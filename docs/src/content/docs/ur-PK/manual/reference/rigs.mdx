@@ -1,359 +1,369 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: رگز
+description: ہر رگ سطح، بیک اینڈ، ایکشن فعل، لائف سائیکل کی حالت، پورٹ، ڈیفالٹ اور معاہدہ — مکمل حقائق پر مبنی کیٹلاگ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/رگز
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/ur-PK/ہدایت-نامہ/تصورات/رگز/); to open a machine, follow [the
-guide](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/).
+صرف حقائق۔ ان کے پیچھے کا ماڈل جاننے کے لیے [رگز اور
+انکلوژرز](/ur-PK/ہدایت-نامہ/تصورات/رگز/) پڑھیں؛ مشین کھولنے کے لیے [گائیڈ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) پر چلیں۔
 
-## Surfaces and backends
+## سطحیں اور بیک اینڈز
 
-| Surface | Drives | Backend | Value | Contained egress |
+| سطح | چلاتا ہے | بیک اینڈ | قدر | محدود ایگریس |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| ٹرمنل (exec) | VM کے exec چینل پر ایک شیل | microVM | `smolvm` | ہاں |
+| براؤزر | ہیڈ لیس Chromium (CDP)، Firefox (WebDriver BiDi) یا WebKit (W3C WebDriver) | microVM | `smolvm` | ہاں |
+| کمپیوٹر | X11 ڈیسک ٹاپ: اِن پٹ ہائپر وائزر کے ذریعے، کیپچر گیسٹ ایجنٹ کے ذریعے | QEMU | `qemu-hvf` (macOS)، `qemu-kvm` (Linux)، `qemu-tcg` (بغیر تیز رفتاری والا فالبیک، کبھی خودکار طور پر منتخب نہیں ہوتا) | ہاں |
+| Android | ADB کے ذریعے Android | گوگل کا ایمولیٹر | `android-emulator` | **نہیں** — ایمولیٹر اپنی نیٹ ورکنگ خود سنبھالتا ہے |
+| iOS | WebDriverAgent کے ذریعے iOS سمیولیٹر | CoreSimulator | `ios-simulator` | **نہیں** — نیٹ ورکنگ میزبان Mac کے پیچھے چلتی ہے |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+ٹرمنل اور `computer_use` سطح ایک ہی `computer` سطح قدر رکھتے ہیں؛ ٹرمنل اپنے
+exec امیج مارکر سے ممتاز ہوتا ہے اور اسے کبھی چلانے کے قابل ڈیسک ٹاپ کے طور پر
+دوبارہ استعمال نہیں کیا جاتا (اور نہ اس کے برعکس)۔ ایک گفتگو ایک ہی ٹرمنل
+مشین دوبارہ استعمال کرتی ہے۔
 
-## Browser engines
+## براؤزر انجنز
 
-| Engine | Value | Protocol | Live view | Stills |
+| انجن | قدر | پروٹوکول | لائیو ویو | اسٹل تصاویر |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (ڈیفالٹ) | Chrome DevTools Protocol | اسکرین کاسٹ — صفحہ دوبارہ پینٹ ہوتے ہی براؤزر فریم پش کرتا ہے | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | پول کی گئیں اسٹل تصاویر (BiDi میں اسکرین کاسٹ نہیں)، زیادہ سے زیادہ 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (کلاسک) | پول کی گئیں اسٹل تصاویر، میزبان کے ffmpeg سے ٹرانس کوڈ کردہ | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+ایک رگ اپنی پوری عمر میں **ایک** ہی انجن چلاتی ہے۔ ایک گفتگو میں **فی انجن**
+ایک رگ رکھی جا سکتی ہے، اور یہی شانہ بہ شانہ موازنہ ممکن بناتا ہے: "Firefox
+(VM)" کے ساتھ "Chromium (VM)" کھولنا دو مشینیں ہیں، اور ایک کو بند کرنے سے
+دوسری چلتی رہتی ہے۔
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+`engine` کو `rig.open` یا `browser_use` ٹول کو دیں۔ نامعلوم نام ڈیفالٹ کرنے کے
+بجائے مسترد کر دیا جاتا ہے — ایک براؤزر مانگنا اور خاموشی سے کوئی مختلف مل
+جانا مطابقت کے سوال کا غلط جواب دینا ہے۔
 
-Engine-specific limits, stated rather than worked around:
+انجن کے مخصوص حدود، جنہیں نظر انداز کرنے کے بجائے بیان کیا گیا ہے:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** میں کیش بائی پاس کرنے والا ری لوڈ نہیں (وہ BiDi کے `ignoreCache`
+  کو قطعی مسترد کر دیتا ہے)، اس لیے ہارڈ ری لوڈ ایک عام ری لوڈ ہی ہے۔
+- **WebKit** میں بھی کیش بائی پاس کرنے والا ری لوڈ نہیں، کنسول فیڈ نہیں (آؤٹ
+  پٹ ہر نیویگیشن کے بعد `console.*` کو ہک کر کے پکڑی جاتی ہے، اس لیے لوڈ کے
+  دوران لاگ ہونے والی ہر چیز رہ جاتی ہے — ہر کنسول ایکسٹریکٹ یہی بتاتا ہے)، اور
+  اس کے لائیو ویو کے لیے میزبان پر `ffmpeg` درکار ہے۔
+- **ان دونوں میں سے کوئی بھی** اپنے پروٹوکول پر کوئی پلیٹ فارم ایکسیسبلٹی ٹری
+  فراہم نہیں کرتا، اس لیے `extract (a11y)` ایک DOM سے ماخوذ تخمینہ واپس کرتا
+  ہے، اور اسے تخمینہ ہی کے طور پر لیبل کیا جاتا ہے۔
+- **کوئی بھی** حقیقی فائل ڈراپ نہیں لے سکتا؛ فائل اِن پٹ کو پھر بھی مشین کے
+  اندر موجود پاتھ پر لگایا جا سکتا ہے۔
 
-## Machine images
+## مشین امیجز
 
-| Surface | Image | Fetched |
+| سطح | امیج | حاصل کی جاتی ہے |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| ٹرمنل | `ubuntu:24.04`، ڈائجسٹ پن شدہ | پہلے بوٹ پر خودکار طور پر، مشین کے اپنے گیٹ والے نیٹ ورک کے ذریعے |
+| براؤزر (Chromium، Firefox، WebKit) | `debian:trixie-slim`، ڈائجسٹ پن شدہ، نیز انجن کے اپنے پیکجز | پہلے بوٹ پر خودکار طور پر، پھر وارم شدہ پیک کے طور پر کیش |
+| کمپیوٹر | Chromium، Firefox، WebKit اور وہی GitHub ہوسٹڈ رنر والی CLI بیس لائن رکھنے والی qcow2 ڈیسک ٹاپ امیج جو ٹرمنل وارم کرتا ہے | **درآمد**، ترتیبات → سرور → رگز کے تحت (جہاں شائع ہوں وہاں چیک سم پن شدہ ڈاؤن لوڈز) |
+| Android | گوگل کی سسٹم امیجز | Android SDK کے ذریعے |
+| iOS | ایک Xcode سمیولیٹر رن ٹائم نیز چیک سم پن شدہ WebDriverAgent | رن ٹائم Xcode کے ذریعے؛ آٹومیشن برج ترتیبات → سرور → رگز سے |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+ہر microVM قسم کے پہلے بوٹ کے بعد سرور ڈیٹا ڈائریکٹری کے نیچے ایک پہلے سے
+نکالی گئی کاپی کیش کر لیتا ہے اور اس کے بعد کی ہر مشین اسی سے بوٹ کرتا ہے —
+بشمول ایسی پہلے سے وارم شدہ امیجز جن میں پیکجز پہلے ہی انسٹال ہوں۔ ٹرمنل
+GitHub ہوسٹڈ رنر جیسی CLI ٹول سیٹ وارم کرتا ہے (`git`، `gcc`، `python3`،
+`jq`، `rsync`، آرکائیو ٹولز، اور apt بیس لائن کا باقی سب؛ Docker یا لینگویج
+ٹول کیشز نہیں)۔ Computer کا qcow2 امیج بلڈ کے وقت وہی CLI نام اندر پکا دیتا
+ہے، XFCE اور تینوں براؤزرز کے ساتھ۔ ہر براؤزر اپنا انجن وارم کرتا ہے۔ تینوں
+انجن ایک Debian بیس شیئر کرتے ہیں مگر کبھی ایک پیک شیئر نہیں کرتے: کیش کی
+کنجی امیج، انجن **اور** ایک آڈیو ریویژن (`audio-v1-<engine>`) پر ہوتی ہے،
+کیونکہ ایک انجن کے لیے — یا اُس وقت سے پہلے جب PulseAudio اور ffmpeg ورک لوڈ
+کا حصہ بنے — وارم کی گئی مشین میں دوسرے کا کچھ نہیں ہوتا۔ ٹرمنل پیک کی کنجی
+اسی وجہ سے ٹول سیٹ ریویژن (`tools-v1`) پر ہوتی ہے: ایسا پیک جو کمپائلر کے
+امیج کا حصہ بننے سے پہلے وارم کیا گیا ہو، ایسی مشین کو نہیں دینا چاہیے جس
+میں کمپائلر ہونا چاہیے۔
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+کوئی بھی پکی ہوئی آٹومیشن امیج لینے کے قابل نہیں — Chromium کا
+`chromedp/headless-shell` ALSA اور PulseAudio دونوں کو باہر کر کے کمپائل کرتا
+ہے، اس لیے وہ کبھی آواز پیدا نہیں کر سکتا؛ Firefox والی واحد برقرار رکھی گئی
+امیج Debian بیس سے 33× بڑی ہے اور پھر بھی کوئی `socat` نہیں رکھتی؛ WebKit
+والی کوئی برقرار رکھی گئی امیج بالکل ہی نہیں۔ اس لیے ہر انجن پہلے آغاز پر
+انسٹال ہوتا ہے (`chromium`، `firefox-esr`، یا `webkit2gtk-driver`) اور یہ
+کرتے ہوئے Debian آرکائیوز (`deb.debian.org`، `security.debian.org`،
+`cloudfront.debian.net`) تک پہنچتا ہے۔ Chromium ڈسٹری بیوشن بائنری ہے جسے
+`chromium --headless=new` کے طور پر لانچ کیا جاتا ہے۔
 
-### Per-workspace custom images
+### فی ورک اسپیس حسبِ ضرورت امیجز
 
-| Setting key | Overrides |
+| سیٹنگ کی کنجی | اوور رائیڈ کرتی ہے |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Terminal (VM) امیج |
+| `rigs.smolvm.browserImage` | Chromium Browser (VM) امیج |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+یہ ایڈمن گیٹ والے ورک اسپیس سیٹنگز اسٹور کے ذریعے لکھی جاتی ہیں (ترتیبات →
+سرور → رگز → حسبِ ضرورت امیجز (یہ ورک اسپیس))۔ قدر لازماً ایک رجسٹری ریفرنس
+ہو — مقامی پاتھ، آرکائیوز اور فلیگ نما اسٹرنگز مسترد کر دی جاتی ہیں، دونوں
+فیلڈ پر اور دوبارہ بوٹ پر۔ محفوظ شدہ غلط قدر کو زوردار طریقے سے نظر انداز
+کیا جاتا ہے اور اس کے بجائے ڈیفالٹ بوٹ ہوتا ہے۔ امیج کی اپنی رجسٹری (نیز
+Docker Hub، GHCR، Quay، GitLab اور GCR کے معروف blob-CDN ساتھی) پل کے لیے
+ایگریس گیٹ سے داخل کی جاتی ہے۔
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**ٹرمنل امیج معاہدہ** — `bash` موجود؛ `git`، `curl`، `socat` پہلے سے انسٹال
+*یا* ایک Debian/Ubuntu apt بیس (انکلوژر پہلے آغاز پر وہ تینوں اور GitHub
+ہوسٹڈ رنر جیسی CLI ٹول سیٹ انسٹال کرتا ہے: کمپائلرز، Python 3، `jq`،
+آرکائیو ٹولز، `rsync`۔ لینگویج ٹول کیشز اور Docker انسٹال نہیں ہوتے)۔
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**براؤزر امیج معاہدہ** — ایک Debian/Ubuntu apt بیس (یا پہلے سے انسٹال پیکجز)
+جس میں `bash` اور `socat` ہوں، نیز ایک `chromium` بائنری جسے سرور خود
+`chromium --headless=new` کے طور پر لانچ کرتا ہے، گیسٹ لوپ بیک `9223` پر
+DevTools کے ساتھ، جو گیسٹ پورٹ `9222` پر ریلے ہوتا ہے۔ آڈیو لین کے لیے پہلے
+آغاز پر PulseAudio اور ffmpeg انسٹال ہوتے ہیں۔ `FROM chromedp/headless-shell`
+سے بلڈ نہ کریں: اپ اسٹریم `headless.gn` ALSA اور PulseAudio دونوں کو باہر کر
+کے کمپائل کرتا ہے، اس لیے وہ بائنری آواز پیدا نہیں کر سکتی۔ اوور رائیڈ
+**صرف Chromium رگز** پر لاگو ہوتا ہے — جس ورک لوڈ کمانڈ سے یہ بوٹ ہوتی ہے وہ
+Chromium کی ہے، اور اسے Firefox یا WebKit کو دینا ایسی بائنری لانچ کرنا ہوگا
+جو وہاں موجود ہی نہیں۔ Firefox یا WebKit رگ اسے زوردار طریقے سے نظر انداز
+کرتی ہے اور اپنی پن شدہ امیج بوٹ کرتی ہے۔
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**آٹومیشن پورٹس** — ہر براؤزر مشین میزبان کے بالکل ایک لوپ بیک پورٹ کو گیسٹ
+`9222` پر فارورڈ کرتی ہے۔ اس کے پیچھے: Chromium کے DevTools اور Firefox کا
+ریموٹ ایجنٹ گیسٹ لوپ بیک `9223` پر ہوتے ہیں جن کے آگے ایک `socat` ریلے ہوتا
+ہے (دونوں بغیر شرط لوپ بیک پر بائنڈ کرتے ہیں)؛ WebKit کا ڈرائیور ایک `--host`
+لیتا ہے اور خود گیسٹ NIC پر بائنڈ کرتا ہے۔ Firefox مزید یہ کہ `Host` ہیڈر کو
+اپنے ہی پورٹ کے خلاف توثیق کرتا ہے، اس لیے کلائنٹ گیسٹ والی اتھارٹی بھیجتا
+ہے، نہ کہ وہ جس پر اس نے ڈائل کیا۔
 
-## Action verbs
+## ایکشن فعل
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+ہر ایکشن مکمل طور پر پارس ہوتا ہے: خراب پے لوڈ فیلڈ کا نام لے کر ایک پیغام
+واپس کرتا ہے، کبھی استثناء نہیں۔ مشاہدے والے فعل (○ سے نشان زد) جب تک کوئی
+انسان کنٹرول تھامے رکھتا ہے اجازت یافتہ رہتے ہیں؛ تبدیلی کرنے والے فعل مسترد
+کر دیے جاتے ہیں۔
 
 ### `computer_use`
 
-`screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
-`right_click`, `middle_click`, `double_click`, `triple_click`,
-`left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
-`clipboard_read`○, `clipboard_write`.
+`screenshot`○، `cursor_position`○، `mouse_move`، `left_click`،
+`right_click`، `middle_click`، `double_click`، `triple_click`،
+`left_mouse_down`، `left_mouse_up`، `left_click_drag`، `scroll`، `key`،
+`hold_key` (0–60 s)، `type`، `wait`○ (0–60 s)، `set_display`،
+`clipboard_read`○، `clipboard_write`۔
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+کوآرڈینیٹس گیسٹ کے موجودہ موڈ میں گیسٹ پکسلز ہیں؛ ہر اسکرین شاٹ ڈسپلے کا سائز
+بتاتا ہے۔ کلیدوں کے امتزاج X11 ہجے استعمال کرتے ہیں (`ctrl+s`، `alt+Tab`،
+`Return`)۔
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` ایک `selection` لیتا ہے: `clipboard` (وہ جو ctrl+C بھرتا ہے،
+ڈیفالٹ)، `primary` (X11 منتخب کر کے کاپی) یا `xdnd` (جاری ڈریگ)۔ خالی نتیجہ
+تینوں کے لیے ایک معمول کا جواب ہے۔ `clipboard_write` صرف `text` لیتا ہے —
+تصاویر اور فائلیں فائل لین پر سفر کرتی ہیں، کیونکہ ایک ایکشن کے آرگیومنٹس
+آڈٹ لاگ میں محفوظ ہو جاتے ہیں اور امیج بائٹس کا وہاں کوئی کام نہیں۔ کلپ بورڈ
+کا مواد ناقابل اعتماد ڈیٹا کے طور پر باڑ میں لگا کر واپس آتا ہے۔
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
-`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
-`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`navigate` (صرف http/https)، `reload` (`hard` اختیاری)، `stop_loading`،
+`click` (سلیکٹر یا کوآرڈینیٹ)، `fill`، `type`، `key` (DOM کلید نام)،
+`scroll`، `mouse_move`، `drag`، `left_mouse_down`، `left_mouse_up`،
+`extract`○ (`a11y` | `dom` | `console`)، `screenshot`○ (`full_page`
+اختیاری)، `set_viewport` (کم از کم 320×240)، `history`، `wait_for`○ (سلیکٹر،
+0.1–30 s)، `clipboard_read`○، `clipboard_write`۔
 
-Extracted page content returns fenced as untrusted data.
+ایکسٹریکٹ شدہ صفحہ مواد ناقابل اعتماد ڈیٹا کے طور پر باڑ میں لگا کر واپس آتا
+ہے۔
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+براؤزر کے پاس بالکل ایک ہی کلپ بورڈ ہوتا ہے، اس لیے `clipboard_read` کوئی
+`selection` نہیں لیتا۔ کلپ بورڈ کے دونوں فعل **محفوظ کانٹیکسٹ** مانگتے ہیں:
+سادہ `http://` پر پیش کیا گیا صفحہ کلپ بورڈ API بالکل نہیں رکھتا، اور فعل خالی
+کلپ بورڈ بتانے کے بجائے یہی بتا دیتا ہے — وہاں `type` استعمال کریں، جو کلپ
+بورڈ سے گزرے بغیر کیریٹ پر داخل کرتا ہے۔
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
-`recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`tap`، `swipe` (50–5000 ms)، `type`، `key` (عرفی نام `back`، `home`،
+`recents`، `enter`، `delete`، `backspace`، `tab`، `escape`، `search`،
+`menu`، `volume_up`، `volume_down`، `power`، یا کوئی بھی `KEYCODE_*`)،
+`screenshot`○، `ui_dump`○، `install_apk`
+(رگ کے worktree اور سرور ڈیٹا ڈائریکٹری تک محدود)، `start_app`،
+`stop_app`، `clear_app_data`، `uninstall_app`، `open_url`، اور `shell`۔
+`shell` ایک argv فہرست لیتا ہے اور Android کے اندر چلتا ہے، کبھی میزبان شیل
+کے ذریعے نہیں؛ یہ `logcat`، `dumpsys` اور `pm grant` جیسی ڈیویلپر تشخیص کا
+احاطہ کرتا ہے۔
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` میں کلپ بورڈ کے فعل نہیں۔ Android 10 سے صرف فوکس شدہ ایپ ہی کلپ
+بورڈ پڑھ سکتی ہے۔
 
 ### `ios_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`tap`، `swipe` (50–5000 ms)، `type`، `key` (`enter`، `backspace`، `tab`،
+`escape`، ایرو کلیدیں یا ایک قابلِ طبع حرف؛ اختیاری `command`،
+`control`، `option` اور `shift` موڈیفائرز)، `home`، `lock`، `unlock`،
+`screenshot`○، `ui_dump`○، `install_app` (سمیولیٹر `.app` ڈائریکٹری
+جو رگ worktree یا سرور ڈیٹا ڈائریکٹری تک محدود ہو)، `start_app`، `stop_app`،
+`uninstall_app`، `open_url`، اور `spawn`۔ `spawn` argv لیتا ہے اور
+`simctl` کے ذریعے سمیولیٹر کے اندر چلتا ہے؛ یہ کبھی میزبان شیل نہیں بلاتا۔
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+کوآرڈینیٹس iOS اسکرین کے **پوائنٹس** ہیں، اسکرین شاٹ پکسلز نہیں۔ لائیو
+اسٹریم سمیولیٹر کا مقرر سائز برقرار رکھتا ہے اور آلے کا سائز بدلنے کے بجائے
+اسے لیٹر باکس کر دیتا ہے۔ میزبان سے سمیولیٹر اور سمیولیٹر سے میزبان تک متنی
+کلپ بورڈ کی منتقلی دیگر رگز کی طرح ہی فی صارف، فی سمت اجازت پالیسی استعمال
+کرتی ہے؛ iOS پیسٹ بورڈ لین فائلیں اور تصاویر قبول نہیں کرتی۔
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+ہر رگ اپنی ملکیت والا CoreSimulator آلہ اور WebDriverAgent سیشن بناتی ہے۔
+اسے بند کرنا WebDriverAgent روکتا ہے، اُس آلے کو بند اور حذف کرتا ہے، اور اس
+کا رجسٹری اندراج ہٹا دیتا ہے۔ iOS رگز صرف ایسے macOS سرور پر چلتی ہیں جہاں
+Xcode، ایک انسٹال شدہ iOS رن ٹائم اور پن شدہ آٹومیشن برج موجود ہو۔ یہ کوئی
+آڈیو، مائیکروفون، فائل ڈراپ، میزبان شیل یا بند نیٹ ورک کی ضمانت فراہم نہیں
+کرتیں۔
 
-### Management tools
+### مینجمنٹ ٹولز
 
-| Tool | Description |
+| ٹول | تفصیل |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | کسی ورک اسپیس کی رگز، سطح، اسٹیٹس، ڈسپلے اور کنٹرولر کے ساتھ فہرست کریں |
+| `rig_close` | ایک رگ تباہ کریں اور اس کی ڈسک ضائع کر دیں |
 
-## Lifecycle
+## لائف سائیکل
 
-| Phase | Meaning |
+| مرحلہ | مطلب |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | بوٹ ہو رہی ہے؛ اسٹیٹس تفصیل موجودہ قدم حرف بہ حرف بتاتی ہے |
+| `ready` | قابلِ رسائی اور ایکشنز قبول کر رہی ہے |
+| `parked` | آئیڈل پارک شدہ: vCPUs رکے ہوئے، RAM پھر بھی موجود؛ اگلا ایکشن اسے جگا دیتا ہے |
+| `closing` | بند ہو رہی ہے |
+| `closed` | ختم؛ قطار آڈٹ ٹریل کے لیے باقی رہتی ہے |
+| `failed` | مر گئی یا کبھی اوپر نہ آئی؛ الگ پہچانی جا سکتی ہے تاکہ UI دوبارہ کوشش پیش کر سکے |
 
-| Close reason | Fired when |
+| بندش کی وجہ | کب عمل میں آتی ہے |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | کسی شخص یا ایجنٹ نے مانگا |
+| `idleTimeout` | آئیڈل ونڈو سے 2× زیادہ آئیڈل، یا میموری کی وجہ سے نکالی گئی |
+| `ttlExpired` | سخت عمر ختم ہو گئی |
+| `conversationEnded` | مالک گفتگو ختم ہو گئی |
+| `workspaceGone` | ورک اسپیس حذف ہو گیا یا رکنیت ختم ہو گئی |
+| `serverShutdown` | سرور بند ہو رہا ہے |
+| `backendFailure` | اس کے نیچے ہائپر وائزر مر گیا |
 
-## Defaults and ceilings
+## ڈیفالٹس اور حدیں
 
-| Value | Terminal | Browser | Computer | Mobile |
+| قدر | ٹرمنل | براؤزر | کمپیوٹر | موبائل |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| میموری | 512 MB | 2048 MB (Chromium)؛ 2560 MB (Firefox، WebKit) | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| سخت TTL | 8 h | 2 h | 2 h | 2 h |
+| آئیڈل ونڈو | 45 min | 15 min | 15 min | 15 min |
+| بوٹ ڈسپلے | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- ایجنٹ لین کی اسٹل تصاویر **1280×800** پر محدود ہیں؛ انسانی لین زیادہ سے زیادہ
+  **2560×1600** تک طے کرتی ہے۔
+- تمام رگز کے لیے میزبان کا رہائشی میموری بجٹ ڈیفالٹ کے طور پر **12 GB** ہے،
+  جو رہائشی میگا بائٹس میں گنا جاتا ہے (پارک شدہ VM پھر بھی اپنی RAM رکھتی
+  ہے)۔ نکالنا سب سے کم حالیہ استعمال شدہ کی بنیاد پر ہوتا ہے اور کبھی ایسی
+  مشین نہیں لے جاتا جسے کوئی چلا رہا ہو، دیکھ رہا ہو، یا جس میں کسی کا ٹرمنل
+  کھلا ہو۔
+- کھلا ٹرمنل یا دیکھنے والا ناظر رگ کو پارک ہونے اور آئیڈل ریپنگ سے روکے
+  رکھتا ہے؛ سخت TTL پھر بھی لاگو رہتا ہے۔
 
-## Ports and dev domains
+## پورٹس اور ڈیو ڈومینز
 
-| Port | Where | Reserved for |
+| پورٹ | کہاں | کس کے لیے مختص |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | ٹرمنل گیسٹ | وہ پورٹ ملٹی پلیکسر جس پر ہر فارورڈ سوار ہوتا ہے |
+| `9222`، `9223` | براؤزر گیسٹ | آٹومیشن ریلے اور اینڈ پوائنٹ (WebKit براہِ راست `9222` پر بائنڈ کرتا ہے اور کوئی ریلے استعمال نہیں کرتا) |
+| `80`، `443` | براؤزر گیسٹ لوپ بیک | ڈیو ڈومین کی HTTP/HTTPS لینیں |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- دریافت سرور کی طرف سے ہر ~4 سیکنڈ میں ٹرمنل گیسٹ کے سننے والے TCP پورٹس
+  پول کرتی ہے۔
+- فی رگ زیادہ سے زیادہ **16** پورٹس خودکار طور پر فارورڈ ہوتے ہیں؛ اس سے زیادہ
+  لاگ میں فہرست ہو جاتے ہیں، فارورڈ نہیں ہوتے۔
+- میزبان والا فارورڈ لوپ بیک پر بائنڈ کرتا ہے، اور گیسٹ کا اپنا پورٹ نمبر
+  ترجیح دیتا ہے؛ **مقامی نیٹ ورک پر شیئر کریں** OS کے تفویض کردہ ایک LAN پورٹ
+  کا اضافہ کرتا ہے۔
+- ڈیو ڈومینز کو `name.test` یا `name.localhost` سے مطابقت رکھنی چاہیے (چھوٹے
+  حروف، زیادہ سے زیادہ 63 حروف کا لیبل)۔ ایک ڈومین ایک پورٹ پر نقشہ بناتا ہے۔
+- ڈیو ڈومین کا HTTPS سرور کی مقامی CA استعمال کرتا ہے (EC P-256،
+  `<dataDir>/rigs/tls/` کے نیچے، کلیدیں 0600 اور کبھی کسی گیسٹ میں نہیں) جس
+  میں `*.test` / `*.localhost` کے لیے ایک وائلڈ کارڈ لیف ہوتا ہے۔ میزبان پر
+  `openssl` نہ ہونے کا مطلب ہے کوئی HTTPS لین نہیں؛ سادہ HTTP پھر بھی روٹ
+  ہوتا ہے۔
 
-## Egress defaults
+## ایگریس ڈیفالٹس
 
-| Surface | Default allowlist |
+| سطح | ڈیفالٹ اجازت فہرست |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| ٹرمنل | سینڈ باکس ڈیویلپر بیس لائن (فورجیز، پیکیج رجسٹریاں، ماڈل فراہم کنندگان) + Ubuntu apt مررز + خود worktree کا فورج میزبان |
+| براؤزر | `usectrl.dev` (پروڈکٹ سائٹ) — نیز ہر انجن کے پہلے بوٹ پر Debian آرکائیوز، جب وہ اپنے پیکجز انسٹال کرتا ہے۔ ہوم پیج ایک مقامی `file://` دستاویز ہے اور اسے کسی ایگریس کی ضرورت نہیں |
+| کمپیوٹر | خالی — سب کچھ مسترد — جب تک کوئی کالر میزبان نہ دے |
+| موبائل | نافذ نہیں (ایمولیٹر کے زیرِ انتظام نیٹ ورکنگ) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+ہر microVM کو اضافی طور پر اپنی امیج کے رجسٹری میزبان ملتے ہیں، صرف پل کے
+لیے۔ کریڈینشل بروکر کے اجازت یافتہ میزبانوں کا مجموعہ اسی اجازت فہرست سے
+ماخوذ ہے: ایسے میزبان کے لیے کوئی ٹوکن جاری نہیں کیا جاتا جہاں گیسٹ پہنچ ہی
+نہ سکے۔
 
-## Clipboard and file transfer
+## کلپ بورڈ اور فائل کی منتقلی
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+کاپی/پیسٹ کی دونوں سمتیں، اور فائلیں اندر باہر گھسیٹنا۔ یہ ایسے شخص کے لیے
+دستیاب ہے جو رگ چلا رہا ہو؛ ایجنٹ کو کلپ بورڈ اوپر والے فعلوں کے ذریعے ملتا
+ہے اور فائل کی منتقلی بالکل نہیں (اس کے پاس انکلوژر کے اندر پہلے ہی ایک شیل
+موجود ہے)۔
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+کلپ بورڈ کا عبور فی صارف اور فی سمت ہے۔ میزبان سے رگ میں پیسٹ ڈیفالٹ کے طور
+پر اجازت یافتہ ہے؛ رگ سے میزبان کو کاپی پوچھتی ہے (دس منٹ کی اجازت، یا
+ترتیبات → سرور → رگز → کلپ بورڈ تک رسائی کے تحت ہمیشہ اجازت دیں)۔ دونوں
+انتخاب آزاد ہیں اور کبھی ورک اسپیس کی ترتیب نہیں ہوتے۔
 
-| Lane | Route | Carries |
+| لین | راستہ | کیا لے جاتی ہے |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| کلپ بورڈ | `GET`/`POST /rig/clipboard/<rigId>` | متن، ایک PNG/JPEG (≤16 MB)، اور کلپ بورڈ پر موجود فائلوں کے گیسٹ پاتھ |
+| فائلیں | `POST /rig/files/<rigId>` | زیادہ سے زیادہ 64 فائلیں، ہر ایک ≤256 MB اور فی ڈراپ ≤512 MB، اختیاری گیسٹ پکسل ڈراپ پوائنٹ کے ساتھ |
+| فائلیں | `GET /rig/files/<rigId>?p=<base64url path>` | ایک فائل کے بائٹس، واپس باہر |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP، RPC نہیں۔** RPC ساکٹ 256 KB سے بڑے آنے والے فریم پر کنکشن بند کر
+  دیتا ہے — یہ ایک DoS گارڈ ہے جو JSON کمانڈز کے لیے درست ہے اور پیسٹ شدہ
+  اسکرین شاٹ کے لیے مہلک۔ بائٹس اُسی طرح کے راستے پر سوار ہوتے ہیں جس پر رگ
+  فریم اور میٹنگ آڈیو پہلے ہی سوار ہوتے ہیں۔
+- **تصدیق** دستخط شدہ ہدف `rig-files:<workspaceId>/<rigId>` کے ساتھ ورک اسپیس
+  رکنیت ہے — یہ اپنا الگ ہدف ہے، اس لیے کسی مشین کو *دیکھنے* کے لیے جاری کیا
+  گیا URL اس میں فائلیں لکھ بھی نہیں سکتا۔
+- **ٹیک اوور لاگو ہوتا ہے۔** کلپ بورڈ لکھنا اور فائلیں گرانا تبدیلی کرنے والے
+  عمل ہیں اور جب کوئی اور کنٹرول تھامے ہو تو مسترد کر دیے جاتے ہیں؛ کلپ بورڈ
+  پڑھنا اور فائل باہر پڑھنا مشاہدہ ہے اور ایسا نہیں۔
+- **ڈراپ کہاں اترتے ہیں:** `~/Drops` (ڈیسک ٹاپ)، `~/drops` (ٹرمنل — worktree
+  کے ساتھ ساتھ، کبھی اس کے اندر نہیں، تاکہ ڈراپ کبھی غیر ٹریک شدہ تبدیلی کے
+  طور پر ظاہر نہ ہو)، `/tmp/cc-drops` (براؤزر)۔ ڈائریکٹری سرور چنتا ہے؛ کوئی
+  کالر اس کا نام نہیں رکھ سکتا۔ موجودہ فائلیں کبھی اوور رائٹ نہیں ہوتیں —
+  ٹکرانے والا نام `2-name.ext` کے طور پر اترتا ہے۔
+- **گیسٹ کو کیا بتایا جاتا ہے:** براؤزر صفحے کو مطلوبہ مقام پر ایک حقیقی ڈراپ
+  ایونٹ ملتا ہے (`Input.dispatchDragEvent`)؛ ڈیسک ٹاپ کو فائلیں اور ان کے URIs
+  اس کے کلپ بورڈ پر ملتے ہیں، کیونکہ کوئی میزبان گیسٹ کے اندر پرائیویلجڈ ڈیمن
+  کے بغیر کسی من مانی ٹول کٹ میں XDND ڈریگ ترکیب نہیں کر سکتا۔ جواب بتاتا ہے
+  کہ دونوں میں سے کیا ہوا۔
+- **باہر گھسیٹنا** صرف ڈیسک ٹاپ پر ہے اور ڈریگ جاری ہونے کے دوران گیسٹ کی
+  `XdndSelection` پڑھتا ہے۔ ایسا پے لوڈ جو گیسٹ کے پاس دباؤ شروع ہونے کے وقت
+  پہلے سے موجود تھا، ختم ہو چکے ڈریگ کی پرانی سلیکشن سمجھا جاتا ہے، نئی نہیں —
+  X میں "ڈریگ ختم ہو گیا" کا کوئی مرحلہ نہیں ہوتا۔
+- **امیج کی شرائط:** ڈیسک ٹاپ امیج پروٹوکول 2 یا اس سے بعد کی ہونی چاہیے (کلپ
+  بورڈ سپورٹ آنے کے بعد بنی ہوئی)۔ پرانی امیج 404 جواب دیتی ہے اور ایپ خراب
+  مشین بتانے کے بجائے اسے دوبارہ بنانے کو کہتی ہے۔
+- **آڈٹ لاگ شکل درج کرتا ہے، کبھی مواد نہیں**: `clipboard_read`،
+  `clipboard_write`، `drop_files` اور `read_file` قطاریں گنتی، سائز اور پاتھ
+  رکھتی ہیں۔ کلپ بورڈ وہ جگہ ہے جہاں کریڈینشلز چند سیکنڈ کے لیے رہتے ہیں، اور
+  اس میں سے کچھ بھی لکھا نہیں جاتا۔
 
-## Guardrails, events, storage
+## گارڈریلز، ایونٹس، اسٹوریج
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- رگ ٹولز **`enclosureControl`** ایکشن کلاس قرار دیتے ہیں (نیز استعمال والے
+  ٹولز پر `networkEgress` اور `processSpawn`؛ `mobile_use` اور `ios_use` مزید
+  `packageInstall` بھی قرار دیتے ہیں)۔ `rig_close`، `enclosureControl` قرار
+  دیتا ہے؛ `rig_list` کچھ قرار نہیں دیتا۔ ڈیفالٹ کے طور پر اجازت یافتہ؛ صرف
+  پڑھنے والے موڈز اسے یکسر مسترد کرتے ہیں؛ فی اسپیس خود مختاری ڈائل اسے پہلے
+  پوچھنے تک گھٹا سکتا ہے۔
+- ڈومین ایونٹس: `RigClosedEvent` (اپنی بندش کی وجہ کے ساتھ)،
+  `RigControlChanged` (ٹیک اوور / کنٹرول واپسی)، `RigReaped` (آئیڈل، TTL یا
+  میموری نکالنا، چلانے والے ایجنٹ کے ساتھ)۔ رگ کھولنا کوئی ایونٹ نہیں۔
+  دیکھیں [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس/)۔
+- اسٹوریج: ہر ورک اسپیس ڈیٹا بیس میں `rig_sessions` اور `rig_action_log`۔
+  ایکشن لاگ ہر اِن پٹ ایونٹ کو اس کے پرنسپل اور فی رگ ایک مونوٹونک ترتیب کے
+  ساتھ درج کرتا ہے؛ ٹائپ کیا گیا متن لکھے جانے سے پہلے ایک طوالت اور ہیش تک
+  محدود کر دیا جاتا ہے۔
+- ڈیٹا ڈائریکٹری: `rigs/images/` (درآمد شدہ qcow2 امیجز)، `rigs/smolvm/`
+  (فی رگ رن ٹائم حالت)، `rigs/smolvm-packs/` (پہلے سے نکالے گئے مشین پیک)،
+  `rigs/tls/` (ڈیو ڈومین CA)، `rigs/run/` (QEMU اوورلے اور سیڈز)۔
+- راستے: لائیو ویو کسی اسپیس یا PR صفحے کا ایک ٹیب ہے؛
+  `/settings/server/rigs` رگز کی سیٹنگز اسکرین ہے۔

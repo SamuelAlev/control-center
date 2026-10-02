@@ -1,156 +1,158 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Använd ytor
+description: Skapa ytor, ange deras läge, hantera deltagare och autonomi och öppna samtal och trådar.
 slug: sv-SE/handbok/how-to-guider/ytor
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Den här guiden visar hur du använder ytor. En **yta** är meddelandeytan i
+Control Center: ett rum som hör till en arbetsyta med en eller flera deltagare
+(du och/eller agenter), som äger en copy-on-write-worktree per repo den
+skapades för.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Rum för två och rum med många agenter är båda bara ytor, och de skiljer sig
+bara i hur många deltagare de har. Det enda undantaget är ytor som agenter
+öppnar för att prata med varandra — se [Ytor mellan agenter](#ytor-mellan-agenter)
+nedan.
 
-## Create a space
+## Skapa en yta
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Gå till **Ytor**
+2. Klicka på **+**-knappen bredvid rubriken Ytor
+3. Ge den ett **namn** — obligatoriskt. Ett tomt namn avvisas; dialogen
+   stannar kvar
+4. Lägg eventuellt till agenter från arbetsytan
+5. Om arbetsytan har några repon väljer du vilka den här ytan etablerar
+   worktrees för. Alla är valda från början; avmarkerar du varje repo skapas en
+   yta där inget är utcheckat
+6. Bekräfta
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Ytor hör till en arbetsyta: du ser bara agenter från den aktuella arbetsytan,
+och en yta visar aldrig data från en annan arbetsyta.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills).
+Varje repo checkas ut under `repos/<name>/` i ytan. Ett repo som levererar sina
+egna agent-skills bidrar med dem till den agent som arbetar i det — en repos
+uppsättning i taget, som byts ut när agenten flyttar sig. I composern når du
+vilken som helst av dem med `/skill:<repo>:<name>`. Se
+[Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Ytan ligger på `/workspaces/<id>/spaces`, och en enskild yta på
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Ange ytans läge
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+En ny yta startar i standardläget. Ändra det via **lägesmenyn** längst till
+vänster i composerns verktygsfält — inte i dialogen för att skapa ytan (som
+inte har något lägesfält) och inte i ytans rubrik.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Läge            | Effekt                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| **Agent**       | Full åtkomst. Standard; `chat` internt, märkt ”Agent” i menyn                                           |
+| **Plan**        | Bara läsning och research; leveransen är en typad plan                                                  |
+| **Orchestrate** | Läsning och research plus ett enda verb, `propose_orchestration`; planen körs först när du godkänner den |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab växlar mellan planläge och agentläge utan att öppna menyn.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Ett fjärde läge, **review**, finns men erbjuds inte i menyn — det tillämpas
+automatiskt på PR-granskningsytor.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Läget lagras på ytan, så samma agent kan vara i planläge i en yta och
+agentläge i en annan. Varje samtal i en yta delar ytans läge.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Håll utkik efter badgen för upprätthållande]
+En badge visas bredvid lägesmenyn när ytans agenter körs på en adapter som inte
+kan upprätthålla läget du valde. Bara den inbyggda harnessen i Control Center
+filtrerar verktygsytan och grindar varje anrop; adaptrarna Claude Code och ACP
+får läget som en begäran som deras runner kan följa eller inte. Ingen badge
+betyder ”inget påstående görs”, inte ”verifierat säkert”.
 :::
 
-See [Modes](/sv-SE/handbok/koncept/lagen/) for the full model.
+Se [Lägen](/sv-SE/handbok/koncept/lagen/) för hela modellen.
 
-## Manage participants and per-agent autonomy
+## Hantera deltagare och autonomi per agent
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Klicka på personikonen i ytans rubrik för att öppna **Hantera deltagare**. För
+varje agent som redan finns i ytan kan du:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Ta bort den från ytan
+- Ange dess **Autonomi** för den här ytan: **Standard**, **Bara föreslå**,
+  **Agera med godkännande** eller **Agera fritt**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Autonomivredet gäller per (yta, agent), så en agent du litar på i ett rum kan
+hållas till bara föreslå i ett annat.
 
-## React to a message
+## Reagera på ett meddelande
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Håll muspekaren över ett meddelande och klicka på leendeikonen för att öppna
+reaktionspaletten. Den är en fast uppsättning på sex: 👍 👎 🎉 ❤️ 👀 ✅. Det
+finns ingen fri emojiväljare — att trycka på en slår den till eller från för
+dig, och de aggregerade chipsen visas under meddelandet.
 
-## Open a conversation
+## Öppna ett samtal
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+En yta rymmer flera samtal samtidigt, och de är jämbördiga — det finns inget
+primärt. En yta behåller alltid minst ett levande samtal: du kan inte arkivera
+det sista aktiva, och att öppna en yta som ännu inte har något skapar ett
+namnlöst bestående samtal.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Samtal visas som flikar i redigeraren och, när det finns fler än ett, som
+kapslade rader under ytan i sidofältet. **Nytt samtal** finns i redigerarens
+meny för ny flik och skapar ett namnlöst samtal utan fråga om titel —
+titelmodellen namnger det efter det första meddelandet. Använd ett för att köra
+parallellt arbete med samma agent och worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Varje samtal behåller sin egen meddelandehistorik och sina egna agentsessioner
+samtidigt som det delar ytans worktrees och dess läge. Att stänga en flik
+döljer den; **Arkivera samtal** (raden i sidofältet eller chattflikens
+kontextmeny) arkiverar bara det samtalet.
 
-## Start a thread
+## Starta en tråd
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Håll muspekaren över valfritt meddelande och välj **Starta tråd**. Det öppnar
+ett samtal som är förankrat i det meddelandet: förankringen sår den nya
+samtalets agentkontext med en rad, och förälderns historik kopieras **inte**.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+När en tråd har svar växer meddelandet den hänger på en rad under sig —
+ansiktena på dem som har sagt något, antalet svar och när det senaste svaret
+kom in. Den raden är vägen tillbaka: att klicka på den öppnar (eller fokuserar)
+trådens flik. Det är det enda spår en tråd lämnar i det flöde den grenade av
+från, och det är därför den finns där.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+En tråds flik har titeln `Thread: <name>` och bär grensymbolen, så två flikar i
+samma yta förväxlas aldrig med varandra.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Trådar nästlar sig aldrig — att förankra i ett meddelande som redan ligger i en
+tråd avvisas. Samtalets rubrik länkar tillbaka till förankringsmeddelandet. Att
+ta bort förankringsmeddelandet tar bort tråden, och att arkivera det
+överordnade samtalet blockerar inte dess befintliga trådar.
 
-## Read state
+## Lässtatus
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Läsmarkeringar gäller per yta, inte per samtal: att öppna vilket samtal som
+helst i ytan rensar rummet. Olästa summeras ändå över alla ytans samtal, trådar
+inräknade. När samtalen listas under ytan sitter punkten för olästa på det
+samtal som har osedda saker i sig, inte på den överordnade raden.
 
-## Agent-to-agent spaces
+## Ytor mellan agenter
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Ytor som agenter öppnar för att prata med varandra grupperas separat i
+sidofältet under **Agenter**, är ihopfällda från början och visas nedtonade. De
+ökar aldrig din badge för olästa — agentpratet är tyst av konstruktion, inte
+tack vare en inställning du måste hitta.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+En ytas typ är ett av fem värden: `topic` (standard för allt du skapar),
+`agentPeer`, `system` (hanteras av en pipeline), `pr` (skapas när en PR-yta
+behöver en worktree-förankring och döljs i sidofältet tills den har meddelanden)
+och `slack` (skapas av chattbryggan för en Slack-tråd eller ett DM med boten,
+och behandlas som ett vanligt samtal mellan människor).
 
-## Related guides
+## Relaterade guider
 
-- [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
-- [@-mention agents](/sv-SE/handbok/how-to-guider/namna-agenter/)
-- [Use plan mode](/sv-SE/handbok/how-to-guider/planlage/)
+- [Använd ytor](/sv-SE/handbok/how-to-guider/ytor/)
+- [@-nämn agenter](/sv-SE/handbok/how-to-guider/namna-agenter/)
+- [Använd planläge](/sv-SE/handbok/how-to-guider/planlage/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Modes](/sv-SE/handbok/koncept/lagen/)
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/): how a Slack thread becomes a space
+- [Lägen](/sv-SE/handbok/koncept/lagen/)
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/): hur en Slack-tråd blir en yta

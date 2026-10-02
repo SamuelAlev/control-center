@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: ورک اسپیس میں ریپوز شامل کریں
+description: Git چیک آؤٹس کو ایک ورک اسپیس میں رجسٹر کریں تاکہ ایجنٹس ان پر کام کر سکیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+یہ گائیڈ دکھاتی ہے کہ کسی Git چیک آؤٹ کو ورک اسپیس میں کیسے رجسٹر کیا جائے، اسے دوبارہ انڈیکس کیسے کیا جائے اور اسے دوبارہ کیسے ہٹایا جائے۔
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+ریپوز **ورک اسپیس تک محدود** ہوتے ہیں۔ کوئی عالمی رجسٹری نہیں اور کوئی الگ لنکنگ قدم نہیں: ریپو شامل کرنا اور اسے ورک اسپیس میں رکھنا ایک ہی عمل ہے۔ ایک ہی چیک آؤٹ دو ورک اسپیسز میں رجسٹر ہونے پر دو مختلف ids کے ساتھ دو آزاد قطاریں بن جاتا ہے — ورک اسپیسز کے درمیان، ریپو کی شناخت اس کا فائل سسٹم پاتھ ہوتی ہے، کبھی اس کی id نہیں۔
 
-## Before you start
+## شروع کرنے سے پہلے
 
-A folder can only be registered if all three of these hold:
+کوئی فولڈر صرف اُس وقت رجسٹر ہو سکتا ہے جب یہ تینوں شرائط پوری ہوں:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. یہ کسی **git ورک ٹری** کے اندر ہو۔
+2. اُس ورک ٹری میں **`origin` ریموٹ** موجود ہو۔
+3. `origin` ریموٹ کسی **معاون کوڈ ہوسٹ** کی طرف اشارہ کرتا ہو: github.com، gitlab.com یا bitbucket.org۔
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+اس کے علاوہ کچھ بھی رجسٹریشن کے وقت ایک واضح پیغام کے ساتھ مسترد کر دیا جاتا ہے: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", یا "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org)."۔ کوئی صرف مقامی موڈ نہیں ہے۔
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+کوڈ ہوسٹ ریموٹ سے پڑھا جاتا ہے اور ریپو پر محفوظ کر دیا جاتا ہے — اسے کبھی آپ منتخب نہیں کرتے۔ ایک ورک اسپیس میں تینوں کے ریپوز بیک وقت رہ سکتے ہیں، اور ہر ایک سے اس کے اپنے API کے ذریعے اس کے اپنے کریڈینشل کے ساتھ بات کی جاتی ہے۔ GitLab کے نیسٹڈ نام اسپیسز محفوظ رہتے ہیں، چنانچہ `gitlab.com/group/subgroup/project` بطور مالک `group/subgroup` اور بطور نام `project` رجسٹر ہوتا ہے۔
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+یہ فولڈر لازماً اُس مشین پر بھی ہونا چاہیے جو `cc_server` ہوسٹ کرتی ہے، اور اُس سرور کی `--repo-roots` ڈائریکٹریز میں سے کسی ایک کے اندر۔ یہ اجازت فہرست بطور ڈیفالٹ سرور صارف کی ہوم ڈائریکٹری ہوتی ہے اور کسی روٹ سے اوپر براؤز کرنا مسترد کر دیا جاتا ہے۔
 
-## Register a checkout
+## چیک آؤٹ رجسٹر کریں
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. **ترتیبات → ورک اسپیس → ریپوزٹریز** کھولیں (`/workspaces/<id>/settings/workspace/repositories`)۔
+2. **ریپوزٹری شامل کریں** پر کلک کریں۔
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+یہ ڈائیلاگ **سرور** کے فائل سسٹم پر ایک نیویگیٹ کرنے کے قابل براؤزر ہے، آپ کے فائل سسٹم پر نہیں۔ ڈیسک ٹاپ، ویب اور فون پر یہی بہاؤ ہے، کیونکہ کوئی مقامی فولڈر پکر غلط مشین کا فولڈر منتخب کر لے گا۔
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. سرور کے ترتیب شدہ روٹس کے اندر نیویگیٹ کریں۔ وہ فولڈرز جو git چیک آؤٹ ہیں نشان زد ہوتے ہیں۔
+4. ان میں سے جتنے چاہیں ٹک کریں۔ انتخاب نیویگیٹ کرتے ہوئے بھی برقرار رہتا ہے، چنانچہ آپ کئی فولڈرز سے چیک آؤٹس جمع کر سکتے ہیں۔
+5. انہیں ایک ہی بیچ میں رجسٹر کریں۔
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+ایک ناکام انتخاب کبھی باقی بیچ کو نہیں گراتا — آپ کو بنائے گئے ids ملتے ہیں، ساتھ ہر مسترد شدہ پاتھ کے لیے الگ خرابی۔ اِس ورک اسپیس میں پہلے سے موجود کسی پاتھ کو دوبارہ رجسٹر کرنے پر نیا نقل بنانے کے بجائے موجودہ ریپو واپس آتا ہے۔
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+ہر رجسٹر شدہ ریپو فہرست میں اپنے `owner/name`، اپنے کوڈ ہوسٹ کا نام بتانے والے ایک بیج، اور سرور پر اپنے پاتھ کے ساتھ ظاہر ہوتا ہے۔ GitHub کے ریپوز مالک کا اوتار بھی دکھاتے ہیں؛ باقی کوڈ ہوسٹس کے پاس مالک کے اوتار کا کوئی اندازہ لگایا جا سکنے والا URL نہیں ہوتا، چنانچہ وہ ابتدائی حروف پر واپس چلے جاتے ہیں۔
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+مخلوط ورک اسپیس میں کوڈ ہوسٹ کا بیج اہمیت رکھتا ہے: دو ریپوز مختلف کوڈ ہوسٹس پر دونوں `acme/web` کہلا سکتے ہیں، اور وہ مختلف برتاؤ کرتے ہیں — کوئی ریویو کیا کر سکتا ہے، اور کوئی لنک کہاں جاتا ہے۔
 
-## What happens next
+## آگے کیا ہوتا ہے
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+رجسٹریشن اِس ورک اسپیس تک محدود ایک `RepoAdded` ایونٹ چلاتی ہے، جو اُس چیک آؤٹ کے لیے `index_code` پائپ لائن شروع کرتا ہے۔ یہی کوڈ گراف کو بھرتا ہے، تاکہ تلاش اور اثرات کے تجزیے کے پاس جواب دینے کو کچھ ہو۔
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/).
+صرف وہی فائلیں انڈیکس ہوتی ہیں جن کی زبان کے لیے کوئی فراہم شدہ گرامر موجود ہو (Dart، JavaScript، TypeScript، TSX، PHP، Python، Rust، Zig، C، C++، Go، Java، Ruby، C#، Swift، Kotlin، R، Assembly، MATLAB اور Ada)۔ [کوڈ گراف سے کوڈ تلاش کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/) دیکھیں۔
 
-## Re-index a repo
+## ریپو دوبارہ انڈیکس کریں
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+ہر قطار میں ایک **کوڈ انڈیکس کریں** بٹن ہوتا ہے۔ اُس چیک آؤٹ کے لیے انڈیکسر دوبارہ چلانے کے لیے اس پر کلک کریں؛ چلتے وقت بٹن ایک پیش رفت ریڈ آؤٹ بن جاتا ہے جو مکمل ہونے والی فائلیں کل کے مقابل دکھاتا ہے، ساتھ ایک منسوخی کنٹرول۔ مکمل ہونے پر یہ سمبلز کی تعداد کے ساتھ ایک نشان میں ڈھل جاتا ہے، یا رن ناکام ہونے پر ایک انتباہ میں۔
 
-## Reorder repos
+## ریپوز کی ترتیب بدلیں
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+قطار پر ہینڈل گھسیٹیں۔ آپ جو ترتیب مقرر کرتے ہیں، ایپ میں ہر ریپو فہرست اُسی ترتیب میں پڑھتی ہے۔
 
-## Fix the GitHub link
+## GitHub لنک درست کریں
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+قطار پر لنک آئیکن ریپو کے GitHub مالک اور ریپوزٹری نام کے لیے ایک ایڈیٹر کھولتا ہے — جب ریموٹ کا نام بدل گیا ہو یا وہ منتقل ہو گیا ہو تو کارآمد۔
 
-## Remove a repo
+## ریپو ہٹائیں
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. **ترتیبات → ورک اسپیس → ریپوزٹریز** کھولیں۔
+2. قطار پر کوڑے دان کے آئیکن پر کلک کریں۔
+3. "ریپوزٹری ورک اسپیس سے ہٹائیں؟" کی تصدیق کریں۔
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+ڈائیلاگ بتاتا ہے کہ یہ کیا کرتا ہے: "_name_ اِس ورک اسپیس سے ہٹ جائے گی۔ ڈسک پر موجود مقامی فائلیں نہیں چھوتیں۔"
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+ہٹانا اِس ورک اسپیس سے ریپو کی قطار حذف کرتا ہے اور اس کی کوڈ گراف قطاریں کاسکیڈ کر کے ہٹا دیتا ہے — سمبلز، ایجز، فائلیں اور انڈیکس چیک پوائنٹس — نیز اس پر ہر فی رکن ریپو گرانٹ، اس کے اسپیس-ریپو روابط اور اس کے الگ تھلگ چیک آؤٹ کے ریکارڈز۔ کسی دوسری ورک اسپیس میں رجسٹر شدہ یہی چیک آؤٹ ایک آزاد قطار ہے اور اس پر کوئی اثر نہیں پڑتا۔ ڈسک پر موجود وہ ورک ٹریز جن کی طرف وہ ریکارڈز اشارہ کرتے تھے، یہ حذف انہیں منہدم نہیں کرتا۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Search code with the code graph](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/)
-- [Run agents in parallel](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-- [Your first workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/)
+- [کوڈ گراف سے کوڈ تلاش کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-تلاش/)
+- [ایجنٹس متوازی چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [آپ کا پہلا ورک اسپیس](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: רפקטורינג מבני של קוד
+description: בקשו מסוכן לאתר ולשכתב קוד לפי צורה ולא לפי טקסט, וסקרו את השינוי לפני שהוא נוחת.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/רפקטורינג-מבני
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+מדריך זה מראה כיצד לגרום לסוכן לבצע שינוי מכני רחב — שינוי קוד אוטומטי, מעבר API גורפי, תבנית שברצונכם להיפטר ממנה — בעזרת חיפוש ושכתוב מבניים, כשהשינוי מוכן לסקירה לפני שמשהו נכתב.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` מתאים קוד לפי **צורה**. `ast_edit` משכתב אותו. `resolve` מחיל או משליך.
 
-## Before you start
+## לפני שמתחילים
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+הכלים המבניים מכסים את השפות שגרף הקוד מנתח: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ו-Ada. הם זקוקים לכך שדקדוקי tree-sitter יוכנו מראש, וכך זה תמיד בבנייה מופצת — דקדוק חסר עוצר את השרת במקום לפגוע בחיפוש.
 
-## Find the shape first
+## מאתרים קודם את הצורה
 
-Never rewrite something you have not looked at. Ask the agent to search:
+לעולם אל תשכתבו משהו שלא הסתכלתם עליו. בקשו מהסוכן לחפש:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> אתרו כל מקום שבו אנו קוראים ל-`dispose()` על ערך nullable שרק בדקנו שאינו null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+הפלט הוא `file:line` בתוספת קוד המקור המתאים לכל אתר.
 
-### What the pattern syntax buys you
+### מה נותן לכם תחביר התבנית
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| אסימון    | מתאים ל                                     |
+| --------- | ------------------------------------------- |
+| `$NAME`   | צומת בודד כלשהו, שנלכד                      |
+| `$$$NAME` | כל רצף של אחים — ארגומנטים, פקודות           |
+| `$_`      | כל דבר, בלי ללכוד אותו בשם                  |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+הנקודה שקובעת: **`$NAME` שמופיע שוב בתבנית חייב ללכוד את אותו טקסט**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+מוצא שומר שמשחרר את מה שבדק. הוא **אינו** מוצא `if (a != null) b.dispose()` — וזה בדרך כלל הבאג שחיפשתם. שום חיפוש טקסטואלי לא יכול לבטא זאת.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[הוא אינו יכול להתאים בתוך מחרוזת או הערה]
+התבנית מנותחת לפי אותו דקדוק של הקובץ, ולכן `dispose(x)` שכתוב בהערת תיעוד או במחרוזת ליטרלית אינו קריאה ואינו מותאם. זו כל הסיבה לפנות לזה במקום ל-`grep`.
 :::
 
-### When the pattern finds nothing
+### כשהתבנית לא מוצאת דבר
 
-Two things to try, in order:
+שני דברים לנסות, לפי הסדר:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **הקטינו אותה.** `foo($X)` לפני `if (a) { foo($X); }`. תבנית שאינה קוד תקף בפני עצמה לרוב אינה המבנה שהתכוונתם אליו.
+2. **ציינו את השפה.** `language:` נגזר רק כשהשדה `path` מצביע על קובץ בודד.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+תבנית שאף הקשר ניתוח לא מקבל מדווחת כלא ניתנת לניתוח — הכלי אומר זאת במפורש במקום לדווח "אין התאמות" על משהו שמעולם לא נקרא כפי שהוא נראה.
 
-## Rewrite, and look before it lands
+## שכתוב, וסקירה לפני שהוא נוחת
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+התוצאה היא **הצעה**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+דבר עדיין לא נכתב לדיסק. קראו את הרשימה, בדקו כמה מהאתרים שהחיפוש דיווח עליהם, ואז:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+או
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[ההחלה היא הכול או כלום]
+כל קובץ נבדק מול התוכן שנלכד בזמן שהשינוי הוכן. אם אחד מהם זז — הסוכן ערך אותו ביד, כלי עיצוב רץ, מעבר אבחון כתב אותו מחדש — השינוי **כולו** נדחה ומושלך. שכתוב מבני שהוחל חלקית משאיר עץ שאינו מתקמפל לא לפי הצורה הישנה ולא לפי החדשה.
 
-Re-run the tool against the current files; do not retry the stale id.
+הריצו את הכלי מחדש מול הקבצים הנוכחיים; אל תנסו שוב את המזהה הישן.
 :::
 
-## Check your work with the compiler
+## בדקו את העבודה שלכם עם המהדר
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+הטעם שבעשייה מבנית הוא שהשינוי רחב. שינויים רחבים הם בדיוק המקום שבו שכתוב שנראה סביר שובר טיפוס. בקשו אבחונים אחרי ההחלה:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` מריץ את הבודק של הפרויקט עצמו (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) ולא שאילתה לקובץ בודד — הצורה הנכונה של שאלה אחרי שינוי שנגע בארבעים קבצים.
 
-## Worked example: migrating a call
+## דוגמה מלאה: מעבר של קריאה
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+נניח ש-`log(msg, level)` הופך ל-`log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+הסתכלו על ההתאמות. אם חלקן הן `log` *אחר* עם שני ארגומנטים, צמצמו את התבנית על ידי הגבלת `path` לתיקייה שאליה שייך זה שהתכוונתם אליו, במקום לנסות לבטא את ההבדל בתבנית.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+ואז `resolve`, ואחר כך `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## מתי להשתמש במשהו אחר
 
-| Situation                                 | Better tool                          |
+| מצב                                       | כלי מתאים יותר                       |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| שינוי שם של סמל                           | `lsp_rename` — הוא עוקב אחרי הפניות, לא אחרי צורות |
+| איתור מחרוזת, הערה או שם קובץ             | `search` (תוכן) / `search_files` (שמות) |
+| "מה יישבר אם אשנה את זה?"                 | [גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) |
+| שפה שהדקדוקים אינם מכסים                  | `search` יחד עם `edit`               |
 
-## Related
+## נושאים קשורים
 
-- [Code intelligence](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — the full argument list
-- [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) — the symbol and impact side
+- [אינטליגנציית קוד](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — למה התאמה מבנית אינה ביטוי רגולרי עם כמה שלבים נוספים
+- [כלי סוכן מובנים](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — רשימת הארגומנטים המלאה
+- [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) — צד הסמלים וההשפעה

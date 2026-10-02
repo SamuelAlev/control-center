@@ -1,33 +1,33 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: הערכות ואיכות
+description: חבילות הערכה, סט ההתחלה שנזרע בכל סביבת עבודה, והיכן הן מופיעות בניטור.
 slug: he-IL/מדריך-למשתמש/מושגים/הערכות-ואיכות
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**חבילת הערכה** היא הגדרה תחומה לסביבת עבודה של משימה להרצה מול סוכן: הנחיה,
+סוכן יעד ומצב, הכנה אופציונלית, מתקן אופציונלי עם SHA מוצמד ורשימת מדרגים.
+המדרגים דטרמיניסטיים תחילה; שופט מבוסס מחוון LLM מכסה את מה שבדיקות אלה אינן
+יכולות לבטא.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+חמש חבילות התחלתיות נזרעות עם יצירתה של סביבת עבודה. הן מכסות הצעות תזמור,
+סקירה שמאתרת באג שהוחדר מראש, מצב תוכנית שנשאר לקריאה בלבד, מצב תוכנית שמפיק
+תוכנית, וסבב הלוך וחזור של כרטיס. הזריעה מאזינה ל־`WorkspaceCreated`
+(`workspace.upsert` או `workspace.create`), מדלגת על שם שכבר קיים ואינה משלימה
+בדיעבד סביבות עבודה ותיקות יותר.
 
-## Where they appear
+## היכן הן מופיעות
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**ניטור → איכות** (`/workspaces/<id>/observability`) מציגה כל חבילה בסביבת
+העבודה.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+אפשר ליצור, להציג, לערוך ולמחוק חבילות דרך `evals.upsertSuite`,
+`evals.deleteSuite` ו־`evals.watchSuites`. לשונית איכות היא הרשימה; הפעולות
+האלה הן העורך.
 
-## Related concepts
+## מושגים קשורים
 
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): the configuration a suite
-  pins
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): the autonomy dial
-- [Manage costs and budgets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/): spend recorded
-  alongside a run
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): התצורה שחבילה מצמידה
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): מחוג האוטונומיה
+- [ניהול עלויות ותקציבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/): ההוצאה
+  שנרשמת לצד ההרצה

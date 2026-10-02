@@ -1,64 +1,62 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: コンセプト
+description: Control Center がどのように機能し、なぜこのように作られているのか — ガイドの背景にある読み物です。
 slug: ja-JP/マニュアル/コンセプト
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ja-JP/マニュアル/ハウツーガイド/); when you want to look
-something up, go to the [reference](/ja-JP/マニュアル/リファレンス/).
+これらのページでは、**Control Center がどのように機能し、なぜそうなっているのか**を説明します。理解のための読み物であり、実際に何かを行うためのものではありません。ここにあるページは、従うべき手順ではありません。特定のタスクを達成したいときは[ハウツーガイド](/ja-JP/マニュアル/ハウツーガイド/)へ、何かを調べたいときは[リファレンス](/ja-JP/マニュアル/リファレンス/)へ進んでください。
 
-Read them in any order. If you are new, the core model is the place to start.
+どの順番で読んでもかまいません。初めての方は、コアモデルから始めてください。
 
-## Core model
+## コアモデル
 
-The four ideas everything else is built on.
+ほかのすべてがその上に成り立つ 4 つの考え方です。
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/) — what happens between your message and the agent's first token
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ja-JP/マニュアル/コンセプト/ツールコンテキスト/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ja-JP/マニュアル/コンセプト/会話履歴/) — persistence, compaction and forking a transcript
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/) — テナント境界と、それがクエリの書き方ではなくデータベースのレイアウトによって強制される理由
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/) — エージェントを構成するもの。アイデンティティ、ロール、スキル、機能、アダプター、モデル
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/) — あなたのメッセージからエージェントが最初のトークンを返すまでの間に何が起きるか
+- [モード](/ja-JP/マニュアル/コンセプト/モード/) — `chat`、`plan`、`review`、`orchestrate` がエージェントにできることをどう変えるか
+- [ツールコンテキストとプロンプトキャッシュ](/ja-JP/マニュアル/コンセプト/ツールコンテキスト/) — エージェントがツールの一部しか見えない理由、残りにどう到達するか、プロバイダーのキャッシュを温かく保つもの
+- [コードインテリジェンス](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — コードグラフ、言語サーバー、構造検索、デバッガー
+- [会話履歴](/ja-JP/マニュアル/コンセプト/会話履歴/) — 永続化、圧縮、トランスクリプトのフォーク
 
-## Safety and control
+## 安全性と制御
 
-What an agent is allowed to touch and who decides.
+エージェントが触れることを許されるものと、それを決めるのは誰か。
 
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) — what actually constrains an agent run today
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ja-JP/マニュアル/コンセプト/認可/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) — 現在、エージェントの実行を実際に制約しているもの
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/) — すべての変更操作に対する 1 つのポリシーエンジンと、ルールがどのように解決されるか
+- [認可](/ja-JP/マニュアル/コンセプト/認可/) — ロール、権限カタログ、監査証跡
+- [リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/) — エージェントがあなたのマシンではなく使い捨ての VM を受け取る理由と、境界が実際に何であるか
 
-## Directing the work
+## 作業の指示
 
-Turning intent into work that gets done.
+意図を、実際に片づく作業に変えること。
 
-- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/) — one goal, one approval, a generated pipeline
-- [AI review](/ja-JP/マニュアル/コンセプト/ai-レビュー/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ja-JP/マニュアル/コンセプト/pr-会話/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ja-JP/マニュアル/コンセプト/メモリとナレッジ/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ja-JP/マニュアル/コンセプト/評価と品質/) — eval suites and the Quality tab
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/) — フリート全体が共有する、ベンダー中立の作業単位
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/) — DAG ワークフロー、トリガー、再開可能な実行
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/) — 1 つのゴール、1 つの承認、生成されるパイプライン
+- [AI レビュー](/ja-JP/マニュアル/コンセプト/ai-レビュー/) — PR がレビュー済みになるまで。レビュースペース、ピアのコンセンサス、軸、Ship/Hold/Block の判定
+- [PR 会話](/ja-JP/マニュアル/コンセプト/pr-会話/) — forge 自体から GitHub のメンションや `ai-review` ラベルに応答する
+- [メモリとナレッジ](/ja-JP/マニュアル/コンセプト/メモリとナレッジ/) — ファクト、ポリシー、エージェントが知ることを許されるもの
+- [評価と品質](/ja-JP/マニュアル/コンセプト/評価と品質/) — 評価スイートと品質タブ
 
-## People and reach
+## 人と到達範囲
 
-Working with other humans and reaching the fleet from elsewhere.
+ほかの人間と一緒に働き、別の場所からフリートに到達すること。
 
-- [Multiplayer and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ja-JP/マニュアル/コンセプト/シングルサインオン/) — SAML and OIDC logins
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ja-JP/マニュアル/コンセプト/ミーティング/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ja-JP/マニュアル/コンセプト/カレンダー/) — Google Calendar sync and meeting alerts
+- [マルチプレイヤーとプレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/) — 人間とエージェントが対等な参加者であること、そしてアクセスを制限するもの
+- [シングルサインオン](/ja-JP/マニュアル/コンセプト/シングルサインオン/) — SAML と OIDC のログイン
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/) — Slack ブリッジが外向きに接続する理由と、チャットからのメッセージを認可するもの
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/) — スマートフォンがあなたのサーバーに到達する方法と、その周囲のセキュリティモデル
+- [ミーティングと文字起こし](/ja-JP/マニュアル/コンセプト/ミーティング/) — オンデバイスでの録音、文字起こし、要約
+- [カレンダーとスケジュール](/ja-JP/マニュアル/コンセプト/カレンダー/) — Google Calendar の同期とミーティングのアラート
 
-## Under the hood
+## 仕組み
 
-The shape of the system itself.
+システムそのものの形。
 
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/) — the in-process bus features talk over
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/) — レイヤリング、共有カーネル、ポートとアダプター
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/) — デスクトップ、Web、スマートフォンのクライアントが 1 つのサーバーとどう関係するか
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/) — 機能同士がやり取りするインプロセスバス

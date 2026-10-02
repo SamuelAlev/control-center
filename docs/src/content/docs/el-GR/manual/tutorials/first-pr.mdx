@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: Ελέγξτε το πρώτο σας pull request
+description: Άνοιγμα PR στον πάγκο εργασίας, ανάγνωση του diff, σχολιασμός, έγκριση και συγχώνευση.
 slug: el-GR/εγχειρίδιο/οδηγοί/πρώτο-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## Τι θα φτιάξετε
 
-By the end of this tutorial, you will have:
+Μέχρι το τέλος αυτού του οδηγού θα έχετε:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Ανοίξει ένα pull request στον πάγκο εργασίας PR του Control Center
+- Διαβάσει το diff του και αφήσει ένα ενσωματωμένο σχόλιο
+- Υποβάλει μια ετυμηγορία ανασκόπησης
+- Συγχωνεύσει το PR
 
-Prerequisites: [Dispatch your first agent](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+Προϋποθέσεις: ολοκληρωμένος ο οδηγός [Αποστείλετε τον πρώτο σας πράκτορα](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) και ένα ανοιχτό pull request σε ένα αποθετήριο που είναι καταχωρισμένο σε αυτόν τον χώρο εργασίας. Για τα βήματα της ανασκόπησης, διαλέξτε ένα PR που δεν ανοίξατε εσείς — το κουμπί **Ανασκόπηση** κρύβεται στα δικά σας PR. Η συγχώνευση λειτουργεί ακόμη και σε PR που συντάξατε εσείς.
 
-## Step 1: Open the pull request
+## Βήμα 1: Ανοίξτε το pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. Πατήστε **Pull requests** στην πλαϊνή στήλη
+2. Βρείτε το PR σας και πατήστε το
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**Σημείο ελέγχου.** Το PR ανοίγει ως πάγκος εργασίας με καρτέλες — Επισκόπηση, Diff, Έλεγχος εκδόσεων, Συνομιλία, Ενέργειες — εστιασμένος στην **Επισκόπηση**: τον τίτλο και τις ενέργειες, την περιγραφή και το χρονολόγιο δραστηριότητας, και μια πλαϊνή στήλη με κατάσταση, κριτές, ανατεθειμένους, ελέγχους και αλλαγμένα αρχεία. Αν πατήσετε ένα αρχείο εκεί, μεταφέρεστε σε αυτό στην καρτέλα Diff. Η καρτέλα **Ανασκόπηση PR** δεν είναι ανοιχτή μέχρι κάποιος να ζητήσει ανασκόπηση με AI.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[Κενή ουρά με προτροπή «σύνδεση GitHub»]
+Αυτή η κατάσταση σημαίνει ότι ο _διακομιστής_ δεν κρατά κάποιο token του GitHub — ο πελάτης σας δεν κρατά ποτέ κάποιο. Ορίστε ένα στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα** και μετά ανανεώστε τη λίστα.
 :::
 
-## Step 2: Read the diff
+## Βήμα 2: Διαβάστε το diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+Ανοίξτε την καρτέλα **Diff**. Ένα πτυσσόμενο δέντρο αρχείων βρίσκεται στα αριστερά και η λωρίδα πάνω από το diff φέρει επιλογέα εύρους commits — περιορίστε το diff σε ένα commit ή σε ένα διάστημα commits — καθώς και τον αριθμό των αρχείων και τις τρέχουσες προσθήκες και διαγραφές.
 
-The settings button in the diff toolbar controls how it renders:
+Το κουμπί ρυθμίσεων στη γραμμή εργαλείων του diff ελέγχει πώς αποδίδεται:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- **Διαχωρισμένη** ή **ενοποιημένη** προβολή
+- **Αναδίπλωση γραμμών** ή κύλιση των μακριών γραμμών
+- **Συμπλέγματα γραμματοσειράς κώδικα**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/).
+Σημειώστε ένα αρχείο ως προβληθέν για να παρακολουθείτε την πρόοδό σας σε ένα μεγάλο diff. Η πλοήγηση με πληκτρολόγιο βρίσκεται στις [Συντομεύσεις πληκτρολογίου](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/).
 
-## Step 3: Leave an inline comment
+## Βήμα 3: Αφήστε ένα ενσωματωμένο σχόλιο
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. Περάστε τον δείκτη πάνω από μια γραμμή στο diff — εμφανίζεται ένα μικρό στρογγυλό κουμπί `+` στο περιθώριο
+2. Πατήστε το για να σχολιάσετε αυτή τη γραμμή ή σύρετέ το πρώτα κατακόρυφα για να επιλέξετε ένα εύρος
+3. Πληκτρολογήστε τα σχόλιά σας. Ο composer προσφέρει δύο τρόπους υποβολής:
+   - Το **Έναρξη ανασκόπησης** (ή το **Προσθήκη στην ανασκόπηση**, αν υπάρχει ήδη ανασκόπηση σε εξέλιξη) βάζει το σχόλιο σε ουρά. Η συζήτηση εμφανίζει **Ανασκόπηση σε εκκρεμότητα** μέχρι να υποβάλετε ετυμηγορία στο βήμα 4.
+   - Το **Προσθήκη μεμονωμένου σχολίου** το αναρτά αμέσως στο GitHub. Η συζήτηση εμφανίζει **Δημοσίευση…**, μετά **Συγχρονίστηκε**, και προσφέρει επανάληψη αν η ανάρτηση αποτύχει.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+Για αυτόν τον οδηγό, χρησιμοποιήστε το **Έναρξη ανασκόπησης**, ώστε το σχόλιο να φύγει μαζί με την ετυμηγορία.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[Ένα σχόλιο σε ουρά δεν βρίσκεται ακόμη στο GitHub]
+Τα **Έναρξη ανασκόπησης** / **Προσθήκη στην ανασκόπηση** κρατούν το σχόλιο τοπικά μέχρι να υποβάλετε ετυμηγορία. Μόνο το **Προσθήκη μεμονωμένου σχολίου** αναρτά αμέσως. Το _σώμα_ της ανασκόπησης που γράφετε στο βήμα 4 είναι ξεχωριστό πρόχειρο.
 :::
 
-## Step 4: Submit a review
+## Βήμα 4: Υποβάλετε ανασκόπηση
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. Πατήστε **Ανασκόπηση** στη γραμμή ενεργειών της Επισκόπησης — το ίδιο κουμπί βρίσκεται και στη γραμμή εργαλείων της καρτέλας Diff. Κρύβεται στα PR που συντάξατε εσείς και σε PR που έχει κλείσει ή συγχωνευθεί.
+2. Γράψτε μια σύνοψη στον composer. Αποθηκεύεται αυτόματα ως πρόχειρο, ώστε να κλείσετε το αναδυόμενο πλαίσιο και να επιστρέψετε.
+3. Διαλέξτε ετυμηγορία:
+   - **Αίτημα αλλαγών**
+   - **Σχόλιο**
+   - **Έγκριση**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+Η ετυμηγορία είναι το ίδιο το κουμπί. Μετά την **Έγκριση** ή το **Αίτημα αλλαγών**, το κουμπί μετονομάζεται σε **Εγκρίθηκε** ή **Ζητήθηκαν αλλαγές**. Μια ετυμηγορία **Σχόλιο** το αφήνει με την ετικέτα **Ανασκόπηση**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**Σημείο ελέγχου.** Το κουμπί γράφει «Εγκρίθηκε» ή «Ζητήθηκαν αλλαγές» αν διαλέξατε ένα από αυτά τα δύο.
 
-## Step 5: Merge
+## Βήμα 5: Συγχώνευση
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+Το κουμπί **Συγχώνευση** υπάρχει όποτε το GitHub αναφέρει ότι το PR μπορεί να συγχωνευθεί — δεν εξαρτάται από τη δική σας έγκριση. Το χρώμα του δηλώνει ετοιμότητα και όχι άδεια: κύριο όταν οι απαιτούμενες εγκρίσεις και οι έλεγχοι είναι πράσινοι, δευτερεύον όσο εκτελείται ακόμη κάποιος έλεγχος, καταστροφικό όταν ένας ζητούμενος κριτής δεν έχει εγκρίνει ή κάποιος έλεγχος αποτυγχάνει.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. Πατήστε **Συγχώνευση**
+2. Διαλέξτε μέθοδο: **Squash και συγχώνευση**, **Δημιουργία commit συγχώνευσης** ή **Rebase και συγχώνευση**
+3. Για τις δύο πρώτες, επεξεργαστείτε τον προσυμπληρωμένο τίτλο και το μήνυμα του commit
+4. Επιβεβαιώστε
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+Τυχόν εκκρεμή προβλήματα — «Οι έλεγχοι αποτυγχάνουν», «Ορισμένες ανασκοπήσεις εκκρεμούν» — παρατίθενται στο αναδυόμενο πλαίσιο πριν επιβεβαιώσετε.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[Η συγχώνευση είναι μη αναστρέψιμη]
+Η συγχώνευση ωθεί commits στο GitHub. Δεν μπαίνει ποτέ στη στοίβα αναίρεσης του Control Center και δεν μπορεί να αναιρεθεί από εδώ.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/) for what else listens.
+Μετά τη συγχώνευση, εκπέμπεται ένα γεγονός τομέα `PrMerged`· το καταναλώνουν τα analytics και οι ειδοποιήσεις. Δείτε τα [Γεγονότα τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/) για το τι άλλο τα ακούει.
 
-## Reviewing with AI
+## Ανασκόπηση με AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Το Control Center μπορεί να βάλει ένα pipeline ελέγχου σε ένα ανοιχτό PR, αλλά μόνο όταν το ζητήσετε: το πρότυπο `pr_review` έχει χειροκίνητο ενεργοποιητή και τίποτε άλλο.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. Ανοίξτε το μενού υπερχείλισης στη γραμμή ενεργειών της Επισκόπησης και επιλέξτε **Ερώτηση AI**. Το Control Center ξεκινά την εκτέλεση και ανοίγει την καρτέλα **Ανασκόπηση PR**, ώστε να δείτε τους ειδικούς εν ώρα εργασίας.
+2. Οι πράκτορες ελέγχου καταχωρίζουν τα ευρήματά τους ως κόμβους ελέγχου στον χώρο του PR· ένα τελικό βήμα τα ενοποιεί σε μία αναφορά.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/).
+Το pipeline σκόπιμα δεν αναρτά στο GitHub — τελειώνει μετά την ενοποίηση. Η δημοσίευση είναι ξεχωριστό βήμα που κάνετε μόνοι σας, με το κουμπί **Δημοσίευση στο GitHub** στην καρτέλα **Ανασκόπηση PR**. Δείτε τη [Χρήση ελέγχου με AI](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/).
 
-## Recap
+## Σύνοψη
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+Ανοίξατε ένα PR στον πάγκο εργασίας, διαβάσατε το diff με επισήμανση σύνταξης, αφήσατε ένα ενσωματωμένο σχόλιο, υποβάλατε μια ετυμηγορία και συγχωνεύσατε — χωρίς να βγείτε από την εφαρμογή.
 
-**Next:** [Build your first pipeline](/el-GR/εγχειρίδιο/οδηγοί/πρώτο-pipeline/) to automate multi-step workflows.
+**Επόμενο:** [Δημιουργήστε το πρώτο σας pipeline](/el-GR/εγχειρίδιο/οδηγοί/πρώτο-pipeline/) για να αυτοματοποιήσετε ροές εργασίας πολλών βημάτων.

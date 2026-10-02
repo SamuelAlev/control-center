@@ -1,69 +1,107 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: Bangun tim agen
+description: Kelompokkan agen di bawah seorang pemimpin agar pekerjaan yang ditugaskan diteruskan melalui satu koordinator.
 slug: id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+Panduan ini menunjukkan cara membuat tim, memberinya seorang pemimpin, dan
+meneruskan pekerjaan ke tim tersebut.
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+Tim adalah kelompok agen bernama di dalam satu ruang kerja, dengan satu agen
+yang ditetapkan sebagai **pemimpin**nya. Menetapkan tiket ke sebuah tim akan
+membangunkan pemimpin, yang memecah pekerjaan itu lalu mendelegasikannya ke
+anggota; saat run seorang anggota selesai, pemimpin dibangunkan lagi untuk
+memutuskan langkah berikutnya.
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+Buat, ganti nama, dan isi tim di **Pengaturan → Ruang kerja → Agen → Tim**. Ada
+dua cara meneruskan pekerjaan ke sebuah tim: agen memanggil `assign_ticket`
+dengan `team_id` tim tersebut, atau node pipeline **Team dispatch** mengirim tim
+itu (tanpa menetapkan tiket). Pemilih penerima tugas tiket mencantumkan Anda dan
+masing-masing agen.
 
-## Create a team
+## Membuat tim
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. Buka **Pengaturan → Ruang kerja → Agen** (`/settings/workspace/agents`).
+2. Klik **Tim** di header halaman.
+3. Klik **Tambah tim**.
+4. Masukkan **nama** (misalnya "backend" atau "review squad") dan **deskripsi**
+   opsional, lalu klik **Buat**.
 
-The team is created and selected and its editor opens in the right-hand pane.
+Tim pun dibuat dan terpilih, dan editornya terbuka di panel kanan.
 
-## Set the leader
+## Menetapkan pemimpin
 
-This is the step the whole feature depends on. In the team's editor:
+Inilah langkah yang menjadi tumpuan seluruh fitur ini. Di editor tim:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. Di bawah **Pemimpin**, pilih satu agen. Teks bantuannya menjelaskannya
+   persis: "Koordinator yang menerima pekerjaan yang ditugaskan ke tim dan
+   mendelegasikannya ke anggota yang paling sesuai."
+2. Secara opsional, isi **Instruksi operasional** — teks bebas yang diserahkan
+   kepada pemimpin bersama setiap tiket yang diteruskan.
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+Mengangkat seorang agen menjadi pemimpin sekaligus menjadikannya anggota bila
+sebelumnya bukan anggota. Tim yang dibiarkan pada **Tidak ada pemimpin**
+bersifat pasif: tidak ada yang dikirim saat pekerjaan diteruskan ke tim itu, dan
+menghapus pemimpin saat ini dari daftar anggota membuat tim kembali tanpa
+pemimpin.
 
-## Add members
+## Menambahkan anggota
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+Di editor yang sama, gunakan kartu anggota untuk menambahkan agen dari ruang
+kerja dan menghapusnya. Anggota adalah daftar yang menjadi cakupan delegasi
+pemimpin.
 
-Teams are workspace-scoped: only agents in this workspace can join.
+Tim terbatas pada ruang kerja: hanya agen di ruang kerja ini yang dapat
+bergabung.
 
-## Give the team a space
+## Memberi tim sebuah space
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+Tidak ada space tim otomatis. Jika Anda menginginkannya, buat space biasa dari
+**Ruang** dan tambahkan agen-agen tim ke dalamnya. Sebuah `Team` membawa nama,
+deskripsi, pemimpin, instruksi, dan anggota — tanpa kaitan space.
 
-## Reporting lines are a separate thing
+## Jalur pelaporan adalah hal terpisah
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+Setiap agen juga memiliki kolom **Melapor ke**, yang diatur di
+**Pengaturan → Ruang kerja → Agen**. Kolom itu membangun pohon pelaporan ruang
+kerja, yang dapat Anda lihat dengan tombol **Bagan organisasi** di halaman agen.
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+Kolom itu tidak menggerakkan perutean tim. Pemimpin memilih delegasi dari daftar
+anggota tim berdasarkan skill dan peran, bukan dari rantai pelaporan. Pemberian
+akses memori dikunci pada peran agen, bukan pada rantai pelaporan, dan tidak ada
+permukaan analitik yang mengagregasi berdasarkan tim atau hierarki. Penjaga
+delegasi membatasi kedalaman dan mendeteksi siklus, tetapi tidak pernah
+mengharuskan targetnya menjadi bawahan.
 
-## What a routed ticket does
+## Apa yang dilakukan tiket yang diteruskan
 
-When a ticket does carry a team assignment:
+Saat sebuah tiket memang membawa penetapan tim:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. Pemimpin tim dikirim bersama tiket, instruksi operasionalnya, dan daftar
+   anggotanya.
+2. Pemimpin mendelegasikan ke anggota dan mencatat evaluasinya dengan alat
+   `record_team_activity` — `action` (didelegasikan), `no_action` (tidak ada lagi
+   yang perlu dilakukan, yang menghentikan pemicuan ulang berikutnya) atau
+   `failed`.
+3. Setiap run anggota yang selesai membangunkan kembali pemimpin, dibatasi oleh
+   penjaga tanpa tindakan.
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+Node pipeline **Team dispatch** adalah titik masuk lainnya. Node ini menerima id
+tim, sebuah prompt, dan mode dispatch:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel` — satu tugas per anggota ke dalam percakapan tersembunyi
+  bersama, ditangguhkan hingga semua run selesai, dengan keluaran setiap anggota
+  dikumpulkan di bawah kunci keluaran node
+- `manager` — kirim hanya pemimpinnya, yang berkoordinasi di percakapan
 
-## Related guides
+## Panduan terkait
 
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Run agents in parallel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
-- [Delegate work to agents](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Jalankan agen secara paralel](/id-ID/panduan-pengguna/panduan-praktis/agen-paralel/)
+- [Delegasikan pekerjaan ke agen](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
 
-## Related concepts
+## Konsep terkait
 
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/)
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/)
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/)
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/)

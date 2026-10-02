@@ -1,138 +1,138 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: GitHub App بنائیں
+description: اپنے سرور کے لیے GitHub App رجسٹر کریں تاکہ اراکین سائن اِن کر سکیں، اور پس منظر کا کام کسی شخص کی بجائے ایپ کے طور پر چلے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+یہ گائیڈ بتاتی ہے کہ اپنے سرور کو اس کی اپنی GitHub شناخت کیسے دی جائے۔ اس میں
+تقریباً دو منٹ لگتے ہیں، یہ صرف سرور مالک کرتا ہے، اور فی سرور یہ صرف ایک بار کرنا
+پڑتا ہے۔
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[شاید آپ کو اس کی ضرورت ہی نہ ہو]
+کسی سرکاری بلڈ کے ساتھ GitHub کا **client id** پہلے سے آتا ہے، اس لیے
+[GitHub سے سائن اِن کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) بغیر کچھ رجسٹر کیے
+فوراً کام کرتا ہے — ڈیوائس فلو صرف client id سے تصدیق کرتا ہے، اس لیے اسے شپ کرنا
+محفوظ ہے۔ اپنی ایپ اُس وقت رجسٹر کریں جب آپ چاہیں کہ **سرور** خود اپنی حیثیت میں
+عمل کرے (ویب ہکس، PR پولنگ اور ٹکٹ ہم آہنگی کسی شخص کے کریڈینشل کی بجائے ایپ کی
+انسٹالیشن پر چلیں)، یا جب آپ سورس سے بلڈ کر رہے ہوں۔
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/).
+اس کے بعد اپنا اکاؤنٹ جوڑنے کے لیے،
+[GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) دیکھیں۔
 
-## Why your server needs its own app
+## آپ کے سرور کو اپنی ایپ کیوں چاہیے
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+ایک ہی رجسٹریشن سے دو مختلف کام نکلتے ہیں، اور ایپ ہی ان دونوں کو دیانتدار بناتی ہے:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
+| کام                    | اس کا جواب کون دیتا ہے                         | یہ کیوں اہم ہے                                                                                       |
 | ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| **کوئی شخص سائن اِن کرتا ہے**  | ایپ کا client id، ڈیوائس فلو کے ذریعے      | آپ کو ایک ایسا کریڈینشل ملتا ہے جو آپ کا ہے — سرور پر، ہر ڈیوائس پر — جسے پیسٹ یا روٹیٹ کرنے والا کوئی ٹوکن نہیں |
+| **سرور خود عمل کرتا ہے**    | ایپ کا id + پرائیویٹ کلید → انسٹالیشن ٹوکن | ویب ہکس، PR پولنگ اور ٹکٹ ہم آہنگی کسی ایک انسان کے ٹوکن کے درست رہنے پر منحصر ہونا چھوڑ دیتے ہیں            |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+غور کریں کہ اُس جدول میں **کیا نہیں** ہے: client secret۔ GitHub کا ڈیوائس فلو صرف
+client id سے تصدیق کرتا ہے — ڈیوائس کوڈ کی درخواست اور ٹوکن پول، دونوں — اس لیے
+سائن اِن کے لیے رکھنے کو کوئی secret نہیں ہوتا۔
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+اپنی ایپ کے بغیر، پہلا کام پھر بھی اُس client id کے ذریعے چلتا ہے جو بلڈ کے ساتھ آتا
+ہے؛ دوسرا سرور مالک کے کریڈینشل پر واپس گر جاتا ہے، چنانچہ پس منظر کا کام اُس شخص پر
+سوار ہوتا ہے جس نے سب سے پہلے آن بورڈنگ کی۔
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[”Control Center کا GitHub App انسٹال کریں“ کا کوئی بٹن نہیں]
+ایک تقسیم شدہ GitHub App کا مطلب ہوتا: سب کے سرورز میں ایک ہی مشترک client secret اور
+ایک ہی مشترک انسٹالیشن، چنانچہ ہر ورک اسپیس کی ریپوزٹری رسائی ایسے کریڈینشلز سے گزرتی
+جنہیں اُس ورک اسپیس میں کوئی کنٹرول نہیں کرتا۔ اس لیے ہر سرور کی اپنی الگ ایپ ہوتی ہے —
+یہ گائیڈ بتاتی ہے کہ اس کی قیمت کتنی کم ہے۔
 :::
 
-## Prerequisites
+## پیشگی شرائط
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- آپ **سرور مالک** ہیں — `providerApps.*` کے آپریشنز صرف اسی کے لیے مختص ہیں،
+  اور یہ کارڈ باقی سب کے لیے پوشیدہ ہے
+- ایک GitHub اکاؤنٹ، یا کوئی تنظیم جس میں آپ ایپس بنا سکیں
+- عوامی طور پر قابلِ رسائی کچھ بھی نہیں: سائن اِن ایک **ڈیوائس فلو** ہے، اس لیے سرور
+  کو نہ کوئی اِن باؤنڈ پورٹ چاہیے، نہ ٹنل، نہ callback URL اور نہ ڈومین
 
-## Register the app
+## ایپ رجسٹر کریں
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. [github.com/settings/apps/new](https://github.com/settings/apps/new) پر جائیں
+   (تنظیم کے لیے: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — کچھ بھی؛ `Control Center (yourname)` ٹھیک ہے۔ یہ اُن کمٹس
+   اور تبصروں پر ظاہر ہوتا ہے جو سرور کرتا ہے
+3. **Homepage URL** — کچھ بھی، مثلاً `https://github.com/your-name`
+4. **Callback URL** — اسے خالی چھوڑ دیں۔ ڈیوائس فلو میں یہ ہوتا ہی نہیں
+5. **Enable Device Flow** کو نشان زد کریں۔ یہ وہ واحد سیٹنگ ہے جس کے بغیر سائن اِن
+   کام نہیں کر سکتا
+6. **Webhook → Active** سے نشان ہٹا دیں، الا یہ کہ آپ ویب ہکس الگ سے جوڑ رہے ہوں
+7. **Repository permissions** میں کم از کم یہ اجازتیں دیں:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (لازمی)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write، اگر آپ ٹکٹس کے لیے GitHub Issues استعمال کرتے ہیں، اور
+     بوٹ کی PR گفتگو میں تبصرہ تلاش کے لیے
+     (دیکھیں [GitHub PR سے Control Center سے بات کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/))
+   - **Checks**: Read-only، PR صفحے پر CI کی حالت کے لیے
+8. **Where can this GitHub App be installed?** میں جو موزوں ہو وہ چنیں —
+   ذاتی سرور کے لیے ”Only on this account“ درست ہے
+9. **Create GitHub App** پر کلک کریں
 
-## Collect the three values
+## تین قدریں حاصل کریں
 
-On the app's page, immediately after creation:
+ایپ کے صفحے پر، اسے بنانے کے فوراً بعد:
 
-| Value           | Where                                             |
+| قدر             | کہاں                                               |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | **General** ٹیب، اوپر کے قریب                      |
+| **Client ID**   | **General** ٹیب، ”Client secrets“ کے نیچے          |
+| **Private key** | **Generate a private key** — ایک `.pem` ڈاؤن لوڈ ہوتا ہے |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+پرائیویٹ کلید کی فائل صرف ایک بار ڈاؤن لوڈ ہوتی ہے اور GitHub اسے دوبارہ کبھی نہیں
+دکھاتا۔ جب تک آپ اسے پیسٹ نہ کر لیں، اسے سنبھال کر رکھیں؛ آپ ہمیشہ ایک نئی بنا سکتے
+ہیں۔
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+**client secret** اختیاری ہے اور ٹھیک ایک چیز دیتا ہے: اگر آپ
+”Expire user authorization tokens“ کو ON رکھیں، تو یہی کسی شخص کے ٹوکن کو خاموشی سے
+تازہ کرتا ہے، بجائے اس کے کہ ہر آٹھ گھنٹے بعد اسے دوبارہ سائن اِن کرنے کو کہا جائے۔
+سائن اِن خود اسے کبھی استعمال نہیں کرتا۔
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+زیادہ سادہ طریقہ یہ ہے کہ اُس میعاد کو OFF کر دیں، اور پھر کہیں کوئی secret درکار نہیں
+رہتا۔ اگر آپ اسے ON رکھیں تو ایک secret بنائیں اور اسے
+**ترتیبات → سرور → سنگل سائن آن** (کے **فراہم کنندہ ایپس** کارڈ) میں پیسٹ کریں — اس کے لیے
+کوئی ماحول کا ویری ایبل نہیں ہے، اور نہ ہی کوئی بلڈ میں بیک ہوتا ہے، چنانچہ یہ آپ کے
+سرور ہی پر رہتا ہے۔
 
-## Install it on your account
+## اسے اپنے اکاؤنٹ پر انسٹال کریں
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+رجسٹر شدہ مگر غیر انسٹال شدہ ایپ لوگوں کی توثیق کر سکتی ہے اور کچھ بھی نہیں پڑھ سکتی۔
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. ایپ کے صفحے پر **Install App** کھولیں
+2. اسے اپنے اکاؤنٹ یا تنظیم پر انسٹال کریں
+3. **All repositories** چنیں، یا وہ ریپوزٹریز منتخب کریں جو اس سرور کو نظر آنی چاہئیں
 
-## Paste it into Control Center
+## اسے Control Center میں پیسٹ کریں
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. **ترتیبات → سرور → سنگل سائن آن** پر جائیں اور **فراہم کنندہ ایپس** کارڈ تک
+   اسکرول کریں
+2. **GitHub** بلاک پر ہر فیلڈ سیٹ کریں:
+   - **App id** — وہی عددی App ID
+   - **پرائیویٹ کلید** — پوری `.pem` پیسٹ کریں، `BEGIN` اور `END` لائنیں شامل کر کے
+   - **Client id** — اُسی صفحے سے
+   - **Client secret** — صرف اُس صورت میں جب آپ نے ایک بنایا ہو (ٹوکن کی تازہ کاری کے لیے)
+3. **ٹیسٹ** پر کلک کریں
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+کلید محفوظ ہوتے ہی پارس ہو جاتی ہے، اس لیے کٹا ہوا یا غلط فارمیٹ میں پیسٹ کیا گیا مواد
+وہیں مسترد ہو جاتا ہے، بجائے اس کے کہ گھنٹوں بعد کسی پس منظر کی درخواست پر ناکام ہو۔
+**ٹیسٹ** اس سے آگے جاتا ہے اور GitHub سے پوچھتا ہے کہ یہ ایپ کن اکاؤنٹس پر انسٹال ہے —
+”محفوظ ہو گیا“ اور ”کام کرتا ہے“ دو الگ دعوے ہیں، اور صرف دوسرے کا مطلب ہے کہ کچھ چلے گا۔
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+چیک پوائنٹ: GitHub بلاک ”سرور خود عمل کر سکتا ہے، اور لوگ سائن اِن کر سکتے ہیں“ پڑھتا
+ہے، اور **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** کے نیچے **GitHub** قطار
+اب **GitHub سے سائن اِن** کی سہولت دیتی ہے۔
 
-## Configure it with environment variables instead
+## اس کے بجائے ماحول کے ویری ایبلز سے کنفیگر کریں
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+ہیڈلیس یا اسکرپٹ شدہ انسٹال کے لیے، سرور ہر فیلڈ کو پہلی بار، جب اس کے پاس کوئی محفوظ
+قدر نہ ہو، ماحول سے سیڈ کرتا ہے:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +140,63 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+ان کے لیے کوئی کمانڈ لائن فلیگ نہیں ہیں — کمانڈ لائن پر رکھا secret میزبان کے ہر پروسیس
+کے لیے `ps` کے ذریعے پڑھا جا سکتا ہے۔ انہیں کنفیگر کرنے کی واحد جگہ ماحول ہے، اور یہ
+بلڈ کے ساتھ آنے والی ہر قدر پر غالب آتا ہے۔
+`.env.template` مکمل فہرست ہے۔
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+مقامی ڈیویلپمنٹ کے لیے ریپو روٹ کا `.env` وہی قدریں رکھتا ہے اور ڈیسک ٹاپ انہیں اُس سرور
+تک پہنچاتا ہے جو وہ خود چلاتا ہے۔ وہاں کلید کو **ایک ہی لائن** میں رکھیں:
+`.env` کی قدر ایک لائن ہوتی ہے، اور ڈبل کوٹس کے اندر `\n` ایک نئی لائن میں ڈیکوڈ ہوتا ہے۔
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` اور `GITHUB_APP_PRIVATE_KEY` وہی نام ہیں جو سینڈ باکس ٹوکن بروکر پہلے ہی
+پڑھتا ہے، چنانچہ جس میزبان نے فائن گرینڈ ایجنٹ ٹوکن کنفیگر کیے ہوں، اسے سائن اِن کی لین
+مفت میں مل جاتی ہے۔ سیڈنگ **فی فیلڈ ایک بار** ہوتی ہے — اس کے بعد محفوظ قدر ہی جیتتی ہے،
+اس لیے ترتیبات میں کی گئی ترمیم اگلے ری اسٹارٹ سے کالعدم نہیں ہوتی۔
 
-## Do the same for Linear
+## Linear کے لیے بھی یہی کریں
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear میں ڈیوائس فلو نہیں ہے، اس لیے اس کا سائن اِن براؤزر کے ایک چکر سے ہوتا ہے اور
+اسے callback URL درکار ہوتا ہے — **فراہم کنندہ ایپس** کارڈ آپ کو ٹھیک وہی URL دکھاتا ہے
+جو رجسٹر کرنا ہے۔
 
-1. Create an OAuth application at
-   [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
+   پر ایک OAuth ایپلیکیشن بنائیں
+2. **Callback URL** کو وہی URL رکھیں جو کارڈ دکھاتا ہے، لفظ بہ لفظ
+3. **Client id** اور **Client secret** کو Linear بلاک میں پیسٹ کریں
+4. اختیاری طور پر ورک اسپیس کا **API کلید** شامل کریں — یہی وہ کریڈینشل ہے جو سرور اُس
+   وقت ٹکٹس ہم آہنگ کرنے کے لیے استعمال کرتا ہے جب کسی انسان نے نہ پوچھا ہو
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The sign-in dialog says the provider returned no device code
+### سائن اِن ڈائیلاگ کہتا ہے کہ فراہم کنندہ نے کوئی ڈیوائس کوڈ واپس نہیں کیا
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+ایپ میں **Enable Device Flow** بند ہے۔ **General** میں اسے آن کریں اور دوبارہ کوشش کریں۔
 
-### Test says the credentials work but the app is not installed anywhere
+### ٹیسٹ کہتا ہے کہ کریڈینشلز کام کرتے ہیں مگر ایپ کہیں انسٹال نہیں
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+رجسٹریشن اور انسٹالیشن الگ الگ مراحل ہیں۔ ایپ کے صفحے پر **Install App** کھولیں اور
+اسے انسٹال کریں۔
 
-### Test says the private key could not be read
+### ٹیسٹ کہتا ہے کہ پرائیویٹ کلید پڑھی نہیں جا سکی
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+پوری `.pem` فائل پیسٹ کریں، `-----BEGIN` اور `-----END` لائنیں بھی شامل کر کے۔
+`ed25519` یا EC کلید استعمال نہیں ہو سکتی — GitHub Apps RSA سے دستخط کرتے ہیں۔
 
-### A member signed in but sees no repositories
+### کوئی رکن سائن اِن ہو گیا مگر اسے کوئی ریپوزٹری نظر نہیں آتی
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+ایپ اُس اکاؤنٹ پر انسٹال نہیں ہے جس کی وہ ریپوزٹریز ہیں، یا اس کی انسٹالیشن مختلف
+ریپوزٹریز منتخب کرتی ہے۔ اُس شخص کا اپنا سائن اِن صرف وہی رسائی دیتا ہے جو ایپ کو
+دیکھنے کی اجازت ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-- [Talk to Control Center from a GitHub PR](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/)
-- [Connect a code host](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
-- [Manage API keys](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [GitHub PR سے Control Center سے بات کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-pr-گفتگوئیں/)
+- [کوڈ ہوسٹ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)
+- [API کلیدیں منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)

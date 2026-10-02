@@ -1,150 +1,149 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: مراقبة تشغيلات خطوط الأنابيب
+description: عالج طابور التشغيلات، واقرأ الخط الزمني للتشغيل ولوحة الخطوة، واستعد من خطوة فاشلة أو عالقة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/).
+هذه الصفحة لكل ما يلي بدء التشغيل: العثور عليه، وقراءة ما فعلته كل
+خطوة، وإعادة التشغيل الفاشل إلى العمل. لبدء تشغيل، انظر
+[تشغيل خط أنابيب يدويًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/).
 
-## Find a run
+## العثور على تشغيل
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. انقر **خطوط الأنابيب** في الشريط الجانبي لمساحة العمل. الشاشة هي طابور
+   تشغيلات مساحة العمل: كل تشغيل، والأحدث أولًا.
+2. استخدم شريط التصفية بجانب الجدول. المرشّحات ثلاثة بالضبط، ولكل منها
+   عدد حي: **الكل**، **قيد التشغيل**، **فشل**.
+3. تنقّل بين صفوف الجدول بـ <kbd>↑</kbd>/<kbd>↓</kbd> (أو <kbd>j</kbd>/<kbd>k</kbd>)
+   واضغط <kbd>Enter</kbd> لفتح التشغيل الذي عليه التركيز. النقر على الصف
+   يفعل الأمر نفسه.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+يعرض كل صف أيقونة لطريقة بدء التشغيل: أيقونة تشغيل للبدء اليدوي، وأيقونة
+ملف لمراقبة مخطط الشفرة، وإلا فأيقونة المشغّل التلقائي. يسمّي التلميح
+المشغّل — **يدوي**، **نُشر PR**، **تغيير ملف**، وما شابه — ويذكر، في تشغيل
+المراقبة، الملفات التي تغيّرت. ثم اسم خط الأنابيب، وشارة الحالة، والمدة
+النشطة (أو موضع الطابور لتشغيل `queued`)، ومنذ متى بدأت هذه المحاولة.
+المدة النشطة تستبعد فترات الخمول بين الإيقاف وإعادة التشغيل، فهي لا
+تطابق الزمن المنقضي على الساعة.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+لا مرشّح للتشغيلات المكتملة أو المعلّقة أو الملغاة، ولا مرشّح لكل قالب،
+ولا نافذة زمنية، ولا عرض لسجل تشغيلات قالب بعينه. مقارنة تشغيلات قالب
+واحد تعني البحث عن اسمه في الطابور.
 
-## Read the run detail
+## قراءة تفاصيل التشغيل
 
-A run's page has three stacked parts.
+لصفحة التشغيل ثلاثة أجزاء متراصة.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**شريط البيانات** يحمل وقت البدء، والمدة النشطة، وتقدّم الخطوات
+(«3 من 7 خطوات»)، وملخص الفشل الذي يسمّي الخطوة التي فشلت وسبب فشلها،
+وإجراءَي **إعادة المحاولة** و**حذف**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**الخط الزمني** يعطي شريطًا لكل خطوة، مع مدتها، ولخطوات الوكيل تكلفتها
+بالسنت. الخطوة التي أُعيدت محاولتها تُظهر اللاحقة `×N` بعد مدتها، وهذه
+اللاحقة هي الموضع الوحيد الذي يظهر فيه عدد المحاولات.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**لوحة المخطط** ترسم القالب مع الحالة الحيّة لكل عقدة. تحديد عقدة يفتح
+لوحة خطوتها.
 
-### Run and step statuses
+### حالات التشغيل والخطوة
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| الحالة | المعنى |
+| --- | --- |
+| **قيد الانتظار** | أُنشئ ولم يبدأ بعد |
+| **في قائمة الانتظار** | قُبل لكنه مُبقًى: سقف الحد الأقصى للتشغيلات المتوازية لهذا القالب ممتلئ، ولا صفوف خطوات بعد |
+| **قيد التشغيل** | يُنفَّذ |
+| **معلّق** | ينتظر أمرًا خارجيًا. هذا طبيعي، والخطوة ليست عالقة |
+| **مكتمل** | انتهى بنجاح |
+| **فشل** | انتهى بخطأ |
+| **أُلغي** | أوقفه مستخدم أو النظام |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+للخطوات الحالات نفسها ما عدا **في قائمة الانتظار**، ويُضاف **تم تخطيه**
+للفرع الذي لم يسلكه الموجّه ولما تفرّع عنه وصار غير قابل للوصول.
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**معلّق** هي الحال التي تقضي فيها خطوة الوكيل جلّ وقتها: وكيل مُرسَل أو
+بوابة موافقة يبقيها حتى يكتمل عملها. ضمانتان في المحرّك تُفشلان التشغيل
+كله بدل استئنافه: خطوة بقيت معلّقة أطول من 24 ساعة
+(`extras.awaitApproval` — جسم `orchestration.awaitApproval` — مستثنى،
+و`human.gate` ليس كذلك)، وخطوة غير متماثلة الأثر كانت في منتصف التنفيذ
+حين توقف الخادم.
 
-## Inspect a step
+## فحص خطوة
 
-Select a node on the canvas. The step panel shows, in order:
+حدّد عقدة على اللوحة. تعرض لوحة الخطوة، بالترتيب:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- تنبيه **الخطأ** حين تفشل الخطوة، أو تنبيه **تم تخطيها** مع السبب حين
+  تُتخطى.
+- **بدأت** و**انتهت** والمدة.
+- **الفرع** — فهرس الفرع، للفروع المتوازية.
+- **عرض المحادثة** — ينتقل إلى المحادثة التي عملت فيها الخطوة. محادثات
+  خط الأنابيب مخفية عن الشريط الجانبي، فهذا السبيل الوحيد إليها.
+- **المدخل** و**المخرج**، بصيغة JSON قابلة للطي.
+- **نشاط الوكيل** — بطاقة لكل تشغيل وكيل أرسلته الخطوة، مع حالته وملخصه
+  ومدته وتكلفته.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+في خطوة الوكيل، **المخرج** هو الحمولة المنظَّمة التي سلّمها الوكيل عبر
+`submit_output`، لا النص الذي كتبه. أثر الاستدلال في **نشاط الوكيل** وفي
+المحادثة التي يفتحها **عرض المحادثة**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+في خطوة bash، **المخرج** هو stdout المشذَّب الذي كتبه السكربت عند الخروج
+0. الخروج بغير صفر يُفشل الخطوة، وذيل stderr هو رسالة الخطأ.
 
-## Recover a failed run
+## استعادة تشغيل فاشل
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. اقرأ ملخص الفشل في شريط البيانات؛ فهو يسمّي الخطوة الفاشلة. تنبيه
+   **الخطأ** في لوحة الخطوة يحمل الرسالة.
+2. افحص **المدخل** الخاص بالخطوة: مفتاح حالة ناقص أو مكتوب خطأ هو السبب
+   الأكثر شيوعًا. خطوة وكيل الموجّه تفشل فورًا وتسمّي العناصر النائبة غير
+   المحسومة، أما خطوة bash فتعرضها سلاسل فارغة وتمضي في التنفيذ، فيظهر
+   الخلل عادة في الخطوة التالية.
+3. لخطوة وكيل، افتح **عرض المحادثة** واقرأ ما فعله الوكيل فعلًا.
+4. اضغط **إعادة المحاولة** في شريط البيانات. الخطوات المكتملة والمتخطاة
+   تحتفظ بمخرجاتها، ويُحذف ما عداها ويُعاد تنفيذه، ويعود التشغيل إلى قيد
+   التشغيل. تبدأ ساعة المدة من جديد لهذه المحاولة.
 
-Common causes worth checking first:
+أسباب شائعة يجدر فحصها أولًا:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **انتهاء المهلة** — تجاوزت الخطوة **المهلة (مللي ثانية)**. تذكّر أن
+  الحقل بالمللي ثانية.
+- **خطأ في السكربت** — خرج أمر bash بغير صفر، أو `bash` ليس على `PATH`
+  لمضيف الخادم.
+- **التحقق من المخطط** — حمولة `submit_output` التي سلّمها الوكيل لم
+  تطابق مخطط إخراج الخطوة.
+- **عنصر نائب غير محسوم** — `{{key}}` أشارت إليه خطوة وكيل الموجّه ولم
+  يُكتَب في خطوة سابقة. يسمّي الخطأ كل مفتاح غير محسوم.
+- **جسم غير مسجّل** — خطوة مفتاح جسمها غير مسجّل تحذّر عند تحميل القالب
+  ثم لا تُنفَّذ أصلًا.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[إعادة المحاولة لا تعمل إلا على تشغيل فاشل أو ملغى]
+يظهر زر **إعادة المحاولة** فقط حين يكون التشغيل `failed` أو `cancelled`.
+يردّ المحرّك فورًا، من غير أن يعيد المحاولة، لأي حالة أخرى.
 :::
 
-## Stop a step that is stuck
+## إيقاف خطوة عالقة
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+حدّد الخطوة قيد التشغيل، واضغط زر **إنهاء العمليات الجارية** في ترويسة
+لوحة الخطوة. يقتل ذلك عملية الخطوة، ويعلّمها فاشلة، فيفشل التشغيل كله
+معها، ويُغلَق كل فرع شقيق ما زال مفتوحًا.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+لا عنصر لإلغاء التشغيل في هذه الشاشة. `pipeline.cancel` موجود كعملية
+RPC، والمحرّك ينفّذه، لكن واجهة خطوط الأنابيب لا تستدعيه. **إنهاء
+العمليات الجارية** على خطوة، أو **حذف** على التشغيل، هما وسيلتا الإيقاف
+المتاحَتان.
 
-## Track cost
+## تتبّع التكلفة
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+تُعرض التكلفة لكل خطوة، في العمود الأخير من الخط الزمني وعلى كل بطاقة
+تحت **نشاط الوكيل**. لا مجموع للتشغيل في صفحة التفاصيل، ولا عمود تكلفة
+في طابور التشغيلات، فمقارنة تكلفة تشغيلين تعني جمع خطواتهما.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a pipeline manually](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/)
-- [Create a pipeline template](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/)
-- [Manage costs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/)
-- [Pipeline steps reference](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/)
+- [تشغيل خط أنابيب يدويًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/)
+- [إنشاء قالب خط أنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/)
+- [إدارة التكاليف](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التكاليف/)
+- [أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Pipelines](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)

@@ -1,128 +1,128 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: ปฏิทินและการจัดตาราง
+description: Control Center ซิงค์ Google Calendar บนเซิร์ฟเวอร์อย่างไร ทำไมการลงชื่อเข้าใช้จึงเป็นการให้สิทธิ์แบบ device code และสโคปแบบอ่านอย่างเดียวครอบคลุมอะไรบ้าง
 slug: th-TH/คู่มือ/แนวคิด/ปฏิทิน
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/th-TH/คู่มือ/แนวคิด/การประชุม/).
+Control Center เชื่อมต่อกับ Google Calendar เพื่อให้วันของคุณอยู่เคียงข้างฟลีต
+มันซิงค์เหตุการณ์ของคุณ แสดงในมุมมองเดือน สัปดาห์ วัน และวาระ เตือนคุณก่อนการ
+ประชุมจะเริ่ม และเปลี่ยนเหตุการณ์ใดก็ได้ให้เป็น[การประชุม](/th-TH/คู่มือ/แนวคิด/การประชุม/)
+ที่บันทึกและสรุปไว้แล้ว
 
-## What it changes on Google
+## มันเปลี่ยนอะไรบน Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+แทบไม่เปลี่ยนอะไรเลย การผสานระบบดึงเหตุการณ์เข้ามาและแสดงผลเท่านั้น ไม่มี
+การสร้าง แก้ไข ลบ หรือตอบรับคำเชิญ การเชื่อมต่อแบบ device code ทุกครั้ง
+ไม่ว่าจะเป็นตัวที่ให้มาในตัวหรือที่คุณนำมาเอง ขอสโคป `calendar.readonly`
+พร้อม `openid email`
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+เหตุการณ์ถูกซิงค์เข้าฐานข้อมูลของเวิร์กสเปซเอง **บนเซิร์ฟเวอร์**
+(`<dataDir>/<workspaceId>/workspace.db`) และแสดงผลโดยไคลเอนต์ทุกตัวผ่าน RPC
+ไม่มีไคลเอนต์ใดถือข้อมูลรับรองของ Google
 
-## Per-workspace accounts
+## บัญชีแยกตามเวิร์กสเปซ
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+บัญชีปฏิทินผูกกับเวิร์กสเปซ เหมือนทุกอย่างอื่นใน Control Center
+[เวิร์กสเปซ](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)แต่ละแห่งเชื่อมบัญชี Google ของตัวเอง
+(หรือหลายบัญชี) และเหตุการณ์กับโทเค็นของเวิร์กสเปซหนึ่งจะไม่ปรากฏให้เห็นจาก
+อีกเวิร์กสเปซเลย การสลับเวิร์กสเปซจึงสลับว่าคุณเห็นปฏิทินใด
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+เวิร์กสเปซหนึ่งเชื่อมบัญชี Google ได้**หลายบัญชี** เช่นบัญชีที่ทำงานและ
+บัญชีส่วนตัว โดยเหตุการณ์ของทั้งหมดถูกรวมเข้าด้วยกันในมุมมองเดียวกัน
 
-## Why sign-in is a device code
+## ทำไมการลงชื่อเข้าใช้จึงเป็น device code
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` แบบไม่มีส่วนติดต่อไม่มีเบราว์เซอร์ไว้รับการเปลี่ยนเส้นทางของ OAuth
+จึงไม่ใช้วิธีนั้น แต่ให้สิทธิ์ผ่าน **device-code grant** (RFC 8628) แทน
+เซิร์ฟเวอร์จะแสดงรหัสผู้ใช้แบบสั้นและ URL ของ Google คุณอนุมัติบนอุปกรณ์ใดก็ได้
+ที่มีเบราว์เซอร์ แล้วเซิร์ฟเวอร์จะโพลล์จนกว่าคุณจะอนุมัติ การติดตั้งแบบไม่มี
+ส่วนติดต่อจึงเชื่อมบัญชีได้ ก็เพราะไม่มีเอนด์พอยต์สำหรับเปลี่ยนเส้นทางให้ต้องโฮสต์
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+สิ่งที่ต้องรู้ก่อนนำข้อมูลรับรองของคุณมาเองก็คือ ชนิดไคลเอนต์ต้องเป็น
+"TV and Limited Input devices" ของ Google Google ให้เฉพาะชุดสโคปที่อยู่ใน
+รายการอนุญาตแก่ไคลเอนต์ชนิดนั้น และโปรเจกต์ที่ไม่ได้อนุญาตให้ใช้ Calendar กับ
+ชนิดนี้จะล้มเหลวด้วย `invalid_scope` — คุณต้องใช้ไคลเอนต์แบบ loopback หรือ
+แบบเว็บแทน
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+โทเค็นไม่ออกจากเซิร์ฟเวอร์เลย โทเค็นถูกเขียนลง `secrets.json` ของเซิร์ฟเวอร์
+ในไดเรกทอรีข้อมูล โดยใช้คีย์ `google_google:<workspaceId>:<email>` อยู่ข้าง
+ฐานข้อมูลและภายใต้ขอบเขตความเชื่อถือของไฟล์ระบบโฮสต์เดียวกัน เซิร์ฟเวอร์รีเฟรช
+การเข้าถึงให้อัตโนมัติ และเมื่อ Google ทำให้บัญชีใช้ไม่ได้อย่างถาวร (เซสชันถูก
+เพิกถอนหรือหมดอายุไปนานแล้ว) จะเผยแพร่ `CalendarAuthExpired` และแสดงแบนเนอร์
+**เชื่อมต่ออีกครั้ง** แทนที่จะล้มเหลวอย่างเงียบๆ
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+บิลด์จากซอร์สไม่แนบข้อมูลรับรอง Google มาให้เลยแม้แต่รายการเดียว — คุณต้องใส่
+client id และ secret ของคุณเอง ส่วนบิลด์รุ่นทางการฝังไคลเอนต์ device code
+ที่ไม่เป็นความลับไว้ เพื่อให้ขั้นตอนการเชื่อมต่อใช้งานได้ทันที เซิร์ฟเวอร์เก็บ
+เพียงเครื่องหมายที่อ้างอิงถึงมัน ไม่เคยเก็บสำเนา `GOOGLE_OAUTH_CLIENT_ID`
+(พร้อม secret) ในสภาพแวดล้อมมีความสำคัญเหนือคู่ที่ฝังมาเสมอ จงใจไม่มีแฟล็ก
+`--google-client-id` เพราะแฟล็กที่ไม่รู้จักจะถูกมองข้าม และ secret บนบรรทัดคำสั่ง
+นั้นอ่านได้ผ่าน `ps`
 
-For running your own Google project, see
-[Connect a Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/).
+หากต้องการรันโปรเจกต์ Google ของคุณเอง ดู
+[เชื่อมต่อ Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
 
-## Sync
+## การซิงค์
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+เซิร์ฟเวอร์ดึงหน้าต่างแบบเลื่อนของเหตุการณ์จากแต่ละบัญชีที่เชื่อมไว้ — ทุกปฏิทิน
+ในบัญชี ไม่ใช่แค่ปฏิทินหลัก — **ทุกสองนาที** และดึงตามต้องการด้วย (ตอนเริ่มทำงาน
+ตอนเชื่อมต่อ รีเฟรชเอง) รอบที่ถี่ขนาดนี้ทำได้เพราะการกวาดเป็นแบบเพิ่มพูน
+ปฏิทินแต่ละอันมีโทเค็นซิงค์ของตัวเอง ปฏิทินที่ไม่มีการจึงเสียเพียงการตอบกลับที่
+เกือบว่างเปล่าหนึ่งครั้ง แทนที่จะดึงหน้าต่างห้าเดือนซ้ำ
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+เหตุการณ์ที่เกิดซ้ำถูกคลี่ออกฝั่งเซิร์ฟเวอร์ ไคลเอนต์จึงไม่ต้องตีความกฎ
+การเกิดซ้ำเลย การไปยังเดือนที่อยู่นอกหน้าต่างปัจจุบันจะโหลดช่วงนั้นแบบ lazy
+เหตุการณ์ที่ถูกลบหรือถูกย้ายออกนอกช่วงจะถูกปรับปรุงให้ตรงกันในรอบซิงค์ถัดไป
 
-## Views
+## มุมมอง
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| มุมมอง    | สิ่งที่แสดง                                          |
+| --------- | --------------------------------------------------- |
+| **เดือน** | ตารางเต็มเดือน (ขับเคลื่อนด้วยแพ็กเกจ `kalender`) |
+| **สัปดาห์** | เหตุการณ์ที่มีเวลาของหนึ่งสัปดาห์ในตารางเวลา       |
+| **วัน**    | เหตุการณ์ที่มีเวลาของวันเดียวในตารางเวลา           |
+| **วาระ**   | รายการเหตุการณ์ที่กำลังจะมาถึงแบบเลื่อนได้          |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+เปิดปฏิทินได้ที่ `/calendar` ส่วนการเลือกเหตุการณ์จะเปิดรายละเอียดที่
+`/calendar/:eventId` มุมมองที่คุณเลือกถูกเก็บไว้ในการตั้งค่าของไคลเอนต์ตัวนั้นเอง
+จึงไม่ตามคุณไปยังอุปกรณ์อื่น
 
-## Meeting alerts
+## การแจ้งเตือนการประชุม
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+ตัวจัดตารางทำงานทุกนาทีเพื่อสแกนหาเหตุการณ์ที่จะเริ่มภายในช่วงเวลาล่วงหน้าที่
+ตั้งค่าได้ แล้วยิงการแจ้งเตือน **"การประชุมกำลังจะเริ่ม"** (เป็น
+[เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/) `MeetingStartingSoon`)
+การแจ้งเตือนจะพา URL เข้าร่วมมาด้วยเมื่อมี และการคลิกจะเปิดรายละเอียดของเหตุการณ์
+การแจ้งเตือนถูกตัดรายการซ้ำโดยเทียบกับ `alertedAt` ของเหตุการณ์ การประชุมเดียวกัน
+จึงไม่แจ้งเตือนซ้ำ แม้จะข้ามการรีสตาร์ต และเหตุการณ์ที่เวลาเริ่มผ่านไปแล้วตอนที่
+แอปปิดอยู่จะไม่ถูกเล่นซ้ำ
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+มีสองขีดจำกัดที่พลาดได้ง่าย ตัวจัดตารางทำงาน **ฝั่งไคลเอนต์บนเดสก์ท็อป** และเฉพาะ
+เวิร์กสเปซที่คุณเปิดอยู่เท่านั้น — เวิร์กสเปซที่คุณไม่ได้อยู่จะไม่แจ้งเตือนใดๆ
+และบิลด์เว็บไม่มีไปป์ไลน์การแจ้งเตือนของระบบปฏิบัติการเลย จึงไม่แจ้งเตือนใดๆ เช่นกัน
 
-## Record and link
+## บันทึกและลิงก์
 
-From a calendar event you can start a [meeting recording](/th-TH/คู่มือ/แนวคิด/การประชุม/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+จากเหตุการณ์ในปฏิทิน คุณเริ่ม[การบันทึกการประชุม](/th-TH/คู่มือ/แนวคิด/การประชุม/)
+ที่ตั้งต้นด้วยชื่อเหตุการณ์ได้ Control Center เก็บลิงก์แบบหนึ่งต่อหนึ่งระหว่าง
+การบันทึกกับเหตุการณ์ บันทึกการประชุมและรายการในปฏิทินจึงเชื่อมกันอยู่
+โดยที่ฟีเจอร์ใดไม่ต้องพึ่งพาอีกฟีเจอร์หนึ่ง
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**เริ่มบันทึกและลิงก์** ใช้ได้เฉพาะเดสก์ท็อป บนไคลเอนต์เว็บ การกระทำนี้จะรายงานว่า
+การบันทึกใช้งานไม่ได้ — แม้ว่ากระบวนการบันทึกของหน้าจอการประชุมเองจะทำงานได้ใน
+เบราว์เซอร์
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[เอเจนต์อ่านปฏิทินของคุณไม่ได้]
+ไม่มีเครื่องมือ MCP ด้านปฏิทิน เอเจนต์ไม่สามารถแสดงรายการเหตุการณ์ อ่าน
+รายละเอียดเหตุการณ์ หรือตอบรับคำเชิญแทนคุณได้ พื้นผิว `calendar.*` เป็น RPC
+สำหรับไคลเอนต์ที่เป็นมนุษย์เท่านั้น
 :::
 
-## See also
+## ดูเพิ่มเติม
 
-- [Meetings and transcription](/th-TH/คู่มือ/แนวคิด/การประชุม/): what happens after you start a recording
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): why calendar accounts are per-workspace
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
-- [Record and summarize a meeting](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/)
+- [การประชุมและการถอดเสียง](/th-TH/คู่มือ/แนวคิด/การประชุม/): สิ่งที่เกิดขึ้นหลังจากคุณเริ่มบันทึก
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): ทำไมบัญชีปฏิทินจึงแยกตามเวิร์กสเปซ
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): `MeetingStartingSoon` และ `CalendarAuthExpired`
+- [เชื่อมต่อ Google Calendar](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน/)
+- [บันทึกและสรุปการประชุม](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/)

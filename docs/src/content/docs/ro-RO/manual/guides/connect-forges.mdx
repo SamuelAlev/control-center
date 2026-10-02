@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Conectează un host de cod
+description: Conectează GitHub, GitLab sau Bitbucket pentru ca suprafața PR, înregistrarea repo-urilor și rulările agenților să funcționeze — un singur spațiu de lucru le poate folosi pe toate trei.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center funcționează cu trei hosturi de cod, numite **forge-uri** în toată aplicația: **GitHub**, **GitLab** și **Bitbucket Cloud**. Niciunul nu este implicit. Conectează unul și totul funcționează; conectează mai multe și un singur spațiu de lucru poate conține repo-uri din toate deodată.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Forge-ul este o proprietate a fiecărui **repo**, citită din remote-ul `origin` atunci când îl înregistrezi. Nu îl alegi niciodată și nu există nicio setare la nivel de spațiu de lucru pe care să o poți greși.
 
-## Connect a forge
+## Conectează un forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Deschide **Setări → Spațiu de lucru → Profil și identitate** (`/settings/workspace/profile`).
+2. Găsește cardul **Găzduire de cod**. Fiecare forge acceptat este listat, conectat sau nu.
+3. Apasă **Autentifică-te cu …** dacă rândul îl oferă, sau **Adaugă token** și lipește unul.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Autentificarea** apare pentru un forge pentru care serverul tău are o aplicație înregistrată — astăzi, acesta este GitHub, printr-un flux de dispozitiv (vezi [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)). Pentru orice altceva, tokenul se lipește, ceea ce este alternativa onestă, nu un buton care nu se poate finaliza.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+În ambele cazuri, acreditarea este **a ta și se află pe server**, indexată după id-ul tău de utilizator: niciun token nu este stocat pe mașina pe care l-ai introdus, fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi. Ea intră în vigoare la **următoarea cerere** — nu este nimic de repornit, iar deconectarea oprește imediat trimiterea ei.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Fiecare rând îți spune de unde provine acreditarea sa, pentru că aceasta este diferența dintre „tokenul meu nu funcționează” și „răspunde un alt token”:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Subtitlu                                        | Semnificație                                                                       |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `Signed in as octocat`                          | Se folosește propria ta acreditare                                                 |
+| `Signed in as octocat · via this server's app`  | Răspunde identitatea de aplicație a serverului — nu te-ai autentificat             |
+| `Signed in as octocat · from the environment`   | Răspunde o variabilă de mediu a serverului, nu acreditarea ta                      |
+| `Not connected`                                 | Nu ai nicio acreditare pentru acest forge                                          |
 
-### What token each forge wants
+### Ce token cere fiecare forge
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Forge         | Token                                                     | Unde îl creezi                                            |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Clasic: `repo` și `read:org`. Cu granularitate fină: Contents + Pull requests (citire/scriere), Checks + Actions (citire) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | Un token de acces personal cu `api`                       | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Un token API Atlassian, plus adresa de e-mail a contului tău | id.atlassian.com → Security → API tokens                |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket se autentifică folosind **adresa de e-mail a contului ca nume de utilizator** și tokenul ca parolă. Setează `BITBUCKET_EMAIL` în mediul serverului, ca să știe cu ce adresă de e-mail să asocieze tokenul.
 
-### Or use the environment
+### Sau folosește variabilele de mediu
 
-For a headless or CI install, the server reads these:
+Pentru o instalare headless sau CI, serverul citește acestea:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, apoi `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, apoi `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, apoi `BITBUCKET_TOKEN` (cu `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Acestea sunt acreditările **serverului**, nu ale tale, iar distincția este esențială: o cerere făcută în numele tău folosește acreditarea ta și nimic altceva, așa că mediul nu te înlocuiește niciodată pe nesimțite. Munca fără niciun om în spate — webhook-uri, interogarea periodică a PR-urilor, sincronizarea tichetelor — rezolvă mai întâi identitatea de aplicație a serverului, apoi acreditarea proprietarului serverului, apoi mediul. Ordinea este fixă, astfel încât „m-am autentificat și nimic nu s-a schimbat” să nu fie niciodată un rezultat posibil.
 
-## You are a different person on each forge
+## Ești o altă persoană pe fiecare forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Aceeași persoană este `octocat` pe GitHub și cu totul altceva pe GitLab. Control Center îți rezolvă identitatea **pe fiecare forge** și o folosește pe cea potrivită pentru fiecare repo, iar asta face ca „necesită revizuirea mea”, „creat de mine” și „ai aprobat asta” să fie corecte într-un spațiu de lucru mixt.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Dacă identitatea unui forge nu s-a rezolvat, repo-urile lui nu contribuie cu nimic la inbox, în loc să se potrivească cu tot. Inboxul spune asta în loc să afirme că ești la zi cu tot.
 
-## One inbox, every forge
+## Un singur inbox, toate forge-urile
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Inboxul și coada de PR-uri se ramifică spre toate forge-urile reprezentate în spațiul de lucru și îmbină rezultatele într-un singur flux — un pull request GitHub și un pull request Bitbucket stau unul lângă altul, ordonate după timp, nu grupate după furnizor.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Eșecurile sunt izolate. Un forge care este picat, limitat de rată sau neconectat nu contribuie cu nimic și nu le afectează pe celelalte; nu golește niciodată tot inboxul. Repo-urile lui continuă să afișeze ultima stare cunoscută până când își revine.
 
-## What each forge can do
+## Ce poate face fiecare forge
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Fiecare forge acceptă bucla de bază: listează și deschide pull request-uri, citește diff-uri, comentează inline și la nivel superior, revizuiește, îmbină și închide. Dincolo de asta, ele chiar diferă, iar Control Center ascunde ce nu poate face un forge în loc să afișeze un control care eșuează în tăcere.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Capabilitate                       | GitHub | GitLab | Bitbucket |
+| ---------------------------------- | :----: | :----: | :-------: |
+| Revizuiri grupate (în așteptare)   |   ✓    |   ✓    |     —     |
+| Cere modificări                    |   ✓    |   ✓    |     ✓     |
+| Starea „vizualizat” pe fișier, sincronizată |   ✓    |   —    |     —     |
+| Reacții emoji                       |   ✓    |   ✓    |     —     |
+| Recenzenți de echipă / grup         |   ✓    |   ✓    |     —     |
+| Recenzenți sugerați                 |   ✓    |   —    |     ✓     |
+| Rezultate CI pe un PR               |   ✓    |   ✓    |     ✓     |
+| Pătrundere în pașii/jurnalele unui job CI |   ✓    |   ✓    |     —     |
+| Pull request-uri stivuite           |   ✓    |   —    |     —     |
+| Șabloane de descriere a PR-urilor    |   ✓    |   ✓    |     —     |
+| Interogare periodică a notificărilor |   ✓    |   —    |     —     |
+| Profiluri de utilizator bogate      |   ✓    |   ✓    |     —     |
+| Ref-ul head al PR-ului, pe server   |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Acolo unde lipsește o capabilitate, funcționalitatea se degradează onest:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **Starea „vizualizat”** funcționează în continuare, dar doar pe dispozitivul pe care ai setat-o.
+- **Revizuirile grupate** pe Bitbucket se publică comentariu cu comentariu, așa că recenzenții le văd sosind individual, nu pe toate deodată.
+- **Fără ref de head al PR-ului** pe Bitbucket, checkoutul unui pull request aduce ramura sursă după nume, ceea ce eșuează după ce ramura respectivă este ștearsă.
 
-## Vocabulary
+## Vocabular
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab numește un pull request **merge request**. Control Center spune „pull request” în tot modelul propriu și folosește substantivul propriu al fiecărui forge atunci când vorbește despre acel forge.
 
-## Troubleshooting
+## Depanare
 
-### The PR list is empty and says a forge is not connected
+### Lista de PR-uri este goală și spune că un forge nu este conectat
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Nu ai nicio acreditare pentru acel forge. Autentifică-te sau lipește un token în **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**. Repo-urile celorlalte forge-uri nu sunt afectate.
 
-### I connected a forge but its repos still show nothing
+### Am conectat un forge, dar repo-urile lui tot nu afișează nimic
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Verifică subtitlul rândului. Dacă scrie „via this server's app” sau „from the environment”, răspunde o altă acreditare decât cea la care te așteptai — acreditarea ta are prioritate pentru orice ceri tu, așa că, dacă scrie altfel, a ta nu a fost salvată.
 
-### A repo will not register
+### Un repo nu se înregistrează
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+Înregistrarea are nevoie de toate trei: calea să fie într-un arbore de lucru git, repo-ul să aibă un remote `origin`, iar acel remote să indice spre github.com, gitlab.com sau bitbucket.org. Vezi [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
 
-### Everything stops working for a while after heavy use
+### Totul se oprește o vreme după o utilizare intensă
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Acesta este întrerupătorul de circuit pentru limita de rată. Un forge care își semnalează limita principală face clientul să respingă local cererile următoare, fără niciun apel de rețea, până când expiră fereastra — astfel încât o furtună de reîncercări nu poate adânci limita. Eșecurile tranzitorii sunt reîncercate cu backoff exponențial.
 
-## Related guides
+## Ghiduri conexe
 
-- [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-- [Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Triage the inbox](/ro-RO/manual/ghiduri-practice/triaza-inbox/)
+- [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
+- [Triază inbox-ul](/ro-RO/manual/ghiduri-practice/triaza-inbox/)

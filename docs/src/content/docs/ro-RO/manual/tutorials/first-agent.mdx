@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Trimite primul agent
+description: Creează un agent, dă-i un spațiu și o sarcină și privește cum curge rularea înapoi.
 slug: ro-RO/manual/tutoriale/primul-agent
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Ce vei construi
 
-By the end of this tutorial, you will have:
+La finalul acestui tutorial, vei avea:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Un agent pe care l-ai creat și configurat singur
+- Un spațiu în care vorbești tu și acel agent
+- O rulare finalizată, cu muncă comisă într-un worktree izolat și un rând în jurnalul de rulare al agentului
 
-Prerequisites: [Your first workspace](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/) completed, so this workspace has a repo registered and at least one model provider connected.
+Cerințe preliminare: [Primul tău spațiu de lucru](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/) finalizat, astfel încât acest spațiu de lucru să aibă un repo înregistrat și cel puțin un furnizor de modele conectat.
 
-## Step 1: Create an agent
+## Pasul 1: Creează un agent
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Mergi la **Setări → Spațiu de lucru → Agenți**
+2. Apasă pe **Agent nou**. Un agent numit „Agent fără nume” este creat imediat și selectat în listă — nu există niciun dialog de creare și nimic de confirmat. Îl configurezi pe loc.
+3. În fila **Setări**, completează:
+   - **Nume**: ceva scurt și memorabil, cum ar fi `alice`. Este ceea ce tastezi după `@`.
+   - **Titlu**: ce face, de ex. „Inginer backend”
+   - **Adaptor**: `Control Center (built-in)`. Alege-l deliberat — doar harness-ul încorporat poate fi dirijat în timpul rulării și pus pe pauză la limita unui tur și nu are nevoie de niciun CLI instalat pe gazda serverului.
+   - **Model**: alege din lista pe care o servește furnizorul conectat
+   - **Abilități**: atașează-le pe cele potrivite, de ex. `testing` sau `architecture`
+4. Apasă **Salvează modificările**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Un agent fără adaptor rulează pe bucla încorporată]
+Când câmpul Adaptor nu este completat, trimiterea revine la **Control Center (built-in)** — bucla de agent din interiorul serverului, așa că nu este nimic de instalat pe gazdă. Are totuși nevoie de un model: dacă nu este setat niciunul, cere modelul implicit de la Anthropic, ceea ce funcționează dacă ai conectat un cont Anthropic și altfel eșuează cu `No credential for provider "anthropic"`. Setează-le oricum pe amândouă în mod explicit, altfel vei rula pe un model pe care nu l-ai ales.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Punct de control.** Rândul din listă arată numele agentului tău și un inel de stare gol.
 
-## Step 2: Start a space
+## Pasul 2: Pornește un spațiu
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. În bara laterală, găsește secțiunea **Spații** și apasă butonul **+**
+2. Dă un nume spațiului
+3. Sub **Adaugă agenți**, selectează agentul pe care tocmai l-ai creat
+4. Dacă spațiul de lucru are repo-uri, alege pe care dintre ele să lucreze acest spațiu
+5. Apasă **Creează**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+Spațiul se deschide. În fundal, Control Center creează un worktree copy-on-write al repo-urilor selectate pentru această conversație, pe propria lui ramură. Checkout-ul tău sursă nu este niciodată modificat.
 
-## Step 3: Send a task
+## Pasul 3: Trimite o sarcină
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Tastează o sarcină concretă și mică pentru repo-ul pe care l-ai înregistrat. Ceva cu un rezultat verificabil funcționează cel mai bine — adaugă un test, corectează un lint, redenumește un simbol.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Apasă Enter. Nu este nevoie să menționezi pe nimeni cu `@`: cu un singur agent în spațiu, un mesaj simplu îl trezește. Într-un spațiu cu mai mulți agenți, `@name` alege unul.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center compune promptul din instrucțiunile agentului, persona lui, skill-urile lui și contextul spațiului, apoi trimite rularea.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Punct de control.** Butonul de trimitere al composerului se transformă în buton de oprire — un agent lucrează în această conversație — și începe să sosească text.
 
-## Step 4: Watch it work
+## Pasul 4: Privește-l cum lucrează
 
-The conversation renders the run as it happens:
+Conversația afișează rularea pe măsură ce se desfășoară:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Raționament**, afișat în linie în timp ce agentul gândește
+- **Apeluri de instrumente**: citiri și scrieri de fișiere, căutări, comenzi shell, fiecare cu rezultatul lui
+- **Text**: rezumate, explicații și întrebări pentru tine
 
-If the agent asks something, answer in the conversation and it resumes.
+Dacă agentul întreabă ceva, răspunde în conversație și își reia lucrul.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Pentru metricile proprii unei rulări și comenzile ei de pauză, reluare și oprire, găsește agentul aflat în rulare în secțiunea **Agenți** din panoul General al spațiului și alege **Deschide activitatea**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+În panoul de activitate, insigna de stare afișează **În rulare**, apoi **Reușit** când rularea se încheie. O rulare care se blochează sau intră în buclă afișează **Blocat**; una care dă eroare afișează **Eșuat**. În registrul de agenți, inelul din listă este gol înainte de prima rulare și plin odată ce agentul redevine inactiv.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ro-RO/manual/concepte/guardrail-uri/).
+Ce limitează rularea: propriul worktree copy-on-write, datele de autentificare intermediate pentru ea la lansare și revocate la desființare, un mediu sanitizat, suprafața de instrumente pe care o permite modul ei și guardrail-urile de acțiune. Efectele precum împingerea unei ramuri sau deschiderea unui pull request trec printr-o poartă separată — vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/).
 
-## Step 5: Check the result
+## Pasul 5: Verifică rezultatul
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Deschide **Setări → Spațiu de lucru → Agenți** și selectează-ți agentul
+2. Deschide fila **Jurnale**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Punct de control.** Un rând de rulare, care arată starea, durata, orele de început și de sfârșit și adaptorul pe care a rulat.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Modificările agentului sunt comise pe ramura conversației, în worktree-ul ei. Commit-urile sunt scrise ca agentul, iar tu ești creditat într-un trailer `Co-Authored-By:`.
 
-## Getting a pull request
+## Obținerea unui pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Nimic nu deschide un pull request de la sine. Dacă vrei unul, cere-l în aceeași conversație:
 
-> Push this branch and open a pull request against the default branch.
+> Împinge această ramură și deschide un pull request către ramura implicită.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+Împingerea (`gitPush`) și crearea de PR (`prCreate`) cer implicit aprobarea ta, așa că așteaptă-te la o confirmare înainte de fiecare. Dacă niciun aprobator nu este conectat când se declanșează cererea, acțiunea este refuzată, nu permisă — guardrail-urile eșuează închis.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR-ul este deschis sub identitatea GitHub al cărei token a fost folosit de rulare — a ta, dacă ai stocat un token personal — nu sub numele agentului. Paternitatea agentului apare pe commit-uri.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Îl poți deschide și singur: panoul **Control sursă** al spațiului are un buton **Creează pull request** care aduce ramura conversației în ecranul de compunere, iar **Pull request-uri → PR nou** deschide același ecran gol. De aici continuă următorul tutorial.
 
-## Recap
+## Recapitulare
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Ai creat un agent, i-ai configurat adaptorul și modelul, i-ai dat un spațiu și o sarcină și ai privit cum o rulare reală se încheie într-un worktree izolat fără să atingi checkout-ul.
 
-**Next:** [Review your first pull request](/ro-RO/manual/tutoriale/primul-pr/) to learn the review workflow.
+**În continuare:** [Revizuiește primul pull request](/ro-RO/manual/tutoriale/primul-pr/) ca să înveți fluxul de revizuire.
 
-For more on agents: [The agent model](/ro-RO/manual/concepte/modelul-agentilor/). For dispatch details: [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/).
+Pentru mai multe despre agenți: [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/). Pentru detalii despre trimitere: [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/).

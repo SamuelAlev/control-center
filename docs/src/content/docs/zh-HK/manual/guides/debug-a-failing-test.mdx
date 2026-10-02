@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: 用代理除錯失敗的測試
+description: 讓代理設定斷點、在除錯器下啟動，並讀取真實的堆疊框，而不是加入打印語句。
 slug: zh-HK/手冊/操作指南/除錯失敗測試
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+本指南說明如何讓代理在打印語句解釋不了的失敗上使用除錯器。
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+`debug` 工具會驅動一個真正的 Debug Adapter Protocol 工作階段。一個被暫停的堆疊框能一次回答關於那一刻的所有問題——每個區域變數、每個呼叫者，以及在該堆疊框自身作用域裡求值的表達式——而打印語句只回答你在執行之前就想到要問的那個問題。
 
-## Before you start
+## 開始之前
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+這個工具會一直留在工具介面上，好讓代理可以追問為何沒有東西可用，而不是靠猜。只有**同時**滿足以下兩項，配接器才能真正啟動：
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- 檢出目錄裡有項目標記，以及
+- 配接器的二進位檔能夠解析到。
 
-Ask the agent to check:
+請代理檢查：
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+它會回答找到的內容，或解釋配接器需要兩者兼備。
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| 語言           | 配接器                       | 標記                                            | 安裝                               |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | 隨 SDK 附帶——無需任何操作          |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | 隨 LLVM 附帶                       |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python 會選用項目自己的直譯器]
+`debugpy` 會先在 `.venv/bin` 或 `venv/bin` 中尋找，然後才輪到 `$PATH`。`$PATH` 上的 python 是另一個環境，而從錯誤的那一個附加時，失敗的方式讀起來像程式碼壞掉，而不像用錯了直譯器。
 :::
 
-## Set the breakpoint first, then launch
+## 先設定斷點，然後啟動
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+順序很重要，而工具會強制執行：斷點可以在工作階段存在**之前**設定，因為那正是協定要求的順序。
 
-Ask the agent something like:
+請代理做類似這樣的事：
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> `bin/main.dart` 裡的 `compute` 函式傳回了錯誤的值。在賦值給 `product` 的那一行設定斷點，在除錯器下啟動它，然後告訴我 `a` 和 `b` 實際上是多少。
 
-It will run roughly:
+它大致上會執行：
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+啟動的結果會報告它停在哪裡：
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[如果它改為報告程式結束]
+斷點沒有繫結。空白行、註解，或未編譯進組建裡的行，都無法容納斷點。對一個仍在運作的工作階段呼叫 `breakpoints`，會報告你設定的斷點實際上有多少個被放置。
 :::
 
-## Read the frame
+## 讀取堆疊框
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+然後往內查看：
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+帶有子項的物件會回報 `[expand: reference N]`——但只有在它背後確實有東西時才會如此，因此代理用不著的展開項永遠不會被提供。
 
-For anything not visible as a local:
+對於任何不以區域變數形式顯示的東西：
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## 逐步執行
 
-| What you want          | Op          |
+| 你想要做什麼           | 操作        |
 | ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| 執行到下一個停止點     | `continue`  |
+| 下一行，同一堆疊框     | `step_over` |
+| 進入呼叫               | `step_in`   |
+| 返回呼叫者             | `step_out`  |
+| 停止正在執行的程式     | `pause`     |
 
-## Attach to something already running
+## 附加到已在執行的行程
 
-For a wedged process rather than one you are starting:
+針對一個卡死的行程，而不是你正在啟動的那一個：
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## 結束
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+永遠要結束工作階段。一個除錯配接器擁有一個**被暫停的行程**，它佔著那個行程所持有的一切——一個連接埠、一把鎖、一個資料庫連線。
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[它無法脫離你的掌控]
+每個工作階段都有無法延長的硬性 TTL，每個對話剛好只有一個，而伺服器停止時一切都會被拆除。第二次 `launch` 會被拒絕，而不是取代第一個：一個沒有結束第一個就啟動第二個的代理，幾乎肯定已經跟丟了第一個。
 :::
 
-## Bounded output
+## 有界輸出
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+對深層物件圖展開 `variables` 本質上是無界的——一個 Flutter widget 就能觸及整棵元素樹。每個作用域的子項上限為 50，值上限為 400 個字元，堆疊框上限為 30。一個填滿上下文窗口的工具結果，就是一個會終結它原本在協助的那次執行的工具。
 
-## Related
+## 相關內容
 
-- [Code intelligence](/zh-HK/手冊/概念/程式碼智能/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/zh-HK/手冊/參考/代理工具/) — every `debug` op and argument
-- [Diagnose an agent](/zh-HK/手冊/操作指南/診斷代理/) — when the problem is the agent, not the code
+- [程式碼智能](/zh-HK/手冊/概念/程式碼智能/) — 為何除錯器、編譯器與匹配器回答的是不同的問題
+- [內建代理工具](/zh-HK/手冊/參考/代理工具/) — 每一個 `debug` 操作與參數
+- [診斷代理](/zh-HK/手冊/操作指南/診斷代理/) — 當問題出在代理，而不是程式碼時

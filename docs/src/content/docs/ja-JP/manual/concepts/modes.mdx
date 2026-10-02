@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: モード
+description: モードをエージェントではなくスペースが持つ理由、4 つのモードがそれぞれ何を保証するのか、そしてその保証が単なるプロンプトではなく構造的に成立するのはどこか。
 slug: ja-JP/マニュアル/コンセプト/モード
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## モードとは
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+モードは**スペース**のプロパティであり、スペース行の 1 つのカラムとして保存されます。スペース内のすべての会話がこれを共有し、スレッドも同じです。スレッドはほかの会話と同様に、そのスペースのモードを継承します。したがって同じエージェントが、同時に異なるスペースで異なるモードになることができ、スペースのモードを切り替えると、エージェントに触れることなく次のターンから動作が変わります。
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+モードはちょうど 4 つあります: `chat`、`review`、`plan`、`orchestrate` です。enum 自体はポリシーを持ちません。モードが保証するすべては、**ケイパビリティプロファイル**で一度だけ宣言され、すべての強制レイヤーがそこから投影します:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **ツールサーフェス** — そのモードでそもそもどのツールが存在するか。最大承認ティア、許可リスト、拒否リスト、拒否されるエフェクトクラスの集合として表現されます。
+2. **必須の出力動詞** — 何かを届けたことになるために、実行が呼び出さなければならないもの。
+3. **拒否されるエフェクトクラス** — アクションガードが即座に拒否するもの。
+4. **ワークツリーの態勢** — ワークツリーへの書き込みが許されるかどうか。これは、変更を加えるツールをサーフェスから取り除くことで強制され、そのおかげでどのホストでも守られます。ホストに OS サンドボックスがある場合、同じ態勢がファイルシステムの書き込みルールも定めます（読み取り専用モードはワークツリーを読み取り専用でマウントします）が、それは保証の 2 つ目のコピーであり、実際に効いているものではありません。
+5. **システムプロンプトブロック** — 実際にマテリアライズされたツール一覧から導出される_生成された_ケイパビリティの前書きと、手書きのガイダンス。
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+すべての強制レイヤーがその 1 つのプロファイルから投影するため、ツールサーフェス、ガード、ワークツリーの態勢、プロンプトが食い違うことはありません。
 
-## The four modes
+## 4 つのモード
 
-### Chat — displayed as "Agent"
+### チャット — 「Agent」として表示されます
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+デフォルトであり、追加の制約がない唯一のモードです。実行ティアまでの完全なツールサーフェス、書き込み可能なワークツリー、拒否されるエフェクトクラスなし、完了契約なしです。実装、バグ修正、コードベースに関する質問、その場限りのあらゆる作業に使います。
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+ラベルに注意してください。コンポーザーではこのモードは「Chat」ではなく **「Agent」**として表示されます。
 
-### Plan — read-only, one deliverable
+### プラン — 読み取り専用、成果物は 1 つ
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+プランモードはワークツリーを読み取り専用にし、書き込みツールをサーフェスから完全に取り除きます。そのため制約は指示によるものではなく構造的です。エージェントは読み、検索し、調査して、ちょうど 1 つだけを届けます。型付きの依存関係グラフを運ぶ `submit_plan` 呼び出しです。グラフは、ゴールと、キー・タイトル・説明を持つノード、および各ノードが依存するノードキーからなります。
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+プランは会話内にコンパクトな行として表示され、その横のタブで Plan Studio を開きます。これを承認すると、グラフがオーケストレーションにコンパイルされ、生成された作業が実行され、作成元のスペースがエージェントモードに戻ります。
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+プランモードの実行が `submit_plan` を一度も呼ばずに終わると、ループはまず、その呼び出しが成功するまでプランは存在しないというナッジを注入します。このナッジは、「ここにプランは不要です」という正直な終了を明示的に許可します。プランモードはスペースの設定であり、その中で尋ねた単なる質問が偽りのプランを強制すべきではないからです。
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/).
+:::note[満たされない契約は失敗した実行ではありません]
+プランなしで終わった実行も、ステータス `completed` で記録されます。プロセスは正常に終了したからです。真実は、実行のライブネス（`empty`）、エラー系統（`silentRun`）、そして何が生成されなかったかを示すサマリーに表れます。詳しくは[エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)を参照してください。
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+別のもう 1 つの出口があります: `exit_plan_mode` です。これは出力動詞ではなく、厳格な承認ゲートです。`submit_plan` の代わりにこれを呼ぶエージェントは何も届けていません。最初の呼び出しは永続的な `plan_exit` 承認を開いて `pending` を返し、スペースは読み取り専用のままです。繰り返しの呼び出しは 2 つ目のゲートを開かず、`pending` のままです。承認が与えられて初めて、次の呼び出しがスペースをチャットに切り替えます。拒否された場合、エージェントは修正プランの新しいリクエストを開けます。
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+自分でプランモードを抜けるには、コンポーザーのドロップダウン（または Shift+Tab）を切り替えます。`exit_plan_mode` の決定は MCP ツール `decide_approval` で行います。受信トレイの「エージェント承認」の行は別物です。実行中のエージェントからのターンごとの確認プロンプトです。
 
-### Review — read-only, no contract
+### レビュー — 読み取り専用、契約なし
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+レビューモードは PR レビュー用です。ワークツリーを読み取り専用にし、ツールサーフェスを実行ティア未満に制限し、レビュー・チケッティング・コミュニケーション用ツールの厳選された許可リストを適用します。プルリクエストのために開かれたスペースは、自動的にレビューモードで作成されます。
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+エージェントの出力は、構造化された所見、つまり**レビューノード**であり、レビューが確定したときには**判定**です。ノードは、種類（`bug`、`suggestion`、`recommendation`、`question`、または `ticket`）、P0（リリースをブロック）から P3（あると望ましい）までの優先度、自己評価による確信度、任意のアンカー（ファイルと行範囲。リポジトリ全体のメモには付きません）、そしてライフサイクルステータスを持ちます。ステータスは、作成者ではないピアが確認した時点で `open` から `consensusReady` に移ります。優先度または確信度が欠けているか範囲外の所見は、判定を汚す前に読み取り境界で破棄されます。
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+判定は Ship、Hold、Block のいずれかで、そこに畳み込まれる軸ごとの結果によって_より_厳しくされることしかありません。ゲート対象の軸が失敗すれば `block` が強制され、ゲート対象の軸が実行できなければ少なくとも `hold` が強制されます。証拠の不在がゲートをグリーンにすることは決してありません。
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+プランやオーケストレーションと違い、レビューには**完了契約がありません**。所見は `add_review_node` で蓄積され、`finalize_review` で公開されますが、どちらも正当に一度も呼ばれないことがあります。レビューモードで動くパイプラインエージェントは、代わりにチケットを完了するためにそこにいるのかもしれません。
 
-### Orchestrate — read-only, proposes a team
+### オーケストレーション — 読み取り専用、チームを提案
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+オーケストレーションモードは、1 つのゴールをチーム全体のプランに変えます。プランモードと同様に読み取り専用で、ファイルに書き込めません。調査用サーフェスに加えて、`propose_orchestration` という単一の特権的な動詞を持ち、これが構造化された提案を出力します。役割、サブチケットのツリー、統合ステップ、予算です。プロンプトはサーフェス上のツールだけを列挙するため、モデルは呼び出せない採用やチケット作業を語ることにターンを費やしません。
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/).
+提案は、あなたが承認するまで何も実行されません。承認すると、決定論的なマテリアライザーがエージェントを採用し、チケットとプロジェクトを作成し、生成されたパイプラインを実行します。承認はオペレーター専用です。そのための MCP ツールは存在しないため、エージェントは提案できても自分のプランを承認することはできません。エージェントが開始した再提案は 2 分間のクールダウンでレート制限されるため、連続する再プランは拒否され、まとめるよう指示されます。詳しくは[オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/)を参照してください。
 
-## Two rules worth knowing
+## 知っておく価値のある 2 つのルール
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**モード自身の出力動詞が拒否されることは決してありません。** `submit_plan` と `propose_orchestration` はツールサーフェスに固定され、ツールフィルター、承認ゲート、アクションガードのいずれも通過済みとして事前承認されます。そのため、スペースごとの自律性ダイヤルがモードの成果物を黙らせることはできません。ハーネスの `ask_user` も同じ理由で固定されています。これこそが実行がオペレーターに到達する方法であるため、これをゲートすると、何かを尋ねる必要のある実行がデッドロックします。読み取りティアなので、すべての読み取り専用モードがこれを保持し、承認ラッパーからも除外されています。承認者が接続されていない状態でプロンプトの前にプロンプトを置くとフェイルクローズし、エージェントは尋ねるという行為自体を拒否されることになります。
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**読み取り専用モードはネットワークアクセスやシークレットを拒否しません。** レビュー、プラン、オーケストレーションが拒否するエフェクトクラスは、世界を変えるものです。ファイル削除、ワークツリー外への書き込み、コミット、プッシュ、PR の作成と公開、ベンダー同期の書き込み、パッケージのインストール、プロセスの起動、ワークスペースの変更、エンクロージャー制御です。ネットワークの送信とシークレットへのアクセスは意図的にデフォルトのままです。調査こそが読み取り専用モードの目的そのものだからです。
 
-## Choosing and changing a mode
+## モードの選択と変更
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+コンポーザーのモードドロップダウンには **3 つ**の選択肢があります。Agent（チャット）、Plan、Orchestrate です。`review` は**ユーザーが選択できません**。PR レビューのスペースが作成されるときにシステムが設定し、パイプラインステップも設定します。
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+スペースを**開く**パイプラインノードは、`extras['mode']` キー（`chat`、`review`、または `plan`）でそのルームのモードを固定できます。このキーは完全一致です。ほかの綴り（`orchestrate` を含む）は黙って無視され、ルームにはボディのデフォルト（create-space ボディでは `review`）が適用されます。エージェントステップは、自分が作成していないルームに参加し、その権限を変更しません。
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+解決自体は単純です。ディスパッチャーはスペースの `mode` カラムを読み取ります。スペースのないディスパッチ（ワンショット、CLI 呼び出し、または別のワークスペースのスペース ID。これは単にこのワークスペースのデータベースファイルに存在しないだけです）は `chat` に解決されます。モードの変更は次のターンから有効になります。
 
-## Where the guarantee actually holds
+## 保証が実際に効くのはどこか
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+モードのツールサーフェスは**組み込みハーネス**が構築し、強制します。単に拒否するのではなくツールを見えなくすること、実行前にすべての呼び出しをゲートすること、完了契約を観測することができる唯一のトランスポートです。
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/).
+Claude Code トランスポートでは、チャット以外のモードは `--permission-mode plan` として渡されます。Claude はそれを慣習として尊重しますが、自身の読み取り・書き込み・編集・シェルツールは見えないところで実行されます。そのトランスポートにとってモードはガイダンスであり、Control Center の境界ではありません。詳しくは[エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)を参照してください。
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+許可リストは書き込みティア以上のツールを制約します。組み込みハーネスの読み取りティアは、どのリストにも載っていないツールにも依然として到達します。Claude Code では、許可リストが省略したツールは、サーバーがそれを持っているかどうかに関係なく拒否されます。
 
-## Related concepts
+## 関連コンセプト
 
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): where the mode is resolved and projected
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): which transports can enforce a mode
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/): what an approved orchestrate proposal does
-- [Use plan mode](/ja-JP/マニュアル/ハウツーガイド/プランモード/): the practical walkthrough
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): モードがどこで解決され、投影されるか
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): どのトランスポートがモードを強制できるか
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): モードのプリセットが供給するエフェクトクラスポリシー
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/): 承認されたオーケストレーション提案が行うこと
+- [プランモードを使う](/ja-JP/マニュアル/ハウツーガイド/プランモード/): 実践的なウォークスルー

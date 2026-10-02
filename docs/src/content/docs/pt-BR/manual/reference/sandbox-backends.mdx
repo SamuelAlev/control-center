@@ -1,192 +1,187 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: Backends de sandbox
+description: Os backends de sandbox, onde eles são aplicados e cada objeto de valor que o runtime do sandbox usa.
 slug: pt-BR/manual/referencia/backends-de-sandbox
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[Se uma execução roda em sandbox depende do host]
+`cc_server` sonda o host uma vez na inicialização e envolve o despacho de agentes no backend nativo quando a sondagem relata um disponível e `--sandbox` não é `off`. As duas costuras do despacho são envolvidas: a CLI do Claude Code pela porta de sandbox, e o ACP mais a ferramenta `bash` do harness integrado pelo gerenciador de sandbox.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/pt-BR/manual/conceitos/barreiras/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+Onde a sondagem não relata backend nenhum — **Windows sempre**, e Linux ou WSL2 sem `bwrap` e `socat` —, as execuções de agentes **não** rodam em sandbox. O ACP e a ferramenta `bash` do harness ainda iniciam com sanitização do ambiente; o Claude Code passa pelo `NoSandboxAdapter` e herda o ambiente do host. As fronteiras restantes são a worktree da própria execução (copy-on-write onde o `rift` é distribuído; `git worktree` no Windows), as credenciais condicionadas por capacidade, intermediadas a cada inicialização e revogadas no encerramento, a política de comandos de cada modo, as [barreiras de ação](/pt-BR/manual/conceitos/barreiras/) unificadas (com falha fechada), a sanitização do ambiente nos caminhos do ACP e do `bash` do harness, e a superfície de ferramentas que o modo permite.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+As ferramentas de arquivo em processo do harness (read, write, edit, apply patch, search, find, search_files) ficam fora do sandbox em todo host: elas rodam no processo do servidor, então só o `bash` é envolvido.
 :::
 
-## Backend overview
+## Visão geral dos backends
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
-| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/pt-BR/manual/conceitos/rigs/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| Backend     | Valor     | Plataforma                                    | Disponibilidade                                                                                                      |
+| ----------- | --------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| VM fechada | `microvm` | macOS, Linux, Windows (hipervisor de microVM) | Condicionado à sondagem do runtime de microVM; aplica-se a terminais interativos — o shell roda dentro de um [rig](/pt-BR/manual/conceitos/rigs/), não no host |
+| Nativo | `native` | macOS (Seatbelt), Linux e WSL2 (bubblewrap) | Sondado na inicialização; o Linux recusa uma execução que exija negações de escrita por glob de nome de arquivo, que o bubblewrap não consegue aplicar |
+| Nenhum | `none` | Todos | O padrão da análise, o padrão do terminal e o fallback quando nenhum backend está disponível ou `--sandbox off` está definido |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` retorna `none` para um valor armazenado nulo ou não reconhecido. Um `"docker"` armazenado é mapeado para `native`.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/pt-BR/manual/referencia/rigs/).
+**`microvm` é o único backend com fronteira de kernel** — a carga de trabalho
+genuinamente não roda no host. Ele nunca é um fallback silencioso em nenhuma das
+direções: pedi-lo explicitamente em um host que não consegue inicializar uma VM
+falha de forma ruidosa ("pedi uma VM e recebi meu notebook" é a única degradação
+que o recinto não pode se permitir), e apenas um *padrão não especificado*
+recorre a `native`, com uma linha de log dizendo isso. O backend real da sessão é
+reportado de volta ao cliente e recebe um selo, então um terminal nunca pode
+alegar estar fechado enquanto roda no host. Ciclo de vida, imagens e saída de rede
+da própria VM estão cobertos pela [referência de rigs](/pt-BR/manual/referencia/rigs/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**O Windows não tem sandbox nativo.** `NativeSandboxAdapter.probe` retorna `available: false` em todo host que não seja macOS ou Linux/WSL2. O despacho de agentes no Windows, portanto, usa `none`. O backend `microvm` é separado: ele é condicionado à sondagem do runtime de microVM e se aplica a terminais interativos e rigs, não a envolver o `bash` no host.
 
-## Probe results
+## Resultados da sondagem
 
-The probe is what gates enforcement. It runs once, at server boot.
+A sondagem é o que condiciona a aplicação. Ela roda uma vez, na inicialização do servidor.
 
-| Host                                   | `available` | Note / hint                                                               |
+| Host                                   | `available` | Nota / dica                                                               |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS | `true` | `sandbox-exec` (Seatbelt) — isolamento de namespace, sem fronteira de kernel |
+| Linux ou WSL2 com `bwrap` e `socat` | `true` | bubblewrap — isolamento de namespace, sem fronteira de kernel |
+| Linux ou WSL2 sem qualquer uma das ferramentas | `false` | `requiresInstall: true`, com uma dica de instalação que nomeia os pacotes ausentes |
+| Qualquer outra plataforma | `false` | O sandbox nativo não é oferecido nesta plataforma |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+O servidor registra o resultado em uma única linha de inicialização: `agent sandbox ON` mais a nota, `no OS-native agent sandbox on this host` mais a dica, ou `agent sandbox DISABLED by --sandbox off`. `GET /healthz` não carrega nenhum campo de sandbox.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` aceita `on` (padrão) ou `off`. É uma desativação explícita, não uma habilitação: `on` significa "envolver quando o host oferecer um backend", nunca "exigir um".
 
-## Native backend
+## Backend nativo
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Usa o mecanismo de sandbox Seatbelt da Apple (o mesmo sistema usado pelo App Sandbox do macOS).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+O perfil gerado é **permissivo por padrão** (`(allow default)`) e recorta negações, porque um perfil totalmente de negação por padrão torna um shell interativo inutilizável — há chamadas demais de dyld, XPC e Mach para enumerar. A consequência prática é que um agente ainda consegue ler a maior parte do host; seus checkouts registrados são protegidos por negações explícitas de escrita e de renomeação, não por invisibilidade.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **Leituras do sistema de arquivos**: negadas para os caminhos secretos (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` e o resto do conjunto de leitura negada)
+- **Escritas no sistema de arquivos**: redefinidas para negar e depois permitidas em subcaminhos explícitos, com os caminhos de negação obrigatória (arquivos rc do shell, `.git/hooks`, a configuração do Claude, checkouts protegidos) bloqueados mesmo dentro de uma raiz gravável. `file-write-unlink` é negado em todo caminho negado e em seus ancestrais, de modo que uma renomeação não pode contornar uma negação de escrita
+- **Processos**: negações de `process-exec` para os binários sempre perigosos, além de um bloqueio à execução de qualquer coisa a partir de um diretório gravável
+- **Rede**: restrita às portas do proxy em processo mais o DNS — o loopback não é permitido de forma irrestrita e sockets Unix não são permitidos. Os proxies aplicam a lista de permissões de domínios por sessão (veja [Saída de rede](#saída-de-rede))
+- **Configuração**: os perfis são gerados a cada inicialização a partir do `SandboxSpec`
 
-Requirements:
+Requisitos:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), presente em toda instalação do macOS — nenhuma ferramenta adicional é necessária
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+Usa o bubblewrap (`bwrap`) para criar namespaces de montagem e de PID.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **Sistema de arquivos**: cria um namespace de montagem com apenas os caminhos vinculados visíveis
+- **Rede**: roda em um namespace de rede não compartilhado; o tráfego chega aos proxies do host por pontes de socket Unix do `socat`
+- **Processos**: isolamento de namespace de PID
 
-Requirements:
+Requisitos:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- `bubblewrap` e `socat` instalados (`sudo apt-get install bubblewrap socat` no Debian/Ubuntu)
+- Suporte a namespaces do kernel (padrão no Linux moderno)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+O bubblewrap consegue ocultar um caminho existente, mas não consegue proibir um arquivo `.env`, `*.key` ou `*.pem` *novo* dentro de um bind gravável. A política de despacho padrão exige essas negações por glob de nome de arquivo, então o despacho nativo de agentes hoje **falha de forma fechada no Linux/WSL2 mesmo quando a sondagem encontra o bubblewrap**. Ele não roda com uma política silenciosamente mais fraca. É preciso um backend com regras de nome de arquivo no momento da criação para restaurar o despacho nativo no Linux. Desativar o sandbox é uma desativação explícita e sem confinamento, não uma alternativa equivalente.
 
-## None backend
+## Backend `none`
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+Nenhum sandbox. O processo roda diretamente no host, com o acesso a sistema de arquivos, rede e processos do host. O ACP e a ferramenta `bash` do harness ainda recebem a sanitização do ambiente e a política de comandos; o Claude Code pelo `NoSandboxAdapter` herda o ambiente do host. É para isso que o despacho de agentes recorre em um host sem backend disponível ou com `--sandbox off`, e é o padrão do terminal quando um cliente não nomeia nenhum.
 
-## Server-hosted terminal
+## Terminal hospedado no servidor
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+O terminal roda em sandbox nos próprios termos, não pela sondagem do despacho. O `defaultBackend` de `TerminalSessionService` é `none` e o `cc_server` não o sobrescreve, então uma sessão de terminal executa o shell do host a menos que o cliente peça `native` explicitamente — o painel de terminal do desktop não pede.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+Quando `native` é solicitado, o shell é envolvido pelo `SandboxManager` sob um perfil de terminal fixo: `$HOME` e o diretório de trabalho da sessão são graváveis, a rede fica aberta e a leitura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains` é negada. O condicionamento por capacidade não se aplica — isso é uma questão do despacho. Se o envolvimento não for suportado, a sessão falha em vez de mostrar um selo nativo sobre um PTY do shell do host.
 
-## Network egress
+## Saída de rede
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+Quando um sandbox é iniciado, o acesso de rede de saída é aplicado por proxies em processo, não por regras de firewall do kernel. Em um host sem backend disponível nada disso se aplica, e um processo gerado chega à rede exatamente como o próprio usuário do servidor chegaria.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- O runtime do sandbox executa um proxy HTTP/HTTPS e um proxy SOCKS5 em `127.0.0.1` dentro do processo do `cc_server`, **um par por sessão restrita** (`http_proxy.dart`, `socks_proxy.dart`). Execuções simultâneas não compartilham um par.
+- Processos em sandbox recebem variáveis de ambiente de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → o proxy HTTP, `ALL_PROXY` → o proxy SOCKS; `GIT_SSH_COMMAND` encaminha git-over-SSH pelo proxy SOCKS). No Linux o namespace de rede não é compartilhado, então os proxies são a única saída; no macOS o sandbox compartilha o loopback do host e fala com eles diretamente.
+- O host de destino de cada conexão é comparado com a lista de permissões de domínios da sessão; qualquer outra coisa é negada. Há duas formas de curinga, cada uma com exatamente um `*`: um `*.example.com` no início casa com qualquer subdomínio (incluindo `a.b.example.com`), mas não com o próprio domínio raiz; um `bedrock.*.amazonaws.com` com rótulo no meio casa exatamente com um rótulo (`bedrock.us-east-1.amazonaws.com`, não `bedrock.evil.attacker.amazonaws.com`).
+- A lista de permissões é resolvida por sessão a partir da base curada (`kBaselineAllowedDomains`: provedores de LLM, hospedagem de Git, registros de pacotes), mais os domínios do GitHub quando o agente tem as capacidades de GitHub ou de push, mais `SandboxSpec.egressAllowlist`. O resolvedor também aceita domínios de provedores de tickets quando o agente pode chamar tickets, mas o caminho de despacho nunca passa essa lista (nem entradas extras de `egressAllowlist`), então na prática toda execução recebe a base mais os domínios do GitHub que suas capacidades lhe garantem.
+- Uma lista fixa de negação (`kBaselineDeniedDomains`: endpoints de metadados de nuvem, destinos de telemetria) tem precedência sobre todas as permissões.
+- `networkEnabled: false` (ou um agente sem a capacidade de rede) ainda inicia os proxies por sessão, mas a lista de permissões fica vazia, então toda conexão de saída é recusada.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+A especificação passada para `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| Campo             | Tipo                                        | Descrição                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId` | `String` | Identificador estável da sessão (normalmente o id do espaço) |
+| `workspaceId` | `String` | Id do espaço de trabalho proprietário |
+| `agentId` | `String?` | Agente atualmente vinculado ao sandbox, se houver |
+| `bindMounts` | `List<SandboxBindMount>` | Montagens host→guest; o sandbox vê apenas os caminhos do host listados aqui |
+| `networkEnabled` | `bool` (padrão `true`) | Combinado com a capacidade de rede do agente. Quando desativado, os proxies por sessão ainda iniciam, mas a lista de permissões fica vazia, então toda conexão de saída é recusada |
+| `egressAllowlist` | `List<String>` (padrão `[]`) | Domínios de saída adicionais permitidos; curingas são suportados (`*.example.com`, além de uma forma intermediária de um único rótulo). O despacho nunca preenche isto, então uma execução envolvida recebe a base curada mais os domínios do GitHub que suas capacidades lhe garantem |
+| `guestWorkdir` | `String?` | Diretório de trabalho padrão dentro do sandbox; chamadas `exec` individuais podem sobrescrevê-lo |
+| `mode` | `Mode` (padrão `chat`) | Recorta as regras de escrita do sistema de arquivos: `chat` mantém as montagens bind graváveis; `review`, `plan` e `orchestrate` são somente leitura |
+| `capabilities` | `AgentCapabilities` (padrão `safeDefault`) | Deriva a decisão de ligar ou desligar a rede e os domínios de saída do GitHub. Os domínios de tickets são um argumento do resolvedor que o caminho de despacho nunca fornece |
+| `protectedPaths` | `List<String>` (padrão `[]`) | Caminhos do host que nunca podem ser graváveis dentro do sandbox, em nenhum modo |
+| `runnerStateDirs` | `List<String>` (padrão `[]`) | Diretórios do host onde o runner mantém o próprio estado, graváveis em todos os modos (um `CLAUDE_CONFIG_DIR` gerenciado pelo Control Center é o atual) |
+| `execGrantRoots` | `List<String>` (padrão `[]`) | Árvores de diretórios aprovadas pelo operador que reabrem o bloqueio de exec em diretórios graváveis no macOS. O Linux as ignora — o bwrap não tem nenhum bloqueio de exec em `$HOME` a reabrir |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` contém os checkouts originais dos repos registrados, resolvidos a cada despacho a partir dos repos do espaço de trabalho. Os agentes trabalham exclusivamente em worktrees de copy-on-write por conversa, então os originais nunca podem ser graváveis de dentro do sandbox — no macOS, a permissão geral de escrita do Seatbelt sobre `$HOME` os deixaria graváveis via `bash` caso contrário. Eles se juntam ao conjunto de negação de escrita de segredos em todos os modos, `chat` incluído.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+Todo caminho de leitura negada e de escrita negada é emitido tanto na sua forma literal quanto na sua forma resolvida por symlink. O kernel casa uma regra de negação com o caminho resolvido, então uma regra escrita contra um caminho com symlink nunca dispara — e no macOS esse é o caso comum, e não o exótico, já que `/tmp` resolve para `/private/tmp` e `/var/folders/…` para `/private/var/folders/…`. Entradas que contêm `*` ou `?` são tratadas como globs e deixadas como estão; um caminho que não resolve é mantido como escrito.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| Campo       | Tipo                     | Descrição                                                                                             |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath` | `String` | Caminho absoluto no host |
+| `guestPath` | `String` | Caminho dentro do sandbox (com o sandbox nativo isto é igual a `hostPath`; mantido por simetria entre adaptadores) |
+| `readOnly` | `bool` (padrão `false`) | Monta como somente leitura quando verdadeiro |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+Retornado por `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| Campo       | Tipo                   | Descrição                                                              |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String` | Identificador da sessão |
+| `backend` | `SandboxBackend` | Qual backend está rodando |
+| `state` | `SandboxState` | Estado de ciclo de vida |
+| `error` | `Object?` | Definido quando `state` é `error` |
+| `details` | `Map<String, Object?>` | Contabilidade interna do adaptador (diretório de trabalho, PID, caminho do perfil etc.) |
 
 ### SandboxState
 
-| State       | Description                                 |
+| Estado       | Descrição                                 |
 | ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| `created` | Especificação criada, mas a VM ainda não iniciou |
+| `warm` | Em execução e pronta para executar comandos |
+| `active` | Executando um comando no momento |
+| `suspended` | Pausado / com checkpoint em disco para economizar RAM |
+| `destroyed` | Desmontado; o handle não é mais válido |
+| `error` | A inicialização falhou — veja `SandboxHandle.error` |
 
-## Sandbox events
+## Eventos do sandbox
 
-| Event type  | Description                                                  |
+| Tipo de evento  | Descrição                                                  |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout` | Saída padrão do sandbox |
+| `stderr` | Erro padrão do sandbox |
+| `exit` | O processo do sandbox saiu (carrega `exitCode`) |
+| `starting` | O sandbox está iniciando |
+| `ready` | O sandbox está pronto para aceitar chamadas exec |
+| `killed` | Processo morto pelo host (OOM, timeout, parada manual) |
+| `violation` | Uma política do sandbox foi violada (carrega um `SandboxViolation`) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| Campo                 | Tipo      | Descrição                                                                |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action` | `String` | O verbo negado (por exemplo, `file-read*`, `network-outbound`) |
+| `target` | `String` | Caminho ou host que foi alvo da operação negada |
+| `suggestedCapability` | `String?` | A flag de capacidade que permitiria esta ação (por exemplo, `canCallGitHubApi`) |
+| `raw` | `String?` | Linha de log bruta, útil para depuração |
 
-## See also
+## Veja também
 
-- [Sandbox security](/pt-BR/manual/conceitos/sandbox-e-seguranca/)
-- [Sandbox policies](/pt-BR/manual/guias/politicas-de-sandbox/)
-- [Guardrails](/pt-BR/manual/conceitos/barreiras/)
-- [cc_server CLI](/pt-BR/manual/referencia/cc-server-cli/): the `--sandbox` flag
+- [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/)
+- [Políticas de sandbox](/pt-BR/manual/guias/politicas-de-sandbox/)
+- [Barreiras](/pt-BR/manual/conceitos/barreiras/)
+- [CLI do cc_server](/pt-BR/manual/referencia/cc-server-cli/): a flag `--sandbox`

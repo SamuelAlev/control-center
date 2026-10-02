@@ -1,185 +1,180 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: ใช้โหมดโฟกัสและซาวด์สเคป
+description: รันเซสชันโฟกัสแบบจับเวลาพร้อมปิลล์นับถอยหลังลอยตัวและการแจ้งเตือนที่ถูกระงับ และปรับแต่งซาวด์สเคปแบบปรับตัวที่เล่นอยู่ข้างใต้
 dateModified: 2026-08-17
 slug: th-TH/คู่มือ/วิธีทำ/โหมดโฟกัส
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+คู่มือนี้แสดงวิธีรันเซสชันโฟกัส: ช่วงเวลาที่จับเวลาได้ ซึ่งระหว่างนั้น
+Control Center จะระงับการแจ้งเตือนที่ไม่เร่งด่วนและลอยปิลล์นับถอยหลังไว้เหนือ
+หน้าต่างอื่น ๆ ของคุณ นอกจากนี้ยังครอบคลุมถึงซาวด์สเคปที่ (โดยค่าเริ่มต้น) เล่น
+อยู่ข้างใต้ — แทร็กแอมเบียนต์ไม่รู้จบที่เซิร์ฟเวอร์ของคุณสังเคราะห์แบบสด ๆ
+โดยปรับรูปร่างตามอารมณ์ที่คุณเลือก สภาพอากาศภายนอก และชั่วโมงของวัน
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+เซสชันโฟกัสเป็นฟีเจอร์ระดับเชลล์ มันไม่ผูกกับเสาใด — ไม่เปลี่ยนเลย์เอาต์
+ไม่ซ่อนแถบข้าง และไม่แก้ไขพื้นผิวการรีวิว PR
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[เฉพาะเดสก์ท็อป]
+ปิลล์ลอยและมินิเพลเยอร์แบบแยกหน้าต่างของซาวด์สเคปเป็นหน้าต่างพี่น้องแบบเนทีฟ
+ที่ถูกเมานต์โดยบูตสแตรปของเดสก์ท็อปเท่านั้น เว็บบิลด์ที่ `app.usectrl.dev`
+ไม่มีทั้งสองอย่าง และไม่มีไปป์ไลน์การแจ้งเตือนของระบบปฏิบัติการ
+เซสชันโฟกัสจึงไม่มีอะไรให้แสดงหรือระงับที่นั่น แผงซาวด์สเคปและการเล่นของมัน
+ทำงานได้ทุกที่ที่คุณเชื่อมต่อกับเซิร์ฟเวอร์
 :::
 
-## Start a focus session
+## เริ่มเซสชันโฟกัส
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. คลิกไอคอนโฟกัสทางขวาของแถบชื่อเรื่อง (ป้ายเครื่องมือ **เริ่มเซสชันโฟกัส**)
+2. ในไดอะล็อก พิมพ์ **เป้าหมาย** แบบไม่บังคับ — สิ่งที่คุณกำลังทำอยู่
+3. เลือก **ระยะเวลา**: 25m, 50m, 1h, 1h 30m หรือ 2h ค่าเริ่มต้นคือ 50m และ
+   ตัวเลือกครั้งล่าสุดของคุณจะถูกจดจำไว้
+4. กด **เริ่ม**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+จุดตรวจสอบ: ปุ่มบนแถบชื่อเรื่องจะถูกแทนที่ด้วยชิปสีเน้นที่แสดงนาทีที่เหลือ
+ปิลล์ลอยจะปรากฏเหนือหน้าต่างอื่น ๆ ของคุณ และ — เมื่อ **เริ่มกับโหมดโฟกัส**
+เปิดอยู่ — ซาวด์สเคปจะเริ่มเล่น
 
-Two other entry points reach the same session:
+อีกสองจุดเข้าถึงเซสชันเดียวกันนี้:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → เริ่มเซสชันโฟกัส** เปิดไดอะล็อกเดียวกัน
+- **⌘⇧⌥F** เริ่มเซสชันทันทีด้วยระยะเวลาที่จดจำไว้และไม่มีเป้าหมาย — ข้าม
+  ไดอะล็อกไป การกดอีกครั้งจะจบเซสชัน
 
-## Read the floating pill
+## อ่านปิลล์ลอย
 
-The pill is a small frameless window you can drag anywhere. It shows:
+ปิลล์คือหน้าต่างเล็ก ๆ ที่ไม่มีกรอบซึ่งคุณลากไปที่ใดก็ได้ มันแสดง:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- จุดแสดงการออนไลน์แบบสดและเวลาที่เหลือในรูปแบบ `mm:ss`
+- เป้าหมายของคุณ หรือ “เซสชันโฟกัส” เมื่อคุณไม่ได้ตั้งไว้
+- แถบความคืบหน้าบาง ๆ ตามขอบล่าง
 
-Hover it to reveal two actions:
+ชี้เมาส์ค้างไว้เพื่อเผยสองการกระทำ:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **หยุดชั่วคราว** / **เล่นต่อ** — หยุดการนับถอยหลัง การหยุดชั่วคราวเกิดเฉพาะ
+  ในปิลล์เท่านั้น ตัวเซสชันยังคงทำงานอยู่
+- **เสร็จสิ้น** — จบเซสชัน
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+ปิลล์ยึดชุดสีมืดไว้ไม่ว่าหน้าต่างหลักจะใช้ธีมใด เพราะมันลอยอยู่เหนือเนื้อหา
+เดสก์ท็อปตามอำเภอใจ
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+ถ้าคุณปิดปิลล์จากแถบชื่อเรื่อง เซสชันจะยังทำงานต่อไป กดปุ่มภาพซ้อนภาพข้าง ๆ
+ชิปโฟกัส (ป้ายเครื่องมือ **ย่อเป็นแถบ**) เพื่อนำมันกลับมา
 
-## Know what gets suppressed
+## รู้ว่าอะไรถูกระงับ
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+ขณะที่เซสชันทำงานอยู่ Control Center จะทิ้งการแจ้งเตือนทุกอย่างยกเว้นสองหมวดหมู่
+ซึ่งถูกส่งเสมอ:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **การประชุมกำลังจะเริ่ม** — การแจ้งเตือนการประชุมที่คุณเห็นหลังจากนั้นก็ไร้ค่า
+- **PR ถูกเผยแพร่แล้ว**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+ทุกอย่างอื่นจะถูกระงับอย่างเงียบ ๆ ตลอดทั้งเซสชัน — ไม่มีเสียง ไม่มีทอสต์ของ
+ระบบปฏิบัติการ การแจ้งเตือนที่ถูกระงับจะไม่ถูกเข้าคิวไว้ส่งภายหลัง
 
-## Play a soundscape
+## เล่นซาวด์สเคป
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. คลิกไอคอนลำโพงทางขวาของแถบชื่อเรื่อง (ป้ายเครื่องมือ **ซาวด์สเคป**)
+   เพื่อเปิดแผง
+2. เลือก **อารมณ์** — **โฟกัส**, **รุ่ง**, **ผ่อนคลาย** หรือ **นอน**
+3. กด **เล่น**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+จุดตรวจสอบ: การ์ด **กำลังเล่น** บอกชื่อฉากปัจจุบัน — สภาพอากาศ ณ ตำแหน่งของ
+เวิร์กสเปซของคุณ อุณหภูมิเป็น °C และป้ายชื่อตำแหน่ง ขณะที่มันขึ้นว่า “กำลังจูน
+บรรยากาศ…” ฉากยังคงกำลังคำนวณอยู่
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+แทร็กนี้ไม่ใช่ลูป เซิร์ฟเวอร์ของคุณสังเคราะห์มันอย่างต่อเนื่องจากอารมณ์ สภาพอากาศ
+สด ณ ตำแหน่งของเวิร์กสเปซ และช่วงเวลาของวัน ฝนให้เสียงสว่างและคึกคัก พายุให้เสียง
+ดังและมีลมกระโชก หมอกให้เสียงทึบมัว กลางคืนมืดกว่าและก้องกังวานกว่าเที่ยงวัน
+อารมณ์เป็นตัวกำหนดคำศัพท์:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| อารมณ์   | เสียง                                                                                  |
+| -------- | -------------------------------------------------------------------------------------- |
+| โฟกัส    | แอมเบียนต์นุ่มนวลและตื่นตัวพร้อมพัลส์ต่ำ — มีไว้เป็นฉากหลังให้กับงาน                     |
+| รุ่ง     | ทำนองที่พุ่งพล่านพร้อมพัลส์นุ่ม ๆ — สำหรับเวลาที่งานรู้สึกหนักหนา                        |
+| ผ่อนคลาย | แพดที่อบอุ่นกว่าและกลมกลืนกว่า ไม่มีจังหวะ                                               |
+| นอน      | เสียงโดรนต่ำที่แทบไม่มีเหตุการณ์ใด ๆ รีเวิร์บลึก                                          |
 
-Switching mood while playing hands playback to the new mood without stopping.
+การสลับอารมณ์ระหว่างเล่นจะส่งการเล่นต่อไปยังอารมณ์ใหม่โดยไม่หยุด
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+แผงนี้ยังเข้าถึงได้จาก ⌘K ใต้หมวดหมู่ **โฟกัส** ถัดจากเซสชันโฟกัสเอง
 
-## Shape the sound
+## ปรับรูปร่างเสียง
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **ปรับ** (โฟกัส รุ่ง และผ่อนคลาย) — แผ่นสี่เหลี่ยมจัตุรัสที่มีลูกกลมลากได้
+  แกนนอนคือ **นุ่ม** ถึง **มีพลัง** (เกิดอะไรขึ้นมากแค่ไหน) แกนตั้งคือ **โปร่ง**
+  ถึง **สว่าง** (เสียงเปิดกว้างแค่ไหน) แตะสองครั้งที่แผ่นเพื่อรีเซ็ตกลับไปที่
+  จุดกลางที่เป็นกลาง ปุ่มลูกศรเลื่อนลูกกลมได้ทีละนิด การปรับของคุณถูกจดจำแยก
+  ตามอารมณ์ และการปรับจะค่อย ๆ ผสานเข้าสู่มิกซ์ที่กำลังเล่น — สตรีมไม่เคย
+  รีสตาร์ต อารมณ์นอนปรับไม่ได้โดยการออกแบบ
+- **ระดับเสียง** — สไลเดอร์ตั้งแต่ 0 ถึง 100% ค่าเริ่มต้น 60% แยกจากระดับเสียง
+  ของระบบ และถูกจดจำไว้
+- **ตำแหน่ง** — ตรวจพบอัตโนมัติจากเวิร์กสเปซ กด **รีเฟรชสภาพอากาศ** เพื่อดึง
+  ฉากใหม่
 
-## Pop out the mini player
+## แยกมินิเพลเยอร์ออกมา
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+ขณะที่เสียงกำลังเล่น แถบชื่อเรื่องจะเพิ่มปุ่มที่สอง (ป้ายเครื่องมือ **แยกเครื่องเล่น**)
+มันลอย HUD ขนาดเล็กที่อยู่ด้านบนสุดเสมอ พร้อมปุ่มเล่น/หยุดชั่วคราว
+สัญลักษณ์สภาพอากาศ ชื่อฉาก และปุ่ม **กลับไปแอป** — สะดวกเมื่อเซสชันโฟกัส
+ทำให้คุณไปอยู่แอปอื่นโดยสิ้นเชิง
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+การหยุดชั่วคราวจากมินิเพลเยอร์ไม่ได้ปิดมันทิ้ง มีเพียงปุ่มปิดของมัน
+(หรือการออกจากแอป) เท่านั้นที่ทำให้มันหายไป
 
-## Run them together
+## ใช้ทั้งสองอย่างร่วมกัน
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+ทั้งสองฟีเจอร์ผูกเข้าด้วยกันด้วยสวิตช์เดียวในแผงซาวด์สเคป: **เริ่มกับโหมดโฟกัส**
+ซึ่งเปิดเป็นค่าเริ่มต้น
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- การเริ่มเซสชันโฟกัสจะเริ่มซาวด์สเคปหากยังไม่มีอะไรเล่นอยู่
+- การจบเซสชัน — ไม่ว่าจะจบด้วยวิธีใด รวมถึงเมื่อตัวจับเวลาหมด — จะหยุดมัน
+  แม้ว่าคุณจะเริ่มซาวด์สเคปด้วยมือก็ตาม
 
-Turn the switch off to keep the two independent.
+ปิดสวิตช์เพื่อให้ทั้งสองทำงานอย่างอิสระจากกัน
 
-## End a session
+## จบเซสชัน
 
-Any one of these ends it:
+วิธีใดวิธีหนึ่งต่อไปนี้จะจบมัน:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- คลิกชิปโฟกัสในแถบชื่อเรื่อง (ป้ายเครื่องมือ **โหมดโฟกัสกำลังทำงาน — แตะเพื่อจบ**)
+- กด **เสร็จสิ้น** บนปิลล์
+- กด **⌘⇧⌥F**
+- เลือก **ออกจากโหมดโฟกัส** ใน ⌘K
+- ปล่อยให้ตัวจับเวลาหมด — เซสชันจะจบอัตโนมัติเมื่อถึงศูนย์
 
-The pill closes, notifications resume immediately and the soundscape stops.
+ปิลล์ปิดลง การแจ้งเตือนกลับมาทันที และซาวด์สเคปหยุด
 
-## Understand what does not persist
+## เข้าใจว่าอะไรไม่คงอยู่
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+เซสชันมีชีวิตอยู่เพียงหนึ่งรอบการทำงานของแอปเท่านั้น ออกจาก Control Center แล้ว
+เปิดใหม่ คุณจะเริ่มในสถานะไม่ทำงานพร้อมตัวจับเวลาที่รีเซ็ตแล้ว แม้จะอยู่กลาง
+เซสชัน — ไม่มีการกู้คืนหลังแครชและไม่มีประวัติเซสชัน
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+มีเพียงสองสิ่งเท่านั้นที่คงอยู่: ระยะเวลาที่คุณต้องการและแฟล็กบล็อกการแจ้งเตือน
+ส่วนเป้าหมาย เวลาที่ผ่านไป และสถานะเปิดของปิลล์ไม่คงอยู่
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+การเล่นก็ชั่วคราวพอ ๆ กัน — ซาวด์สเคปถูกหยุดเสมอตอนเปิดแอป อารมณ์ ระดับเสียง
+และการปรับแยกตามอารมณ์ของคุณคงอยู่ แต่สตรีมเองไม่เคยกลับมาเล่นเอง
 
-## Troubleshooting
+## การแก้ไขปัญหา
 
-### The tune pad is missing
+### แผ่นปรับหายไป
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+คุณอยู่ที่อารมณ์นอน ซึ่งจงใจให้ปรับไม่ได้ สลับไปที่โฟกัสหรือผ่อนคลายเพื่อให้
+แผ่นกลับมา
 
-### Nothing plays after restarting the app
+### ไม่มีเสียงเล่นหลังรีสตาร์ตแอป
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+เป็นไปตามการออกแบบ — การเล่นถูกหยุดเสมอเมื่อเปิดแอป เปิดแผงแล้วกด **เล่น**
+อีกครั้ง ถ้ายังเงียบอยู่ ให้ตรวจสอบสไลเดอร์ระดับเสียงของแผง ซึ่งแยกจากระดับเสียง
+ของระบบ
 
-### The weather or temperature looks wrong
+### สภาพอากาศหรืออุณหภูมิดูไม่ถูกต้อง
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+ฉากจะตามตำแหน่งของเวิร์กสเปซที่ใช้งานอยู่ กด **รีเฟรชสภาพอากาศ** ในแผงเพื่อดึงใหม่
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Configure notifications](/th-TH/คู่มือ/วิธีทำ/การแจ้งเตือน/)
-- [Keyboard shortcuts](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/)
+- [ตั้งค่าการแจ้งเตือน](/th-TH/คู่มือ/วิธีทำ/การแจ้งเตือน/)
+- [ทางลัดแป้นพิมพ์](/th-TH/คู่มือ/อ้างอิง/ทางลัดแป้นพิมพ์/)

@@ -1,156 +1,158 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: Slash komutları
+description: Yazı alanına yazabileceğiniz her komut; ne yaptığı ve nerede çalıştığı.
 slug: tr-TR/kilavuz/referans/slash-komutlari
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+Bir alanın yazı alanına yazılan komutlar. Etki ettikleri yere göre üç gruba ayrılırlar ve bu fark önemlidir: **yerel** bir komut hiçbir zaman mesaj olarak iletilmez; bu yüzden ne transkriptte görünür ne de bir ajana ulaşır.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Nerede çalışır | Bu ne demek                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| **Yerel**      | İstemcide (veya istemcinin başlattığı bir sunucu işleminde) ele alınır. Komut hiçbir zaman mesaj olarak iletilmez; bu yüzden onu hiçbir ajan görmez. |
+| **Yanal**      | Konuşma hakkında sunucu tarafında tek bir model çağrısı. Konuşma değişmez.                          |
+| **Gönderim**   | Mesajın başlattığı çalıştırma için bir mod veya yönerge belirler.                                   |
 
 ---
 
-## Directing a run
+## Bir çalıştırmayı yönlendirme
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Yerel → gönderim.** Konuşmada plan modunu devreye alır: tamamen salt okunur bir çalışma ağacı ve `read` ile sınırlanmış bir araç yüzeyi. Ajanın teslimatı bir düzenleme değil, bir plandır. Yalın bir `/plan` yalnızca modu değiştirir ve hiçbir zaman mesaj olarak iletilmez; bir istemle birlikte verildiğinde çalıştırmayı başlatan şey satırın geri kalanıdır.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Gönderim.** Hedef gözetmeninin segmentler arasında yeniden gönderdiği ve yeniden başlattığı özerk bir hedefi başlatır.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+`/goal` komutunu önce metinle yazmak **Hedefi netleştir** görüşmesini açar — bir taslağı şu beş şeyin tamamı gelmeden kabul etmeyi reddeden kısa bir geçiş: bir değerlendiricinin kendi yargısına başvurmadan karara bağlayabileceği başarı ölçütleri, tam bir doğrulama komutu, bir deneme üst sınırı, kapsam sınırları ve durma koşulları. Her adım *Atla ve yazıldığı gibi çalıştır* seçeneğini sunar: bu görüşme bir varsayılan, kapı değil.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume` ve `/goal drop` slash komutları değildir. Duraklatma, devam etme ve durdurma, kenar çubuğundaki konuşmanın hedef listesinde bulunur. Hedefin kendisine verilen başlangıç bayrakları `--budget <dollars>`, `--max <N>` (çalıştırma bütçesi) ve `--days <N>` (son tarih) şeklindedir. Maliyet tavanına takılan bir hedef, yalnızca o tavan yükseltilerek devam eder; bu da aynı kenar çubuğu denetiminden yapılır.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Neden araya giriyor]
+Özerk bir hedef, belirsiz bir brifingin gerçekten pahalıya mal olduğu tek yerdir. Çalıştırma, “bitti”nin ne demek olduğunu kimsenin tanımlamadığı bir hedef üzerinde saatlerce çalışır ve ardından başarıyı kendi ölçütlerine göre bildirir. Beş soru, kendini ne zaman bitmiş hissettiyse o zaman biten bir gece boyu çalıştırmadan daha ucuzdur.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Gönderim.** Tamamlanana kadar yinelemeli olarak çalışır. Bir sınır kabul eder: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Bir sınıra *benziyorsa* (bir rakamla veya bir işaretle başlıyorsa) ve ayrıştırılamıyorsa, o token kesin bir hatadır. Düz metin düz metindir; bu yüzden `/loop keep going until the tests pass` yanlış bir ayrıştırma değil, satır içi istemi olan sınırsız bir döngüdür.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/).
+**Gönderim.** Oturumu bir **yönlendirici**ye dönüştürür: kendi araçları `read` artı beş worker fiiline düşer ve düzenlemeleri arka plan worker'ları yapar. Bkz. [Arka plan worker'larını yönetme](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/).
 
-Workers never outlive the mode — exiting kills every one of them.
+Worker'lar moddan daha uzun yaşamaz — moddan çıkmak hepsini öldürür.
 
 ---
 
-## Managing context
+## Bağlamı yönetme
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Yerel → sunucu.** Daha eski geçmişi bağlanmış bir özete katlar ve sıkıştırılmış bağlam üzerinde devam eder. Modele dönük hiçbir argümanı yoktur: komut hiçbir zaman mesaj olarak iletilmez ve sıkıştırma geçişi bir odak ipucu almaz.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Yerel → sunucu.** Ağır içeriği **özetlemeden** atar: model çağrısı yok, her kelime korunur, yalnızca kimsenin bir daha okumayacağı yığın boşaltılır.
 
-| Target        | Drops                             |
+| Hedef         | Attığı                            |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Olaysız geçen eski araç sonuçları (varsayılan) |
+| `images`      | Eski ekran görüntüleri; metinleri korunur |
+| `all`         | Her ikisi                         |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Bu, “bağlamım şişti ama özet istemiyorum” diyenler için kaçış kapısıdır.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Yerel.** Bu konuşmanın ajanı için bağlam gezginini kendi sekmesinde açar:
+bağlam penceresinin her segmenti ve her parçası — sistem istemi, beceriler,
+bağlam dosyaları, araç şemaları, geçmiş ve görüntüler — her birinin maliyeti ve
+arkasındaki birebir içerikle birlikte.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+Sekme (alan, ajan) çiftine göre anahtarlanır; bu yüzden komutu iki kez çalıştırmak
+aynı dökümün kopyalarını üst üste yığmak yerine tek sekmeye yeniden odaklanır.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+**Birden fazla ajanı** olan bir alanda yalın bir `/context`, başlıktaki bağlam
+kullanımı göstergesinin okuduğu pencereyi açar — burada en son çalışmış olan ajan,
+yani iletisi iletiler dizisinin en altında duran ajan — ve sekme `Bağlam · <name>`
+olarak etiketlenir, böylece kimin bağlamı olduğu anlaşılır. Değiştirmek için başka
+bir ad verin: `/context qa` (`@` isteğe bağlıdır). Yazılan bir ad tam olarak
+çözümlenir, asla bulanık biçimde değil: iki ajan iki farklı pencere tutar;
+dolayısıyla diğerini açan bir yakın isabet, sormadığınız bir soruya makul görünen
+bir yanıt olurdu.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Aynı gezgin, alan başlığındaki ve aynı ajanı izleyen bağlam kullanımı göstergesi
+çipinin arkasındadır — komut ile çip, burada “bağlam”ın ne anlama geldiği
+konusunda asla ayrı düşemez.
 
 ---
 
-## Asking about the conversation
+## Konuşma hakkında soru sorma
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Bunlar bir model çağrısı harcar ve **konuşmayı asla değiştirmez**. Ajanın bir sonraki gerçek turu, zaten göreceği şeyin tam olarak aynısını görür; sormanın bütün değeri de budur.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Yanal.** İşi sıfırdan devralan kişi için bir devir belgesi yazar: görev nedir, neler öğrenildi, geriye ne kaldı.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Yanal.** Şimdiye kadarki işle ilgili bir soruyu, soruyu da yanıtı da transkripte eklemeden yanıtlar.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[İki komut, tek uygulama]
+İkisi de aynı biçimdedir — konuşmayı olduğu gibi al, ona dair tek bir soru sor, iki tarafı da kalıcı hale getirme. “Şimdiye kadarki bağlam” konusunda iki farklı anlayışa kaymasınlar diye tek kez uygulandılar.
 :::
 
 ---
 
-## Navigating and exporting
+## Gezinme ve dışa aktarma
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/tr-TR/kilavuz/nasil-yapilir/konusmayi-dallandirma/).
+**Yerel.** Ağaç gezginini açar: konuşmanın nerede çatallandığını, şu anda hangi yolda olduğunu ve bıraktığınız bir yola nasıl geri döneceğinizi gösterir. Bkz. [Bir konuşmayı dallandırma](/tr-TR/kilavuz/nasil-yapilir/konusmayi-dallandirma/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Yerel.** Konuşmayı kendi kendine yeten bir HTML dosyasına yazar — katlanabilir araç kartları, stil sayfası yok, betik yok, görsel sunucusu yok. Masaüstünde `Documents/ControlCenter/exports/` altına düşer, web'de indirilir.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Yerel.** Transkripti, araç çağrıları katlanabilir bloklar hâlinde olacak şekilde panoya markdown olarak kopyalar. Akıl yürütme bilinçli olarak dışarıda bırakılır: bir hata bildirimine yapıştırılan transkripti bir insan okur.
 
 ---
 
-## Everything else
+## Geri kalan her şey
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Yerel.** Konuşmanın kalıcılaştırılmış todo listesini görüntüler ve düzenler. Yalın bir `/todo` düzenleyiciyi açar. Alt komutlar: `append`, `start`, `done`, `drop` (`rm` takma adı), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Gönderim.** Kurulu bir beceriyi uygular. Beceriler kendi `skill:` önekleri altında yaşar; böylece yerleşiklerle aynı ad alanını paylaşmazlar — bu olmasaydı `plan` adlı bir beceri kalıcı olarak erişilemez olurdu.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Gönderim.** Depoda `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` veya `.opencode/commands` altındaki herhangi bir markdown dosyası. İç içe bir `foo/bar.md` dosyasına `foo:bar` olarak da ulaşılır.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Şablonlama: `$1`, `$@`, `$@[start:length]` ve `$ARGUMENTS`. Frontmatter `description` ayarlayabilir (yazı alanı otomatik tamamlaması). `allowed-tools` ve `model` dosyadan ayrıştırılır, ancak bir kullanıcı komutu çağrısı şu anda yalnızca argümanları gövdeye yerleştirir — çalıştırmanın modelini veya araç yüzeyini değiştirmezler.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Kullanıcının kendi yazdığı bir komut, aynı adı taşıyan bir beceriyi yener — bu, bir insanın bilerek argümanlarla çağırdığı bir kısayoldur.
 
 ---
 
-## Magic keywords
+## Sihirli anahtar sözcükler
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Komut değildirler. Bir istemin herhangi bir yerinde tek başına duran küçük harfli bir sözcük, o tura gizli bir yönerge ekler.
 
-| Word          | Effect                                                             |
-| ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| Sözcük        | Etki                                                             |
+| ------------- | ---------------------------------------------------------------- |
+| `ultrathink`  | Tur için azami akıl yürütme çabası                              |
+| `orchestrate` | Bağımsız işleri paralel olarak devretme ve her aşamayı doğrulama  |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Eşleştirici, sınırlar konusunda bilinçli olarak katıdır. `orchestrate,` eşleşir; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` ve `orchestrate()` eşleşmez; ayrıca çitli kod blokları, satır içi aralıklar ve XML bölümleri önce maskelenir. Bu olmasaydı, bir yığın izini yapıştırmak ajanın nasıl davrandığını değiştirirdi.
 
 ---

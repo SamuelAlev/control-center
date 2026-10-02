@@ -1,97 +1,102 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Berikan agen mesin untuk menguji
+description: Berikan agen browser, desktop, emulator Android, atau Simulator iOS sekali pakai — dipantau langsung, dengan kontrol yang dapat Anda ambil alih.
 slug: id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**Rig** adalah mesin sekali pakai yang dibuka agen saat ia benar-benar perlu
+mencoba sesuatu: memuat halaman, mengklik aplikasi desktop, atau
+mengetuk-ngetuk ponsel. Anda dapat menontonnya bekerja secara real time, dan
+mengambil alih kontrolnya kapan pun Anda mau.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Rig terminal, browser, dan desktop yang terisolasi adalah VM dengan disk sekali
+pakai dan jaringan yang dijaga gerbang. Android dan iOS adalah emulator yang
+dikelola host: status perangkatnya sekali pakai, tetapi jaringannya mengikuti
+host server.
 
-## Set it up once
+## Siapkan sekali saja
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Rig berjalan di mesin yang menghosting `cc_server` — mesin yang sama, bukan
+mesin yang sedang Anda lihat. Ada lima permukaan yang dihadapi pengguna;
+permukaan desktop dan seluler memerlukan penyiapan host:
 
-| Surface | Runs on | Setup |
+| Permukaan | Berjalan di | Penyiapan |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | microVM yang mem-boot image Ubuntu yang dipin | Tidak ada — image diambil otomatis saat pertama dipakai |
+| **Browser (VM)** | microVM yang mem-boot image Debian yang dipin, dengan Chromium, Firefox, atau WebKit dipasang saat pertama dipakai | Tidak ada — sama |
+| **Komputer (VM)** | QEMU dengan image desktop Linux yang membawa Chromium, Firefox, WebKit, dan baseline CLI ala runner yang dihosting GitHub | Pasang QEMU (`brew install qemu`), lalu **Impor** image desktop di **Pengaturan → Server → Rigs** |
+| **Android** | Emulator Android dari Google | Pasang Android SDK, buat AVD, lalu jalankan (di bawah) |
+| **Simulator iOS** | CoreSimulator di Mac server | Pasang Xcode dan runtime iOS yang diminta, lalu pasang bridge otomatisasi di **Pengaturan → Server → Rigs** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Mesin terminal dan browser boot dari image yang dipin dengan digest: byte
+persisnya ditentukan lebih dulu, diambil sekali saat boot pertama, lalu
+di-cache — setelah boot pertama untuk setiap jenis, mesin berikutnya melewati
+unduhan sepenuhnya dan menyala dalam hitungan detik. **Pengaturan → Server →
+Rigs** menampilkan apa yang dapat di-boot server Anda dan setiap mesin yang
+sedang berjalan saat ini.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Image desktop yang sudah terpasang tetap dapat dikelola dari halaman yang sama:
+**Impor** menggantinya dengan qcow2 yang lebih baru, dan **Hapus** menghapusnya
+sehingga Anda dapat memasang build yang segar.
 
-### Mobile devices are set up differently
+### Perangkat seluler disiapkan dengan cara berbeda
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Tidak ada image milik kami untuk Android atau iOS, dan itu bukan kelalaian.
+Image sistem Android berasal dari SDK Google; runtime iOS berasal dari Xcode.
+Untuk Android, pasang Android Studio (atau alat SDK baris perintah), tambahkan
+perangkat virtual di **Device Manager**, lalu jalankan. Halaman Rigs kemudian
+melaporkan Android sebagai tersedia.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Halaman itu juga memberi tahu persis langkah mana yang belum Anda penuhi —
+tidak ada SDK, tidak ada emulator, tidak ada perangkat virtual, atau perangkat
+yang memang tidak sedang berjalan — karena keempatnya punya perbaikan yang
+berbeda dan hanya satu di antaranya berupa unduhan. Jika Anda menjalankan
+`cc_server` dari shell yang tidak dapat melihat SDK, ekspor variabelnya:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Untuk iOS, server itu sendiri harus berjalan di macOS dengan Xcode dan runtime
+Simulator iOS terpasang. Buka **Pengaturan → Server → Rigs** lalu tekan
+**Instal bridge otomatisasi iOS**. Server mengambil artefak WebDriverAgent yang
+dipin dengan checksum, memverifikasinya, dan memasangnya ke penyimpanan
+otomatisasi milik server. Tidak ada simulator yang boot selama penyiapan.
 
-## Open a machine
+## Buka mesin
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Mesin hadir sebagai **tab**, di samping chat dan diff — di sebuah space atau di
+halaman PR, di menu `+` yang sama, di bawah **Mesin**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Komputer** — desktop Linux dengan Chromium, Firefox, dan WebKit
+- **Chromium**, **Firefox**, atau **WebKit** — sebuah browser
+- **Android** — emulator Android yang sedang berjalan
+- **Simulator iOS** — simulator sekali pakai yang dibuat untuk percakapan ini
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Pilih salah satu lalu tekan **Mulai mesin**. Tab menampilkan tahap boot yang
+sedang berlangsung ("Starting the microVM", "Waiting for the guest to come up")
+alih-alih sekadar berputar.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Tab ini bercakupan percakapan, begitu pula alat agen. Tab Chromium, Firefox,
+atau WebKit dan `browser_use`, Android dan `mobile_use`, atau Simulator iOS dan
+`ios_use` menuju mesin default yang sama. Slot UI tambahan adalah mesin
+pembanding yang terpisah; alat agen selalu memakai yang default.
 
-To build, install and start a Flutter app on Android:
+Untuk mem-build, memasang, dan menjalankan aplikasi Flutter di Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+Lalu panggil `mobile_use` dengan `install_apk` dan
+`build/app/outputs/flutter-apk/app-debug.apk`, disusul `start_app` dan nama
+paket Android. `ui_dump`, tangkapan layar, dan input mengemudikan perangkat
+yang sama dengan yang ditampilkan di tab manusia. `stop_app`,
+`clear_app_data`, `uninstall_app`, `open_url`, dan panggilan `shell` berbentuk
+argv mencakup sisa siklus pengembangan tanpa menjalankan shell di host server.
 
-To build, install and start a Flutter app on iOS Simulator:
+Untuk mem-build, memasang, dan menjalankan aplikasi Flutter di Simulator iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +104,217 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+Lalu panggil `ios_use` dengan `install_app` dan direktori `.app`, disusul
+`start_app` dan bundle identifier yang dicetak oleh `plutil`.
+Alat iOS juga menyediakan `stop_app`, `uninstall_app`, `open_url`, dan aksi
+`spawn` berbentuk argv untuk diagnostik lokal simulator.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Tampilan desktop dan browser menyesuaikan ukuran panel. iOS mempertahankan
+ukuran titik tetap simulator dan memberinya letterbox. Setiap permukaan tetap
+punya dua jalur independen: agen mendapat tangkapan layar kecil yang murah,
+sementara Anda mendapat tampilan langsung. Berpindah tab menghentikan aliran
+manusia sehingga mesin di latar belakang tidak memakan bandwidth tampilan.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Tab rig tidak memulai mesin dengan sendirinya, termasuk saat pemulihan tata
+letak. Aturan itu mencegah peluncuran aplikasi tiba-tiba mem-boot VM atau
+membuat perangkat simulator.
 
-## Drive the machine
+## Kemudikan mesin
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Kanvas dapat Anda ketik dan klik kapan pun tidak ada orang lain yang memegang
+kendali eksklusif — atau saat Anda yang memegangnya. Selama Anda memegang kunci
+itu, tag status berbunyi **Anda memegang kendali**, agen tetap dapat mengambil
+tangkapan layar, dan server menolak tindakan mutasinya di satu titik
+penyempitan yang dilewati setiap tindakan. Semua yang Anda lakukan tercatat
+atas nama Anda.
 
-Press **Stop the machine** when you are done.
+Tekan **Hentikan mesin** setelah selesai.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Kendali bersifat eksklusif dengan sengaja: dua pelaku yang mengetik di satu
+mesin menghasilkan input yang tidak dimaksudkan keduanya.
 
-## Move things in and out
+## Memindahkan konten masuk dan keluar
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Salin dan tempel bekerja di kedua arah melintasi kanvas rig, begitu pula
+menyeret berkas.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Salin dan tempel.** Tekan kombinasi salin di atas kanvas dan apa pun yang
+disalin mesin — teks, gambar, daftar berkas — mendarat di papan klip Anda.
+Tempel mengirim milik Anda ke arah sebaliknya lalu menekan tempel di dalam
+mesin. Di macOS kombinasinya ⌘C/⌘V; ⌃C tetap sampai ke shell tamu sebagai
+interupsi. Di Windows dan Linux gunakan ⌃C/⌃V — tamu menerima penekanan tombol
+yang sama seperti yang akan diterimanya, sehingga ⌃C di terminal tamu tetap
+menjadi interupsi dan papan klip Anda sendiri tidak tersentuh.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Tidak ada yang disinkronkan di latar belakang. Kata sandi yang Anda salin di
+mesin sendiri tidak sampai ke dalam VM karena timer berbunyi; ia melintas saat
+Anda menempel.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Menempel ke rig diizinkan secara default. Menyalin keluar dari rig meminta
+konfirmasi lebih dulu — izin sepuluh menit, atau **Selalu izinkan** di
+**Pengaturan → Server → Rigs → Akses papan klip**. Kedua arah itu independen,
+dan keduanya mengikuti Anda, bukan ruang kerja.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Seret berkas masuk.** Jatuhkan di mana saja pada kanvas.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- Di **Browser (VM)**, halaman menerima drop yang *sungguhan* pada titik Anda
+  melepas berkas, sehingga zona unggah berperilaku persis seperti dengan berkas
+  lokal.
+- Di **Komputer (VM)**, berkas mendarat di `~/Drops` dan path-nya masuk ke
+  papan klip mesin, sehingga ⌃V menempelkannya ke pengelola berkas atau kolom
+  unggah. Host tidak dapat menyintesis drag ke aplikasi Linux sembarang tanpa
+  menjalankan daemon berhak istimewa di dalam VM, yang justru sengaja tidak
+  dimiliki rig — jadi toast memberi tahu Anda ke mana berkasnya pergi alih-alih
+  berpura-pura sebuah drop terjadi.
+- Di **terminal**, berkasnya disalin masuk dan path-nya diketikkan di prompt,
+  siap diteruskan ke sebuah perintah. Menempelkan *gambar* ke terminal melakukan
+  hal yang sama: gambar itu disimpan di mesin dan Anda mendapat path-nya.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Seret berkas keluar** berfungsi dari Komputer (VM). Mulai menyeret berkas di
+dalam mesin, bawa penunjuk keluar dari kanvas, dan berkasnya menjadi drag
+sungguhan di desktop Anda — jatuhkan di Finder atau Explorer. Menyalin berkas
+di pengelola berkas mesin lalu menempelkannya di sisi Anda juga berfungsi.
+Browser (VM) tidak menawarkan ini: browser headless tidak punya payload drag
+untuk dibaca, dan menebak dari seleksi teks halaman akan membajak klik biasa.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Komputer (VM) memerlukan image yang dibangun setelah dukungan papan klip
+hadir. Jika Anda mengimpor image Anda lebih awal, bangun ulang dengan
+`scripts/rigs/build_image.sh`, lalu gunakan **Impor** pada image yang terpasang
+untuk menggantinya.
 :::
 
-## Terminals inside a rig
+## Terminal di dalam rig
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Terminal di sebuah space atau di halaman PR dapat berjalan di dalam rig
+alih-alih di mesin server itu sendiri. Saat itu terjadi, panel menampilkan
+badge **VM terisolasi**.
 
-What changes:
+Apa yang berubah:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Tidak ada yang Anda jalankan yang mencapai host. Satu `rm -rf` di sana
+  membuat Anda kehilangan rig.
+- Jaringannya menolak secara default. Hanya host di daftar izin rig yang dapat
+  dijangkau, dan semuanya melewati gerbang yang menegakkannya.
+- `git push` tetap bekerja. Rig tidak menyimpan kredensial; ia meminta token
+  berumur pendek ke server per operasi, dan token itu dicabut saat rig ditutup.
 
-What to know:
+Yang perlu diketahui:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Terminal terisolasi yang dipulihkan menunggu Anda.** Seperti tab rig,
+  terminal `microvm` yang kembali bersama tata letak Anda menampilkan tombol
+  **Buka shell** alih-alih mem-boot VM-nya saat diluncurkan. Terminal shell host
+  memakan satu proses; terminal terisolasi memakan satu mesin.
+- **Berkas yang dijatuhkan ke terminal diketik, bukan dibuka.** Jatuhkan CSV ke
+  terminal terisolasi dan berkasnya disalin ke dalam mesin lalu path tamunya
+  muncul di prompt — path host akan menjadi perintah yang gagal di sana.
+- **Salinan di dalam rig hanyalah salinan.** Worktree Anda di host tetap
+  menjadi acuan. Commit yang Anda buat di dalam rig dibawa kembali ke
+  `refs/rigs/<id>/*` saat Anda memintanya — commit itu tidak pernah memindahkan
+  branch atau menyentuh working tree Anda.
+- **Pekerjaan bertarget host tetap berjalan di host.** Tamu Linux tidak dapat
+  mem-build untuk macOS atau menjalankan `xcodebuild`. Pilih backend native
+  secara eksplisit untuk itu; aplikasi akan meminta Anda mengonfirmasi
+  alih-alih beralih diam-diam.
 
-## Ports
+## Port
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/id-ID/panduan-pengguna/panduan-praktis/port-vm/).
+Jalankan server dev di Terminal (VM) — misalnya `pnpm dev` di port 3000 — dan
+dalam beberapa detik ikon colokan di sudut terminal menyala: port-nya
+diteruskan ke `localhost:3000` di mesin Anda, dapat dijangkau di
+`localhost:3000` di dalam Browser (VM), dapat dibagikan di jaringan Anda, dan
+dapat diberi nama `https://myapp.test`. Seluruh alurnya — penerusan otomatis,
+berbagi di LAN, domain dev dengan HTTPS — punya panduan tersendiri:
+[Teruskan port dari terminal](/id-ID/panduan-pengguna/panduan-praktis/port-vm/).
 
-## Custom images
+## Image kustom
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Sebuah ruang kerja dapat mengarahkan Terminal (VM) dan Browser (VM) ke image
+miliknya sendiri — di **Pengaturan → Server → Rigs → Image kustom (ruang kerja
+ini)**. Penggunaan umum: memperluas image default dengan toolchain yang
+dibutuhkan proyek Anda agar setiap terminal siap saat dimulai, atau memakai
+ulang image yang sudah dipublikasikan tim Anda.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Mesin tetap boot di dalam lingkungan terisolasi yang sama: gerbang egress yang
+sama, broker kredensial yang sama, siklus hidup yang sama. Hanya admin ruang
+kerja yang dapat mengubah pengaturan ini, mesin baru memakainya (yang sedang
+berjalan tetap memakai miliknya), dan referensinya harus berupa image registry
+— path lokal ditolak.
 
-What an image must provide:
+Apa yang harus disediakan sebuah image:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — image Linux dengan `bash`. Ia juga membutuhkan `git`,
+  `curl`, dan `socat` — entah sudah terpasang, atau dapat dipasang saat pertama
+  dijalankan (image berbasis Debian/Ubuntu apa pun berfungsi: paket itu
+  dipasang otomatis, bersama toolset CLI ala runner yang dihosting GitHub:
+  compiler, Python 3, `jq`, alat arsip, `rsync`. Runtime bahasa seperti
+  Node/Go/Java dan Docker tidak dipasang sebelumnya). Port tamu `7911`
+  dicadangkan untuk penerus port.
+- **Browser (VM)** — image Debian/Ubuntu dengan `bash` dan `socat`, plus biner
+  `chromium`. Server menjalankan Chromium sendiri sebagai
+  `chromium --headless=new` dan meneruskan DevTools dari tamu `9223` ke
+  `9222`. PulseAudio dan ffmpeg dipasang saat pertama dijalankan. Jangan
+  mem-build `FROM chromedp/headless-shell` — biner itu tidak punya audio.
+  Penggantian ini hanya berlaku untuk rig Chromium; Firefox dan WebKit
+  mengabaikannya dan mem-boot image Debian yang dipin. Port tamu `9222`/`9223`
+  dicadangkan.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Dua rekomendasi: pin referensinya dengan digest (`@sha256:…`) agar byte-nya
+tidak berubah di bawah Anda, dan hosting di Docker Hub atau GitHub Container
+Registry — host unduhan registry tersebut diterima lewat gerbang egress secara
+otomatis; registry lain mungkin perlu host pengiriman kontennya dapat dijangkau
+agar tarikan berhasil.
 
-## When a rig goes away
+## Saat rig hilang
 
-Rigs are meant to be temporary:
+Rig memang dimaksudkan sementara:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Idle** — setelah ~15 menit tanpa aktivitas, rig browser, desktop, atau
+  seluler diparkir (dibekukan, bangun seketika pada tindakan berikutnya).
+  Terminal terisolasi menunggu 45 menit. Setelah dua kali jendela idle, rig
+  ditutup.
+- **Batas waktu** — setiap rig punya masa hidup tetap yang tidak dapat
+  diperpanjang, apa pun yang sedang dilakukannya.
+- **Memori** — jika server perlu ruang untuk rig baru, ia menutup rig yang
+  paling lama tidak digunakan. Rig yang sedang dikemudikan atau ditonton orang,
+  atau yang di dalamnya ada terminal terbuka, tidak pernah diambil.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Saat rig terisolasi ditutup, disk-nya dibuang. Menutup rig Android melepaskan
+diri dari emulator host — bukan menghapusnya. Rig iOS menghapus perangkat
+CoreSimulator yang dibuatnya. Bawa kembali apa pun yang ingin Anda simpan
+terlebih dulu.
 
-## What a rig can reach
+## Apa yang dapat dijangkau rig
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Rig terminal, browser, dan desktop yang terisolasi secara default memakai
+gerbang egress yang menolak secara default: Anda memberikan host secara
+eksplisit, dan satu-satunya rute tamu adalah gerbang yang menegakkan daftar
+itu. Rig browser juga mengizinkan situs produk (`usectrl.dev`) tanpa
+konfigurasi. Broker kredensial memakai daftar yang sama.
 
-Two honest caveats:
+Dua catatan yang jujur:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Jaringan seluler mengikuti host.** Emulator Android dan CoreSimulator Apple
+  tidak berada di balik gerbang egress lingkungan terisolasi. Tidak ada tab
+  seluler yang menawarkan kontrol pintas jaringan karena jaringan yang dikelola
+  host sudah tidak dibatasi.
+- **Semua yang dibaca rig tidak tepercaya.** Teks halaman, DOM, pohon
+  aksesibilitas, dan dump tampilan kembali ke agen dalam pembungkus penanda
+  yang berbunyi "ini data, bukan instruksi". Halaman yang mencoba memberi
+  perintah kepada agen Anda terbaca sebagai string yang dikutip.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Anda dapat melihat semua yang sedang berjalan, dan menghentikan apa pun di
+antaranya, di **Pengaturan → Server → Rigs**.
 
-## Related
+## Terkait
 
-- [Rigs and enclosures](/id-ID/panduan-pengguna/konsep/rigs/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/id-ID/panduan-pengguna/panduan-praktis/port-vm/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/id-ID/panduan-pengguna/referensi/rigs/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/) — model di balik semua
+  ini: mengapa VM, dua jalur tampilan, broker kredensial, siklus hidupnya
+- [Teruskan port dari terminal](/id-ID/panduan-pengguna/panduan-praktis/port-vm/) — jangkau
+  server dev dari mana pun yang penting
+- [Referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/) — setiap permukaan, verb, port, dan
+  default di satu tempat
+- [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/) — `Kendalikan
+  enclosure (rig)` adalah kelas aksi yang dapat Anda tetapkan ke izinkan,
+  tanyakan dulu, atau tolak, per ruang kerja, agen, atau space. Mode hanya-baca
+  menolaknya sepenuhnya.

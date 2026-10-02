@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Αρχιτεκτονική
+description: Πώς είναι δομημένο το Control Center, με μοντέλο λεπτού πελάτη πάνω από διακομιστή, Καθαρή Αρχιτεκτονική με προτεραιότητα στα χαρακτηριστικά και θύρες και προσαρμογείς.
 dateModified: 2026-09-19
 slug: el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Επισκόπηση
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Το Control Center ακολουθεί Καθαρή Αρχιτεκτονική με προτεραιότητα στα χαρακτηριστικά και μοτίβο θυρών και προσαρμογέων. Η βάση κώδικα είναι οργανωμένη γύρω από επιχειρηματικούς τομείς (χαρακτηριστικά), με αυστηρούς κανόνες εξαρτήσεων που επιβάλλονται από ένα αυτοματοποιημένο τεστ αρχιτεκτονικής.
 
-## A thin client over a headless server
+## Ένας λεπτός πελάτης πάνω από έναν headless διακομιστή
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Το Control Center είναι **αρχιτεκτονική λεπτού πελάτη**. Κανένας πελάτης δεν ανοίγει τη βάση δεδομένων — μια headless διεργασία **`cc_server`** κατέχει τα δεδομένα (μια μικρή `global.db` συν ένα αρχείο SQLite ανά χώρο εργασίας, που ανοίγει με καθυστέρηση) και τα σερβίρει μέσω WebSocket RPC. Η εφαρμογή για υπολογιστή, η έκδοση για web και ο σύντροφος για το τηλέφωνο είναι όλα στρώματα απόδοσης πάνω από αυτή τη μία σύνδεση RPC.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Η επιτραπέζια εφαρμογή επιλέγει πώς φτάνει στον διακομιστή της κατά την πρώτη εκκίνηση: **τοπικά** (εκκινεί ένα `cc_server` σε αυτό το μηχάνημα και συνομιλεί μέσω loopback — η προεπιλογή) ή **απομακρυσμένα** (καλεί ένα `cc_server` αλλού μέσω ασφαλούς WebSocket). Ο πελάτης web είναι πάντα απομακρυσμένος. Ο επιλυτής εκκίνησης (`bootstrap/server_backend.dart`) επιλέγει τη διαδρομή προτού υπάρξει το Riverpod και έπειτα αντικαθιστά το `rpcClientProvider` με τον συνδεδεμένο πελάτη — έτσι κάθε χαρακτηριστικό διαβάζει και γράφει μέσω του διακομιστή και όχι μέσω τοπικής βάσης δεδομένων.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Το ίδιο το επίπεδο RPC είναι **χωρίς κατάσταση**: μια συνεδρία ταυτοποιείται, αλλά δεν δεσμεύεται σε κάποιον χώρο εργασίας. Κάθε κλήση με εμβέλεια χώρου εργασίας φέρει το δικό της `workspace_id` στα ορίσματά της και ο διανομέας αρνείται μια τέτοια κλήση χωρίς αυτό. Αυτό επιτρέπει σε δύο πελάτες σε έναν διακομιστή να κρατούν διαφορετικούς ενεργούς χώρους εργασίας χωρίς έναν «τρέχοντα χώρο εργασίας» που θα κρατούσε ο διακομιστής και για τον οποίο θα διαφωνούσαν — και σημαίνει ότι η απομόνωση επιβάλλεται ανά κλήση και όχι ανά σύνδεση.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) for the full client matrix and what runs where.
+Πρόκειται για ένα **Dart workspace** με ένα ενιαίο επιλυμένο lockfile και είκοσι ένα μέλη — δεκαπέντε πακέτα και έξι εφαρμογές — με ρίζα του workspace την εφαρμογή για υπολογιστή και web (`control_center`). Οι έξι εφαρμογές είναι το headless δυαδικό του διακομιστή (`cc_server`), ο headless εκτελεστής στόλου (`cc_worker`), η PWA για το τηλέφωνο (`cc_remote`), ο διαμεσολαβητής αναμετάδοσης WebSocket (`cc_signaling_server`), η γκαλερί Widgetbook (`cc_gallery`) και ο δημόσιος κεντρικός υπολογιστής επίδειξης (`cc_demo_server`). Τα δεκαπέντε πακέτα είναι τα `cc_ui` (σύστημα σχεδίασης), `cc_domain` (κοινός πυρήνας σε καθαρή Dart: οντότητες, αντικείμενα τιμής, θύρες, συμβάντα και το επίπεδο τομέα κάθε χαρακτηριστικού), `cc_harness` (ο ενσωματωμένος πυρήνας πρακτόρων: βρόχος πράκτορα σε καθαρή Dart — μηνύματα, θύρα παρόχου, εργαλεία, συμπύκνωση, καθοδήγηση, άγκιστρα, υποπράκτορες — χωρίς `dart:io` και χωρίς άλλη εξάρτηση `cc_*`), `cc_harness_runtime` (ο ενσωματωμένος προσαρμογέας χρόνου εκτέλεσης του μηχανισμού: πάροχοι ροής μόνο για VM, μεσιτεία διαπιστευτηρίων OAuth/PKCE, χώροι αποθήκευσης διαπιστευτηρίων και το γενικό σύνολο εργαλείων — εκτελεί πράκτορες χωρίς εγκατεστημένο εξωτερικό CLI), `cc_rpc` (μεταφορές πελάτη), `cc_host` (πυρήνας διακομιστή), `cc_data` (απομακρυσμένα αποθετήρια), `cc_persistence` (βάση δεδομένων πλευράς διακομιστή), `cc_server_core` (σύνθεση εφαρμογής και διακομιστή + χρόνος εκτέλεσης ταυτότητας/παρουσίας/στόλου/αξιολογήσεων), `cc_infra` (προσαρμογείς μόνο για VM), `cc_mcp` (εργαλεία MCP), `cc_mcp_client` (πελάτης για εξωτερικούς διακομιστές MCP, που γεφυρώνει τα εργαλεία τους στο τοπικό μητρώο), `cc_markdown` (μηχανή markdown εντός του αποθετηρίου), `cc_natives` (φύλλο FFI) και `system_audio_capture`. Δείτε το [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) για τον πλήρη πίνακα πελατών και το τι εκτελείται πού.
 
-## Dependency rule
+## Κανόνας εξαρτήσεων
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Επίπεδο τομέα**: οντότητες καθαρής Dart, αντικείμενα τιμής, διεπαφές αποθετηρίων, θύρες και υπηρεσίες τομέα. Μηδενικές εισαγωγές από την υποδομή (χωρίς dio, drift ή μοντέλα δικτύου).
+- **Επίπεδο παρουσίασης**: οθόνες, widgets, notifiers. Καμία άμεση πρόσβαση σε drift/DAO/επίπεδο δεδομένων· τα πάντα περνούν από παρόχους Riverpod → αποθετήρια.
+- **Επίπεδο υποδομής**: συγκεκριμένες υλοποιήσεις των θυρών τομέα και των διεπαφών αποθετηρίων. Εξαρτάται από τον τομέα, ποτέ το αντίστροφο.
 
-## Feature structure
+## Δομή χαρακτηριστικών
 
-The full feature shape is:
+Η πλήρης μορφή ενός χαρακτηριστικού είναι:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Ελάχιστα χαρακτηριστικά κάτω από το `lib/features/` φέρουν στην πραγματικότητα και τα τέσσερα, και τα κενά είναι διδακτικά και όχι τυχαία. Ο κοινός πυρήνας απορρόφησε το `domain/` κάθε χαρακτηριστικού στο `cc_domain` και ο λεπτός πελάτης δεν διατηρεί υλοποιήσεις αποθετηρίων, οπότε τα περισσότερα χαρακτηριστικά κάτω από το `lib/` είναι `presentation/` συν `providers/` και τίποτα άλλο. Ένας κατάλογος `data/` ή `domain/` που επιβιώνει στον πελάτη σηματοδοτεί κάτι που είναι πραγματικά πλευράς πελάτη.
 
-Two named exceptions are worth knowing:
+Δύο ονομαστικές εξαιρέσεις αξίζει να τις γνωρίζετε:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- Το **`mcp`** έχει μόνο παρόχους. Η διεπαφή ρυθμίσεων και κατάστασής του βρίσκεται κάτω από το `settings/` και η ίδια η επιφάνεια εργαλείων είναι πακέτο (`cc_mcp`), όχι φάκελος χαρακτηριστικού.
+- Το **`orchestration`** και το **`plan_studio`** φέρουν μόνο `presentation/` και `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) for the model.
+Το χαρακτηριστικό **`guardrails`** τοποθετεί το επίπεδο τομέα του στο `cc_domain/features/guardrails/` και όχι στη ρίζα της εφαρμογής, επειδή το επιβάλλει ο διακομιστής: ένας κανόνας αντιστοιχίζει μια `ActionClass` (ή ένα `commandPrefix` κελύφους) σε μια απόφαση — `allow`, `prompt` ή `deny` — σε κάποια εμβέλεια, οι κανόνες αποθηκεύονται ανά χώρο εργασίας και κάθε ελεγχόμενη ενέργεια πράκτορα επιλύεται μέσω της αλυσίδας πολιτικής πριν εκτελεστεί. Η επίλυση διατρέχει `space > agent > workspace > mode preset > built-in default` και **αποφασίζει η πρώτη εμβέλεια που έχει κανόνα που ταιριάζει**· το πιο περιοριστικό λειτουργεί μόνο ως κριτήριο ισοπαλίας εντός μίας εμβέλειας και για τον συνδυασμό των κλάσεων που δηλώνει μία ενέργεια. Η επιφάνεια για τον χειριστή είναι Ρυθμίσεις → Χώρος εργασίας → Δικαιώματα πρακτόρων, στη διαδρομή `/workspaces/<id>/settings/workspace/permissions`. Δείτε τους [Περιορισμούς](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) για το μοντέλο.
 
-## Shared kernel
+## Κοινός πυρήνας
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+Το `packages/cc_domain/lib/core/domain/` περιέχει οντότητες και αποθετήρια κοινά σε 3+ χαρακτηριστικά. Είναι καθαρή Dart με μηδενικές εξαρτήσεις υποδομής, και αυτό επιτρέπει τόσο στον πελάτη Flutter όσο και στο δυαδικό του διακομιστή χωρίς Flutter να εισάγουν τους ίδιους ορισμούς:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Βασικές οντότητες: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Ταυτότητα και συνεργασία: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Οντότητες μνήμης: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Κοινά αντικείμενα τιμής: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Κοινές θύρες: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Υπηρεσίες τομέα: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + τύποι συμβάντων (χώρου εργασίας/πράκτορα, PR/κριτικής, μηνυμάτων, εισιτηρίων, pipeline, ενορχήστρωσης, μνήμης, ημερολογίου/συσκέψεων, ταυτότητας και ιδιότητας μέλους, παρατηρησιμότητας)
 
-## Identity & multiplayer
+## Ταυτότητα και συνεργασία
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Το Control Center είναι πολυχρηστικό: άνθρωποι και πράκτορες είναι ισότιμοι δρώντες που ενοποιούνται από ένα `Principal`. Ένα μέλος χώρου εργασίας είναι ένας `User` δεσμευμένος σε ένα `Workspace` με κάποιον `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Η ιδιότητα μέλους είναι το όριο πρόσβασης** — όχι ένα κλειδί σύζευξης — και οι εκχωρήσεις ανά αποθετήριο εμποδίζουν την ιδιότητα μέλους χώρου εργασίας να υπερβαίνει σε προνόμια το forge. Ο πρώτος χρήστης που δημιουργείται σε έναν νέο διακομιστή κατέχει την εγκατάσταση· οι υπόλοιποι συμμετέχουν με πρόσκληση ή μέσω OIDC. Η δημιουργία ενός χώρου εργασίας σημαδεύει αυτόν τον χρήστη ως `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Η συνεργασία σε πραγματικό χρόνο βασίζεται σε **διακομιστή ως πηγή αυθεντίας + last-writer-wins (LWW) ανά πεδίο** και όχι σε CRDT. Η παρουσία (ποιος είναι εδώ, πού βρίσκεται, δείκτες, πληκτρολόγηση, η ζωντανή κατάσταση ενός πράκτορα και το τρέχον κόστος του) είναι ένα ξεχωριστό **εφήμερο κανάλι που δεν αποθηκεύεται ποτέ**· η διαρκής κατάσταση κινείται σε έναν κορμό αισιόδοξων μεταβολών + επαναφοράς από τον διακομιστή + LWW. Άνθρωποι και πράκτορες μοιράζονται έναν κατάλογο. Με έναν μόνο ανθρώπινο χειριστή το κανάλι παρουσίας μένει αδρανές και δεν εμφανίζεται κανένα στοιχείο καταλόγου — η συνεργασία δεν κοστίζει τίποτα στον μοναχικό χρήστη.
 
-## Ports and adapters
+## Θύρες και προσαρμογείς
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Οι θύρες είναι αφηρημένες διεπαφές στο επίπεδο τομέα. Οι προσαρμογείς είναι συγκεκριμένες υλοποιήσεις στην υποδομή. Επειδή ο headless διακομιστής κατέχει τα δεδομένα και πρέπει να χτίζεται χωρίς Flutter, σχεδόν κάθε προσαρμογέας είναι μόνο για VM και βρίσκεται στο `packages/cc_infra/lib/src/`, οργανωμένος ανά μέλημα:
 
-| Port                   | Adapter location                                                                                            |
+| Θύρα                   | Θέση προσαρμογέα                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (πλευράς πελάτη: αποδίδει τοπικά τα συμβάντα του διακομιστή)                       |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Τα Jira, ClickUp και GitHub Issues είναι προσαρμογείς συγχρονισμού εισιτηρίων στο `cc_infra/lib/src/tickets/sync/`; τα τοπικά εισιτήρια ζουν στη βάση δεδομένων του χώρου εργασίας χωρίς `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (υπηρεσία τομέα σε καθαρή Dart — δεν χρειάζεται υποδομή) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Η ρίζα σύνθεσης της εφαρμογής (`di/providers.dart`) δεσμεύει τις θύρες της πλευράς πελάτη με υλοποιήσεις μέσω παρόχων Riverpod· ο διακομιστής συνθέτει τους προσαρμογείς του στο `cc_server_core`.
 
-## State management
+## Διαχείριση κατάστασης
 
-**Riverpod** for all client state:
+**Riverpod** για όλη την κατάσταση του πελάτη:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` και `AsyncNotifier<T>` για μεταβλητή κατάσταση
+- `FutureProvider<T>` για ασύγχρονα δεδομένα
+- Οι λίστες και οι ζωντανές γραμμές φτάνουν μέσω συνδρομών RPC ως `AsyncValue<List<T>>` — ο διακομιστής χρησιμοποιεί εσωτερικά το `.watch()` του Drift· κανένας πελάτης δεν ανοίγει το Drift
+- Τα εργαλεία MCP λαμβάνουν τις εξαρτήσεις τους ως τυποποιημένες παραμέτρους κατασκευαστή, ποτέ ως `Ref`
 
-## Database
+## Βάση δεδομένων
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), χωρισμένο σε δύο βάσεις δεδομένων, και οι δύο στο `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — ένας σύντομος κατάλογος πινάκων που αφορούν πραγματικά ολόκληρο τον διακομιστή: το μητρώο χώρων εργασίας, χρήστες/προτιμήσεις/συζευγμένες συσκευές, συνδέσεις SSO, ρυθμίσεις διακομιστή για όλη την εγκατάσταση, διαχειριζόμενες πολιτικές ενεργειών (ένα όριο για όλη την εγκατάσταση που μπορεί μόνο να σφίξει τους περιορισμούς του χώρου εργασίας), τη ροή ειδήσεων ανά χρήστη, την ουρά του στόλου (εργάτες/εργασίες/αρχείο τοποθέτησης), το ευρετήριο `workspace_routes` πριν από την ταυτοποίηση και τα μεταδεδομένα της εγκατάστασης. Η εκκίνηση ανοίγει μόνο αυτό το αρχείο, οπότε το κόστος εκκίνησης μένει σταθερό ανεξάρτητα από το πόσο ιστορικό συσσωρεύουν οι χώροι εργασίας. Η προσθήκη πίνακα εδώ είναι απόφαση απομόνωσης για την οποία ένα τεστ καστάνιας σας αναγκάζει να επιχειρηματολογήσετε.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — ένας _κατάλογος_ ανά χώρο εργασίας, που περιέχει ένα αρχείο SQLite και ό,τι άλλο ανήκει μόνο σε αυτόν τον χώρο εργασίας, ώστε τα worktrees μιας συνομιλίας και τα αρχεία των πρακτόρων να βρίσκονται δίπλα στη βάση δεδομένων και να διαγράφονται μαζί της. Σχεδόν τα πάντα ζουν εδώ: πράκτορες, χώροι, εισιτήρια, μνήμη, pipelines, συσκέψεις, το γράφημα κώδικα, κριτικές, αποθετήρια. Τα αρχεία ανοίγουν με καθυστέρηση την πρώτη φορά που τα αγγίζει κανείς, μέσω του `WorkspaceDatabaseManager.of(workspaceId)`, και πληρώνουν τότε το δικό τους `quick_check`, την εγκατάσταση FTS/trigger και το `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Και τα δύο μισά ξεκίνησαν από μια ενοποιημένη αφετηρία v1 — το `onCreate` χτίζει το τρέχον σχήμα — με βήματα μετανάστευσης να προσαρτώνται μόνο όταν κάποια αναπτυγμένη βάση δεδομένων πρέπει να μεταφερθεί προς τα εμπρός.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Επειδή ένας χώρος εργασίας είναι ένα αρχείο, η εξαγωγή ενός χώρου εργασίας είναι μία μόνο δήλωση `VACUUM INTO` (`workspace.export`) και όχι εξαγωγή πίνακα προς πίνακα· το `workspace.import` υιοθετεί ένα τέτοιο αρχείο και χρησιμοποιεί το ενσωματωμένο `workspace_meta` για να ξεχωρίσει το δικό του αρχείο που υιοθετείται ξανά από ένα που προήλθε από άλλη εγκατάσταση.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Και οι δύο βάσεις δεδομένων ανήκουν στο `cc_persistence` και ανοίγουν μόνο από το `cc_server`· κανένας πελάτης δεν ανοίγει βάση δεδομένων — κάθε πελάτης διαβάζει/γράφει μέσω RPC. Οι πίνακες ορίζονται στο `packages/cc_persistence/lib/database/tables/`, τα DAO στο `.../daos/`· οι οντότητες τομέα είναι καθαρή Dart, ξεχωριστές από τις κλάσεις πινάκων του Drift, με αντιστοίχιση στα επίπεδα δεδομένων. Το FTS5 χειρίζεται την αναζήτηση πλήρους κειμένου και τα embeddings `sqlite_vector`, και τα δύο μόνο στον διακομιστή· και οι δύο βάσεις εκτελούν `PRAGMA foreign_keys=ON` σε λειτουργία ημερολογίου WAL.
 
-## Routing
+## Δρομολόγηση
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, με ένα γεγονός που διέπει όλα τα υπόλοιπα: **κάθε προορισμός εντός της εφαρμογής έχει πρόθεμα χώρου εργασίας**, με τη μορφή `/workspaces/:workspaceId/…`. Το αναγνωριστικό του χώρου εργασίας στο URL είναι η μοναδική πηγή αλήθειας για τον ενεργό χώρο εργασίας — το `activeWorkspaceIdProvider` οδηγείται από τη διαδρομή και όχι το αντίστροφο — και γι' αυτό η ανάγνωση δεδομένων με εμβέλεια χώρου εργασίας έξω από μια διαδρομή με πρόθεμα δεν έχει από πού να πάρει το αναγνωριστικό της.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- _Συναρτήσεις_ κατασκευής διαδρομών στο `router/routes.dart`, καθεμία με το αναγνωριστικό του χώρου εργασίας ως πρώτο όρισμα, όχι σταθερές συμβολοσειρών
+- Τέσσερις διαδρομές πριν από το πλαίσιο δεν έχουν πρόθεμα: `/splash`, `/onboarding`, `/signed-out` και `/workspaces` (ο επιλογέας)
+- Το `ShellRoute` περιβάλλει το κέλυφος της εφαρμογής· αυτές οι τέσσερις επιφάνειες αποδίδονται σε πλήρη οθόνη έξω από αυτό
+- Φύλακας ταυτοποίησης: η ημιτελής ρύθμιση οδηγεί στο `/onboarding`· μια ολοκληρωμένη ρύθμιση της οποίας το διαπιστευτήριο forge έχει χαθεί οδηγεί στο `/signed-out`. Ολοκληρωμένη σημαίνει ότι τουλάχιστον ένα forge είναι συνδεδεμένο για τον συνδεδεμένο χρήστη και υπάρχει τουλάχιστον ένας χώρος εργασίας — όχι συγκεκριμένα το GitHub — και το CLI `gh` δεν είναι μέθοδος ταυτοποίησης
+- Πύλη εισαγωγής στο `features/auth/providers/`
 
-## Networking (server-side)
+## Δικτύωση (πλευράς διακομιστή)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Όλο το εξωτερικό HTTP ζει στον διακομιστή. Οι πελάτες δεν καλούν ποτέ απευθείας το GitHub, τη Linear ή την Google — καλούν λειτουργίες RPC του διακομιστή, και ακόμη και τα απομακρυσμένα πολυμέσα ανακτώνται μέσω του σημείου πρόσβασης `/proxy/media` του διακομιστή και όχι από την αρχική πηγή.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Πελάτες **dio** στο `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` και `GoogleCalendarApiClient`
+- Έγχυση token ταυτοποίησης μέσω interceptors, συμπεριλαμβανομένου ενός interceptor Google OAuth ανά λογαριασμό στο `cc_server_core` που ανανεώνει τα token στο 401
+- Όλα τα σφάλματα αντιστοιχίζονται μέσω του `packages/cc_infra/lib/src/network/error_mapper.dart` → τυποποιημένες υποκλάσεις `AppException` που ορίζονται στο `cc_domain`
 
-## Security
+## Ασφάλεια
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Ο διακομιστής κρατά τα διαπιστευτήρια που μετράνε: τα token του GitHub και των εισιτηρίων για εκκινήσεις πρακτόρων, τα κλειδιά των παρόχων LLM και τα token OAuth ζουν όλα κάτω από τον κατάλογο δεδομένων του διακομιστή ή στο περιβάλλον του. Αυτό που εξακολουθεί να κρατά το keychain του πελάτη είναι το δικό του διαπιστευτήριο συσκευής και το κλειδί σύζευξης για έναν απομακρυσμένο διακομιστή.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Μυστικά στο `flutter_secure_storage` (keychain του macOS, credential manager των Windows, libsecret του Linux) — το διαπιστευτήριο συσκευής του πελάτη και τα κλειδιά απομακρυσμένης σύζευξης, όχι τα token των παρόχων
+- `shared_preferences` μόνο για μη ευαίσθητες προτιμήσεις (θέμα, γραμματοσειρά, διάταξη)
+- Τα υπολείμματα μυστικών παρόχων από παλαιότερες εγκαταστάσεις παραδίδονται μία φορά στον διακομιστή από το `features/auth/providers/credential_migration.dart` και έπειτα διαγράφονται από το keychain του πελάτη
 
-## Architecture enforcement
+## Επιβολή της αρχιτεκτονικής
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Οι περιορισμοί της αρχιτεκτονικής επικυρώνονται από το `test/core/architecture_constraints_test.dart`, το οποίο αποτυγχάνει αν παραβιαστούν οι κανόνες εξαρτήσεων.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): how isolation is enforced
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): the dispatch flow
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): cross-feature communication
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/): the thin-client server model and the client matrix
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): πώς επιβάλλεται η απομόνωση
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): η ροή της αποστολής
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): επικοινωνία μεταξύ χαρακτηριστικών
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/): το μοντέλο του λεπτού πελάτη πάνω από διακομιστή και ο πίνακας πελατών

@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: مساحة عملك الأولى
+description: أنشئ مساحة عمل، وسجّل فيها مستودعًا، وشاهد حد العزل بنفسك.
 slug: ar-SA/دليل-المستخدم/دروس/أول-مساحة-عمل
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## ما الذي ستبنيه
 
-By the end of this tutorial, you will have:
+بنهاية هذا الدرس ستكون لديك:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- مساحة عمل تحمل اسم مشروعك
+- مستودع Git مسجّل فيها
+- خمسة وكلاء مبذورون، هيّأت أحدهم بما يكفي لتشغيله
+- مساحة عمل ثانية فارغة تُثبت حد العزل
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+أنشأ الإعداد الأولي مساحة عمل لك أصلًا. ينشئ هذا الدرس واحدة جديدة عمدًا، حتى ترى كل جزء من العملية.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+قبل أن تبدأ، اختر نسخة عمل Git تستوفي الشروط الثلاثة كلها — ترفض خطوة التسجيل ما عداها:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- أن تكون داخل شجرة عمل Git
+- أن يكون لها مستودع بعيد `origin`
+- أن يشير ذلك المستودع البعيد إلى github.com أو gitlab.com أو bitbucket.org
 
-## Step 1: Create a workspace
+## الخطوة 1: إنشاء مساحة عمل
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. انقر شريحة مساحة العمل في شريط العنوان
+2. اختر **إضافة مساحة عمل…**
+3. أدخل اسمًا يميّز المشروع، مثل "api-service" أو "frontend-v2"
+4. اختر شعارًا إن شئت
+5. انقر **إضافة مساحة عمل**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+ينتقل Control Center إلى مساحة العمل الجديدة ويهبط على واردها (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+خلف ذلك ينشر الخادم حدث `WorkspaceCreated` ويبذر مساحة العمل بما يلي:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **وكيل CEO**، وشخصيته التنسيق والتفويض
+- أربعة متخصصين — `qa` و`architect` و`engineer` و`librarian` — لكل منهم تعليماته ومهاراته
+- قوالب خطوط الأنابيب المضمّنة وصفوف مشغّلاتها
 
-Every workspace you create gets all of this, not just the first one.
+كل مساحة عمل تنشئها تحصل على هذا كله، لا الأولى وحدها.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+للتأكد: افتح **الإعدادات ← مساحة العمل ← الوكلاء**. خمسة وكلاء في الكشف، ولكل واحد حلقة حالة مجوّفة.
 
-## Step 2: Register a repository
+## الخطوة 2: تسجيل مستودع
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. انتقل إلى **الإعدادات ← مساحة العمل ← المستودعات**
+2. انقر **إضافة مستودع**
+3. تصفّح إلى نسخة عملك. يتنقّل الحوار بين مجلدات الجهاز الذي يشغّل `cc_server` — لا عميلك — ويبقى داخل الجذور التي يعرضها ذلك الخادم (المجلد الرئيسي لمستخدمه افتراضيًا). تحصل نسخة عمل Git على أيقونة مجلد مميّزة ومربع اختيار، ولا يحصل المجلد العادي على أي منهما، فلا يُختار إلا نسخ العمل.
+4. ضع علامة على نسخة عمل واحدة أو أكثر وسجّل الدفعة. يبقى التحديد وأنت تتنقّل، فتجمع عدة نسخ في مرور واحد، ولا يُسقط اختيار سيئ البقية أبدًا.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+يقرأ Control Center المستودع البعيد `origin` لكل نسخة عمل، ويحلّ المالك والمستودع، وينشئ صف المستودع **داخل مساحة العمل هذه**. لا خطوة ثانية للربط: التسجيل هو ما يحدّ نطاقه.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+تسجيل نسخة العمل نفسها لاحقًا في مساحة عمل أخرى ينشئ صف مستودع ثانٍ مستقل بمعرّفه الخاص. بين مساحات العمل تُعرَف نسخة العمل بمسار نظام ملفاتها، لا بمعرّفها.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+للتأكد: يظهر المستودع في القائمة مع `owner/repo` وفرعه الحالي.
 
-## Step 3: Make one agent runnable
+## الخطوة 3: اجعل وكيلًا واحدًا قابلًا للتشغيل
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+الوكلاء الخمسة الذين بذرتهم مساحة العمل هذه للتو بلا محوّل ولا نموذج. يشغّلهم الإرسال على **Control Center (built-in)**، وإن لم يُضبط نموذج طلب من Anthropic افتراضه — فلا يعملون إلا إذا ربطت حساب Anthropic، وإن ربطته فعلى نموذج لم تختره. يختم إعداد أول تشغيل اختياره على كل وكيل في مساحة العمل الأولى، مرة واحدة؛ ومساحة العمل التي تنشئها بعد ذلك تبدأ والخمسة غير مضبوطين. اضبط واحدًا الآن.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. افتح **الإعدادات ← مساحة العمل ← الوكلاء**
+2. اختر `engineer` في الكشف
+3. في علامة تبويب **الإعدادات**، اضبط **المحوّل** على `Control Center (built-in)` واختر **النموذج** من مزوّد ربطته تحت الإعدادات ← الخادم ← مزوّدو النماذج
+4. اضغط **حفظ التغييرات**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+للتأكد: أعد فتح الوكيل، فيحمل الحقلان اختيارَيك.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/) covers the rest of the form.
+يحمل كل وكيل محوّله ونموذجه، فكرّر ذلك لأي وكيل آخر تنوي استخدامه. يغطي [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/) بقية النموذج.
 
-## Step 4: See the isolation boundary
+## الخطوة 4: شاهد حد العزل
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+أنشئ مساحة عمل ثانية من شريحة شريط العنوان، تمامًا كما في الخطوة 1. ثم انظر إليها:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **الإعدادات ← مساحة العمل ← المستودعات** فارغة. المستودع الذي سجّلته قبل دقيقة ليس هناك.
+- **الإعدادات ← مساحة العمل ← الوكلاء** تضم خمسة وكلاء، لكنهم صفوف مختلفة — والمحوّل الذي ضبطته في الخطوة 3 غائب.
+- قائمة المساحات والتذاكر والذاكرة كلها فارغة.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+لم يتسرّب شيء، لأنه لا يوجد ما يتسرّب منه: تعيش صفوف كل مساحة عمل في ملف قاعدة تلك المساحة. قراءة عبر مساحات العمل ليست استعلامًا يُصفَّى، بل استعلامًا لا مكان لتشغيله. حذف مساحة العمل هو فك ارتباط ملف.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+ارجع بشريحة شريط العنوان، أو افتح **إدارة مساحات العمل** لتراهما جنبًا إلى جنب.
 
-For the full model, read [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
+للنموذج الكامل، اقرأ [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
 
-## Recap
+## الخلاصة
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+أنشأت مساحة عمل، وشاهدتها تبذر وكيل CEO وأربعة متخصصين، وسجّلت فيها مستودعًا، وأعطيت وكيلًا واحدًا محوّلًا ونموذجًا، وتأكدت أن مساحة عمل ثانية لا تشاركها شيئًا من ذلك.
 
-**Next:** [Dispatch your first agent](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) to put the workspace to work.
+**التالي:** [أرسل وكيلك الأول](/ar-SA/دليل-المستخدم/دروس/أول-وكيل/) لتضع مساحة العمل موضع العمل.

@@ -1,121 +1,131 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: Ajanları @ ile anma
+description: Bir alanda ajanları göndermek ve ekip arkadaşlarınıza bildirim iletmek için onları @ ile anın.
 slug: tr-TR/kilavuz/nasil-yapilir/ajanlari-anma
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Bu kılavuz, bir alanda ajanları ve ekip arkadaşlarınızı nasıl @ ile
+anacağınızı gösterir.
 
-## Mention an agent
+## Bir ajanı anma
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Yazı alanına `@` yazın ve otomatik tamamlamadan bir ajan seçin ya da adı kendiniz
+yazın:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Anılan ajan, alana henüz katılımcı değilse katılımcı olarak eklenir ve alanın
+bağlamı ile moduyla gönderilir. Anılmayan katılımcılar mesajı görür ama
+gönderilmez.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Ajan anması içermeyen bir mesaj gönderirseniz, yanıt verecek ajanı Control Center
+kendisi seçer: konuşmada en son konuşan ajan; bir sahibi varsa konuşmanın sahibi;
+o da yoksa alanın katılımcıları arasındaki ilk üst düzey ajan. Tek ajanlı bir
+alanda bu her zaman tek ajanın kendisidir.
 
-## Know how a name is matched
+## Bir adın nasıl eşleştirildiğini bilin
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Bir anma belirteci **büyük/küçük harfe duyarsız** olarak, **tam ad ya da önek**
+ile eşleştirilir. Yani `@arch`, `architect` adlı bir ajana ulaşır ve `@Alice`,
+`alice`'a ulaşır.
 
-Two consequences worth planning around:
+Planlamaya değer iki sonuç vardır:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Kısa bir belirteç hata değildir.** İki ajan aynı öneki paylaşıyorsa ilk
+  bulunan kazanır ve hangisinin kazandığı herhangi bir eşitlik bozma kuralına
+  değil, sıralamaya bağlıdır. Adlar çakıştığında her zaman tam adı kullanın.
+- **Bir belirtecin parçası olan karakterler yalnızca harfler, rakamlar ve alt
+  çizgilerdir.** Ayrıştırıcı `@(\w+)` ile eşleşir; bu yüzden `@code-reviewer`,
+  `code` belirteci olarak ve `@my agent`, `my` olarak okunur. Adında kısa çizgi,
+  nokta veya boşluk bulunan bir ajan — adı düz metin olarak ekleyen otomatik
+  tamamlama dâhil — güvenilir biçimde anılamaz. Ajanları tek sözcükle ya da alt
+  çizgiyle adlandırın.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Anmalar, metin ajana ulaşmadan önce metinden çıkarılır. Bu yüzden _yalnızca_
+anmalardan oluşan bir mesaj (`@alice`) hiçbir şey göndermez — ona yapacak bir iş
+verin.
 
-## Mention several agents at once
+## Aynı anda birkaç ajanı anma
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Her iki ajan da aynı konuşmaya paralel olarak gönderilir ve ikisi de mesajın
+tamamını alır.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Ayrıca **o alanın çalışma ağaçlarını paylaşırlar**. Depo çalışma ağaçları ajan
+başına değil, alan başına hazırlanır; her ajan `AGENTS.md` dosyası, becerileri ve
+yapılandırması için kendi overlay çalışma dizinini alır ve paylaşılan depolar
+okuma-yazma olarak bağlanır. Bu yüzden birlikte anılan iki ajan birbirinin
+düzenlemelerini görebilir — ve onlarla çakışabilir.
 
-## Mention a teammate
+## Bir ekip arkadaşını anma
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Bir ajanla eşleşmeyen her `@token`, aynı büyük/küçük harfe duyarsız tam ad ya da
+önek kuralıyla, kullanıcı adına göre çalışma alanının insan üyelerine karşı
+denenir.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Çözümlenen bir insan anması **hiçbir şey göndermez**. Yalnızca bildirim
+yönlendiricisinin o kişiye ulaşabilmesi için mesajın meta verisiyle birlikte
+taşınır.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Önce her zaman ajan adları denenir ve bir ajanın sahiplendiği belirteç üye
+listesine hiçbir zaman sunulmaz — bir `@word` yalnızca tek bir Principal'a
+çözümlenebilir.
 
-## What the agent receives
+## Ajanın aldıkları
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Gönderilen bir ajan, isteminde kendisini kimin çağırdığını belirten ve alanın
+kadrosunu — diğer ajanlar (üst düzey ya da alt olarak işaretlenmiş) ve insan
+üyeler — listeleyen bir “Summons” bloğu alır; böylece kime devredebileceğini
+bilir. Blok ayrıca ona, yanıtında başka bir ajanı anmanın o ajanı uyandırdığını
+ve kendisini anmanın yok sayıldığını söyler.
 
-## When an agent mentions an agent
+## Bir ajan başka bir ajanı andığında
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Bir ajan kendi yanıtında devredebilir. Bir tur **temiz biçimde tamamlandığında**,
+metnindeki anmalar çözümlenir ve o ajanlar alana eklenip aynı konuşmaya
+gönderilir; anmayı yapan tur onların istemi olur. Başarısız olan ya da kesintiye
+uğrayan bir tur kimseyi uyandırmaz — düşüncenin ortasında durmuştur.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Kurallar, yazı alanındakilerden kasten daha katıdır; çünkü yanlış bir tahmini
+düzeltecek kimse yoktur:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Yalnızca tam adlar.** Önek eşleşmesi yok. `@arch`, bir insan yazdığında
+  `architect`'e ulaşır; bir ajandan geldiğinde kimseye ulaşmaz. İki ajanla
+  eşleşen bir ad da kimseye ulaşmaz.
+- **Kod, düz metin değildir.** Üçlü ters tırnaklı kod bloklarının veya
+  `` `backticks` `` içindeki anmalar yok sayılır; bu yüzden bir `@Override` ek
+  açıklamasını ya da `pip install foo@1.2` komutunu alıntılamak güvenlidir.
+  Kapatılmamış bir blok, kendisinden sonraki her şeyi etkisiz bırakır.
+- **Önceki belirtece yapışık bir `@` anma sayılmaz** — `sam@host.com`,
+  `pkg/@scope` ve `node@20` kimseye çözümlenmez.
+- **Kısa çizgiler korunur**; bu yüzden `@code-reviewer`, `code` belirteci olarak
+  değil, kendisi olarak çözümlenir.
+- **Tur başına en fazla üç ajan.** Bir özette altı ekip arkadaşını listeleyen bir
+  ajan onları listeliyordur, çağırmıyordur.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Bir uyandırma zinciri, devretmeyle aynı şekilde sınırlanır: **derinlik 3** ve
+zincirde zaten bulunan bir ajan onun tarafından yeniden uyandırılamaz
+(`A → B → A` yok). Sıralı bir çift ayrıca zincirler arasında hız sınırına
+tabidir. Reddedilen bir uyandırma, hangi anmanın iletilemediğini ve nedenini
+söyleyen bir sistem mesajını konuşmaya gönderir — çözümlenemeyen bir ad
+göndermez; çünkü aksi hâlde bir cümledeki her `@` kendini anlatırdı.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Düz metne bağlı olmaması gereken bir devir için — bir istek/yanıt ya da alan
+dışındaki bir ajana ulaşmak — bunun yerine `send_to_agent`, `ask_agent` ve
+`delegate_task` araçlarını kullanın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Chat with an agent](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
-- [Use spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/)
-- [Run agents in parallel](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
+- [Bir ajanla sohbet etme](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
+- [Alanları kullanma](/tr-TR/kilavuz/nasil-yapilir/alanlar/)
+- [Ajanları paralel çalıştırma](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)

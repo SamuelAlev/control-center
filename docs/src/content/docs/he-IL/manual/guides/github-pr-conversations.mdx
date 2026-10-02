@@ -1,97 +1,89 @@
 ---
-title: Talk to Control Center from a GitHub PR
-description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+title: דיבור עם Control Center מבקשת משיכה ב־GitHub
+description: בקשו מבוט ה-GitHub App של השרת סקירה, או שאלו אותו שאלה מתוך שיחת בקשת המשיכה עצמה — בלי webhook ובלי כתובת ציבורית.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיחות-github-pr
+sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 ---
 
-This guide shows you how to work with Control Center without leaving GitHub:
-request an AI review from the PR page, ask the bot a question in a comment, and
-keep the conversation going in its review threads.
+המדריך הזה מראה איך לעבוד עם Control Center בלי לצאת מ-GitHub: לבקש סקירת AI
+מעמוד ה-PR, לשאול את הבוט שאלה בתגובה, ולהמשיך את השיחה בשרשורי הסקירה שלו.
 
-The bot is your server's own [GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/) — the same
-one that already signs people in and runs background work. Nothing new is
-registered, and nothing has to be reachable from the internet: the server
-discovers what was said on GitHub by polling, so a laptop behind NAT behaves
-exactly like a public deploy.
+הבוט הוא ה-[GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/) של השרת שלכם — אותו
+אחד שכבר מכניס אנשים ומריץ עבודת רקע. שום דבר חדש לא נרשם, ושום דבר לא צריך להיות
+נגיש מהאינטרנט: השרת מגלה מה נאמר ב-GitHub באמצעות סריקה, כך שמחשב נייד מאחורי
+NAT מתנהג בדיוק כמו פריסה ציבורית.
 
-## Prerequisites
+## דרישות מקדימות
 
-- The server has its GitHub App [registered and
-  installed](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/), with **Pull requests: read and write**
-  (for comments, threads and reactions) and **Issues: read** (for the comment
-  search). Both are already in that guide's permission list
-- The repository is linked to a workspace in Control Center
-- No webhook URL, no tunnel, no callback — there is nothing to configure on the
-  network side
+- לשרת יש GitHub App [רשום ומותקן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/), עם
+  **Pull requests: read and write** (עבור תגובות, שרשורים וריאקציות) ו-**Issues: read**
+  (עבור חיפוש התגובות). שניהם כבר מופיעים ברשימת ההרשאות של אותו מדריך
+- המאגר מקושר לסביבת עבודה ב-Control Center
+- בלי כתובת webhook, בלי מנהרה, בלי callback — אין שום דבר להגדיר בצד הרשת
 
-## Find your bot's name
+## מצאו את שם הבוט שלכם
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+שם המשתמש של הבוט הוא `<appslug>[bot]`, כאשר `appslug` הוא השם שנתתם לאפליקציה
+כשרשמתם אותה.
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. Open the **GitHub** block and click **Test**
-3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
-   login is always `<appslug>[bot]` — type that, or the short `@appslug`
+1. עברו אל **הגדרות ← שרת ← כניסה מאוחדת** וגללו אל הכרטיס
+   **אפליקציות ספק**
+2. פתחו את הבלוק **GitHub** ולחצו על **בדוק**
+3. העתיקו את **שם המשתמש של הבוט** כשהוא מתמלא. אם עדיין מוצגת הנחיה ריקה, שם
+   המשתמש הוא תמיד `<appslug>[bot]` — הקלידו אותו, או את הצורה המקוצרת `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub אינו מציע חשבונות אפליקציה בהשלמה האוטומטית של `@`, ולכן יש להקליד את שם
+המשתמש — זו הסיבה שכרטיס ההגדרות מאפשר להעתיק אותו בלחיצה אחת. הסיומת `[bot]`
+אופציונלית: גם `@myapp` וגם `@myapp[bot]` פונים אל הבוט.
 
-:::note[Pick a distinctive app name]
-The short form is matched as text. If a human GitHub user happens to share your
-app's slug, mentioning that user by the short form also reaches the bot. The
-full `@myapp[bot]` form is always unambiguous.
+:::note[בחרו שם אפליקציה ייחודי]
+הצורה המקוצרת מותאמת כטקסט. אם משתמש GitHub אנושי חולק במקרה את ה-slug של
+האפליקציה שלכם, אזכור של אותו משתמש בצורה המקוצרת מגיע גם הוא אל הבוט. הצורה
+המלאה `@myapp[bot]` חד־משמעית תמיד.
 :::
 
-## Request a review from GitHub
+## בקשת סקירה מתוך GitHub
 
-Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
-button starts:
+שתי דרכים, ושתיהן מפעילות את אותו פייפליין מובנה `pr_review` שהכפתור **שאל את
+ה־AI** מפעיל:
 
-- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
-  offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot. There is no comment to react to, so nothing
-  is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
-  bot reacts with 👀, then replies when the review has started (or that one is
-  already running)
+- **הוסיפו את התווית `ai-review`** ל-PR. זה הדבר הקרוב ביותר ש-GitHub מציע
+  להקצאת הבוט כסוקר — חשבונות אפליקציה אינם יכולים להחזיק במשבצת המקורית של
+  סוקר מבוקש. אין תגובה להגיב עליה, ולכן שום דבר לא מפורסם ב-GitHub; הסקירה
+  מתחילה ב-Control Center
+- **הגיבו `@myapp review`** (או רק `@myapp`) בשיחת בקשת המשיכה. הבוט מגיב ב-👀,
+  ואז משיב כשהסקירה התחילה (או שהיא כבר רצה)
 
-The reviewers work in the PR's review space; read and publish the findings as
-in [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/). Publishing back to GitHub
-stays a decision you make in Control Center — starting a review from GitHub
-does not publish anything to GitHub on its own.
+הסוקרים עובדים במרחב הסקירה של ה-PR; קראו ופרסמו את הממצאים כמו ב[שימוש בסקירה
+מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/). פרסום חזרה ל-GitHub נשאר החלטה
+שאתם מקבלים ב-Control Center — התחלת סקירה מ-GitHub לא מפרסמת דבר ל-GitHub
+בעצמה.
 
-The label fires once per PR: adding it is the ask, and it is not re-armed when
-removed and re-added. To run a review again — after a push, say — mention the
-bot.
+התווית מופעלת פעם אחת לכל PR: הוספה שלה היא הבקשה, והיא אינה נטענת מחדש כשמסירים
+אותה ומוסיפים שוב. כדי להריץ סקירה שוב — אחרי דחיפה, למשל — אזכרו את הבוט.
 
-## Ask a question
+## שאלו שאלה
 
-Comment on the PR conversation:
+הגיבו בשיחת בקשת המשיכה:
 
 ```text
 @myapp why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
-What happens, in order:
+מה קורה, לפי הסדר:
 
-1. The bot reacts with 👀 so you know the comment was seen
-2. The question is posted into the PR's review space **as you** — same
-   attribution as if you had typed it in Control Center
-3. An agent answers in the space, and the answer is posted back on the PR as a
-   comment that @-mentions you
+1. הבוט מגיב ב-👀 כדי שתדעו שהתגובה נראתה
+2. השאלה מפורסמת אל מרחב הסקירה של ה-PR **כמוכם** — אותו ייחוס כאילו הקלדתם אותה
+   ב-Control Center
+3. סוכן עונה במרחב, והתשובה מפורסמת חזרה ב-PR כתגובה שמאזכרת אתכם ב-@
 
-A question on a PR with no review yet wakes the workspace's CEO agent; once a
-review has run, the agent that spoke last answers, so follow-ups land with
-whoever has the context.
+שאלה על PR שאין לו עדיין סקירה מעירה את סוכן ה-CEO של סביבת העבודה; לאחר שסקירה
+רצה, הסוכן שדיבר אחרון משיב, כך ששאלות ההמשך נוחתות אצל מי שמחזיק בהקשר.
 
-## Follow up in a review thread
+## שאלות המשך בשרשור סקירה
 
-Reply inside an inline review thread the bot is part of — a diff comment it
-left, or an answer it posted in that thread. No mention is needed; the thread
-**is** the addressing:
+השיבו בתוך שרשור סקירה מוטבע שהבוט שותף בו — תגובת diff שהוא השאיר, או תשובה
+שהוא פרסם באותו שרשור. אין צורך באזכור; השרשור **הוא** הפנייה:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -99,76 +91,70 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 what would the complexity be with the bounded queue instead?
 ```
 
-Multi-turn works the same way: each reply is another question in the same
-conversation, with the review space as context, and the answer comes back in
-the thread.
+ריבוי סבבים עובד באותו אופן: כל תשובה היא שאלה נוספת באותה שיחה, כשמרחב הסקירה
+הוא ההקשר, והתשובה חוזרת בשרשור.
 
-A follow-up on the PR conversation timeline is a new top-level comment, so it
-still needs an @mention.
+שאלת המשך בציר הזמן של שיחת בקשת המשיכה היא תגובה חדשה ברמה העליונה, ולכן היא
+עדיין דורשת אזכור ב-@.
 
-## Who the bot talks to
+## עם מי הבוט מדבר
 
-A GitHub comment arrives as little more than a login, so the bot resolves the
-author before doing anything:
+תגובה בבקשת משיכה מגיעה כשהיא נושאת מעט יותר משם המשתמש של המחבר, ולכן הבוט פותר
+את המחבר לפני שהוא עושה משהו:
 
-- **Your GitHub account must be linked to your identity** in Control Center —
-  [sign in with GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/), or paste a token,
-  from **Settings → Workspace → Profile & identity → Code hosting**
-- **You must be a member with a write role** (`member`, `admin`, or `owner`)
-  in the workspace that links the repository
+- **חשבון ה-GitHub שלכם חייב להיות מקושר לזהות שלכם** ב-Control Center —
+  [היכנסו עם GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/), או הדביקו אסימון,
+  מתוך **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד**
+- **עליכם להיות חבר עם תפקיד כתיבה** (`member`, `admin` או `owner`) בסביבת
+  העבודה שמקשרת את המאגר
 
-Anyone else gets one polite reply explaining what is missing — an unknown
-login (unlinked, or linked but not a member here) and a read-only role are
-the two cases — and their words never enter the workspace. The `ai-review`
-label is not gated this way: it has no author, so it starts the review in
-the workspace that already links the repo.
+כל אחד אחר מקבל תשובה מנומסת אחת שמסבירה מה חסר — שם משתמש לא מוכר (לא מקושר, או
+מקושר אך אינו חבר כאן) ותפקיד קריאה בלבד הם שני המקרים — ומילותיו לעולם אינן
+נכנסות לסביבת העבודה. התווית `ai-review` אינה מותנית כך: אין לה מחבר, ולכן היא
+מתחילה את הסקירה בסביבת העבודה שכבר מקשרת את המאגר.
 
-## What to expect
+## למה לצפות
 
-| Thing               | Behaviour                                                                 |
+| דבר                 | התנהגות                                                                  |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
-| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
-| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
-| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+| אישור               | 👀 על תגובה בתוך כדקה — מרווח הסבב. לתווית `ai-review` אין תגובה להגיב עליה |
+| תשובות              | מפורסמות כהבוט (האפליקציה), במסלול שבו נשאלה השאלה                        |
+| ייחוס במרחב         | השאלה היא שלכם; הסוכן רץ בשמכם, תחת הגדרות האוטונומיה של המרחב            |
+| סקירות              | הממצאים נוחתים במרחב הסקירה; הפרסום ל-GitHub הוא ידני                     |
 
-The roughly-one-minute latency is the trade for needing no inbound network
-access at all. Nothing about the sweep is urgent, and nothing is lost while the
-server is offline — a comment that arrives during downtime is caught on the
-next sweep.
+ההשהיה של בערך דקה היא המחיר של לא להזדקק לשום גישה נכנסת לרשת. שום דבר בסריקה
+אינו דחוף, ושום דבר אינו הולך לאיבוד כשהשרת לא מקוון — תגובה שמגיעה בזמן השבתה
+נתפסת בסבב הבא.
 
-## Troubleshooting
+## פתרון תקלות
 
-**Nothing happens for a comment that mentions the bot.**
+**שום דבר לא קורה בתגובה שמאזכרת את הבוט.**
 
-- Is the app **installed** on the account that owns the repo, and the repo
-  **linked** to a workspace? An unlinked repo is skipped before anything is
-  recorded, so linking it later still delivers
-- Is your GitHub account linked, and are you a member with a write role? Check
-  the PR for the bot's refusal reply — it says which
-- Still nothing? The server log names the sweep and the PR when something
-  fails; look for `pr_conversation:` (the poller) and
-  `github_pr_conversation:` (the bridge)
+- האם האפליקציה **מותקנת** בחשבון שמחזיק במאגר, והמאגר **מקושר** לסביבת עבודה?
+  מאגר לא מקושר מדולג לפני שנרשם דבר, כך שקישורו לאחר מכן עדיין מספק
+- האם חשבון ה-GitHub שלכם מקושר, והאם אתם חבר עם תפקיד כתיבה? בדקו ב-PR את
+  תשובת הסירוב של הבוט — היא אומרת מה מהשניים חסר
+- עדיין כלום? יומן השרת מציין את הסבב ואת ה-PR כשמשהו נכשל; חפשו
+  `pr_conversation:` (הסורק) ו-`github_pr_conversation:` (הגשר)
 
-**The label does not start a review.**
+**התווית לא מתחילה סקירה.**
 
-It fires once per PR. If a review already ran, or the label was added before
-the server ever saw the PR (the first sweep records the backlog silently
-rather than storming it), mention the bot instead — `@myapp review` always
-starts one unless a review is already in flight.
+היא מופעלת פעם אחת לכל PR. אם סקירה כבר רצה, או שהתווית נוספה לפני שהשרת ראה את
+ה-PR בכלל (הסבב הראשון רושם את המלאי בשקט במקום להסתער עליו), אזכרו את הבוט
+במקום — `@myapp review` תמיד מתחיל סקירה אלא אם סקירה כבר בדרך.
 
-**The bot's answer never arrived on GitHub.**
+**התשובה של הבוט לא הגיעה ל-GitHub.**
 
-The answer itself is never lost — it is in the PR's review space in Control
-Center. A posting failure (GitHub down, permissions changed) is logged and the
-reply is not retried; ask again in the thread if it matters.
+התשובה עצמה לעולם אינה הולכת לאיבוד — היא נמצאת במרחב הסקירה של ה-PR
+ב-Control Center. כשל בפרסום (GitHub למטה, הרשאות שהשתנו) נרשם ביומן והתשובה אינה
+נשלחת שוב; שאלו שוב בשרשור אם זה חשוב.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): the registration the bot
-  is born from
-- [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/): reading the findings a
-  mention-started review produces
-- [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/): linking your
-  own GitHub account, which is what the bot resolves you by
-- [Use spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/): the room all of this lands in
+- [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/): הרישום שממנו הבוט
+  נולד
+- [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/): קריאת הממצאים
+  שסקירה שהתחילה מאזכור מפיקה
+- [הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/): קישור
+  חשבון ה-GitHub שלכם, שזה מה שלפיו הבוט פותר אתכם
+- [שימוש במרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/): החדר שכל זה נוחת בו

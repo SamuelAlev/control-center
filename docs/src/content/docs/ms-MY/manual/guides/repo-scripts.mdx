@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Skrip repositori
+description: Skrip persediaan dan arkib mengikut repositori yang berjalan terhadap worktree sesuatu ruang.
 slug: ms-MY/manual-pengguna/panduan-cara/skrip-repositori
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Skrip repositori ialah skrip shell yang anda konfigurasikan mengikut repositori
+(Tetapan → Repositori → ikon terminal pada baris repositori) yang dijalankan
+oleh pelayan Control Center terhadap **worktree sesuatu ruang** bagi repositori
+itu — checkout terasing di bawah
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` tempat ejen bekerja.
 
-There are two kinds:
+Terdapat dua jenis:
 
-| Script | When it runs | Use it for |
+| Skrip | Bila ia berjalan | Gunakannya untuk |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Persediaan** | Sejurus selepas worktree disediakan untuk sesuatu ruang | Memasang kebergantungan, menjana fail, menyalin `.env` |
+| **Arkib** | Sejurus sebelum worktree dimusnahkan atau dikutip oleh pengumpul sampah | Membersihkan sumber di luar worktree (rangkaian docker, terowong, keadaan luaran) |
 
-## Where scripts run
+## Di mana skrip berjalan
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Kedua-dua skrip dijalankan melalui `bash -lc` (shell log masuk, jadi alat yang
+dipasang melalui Homebrew/nvm berada pada `PATH`) dengan **worktree sebagai
+direktori kerja**, dan pemboleh ubah persekitaran ini ditetapkan:
 
-| Variable | Value |
+| Pemboleh ubah | Nilai |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktree (cwd skrip) |
+| `CC_ROOT_PATH` | Repositori sumber yang didaftarkan — checkout anda sendiri |
+| `CC_SPACE_ID` | Ruang yang memiliki worktree itu |
+| `CC_SPACE_NAME` | Nama paparan ruang itu |
+| `CC_REPO_NAME` | Nama paparan repositori itu |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+Contohnya, skrip persediaan yang memasang kebergantungan dan membawa masuk
+`.env` repositori yang diabaikan oleh git:
 
 ```bash
 pnpm install
@@ -39,28 +41,34 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Kelakuan kegagalan
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Skrip **persediaan** yang keluar dengan bukan sifar (atau melebihi tamat
+  masanya selama 5 minit) menggagalkan penyediaan ruang itu: ruang tersebut
+  menunjukkan keadaan gagal dengan pilihan cuba semula, dan hujung output
+  larian itu direkodkan. Cuba semula akan menyediakan daripada worktree yang
+  bersih dan menjalankan skrip itu sekali lagi — tulis skrip persediaan supaya
+  larian semula selepas pemasangan separa berkesan (pengurus pakej sudah
+  berkelakuan begitu).
+- Skrip **arkib** bersifat usaha terbaik: kegagalan (atau tamat masanya selama
+  2 minit) direkodkan tetapi **tidak pernah menyekat pemadaman**. Arkib
+  berjalan pada laluan GC tanpa sesiapa untuk menjawab gesaan (ruang dipadam,
+  PR dicantumkan, pembersihan berjadual).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Persediaan hanya berjalan pada worktree yang **baharu**: menghantar semula ejen
+ke ruang yang sudah panas menggunakan semula checkout yang sedia ada dan tidak
+membayar semula pemasangan.
 
-## Run history
+## Sejarah larian
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Setiap pelaksanaan direkodkan dengan status, tempoh, kod keluar dan hujung
+output terhadnya, yang kelihatan dalam dialog tetapan yang sama di bawah
+"Larian terkini" (langganan `repos.watchScriptRuns` menstrimnya secara
+langsung).
 
-## Permissions
+## Kebenaran
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Skrip ialah shell yang dilaksanakan oleh **pelayan**, jadi menulisnya terhad
+kepada pentadbir ruang kerja dan dijaga oleh kelas tindakan `processSpawn` —
+jaring guardrail yang sama yang mengawal setiap operasi penjanaan proses yang
+lain.

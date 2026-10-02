@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Modalità
+description: Perché è uno spazio, non un agente, a portare una modalità; che cosa garantisce ciascuna delle quattro modalità; e dove quella garanzia è strutturale anziché solo dichiarata nel prompt.
 slug: it-IT/manuale/concetti/modalita
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Che cos'è una modalità
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Una modalità è una proprietà di uno **spazio**, memorizzata come una singola colonna sulla riga dello spazio. Ogni conversazione all'interno di uno spazio la condivide, thread compresi — un thread eredita la modalità del suo spazio come qualsiasi altra conversazione. Lo stesso agente può quindi trovarsi in modalità diverse in spazi diversi nello stesso momento, e cambiare la modalità di uno spazio modifica ciò che accade al turno successivo senza toccare l'agente.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Le modalità sono esattamente quattro: `chat`, `review`, `plan`, `orchestrate`. L'enum in sé non porta alcuna policy. Tutto ciò che una modalità garantisce è dichiarato una volta sola, in un **profilo di capacità**, da cui proietta ogni livello di applicazione:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Superficie degli strumenti** — quali strumenti esistono in quella modalità, espressa come livello massimo di approvazione, una lista di autorizzazione, una lista di divieto e un insieme di classi di effetto rifiutate.
+2. **Verbo di output richiesto** — ciò che l'esecuzione deve chiamare per aver consegnato qualcosa.
+3. **Classi di effetto negate** — ciò che la guardia delle azioni rifiuta senza appello.
+4. **Postura del worktree** — se il worktree può essere scritto. È imposta rimuovendo dalla superficie gli strumenti che mutano, ed è ciò che la fa valere su ogni host. Dove l'host dispone di un sandbox del sistema operativo, la stessa postura ritaglia anche le regole di scrittura del filesystem — una modalità di sola lettura monta il worktree in sola lettura — ma quella è una seconda copia della garanzia, non quella che fa il lavoro.
+5. **Blocco del prompt di sistema** — un preambolo delle capacità _generato_ a partire dall'elenco effettivo degli strumenti materializzati, più indicazioni scritte a mano.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Ogni livello di applicazione proietta da quell'unico profilo, perciò la superficie degli strumenti, la guardia, la postura del worktree e il prompt non possono contraddirsi.
 
-## The four modes
+## Le quattro modalità
 
-### Chat — displayed as "Agent"
+### Chat — visualizzata come «Agente»
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+È la modalità predefinita e l'unica senza vincoli aggiuntivi: la superficie completa degli strumenti fino al livello di esecuzione, un worktree scrivibile, nessuna classe di effetto negata e nessun contratto di completamento. Usala per l'implementazione, la correzione di bug, le domande sulla codebase e qualsiasi cosa ad hoc.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Fai attenzione all'etichetta: nel composer la modalità è mostrata come **«Agente»**, non «Chat».
 
-### Plan — read-only, one deliverable
+### Piano — sola lettura, un solo risultato
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+La modalità Piano rende il worktree di sola lettura e rimuove del tutto gli strumenti di scrittura dalla superficie, così la restrizione è strutturale anziché impartita. L'agente legge, cerca e svolge ricerca, e consegna esattamente una cosa: una chiamata a `submit_plan` che porta con sé un grafo di dipendenze tipizzato — un obiettivo più nodi con chiavi, titoli, descrizioni e le chiavi dei nodi da cui ciascuno dipende.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Il piano viene mostrato come una riga compatta nella conversazione e apre Plan Studio in una scheda accanto. Approvarlo compila il grafo in un'orchestrazione, esegue il lavoro generato e riporta lo spazio di authoring alla modalità agente.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Se un'esecuzione in modalità Piano termina senza aver mai chiamato `submit_plan`, il loop inietta prima un sollecito che dice che il piano non esiste finché quella chiamata non va a buon fine. Il sollecito autorizza esplicitamente un'onesta uscita «qui non serve alcun piano», perché la modalità Piano è un'impostazione dello spazio e una semplice domanda posta al suo interno non deve forzare un piano fittizio.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/it-IT/manuale/concetti/ciclo-di-vita-invio/).
+:::note[Un contratto non soddisfatto non è un'esecuzione fallita]
+Un'esecuzione che termina senza il suo piano viene comunque registrata con stato `completed` — il processo è uscito in modo pulito. La verità sta nella vitalità dell'esecuzione (`empty`), nella famiglia di errore (`silentRun`) e in un riepilogo che nomina ciò che non è stato prodotto. Vedi [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Esiste una seconda via d'uscita, separata: `exit_plan_mode`. È un gate di approvazione rigido, non un verbo di output — un agente che la chiama invece di `submit_plan` non ha consegnato nulla. La prima chiamata apre un'approvazione durevole `plan_exit` e restituisce `pending`, e lo spazio resta di sola lettura; le chiamate ripetute restano `pending` invece di aprire un secondo gate. Solo una volta concessa l'approvazione una chiamata successiva riporta lo spazio alla modalità chat. Un rifiuto permette all'agente di aprire una nuova richiesta per un piano rivisto.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Per uscire tu stesso dalla modalità Piano, cambia il menu a discesa della modalità nel composer (oppure premi Shift+Tab). `exit_plan_mode` viene decisa con lo strumento MCP `decide_approval`. Le righe «approvazione dell'agente» della posta in arrivo sono un'altra cosa: richieste di conferma per singolo turno provenienti da un agente in esecuzione.
 
-### Review — read-only, no contract
+### Revisione — sola lettura, nessun contratto
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+La modalità Revisione è pensata per la revisione delle PR. Rende il worktree di sola lettura, limita la superficie degli strumenti al di sotto del livello di esecuzione e applica una lista di autorizzazione curata di strumenti di revisione, ticketing e comunicazione. Uno spazio aperto per una pull request viene creato automaticamente in modalità Revisione.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+L'output dell'agente è costituito da riscontri strutturati — i **nodi di revisione** — e, quando una revisione viene finalizzata, da un **verdetto**. Un nodo porta un tipo (`bug`, `suggestion`, `recommendation`, `question` o `ticket`), una priorità da P0 (blocca il rilascio) a P3 (da avere se possibile), una confidenza autovalutata, un'ancora facoltativa (file più un intervallo di righe; le note sull'intero repository non ne hanno) e uno stato del ciclo di vita che passa da `open` a `consensusReady` quando un pari — mai l'autore — lo conferma. Un riscontro la cui priorità o confidenza manca o è fuori intervallo viene scartato al confine di lettura anziché inquinare il verdetto.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Il verdetto è ship, hold o block ed è reso solo _più_ severo dai risultati per asse che vi confluiscono: un asse con gate fallito forza `block` e un asse con gate che non è potuto essere eseguito forza almeno `hold`. L'assenza di prove non rende mai verde un gate.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+A differenza di Piano e Orchestrazione, la Revisione non porta **alcun contratto di completamento**. I riscontri si accumulano tramite `add_review_node` e vengono pubblicati da `finalize_review`, ed entrambe possono legittimamente essere chiamate zero volte — un agente di pipeline in esecuzione in modalità Revisione può trovarsi lì per completare un ticket.
 
-### Orchestrate — read-only, proposes a team
+### Orchestrazione — sola lettura, propone un team
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+La modalità Orchestrazione trasforma un singolo obiettivo in un piano per un intero team. Come la modalità Piano è di sola lettura e non può scrivere file; sopra alla superficie di ricerca ha un unico verbo privilegiato, `propose_orchestration`, che emette una proposta strutturata: ruoli, un albero di sotto-ticket, un passaggio di sintesi e un budget. Il prompt nomina solo gli strumenti presenti sulla superficie, così il modello non spreca turni a raccontare assunzioni o lavoro sui ticket che non può chiamare.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/it-IT/manuale/concetti/orchestrazione/).
+Nulla nella proposta viene eseguito finché non la approvi. All'approvazione un materializzatore deterministico assume gli agenti, crea i ticket e un progetto ed esegue una pipeline generata. L'approvazione è riservata all'operatore: non esiste uno strumento MCP per farlo, quindi un agente può proporre ma non approvare mai il proprio piano. Le riproposte avviate da un agente sono limitate da un cooldown di due minuti, quindi i ripensamenti consecutivi vengono rifiutati e invitati a fondersi. Vedi [Orchestrazione](/it-IT/manuale/concetti/orchestrazione/).
 
-## Two rules worth knowing
+## Due regole da conoscere
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Il verbo di output di una modalità non può mai essere negato.** `submit_plan` e `propose_orchestration` sono fissati nella superficie degli strumenti e pre-approvati oltre il filtro degli strumenti, il gate di approvazione e la guardia delle azioni, così il quadrante dell'autonomia per spazio non può mettere a tacere il risultato di una modalità. Anche l'`ask_user` dell'harness è fissato per lo stesso motivo: è _il_ modo in cui un'esecuzione raggiunge l'operatore, quindi sottoporlo a un gate bloccherebbe un'esecuzione che deve chiedere qualcosa. È di livello lettura, quindi ogni modalità di sola lettura lo mantiene, ed è esente dal wrapper di approvazione — un prompt davanti a un prompt fallisce chiuso quando non c'è alcun approvatore collegato, il che negherebbe a un agente l'atto stesso di chiedere.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Le modalità di sola lettura non negano l'accesso alla rete né ai segreti.** Le classi di effetto che Revisione, Piano e Orchestrazione rifiutano sono quelle che cambiano il mondo: eliminazione di file, scritture fuori dal worktree, commit, push, creazione e pubblicazione di PR, scritture di sincronizzazione dei fornitori, installazione di pacchetti, avvio di processi, mutazione dello spazio di lavoro e controllo dei recinti. L'egress di rete e l'accesso ai segreti restano ai valori predefiniti di proposito — la ricerca è l'intero scopo di una modalità di sola lettura.
 
-## Choosing and changing a mode
+## Scegliere e cambiare una modalità
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Il menu a discesa della modalità nel composer offre **tre** opzioni: Agente (chat), Piano e Orchestrazione. `review` **non è selezionabile dall'utente** — viene impostata dal sistema quando si crea uno spazio per la revisione di una PR e dai passaggi di pipeline.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Un nodo di pipeline che **apre uno spazio** può fissare la modalità di quella stanza con una chiave `extras['mode']` (`chat`, `review` o `plan`). La chiave richiede una corrispondenza esatta: qualsiasi altra grafia — compresa `orchestrate` — viene ignorata in silenzio e la stanza ottiene il valore predefinito del body (`review` sul body create-space). Un passaggio agente entra in una stanza che non ha creato e non ne ridefinisce i permessi.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+La risoluzione in sé è semplice. Il dispatcher legge la colonna `mode` dello spazio; un invio senza spazio — un one-shot, un'invocazione da CLI o un id di spazio proveniente da un altro spazio di lavoro, che semplicemente non è nel file di database di questo spazio di lavoro — si risolve in `chat`. Il cambio di modalità ha effetto dal turno successivo.
 
-## Where the guarantee actually holds
+## Dove la garanzia vale davvero
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+La superficie degli strumenti di una modalità è costruita e applicata dall'**harness integrato**. È l'unico trasporto in grado di rendere uno strumento invisibile anziché semplicemente negato, di sottoporre a un gate ogni chiamata prima che venga eseguita e di osservare un contratto di completamento.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/it-IT/manuale/concetti/modello-agenti/).
+Sul trasporto Claude Code una modalità diversa da chat viene passata come `--permission-mode plan`. Claude lo rispetta per convenzione; i suoi strumenti di lettura, scrittura, modifica e shell vengono eseguiti senza essere visti. Per quel trasporto la modalità è un'indicazione, non un confine di Control Center — vedi [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Le liste di autorizzazione vincolano gli strumenti di livello scrittura e superiore. Il livello di lettura dell'harness integrato raggiunge comunque strumenti che nessuna lista nomina; su Claude Code, uno strumento omesso dalla lista di autorizzazione viene rifiutato che il server lo abbia o no.
 
-## Related concepts
+## Concetti correlati
 
-- [Agent dispatch lifecycle](/it-IT/manuale/concetti/ciclo-di-vita-invio/): where the mode is resolved and projected
-- [The agent model](/it-IT/manuale/concetti/modello-agenti/): which transports can enforce a mode
-- [Guardrails](/it-IT/manuale/concetti/guardrail/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/it-IT/manuale/concetti/orchestrazione/): what an approved orchestrate proposal does
-- [Use plan mode](/it-IT/manuale/guide/modalita-piano/): the practical walkthrough
+- [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/): dove la modalità viene risolta e proiettata
+- [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/): quali trasporti possono applicare una modalità
+- [Guardrail](/it-IT/manuale/concetti/guardrail/): la policy delle classi di effetto in cui confluisce la preimpostazione di una modalità
+- [Orchestrazione](/it-IT/manuale/concetti/orchestrazione/): che cosa fa una proposta di orchestrazione approvata
+- [Usa la modalità piano](/it-IT/manuale/guide/modalita-piano/): la guida pratica passo passo

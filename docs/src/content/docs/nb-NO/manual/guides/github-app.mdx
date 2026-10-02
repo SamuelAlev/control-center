@@ -1,138 +1,145 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Opprett GitHub App
+description: Registrer en GitHub App for serveren din, slik at medlemmer kan logge inn, og slik at bakgrunnsarbeid kjører som appen i stedet for som en person.
 slug: nb-NO/handbok/slik-gjor-du/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Denne veiledningen viser deg hvordan du gir serveren din sin egen
+GitHub-identitet. Det tar omtrent to minutter, bare servereieren gjør det, og det
+må bare gjøres én gang per server.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Du trenger den kanskje ikke]
+Et offisielt bygg leveres allerede med en GitHub-**client id**, så
+[Logg inn med GitHub](/nb-NO/handbok/slik-gjor-du/github-integrasjon/) fungerer
+med en gang uten at noe er registrert — en enhetsflyt autentiserer med client
+id-en alene, så det er trygt å levere. Registrer din egen app når du vil at
+SERVEREN skal opptre som seg selv (webhooks, PR-polling og sakssynkronisering som
+kjører på en appinstallasjon i stedet for på en persons påloggingsinformasjon),
+eller når du bygger fra kildekode.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
+For å koble til din egen konto etterpå, se
+[Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
 
-## Why your server needs its own app
+## Hvorfor serveren din trenger sin egen app
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+To forskjellige oppgaver kommer ut av én registrering, og appen er det som gjør
+begge troverdige:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
+| Oppgave                    | Hva som svarer                                | Hvorfor det betyr noe                                                                                       |
 | ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| **En person logger inn**  | Appens client id, via enhetsflyten      | Du får påloggingsinformasjon som er din, på serveren, på hver enhet — uten et token å lime inn eller rotere |
+| **Serveren opptrer**    | Appens id + private key → installasjonstoken | Webhooks, PR-polling og sakssynkronisering slutter å avhenge av at én persons token fortsatt er gyldig            |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Legg merke til hva som **ikke** står i den tabellen: en client secret. GitHubs
+enhetsflyt autentiserer med client id-en alene — både forespørselen om
+enhetskode og token-pollingen — så det finnes ingen secret å ta vare på for
+pålogging.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Uten din egen app fungerer det første fortsatt gjennom client id-en bygget
+leverer; det andre faller tilbake til servereierens påloggingsinformasjon, så
+bakgrunnsarbeid hviler på den som satte opp serveren først.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Det finnes ingen «installer Control Centers GitHub App»-knapp]
+En distribuert GitHub App ville bety én delt client secret og én delt
+installasjon på tvers av alles servere, så hvert arbeidsområdes tilgang til
+repoer ville gå gjennom påloggingsinformasjon som ingen i det arbeidsområdet
+kontrollerer. Hver server eier derfor sin egen app — denne veiledningen handler
+om hvor lite det koster.
 :::
 
-## Prerequisites
+## Forutsetninger
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Du er **servereier** — `providerApps.*`-operasjonene er forbeholdt denne
+  rollen, og kortet er usynlig for alle andre
+- En GitHub-konto, eller en organisasjon der du kan opprette apper
+- Ingenting offentlig tilgjengelig: påloggingen er en **enhetsflyt**, så
+  serveren trenger ingen inngående port, tunnel, callback-URL eller domene
 
-## Register the app
+## Registrer appen
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Gå til [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (for en organisasjon: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — hva som helst; `Control Center (yourname)` går fint.
+   Navnet vises på commits og kommentarer serveren legger inn
+3. **Homepage URL** — hva som helst, f.eks. `https://github.com/your-name`
+4. **Callback URL** — la den stå tom. Enhetsflyten bruker ingen
+5. Hak av for **Enable Device Flow**. Dette er den ene innstillingen
+   påloggingen ikke kan fungere uten
+6. Fjern haken for **Webhook → Active** med mindre du setter opp webhooks
+   separat
+7. Under **Repository permissions** gir du minst:
    - **Contents**: Read and write
    - **Metadata**: Read-only (mandatory)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, hvis du bruker GitHub Issues som saker, og for
+     botens kommentarsøk i PR-samtaler
+     (se [Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/))
+   - **Checks**: Read-only, for CI-status på PR-siden
+8. Under **Where can this GitHub App be installed?** velger du det som passer —
+   «Only on this account» er riktig for en personlig server
+9. Klikk **Create GitHub App**
 
-## Collect the three values
+## Hent ut de tre verdiene
 
-On the app's page, immediately after creation:
+På appens side, rett etter at den er opprettet:
 
-| Value           | Where                                             |
+| Verdi           | Hvor                                             |
 | --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| **App ID**      | **General**-fanen, nær toppen                 |
+| **Client ID**   | **General**-fanen, under «Client secrets»       |
+| **Privat nøkkel** | **Generate a private key** — en `.pem` lastes ned   |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Filen med den private nøkkelen lastes ned én gang, og GitHub viser den aldri
+igjen. Ta vare på den til du har limt den inn; du kan alltids generere en ny.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+En **client secret** er valgfri og gir deg nøyaktig én ting: hvis du lar «Expire
+user authorization tokens» stå PÅ, er det denne som fornyer noens token i det
+stille i stedet for å be dem logge inn på nytt hver åttende time. Selve
+påloggingen bruker den aldri.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Det enkleste oppsettet er å slå den utløpsinnstillingen AV, og da trengs ingen
+secret noe sted. Hvis du beholder den på, genererer du en secret og limer den
+inn i **Innstillinger → Server → Enkel pålogging** (kortet **Leverandørapper**)
+— det finnes ingen miljøvariabel for den, og ingen er bakt inn i et bygg, så den
+blir værende på serveren din.
 
-## Install it on your account
+## Installer den på kontoen din
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+En app som er registrert, men ikke installert, kan autentisere folk, men ikke
+lese noe.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. På appens side åpner du **Install App**
+2. Installer den på kontoen eller organisasjonen din
+3. Velg **All repositories**, eller velg de repoene denne serveren skal se
 
-## Paste it into Control Center
+## Lim den inn i Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til kortet
+   **Leverandørapper**
+2. I **GitHub**-blokken fyller du ut hvert felt:
+   - **App-id** — det numeriske App ID
+   - **Privat nøkkel** — lim inn hele `.pem`-en, inkludert `BEGIN`- og
+     `END`-linjene
+   - **Client id** — fra samme side
+   - **Client secret** — bare hvis du genererte en (for tokenfornying)
+3. Klikk **Test**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Nøkkelen analyseres idet den lagres, så en avkuttet eller feilformatert
+innliming avvises der og da i stedet for å feile på en bakgrunnsforespørsel
+flere timer senere. **Test** går lenger og spør GitHub hvilke kontoer appen er
+installert på — «lagret» og «virker» er forskjellige påstander, og bare den
+andre betyr at noe faktisk vil kjøre.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Sjekkpunkt: GitHub-blokken viser «Serveren kan opptre som seg selv, og folk kan
+logge inn», og **GitHub**-raden under **Innstillinger → Arbeidsområde → Profil og
+identitet → Kodehosting** tilbyr nå **Logg inn med GitHub**.
 
-## Configure it with environment variables instead
+## Konfigurer den med miljøvariabler i stedet
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+For en headless- eller skriptbasert installasjon fyller serveren hvert felt fra
+miljøet første gang det ikke har en lagret verdi:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +147,67 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Det finnes ingen kommandolinjeflagg for disse — en secret på en kommandolinje
+kan leses av alle prosesser på verten gjennom `ps`. Miljøet er det eneste stedet
+å konfigurere dem, og det overstyrer det bygget måtte levere. `.env.template` er
+den komplette listen.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+For lokal utvikling har `.env` i repo-roten de samme verdiene, og
+skrivebordsappen sender dem videre til serveren den starter. Legg nøkkelen på
+**én linje** der: en `.env`-verdi er én linje, og `\n` inne i doble
+anførselstegn dekodes til et linjeskift.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` og `GITHUB_APP_PRIVATE_KEY` er de samme navnene som sandkassens
+tokenmegler allerede leser, så en vert som har konfigurert finkornede
+agenttokens, får påloggingsbanen gratis. Fylling fra miljøet skjer **én gang per
+felt** — etter det vinner den lagrede verdien, så redigeringer i Innstillinger
+blir ikke overskrevet ved neste omstart.
 
-## Do the same for Linear
+## Gjør det samme for Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear har ingen enhetsflyt, så påloggingen der er en runde i nettleseren, og
+den trenger en callback-URL — kortet **Leverandørapper** viser deg nøyaktig
+hvilken du skal registrere.
 
-1. Create an OAuth application at
+1. Opprett en OAuth-applikasjon på
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Sett **Callback URL** til URL-en kortet viser, ordrett
+3. Lim inn **Client ID** og **Client secret** i Linear-blokken
+4. Legg eventuelt til en **API-nøkkel** for arbeidsområdet — det er
+   påloggingsinformasjonen serveren bruker til å synkronisere saker når ingen har
+   bedt om det
 
-## Troubleshooting
+## Feilsøking
 
-### The sign-in dialog says the provider returned no device code
+### Påloggingsdialogen sier at leverandøren ikke returnerte noen enhetskode
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** er slått av for appen. Slå den på under **General** og
+prøv igjen.
 
-### Test says the credentials work but the app is not installed anywhere
+### Test sier at påloggingsinformasjonen virker, men at appen ikke er installert noe sted
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Registrering og installasjon er to separate steg. Åpne **Install App** på appens
+side og installer den.
 
-### Test says the private key could not be read
+### Test sier at den private nøkkelen ikke kunne leses
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Lim inn hele `.pem`-filen, inkludert linjene `-----BEGIN` og `-----END`. En
+`ed25519`- eller EC-nøkkel kan ikke brukes — GitHub Apps signerer med RSA.
 
-### A member signed in but sees no repositories
+### Et medlem logget inn, men ser ingen repoer
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Appen er ikke installert på kontoen som eier dem, eller installasjonen omfatter
+andre repoer. Medlemmets egen pålogging gir bare tilgang til det appen har lov
+til å se.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Set up GitHub integration](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
-- [Talk to Control Center from a GitHub PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/)
-- [Connect a code host](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/)
-- [Manage API keys](/nb-NO/handbok/slik-gjor-du/api-nokler/)
-- [Set up Slack integration](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)
+- [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
+- [Snakk med Control Center fra en GitHub-PR](/nb-NO/handbok/slik-gjor-du/github-pr-samtaler/)
+- [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/)
+- [Administrer API-nøkler](/nb-NO/handbok/slik-gjor-du/api-nokler/)
+- [Sett opp Slack-integrasjon](/nb-NO/handbok/slik-gjor-du/slack-integrasjon/)

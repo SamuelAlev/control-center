@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Запускати агентів паралельно
+description: Запускайте кілька агентів одночасно й не давайте їхній роботі конфліктувати.
 slug: uk-UA/керівництво/практичні-посібники/паралельні-агенти
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+У цьому посібнику показано, як запускати кілька агентів одночасно, щоб вони не перезаписували роботу одне одного.
 
-## The unit of isolation is the space, not the agent
+## Одиниця ізоляції — простір, а не агент
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Коли в просторі починається робота, Control Center готує по одному checkout із copy-on-write для кожного зареєстрованого репозиторію під власним коренем цього простору, на гілці, похідній від шаблону гілки робочого простору. Далі кожен агент у просторі отримує власний робочий каталог оверлею — але ці оверлеї **спільно використовують** каталог `repos/` цього простору.
 
-So:
+Отже:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Два агенти в **різних просторах** працюють у різних checkout, на різних гілках. Це справжня ізоляція.
+- Два агенти в **одному просторі** працюють у тому самому checkout, на тій самій гілці. Їхні шляхи оверлеїв відрізняються, тож блокування шляху диспетчеризації (яке серіалізує запуски лише тоді, коли вони запитують ідентичний робочий каталог) їх теж не серіалізує. Вони можуть писати в ті самі файли одночасно.
 
-The rule that follows: **one space per parallel task.**
+Звідси правило: **один простір на паралельне завдання.**
 
-## Run tasks in parallel — separate spaces
+## Запускайте завдання паралельно — окремі простори
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Відкрийте простір з агентом A і надішліть йому завдання.
+2. Відкрийте другий простір з агентом B і надішліть йому інше завдання.
+3. Обидва запускаються негайно — кожен у власному checkout простору на власній гілці.
 
-This is the recipe to use whenever the agents will be editing files.
+Це рецепт, який варто застосовувати щоразу, коли агенти редагуватимуть файли.
 
-## Work together in one space — several mentions
+## Працюйте разом в одному просторі — кілька згадок
 
-In a single space, @-mention more than one agent:
+В одному просторі @-згадайте більше ніж одного агента:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Обидва агенти запускаються паралельно й потоком надсилають дані в той самий простір, з позначкою відправника. Оскільки вони спільно використовують checkout простору, використовуйте це для співпраці — один пише, інший читає, або двоє агентів міркують про те саме дерево — а не для двох незалежних редагувань.
 
-## Fan out from a pipeline
+## Розгалуження з конвеєра
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Вбудований шаблон `pr_review` — це готовий приклад розгалуження: кілька вузлів-рев’юерів виконуються одночасно від одного тригера, а вузол **Consolidate (join)** згортає їхні висновки в один звіт. Запустіть його з екрана конвеєрів — і кожен рев’юер запуститься паралельно.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Редактор конвеєрів ховає термінальний сторожовий елемент і перепростоює його так, щоб той чекав на кожен живий стік, коли ви додаєте або з’єднуєте крок, — тож гілки, які ви намалюєте самі, справді виконуються.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Призначення тікета нічого не запускає]
+Призначення тікета агенту фіксує власність. Диспетчера тікетів не існує — `TicketAssigned` є сигналом аудиту, і жодна робота з нього не починається. Єдиний виняток — тікет, призначений _команді_, який будить лідера цієї команди.
 :::
 
-## Watch them run
+## Спостерігайте, як вони працюють
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Спостережуваність → Наживо** (нижній колонтитул бічної панелі → «Спостережуваність», далі вкладка «Наживо») показує список агентів цього робочого простору, який оновлюється щосекунди: стан (виконується / очікує / припарковано / перервано), що робить кожен із них, токени й вартість останнього запуску та керування завершенням для процесу, що виконується. Вибір рядка закріплює висувну панель зі стенограмою.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Налаштування → Робочий простір → Агенти** показує той самий список з іншим словником станів, де на першому місці увага, який виводиться з історії запусків кожного агента — виконується, заблоковано, не вдалося, неактивний, запусків ще немає — і відсортований так, що все, що потребує уваги, спливає вгору. Вкладка **Журнали** кожного агента містить його власну історію запусків.
 
-Both surfaces are scoped to the active workspace.
+Обидві поверхні обмежено активним робочим простором.
 
-## Handle conflicts
+## Розв’язуйте конфлікти
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+У різних просторах кожен простір перебуває на власній гілці, тож зіткнення постає як звичайний конфлікт злиття Git, коли ви зливаєте другий pull request. Розв’яжіть його так само, як будь-який конфлікт злиття.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Усередині одного простору немає ні межі гілок, ні блокування: агенти пишуть у ті самі файли наживо, і той, хто програв, просто перезаписується. Якщо вам кортить, щоб два агенти редагували в одному просторі, натомість розділіть роботу на два простори.
 
-To reduce collisions either way:
+Щоб зменшити зіткнення в обох випадках:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/).
-- Review and merge each agent's pull request promptly.
+- Дайте кожному агенту окрему ділянку — різні файли, різні модулі.
+- Перш ніж запускати, перевірте через граф коду, чого торкається зміна. Див. [Пошук коду через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/).
+- Своєчасно переглядайте та зливайте pull request кожного агента.
 
-## Resource considerations
+## Міркування щодо ресурсів
 
-Each running agent costs:
+Кожен агент, що виконується, коштує:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Checkout простору — мізерні витрати на диску, поки доступний copy-on-write; у Windows — `git worktree`. Файлова система, яка не вміє reflink, провалює підготовку, а не копіює.
+- Процес на хості сервера
+- Токени моделі, які накопичуються на кожного агента
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/uk-UA/керівництво/практичні-посібники/керувати-витратами/) for the two commands that do have one.
+Витрати потрапляють у **Спостережуваність → Інсайти**. Зауважте, що звичайний інтерактивний хід не має обмеження витрат; див. [Керувати витратами](/uk-UA/керівництво/практичні-посібники/керувати-витратами/), щоб дізнатися про дві команди, які його мають.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/)
-- [Build an agent team](/uk-UA/керівництво/практичні-посібники/зібрати-команду/)
-- [Manage costs](/uk-UA/керівництво/практичні-посібники/керувати-витратами/)
-- [Add repos to a workspace](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/)
+- [Зібрати команду агентів](/uk-UA/керівництво/практичні-посібники/зібрати-команду/)
+- [Керувати витратами](/uk-UA/керівництво/практичні-посібники/керувати-витратами/)
+- [Додати репозиторії до робочого простору](/uk-UA/керівництво/практичні-посібники/додати-репозиторії/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/)
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/)
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)

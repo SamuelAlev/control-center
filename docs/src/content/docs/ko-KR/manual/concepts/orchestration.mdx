@@ -1,113 +1,117 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: 오케스트레이션
+description: 하나의 "큰 요청"이 한 번만 승인하면 되는 팀 전체 계획이 되고, 그것을 실행하는 파이프라인이 생성되기까지의 과정을 설명합니다.
 slug: ko-KR/매뉴얼/개념/오케스트레이션
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+에이전트 하나는 한 가지 일을 잘합니다. 하지만 어떤 요청은 그보다 큽니다.
+"X 시장을 조사해서 포지셔닝 문서를 써 줘", "이 기능을 끝까지 출시해 줘",
+"이 모듈을 감사하고 발견한 문제를 고쳐 줘" 같은 요청입니다.
+**오케스트레이션**은 Control Center가 이런 요청을 처리하는 방식입니다.
+오케스트레이터(보통 CEO 에이전트)가 팀 전체 계획을 제안하면, 여러분은
+그것을 **한 번** 승인하고, 결정적 머티리얼라이저가 그 계획을 실제로 작업을
+수행하는 파이프라인으로 바꿉니다.
 
-It sits between the two existing ways of getting work done:
+이것은 기존에 작업을 처리하던 두 방식 사이에 자리합니다.
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ko-KR/매뉴얼/개념/디스패치-수명주기/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ko-KR/매뉴얼/개념/파이프라인/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| 이런 것을 원할 때                     | 사용                                                          |
+| ------------------------------------- | ------------------------------------------------------------- |
+| 작업 하나를 에이전트 하나에 맡기기    | [스페이스에서 보내는 메시지](/ko-KR/매뉴얼/개념/디스패치-수명주기/) |
+| 이미 알고 있는 프로세스를 직접 정의하기 | [파이프라인 템플릿](/ko-KR/매뉴얼/개념/파이프라인/)            |
+| 목표만 말하고 계획은 팀이 세우게 하기 | **오케스트레이션**                                            |
 
-## The shape of a proposal
+## 제안의 구조
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+오케스트레이터에 목표를 주면, 구조화된 **`OrchestrationProposal`**이
+돌아옵니다. 자유 형식의 산문이 아니라 앱이 검증하고 실행할 수 있는 타입이
+지정된 계획입니다. 제안에는 다음이 포함됩니다.
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ko-KR/매뉴얼/개념/티켓/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **목표**: 여러분의 상위 수준 요청을 다시 표현한 것입니다.
+- **역할**: 일을 수행하는 주체입니다. 각 역할은 여러분이 고르는 **기존
+  에이전트**이거나, 승인 시 오케스트레이션이 만드는 **신규 채용**입니다.
+- **하위 티켓**: 작업을 [티켓](/ko-KR/매뉴얼/개념/티켓/)의 DAG로 분해한 것입니다.
+- **리서치** _(선택 사항)_: 가장 먼저 실행되어 나머지에 입력을 넘기는 리서치 단계입니다.
+- **토론** _(선택 사항)_: 작업을 시작하기 전에 각 역할이 구조화된 입장을
+  올리는, 횟수가 정해진 라운드입니다.
+- **종합**: 산출물을 만들어 내는 마지막 단계입니다.
+- **예산**: 선언된 비용 상한입니다.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[예산은 권고 사항입니다]
+제안의 비용 상한은 계획의 추정 총액과 비교되어, 승인하기 _전에_ 승인 바에서
+예산을 초과한 계획에 표시를 남깁니다. 실행이 시작된 뒤에는 이 값을 읽는
+곳이 없으므로, 예산을 초과한 오케스트레이션을 중지시키거나 실패시키지
+않습니다. 에이전트별·워크스페이스별 예산 정책은 별개의 메커니즘이며, 실제로
+지출을 일시 중지하는 것은 이 정책입니다.
 :::
 
-## Where you review it
+## 어디에서 검토하나요
 
-Two surfaces show the same orchestration.
+같은 오케스트레이션을 보여 주는 두 개의 화면이 있습니다.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**제안 카드**는 계획을 만들어 낸 대화에 있습니다. 제안됨, 실행 중, 완료됨이라는
+전체 수명주기를 거치며 다시 렌더링되는 하나의 메시지이며, 그 위에 승인과
+취소 액션이 있습니다.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio**는 편집기입니다. DAG 캔버스, 노드 인스펙터, 리비전과 diff
+드로어, 그리고 추정치를 표시하는 승인 바로 이루어집니다. 이 카드에서 곧바로
+편집기 탭으로 열립니다. 사이드바에는 "플랜" 항목이 의도적으로 없습니다.
+`/plans`와 `/plans/:kind/:id`는 공유를 위한 딥 링크로 존재합니다.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+승인은 **운영자 전용**입니다. 이를 위한 MCP 도구는 없습니다. 에이전트는
+제안(`propose_orchestration`)하고, 계획을 제출(`submit_plan`)하고, 플레이북을
+인스턴스화(`run_playbook`)할 수 있지만, 승인은 사람만 할 수 있습니다. 또한
+에이전트가 시작한 리비전은 2분 쿨다운으로 속도가 제한되므로, 재계획
+루프는 피드를 뒤덮는 대신 하나로 합쳐집니다.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+승인 전에 바꿀 수 있는 것은 노드 인스펙터가 보여 주는 범위입니다. 하위
+티켓의 제목을 바꾸거나 내용을 다시 쓰고, 소유하는 **역할**을 변경하고,
+의존성을 다시 연결하고, 출력 스키마를 편집하거나, 노드를 아예 삭제할 수
+있습니다. 구조 노드(리서치, 토론, 종합)와 이미 실행된 노드는 읽기
+전용입니다. 편집기에서는 역할을 특정 이름의 에이전트에 고정할 수 없고,
+예산도 편집할 수 없습니다.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+하나의 계획을 두 사람이 편집하는 상황은 병합이 아니라 낙관적 동시성으로
+해결합니다. 모든 편집은 자신이 기준으로 삼은 `base_revision`을 함께
+가지고 있습니다. 오래된 리비전을 기준으로 한 편집은 다른 사람의 편집을
+조용히 덮어쓰는 대신 "the plan moved on"과 함께 거부됩니다. 되감기도
+삭제가 아닙니다. 이전 제안을 새 리비전으로 덧붙이므로, 리비전 타임라인은
+오직 늘어나기만 합니다.
 
-## Honest estimates, or none
+## 정직한 추정, 아니면 없음
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+승인 바의 추정치는 각 역할의 실제 완료된 실행 이력을 바탕으로
+사분위(p25–p75) 구간으로 계산됩니다. 비용 총액은 추정 가능한 노드를
+**합산**합니다. 소요 시간은 합이 아니라 DAG를 가로지르는 **임계 경로**입니다
+(병렬 분기는 서로 겹칩니다).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+**완료된 실행 이력이 없는** 역할의 노드는 `sampleSize: 0`과 null 범위를
+보고합니다. 이는 정확히 그대로 — 알 수 없음 — 으로 렌더링되며, 결코
+지어낸 단일 값으로 표시되지 않습니다. 믿을 수 없는 추정은 추정이 아예 없는
+것보다 나쁘기 때문입니다. 이력이 있는 노드와 없는 노드가 섞여 있으면 총계는
+부분으로 표시됩니다. 영향 범위는 노드가 `symbol` 또는 `file` 출처 참조를
+선언한 경우에만 나타납니다. 그런 참조가 없는 노드는 산문에서 유추하는 대신
+"알 수 없음"으로 남습니다.
 
-## One approval, then deterministic execution
+## 한 번의 승인, 그다음 결정적 실행
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ko-KR/매뉴얼/개념/파이프라인/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+이것이 핵심 아이디어입니다. **에이전트가 계획하고, 결정적 함수가 실행합니다.**
+승인하면 LLM도 I/O도 없는 순수 함수인 `OrchestrationMaterializer`가 제안을
+실제 [파이프라인](/ko-KR/매뉴얼/개념/파이프라인/)으로 변환합니다. 같은 제안과
+같은 확정된 역할이 주어지면 항상 같은 DAG를 만들어 냅니다. 이 점이 중요한
+것은 생성된 파이프라인이 엔진이 이미 무료로 제공하는 모든 것을 물려받기
+때문입니다. 재시작을 넘나드는 일시 중지와 재개, 크래시 복구, 실행별 비용과
+토큰 집계, 실행 상세 UI가 그것입니다.
 
-Approval also creates the scaffolding the work needs:
+승인은 작업에 필요한 골격도 만듭니다.
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- 신규로 표시된 역할을 **채용**합니다(채용한 에이전트 id를 기록하므로 승인
+  도중 크래시가 나도 중복 채용 없이 재개할 수 있습니다)
+- 역할을 묶는 **팀**
+- 상위 티켓을 등록하는 **프로젝트**
+- 이 모든 것을 구동하는 **파이프라인 템플릿 + 실행**
 
-## The lifecycle
+## 수명주기
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +119,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| 상태           | 의미                                                                             |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | 계획이 준비되어 한 번의 사전 승인을 기다리고 있습니다                            |
+| `approved`     | 승인했습니다. 머티리얼라이제이션이 진행 중입니다(채용, 팀, 프로젝트, 파이프라인) |
+| `executing`    | 생성된 파이프라인이 실행 중입니다: 하위 티켓, 토론, 작업                          |
+| `synthesizing` | 하위 티켓이 끝났고, 종합 단계가 산출물을 만들고 있습니다                         |
+| `completed`    | 완료: 상위 티켓이 완료로 표시되고 산출물이 공유 스페이스에 게시됩니다            |
+| `failed`       | 머티리얼라이제이션이 실패했거나 생성된 파이프라인 실행이 실패했습니다            |
+| `cancelled`    | 취소했습니다                                                                     |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+단조 증가하는 **리비전** 번호는 오케스트레이터가 상태가 아직 `proposed`인
+동안 제안을 개정할 때마다 그 제안을 추적합니다. 앱은 여러분이 승인한
+리비전을 기록합니다. `propose_orchestration`은 상태가 더 이상 `proposed`가
+아니면 리비전을 거부합니다.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+오케스트레이션은 항상 **상위 티켓**을 기준으로 열리고 하나의 토론
+**스페이스**를 공유하므로, 전체 작업을 단일 작업 항목으로 추적할 수 있고
+팀은 한 방에서 이야기합니다.
 
-## What happens when it finishes
+## 완료되면 어떻게 되나요
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+상시 동작하는 리스너가 생성된 파이프라인을 지켜보다가, 그 종료 상태를
+오케스트레이션과 상위 티켓에 반영합니다. 따라서 완료와 실패는 여러분이 이미
+보고 있는 위치에 나타납니다. 오케스트레이션 기능은 자체 실행 엔진이 필요
+없습니다.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+오케스트레이션은 언제든지 취소할 수 있습니다. 취소하면 진행 중인 작업이
+정리됩니다.
 
 ::::note
-Orchestration builds on [pipelines](/ko-KR/매뉴얼/개념/파이프라인/) and
-[tickets](/ko-KR/매뉴얼/개념/티켓/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+오케스트레이션은 [파이프라인](/ko-KR/매뉴얼/개념/파이프라인/)과
+[티켓](/ko-KR/매뉴얼/개념/티켓/) 위에 세워집니다. 별도의 런타임이라기보다
+그 위에 얹히는 계획과 승인 계층입니다.
 ::::
 
-## See also
+## 함께 보기
 
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ko-KR/매뉴얼/개념/티켓/): the parent ticket an orchestration is anchored on
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): the roles an orchestration fills or hires
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
-- [Work in Plan Studio](/ko-KR/매뉴얼/사용-가이드/plan-studio/)
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/): 머티리얼라이즈된 오케스트레이션이 실행되는 엔진
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/): 오케스트레이션이 고정되는 상위 티켓
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 오케스트레이션이 채우거나 채용하는 역할
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
+- [Plan Studio에서 작업](/ko-KR/매뉴얼/사용-가이드/plan-studio/)

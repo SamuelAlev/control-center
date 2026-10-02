@@ -1,213 +1,241 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Συσκέψεις και μεταγραφή
+description: Πώς το Control Center καταγράφει μια κλήση, τη μεταγράφει και τη χωρίζει σε ομιλητές στον διακομιστή και πού βρίσκεται το ένα βήμα που φεύγει από τον κεντρικό υπολογιστή.
 slug: el-GR/εγχειρίδιο/έννοιες/συσκέψεις
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Το Control Center μπορεί να καταγράψει μια κλήση και να σου επιστρέψει ένα
+καθαρό κείμενο — σύνοψη, στοιχεία ενέργειας και αποφάσεις — με την αναγνώριση
+ομιλίας και τον διαχωρισμό ομιλητών να εκτελούνται στο δικό σου υλικό. Σκέψου
+το Granola, αλλά φιλοξενημένο από εσένα και συνδεδεμένο στον ίδιο χώρο εργασίας
+όπου ζουν οι πράκτορές σου.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Η εγγραφή χρειάζεται μοντέλο φωνής και επανεκκίνηση του διακομιστή]
+Η εγγραφή και η υπαγόρευση ξεκινούν αφού υπάρχει ένα μοντέλο ομιλίας (ASR) στον
+δίσκο **και** ο διακομιστής έχει επανεκκινηθεί. Μια κανονική εκκίνηση εγκαθιστά
+αναγκαστικά το επιλεγμένο μοντέλο (Parakeet TDT 0.6B v3 από προεπιλογή) στο
+παρασκήνιο, αλλά ο διακομιστής προσδιορίζει τις διαδρομές των μοντέλων φωνής
+ακριβώς μία φορά κοντά στην αρχή της εκκίνησης — λεπτά πριν προλάβει να
+ολοκληρωθεί αυτή η λήψη. Αφού το μοντέλο αναφέρει ότι εγκαταστάθηκε, κάνε
+επανεκκίνηση του `cc_server`. Για να διαλέξεις διαφορετική έκδοση, χρησιμοποίησε
+Ρυθμίσεις → Διακομιστής → Μοντέλα φωνής και συσκέψεων — αυτό χρειάζεται επίσης
+επανεκκίνηση.
 :::
 
-## What a meeting is
+## Τι είναι μια σύσκεψη
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Μια **σύσκεψη** είναι μια καταγεγραμμένη, μεταγραμμένη συνεδρία. Δεν είναι το ίδιο
+πράγμα με ένα [συμβάν ημερολογίου](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/): ένα
+συμβάν είναι μια προγραμματισμένη δέσμευση που συγχρονίζεται από τη Google, ενώ
+μια σύσκεψη είναι κάτι που κατέγραψες πραγματικά. Τα δύο μπορούν να συνδεθούν,
+αφού μπορείς να ξεκινήσεις μια εγγραφή από ένα συμβάν, αλλά παραμένουν ξεχωριστές
+καταγραφές.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Κάθε σύσκεψη έχει εμβέλεια χώρου εργασίας, όπως όλα τα άλλα στο Control Center.
+Συσκέψεις που καταγράφηκαν σε έναν χώρο εργασίας δεν εμφανίζονται ποτέ σε άλλον.
 
-## Where the work happens
+## Πού γίνεται η δουλειά
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+Το «στη συσκευή» είναι το σωστό ένστικτο αλλά η λάθος λέξη. Ο πελάτης συλλαμβάνει
+τον ήχο και μεταδίδει ροή πλαισίων PCM16 των 16 kHz στο **μηχάνημα που εκτελεί το
+`cc_server`**. Αυτός ο κεντρικός υπολογιστής κάνει όλα τα υπόλοιπα: γράφει τα WAV
+ανά κανάλι κάτω από το `<dataDir>/meetings/<meetingId>/`, μεταγράφει σε isolate
+εργάτη, φιλτράρει την ηχώ και κάνει διαχωρισμό ομιλητών εκ των υστέρων. Σε έναν
+αυτόνομο υπολογιστή, αυτός ο κεντρικός υπολογιστής είναι το ίδιο μηχάνημα. Όταν
+δείχνει σε απομακρυσμένο διακομιστή, δεν είναι — οπότε το «τίποτα δεν φεύγει από
+τον φορητό μου» ισχύει μόνο όταν ο διακομιστής είναι ο φορητός σου.
 
-There is one further exception and it is the important one.
+Υπάρχει μια ακόμη εξαίρεση και είναι η σημαντική.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Η σύνοψη φεύγει από τον κεντρικό υπολογιστή]
+Η απομαγνητοφώνηση και οι σημειώσεις σου αποστέλλονται σε όποιον πάροχο μοντέλου
+έχει ρυθμιστεί ο πράκτορας σύνοψης. Για οποιονδήποτε πάροχο cloud, αυτό σημαίνει
+ότι ολόκληρη η απομαγνητοφώνηση πηγαίνει στο API αυτού του παρόχου. Αν μια
+απομαγνητοφώνηση δεν πρέπει να φύγει από τον κεντρικό υπολογιστή, στρέψε τον
+πράκτορα σύνοψης σε τοπικό endpoint (Ollama, LM Studio ή άλλον τοπικό διακομιστή).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Όλα πριν από τη σύνοψη — καταγραφή, μεταγραφή, ακύρωση ηχούς, διαχωρισμός
+ομιλητών, αντιστοίχιση ηχητικών αποτυπωμάτων — εκτελούνται στον διακομιστή χωρίς
+καμία κλήση δικτύου.
 
-## Which models ship
+## Ποια μοντέλα περιλαμβάνονται
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Τα μοντέλα **embedding, διαχωρισμού ομιλητών και ομιλίας (ASR)** εγκαθίστανται
+αναγκαστικά στην πρώτη εκκίνηση (παραλείπονται σε ένα demo), ώστε ο διαχωρισμός
+ομιλητών και η εγγραφή να υπάρχουν χωρίς επίσκεψη στις ρυθμίσεις. Το ASR
+εξακολουθεί να είναι **επιλέξιμο** — είναι αρκετές εκατοντάδες megabyte και
+τέσσερις εκδόσεις περιλαμβάνονται στον επιλογέα. Η ομιλία χρειάζεται ακόμη μία
+επανεκκίνηση μετά την πρώτη λήψη, επειδή ο μεταγραφέας προσδιορίζει το μοντέλο
+του πριν προλάβει να ολοκληρωθεί η λήψη.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Οι τέσσερις καταχωρίσεις του επιλογέα, που διαφέρουν σε μέγεθος, κάλυψη γλωσσών
+και ακρίβεια:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — πολύγλωσσο, η προτεινόμενη προεπιλογή (~600 MB)
+- Parakeet TDT 0.6B v2 — αγγλικά (~480 MB)
+- Whisper large-v3-turbo — πολύγλωσσο (~626 MB)
+- Whisper base.en — μόνο αγγλικά, η μικρή ιστορική προεπιλογή (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Τα μοντέλα είναι τα μόνα αρχεία που λαμβάνει ο διακομιστής κατά την εκτέλεση·
+κάθε εγγενής βιβλιοθήκη περιλαμβάνεται στο πακέτο.
 
-## How capture works
+## Πώς γίνεται η καταγραφή
 
-A meeting records **two audio channels at once**:
+Μια σύσκεψη καταγράφει **δύο κανάλια ήχου ταυτόχρονα**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Εσύ («εγώ»)**: το μικρόφωνό σου.
+- **Οι άλλοι («αυτοί»)**: η έξοδος ήχου της σύσκεψης, που συλλαμβάνεται από
+  loopback χωρίς οδηγό — taps διεργασίας/συσκευής Core Audio σε macOS, loopback
+  WASAPI σε Windows, monitor PipeWire / PulseAudio σε Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Επειδή τα δύο κανάλια καταγράφονται ξεχωριστά, η απομαγνητοφώνηση αποδίδεται σε
+ομιλητές από την αρχή: τα λόγια σου φέρουν την ετικέτα `me`, όλοι στη σύνδεση
+φέρουν την ετικέτα `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Η φωνή σου διαρρέει από την έξοδο του συστήματος πίσω στο μικρόφωνο και, χωρίς
+άλλο, θα μεταγραφόταν δύο φορές. Δύο φίλτρα το εμποδίζουν. Σε επίπεδο σήματος,
+**το AEC3 εκτελείται σε κάθε εγγραφή απομακρυσμένης λειτουργίας και είναι
+υποχρεωτικό** — αν η εγγενής βιβλιοθήκη AEC δεν μπορεί να φορτωθεί, η εγγραφή
+αρνείται να ξεκινήσει αντί να μεταδίδει σιωπηλά ένα μικρόφωνο γεμάτο ηχώ. (Η
+λειτουργία αυτοπρόσωπης παρουσίας δεν έχει αναφορά απομακρυσμένου άκρου για
+ακύρωση, οπότε το AEC εκεί είναι πέρασμα ταυτότητας.) Πάνω από αυτό, ένα φίλτρο
+ηχούς σε επίπεδο κειμένου στην πλευρά του κεντρικού υπολογιστή εκτελείται σε
+κάθε πλατφόρμα.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Όλη η επεξεργασία μικροφώνου σε επίπεδο λειτουργικού συστήματος είναι σκόπιμα
+απενεργοποιημένη. Η ενεργοποίηση της ακύρωσης ηχούς ή της αυτόματης ενίσχυσης
+της ίδιας της πλατφόρμας σε macOS αλλάζει το μικρόφωνο σε Voice Processing I/O,
+το οποίο σε αυτή την έκδοση σκότωνε και το μικρόφωνο _και_ το tap του ήχου
+συστήματος.
 
-## Transcription and diarization
+## Μεταγραφή και διαχωρισμός ομιλητών
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Κατά την εγγραφή, ο ήχος αποκωδικοποιείται σε **κυλιόμενα παράθυρα** — κομμένα
+σε μια σύντομη σιωπή στο τέλος ή σε ένα μέγιστο μήκος παραθύρου — εκτός του
+νήματος του UI. Κάθε παράθυρο γίνεται ένα τμήμα απομαγνητοφώνησης με ετικέτα
+ομιλητή και μετατοπίσεις σε χιλιοστά του δευτερολέπτου.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Παράθυρα που δεν ξεπέρασαν ποτέ ένα κατώφλι RMS παραλείπονται **χωρίς να
+αποκωδικοποιηθούν καθόλου**, επειδή ένα μοντέλο ομιλίας αποδίδει τη σιωπή ως
+παραισθησιακά διακριτικά που δεν είναι ομιλία και η αποκωδικοποίηση είναι
+χαμένος χρόνος CPU. Η πρακτική συνέπεια: ένας σταθερά πολύ χαμηλόφωνος ομιλητής
+δεν παράγει απομαγνητοφώνηση. Αν κάποιος βγει κενός, έλεγξε τη στάθμη εισόδου
+του πριν κατηγορήσεις το μοντέλο.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Αφού σταματήσεις, ο **διαχωρισμός ομιλητών** εκτελείται εκτός σύνδεσης πάνω στην
+εγγραφή και χωρίζει το απομακρυσμένο κανάλι σε μεμονωμένους ομιλητές
+(`Person 1`, `Person 2`, …) που μπορείς να μετονομάσεις. Ο αριθμός των ομιλητών
+συνάγεται από ένα κατώφλι ομαδοποίησης, όχι από ένα πλήθος που ορίζεις — άρα
+είναι τεχνούργημα του κατωφλίου και ένας χαμηλόφωνος ή αλληλοεπικαλυπτόμενος
+ομιλητής μπορεί να συγχωνευθεί με έναν γείτονα. Η απομαγνητοφώνηση αποδίδεται ως
+γραμμές `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Προφίλ φωνής
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Η μετονομασία ενός ομιλητή κάνει κάτι περισσότερο από το να επισημάνει μία
+απομαγνητοφώνηση. Το Control Center μπορεί να αποθηκεύσει το ηχητικό αποτύπωμα
+του ομιλητή ως **προφίλ φωνής**, ώστε να τον αναγνωρίζει αυτόματα σε μελλοντικές
+συσκέψεις. Όταν ονομάζεις έναν ομιλητή που προέκυψε από διαχωρισμό, σου
+ζητείται αν θέλεις να αποθηκευτεί το ηχητικό αποτύπωμα· αν το κάνεις, αυτό
+συνδυάζεται σε ένα κινούμενο centroid για αυτό το όνομα και αντιστοιχίζεται με
+νέους ομιλητές με συνημίτονο ομοιότητας, ώστε το ίδιο άτομο να εμφανίζεται με το
+όνομά του την επόμενη φορά χωρίς να χρειάζεται να το επισημάνεις ξανά.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Τα προφίλ φωνής έχουν εμβέλεια χώρου εργασίας και δεν περνούν ποτέ τα όρια.
+Διαχειρίσου τα στις **Ρυθμίσεις → Χώρος εργασίας → Συσκέψεις**. Η μετονομασία
+ενός ομιλητή που είχε αποθηκευτεί προηγουμένως αφαιρεί το παλιό όνομα από το
+μητρώο και προσφέρει να καταχωρίσει το νέο· η διαγραφή ενός προφίλ αφαιρεί το
+αποθηκευμένο ηχητικό αποτύπωμα αλλά αφήνει άθικτα τυχόν ονόματα που έχουν ήδη
+εφαρμοστεί σε παλιές συσκέψεις.
 
-## The summary pipeline
+## Το pipeline σύνοψης
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Όταν σταματήσει μια εγγραφή, ο διακομιστής δημοσιεύει ένα
+[γεγονός τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/) `MeetingRecordingStopped`.
+Το ενσωματωμένο **πρότυπο pipeline `meeting_summary`** ενεργοποιείται από αυτό το
+γεγονός. Η εγγραφή δεν περιμένει αυτό· η σύσκεψη απλώς περνά από τον κύκλο ζωής
+της κατάστασής της:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Ο πράκτορας σύνοψης λαμβάνει τον τίτλο, τις πρόχειρες ζωντανές σημειώσεις σου
+και την απομαγνητοφώνηση και επιστρέφει **δομημένο JSON**. Το ποιες ενότητες
+γράφει καθορίζεται από το **ενεργό πρότυπο σημειώσεων σύσκεψης** του χώρου
+εργασίας (Ρυθμίσεις → Χώρος εργασίας → Συσκέψεις)· το ενεργό πρότυπο
+εφαρμόζεται σε νέες συνόψεις και σε όσες εκτελούνται ξανά. Τα βήματα persist του
+pipeline γράφουν έπειτα αυτό το JSON σε διακριτές γραμμές:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` και `summary` → οι σημειώσεις της σύσκεψης
+- κάθε στοιχείο ενέργειας → μια γραμμή `MeetingActionItem` (content, owner, προαιρετικός σύνδεσμος εισιτηρίου)
+- κάθε απόφαση → μια γραμμή `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Τα στοιχεία ενέργειας και οι αποφάσεις **δεν** εξάγονται ποτέ από ελεύθερο
+markdown, μόνο από τους δομημένους πίνακες του πράκτορα. Αν μια εκτέλεση δεν
+παράγει δομημένη έξοδο, τα βήματα persist παραλείπονται και η ακατέργαστη
+απομαγνητοφώνηση κρατείται ως εφεδρική, ώστε να μη χάνεις ποτέ την καταγραφή.
+Τίποτα στο pipeline δεν σημαδεύει τη σύσκεψη ως `done` — ένας μόνο reconciler το
+κάνει αυτό από το τελικό γεγονός της εκτέλεσης, ώστε η αποτυχία ενός παράλληλου
+βήματος να μην αφήνει μισογραμμένη μια σύσκεψη που μοιάζει ήδη ολοκληρωμένη.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Οι πράκτορες δεν μπορούν να διαβάσουν τις συσκέψεις σου]
+Δεν υπάρχουν εργαλεία MCP για συσκέψεις ή ημερολόγιο. Ένας πράκτορας συνδεδεμένος
+μέσω [MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/) δεν μπορεί να
+απαριθμήσει συσκέψεις, να διαβάσει απομαγνητοφώνηση ή να δει στοιχεία ενέργειας
+και αποφάσεις — αυτά τα δεδομένα φτάνουν σε ανθρώπινους πελάτες μόνο μέσω RPC.
+Οι αποφάσεις φτάνουν έμμεσα στους πράκτορες, ως γεγονότα μνήμης στον τομέα
+`decisions`.
 :::
 
-## Where meetings show up
+## Πού εμφανίζονται οι συσκέψεις
 
-| Surface                | What it shows                                                                         |
+| Επιφάνεια              | Τι εμφανίζει                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | Η λίστα συσκέψεων, με πλήθη στοιχείων ενέργειας και αποφάσεων                          |
+| `/meetings/record`     | Το HUD ζωντανής εγγραφής: οι σημειώσεις σου στη μία πλευρά, η απομαγνητοφώνηση σε ροή στην άλλη |
+| `/meetings/:meetingId` | Οι λεπτομέρειες μιας σύσκεψης: καρτέλες Σημειώσεις, Πρακτικό, Στοιχεία ενέργειας και Αποφάσεις |
+| Ρυθμίσεις → Χώρος εργασίας → Συσκέψεις | Πρότυπα σημειώσεων και αποθηκευμένα προφίλ φωνής για αυτόν τον χώρο εργασίας        |
 
-## Platform support
+## Υποστήριξη πλατφορμών
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Η καταγραφή είναι χωρίς οδηγούς και στις τρεις πλατφόρμες επιφάνειας εργασίας
+(taps Core Audio σε macOS, WASAPI σε Windows, PipeWire σε Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Και ο πελάτης web καταγράφει**, κάτι που μπορεί να κρύψει η υπόλοιπη εστίαση
+αυτής της σελίδας στην επιφάνεια εργασίας: ο περιηγητής παίρνει το μικρόφωνό σου
+μέσω `getUserMedia` και τον ήχο της σύσκεψης μέσω `getDisplayMedia` (κοινή χρήση
+οθόνης), κάνει υποδειγματοληψία σε PCM16 16 kHz και μεταδίδει ροή στον ίδιο
+κεντρικό υπολογιστή. Ισχύουν τρεις επιφυλάξεις εκεί:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Η κοινόχρηστη επιφάνεια **πρέπει** να φέρει κομμάτι ήχου. Ο Safari, ο Firefox
+  και η κοινή χρήση πλήρους οθόνης του macOS δεν παρέχουν κανένα και η εγγραφή
+  αρνείται να ξεκινήσει.
+- Δεν υπάρχει εγγενές AEC3. Η ακύρωση ηχούς του ίδιου του περιηγητή ζητείται στο
+  μικρόφωνο· το φίλτρο ηχούς κειμένου στην πλευρά του κεντρικού υπολογιστή
+  εκτελείται ακόμη. Το HUD δείχνει ένα όργανο στάθμης εισόδου που τροφοδοτείται
+  από το PCM του μικροφώνου.
+- Η εκ νέου εκτέλεση σύνοψης και η ακύρωση επεξεργασίας είναι μόνο για επιφάνεια
+  εργασίας.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Η ενέργεια **Έναρξη εγγραφής και σύνδεση** του ημερολογίου είναι μόνο για
+επιφάνεια εργασίας και το αναφέρει καθαρά στο web, παρόλο που η δική της ροή
+εγγραφής της οθόνης συσκέψεων λειτουργεί εκεί.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Η διαγραφή μιας σύσκεψης αφήνει τον ήχο της πίσω]
+Η διαγραφή μιας σύσκεψης αφαιρεί μόνο τις γραμμές της στη βάση δεδομένων. Ο
+διατηρούμενος κατάλογος ήχου ανά κανάλι `<dataDir>/meetings/<meetingId>/` δεν
+καθαρίζεται ποτέ — δεν υπάρχει πολιτική διατήρησης, όριο μεγέθους ή συλλογή GC
+για αυτόν. Η ανάκτηση αυτού του χώρου δίσκου είναι χειροκίνητη εργασία στον
+κεντρικό υπολογιστή του διακομιστή.
 :::
 
-## See also
+## Δείτε επίσης
 
-- [Calendar and scheduling](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/): record a meeting straight from a calendar event
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/): the engine behind `meeting_summary`
-- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): link a meeting's action items to tickets
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/)
+- [Ημερολόγιο και προγραμματισμός](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/): καταγράψε μια σύσκεψη απευθείας από ένα συμβάν ημερολογίου
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/): η μηχανή πίσω από το `meeting_summary`
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/): σύνδεσε τα στοιχεία ενέργειας μιας σύσκεψης με εισιτήρια
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): `MeetingRecordingStopped` και `MeetingStartingSoon`
+- [Καταγραφή και σύνοψη σύσκεψης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/)

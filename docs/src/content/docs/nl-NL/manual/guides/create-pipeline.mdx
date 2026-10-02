@@ -1,241 +1,263 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Een pipeline-sjabloon maken
+description: Stel in de pipeline-editor een DAG-werkstroomsjabloon samen — voeg nodes toe, verbind ze, declareer invoer en maak het uitvoerbaar.
 slug: nl-NL/handleiding/gidsen/pipeline-maken
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Pipeline-sjablonen stel je samen in de werkruimte-instellingen. Het item
+**Pipelines** in de zijbalk van de werkruimte is de _wachtrij van runs_, niet de
+sjablonenlijst — er zit geen actie “sjabloon maken” in.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/nl-NL/handleiding/referentie/pipeline-stappen/).
+Wat elke stapsoort, elke body-sleutel en elk configuratieveld betekent, lees je
+in de [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/).
 
-## Create a template
+## Een sjabloon maken
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Ga naar **Instellingen → Werkruimte → Pipelinesjablonen**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Druk op **Nieuwe template**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Er is geen dialoogvenster voor de id. De editor opent meteen op een voorbereid
+skelet met de naam **Nieuwe pipeline**, met een automatisch toegewezen id
+(`pipeline_1`, dan `pipeline_2`, …). Klik op de titel in de koptekst om hem te
+hernoemen.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Het canvas is niet leeg: een ingangsnode **Trigger**, één prompt-agent-node met
+het label **Step** en een terminal-sentinel die de run beëindigt. De sentinel
+wordt niet getekend. De editor verbindt die verborgen terminal opnieuw met elke
+bereikbare sink, zodat werk dat je achter **Step** hangt alsnog wordt
+uitgevoerd.
 
-## Add nodes
+## Nodes toevoegen
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+De zijbalk **Node-bibliotheek** staat permanent links in de editor. Filter hem
+met het vak **Knooppunten zoeken** en sleep een item naar het canvas — de node
+komt te staan waar je hem loslaat, zonder inkomende verbinding.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palettenode                    | Stapsoort | Wat het doet                                                                              |
+| ------------------------------ | --------- | ----------------------------------------------------------------------------------------- |
+| **Bash script**                | listen    | Voert een shellscript uit met `{{state}}`-substitutie; er wordt geen agent gedispatcht    |
+| **Open conversation**          | listen    | Opent de enige zichtbare ruimte van de run en de checkout ervan; agent-nodes voegen zich bij deze ruimte |
+| **Clone PR branch**            | listen    | Vindt de head-branch van de PR via `gh pr view` en kloont die naar de map van de run      |
+| **Post PR comment**            | listen    | Plaatst de gebundelde bevindingen als GitHub-reviewcommentaar op de PR                    |
+| **Reviewer (prompt)**          | listen    | Dispatcht een gespecialiseerde reviewer-agent; blijft onderbroken tot de agent zijn resultaat indient |
+| **Consolidate (join)**         | join      | Wacht op meerdere stroomopwaartse takken en vraagt daarna een agent hun uitvoer te bundelen |
+| **Custom prompt**              | listen    | Algemene, promptgestuurde node via de body `promptAgent`                                  |
+| **Post to space**              | listen    | Stuurt een bericht naar een berichtenruimte                                               |
+| **Condition / switch (router)** | router   | Vertakt de flow op basis van een statuswaarde                                             |
+| **If file exists (router)**    | router    | Routeert `"true"` als een pad onder de kloon bestaat, anders `"false"`                    |
+| **Any file exists (OR router)** | router   | Routeert `"true"` als een van de opgegeven paden bestaat                                  |
+| **All conditions (AND router)** | router   | Routeert `"true"` alleen als elk opgegeven pad bestaat                                    |
+| **Team dispatch**              | listen    | Dispatcht een heel team en blijft onderbroken tot het klaar is                            |
+| **Approval gate**              | listen    | Pauzeert voor een goedkeuringsbeslissing                                                  |
+| **For each (map)**             | forEach   | Rendert een prompt per item en dispatcht de agent daarna één keer met die prompts aan elkaar |
+| **Call sub-pipeline**          | listen    | Voert een ander sjabloon uit als geneste stap                                             |
+| **Clean up worktrees**         | listen    | Verwijdert verouderde geïsoleerde worktrees; deterministisch, er wordt geen agent gedispatcht |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+De bibliotheek groepeert ze onder **Flow en logica**, **PR-review**, **Agents**,
+**Berichten** en **Code**. Er is geen groep Demo.
 
-## Wire nodes together
+## Nodes met elkaar verbinden
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Elke werknode heeft een ronde **uitvoerpoort** aan de rechterrand. Sleep van die
+poort naar een andere node om ze te verbinden. Starttriggers werken hetzelfde:
+elke trigger heeft zijn eigen poort, dus een verbinding vanaf **Schema** vertrekt
+niet ook vanaf **Handmatige uitvoering**. Druk op **Stap toevoegen** (`+`) net
+voorbij een node om daarna een type in te voegen. Zweef over het midden van een
+bestaande rand en druk op × om de verbinding te verbreken.
 
-Connections are also edited from the node that _receives_ them:
+Verbindingen bewerk je ook vanaf de node die ze _ontvangt_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Selecteer de stroomafwaartse node. Het configuratiepaneel opent rechts.
+2. Scroll naar **Triggers van** en tik op de chip van elke stroomopwaartse node
+   waarop deze moet luisteren. Als je op een geselecteerde chip tikt, wordt de
+   verbinding verwijderd.
+3. Is een stroomopwaartse node een router, dan verschijnt onder de chips een
+   blok **Routesleutels** met één veld **Routesleutel van &lt;node&gt;** per
+   routerrand. Vul de sleutel in waarop die rand afgaat: `true` of `false` bij
+   de routers voor bestaande bestanden, of de naam van het geval bij een
+   schakelaar.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Elke triggernode is een ingangspunt. Een node mag naar meerdere stroomopwaartse
+nodes luisteren (fan-in) en meerdere stroomafwaartse nodes voeden (fan-out), en
+de graaf moet acyclisch blijven — niets in de editor houdt je tegen als je een
+cyclus aansluit, dus controleer je werk.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+De terminal-sentinel wordt uit het canvas gefilterd en kan dus niet worden
+geselecteerd. De editor verbindt hem opnieuw met elke bereikbare sink telkens
+wanneer de graaf verandert, zodat werk dat je achter de voorbereide **Step**
+hangt alsnog wordt uitgevoerd. Een lege graaf (een trigger zonder opvolgend
+werk) vermeldt de trigger zelf, zodat een run meteen voltooit.
 
-## Configure a node
+## Een node configureren
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Selecteer een node om het configuratiepaneel te openen. Welke velden
+verschijnen, hangt af van de body van de node.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Elke node heeft **Label**, **Invoersleutels (door komma's gescheiden)**
+(statussleutels die bij uitvoering worden gelezen) en onder **Geavanceerd**:
+**Reducer**, **Time-out (ms)**, **Nieuwe pogingen**, **Doorgaan als deze stap
+mislukt** en **Uitvoerschema (JSON)**. Listen- en join-nodes kunnen hun **Type**
+ook tussen die twee wisselen.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Voegt een kiezer voor **Te klonen repositories** toe (welke repo's van de
+werkruimte worden uitgecheckt; leeg betekent geen enkele), een **Naam van de
+ruimte** en het selectievakje **Er een gesprek in openen**. Staat dat vakje aan,
+dan benoemt **Naam van het gesprek** de stroom waarmee de ruimte opent.
+Agent-nodes voegen zich bij deze ruimte — ze openen er geen eigen.
 
-### Prompt agent
+### Prompt-agent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Voegt **Agent** toe (welke agent wordt gedispatcht), **Prompt-template** (gebruik
+`{{key}}` om naar invoer of uitvoer van stroomopwaartse nodes te verwijzen) en
+**Uitvoersleutel**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Time-out (ms)** is in _milliseconden_, niet in seconden — `900000` is
+15 minuten. Als je `900` invult, krijgt de stap 0,9 seconde.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+De gespreksmodus waarin een prompt-agent-node werkt, heeft geen editorveld op de
+agent-node. Die reist mee in `extras['mode']` (`chat`, `plan` of `review`) op de
+node **Open conversation** die de ruimte heeft aangemaakt (standaard `review`).
+Zet je hem op een agentstap, dan wordt hij genegeerd. De sleutel wordt exact
+vergeleken: elke andere spelling wordt stil genegeerd.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Voegt **Bash-script** toe. Er zijn geen velden voor werkmap of omgeving, omdat
+geen van beide configureerbaar is:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Elke bash-stap in een run deelt de cwd `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` wordt geïnjecteerd uit de opslag voor inloggegevens, dus `gh` en
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` werken zonder verdere
+  configuratie.
+- Het script wordt gestart als het letterlijke uitvoerbare bestand `bash`, dus
+  `bash` moet in de `PATH` van de serverhost staan. Daar moet je op Windows
+  rekening mee houden.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Een router evalueert een voorwaarde en geeft een routesleutel terug; de engine
+laat alleen de stroomafwaartse rand afgaan waarvan de routesleutel overeenkomt en
+markeert de andere takken als overgeslagen.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Als je een router selecteert, vervangt de voorwaardeneditor het veld
+**Uitvoersleutel**. Kies een van de vier modi:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Bestand(en) aanwezig — een** — routeert `"true"` als een van de opgegeven
+  paden bestaat.
+- **Bestanden aanwezig — alle** — routeert `"true"` alleen als elk opgegeven pad
+  bestaat.
+- **Vergelijking** — vergelijkt een statuswaarde met een letterlijke waarde.
+- **Schakelaar** — routeert op de waarde van een statussleutel, met een
+  standaardgeval.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Zet daarna de passende routesleutels op de uitgaande randen (zie
+[Nodes met elkaar verbinden](#nodes-met-elkaar-verbinden)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/nl-NL/handleiding/referentie/pipeline-stappen/).
+Booleaanse groepen `and` / `or` / `not` ondersteunt de body wel, maar ze zijn
+niet in dit formulier samen te stellen — daarvoor heb je een met de hand
+geschreven predicaatboom onder `extras.predicate` nodig. Het volledige
+vocabulaire aan predicaten en operatoren staat in de
+[Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Geen eigen configuratie: hij wacht op al zijn stroomopwaartse stappen.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+De poort dispatcht de goedkeurder-agent met de poortprompt naar een verborgen
+gesprek en blijft onderbroken. De goedkeurder vraagt je beslissing in het gesprek
+en dient die in met `submit_output` als `{ "decision": "approved" | "rejected",
+"reason": "..." }`. De beslissing komt onder de uitvoersleutel te staan
+(standaard `approval_decision`), zodat een stroomafwaartse schakelaar-router
+erop kan vertakken.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Zet **Agent** op de goedkeurder en **Prompt-template** op de vraag van de poort.
+De poort wordt opgelost via `submit_output` als
+`{ "decision": "approved" | "rejected", "reason": "..." }`. Nodes
+**Reviewer (prompt)** dienen op dezelfde manier in.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Voegt **Team-ID** en **Verzendmodus** toe. De kiezer biedt precies twee modi:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — één taak per lid, blijft onderbroken tot alle klaar zijn.
+- `manager` — dispatcht de leider, die delegeert.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Elke andere opgeslagen waarde gedraagt zich als `allParallel`. Zet **Reducer** op
+`append` om het resultaat van elk lid als lijst onder de uitvoersleutel te
+verzamelen.
 
-### For each and Call sub-pipeline
+### For each en Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** mapt standaard over de statussleutel `items` (`extras.iterableKey` /
+`extras.itemKey` op de node). Hij rendert zijn prompt één keer per item
+(`{{item}}` als standaard) en dispatcht de agent **één keer** met die prompts aan
+elkaar. Een lege verzameling voltooit direct met een lege lijst. Het is geen
+aparte parallelle dispatch per item.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** blijft onderbroken tot de onderliggende run een
+eindtoestand bereikt en voegt daarna de eindstatus van het kind samen onder de
+uitvoersleutel (standaard `subflow_result`). Wijs met `extras.templateId` naar
+een kind. Een sjabloon kan zichzelf niet aanroepen; een mislukt of geannuleerd
+kind laat de bovenliggende stap mislukken, en die volgt daarna het herkansings-
+en doorgaan-bij-mislukken-beleid van die stap.
 
-## Declare inputs and allow manual runs
+## Invoer declareren en handmatige runs toestaan
 
-Both live behind **Manual run** in the editor header.
+Beide zitten achter **Handmatige uitvoering** in de koptekst van de editor.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Druk op **Handmatige uitvoering**.
+2. Zet **Handmatige uitvoering toestaan** aan. Deze schakelaar wordt meteen
+   opgeslagen — hij maakt de triggerrij `manual` aan (of verwijdert die), en
+   daardoor verschijnt het sjabloon in de runkiezer.
+3. Stel **Max. parallelle runs** in als je een limiet wilt (laat leeg voor
+   onbeperkt). Extra starts wachten in de status `queued` tot er een plek
+   vrijkomt.
+4. Druk op **Invoer toevoegen** voor elk formulierveld dat een handmatige run
+   moet verzamelen:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Veld                                  | Beschrijving                                                     |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| **Sleutel**                           | Statussleutel waaronder de waarde wordt opgeslagen; verwijs ernaar met `{{key}}` |
+| **Label**                             | Weergavelabel (standaard de sleutel)                             |
+| **Type**                              | Tekst, Tekst met meerdere regels, Getal, Schakelaar, Selectie, Repository |
+| **Opties (door komma's gescheiden)**  | Door komma's gescheiden keuzes, alleen bij Selectie              |
+| **Standaardwaarde**                   | Vooraf ingevulde waarde                                          |
+| **Tijdelijke aanduiding**             | Hinttekst in het lege veld                                       |
+| **Helptekst**                         | Helptekst onder het veld                                         |
+| **Verplicht**                         | Of het runformulier blokkeert op een lege waarde                 |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Een invoer **Repository** toont een kiezer over de repo's van de werkruimte en
+vult `repo_id`, `repo_local_path`, `repo_full_name` en — als de repo een
+GitHub-remote heeft — `repo_owner` en `repo_name` in de payload van de run.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Druk op **Opslaan** in het dialoogvenster. Wijzigingen aan de invoer gaan in
+   het concept; ze blijven bewaard wanneer je het sjabloon opslaat.
 
-## Save and enable
+## Opslaan en inschakelen
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/).
+1. Druk op **Opslaan** in de koptekst van de editor. Tot dan toont de koptekst
+   “Niet-opgeslagen wijzigingen”.
+2. Ga terug naar **Instellingen → Werkruimte → Pipelinesjablonen** en
+   controleer of de schakelaar in de rij van het sjabloon aan staat. De engine
+   weigert een uitgeschakeld sjabloon te starten, en een uitgeschakeld sjabloon
+   verschijnt nooit in de runkiezer.
+3. Om het automatisch te starten sleep je een trigger uit de node-bibliotheek
+   naar het canvas — zie
+   [Pipeline-triggers instellen](/nl-NL/handleiding/gidsen/pipeline-triggers/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Run a pipeline manually](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
-- [Set up pipeline triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/)
-- [Monitor pipeline runs](/nl-NL/handleiding/gidsen/pipelines-monitoren/)
-- [Pipeline steps reference](/nl-NL/handleiding/referentie/pipeline-stappen/)
+- [Een pipeline handmatig uitvoeren](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
+- [Pipeline-triggers instellen](/nl-NL/handleiding/gidsen/pipeline-triggers/)
+- [Pipeline-runs monitoren](/nl-NL/handleiding/gidsen/pipelines-monitoren/)
+- [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/)
 
-## Related concepts
+## Gerelateerde concepten
 
 - [Pipelines](/nl-NL/handleiding/concepten/pipelines/)

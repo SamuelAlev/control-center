@@ -1,150 +1,135 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: 監察管線執行
+description: 操作執行佇列、閱讀一次執行的瀑布圖與步驟面板，並從失敗或卡住的步驟復原。
 slug: zh-HK/手冊/操作指南/監察管線
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/zh-HK/手冊/操作指南/執行管線/).
+這一頁涵蓋執行開始之後的一切：找到它、閱讀每個步驟做了甚麼，以及讓失敗的執行
+重新動起來。如要開始一次執行，請參閱[手動執行管線](/zh-HK/手冊/操作指南/執行管線/)。
 
-## Find a run
+## 尋找一次執行
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. 在工作區側邊欄點擊**管線**。這個畫面就是工作區的執行佇列 —— 每次
+   執行，最新的排在最前。
+2. 使用左側導軌來篩選。篩選器恰好有三個，每個都有即時計數：**全部**、
+   **執行中**、**已失敗**。
+3. 用 <kbd>↑</kbd>/<kbd>↓</kbd>（或 <kbd>j</kbd>/<kbd>k</kbd>）在表格中
+   移動，然後按 <kbd>Enter</kbd> 開啟目前聚焦的執行。點擊資料列也有同樣效果。
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+每個資料列都會顯示一個圖示，代表該次執行是如何開始的（手動是播放圖示；程式碼圖
+監看是檔案圖示；其他情況則是自動觸發器）。工具提示會寫出觸發器名稱 ——
+**手動**、**PR 發布**、**檔案變更** 等等 —— 而對於監看型執行，還會列出哪些檔案
+有變更。接着是管線名稱、狀態徽章、活動時長（若是 `queued` 執行則為佇列位置），
+以及這次嘗試是多久之前開始的。活動時長不計入閒置的停止與重新開始空檔，因此它
+並不是實際流逝的時間。
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+沒有針對已完成、已暫停或已取消執行的篩選器，沒有逐範本的篩選器，沒有時間範圍，
+也沒有逐範本的執行歷史檢視。要比較同一個範本的多個執行，只能掃視佇列找出它的
+名稱。
 
-## Read the run detail
+## 閱讀執行詳情
 
-A run's page has three stacked parts.
+一次執行的頁面由上而下分為三個部分。
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**中繼資訊列** 載有開始時間、活動時長、步驟進度（「3 / 7 個步驟」）、指出哪個
+步驟出錯與原因的失敗摘要，以及**重試**與**刪除**操作。
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**時間瀑布圖** 為每個步驟給出一條長條，附上其時長，而代理步驟還有以美分計的
+成本。曾被重試的步驟會在時長後面顯示 `×N` 後綴；該後綴是唯一會出現嘗試次數的
+地方。
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**圖形畫布** 會繪出範本，並顯示每個節點的即時狀態。選取節點會開啟它的步驟面板。
 
-### Run and step statuses
+### 執行與步驟狀態
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| 狀態       | 含義                                                |
+| ---------- | --------------------------------------------------- |
+| **等待中** | 已建立，尚未開始                                    |
+| **排隊中** | 已獲准但被擱置：此範本的最大並行上限已滿；尚無步驟資料列 |
+| **執行中** | 正在執行                                            |
+| **已暫停** | 正在等待外部事物 —— 屬正常，不是卡住                 |
+| **已完成** | 成功結束                                            |
+| **已失敗** | 以錯誤結束                                          |
+| **已取消** | 由使用者或系統停止                                  |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+步驟具備上述狀態，但少了**排隊中**，另外多了**已跳過**，用於路由器未有採納的
+分支（及其現在已無法觸及的下游步驟）。
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+代理步驟大半生都處於**已暫停**：已派發的代理或核准閘門會扣住該步驟，直到它的
+工作完成為止。兩道引擎防線會令整次執行失敗，而不是恢復它：步驟暫停超過 24 小時
+（`extras.awaitApproval` —— 即 `orchestration.awaitApproval` 主體 —— 可獲豁免；
+`human.gate` 則不獲豁免），以及伺服器停止時仍在執行中途的非冪等步驟。
 
-## Inspect a step
+## 檢視步驟
 
-Select a node on the canvas. The step panel shows, in order:
+在畫布上選取節點。步驟面板會依次顯示：
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- 步驟失敗時的**錯誤**提示框，或步驟被略過時附有原因的**已跳過**提示框。
+- **已開始**、**已結束**與時長。
+- **分支** —— 並行分支的分支索引。
+- **檢視對話** —— 跳至該步驟所執行所在的對話。管線對話會從側邊欄隱藏，所以
+  這是唯一的進入途徑。
+- **輸入**與**輸出**，以可摺疊的 JSON 呈現。
+- **代理活動** —— 該步驟所派發的每次代理執行各有一張卡片，顯示其狀態、摘要、
+  時長與成本。
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+對於代理步驟，**輸出**是代理以 `submit_output` 提交的結構化載荷，而不是它的
+文字敘述。推理追蹤則位於**代理活動**，以及**檢視對話**背後的對話之中。
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+對於 bash 步驟，**輸出**是指令碼在退出碼 0 時所寫入、經過修剪的標準輸出。非零
+退出碼會令該步驟失敗，並以標準錯誤的末段作為錯誤訊息。
 
-## Recover a failed run
+## 復原失敗的執行
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. 閱讀中繼資訊列上的失敗摘要；它會指出失敗的步驟。步驟面板的**錯誤**提示框則
+   載有訊息。
+2. 檢查步驟的**輸入** —— 狀態鍵缺失或拼寫錯誤是最常見的原因。提示代理步驟會
+   直接失敗並指出未解析的佔位符；bash 步驟則會把它們呈現為空字串並照樣執行，
+   問題通常會在下一步才浮現。
+3. 對於代理步驟，開啟**檢視對話**，閱讀代理實際做了甚麼。
+4. 在中繼資訊列上按**重試**。已完成與已跳過的步驟會保留其輸出；其餘全部都會被
+   刪除並重新執行，而該次執行會切回執行中。這次嘗試的時長計時會重新開始。
 
-Common causes worth checking first:
+值得先檢查的常見原因：
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **逾時** —— 步驟超出了它的**逾時（毫秒）**。請記住這個欄位是毫秒。
+- **指令碼錯誤** —— bash 指令以非零退出碼結束，或伺服器主機的 `PATH` 上沒有
+  `bash`。
+- **Schema 驗證** —— 代理的 `submit_output` 載荷不符合步驟的輸出 schema。
+- **未解析的佔位符** —— 提示代理步驟所參照的 `{{key}}` 從未在上游寫入。錯誤
+  訊息會列出每一個未解析的鍵。
+- **未註冊的主體** —— 主體鍵未註冊的步驟會在載入範本時發出警告，之後就永遠
+  不會執行。
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[重試只適用於已失敗或已取消的執行]
+**重試**按鈕只在該次執行處於 `failed` 或 `cancelled` 時才會顯示。引擎對任何其他
+狀態都會立即返回。
 :::
 
-## Stop a step that is stuck
+## 停止卡住的步驟
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+選取執行中的步驟，然後按步驟面板標題列中的**終止執行中**按鈕。這會終止該步驟的
+行程、將該步驟標記為已失敗，因此令整次執行失敗 —— 每個仍開啟的兄弟分支都會隨之
+一併結束。
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+這個畫面上沒有取消整次執行的控制項。`pipeline.cancel` 是一項 RPC 操作，引擎也有
+實作它，但管線介面中沒有任何地方會呼叫它；在步驟上使用 `Kill running`，或在執行
+上使用 `Delete`，是唯一可用的停止手勢。
 
-## Track cost
+## 追蹤成本
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+成本按步驟回報，顯示在瀑布圖最右側的欄位，以及**代理活動**下每張卡片上。詳情頁
+上沒有整次執行的總額，執行佇列中也沒有成本欄，因此要比較兩次執行的成本，就只能
+把它們各步驟的成本加起來。
 
-## Related guides
+## 相關指南
 
-- [Run a pipeline manually](/zh-HK/手冊/操作指南/執行管線/)
-- [Create a pipeline template](/zh-HK/手冊/操作指南/建立管線/)
-- [Manage costs](/zh-HK/手冊/操作指南/管理成本/)
-- [Pipeline steps reference](/zh-HK/手冊/參考/管線步驟/)
+- [手動執行管線](/zh-HK/手冊/操作指南/執行管線/)
+- [建立管線範本](/zh-HK/手冊/操作指南/建立管線/)
+- [管理成本](/zh-HK/手冊/操作指南/管理成本/)
+- [管線步驟](/zh-HK/手冊/參考/管線步驟/)
 
-## Related concepts
+## 相關概念
 
-- [Pipelines](/zh-HK/手冊/概念/管線/)
+- [管線](/zh-HK/手冊/概念/管線/)

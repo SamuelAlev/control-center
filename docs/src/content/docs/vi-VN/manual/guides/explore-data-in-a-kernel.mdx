@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Khám phá dữ liệu trong kernel bền vững
+description: Cho một agent trình thông dịch Python hoặc JavaScript giữ nguyên các biến giữa các lần gọi, vẽ biểu đồ ngay vào chat và có thể gọi chính công cụ của bạn từ bên trong một ô.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/kham-pha-du-lieu-trong-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Hướng dẫn này chỉ cách để một agent nạp một thứ tốn kém đúng một lần rồi hỏi nó vài câu hỏi, thay vì phải trả giá cho việc nạp ở mỗi câu hỏi.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Công cụ `eval` chạy một **trình thông dịch bền vững**. Biến, import và dữ liệu đã nạp vẫn còn nguyên giữa các lần gọi.
 
-## Why not just run a script
+## Vì sao không chỉ chạy một script
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Một lệnh `python -c` chạy một lần sẽ phải trả giá cho phần thiết lập ở mỗi câu hỏi. Nạp một dataframe tốn vài giây và cả trăm megabyte; còn vẽ biểu đồ từ nó chỉ tốn vài mili giây. Khi mỗi câu hỏi đều phải trả giá cho việc nạp, agent sẽ hỏi ít hơn mức nó nên hỏi — và mỗi câu trả lời quay về dưới dạng văn bản mà nó lại phải phân tích lại.
 
-## Load once, then ask
+## Nạp một lần, rồi hỏi
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Nạp `data/runs.csv` và cho tôi biết thời lượng p95 theo từng agent.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Biểu thức cuối cùng được hiển thị theo cách một notebook vẫn làm, nên `len(runs)` cho biết số dòng mà không cần `print`.
 
-Then, in a **separate call**:
+Rồi, trong một **lần gọi riêng**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` vẫn đang được nạp. Một frame của pandas quay về dưới dạng bảng được kết xuất thay vì một repr.
 
-## Charts land in the chat
+## Biểu đồ hiện thẳng vào chat
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Các hình được chụp lại sau khi ô chạy xong và trả về dưới dạng ảnh, rồi bản ghi hội thoại kết xuất chúng. Bạn thấy biểu đồ; agent cũng thấy.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Hình được đóng lại sau khi chụp. Một hình không được thu gom sẽ còn bị ô *kế tiếp* vẽ lại và gửi lại, nên một phiên năm ô sẽ phát ra biểu đồ đầu tiên năm lần.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Không Jupyter, không pip, không bước cài đặt]
+Trình chạy chỉ là `python3 -u` thuần nói một giao thức dòng trên stdio. Nó tự hiện thực `display()`, việc điều phối gói MIME và việc chụp hình, nên nó chạy trên bất kỳ Python 3 nào — kể cả bên trong một sandbox, nơi việc cài đặt đúng là thứ mà sandbox sinh ra để ngăn chặn.
 :::
 
-## The idioms you would type anyway
+## Những cú pháp mà dù sao bạn vẫn gõ
 
-These are rewritten into plain code rather than erroring:
+Những cú pháp này được viết lại thành mã thuần thay vì báo lỗi:
 
-| You type    | What happens                                        |
+| Bạn gõ      | Điều xảy ra                                         |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Chạy pip, rồi **xóa bộ nhớ đệm module** để lần `import` kế tiếp nhìn thấy gói đó |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | Một tiến trình con có thu thập đầu ra               |
+| `%%bash`    | Phần còn lại của ô như một script shell             |
+| `%%timeit`  | 1000 lần chạy có đo thời gian                       |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Việc xóa bộ nhớ đệm của `%pip` mới là điều quan trọng: cài đặt vào một trình thông dịch đang chạy không có tác dụng gì với một module đã được import từ trước, nên nếu thiếu bước này thì phiên bản bạn vừa cài không phải là phiên bản đang chạy.
 
-## Calling your own tools from inside a cell
+## Gọi công cụ của chính bạn từ bên trong một ô
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` đi vào lại sổ đăng ký công cụ của chính agent. Nghĩa là một ô có thể tỏa ra trên hàng trăm tệp, hoặc ủy thác qua `task`, mà mô hình không phải tiêu tốn một lượt cho mỗi mục.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Cầu nối không đi vòng qua rào chắn của bạn]
+Một lệnh gọi qua cầu được phân giải dựa trên **cùng** sổ đăng ký công cụ như một lệnh gọi do mô hình phát ra, nên chính sách `ActionClass`, lời nhắc phê duyệt và mọi lớp bọc đều áp dụng y hệt. Một cầu nối vượt qua sổ đăng ký sẽ là một lỗ hổng đúng kiểu “viết một dòng Python”.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Một lệnh gọi qua cầu sẽ **tạm ngưng thời gian chờ của ô** trong khi lệnh đó còn đang chờ xử lý. Ngân sách này đo sự không hoạt động, chứ không đo đồng hồ thực — một ô tỏa ra tới các subagent rồi chờ bốn phút không phải là bị treo, và giết nó giữa lúc tỏa ra sẽ làm mất toàn bộ trạng thái của kernel.
 
-## Starting over
+## Bắt đầu lại
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Vứt bỏ trình thông dịch hiện tại và khởi động một cái sạch. Mọi thứ đã nạp đều mất, và đó chính là mục đích.
 
-## Where the kernel runs
+## Kernel chạy ở đâu
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+Trong **enclosure** của cuộc hội thoại nếu cuộc hội thoại có một cái, còn không thì trên host.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Một trình thông dịch bền vững do một mô hình đang đọc một kho mã không đáng tin điều khiển chính là thứ mà việc thực thi chỉ-trong-enclosure sinh ra để phục vụ: một lệnh `bash` chạy một lần thì ít nhất cũng kết thúc, còn một kernel là một shell biết ghi nhớ.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/).
+Nó **không** khởi động một enclosure để làm được điều đó — cùng quy tắc khiến một tab rig không tự khởi động. Nếu bạn muốn kernel nằm trong enclosure, hãy mở shell của cuộc hội thoại trước. Xem [Cho agent một máy để kiểm thử](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/).
 
-## Limits
+## Giới hạn
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Mỗi kernel chạy một ô tại một thời điểm.** Hai ô đua nhau trong một trình thông dịch là hai nửa của hai chương trình đan xen vào nhau trong cùng một namespace.
+- **Đầu ra bị giới hạn.** Một ô nằm trong vòng lặp in sẽ bị cắt ngắn thay vì được phép lấp đầy cửa sổ ngữ cảnh.
+- **Bốn ảnh mỗi ô.** Một vòng lặp vẽ biểu đồ có thể phát ra một hình ở mỗi lần lặp, và mỗi ảnh là một khoản chi phí cố định lớn trong yêu cầu chứa nó.
+- **Kernel chết cùng lượt chạy.** Một kernel còn giữ dataframe sau khi cuộc hội thoại đã kết thúc là một chỗ rò rỉ.
 
-## Related
+## Liên quan
 
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) — what "enclosed" means here
-- [Give an agent a machine to test on](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) — opening the enclosure
-- [Built-in agent tools](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — the arguments
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) — “nằm trong enclosure” ở đây nghĩa là gì
+- [Cho agent một máy để kiểm thử](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) — mở enclosure
+- [Công cụ agent tích hợp](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — các đối số

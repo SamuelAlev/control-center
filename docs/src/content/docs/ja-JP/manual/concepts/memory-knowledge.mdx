@@ -1,199 +1,114 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: メモリとナレッジ
+description: Control Center がエージェントのナレッジをどのように保存するのか、実際にエージェントのプロンプトへ届くのは何か、そしてメモリの読み取りがなぜフェイルオープンなのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/メモリとナレッジ
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## メモリの役割
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+メモリがなければ、エージェントとの会話は毎回ゼロから始まります。同じ規約をまた説明し直し、同じ意思決定をまた議論し、同じ行き止まりをまた探索することになります。メモリは実行をまたいで生き残るワークスペース単位のストアであり、あるエージェントが生み出したナレッジを、後から別のエージェントが見つけられるようにするために存在します。
 
-It has three layers and they answer different questions:
+メモリには 3 つの層があり、それぞれ異なる問いに答えます。
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **事実** — 何が真か（規約、結果、意思決定）。
+2. **ポリシー** — それに対してエージェントが何をすべきか（規範的なルール）。
+3. **ワーキングメモリ** — あるエージェントが何の途中だったか。
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+この区別が重要なのは、それぞれが異なる経路でエージェントに届くからです。事実は検索されます。ポリシーはプッシュされます。ワーキングメモリは非公開です。
 
-## Facts
+## 事実
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` は、ワークスペースとドメインにスコープされたナレッジの単位です。
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| 属性                                        | 内容                                                                   |
+| ------------------------------------------- | ---------------------------------------------------------------------- |
+| `domain`                                    | ナレッジのドメイン（"conventions"、"decisions"、"codebase"）             |
+| `topic`                                     | 短いトピックラベル                                                     |
+| `content`                                   | ナレッジの本文                                                         |
+| `confidence`                                | 0.0～1.0。来歴から初期化され、再言及によって上がる                      |
+| `memoryType`                                | 事実の種類。時間減衰の曲線を左右する                                   |
+| `veracity`                                  | どう知られるに至ったか。confidence を初期化し、再言及ごとの上昇幅を決める |
+| `sourceObservationIds`                      | どの観測がその事実を導いたか                                           |
+| `supersededBy`                              | それを置き換えた新しい事実（存在する場合）                             |
+| `validUntil`、`recallCount`、`mentionCount` | リコール時に使われる有効期限と利用のシグナル                           |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+最後の 2 行は見落とされがちですが、_どの_事実が表に出るかを決めるのはこの 2 行です。`memoryType` は型ごとの Weibull 減衰パラメーターを持ち、期限付きのコミットメントは素早く薄れる一方、安定したプロファイルの事実は薄れません。`veracity` は来歴を記録します。人間が述べたもの（重み 1.0）、エージェントが推論したもの（0.7）、ツールが生成したもの（0.5）、インポートされたもの（0.6）で、その重みが事実の初期 confidence を決めます。
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+事実は矛盾したときでもその場で編集されることはありません。事実を書き込むと、同一ドメイン・同一トピックの事実に対して競合検出が実行され、敗れた側を置き換えて競合の行を記録します。狙いは監査証跡です。以前に何が信じられていたか、そして何がそれを置き換えたかを、いつでも確認できます。
 
-## Policies
+## ポリシー
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` は事実から導かれる規範的なルールで、ワークスペースとドメインにスコープされ、アクティブフラグと任意の `requiredRole` を持ちます。
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+ワークスペース内の**すべてのアクティブな**ポリシーが、**あらゆる**ディスパッチにフィルタリングなしで注入されます。ドメイン、ロール、タスク、スペースによる絞り込みはありません。20 個目のポリシーを書く前にこれを知っておく価値があります。ポリシーはタスクと同じコンテキストウィンドウを奪い合うからです。ポリシーの `requiredRole` が助言的な意味しか持たないのも同じ理由です。それはそのルールが誰に向けられたかを示すだけで、ルールがほかの全員に届くのを止めるものではありません。
 
-## Domains
+## ドメイン
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` はワークスペース内で事実とポリシーをまとめます。ドメインはナレッジに組織的な構造を与え、アクセスグラントを書く対象となる単位です。ただし、ドメインを機密性の境界として扱う前に、以下の注意を参照してください。
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+ドメインはワークスペース全体（`architecture`）か、1 つのリポジトリ（`repo:<slug>/architecture`）のどちらかにスコープされます。両方のスコープで同じ名前を使っても、それは 2 つの独立したストアです。あるコードベースについて真である事実が、ワークスペース全体のものを上書きすることはありません。エージェントがそのリポジトリで作業しているとき、`search_memory` とディスパッチのプリアンブルはリポジトリスコープのメモリを優先して順位付けしますが、残りを除外するわけではありません。そのスコープに書き込む、あるいはブーストするには、`propose_fact` / `propose_policy` / `search_memory` に `repo` を渡します。
 
-## Access control is fail-open for reads
+## アクセス制御は読み取りについてフェイルオープン
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` は、エージェントのロールとドメインを 3 つの権限レベルのいずれかに対応付けます。
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| 権限    | 意味                                                                                    |
+| ------- | --------------------------------------------------------------------------------------- |
+| `none`  | アクセスなし                                                                            |
+| `read`  | 事実を検索して取得できる                                                                |
+| `write` | `propose_policy` で必要。事実の書き込み（`propose_fact`、`supersede_fact`）はグラントの制限を受けない |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[グラントが存在しないことは拒否ではなく読み取りを意味する]
+`(role, domain)` のペアに対するグラントの行が存在しない場合、実効権限は **`read`** になります。読み取りは設計上フェイルオープンです。例外を投げる唯一の書き込みは、`write` 権限なしの `propose_policy` です（`InsufficientMemoryPermission`）。機密性の高い内容をメモリドメインに置いても、それを見るべきでないすべてのロールに対して明示的に `none` グラントを書かない限り、誰が読めるかは制限されません。
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+また、現時点で製品のどこにもグラント用の UI はありません。メモリ画面には事実、ポリシー、ナレッジグラフのタブしかなく、グラントに到達できるのは `memory_access_grant.*` の RPC オペレーション経由だけです。
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+この非対称性（読み取りには緩く、ポリシーの書き込みには厳しい）は意図的なトレードオフです。メモリは循環してこそ最も役立ち、読み取りの拒否は、問題を報告するエージェントではなく、黙って知っていることが減ったエージェントを生みます。対照的に、ポリシー書き込みの拒否は目立って気づけるので、強制はそちらに置かれています。新しく作成されたドメインはすべてのロールに `write` をシードします。後からそれを厳しくするのは RPC 経由の編集だけです。グラントの UI が存在しないからです。
 
-## Working memory
+## ワーキングメモリ
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+各エージェントは `AgentWorkingMemory` を持ちます。ワークスペースとエージェントをキーとする自由記述のスクラッチパッドです。これは実行をまたいで永続し、そのエージェントだけのもので、ディスパッチのたびにプロンプトへ注入されます。「認証のリファクタリングの途中だった」という状態が住む場所であり、次の実行へ持ち越す価値はあるものの、永続的な事実へ昇格させる価値はない状態です。
 
-## What actually reaches an agent's prompt
+## 実際にエージェントのプロンプトに届くもの
 
-At dispatch, the memory preamble is assembled from exactly three things:
+ディスパッチ時に、メモリのプリアンブルはちょうど 3 つから組み立てられます。
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **ワークスペースのアクティブなポリシーすべて**。`- [domain] rule` 行として。
+- **エージェント自身のワーキングメモリ**。逐語的に。
+- **このタスクにキーワードでマッチした事実の候補リスト**。最大 5 件で、約 1,200 文字の予算内、かつタスクの説明が 20 文字以上の場合に限られます。それより短いタスクには事実がまったく与えられません。
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+候補リストは FTS／キーワードのみで、上限は意図的です。クエリの埋め込みは遅く、ディスパッチ経路はレイテンシが即座に見える唯一の場所なので、遅いセマンティック経路は意図的にそこから外されています。プリアンブルは、重要な項目を `search_memory` で検証するようエージェントに伝えて締めくくられます。完全なリコールモデルはそこにあります。
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+この経路ではアクセスグラントは参照されません。候補リストが見つけたものだけが、エージェントの目に入ります。
 
-## Recall: one query, four voices
+## リコール: 1 つのクエリ、4 つの声
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+エージェント向けの `search_memory` ツールには 3 つのモードがあり、それらは本当に異なる検索です。
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — FTS5 のみ。
+- **`semantic`** — BM25 とベクトルの結果を相互ランク融合で統合。
+- **`hybrid`**（既定） — ポリフォニックリコール。4 つの順位付きの声を統合し、その後で多様化します。
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+4 つの声とは、字句（FTS）、セマンティック（ベクトル KNN）、時間（最近のアクティブな事実）、グラフです。グラフは、最も強い字句とセマンティックのシードから、エピソードエッジをたどる 2 ホップの探索です。グラフの声こそがエピソードエッジの存在理由です。あなたのどの言葉にもマッチせずに、あなたの答えに_つながっている_事実を表に出します。それぞれの声は分類されたクエリ意図によって重み付けされ（既定ではセマンティックが最も重く、次にグラフと字句、その次に新しさ）、各候補のスコアは Weibull 減衰でスケーリングされ、結果セットは MMR で多様化されるため、1 つの事実の 5 通りの言い換えが 4 つの異なる事実を押しのけることはありません。
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[モデルがインストールされるまでセマンティックリコールは沈黙する]
+ベクトルの声は、オンデバイスの埋め込みモデルがダウンロードされて初めて寄与します。それまではハイブリッドリコールは 3 つの声で動作し、遡ってのバックフィルもありません。モデルのインストール前に書かれた事実がベクトルを得ることはないからです。SQLite のベクトル拡張自体の読み込みに失敗した場合、ベクトル経路はさらに劣化し、パックされた埋め込みに対する Dart 内スキャンになります。それでもリコールは応答しますが、遅くなるだけです。
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+デスクトップとウェブのメモリ検索は、別のより単純な経路です。`memory_fact.search` の RPC オペレーションは **FTS5 のみ**です。シンクライアントはクエリの埋め込みを送れず、ハイブリッド経路はホスト内に留まるからです。したがって、メモリブラウザーで目にする順位は、エージェントが `search_memory` から得る順位とは異なります。これは想定どおりでバグではありませんが、UI で「検索したが見つからなかった」ことは、エージェントも見つけられない証拠にはならない、ということは意味します。
 
-## Where memory lives and who writes it
+## メモリがどこにあり、誰が書くのか
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+メモリブラウザーは **設定 → ワークスペース → メモリ**（`/workspaces/<id>/settings/memory`）にあり、事実、ポリシー、ナレッジグラフのタブがあります。
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+そこには人を驚かせる非対称性があります。**メモリは編集も削除もできますが、作成はできません。** 事実タブにもポリシータブにも追加の手段はありません。作成はエージェント側で、`propose_fact` と `propose_policy` を通じて行います（置き換えには `supersede_fact` / `supersede_policy`）。`remember` はセッションに閉じたホット層の項目を書き込み、それを `consolidate_memory` が後から事実へ昇格させることがあります。`record_observation` と `update_my_notes` は、ディスパッチ時に注入される非公開のスクラッチパッドを書きます。ブラウザーはレビューと修正のサーフェスであり、作成のサーフェスではありません。ですから、メモリに事実を入れたいなら、それを入れる方法はエージェントに伝えることです。
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+2 つのメンテナンス操作も同様に、スケジュールではなくエージェントが呼び出します。`consolidate_memory` は蓄積された事実をマージして刈り込み、`harmonize_memory` はエージェント間で食い違った信念を調停します。`list_memory_conflicts` は競合検出がすでに記録した内容を表示します。これらをタイマーで実行してくれるものはありません。ミーティングの決定は、ミーティングの永続化ステップがそれらを記録するときに `decisions` ドメインへ取り込まれます。それは完了したエージェント実行に対するタイマーではありません。
 
-## Related concepts
+## 関連項目
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): roles are what grants are written against
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ja-JP/マニュアル/ハウツーガイド/メモリ管理/): working with memory in practice
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): グラントを書く対象となるのはロールです
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): メモリはワークスペース単位で、そのワークスペース自身のデータベースファイルに存在します
+- [ワークスペースメモリを管理](/ja-JP/マニュアル/ハウツーガイド/メモリ管理/): 実際にメモリを扱う

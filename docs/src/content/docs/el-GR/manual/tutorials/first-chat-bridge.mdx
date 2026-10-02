@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Συνδέστε το Slack στον χώρο εργασίας σας
+description: Δημιουργήστε την εφαρμογή Slack, συνδέστε την, συνδέστε τον λογαριασμό σας και βάλτε έναν πράκτορα να απαντά σε ένα νήμα του Slack.
 slug: el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Τι θα φτιάξετε
 
-By the end of this tutorial, you will have:
+Στο τέλος αυτού του οδηγού θα έχετε:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- Μια εφαρμογή Slack δημιουργημένη για τον χώρο εργασίας σας, με τα σωστά δικαιώματα και συμβάντα ήδη ρυθμισμένα
+- Μια ζωντανή σύνδεση ανάμεσα στο Slack και το Control Center
+- Τον δικό σας λογαριασμό Slack συνδεδεμένο με τον χρήστη σας στο Control Center
+- Έναν πράκτορα να σας απαντά σε ένα νήμα του Slack και ένα εισιτήριο καταχωρισμένο από μια εντολή slash
 
-Prerequisites:
+Προαπαιτούμενα:
 
-- [Your first workspace](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-χώρος-εργασίας/) and [Dispatch your first agent](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- Ο [πρώτος σας χώρος εργασίας](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-χώρος-εργασίας/) και η [αποστολή του πρώτου σας πράκτορα](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) ολοκληρωμένα — ένας χώρος εργασίας χωρίς πράκτορες μπορεί να λάβει ένα μήνυμα από το Slack, αλλά δεν έχει κανέναν να απαντήσει
+- Ο **πράκτορας CEO** του χώρου εργασίας έχει προσαρμογέα και μοντέλο ορισμένα στις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**. Η γέφυρα ξυπνά τον CEO, όχι τον πράκτορα που ρυθμίσατε στον προηγούμενο οδηγό, και ένας πράκτορας χωρίς προσαρμογέα εκτελείται στον ενσωματωμένο βρόχο με το προεπιλεγμένο μοντέλο της Anthropic.
+- Τον ρόλο `owner` ή `admin` στον χώρο εργασίας του Control Center (η σύνδεση μιας εφαρμογής συνομιλίας μιλά για λογαριασμό ολόκληρου του χώρου εργασίας)
+- Δικαίωμα δημιουργίας και εγκατάστασης εφαρμογών στον χώρο εργασίας σας στο Slack
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Τίποτα εδώ δεν χρειάζεται δημόσια διεύθυνση, tunnel ή θύρα εισόδου. Το Control Center καλεί _προς τα έξω_ το Slack μέσω Socket Mode, οπότε αυτό λειτουργεί από έναν φορητό υπολογιστή πίσω από NAT.
 
-## Step 1: Get a Slack app configuration token
+## Βήμα 1: Αποκτήστε ένα token ρύθμισης εφαρμογής Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Αυτό είναι το μοναδικό μυστικό που πρέπει να αποκτήσετε με το χέρι. Επιτρέπει στο Control Center να δημιουργήσει και αργότερα να επεξεργαστεί την εφαρμογή για εσάς.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Ανοίξτε το [api.slack.com/apps](https://api.slack.com/apps)
+2. Μεταβείτε στο τμήμα token ρύθμισης εφαρμογής στο κάτω μέρος της σελίδας
+3. Δημιουργήστε ένα ζεύγος token για τον χώρο εργασίας σας στο Slack
+4. Αντιγράψτε το **refresh** token — ξεκινά με `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Βήμα 2: Αφήστε το Control Center να δημιουργήσει την εφαρμογή
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Στο Control Center, μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Γενικά** και βρείτε την κάρτα **Γέφυρες συνομιλίας**
+2. Στο τμήμα **Slack**, κάντε κλικ στο **Δημιουργία εφαρμογής για μένα**
+3. Επικολλήστε το token ρύθμισης εφαρμογής
+4. Ελέγξτε πώς θα είναι το bot:
+   - **Όνομα εφαρμογής**: πώς εμφανίζει το Slack την εφαρμογή, π.χ. `Control Center · Acme`
+   - **Όνομα bot**: τι πληκτρολογούν οι άνθρωποι μετά το `@`, π.χ. `control-center`
+   - **Σύντομη περιγραφή** και **Τι λέει το bot ότι μπορεί να κάνει**
+   - **Εντολή κάθετου**: `cc` από προεπιλογή, οπότε η εντολή είναι `/cc`
+   - **Άμεσα μηνύματα**: αφήστε το ενεργό ώστε τα μέλη να μπορούν να στέλνουν άμεσα μηνύματα στο bot
+5. Κάντε κλικ στο **Δημιουργία εφαρμογής**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Το Control Center συνθέτει ολόκληρο τον ορισμό της εφαρμογής — Socket Mode ενεργό, τα scopes και τις συνδρομές σε συμβάντα που χρειάζεται το bot, την εντολή slash, την καρτέλα Messages — και τη δημιουργεί στο Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## Βήμα 3: Ολοκληρώστε τα δύο βήματα που μπορεί να κάνει μόνο το Slack
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Το Slack δεν έχει API για τη δημιουργία token επιπέδου εφαρμογής ή την εγκατάσταση μιας εφαρμογής, οπότε το παράθυρο διαλόγου σάς τα δίνει και τα δύο ως συνδέσμους:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Δημιουργία token επιπέδου εφαρμογής** — ανοίγει το **Basic Information → App-Level Tokens**. Δημιουργήστε ένα token με το scope `connections:write` και αντιγράψτε το. Ξεκινά με `xapp-`
+2. **Εγκατάσταση της εφαρμογής** — ανοίγει το **Install App**. Εγκαταστήστε την στον χώρο εργασίας σας και μετά αντιγράψτε το **Bot User OAuth Token**. Ξεκινά με `xoxb-`
 
-Keep both values around for the next step.
+Κρατήστε και τις δύο τιμές για το επόμενο βήμα.
 
-## Step 4: Connect
+## Βήμα 4: Σύνδεση
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Πίσω στο παράθυρο διαλόγου, κάντε κλικ στο **Επικόλληση των διαπιστευτηρίων**
+2. Εισαγάγετε το **Token bot** (`xoxb-…`) και το **Token επιπέδου εφαρμογής** (`xapp-…`)
+3. Αφήστε το **Token ρύθμισης εφαρμογής** κενό — αυτό του βήματος 1 έχει ήδη αποθηκευτεί (το Slack το περιέστρεψε και το Control Center αποθήκευσε το νέο)
+4. Κάντε κλικ στη **Σύνδεση**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Το Control Center επαληθεύει το token bot με το Slack προτού αποθηκεύσει οτιδήποτε και μετά ανοίγει το socket. Η γραμμή τώρα δείχνει το όνομα του bot και το όνομα του χώρου εργασίας σας στο Slack με ετικέτα **Ζωντανά**.
 
-## Step 5: Link your own Slack account
+## Βήμα 5: Συνδέστε τον δικό σας λογαριασμό Slack
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Η σύνδεση κάνει το bot προσβάσιμο· η σύνδεση του λογαριασμού κάνει _εσάς_ αναγνωρίσιμο. Μέχρι να συνδεθεί η ταυτότητά σας στο Slack, το bot δεν θα ενεργεί βάσει των μηνυμάτων σας — δεν αποδίδει ποτέ ένα μήνυμα σε όποιον εγκατέστησε την εφαρμογή.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Η σύνδεση λογαριασμού είναι προσωπική, οπότε βρίσκεται σε διαφορετική σελίδα από τη σύνδεση που αφορά ολόκληρο τον χώρο εργασίας.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα** και βρείτε την κάρτα **Συνδεδεμένοι λογαριασμοί συνομιλίας**
+2. Κάντε κλικ στο **Σύνδεση του λογαριασμού μου Slack**
+3. Αντιγράψτε την εντολή που εμφανίζει, για παράδειγμα `/cc link K7M2QP`
+4. Στο Slack, στείλτε αυτή την εντολή στο bot σε ένα άμεσο μήνυμα
+5. Το bot απαντά "Linked — you are …"
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Ο κωδικός είναι μίας χρήσης και λήγει σε 15 λεπτά. Αν το email σας στο Slack αντιστοιχεί σε χρήστη του Control Center που είναι ήδη μέλος αυτού του χώρου εργασίας, η γέφυρα σας συνδέει αυτόματα την πρώτη φορά που θα της μιλήσετε και μπορείτε να παραλείψετε αυτό το βήμα.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Αν κάνετε @-αναφορά στο bot πριν ολοκληρωθεί αυτό, αρνείται και εξηγεί γιατί. Οι τρεις αρνήσεις είναι διακριτές, οπότε προσέξτε ποια λάβατε:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Αποστολέας χωρίς σύνδεση**: το bot σας λέει πώς να συνδεθείτε. Επιστρέψτε σε αυτό το βήμα.
+- **Συνδεδεμένος, αλλά όχι μέλος αυτού του χώρου εργασίας**: ζητήστε από έναν διαχειριστή να σας προσκαλέσει.
+- **Μέλος με ρόλο μόνο για ανάγνωση** (viewer ή guest): το bot δεν θα ξεκινήσει εργασία για λογαριασμό σας.
 
-## Step 6: Put an agent on something
+## Βήμα 6: Βάλτε έναν πράκτορα σε κάτι
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Στο Slack, προσκαλέστε το bot σε ένα κανάλι: `/invite @control-center`
+2. Κάντε @-αναφορά με ένα πραγματικό αίτημα:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center κάνε σύνοψη των ανοιχτών PR στο αποθετήριο api
 
-The bridge:
+Η γέφυρα:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Δημιουργεί έναν χώρο στο Control Center για εκείνο το νήμα του Slack, με όνομα βασισμένο στο κανάλι του Slack και στο αίτημά σας
+2. Ξυπνά τον πράκτορα υποδοχής του χώρου εργασίας (τον πράκτορα CEO όταν υπάρχει, αλλιώς τον πρώτο πράκτορα)
+3. Μεταδίδει σε ροή την απάντηση του πράκτορα πίσω στο νήμα του Slack καθώς γράφεται
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Απαντήστε στο ίδιο νήμα του Slack για να συνεχίσετε — δεν χρειάζονται άλλες αναφορές, γιατί το νήμα του Slack είναι πλέον γεφυρωμένο. Ή στείλτε άμεσο μήνυμα στο bot αντί να χρησιμοποιήσετε κανάλι· κάθε συνομιλία άμεσων μηνυμάτων οδηγεί τον δικό της χώρο στο Control Center, με τίτλο και γραμμή κατάστασης "σκέφτεται…" όσο εργάζεται ο πράκτορας.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Η ροή απαιτεί το streaming API του Slack, το οποίο δεν το έχει κάθε πλάνο. Αν η εφαρμογή σας το απορρίψει, η γέφυρα σταματά να προσπαθεί για ολόκληρη τη σύνδεση και αναρτά κάθε απάντηση ως ένα μήνυμα και η κάρτα Γέφυρες συνομιλίας γράφει "Η ζωντανή ροή είναι απενεργοποιημένη για αυτή την εφαρμογή Slack — οι απαντήσεις φτάνουν ως ένα μήνυμα." Όλα τα υπόλοιπα λειτουργούν το ίδιο.
 
-## Step 7: File a ticket without leaving Slack
+## Βήμα 7: Καταχωρίστε ένα εισιτήριο χωρίς να φύγετε από το Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Το bot απαντά με το κλειδί του εισιτηρίου που καταχώρισε. Το εισιτήριο είναι ένα συνηθισμένο τοπικό εισιτήριο του Control Center, με αναφορά από εσάς, έτοιμο να ανατεθεί σε έναν πράκτορα. Το `/cc help` απαριθμεί όλα όσα μπορεί να κάνει η εντολή.
 
-## Recap
+## Σύνοψη
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Δημιουργήσατε μια εφαρμογή Slack από το Control Center, τη συνδέσατε μέσω εξερχόμενου socket, συνδέσατε την ταυτότητά σας στο Slack με τον χρήστη σας στο Control Center και κατευθύνατε έναν πράκτορα από ένα νήμα του Slack. Ό,τι συνέβη στο Slack υπάρχει και στο Control Center: το νήμα του Slack είναι ένας χώρος, η απάντηση είναι μια μεταγραφή, το εισιτήριο είναι ένα εισιτήριο.
 
-**Next:** [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/).
+**Επόμενα:** Η [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/) καλύπτει τη χειροκίνητη διαδρομή, την περιστροφή token και την αντιμετώπιση προβλημάτων. Για το μοντέλο από κάτω, διαβάστε τις [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/).

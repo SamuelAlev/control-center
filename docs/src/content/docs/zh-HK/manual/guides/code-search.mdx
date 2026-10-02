@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: 以程式碼圖搜尋程式碼
+description: 為程式庫建立索引，並使用程式碼圖工具尋找符號，看看某項變更會破壞什麼。
 slug: zh-HK/手冊/操作指南/程式碼搜尋
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+本指南說明如何把程式庫納入程式碼圖，然後用它來回答你在重構之前真正會問的問題：有什麼依賴這個？
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+程式碼圖是一個符號與邊的資料庫，透過 tree-sitter 解析你已註冊的檢出而建立。它的工具**面向代理**——你需要透過詢問代理來使用它們。
 
-## Before you start
+## 開始之前
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+程式碼圖會索引 Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB 與 Ada。任何其他語言的檔案都不會被解析，所以不會出現在 `search_code`、`code_symbol`、`code_callers`、`code_callees` 或 `code_impact` 中。
 
-Two more things shape what gets indexed:
+還有兩件事會影響哪些內容會被索引：
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- 在 git 工作樹中，列舉會交由 `git ls-files --cached --others --exclude-standard` 決定，因此每個 `.gitignore`、巢狀忽略檔案、`.git/info/exclude` 以及全域排除檔案都會被遵循。這正是讓 `node_modules` 與建置輸出不會進入程式碼圖的原因。
+- 產生的 Dart 則一律會被捨棄。產生的檔案通常都已提交，所以單靠 git 並不會排除它們，而它們在每次執行程式碼產生時都會變動。
 
-## Get a repo indexed
+## 讓程式庫被索引
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/zh-HK/手冊/操作指南/加入程式庫/).
+註冊檢出會觸發 `RepoAdded`，自動為它啟動 `index_code` 管線。參見[將程式庫加入工作區](/zh-HK/手冊/操作指南/加入程式庫/)。
 
-To re-index by hand:
+如要手動重新索引：
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. 開啟 **設定 → 工作區 → 程式庫**。
+2. 在程式庫那一列上按 **索引程式碼** 按鈕。
+3. 執行期間，按鈕會顯示已完成檔案數對總數，並附有取消控制項。完成後，它會變成一個帶有符號數量的勾號。
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+程式碼圖按工作區、程式庫與檢出分割：已連結的檢出是一個分割區，而每個空間 worktree 各有自己的分割區（以其隔離程式庫 id 為鍵）。
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+有兩個節流機制值得了解，因為它們能解釋一段看起來像當機的等待：
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- 檔案監看器在主機上一次只允許**一次**索引執行——第二個檢出必須等待。`index_code` 管線另外還限制每個工作區只能執行一次，所以同一個工作區中的兩個程式庫會排隊；不同工作區則可並行索引。索引器本身會序列化**同一個**檢出的兩次執行，因此管線啟動與監看器掃描不會重複解析它。
+- 屬於**休眠空間**（過去一週沒有任何訊息）的 worktree 既不會被監看，也不會被索引。已連結的檢出仍會被監看。略過決定會在五分鐘後重新檢查，因此重新活躍起來的空間會被重新納入。
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[缺少語法會令伺服器停止，而不是搜尋]
+Tree-sitter 及其語法是必需的原生元件。若有任何一個缺少，`cc_server` 會拒絕啟動並指出缺少的 dylib——症狀是伺服器無法啟動，而不是搜尋功能降級。以 `scripts/natives/build_natives.sh` 預備它們，然後重新建置伺服器二進位檔。
 :::
 
-## Find a symbol
+## 尋找符號
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+請代理搜尋。工具是 `search_code`，它同時需要工作區與程式庫：
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+程式庫 id 來自 `list_repos`。選用的 `mode` 引數可為 `keyword`、`semantic` 或 `hybrid`，預設為 hybrid——在名稱、簽章與文件註解上套用 BM25，並與向量相似度融合。
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+每個結果會帶有符號的 id、名稱、完整限定名稱、種類、檔案路徑、起始與結束行，以及它的簽章（若有的話）。**id** 就是你餵給本頁其他每個工具的識別代碼。
 
-When you know the exact name, look it up directly instead:
+當你知道確切名稱時，改為直接查詢：
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## 追蹤呼叫
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+兩者都接受來自搜尋結果的 `symbol_id`，以及選用的 `limit`（預設 50）：
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` 會傳回有邊指向此符號的那些符號；`code_callees` 則傳回它所依賴的符號。
 
-## Check what a change would break
+## 檢查某項變更會破壞什麼
 
-This is the tool the whole page exists for:
+這正是整頁存在的理由：
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+它會計算**反向**依賴半徑：也就是沿著 `calls`、`extends` 與 `implements` 邊，直接或間接依賴該符號的所有東西（匯入、mixin 與泛型參照會儲存在圖中，但這裏不會走訪）。`depth` 是最大跳躍次數，介於 1 與 6 之間，預設為 2。
 
-The result is three fields:
+結果有三個欄位：
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root`——你所查詢的符號
+- `impacted`——可觸及的集合，包括深度為 0 的根，每個都帶有相對於根的 `depth`
+- `edgeCount`——走訪過程中跨越了多少條邊，是一個計數，而非邊本身
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+在重新命名或變更簽章之前先執行它，並把受影響清單交給代理作為其範圍。
 
-## Results are checked against the caller's own working copy
+## 結果會對照呼叫者自己的工作副本核對
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+若呼叫者是代理，空間 id 會自動注入，結果會對照**該空間的**工作副本核對。若某個符號的檔案已不存在於呼叫者的樹中，該符號會被省略，回應會帶有 `staleOmitted` 計數，以及一則說明這些符號的索引已過期的備註。
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+這就是為何你和代理對同一個查詢會得到不同答案，也是為何某個空間中的代理會與另一個空間中的代理得到不同答案。同一個空間中每則對話共用那一個 worktree。核對會以失敗放行的方式處理：寧可給出過期的答案，也不要空白的答案。
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/zh-HK/手冊/操作指南/審查運算/).
+當你想要某項變更的影響半徑時，請代理執行 `code_impact`（或 `review_studio.blastRadius`）。參見[審查運算](/zh-HK/手冊/操作指南/審查運算/)。
 
-## Semantic search needs the embedding model
+## 語意搜尋需要嵌入模型
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+符號與事實會在寫入時嵌入，而且只有在裝置上已安裝嵌入模型時才會這樣做。在此之前，`mode: "semantic"` 以及 hybrid 的語意部分沒有任何東西可供比對，搜尋實際上只靠關鍵字。
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+請在建立索引之前，於 **設定 → 伺服器 → 診斷與私隱 → 語意搜尋** 安裝模型。符號會在其檔案被匯入時取得向量。
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+另請注意，任何重新建置伺服器二進位檔的動作都會重新預備語法 dylib 並改變其 mtime，這會令每個索引檢查點失效，並在下次執行時迫使對每個檢出完整重新走訪一次。它會重新計算雜湊，但不會重新擷取未變更的檔案。
 
-## What is in the graph
+## 圖中有什麼
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**符號種類：** 函式、方法、類別、欄位、列舉、建構子、getter、setter、typedef、擴充、mixin、變數。
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**邊的種類：** calls、imports、extends、implements、mixes in、references。
 
-The canonical signatures for these tools live in [MCP tools](/zh-HK/手冊/參考/mcp-工具/).
+這些工具的標準簽章位於 [MCP 工具](/zh-HK/手冊/參考/mcp-工具/)。
 
-## Related guides
+## 相關指南
 
-- [Add repos to a workspace](/zh-HK/手冊/操作指南/加入程式庫/)
-- [Review compute (cohorts and axes)](/zh-HK/手冊/操作指南/審查運算/)
-- [Use the MCP server](/zh-HK/手冊/操作指南/mcp-伺服器/)
+- [將程式庫加入工作區](/zh-HK/手冊/操作指南/加入程式庫/)
+- [審查運算（群體與軸向）](/zh-HK/手冊/操作指南/審查運算/)
+- [使用 MCP 伺服器](/zh-HK/手冊/操作指南/mcp-伺服器/)
 
-## Related concepts
+## 相關概念
 
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/)
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/)

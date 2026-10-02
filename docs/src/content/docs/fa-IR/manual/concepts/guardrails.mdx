@@ -1,248 +1,255 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: گاردریل‌ها — یک سیاست برای هر اقدام تغییردهنده
+description: چرا Control Center هر اثر جانبی عامل را از یک موتور واحد اجازه/پرسش/رد عبور می‌دهد، چرا طبقه‌بندی ActionClass عمداً کوچک می‌ماند و درجهٔ خودمختاری واقعاً چه چیزی را عوض می‌کند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/گاردریلها
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+عامل‌ها در Control Center می‌توانند فایل حذف کنند، شاخه‌ها را push کنند،
+pull request منتشر کنند و APIهای بیرونی را صدا بزنند. هر یک از این‌ها
+_نوع_ متفاوتی از ریسک است و مدتی طولانی تنها یکی از آن‌ها — فرمان‌های
+shell — سیاست داشت. گاردریل‌ها وجود دارند تا یک پرسش را به شکلی یکسان،
+برای هر اقدام تغییردهنده‌ای که یک عامل می‌تواند انجام دهد و فارغ از اینکه
+کدام زمان اجرا یا ابزار پیشنهادش می‌دهد، پاسخ دهند: **آیا این مجاز است،
+به تأیید نیاز دارد، یا رد می‌شود؟**
 
-## One engine, every chokepoint
+## یک موتور، همهٔ گلوگاه‌ها
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+دقیقاً یک موتور سیاست وجود دارد. در هر نقطه‌ای که یک اقدام می‌تواند از
+سامانه بیرون بزند از آن مشورت گرفته می‌شود: رجیستری ابزار هارنس داخلی،
+دروازهٔ توزیع‌کنندهٔ MCP سمت سرور و تغییرات عملیات مخزن. پس قاعده‌ای که یک
+بار نوشته می‌شود هم بر زمان اجرای داخلی و هم بر CLIهای عامل بیرونی اعمال
+می‌شود — مسیر دومی، آرام‌تر، که دورش بزند وجود ندارد. سیاست فرمان قدیمی
+که فقط مخصوص bash بود هنوز کار می‌کند: یک قاعده می‌تواند به‌جای صنف اقدام
+با پیشوند یک فرمان مطابقت کند و این دو شکل در همان مخزن کنار هم می‌مانند.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+با این حال، موتور جایگزین سندباکس سیستم‌عامل نیست و سندباکس هم جایگزین آن
+نیست. این دو به پرسش‌های متفاوتی پاسخ می‌دهند: گاردریل‌ها تعیین می‌کنند
+که آیا فراخوانی‌ای که Control Center می‌بیند اصلاً اجازهٔ رخ دادن دارد، و
+سندباکس محدود می‌کند که فرایند برآمده تا کجا می‌تواند برسد. `cc_server`
+سندباکس را جایی اعمال می‌کند که میزبان بک‌اندی عرضه کند — اما [Windows
+هیچ بک‌اندی عرضه نمی‌کند و Linux به `bwrap` و `socat`
+نیاز دارد(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/). روی آن
+میزبان‌ها گاردریل‌ها بیرونی‌ترین لایهٔ اعمال‌اند، نه سیاستی که روی یک کف
+نشسته باشد؛ و این را بدانید وقتی تصمیم می‌گیرید چقدر تساهل کنید.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: طبقه‌بندی‌ای که عمداً بسته است
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+هر ابزار تغییردهنده اعلام می‌کند به کدام **ActionClassها** تعلق دارد، از
+مجموعه‌ای بسته با سیزده صنف اثر. پنج صنف از آن‌ها به‌صورت پیش‌فرض
+می‌پرسند؛ بقیه اجازه می‌دهند و این یک قاعده است که آن را عوض می‌کند.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| صنف | پیش‌فرض داخلی | چه چیزی را پوشش می‌دهد |
+| --- | --- | --- |
+| `fileDelete` | **ابتدا بپرس** | حذف یک فایل (نوشتنی به شکل حذف، `rm`) |
+| `gitPush` | **ابتدا بپرس** | push به یک ریموت git |
+| `prCreate` | **ابتدا بپرس** | ساخت یک pull request |
+| `prPublish` | **ابتدا بپرس** | انتشار یک بازبینی، ادغام یک PR |
+| `vendorSyncWrite` | **ابتدا بپرس** | نوشتن در سامانهٔ بیرونی تیکت (Linear، Jira، همگام‌سازی GitHub) |
+| `fileWriteOutsideWorktree` | اجازه | نوشتن فایلی بیرون از worktree جدا‌شده |
+| `gitCommit` | اجازه | ساخت یک کامیت git |
+| `networkEgress` | اجازه | خروج به شبکه (واکشی وب، HTTP دلبخواه) |
+| `secretAccess` | اجازه | خواندن یک راز یا اعتبارنامه |
+| `packageInstall` | اجازه | نصب یک بسته (npm، pip، pub، brew) |
+| `processSpawn` | اجازه | اجرای یک فرایند (shell و هر چیزی که shell را صدا می‌زند) |
+| `workspaceMutation` | اجازه | تغییر ساختار فضای کاری (مخزن‌ها، فضاها، عامل‌ها) |
+| `enclosureControl` | اجازه | راندن یک محفظه (ریگ): بوت‌کردن یک VM، فرستادن ورودی به آن |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+هشت صنفی که پیش‌فرضشان اجازه است با این فرض انتخاب شدند که کف سندباکس
+زیرشان اعمال می‌شود. این کار جایی که میزبان بک‌اند عرضه می‌کند انجام
+می‌شود و روی Windows یا جعبه‌ای Linux که `bwrap` و `socat` ندارد انجام
+نمی‌شود — پس اگر می‌خواهید `fileWriteOutsideWorktree` یا `packageInstall`
+آنجا دروازه‌دار شود، قاعده‌ای است که باید خودتان بنویسید.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+این مجموعه عمداً بسته است. ابزار تغییردهندهٔ تازه‌ای که هیچ صنفی اعلام نکند
+در آزمون قفل یک‌طرفه رد می‌شود، پس این طبقه‌بندی فقط با تصمیمی صریح و
+مدلّل می‌تواند رشد کند — «پخش‌شدگی طبقه‌بندی، مرگ این قابلیت است.» سیزده
+صنف برای بیان سیاست‌هایی که مردم واقعاً می‌نویسند کافی است (هرگز بدون
+پرسیدن push نکن، هرگز بیرون از worktree حذف نکن، همیشه خواندن را مجاز
+بدان) و به‌قدری کم است که رابط تنظیمات فهم‌پذیر بماند.
 
-## Rules and scope resolution
+## قواعد و تعیین محدوده
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+یک قاعده `(scope, ActionClass | command prefix) → allow | prompt | deny` را
+نقشه می‌کند. محدوده‌ها از خاص‌ترین به کم‌خاص‌ترین تودرتو می‌شوند:
 
-**space > agent > workspace > mode preset > built-in default**
+**فضا > عامل > فضای کاری > پیش‌تنظیم حالت > پیش‌فرض داخلی**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+تعیین با **تقدم خاص‌بودن** انجام می‌شود: نخستین محدوده‌ای که قاعده‌ای
+مطابق دارد تصمیم می‌گیرد و تعیین همان‌جا می‌ایستد. محدودکننده‌ترین فقط
+شکستن تساوی است — میان دو قاعدهٔ هم‌ازحد خاص در یک محدوده و هنگام ترکیب
+چند صنفی که یک اقدام واحد اعلام می‌کند. درون یک محدوده، قاعدهٔ فرمان بر
+بلندترین پیشوند فرمان منطبق می‌شود. اجازه هیچ‌جا از رد نمی‌برد.
 
-Two decisions carry hard guarantees:
+دو تصمیم تضمین‌های سختی دارند:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **پرسش‌های بسته در نبود پاسخ.** یک `prompt` بدون تأییدکنندهٔ متصل به
+  _ردشده_ می‌رسد. پرسش بی‌پاسخ هرگز بله نیست.
+- **ترکیب محدودکننده‌ترین.** اقدامی که چند صنف را دربر می‌گیرد آن‌ها را به
+  محدودکننده‌ترین شکل ترکیب می‌کند؛ وقتی چند صنف می‌پرسند، یک تأیید همهٔ
+  آن‌ها را فهرست می‌کند.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+عمداً هیچ قفلی در سطح هر نوبت وجود ندارد. هر فراخوانی ابزار سیاست را از
+صفر دوباره تعیین می‌کند، پس پرسیدن مکرر برای یک اقدام با «این تصمیم را به
+خاطر بسپار» خود اپراتور محدود می‌شود، نه با چیزی که به نوبت گره خورده
+باشد.
 
-## Argument-level rules
+## قواعد در سطح آرگومان‌ها
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+یک قاعده می‌تواند آرگومان‌های یک اقدام را محدود کند، نه فقط فعل آن.
+«می‌تواند push کند» و «می‌تواند به `feature/*` push کند» دو ادعای متفاوت
+اند و فقط دومی یک کنترل است — دروازهٔ توانایی‌ای که تنها فعل را مجاز
+می‌کند همان شکلی است که پشت بیشتر حوادث منتشرشدهٔ عامل‌ها می‌نشیند.
 
-A constraint may name:
+یک محدودیت می‌تواند این‌ها را نام ببرد:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **مسیرها** — الگوهای glob (`repos/**`، `!**/.env`)
+- **رف‌ها** — رف‌های git، با نفی `!` (`['**', '!main']` یعنی «هر شاخه‌ای جز
+  main»)
+- **میزبان‌ها** — مقصدهای شبکه، با نویسه‌های عام زیردامنه (`*.internal`)
+- **فرمان‌ها** — پیشوندهای فرمان، منطبق بر مرز واژه
+- **سقف‌ها** — `maxCount` / `maxCents`، تا «حذف حداکثر 50 فایل» قابل بیان
+  شود
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+سه ویژگی از بسته و بی‌حلقه نگه‌داشتن این دستور زبانی بیرون می‌افتد و هر سه
+همان مقصودند: هر قاعده به‌صورت جمله‌ای درمی‌آید که می‌توانید بازخوانی‌اش
+کنید، هر رد می‌تواند محدودیتی را که منطبق شده نام ببرد، و کل سیاست قابل
+برشمردن است — می‌توانید ببینید عامل *پیش از* اجرا چه کاری می‌تواند بکند.
 
-Three rules that matter:
+سه قاعده که اهمیت دارند:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- یک **قاعدهٔ مقید در همان محدوده از یک قاعدهٔ بی‌قید خاص‌تر است**، پس
+  «رد push به `main`» بدون اینکه کسی به ترتیب فکر کند «اجازهٔ push» را
+  می‌برد.
+- قاعدهٔ **محدودکننده** (رد / پرسش) وقتی اعمال می‌شود که درخواست *هر*
+  مقداری را که نام برده لمس کند؛ قاعدهٔ **مجاز** (اجازه) فقط وقتی اعمال
+  می‌شود که درخواست *تماماً* درون آن باشد. خواندن هر دو به یک شکل به عامل
+  اجازه می‌دهد مسیری ممنوع را با کنار هم گذاشتن مسیری بی‌گناه تطهیر کند.
+- قاعده‌ای که وجهی را نام می‌برد که درخواست چیزی درباره‌اش نمی‌گوید نه
+  اعمال می‌شود و نه نادیده گرفته: **به یک تأیید ارتقا می‌یابد**. نادیده
+  گرفتن خاموش هر قاعدهٔ شاخهٔ محافظت‌شده را در برابر ابزاری که رف خود را
+  گزارش نمی‌کند بی‌اثر می‌کند؛ رد خاموش هم هر pushی را که استخراج‌کننده
+  نمی‌تواند توصیف کند رد می‌کند. با نبود تأییدکنندهٔ متصل، قاعدهٔ
+  بسته‌در-نبود-پاسخ موجود آن ارتقا را به یک رد تبدیل می‌کند.
 
-## What a command rule can and cannot catch
+## قاعدهٔ فرمان چه چیزی را می‌گیرد و چه چیزی را نه
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+یک قاعدهٔ `commandPrefix` بر مرز واژه منطبق می‌شود: `git push` شامل
+`git push origin main` می‌شود و نه `git pushx`. این قاعده shell را نرمال
+**نمی‌کند**. `git  push` (دو فاصله)، `cd sub && git push` و
+`GIT_DIR=… git push` رشته‌های متفاوتی‌اند و هیچ‌کدام با قاعده‌ای دربارهٔ
+`git push` منطبق نمی‌شود.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+این یک حد واقعی است و گفته می‌شود، نه لاپوشانی: قواعد فرمان راحتی‌ای برای
+اپراتورند تا رفتار عادی عامل را شکل دهد، **نه** مرزی در برابر عاملی
+خصمانه. مرزها صنف‌های اثر هستند (که ابزار اعلامشان می‌کند و نمی‌تواند
+بازنویسی‌شان کند)، تور فرمان حالت در زیر مخزن سیاست، و سندباکس سیستم‌عامل
+در زیر هر دو. قاعدهٔ فرمانی که به `allow` می‌رسد هیچ‌یک از آن دو را شل
+نمی‌کند — تور حالت پس از آن اجرا می‌شود و `deny` آن قطعی است.
 
-## Standing approvals
+## تأییدهای ماندگار
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+پاسخ دادن به یک پرسش با «این را به خاطر بسپار» یک قاعدهٔ سیاست واقعی
+می‌نویسد: دارای محدوده (فضا / عامل / فضای کاری)، **مقید به آرگومان**
+(تأیید push به `feature/login` دسترسی `feature/**` را می‌دهد، نه `main`)
+و **خودلغو** پس از یک TTL صریح. بله گفتن برای چند ساعت آینده همان بازنویسی
+آرام سیاست دائمی شما نیست، و قواعدی که می‌نویسد با منشأ `remembered` و یک
+انقضا در همان مخزن می‌نشینند، پس می‌توان آن‌ها را پیش از موعد لغو کرد.
 
-## Enforcement levels
+## سطوح اعمال
 
-Each rule carries one:
+هر قاعده یکی از این‌ها را حمل می‌کند:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — اجازه می‌دهد، اما ثبت می‌کند که قاعده منطبق شده. این مسیر
+  پذیرش است: یک قاعدهٔ سختگیر را در حالت advisory منتشر کنید، یک هفته رد
+  حسابرسی را بخوانید تا دقیقاً ببینید *چه چیزی* را مسدود می‌کرد، سپس
+  ارتقایش دهید. بدون این رده، سیاست‌های سختگیر هرگز روشن نمی‌شوند.
+- **soft** — رد می‌کند، با امکان عبور برای کسی که مجوز عبور دارد، همراه با
+  توجیهی ثبت‌شده. خود عبور یک رویداد حسابرسی‌شده است.
+- **hard** (پیش‌فرض) — رد می‌کند. هیچ چیز از آن عبور نمی‌کند.
 
-## The managed tier
+## لایهٔ مدیریت‌شده
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+اپراتور نصب می‌تواند سیاستی را سنجاق کند که هیچ مدیر فضای کاری نتواند
+شلش کند. قواعد مدیریت‌شده سمت سرور زندگی می‌کنند و به شکل
+**محدودکننده‌ترین** با زنجیرهٔ خود هر فضای کاری ادغام می‌شوند — آن‌ها
+محدوده‌ای در سر زنجیره نیستند، چون یک `allow` مدیریت‌شده در سر زنجیره به
+نصب اجازه می‌داد رد یک فضای کاری را باطل کند، یعنی عکس کاری که یک گیره
+برای آن ساخته شده. پس یک قاعدهٔ مدیریت‌شده فقط می‌تواند سخت‌تر کند.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+تنظیم `CC_SERVER_MANAGED_POLICY` روی یک فایل JSON کاملاً بر قواعد
+ذخیره‌شده اولویت می‌یابد، و همین است که به اپراتور اجازه می‌دهد وضعیتی را
+سنجاق کند که هیچ رابط مدیریتی نمی‌تواند عوضش کند — پاسخ به «آیا می‌توانم
+جلوی توسعه‌دهنده‌هایم را بگیرم که کنترل‌های ایمنی را خاموش کنند؟».
 
-## The autonomy dial is a profile, not a parallel system
+## درجهٔ خودمختاری یک نمایه است، نه یک سامانهٔ موازی
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+درجهٔ خودمختاری هر فضا یک نمایهٔ نام‌دار روی همین مخزن سیاست است، نه
+سازوکاری دوم. سه تنظیم آن به‌صورت `proposeOnly`، `actWithApproval` و
+`actFreely` ذخیره و فرستاده می‌شوند (شکل‌های خط‌دار فقط متن رابط‌اند و
+`autonomy.setForSpace` هر چیز دیگری را رد می‌کند). ترک آن بدون مقدار
+مانند `actWithApproval` رفتار می‌کند.
 
-What each one does to a resolved decision:
+اثر هر یک بر تصمیمی که تعیین شده:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** هر ابزار دروازه‌دار را یکسره رد می‌کند. عامل هنوز
+  می‌تواند استدلال کند و پاسخ دهد؛ فقط نمی‌تواند عمل کند و پیامش می‌گوید
+  چرا.
+- **`actWithApproval`** (و بی‌مقدار) همان دروازهٔ تأیید
+  بسته‌در-نبود-پاسخ است که بالا توصیف شد.
+- **`actFreely`** هر چیزی را که به یک `deny` سخت نرسیده باشد پیش‌تأیید
+  می‌کند.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+این آخری سزاوار آن است که صریح گفته شود، نه تلطیف: زیر `actFreely` یک
+تصمیم `prompt` **نه** به تأییدکننده‌ای ارتقا می‌یابد — مجاز می‌شود و از
+کسی پرسیده نمی‌شود. فقط یک قاعدهٔ `deny` صریح از درجه جان به در می‌برد.
+پس `actFreely` اعطای عمدی خودمختاری است، نه تنظیم راحتی، و قاعدهٔ
+بسته‌در-نبود-پاسخ دقیقاً همان موردی را محافظت می‌کند که اهمیت دارد
+(`actWithApproval`، یعنی پیش‌فرض).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+واگذاری میان عامل‌ها در گلوگاه `delegate_task` با هر چهار نگهبان حراست
+می‌شود: سقف عمق (پیش‌فرض 3)، تشخیص چرخه، **سقف خودمختاری** (واگذارشده
+هرگز نمی‌تواند با خودمختاری بیشتر از واگذارکننده‌اش عمل کند — امتیاز را
+نمی‌توان با سپردن کار به عاملی آزادتر تطهیر کرد) و **پاکت بودجه** (واگذاری
+از بودجهٔ باقی‌ماندهٔ واگذارکننده حساب می‌شود و نمی‌تواند بودجهٔ تازه
+بسازد). هر یک با صدای بلند رد می‌شود و دلیل نگهبان عیناً به عامل
+بازگردانده می‌شود.
 
-## The adapter honesty matrix
+## ماتریس صداقت آداپتورها
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+هر زمان اجرایی به Control Center اجازه نمی‌دهد هر اقدامی را رهگیری کند.
+CLIهای عامل بیرونی برخی ابزارها را به‌صورت بومی، درون‌فرایندی، اجرا
+می‌کنند، جایی که هیچ دروازه‌ای نمی‌تواند بنشیند. آداپتورها به‌جای تظاهر به
+خلافش، هر یک یک **ماتریس صداقت** حمل می‌کنند: به‌ازای هر آداپتور، اینکه
+آیا Control Center سطح ابزار را پالایش می‌کند، فراخوانی‌های ابزار را
+رهگیری می‌کند، قرارداد پایان را رصد می‌کند، ابزارهای بومی اجراکننده را
+می‌بیند، و اینکه آیا ابزارهای درون‌فرایندی با پروفایل سندباکس پوشش داده
+می‌شوند.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+دو مورد پیش از اعتماد به یک پیکربندی ارزش خواندن دارند. هارنس داخلی اعلام
+می‌کند که ابزارهای فایل درون‌فرایندی‌اش سندباکس **نشده‌اند** — سطح ابزار و
+این موتور سیاست تنها مرز سیستم‌عامل فایل آن‌اند. Claude Code اعلام می‌کند
+که فراخوانی‌های ابزار خودش **قابل رهگیری نیستند**، چون با
+`--dangerously-skip-permissions` اجرا می‌شود؛ Control Center فقط
+فراخوانی‌های `mcp__*` آن را می‌بیند و ابزارهای خواندن، نوشتن، ویرایش و
+shell خودش دیده‌نشده اجرا می‌شوند.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+صفحهٔ تنظیمات این ماتریس را نشان می‌دهد، چون تنها شکست نابخشودنی برای یک
+سامانهٔ گاردریل، ادعای پوششی است که وجود ندارد.
 
-## Probing policy before it bites
+## کاوش سیاست پیش از آنکه گاز بگیرد
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+گاردریل‌ها در **تنظیمات → فضای کاری → مجوزهای عامل**
+(`/workspaces/<id>/settings/workspace/permissions`) قرار دارند. این صفحه
+ماتریس سیاست را دارد که قواعد در آن نوشته می‌شوند، قالب‌های سیاست، کاوشگر
+«اگر…؟»، رد حسابرسی مجوز و ماتریس صداقت آداپتور.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+کاوشگر یک صنف اقدام (یا یک فرمان) و یک محدوده می‌گیرد و نشان می‌دهد کدام
+قاعده تصمیم گرفت و چرا. چون تعیین خالص و قطعی است — همان اقدام، همان
+محدوده، همان تصمیم — پاسخ کاوشگر همان پاسخی است که عامل خواهد گرفت.
 
-## Related concepts
+## مفاهیم مرتبط
 
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/): writing and testing rules in practice
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): چه چیزی واقعاً اجرای یک عامل را محدود می‌کند و کف سیستم‌عامل زیر این موتور تا کجا می‌رسد
+- [چندنفره — هویت، عضویت و حضور(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): فضاها، هویت‌ها و جایی که درجهٔ خودمختاری می‌زید
+- [پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/): نوشتن و آزمودن قواعد در عمل

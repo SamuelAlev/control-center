@@ -1,123 +1,68 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: การอนุญาต — ใครทำอะไรได้ และคุณพิสูจน์เรื่องนี้อย่างไร
+description: แค็ตตาล็อกสิทธิ์ที่อยู่เบื้องหลังบทบาทของ Control Center, ร่องรอยการตรวจสอบที่ตรวจจับการแก้ไขได้ซึ่งการตัดสินด้านการอนุญาตทุกครั้งตกลงไป และการควบคุมระดับทั้งการติดตั้งที่ผู้ดำเนินการกำหนดไว้ได้
 slug: th-TH/คู่มือ/แนวคิด/การอนุญาต
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/).
+Control Center ตอบคำถามด้านการอนุญาตสองข้อ ซึ่งแตกต่างกันจริง ๆ **“บุคคลนี้เรียกใช้การดำเนินการนี้ได้หรือไม่?”** เป็นเรื่องของคน บทบาท และรีโป ส่วน **“เอเจนต์นี้ก่อให้เกิดผลลัพธ์นี้ได้หรือไม่?”** เป็นเรื่องของการกระทำ อาร์กิวเมนต์ และขอบเขตความเสียหาย — ข้อหลังอยู่ใน[กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
 
-This page is the first question, plus the record both of them leave behind.
+หน้านี้ว่าด้วยคำถามข้อแรก พร้อมทั้งบันทึกที่ทั้งสองข้อทิ้งไว้เบื้องหลัง
 
-## One decision point
+## จุดตัดสินใจจุดเดียว
 
-Every human-side authorization decision resolves through a single function:
+การตัดสินด้านการอนุญาตฝั่งมนุษย์ทุกครั้งตัดสินผ่านฟังก์ชันเดียว:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**สิทธิ์**หนึ่งรายการเขียนเป็น `<domain>:<tier>` — `tickets:write`, `members:administer`, `repos:read` แค็ตตาล็อกนี้ถูก**อนุมาน**ขึ้นมา ไม่ได้เขียนด้วยมือ: มันคำนวณจากพื้นผิวการดำเนินการเอง (คำนำหน้าชื่อ op บอก domain ส่วนบทบาทขั้นต่ำที่ op บังคับใช้อยู่แล้วบอกระดับ) การดำเนินการทั้งหมดราว 550 รายการจึงมีสิทธิ์กำกับอยู่ โดยไม่มีใครต้องพิมพ์กำหนดแม้แต่รายการเดียว
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+การอนุมานเช่นนี้คือคุณสมบัติที่คุ้มค่าแก่การปกป้อง มันหมายความว่าการดำเนินการใหม่ถูกกั้นไว้โดยค่าเริ่มต้น — จุดล้มเหลวของโมเดลที่กำกับด้วยมือคือมีใครสักคนลืม และสิ่งที่เขาลืมก็คือด่านกั้นนั่นเอง มีการทดสอบแบบแรตเช็ตที่ตรึงชุดโดเมนอันเป็นผลลัพธ์ไว้ การเพิ่มการดำเนินการภายใต้คำนำหน้าใหม่จึงเป็นการตัดสินใจตั้งชื่อที่มนุษย์ตั้งใจเลือก ไม่ใช่ความบังเอิญ
 
-The four tiers map exactly onto the built-in roles:
+ระดับทั้งสี่แมปกับบทบาทในตัวแบบพอดี:
 
-| Tier | Role floor | Example |
+| ระดับ | บทบาทขั้นต่ำ | ตัวอย่าง |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | แขก | `tickets:read` |
+| `write` | สมาชิก | `tickets:write` |
+| `administer` | แอดมิน | `members:administer` |
+| `own` | เจ้าของ | `workspace:own` |
 
-## Roles
+## บทบาท
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+บทบาทในตัวห้าบทบาท — **เจ้าของ, แอดมิน, สมาชิก, ผู้ดู, แขก** — เป็นพรีเซ็ตบนแค็ตตาล็อกนั้น ความเป็นเจ้าของมีได้เพียงตำแหน่งเดียวต่อเวิร์กสเปซ และโอนกันอย่างชัดเจนด้วย **โอนความเป็นเจ้าของ** (เจ้าของที่จากไปจะลบออกไม่ได้เลยหากไม่ทำเช่นนั้น: การถอนผู้ใช้ด้วย SCIM ปฏิเสธเจ้าของเวิร์กสเปซทุกคน — ต้องโอนก่อน)
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**บทบาทที่กำหนดเองทำงานแบบลบออก** บทบาทที่กำหนดเองระบุพรีเซ็ตฐาน (`admin`, `member`, `viewer` หรือ `guest` — ไม่มีทางเป็น `owner`) พร้อมชุดสิทธิ์ที่ถูกนำออกจากพรีเซ็ตนั้น — “เป็นแอดมิน แต่จัดการสมาชิกไม่ได้” มันให้สิทธิ์เกินฐานไม่ได้เลย นี่คือเหตุผลที่นำมาใช้กับระบบที่ติดตั้งอยู่แล้วได้อย่างปลอดภัย: การตรวจสอบเดิมทุกจุดยังคงเป็นขอบเขตบนที่เชื่อถือได้ สมาชิกถือบทบาทเหล่านี้ในชื่อ `custom:<id>` และไคลเอนต์ที่เก่าเกินกว่าจะเข้าใจค่านั้นจะถอยกลับไปใช้แขกแทนที่จะเดา
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+ใต้บทบาทลงไปคือ**สิทธิ์ระดับรีโป** (`none` / `read` / `review` / `write`): การเป็นสมาชิกเวิร์กสเปซไม่เคยให้สิทธิ์เหนือกว่าโฮสต์โค้ดอย่างเงียบ ๆ ทุกพื้นผิวที่เปิดให้เข้าถึงโค้ดจะตรวจสอบสิทธิ์เหล่านี้ — รวมถึงเส้นทางที่เข้าถึงโค้ดทางอ้อม เช่นเทอร์มินัลหรือเซสชันตัวแก้ไขที่เปิดบน worktree ของสเปซ
 
-## Server authority
+## อำนาจของเซิร์ฟเวอร์
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+บางการดำเนินการไม่เกี่ยวกับเวิร์กสเปซเลย: การตั้งค่าระดับทั้งการติดตั้ง, การกำหนดค่า SSO, ข้อมูลรับรองของผู้ให้บริการ, การจัดการโมเดล, การสำรองข้อมูลทั้งการติดตั้ง การดำเนินการเหล่านี้ประกาศ**อำนาจของเซิร์ฟเวอร์** และถูกปฏิเสธสำหรับทุกคนยกเว้นผู้ดำเนินการของการติดตั้ง (เจ้าของเซิร์ฟเวอร์ที่บันทึกไว้) โดยเจตนาแล้วมีตัวตนของผู้ดำเนินการเพียงหนึ่งเดียว และมีนิยามของมันเพียงหนึ่งเดียว
 
-## The audit trail
+## ร่องรอยการตรวจสอบ
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+การตัดสินด้านการอนุญาตทุกครั้ง — **ทั้งการอนุญาตและการปฏิเสธ** — ถูกต่อท้ายลงในร่องรอยการตรวจสอบแบบผูกด้วยแฮชของแต่ละเวิร์กสเปซ
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+ล็อกที่บันทึกแต่การปฏิเสธตอบได้แค่ว่า “เราบล็อกอะไรไปบ้าง?” แต่ตอบไม่ได้ว่า “เอเจนต์นี้ทำอะไรไปจริง ๆ และใครอนุญาต?” ซึ่งเป็นคำถามตั้งต้นของการทบทวนเหตุการณ์ ดังนั้นแต่ละรายการจึงบันทึกสายการอ้างอิงที่มาที่ไปอย่างครบถ้วน: ตัวตนผู้ลงมือ, มนุษย์ที่มันลงมือแทน, การมอบอำนาจที่ทำให้มันเข้ามา, การกระทำและอาร์กิวเมนต์ของมัน (ในรูปไดเจสต์), การตัดสิน และ**กฎที่ใช้ตัดสิน**
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+รายการต่าง ๆ ถูกต่อเป็นโซ่: แฮชของแต่ละรายการครอบคลุมแฮชของรายการก่อนหน้า การแก้ไข ลบ หรือสลับลำดับแถวใด ๆ จึงทำให้แฮชทุกตัวหลังจากนั้นขาด **ตรวจสอบโซ่**จะคำนวณใหม่ทั้งชุดและระบุจุดเชื่อมแรกที่ไม่ผ่าน ล็อกตรวจสอบที่คุณตรวจสอบไม่ได้ก็เป็นแค่ล็อก แต่ล็อกที่คำนวณซ้ำได้คือหลักฐาน
 
-Two consequences worth knowing:
+ผลที่ตามมาสองข้อที่ควรรู้:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- ตารางตรวจสอบ**ได้รับการยกเว้นจากการตัดทิ้งตามอายุ** โซ่แฮชตัดออกจากตรงกลางไม่ได้ การเก็บรักษาคือนำออกก่อนแล้วจึงตัดทอน และการตัดทอนจะทิ้งจุดตรวจที่พกแฮชปลายทางของช่วงที่ถูกนำออกไว้ ทำให้ส่วนที่เหลือยังตรวจสอบย้อนกลับไปถึงต้นทางได้
+- มันวางอยู่**เคียงข้าง**ไทม์ไลน์กิจกรรม ไม่ได้ทับซ้อนอยู่บนนั้น ไทม์ไลน์คือสิ่งที่คนทำ ส่วนนี่คือสิ่งที่ถูกอนุญาตและถูกปฏิเสธ correlation id ที่ใช้ร่วมกันทำให้อ่านการเรียกหนึ่งครั้งได้จากทั้งสองที่
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+มันส่งออกเป็น JSON ที่คั่นด้วยบรรทัดใหม่ และสตรีมไปยัง SIEM ได้ (Splunk, Elastic, Sentinel — ปลายทาง HTTP พร้อม bearer token) โดยเจตนาออกแบบให้การสตรีมเป็นแบบพยายามให้ได้มากที่สุด: SIEM ล่มต้องไม่บล็อกการเรียกเครื่องมือของเอเจนต์ไม่ว่ากรณีใด และสำเนาถาวรที่ตรวจสอบได้ก็อยู่บนดิสก์อยู่แล้วทั้งสองทาง
 
-## Sessions
+## เซสชัน
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+การติดตั้งหนึ่งแห่งกำหนด**อายุเซสชันสูงสุด**และ**เวลาหมดอายุเมื่อไม่ใช้งาน**ได้ ทั้งสองอย่างถูกบังคับใช้ที่จุดตรวจข้อมูลรับรองอุปกรณ์ ซึ่งทุกช่องทางที่ผ่านการยืนยันตัวตนต้องผ่านจุดนี้ — ขอบเขตเซสชันที่ไคลเอนต์เพิกเฉยได้นั้นตอบได้แค่แบบสอบถาม ไม่ได้ตอบโจมตี การติดตั้งยังบังคับให้ใช้ SSO ได้ด้วย ซึ่งจะปิดการจับคู่ด้วยตนเองสำหรับอุปกรณ์ใหม่ (พร้อมการกันการล็อกเอาต์: มันจะปฏิเสธตราบใดที่ยังไม่มีการเชื่อมต่อ SSO ที่ใช้งานได้)
 
-## What this is not
+## สิ่งที่หน้านี้ไม่ใช่
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **ไม่ใช่ ACL ระดับวัตถุ** โดยเจตนาแล้วไม่มีสิทธิ์ระดับตั๋วงานหรือระดับข้อความ การแยกระดับรีโปคือสิ่งที่ทีมขอมาจริง และมีอยู่แล้ว ส่วนการแชร์ระดับวัตถุเป็นพื้นผิวที่ต้องจัดการชุดค่าผสมมากมายโดยยังไม่มีความต้องการที่พิสูจน์ได้ในที่นี้
+- **ไม่ใช่เอนจินนโยบายที่คุณกำหนดค่าด้วย DSL** คำศัพท์ถูกปิดไว้โดยเจตนา นโยบายทั้งหมดจึงแสดงผล อธิบาย และแจกแจงได้
+- **ไม่ถูกบังคับใช้ที่ใดนอกจากเซิร์ฟเวอร์** การตรวจสอบฝั่งไคลเอนต์มีอยู่เพียงเพื่อไม่ให้เสนอตัวควบคุมที่จะถูกปฏิเสธ การตัดสินที่มีผลชี้ขาดเป็นของเซิร์ฟเวอร์เสมอ

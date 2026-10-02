@@ -1,129 +1,137 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Installer og administrer skills
+description: Legg til GitHub-repoer som skill-kilder, bla gjennom katalogene deres, og installer, oppdater eller avinstaller skills gjennom antivirus-skanningsporten.
 slug: nb-NO/handbok/slik-gjor-du/administrer-skills
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Denne veiledningen viser hvordan du fyller et arbeidsområde med skills fra
+GitHub: legg til et repo som kilde, installer skillene du vil ha fra det, og
+hold dem oppdatert over tid.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/nb-NO/handbok/konsepter/agentmodell/); this page stays
-on the doing.
+Det viktigste å vite før du begynner: **et kilderepo er ikke til å stole på.**
+Navnet, beskrivelsen og stjernetellingen er skrevet av den som eier det. Det
+eneste sikkerhetssignalet Control Center stoler på, er utfallet av
+antivirus-skanningen, som hver installasjon passerer før noe når disken eller
+en agentprompt. Vil du ha resonnementet, kan du lese
+[avsnittet om skills i agentmodellen](/nb-NO/handbok/konsepter/agentmodell/); denne siden
+holder seg til det praktiske.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+Skillene ligger under **Innstillinger → Arbeidsområde → Ferdigheter**
+(`/workspaces/<id>/settings/workspace/skills`). De er knyttet til
+arbeidsområdet: skillene du installerer her, tilhører bare dette
+arbeidsområdet. Siden har to faner: **Installert** (lokale skills, med en
+**Ny ferdighet**-editor) og **Kilder** (GitHub-kataloger). Begge
+skriveoperasjonene passerer den samme skanningsporten.
 
-## Add a skill repository
+## Legg til et skill-repo
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Åpne **Innstillinger → Arbeidsområde → Ferdigheter**, og bytt til
+   **Kilder**-fanen.
+2. Trykk **Legg til arkiv**.
+3. Lim inn URL-en til et GitHub-repo, f.eks.
+   `https://github.com/anthropics/skills`, og bekreft.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+Serveren sjekker at repoet finnes og er synlig med påloggingsinformasjonen sin,
+og legger det deretter til i listen til venstre. Det finnes ingen kuratert
+butikk i mellom: alle GitHub-repoer fungerer, og det betyr også at omdømmet er
+ditt å bedømme — en stjernetelling er et bevis, aldri en garanti.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Skillene til et repo er mappene som inneholder en `SKILL.md` (opptil tre nivåer
+dypt, pluss Claude-oppsettet for plugin-markedsplass
+`plugins/<plugin>/skills/<skill>`, der avhengighets- og leverandørtrær hoppes
+over). Hvis rutenettet senere sier at repoet ikke har noen skills, er det
+nettopp det det betyr: ingen mappe i det følger skill-konvensjonen.
 
-## Inspect a skill before installing
+## Undersøk en skill før du installerer
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Velg et repo i listen til venstre; skillene vises som et rutenett til høyre,
+med et filterfelt over som begrenser katalogen etter navn, beskrivelse eller
+slug. Klikk på et kort for å åpne detaljvisningen. Den viser tre ting:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README-en**, gjengitt som markdown — skillmappens `README.md`, eller
+  brødteksten i `SKILL.md` når det ikke finnes noen README.
+- **Skanningsforhåndsvisningen** — utfallet (`pass`, `warn` eller
+  `quarantine`), kapasitetene skillinnholdet erklærer (kjører shell, skriver
+  filer, nettverkstilgang…) og alle funn skanneren registrerte.
+- **Filantallet** — en installasjon skriver hele mappen til skillen, ikke bare
+  `SKILL.md`.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Forhåndsvisningen skanner nøyaktig de samme bytene som en installasjon ville
+skrive, så utfallet du ser, er utfallet installasjonen får; ingenting vurderes
+på nytt bak ryggen din.
 
-## Install a skill
+## Installer en skill
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Åpne detaljvisningen for skillen.
+2. Les skanningsutfallet. Ved et `warn`- eller `pass`-utfall trykker du
+   **Installer**.
+3. Ved et `quarantine`-utfall forblir installasjonen deaktivert til du merker
+   av for **Jeg forstår risikoen — installer likevel**. Denne overstyringen
+   registreres, den antas ikke.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+Installasjonen skriver mappen til skillen inn i arbeidsområdet, registrerer et
+feste i `skills-lock.json` (kilderepo, sti, commiten den kom fra og en
+innholdshash), og skillen blir tilgjengelig for agenter i arbeidsområdet. Et
+kort merket **Navn i bruk** betyr at en annen skill allerede eier det navnet
+lokalt — avinstaller den først.
 
-## Update skills over time
+## Oppdater skills over tid
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+Kortene for installerte skills har merker: **Installert**, eller **Oppdatering
+tilgjengelig** når repoet har beveget seg forbi commiten du festet. Åpne
+detaljvisningen og trykk **Oppdater** for å hente på nytt på den nye commiten.
+En oppdatering passerer den samme skanningsporten som en installasjon — en
+skill der den nye versjonen settes i karantene, avvises, og versjonen du hadde,
+blir liggende. Hashen til den gamle versjonen beholdes som referanse for
+tilbakerulling i låsen.
 
-## Uninstall a skill, remove a repository
+## Avinstaller en skill, fjern et repo
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**Avinstaller** (i detaljvisningen for en installert skill, eller sletting i
+**Installert**-fanen) fjerner skillmappen og festet i låsen samtidig — en
+avinstallert skill etterlater ingenting.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Fjerning av et repo** fra listen til venstre fjerner bare katalogen: skills du
+installerte fra det, forblir installert og oppdateres fortsatt, fordi et feste
+registrerer repoet ved navn og ikke ved referanse til kildeoppføringen. Legg
+repoet tilbake hvis du vil bla i det igjen.
 
-## Invoke a skill
+## Påkall en skill
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+Skills påkalles under sitt eget navnerom, så de kolliderer aldri med innebygde
+skråstrekkommandoer (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — en skill installert i dette arbeidsområdet, eller knyttet
+  til agenten
+- `/skill:<repo>:<name>` — en skill som leveres av et repo som er sjekket ut i
+  dette området
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+Et nakent navn som ikke er innebygd, løses fortsatt, for meldinger skrevet før
+navnerommet fantes. Det er `/skill:plan` som når en skill som heter `plan`;
+`/plan` er alltid den innebygde.
 
-## Repo-scoped skills
+## Repo-avgrensede skills
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Et utsjekket repo kan levere sine egne skills, i `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` eller `skills/`. De
+installeres **ikke** gjennom denne siden. En agent har bare skillene til repoet
+den jobber i akkurat nå; de byttes ut når den flytter seg. Skrivefeltet er ikke
+avgrenset på den måten: `/skill:<repo>:<name>` når hvilket som helst repo i
+området.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+Repo-skills passerer den samme skanningen som feiler lukket (`pass` / `warn` /
+`quarantine`) før frontmatteren deres når en prompt. `warn` slippes inn;
+`quarantine` holdes tilbake, uten noen operatøroverstyring på den veien.
 
-See [Repo-scoped skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills) and
-[Slash commands](/nb-NO/handbok/referanse/skrastrekkommandoer/).
+Se [Repo-avgrensede skills](/nb-NO/handbok/konsepter/agentmodell/#repo-scoped-skills) og
+[Skråstrekkommandoer](/nb-NO/handbok/referanse/skrastrekkommandoer/).
 
-## Related guides
+## Relaterte guider
 
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [Create and configure an agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/)
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/)

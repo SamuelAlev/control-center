@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: เชื่อมต่อโฮสต์โค้ด
+description: เชื่อมต่อ GitHub, GitLab หรือ Bitbucket เพื่อให้พื้นผิว PR การลงทะเบียนรีโป และการรันเอเจนต์ทำงานได้ — เวิร์กสเปซเดียวใช้ได้ทั้งสามเจ้า
 slug: th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center ทำงานกับโฮสต์โค้ดสามเจ้า ซึ่งแอปนี้เรียกว่า **ฟอร์จ** ตลอดทั้งแอป: **GitHub**, **GitLab** และ **Bitbucket Cloud** ไม่มีเจ้าใดเป็นค่าเริ่มต้น เชื่อมต่อเจ้าเดียวแล้วทุกอย่างก็ทำงาน เชื่อมหลายเจ้าและเวิร์กสเปซเดียวก็เก็บรีโปจากทุกเจ้าได้พร้อมกัน
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+ฟอร์จเป็นคุณสมบัติของแต่ละ**รีโป** โดยอ่านจาก remote `origin` ของมันตอนที่คุณลงทะเบียน คุณไม่ต้องเลือกเอง และไม่มีตั้งค่าใดต่อเวิร์กสเปซที่จะตั้งผิดได้
 
-## Connect a forge
+## เชื่อมต่อฟอร์จ
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน** (`/settings/workspace/profile`)
+2. หาการ์ด **โฮสต์โค้ด** ฟอร์จที่รองรับทั้งหมดจะอยู่ในรายการ ไม่ว่าเชื่อมต่อแล้วหรือไม่
+3. กด **ลงชื่อเข้าใช้ด้วย …** หากแถวนั้นมีให้ หรือกด **เพิ่มโทเค็น** แล้ววางโทเค็นลงไป
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**ลงชื่อเข้าใช้** จะปรากฏสำหรับฟอร์จที่เซิร์ฟเวอร์ของคุณมีแอปลงทะเบียนไว้ — ปัจจุบันคือ GitHub ผ่าน device flow (ดู [สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)) นอกนั้นคือการวางโทเค็น ซึ่งเป็นการสื่อความที่ตรงไปตรงมา แทนที่จะเป็นปุ่มที่กดแล้วทำอะไรไม่ได้
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+ไม่ว่าจะทางไหน ข้อมูลรับรองเป็น**ของคุณและอยู่บนเซิร์ฟเวอร์** โดยใช้ user id ของคุณเป็นคีย์: ไม่มีโทเค็นถูกเก็บไว้บนเครื่องที่คุณพิมพ์มันลงไป ทุกอุปกรณ์ที่คุณลงชื่อเข้าใช้ใช้โทเค็นเดียวกัน และสมาชิกคนอื่นอ่านมันไม่ได้ มันมีผลตั้งแต่**คำขอถัดไป** — ไม่มีอะไรต้องรีสตาร์ต และการยกเลิกการเชื่อมต่อจะหยุดส่งมันทันที
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+แต่ละแถวบอกว่าข้อมูลรับรองของมันมาจากไหน เพราะนั่นคือความต่างระหว่าง “โทเค็นของฉันใช้ไม่ได้” กับ “มีโทเค็นอื่นเป็นคนตอบ”:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| คำบรรยายใต้ชื่อ                                | ความหมาย                                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------- |
+| `ลงชื่อเข้าใช้เป็น octocat`                     | ข้อมูลรับรองของคุณเองเป็นตัวที่ถูกใช้                            |
+| `ลงชื่อเข้าใช้เป็น octocat · ผ่านแอปของเซิร์ฟเวอร์นี้` | ตัวตนแอปของเซิร์ฟเวอร์เป็นคนตอบ — คุณยังไม่ได้ลงชื่อเข้าใช้ |
+| `ลงชื่อเข้าใช้เป็น octocat · จากสภาพแวดล้อม`    | ตัวแปรสภาพแวดล้อมของเซิร์ฟเวอร์เป็นคนตอบ ไม่ใช่ข้อมูลรับรองของคุณ |
+| `ยังไม่เชื่อมต่อ`                               | คุณไม่มีข้อมูลรับรองสำหรับฟอร์จนี้                               |
 
-### What token each forge wants
+### แต่ละฟอร์จต้องการโทเค็นแบบไหน
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| ฟอร์จ           | โทเค็น                                                                                                             | สร้างได้ที่ไหน                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| **GitHub**      | แบบคลาสสิก: `repo` และ `read:org` แบบละเอียด: Contents + Pull requests (อ่านและเขียน), Checks + Actions (อ่าน) | github.com → Settings → Developer settings → Tokens       |
+| **GitLab**      | โทเค็นการเข้าถึงส่วนบุคคลที่มี `api`                                                                                | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket**   | API token ของ Atlassian บวกอีเมลบัญชีของคุณ                                                                        | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket ยืนยันตัวตนด้วย**อีเมลบัญชีของคุณเป็นชื่อผู้ใช้** และใช้โทเค็นเป็นรหัสผ่าน ตั้ง `BITBUCKET_EMAIL` ในสภาพแวดล้อมของเซิร์ฟเวอร์ เพื่อให้รู้ว่าต้องจับคู่อีเมลใดกับโทเค็น
 
-### Or use the environment
+### หรือใช้สภาพแวดล้อม
 
-For a headless or CI install, the server reads these:
+สำหรับการติดตั้งแบบ headless หรือ CI เซิร์ฟเวอร์จะอ่านค่าเหล่านี้:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN` แล้วจึง `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN` แล้วจึง `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN` แล้วจึง `BITBUCKET_TOKEN` (พร้อม `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+ค่าเหล่านี้เป็นข้อมูลรับรองของ**เซิร์ฟเวอร์** ไม่ใช่ของคุณ และความต่างข้อนี้สำคัญมาก: คำขอที่ทำในนามของคุณใช้ข้อมูลรับรองของคุณและไม่มีอะไรอื่น สภาพแวดล้อมจึงไม่เคยแอบทำหน้าที่แทนคุณ งานที่ไม่มีมนุษย์อยู่เบื้องหลัง — webhook, การโพลล์ PR, การซิงค์ตั๋วงาน — จะใช้ตัวตนแอปของเซิร์ฟเวอร์ก่อน จากนั้นข้อมูลรับรองของเจ้าของเซิร์ฟเวอร์ แล้วจึงสภาพแวดล้อม ลำดับนี้ตายตัว เพื่อให้ “ฉันลงชื่อเข้าใช้แล้วแต่ไม่มีอะไรเปลี่ยน” ไม่ใช่ผลลัพธ์ที่รองรับ
 
-## You are a different person on each forge
+## คุณเป็นคนละคนกันในแต่ละฟอร์จ
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+มนุษย์คนเดียวกันเป็น `octocat` บน GitHub และเป็นชื่ออื่นโดยสิ้นเชิงบน GitLab Control Center แยกแยะตัวตนของคุณ**ตามฟอร์จ** และใช้ตัวตนที่ถูกต้องกับแต่ละรีโป นี่คือสิ่งที่ทำให้ “ต้องให้ฉันรีวิว” “สร้างโดยฉัน” และ “คุณอนุมัติสิ่งนี้” ถูกต้องในเวิร์กสเปซที่ใช้หลายฟอร์จ
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+ถ้าตัวตนของฟอร์จใดยังแยกแยะไม่ได้ รีโปของฟอร์จนั้นจะไม่ป้อนอะไรเข้าสู่กล่องขาเข้าเลย แทนที่จะจับคู่กับทุกอย่าง กล่องขาเข้าจะบอกตามนั้น แทนที่จะอ้างว่าคุณตามทันทุกอย่างแล้ว
 
-## One inbox, every forge
+## กล่องขาเข้าเดียว ทุกฟอร์จ
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+กล่องขาเข้าและคิว PR กระจายคำขอไปยังทุกฟอร์จที่มีอยู่ในเวิร์กสเปซ แล้วรวมผลลัพธ์เป็นสตรีมเดียว — pull request ของ GitHub และ pull request ของ Bitbucket จะอยู่ข้างกัน เรียงตามเวลา ไม่ได้จัดกลุ่มตามผู้ให้บริการ
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+ความล้มเหลวถูกแยกออกจากกัน ฟอร์จที่ล่ม ติดขีดจำกัดอัตรา หรือยังไม่ได้เชื่อมต่อ จะไม่ป้อนอะไรเลยและปล่อยให้เจ้าอื่นไม่ถูกแตะต้อง มันไม่เคยทำให้กล่องขาเข้าว่างทั้งใบ รีโปของมันเองยังคงแสดงสถานะล่าสุดที่รู้จักจนกว่ามันจะกลับมา
 
-## What each forge can do
+## แต่ละฟอร์จทำอะไรได้บ้าง
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+ทุกฟอร์จรองรับวงจรหลัก: แสดงรายการและเปิด pull request อ่าน diff แสดงความคิดเห็นในบรรทัดและระดับบนสุด รีวิว รวม และปิด เหนือกว่านั้นแต่ละเจ้าต่างกันจริง และ Control Center จะซ่อนสิ่งที่ฟอร์จทำไม่ได้ แทนที่จะแสดงตัวควบคุมที่ล้มเหลวเงียบ ๆ
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| ความสามารถ                       | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| รีวิวแบบเป็นชุด (ที่ค้างอยู่)        |   ✓    |   ✓    |     —     |
+| ขอให้แก้ไข                        |   ✓    |   ✓    |     ✓     |
+| ซิงค์สถานะ “ดูแล้ว” ต่อไฟล์         |   ✓    |   —    |     —     |
+| ปฏิกิริยาอีโมจิ                     |   ✓    |   ✓    |     —     |
+| ผู้รีวิวแบบทีม / กลุ่ม               |   ✓    |   ✓    |     —     |
+| ผู้รีวิวที่แนะนำ                    |   ✓    |   —    |     ✓     |
+| ผลลัพธ์ CI บน PR                    |   ✓    |   ✓    |     ✓     |
+| เจาะดูขั้นตอน/บันทึกของงาน CI       |   ✓    |   ✓    |     —     |
+| Pull request ที่ซ้อนกัน             |   ✓    |   —    |     —     |
+| เทมเพลตคำอธิบาย PR                 |   ✓    |   ✓    |     —     |
+| การโพลล์การแจ้งเตือน                |   ✓    |   —    |     —     |
+| โปรไฟล์ผู้ใช้แบบละเอียด             |   ✓    |   ✓    |     —     |
+| PR head ref ฝั่งเซิร์ฟเวอร์          |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+เมื่อความสามารถใดขาดไป ฟีเจอร์จะลดทอนลงอย่างตรงไปตรงมา:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **สถานะดูแล้ว** ยังทำงานได้ แต่เฉพาะบนอุปกรณ์ที่คุณตั้งมันไว้เท่านั้น
+- **รีวิวแบบเป็นชุด** บน Bitbucket จะโพสต์ทีละความคิดเห็น ผู้รีวิวจึงเห็นพวกมันมาทีละรายการ ไม่ได้มาพร้อมกันทั้งหมด
+- **ไม่มี PR head ref** บน Bitbucket หมายความว่าการเช็กเอาต์ pull request จะดึงสาขาต้นทางตามชื่อ ซึ่งจะล้มเหลวเมื่อสาขานั้นถูกลบไปแล้ว
 
-## Vocabulary
+## คำศัพท์
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab เรียก pull request ว่า **merge request** Control Center ใช้คำว่า “pull request” ตลอดโมเดลของตัวเอง และใช้คำเรียกของแต่ละฟอร์จเองเมื่อพูดถึงฟอร์จนั้น
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### The PR list is empty and says a forge is not connected
+### รายการ PR ว่างเปล่าและบอกว่าฟอร์จยังไม่ได้เชื่อมต่อ
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+คุณไม่มีข้อมูลรับรองสำหรับฟอร์จนั้น ลงชื่อเข้าใช้หรือวางโทเค็นใน **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด** รีโปของฟอร์จอื่นไม่ได้รับผลกระทบ
 
-### I connected a forge but its repos still show nothing
+### ฉันเชื่อมต่อฟอร์จแล้ว แต่รีโปของมันยังไม่แสดงอะไร
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+ตรวจดูคำบรรยายใต้ชื่อของแถวนั้น ถ้ามันขึ้นว่า “ผ่านแอปของเซิร์ฟเวอร์นี้” หรือ “จากสภาพแวดล้อม” แสดงว่ามีข้อมูลรับรองอื่นเป็นคนตอบ ไม่ใช่ตัวที่คุณคาดไว้ — ข้อมูลรับรองของคุณชนะสำหรับทุกสิ่งที่คุณขอ ดังนั้นถ้ามันบอกเป็นอย่างอื่น ของคุณยังไม่ถูกบันทึก
 
-### A repo will not register
+### รีโปลงทะเบียนไม่ได้
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/).
+การลงทะเบียนต้องเข้าเงื่อนไขทั้งสามข้อ: พาธอยู่ภายใน git work tree, มี remote `origin` และ remote นั้นชี้ไปที่ github.com, gitlab.com หรือ bitbucket.org ดู [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
 
-### Everything stops working for a while after heavy use
+### ทุกอย่างหยุดทำงานชั่วขณะหลังใช้งานหนัก
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+นั่นคือเซอร์กิตเบรกเกอร์ของขีดจำกัดอัตรา ฟอร์จที่ส่งสัญญาณว่าแตะขีดจำกัดหลักจะทำให้ไคลเอนต์ให้คำขอต่อไปล้มเหลวในเครื่องโดยไม่เรียกผ่านเครือข่ายจนกว่าหน้าต่างเวลาจะผ่านไป — พายุการลองใหม่จึงไม่สามารถทำให้ขีดจำกัดลึกลงได้ ความล้มเหลวชั่วคราวจะถูกลองใหม่ด้วย exponential backoff
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
-- [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
-- [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
-- [Triage the inbox](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)
+- [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
+- [ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
+- [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+- [คัดแยกกล่องขาเข้า](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)

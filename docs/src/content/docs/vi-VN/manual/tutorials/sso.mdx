@@ -1,125 +1,126 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Cho đội ngũ đăng nhập bằng SSO
+description: Kết nối Okta (SAML) với máy chủ Control Center của bạn và chạy trọn một lần đăng nhập từ đầu đến cuối.
 slug: vi-VN/so-tay/huong-dan/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Bạn sẽ xây dựng được gì
 
-By the end of this tutorial, you will have:
+Đến cuối hướng dẫn này, bạn sẽ có:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- một kết nối SAML giữa máy chủ Control Center của bạn và một nhà cung cấp
+  danh tính (chúng tôi lấy Okta làm ví dụ),
+- một người dùng được cấp phát tự động ở lần đăng nhập đầu tiên, và
+- một chính sách tư cách thành viên không gian làm việc do bạn chủ động chọn.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Bạn sẽ cần một máy chủ do bạn quản trị (**chủ sở hữu máy chủ** — người vận hành
+bản cài đặt) và một ứng dụng IdP mà bạn có thể cấu hình. Dự trù 20 phút.
 
-## 1. Open the single sign-on settings
+## 1. Mở phần cài đặt đăng nhập một lần
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Đăng nhập vào Control Center, rồi vào
+**Cài đặt → Máy chủ → Đăng nhập một lần**. Màn hình chuyển đổi giữa
+**SAML** và **OpenID Connect**, cùng một thẻ **Cấp phát người dùng (SCIM)**.
+Hãy ở lại SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Mọi thứ trên màn hình này đều có phạm vi toàn máy chủ: một IdP xác thực con
+người trong mọi không gian làm việc, nên chỉ chủ sở hữu máy chủ mới sửa được.
 
-## 2. Paste the IdP metadata
+## 2. Dán metadata của IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Trong Okta, mở tab **Sign On** của ứng dụng và sao chép XML metadata (hoặc tải
+tệp về rồi dán nội dung tệp). Quay lại Control Center, dán vào
+**XML metadata IdP** và nhấn **Kiểm tra kết nối**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Thông báo nổi cho biết endpoint đăng nhập của IdP — bằng chứng rằng metadata đã
+được phân tích, chứng chỉ đã được đọc và máy chủ có thể dựng một yêu cầu đăng
+nhập dựa trên đó (phép thử này chạy hết mọi thứ, chỉ thiếu vòng khứ hồi qua
+trình duyệt). Nếu thất bại, XML không phải một `EntityDescriptor` hoàn chỉnh
+(tab SAML trong Okta gọi nó là “Metadata URL”; hãy mở URL đó và sao chép nội
+dung nó trả về). Nút tương tự trên **OpenID Connect** thì kiểm tra tài liệu
+khám phá của issuer thay vào đó. Để bắt cả trường hợp chứng chỉ sắp hết hạn và
+xem IdP có nhận ra Control Center hay không, hãy dùng
+[công cụ kiểm tra ở bước 6](#6-kiểm-tra-ngay-trên-trang-này).
 
-## 3. Register Control Center at the IdP
+## 3. Đăng ký Control Center tại IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Nhấn **Sao chép metadata SP** và đưa nó cho người cấu hình phía Okta (hoặc đọc
+hai giá trị mà họ yêu cầu):
 
-- **ACS URL**: `https://<your-server>/saml/acs`
-- **Entity ID**: `https://<your-server>/saml`
+- **URL ACS**: `https://<your-server>/saml/acs`
+- **ID thực thể**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+Các URL này bắt nguồn từ origin mà trình duyệt của người dùng truy cập tới. Nếu
+máy chủ chạy sau một tunnel hay reverse proxy, hãy đảm bảo origin ổn định
+(Cài đặt → Máy chủ → Kết nối & trạng thái → Chia sẻ máy chủ này hiển thị URL công khai) — hoặc ghim
+ID thực thể một cách minh thị trong trường **ID thực thể SP**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[Sau NAT?]
+Đăng nhập SAML **không** cần IP công khai hay tên miền: IdP không bao giờ kết
+nối tới máy chủ của bạn — trình duyệt của người dùng mang theo vòng khứ hồi, nên
+localhost, LAN, VPN, Tailscale hay một tunnel đều dùng được. Có hai điều cần
+phân biệt rõ:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim)).
+- origin mà trình duyệt dùng phải **khớp** với URL ACS / ID thực thể đã đăng ký
+  tại IdP (hãy ghim ID thực thể nếu người dùng truy cập máy chủ dưới nhiều hơn
+  một origin),
+- **cấp phát SCIM là ngoại lệ** — IdP gọi thẳng tới máy chủ của bạn, nên nó cần
+  một tunnel hoặc URL công khai
+  ([cấp phát người dùng bằng SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Chọn những gì một lần đăng nhập cấp
 
-Two policies decide what a first login does:
+Hai chính sách quyết định điều gì xảy ra ở lần đăng nhập đầu tiên:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Thêm người dùng vào mọi không gian làm việc khi đăng nhập lần đầu** — hãy
+  để bật với triển khai một đội, nơi SSO đồng nghĩa với tin cậy. Tắt nó khi
+  nhiều đội hoặc khách hàng dùng chung máy chủ: khi đó mỗi người mới cần một
+  lời mời vào không gian làm việc minh thị, và đây là mặc định an toàn hơn.
+- **Cấp phát người dùng chưa có khi đăng nhập lần đầu** — bật theo mặc định;
+  tắt nó để từ chối bất kỳ ai chưa có sẵn tài khoản.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Tùy chọn, hãy ánh xạ một thuộc tính mang tên nhóm (ở Okta thường là `groups`)
+và chuyển nhóm thành vai trò bằng bảng ánh xạ — ví dụ
+`{"platform-leads": "admin"}`. SSO không bao giờ cấp được vai trò chủ sở hữu.
 
-## 5. Enable and take a login
+## 5. Bật và thực hiện một lần đăng nhập
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Bật **Dùng SAML để đăng nhập**, nhấn **Lưu kết nối**, rồi mở một cửa sổ trình
+duyệt riêng tư tại `https://<your-server>/saml/login`. Đăng nhập tại Okta và bạn
+quay lại máy khách web — đã đăng nhập, tài khoản đã được tạo và tư cách thành
+viên được cấp theo chính sách bạn đã chọn.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Điểm vào tương tự xuất hiện trên màn hình kết nối web (**Đăng nhập bằng
+SAML**) ngay khi bạn gõ địa chỉ máy chủ — biểu mẫu thích ứng với những gì máy
+chủ cung cấp (OpenID Connect hiển thị **Đăng nhập bằng OpenID Connect**).
+Nút này mở đăng nhập trong một **tab mới**; khi vòng khứ hồi hoàn tất, tab đang
+chờ tự động tiếp nhận phiên. Màn hình thiết lập máy chủ trên ứng dụng máy tính
+cũng làm điều tương tự: gõ URL máy chủ, một nút **Đăng nhập bằng SAML** xuất
+hiện, mở trình duyệt của bạn và ứng dụng đăng nhập khi vòng khứ hồi hoàn tất.
 
-## 6. Check it from this page
+## 6. Kiểm tra ngay trên trang này
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Trước khi triển khai SSO, hoặc khi một lần đăng nhập thất bại, hãy kiểm tra các
+thành phần tại đây. Công cụ kiểm tra chạy hoàn toàn trong trình duyệt của bạn:
+nó đọc metadata bạn dán vào tab này và áp dụng đúng các quy tắc như máy chủ.
+Nếu bạn nhập địa chỉ máy chủ, nó cũng hỏi máy chủ đó xem tính năng đăng nhập
+SAML có đang bật không.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Nó bắt được những gì **Kiểm tra kết nối** trong ứng dụng không thấy: một chứng
+chỉ ký sắp hết hạn, một IdP khăng khăng đòi yêu cầu được ký, và, với phần đăng
+nhập thử, liệu IdP có nhận ra Control Center hay không.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Đi tiếp từ đây
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/vi-VN/so-tay/khai-niem/dang-nhap-mot-lan).
+- Trao cho IdP cả quyền kiểm soát vòng đời:
+  [cấp phát và hủy cấp phát người dùng bằng SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim).
+- IdP của bạn dùng OpenID Connect thay vì SAML?
+  [Kết nối một nhà cung cấp OpenID Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc).
+- Tò mò vòng khứ hồi qua trình duyệt thực sự xác minh điều gì?
+  [Đăng nhập một lần hoạt động như thế nào](/vi-VN/so-tay/khai-niem/dang-nhap-mot-lan).

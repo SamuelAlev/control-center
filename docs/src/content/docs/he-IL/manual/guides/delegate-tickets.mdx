@@ -1,131 +1,120 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: האצלת עבודה לסוכנים
+description: מסרו כרטיס לסוכן בשיחה ותנו לסוכנים להאציל תת־משימות זה לזה, תחת הגנות העומק והמעגלים.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+המדריך הזה עוסק בהעברת עבודה מהידיים שלכם לידי סוכן, ובמה שקורה כשסוכנים מעבירים
+עבודה זה לזה.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[הקצאת כרטיס לסוכן אינה משגרת]
+אין משגר כרטיסים כשהאחראי הוא סוכן. הקצאה רושמת בעלות ותו לא — לא נוצר מרחב, לא
+משתנה סטטוס ואף סוכן לא מתחיל לרוץ. החריג הוא כרטיס שמוקצה ל**צוות**, שמעיר את
+מוביל הצוות. עבודת סוכנים עבור אחראי נקוב מתקיימת בשיחות, ולכן שם מתחילים אותה.
 :::
 
-## Hand a ticket to an agent
+## מסירת כרטיס לסוכן
 
-1. [Create the ticket](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [צרו את הכרטיס](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/) עם כותרת
+   ותיאור מדויקים מספיק כדי לעבוד לפיהם.
+2. הגדירו את הסוכן כ**אחראי** של הכרטיס, כדי שהבעלות תירשם.
+3. פתחו מרחב (או צרו אחד) ואזכירו את הסוכן ב־@.
+4. הפנו לכרטיס באזכור `#` בהודעה שלכם — תיבת הכתיבה משלימה אוטומטית כרטיסים של
+   סביבת העבודה — ואמרו מה תרצו שייעשה.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+הסוכן מרים את העבודה מהשיחה. ההתקדמות שלו נזרמת אל אותו מרחב.
 
-## What the agent receives
+## מה הסוכן מקבל
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- ההודעה שלכם, כולל הפניית הכרטיס שתייגתם.
+- המרחב שבו לעבוד ולדווח.
+- עץ עבודה מבודד מהמאגרים המקושרים של סביבת העבודה.
+- ה**מצב** של המרחב, שהוא זה שקובע את משטח הכלים של הריצה.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/).
+מצב הוא מאפיין של המרחב, לא של הכרטיס — לכרטיס אין מצב. סוכן אחד יכול אפוא להיות
+במצב `chat` במרחב אחד ובמצב `plan` באחר. בוחרים אותו מהתפריט הנפתח של המצב בתיבת
+הכתיבה (**סוכן**, **תכנון** או **תזמור**); `review` נקבע על ידי מרחבי סקירת בקשות
+משיכה ואינו ניתן לבחירה. ראו [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/).
 
-## Require a structured result
+## דרישת פלט מובנה
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+חוזה פלט מוצהר על השליחה, לא על הכרטיס: `expected_output_schema` בתוספת
+`output_contract_mode` (ברירת המחדל היא strict). הסוכן עומד בו בקריאה
+ל-`submit_output`, שמאמת את המטען מול הסכמה ודוחה מטען שאינו תואם.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+גם הפלט שהתקבל וגם כל דחייה נרשמים ב**יומן ההרצות של הסוכן**. סטטוס הכרטיס עצמו
+אינו מושפע מכך — חוזה שנכשל אינו מכשיל את הכרטיס.
 
-## Monitor progress
+## מעקב אחר ההתקדמות
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **המרחב** — פעילות הסוכנים בזמן אמת, התצוגה העיקרית.
+- **הכרטיס** — הסטטוס שלו, כפי שקובע מי שמזיז אותו.
+- **ניטור → בזמן אמת** (`/workspaces/<workspace-id>/observability`) — סגל
+  הסוכנים בזמן אמת.
+- **ניטור → תובנות** — יומן ההרצות, עם עלות ומשך.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+אין מסך לוח מחוונים; כתובת סביבת עבודה בלי נתיב נוסף מפנה לדואר הנכנס.
 
-## Let agents delegate to each other
+## לאפשר לסוכנים להאציל זה לזה
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+סוכן שמתקל בתת־בעיה מאציל בכלי ה-MCP ‏`delegate_task`. הוא יוצר כרטיס בן שמוקצה
+לסוכן אחר, וכשמעבירים `parent_ticket_id` הוא רושם את השרשרת כדי שההגנות יראו
+אותה.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+שתי הגנות מבניות רצות תמיד בנקודת החנק של הכרטוס, ולעולם לא מכוח הוראה בהנחיה:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **תקרת עומק** — שרשרת של יותר מ-3 קפיצות נדחית.
+- **זיהוי מעגלים** — קפיצה חזרה אל סוכן שכבר נמצא בשרשרת נדחית.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+כשמעבירים `from_agent_id`, רצות שתי הגנות נוספות (בייצור מסופקות תמיד יציאות
+הפותר):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **תקרת אוטונומיה** — הרמה האפקטיבית של המואצל במרחב לא תעלה על זו של המאציל.
+- **מעטפת תקציב** — האצלה מחייבת את תקציב העצירה הקשה שנותר למאציל ואינה יכולה
+  להנפיק עוד. מדיניות חסרה, או מדיניות בלתי מוגבלת, עוברת.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+סירוב הוא קולני: הכלי מחזיר את הסיבה של ההגנה מילה במילה, כך שהסוכן המאציל רואה
+בדיוק למה. השדה `delegatedByAgentId` רושם מי האציל, ובכך נוצר עץ האצלות.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` מדלג על כל הגנה]
+הכלי הוותיק יותר `delegate_ticket` עדיין רשום וקורא ישירות ל-`createTicket` — בלי
+תקרת עומק, בלי בדיקת מעגלים, בלי תקרת אוטונומיה ובלי מעטפת תקציב. העדיפו את
+`delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+תקרת העומק 3 של ההאצלה היא מגבלה שונה מתקרת הקינון 2 של תתי־סוכנים במנגנון ההרצה
+המובנה — האחת מגבילה כרטיסים בין סוכנים, והאחרת מגבילה תתי־סוכנים בתוך ריצה אחת.
 
-## Put several agents on one ticket
+## כמה סוכנים על כרטיס אחד
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+הוסיפו אותם כ**משתפי פעולה** בכרטיס (תפקידים: אחראי, משתף פעולה, סוקר). זו
+רשימה — תיעוד של מי שמעורב — והיא אינה מעניקה דבר כשלעצמה.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/).
+כדי להכניס סוכנים באמת לאותה שיחה, הוסיפו אותם כמשתתפים מכותרת המרחב. משם הם
+יכולים לאזכר זה את זה ב־@. ראו
+[מרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/).
 
-## Automated ticket creation
+## יצירת כרטיסים אוטומטית
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+אין צומת בפלטת הפייפליין שיוצר כרטיסים, ולכן פייפליין אינו יכול לפזר עבודה
+ככרטיסים מוקצים.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/).
+המסלול שכן קיים הוא תזמור: אישור הצעה יוצר פרויקט וצוות, הופך את ה-DAG של
+תת־הכרטיסים של ההצעה ל**תבנית פייפליין** (שלב `promptAgent` אחד לכל תת־כרטיס,
+ולא שורת `Ticket` לכל אחד) ומפעיל את אותה הרצה. ראו
+[הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Create and manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
-- [Chat with an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
-- [Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
-- [Organize work with projects](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)
-- [Ticket lifecycle reference](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/)
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
+- [צ'אט עם סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
+- [הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
+- [ארגון עבודה בפרויקטים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)
+- [מחזור חיי כרטיס](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
-- [Dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
+- [מחזור חיי שליחה](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)

@@ -1,137 +1,147 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Poorten doorsturen vanaf een terminal
+description: Bereik een dev-server die in een Terminal (VM) of een hostshell is gestart — vanaf je eigen machine, vanuit de Browser (VM), vanaf Android, op je netwerk, of onder een dev-domein met HTTPS.
 slug: nl-NL/handleiding/gidsen/vm-poorten
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Een server die je in de terminal van een gesprek start, wordt alleen gepubliceerd voor **die ruimte**. Het poortenpaneel merkt de processen op die deze app daar heeft gestart, brengt ze in kaart en geeft je een adres voor elke plek van waaruit je ze wilt bereiken. Twee ruimtes kunnen allebei op `5173` luisteren; hun poortmappen lopen nooit door elkaar.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Niets hiervan zet de machine open: elk pad wordt door de server aangemaakt, op verzoek, en verdwijnt samen met de terminal of de rig.
 
-## See what is listening
+## Zie wat er luistert
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Open de **Terminal (VM)** of hostshell van het gesprek (in een ruimte of op een PR-pagina).
+2. Start je server — `pnpm dev`, `python -m http.server 8000`, wat dan ook.
+3. Binnen een paar seconden krijgt het **stekkerpictogram** rechtsboven in de
+   terminal een stip. Klik erop.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Het paneel toont elke luisterende poort met het proces dat er eigenaar van is,
+als `3000 → 3000`: links de poort waarop het proces zich heeft gebonden, rechts
+de poort waarop het lokaal antwoordt (hetzelfde nummer wanneer die vrij was op
+jouw machine). Elke rij vermeldt ook of desktop-`localhost`, de Browser (VM) en
+Android er kunnen komen.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Detectie blijft begrensd: een Terminal (VM) wordt binnen die gast uitgelezen;
+een hostshell wordt uitgelezen vanuit de PTY-procesboom van die sessie. Andere
+ruimtes, en andere processen op je Mac, worden niet vermeld.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Nieuwe poorten in **deze** terminal worden automatisch doorgestuurd. Zet
+**Poorten automatisch doorsturen** uit in hetzelfde paneel als je alleen de
+poorten wilt die je zelf toevoegt.
 
-## Reach it from this computer
+## Bereik het vanaf deze computer
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Gebruik **Lokale URL kopiëren** in de rij — `http://localhost:3000`. De
+doorsturing luistert alleen op loopback, dus niets anders op je netwerk kan
+hem zien.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Als twee ruimtes allebei gastpoort `5173` aanbieden en jouw machine heeft
+`127.0.0.1:5173` al bezet, dan houdt de tweede ruimte gastpoort `5173` en
+krijgt die een tijdelijke lokale poort. URL kopiëren gebruikt het
+rechternummer.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Op een hostshell draait het proces al op jouw machine. Dezelfde lokale poort
+mappen heeft geen effect; kies je een **andere** lokale poort, dan bindt er een
+loopbackproxy aan de poort die je hebt gekozen.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (of binden op `0.0.0.0`) zorgt er **niet** voor dat een ingesloten
+Browser (VM) een server op de Mac kan bereiken. De gast heeft zijn eigen
+loopback; de server plant een tunnel in die gast zodra het browsertabblad in
+**dezelfde ruimte** staat.
 
-## Reach it from the Browser (VM)
+## Bereik het vanuit de Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Open de ingesloten browser in **hetzelfde gesprek**. Typ
+`localhost:<left-hand port>` — het nummer waarop het proces zich heeft
+gebonden. Een remap (`5173 → 3000`) antwoordt in die browser ook op het
+rechternummer, dus daar werkt URL kopiëren ook. De `browser_use` van een agent
+kan naar beide navigeren. Een server in Ruimte A verschijnt nooit als
+`localhost:5173` in de browser van Ruimte B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Gebruik `localhost`, geen LAN-IP en niet `--host`. De gast heeft zijn eigen
+loopback; de tunnel luistert daar zowel op IPv4 als op IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Pagina's die veel verbindingen tegelijk openen (tientallen assets, een
+live-reloadsocket) delen diezelfde tunnel. De Browser (VM) multiplext ze naar
+één persistente exec, zodat een uitbarsting van requests niet per verbinding
+een nieuw proces start en niet uitloopt op een time-out met een witte pagina.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Binnen één ruimte wint een doorsturing van de Terminal (VM) van een hostshell
+op hetzelfde nummer. Tussen ruimtes is er geen voorrang — het zijn
+afzonderlijke poortmappen.
 
-## Reach it from Android
+## Bereik het vanaf Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Open het tabblad **Android** van die ruimte. De `localhost:<port>` van de
+emulator wordt dan omgekeerd naar de gepubliceerde poort van deze ruimte
+(`adb reverse`). Eén emulator is apparaatglobaal: Ruimte B koppelen richt
+`:5173` opnieuw op B en laat die van A vallen. Sluit je het tabblad, dan worden
+de reverses die deze rig heeft geplant verwijderd.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+De iOS Simulator is de Mac zelf — geen reverse nodig. Een fysieke iPhone heeft
+nog steeds een LAN-deel nodig.
 
-## Share it on your network
+## Deel het op je netwerk
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Delen op lokaal netwerk** publiceert de poort op
+`<server-ip>:<random port>` — handig om de pagina op je telefoon te openen, of
+wanneer de server op een andere machine draait.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- De LAN-poort wordt altijd door het besturingssysteem toegewezen, nooit het
+  nummer van de gast, zodat blootstelling een bewust, zichtbaar adres is in
+  plaats van een adres dat te raden valt.
+- Hij blijft privé (alleen loopback) totdat je hem aanzet, en
+  **⋯ → Alleen lokaal** haalt hem weer van het netwerk.
 
-## Give it a name — with HTTPS
+## Geef het een naam — met HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Een browserdomein instellen (.test)** kent de poort een dev-domein toe
+zoals `myapp.test`. In de Browser (VM) laadt `https://myapp.test` dan je server
+met een geldig slotje — handig voor alles wat zich anders gedraagt op een
+benoemde origin of in een secure context (cookies, service workers,
+OAuth-callbacks).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domeinen moeten eindigen op `.test` of `.localhost` — de twee TLD's die voor
+  ontwikkeling zijn gereserveerd, zodat een dev-naam nooit een echte site kan
+  overschaduwen.
+- Domein**namen** zijn uniek op de server; poort**nummers** niet. Twee ruimtes
+  mogen allebei `5173` gebruiken, maar ze kunnen niet allebei `myapp.test`
+  opeisen.
+- Het certificaat komt van een lokale autoriteit die op je server wordt
+  aangemaakt zodra die voor het eerst nodig is. De sleutels staan onder de
+  datadirectory van de server en komen nooit in een gast terecht; de ingesloten
+  browser vertrouwt precies die ene sleutel, zodat TLS naar het echte internet
+  nog steeds normaal valideert.
+- Het domein resolvet **alleen binnen de Browser (VM)**. Je eigen browser op de
+  host gebruikt in plaats daarvan `localhost:<port>`.
+- Gewoon `http://myapp.test` werkt ook.
 
-## Forward a port by hand
+## Een poort handmatig doorsturen
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Poort toevoegen** onderaan het paneel mapt een poort voordat (of ongeacht of)
+er iets op luistert. Een handmatige doorsturing behoudt zijn adres terwijl je
+server opnieuw opstart — de rij toont *luistert niet* totdat hij terug is —
+terwijl automatische doorsturingen verdwijnen zodra hun poort dat doet. Op een
+hostshell kun je ook een andere lokale poort instellen.
 
-## How it stays contained
+## Hoe het ingesloten blijft
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/nl-NL/handleiding/concepten/rigs/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/nl-NL/handleiding/referentie/rigs/#ports-and-dev-domains).
+Poorten zijn gekoppeld aan werkruimte en ruimte. De eigen poortmap van de
+hypervisor staat vast zodra een machine opstart, dus een Terminal (VM) rijdt op
+twee smalle kanalen die de server beheert: één vooraf aangemaakte inkomende baan
+naar de gast, die weigert verbinding te maken met een poort waarop de gast niet
+daadwerkelijk luistert, en reverse tunnels die de server openhoudt voor de
+Browser (VM) en Android. Een hostshell scant nooit de hele machine. Er wordt
+nooit een listener in een gast aangemaakt die de server er niet heeft neergezet,
+en alles wordt samen met de terminal of de rig afgebroken. Het ontwerp staat
+uitgelegd in [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/#ports-without-holes);
+de exacte gereserveerde poorten en domeinregels staan in de
+[rigs-referentie](/nl-NL/handleiding/referentie/rigs/#ports-and-dev-domains).
 
-## Related
+## Gerelateerd
 
-- [Give an agent a machine to test on](/nl-NL/handleiding/gidsen/rigs-gebruiken/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/nl-NL/handleiding/referentie/rigs/) — reserved ports, dev TLDs,
-  defaults
+- [Een agent een testmachine geven](/nl-NL/handleiding/gidsen/rigs-gebruiken/) — rigs openen,
+  bekijken en overnemen
+- [Rigs-referentie](/nl-NL/handleiding/referentie/rigs/) — gereserveerde poorten, dev-TLD's,
+  standaardwaarden

@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Slack’i çalışma alanınıza bağlayın
+description: Slack uygulamasını oluşturun, bağlayın, hesabınızı bağlayın ve bir ajanın bir Slack dizisinde size yanıt vermesini sağlayın.
 slug: tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Neler oluşturacaksınız
 
-By the end of this tutorial, you will have:
+Bu öğreticinin sonunda şunlara sahip olacaksınız:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- Çalışma alanınız için oluşturulmuş, doğru izinleri ve olayları zaten ayarlanmış bir Slack uygulaması
+- Slack ile Control Center arasında canlı bir bağlantı
+- Control Center kullanıcınıza bağlı kendi Slack hesabınız
+- Size bir Slack dizisinde yanıt veren bir ajan ve bir slash komutuyla açılan bir bilet
 
-Prerequisites:
+Ön koşullar:
 
-- [Your first workspace](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/) and [Dispatch your first agent](/tr-TR/kilavuz/ogreticiler/ilk-ajan/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [İlk çalışma alanınız](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/) ve [İlk ajanınızı gönderin](/tr-TR/kilavuz/ogreticiler/ilk-ajan/) tamamlanmış olmalı — ajanı olmayan bir çalışma alanı bir Slack iletisi alabilir, ama yanıtlayacak kimsesi yoktur
+- Çalışma alanının **CEO ajanında** bir adaptör ve bir model ayarlıdır — **Ayarlar → Çalışma alanı → Ajanlar**. Köprü, önceki öğreticide yapılandırdığınız ajanı değil CEO'yu uyandırır ve adaptörü olmayan bir ajan, yerleşik döngüde Anthropic'in varsayılan modeliyle çalışır.
+- Control Center çalışma alanında `owner` veya `admin` rolü (bir sohbet uygulaması bağlamak tüm çalışma alanı adına konuşur)
+- Slack çalışma alanınızda uygulama oluşturma ve yükleme izni
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Burada hiçbir şey herkese açık bir adres, bir tünel ya da gelen bir port gerektirmez. Control Center, Slack'e Socket Mode üzerinden _dışarı_ bağlanır; bu yüzden NAT arkasındaki bir dizüstü bilgisayardan da çalışır.
 
-## Step 1: Get a Slack app configuration token
+## 1. Adım: Bir Slack uygulaması yapılandırma jetonu edinin
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Bu, elle almanız gereken tek sırdır. Control Center'ın uygulamayı sizin için oluşturmasını ve sonradan düzenlemesini sağlar.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. [api.slack.com/apps](https://api.slack.com/apps) adresini açın
+2. Sayfanın altındaki uygulama yapılandırma jetonları bölümüne gidin
+3. Slack çalışma alanınız için bir jeton çifti oluşturun
+4. **yenileme** jetonunu kopyalayın — `xoxe-` ile başlar
 
-## Step 2: Let Control Center create the app
+## 2. Adım: Uygulamayı Control Center oluştursun
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartını bulun
+2. **Slack** bloğunda **Uygulamayı benim için oluştur**'a tıklayın
+3. Uygulama yapılandırma jetonunu yapıştırın
+4. Botun nasıl görüneceğini gözden geçirin:
+   - **Uygulama adı**: Slack'in uygulamayı nasıl listelediği, örn. `Control Center · Acme`
+   - **Bot adı**: insanların `@` işaretinden sonra yazdığı ad, örn. `control-center`
+   - **Kısa açıklama** ve **Botun neler yapabileceğini söylediği metin**
+   - **Slash komutu**: varsayılan olarak `cc`, yani komut `/cc` olur
+   - **Direkt mesajlar**: üyeler bota DM gönderebilsin diye açık bırakın
+5. **Uygulama oluştur**'a tıklayın
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center uygulama tanımının tamamını oluşturur — Socket Mode açık, ihtiyaç duyduğu bot kapsamları ve olay abonelikleri, slash komutu, Messages sekmesi — ve uygulamayı Slack'te oluşturur.
 
-## Step 3: Finish the two steps only Slack can do
+## 3. Adım: Yalnızca Slack'in yapabileceği iki adımı tamamlayın
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack'in uygulama düzeyinde bir jeton oluşturmak veya bir uygulamayı yüklemek için bir API'si yoktur; bu yüzden iletişim kutusu ikisini de size bağlantı olarak sunar:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Uygulama düzeyinde bir jeton oluştur** — **Basic Information → App-Level Tokens** bölümünü açar. `connections:write` kapsamıyla bir jeton oluşturun ve kopyalayın. `xapp-` ile başlar
+2. **Uygulamayı yükle** — **Install App**'i açar. Çalışma alanınıza yükleyin, ardından **Bot User OAuth Token**'ı kopyalayın. `xoxb-` ile başlar
 
-Keep both values around for the next step.
+Her iki değeri de sonraki adım için elinizin altında tutun.
 
-## Step 4: Connect
+## 4. Adım: Bağlanın
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. İletişim kutusuna dönüp **Kimlik bilgilerini yapıştır**'a tıklayın
+2. **Bot token** (`xoxb-…`) ve **Uygulama düzeyi token** (`xapp-…`) değerlerini girin
+3. **Uygulama yapılandırma jetonu** alanını boş bırakın — 1. adımdaki zaten saklanmıştı (Slack onu rotasyona soktu ve Control Center yenisini kaydetti)
+4. **Bağlan**'a tıklayın
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center, herhangi bir şeyi saklamadan _önce_ bot token'ını Slack ile doğrular, ardından soketi açar. Satır artık botun adını ve Slack çalışma alanınızın adını bir **Canlı** etiketiyle gösterir.
 
-## Step 5: Link your own Slack account
+## 5. Adım: Kendi Slack hesabınızı bağlayın
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Bağlantı botu erişilebilir kılar; hesabınızı bağlamaksa _sizi_ tanınabilir kılar. Slack kimliğiniz bağlanana kadar bot iletileriniz üzerine iş yapmaz — bir iletiyi hiçbir zaman uygulamayı kuran kişiye atfetmez.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Hesap bağlama kişiye özeldir; bu yüzden çalışma alanı genelindeki bağlantıdan farklı bir sayfada yer alır.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne gidin ve **Bağlı sohbet hesapları** kartını bulun
+2. **Slack hesabımı bağla**'ya tıklayın
+3. Gösterdiği komutu kopyalayın, örneğin `/cc link K7M2QP`
+4. Slack'te bu komutu bota bir DM'de gönderin
+5. Bot “Bağlandı — siz …” diye yanıtlar
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Kod tek kullanımlıktır ve 15 dakika sonra süresi dolar. Slack e-postanız, bu çalışma alanının zaten üyesi olan bir Control Center kullanıcısıyla eşleşiyorsa, köprü botla ilk konuştuğunuzda sizi otomatik olarak bağlar ve bu adımı atlayabilirsiniz.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Bu tamamlanmadan botu etiketlerseniz, bot reddeder ve nedenini söyler. Üç ret birbirinden farklıdır; hangisini aldığınızı okuyun:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Bağlı olmayan gönderen**: bot size nasıl bağlanacağınızı söyler. Bu adıma dönün.
+- **Bağlı, ama bu çalışma alanının üyesi değil**: bir yöneticiden sizi davet etmesini isteyin.
+- **Salt okunur role sahip üye** (izleyici veya misafir): bot sizin adınıza iş başlatmaz.
 
-## Step 6: Put an agent on something
+## 6. Adım: Bir ajana bir iş verin
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Slack'te botu bir kanala davet edin: `/invite @control-center`
+2. Onu gerçek bir istekle etiketleyin:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center, api deposundaki açık PR'ları özetle
 
-The bridge:
+Köprü:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. O Slack dizisi için, Slack kanalının ve isteğinizin adını taşıyan bir Control Center alanı oluşturur
+2. Çalışma alanının ön kapı ajanını uyandırır (CEO ajanı varsa o, yoksa ilk ajan)
+3. Ajanın yanıtını yazıldığı anda Slack dizisine akış halinde aktarır
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Devam etmek için aynı Slack dizisinde yanıtlayın — başka etiketleme gerekmez, çünkü Slack dizisi artık köprülenmiştir. Ya da kanal kullanmak yerine bota DM gönderin; her DM konuşması kendi Control Center alanını yürütür ve ajan çalışırken bir başlıkla birlikte bir “düşünüyor…” durum satırı taşır.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Akış, Slack'in akış API'sini gerektirir ve bunu her plan sunmaz. Uygulamanıza bunun için izin verilmezse, köprü tüm bağlantı boyunca denemeyi bırakır ve her yanıtı tek bir ileti olarak gönderir; Sohbet köprüleri kartı da “Bu Slack uygulamasında canlı akış kapalı — yanıtlar tek ileti olarak gelir.” yazar. Geri kalan her şey aynı şekilde çalışır.
 
-## Step 7: File a ticket without leaving Slack
+## 7. Adım: Slack'ten çıkmadan bilet açın
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Bot, açtığı biletin anahtarıyla yanıtlar. Bilet, sizin bildirdiğiniz, bir ajana atanmaya hazır, sıradan bir yerel Control Center biletidir. `/cc help` komutun yapabildiği her şeyi listeler.
 
-## Recap
+## Özet
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Control Center'dan bir Slack uygulaması oluşturdunuz, onu giden bir soket üzerinden bağladınız, Slack kimliğinizi Control Center kullanıcınıza bağladınız ve bir ajanı bir Slack dizisinden yönettiniz. Slack'te olan her şey Control Center'da da vardır: Slack dizisi bir alan, yanıt bir transkript, bilet bir bilettir.
 
-**Next:** [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/).
+**Sonraki:** [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/) elle yapılan yolu, jetonların rotasyonunu ve sorun gidermeyi kapsar. Altındaki model için [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/) sayfasını okuyun.

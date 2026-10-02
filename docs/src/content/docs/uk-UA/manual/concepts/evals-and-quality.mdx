@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Eval і якість
+description: Eval-набори, стартовий набір, який додається до кожного робочого простору, і де вони з’являються у розділі «Спостережуваність».
 slug: uk-UA/керівництво/поняття/eval-і-якість
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**Eval-набір** — це визначення завдання для запуску проти агента в межах
+робочого простору: промпт, цільовий агент і режим, необов’язкове налаштування,
+необов’язкова фікстура із закріпленим SHA та список оцінювачів. Оцінювачі
+насамперед детерміновані; суддя за LLM-рубрикою покриває те, чого ці перевірки
+не можуть виразити.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+П’ять стартових наборів додаються під час створення робочого простору. Вони
+охоплюють пропозиції оркестрації, перевірку, що знаходить підкладений баг, режим
+плану, який залишається лише для читання, режим плану, який створює план, і
+повний цикл тікета. Початкове наповнення слухає `WorkspaceCreated`
+(`workspace.upsert` або `workspace.create`), пропускає назву, що вже існує, і не
+наповнює заднім числом старіші робочі простори.
 
-## Where they appear
+## Де вони з’являються
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Спостережуваність → Якість** (`/workspaces/<id>/observability`) перелічує кожен
+набір у робочому просторі.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Створюйте, перелічуйте, редагуйте й видаляйте набори через `evals.upsertSuite`,
+`evals.deleteSuite` та `evals.watchSuites`. Вкладка «Якість» — це список; ці
+операції — це редактор.
 
-## Related concepts
+## Пов’язані поняття
 
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): the configuration a suite
-  pins
-- [Guardrails](/uk-UA/керівництво/поняття/обмеження/): the autonomy dial
-- [Manage costs and budgets](/uk-UA/керівництво/практичні-посібники/керувати-витратами/): spend recorded
-  alongside a run
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): конфігурація, яку закріплює
+  набір
+- [Обмеження](/uk-UA/керівництво/поняття/обмеження/): регулятор автономії
+- [Керування витратами й бюджетами](/uk-UA/керівництво/практичні-посібники/керувати-витратами/): витрати,
+  записані разом із запуском

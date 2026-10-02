@@ -1,115 +1,80 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: API کلیدیں منظم کریں
+description: ہر اسناد کہاں رہتی ہے — سرور پر آپ کا صارف اکاؤنٹ، خود سرور، یا کوئی بیرونی CLI — اور اسے کیسے سیٹ، تبدیل اور ہٹایا جائے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+یہ گائیڈ دکھاتی ہے کہ Control Center جو اسناد استعمال کرتا ہے وہ کہاں محفوظ ہوتی ہیں اور انہیں کیسے تبدیل کیا جائے۔
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**آپ جس مشین پر ٹائپ کر رہے ہیں، اس پر کچھ محفوظ نہیں ہوتا۔** ہر اسناد سرور پر رہتی ہے؛ کسی مخصوص درخواست کا جواب کون سی دیتی ہے، یہ اس پر منحصر ہے کہ اس کے پیچھے کوئی انسان ہے یا نہیں۔
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| اسناد | کہاں محفوظ ہوتی ہے | کون استعمال کرتا ہے |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| آپ کی forge / ٹکٹنگ اسناد | سرور کی 0600 خفیہ فائل، آپ کے صارف id کے تحت | ہر وہ کام جو آپ مانگیں: PR سطح، آپ کے ایجنٹ رنز، آپ کی امیجز |
+| سرور کی ایپ شناخت | وہی فائل، نیز غیر خفیہ چیزوں کے لیے `server_settings` | وہ کام جو کسی انسان نے نہیں مانگا: ویب ہکس، PR پولنگ، ٹکٹ ہم آہنگی |
+| ماڈل فراہم کنندہ کی کلیدیں اور OAuth ٹوکن | سرور کا اپنا اسناد کا ذخیرہ | بلٹ اِن اڈاپٹر، انسٹال کی ہر ورک اسپیس کے لیے |
+| Slack بوٹ ٹوکن | سرور پر `<dataDir>/<workspaceId>/chat_credentials/` | اُس ورک اسپیس کا چیٹ برج |
+| بیرونی CLI اسناد | جو بھی وہ CLI استعمال کرتا ہے | Claude Code، سرور ہوسٹ پر |
 
-## Two GitHub credentials, and they answer different questions
+## دو GitHub اسناد، اور وہ مختلف سوالوں کے جواب دیتی ہیں
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **آپ کی**، سائن اِن (ڈیوائس فلو) سے یا ٹوکن پیسٹ کرنے سے۔ *آپ کی طرف سے* کی گئی ہر درخواست یہی استعمال کرتی ہے، اس لیے آپ کے لیے پوسٹ کیا گیا کوئی تبصرہ آپ کا نام لے کر جاتا ہے۔ کوئی دوسرا رکن اسے پڑھ نہیں سکتا، اور وہ اپنی اسناد خود جوڑتا ہے
+- **سرور کی**، اُس GitHub App سے جو آپریٹر نے رجسٹر کی۔ بغیر کسی کالر کے ہر چیز کا جواب یہی دیتی ہے — چنانچہ کوئی شخص چھوڑ کر جائے یا ٹوکن تبدیل کرے تو forge رسائی غائب نہیں ہوتی
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-and [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/).
+آپ کی اسناد **ترتیبات → ورک اسپیس → پروفائل اور شناخت** کے **کوڈ ہوسٹنگ** کارڈ میں سیٹ ہوتی ہیں؛ سرور والی **ترتیبات → سرور → سنگل سائن آن** کے **فراہم کنندہ ایپس** میں۔ [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) اور [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) دیکھیں۔
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[صرف URL سے کھلنے والی ایک اسکرین بھی ہے]
+`/workspaces/<workspaceId>/api-keys` وہی دو کارڈ دکھاتا ہے جو آن بورڈنگ کے پہلے قدم میں ہوتے ہیں۔ **UI میں کہیں اس کا کوئی نیویگیشن اندراج نہیں**؛ یہ صرف URL ٹائپ کرنے سے پہنچتا ہے۔ اس کے بجائے ترتیبات → ورک اسپیس → پروفائل اور شناخت استعمال کریں۔
 :::
 
-## Set model provider keys
+## ماڈل فراہم کنندہ کی کلیدیں سیٹ کریں
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+بلٹ اِن اڈاپٹر خود فراہم کنندگان کی توثیق کرتا ہے اور وہ اسناد سرور پر رہتی ہیں۔
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. **ترتیبات → سرور → ماڈل فراہم کنندگان** پر جائیں
+2. **فراہم کنندگان اور ماڈلز** تک اسکرول کریں
+3. فراہم کنندہ جوڑیں — OpenAI، Codex، Cursor اور Kimi Code کے لیے براؤزر OAuth؛ Anthropic اور باقیوں کے لیے API کلید
 
-See [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/) for the full list and
-for adding a custom endpoint.
+مکمل فہرست اور حسبِ ضرورت اینڈ پوائنٹ شامل کرنے کے لیے [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/) دیکھیں۔
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+یہ اسناد **ہوسٹ گلوبل** ہیں: ایک کلید انسٹال کی ہر ورک اسپیس کو کام دیتی ہے۔ OAuth ٹوکن میعاد ختم ہونے سے پہلے تازہ کر دیے جاتے ہیں۔
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+بیرونی اڈاپٹر CLI اپنی اسناد اپنی کنفیگریشن میں، سرور ہوسٹ پر رکھتے ہیں — Control Center انہیں منظم نہیں کرتا۔ Claude Code کی توثیق اُسی طرح کریں جس طرح اس کی اپنی دستاویزات کہتی ہیں، اُس مشین پر جس پر `cc_server` چلتا ہے۔
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/).
+فی اڈاپٹر **ماحول کے ویری ایبلز** ڈائیلاگ ایسا لگتا ہے کہ ان میں سے کسی کے لیے کلید رکھنے کی جگہ ہے، مگر ایسا نہیں: یہ آپ کے ڈیوائس پر لکھتا ہے، جبکہ سرور اپنی کاپی پڑھتا ہے اور دونوں کے درمیان کوئی پل نہیں۔ [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/) دیکھیں۔
 
-## Connect a ticketing vendor
+## ٹکٹنگ وینڈر جوڑیں
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+**ترتیبات → ورک اسپیس → عام** پر **ٹکٹنگ** کارڈ ایک ہی فیصلے کے دونوں حصے رکھتا ہے: آپ کے ٹکٹس کس وینڈر میں رہتے ہیں، اور اس کی اسناد۔ **مقامی** چننے پر اسناد کی قطار چھپ جاتی ہے — مقامی ٹکٹس اسی سرور کے اپنے ڈیٹا بیس میں رہتے ہیں اور ان کی توثیق کرنے کو کچھ نہیں۔
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/).
+آپ کی کلید سرور پر آپ کے صارف id کے تحت محفوظ ہوتی ہے، forge والی کی طرح۔ سرور اپنی Linear کلید الگ رکھتا ہے (**فراہم کنندہ ایپس**)، اور جب کسی انسان نے نہ مانگا ہو تو ٹکٹ ہم آہنگی اسی پر چلتی ہے۔ ایجنٹ کو ملنے والی کلید صرف اُس وقت داخل کی جاتی ہے جب ایجنٹ کے پاس **ٹکٹنگ API کالز کی اجازت دیں** کی قابلیت ہو۔ [Linear انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/) دیکھیں۔
 
-## Rotate or revoke
+## تبدیل یا منسوخ کریں
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- **آپ کی GitHub اسناد**: **منقطع کریں** دبائیں، پھر دوبارہ سائن اِن کریں یا نیا ٹوکن پیسٹ کریں۔ پرانی والی GitHub پر منسوخ کر دیں
+- **سرور کی ایپ**: ایپ کے GitHub صفحے پر نئی پرائیویٹ کلید یا کلائنٹ سیکرٹ بنائیں، اسے **فراہم کنندہ ایپس** میں پیسٹ کریں اور **ٹیسٹ** دبائیں
+- **کوئی ماڈل فراہم کنندہ**: اس کی قطار پر سائن آؤٹ کریں (OAuth) یا کلید ہٹائیں، پھر دوبارہ جوڑیں
+- **Slack**: کنیکٹ ڈائیلاگ میں ٹوکن دوبارہ پیسٹ کریں۔ [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/) دیکھیں
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The PR list is empty but my token works in `curl`
+### PR فہرست خالی ہے مگر میرا ٹوکن `curl` میں چلتا ہے
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+**کوڈ ہوسٹنگ** قطار کا ذیلی عنوان دیکھیں۔ اگر وہ کوئی اور ذریعہ بتاتا ہو ("اس سرور کی ایپ کے ذریعے"، "ماحول سے")، تو آپ جو اسناد جانچ رہے ہیں وہ جواب دینے والی نہیں — آپ والی محفوظ نہیں ہوئی۔
 
-### The token is accepted but later requests fail
+### ٹوکن قبول ہو جاتا ہے مگر بعد کی درخواستیں ناکام ہوتی ہیں
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+ٹوکن جیسے محفوظ ہوا ہے ویسے ہی جانچا جاتا ہے، اس لیے قطار اس کے پیچھے والا اکاؤنٹ بتا دیتی ہے — مگر صرف اکاؤنٹ، اسکوپس نہیں۔ بہت کم اسکوپس والا ٹوکن جڑ تو جاتا ہے، مگر پھر الگ الگ درخواستوں میں ناکام ہوتا ہے۔ اسکوپس اور میعاد دیکھیں:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-- [Create the GitHub App](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)
-- [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
-- [Set up Linear integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/)
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)
+- [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [Linear انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/)

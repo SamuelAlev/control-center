@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Ügynök eszközkontextusának hangolása
+description: Nézze meg, mit küld valójában egy futás, változtassa meg, mely eszközök töltődnek be előre, és derítse ki, hogy egy rossz eszközválasztás visszakeresési kihagyás vagy promptprobléma volt-e.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkozkontextus-hangolasa
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
+Ez az útmutató a kétszintű eszközfelület körüli gyakorlati munkát járja körül: hogyan látható, mit küld egy futás, hogyan változtatható meg, és hogyan diagnosztizálható egy ügynök, amely rossz eszközhöz nyúlt. Hogy miért működik így, arról az [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus) oldalon olvashat.
 
-## Look at what a run actually sends
+## Nézze meg, mit küld valójában egy futás
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Nyisson meg egy beszélgetést, és koppintson a beszélgetés fejlécében lévő kontextushasználat-jelzőre. Ez pontosan azt a felületet építi újra, amelyet a következő indítás elküldene, anélkül hogy bármit futtatna. A **Több megjelenítése** (vagy a `/context` parancs) megnyitja a teljes kontextusfelfedezőt, ahol az egyes eszközöket is megvizsgálhatja.
 
-Two segments matter here:
+Itt két szegmens számít:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Eszközdefiníciók** és **MCP- és dinamikus eszközök** — a rezidens készlet, az egyes eszközök valódi tokenköltségével.
+- **Igény szerint betöltött eszközök** — a halasztott index. Minden bejegyzésnél csak a név kerül felszámításra, mert a kérésben csak a név utazik; egy elem megnyitása azonban a teljes leírást és sémát mutatja, így láthatja, mennyibe *kerülne*, ha a futás behúzná.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli).
+Ha a halasztott szegmens üres, a halasztás ki van kapcsolva ennél a szervernél. Ellenőrizze a `--tool-deferral` kapcsolót a [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli) oldalon.
 
-## Change which tools load up front
+## Változtassa meg, mely eszközök töltődnek be előre
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+A rezidens készlet szabályzat, nem konfiguráció — a `ModeToolPolicy`-ban él (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`), és minden futásra érvényes:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/hu-HU/kezikonyv/fogalmak/modok) uses on nearly every turn.
+- `residentBuiltins` — a fájl- és shell-szókincs.
+- `residentDiscovery` — a `search_tools` és a `list_my_tools`. Ne távolítsa el őket; ezeken keresztül ér el az ügynök minden mást.
+- `residentMcpTools` — az a néhány Control Center-eszköz, amely megéri a sémáját minden kérésben.
+- Egy módonkénti blokk azoknak az eszközöknek, amelyeket egy adott [mód](/hu-HU/kezikonyv/fogalmak/modok) szinte minden körben használ.
 
-Two rules when editing it:
+Két szabály a szerkesztésekor:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Csak akkor vegyen fel egy eszközt, ha a futások többsége használja.** Minden név a sémájával együtt minden futás minden kérésében fizetendő, a végtelenségig. Egy eszköz, amely használatkor fontos, de összességében ritka, a halasztott felébe való — az ügynök így is megtalálja.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Az eszköz valódi nevét használja.** Egy rezidens név, amely egyetlen eszközzel sem egyezik, hatástalan: nincs hiba, nincs figyelmeztetés, az eszköz egyszerűen halasztott marad. A `test/tooling/resident_tool_names_test.dart` ezt elkapja, és emellett módonként 40 rezidens eszköz alatt tartja a készletet, ami épp a gyakorlat lényege — azon a sávon túl az eszközválasztás mérhetően romlik.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Egy mód kötelező és beékelt igéit a rendszer automatikusan hozzáadja, így soha nem kell felsorolnia egy mód saját kimeneti igéjét.
 
-## Diagnose a bad tool choice
+## Egy rossz eszközválasztás diagnosztizálása
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Amikor egy ügynök rossz eszközt használt, vagy azt állította, hogy nem tud megtenni valamit, derítse ki, hogy a három eset közül melyik történt meg.
 
-### 1. Did it look?
+### 1. Odanézett?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Minden futás rögzíti, mely halasztott eszközöket töltötte be, és hogy mi váltotta ki a betöltést — egy közvetlen hívás név szerint, vagy egy `search_tools` lekérdezés. Nyissa meg a futás eseményfolyamát (**Beállítások → Munkaterület → Ügynökök** → az ügynök → **Naplók** → **Nézet**), és keresse a `[harness] loaded N deferred tool(s)` sort.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Semmi nincs naplózva, és az ügynök azt mondta, hogy hiányzik a képesség** — nem is nézett utána. Ez promptprobléma, nem visszakeresési hiba: a halasztott index a rendszerpromptjában van, azzal az utasítással, hogy ne jelentse ki egy képesség hiányát, amíg egy keresés üresen nem tér vissza.
+- **Naplózódott egy keresés, de semmi nem töltődött be** — valódi visszakeresési kihagyás. Ugorjon a 2. lépésre.
+- **Betöltődtek az eszközök, de rosszat használt** — a megtalált eszközök túlságosan hasonlók. Ugorjon a 3. lépésre.
 
-### 2. Fix a retrieval miss
+### 2. Javítsa a visszakeresési kihagyást
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+A `search_tools` a nevekre, a leírásokra és az argumentumnevekre illeszt. Egy kihagyás szinte mindig azt jelenti, hogy a leírás nem tartalmazza azokat a szavakat, amelyeket az ügynök használt.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Adja hozzá őket. A leírások a visszakeresési index, ezért **hosszabbítsa meg őket, ne rövidítse** — írja bele azt a szókincset, amelyet egy kezelő valóban begépelne („hozzárendel”, „átad”, „odaad”), ne csak a belső főnevet. Egy leírás megkurtítása a tokenek megtakarítása érdekében egyszerre kerül a keresési találatba és a kiválasztás pontosságába, a sémához képest pedig szinte semmit nem takarít meg.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Ha a megfelelő eszköz létezik, de alacsonyan rangsorol, erre való a `limit` argumentum; az eszköz saját leírása arra utasítja az ügynököt, hogy szélesítse ki a közelinek tűnő, de célt tévesztő keresést.
 
-### 3. Fix look-alike tools
+### 3. Javítsa a hasonmás eszközöket
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Ha két eszköz leírása ugyanúgy hangzana valakinek, aki még nem ismeri a köztük lévő különbséget, a modell csak találgat. Vonja össze őket egyetlen eszközzé egy megkülönböztető argumentummal.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+A `ticket_relation` és a `ticket_pr_link` ezt a mintát követi: mindkettő egy megkülönböztető argumentumon keresztül kezeli az összekapcsolást és a szétválasztást. Az *egyetlen híváson belül*, a kérés teljes kontextusával meghozott döntés megbízhatóbb, mint a két hasonmás leírás közötti választás.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Tartsa külön azokat az eszközöket, amelyek eltérő jóváhagyási kapuzást, eltérő auditálást vagy eltérő megjelenítést igényelnek — ezek olyan okok, amelyek miatt egy összevonás valódi veszteséget okozna.
 
-## Check the prompt cache is working
+## Ellenőrizze, hogy működik-e a promptgyorsítótár
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+A gyorsítótár találati aránya a **Megfigyelhetőség → Betekintések** alatt **Gyorsítótár-arány** néven jelenik meg. Egy egészséges, hosszan futó beszélgetés értéke magas; ha tartósan alacsony, valami minden körben újraírja a prefixumot.
 
-Common causes, in order of likelihood:
+A gyakori okok, valószínűség szerinti sorrendben:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Bármi nem determinisztikus dolog a prompt elején.** Egy időbélyeg, egy kérésazonosító vagy egy változó sorrendben bejárt halmaz is elég hozzá.
+- **Modell- vagy erőfeszítésváltás a beszélgetés közben.** Mindkettő megváltoztatja a prefixumot. Az alügynököknél ezt különösen könnyű elrontani: ha a gyermekeket alacsonyabb erőfeszítéssel futtatja a pénz megtakarítása érdekében, az az elveszett gyorsítótár-megosztás miatt többbe kerülhet, mint amennyit megtakarít.
+- **Gyakori tömörítés.** A tömörítés tervezésénél fogva újraírja az előzményeket, így a költsége valódi; a megoldás az, hogy ritkán és mélyen tömörítsen, ne gyakran és sekélyen.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+A halasztás kikapcsolása a `--tool-deferral=off` kapcsolóval érvényes A/B-vizsgálat annak elkülönítésére, hogy egy viselkedésváltozás a kétszintű felülettől ered-e. Pontosan a halasztás előtti kérést állítja elő, így ha a viselkedés kikapcsolt állapotban is fennmarad, a felület nem az oka.

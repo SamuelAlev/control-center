@@ -1,172 +1,129 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: アダプターとモデルを管理
+description: モデルプロバイダーを接続し、エージェントが実行に使うモデルを選び、サーバーホストにどのエージェントランナー CLI があるかを確認します。
 slug: ja-JP/マニュアル/ハウツーガイド/アダプター
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+このガイドでは、モデルプロバイダーを接続し、エージェントが何で実行されるかを選ぶ方法を説明します。
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+ここで扱う内容はすべて 1 つのページにあります: **設定 → サーバー → モデルプロバイダー**。サブサイドバーの項目は「モデルプロバイダー」、ページの見出しは「アダプター」です。
 
-## What an adapter is
+## アダプターとは
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+アダプターとは、エージェントの 1 ターンを実行する_ランナー_です。2 つだけであり、この一覧は固定です。3 つ目を追加することはできません。
 
-| Adapter                   | CLI      | Transport                                           |
+| アダプター                | CLI      | トランスポート                                      |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (built-in) | なし     | インプロセスのエージェントループで、プロバイダーとは HTTP で通信する |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor、Codex、Anthropic、OpenAI などは、別個の CLI ではなく、組み込みアダプター上の**プロバイダー**です。追加_できる_のは別のプロバイダー、つまり OpenAI または Anthropic 互換の任意のエンドポイントです。それは次のセクションで扱います。
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[検出が調べるのはあなたのマシンではなくサーバーです]
+**検出されたランナー**カードには、_サーバーホストの_ `PATH` で `cc_server` が見つけたものが一覧されます。シンクライアントや Web クライアントでは、それは今見ているマシンとは別のマシンです。CLI は `cc_server` を実行するマシンにインストールしてください。
 :::
 
-## Connect a model provider
+## モデルプロバイダーを接続
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+組み込みアダプターは、実行する前に少なくとも 1 つの接続済みプロバイダーが必要です。カタログには 14 個が同梱されています。
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. **設定 → サーバー → モデルプロバイダー**に移動します
+2. **プロバイダーとモデル**までスクロールします
+3. 使うプロバイダーを見つけて接続します:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| プロバイダー                                                                                             | 接続方法                                                                                                                      |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API キー。Claude Pro/Max サブスクリプションは Anthropic API のログインではないため、そのプランでは Claude Code アダプターを使用してください |
+| OpenAI、Codex、Cursor                                                                                    | ブラウザーでの OAuth ログイン、または API キー。Codex は CLI の起動ではなく、Codex Responses バックエンド経由の ChatGPT Plus/Pro です |
+| Kimi Code                                                                                                | ブラウザー OAuth のみ（デバイスコードフロー）。定額プランなので、トークン単位の料金はありません                              |
+| OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai、z.ai GLM Coding Plan、Moonshot (Kimi API) | API キー                                                                                                                      |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+確認ポイント: 行のバッジが接続済みに変わり、展開するとそのプロバイダーが提供するモデルが一覧されます。各モデルには 100 万トークンあたりの料金とコンテキストウィンドウが表示されます。
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth トークンはサーバー自身の資格情報ストアに保存され、期限切れになる前に更新されます。プロバイダーの資格情報は**ホストグローバル**であり、1 つのワークスペースに限定されず、インストール上のすべてのワークスペースで共有されます。
 
-### Add a custom provider
+### カスタムプロバイダーを追加
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Ollama、LM Studio、vLLM、またはプライベートデプロイメントに使用します。
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. **プロバイダーとモデル**の**カスタムプロバイダー**で、**プロバイダーを追加**を押します
+2. **名前**を入力し、**API の種類**（OpenAI 互換または Anthropic 互換）を選び、**ベース URL** を指定します（例: `http://localhost:11434/v1`）
+3. エンドポイントに必要な場合は **API キー**を追加し、**プロバイダーを追加**を押します
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+カスタムプロバイダーは同じ一覧に表示され、組み込みの兄弟にはない削除ボタンが付きます。
 
-## Pick a model for an agent
+## エージェントで使うモデルを選ぶ
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. **設定 → ワークスペース → エージェント**に移動し、エージェントを選択します
+2. **設定**タブで**アダプター**を選びます
+3. その隣のドロップダウンから**モデル**を選びます
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+組み込みアダプターでは、ドロップダウンは接続済みの各プロバイダー自身のカタログからリアルタイムに組み立てられます。資格情報が保存されていないプロバイダーはモデルを 1 つも提供しないため、ドロップダウンが空のときはほぼ常に「利用可能なものがない」ではなく「まだ何も接続していない」という意味になります。
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev は補完情報であり、ID の供給元ではありません]
+同梱の [models.dev](https://models.dev) カタログは、すでにライブ一覧にあるモデルに料金とコンテキストウィンドウを補います。モデル ID を追加することはありません。期待するモデルが見当たらない場合、そのプロバイダーのエンドポイントがそれを返していません。
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+組み込みアダプターのモデル ID は `provider/model` という修飾形式で、`|` で区切られたフォールバックチェーンを持てます。フォールバック時は、要求したモデルではなく、実際にそのターンを処理したモデルに対してコストが計算されます。
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[アダプターのないエージェントは組み込みループで実行されます]
+すべてのワークスペースには 5 体のエージェント（CEO と、`qa`、`architect`、`engineer`、`librarian`）がアダプターもモデルもなしでシードされます。ディスパッチは **Control Center (built-in)** にフォールバックし、このページの**デフォルトランナー**設定にはフォールバックしません。後者はクライアントの設定であり、ディスパッチ経路が読むことはありません。これらの実行のログには `cc-harness` が記録されるため、トランスクリプトには実際に実行されたものが示されます。
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+モデルもない場合、組み込みループは Anthropic にデフォルトモデルを問い合わせます。したがって、完全に未設定のエージェントは、Anthropic アカウントを接続していれば実行され、そうでなければ `No credential for provider "anthropic"` で失敗します。
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+オンボーディングのアダプター手順を終えると、その時点で存在するすべてのワークスペースにわたり、アダプターまたはモデルがまだ不足している**すべての**エージェント（CEO とスペシャリスト）が、選んだ組み合わせで後からまとめて更新されます。後から作成されたワークスペースでは、5 体すべてが引き続き未設定でシードされます。使用する予定のすべてのエージェントで、アダプターとモデルを明示的に設定してください。
 :::
 
-## Install a runner CLI
+## ランナー CLI をインストール
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+組み込みアダプターにはインストールは不要です。Claude Code の場合は、そのツール自身のパッケージマネージャーで CLI を**サーバーホストに**インストールします。例:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+その後、ページ上部の**更新**を押します。検出された各行には、解決されたバージョンとパス、および JSON モードとモデル選択に対応しているかどうかを示すチップが表示されます。
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+外部 CLI は、サーバーホスト上の自身の設定に、自身の資格情報を保持します。Control Center はそれらを管理しません。
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[アダプターの追加引数と環境変数はこのデバイスに保存されます]
+各アダプターの行には**追加引数**フィールドと**環境変数**ダイアログがあります。これらの値はお使いのデバイスに保存されます。サーバーは起動時の argv と env を自身の設定ストアから読み取ります。プロバイダーのキーは（OAuth またはモデルプロバイダーページのキーフィールドを使って）サーバーに置き、これら 2 つのフィールドには入れないでください。
 :::
 
-## Restrict which providers a workspace may use
+## ワークスペースが使用できるプロバイダーを制限
 
-Provider governance is per workspace and is evaluated last-match-wins.
+プロバイダーのガバナンスはワークスペース単位で、最後に一致したものが勝つ方式で評価されます。
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. **プロバイダーとモデル**で、プロバイダーの行の**許可**スイッチをオフにします
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+これにより、アクティブなワークスペースにそのプロバイダーの `deny` ステートメントが書き込まれ、そのワークスペースのカタログからそのモデルが外れます。スイッチを再びオンにすると、ステートメントが削除されます。
 
-## Troubleshooting
+## トラブルシューティング
 
-### A runner shows as not found
+### ランナーが見つからないと表示される
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- CLI が自分のマシンだけでなく**サーバーホストの** `PATH` にあることを確認します
+- GUI から起動したデスクトップアプリは最小限の `PATH` でサーバーを起動するため、シェル専用のパスにインストールされた CLI はそれから見えないことがあります
+- インストール後に**更新**を押します
 
-### The model dropdown is empty
+### モデルのドロップダウンが空である
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- アダプターが組み込みのもので、プロバイダーが 1 つも接続されていない — **プロバイダーとモデル**で接続します
+- または、プロバイダーは接続済みだが、このワークスペースのガバナンススイッチで拒否されている
 
-### A model runs but the price shows as unknown
+### モデルは実行されるが料金が不明と表示される
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+ライブのモデル一覧には ID が含まれます。料金とコンテキストは models.dev から取得します。まったく新しいモデルやカスタムプロバイダーのモデルには、まだカタログのエントリがありません。
 
-## Related guides
+## 関連するガイド
 
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [Manage API keys](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
-- [Diagnose an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
-- [Manage costs](/ja-JP/マニュアル/ハウツーガイド/コスト管理/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [API キーを管理](/ja-JP/マニュアル/ハウツーガイド/api-キー/)
+- [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
+- [コスト管理](/ja-JP/マニュアル/ハウツーガイド/コスト管理/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)

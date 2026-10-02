@@ -1,193 +1,204 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Налаштувати політики пісочниці
+description: Що обмежує запуск агента, як зрозуміти, чи загортає його пісочниця ОС, і які налаштування можливостей сервер справді читає.
 slug: uk-UA/керівництво/практичні-посібники/політики-пісочниці
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Чи буде запуск агента в пісочниці, вирішує сервер під час завантаження
+(`--sandbox`). Перемикач **Увімкнути пісочницю**, вибір **Бекенд** і перемикачі
+**Типові можливості · нові простори** у розділі **Налаштування → Сервер →
+Діагностика та приватність** — це вподобання, збережені на вашому пристрої.
+Виявлення хоста в картці **Пісочниця** повідомляє, що хост сервера може
+загорнути.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+До запуску доходять два елементи керування, і цей посібник охоплює обидва:
+**Дозволи пісочниці** для кожного агента, описані нижче, і власний прапорець
+`--sandbox` сервера.
 
-## What constrains an agent run
+## Що обмежує запуск агента
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Агента стримують шість речей. Перша — пісочниця ОС, і саме вона умовна; решта
+п’ять діють на кожному хості.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Межа                     | Що вона робить                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Пісочниця ОС             | Seatbelt на macOS, bubblewrap на Linux і WSL2. Загортає CLI Claude Code, адаптери ACP та інструмент `bash` вбудованого harness. **Відсутня на Windows і на Linux без `bwrap` і `socat`**          |
+| Власний worktree         | Кожна розмова отримує робочу копію з copy-on-write. Оригінальна робоча копія додається до запуску як шлях із забороною запису, і саме пісочниця це забезпечує                                          |
+| Облікові дані від брокера | Брокер облікових даних створює середовище для кожного запуску з можливостей агента й відкликає його під час згортання. Немає можливості — немає токена в середовищі                                 |
+| Обмеження дій            | Кожен інструмент, що змінює стан, оголошує свої класи ефектів, і рушій обмежень розв’язує їх до виконання виклику. `prompt` без під’єднаного затверджувача відхиляють                                  |
+| Очищення середовища      | ACP та інструмент `bash` вбудованого harness отримують фільтроване середовище. Claude Code через `NoSandboxAdapter` успадковує середовище хоста                                                      |
+| Поверхня інструментів режиму | Режим лише читання повністю вилучає інструменти, що змінюють worktree, і фіксує власне дієслово виводу режиму, щоб він усе одно міг видавати результат                                            |
 
-Three things stay weaker than they look:
+Три речі залишаються слабшими, ніж здаються:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Лише **вбудований harness** забезпечує шлюз інструментів, контракти
+  завершення та структурні правила режимів. Адаптер Claude Code — ні. Зокрема,
+  Claude Code запускається з `--dangerously-skip-permissions`, бо
+  неінтерактивний `claude -p` інакше блокувався б назавжди на власному запиті
+  на схвалення — тож Control Center не бачить і не обмежує власні виклики
+  читання, запису, редагування та шелу Claude. Там, де пісочниця увімкнена,
+  вона є межею навколо них.
+- Файлові інструменти harness у процесі (read, write, edit, apply patch, search,
+  find, search_files) виконуються всередині процесу сервера, тож жоден профіль
+  пісочниці їх не обмежує. Через загорнутий виконавець команд проходить лише
+  інструмент `bash`. Ці інструменти обмежені власною ізоляцією шляхів плюс
+  обмеженнями дій.
+- На хості без бекенда перший рядок не застосовується взагалі. ACP та інструмент
+  `bash` вбудованого harness повертаються до очищення середовища плюс політики
+  команд; Claude Code через `NoSandboxAdapter` успадковує середовище хоста.
+  Сервер повідомляє про це у своєму журналі запуску. Перевірте свій нижче.
 
-## Set an agent's capabilities
+## Задати можливості агента
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Це єдиний елемент керування можливостями, який читає сервер. Він діє для кожного
+агента окремо й вирішує, що брокер облікових даних кладе в середовище цього
+агента.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Перейдіть у **Налаштування → Робочий простір → Агенти**
+2. Виберіть агента зі списку
+3. На вкладці **Налаштування** прокрутіть до **Дозволи пісочниці**
+4. Увімкніть перемикач — підпис у рядку зміниться з **Типовий для робочого простору**
+5. Налаштуйте чотири перемикачі:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| Перемикач                            | Що він визначає                                                                                                                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Дозволити git push**               | Коли його вимкнено, запуск отримує `GIT_ASKPASS=/usr/bin/false` і `GIT_TERMINAL_PROMPT=0`, тож push не може запитати облікові дані                                                                                               |
+| **Дозволити виклики GitHub API**     | Разом із **Дозволити git push** визначає, чи вставляє брокер токен GitHub як `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                          |
+| **Дозволити виклики ticketing API**  | Визначає, чи вставляє брокер `TICKETING_API_KEY`                                                                                                                                                                                 |
+| **Дозволити загальний доступ до мережі** | Там, де пісочниця увімкнена, це справжній шлюз вихідного трафіку: коли його вимкнено, список дозволених запуску порожній, і кожен вихідний запит відхиляється на проксі. Там, де бекенда немає, він фіксується в запуску, але не блокує нічого, що робить породжений процес |
 
-6. Save
+6. Збережіть
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Контрольна точка: відкрийте агента знову — перемикач усе ще увімкнений і ваші
+перемикачі на місці; збережений набір можливостей проходить туди й назад через
+сервер, а агент без жодного повертається до консервативного стандарту (push
+вимкнено, GitHub API вимкнено, тікетинг вимкнено, мережа увімкнена).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Дві пастки]
+Підпис каже **Типовий для робочого простору**, але жодного налаштування
+можливостей на рівні робочого простору сервер не читає. Агент із вимкненим
+перемикачем отримує вбудований консервативний стандарт.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Окремо: облікові дані GitHub для запуску завжди належать брокеру — це токен
+установлення GitHub App з областю репозиторію або запасний PAT із середовища — і
+ніколи не власний збережений токен члена, який надіслав запит. `actingUserId`
+передається, щоб брокер міг *утримати* серверний PAT від члена, який не є
+власником і не підключив GitHub; він не накладає особистий токен поверх вимкненої
+можливості. Не вважайте **Дозволити виклики GitHub API** жорсткою межею
+вихідного трафіку на хості без пісочниці ОС: породжений процес усе одно може
+дістатися мережі.
 :::
 
-## Check whether your agent runs are sandboxed
+## Перевірте, чи ваші запуски агентів у пісочниці
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Це вирішують дві речі, обидві на сервері: чи пропонує хост бекенд і чи
+увімкнено `--sandbox`. Перевіряйте їх у такому порядку.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Перейдіть у **Налаштування → Сервер → Діагностика та приватність**
+2. Прочитайте картку **Пісочниця**. Факт **Хост** — це машина, на якій працює
+   `cc_server`, а не машина, на яку ви дивитеся. Поле **Бекенд** перелічує
+   **Нативна пісочниця** (Seatbelt на macOS, bubblewrap на Linux і WSL2) або
+   **Без ізоляції**. Факт **Чинне** — це вподобання цього пристрою, а не
+   обгортка, яку сервер справді використовує.
+3. Прочитайте журнал запуску сервера. Він друкує рівно один із трьох рядків:
+   - `agent sandbox ON` плюс примітка про бекенд — запуски загорнуто
+   - `no OS-native agent sandbox on this host` плюс підказка щодо встановлення,
+     де вона є — запуски не загорнуто
+   - `agent sandbox DISABLED by --sandbox off` — навмисна відмова
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` не повідомляє стан пісочниці, тож журнал запуску і є перевіркою.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Щоб вимкнути пісочницю навмисно — хост, де профіль поводиться неправильно, і є
+причиною, чому така можливість існує — запустіть сервер із `--sandbox off` або
+задайте `CC_SERVER_SANDBOX=off`. Типове значення — `on`, і `on` означає
+«використати бекенд, якщо він на хості є», а не «вимагати його».
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Дві ситуації ніколи не отримують нативної обгортки пісочниці. На **Windows**
+нативна перевірка завжди повідомляє про недоступність, і встановлювати нічого —
+диспетчеризація агентів використовує `none`. Бекенд `microvm` окремий
+(інтерактивні термінали та rigs) і має власну перевірку доступності залежно від
+свого середовища виконання. На **Linux і WSL2** і `bwrap`, і `socat` мають бути
+в `PATH`; без них перевірка повідомляє про недоступність і називає відсутні
+пакети.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+На Linux/WSL2 із встановленим bubblewrap глоб-шаблони секретних файлів
+стандартної політики неможливо застосувати до файлів, які агент створить
+пізніше. Такий нативний запуск тепер завершується невдачею, а не тихо ігнорує
+правила. Тож успішна перевірка під час завантаження не гарантує, що
+диспетчеризація на Linux зможе стартувати. `--sandbox off` — це навмисна
+відмова від обмежень, а не замінник межі безпеки.
 
-## Know what a mode already forbids
+## Знайте, що режим уже забороняє
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Режим зберігається для кожного простору окремо й надходить до рушія розв’язання
+обмежень як шар **пресету режиму**. Три з чотирьох режимів доступні лише для
+читання, і режим лише читання відхиляє одинадцять класів ефектів одразу:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Режим                | Worktree   | Що відхиляє пресет                                                                                                                                                                                                                             |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Агент** (`chat`)   | Для запису | Нічого — діють вбудовані стандарти                                                                                                                                                                                                             |
+| **План**             | Лише читання | Видалити файл, записати поза worktree, створити коміт, надіслати (push), відкрити PR, опублікувати або злити, записати до зовнішнього трекера, встановити пакет, запустити процес, змінити структуру робочого простору, завантажити ізольоване середовище (rig) або керувати ним |
+| **Огляд**            | Лише читання | Ті самі одинадцять. Не вибирається користувачем — композер пропонує лише Агент, План та Оркестрація                                                                                                                                               |
+| **Оркестрація**      | Лише читання | Ті самі одинадцять                                                                                                                                                                                                                             |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Доступ до мережі й доступ до секретів навмисно _не_ відхиляються режимом лише
+читання: дослідження і є його суттю.
 
-## Require approval before an action runs
+## Вимагати схвалення перед виконанням дії
 
-Approval is a guardrail decision, not a sandbox setting.
+Схвалення — це рішення обмежень, а не налаштування пісочниці.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Перейдіть у **Налаштування → Робочий простір → Дозволи агента**
+2. Задайте класу дій значення **Спочатку запитати** в області робочого простору,
+   агента або простору
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/) for the full
-resolution order.
+Рішення **Спочатку запитати** перериває запуск і питає вас. Без під’єднаного
+затверджувача воно закривається відмовою, і дію відхиляють. Повний порядок
+розв’язання дивіться в розділі
+[Налаштувати обмеження](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/).
 
-## Troubleshooting
+## Усунення несправностей
 
-### An agent cannot push and I never denied it
+### Агент не може надіслати зміни, і я цього не забороняв
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Перевірте **Дозволи пісочниці** агента. Агент без власного набору можливостей
+отримує консервативний стандарт, у якому **Дозволити git push** вимкнено — тож
+брокер не вставляє токен GitHub, і git не має чим автентифікуватися.
 
-### The Sandboxing card reports no native sandbox
+### Картка «Пісочниця» повідомляє, що нативної пісочниці немає
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/).
+Тоді запуски агентів на цьому хості не загорнуті Seatbelt чи bubblewrap, і ви
+маєте лише решту меж. На Linux і WSL2 встановіть обидва відсутні інструменти —
+`sudo apt-get install bubblewrap socat` — і перезапустіть сервер; після цього
+журнал запуску має сказати, що пісочницю увімкнено. На Windows нативного бекенда
+для встановлення немає, тож натомість посильте обмеження: дивіться
+[Налаштувати обмеження](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/).
 
-### An agent reached a file outside its worktree
+### Агент дістався файлу поза своїм worktree
 
-Which tool reached it decides whether this is expected.
+Від того, який інструмент до нього дістався, залежить, чи це очікувано.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Файлові інструменти harness у процесі (read, write, edit, apply patch, search,
+find, search_files) виконуються в процесі сервера, тож жоден профіль пісочниці до
+них не застосовується — їхньою межею є власна ізоляція шляхів плюс обмеження.
+Команда `bash` або CLI Claude Code _загорнуті_ там, де бекенд існує, і ваші
+зареєстровані робочі копії мають заборону запису всередині цієї обгортки в
+кожному режимі, включно з їхнім розв’язаним через символьні посилання написанням
+(на macOS шлях, досягнутий через `/tmp` або `/var/folders`, розв’язується під
+`/private`, і тепер заборонено обидва написання). На хості без бекенда нічого з
+цього не застосовується. У будь-якому разі обмеження можуть відхилити **Запис
+поза робочим деревом** одразу.
 
-## Related guides
+## Пов’язані посібники
 
-- [Configure guardrails](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/)
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/)
-- [Diagnose an agent](/uk-UA/керівництво/практичні-посібники/діагностика-агента/)
-- [Sandbox backends](/uk-UA/керівництво/довідка/бекенди-пісочниці/)
-- [cc_server CLI](/uk-UA/керівництво/довідка/cc-server-cli/): the `--sandbox` flag
+- [Налаштувати обмеження](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/)
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/)
+- [Діагностувати агента](/uk-UA/керівництво/практичні-посібники/діагностика-агента/)
+- [Бекенди пісочниці](/uk-UA/керівництво/довідка/бекенди-пісочниці/)
+- [CLI cc_server](/uk-UA/керівництво/довідка/cc-server-cli/): прапорець `--sandbox`
 
-## Related concepts
+## Пов’язані поняття
 
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
-- [Modes](/uk-UA/керівництво/поняття/режими/)
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
+- [Режими](/uk-UA/керівництво/поняття/режими/)

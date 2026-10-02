@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: 派发你的第一个智能体
+description: 创建一个智能体，给它一个空间和一项任务，然后看着这次运行流式返回结果。
 slug: zh-CN/手册/教程/第一个智能体
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+学完本教程后，你将拥有：
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- 一个由你自己创建并配置的智能体
+- 一个供你和该智能体对话的空间
+- 一次已完成的运行，其中的工作在隔离工作树中已提交，并在该智能体的运行日志中留下一行记录
 
-Prerequisites: [Your first workspace](/zh-CN/手册/教程/第一个工作区/) completed, so this workspace has a repo registered and at least one model provider connected.
+前置条件：已完成[你的第一个工作区](/zh-CN/手册/教程/第一个工作区/)，因此该工作区中已注册仓库，并连接了至少一个模型提供商。
 
-## Step 1: Create an agent
+## 第 1 步：创建一个智能体
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. 打开 **设置 → 工作区 → 智能体**
+2. 点击 **新建智能体**。系统会立即创建一个名为“未命名智能体”的智能体，并在名册中选中它——不会弹出创建对话框，也没有任何需要确认的内容。你直接在原地配置它。
+3. 在 **设置** 标签页中填写：
+   - **名称**：简短好记，例如 `alice`。这就是你在 `@` 后面输入的内容。
+   - **标题**：它的职责，例如“后端工程师”
+   - **适配器**：`Control Center (built-in)`。请有意选择这一项——只有内置运行器可以在运行中途被引导，并在回合边界暂停，而且它不需要在服务器主机上安装任何 CLI。
+   - **模型**：从已连接提供商所提供的列表中选择
+   - **技能**：附加任何合适的技能，例如 `testing` 或 `architecture`
+4. 点击 **保存更改**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[没有适配器的智能体会在内置循环上运行]
+当适配器字段未设置时，派发会回退到 **Control Center (built-in)**——即服务器内部的智能体循环，因此主机上无需安装任何东西。它仍然需要一个模型：若未设置，它会向 Anthropic 请求其默认模型；如果你已连接 Anthropic 账号，这会正常工作，否则会以 `No credential for provider "anthropic"` 失败。无论如何都请显式设置这两项，否则你将在一个并非自己选择的模型上运行。
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**检查点。** 名册中该行会显示你的智能体名称，以及一个空心的状态环。
 
-## Step 2: Start a space
+## 第 2 步：启动一个空间
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. 在侧边栏中找到 **空间** 区块，然后点击 **+** 按钮
+2. 为该空间取名
+3. 在 **添加智能体** 下，选择你刚刚创建的智能体
+4. 如果该工作区中有仓库，请选择这个空间应在哪些仓库上工作
+5. 点击 **创建**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+空间随即打开。在后台，Control Center 会为这段对话在选定的仓库上预配一个写时复制工作树，并使用它自己的分支。你的源检出永远不会被改动。
 
-## Step 3: Send a task
+## 第 3 步：发送一项任务
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+针对你注册的仓库输入一项具体而微小的任务。最好是结果可核验的任务——添加一个测试、修复一处 lint 问题、重命名一个符号。
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+按 Enter。你无需 `@` 提及任何人：空间中只有一个智能体时，一条普通消息就能唤醒它。若空间中有多个智能体，用 `@name` 指定其中一个。
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center 会根据该智能体的指令、角色设定、技能以及这个空间的上下文组装提示词，然后派发这次运行。
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**检查点。** 输入框的发送按钮会变成一个停止按钮——有智能体正在这段对话中工作——文本随即开始出现。
 
-## Step 4: Watch it work
+## 第 4 步：看它工作
 
-The conversation renders the run as it happens:
+对话会随着运行的进行实时渲染：
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **推理**，在智能体思考时以内联方式展示
+- **工具调用**：文件读写、搜索、shell 命令，每项都带有其结果
+- **文本**：摘要、说明以及向你提出的问题
 
-If the agent asks something, answer in the conversation and it resumes.
+如果智能体提出问题，在对话中回答它，它就会继续。
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+如果要查看某次运行自身的指标以及它的暂停、继续和停止控件，请在空间的常规面板中的 **智能体** 区块找到正在运行的智能体，然后选择 **打开活动**。
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+在活动窗格中，状态徽章显示 **运行中**，运行结束后变为 **成功**。停滞或陷入循环的运行显示 **已阻塞**；出错的运行显示 **失败**。在智能体登记表中，名册状态环在首次运行前是空心的，智能体重新回到空闲后则变为实心。
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/zh-CN/手册/概念/护栏/).
+约束这次运行的因素包括：它自己的写时复制工作树、在启动时为其代理并在拆除时撤销的凭据、经过净化的环境、其模式所允许的工具面，以及动作护栏。推送分支或创建 pull request 之类的副作用则单独设置门禁——参见[护栏](/zh-CN/手册/概念/护栏/)。
 
-## Step 5: Check the result
+## 第 5 步：检查结果
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. 打开 **设置 → 工作区 → 智能体**，然后选中你的智能体
+2. 打开 **日志** 标签页
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**检查点。** 一行运行记录，显示其状态、时长、开始与结束时间，以及它所运行的适配器。
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+该智能体的改动会提交到这段对话的分支上，位于它自己的工作树中。提交以该智能体作为作者，并通过 `Co-Authored-By:` 尾注为你署名。
 
-## Getting a pull request
+## 获取一个 pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+没有任何东西会自动创建 pull request。如果你想要一个，就在同一段对话中提出：
 
-> Push this branch and open a pull request against the default branch.
+> 推送这个分支，并针对默认分支创建一个 pull request。
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+推送（`gitPush`）和创建 PR（`prCreate`）都默认先征求你的批准，因此每一步之前都会出现一次确认。如果提示触发时没有连接任何批准人，该操作会被拒绝而不是放行——护栏会失效即拒绝。
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+该 PR 会以这次运行所用令牌对应的 GitHub 身份创建——如果你保存了个人令牌，那就是你的身份——而不是以智能体的名义。智能体的作者身份体现在提交上。
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+你也可以自己创建：空间的 **源代码管理** 面板中有一个 **创建 pull request** 按钮，它会把这段对话的分支带入撰写界面，而 **Pull requests → 新建 PR** 会打开同一个界面，但内容为空。下一篇教程就从那里接着讲。
 
-## Recap
+## 小结
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+你创建了一个智能体，配置了它的适配器和模型，给了它一个空间和一项任务，并看着一次真实的运行在隔离工作树中完成，而完全没有触及你的检出。
 
-**Next:** [Review your first pull request](/zh-CN/手册/教程/第一个-pr/) to learn the review workflow.
+**下一步：** [审查你的第一个 pull request](/zh-CN/手册/教程/第一个-pr/) 了解审查工作流。
 
-For more on agents: [The agent model](/zh-CN/手册/概念/智能体模型/). For dispatch details: [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/).
+关于智能体的更多内容：[智能体模型](/zh-CN/手册/概念/智能体模型/)。关于派发的细节：[智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)。

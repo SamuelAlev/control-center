@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Utvärderingar och kvalitet
+description: Eval-sviter, startpaketet som sås in i varje arbetsyta och var de visas i Observability.
 slug: sv-SE/handbok/koncept/utvarderingar-och-kvalitet
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+En **eval-svit** är en arbetsytsbunden definition av en uppgift som ska köras
+mot en agent: en prompt, en målagent och ett läge, valfri uppsättning, en
+valfri fixture med fastnålad SHA och en lista med bedömare. Bedömarna är
+deterministiska i första hand; en domare med LLM-rubrik täcker det som
+kontrollerna inte kan uttrycka.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Fem startsviter sås in när en arbetsyta skapas. De täcker
+orkestreringsförslag, en granskning som hittar en inplanterad bugg, att
+planläge förblir skrivskyddat, att planläge tar fram en plan och en tur och
+retur för ett ärende. Inplanteringen lyssnar på `WorkspaceCreated`
+(`workspace.upsert` eller `workspace.create`), hoppar över ett namn som redan
+finns och fyller inte på äldre arbetsytor i efterhand.
 
-## Where they appear
+## Var de visas
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observability → Kvalitet** (`/workspaces/<id>/observability`) listar varje
+svit i arbetsytan.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Skapa, lista, redigera och ta bort sviter via `evals.upsertSuite`,
+`evals.deleteSuite` och `evals.watchSuites`. Fliken Kvalitet är listan; de
+åtgärderna är redigeraren.
 
-## Related concepts
+## Relaterade koncept
 
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): the configuration a suite
-  pins
-- [Guardrails](/sv-SE/handbok/koncept/racken/): the autonomy dial
-- [Manage costs and budgets](/sv-SE/handbok/how-to-guider/hantera-kostnader/): spend recorded
-  alongside a run
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): konfigurationen en svit
+  låser fast
+- [Räcken](/sv-SE/handbok/koncept/racken/): autonomireglaget
+- [Hantera kostnader och budgetar](/sv-SE/handbok/how-to-guider/hantera-kostnader/): utgifter som
+  registreras tillsammans med en körning

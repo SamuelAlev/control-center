@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: Az első ügynök elindítása
+description: Hozzon létre egy ügynököt, adjon neki egy teret és egy feladatot, és kövesse élőben, ahogy a futás visszaérkezik.
 slug: hu-HU/kezikonyv/oktatoanyagok/elso-ugynok
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## Mit fog felépíteni
 
-By the end of this tutorial, you will have:
+Az oktatóanyag végére a következőkkel rendelkezik:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- Egy ügynök, amelyet Ön hozott létre és konfigurált
+- Egy tér, ahol Ön és az az ügynök beszélget
+- Egy befejezett futás, commitolt munkával egy elszigetelt worktree-ben és egy sorral az ügynök futásnaplójában
 
-Prerequisites: [Your first workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/) completed, so this workspace has a repo registered and at least one model provider connected.
+Előfeltétel: [Az első munkaterületed](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/) elvégzése, így ebben a munkaterületben van regisztrált repó és legalább egy csatlakoztatott modellszolgáltató.
 
-## Step 1: Create an agent
+## 1. lépés: Ügynök létrehozása
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. Nyissa meg a **Beállítások → Munkaterület → Ügynökök** pontot
+2. Kattintson az **Új ügynök** elemre. Azonnal létrejön egy „Névtelen ügynök” nevű ügynök, és ki lesz jelölve a névsorban — nincs létrehozási párbeszédablak, és semmit sem kell megerősíteni. Helyben konfigurálja.
+3. A **Beállítások** lapon adja meg a következőket:
+   - **Név**: valami rövid és könnyen megjegyezhető, például `alice`. Ezt írja be a `@` után.
+   - **Cím**: mit csinál, például „Backend-fejlesztő”
+   - **Adapter**: `Control Center (built-in)`. Szándékosan ezt válassza — csak a beépített harness vezérelhető futás közben, és állítható meg egy körhatáron, ráadásul a szerverkiszolgálón nem kell CLI-t telepíteni.
+   - **Modell**: válasszon a csatlakoztatott szolgáltató által kínált listából
+   - **Készségek**: csatoljon olyat, amelyik illik, például `testing` vagy `architecture`
+4. Nyomja meg a **Módosítások mentése** gombot
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[Az adapter nélküli ügynök a beépített cikluson fut]
+Ha az Adapter mező nincs kitöltve, az indítás a **Control Center (built-in)** értékre esik vissza — ez a szerveren belüli ügynökciklus, így a kiszolgálón nincs mit telepíteni. Még mindig szüksége van egy modellre: ha nincs beállítva, az Anthropic alapértelmezett modelljét kéri; ez akkor működik, ha csatlakoztatott egy Anthropic-fiókot, ellenkező esetben pedig meghiúsul a következő hibával: `No credential for provider "anthropic"`. Mindenesetre állítsa be mindkettőt kifejezetten, különben egy Ön által nem választott modellen fog futni.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**Ellenőrzési pont.** A névsor sorában az ügynök neve és egy üreges állapotgyűrű látható.
 
-## Step 2: Start a space
+## 2. lépés: Tér indítása
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. Az oldalsávon keresse meg a **Terek** szakaszt, és kattintson a **+** gombra
+2. Adjon nevet a térnek
+3. Az **Ügynökök hozzáadása** alatt válassza ki az imént létrehozott ügynököt
+4. Ha a munkaterületen vannak repók, válassza ki, melyeken dolgozzon ez a tér
+5. Kattintson a **Létrehozás** elemre
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+A tér megnyílik. A háttérben a Control Center létrehoz a kijelölt repókból egy copy-on-write worktree-t ehhez a beszélgetéshez, saját ágon. A forrás-checkoutja soha nem módosul.
 
-## Step 3: Send a task
+## 3. lépés: Feladat küldése
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+Írjon be egy konkrét, kis feladatot a regisztrált repóval kapcsolatban. A legjobban az ellenőrizhető eredményű feladat működik — adjon hozzá egy tesztet, javítson egy lintet, nevezzen át egy szimbólumot.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Nyomja meg az Entert. Nem kell `@`-említéssel megjelölnie senkit: ha egyetlen ügynök van a térben, egy egyszerű üzenet felébreszti. Több ügynököt tartalmazó térben a `@name` választ ki egyet.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+A Control Center összeállítja a promptot az ügynök utasításaiból, personájából, készségeiből és a tér kontextusából, majd elindítja a futást.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**Ellenőrzési pont.** Az üzenetszerkesztő küldés gombja leállítás gombbá alakul — egy ügynök dolgozik ebben a beszélgetésben —, és elkezd megérkezni a szöveg.
 
-## Step 4: Watch it work
+## 4. lépés: Nézze, ahogy dolgozik
 
-The conversation renders the run as it happens:
+A beszélgetés megjeleníti a futást, ahogy az megtörténik:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **Gondolkodás**, soron belül megjelenítve, ahogy az ügynök gondolkodik
+- **Eszközhívások**: fájlolvasások és -írások, keresések, shell-parancsok, mindegyik a saját eredményével
+- **Szöveg**: összefoglalók, magyarázatok és az Önnek szánt kérdések
 
-If the agent asks something, answer in the conversation and it resumes.
+Ha az ügynök kérdez valamit, válaszoljon a beszélgetésben, és az ügynök folytatja.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+Egy futás saját mérőszámaihoz, valamint a szüneteltetés, folytatás és leállítás vezérlőihez keresse meg a futó ügynököt a tér **Általános** paneljének **Ügynökök** szakaszában, és válassza a **Tevékenység megnyitása** lehetőséget.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+A tevékenységpanelben az állapotjelvény **Fut**, majd a futás befejezésekor **Sikeres** értéket mutat. Az elakadó vagy ciklikusan ismétlődő futás **Blokkolva**; a hibát adó futás **Sikertelen**. Az ügynökjegyzékben a névsor gyűrűje üreges az első futás előtt, és tömör, amint az ügynök ismét tétlen.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/).
+Mi korlátozza a futást: a saját copy-on-write worktree-je, az indításkor a számára közvetített és a megszüntetéskor visszavont hitelesítő adatok, a megtisztított környezet, a módja által engedélyezett eszközfelület és a műveletkorlátok. Az olyan hatások, mint egy ág pusholása vagy egy pull request megnyitása, külön kapuk mögött vannak — lásd: [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/).
 
-## Step 5: Check the result
+## 5. lépés: Az eredmény ellenőrzése
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. Nyissa meg a **Beállítások → Munkaterület → Ügynökök** pontot, és válassza ki az ügynökét
+2. Nyissa meg a **Naplók** lapot
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**Ellenőrzési pont.** Egy futássor, amely az állapotát, időtartamát, kezdési és befejezési idejét, valamint az általa használt adaptert mutatja.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+Az ügynök módosításai a beszélgetés ágán vannak commitolva, a worktree-jében. A commitok szerzője az ügynök, Önt pedig egy `Co-Authored-By:` trailer jelöli meg.
 
-## Getting a pull request
+## Pull request beszerzése
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+Semmi sem nyit pull requestet magától. Ha szeretne egyet, kérje ugyanabban a beszélgetésben:
 
-> Push this branch and open a pull request against the default branch.
+> Pusholja fel ezt az ágat, és nyisson pull requestet az alapértelmezett ág ellen.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+A pusholás (`gitPush`) és a PR létrehozása (`prCreate`) alapértelmezés szerint az Ön jóváhagyását kéri, így mindegyik előtt számítson egy megerősítésre. Ha a kérés felbukkanásakor nincs csatlakoztatva jóváhagyó, a művelet megtagadásra kerül ahelyett, hogy engedélyeznék — a korlátok zárt állapotba esnek.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+A PR azon GitHub-identitás alatt nyílik meg, amelynek a tokenjét a futás használta — az Öné, ha személyes tokent tárolt —, nem az ügynök neve alatt. Az ügynök szerzősége a commitokon látszik.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+Ön is megnyithatja: a tér **Verziókezelés** paneljén van egy **Pull request létrehozása** gomb, amely átviszi a beszélgetés ágát a szerkesztőképernyőre, a **Pull requestek → Új PR** pedig ugyanezt a képernyőt nyitja meg üresen. Itt folytatódik a következő oktatóanyag.
 
-## Recap
+## Összefoglaló
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+Létrehozott egy ügynököt, beállította az adapterét és a modelljét, adott neki egy teret és egy feladatot, és végignézte, ahogy egy valódi futás befejeződik egy elszigetelt worktree-ben anélkül, hogy hozzányúlt volna a checkoutjához.
 
-**Next:** [Review your first pull request](/hu-HU/kezikonyv/oktatoanyagok/elso-pr/) to learn the review workflow.
+**Következő:** [Az első pull request átnézése](/hu-HU/kezikonyv/oktatoanyagok/elso-pr/), hogy megismerje az átnézési folyamatot.
 
-For more on agents: [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/). For dispatch details: [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).
+További információ az ügynökökről: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/). Az indítás részleteiről: [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).

@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: Mimari
+description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Genel bakış
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center, portlar ve adaptörler deseniyle özellik öncelikli Clean Architecture’ı izler. Kod tabanı iş alanları (özellikler) etrafında düzenlenmiştir ve katı bağımlılık kuralları otomatik bir mimari testiyle uygulanır.
 
-## A thin client over a headless server
+## Headless bir sunucu üzerinde ince istemci
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center bir **ince istemci mimarisidir**. Hiçbir istemci veritabanını açmaz — verinin sahibi headless bir **`cc_server`** sürecidir (küçük bir `global.db` artı her çalışma alanı için tembelce açılan bir SQLite dosyası) ve veriyi WebSocket RPC üzerinden sunar. Masaüstü uygulaması, web derlemesi ve telefon yoldaşı, hepsi o tek RPC bağlantısı üzerinden çizen istemcilerdir.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Masaüstü, ilk açılışta sunucusuna nasıl ulaşacağını seçer: **yerel** (bu makinede bir `cc_server` başlatır ve loopback üzerinden konuşur — varsayılan budur) ya da **uzak** (başka bir yerdeki `cc_server`’a güvenli bir WebSocket üzerinden bağlanır). Web istemcisi her zaman uzaktır. Önyükleme çözümleyicisi (`bootstrap/server_backend.dart`), Riverpod var olmadan önce yolu seçer, ardından `rpcClientProvider`’ı bağlı istemciyle geçersiz kılar — böylece her özellik yerel bir veritabanı yerine sunucu üzerinden okur ve yazar.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+RPC katmanının kendisi **durumsuzdur**: bir oturumun kimliği doğrulanır, ama oturum bir çalışma alanına bağlı değildir. Çalışma alanı kapsamlı her çağrı, kendi `workspace_id` değerini argümanlarında taşır ve gönderici böyle bir çağrıyı bu değer olmadan reddeder. İki istemcinin tek bir sunucuda farklı etkin çalışma alanları tutabilmesini sağlayan şey budur; sunucunun elinde anlaşmazlığa düşülecek bir "geçerli çalışma alanı" yoktur — ve bu, yalıtımın bağlantı başına değil, çağrı başına uygulandığı anlamına gelir.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/) for the full client matrix and what runs where.
+Bu, yirmi bir üyeli — on beş paket artı altı uygulama — tek bir çözümlenmiş lockfile’a sahip bir **Dart workspace**’tir; çalışma alanı kökü masaüstü+web uygulamasıdır (`control_center`). Altı uygulama şunlardır: headless sunucu ikilisi (`cc_server`), headless filo yürütücüsü (`cc_worker`), telefon PWA’sı (`cc_remote`), WebSocket relay broker’ı (`cc_signaling_server`), Widgetbook galerisi (`cc_gallery`) ve genel demo barındırıcısı (`cc_demo_server`). On beş paket şunlardır: `cc_ui` (tasarım sistemi), `cc_domain` (saf Dart paylaşılan çekirdek: varlıklar, değer nesneleri, portlar, olaylar ve her özelliğin alan katmanı), `cc_harness` (yerleşik ajan çekirdeği: saf Dart bir ajan döngüsü — mesajlar, sağlayıcı portu, araçlar, sıkıştırma, yönlendirme, kancalar, alt ajanlar — `dart:io` olmadan ve başka bir `cc_*` bağımlılığı olmadan), `cc_harness_runtime` (yerleşik harness çalışma zamanı adaptörü: yalnızca VM akış sağlayıcıları, OAuth/PKCE kimlik bilgisi aracılığı, kimlik bilgisi depoları ve genel araç kümesi — harici CLI kurulu olmadan ajanları çalıştırır), `cc_rpc` (istemci taşıma katmanları), `cc_host` (sunucu çekirdeği), `cc_data` (uzak depolar), `cc_persistence` (sunucu tarafı DB), `cc_server_core` (uygulama-sunucu kompozisyonu + kimlik/mevcudiyet/filo/eval çalışma zamanı), `cc_infra` (yalnızca VM adaptörleri), `cc_mcp` (MCP araçları), `cc_mcp_client` (harici MCP sunucuları için istemci; araçlarını yerel kayıt defterine köprüler), `cc_markdown` (depo içi markdown motoru), `cc_natives` (FFI yaprağı) ve `system_audio_capture`. Tam istemci matrisi ve neyin nerede çalıştığı için bkz. [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/).
 
-## Dependency rule
+## Bağımlılık kuralı
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Alan katmanı**: saf Dart varlıklar, değer nesneleri, depo arayüzleri, portlar ve alan hizmetleri. Hiç altyapı import’u yok (dio, drift ya da ağ modeli yok).
+- **Sunum katmanı**: ekranlar, widget’lar, notifier’lar. Doğrudan drift/DAO/veri katmanı erişimi yok; her şey Riverpod provider’ları → depolar üzerinden gider.
+- **Altyapı katmanı**: alan portlarının ve depo arayüzlerinin somut uygulamaları. Alana bağımlıdır, tersi asla.
 
-## Feature structure
+## Özellik yapısı
 
-The full feature shape is:
+Tam özellik yapısı şudur:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+`lib/features/` altında dördünü birden gerçekten taşıyan çok az özellik var ve bu boşluklar tesadüfi değil, bilgilendiricidir. Paylaşılan çekirdek her özelliğin `domain/` dizinini `cc_domain` içine aldı ve ince istemci hiçbir depo uygulaması barındırmıyor; bu yüzden `lib/` altındaki çoğu özellik `presentation/` artı `providers/` ve başka bir şey değil. İstemcide ayakta kalan bir `data/` veya `domain/` dizini, gerçekten istemci tarafı olan bir şeyi işaret eder.
 
-Two named exceptions are worth knowing:
+Bilinmeye değer iki adlandırılmış istisna var:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** yalnızca provider’lardan oluşur. Ayarları ve durum arayüzü `settings/` altında yaşar ve araç yüzeyinin kendisi bir özellik klasörü değil, bir pakettir (`cc_mcp`).
+- **`orchestration`** ve **`plan_studio`** yalnızca `presentation/` ve `providers/` taşır.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/) for the model.
+**`guardrails`** özelliği alan katmanını kök uygulama yerine `cc_domain/features/guardrails/` içine koyar, çünkü bunu sunucu uygular: bir kural, bir kapsamda bir `ActionClass`’ı (ya da bir kabuk `commandPrefix`’ini) bir karara — `allow`, `prompt` ya da `deny` — eşler; kurallar çalışma alanı başına saklanır ve yönetilen her ajan eylemi çalışmadan önce politika zincirinden çözümlenir. Çözümleme `space > agent > workspace > mode preset > built-in default` sırasını izler ve **eşleşen kurala sahip ilk kapsam karar verir**; en kısıtlayıcı olma yalnızca tek bir kapsam içinde ve bir eylemin bildirdiği birkaç sınıfı birleştirmede beraberliği bozar. Operatöre bakan yüzey, `/workspaces/<id>/settings/workspace/permissions` adresindeki Ayarlar → Çalışma alanı → Ajan izinleri’dir. Model için bkz. [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/).
 
-## Shared kernel
+## Paylaşılan çekirdek
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/`, 3+ özellik arasında paylaşılan varlıkları ve depoları barındırır. Sıfır altyapı bağımlılığıyla saf Dart’tır; hem Flutter istemcisinin hem de Flutter’sız sunucu ikilisinin aynı tanımları import etmesini sağlayan da budur:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Çekirdek varlıklar: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Kimlik ve çok oyunculu: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Bellek varlıkları: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Paylaşılan değer nesneleri: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Paylaşılan portlar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Alan hizmetleri: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + olay türleri (çalışma alanı/ajan, PR/inceleme, mesajlaşma, biletleme, pipeline, orkestrasyon, bellek, takvim/toplantılar, kimlik ve üyelik, gözlemlenebilirlik)
 
-## Identity & multiplayer
+## Kimlik ve çok oyunculu
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center çok kullanıcılıdır: insanlar ve ajanlar, bir `Principal` ile birleştirilen eşit aktörlerdir. Bir çalışma alanı üyesi, bir `Workspace`’e bir `WorkspaceRole` ile bağlanan bir `User`’dır (`owner`/`admin`/`member`/`viewer`/`guest`). **Erişim sınırı üyeliktir** — bir eşleştirme anahtarı değil — ve depo başına izinler, çalışma alanı üyeliğinin forge’dan daha fazla yetki vermesini engeller. Yeni bir sunucuda oluşturulan ilk kullanıcı kurulumun sahibidir; diğerleri davetle ya da OIDC ile katılır. Bir çalışma alanı oluşturmak, o kullanıcıyı `owner` olarak damgalar.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Gerçek zamanlı işbirliği bir CRDT değil, **yetkili sunucu + alan başına son yazan kazanır (LWW)** yaklaşımıdır. Mevcudiyet (kim burada, nerede, imleçler, yazma, bir ajanın canlı durumu ve çalışma maliyeti) **asla kalıcılaştırılmayan** ayrı bir **geçici hattır**; kalıcı durum ise iyimser değişiklik + sunucu yeniden temellendirmesi + LWW omurgası üzerinde ilerler. İnsanlar ve ajanlar tek bir kadroyu paylaşır. Tek bir insan operatör varken mevcudiyet hattı boş durur ve hiçbir kadro arayüzü görünmez — çok oyunculu olmak yalnız kullanıcıya hiçbir maliyet çıkarmaz.
 
-## Ports and adapters
+## Portlar ve adaptörler
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Portlar, alan katmanındaki soyut arayüzlerdir. Adaptörler, altyapıdaki somut uygulamalardır. Headless sunucu verinin sahibi olduğu ve Flutter’sız derlenmesi gerektiği için neredeyse her adaptör yalnızca VM’e özeldir ve `packages/cc_infra/lib/src/` altında, ilgi alanına göre düzenlenmiş olarak yaşar:
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Adaptör konumu                                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (istemci tarafı: sunucu olaylarını yerel olarak işler)                             |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp ve GitHub Issues, `cc_infra/lib/src/tickets/sync/` içindeki bilet eşitleme adaptörleridir; yerel biletler `TicketProviderPort` olmadan çalışma alanı veritabanında yaşar. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (saf Dart bir alan hizmeti — hiçbir altyapıya ihtiyaç duymaz) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Uygulamanın kompozisyon kökü (`di/providers.dart`), istemci tarafı portları Riverpod provider’ları aracılığıyla uygulamalara bağlar; sunucu ise adaptörlerini `cc_server_core` içinde bir araya getirir.
 
-## State management
+## Durum yönetimi
 
-**Riverpod** for all client state:
+Tüm istemci durumu için **Riverpod**:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- Değiştirilebilir durum için `Notifier<T>` ve `AsyncNotifier<T>`
+- Asenkron veri için `FutureProvider<T>`
+- Listeler ve canlı satırlar, RPC abonelikleri üzerinden `AsyncValue<List<T>>` olarak gelir — sunucu içeride Drift `.watch()` kullanır; hiçbir istemci Drift açmaz
+- MCP araçları bağımlılıklarını tipli kurucu parametreleri olarak alır, asla `Ref` olarak değil
 
-## Database
+## Veritabanı
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+İki veritabanına bölünmüş **Drift** (SQLite); ikisi de `cc_persistence` içinde:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — gerçekten sunucu geneli olan az sayıda tablo: çalışma alanı kaydı, kullanıcılar/tercihler/eşleştirilmiş aygıtlar, SSO bağlantıları, kurulum geneli sunucu ayarları, yönetilen eylem politikaları (çalışma alanı korumalarını yalnızca sıkılaştırabilen kurulum geneli bir sınırlama), kullanıcı başına haber akışı, filo kuyruğu (worker’lar/işler/yerleştirme günlüğü), kimlik doğrulama öncesi `workspace_routes` dizini ve kurulum meta verileri. Önyükleme yalnızca bu dosyayı açar, böylece çalışma alanları ne kadar geçmiş biriktirirse biriktirsin başlangıç maliyeti sabit kalır. Buraya bir tablo eklemek, bir ratchet testinin gerekçelendirmenizi zorunlu kıldığı bir yalıtım kararıdır.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — her çalışma alanı için bir _dizin_; içinde bir SQLite dosyası artı yalnızca o çalışma alanına ait olan her şeyi barındırır, böylece bir konuşmanın worktree’leri ve ajan dosyaları veritabanının yanında durur ve onunla birlikte silinir. Neredeyse her şey burada yaşar: ajanlar, alanlar, biletler, bellek, pipeline’lar, toplantılar, kod grafiği, incelemeler, depolar. Dosyalar ilk dokunuşta `WorkspaceDatabaseManager.of(workspaceId)` üzerinden tembelce açılır ve o anda kendi `quick_check`, FTS/tetikleyici kurulumu ve `vector_init` işlemlerinin bedelini öder.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Her iki yarı da sıkıştırılmış bir v1 temelinden başladı — `onCreate` geçerli şemayı oluşturur — ve göç adımları yalnızca dağıtılmış bir veritabanının ileriye taşınması gerektiğinde eklenir.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Bir çalışma alanı tek bir dosya olduğundan, bir çalışma alanını dışa aktarmak tablo tablo bir döküm değil, tek bir `VACUUM INTO` deyimidir (`workspace.export`); `workspace.import` böyle bir dosyayı sahiplenir ve gömülü `workspace_meta`yı kullanarak kendi dosyasının yeniden mi sahiplenildiğini yoksa başka bir kurulumdan mı geldiğini ayırt eder.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Her iki veritabanının sahibi de `cc_persistence`tır ve yalnızca `cc_server` tarafından açılır; hiçbir istemci DB açmaz — her istemci RPC üzerinden okur/yazar. Tablolar `packages/cc_persistence/lib/database/tables/` içinde, DAO’lar `.../daos/` içinde tanımlanır; alan varlıkları saf Dart’tır, Drift tablo sınıflarından ayrıdır ve eşleme veri katmanlarında yapılır. FTS5 tam metin aramasını, `sqlite_vector` ise gömme vektörlerini işler; ikisi de yalnızca sunucuda çalışır; her iki veritabanı da WAL günlük kipinde `PRAGMA foreign_keys=ON` çalıştırır.
 
-## Routing
+## Yönlendirme
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**; geri kalan her şeyi belirleyen tek bir olguyla: **uygulama içindeki her hedef, `/workspaces/:workspaceId/…` biçiminde çalışma alanı öneki taşır**. URL’deki çalışma alanı kimliği, etkin çalışma alanı için tek doğruluk kaynağıdır — `activeWorkspaceIdProvider` rotadan sürülür, tersi değil — bu yüzden önekli bir rota dışında çalışma alanı kapsamlı veriyi okumak, kimliğini alacak bir yer bulamaz.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- `router/routes.dart` içindeki, her biri çalışma alanı kimliğini ilk argümanı olarak alan rota kurucu _fonksiyonları_, dizge sabitleri değil
+- Bağlam öncesi dört rota öneksizdir: `/splash`, `/onboarding`, `/signed-out` ve `/workspaces` (seçici)
+- `ShellRoute` uygulama kabuğunu sarar; bu dört yüzey onun dışında tam ekran işlenir
+- Kimlik doğrulama koruması: tamamlanmamış kurulum `/onboarding` adresine, forge kimlik bilgisi kaybolmuş tamamlanmış bir kurulum ise `/signed-out` adresine gider. Tamamlanmış olmak, oturum açmış kullanıcı için en az bir forge’un bağlı olması ve en az bir çalışma alanının var olması demektir — özellikle GitHub değil; ayrıca `gh` CLI bir kimlik doğrulama yöntemi değildir
+- `features/auth/providers/` içindeki onboarding kapısı
 
-## Networking (server-side)
+## Ağ (sunucu tarafı)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Tüm harici HTTP sunucuda yaşar. İstemciler GitHub’a, Linear’a ya da Google’a asla doğrudan bağlanmaz — sunucu RPC işlemlerini çağırırlar ve uzak medya bile asıl kaynaktan değil, sunucunun `/proxy/media` uç noktası üzerinden getirilir.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- `packages/cc_infra/lib/src/` içindeki **dio** istemcileri: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` ve `GoogleCalendarApiClient`
+- Interceptor’lar aracılığıyla kimlik doğrulama token’ı enjeksiyonu; buna 401’de token’ları yenileyen, `cc_server_core` içindeki hesap başına bir Google OAuth interceptor’ı da dahildir
+- Tüm hatalar `packages/cc_infra/lib/src/network/error_mapper.dart` üzerinden eşlenir → `cc_domain` içinde tanımlı tipli `AppException` alt sınıflarına
 
-## Security
+## Güvenlik
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Önemli kimlik bilgileri sunucuda durur: ajan başlatmaları için GitHub ve biletleme token’ları, LLM sağlayıcı anahtarları ve OAuth token’ları, hepsi sunucunun veri dizini altında ya da ortamında yaşar. İstemci anahtarlığında kalanlarsa kendi aygıt kimlik bilgisi ve uzak bir sunucu için eşleştirme anahtarıdır.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Sırlar `flutter_secure_storage` içinde (macOS anahtarlığı, Windows kimlik bilgisi yöneticisi, Linux libsecret) — istemcinin aygıt kimlik bilgisi ve uzak eşleştirme anahtarları, sağlayıcı token’ları değil
+- Yalnızca hassas olmayan tercihler için `shared_preferences` (tema, yazı tipi, yerleşim)
+- Eski kurulumlardan kalan sağlayıcı sırları, `features/auth/providers/credential_migration.dart` tarafından bir kez sunucuya devredilir ve ardından istemci anahtarlığından silinir
 
-## Architecture enforcement
+## Mimari kısıtlarının uygulanması
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Mimari kısıtlar, `test/core/architecture_constraints_test.dart` tarafından doğrulanır; bu test, bağımlılık kuralları ihlal edilirse başarısız olur.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): how isolation is enforced
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): the dispatch flow
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/): cross-feature communication
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/): the thin-client server model and the client matrix
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): yalıtım nasıl uygulanır
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): gönderim akışı
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): özellikler arası iletişim
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/): ince istemci sunucu modeli ve istemci matrisi

@@ -1,241 +1,260 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Creează un șablon de pipeline
+description: Redactează un șablon de flux DAG în editorul de pipeline-uri — adaugă noduri, leagă-le, declară intrări și fă-l să poată rula.
 slug: ro-RO/manual/ghiduri-practice/creeaza-pipeline
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Șabloanele de pipeline se redactează în setările spațiului de lucru. Intrarea
+**Pipeline-uri** din bara laterală a spațiului de lucru este _coada de rulare_,
+nu lista de șabloane — nu are nicio acțiune de „creare șablon”.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ro-RO/manual/referinta/pasi-pipeline/).
+Pentru ce înseamnă fiecare tip de pas, cheie de corp și câmp de configurare,
+vezi [referința tipurilor de pași din
+pipeline](/ro-RO/manual/referinta/pasi-pipeline/).
 
-## Create a template
+## Creează un șablon
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Mergi la **Setări → Spațiu de lucru → Șabloane pipeline**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Apasă **Șablon nou**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Nu există niciun dialog pentru id. Editorul se deschide imediat pe un schelet
+precompletat numit **Pipeline nou**, cu un id alocat automat (`pipeline_1`,
+apoi `pipeline_2`, …). Fă clic pe titlul din antet ca să-l redenumești.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Pânza nu este goală: un nod de intrare **Trigger**, un nod de agent cu prompt
+etichetat **Step** și o sentinelă terminală care încheie rularea. Sentinela nu
+este desenată. Editorul recablează acel terminal ascuns către fiecare destinație
+accesibilă, așa că munca pe care o atașezi după **Step** rulează oricum.
 
-## Add nodes
+## Adaugă noduri
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Bara laterală **Bibliotecă de noduri** stă permanent în partea stângă a
+editorului. Filtrează-o cu caseta **Caută noduri** și trage o intrare pe pânză —
+nodul ajunge exact acolo unde îl lași, fără nicio conexiune de intrare.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Nod din paletă                  | Tip de pas | Ce face                                                                                        |
+| ------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen     | Rulează un script shell cu substituție de `{{state}}`; nu se trimite niciun agent               |
+| **Open conversation**           | listen     | Deschide singurul spațiu vizibil al rulării și checkout-ul lui; nodurile de agent se alătură acestei săli |
+| **Clone PR branch**             | listen     | Descoperă ramura head a PR-ului prin `gh pr view` și o clonează în directorul rulării            |
+| **Post PR comment**             | listen     | Publică constatările consolidate pe PR ca un comentariu de revizuire GitHub                     |
+| **Reviewer (prompt)**           | listen     | Trimite un agent revizor specialist; suspendă până când agentul își trimite rezultatul           |
+| **Consolidate (join)**          | join       | Așteaptă mai multe ramuri din amonte, apoi cere unui agent să le consolideze ieșirile            |
+| **Custom prompt**               | listen     | Nod generic condus de un prompt, rutat prin corpul `promptAgent`                                 |
+| **Post to space**               | listen     | Trimite un mesaj într-un spațiu de mesagerie                                                     |
+| **Condition / switch (router)** | router     | Ramifică fluxul în funcție de o valoare de stare                                                 |
+| **If file exists (router)**     | router     | Rutează `"true"` când o cale există în clone, altfel `"false"`                                   |
+| **Any file exists (OR router)** | router     | Rutează `"true"` când există oricare dintre căile listate                                        |
+| **All conditions (AND router)** | router     | Rutează `"true"` doar când există toate căile listate                                            |
+| **Team dispatch**               | listen     | Trimite o echipă întreagă și suspendă până când aceasta termină                                  |
+| **Approval gate**               | listen     | Face o pauză pentru o decizie de aprobare                                                        |
+| **For each (map)**              | forEach    | Redă un prompt pentru fiecare element, apoi trimite agentul o singură dată cu acele prompturi concatenate |
+| **Call sub-pipeline**           | listen     | Rulează alt șablon ca pas imbricat                                                               |
+| **Clean up worktrees**          | listen     | Elimină worktree-urile izolate învechite; determinist, nu se trimite niciun agent                |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Biblioteca le grupează sub **Flux și logică**, **Revizuire PR**, **Agenți**,
+**Mesagerie** și **Cod**. Nu există un grup Demo.
 
-## Wire nodes together
+## Leagă nodurile între ele
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Fiecare nod de lucru are un **port de ieșire** circular pe marginea din dreapta.
+Trage din acel port pe alt nod ca să le conectezi. Declanșatorii de pornire
+funcționează la fel: fiecare își are propriul port, așa că un fir din **Program**
+nu pleacă și din **Rulare manuală**. Apasă **Adaugă pas** (`+`) imediat după un
+nod ca să inserezi un tip în urma lui. Treci cu mouse-ul peste mijlocul unei
+muchii existente și apasă × ca să o deconectezi.
 
-Connections are also edited from the node that _receives_ them:
+Conexiunile se editează și din nodul care le _primește_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Selectează nodul din aval. Panoul lui de configurare se deschide în dreapta.
+2. Derulează până la **Triggers from** și atinge cipul fiecărui nod din amonte
+   pe care acesta trebuie să-l asculte. Atingerea unui cip selectat elimină
+   conexiunea.
+3. Dacă un nod din amonte este un router, sub cipuri apare un bloc **Chei de
+   rută** cu câte un câmp **Cheie de rută de la &lt;nod&gt;** pentru fiecare
+   muchie de router. Introdu cheia pe care se declanșează acea muchie — `true`
+   sau `false` pentru routerele de tip „există fișier”, ori numele cazului
+   pentru un switch.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Fiecare nod de declanșare este un punct de intrare. Un nod poate asculta mai
+multe noduri din amonte (fan-in) și poate alimenta mai multe noduri din aval
+(fan-out), iar graful trebuie să rămână aciclic — nimic din editor nu te oprește
+să cablezi un ciclu, așa că verifică-ți munca.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Sentinela terminală este filtrată din pânză, așa că nu poate fi selectată.
+Editorul o recablează către fiecare destinație accesibilă de fiecare dată când
+graful se schimbă, așa că munca pe care o atașezi după **Step**-ul precompletat
+rulează oricum. Un graf gol (un declanșator fără succesori de lucru) listează
+declanșatorul însuși, ca o rulare să se încheie imediat.
 
-## Configure a node
+## Configurează un nod
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Selectează un nod ca să-i deschizi panoul de configurare. Ce câmpuri apar
+depinde de corpul nodului.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Fiecare nod are **Etichetă**, **Chei de intrare** (chei de stare separate prin
+virgule, citite la momentul execuției) și, sub **Avansat**, **Reducer**,
+**Timeout (ms)**, **Încercări de reîncercare**, **Continuă dacă acest pas
+eșuează** și **Schemă de ieșire**. Nodurile listen și join își pot comuta și
+**Tipul** între cele două.
 
-### Open conversation
+### Deschide o conversație
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Adaugă un selector de **domeniu de depozite** (ce depozite ale spațiului de
+lucru se extrag; gol înseamnă niciunul), un **Nume spațiu** și o casetă de
+selectare **Deschide o conversație în el**. Când caseta este bifată, un câmp
+**Nume conversație** denumește fluxul cu care se deschide sala. Nodurile de
+agent se alătură acestei săli — nu deschid una proprie.
 
-### Prompt agent
+### Agent cu prompt
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Adaugă **Agent** (ce agent se trimite), **Prompt** (folosește `{{key}}` pentru a
+face referire la intrări sau la ieșiri din amonte) și **Cheie de ieșire**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Timeout (ms)** este în _milisecunde_, nu în secunde — `900000` înseamnă 15
+minute. Dacă introduci `900`, pasul primește 0,9 secunde.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Modul de conversație sub care rulează un nod de agent cu prompt nu are niciun
+câmp în editor pe nodul de agent. El călătorește în `extras['mode']` (`chat`,
+`plan` sau `review`) pe nodul **Open conversation** care a creat sala (implicit
+`review`). Dacă îl setezi pe un pas de agent, este ignorat. Cheia se potrivește
+exact: orice altă scriere este ignorată în silență.
 
-### Bash script
+### Script Bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Adaugă **Script Bash**. Nu există câmpuri pentru director de lucru sau mediu,
+pentru că niciunul nu este configurabil:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Toate nodurile bash dintr-o rulare folosesc același director curent,
+  `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` este injectat din depozitul de credențiale, așa că `gh` și
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` funcționează fără
+  configurare.
+- Scriptul este lansat ca executabilul literal `bash`, deci `bash` trebuie să
+  fie în `PATH`-ul gazdei serverului. Aceasta este o considerație pentru
+  Windows.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Un router evaluează o condiție și returnează o cheie de rută; motorul
+declanșează doar muchia din aval a cărei cheie de rută se potrivește și
+marchează celelalte ramuri ca sărite.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Selectarea unui router înlocuiește câmpul **Cheie de ieșire** cu editorul de
+condiții. Alege unul dintre cele patru moduri:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Fișier(e) există — oricare** — rutează `"true"` când există oricare dintre
+  căile listate.
+- **Fișierele există — toate** — rutează `"true"` doar când există toate căile
+  listate.
+- **Comparație** — compară o valoare de stare cu un literal.
+- **Switch** — rutează după valoarea unei chei de stare, cu un caz implicit.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Apoi setează cheile de rută corespunzătoare pe muchiile de ieșire (vezi
+[Leagă nodurile între ele](#leagă-nodurile-între-ele)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ro-RO/manual/referinta/pasi-pipeline/).
+Grupurile booleene `and` / `or` / `not` sunt acceptate de corp, dar nu pot fi
+create din acest formular — au nevoie de un arbore de predicate scris manual
+sub `extras.predicate`. Vocabularul complet de predicate și operatori se află
+în [referința tipurilor de pași din
+pipeline](/ro-RO/manual/referinta/pasi-pipeline/).
 
-### Join
+### Îmbinare
 
-No configuration of its own: it waits for all of its upstream steps.
+Nu are configurare proprie: așteaptă toți pașii săi din amonte.
 
-### Approval gate
+### Poartă de aprobare
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Poarta trimite agentul aprobator într-o conversație ascunsă, cu promptul porții,
+și suspendă. Aprobatorul îți cere decizia în conversație și o trimite cu
+`submit_output` ca `{ "decision": "approved" | "rejected", "reason": "..." }`.
+Decizia ajunge sub cheia de ieșire (implicit `approval_decision`), așa că un
+router de tip switch din aval poate ramifica pe baza ei.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Setează **Agent** pe aprobator și **Prompt** pe întrebarea porții. Poarta se
+rezolvă prin `submit_output` ca `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Nodurile Reviewer (prompt) trimit la fel.
 
-### Team dispatch
+### Trimitere de echipă
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Adaugă **ID echipă** și **Mod de dispatch**. Selectorul oferă exact două
+moduri:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — o sarcină per membru, suspendă până când toate se termină.
+- `manager` — trimite liderul, care deleagă.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Orice altă valoare stocată se comportă ca `allParallel`. Setează **Reducer** pe
+`append` pentru a colecta rezultatul fiecărui membru într-o listă sub cheia de
+ieșire.
 
-### For each and Call sub-pipeline
+### For each și Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** iterează implicit peste cheia de stare `items` (`extras.iterableKey`
+/ `extras.itemKey` pe nod). Redă promptul o dată pentru fiecare element
+(`{{item}}` implicit) și trimite agentul **o singură dată**, cu acele prompturi
+concatenate. O colecție goală se încheie imediat, cu o listă goală. Nu este o
+trimitere paralelă per element.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** suspendă până când rularea copil ajunge într-o stare
+terminală, apoi fuzionează starea finală a copilului sub cheia de ieșire
+(implicit `subflow_result`). Indică spre un copil cu `extras.templateId`. Un
+șablon nu se poate apela pe sine; un copil eșuat sau anulat face să eșueze
+pasul părinte, care alimentează apoi politica de reîncercare și de
+continuare-la-eșec a acelui pas.
 
-## Declare inputs and allow manual runs
+## Declară intrări și permite rulări manuale
 
-Both live behind **Manual run** in the editor header.
+Ambele se află în spatele butonului **Rulare manuală** din antetul editorului.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Apasă **Rulare manuală**.
+2. Activează **Permite rulare manuală**. Acest comutator se salvează imediat —
+   creează (sau șterge) rândul de declanșator `manual` care face șablonul să
+   apară în lansatorul de rulări.
+3. Setează **Max. rulări paralele** dacă vrei o limită (lasă gol pentru
+   nelimitat). Pornirile suplimentare așteaptă într-o stare `queued` până când
+   se eliberează un loc.
+4. Apasă **Adaugă intrare** pentru fiecare câmp de formular pe care o rulare
+   manuală ar trebui să îl colecteze:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Câmp                  | Descriere                                                            |
+| --------------------- | -------------------------------------------------------------------- |
+| **Cheie**             | Cheia de stare sub care se stochează valoarea; fă referire la ea ca `{{key}}` |
+| **Etichetă**          | Eticheta afișată (implicit, cheia)                                   |
+| **Tip**               | Text, Text pe mai multe linii, Număr, Comutator, Selectare, Depozit  |
+| **Opțiuni**           | Alegeri separate prin virgulă, doar pentru Selectare                 |
+| **Valoare implicită** | Valoare precompletată                                                |
+| **Placeholder**       | Text indicativ în interiorul câmpului gol                            |
+| **Text de ajutor**    | Text auxiliar sub câmp                                               |
+| **Obligatoriu**       | Dacă formularul de rulare blochează la o valoare goală              |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+O intrare **Depozit** afișează un selector peste depozitele spațiului de lucru
+și populează `repo_id`, `repo_local_path`, `repo_full_name` și — când depozitul
+are un remote GitHub — `repo_owner` și `repo_name` în payload-ul rulării.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Apasă **Salvează** în dialog. Modificările intrărilor sunt incluse în ciornă;
+   ele persistă când salvezi șablonul.
 
-## Save and enable
+## Salvează și activează
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/).
+1. Apasă **Salvează** în antetul editorului. Antetul afișează „Modificări
+   nesalvate” până când faci asta.
+2. Întoarce-te la **Setări → Spațiu de lucru → Șabloane pipeline** și verifică
+   dacă comutatorul din rândul șablonului este activat. Motorul refuză să
+   pornească un șablon dezactivat, iar un șablon dezactivat nu apare niciodată
+   în lansatorul de rulări.
+3. Ca să-l pornești automat, trage un declanșator din biblioteca de noduri pe
+   pânză — vezi
+   [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Run a pipeline manually](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)
-- [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
-- [Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
-- [Pipeline steps reference](/ro-RO/manual/referinta/pasi-pipeline/)
+- [Rulează un pipeline manual](/ro-RO/manual/ghiduri-practice/ruleaza-pipeline/)
+- [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
+- [Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
+- [Referința tipurilor de pași din pipeline](/ro-RO/manual/referinta/pasi-pipeline/)
 
-## Related concepts
+## Concepte conexe
 
-- [Pipelines](/ro-RO/manual/concepte/pipeline-uri/)
+- [Pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/)

@@ -1,149 +1,147 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: הגדרת התראות
+description: הפעילו או כבו קטגוריות, הגדירו Quiet hours וצליל, ודעו אילו התראות מגיעות אליכם ואיפה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/התראות
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+המדריך הזה מראה כיצד להגדיר התראות ומה כל הגדרה באמת שולטת בו.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+ההתראות מגיעות בשני משטחים. **מרכז ההתראות** — הפעמון שבשורת הכותרת — קורא פיד
+מתמשך לפי סביבת עבודה בשרת. **התראות קופצות של מערכת ההפעלה** הן נתיב נפרד,
+לשולחן העבודה בלבד, שניזון ממסגרות חיות שהשרת דוחף.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[גרסת הווב אינה מציגה התראות מערכת הפעלה]
+צינור ההתראות הקופצות נבנה רק באתחול שולחן העבודה. ב-`app.usectrl.dev` אין
+התראות קופצות של מערכת ההפעלה, אין צלילי התראות ואין רצועת באנרים סביבתית —
+הפעמון וההיסטוריה שלו עדיין עובדים, משום שהם קוראים את הפיד של השרת. ללקוח
+הטלפון אין כלל משטח התראות.
 :::
 
-## Turn categories on or off
+## הפעלה או כיבוי של קטגוריות
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. עברו אל **הגדרות → אישי → התראות**
+2. השאירו את **הפעלת התראות** דלוק
+3. הפעילו או כבו את הקטגוריות שאתם רוצים. יש בדיוק שש עשרה:
 
-| Category                  | Fires when                                                                 |
+| קטגוריה                  | נקראת כאשר                                                                 |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| הסוכן סיים            | סוכן סיים הרצה                                                    |
+| PR פורסם              | סוכן פרסם PR                                                    |
+| PR מוזג            | PR מוזג                                                            |
+| הודעות חדשות              | הודעה הגיעה למרחב שאינכם מביטים בו                        |
+| אוזכרת בבקשת משיכה | סקר ההתראות של GitHub ראה שאוזכרתם בבקשת משיכה                       |
+| התבקשה סקירה          | הסקירה שלכם התבקשה בפועל בבקשת משיכה שאינה טיוטה                       |
+| הסקירה אינה עדכנית        | קומיטים חדשים נחתו בבקשת משיכה שכבר סקרתם                  |
+| מוכן למיזוג           | בקשת משיכה שאתם מחבריה הפכה לניתנת למיזוג, או חדלה מלהיות                     |
+| החלטות סקירה          | סוקר אישר, ביקש שינויים, או שאישור שלו נדחה       |
+| בדיקות                    | CI נכשל בבקשת משיכה שאתם מחבריה, או התאושש                     |
+| שרשורי סקירה          | מישהו השיב בשרשור שאתם משתתפים בו או סימן אותו כנפתר                         |
+| כרטיס הוקצה           | כרטיס הוקצה                                                      |
+| סטטוס כרטיס השתנה     | כרטיס החליף סטטוס                                                    |
+| פגישה מתחילה בקרוב     | פגישה ביומן נכנסת לחלון ההתראה מראש שלכם                              |
+| לוח השנה נותק     | תוקף אסימון ה-OAuth של יומן מחובר פג                                 |
+| עדכוני מתחם מבודד         | מתחם מבודד הושתלט, פונה או נכשל                           |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+כל דבר שאינו ברשימה הזו אינו יכול להתריע או להיות מסונן — אין קטגוריית
+״כל השאר״.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+ההעדפות האלה עוקבות אחרי המשתמש שלכם בין מכשירים, כך שטלפון ומחשב נייד נשארים
+מסונכרנים. עוצמת הקול היא החריג המכוון ונשארת לכל מכשיר בנפרד.
 
-## Set quiet hours
+## הגדרת Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. באותו עמוד, הפעילו את **Quiet hours**
+2. הקלידו שעת התחלה ושעת סיום בתבנית `HH:MM` (חלון ברירת המחדל הוא 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+במהלך Quiet hours התראות שאינן דחופות מושלכות — אינן נכנסות לתור ואינן מוצגות
+שוב מאוחר יותר.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+שתי קטגוריות הן **דחופות** ותמיד נמסרות, תוך עקיפת Quiet hours _ו_מצב ריכוז:
+**פגישה מתחילה בקרוב** ו**PR פורסם**. התראת פגישה שרואים רק בדיעבד חסרת ערך,
+וזו הסיבה.
 
-## Choose a sound
+## בחירת צליל
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. גללו אל **צליל התראה**
+2. בחרו אחד מאחד עשר הצלילים המצורפים, או **ללא**
+3. לחצו על כפתור הבדיקה כדי לשמוע אותו, וכוננו את עוצמת הקול עם המחוון
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+האפליקציה מנגנת את הצליל בעצמה; התראת מערכת ההפעלה נמסרת בשקט, כך שלעולם לא
+תשמעו אותו פעמיים.
 
-## Set the meeting lead time
+## הגדרת זמן ההתראה מראש של פגישות
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. גללו אל **זמן התראה מראש**
+2. בחרו **5**, **10**, **15** או **30** דקות
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+זה פרק הזמן שלפני אירוע ביומן שבו נורית התראת **פגישה מתחילה בקרוב**. ברירת
+המחדל היא 5 דקות.
 
-## Know when a notification is suppressed
+## לדעת מתי התראה מושתקת
 
-A notification is dropped, silently, when any of these is true:
+התראה מושלכת, בשקט, כאשר אחד מאלה מתקיים:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- ההתראות כבויות באופן גלובלי, או שהקטגוריה שלה כבויה
+- אתם כבר נמצאים בנתיב שאליו היא הייתה מובילה אתכם — ולגבי הודעה, כבר נמצאים
+  באותו מרחב
+- מצב ריכוז פעיל והקטגוריה אינה דחופה
+- Quiet hours פעילים והקטגוריה אינה דחופה
 
-Those checks apply to OS toasts. The durable bell still records the event.
+הבדיקות האלה חלות על התראות קופצות של מערכת ההפעלה. הפעמון המתמשך עדיין רושם את
+האירוע.
 
-Two more suppressions live further upstream, in what the server sends at all:
+שני מנגנוני השתקה נוספים פועלים מוקדם יותר במעלה הזרם, במה שהשרת בכלל שולח:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- הודעה של **אדם** אחר בלי אזכור שלכם לעולם אינה הופכת להתראה
+- מרחבים של סוכן לסוכן מושתקים בסרגל הצד, ולכן הם לעולם אינם מקפיצים את תג
+  ההודעות שלא נקראו של האדם
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+בתוך מרחב אין פינה שקטה: כל שיחה מתריעה באותה מידה, כולל שרשורים. מצב הקריאה
+מוגדר לפי מרחב, ולכן הלא־נקרא נצבר על פני השיחות של מרחב ולא נעקב בנפרד לכל
+שיחה.
 
-## Read and clear the notification centre
+## קריאה וניקוי של מרכז ההתראות
 
-1. Click the bell in the title bar
+1. לחצו על הפעמון שבשורת הכותרת
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+החלונית הקופצת מציגה פעילות אחרונה, כשכל רשומה מקושרת ישירות למה שהיא עוסקת בו.
+פתיחתה **אינה** מסמנת הכול כנקרא — השתמשו ב**סימון הכול כנקרא** שבכותרת, או סמנו
+שורה בודדת. מצב הקריאה עוקב אחרי המשתמש שלכם בין מכשירים.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[ניקוי הכול הוא סימן מים, לא מחיקה]
+**ניקוי הכול** מטביע סימן מים לפי משתמש שמסתיר כל מה ישן יותר; השורות נשארות.
+בנפרד מכך, כל סביבת עבודה שומרת רק את **200** שורות הפיד האחרונות שלה, שנגזמות
+עם הגעת חדשות, בעוד הפעמון נרשם ל-**50** החדשות ביותר והחלונית הקופצת מציגה עד
+**15** מהן. היסטוריה מעבר לכך נעלמה, ללא קשר למצב הקריאה.
 :::
 
-## Troubleshooting
+## פתרון תקלות
 
-### No OS notifications on macOS
+### אין התראות מערכת הפעלה ב-macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+ההרשאה מתבקשת בנייטיב עם הפעלת האפליקציה. אם דחיתם אותה, הפעילו את Control Center
+מחדש תחת הגדרות מערכת → התראות; אין באפליקציה בקשה שיכולה לעורר אותה שוב.
 
-### Nothing arrives on the web build
+### שום דבר לא מגיע בגרסת הווב
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+כצפוי — לגרסת הווב אין צינור התראות של מערכת ההפעלה. השתמשו בפעמון.
 
-### The bell badge shows zero but there is clearly new activity
+### תג הפעמון מציג אפס אבל יש בבירור פעילות חדשה
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+עד שזרם סימוני הקריאה נפתר לאחר ההתחברות, רשומות מוצגות כנקראו כדי למנוע תג
+שמהבהב ואז מתרוקן. זה מתייצב ברגע שהסימון נטען.
 
-### An agent's run finished but nothing pinged me
+### ההרצה של סוכן הסתיימה אבל שום דבר לא התריע לי
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+בדקו שלא הייתם כבר במרחב שבו זה קרה — נתיב פעיל משתיק את ההתראה הקופצת של עצמו.
 
-## Related guides
+## מדריכים קשורים
 
-- [Use focus mode and soundscapes](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-ריכוז/)
-- [Triage your inbox](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)
-- [Curate your newsfeed](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/עדכוני-חדשות/)
+- [שימוש במצב ריכוז ובנופי צליל](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-ריכוז/)
+- [טריאז' לדואר הנכנס](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)
+- [עריכת עדכוני החדשות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/עדכוני-חדשות/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/)
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/)

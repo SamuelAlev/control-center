@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Inteligence kódu
+description: Proč agent potřebuje překladač, strukturální porovnávač a debugger a na co každý z nich umí odpovědět, když to ostatní neumí.
 slug: cs-CZ/prirucka/koncepty/inteligence-kodu
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center dává agentovi čtyři způsoby, jak kódu rozumět i jinak než čtením. Každý odpovídá na jinou otázku. Jsou čtyři právě proto, že žádný jeden mechanismus nezodpoví všechny.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mechanismus | Na co odpovídá | Co stojí |
+| --- | --- | --- |
+| **Graf kódu** | Co tu je a co na tom závisí | Průchod indexem; dotaz je levný |
+| **Jazykový server** | Přeloží se to opravdu a jaký je to typ | Proces serveru na každý projekt |
+| **Strukturální hledání** | Kde se objevuje tento TVAR | Rozbor na soubor |
+| **Debugger** | Co v tomto okamžiku a v tomto rámci platilo | Zastavený proces |
 
-## The gap the language server closes
+## Mezera, kterou uzavírá jazykový server
 
-The [code graph](/cs-CZ/prirucka/navody/hledani-kodu/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Graf kódu](/cs-CZ/prirucka/navody/hledani-kodu/) vzniká z tree-sitter: symboly, hrany volání, poloměr dopadu. Je rychlý, je levný a o **typech** neví nic. Neřekne ti, jestli se volání, které jsi právě napsal, přeloží, jestli to pole na objektu existuje, ani jestli přejmenování minulo re-export.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Bez jazykového serveru se to agent dozví až při testech, nebo se to nedozví vůbec. Napíše něco věrohodného, jde dál a chyba se ukáže o tři tahy později, přilepená k jiné změně.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Přínos proto není samotný nástroj `lsp`. `write`, `edit` a `apply_patch` jsou obalené: po každém zápisu soubor projde jazykovým serverem a k výsledku nástroje se připojí **nově zavedené** diagnostiky. Agent se dozví, že rozbil sestavení, v okamžiku, kdy ho rozbil, ať se zeptal, nebo ne.
 
-### Only new diagnostics
+### Jen nové diagnostiky
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Opakovat, co už agent slyšel, je horší než mlčet. Výsledek se zaplní šumem, který se naučí přeskakovat, a jediná nová chyba odejde s ním. Evidence daného běhu si vede, co už bylo nahlášeno, podle závažnosti, kódu a textu zprávy, **ne** podle pozice. Diagnostika, která jen sjela o čtyři řádky níž, se proto nehlásí znovu jako nová.
 
-### Lazy, and honest about being absent
+### Líně a upřímně o tom, že chybí
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Při startu se nespouští žádný server. Spustí se až s prvním požadavkem, který ho potřebuje, skoro vždy při první úpravě souboru, o který se hlásí. Nečinné servery se odklízejí. Hostitel, který se Dartu nikdy nedotkne, nespustí analyzátor.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Detekce je **průnik**: v checkoutu musí ležet kořenová značka *a zároveň* se musí najít binárka. Značka sama říká „tohle je projekt v Pythonu“ a nic o tom, jestli je server nainstalovaný. Binárka, kterou jde najít, sama říká, že hostitel má toolchain, a nic o tomto checkoutu. Teprve obojí dohromady znamená, že dotaz může projít. Nástroj, který se nabízí a pokaždé selže, je horší než ten, který v nabídce není.
 
-## Why structural search, when grep exists
+## Proč strukturální hledání, když už je tu grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` hledá znaky. Na jméno je to správný nástroj, na tvar špatný.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Strukturální vzor se parsuje **stejnou gramatikou jako soubor**. `dispose($X)` proto najde volání, ať je oddělené mezerami, zalomené, nebo zabalené, a tytéž znaky uvnitř řetězcového literálu nebo komentáře neshodí nikdy.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Od regulárního výrazu s pár kroky navíc se liší tím, že metaproměnná zopakovaná v jednom vzoru musí zachytit tentýž text:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+sedí na guard, který zavolá dispose na to, co právě otestoval, a nesedí na guard, který dispose zavolá na něco jiného. Taková třída chyb se textem vyjádřit nedá.
 
-### It runs on the tree-sitter already linked
+### Běží na tree-sitter, který už je nalinkovaný
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Druhý engine tu není. `cc_natives` už pro graf kódu načítá tree-sitter a jeho gramatiky, s cache zkompilovaných dotazů a tabulkou jazyků. Porovnávač je čistý Dart nad stromy, které se tak jako tak parsovaly. Druhý strukturální engine by znamenal druhý parser, druhou sadu gramatik, kterou je třeba sestavit a připravit na každé platformě, a dvě odpovědi na otázku „co je výraz volání“.
 
-### A fragment needs somewhere to live
+### Fragment potřebuje, kam ho zasadit
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Gramatika říká jen to, čím je celý *soubor*. Když se `dispose(x)` parsuje holé na nejvyšší úrovni Dartu, je to úplně platná **signatura funkce**: deklarace pojmenovaná `dispose` s parametrem `x`. Nikde není chyba, která by to prozradila. Porovnávač postavený na takovém rozboru hledá deklarace, volání nenajde a u vzoru, který se nikdy nečetl tak, jak vypadá, ohlásí „žádné shody“.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Vzor se proto zkouší po žebříčku opor: příkaz, výraz, člen třídy, nejvyšší úroveň. První, která ho přijme, vyhrává. Fragment, který nepřijme žádný kontext, se nahlásí jako nerozparsovatelný. Nehledá se a pak tiše nenajde.
 
-## Why a rewrite stages instead of writing
+## Proč se přepis připraví, místo aby se zapsal
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Strukturální přepis je nejširší úprava, kterou agent umí udělat: jeden vzor, čtyřicet souborů a výsledek řádek po řádku nečte nikdo. Ani model, ani člověk, který o přepis požádal. Zapsat ho a ohlásit „hotovo“ znamená, že první poctivý pohled na změnu je až `git diff` potom.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+`ast_edit` proto nahlásí, co by *udělal*: počet, soubory, místa shody. Změna se zapíše, teprve když ji `resolve` potvrdí. Díky tomu může před člověkem nejdřív ležet diff a volba Přijmout/Zahodit, než cokoli dopadne na disk.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Zápis je všechno, nebo nic. Každý soubor se porovná s obsahem zachyceným při přípravě. Mezi přípravou a zápisem mohl agent některý soubor upravit ručně, průchod diagnostik ho mohl přepsat, nebo se ho dotkl formátovač. Zapsat to přesto by tu práci zahodilo a diff by vypadal jako záměr. Jakýkoli nesoulad odmítne celou změnu: částečně provedený strukturální přepis nechá strom, který se nepřeloží ani v jednom z obou tvarů.
 
-## What a debugger answers that a print statement cannot
+## Co debugger zodpoví a příkaz print ne
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Smyčka s příkazem print je: přidej print, spusť to celé znovu, přečti výstup, print smaž. Každá otázka stojí celý běh testů a odpoví jen na to, na co ses zeptal *před* během.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Zastavený rámec odpoví najednou na každou otázku o tom okamžiku: každá lokální proměnná, každý volající a výraz vyhodnocený ve vlastním rozsahu rámce. U zaseknutého procesu, nebo u chyby, která se ukáže jednou z deseti běhů, je to rozdíl mezi odpolednem a minutou.
 
-### Bounded like an enclosure, and for the same reason
+### Ohraničený jako izolované prostředí, a ze stejného důvodu
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Adaptér debuggeru vlastní **zastavený proces**, který drží všechno, co ten proces drží: port, zámek, spojení s databází. Relace, kterou nikdo neřídí, je únik, který přežije tah, v němž vznikla. Proto je tu tvrdá TTL, přesně jedna relace na konverzaci a druhý `launch` se odmítne, místo aby první tiše nahradil. Agent, který spustí druhou, aniž první ukončil, o té první skoro jistě ztratil přehled.
 
-### One transport, two protocols
+### Jeden transport, dva protokoly
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol sdílí s Language Server Protocol rámování `Content-Length` a nic nad ním. Korelační klíče jsou jiné, tvar selhání je jiný a třetí typ zprávy (události) nemá v LSP protějšek. Rámování je na jednom místě, protokoly na něm sedí každý zvlášť.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Napsat rámování dvakrát by znamenalo dvě odpovědi na „zpráva sahá přes dva chunky“, „chunk nese tři zprávy“ a „server zapsal banner na stdout ještě před prvním rámcem“. Opravu by dostala jen jedna z nich.
 
-## Related
+## Související
 
-- [Search code with the code graph](/cs-CZ/prirucka/navody/hledani-kodu/) — the symbol and impact side
-- [Debug a failing test](/cs-CZ/prirucka/navody/ladeni-padajiciho-testu/) — the debugger, end to end
-- [Refactor structurally](/cs-CZ/prirucka/navody/strukturalni-refaktoring/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — every operation and argument
+- [Hledejte kód v grafu kódu](/cs-CZ/prirucka/navody/hledani-kodu/) — symboly a dopad
+- [Laděte padající test](/cs-CZ/prirucka/navody/ladeni-padajiciho-testu/) — debugger od začátku do konce
+- [Refaktorujte strukturálně](/cs-CZ/prirucka/navody/strukturalni-refaktoring/) — `ast_grep` a `ast_edit`
+- [Vestavěné nástroje agentů](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — každá operace a její argumenty

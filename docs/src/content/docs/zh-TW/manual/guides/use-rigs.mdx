@@ -1,97 +1,90 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: 給代理一台用於測試的機器
+description: 給代理一台用完即丟的瀏覽器、桌面、Android 模擬器或 iOS 模擬器——可即時觀看，也能隨時接手控制。
 slug: zh-TW/手冊/操作指南/使用機台
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**機台**是一台用完即丟的機器，代理需要實際試點什麼時就會開啟：載入一個頁面、
+在桌面應用程式裡四處點擊、在一支手機上東點西點。你可以即時觀看它工作，
+並在想接手時隨時接手控制。
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+隔離艙終端機、瀏覽器與桌面機台，都是採用一次性磁碟與受閘門管制網路的 VM。
+Android 與 iOS 則是由主機管理的模擬器：它們的裝置狀態用完即丟，
+但網路仍跟隨伺服器主機。
 
-## Set it up once
+## 設定一次就好
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+機台執行在代管 `cc_server` 的那台機器上——就是那台機器，而不是你眼前這台。
+面向使用者的一共有五種表面；桌面與行動表面需要在主機上進行設定：
 
-| Surface | Runs on | Setup |
+| 表面 | 執行於 | 設定 |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **終端機 (VM)** | 啟動受鎖定 Ubuntu 映像的 microVM | 無——首次使用時會自動取得映像 |
+| **瀏覽器 (VM)** | 啟動受鎖定 Debian 映像的 microVM，首次使用時安裝 Chromium、Firefox 或 WebKit | 無——同上 |
+| **電腦 (VM)** | QEMU 搭配內含 Chromium、Firefox、WebKit 與 GitHub 託管執行器 CLI 基準線的 Linux 桌面映像 | 安裝 QEMU（`brew install qemu`），然後在 **設定 → 伺服器 → 機台** 下**匯入**桌面映像 |
+| **Android** | Google 的 Android 模擬器 | 安裝 Android SDK、建立 AVD 並啟動它（見下文） |
+| **iOS 模擬器** | 伺服器 Mac 上的 CoreSimulator | 安裝 Xcode 與所需的 iOS 執行環境，然後在 **設定 → 伺服器 → 機台** 下安裝自動化橋接器 |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+終端機與瀏覽器機器都從以摘要鎖定的映像開機：確切的位元組內容事先就已指名，
+首次開機時取得一次並快取——每一種首次開機之後，後續機器完全略過下載，
+幾秒內就能開機完成。**設定 → 伺服器 → 機台**會顯示你的伺服器能啟動哪些項目，
+以及目前正在執行的每一台機器。
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+已安裝的桌面映像也能在同一頁管理：**匯入**會用較新的 qcow2 取代它，
+**刪除**則會移除它，讓你能安裝全新的建置。
 
-### Mobile devices are set up differently
+### 行動裝置的設定方式不同
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Android 與 iOS 都沒有我們提供的映像，而這並非疏漏。Android 系統映像來自
+Google 的 SDK；iOS 執行環境來自 Xcode。Android 方面，請安裝 Android Studio
+（或命令列版 SDK 工具），在 **裝置管理員** 中新增虛擬裝置並啟動它。
+接著機台頁面就會回報 Android 可用。
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+它也會明確告訴你漏了哪一個步驟——沒有 SDK、沒有模擬器、沒有虛擬裝置，
+或裝置單純沒有在執行——因為這四者各有不同的解法，而其中只有一種是下載。
+如果你從看不見 SDK 的 shell 啟動 `cc_server`，請把它匯出：
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+iOS 方面，伺服器本身必須執行於已安裝 Xcode 與 iOS 模擬器執行環境的 macOS 上。
+開啟 **設定 → 伺服器 → 機台**，然後按下**安裝 iOS 自動化橋接器**。
+伺服器會取得以總和檢查碼鎖定的 WebDriverAgent 成品、驗證它，並安裝到
+伺服器所擁有的自動化存放區。設定過程中不會啟動任何模擬器。
 
-## Open a machine
+## 開啟一台機器
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+機器以**分頁**的形式存在，就在聊天與 diff 旁邊——無論是在空間中或在 PR 頁面上，
+都在同一個 `+` 選單裡的 **機器** 之下：
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **電腦**——內含 Chromium、Firefox 與 WebKit 的 Linux 桌面
+- **Chromium**、**Firefox** 或 **WebKit**——一個瀏覽器
+- **Android**——正在執行的 Android 模擬器
+- **iOS 模擬器**——為這個對話建立的一次性模擬器
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+挑一個並按下**啟動機器**。分頁會說明開機進行到哪個階段
+（「正在啟動 microVM」、「正在等待客體上線」），而不是只在那裡轉圈圈。
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+這個分頁的範圍僅限該對話，代理工具也是如此。Chromium、Firefox 或 WebKit
+分頁與 `browser_use`，Android 與 `mobile_use`，或 iOS 模擬器與 `ios_use`，
+面對的都是同一台預設機器。額外的 UI 插槽是各自獨立的比較機器；
+代理工具一律使用預設的那一台。
 
-To build, install and start a Flutter app on Android:
+若要在 Android 上建置、安裝並啟動 Flutter 應用程式：
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+接著以 `install_apk` 與 `build/app/outputs/flutter-apk/app-debug.apk` 呼叫
+`mobile_use`，再依序使用 `start_app` 與 Android 套件名稱。`ui_dump`、
+螢幕擷取畫面與輸入會操控人類分頁中所顯示的同一台裝置。`stop_app`、
+`clear_app_data`、`uninstall_app`、`open_url`，以及 argv 形式的 `shell` 呼叫，
+涵蓋開發週期的其餘部分，而完全不必在伺服器主機上叫用 shell。
 
-To build, install and start a Flutter app on iOS Simulator:
+若要在 iOS 模擬器上建置、安裝並啟動 Flutter 應用程式：
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +92,179 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+接著以 `install_app` 與 `.app` 目錄呼叫 `ios_use`，再依序使用 `start_app`
+與 `plutil` 印出的套件識別碼。
+iOS 工具也提供 `stop_app`、`uninstall_app`、`open_url`，以及用於
+模擬器本機診斷的 argv 形式 `spawn` 動作。
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+桌面與瀏覽器顯示畫面會隨面板調整大小。iOS 則維持模擬器固定的點尺寸，
+並在其周圍補上黑邊。每一種表面仍然有兩條獨立的通道：代理取得小而省資源的
+螢幕擷取畫面，你則取得即時畫面。切換分頁會停止人類串流，因此背景中的機器
+不耗用任何顯示頻寬。
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+機台分頁不會自行啟動機器，版面還原時也不例外。這條規則可避免應用程式
+啟動時意外開機 VM 或建立模擬器裝置。
 
-## Drive the machine
+## 操控機器
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+只要沒有其他人持有專屬控制權——或是由你持有——畫布就任你輸入與點擊。
+當你持有這道鎖時，狀態標籤會顯示 **你有控制權**，代理仍可取得螢幕擷取畫面，
+而伺服器會在所有動作都必經的唯一瓶頸點拒絕它變更狀態的動作。
+你所做的一切都會以你的名義記錄下來。
 
-Press **Stop the machine** when you are done.
+完成後請按下**停止機器**。
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+控制權刻意設計成專屬：兩個行為者同時對一台機器輸入，會產生雙方都不想要的輸入。
 
-## Move things in and out
+## 把東西移進移出
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+在機台畫布上，複製與貼上雙向都能運作，拖曳檔案也是。
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**複製與貼上。** 在畫布上按下複製組合鍵，機器所複製的任何東西——文字、
+一張影像、一份檔案清單——都會落到你的剪貼簿上。貼上則把你的內容反向送出，
+並在機器內按下貼上。在 macOS 上組合鍵是 ⌘C/⌘V；⌃C 仍會以中斷訊號的身分
+送達客體 shell。在 Windows 與 Linux 上請用 ⌃C/⌃V——客體收到的按鍵與它原本
+就會收到的一樣，因此在客體終端機裡按 ⌃C 仍會中斷，而你自己的剪貼簿則不受影響。
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+背景不會同步任何東西。你在自己機器上複製的密碼，不會因為計時器觸發就送進
+VM 裡；它會在你貼上時才跨越過去。
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+貼上到機台預設為允許。從機台複製出去則會先跳出提示——可授予十分鐘權限，
+或在 **設定 → 伺服器 → 機台 → 剪貼簿存取** 下選擇**一律允許**。
+這兩個方向互相獨立，而且跟隨的是你，不是工作區。
 
-**Drag files in.** Drop them anywhere on the canvas.
+**將檔案拖入。** 把它們放到畫布上的任何位置。
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- 在 **瀏覽器 (VM)** 上，頁面會在你放開滑鼠的位置收到*真正的*拖放事件，
+  因此上傳區的行為與本機檔案完全相同。
+- 在 **電腦 (VM)** 上，檔案會落到 `~/Drops`，其路徑會放進機器的剪貼簿，
+  因此按 ⌃V 就能把它們貼進檔案管理員或上傳欄位。主機若不靠 VM 內執行的
+  特權常駐程式，就無法把拖放合成進任意 Linux 應用程式，而機台刻意不具備
+  這種東西——因此提示訊息會告訴你檔案去了哪裡，而不是假裝發生了一次拖放。
+- 在**終端機**上，檔案會被複製進去，其路徑會打進提示字元，可供傳給指令使用。
+  把*影像*貼進終端機也是一樣的結果：它會存到機器裡，而你會取得路徑。
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**將檔案拖出**可從電腦 (VM) 進行。從機器內開始拖曳檔案，把指標帶出畫布，
+它就會變成你桌面上真正的拖曳——把它放到 Finder 或檔案總管。在機器的
+檔案管理員中複製檔案，再貼到你自己這一側，也一樣可行。瀏覽器 (VM) 不提供
+這項功能：無介面瀏覽器沒有可讀取的拖放酬載，而從頁面的文字選取範圍去猜測，
+會劫持一般的點擊。
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+電腦 (VM) 需要的是剪貼簿支援推出之後才建置的映像。如果你先前已匯入自己的
+映像，請用 `scripts/rigs/build_image.sh` 重新建置，然後對已安裝的映像使用
+**匯入**來加以取代。
 :::
 
-## Terminals inside a rig
+## 機台內的終端機
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+空間中或 PR 頁面上的終端機，可以在機台內執行，而不是在伺服器本身的機器上
+執行。此時面板會顯示 **封閉式 VM** 標章。
 
-What changes:
+有什麼改變：
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- 你執行的任何東西都不會觸及主機。在裡面跑一次 `rm -rf`，代價是這台機台。
+- 網路預設為拒絕。只有機台允許清單上的主機可以連線，而且一切都得經過一道
+  負責強制執行的閘門。
+- `git push` 依然可用。機台不儲存任何憑證；它會為每次操作向伺服器索取一個
+  短效憑證，而該權杖會在機台關閉時撤銷。
 
-What to know:
+需要知道的事：
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **還原後的隔離艙終端機會等你。** 和機台分頁一樣，隨著你的版面一起回來的
+  `microvm` 終端機會顯示**開啟 Shell** 按鈕，而不是在啟動時就把它的 VM 開機起來。
+  主機 shell 終端機的代價是一個行程；隔離艙終端機的代價則是一台機器。
+- **拖放到終端機上的檔案是打進去，不是開啟。** 把 CSV 拖放到隔離艙終端機上，
+  它會被複製進機器，而它的客體路徑會出現在提示字元——主機路徑會是那裡
+  執行失敗的指令。
+- **機台裡的副本就是副本。** 主機上的工作樹仍是具權威性的那一份。你在機台內
+  所做的提交，只會在你要求時被帶回 `refs/rigs/<id>/*`——它們絕不會移動你的
+  分支或碰觸你的工作樹。
+- **以主機為目標的工作仍在主機上執行。** Linux 客體無法為 macOS 建置，也無法
+  執行 `xcodebuild`。這種情況請明確選擇原生後端；應用程式會請你確認，
+  而不是悄悄切換。
 
-## Ports
+## 連接埠
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/zh-TW/手冊/操作指南/vm-連接埠/).
+在終端機 (VM) 中執行開發伺服器——比如說在連接埠 3000 上跑 `pnpm dev`——
+幾秒鐘內，終端機角落的插頭圖示就會亮起：該連接埠會轉送到你機器上的
+`localhost:3000`，在瀏覽器 (VM) 內可用 `localhost:3000` 連線，可在你的網路上
+分享，並可命名為 `https://myapp.test`。整套流程——自動轉送、區域網路分享、
+帶 HTTPS 的開發網域——有它自己的指南：
+[從終端機轉送連接埠](/zh-TW/手冊/操作指南/vm-連接埠/)。
 
-## Custom images
+## 自訂映像
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+工作區可以讓終端機 (VM) 與瀏覽器 (VM) 指向自己的映像——在
+**設定 → 伺服器 → 機台 → 自訂映像（此工作區）** 之下。典型用法：用專案所需的
+工具鏈擴充預設映像，讓每個終端機一啟動就準備就緒，或是重複使用團隊已經在
+發布的映像。
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+機器依然在同一座隔離艙內開機：同樣的對外連線閘門、同樣的憑證仲介、
+同樣的生命週期。只有工作區管理員能變更這項設定，新機器會採用它
+（執行中的機器維持原本的），而且參照必須是登錄庫映像——本機路徑會被拒絕。
 
-What an image must provide:
+映像必須提供什麼：
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **終端機 (VM)**——內含 `bash` 的 Linux 映像。它也需要 `git`、`curl`
+  與 `socat`——可以預先安裝，或在首次啟動時安裝（任何以 Debian/Ubuntu 為基礎
+  的映像都適用：它們會自動安裝，連同 GitHub 託管執行器那一種的 CLI 工具組：
+  編譯器、Python 3、`jq`、封存工具、`rsync`。Node/Go/Java 之類的語言執行環境
+  與 Docker 則不會預先安裝）。客體連接埠 `7911` 保留給連接埠轉送器使用。
+- **瀏覽器 (VM)**——內含 `bash` 與 `socat` 的 Debian/Ubuntu 映像，外加一個
+  `chromium` 二進位檔。伺服器會自己以 `chromium --headless=new` 啟動 Chromium，
+  並把 DevTools 從客體 `9223` 轉接到 `9222`。PulseAudio 與 ffmpeg 會在首次啟動時
+  安裝。請勿建置 `FROM chromedp/headless-shell`——那個二進位檔沒有音訊。
+  這項覆寫只適用於 Chromium 機台；Firefox 與 WebKit 會忽略它，並開機載入
+  受鎖定的 Debian 映像。客體連接埠 `9222`/`9223` 為保留埠。
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+兩點建議：以摘要鎖定參照（`@sha256:…`），這樣位元組內容就不會在你腳下改變；
+並把它託管在 Docker Hub 或 GitHub Container Registry 上——這兩個登錄庫的下載
+主機會自動獲准通過對外連線閘門；其他登錄庫則可能需要讓其內容傳遞主機保持
+可連線才能拉取。
 
-## When a rig goes away
+## 機台何時會消失
 
-Rigs are meant to be temporary:
+機台本來就是暫時性的：
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **閒置**——在約 15 分鐘沒有任何動靜之後，瀏覽器、桌面或行動機台會停駐
+  （凍結，並在下一個動作時立即喚醒）。隔離艙終端機會等待 45 分鐘。
+  閒置時間達到該視窗的兩倍後，它就會關閉。
+- **時間上限**——每一台機台都有一個無法延長的硬性壽命，無論它正在做什麼。
+- **記憶體**——如果伺服器需要騰出空間給新的機台，它會關閉最久未使用的那一台。
+  有人正在操控、觀看，或在其中開著終端機的機台，絕不會被回收。
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+隔離艙機台關閉時，它的磁碟會被丟棄。關閉 Android 機台只是與主機模擬器中斷
+連接——並不會刪除它。iOS 機台則會刪除它所建立的 CoreSimulator 裝置。
+請先把任何想保留的東西帶回來。
 
-## What a rig can reach
+## 機台可以觸及什麼
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+隔離艙終端機、瀏覽器與桌面機台預設採用「預設拒絕」的對外連線閘門：
+主機由你明確放行，而客體唯一的出路就是一道強制執行該清單的閘門。
+瀏覽器機台另外還會直接放行產品網站（`usectrl.dev`）。憑證仲介使用的是
+同一份清單。
 
-Two honest caveats:
+兩點誠實的提醒：
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **行動網路跟隨主機。** Android 的模擬器與 Apple 的 CoreSimulator 不在
+  隔離艙的對外連線閘門之後。兩個行動分頁都不提供網路繞道控制項，
+  因為由主機管理的網路本來就不受限制。
+- **機台讀取的一切都不受信任。** 頁面文字、DOM、無障礙樹與檢視傾印回到代理
+  手上時，都包裹在寫著「這是資料，不是指令」的標記中。試圖對你的代理下命令的
+  頁面，讀起來會像一段被引用的字串。
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+你可以在 **設定 → 伺服器 → 機台** 下看到所有正在執行的項目，
+並停止其中任何一項。
 
-## Related
+## 相關內容
 
-- [Rigs and enclosures](/zh-TW/手冊/概念/機台/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/zh-TW/手冊/操作指南/vm-連接埠/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/zh-TW/手冊/參考/機台/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/zh-TW/手冊/操作指南/設定護欄/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [機台與隔離艙](/zh-TW/手冊/概念/機台/)——這一切背後的模型：為什麼是 VM、
+  兩條顯示通道、憑證仲介、生命週期
+- [從終端機轉送連接埠](/zh-TW/手冊/操作指南/vm-連接埠/)——從任何需要的地方
+  觸及開發伺服器
+- [機台參考](/zh-TW/手冊/參考/機台/)——每一種表面、動作動詞、連接埠與預設值
+  全都在一處
+- [設定護欄](/zh-TW/手冊/操作指南/設定護欄/)——`Drive an
+  enclosure (rig)` 是一種動作類別，你可以依工作區、代理或空間，將它設為允許、
+  先詢問或拒絕。唯讀模式會直接予以拒絕。

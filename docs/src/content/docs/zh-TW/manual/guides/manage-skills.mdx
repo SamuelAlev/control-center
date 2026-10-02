@@ -1,129 +1,109 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: 安裝與管理技能
+description: 將 GitHub 儲存庫新增為技能來源，瀏覽其中的技能目錄，並透過防毒掃描關卡安裝、更新或解除安裝技能。
 slug: zh-TW/手冊/操作指南/管理技能
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+本指南說明如何用 GitHub 上的技能充實一個工作區：把儲存庫新增為來源、從中安裝你想要的
+技能，並讓它們長期保持最新。
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/zh-TW/手冊/概念/代理模型/); this page stays
-on the doing.
+開始之前必須先了解一件重要的事：**來源儲存庫是不受信任的。** 它的名稱、說明與星星
+數都由持有它的人填寫。Control Center 唯一信任的安全訊號是防毒掃描判定；任何內容在
+抵達磁碟或代理提示之前，每一次安裝都必須先通過這道判定。若你想了解背後的推理，請閱讀
+[代理模型的技能一節](/zh-TW/手冊/概念/代理模型/)；本頁只談怎麼做。
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+技能位於 **設定 → 工作區 → 技能**
+（`/workspaces/<id>/settings/workspace/skills`）。它們以工作區為作用域：你在這裡安裝的
+技能只屬於這個工作區。本頁有兩個分頁：**已安裝**（本機技能，其中包含一個**新增技能**
+編輯器）與**來源**（GitHub 技能目錄）。兩種寫入都必須通過同一道掃描關卡。
 
-## Add a skill repository
+## 新增技能儲存庫
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. 開啟 **設定 → 工作區 → 技能**，並切換到**來源**分頁。
+2. 按下**新增儲存庫**。
+3. 貼上一個 GitHub 儲存庫 URL，例如 `https://github.com/anthropics/skills`，
+   然後確認。
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+伺服器會用自身的憑證檢查該儲存庫是否存在且可見，接著將它新增到左側欄。中間沒有經過
+策畫的市集：任何 GitHub 儲存庫都行，這也意味著聲譽得由你自己判斷——星星數只是證據，
+從來不是保證。
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+一個儲存庫的技能，就是那些包含 `SKILL.md` 的目錄（最多三層深，另外還包括 Claude 外掛
+市集的版面配置 `plugins/<plugin>/skills/<skill>`，並略過相依性與廠商目錄）。若網格
+稍後顯示該儲存庫沒有技能，意思就是如此：其中沒有任何目錄符合技能慣例。
 
-## Inspect a skill before installing
+## 安裝前檢查技能
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+在左側欄中選取一個儲存庫，它的技能會以網格形式出現在右側，網格上方有一個篩選欄位，
+可依名稱、說明或 slug 縮小目錄範圍。點選卡片即可開啟詳細資料檢視。它會顯示三項內容：
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**，以 Markdown 呈現——也就是技能目錄中的 `README.md`；若沒有 README，則為
+  `SKILL.md` 的本文。
+- **掃描預覽**——掃描判定（`pass`、`warn` 或 `quarantine`）、技能內容所宣告的能力
+  （執行 shell、寫入檔案、網路存取……），以及掃描器記錄下來的每一項發現項目。
+- **檔案數量**——一次安裝會寫入技能的整個目錄，而不只是它的 `SKILL.md`。
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+預覽所掃描的，正是安裝將會寫入的那些位元組，所以你看到的判定就是安裝會得到的判定；
+不會在你背後重新判定。
 
-## Install a skill
+## 安裝技能
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. 開啟該技能的詳細資料檢視。
+2. 閱讀掃描判定。若判定為 `warn` 或 `pass`，按下**安裝**。
+3. 若判定為 `quarantine`，在你勾選**我了解風險—仍要安裝**之前，安裝會保持停用。
+   這項覆寫會被記錄下來，而不是被當成預設。
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+安裝會把技能的目錄寫入工作區，在 `skills-lock.json` 中記錄一筆固定記錄（來源儲存庫、
+路徑、它來自哪個提交，以及內容雜湊），該技能隨後即可供工作區內的代理使用。標示
+**名稱已被使用**的卡片，表示本機已有另一個技能占用了這個名稱——請先解除安裝那一個。
 
-## Update skills over time
+## 長期更新技能
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+已安裝技能的卡片帶有徽章：**已安裝**，或當儲存庫已經越過你固定的那個提交時顯示
+**有可用更新**。開啟詳細資料檢視並按下**更新**，即可依新的提交重新取得。更新與安裝
+會通過同一道掃描關卡——新版本若遭判定為隔離，該技能會被拒絕，而你原有的版本保持
+不變。舊版本的雜湊會以回復參照的形式保留在鎖定檔中。
 
-## Uninstall a skill, remove a repository
+## 解除安裝技能、移除儲存庫
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**解除安裝**（位於已安裝技能的詳細資料檢視上，或在**已安裝**分頁中刪除）會一併移除
+技能的目錄與它的鎖定固定記錄——解除安裝後的技能不會留下任何殘留。
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+從左側欄**移除儲存庫**只會移除目錄本身：你從它安裝的技能仍保持安裝，也仍會更新，
+因為固定記錄是以名稱記錄儲存庫，而不是參照來源項目。若你想再次瀏覽它，把該儲存庫
+重新新增回來即可。
 
-## Invoke a skill
+## 呼叫技能
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+技能會在自己的命名空間下被呼叫，因此絕不會與內建斜線指令（`/plan`、`/goal`、`/loop`、
+`/compact`）衝突：
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>`——安裝在此工作區中，或附加到該代理的技能
+- `/skill:<repo>:<name>`——本空間中已簽出的某個儲存庫所隨附的技能
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+對於命名空間出現之前寫下的訊息，不帶命名空間的非內建名稱仍會解析。`/skill:plan` 才會
+觸及名為 `plan` 的技能；`/plan` 永遠是內建指令。
 
-## Repo-scoped skills
+## 儲存庫範圍的技能
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+已簽出的儲存庫可以隨附自己的技能，位於 `.agents/skills/`、`.agent/skills/`、
+`.claude/skills/`、`.opencode/skills/` 或 `skills/`。這些技能**不**透過本頁安裝。一個
+代理只會攜帶它目前所在儲存庫的技能；當它移動時，這些技能也會跟著替換。輸入框則不是
+這樣限定範圍：`/skill:<repo>:<name>` 可觸及本空間中的任何儲存庫。
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+儲存庫技能在本身的 frontmatter 進入提示之前，也會通過同一道失效即拒絕的掃描
+（`pass` / `warn` / `quarantine`）。`warn` 會被放行；`quarantine` 會被扣下，而這條
+路徑上沒有任何操作員覆寫。
 
-See [Repo-scoped skills](/zh-TW/手冊/概念/代理模型/#repo-scoped-skills) and
-[Slash commands](/zh-TW/手冊/參考/斜線指令/).
+參見[儲存庫範圍的技能](/zh-TW/手冊/概念/代理模型/#repo-scoped-skills)與
+[斜線指令](/zh-TW/手冊/參考/斜線指令/)。
 
-## Related guides
+## 相關指南
 
-- [Chat with an agent](/zh-TW/手冊/操作指南/與代理聊天/)
-- [Create and configure an agent](/zh-TW/手冊/操作指南/建立代理/)
+- [與代理聊天](/zh-TW/手冊/操作指南/與代理聊天/)
+- [建立並設定代理](/zh-TW/手冊/操作指南/建立代理/)
 
-## Related concepts
+## 相關概念
 
-- [The agent model](/zh-TW/手冊/概念/代理模型/)
+- [代理模型](/zh-TW/手冊/概念/代理模型/)

@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Déboguer un test en échec avec un agent
+description: Demandez à un agent de poser un point d’arrêt, de lancer le programme sous un débogueur et de lire un vrai cadre de pile au lieu d’ajouter des instructions print.
 slug: fr-FR/manuel/guides/deboguer-test-en-echec
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Ce guide vous montre comment amener un agent à se servir d’un débogueur sur une défaillance que les instructions print n’expliquent pas.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+L’outil `debug` pilote une véritable session Debug Adapter Protocol. Un cadre arrêté répond d’un coup à toutes les questions sur cet instant — chaque variable locale, chaque appelant, et une expression évaluée dans la portée propre du cadre — là où une instruction print ne répond qu’à la question que vous avez pensé à poser avant de lancer.
 
-## Before you start
+## Avant de commencer
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+L’outil reste présent dans la surface d’outils, afin que l’agent puisse demander pourquoi rien n’est utilisable plutôt que de deviner. Un adaptateur ne peut réellement démarrer que si **ces deux** conditions sont réunies :
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- un marqueur de projet dans le checkout, et
+- le binaire de l’adaptateur qui se résout.
 
-Ask the agent to check:
+Demandez à l’agent de vérifier :
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Il répond avec ce qu’il a trouvé, ou explique qu’un adaptateur a besoin des deux moitiés.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Langage        | Adaptateur                   | Marqueur                                         | Installation                                          |
+| -------------- | ---------------------------- | ------------------------------------------------ | ----------------------------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | Fourni avec le SDK — rien à faire                     |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`                                 |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Fourni avec LLVM                                      |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python choisit l’interpréteur du projet]
+`debugpy` est recherché dans `.venv/bin` ou `venv/bin` avant `$PATH`. Un python du `$PATH` est un autre environnement, et s’attacher depuis le mauvais échoue d’une manière qui se lit comme du code cassé plutôt que comme le mauvais interpréteur.
 :::
 
-## Set the breakpoint first, then launch
+## Posez d’abord le point d’arrêt, puis lancez
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+L’ordre compte et l’outil l’impose : les points d’arrêt peuvent être posés **avant** qu’une session existe, car c’est la séquence qu’exige le protocole.
 
-Ask the agent something like:
+Demandez à l’agent quelque chose comme :
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> La fonction `compute` dans `bin/main.dart` renvoie une valeur erronée. Posez un point d’arrêt sur la ligne qui affecte `product`, lancez-le sous le débogueur et dites-moi ce que valent réellement `a` et `b`.
 
-It will run roughly:
+Il exécutera à peu près :
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Le lancement indique où il s’est arrêté :
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[S’il signale à la place que le programme se termine]
+Le point d’arrêt ne s’est pas fixé. Une ligne vide, un commentaire ou une ligne non compilée dans le build ne peut pas en porter un. Appeler `breakpoints` sur une session active indique combien de ceux que vous avez posés ont réellement été placés.
 :::
 
-## Read the frame
+## Lisez le cadre
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Puis descendez dedans :
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Un objet qui a des enfants indique `[expand: reference N]` — mais uniquement lorsqu’il y a réellement quelque chose derrière, si bien qu’une expansion inutilisable par l’agent n’est jamais proposée.
 
-For anything not visible as a local:
+Pour tout ce qui n’apparaît pas comme variable locale :
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Avancez pas à pas
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Ce que vous voulez               | Opération   |
+| -------------------------------- | ----------- |
+| Exécuter jusqu’au prochain arrêt | `continue`  |
+| Ligne suivante, même cadre       | `step_over` |
+| Entrer dans l’appel              | `step_in`   |
+| Sortir vers l’appelant           | `step_out`  |
+| Arrêter un programme en cours    | `pause`     |
 
-## Attach to something already running
+## S’attacher à un processus déjà en cours
 
-For a wedged process rather than one you are starting:
+Pour un processus bloqué plutôt qu’un processus que vous lancez :
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Terminer
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Terminez toujours la session. Un adaptateur de débogage possède un **processus arrêté** qui retient tout ce que ce processus retient — un port, un verrou, une connexion à une base de données.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Il ne peut pas vous échapper]
+Chaque session a une durée de vie stricte qu’elle ne peut pas prolonger, il en existe exactement une par conversation, et tout est démonté à l’arrêt du serveur. Un second `launch` est refusé plutôt que de remplacer le premier : un agent qui en démarre un sans terminer l’autre a presque certainement perdu la trace du premier.
 :::
 
-## Bounded output
+## Sortie bornée
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Une expansion `variables` sur un graphe d’objets profond est par nature non bornée — un seul widget Flutter atteint tout l’arbre d’éléments. Les enfants par portée sont plafonnés à 50, les valeurs à 400 caractères et les cadres de pile à 30. Un résultat d’outil qui remplit la fenêtre de contexte est un outil qui met fin à l’exécution qu’il aidait.
 
-## Related
+## Voir aussi
 
-- [Code intelligence](/fr-FR/manuel/concepts/intelligence-du-code/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/fr-FR/manuel/reference/outils-agent/) — every `debug` op and argument
-- [Diagnose an agent](/fr-FR/manuel/guides/diagnostiquer-agent/) — when the problem is the agent, not the code
+- [Intelligence du code](/fr-FR/manuel/concepts/intelligence-du-code/) — pourquoi un débogueur, un compilateur et un moteur de correspondance répondent à des questions différentes
+- [Outils d’agent intégrés](/fr-FR/manuel/reference/outils-agent/) — chaque opération et chaque argument de `debug`
+- [Diagnostiquer un agent](/fr-FR/manuel/guides/diagnostiquer-agent/) — quand le problème est l’agent, et non le code

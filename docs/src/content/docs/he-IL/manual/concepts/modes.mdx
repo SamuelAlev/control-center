@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: מצבים
+description: למה מרחב, ולא סוכן, נושא מצב; מה מבטיח כל אחד מארבעת המצבים; והיכן ההבטחה הזו מבנית ולא רק נדרשת בהנחיה.
 slug: he-IL/מדריך-למשתמש/מושגים/מצבים
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## מהו מצב
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+מצב הוא מאפיין של **מרחב**, השמור בעמודה אחת בשורת המרחב. כל שיחה בתוך מרחב חולקת אותו, וגם שרשורים — שרשור יורש את המצב של המרחב שלו כמו כל שיחה אחרת. אותו סוכן יכול אפוא להיות במצבים שונים במרחבים שונים בו־זמנית, והחלפת המצב של מרחב משנה את מה שקורה בתור הבא בלי לגעת בסוכן.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+ישנם בדיוק ארבעה: `chat`, `review`, `plan`, `orchestrate`. ה-enum עצמו אינו נושא מדיניות. כל מה שמצב מבטיח מוצהר פעם אחת, ב**פרופיל יכולות**, שכל שכבת אכיפה משליכה ממנו:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **משטח הכלים** — אילו כלים קיימים בכלל במצב הזה, לידי ביטוי כדרגת אישור מרבית, רשימת היתר, רשימת חסימה וקבוצה של מחלקות פעולה מסורבות.
+2. **פועל התוצר הנדרש** — מה ההרצה חייבת לקרוא כדי שהתוצר שלה יהיה קיים.
+3. **מחלקות פעולה חסומות** — מה ששומר הפעולות דוחה על הסף.
+4. **תנוחת עץ העבודה** — אם מותר לכתוב בעץ העבודה. היא נאכפת על ידי הסרת כלי השינוי מהמשטח, וזה מה שעושה אותה תקפה בכל מארח. היכן שלמארח יש ארגז חול של מערכת ההפעלה, אותה תנוחה גם חורטת את כללי הכתיבה במערכת הקבצים — מצב לקריאה בלבד תולה את עץ העבודה לקריאה בלבד — אבל זו העתקה שנייה של ההבטחה, ולא זו שעושה את העבודה.
+5. **בלוק הנחיית המערכת** — פתיח יכולות _נוצר_ הנגזר מרשימת הכלים הממומשת בפועל, בתוספת הדרכה שנכתבה ביד.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+כל שכבת אכיפה משליכה מאותו פרופיל אחד, כך שמשטח הכלים, השומר, תנוחת עץ העבודה וההנחיה אינם יכולים לסתור זה את זה.
 
-## The four modes
+## ארבעת המצבים
 
-### Chat — displayed as "Agent"
+### צ'אט — מוצג כ"סוכן"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+ברירת המחדל והמצב היחיד בלי אילוצים נוספים: משטח הכלים המלא עד דרגת הביצוע, עץ עבודה שאפשר לכתוב בו, בלי מחלקות פעולה חסומות ובלי חוזה השלמה. השתמשו בו למימוש, לתיקוני באגים, לשאלות על בסיס הקוד ולכל דבר אד-הוק.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+שימו לב לתווית: בתיבת הכתיבה המצב מוצג כ**"סוכן"**, ולא "צ'אט".
 
-### Plan — read-only, one deliverable
+### תכנון — לקריאה בלבד, תוצר אחד
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+מצב תכנון הופך את עץ העבודה לקריאה בלבד ומסיר את כלי הכתיבה מהמשטח לחלוטין, כך שההגבלה מבנית ולא נדרשת בהנחיה. הסוכן קורא, מחפש וחוקר, ומפיק בדיוק דבר אחד: קריאה ל-`submit_plan` שנושאת גרף תלויות טיפוסי — מטרה, ולצידה צמתים עם מפתחות, כותרות, תיאורים ומפתחות הצמתים שכל אחד מהם תלוי בהם.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+התוכנית מרונדרת כשורה קומפקטית בשיחה ופותחת את Plan Studio בלשונית לצידה. אישורה מהדר את הגרף לתזמור, מריץ את העבודה שנוצרה ומחזיר את מרחב הכתיבה למצב סוכן.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+אם הרצה במצב תכנון מסתיימת בלי לקרוא ל-`submit_plan` ולו פעם אחת, הלולאה מזריקה תחילה דחיפה עדינה שאומרת שהתוכנית אינה קיימת עד שהקריאה הזו תצליח. הדחיפה מתירה במפורש יציאה כנה של "אין צורך בתוכנית כאן", מפני שמצב תכנון הוא הגדרה של מרחב, ושאלה פשוטה שנשאלת בתוכו לא אמורה לכפות תוכנית מלאכותית.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/).
+:::note[חוזה שלא מולא אינו הרצה שנכשלה]
+הרצה שמסתיימת בלי התוכנית שלה עדיין נרשמת עם הסטטוס `completed` — התהליך יצא נקי. האמת נשענת על חיות ההרצה (`empty`), על משפחת השגיאה (`silentRun`) ועל סיכום שמציין מה לא הופק. ראו [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+קיימת דרך יציאה שנייה ונפרדת: `exit_plan_mode`. זהו שער אישור קשיח, לא פועל תוצר — סוכן שקורא לו במקום ל-`submit_plan` לא סיפק דבר. הקריאה הראשונה פותחת אישור `plan_exit` עמיד ומחזירה `pending`, והמרחב נשאר לקריאה בלבד; קריאות חוזרות נשארות `pending` במקום לפתוח שער שני. רק לאחר שהאישור ניתן, קריאה שלאחריו מעבירה את המרחב למצב צ'אט. דחייה מאפשרת לסוכן לפתוח בקשה חדשה לתוכנית מתוקנת.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+כדי לצאת בעצמכם ממצב תכנון, החליפו את התפריט הנפתח של תיבת הכתיבה (או Shift+Tab). ‏`exit_plan_mode` מוכרע בכלי ה-MCP ‏`decide_approval`. שורות "אישור סוכן" בדואר הנכנס הן דבר אחר: הנחיות אישור לכל תור, מסוכן שרץ.
 
-### Review — read-only, no contract
+### סקירה — לקריאה בלבד, בלי חוזה
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+מצב סקירה מיועד לסקירת PR. הוא הופך את עץ העבודה לקריאה בלבד, חוסם את משטח הכלים מתחת לדרגת הביצוע ומיישם רשימת היתר מצומצמת של כלי סקירה, כרטוס ותקשורת. מרחב שנפתח לבקשת משיכה נוצר אוטומטית במצב סקירה.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+התוצר של הסוכן הוא ממצאים מובנים — **צמתי סקירה** — וכשסקירה מסתיימת, גם **הכרעה**. צומת נושא סוג (`bug`, `suggestion`, `recommendation`, `question` או `ticket`), עדיפות מ-P0 (חוסם שחרור) עד P3 (נחמד שיהיה), ביטחון בהערכה עצמית, עוגן אופציונלי (קובץ בתוספת טווח שורות; להערות ברמת המאגר אין עוגן) וסטטוס מחזור חיים שנע מ-`open` ל-`consensusReady` ברגע שעמית — ולעולם לא המחבר — מאשר אותו. ממצא שהעדיפות או הביטחון שלו חסרים או מחוץ לטווח נזרק בגבול הקריאה במקום לזהם את ההכרעה.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+ההכרעה היא Ship, Hold או Block, ותוצאות הצירים שמקופלות לתוכה רק מחמירות אותה _יותר_: ציר משעור שנכשל כופה `block` וציר משעור שלא הצליח לרוץ כופה לפחות `hold`. היעדר ראיה לעולם לא הופך שער לירוק.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+שלא כמו תכנון ותזמור, סקירה אינה נושאת **חוזה השלמה**. ממצאים מצטברים דרך `add_review_node` ומתפרסמים על ידי `finalize_review`, ושניהם יכולים להיקרא אפס פעמים באופן לגיטימי — סוכן פייפליין שרץ במצב סקירה עשוי להיות שם כדי להשלים כרטיס.
 
-### Orchestrate — read-only, proposes a team
+### תזמור — לקריאה בלבד, מציע צוות
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+מצב תזמור הופך מטרה אחת לתוכנית של צוות שלם. כמו מצב תכנון הוא לקריאה בלבד ואינו יכול לכתוב קבצים; על גבי משטח המחקר יש לו פועל מורשה יחיד, `propose_orchestration`, שפולט הצעה מובנית: תפקידים, עץ תת-כרטיסים, שלב סינתזה ותקציב. ההנחיה מציינת רק את הכלים שעל המשטח, כך שהמודל לא מבזבז תורים על סיפור גיוסים או עבודת כרטיסים שאינו יכול לקרוא לה.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/).
+דבר בהצעה אינו מתבצע עד שתאשרו אותה. עם האישור, מממש דטרמיניסטי מגייס את הסוכנים, יוצר את הכרטיסים ואת הפרויקט ומריץ פייפליין שנוצר. האישור שמור למפעיל בלבד: אין כלי MCP לשם כך, כך שסוכן יכול להציע אך לעולם לא לאשר את התוכנית של עצמו. הצעות חוזרות שיזם סוכן מוגבלות בקצב על ידי צינון של שתי דקות, כך שתכנונים חוזרים רצופים נדחים ומתבקשים להתאחד. ראו [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/).
 
-## Two rules worth knowing
+## שני כללים שכדאי להכיר
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**אין אפשרות לחסום את פועל התוצר של מצב עצמו.** `submit_plan` ו-`propose_orchestration` מוצמדים למשטח הכלים ומאושרים מראש מעבר למסנן הכלים, לשער האישור ולשומר הפעולות כאחד, כך שמחוון האוטונומיה לפי מרחב לא יכול להשתק את התוצר של מצב. גם `ask_user` של מנגנון ההרצה מוצמד מאותה סיבה: זו הדרך שבה הרצה מגיעה אל המפעיל, ולכן חסימתו הייתה מביאה למבוי סתום הרצה שצריכה לשאול משהו. הוא מדרגת הקריאה, ולכן כל מצב לקריאה בלבד שומר עליו, והוא פטור ממעטפת האישור — הנחיה לפני הנחיה נכשלת באופן סגור כשאין מאשר מחובר, מה שהיה מונע מסוכן את עצם השאלה.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**מצבים לקריאה בלבד אינם חוסמים גישה לרשת או לסודות.** מחלקות הפעולה שמצבי סקירה, תכנון ותזמור מסרבים להן הן אלה שמשנות את העולם: מחיקת קובץ, כתיבה מחוץ לעץ העבודה, יצירת קומיט, דחיפה למאגר מרוחק, פתיחת בקשת משיכה ופרסומה, כתיבה למערכת מעקב חיצונית, התקנת חבילה, הרצת תהליך, שינוי מבנה סביבת העבודה ושליטה במתחם מבודד. יציאה לרשת וגישה לסודות נשארות בברירת המחדל שלהן במכוון — מחקר הוא כל תכליתו של מצב לקריאה בלבד.
 
-## Choosing and changing a mode
+## בחירה ושינוי של מצב
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+התפריט הנפתח של המצב בתיבת הכתיבה מציע **שלוש** אפשרויות: סוכן (צ'אט), תכנון ותזמור. `review` **אינו ניתן לבחירה על ידי המשתמש** — הוא נקבע על ידי המערכת כשנוצר מרחב סקירת PR ועל ידי שלבי פייפליין.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+צומת פייפליין ש**פותח מרחב** יכול לנעוץ את המצב של אותו חדר באמצעות מפתח `extras['mode']` (`chat`, `review` או `plan`). המפתח הוא התאמה מדויקת: כל איות אחר — כולל `orchestrate` — מתעלמים ממנו בשקט, והחדר מקבל את ברירת המחדל של הגוף (`review` בגוף יצירת המרחב). שלב סוכן מצטרף לחדר שהוא לא יצר ואינו משנה את הרשאותיו.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+הפתרון עצמו פשוט. המתזמן קורא את עמודת ה-`mode` של המרחב; שליחה בלי מרחב — הרצה חד-פעמית, קריאה מ-CLI, או מזהה מרחב מסביבת עבודה אחרת, שפשוט אינו בקובץ מסד הנתונים של סביבת העבודה הזו — נפתרת ל-`chat`. החלפת המצב נכנסת לתוקף מהתור הבא.
 
-## Where the guarantee actually holds
+## היכן ההבטחה מחזיקה באמת
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+משטח הכלים של מצב נבנה ונאכף על ידי **מנגנון ההרצה המובנה**. זו התעבורה היחידה שיכולה להפוך כלי לבלתי נראה ולא רק לחסום אותו, לשער כל קריאה לפני שהיא רצה ולהשגיח על חוזה השלמה.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
+בתעבורה של Claude Code, מצב שאינו צ'אט מועבר בתור `--permission-mode plan`. Claude מכבד זאת לפי מוסכמה; כלי הקריאה, הכתיבה, העריכה וה-shell של עצמו רצים בלי להיראות. בתעבורה הזו המצב הוא הנחיה, לא גבול של Control Center — ראו [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+רשימות ההיתר מגבילות כלים מדרגת הכתיבה ומעלה. דרגת הקריאה של מנגנון ההרצה המובנה עדיין מגיעה לכלים שאף רשימה אינה מציינת; ב-Claude Code, כלי שרשימת ההיתר משמיטה נדחה, בין אם לשרת יש אותו ובין אם לא.
 
-## Related concepts
+## מושגים קשורים
 
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/): where the mode is resolved and projected
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): which transports can enforce a mode
-- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/): what an approved orchestrate proposal does
-- [Use plan mode](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/): the practical walkthrough
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/): היכן המצב נפתר ומושלך
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): אילו תעבורות יכולות לאכוף מצב
+- [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/): מדיניות מחלקות הפעולה שערכת המצב של מצב מזינה
+- [תזמור](/he-IL/מדריך-למשתמש/מושגים/תזמור/): מה עושה הצעת תזמור מאושרת
+- [שימוש במצב תוכנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-תוכנית/): המדריך המעשי

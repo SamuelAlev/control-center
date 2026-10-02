@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Ο πρώτος σας χώρος εργασίας
+description: Δημιουργήστε έναν χώρο εργασίας, καταχωρίστε ένα αποθετήριο μέσα του και δείτε το όριο απομόνωσης με τα μάτια σας.
 slug: el-GR/εγχειρίδιο/οδηγοί/πρώτος-χώρος-εργασίας
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Τι θα φτιάξετε
 
-By the end of this tutorial, you will have:
+Μέχρι το τέλος αυτού του οδηγού θα έχετε:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Έναν χώρο εργασίας με το όνομα του έργου σας
+- Ένα αποθετήριο Git καταχωρισμένο μέσα του
+- Πέντε πράκτορες από τον αρχικό εφοδιασμό, έναν από τους οποίους θα έχετε ρυθμίσει αρκετά ώστε να εκτελείται
+- Έναν δεύτερο, κενό χώρο εργασίας που αποδεικνύει το όριο απομόνωσης
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Η υποδοχή έχει ήδη δημιουργήσει έναν χώρο εργασίας για εσάς. Αυτός ο οδηγός δημιουργεί σκόπιμα έναν καινούργιο, ώστε να δείτε κάθε μέρος της διαδικασίας.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Πριν ξεκινήσετε, διαλέξτε ένα Git checkout που πληροί και τα τρία παρακάτω — το βήμα της καταχώρισης απορρίπτει οτιδήποτε άλλο:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- βρίσκεται μέσα σε ένα δέντρο εργασίας git
+- έχει ένα απομακρυσμένο `origin`
+- αυτό το απομακρυσμένο δείχνει στα github.com, gitlab.com ή bitbucket.org
 
-## Step 1: Create a workspace
+## Βήμα 1: Δημιουργήστε έναν χώρο εργασίας
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Κάντε κλικ στο τσιπ του χώρου εργασίας στη γραμμή τίτλου
+2. Επιλέξτε **Προσθήκη χώρου εργασίας…**
+3. Εισαγάγετε ένα όνομα που αναγνωρίζει το έργο, όπως «api-service» ή «frontend-v2»
+4. Προαιρετικά, διαλέξτε ένα λογότυπο
+5. Κάντε κλικ στο **Προσθήκη χώρου εργασίας**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Το Control Center μεταβαίνει στον νέο χώρο εργασίας και προσγειώνεται στα εισερχόμενά του (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Πίσω από αυτό, ο διακομιστής εκπέμπει ένα συμβάν `WorkspaceCreated` και εφοδιάζει τον χώρο εργασίας με:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- έναν **πράκτορα CEO**, του οποίου η προσωπικότητα είναι ο συντονισμός και η ανάθεση
+- τέσσερις ειδικούς — `qa`, `architect`, `engineer` και `librarian` — καθέναν με τις δικές του οδηγίες και δεξιότητες
+- τα ενσωματωμένα πρότυπα pipeline και τις γραμμές ενεργοποιητών τους
 
-Every workspace you create gets all of this, not just the first one.
+Κάθε χώρος εργασίας που δημιουργείτε τα αποκτά όλα αυτά, όχι μόνο ο πρώτος.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Επιβεβαιώστε το: ανοίξτε τις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**. Πέντε πράκτορες βρίσκονται στη λίστα, ο καθένας με έναν κοίλο δακτύλιο κατάστασης.
 
-## Step 2: Register a repository
+## Βήμα 2: Καταχωρίστε ένα αποθετήριο
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια**
+2. Κάντε κλικ στο **Προσθήκη αποθετηρίου**
+3. Περιηγηθείτε στο checkout σας. Το παράθυρο διαλόγου πλοηγείται στους φακέλους του μηχανήματος που εκτελεί το `cc_server` — όχι του πελάτη σας — και μένει μέσα στις ρίζες που εκθέτει αυτός ο διακομιστής (από προεπιλογή, τον αρχικό κατάλογο του χρήστη του). Ένα git checkout παίρνει ξεχωριστό εικονίδιο φακέλου και ένα πλαίσιο επιλογής· ένας απλός φάκελος δεν παίρνει τίποτα από τα δύο, οπότε μόνο checkouts μπορούν να επιλεγούν.
+4. Επιλέξτε ένα ή περισσότερα checkouts και καταχωρίστε την παρτίδα. Οι επιλογές διατηρούνται καθώς περιηγείστε, ώστε να συγκεντρώσετε αρκετά σε ένα πέρασμα και μια κακή επιλογή να μην απορρίπτει ποτέ τα υπόλοιπα.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Το Control Center διαβάζει το απομακρυσμένο `origin` κάθε checkout, επιλύει ιδιοκτήτη και αποθετήριο και δημιουργεί τη γραμμή του αποθετηρίου **μέσα σε αυτόν τον χώρο εργασίας**. Δεν υπάρχει δεύτερο βήμα για τη σύνδεσή του: η καταχώριση είναι αυτό που του δίνει εμβέλεια.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Η καταχώριση του ίδιου checkout σε άλλον χώρο εργασίας αργότερα δημιουργεί μια δεύτερη, ανεξάρτητη γραμμή αποθετηρίου με δικό της αναγνωριστικό. Μεταξύ χώρων εργασίας, ένα checkout αναγνωρίζεται από τη διαδρομή του στο σύστημα αρχείων, ποτέ από αναγνωριστικό.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Επιβεβαιώστε το: το αποθετήριο εμφανίζεται στη λίστα με το `owner/repo` και τον τρέχοντα κλάδο του.
 
-## Step 3: Make one agent runnable
+## Βήμα 3: Κάντε έναν πράκτορα εκτελέσιμο
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+Οι πέντε πράκτορες που μόλις εφοδίασε αυτός ο χώρος εργασίας δεν έχουν προσαρμογέα ούτε μοντέλο. Η αποστολή τούς εκτελεί στο **Control Center (ενσωματωμένο)** και, χωρίς ορισμένο μοντέλο, ζητά από την Anthropic το προεπιλεγμένο της — οπότε λειτουργούν μόνο αν έχετε συνδέσει λογαριασμό Anthropic, και σε ένα μοντέλο που δεν διαλέξατε εσείς αν έχετε. Η υποδοχή της πρώτης εκτέλεσης σφραγίζει την επιλογή της σε κάθε πράκτορα του πρώτου χώρου εργασίας, μία φορά· ένας χώρος εργασίας που δημιουργείτε μετά ξεκινά με τους πέντε χωρίς ρύθμιση. Ορίστε έναν τώρα.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Ανοίξτε τις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**
+2. Επιλέξτε τον `engineer` στη λίστα
+3. Στην καρτέλα **Ρυθμίσεις**, ορίστε τον **Προσαρμογέα** σε `Control Center (built-in)` και διαλέξτε ένα **Μοντέλο** από έναν πάροχο που έχετε συνδέσει στις Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων
+4. Πατήστε **Αποθήκευση αλλαγών**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Επιβεβαιώστε το: ανοίξτε ξανά τον πράκτορα και τα δύο πεδία κρατούν τις επιλογές σας.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/) covers the rest of the form.
+Κάθε πράκτορας φέρει τον δικό του προσαρμογέα και μοντέλο, οπότε επαναλάβετε το ίδιο για κάθε άλλον πράκτορα που σκοπεύετε να χρησιμοποιήσετε. Η [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/) καλύπτει τα υπόλοιπα της φόρμας.
 
-## Step 4: See the isolation boundary
+## Βήμα 4: Δείτε το όριο απομόνωσης
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Δημιουργήστε έναν δεύτερο χώρο εργασίας από το τσιπ της γραμμής τίτλου, ακριβώς όπως στο βήμα 1. Έπειτα κοιτάξτε τον:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- Στις **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια** δεν υπάρχει τίποτα. Το αποθετήριο που καταχωρίσατε πριν από ένα λεπτό δεν είναι εκεί.
+- Στις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** υπάρχουν πέντε πράκτορες, αλλά είναι διαφορετικές γραμμές — ο προσαρμογέας που ορίσατε στο βήμα 3 έχει χαθεί.
+- Η λίστα χώρων, τα εισιτήρια και η μνήμη είναι όλα κενά.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Δεν διέρρευσε τίποτα, γιατί δεν υπάρχει τίποτα από όπου να διαρρεύσει: οι γραμμές κάθε χώρου εργασίας ζουν στο δικό του αρχείο βάσης δεδομένων. Μια ανάγνωση μεταξύ χώρων εργασίας δεν είναι ένα ερώτημα που φιλτράρεται, είναι ένα ερώτημα που δεν έχει πού να εκτελεστεί. Η διαγραφή ενός χώρου εργασίας είναι η αποσύνδεση ενός αρχείου.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Επιστρέψτε με το τσιπ της γραμμής τίτλου, ή ανοίξτε τη **Διαχείριση χώρων εργασίας** για να τους δείτε δίπλα-δίπλα.
 
-For the full model, read [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
+Για το πλήρες μοντέλο, διαβάστε [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/).
 
-## Recap
+## Σύνοψη
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Δημιουργήσατε έναν χώρο εργασίας, τον είδατε να εφοδιάζει έναν CEO και τέσσερις ειδικούς, καταχωρίσατε ένα αποθετήριο μέσα του, δώσατε σε έναν πράκτορα προσαρμογέα και μοντέλο και επιβεβαιώσατε ότι ένας δεύτερος χώρος εργασίας δεν μοιράζεται τίποτα από αυτά.
 
-**Next:** [Dispatch your first agent](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) to put the workspace to work.
+**Στη συνέχεια:** [Αποστείλετε τον πρώτο σας πράκτορα](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) για να βάλετε τον χώρο εργασίας στη δουλειά.

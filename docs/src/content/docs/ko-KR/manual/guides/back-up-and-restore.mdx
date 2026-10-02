@@ -1,162 +1,166 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: 백업 및 복원
+description: 설치의 스냅샷을 만들고, 워크스페이스를 머신 간에 옮기고, 워크스페이스 하나 또는 전체를 복원하고, 사본을 다른 곳에 보관합니다.
 slug: ko-KR/매뉴얼/사용-가이드/백업-및-복원
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/ko-KR/매뉴얼/레퍼런스/백업/).
+이 가이드에서는 사람들이 백업으로 실제로 하는 다섯 가지 일, 즉 백업 만들기, 백업
+수집하기, 워크스페이스 옮기기, 백업 복원하기, 머신 밖에 사본 보관하기를 다룹니다.
+모든 아티팩트와 작업의 정확한 형태는
+[백업 레퍼런스](/ko-KR/매뉴얼/레퍼런스/백업/)를 참고하세요.
 
-Everything here lives at **Settings → Server → Backup & restore**.
+여기서 설명하는 모든 것은 **설정 → 서버 → 백업 및 복원**에 있습니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **풀 클라이언트** — 데스크톱 또는 웹 앱입니다. 페어링된 휴대폰은 설계상 이 중 어느 것도 실행할 수 없습니다.
+- **설치 스냅샷**을 만들거나 나열, 다운로드, 삭제하려면 설치의 **소유자**여야 합니다.
+- 워크스페이스별 작업의 경우: 내보내려면 해당 워크스페이스의 **관리자**, 가져오거나 삭제하려면 **소유자**여야 합니다.
+- 다운로드와 업로드의 경우: 서버에 **직접** 연결해야 합니다. 브로커 릴레이는 파일 전송이 아니라 RPC 프레임을 운반하며, 릴레이를 통해 연결하면 전송 컨트롤이 안내 문구와 함께 비활성화됩니다.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[설치 스냅샷은 수동입니다]
+**지금 백업**은 요청할 때만 설치 전체 스냅샷을 만듭니다. 대신 기본 제공되는
+**Workspace backup** 파이프라인이 매주 한 번 워크스페이스 데이터베이스 백업을 만들고
+해당 워크스페이스의 30일이 지난 백업을 제거할 수 있습니다. `global.db`, 다른
+워크스페이스, 데이터베이스 옆에 있는 파일은 복사하지 않습니다. 머신 밖 사본은
+별도로 보관하세요.
 :::
 
-## What a backup covers
+## 백업이 포함하는 범위
 
-Both artifacts are **databases only**:
+두 아티팩트 모두 **데이터베이스만** 담습니다:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **설치 스냅샷**은 타임스탬프가 붙은 디렉터리로, `manifest.json`, `global.db`, 그리고 워크스페이스마다 하나씩 있는 `<workspaceId>/workspace.db`로 이루어집니다.
+- **워크스페이스 내보내기**는 그 `workspace.db` 파일 하나입니다.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/ko-KR/매뉴얼/레퍼런스/백업/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+둘 다 데이터 디렉터리의 나머지는 담지 않습니다. `secrets.json`(페어링 키, 공급자
+자격 증명, SSO), 워크스페이스의 `blobs/`(메시지에 붙여 넣은 이미지), `skills/`,
+`agents/`, `chat_credentials/`, 녹음한 회의 오디오, 리그 이미지 등입니다. 그중
+일부는 버려도 되는 것이고 일부는 아닙니다.
+[전체 표는 레퍼런스에 있고](/ko-KR/매뉴얼/레퍼런스/백업/#what-a-backup-does-not-contain),
+이를 다루는 방법이 바로 [머신 밖 섹션](#백업을-머신-밖으로-복사하기)의 목적입니다.
 
-## Take a snapshot of the whole install
+## 설치 전체의 스냅샷 만들기
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. **설정 → 서버 → 백업 및 복원**을 엽니다.
+2. **설치 스냅샷**에서 **지금 백업**을 누릅니다.
+3. 토스트에 서버 호스트에서 기록된 디렉터리 이름이 표시됩니다. 새 스냅샷은 목록 맨 위에 나타납니다.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+스냅샷을 만드는 동안에도 서버는 계속 실행됩니다. 각 파일은 `VACUUM INTO`로
+기록되며, 이는 실행 중인 데이터베이스에 대해서도 일관성을 유지하므로 별도의 점검
+시간이 필요하지도, 에이전트를 중지할 필요도 없습니다.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+목록의 각 행에는 타임스탬프, 디스크 사용량, 캡처된 워크스페이스 수, 그리고
+스냅샷이 **완료**인지 **미완료**인지가 표시됩니다. 미완료는 매니페스트가 없거나
+있지 않은 파일을 가리키는 경우입니다. 충돌이나 디스크 가득 참으로 중단된
+백업입니다. 이런 스냅샷도 일부러 목록에 남겨 둡니다. 보이지 않는 스냅샷은 있다고
+믿게 되는 스냅샷이기 때문입니다. 미완료 스냅샷으로는 설치 전체를 복원할 수 없지만,
+그 안에 들어 있는 워크스페이스 파일은 하나씩 가져올 수 있습니다.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+행에 **_n_개의 워크스페이스를 캡처하지 않음**이라고 표시될 수도 있습니다. 등록되었지만
+한 번도 기록된 적이 없는 워크스페이스(아직 파일이 없음)이거나, 복사에 실패한
+워크스페이스입니다. 서버 로그를 확인하세요.
 
-## Schedule workspace backups and retention
+## 워크스페이스 백업과 보존 예약하기
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+워크스페이스의 **설정 → 파이프라인 → 파이프라인 템플릿**을 열고
+**Workspace backup**을 찾습니다. 활성화된 일정은 매주 일요일 03:00 UTC에
+실행됩니다: **Back up workspace** 다음에 **Delete backups older than**(기본
+30일)이 이어집니다. 두 번째 노드는 백업이 성공한 뒤에만 실행됩니다. 노드에서
+보존 일수를 바꾸거나 일정을 비활성화할 수 있습니다. 예약 시각에 서버가
+오프라인이면, 다시 올라올 때 일정이 한 번만 따라잡고 놓친 주를 모두 재생하지는
+않습니다.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+워크스페이스 백업은 서버의
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`에 있습니다.
+보존 노드는 이 워크스페이스의 오래된 백업만 삭제하며, 설치 스냅샷이나 다른
+워크스페이스의 백업은 절대 삭제하지 않습니다. 이 파일들은 데이터베이스만
+담습니다. 머신 밖 보존을 위해서는 이것을 따로 복사하세요.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+이 백업은 **설치 스냅샷** 목록과 별개입니다. 복원하려면 백업의 서버 측
+`workspace.db` 경로와 함께 **워크스페이스 데이터 → 가져오기**를 사용합니다.
+가져오기는 해당 워크스페이스의 현재 데이터베이스를 교체하므로, 복원을 되돌려야
+할 수도 있다면 먼저 내보내세요.
 
-## Delete an install snapshot
+## 설치 스냅샷 삭제하기
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+**설치 스냅샷**에서 스냅샷을 펼치고(미완료 스냅샷 포함), 위험 영역에서
+**스냅샷 삭제**를 사용합니다. 스냅샷 이름을 확인합니다. 스냅샷 디렉터리 전체가
+서버에서 영구히 제거됩니다. 사본이 필요하면 먼저 다운로드하세요. 워크스페이스
+백업 파이프라인은 이 스냅샷들을 절대 삭제하지 않습니다.
 
-## Collect a copy on your own machine
+## 내 머신에 사본 수집하기
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+페이지에 표시되는 경로는 `cc_server`를 실행하는 머신의 경로입니다. 그 머신이
+지금 앉아 있는 머신이 아니라면 **다운로드** 버튼을 사용하세요:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- **워크스페이스 데이터** 아래 각 **워크스페이스** 옆의 **다운로드**에서 `.db` 파일 하나를 받습니다.
+- **설치 스냅샷** 아래 각 **스냅샷** 옆의 **다운로드**에서 스냅샷 전체를 `.zip`으로 받습니다.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+데스크톱에서는 파일이 저장될 위치를 직접 고르고 토스트에 그 이름이 표시되며,
+웹에서는 브라우저의 다운로드 폴더로 들어갑니다. 어느 쪽이든 둘 다 바이트 단위로
+진행률을 보고합니다. 이 두 가지가 기가바이트까지 커지는 페이로드이기 때문입니다.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+둘 다 버튼을 누르는 순간 새 사본을 만들어 스트리밍하고, 그 뒤에 서버의 사본을
+삭제합니다. 다운로드는 "내보내기 버튼이 앞서 만들어 둔 파일을 가져오는 것"이
+아닙니다.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+스냅샷 아카이브의 압축을 풀면 스냅샷 구조가 그대로 재현되며, 그래서 스냅샷을
+복원하는 일은 곧 다시 복사하는 일이 됩니다.
 
-## Move a workspace to another install
+## 워크스페이스를 다른 설치로 이동하기
 
-One workspace is one database file, so handing it over is a file operation.
+워크스페이스 하나는 데이터베이스 파일 하나이므로, 넘겨주는 일은 파일 작업입니다.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. **원본** 서버에서 **설정 → 서버 → 백업 및 복원 → 워크스페이스 데이터**를 열고, 워크스페이스를 펼친 뒤 **다운로드**를 누릅니다.
+2. **대상** 서버에서 이 워크스페이스를 받을 워크스페이스를 만들거나 고릅니다.
+3. 그 워크스페이스를 펼치고 **이 기기에서 복원** 아래에서 **파일 선택 후 업로드**를 누릅니다. 다운로드한 `.db`를 고릅니다.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+두 서버가 지금 앉아 있는 같은 머신이라면, **서버에 저장**과
+**가져오기** → **파일 선택**이 왕복 없이 같은 일을 합니다. 가져오기 대화 상자의
+경로는 서버 호스트에서 해석됩니다.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[가져오기는 모든 것을 교체합니다]
+가져오기는 대상 워크스페이스가 현재 담고 있는 모든 것을 덮어쓰며 되돌릴 수
+없습니다. 대상에 되찾고 싶을 만한 내용이 있다면 먼저 내보내세요.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+거부되지 않고 허용되며 기록만 되는 경우가 두 가지 있습니다. 기록된 워크스페이스
+id가 대상과 다른 파일을 가져오는 경우(이렇게 워크스페이스를 복제하거나 새 id로
+복원합니다)와, **다른 설치**의 파일을 가져오는 경우입니다. 두 번째 경우 그 파일의
+페어링된 기기와 사용자 id는 파일이 온 설치에 속하므로 이 설치에서는 해석되지
+않습니다. 워크스페이스 자체의 데이터는 온전하지만, 가져온 뒤에는 멤버십을 다시
+확인하세요.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+채팅 봇 토큰은 데이터베이스 안이 아니라 옆에 있으므로, 남에게 넘긴
+워크스페이스에는 살아 있는 자격 증명이 들어 있지 않습니다. 받는 설치가 자체
+토큰을 다시 연결합니다.
 
-## Restore one workspace from a snapshot
+## 스냅샷에서 워크스페이스 하나 복원하기
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. **설치 스냅샷**에서 원하는 스냅샷을 펼칩니다.
+2. 그 워크스페이스의 행을 찾아 **복원**을 누릅니다.
+3. 확인합니다. 스냅샷을 만든 뒤 그 워크스페이스가 한 모든 일은 사라집니다.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+이것은 가져오기와 같은 작업을, 스냅샷 안에 있는 그 워크스페이스 파일의 사본을
+향해 실행하는 것입니다. 일부러 그렇게 했습니다. 같은 파일을 다르게 취급할 수 있는
+두 번째 메커니즘을 두지 않기 위해서입니다.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+행에 **이 서버에 더 이상 없습니다**라고 표시되고 **복원**이 비활성화되어 있을 수
+있습니다. 스냅샷이 이 설치에 더 이상 없는 워크스페이스를 담고 있는 것입니다.
+수동으로 되살리세요. 워크스페이스를 만든 뒤 **워크스페이스 데이터** 아래에서
+`<snapshot path>/<old workspace id>/workspace.db`에서 그 워크스페이스로
+가져옵니다. 펼친 스냅샷은 복사 필드에 자체 **서버 경로**를 표시하고 행 제목이 옛
+워크스페이스 id이므로, 그 경로의 양쪽 절반을 눈앞에서 모두 확인할 수 있습니다.
 
-## Restore a whole install
+## 설치 전체 복원하기
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+이를 위한 버튼은 없으며, 있어서도 안 됩니다. 실행 중인 서버가 열어 두고 있는
+데이터베이스를 교체하기 때문입니다.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **`cc_server`를 중지합니다.** 내장 서버와 함께 데스크톱 앱을 실행 중이라면 앱을 종료합니다.
+2. 스냅샷의 내용을 데이터 디렉터리 위로 복사합니다. 스냅샷 구조가 라이브 구조를 그대로 비추므로 단순한 복사입니다:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +175,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. 교체한 데이터베이스 옆에 있는 `-wal` 및 `-shm` 파일을 삭제합니다. 이것들은 옛 파일에 속하며, 복원한 데이터베이스 옆에 오래된 파일이 남아 있으면 손상 위험이 있습니다.
+4. 서버를 다시 시작합니다.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+스냅샷에는 `secrets.json`이 들어 있지 않으므로, **새** 호스트에 복원한 설치는
+데이터는 유지하지만 자격 증명은 유지하지 못합니다. 페어링된 기기, 공급자 토큰,
+SSO 설정을 다시 설정하거나, 그 파일을 보관해 둔 곳에서 복원해야 합니다.
+`secrets.json`이 한 번도 사라지지 않은 같은 호스트에 복원하는 경우에는 모든 것이
+그대로 유지됩니다.
 
-## Copy backups off the machine
+## 백업을 머신 밖으로 복사하기
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+복사한 데이터베이스와 같은 디스크에 있는 스냅샷이 막아 주는 것은 잘못된
+가져오기이지, 디스크가 아닙니다. Control Center는 어디로도 사본을 보내지 않으므로
+이 부분은 여러분의 몫입니다.
 
-### Sync the snapshots
+### 스냅샷 동기화하기
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+스냅샷은 한 번 기록되면 불변이고 타임스탬프로 이름이 붙으므로, 어떤 동기화
+도구든 잘 다룹니다. 진행 중인 다운로드와 업로드의 작업장인 `transfer/`는
+제외하세요:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +211,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete`는 로컬 정리를 원격에 그대로 반영합니다. 원격이 호스트보다 스냅샷을 더
+오래 보관하게 하려면 이 옵션을 빼세요.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[라이브 데이터베이스를 직접 동기화하지 마세요]
+서버가 실행 중일 때 rsync, `aws s3 sync` 또는 파일 수준 백업 에이전트를 `global.db`
+나 `<workspaceId>/workspace.db`에 지정하지 마세요. 실행 중인 SQLite 데이터베이스에는
+`-wal` 사이드카가 있으며, 파일 단위 복사는 둘을 서로 다른 시점에 캡처합니다. 그
+결과는 대개 열리기는 하지만 최근 쓰기가 조용히 빠져 있는 파일이거나, 아예 열리지
+않는 파일입니다. 읽기 트랜잭션에서 기록된 **스냅샷**을 복사하거나, 아래처럼
+`VACUUM INTO`로 새로 만드세요.
 :::
 
-### Include what a snapshot leaves out
+### 스냅샷이 빠뜨리는 것 포함하기
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+데이터만이 아니라 설치 자체를 다시 만들 수 있게 하려면 이것들도 복사하세요.
+일반 파일이라 서버가 실행 중일 때 복사해도 안전합니다:
 
 ```bash
 rsync -a \
@@ -234,20 +241,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json`은 `0600`이며 설치의 모든 페어링 키, 공급자 자격 증명, SSO 설정을
+담습니다. 이것이 저장되는 곳은 최소한 서버 호스트만큼 보호되어야 합니다. 즉 저장
+시 암호화되어야 하고, 다른 누구도 읽을 수 없는 버킷이어야 합니다.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+`spaces/`(복사 시 쓰기 워크트리, 저장소에서 다시 프로비저닝됨), `pr_clones/`
+(캐시), `models/`(다시 다운로드됨), `media_cache/` 및 `rigs/`(머신 상태이며 큼)는
+건너뛰세요. 회의를 보관한다면 `meetings/` 아래의 녹음한 회의 오디오는 포함할
+가치가 있습니다.
 
-### Schedule a whole-install snapshot outside the app
+### 앱 밖에서 설치 전체 스냅샷 예약하기
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+기본 제공 파이프라인은 워크스페이스 하나만 백업합니다. 무인 **설치 전체**
+스냅샷을 위해서는 CLI 하위 명령이 없고, 스냅샷 RPC에는 설치 소유자인 페어링된
+풀 클라이언트가 필요합니다. 호스트 측 타이머가 라이브 데이터베이스에
+`VACUUM INTO`를 사용할 수 있습니다:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +274,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+데이터 디렉터리를 소유한 것과 같은 사용자로 cron 또는 systemd 타이머에서 실행하고,
+끝난 뒤 `DEST`를 호스트 밖으로 동기화하세요. `VACUUM INTO`에는 SQLite 3.27
+이상이 필요합니다.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+`<dataDir>/backups/` **바깥**에 작성하세요. 그 안에 손수 만든 디렉터리는
+`manifest.json`이 없으므로, 앱이 이를 미완료 스냅샷으로 나열하게 되고 목록은
+서버가 스스로 만들어 낸 것에 대한 정직한 기록이기를 그만두게 됩니다.
 
-### Prune old whole-install snapshots
+### 오래된 설치 전체 스냅샷 정리하기
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+앱에서 개별 설치 스냅샷을 삭제할 수 있습니다. 호스트 측 보존 정책을 위해서는
+워크스페이스 백업 디렉터리를 설치 스냅샷과 분리해 두세요:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +293,49 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+`-exec`를 추가하기 전에 `-print`로 한 번 실행한 출력을 확인하세요. 하나보다 더
+많이 보관하세요. 막으려는 장애는 흔히 "마지막 백업에도 같은 문제가 있다"이기
+때문입니다.
 
-## Check that a backup is good
+## 백업이 정상인지 확인하기
 
-A backup nobody has restored is a hypothesis.
+아무도 복원해 보지 않은 백업은 가설일 뿐입니다.
 
-Cheap check — the file opens and its pages are intact:
+간단한 확인 — 파일이 열리고 페이지가 온전한지:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+실제 확인 — 가져와 보는 것입니다. 비프로덕션 설치에 임시 워크스페이스를 만들고
+그 안에 워크스페이스 파일을 가져온 뒤, 기대하는 스페이스, 티켓, 메시지가 있는지
+살펴보세요. 이는 FTS 재구축을 포함해 실제 복원이 지나는 것과 같은 경로를 행사하며,
+백업이 단지 읽히는 것이 아니라 복원 가능하다는 것을 알려 주는 유일한 확인입니다.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+백업을 설정할 때 한 번, 그리고 백업을 저장하는 위치를 바꿀 때마다 다시 하세요.
 
-## Troubleshooting
+## 문제 해결
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| 증상                                                                  | 원인과 해결                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| 다운로드와 업로드 컨트롤이 릴레이 관련 안내와 함께 비활성화됨                     | 브로커 릴레이를 통해 연결되어 있으며, 릴레이는 파일 전송을 운반하지 않습니다. 직접 연결하세요                          |
+| "서버가 거부했습니다"                                                     | 역할 문제입니다. 설치 스냅샷을 만들거나 나열하려면 설치의 운영자가 필요합니다. 워크스페이스 다운로드에는 관리자, 복원에는 소유자, 스냅샷 전체 zip에는 설치의 운영자가 필요합니다 |
+| "이 서버에는 백업 기능이 없습니다"                                      | 호스트에 백업 포트가 연결되어 있지 않습니다 — 데모 서버입니다. 작업은 거부되는 것이 아니라 아예 없습니다                          |
+| "파일이 서버가 허용하는 크기보다 큽니다"                             | 업로드는 8 GiB가 상한입니다. 파일을 서버 호스트에 두고 대신 **가져오기** → **파일 선택**을 사용하세요                 |
+| Import refused: not a Control Center workspace database                  | 그 파일에 `workspace_meta` 행이 없습니다 — 워크스페이스 내보내기가 아니거나 잘렸습니다. 아무것도 교체되지 않았습니다             |
+| 스냅샷이 **미완료**로 나열됨                                      | 매니페스트가 없거나 없는 파일을 가리킵니다. 새로 하나 만드세요. 그동안에는 그 안의 개별 워크스페이스 파일을 가져올 수 있습니다 |
+| 스냅샷에 워크스페이스가 캡처되지 않았다고 표시됨                             | 그 워크스페이스는 한 번도 기록된 적이 없거나 복사에 실패했습니다. 서버 로그를 확인하세요                                  |
+| 복원한 설치에 코드 호스트나 SSO 자격 증명이 없음                       | `secrets.json`은 스냅샷에 들어 있지 않습니다. 보관해 둔 곳에서 복원하거나 공급자를 다시 연결하세요                     |
+| 복원한 워크스페이스에 붙여 넣은 이미지가 없음                            | Blob은 데이터베이스 안이 아니라 옆에 있습니다. `<workspaceId>/blobs/`도 함께 복사하세요                                     |
 
-## Related guides
+## 관련 가이드
 
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): where the data directory comes from
-- [Connect to a remote server](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): direct versus relayed connections
-- [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): the credential the transfer routes sign with
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/): 데이터 디렉터리는 어디에서 오는지
+- [원격 서버 연결](/ko-KR/매뉴얼/사용-가이드/원격-서버-연결/): 직접 연결과 릴레이 연결
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): 전송 경로가 서명에 사용하는 자격 증명
 
-## Related concepts and reference
+## 관련 개념과 레퍼런스
 
-- [Backup, export and import](/ko-KR/매뉴얼/레퍼런스/백업/): every operation, route, field and limit
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/): why one workspace is one file
-- [`cc_server` CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): the data directory layout
+- [백업, 내보내기, 가져오기](/ko-KR/매뉴얼/레퍼런스/백업/): 모든 작업, 경로, 필드, 한도
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/): 워크스페이스 하나가 파일 하나인 이유
+- [`cc_server` CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): 데이터 디렉터리 구조

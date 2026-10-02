@@ -1,134 +1,153 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: Συνομιλίες PR
+description: Πώς ένα σχόλιο σε PR του GitHub γίνεται στροφή πράκτορα χωρίς webhook, τι εξουσιοδοτεί τον συντάκτη και σε ποιον αποδίδεται κάθε πλευρά της συνομιλίας.
 slug: el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+Ένα pull request είναι ήδη το μέρος όπου συμβαίνει η συζήτηση για τον κώδικα.
+Οι συνομιλίες PR το κάνουν επιφάνεια ενός χώρου εργασίας του Control Center,
+με τον ίδιο τρόπο που μια
+[γέφυρα συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) κάνει το Slack μία: κάντε
+@-αναφορά στο bot της GitHub App του διακομιστή σε ένα PR, απαντήστε μέσα στα
+νήματα ελέγχου του ή προσθέστε την ετικέτα `ai-review`, και η εργασία γίνεται
+στον χώρο ελέγχου του PR — με την ίδια απόδοση και τους ίδιους περιορισμούς
+όπως οτιδήποτε πληκτρολογείται στην εφαρμογή. Ένα σχόλιο περνά επίσης από πύλη
+βάσει ιδιότητας μέλους· η ετικέτα όχι, γιατί δεν έχει συντάκτη. Οι απαντήσεις
+του bot επιστρέφουν στο GitHub, στο νήμα όπου τέθηκε η ερώτηση.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+Τρεις αποφάσεις διαμορφώνουν τη λειτουργία και καθεμία είναι η ίδια απόφαση που
+πήρε η γέφυρα συνομιλίας για τη συνομιλία, διατυπωμένη ξανά για έναν κεντρικό
+υπολογιστή κώδικα: **προς ποια κατεύθυνση τρέχει η σύνδεση**, **τι εξουσιοδοτεί
+ένα σχόλιο που φτάνει από έξω** και **σε ποιον αποδίδεται κάθε πλευρά**.
 
-## Polling is the transport
+## Ο περιοδικός έλεγχος είναι το μέσο μεταφοράς
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+Το μόνο κανάλι push του GitHub για μια εφαρμογή είναι το webhook, και ένα
+webhook χρειάζεται ένα URL εισόδου — το μόνο πράγμα που αυτή η επιφάνεια
+σκόπιμα δεν απαιτεί ποτέ. Έτσι, η ανακάλυψη γίνεται με σάρωση: περίπου κάθε
+λεπτό, μία αναζήτηση με ψευδώνυμο ανά εγκατάσταση εφαρμογής ζητά από το GitHub
+PR που αναφέρουν το bot (ή το σύντομο slug του) και ανοιχτά PR που φέρουν την
+ετικέτα ελέγχου, για τα PR που έχουν ήδη χώρο ελέγχου διαβάζονται τα νήματα
+σχολίων τους, και τα πάντα συγκρίνονται με βάση το αναγνωριστικό σχολίου με ό,τι
+είχε εμφανιστεί στην προηγούμενη σάρωση.
 
-The design consequences are worth naming:
+Οι συνέπειες του σχεδιασμού αξίζει να ονομαστούν:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **Η καθυστέρηση είναι διάστημα σάρωσης, όχι γεγονός.** Η επιβεβαίωση με 👀
+  φτάνει μέσα σε περίπου ένα λεπτό. Τίποτα επείγον δεν εξαρτάται από αυτό.
+- **Ακριβώς μία φορά, ανά σχόλιο.** Τα αναγνωριστικά σχολίων είναι μοναδικά σε
+  όλο το GitHub· καθένα καταγράφεται τη στιγμή που χαρακτηρίζεται κατάλληλο,
+  πριν ενεργήσει κάτι πάνω του. Μια κατάρρευση μπορεί να χάσει τον χειρισμό
+  ενός σχολίου, ποτέ να τον ενεργοποιήσει δύο φορές.
+- **Ο χρόνος εκτός λειτουργίας καλύπτεται, δεν αναπαράγεται.** Το σύνολο όσων
+  έχουν εμφανιστεί αποθηκεύεται, ώστε μια επανεκκίνηση να παραδίδει ό,τι έφτασε
+  όσο ήταν εκτός λειτουργίας. Η μόνη εξαίρεση είναι η πρώτη σάρωση που έγινε
+  ποτέ: χωρίς μνήμη για σύγκριση, ό,τι εκκρεμεί καταγράφεται σιωπηλά — ένας
+  χειριστής που είχε βάλει ετικέτα σε είκοσι PR πριν υπάρξει αυτός ο διακομιστής
+  δεν πρέπει να επιστρέψει σε είκοσι ελέγχους σε εξέλιξη.
+- **Η ετικέτα είναι σύνολο, όχι γεγονός.** Η αναζήτηση αναφέρει την _παρουσία_
+  της ετικέτας, οπότε ένα PR με ετικέτα ενεργοποιείται μία φορά, για πάντα. Η
+  εκ νέου προσθήκη μιας ετικέτας αφού αφαιρεθεί είναι αόρατη στη σάρωση· η
+  @-αναφορά είναι η διαδρομή επανεκτέλεσης.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+Η αναζήτηση εκτελείται μία φορά ανά λογαριασμό εγκατάστασης, στον πελάτη του
+ίδιου του κατόχου, γιατί ένα token εγκατάστασης βλέπει μόνο τα αποθετήρια της
+δικής του εγκατάστασης — ένα μεμονωμένο διαπιστευτήριο για όλο τον διακομιστή
+θα έχανε σιωπηλά κάθε PR στις άλλες εγκαταστάσεις της εφαρμογής.
 
-## Membership authorizes, not the comment
+## Η ιδιότητα μέλους εξουσιοδοτεί, όχι το σχόλιο
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+Ένα σχόλιο σε PR φτάνει κουβαλώντας λίγο περισσότερο από το όνομα σύνδεσης του
+συντάκτη — μια μη επαληθευμένη εξωτερική ταυτότητα μέχρι αποδείξεως του
+αντιθέτου. Το bot το αντιστοιχίζει σε ένα αντίστροφο ευρετήριο των μελών του
+χώρου εργασίας και των συνδεδεμένων λογαριασμών τους στο GitHub, το οποίο
+ξαναχτίζεται με TTL, γιατί άνθρωποι συνδέονται και προσκαλούνται όσο ο
+διακομιστής εκτελείται.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+Το κλείσιμο κατά την αποτυχία μοιάζει με σκάλα, και κάθε σκαλοπάτι απαντά στο
+νήμα στο οποίο αρνήθηκε:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **Ένα άγνωστο όνομα σύνδεσης** — χωρίς σύνδεση με λογαριασμό, ή συνδεδεμένο
+  από κάποιον που δεν είναι μέλος αυτού του χώρου εργασίας — λαμβάνει την
+  οδηγία να συνδεθεί και να βεβαιωθεί ότι ανήκει
+- **Ένα μέλος μόνο για ανάγνωση** (`viewer` ή `guest`) ενημερώνεται ότι ο ρόλος
+  του δεν μπορεί να ξεκινήσει εργασία
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+Οι δύο περιπτώσεις άγνωστου ονόματος σύνδεσης μοιράζονται μία απάντηση: το
+αντίστροφο ευρετήριο επιστρέφει μόνο μέλη _αυτού_ του χώρου εργασίας, οπότε
+ένας λογαριασμός χωρίς σύνδεση και ένας συνδεδεμένος μη μέλος είναι η ίδια
+αστοχία. Καμία από τις δύο δεν προχωρά. Ένα σχόλιο δεν αποδίδεται ποτέ σε
+κάποιον που δεν το έστειλε, και τα λόγια ενός αγνώστου δεν μπαίνουν ποτέ σε έναν
+χώρο εργασίας που δεν μπορεί να δει.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+Η ετικέτα `ai-review` δεν έχει συντάκτη προς αντιστοίχιση, οπότε δεν ανεβαίνει
+αυτή τη σκάλα. Η προσθήκη της ξεκινά τον έλεγχο στον χώρο εργασίας που έχει ήδη
+συνδεδεμένο το αποθετήριο.
 
-## Two identities, on purpose
+## Δύο ταυτότητες, σκόπιμα
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+Κάθε πλευρά της συνομιλίας φέρει διαφορετική ταυτότητα, και η διαφορά είναι η
+ίδια η λειτουργία:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **Στο GitHub, το bot είναι ο διακομιστής.** Κάθε σχόλιο, αντίδραση και
+  απάντηση που αναρτά η γέφυρα χρησιμοποιεί το token εγκατάστασης της
+  εφαρμογής. Κανείς δεν πάτησε τίποτα σε έναν πελάτη, οπότε τίποτα δεν
+  δανείζεται τον λογαριασμό ενός ανθρώπου — ο ίδιος κανόνας που κρατά τα webhook
+  και τον περιοδικό έλεγχο έξω από ανθρώπινα διαπιστευτήρια.
+- **Στον χώρο, η ερώτηση είναι δική σας.** Το μήνυμα αποδίδεται στο μέλος στο
+  οποίο αντιστοιχίστηκε ο συντάκτης, και η εκτέλεση του πράκτορα γίνεται για
+  λογαριασμό του: τα commits τον αναφέρουν ως συνδημιουργό, και ο δείκτης
+  αυτονομίας και οι περιορισμοί ενεργειών του χώρου εφαρμόζονται ακριβώς όπως
+  σε ένα μήνυμα που πληκτρολογήθηκε στην εφαρμογή. Οι εγγραφές στον κεντρικό
+  υπολογιστή κώδικα από την εκτέλεση εξακολουθούν να γίνονται ως η εφαρμογή — ο
+  ίδιος κανόνας με την παραπάνω κουκκίδα — όχι με το προσωπικό token του μέλους.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+Η δημοσίευση των ευρημάτων ελέγχου πίσω στο GitHub παραμένει απόφαση ενός
+ανθρώπου, που λαμβάνεται στο Control Center. Μια @-αναφορά μπορεί να _ξεκινήσει_
+έναν έλεγχο· μόνο ένας άνθρωπος δημοσιεύει έναν.
 
-## The loop guard, and the short name
+## Ο φύλακας βρόχου και το σύντομο όνομα
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+Ό,τι έχει συνταχθεί από λογαριασμό bot απορρίπτεται πριν εκτελεστεί οποιαδήποτε
+πύλη — το δικό μας ειδικά, και κάθε κατάληξη `[bot]`, ώστε ούτε το bot ελέγχου
+μιας άλλης εφαρμογής να μπορεί να ξυπνήσει το δικό μας. Χωρίς αυτό, οι
+απαντήσεις του ίδιου του bot θα έφταναν ως νέα σχόλια και θα το ενεργοποιούσαν
+ξανά για πάντα.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+Η κατάληξη `[bot]` είναι επίσης ο λόγος που υπάρχει η σύντομη μορφή. Το GitHub
+καθορίζει το όνομα σύνδεσης του λογαριασμού μιας εφαρμογής σε `<slug>[bot]`, δεν
+προσφέρει αυτόματη συμπλήρωση γι' αυτό και δεν αντιστοιχίζει ποτέ το `@slug`
+στην εφαρμογή — οπότε η αποδοχή του γυμνού slug είναι απόφαση _του δικού μας_
+αντιστοιχιστή, και η ανακάλυψή του απαιτεί ένα κανάλι αναζήτησης σε ακατέργαστο
+**κείμενο** σχολίων αντί για το ευρετήριο αναφορών του GitHub. Το κόστος
+δηλώνεται αντί να εξομαλύνεται: ένας ανθρώπινος χρήστης που μοιράζεται το slug
+της εφαρμογής απευθύνεται στο bot με κάθε σύντομη αναφορά του εαυτού του. Τα
+χαρακτηριστικά ονόματα εφαρμογών κάνουν τη σύγκρουση υποθετική.
 
-## What is deliberately not offered
+## Τι δεν προσφέρεται σκόπιμα
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **Χωρίς αυτόματη δημοσίευση.** Τα ευρήματα προσγειώνονται στον χώρο ελέγχου·
+  η δημοσίευση στο GitHub είναι ξεχωριστή, ανθρώπινη ενέργεια
+- **Χωρίς ασαφή ταυτότητα.** Ο συντάκτης αντιστοιχίζεται σε ακριβώς ένα μέλος ή
+  απορρίπτεται — δεν υπάρχει απόδοση κατ' εκτίμηση
+- **Χωρίς webhook της GitHub App.** Αυτή η επιφάνεια δεν καταχωρεί ποτέ ένα,
+  οπότε δεν υπάρχει URL εισόδου που να εκτίθεται για σχόλια PR. Τα άλλα webhook
+  του προϊόντος (pipeline, συγχρονισμός εισιτηρίων) αποτελούν ξεχωριστή,
+  προαιρετική ρύθμιση.
 
-## See also
+## Δείτε επίσης
 
-- [Talk to Control Center from a GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/):
-  the how-to for all of this
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/):
-  the principals and roles a login resolves through
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/): the pipeline a mention
-  or label starts
+- [Συνομιλία με το Control Center από GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/):
+  ο οδηγός πρακτικής για όλα αυτά
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/): οι ίδιες τρεις αποφάσεις,
+  για τη συνομιλία
+- [Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/): από πού προέρχεται η
+  ταυτότητα του bot
+- [Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/):
+  τα υποκείμενα και οι ρόλοι μέσα από τους οποίους αντιστοιχίζεται ένα όνομα
+  σύνδεσης
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): τι επιτρέπεται να κάνει ο πράκτορας
+  που απαντά
+- [Χρήση ελέγχου με AI](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/): το pipeline που ξεκινά
+  μια @-αναφορά ή μια ετικέτα

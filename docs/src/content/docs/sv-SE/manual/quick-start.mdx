@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Snabbstart
+description: Installera Control Center, konfigurera en agent och se den arbeta i ditt repo.
 slug: sv-SE/handbok/snabbstart
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Det här är den kortaste kompletta vägen från noll till en agent som körs mot din egen kod. Följ den i ordning; varje steg bygger på det föregående.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Du behöver Git, ett GitHub-konto och antingen ett konto hos en modellleverantör (Anthropic, OpenAI, Codex, Cursor, Kimi Code eller vilken leverantör som helst med en API-nyckel) eller Claude Code CLI redan installerat. Allt annat ställs in längs vägen.
 
-## Step 1: Install and launch
+## Steg 1: Installera och starta
 
-Install Control Center as described in [Install](/sv-SE/handbok/installera/), then open it.
+Installera Control Center enligt beskrivningen i [Installera](/sv-SE/handbok/installera/) och öppna det sedan.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Vid första starten frågar skrivbordsappen **”Hur ska Control Center köras?”** Välj **Kör i den här appen**. Control Center startar en headless `cc_server` på den här maskinen, som äger din data och gör allt arbete. Du ser den aldrig; i stället öppnas onboarding-skärmen.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/sv-SE/handbok/installera/#use-it-in-your-browser) for the browser route.
+:::note[Vill du helst inte installera något?]
+Samma app körs i webbläsaren på [app.usectrl.dev](https://app.usectrl.dev) med samma
+funktioner. En webbläsarflik kan dock inte vara värd för servern, så du får
+tillhandahålla en — kör `cc_server` lokalt och anslut till `ws://localhost:9030`, eller
+peka den mot en server på en annan maskin. Den här snabbstarten tar skrivbordsvägen
+eftersom den inte kräver någon serverkonfiguration; se
+[Installera](/sv-SE/handbok/installera/#use-it-in-your-browser) för webbläsarvägen.
 :::
 
-## Step 2: Work through onboarding
+## Steg 2: Gå igenom onboardingen
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Onboardingen har fem steg som körs i ordning — det går inte att hoppa framåt.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Anslut**: logga in med GitHub eller klistra in en personlig åtkomsttoken med `repo` och `read:org`. Inloggningsuppgiften lagras på servern och knyts till ditt konto.
+2. **Arbetsyta**: namnge din första arbetsyta och välj eventuellt en logotyp. När du skapar den seedas fem agenter — en CEO plus `qa`, `architect`, `engineer` och `librarian` — och de inbyggda pipelinemallarna.
+3. **Sandlåda**: registrerar en sandlådeinställning. Båda valen låter dig fortsätta.
+4. **Adapter**: välj den adapter och modell som agenter ska använda som standard. Välj **Control Center (built-in)** och använd sedan leverantörsväljaren som visas för att logga in hos en modellleverantör — modellistan förblir tom tills en är ansluten. När du slutför det här steget skrivs även adaptern och modellen in på arbetsytans CEO-agent.
+5. **Röst (valfritt)**: installera en talmodell på enheten för diktering, eller hoppa över steget.
 
-Control Center then opens your workspace inbox.
+Control Center öppnar sedan inkorgen för din arbetsyta.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
+:::note[Vad som begränsar en agentkörning]
+Agentkommandon körs inuti värdenhetens operativsystems inbyggda sandlåda när en sådan finns — Seatbelt på macOS, bubblewrap på Linux. Windows har ingen backend, så körningar där begränsas bara av de andra lagren: samtalets egen worktree (`git worktree` på Windows; copy-on-write där `rift` finns), inloggningsuppgifter som förmedlas vid varje start och återkallas vid avvecklingen, och åtgärdsräckena. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
 :::
 
-## Step 3: Add a repository
+## Steg 3: Lägg till ett repo
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Gå till **Inställningar → Arbetsyta → Arkiv** och klicka på **Lägg till arkiv**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+Dialogen bläddrar bland mapparna på maskinen som kör servern, inte i din klient, och den håller sig inom de rötter som servern är konfigurerad att exponera (som standard serverns användares hemkatalog). Endast git-utcheckningar får en kryssruta. Markera din och registrera den.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+En utcheckning accepteras bara om den ligger i ett git-arbetsträd, har en `origin`-remote och den remoten pekar på en kodvärd som stöds — github.com, gitlab.com eller bitbucket.org. Allt annat avvisas med orsaken.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repos är knutna till arbetsytan: att registrera en utcheckning här placerar den i _den här_ arbetsytan. Det finns inget separat länkningssteg.
 
-## Step 4: Give an agent an adapter and a model
+## Steg 4: Ge en agent en adapter och en modell
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Gå till **Inställningar → Arbetsyta → Agenter**. Välj agenten `engineer` i listan.
 
-On the **Settings** tab, set:
+På fliken **Inställningar** ställer du in:
 
 - **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Modell**: välj en från leverantören du anslöt under onboardingen
 
-Press **Save changes**.
+Tryck på **Spara ändringar**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Det här steget är i praktiken inte valfritt. Endast CEO-agenten ärver adaptern som valdes under onboardingen; de fyra specialisterna skapas utan en. De faller tillbaka på **Control Center (built-in)** med Anthropics standardmodell, så de körs bara om du har anslutit ett Anthropic-konto — och då på en modell du inte valde, om du har gjort det.
 
-## Step 5: Send the agent a task
+## Steg 5: Skicka en uppgift till agenten
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Leta upp avsnittet **Ytor** i sidofältet och klicka på **+**-knappen.
+2. Namnge ytan, lägg till agenten `engineer` under **Lägg till agenter** och skapa den.
+3. Skriv en konkret, liten uppgift mot repot du registrerade och tryck på Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center etablerar en copy-on-write-worktree av arbetsytans repos för det här samtalet, sätter samman en prompt av agentens roll, persona, skills och ytans kontext och skickar i väg körningen. Din källkodsutcheckning rörs aldrig.
 
-## Step 6: Watch it work
+## Steg 6: Se den arbeta
 
-You should see, in order:
+Du bör se följande, i ordning:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Att skrivfältets skicka-knapp blir en stoppknapp, eftersom en agent arbetar i det här samtalet
+- Att agentens resonemang, verktygsanrop och text strömmar in i transkriptet
+- Att skicka-knappen kommer tillbaka när körningen tar slut
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Öppna sedan **Inställningar → Arbetsyta → Agenter**, välj agenten och kontrollera fliken **Loggar**: en körningsrad med status, varaktighet, start- och sluttid och adaptern den kördes på.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Det är loopen. Allt annat i Control Center — pull request-granskning, pipelines, ärenden, möten, Slack — hänger på den.
 
-## Next steps
+## Nästa steg
 
-- [Your first workspace](/sv-SE/handbok/guider/forsta-arbetsyta/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/sv-SE/handbok/guider/forsta-pr/): take an agent's branch through review and merge
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): what an agent is made of
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/): the rest of the agent form
-- [Run an orchestration](/sv-SE/handbok/how-to-guider/kor-orkestrering/): one goal, one approval, a generated pipeline
-- [Pair your phone](/sv-SE/handbok/how-to-guider/para-enhet/): follow the fleet from anywhere
-- [Deployment and clients](/sv-SE/handbok/koncept/driftsattning/): how the desktop, web and phone clients relate to the server
+- [Din första arbetsyta](/sv-SE/handbok/guider/forsta-arbetsyta/): samma stoff, i långsammare takt, med isoleringsmodellen förklarad
+- [Granska din första pull request](/sv-SE/handbok/guider/forsta-pr/): ta en agents gren genom granskning och sammanslagning
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vad en agent består av
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/): resten av agentformuläret
+- [Kör en orkestrering](/sv-SE/handbok/how-to-guider/kor-orkestrering/): ett mål, ett godkännande, en genererad pipeline
+- [Para din telefon](/sv-SE/handbok/how-to-guider/para-enhet/): följ flottan varifrån som helst
+- [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/): hur skrivbords-, webb- och telefonklienterna förhåller sig till servern

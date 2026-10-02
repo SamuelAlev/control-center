@@ -1,102 +1,103 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Xây dựng quy trình đầu tiên
+description: Tạo một mẫu quy trình, cấu hình bước của nó, cho phép chạy thủ công và khởi chạy một lần.
 slug: vi-VN/so-tay/huong-dan/quy-trinh-dau-tien
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Bạn sẽ xây dựng gì
 
-By the end of this tutorial, you will have:
+Kết thúc hướng dẫn này, bạn sẽ có:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Một mẫu quy trình đã lưu, điều phối một agent bằng một prompt
+- Tính năng chạy thủ công được bật trên mẫu đó, để nó có thể được khởi chạy bằng tay
+- Một lần chạy đã hoàn tất, với đầu vào và đầu ra của bước hiển thị rõ
 
-Prerequisites: [Dispatch your first agent](/vi-VN/so-tay/huong-dan/agent-dau-tien/) completed, so you have an agent with an adapter and a model.
+Điều kiện tiên quyết: đã hoàn thành [Điều phối agent đầu tiên](/vi-VN/so-tay/huong-dan/agent-dau-tien/), để bạn có một agent với adapter và mô hình.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/); for the full step vocabulary, [Pipeline step kinds](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
+Quy trình là một DAG gồm các bước. Mẫu định nghĩa đồ thị; lần chạy là các lần thực thi. Để hiểu mô hình đằng sau nó, đọc [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/); để nắm đầy đủ từ vựng về bước, đọc [Loại bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
 
-## Step 1: Create a template
+## Bước 1: Tạo một mẫu
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Mở **Cài đặt → Không gian làm việc → Mẫu quy trình**
+2. Nhấp **Mẫu mới**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Trình chỉnh sửa mở ra trên một bộ khung được gieo sẵn tên là **Quy trình mới** (id `pipeline_N`).
+Nhấp vào tiêu đề ở phần đầu và đổi tên nó — với hướng dẫn này,
+`code_quality_check` là một cái tên hay. Không có hộp thoại nhập id và cũng không có
+trường mô tả.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Canvas không trống. Một mẫu mới được nối sẵn thành **Trigger → Step →
+terminal**, trong đó "Step" là một nút agent prompt và terminal là một điểm đánh
+dấu vô hình mà trình chỉnh sửa nối lại tới mọi nút đích tiếp cận được.
 
-You configure the Step that is already there.
+Bạn cấu hình nút Step đã có sẵn đó.
 
-## Step 2: Configure the step
+## Bước 2: Cấu hình bước
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Nhấp vào nút **Step** trên canvas
+2. Trong bảng **Cấu hình nút** ở bên phải, đặt:
+   - **Agent**: agent của bạn từ hướng dẫn trước
+   - **Mẫu prompt**: "Hãy đánh giá mã trên nhánh hiện tại để tìm các vấn đề về chất lượng. Liệt kê những gì bạn phát hiện."
+3. Để nguyên **Triggers from** — nút đã được nối sẵn để kích hoạt sau Trigger
 
-## Step 3: Save
+## Bước 3: Lưu
 
-Press **Save** in the editor header.
+Nhấn **Lưu** ở phần đầu trình chỉnh sửa.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+Điểm kiểm tra: dòng chữ "Thay đổi chưa lưu" biến mất.
 
-## Step 4: Allow manual runs
+## Bước 4: Cho phép chạy thủ công
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Nhấp vào ô nét đứt **Thêm bộ kích hoạt** trên canvas (hoặc kéo **Chạy thủ công**
+   từ mục Bộ kích hoạt trong thư viện nút) và chọn **Chạy thủ công**.
+2. Chọn nút đó. Trong bảng cấu hình ở bên phải, bật **Đã bật** —
+   "Hiện trên trang chạy và khởi chạy thủ công."
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Điều này không phải tùy chọn và rất dễ bỏ sót. Một mẫu mới được tạo ra với **hoàn toàn không có hàng trình kích hoạt nào**, nên cho tới khi bạn bật công tắc này, trang chạy sẽ không liệt kê nó và cũng không có gì để khởi chạy. Công tắc ghi trình kích hoạt ngay lập tức; nó không chờ một lần lưu nào khác.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Công tắc tương tự nằm sau **Chạy thủ công** ở phần đầu trình chỉnh sửa, bên cạnh các đầu vào đã khai báo của mẫu.
 
-## Step 5: Run it
+## Bước 5: Chạy nó
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Nhấp **Pipelines** trong thanh bên
+2. Nhấp **Chạy quy trình** ở phần đầu trang
+3. Chọn `code_quality_check` ở thanh bên trái
+4. Nhấp **Chạy quy trình** trên biểu mẫu — mẫu của bạn không khai báo đầu vào nào, nên không có gì phải điền
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+Điểm kiểm tra: một thông báo nổi xác nhận lần chạy đã bắt đầu và Control Center mở trang chi tiết lần chạy.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Engine tạo bản ghi lần chạy, hoàn tất trình kích hoạt, lập lịch bước, điều phối agent và hoàn tất lần chạy khi nhánh đi vào terminal kết thúc.
 
-## Step 6: Inspect the result
+## Bước 6: Kiểm tra kết quả
 
-Click the step in the run to open its detail panel:
+Nhấp vào bước trong lần chạy để mở bảng chi tiết của nó:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Dấu thời gian **Bắt đầu** và **Kết thúc** cùng **Thời lượng**
+- **Đầu vào**: trạng thái được truyền vào bước
+- **Đầu ra**: những gì nó tạo ra — ở đây là phản hồi của agent
+- **Hoạt động của agent**, kèm một liên kết tới cuộc hội thoại mà bước này đã điều khiển
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+Điểm kiểm tra: bước hiển thị trạng thái hoàn tất và đầu ra của nó chứa bản đánh giá của agent.
 
-## Adding more steps
+## Thêm các bước khác
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Các nút được thêm bằng cách kéo một mục từ thư viện nút ở bên trái vào
+canvas, hoặc bằng cách nhấn **Thêm bước** (`+`) ngay sau một nút. Kéo từ
+cổng đầu ra của một nút sang một nút khác để nối chúng, hoặc chọn nút mới
+và tích vào bước thượng nguồn của nó dưới **Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Nút terminal không được vẽ ra và không thể chọn được. Trình chỉnh sửa nối lại nó
+tới mọi nút đích tiếp cận được, nên một nút bạn thêm sau Step được gieo sẵn vẫn chạy.
 
-## Recap
+## Tóm tắt
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Bạn đã tạo một mẫu, cấu hình nút agent prompt mà nó được gieo sẵn, lưu nó, làm cho nó có thể chạy thủ công, khởi chạy một lần chạy và đọc đầu vào cùng đầu ra của bước.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Quy trình có thể lớn hơn nhiều so với thế này — router có điều kiện, nhánh song song, nút join, phân nhánh for-each, cổng cho con người — nhưng hình dạng không bao giờ thay đổi: các bước trong một DAG, truyền trạng thái.
 
-**Next:** [Bridge Slack to your workspace](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/), the last tutorial in this sequence.
+**Tiếp theo:** [Nối Slack với không gian làm việc](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/), hướng dẫn cuối cùng trong chuỗi này.
 
-- [Set up pipeline triggers](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/) to start pipelines from events or a schedule
-- [Pipelines and automation](/vi-VN/so-tay/khai-niem/quy-trinh/) for the model underneath
-- [Pipeline step kinds](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/) for every step type
+- [Thiết lập trình kích hoạt quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/trinh-kich-hoat-quy-trinh/) để khởi chạy quy trình từ sự kiện hoặc theo lịch
+- [Quy trình và tự động hóa](/vi-VN/so-tay/khai-niem/quy-trinh/) để hiểu mô hình bên dưới
+- [Loại bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/) để biết mọi loại bước

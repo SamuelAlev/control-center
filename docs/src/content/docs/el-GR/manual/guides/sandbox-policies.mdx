@@ -1,193 +1,224 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Ρύθμιση πολιτικών sandbox
+description: Τι περιορίζει μια εκτέλεση πράκτορα, πώς καταλαβαίνετε αν το sandbox του λειτουργικού συστήματος την περιτυλίγει και ποιες ρυθμίσεις δυνατοτήτων διαβάζει πραγματικά ο διακομιστής.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Το αν μια εκτέλεση πράκτορα είναι μέσα σε sandbox αποφασίζεται στον διακομιστή,
+κατά την εκκίνηση (`--sandbox`). Ο διακόπτης **Ενεργοποίηση sandbox**, ο
+επιλογέας **Backend** και οι διακόπτες **Προεπιλεγμένες δυνατότητες · νέοι
+χώροι** στις **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο** είναι
+προτιμήσεις που αποθηκεύονται στη συσκευή σας. Η ανίχνευση κεντρικού υπολογιστή
+της κάρτας **Sandboxing** αναφέρει τι μπορεί να περιτυλίξει ο κεντρικός
+υπολογιστής του διακομιστή.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Δύο στοιχεία ελέγχου φτάνουν σε μια εκτέλεση και αυτός ο οδηγός καλύπτει και τα
+δύο: τα **Δικαιώματα sandbox** ανά πράκτορα παρακάτω και τη δική του σημαία
+`--sandbox` του διακομιστή.
 
-## What constrains an agent run
+## Τι περιορίζει μια εκτέλεση πράκτορα
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Έναν πράκτορα τον συγκρατούν έξι πράγματα. Το πρώτο είναι το sandbox του
+λειτουργικού συστήματος και είναι το μόνο υπό αίρεση — τα άλλα πέντε ισχύουν σε
+κάθε κεντρικό υπολογιστή.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Όριο                             | Τι κάνει                                                                                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Το sandbox του λειτουργικού συστήματος | Seatbelt στο macOS, bubblewrap στο Linux και στο WSL2. Περιτυλίγει το CLI του Claude Code, τους προσαρμογείς ACP και το εργαλείο `bash` του harness. **Απουσιάζει στα Windows και σε Linux χωρίς `bwrap` και `socat`** |
+| Το δικό του worktree             | Κάθε συνομιλία παίρνει το δικό της checkout copy-on-write. Το αρχικό checkout εντάσσεται στην εκτέλεση ως διαδρομή απαγόρευσης εγγραφής και το sandbox είναι αυτό που το επιβάλλει                 |
+| Διαπιστευτήρια μέσω μεσίτη       | Ο μεσίτης διαπιστευτηρίων εκδίδει ένα περιβάλλον ανά εκτέλεση από τις δυνατότητες του πράκτορα και το ανακαλεί κατά τον τερματισμό. Χωρίς δυνατότητα, κανένα token στο περιβάλλον              |
+| Περιορισμοί ενεργειών            | Κάθε εργαλείο που τροποποιεί δεδομένα δηλώνει τις κατηγορίες επιδράσεών του και ο φρουρός τις επιλύει πριν εκτελεστεί η κλήση. Μια τιμή `prompt` χωρίς συνδεδεμένο εγκριτή απορρίπτεται        |
+| Καθαρισμός περιβάλλοντος         | Το ACP και το εργαλείο `bash` του harness παίρνουν ένα φιλτραρισμένο περιβάλλον. Το Claude Code μέσω `NoSandboxAdapter` κληρονομεί το περιβάλλον του κεντρικού υπολογιστή                         |
+| Η επιφάνεια εργαλείων της λειτουργίας | Μια λειτουργία μόνο για ανάγνωση αφαιρεί εντελώς τα εργαλεία που τροποποιούν το worktree και καρφιτσώνει το δικό της ρήμα εξόδου, ώστε να μπορεί ακόμη να παραδώσει                                |
 
-Three things stay weaker than they look:
+Τρία πράγματα παραμένουν πιο αδύναμα απ' ό,τι φαίνονται:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Μόνο το **ενσωματωμένο harness** επιβάλλει την πύλη εργαλείων, τα συμβόλαια
+  ολοκλήρωσης και τους δομικούς κανόνες λειτουργίας. Ο προσαρμογέας Claude Code
+  δεν τα επιβάλλει. Ειδικά το Claude Code εκκινείται με
+  `--dangerously-skip-permissions`, επειδή ένα μη διαδραστικό `claude -p` θα
+  κολλούσε για πάντα στη δική του προτροπή — έτσι, οι δικές του κλήσεις
+  ανάγνωσης, εγγραφής, επεξεργασίας και bash ούτε φαίνονται ούτε περνούν από
+  πύλη του Control Center. Όπου το sandbox είναι ενεργό, αυτό είναι το όριο γύρω
+  τους.
+- Τα εργαλεία αρχείων εντός διεργασίας του harness (read, write, edit, apply
+  patch, search, find, search_files) εκτελούνται μέσα στη διεργασία του
+  διακομιστή, οπότε κανένα προφίλ sandbox δεν τα περιορίζει. Μόνο το εργαλείο
+  `bash` περνά από τον εκτελεστή εντολών εντός sandbox. Αυτά τα εργαλεία
+  περιορίζονται από τον δικό τους περιορισμό διαδρομών συν τους περιορισμούς
+  ενεργειών.
+- Σε έναν κεντρικό υπολογιστή χωρίς backend, η πρώτη γραμμή δεν ισχύει καθόλου.
+  Το ACP και το εργαλείο `bash` του harness καταφεύγουν στον καθαρισμό
+  περιβάλλοντος συν την πολιτική εντολών· το Claude Code κληρονομεί το
+  περιβάλλον του κεντρικού υπολογιστή μέσω `NoSandboxAdapter`. Ο διακομιστής το
+  αναφέρει στο αρχείο καταγραφής εκκίνησής του. Ελέγξτε το δικό σας παρακάτω.
 
-## Set an agent's capabilities
+## Ορίστε τις δυνατότητες ενός πράκτορα
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Αυτό είναι το μοναδικό στοιχείο ελέγχου δυνατοτήτων που διαβάζει ο διακομιστής.
+Είναι ανά πράκτορα και καθορίζει τι βάζει ο μεσίτης διαπιστευτηρίων στο
+περιβάλλον αυτού του πράκτορα.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες**
+2. Επιλέξτε τον πράκτορα στη λίστα
+3. Στην καρτέλα **Ρυθμίσεις**, μεταβείτε στα **Δικαιώματα sandbox**
+4. Ενεργοποιήστε τον διακόπτη — η λεζάντα της γραμμής αλλάζει από **Χρήση
+   προεπιλογής χώρου εργασίας**
+5. Ρυθμίστε τους τέσσερις διακόπτες:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| Διακόπτης                        | Τι ελέγχει                                                                                                                                                                                                                                       |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **Να επιτρέπεται git push**      | Με αυτό ανενεργό, η εκτέλεση παίρνει `GIT_ASKPASS=/usr/bin/false` και `GIT_TERMINAL_PROMPT=0`, ώστε ένα push να μην μπορεί να ζητήσει διαπιστευτήριο                                                                                              |
+| **Να επιτρέπονται κλήσεις GitHub API** | Μαζί με το **Να επιτρέπεται git push**, ελέγχει αν ο μεσίτης εγχέει το token του GitHub ως `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                    |
+| **Να επιτρέπονται κλήσεις API εισιτηρίων** | Ελέγχει αν ο μεσίτης εγχέει το `TICKETING_API_KEY`                                                                                                                                                                                     |
+| **Να επιτρέπεται γενική πρόσβαση στο δίκτυο** | Όπου το sandbox είναι ενεργό, αυτό είναι πραγματική πύλη εξόδου: με αυτό ανενεργό, η λίστα επιτρεπόμενων της εκτέλεσης είναι κενή και κάθε εξερχόμενο αίτημα απορρίπτεται στον proxy. Όπου δεν υπάρχει backend, καταγράφεται στην εκτέλεση αλλά δεν μπλοκάρει τίποτα από όσα κάνει μια εκκινημένη διεργασία |
 
-6. Save
+6. Αποθήκευση
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Σημείο ελέγχου: ανοίξτε ξανά τον πράκτορα και ο διακόπτης είναι ακόμη ενεργός με
+τους διακόπτες σας — ένα αποθηκευμένο σύνολο δυνατοτήτων κάνει πλήρη κύκλο μέσω
+του διακομιστή και ένας πράκτορας χωρίς κανένα καταφεύγει στη συντηρητική
+προεπιλογή (push ανενεργό, GitHub API ανενεργό, εισιτήρια ανενεργά, δίκτυο
+ενεργό).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Δύο τρόποι που αυτό προκαλεί πρόβλημα]
+Η λεζάντα λέει **Χρήση προεπιλογής χώρου εργασίας**, αλλά δεν υπάρχει ρύθμιση
+δυνατοτήτων σε επίπεδο χώρου εργασίας που να διαβάζει ο διακομιστής. Ένας
+πράκτορας με τον διακόπτη ανενεργό παίρνει την ενσωματωμένη συντηρητική
+προεπιλογή.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Ξεχωριστά, το διαπιστευτήριο GitHub της εκτέλεσης είναι πάντα μόνο του μεσίτη —
+ένα token εγκατάστασης GitHub App με εμβέλεια αποθετηρίου, ή η εφεδρική λύση του
+PAT από το περιβάλλον — ποτέ το αποθηκευμένο token του ίδιου του μέλους που κάνει
+το αίτημα. Το `actingUserId` μεταβιβάζεται ώστε ο μεσίτης να μπορεί να
+*παρακρατήσει* το PAT του διακομιστή από ένα μέλος που δεν είναι ο ιδιοκτήτης και
+δεν έχει συνδέσει το GitHub· δεν συνενώνει ένα προσωπικό token πάνω από μια
+δυνατότητα που είναι ανενεργή. Μη θεωρείτε το **Να επιτρέπονται κλήσεις GitHub
+API** ως σκληρό όριο εξόδου σε έναν κεντρικό υπολογιστή χωρίς sandbox
+λειτουργικού συστήματος: μια εκκινημένη διεργασία μπορεί ακόμη να φτάσει στο
+δίκτυο.
 :::
 
-## Check whether your agent runs are sandboxed
+## Ελέγξτε αν οι εκτελέσεις πράκτορα είναι μέσα σε sandbox
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Δύο πράγματα το κρίνουν, και τα δύο στον διακομιστή: αν ο κεντρικός υπολογιστής
+προσφέρει backend και αν το `--sandbox` είναι ενεργό. Ελέγξτε τα με αυτή τη
+σειρά.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Μεταβείτε στις **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο**
+2. Διαβάστε την κάρτα **Sandboxing**. Το στοιχείο **Κεντρικός υπολογιστής** είναι
+   το μηχάνημα στο οποίο εκτελείται το `cc_server`, όχι το μηχάνημα που κοιτάτε.
+   Το πεδίο **Backend** εμφανίζει **Εγγενές sandbox** (Seatbelt στο macOS,
+   bubblewrap στο Linux και στο WSL2) ή **Χωρίς απομόνωση**. Το στοιχείο **Σε
+   ισχύ** είναι η προτίμηση αυτής της συσκευής, όχι το περιτύλιγμα που
+   χρησιμοποιεί στην πραγματικότητα ο διακομιστής.
+3. Διαβάστε το αρχείο καταγραφής εκκίνησης του διακομιστή. Εκτυπώνει ακριβώς μία
+   από τρεις γραμμές:
+   - `agent sandbox ON` μαζί με τη σημείωση backend — οι εκτελέσεις περιτυλίγονται
+   - `no OS-native agent sandbox on this host` μαζί με υπόδειξη εγκατάστασης όπου
+     υπάρχει — οι εκτελέσεις δεν περιτυλίγονται
+   - `agent sandbox DISABLED by --sandbox off` — σκόπιμη εξαίρεση
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+Το `GET /healthz` δεν αναφέρει την κατάσταση του sandbox, οπότε το αρχείο
+καταγραφής εκκίνησης είναι ο έλεγχος.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Για να απενεργοποιήσετε σκόπιμα το sandbox — ένας κεντρικός υπολογιστής όπου το
+προφίλ συμπεριφέρεται άσχημα είναι ο λόγος που υπάρχει αυτή η επιλογή — ξεκινήστε
+τον διακομιστή με `--sandbox off` ή ορίστε `CC_SERVER_SANDBOX=off`. Η προεπιλογή
+είναι `on` και το `on` σημαίνει «χρησιμοποίησε ένα backend αν το έχει ο κεντρικός
+υπολογιστής», ποτέ «απαίτησε ένα».
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Δύο περιπτώσεις δεν παίρνουν ποτέ περιτύλιγμα εγγενούς sandbox. Στα **Windows** η
+εγγενής ανίχνευση αναφέρει πάντα μη διαθέσιμο και δεν υπάρχει τίποτα να
+εγκατασταθεί — η αποστολή πράκτορα χρησιμοποιεί `none`. Το backend `microvm`
+είναι ξεχωριστό (διαδραστικά τερματικά και σταθμοί) και περνά από πύλη
+ανίχνευσης με βάση τον δικό του χρόνο εκτέλεσης. Σε **Linux και WSL2** τόσο το
+`bwrap` όσο και το `socat` πρέπει να βρίσκονται στο `PATH`· χωρίς αυτά, η
+ανίχνευση αναφέρει μη διαθέσιμο και ονομάζει τα πακέτα που λείπουν.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Σε Linux/WSL2 με εγκατεστημένο το bubblewrap, τα globs μυστικών αρχείων της
+τυπικής πολιτικής δεν μπορούν να επιβληθούν για αρχεία που δημιουργεί αργότερα
+ένας πράκτορας. Μια τέτοια εγγενής εκτέλεση πλέον αποτυγχάνει αντί να αγνοεί
+σιωπηλά τους κανόνες. Επομένως, μια θετική ανίχνευση κατά την εκκίνηση δεν
+εγγυάται ότι μπορεί να ξεκινήσει μια αποστολή σε Linux. Το `--sandbox off` είναι
+σκόπιμη εξαίρεση χωρίς περιορισμούς, όχι υποκατάστατο ορίου ασφαλείας.
 
-## Know what a mode already forbids
+## Μάθετε τι απαγορεύει ήδη μια λειτουργία
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Η λειτουργία αποθηκεύεται ανά χώρο και τροφοδοτεί τον επιλυτή περιορισμών ως
+επίπεδο **προκαθορισμένου λειτουργίας**. Οι τρεις από τις τέσσερις λειτουργίες
+είναι μόνο για ανάγνωση και μια λειτουργία μόνο για ανάγνωση απορρίπτει ευθέως
+έντεκα κατηγορίες επιδράσεων:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Λειτουργία             | Worktree        | Απορρίπτονται από το προκαθορισμένο                                                                                                                                                                              |
+| ---------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Πράκτορας** (`chat`) | Εγγράψιμο       | Τίποτα — ισχύουν οι ενσωματωμένες προεπιλογές                                                                                                                                                                     |
+| **Σχέδιο**             | Μόνο για ανάγνωση | Διαγραφή αρχείου, εγγραφή εκτός του worktree, δημιουργία commit, push σε απομακρυσμένο, άνοιγμα pull request, δημοσίευση ανασκόπησης ή συγχώνευση, εγγραφή σε εξωτερικό tracker, εγκατάσταση πακέτου, εκτέλεση διεργασίας, αλλαγή δομής χώρου εργασίας, έλεγχος απομονωμένου περιβάλλοντος (σταθμός) |
+| **Ανασκόπηση**         | Μόνο για ανάγνωση | Τα ίδια έντεκα. Δεν είναι επιλέξιμη από τον χρήστη — ο συνθέτης προσφέρει μόνο Πράκτορα, Σχέδιο και Ενορχήστρωση                                                                                                   |
+| **Ενορχήστρωση**       | Μόνο για ανάγνωση | Τα ίδια έντεκα                                                                                                                                                                                                    |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Η πρόσβαση στο δίκτυο και η πρόσβαση σε μυστικά σκόπιμα _δεν_ απορρίπτονται από
+μια λειτουργία μόνο για ανάγνωση: η έρευνα είναι ο σκοπός της.
 
-## Require approval before an action runs
+## Απαιτήστε έγκριση πριν εκτελεστεί μια ενέργεια
 
-Approval is a guardrail decision, not a sandbox setting.
+Η έγκριση είναι απόφαση περιορισμού, όχι ρύθμιση sandbox.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Δικαιώματα πρακτόρων**
+2. Ορίστε την κατηγορία ενέργειας σε **Ερώτηση πρώτα** στο πεδίο εφαρμογής
+   χώρου εργασίας, πράκτορα ή χώρου
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/) for the full
-resolution order.
+Μια απόφαση **Ερώτηση πρώτα** διακόπτει την εκτέλεση και σας ρωτά. Χωρίς
+συνδεδεμένο εγκριτή αποτυγχάνει κλειστή και η ενέργεια απορρίπτεται. Δείτε τη
+[Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/) για την πλήρη
+σειρά επίλυσης.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### An agent cannot push and I never denied it
+### Ένας πράκτορας δεν μπορεί να κάνει push και δεν το απέρριψα ποτέ
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Ελέγξτε τα **Δικαιώματα sandbox** του πράκτορα. Ένας πράκτορας χωρίς
+προσαρμοσμένο σύνολο δυνατοτήτων παίρνει τη συντηρητική προεπιλογή, η οποία έχει
+το **Να επιτρέπεται git push** ανενεργό — έτσι ο μεσίτης δεν εγχέει token του
+GitHub και το git δεν έχει τρόπο να πιστοποιηθεί.
 
-### The Sandboxing card reports no native sandbox
+### Η κάρτα Sandboxing αναφέρει ότι δεν υπάρχει εγγενές sandbox
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/).
+Τότε οι εκτελέσεις πράκτορα σε αυτόν τον κεντρικό υπολογιστή δεν περιτυλίγονται
+από το Seatbelt ή το bubblewrap και τα υπόλοιπα όρια είναι ό,τι έχετε. Σε Linux
+και WSL2, εγκαταστήστε και τα δύο εργαλεία που λείπουν — `sudo apt-get install
+bubblewrap socat` — και επανεκκινήστε τον διακομιστή· το αρχείο καταγραφής
+εκκίνησης θα πρέπει τότε να λέει ότι το sandbox είναι ενεργό. Στα Windows δεν
+υπάρχει εγγενές backend για εγκατάσταση, οπότε σφίξτε τους περιορισμούς αντ'
+αυτού: δείτε τη
+[Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/).
 
-### An agent reached a file outside its worktree
+### Ένας πράκτορας έφτασε σε αρχείο εκτός του worktree
 
-Which tool reached it decides whether this is expected.
+Ποιο εργαλείο έφτασε σε αυτό καθορίζει αν αυτό είναι αναμενόμενο.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Τα εργαλεία αρχείων εντός διεργασίας του harness (read, write, edit, apply patch,
+search, find, search_files) εκτελούνται στη διεργασία του διακομιστή, οπότε
+κανένα προφίλ sandbox δεν ισχύει γι' αυτά — το όριό τους είναι ο δικός τους
+περιορισμός διαδρομών συν οι περιορισμοί. Μια εντολή `bash` ή το CLI του Claude
+Code _περιτυλίγεται_ όπου υπάρχει backend και τα καταχωρισμένα checkouts σας
+είναι απαγόρευσης εγγραφής μέσα σε αυτό το περιτύλιγμα σε κάθε λειτουργία,
+συμπεριλαμβανομένων των γραφών τους μετά την επίλυση symlink (στο macOS μια
+διαδρομή στην οποία φτάνετε μέσω `/tmp` ή `/var/folders` επιλύεται κάτω από το
+`/private` και πλέον απορρίπτονται και οι δύο γραφές). Σε έναν κεντρικό
+υπολογιστή χωρίς backend, τίποτα από αυτά δεν ισχύει. Σε κάθε περίπτωση, οι
+περιορισμοί μπορούν να απορρίψουν ευθέως την **Εγγραφή εκτός του worktree**.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [Diagnose an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
-- [Sandbox backends](/el-GR/εγχειρίδιο/αναφορά/υποσυστήματα-sandbox/)
-- [cc_server CLI](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/): the `--sandbox` flag
+- [Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
+- [Υποσυστήματα sandbox](/el-GR/εγχειρίδιο/αναφορά/υποσυστήματα-sandbox/)
+- [CLI του cc_server](/el-GR/εγχειρίδιο/αναφορά/cc-server-cli/): η σημαία `--sandbox`
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)

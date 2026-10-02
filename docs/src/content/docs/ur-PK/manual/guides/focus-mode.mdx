@@ -1,185 +1,189 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: فوکس موڈ اور ساؤنڈ اسکیپس استعمال کریں
+description: ایک مقررہ وقت کا فوکس سیشن چلائیں جس میں ایک فلوٹنگ کاؤنٹ ڈاؤن پِل ہو اور اطلاعات دب جائیں، اور اس کے نیچے چلنے والی موافقت پذیر ساؤنڈ اسکیپ کو ترتیب دیں۔
 dateModified: 2026-08-17
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فوکس-موڈ
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+یہ گائیڈ دکھاتی ہے کہ فوکس سیشن کیسے چلایا جائے: ایک مقررہ وقت کا وقفہ جس کے
+دوران Control Center غیر ضروری اطلاعات دبا دیتا ہے اور آپ کی دیگر ونڈوز کے اوپر
+ایک کاؤنٹ ڈاؤن پِل فلوٹ کرتا ہے۔ اس میں وہ ساؤنڈ اسکیپ بھی شامل ہے جو (بطور
+ڈیفالٹ) اس کے نیچے چلتی ہے — ایک لازوال محیطی ٹریک جسے آپ کا سرور براہِ راست
+ترکیب کرتا ہے، اور جس کی شکل آپ کے چنے ہوئے موڈ، باہر کے موسم اور دن کے وقت سے
+بنتی ہے۔
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+فوکس سیشن شیل کی سطح کی ایک خصوصیت ہے۔ یہ کسی بنیادی ستون سے بندھا نہیں — نہ لے
+آؤٹ بدلتا ہے، نہ سائیڈ بار چھپاتا ہے، اور نہ کسی PR ریویو کی سطح کو بدلتا ہے۔
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[صرف ڈیسک ٹاپ]
+فلوٹنگ پِل اور ساؤنڈ اسکیپ کا الگ کھلنے والا منی پلیئر مقامی ساتھی ونڈوز ہیں،
+جنہیں صرف ڈیسک ٹاپ بوٹ اسٹریپ ماؤنٹ کرتا ہے۔ `app.usectrl.dev` پر ویب بلڈ میں یہ
+دونوں نہیں ہیں، اور OS اطلاعات کی کوئی پائپ لائن بھی نہیں، چنانچہ وہاں فوکس
+سیشن کے پاس دکھانے یا دبانے کو کچھ نہیں ہوتا۔ ساؤنڈ اسکیپ پینل اور اس کی
+پلے بیک ہر وہاں کام کرتے ہیں جہاں آپ کسی سرور سے جڑیں۔
 :::
 
-## Start a focus session
+## فوکس سیشن شروع کریں
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. ٹائٹل بار کے دائیں طرف فوکس آئیکن پر کلک کریں (ٹول ٹپ **فوکس سیشن شروع
+   کریں**)
+2. ڈائیلاگ میں ایک اختیاری **ہدف** لکھیں — وہ چیز جس پر آپ کام کر رہے ہیں
+3. ایک **مدت** منتخب کریں: 25m، 50m، 1h، 1h 30m یا 2h۔ ڈیفالٹ 50m ہے اور آپ کا
+   آخری انتخاب یاد رکھا جاتا ہے
+4. **شروع** دبائیں
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+چیک پوائنٹ: ٹائٹل بار کا بٹن ایک ایسنٹ چِپ سے بدل جاتا ہے جو باقی بچنے والے منٹ
+دکھاتی ہے، فلوٹنگ پِل آپ کی دیگر ونڈوز کے اوپر ظاہر ہوتا ہے اور — **فوکس موڈ کے
+ساتھ شروع کریں** کے آن ہونے پر — ساؤنڈ اسکیپ چلنے لگتی ہے۔
 
-Two other entry points reach the same session:
+اسی سیشن تک پہنچنے کے دو اور داخلے ہیں:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** وہی ڈائیلاگ کھولتا ہے۔
+- **⌘⇧⌥F** آپ کی یاد رکھی گئی مدت کے ساتھ اور بغیر ہدف کے فوراً سیشن شروع کرتا
+  ہے — یہ ڈائیلاگ چھوڑ دیتا ہے۔ اسے دوبارہ دبانے سے سیشن ختم ہو جاتا ہے۔
 
-## Read the floating pill
+## فلوٹنگ پِل پڑھیں
 
-The pill is a small frameless window you can drag anywhere. It shows:
+پِل ایک چھوٹی بغیر فریم ونڈو ہے جسے آپ کہیں بھی گھسیٹ سکتے ہیں۔ یہ دکھاتی ہے:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- ایک لائیو موجودگی نقطہ اور باقی وقت `mm:ss` کی صورت میں
+- آپ کا ہدف، یا "Focus session" جب آپ نے کوئی ہدف مقرر نہ کیا ہو
+- نیچے کے کنارے پر ایک باریک پیش رفت بار
 
-Hover it to reveal two actions:
+اس پر ہوور کرنے سے دو کارروائیاں سامنے آتی ہیں:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — کاؤنٹ ڈاؤن روک دیتا ہے۔ توقف صرف پِل تک محدود ہے؛
+  سیشن خود فعال رہتا ہے۔
+- **Complete** — سیشن ختم کر دیتا ہے۔
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+پِل مرکزی ونڈو کے کسی بھی تھیم کے باوجود تاریک پیلیٹ ہی اپناتی ہے، کیونکہ یہ
+ڈیسک ٹاپ کے من مانے مواد کے اوپر فلوٹ کرتی ہے۔
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+اگر آپ پِل کو ٹائٹل بار سے بند کریں تو سیشن چلتا رہتا ہے۔ اسے واپس لانے کے لیے
+فوکس چِپ کے ساتھ والا پکچر اِن پکچر بٹن دبائیں (ٹول ٹپ **بار پر چھوٹا
+کریں**)۔
 
-## Know what gets suppressed
+## کیا دبایا جاتا ہے، یہ جانیں
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+جب تک کوئی سیشن فعال ہو، Control Center ہر اطلاع گرا دیتا ہے سوائے دو اقسام کے،
+جو ہمیشہ پہنچائی جاتی ہیں:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **میٹنگ جلد شروع ہو رہی ہے** — بعد میں نظر آنے والا میٹنگ الرٹ بے کار ہے
+- **PR شائع ہوا**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+باقی سب پورے سیشن کے لیے خاموشی سے دب جاتا ہے — نہ آواز، نہ OS ٹوسٹ۔ دبی ہوئی
+اطلاعات بعد میں پہنچانے کے لیے قطار میں نہیں رکھی جاتیں۔
 
-## Play a soundscape
+## ساؤنڈ اسکیپ چلائیں
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. پینل کھولنے کے لیے ٹائٹل بار کے دائیں طرف اسپیکر آئیکن پر کلک کریں (ٹول ٹپ
+   **ساؤنڈ اسکیپس**)
+2. ایک **موڈ** منتخب کریں — **فوکس**، **عروج**، **آرام** یا **نیند**
+3. **چلائیں** دبائیں
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+چیک پوائنٹ: **اب چل رہا ہے** کارڈ موجودہ منظر کا نام بتاتا ہے — آپ کے ورک اسپیس
+کے مقام کا موسم، درجہ حرارت °C میں اور مقام کا لیبل۔ جب تک وہ "امبیئنس ٹون ہو
+رہا ہے…" پڑھتا ہے، منظر ابھی طے ہو رہا ہے۔
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+ٹریک کوئی لوپ نہیں ہے۔ آپ کا سرور اسے موڈ، ورک اسپیس کے مقام کے زندہ موسم اور
+دن کے وقت سے مسلسل ترکیب کرتا ہے۔ بارش روشن اور مصروف لگتی ہے، طوفان بلند و
+تند، دھند دبی ہوئی؛ رات دوپہر سے زیادہ تاریک اور زیادہ گونج دار ہوتی ہے۔ موڈ
+الفاظ کا ذخیرہ طے کرتا ہے:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| موڈ  | آواز                                                                            |
+| ---- | ------------------------------------------------------------------------------- |
+| فوکس | ہلکا، چوکس امبیئنس جس میں ایک مدھم دھڑکن ہو — کام کے نیچے بیٹھنے کے لیے         |
+| عروج | نرم دھڑکن والی اُبھرتی دھن — جب کام بھاری محسوس ہو                                |
+| آرام | زیادہ گرم، زیادہ ہم آہنگ پیڈز، کوئی تال نہیں                                     |
+| نیند | مدھم ڈرون جن میں تقریباً کوئی واقعہ نہ ہو، گہرا ریورب                            |
 
-Switching mood while playing hands playback to the new mood without stopping.
+چلتے ہوئے موڈ بدلنے سے پلے بیک رکے بغیر نئے موڈ کے حوالے ہو جاتا ہے۔
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+پینل ⌘K سے بھی **Focus** زمرے کے تحت، خود فوکس سیشن کے ساتھ، قابلِ رسائی ہے۔
 
-## Shape the sound
+## آواز کو ترتیب دیں
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **ٹون** (فوکس، عروج اور آرام) — ایک مربع پیڈ جس میں گھسیٹنے کے قابل پک ہوتا
+  ہے۔ افقی سمت **نرم** سے **توانا** تک ہے (یعنی کتنا کچھ ہوتا ہے)، عمودی **وسیع**
+  سے **روشن** تک (یعنی آواز کتنی کھلی ہے)۔ پیڈ کو غیر جانب دار مرکز پر ری سیٹ
+  کرنے کے لیے اس پر ڈبل ٹیپ کریں؛ تیر والے کلید پک کو تھوڑا سا سرکاتے ہیں۔ آپ
+  کا ٹون فی موڈ یاد رکھا جاتا ہے، اور ایڈجسٹمنٹ چلتے ہوئے مکس میں آہستگی سے شامل
+  ہو جاتی ہیں — اسٹریم کبھی دوبارہ شروع نہیں ہوتی۔ نیند موڈ جان بوجھ کر ناقابلِ
+  ٹون ہے۔
+- **والیوم** — 0 سے 100% تک ایک سلائیڈر، جس کا ڈیفالٹ 60% ہے۔ یہ سسٹم والیوم سے
+  الگ ہے اور یاد رکھا جاتا ہے۔
+- **مقام** — ورک اسپیس سے خود بخود پتہ لگ جاتا ہے۔ منظر دوبارہ لانے کے لیے
+  **موسم تازہ کریں** دبائیں۔
 
-## Pop out the mini player
+## منی پلیئر الگ کھولیں
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+جب تک آڈیو چل رہا ہو، ٹائٹل بار میں ایک دوسرا بٹن بڑھ جاتا ہے (ٹول ٹپ **پلیئر
+الگ کھولیں**)۔ یہ ایک چھوٹا، ہمیشہ سب سے اوپر رہنے والا HUD فلوٹ کرتا ہے جس میں
+پلے/پاز، موسم کی علامت، منظر کا نام اور ایک **ایپ پر واپس** بٹن ہوتا ہے — یہ تب
+کارآمد ہے جب فوکس سیشن آپ کو کسی اور ایپ میں بالکل جھکا دے۔
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+منی پلیئر سے پاز کرنے پر وہ بند نہیں ہوتا؛ اسے صرف اس کا بند کرنے کا بٹن (یا
+ایپ سے باہر نکلنا) ہٹاتا ہے۔
 
-## Run them together
+## دونوں کو ساتھ چلائیں
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+یہ دونوں خصوصیات ساؤنڈ اسکیپ پینل میں ایک ہی سوئچ سے جڑی ہیں: **فوکس موڈ کے
+ساتھ شروع کریں**، جو بطور ڈیفالٹ آن ہے۔
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- فوکس سیشن شروع کرنا ساؤنڈ اسکیپ کو شروع کر دیتا ہے اگر پہلے سے کچھ نہ چل رہا
+  ہو۔
+- سیشن کا خاتمہ — خواہ کیسے بھی ہو، بشمول ٹائمر کا ختم ہو جانا — اسے روک دیتا
+  ہے، حتیٰ کہ جب آپ نے ساؤنڈ اسکیپ خود ہاتھ سے شروع کی ہو۔
 
-Turn the switch off to keep the two independent.
+دونوں کو آزاد رکھنے کے لیے سوئچ آف کر دیں۔
 
-## End a session
+## سیشن ختم کریں
 
-Any one of these ends it:
+ان میں سے کوئی بھی اسے ختم کرتا ہے:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- ٹائٹل بار میں فوکس چِپ پر کلک کریں (ٹول ٹپ **فوکس موڈ فعال — ختم کرنے کے لیے
+  ٹیپ کریں**)
+- پِل پر **Complete** دبائیں
+- **⌘⇧⌥F** دبائیں
+- ⌘K میں **Exit focus mode** منتخب کریں
+- ٹائمر کو ختم ہونے دیں — سیشن صفر پر خود بخود مکمل ہو جاتا ہے
 
-The pill closes, notifications resume immediately and the soundscape stops.
+پِل بند ہو جاتی ہے، اطلاعات فوراً دوبارہ شروع ہو جاتی ہیں اور ساؤنڈ اسکیپ رک
+جاتی ہے۔
 
-## Understand what does not persist
+## کیا محفوظ نہیں رہتا، یہ سمجھیں
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+ایک سیشن بالکل ایک ایپ رن تک زندہ رہتا ہے۔ Control Center بند کر کے دوبارہ
+کھولیں تو آپ غیر فعال حالت میں اور ری سیٹ ٹائمر کے ساتھ شروع کرتے ہیں، حتیٰ کہ
+سیشن کے بیچ میں بھی — نہ کوئی کریش ریکوری ہے اور نہ سیشن کی کوئی تاریخ۔
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+صرف دو چیزیں منتقل ہوتی ہیں: آپ کی پسندیدہ مدت اور اطلاعات بلاک کرنے کا فلیگ۔
+ہدف، گزرا ہوا وقت اور پِل کی کھلی حالت منتقل نہیں ہوتے۔
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+پلے بیک بھی اتنا ہی عارضی ہے — ساؤنڈ اسکیپ لانچ پر ہمیشہ رکی ہوتی ہے۔ آپ کا
+موڈ، والیوم اور فی موڈ ٹون برقرار رہتے ہیں؛ خود اسٹریم کبھی اپنے آپ دوبارہ
+شروع نہیں ہوتی۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The tune pad is missing
+### ٹون پیڈ غائب ہے
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+آپ نیند موڈ پر ہیں، جو جان بوجھ کر ناقابلِ ٹون ہے۔ پیڈ واپس لانے کے لیے فوکس
+یا آرام پر جائیں۔
 
-### Nothing plays after restarting the app
+### ایپ دوبارہ چلانے کے بعد کچھ نہیں چلتا
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+ڈیزائن ہی ایسا ہے — پلے بیک ایپ لانچ پر ہمیشہ رکا ہوتا ہے۔ پینل کھولیں اور
+دوبارہ **چلائیں** دبائیں۔ اگر پھر بھی خاموش رہے تو پینل کا والیوم سلائیڈر
+دیکھیں، جو سسٹم والیوم سے الگ ہے۔
 
-### The weather or temperature looks wrong
+### موسم یا درجہ حرارت غلط لگتا ہے
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+منظر فعال ورک اسپیس کے مقام کی پیروی کرتا ہے۔ اسے دوبارہ لانے کے لیے پینل میں
+**موسم تازہ کریں** دبائیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Configure notifications](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اطلاعات/)
-- [Keyboard shortcuts](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/)
+- [اطلاعات کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اطلاعات/)
+- [کی بورڈ شارٹ کٹس](/ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس/)

@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Встроенные инструменты агента
+description: Поверхность инструментов, которую встроенный харнесс даёт агенту, — языковой сервер, структурный поиск, отладчик, ядра и управление воркерами, — со всеми операциями и их аргументами.
 slug: ru-RU/руководство/справка/инструменты-агента
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/ru-RU/руководство/справка/инструменты-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Это **привязанные к серверу** инструменты, которые встроенная среда выполнения агента регистрирует напрямую, — языковой сервер, структурный поиск, отладчик, ядра, вопросы и управление воркерами, — в отличие от [инструментов MCP](/ru-RU/руководство/справка/инструменты-mcp/), которые она подключает извне, и универсальных инструментов работы с файлами, поиска и оболочки из среды выполнения харнесса. Их нет в реестре MCP: внешний клиент MCP их не увидит, потому что каждый из них привязан к живому ресурсу на стороне сервера — процессу языкового сервера, отладочному адаптеру, интерпретатору, — который принадлежит одному запуску.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Каждый инструмент здесь регистрируется, только когда для запуска подключён его опорный ресурс — супервизор языкового сервера или отладки, парсер tree-sitter, фабрика ядер, порт вопросов, состав vibe. Обнаружение языкового сервера или отладочного адаптера для *этой рабочей копии* — отдельная, более поздняя проверка (`status` / `adapters`): эти инструменты остаются на поверхности, чтобы агент мог спросить, почему ничего не работает, а не гадать.
 
-## Approval tiers
+## Уровни подтверждения
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Каждый инструмент объявляет уровень, и уровень решает, **какие поверхности его видят**, — а не просто то, спрашивает ли он подтверждение. Режим плана и субагенты только для чтения ограничены уровнем `read`, поэтому инструмент уровня `write` или `exec` полностью отсутствует в их схеме.
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| Уровень | Значение                       | Инструменты здесь                                |
+| ------- | ------------------------------ | ------------------------------------------------ |
+| `read`  | Без побочных эффектов          | `lsp`, `ast_grep`, `ask_user`, пять `vibe_*`     |
+| `write` | Изменяет файлы                 | `lsp_rename`, `ast_edit`, `resolve`              |
+| `exec`  | Запускает процесс или управляет им | `debug`, `eval`                              |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — запросы к языковому серверу
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Регистрируется, когда у запуска есть супервизор языкового сервера и рабочий каталог. Способен ли сервер на самом деле ответить, определяется в момент вызова как **пересечение**: маркер корня должен существовать, *и* бинарник сервера должен разрешаться. Каждое из условий само по себе означает, что сервер не запустится — `status` так и говорит, — а не молчаливое предположение.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Позиции адресуются строкой `line` плюс подстрокой `symbol`, никогда — столбцом. Модель, у которой просят столбец, гадает, а неверная догадка разрешается в другой символ на той же строке — ответ, который выглядит правильным, но говорит о другом. Пропуск `symbol` в навигационном действии — это ошибка, а не догадка о первом столбце.
 
-| Action            | Arguments                        | Returns                                    |
+| Действие          | Аргументы                        | Возвращает                                 |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (или `"*"`)               | Ошибки и предупреждения; `"*"` вместо этого запускает проверку проекта |
+| `definition`      | `file`, `line`, `symbol`         | Где объявлен символ                        |
+| `type_definition` | `file`, `line`, `symbol`         | Где объявлен его тип                       |
+| `implementation`  | `file`, `line`, `symbol`         | Конкретные реализации                      |
+| `references`      | `file`, `line`, `symbol`         | Все использования, не более 50             |
+| `hover`           | `file`, `line`, `symbol`         | Сигнатура и doc-комментарий                |
+| `symbols`         | `query` или `file`               | Поиск по рабочему пространству с `query` (не более 100); символы документа с `file` (не более 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Быстрые исправления, которые предлагает сервер |
+| `status`          | —                                | Какие серверы работают и для каких корней  |
+| `reload`          | —                                | Перезапускает сервер для этого корня       |
 
-### Diagnostics on write
+### Диагностика при записи
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Выигрыш не в самом инструменте. `write`, `edit` и `apply_patch` **обёрнуты**: после записи файл синхронизируется и сохраняется через языковой сервер, и в результат инструмента подмешиваются только **вновь появившиеся** диагностики. Агент узнаёт, что сломал сборку, в тот самый момент, когда он её сломал, и ему не нужно помнить, чтобы спросить.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Уже отчитанные диагностики подавляются реестром уровня запуска, ключ которого строится по серьёзности, коду и сообщению, — позиция намеренно исключена, поэтому диагностика, которая всего лишь сместилась на четыре строки вниз, не отчитывается заново как новая.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — переименование в пределах проекта
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Отдельный инструмент уровня `write` ровно по одной причине: уровень решает видимость. Добавление переименования в `lsp` либо дало бы исследователю только для чтения возможность переписать репозиторий, либо поставило бы каждый `hover` за запрос подтверждения.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Аргумент   | Значение                               |
+| ---------- | -------------------------------------- |
+| `file`     | Где находится символ                   |
+| `line`     | Строка с нумерацией от 1               |
+| `symbol`   | Подстрока, опознающая его в этой строке |
+| `new_name` | Как его назвать                        |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — структурный поиск
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Находит код по **форме**, а не по тексту. `$NAME` сопоставляется с любым узлом, `$$$NAME` — с последовательностью соседних узлов, а `$_` — это подстановочный знак, который ничего не связывает.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Свойство, которое делает его сопоставителем, а не регулярным выражением с лишними шагами: метапеременная, повторённая в одном шаблоне, должна захватить один и тот же текст.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+находит проверку, которая освобождает то же, что проверяла, и **не** находит ту, что освобождает что-то другое.
 
-| Argument      | Meaning                                                     |
-| ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| Аргумент      | Значение                                                     |
+| ------------- | ------------------------------------------------------------ |
+| `pattern`     | Фрагмент кода с метапеременными                              |
+| `path`        | Файл или каталог для поиска; по умолчанию всё рабочее пространство |
+| `language`    | Идентификатор поставляемой грамматики (`dart`, `python`, `rust`, `c`, …). Выводится, когда `path` указывает на файл |
+| `max_results` | По умолчанию 50                                              |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Шаблон разбирается той же грамматикой, что и файл]
+Поэтому `dispose(x)` находит вызов, как бы он ни был расставлен пробелами, перенесён по строкам или закомментирован, — и никогда не находит те же символы внутри строкового литерала или комментария.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Фрагмент разбирается в каркасе, а не сам по себе]
+`dispose(x)`, разобранный на верхнем уровне Dart, — это допустимая *сигнатура функции*. Компилятор шаблонов перебирает лестницу контекстов (инструкция, выражение, член класса, объявление) и использует первый, который принимает фрагмент. Шаблон, который не принимает ни один контекст, сообщается как неразбираемый, а не ищется и молча не находится.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — структурная перезапись с подготовкой
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+То же сопоставление, плюс шаблон `rewrite`, в который подставляются обратно метапеременные. **Ничего не записывается.** Изменение подготавливается, и результат называет `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Аргумент   | Значение                                            |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Что сопоставлять                                    |
+| `rewrite`  | Что подставить на это место, с подстановкой `$NAME` |
+| `path`     | Область; по умолчанию всё рабочее пространство      |
+| `language` | Идентификатор языка                                 |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — зафиксировать или отбросить подготовленное изменение
 
-| Argument  | Meaning                          |
+| Аргумент  | Значение                         |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Из результата `(proposed)`       |
+| `action`  | `accept` или `discard`           |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Каждый файл сверяется с содержимым, зафиксированным в момент подготовки изменения, и **любое** несовпадение отклоняет изменение целиком. Частично применённая структурная перезапись оставляет дерево, которое не компилируется ни под старой формой, ни под новой.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — управление отладчиком
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Регистрируется, когда у запуска есть супервизор отладочных сессий, рабочий каталог и идентификатор разговора. Способен ли адаптер на самом деле запуститься, определяется в момент вызова по тому же правилу пересечения, что и для языкового сервера (маркер корня *и* бинарник). Уровень `exec`; небезопасен при параллельном выполнении (сессия — это состояние между вызовами, поэтому `continue`, обогнавший `stack`, прочитал бы кадр, который уже сдвинулся).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Одна сессия на разговор, с жёстким TTL (30 минут). Второй `launch` отклоняется, а не заменяет первый молча.
 
-| Op            | Arguments                     | Notes                                          |
+| Операция      | Аргументы                     | Примечания                                     |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Какие адаптеры здесь пригодны и почему нет     |
+| `status`      | —                             | Работает ли сессия и где она остановилась      |
+| `breakpoints` | `file`, `lines[]`             | Пустой `lines` очищает файл. Можно ставить **до** запуска |
+| `launch`      | `program`, `args[]`           | Запускает программу остановленной на ваших точках останова |
+| `attach`      | `port`                        | Подключается к уже запущенной отлаживаемой программе |
+| `continue`    | `thread_id?`                  | Выполняет до следующей остановки               |
+| `pause`       | `thread_id?`                  | Останавливает её там, где она есть             |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Делает один шаг                     |
+| `threads`     | —                             | Идентификаторы и имена потоков                 |
+| `stack`       | `thread_id?`                  | Кадры, не более 30                             |
+| `scopes`      | `frame_id`                    | Области видимости кадра, у каждой есть `reference` |
+| `variables`   | `reference`                   | Дочерние элементы, не более 50; значения не длиннее 400 символов |
+| `evaluate`    | `expression`, `frame_id?`     | Вычисляется в собственной области видимости кадра |
+| `output`      | —                             | stdout/stderr отлаживаемой программы, с ограничением размера |
+| `terminate`   | —                             | Завершает сессию и убивает адаптер             |
 
-### Adapters
+### Адаптеры
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
-| `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| Идентификатор | Команда                      | Маркеры корня                                   |
+| ------------- | ---------------------------- | ----------------------------------------------- |
+| `dart`        | `dart debug_adapter`         | `pubspec.yaml`                                  |
+| `debugpy`     | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
+| `lldb`        | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  |
+| `delve`       | `dlv dap`                    | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` предпочитает локальные для проекта `.venv/bin` или `venv/bin` вместо `$PATH`: python из `$PATH` — это другое окружение, и подключение не из того окружения падает так, что это читается как сломанный код.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — постоянные интерпретаторы
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Ячейка Python или JavaScript, переменные, импорты и загруженные данные которой переживают переходы между вызовами. Уровень `exec`; небезопасна при параллельном выполнении.
 
-| Argument      | Meaning                                          |
+| Аргумент      | Значение                                         |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | Ячейка                                           |
+| `description` | Обязательно. 5–10 слов для метки в транскрипте   |
+| `language`    | `python` (по умолчанию) или `javascript`         |
+| `reset`       | Отбросить интерпретатор и сначала начать с чистого |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Последнее выражение отражается так, как это делает блокнот.
+- `display()` работает, датафрейм pandas отрисовывается как таблица, а график matplotlib возвращается как **изображение, которое показывает транскрипт**.
+- Идиомы IPython, которые люди набирают рефлекторно, — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — переписываются в обычный код. `%pip` вдобавок вытесняет `sys.modules`, поэтому следующий `import` видит то, что только что установили.
 
-### Calling your own tools from inside a cell
+### Вызов собственных инструментов из ячейки
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Мост **снова входит в реестр инструментов харнесса**, поэтому ограничения, подтверждение и каждая обёртка применяются точно так же, как к вызову, сделанному моделью. Он идёт по собственному каналу ядра, а не через loopback-сокет: ни порта, ни секрета, ни правила исходящего доступа.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Тайм-аут ячейки — это бюджет *бездействия* (по умолчанию 5 минут), и он **приостанавливается**, пока не завершится вызов через мост, поэтому ячейка, которая разветвляется на субагентов, не убивается посреди разветвления.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Где выполняется ядро]
+В изолированной среде разговора, если она у него есть, иначе — на хосте. Он не запускает изолированную среду, чтобы до неё добраться, — то же правило, которое не даёт вкладке rig запуститься автоматически.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — задать вопрос человеку
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Уровень `read`. **Единственный** способ, которым запуск может спросить что-либо у оператора. Он отрисовывает в разговоре нумерованную карточку и блокируется, пока кто-нибудь не ответит, не пропустит её или пока вопрос не истечёт по тайм-ауту. Никогда не пишите вопрос как сообщение в чате — это завершает ход.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Аргумент          | Значение                                   |
+| ----------------- | ------------------------------------------ |
+| `question`        | Что спросить                               |
+| `context`         | Необязательно: почему вы спрашиваете и что зависит от ответа |
+| `options[]`       | Варианты, каждый `{label, description?}`   |
+| `allow_free_text` | Принимается ли ответ, набранный вручную    |
+| `multi_select`    | Можно ли выбрать несколько вариантов       |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Пропуск — это успех: действуйте на основании заявленного допущения и не спрашивайте снова. Тайм-аут — это ошибка с той же инструкцией. Запросы разрешения («можно мне это сделать?») — отдельный шлюз, и они отрисовываются в разговоре той же карточкой.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Регистрируется, только когда существуют и порт вопросов, и целевое пространство. Без подключённого человека вызов **падает**, а не блокируется навсегда, — та же позиция отказа по умолчанию, которую занимает `prompt` ограничения без подключённого подтверждающего.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — управление фоновыми воркерами
 
-Registered only while [vibe mode](/ru-RU/руководство/практические-руководства/направлять-фоновые-воркеры/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Регистрируются, только пока включён [режим vibe](/ru-RU/руководство/практические-руководства/направлять-фоновые-воркеры/). Все пять относятся к уровню `read`: шлюз должен стоять на инструментах воркера, там, где правка действительно происходит.
 
-| Tool         | Arguments                                | Notes                                       |
+| Инструмент   | Аргументы                                | Примечания                                  |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Возвращает управление сразу; воркер продолжает работу |
+| `vibe_send`  | `worker_id`, `message`                   | Дописывает к заданию и запускает заново     |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Блокируется, пока он не завершится          |
+| `vibe_kill`  | `worker_id`                              | Останавливает его                           |
+| `vibe_list`  | —                                        | Уровень, статус, затраченное время и последний результат |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` — это `fast` (механическая работа с чёткой спецификацией) или `good` (проектирование, суждение или проверка результата воркера `fast`).

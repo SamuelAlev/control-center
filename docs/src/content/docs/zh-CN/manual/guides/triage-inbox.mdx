@@ -1,164 +1,99 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: 分拣你的收件箱
+description: 使用统一收件箱——清理阻塞你的事项，审阅等待你处理的内容，并跟踪你自己的 PR。
 slug: zh-CN/手册/操作指南/分拣收件箱
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+本指南介绍如何使用收件箱：这个唯一的界面汇集了所有阻塞你或明确要求你处理的事情——待处理的智能体审批、失败的工单同步，以及所有将你列为审查者或作者的 pull request。
 
-## Open the inbox
+## 打开收件箱
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. 点击侧边栏中的**收件箱**。它的徽标统计待处理的智能体审批、失败的同步，以及等待你审阅的未关闭 PR。
+2. 或者按下 <kbd>⌘K</kbd> 并运行**收件箱**导航命令。
+3. 或者直接深链到 `/workspaces/<workspace-id>/inbox`。
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+侧边栏条目始终显示实时数量，因此无需打开页面，你就能看到待分拣的工作在不断累积。
 
-## Read severity at a glance
+## 一眼看清严重程度
 
-Scan top to bottom; the inbox is already ordered by urgency:
+从上到下浏览；收件箱已按紧急程度排序：
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. 固定的**需要你处理**提示条位于 PR 分区之上。每张卡片都带有一个严重程度标签。已注册的来源（卡在确认提示上的智能体、厂商镜像已过期的工单同步）会标记为**阻塞**。
+2. 提示条内，严重程度最高的排在最前；相同则等待时间最长的条目优先。
+3. 提示条下方，PR 被归入固定的审查生命周期分区——**等待你审阅**、**已退回给你**、**已批准**、**草稿**、**等待审阅者**、**正在合并与最近已合并**、**等待作者**。靠前的分区是需要 _你_ 处理的内容；其余分区反映的是 _你的_ PR 所处的状态。**等待你审阅**包含那些仍然请求了你所属团队的 PR（前提是代码托管平台支持团队；在 GitHub 上，一旦任一团队成员完成审查，团队就会被移除）。
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+只有当某条目阻塞了某事或明确请求你处理时，它才会进入收件箱。提示条为空且分区列表也为空时，只有在这样的“空”可信时，才会显示**全部处理完毕**。
 
-## One inbox across every forge
+## 覆盖所有代码托管平台的统一收件箱
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+如果工作区中的仓库分布在多个代码托管平台上，收件箱会把它们合并成单一信息流——GitHub pull request 和 Bitbucket pull request 会出现在同一分区中，按时间排序而非按厂商分组。行的 `repo #number` 元数据可用来区分它们。
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+“你的”是**按代码托管平台**分别判定的，因为你在每个平台上都是不同的账户。只有当某个 pull request 与仓库实际所在平台上你的身份匹配时，它才算是你的，或被算作请求你审阅。
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+宕机或未连接的代码托管平台不会贡献任何内容，也不会影响收件箱的其余部分——单个连接中断绝不会清空整个列表。当所有代码托管平台的登录都仍未解决（**无法确认你的 GitHub 账户**——这段文案仍会点名 GitHub）、当 githubstatus.com 报告故障，或当覆盖已关联仓库的 GitHub App 安装被暂停时，空状态会给出说明，而不是显示**全部处理完毕**。
 
-## Clear the attention strip
+## 清理需要你处理的提示条
 
-Each strip card has one next action:
+每张提示条卡片都有一个后续操作：
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. 如果卡片是一个待处理的智能体确认，点击**审阅**——你会进入该智能体的空间，并看到它待处理的确认。在那里批准或拒绝（参见[与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)）。
+2. 如果卡片为某个厂商显示**同步失败**，点击**打开**——你会进入**设置 → 工作区 → 通用**，其中的**同步健康状况**卡片会显示每个连接的上次同步时间、连续失败次数和最新结果。收件箱中只显示每个厂商最近一次失败，因此同步恢复后卡片就会消失。
+3. 一旦底层状态解决（智能体得到答复、同步恢复），卡片会自动消失——无需手动关闭。
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[这些是每轮确认，而不是治理审批]
+“智能体审批”卡片是正在运行的智能体在其自身对话中暂停，就某个操作请求许可。它与智能体通过审批 MCP 工具创建的治理 `Approval` 记录不同——后者在应用中没有任何人工界面，也绝不会出现在这里。
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[同步健康状况为只读]
+该卡片用于报告工单同步连接；除**立即同步**按钮外，它无法创建、编辑或重新连接，也没有其他界面能做到这些。未配置任何连接时，它只会显示“暂无同步连接”，新工作区就是这种状态。
 :::
 
-## Filter to what is blocking
+## 筛选出阻塞项
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. 在没有文本框获得焦点时按下 <kbd>f</kbd> 打开筛选菜单，或点击工具栏中的筛选按钮。
+2. 任意组合选择状态、作者、审查者、内容、仓库所有者/名称、日期范围或快速审查。菜单中的分面计数会显示每个选项匹配多少个收件箱条目。
+3. 启用的筛选条件会以标签形式出现在列表上方的栏中；点击标签上的 ✕ 即可移除该条件。
+4. 使用左侧导航栏在各分区之间跳转——每个条目都显示实时数量，高亮会跟随你的滚动位置。点击分区标题可折叠你不分拣的分区（例如在清理审查时折叠**草稿**）。
+5. 点击列标题（标题、变更或更新时间）可对所有分区排序；再次点击当前列可反转方向。显示选项按钮控制草稿可见性、最近已合并时间窗口、行属性、排序方式和分组（只有按作者分组会改变收件箱布局）。
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+此处的筛选与 PR 队列相互独立——缩小收件箱范围绝不会改变队列的筛选条件，反之亦然。
 
-## Act on a PR item
+## 处理 PR 条目
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/zh-CN/手册/操作指南/派发审查智能体/) and
-   [the dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/).
+1. 点击任意行打开 PR 详情页。
+2. 如果 PR 位于**等待你审阅**中，请审查并提交你的决定——参见[审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)。
+3. 如果 PR 位于**已退回给你**中（已请求变更或 CI 失败），请从你的检出目录推送修复，或把后续工作交给智能体。
+4. 如果 PR 位于**已批准**中，请从详情页合并。
+5. 如果你更愿意把审查委派出去而不是自己做，参见[派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)和[智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)。
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+一旦底层状态发生变化（你的审查提交、PR 合并），分类器会自动把该 PR 重新归入新的分区。
 
-## Undo a mistaken action
+## 撤销误操作
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. 按下 <kbd>⌘Z</kbd> 撤销上一步操作，按下 <kbd>⌘⇧Z</kbd> 重做。
+2. 如果文本框获得焦点，⌘Z 会改为编辑该字段的文本——若要撤销应用级操作，请先点击字段外部。
 
-## Look up shortcuts in place
+## 就地查看快捷键
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/zh-CN/手册/参考/键盘快捷键/).
+在没有文本框获得焦点时按下 <kbd>?</kbd> 打开键盘速查表。它会列出当前路由上所有生效的按键绑定，包括收件箱的 <kbd>f</kbd> 筛选快捷键。完整的键位映射见[键盘快捷键参考](/zh-CN/手册/参考/键盘快捷键/)。
 
-## Drive it from the command palette
+## 通过命令面板操作
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. 在任意位置按下 <kbd>⌘K</kbd> 打开命令面板。
+2. 输入**收件箱**可跳转到该页面，或输入 PR 标题——命令面板会列出匹配的 pull request 并打开你选择的那个。
+3. 收件箱打开时，运行**复制此页面的链接**来复制该 URL 以便分享。该命令复制的是当前路由，因此只有当你在此页面上时，复制得到的才是收件箱的 URL。
 
-## Refresh on demand
+## 按需刷新
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+收件箱会实时更新，但如果你怀疑数据已过期，请点击工具栏中的刷新控件——它会立即对每个已连接的代码托管平台强制执行一次服务器端扫描，并重新获取已合并/已审查的覆盖信息。图标会一直旋转，直到所有请求都完成。
 
-## Related guides
+## 相关指南
 
-- [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/)
-- [Chat with an agent](/zh-CN/手册/操作指南/与智能体聊天/)
-- [Dispatch reviewers](/zh-CN/手册/操作指南/派发审查智能体/)
+- [审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)
+- [与智能体聊天](/zh-CN/手册/操作指南/与智能体聊天/)
+- [派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)
 
-## Related concepts
+## 相关概念
 
-- [Dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)

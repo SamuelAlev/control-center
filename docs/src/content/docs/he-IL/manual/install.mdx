@@ -1,153 +1,192 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: התקנה
+description: השתמשו ב-Control Center בדפדפן או התקינו את אפליקציית שולחן העבודה, הגדירו backend של סוכנים ובחרו היכן רץ השרת שלו.
 slug: he-IL/מדריך-למשתמש/התקנה
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center פועל בשתי דרכים: כ**אפליקציית ווב** בכתובת
+[app.usectrl.dev](https://app.usectrl.dev), בלי שום דבר להוריד, או כ**אפליקציית שולחן
+עבודה** שאתם מתקינים. אלו אותה אפליקציה עם אותן תכונות. ההבדל היחיד הוא היכן רץ
+השרת — ואפליקציית הווב אינה יכולה להריץ אחד עבורכם.
 
-## Use it in your browser
+## שימוש בדפדפן
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) היא האפליקציה הזו מהודרת עבור הדפדפן.
+אין מה להתקין ואין מה לעדכן. פתחו אותה והתחברו.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+מה שלשונית דפדפן אין אפשרות לעשות הוא _להיות_ השרת. כל לקוח — שולחן עבודה, ווב,
+טלפון — הוא מרנדר דק מעל `cc_server` ללא ממשק, שמחזיק במסד הנתונים ועושה את העבודה,
+ולכן אפליקציית הווב תמיד מדברת אל שרת שאתם מריצים. שתי דרכים לספק לה אחד:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**שרת על המחשב שלכם.** הפעילו `cc_server` באופן מקומי והפנו את אפליקציית הווב אל
+`ws://localhost:9030`. דפדפנים מתייחסים אל `localhost` כאל מהימן, כך שזה לא דורש תעודה
+ולא מנהרה. זו הדרך המהירה ביותר לנסות את אפליקציית הווב, והנתונים שלכם לא יוצאים
+מהמחשב.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**שרת על מחשב אחר.** מכיוון ש-`app.usectrl.dev` מוגש מעל HTTPS, שרת שאינו מקומי חייב להיות
+נגיש מעל `wss://` עם תעודה שהדפדפן כבר סומך עליה. `cc_server` מסרב לקשור כתובת
+שאינה loopback ללא TLS, ולכן בחרו באחת מהאפשרויות:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- לתת לו תעודה ישירות, עם `--tls-cert` ו-`--tls-key`
+- להעמיד אותו מאחורי פרוקסי הפוך שמסיים TLS ולהפעיל אותו עם `--insecure`
+- לחשוף אותו דרך מנהרה או VPN שמספקים את התעודה — Tailscale, cloudflared או דומה.
+  ב**הגדרות ← שרת ← חיבור וסטטוס** נמצאת ההצטרפות המובנית למנהרה תחת **שתף שרת זה**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+בכל פעם שהשרת יושב מאחורי פרוקסי, NAT או מנהרה, הגדירו את `--public-url` לכתובת
+שאליה הלקוחות אמורים לפנות בפועל. ברירת המחדל שלו היא הקישור המקומי, ולכן בלעדיו
+הלקוחות מנסים לפנות למארח הלא נכון.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[מארחים עותק משלכם של לקוח הווב?]
+`cc_server` מקבל מקורות דפדפן רק אם הם מופיעים ברשימת ה-`--allowed-origins` שלו,
+שברירת המחדל שלה היא `https://app.usectrl.dev`. הוסיפו שם את המקור שלכם אם אתם מארחים
+את גרסת הווב בעצמכם. לקוחות loopback ולקוחות נייטיביים מורשים תמיד, ללא תלות ברשימה
+הזו.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+כמה דברים נשארים בלעדיים לשולחן העבודה, מפני שהם זקוקים לחלון נייטיבי או להתקני השמע
+של המחשב עצמו: המחוון הצף של מצב הריכוז, התראות קופצות של מערכת ההפעלה (מרכז ההתראות
+בתוך האפליקציה עובד בכל מקום), "התחלת הקלטה וקישור" מאירוע ביומן, והרצה מחודשת של
+סיכום פגישה. כל השאר — מרחבים, סוכנים, סקירת בקשות משיכה, פייפליינים, כרטיסים, זיכרון
+והקלטת פגישות עצמה — מתנהג אותו הדבר.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/). To host the server,
-follow [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
+כדי לחבר את אפליקציית הווב לשרת, עקבו אחר
+[התחברות לשרת מרוחק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/). כדי לארח את השרת,
+עקבו אחר [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
 
-## Desktop system requirements
+## דרישות מערכת לשולחן העבודה
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| דרישה                | macOS                                                 | Windows     | Linux                                                      |
+| -------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| גרסת מערכת ההפעלה    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ או הפצה אחרת עם glibc 2.35+ ו-GTK 3          |
+| ארכיטקטורה           | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git                  | נדרש                                                  | נדרש        | נדרש                                                       |
+| מקום בדיסק           | ~200 MB לאפליקציה, בתוספת תיקיית הנתונים של השרת      | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+למקינטוש מבוסס Intel אין הורדה מוכנה מראש. [בנייה מקוד המקור](#בנייה-מקוד-המקור) במקום.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+תיקיית הנתונים של השרת גדולה בהרבה מהאפליקציה. בהפעלה הראשונה שלה `cc_server` מתקין
+בכוח את המודלים שעל המכשיר — הטמעות טקסט (~90 MB), הפרדת דוברים (~35 MB) ומודל הדיבור
+הנבחר (Parakeet TDT v3 כברירת מחדל, ~600 MB; גרסאות Whisper ‎198–626 MB) — בתוספת build
+מוטמע של code-server, וכל שיחת סוכן מקבלת עץ עבודה בהעתקה בעת כתיבה של המאגרים שעליהם
+היא עובדת (`git worktree` רגיל ב-Windows). הדיבור אינו אופציונלי: בלי מודל ה-ASR, פעולות
+פגישות והכתבה אינן מסופקות. ההורדה הראשונה של מודל הדיבור עדיין דורשת הפעלה מחדש אחת
+לפני שההקלטה נדלקת.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+שולחן העבודה מפנה את השרת שלו אל תיקיית התמיכה באפליקציות לפי משתמש של מערכת ההפעלה.
+`cc_server` שהופעל ידנית בלי `--data-dir` משתמש כברירת מחדל ב-`<application
+data>/control-center` — `~/Library/Application Support/control-center` ב-macOS,
+`%APPDATA%\control-center` ב-Windows, `$XDG_DATA_HOME/control-center` (או
+`~/.local/share/control-center`) ב-Linux.
 
-## Download
+## הורדה
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+כל ארטיפקט שלהלן מגיע מ-[GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+הורידו את `Control-Center-<version>-arm64.dmg`, פתחו אותו וגררו את Control Center אל
+Applications. ה-build חתום ב-Developer ID ומאושר ב-notarization של Apple, ולכן הוא נפתח
+כרגיל.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: מתקין לפי משתמש.
+- `Control-Center-<version>-windows-x64.zip`: קובץ zip נייד.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows משתמש ב-`git worktree` עבור checkout של מרחבים (בלי העתקה בעת כתיבה).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+ה-AppImage נושא עמו מידע עדכון, ולכן [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) או appimaged יכולים להביא אותו לגרסה האחרונה במקום, ולהוריד רק את מה שהשתנה.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+שניהם נבנים על Ubuntu 22.04 ורצים עליה או על כל דבר חדש יותר (Debian 12, Fedora 36 ואילך): הם מקושרים ל-glibc 2.35 ול-libstdc++ של GCC 12, ולוקחים את GTK 3 מהמערכת. המעט ספריות ששולחן עבודה סטנדרטי עשוי לחסר בהן נוסעות בתוכם, ולכן אין צורך להתקין דבר נוסף. הקול — השמעת פגישות, נופי הצליל, אודיו של תחנות וצלצולי התראות — מושמע דרך libmpv של המערכת (`libmpv1` ב-Ubuntu 22.04, `libmpv2` ב-Ubuntu ו-Debian חדשים יותר, `mpv-libs` ב-Fedora); בלעדיו האפליקציה עולה כשהפקדים האלה מוסתרים.
 
-### Standalone server
+### שרת עצמאי
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
+כל גרסה כוללת גם את השרת ללא ממשק בנפרד — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — לצד images של `cc-server`, `cc-webapp` ו-`cc-remote` ב-GHCR. ראו [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+הארכיון של Linux נבנה על Ubuntu 22.04 והספריות הנייטיביות המצורפות אליו מקושרות ל-glibc 2.35 ול-libstdc++ של GCC 12, ולכן הוא דורש מארח חדש לפחות כזה (Ubuntu 22.04, Debian 12, Fedora 36 ואילך). בהפצה ישנה יותר הריצו במקום זאת את ה-image של `cc-server` — מכולה מביאה איתה userland משלה, כך שרק הקרנל צריך להיות שלכם.
 
-## Agent backend
+## ה-backend של הסוכנים
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center שולח סוכנים דרך **מתאמים**. יש שניים מהם, הרשימה קבועה, והם מזוהים
+אוטומטית — אין דרך לרשום מתאם נוסף.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+המתאם **Control Center (מובנה)** אינו זקוק ל-CLI חיצוני: לולאת הסוכן רצה בתוך השרת
+ומדברת עם ספקי מודלים מעל HTTP, ולכן הוא תמיד זמין. חברו ספק תחת **הגדרות ← שרת ← ספקי
+מודלים**. OpenAI, Codex, Cursor ו-Kimi Code מציעים כניסה בדפדפן; Anthropic, OpenRouter,
+Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai ו-Moonshot מקבלים מפתח API. Codex
+ו-Cursor הם ספקים במריץ הזה, לא CLI נפרדים. z.ai מופיע פעמיים בכוונה: **z.ai** היא
+הפלטפורמה הפתוחה בתשלום לפי שימוש, שמחויבת כנגד יתרת החשבון שלכם, בעוד **z.ai GLM
+Coding Plan** היא המינוי. זה אותו מפתח חשבון, אבל z.ai מגישה את התוכנית ממארח אחר —
+הדביקו מפתח של תוכנית קידוד באריח הרגיל של z.ai וכל בקשה תחזור עם `429 … "Insufficient balance or no resource package"`, כי לתוכנית אין יתרה להוציא. מנוי
+Claude Pro/Max אינו התחברות API של Anthropic; הגיעו לתוכנית הזו דרך מתאם Claude Code
+במקום. מה שכן _אפשר_ להוסיף בעמוד הזה הוא **ספק מותאם אישית** — כל נקודת קצה תואמת
+OpenAI או Anthropic (Ollama, LM Studio, vLLM, פריסה פרטית) תחת **ספקים מותאמים אישית ←
+הוספת ספק**.
 
-The other adapter wraps an external CLI:
+המתאם האחר עוטף CLI חיצוני:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+הזיהוי בודק את ה-`PATH` של המכונה שמריצה את `cc_server` — אותה מכונה כששולחן העבודה
+מריץ שרת משלו, המארח המרוחק בכל מקרה אחר. התקינו את ה-CLI של Claude Code שם, לא
+בלקוח. כפתור **רענן** בעמוד הזה מריץ את הבדיקה מחדש.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
+רשימות המודלים מוגשות בזמן אמת על ידי כל ספק מחובר; [models.dev](https://models.dev) מספק רק מטא-נתונים של מחיר וחלון הקשר. ראו [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
 
-## GitHub authentication
+## אימות GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+פרטי הגישה ל-GitHub הם **שלכם וחיים בשרת**, לפי מזהה המשתמש שלכם — ולא במחזיק המפתחות
+של מערכת ההפעלה בלקוח. כל מכשיר שאתם מתחברים ממנו משתמש באותם פרטים, ואף חבר אחר אינו
+יכול לקרוא אותם.
 
-If the server has a GitHub App registered ([Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+אם בשרת רשום GitHub App ([יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)), ב**הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד** מוצעת **כניסה עם GitHub** (זרימת מכשיר שהשרת מריץ). אחרת, הדביקו אסימון גישה אישי:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- קלאסי: `repo` ו-`read:org`
+- Fine-grained: **Contents** ו-**Pull requests** (קריאה וכתיבה), **Checks** ו-**Actions** (קריאה)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+צרו אחד בכתובת [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). השרת בודק את האסימון לקבלת שם החשבון בזמן שהוא נשמר, ולכן השורה יכולה לומר "מחובר בתור …"; בדיקה שנכשלת עדיין שומרת את האסימון, ושגיאת הקלדה או הרשאה חסרה יתגלו כבקשה שנכשלה בהמשך.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/).
+השלב הראשון בתהליך ההיכרות הוא החיבור הזה. לאחר מכן, באותו כרטיס מחליפים או מנקים
+אותו. GitLab ו-Bitbucket משתמשים באותו כרטיס; ראו [חיבור מארח קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד/).
 
-## Choose where the server runs
+## בחירת המקום שבו רץ השרת
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/) explains what that split means for the desktop, web and phone.
+Control Center הוא לקוח דק מעל תהליך `cc_server` ללא ממשק, שמחזיק במסד הנתונים ועושה
+את כל העבודה; [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/) מסביר מה המשמעות של
+הפיצול הזה עבור שולחן העבודה, הווב והטלפון.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+בהפעלה הראשונה שולחן העבודה שואל **"כיצד להריץ את Control Center?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/he-IL/מדריך-למשתמש/התחלה-מהירה/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **הרץ באפליקציה זו**: שולחן העבודה מפעיל ומפקח על `cc_server` במכונה הזו ומדבר איתו
+  מעל loopback. אין מה להגדיר מעבר לכך. זו ההגדרה ש[התחלה מהירה](/he-IL/מדריך-למשתמש/התחלה-מהירה/) מניחה.
+- **התחבר למופע מרוחק**: הפנו את שולחן העבודה אל `cc_server` שרץ במקום אחר, עם כתובת
+  ה-WebSocket שלו, מזהה מכשיר, ומפתח צימוד או קוד הזמנה חד-פעמי. השרת ההוא מחזיק
+  בנתונים; שולחן העבודה הזה רק מרנדר אותם.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/).
+אפשר להוסיף או להחליף שרתים מאוחר יותר תחת **הגדרות ← שרת ← חיבור וסטטוס**. החלפה
+מתחברת מחדש במקום — בלי הפעלה מחדש. דפדפן אינו יכול להריץ שרת, ולכן לקוח הווב הוא תמיד
+מרוחק; ראו [התחברות לשרת מרוחק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק/).
 
-To host a server yourself, follow [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+כדי לארח שרת בעצמכם, עקבו אחר [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/). הוא מכסה בנייה של הבינארי, יצירת מפתח צימוד לפני ההפעלה הראשונה, ואת הדגלים `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## אימות ההגדרה
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **הגדרות ← שרת ← ספקי מודלים** מציג את שני המתאמים. "Control Center (מובנה)" מוצג כנמצא עם גרסה `built-in`; Claude Code מוצג כנמצא אם ה-CLI שלו נמצא ב-`PATH` של מארח השרת. לחצו על **רענן** אם הוא חסר.
+2. **הגדרות ← סביבת עבודה ← מאגרים** מציג את המאגרים של סביבת העבודה הזו, ו**הוספת מאגר** מדפדף בתיקיות של מארח השרת.
+3. **הגדרות ← סביבת עבודה ← סוכנים** מציג את חמשת הסוכנים שסביבת העבודה הראשונה שלכם זרעה. כל אחד מהם צריך **מתאם** ו**מודל** מוגדרים לפני שהוא יכול לרוץ.
+4. **הגדרות ← שרת ← אבחון ופרטיות** מדווח על מנועי ארגז החול שמארח זה מציע, על מצב מודל ההטמעות ועל הרישום ביומן.
 
-## Build from source
+## בנייה מקוד המקור
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+ספריות נייטיביות הן חובה ואין מצב מופחת: ספרייה חסרה היא כשל אתחול מוחלט, לא מסלול
+איטי יותר. הכינו אותן לפני כל דבר אחר. כל פקודת Flutter ו-Dart עוברת דרך `fvm`, מפני
+שגרסת ה-SDK מוצמדת על ידי המאגר.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +198,18 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+ב-macOS, אחסון מאובטח (כניסה ל-GitHub, ל-Linear ול-Google) דורש שהאפליקציה תיחתם על ידי
+צוות Apple — חשבון Apple ID חינמי מספיק, וזו הגדרה חד-פעמית שמתוארת תחת [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). בלעדיה האפליקציה עדיין עולה; רק האחסון המאובטח אינו זמין. Windows ו-Linux אינם דורשים חתימה.
 
-To build the headless server binary, stage the natives the same way first, then:
+כדי לבנות את הבינארי של השרת ללא ממשק, הכינו תחילה את הספריות הנייטיביות באותו אופן,
+ואז:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+ה-hook של הבנייה מעתיק אל החבילה כל מה שכבר נמצא ב-`build/natives/`, כך שבנייה לפני
+ההכנה מניבה חבילה בלי ספריות נייטיביות ושרת שמסרב לעלות.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+עבור לקוח הווב השתמשו ב-`scripts/build_web.sh` (`--target remote` עבור ה-PWA של הטלפון). זה מה ש-CI מריץ: `flutter build web` רגיל מדלג על חתימת זהות ה-build, על יצירה מחדש של ה-Web Worker, על מניפסט הפריסה ועל בדיקת תקציב הנכסים.

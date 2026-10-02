@@ -1,150 +1,161 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Pipeline-runs monitoren
+description: Werk de wachtrij met runs af, lees de tijdlijn en het stappenpaneel van een run en herstel een mislukte of vastgelopen stap.
 slug: nl-NL/handleiding/gidsen/pipelines-monitoren
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/).
+Deze pagina gaat over alles wat er na de start van een run gebeurt: hem vinden,
+lezen wat elke stap heeft gedaan en een mislukte run weer op gang krijgen. Zie
+[Een pipeline handmatig uitvoeren](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
+om er een te starten.
 
-## Find a run
+## Een run vinden
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Klik in de zijbalk van de werkruimte op **Pipelines**. Het scherm is de
+   runwachtrij van de werkruimte — elke run, de nieuwste eerst.
+2. Gebruik de linkerbalk om te filteren. Er zijn precies drie filters, elk met
+   een live teller: **Alle**, **Running**, **Failed**.
+3. Loop de tabel door met <kbd>↑</kbd>/<kbd>↓</kbd> (of <kbd>j</kbd>/<kbd>k</kbd>)
+   en druk op <kbd>Enter</kbd> om de gefocuste run te openen. Op een rij klikken
+   doet hetzelfde.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Elke rij toont een symbool voor hoe de run is gestart (play bij handmatig; een
+bestandssymbool bij een codegraaf-watcher; anders de automatische trigger). De
+tooltip noemt de trigger — **Handmatig**, **PR gepubliceerd**,
+**Bestandswijziging**, enzovoort — en bij een watcher-run welke bestanden er zijn
+gewijzigd. Dan de naam van de pipeline, een statusbadge, de actieve duur (of de
+positie in de wachtrij bij een `queued`-run) en hoe lang geleden deze poging is
+gestart. De actieve duur laat de inactieve gaten tussen stoppen en herstarten
+buiten beschouwing, dus het is niet de verstreken kloktijd.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Er is geen filter voor afgeronde, opgeschorte of geannuleerde runs, geen filter
+per sjabloon, geen tijdvenster en geen uitvoeringsgeschiedenis per sjabloon. Runs
+van één sjabloon vergelijken betekent de wachtrij afspeuren naar de naam ervan.
 
-## Read the run detail
+## De details van een run lezen
 
-A run's page has three stacked parts.
+De pagina van een run heeft drie delen onder elkaar.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**De metastrook** bevat de starttijd, de actieve duur, de stapvoortgang ("3 van
+7 stappen"), een foutsamenvatting die de stap noemt die is stukgelopen en
+waarom, en de acties **Opnieuw proberen** en **Verwijderen**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**De tijdlijn** geeft één balk per stap, met de duur en — bij agentstappen — de
+kosten in centen. Een stap die opnieuw is geprobeerd, toont na de duur een
+suffix `×N`; dat suffix is de enige plek waar het aantal pogingen opduikt.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Het graafcanvas** tekent het sjabloon met de actuele status van elke node. Als
+je een node selecteert, opent het bijbehorende stappenpaneel.
 
-### Run and step statuses
+### Statussen van runs en stappen
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Status          | Betekenis                                          |
+| --------------- | -------------------------------------------------- |
+| **Pending**     | Aangemaakt, nog niet gestart                       |
+| **In wachtrij** | Toegelaten maar vastgehouden: de limiet voor het maximaal aantal parallelle runs van dit sjabloon is vol; nog geen rijen per stap |
+| **Running**     | Wordt uitgevoerd                                   |
+| **Suspended**   | Wacht op iets externs — normaal, niet vastgelopen  |
+| **Completed**   | Succesvol afgerond                                 |
+| **Failed**      | Beëindigd met een fout                             |
+| **Cancelled**   | Gestopt door een gebruiker of door het systeem     |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Stappen hebben die statussen zonder **In wachtrij**, plus **Skipped**, voor een
+tak die een router niet heeft genomen (en de nu onbereikbare afstammelingen
+daarvan).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Suspended** is de status waarin een agentstap het grootste deel van zijn leven
+doorbrengt: een gedispatchte agent of een goedkeuringspoort houdt de stap vast
+tot zijn werk binnenkomt. Twee vangnetten van de engine laten de hele run
+mislukken in plaats van hem te hervatten: een stap die langer dan 24 uur
+suspended is (`extras.awaitApproval` — de body `orchestration.awaitApproval` —
+is uitgezonderd; `human.gate` niet) en een niet-idempotente stap die nog liep
+toen de server stopte.
 
-## Inspect a step
+## Een stap inspecteren
 
-Select a node on the canvas. The step panel shows, in order:
+Selecteer een node op het canvas. Het stappenpaneel toont, in deze volgorde:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Een melding **Fout** wanneer de stap is mislukt, of een melding
+  **Overgeslagen** met de reden wanneer hij is overgeslagen.
+- **Gestart**, **Voltooid** en de duur.
+- **Tak** — de takindex, bij parallelle takken.
+- **Gesprek tonen** — springt naar het gesprek waarin de stap heeft gelopen.
+  Pipelinegesprekken zijn verborgen in de zijbalk, dus dit is de enige manier om
+  erin te komen.
+- **Invoer** en **Uitvoer**, als inklapbare JSON.
+- **Agentactiviteit** — één tegel per agentrun die de stap heeft gedispatcht, met
+  de status, samenvatting, duur en kosten.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Bij een agentstap is **Uitvoer** de gestructureerde payload die de agent met
+`submit_output` heeft ingediend, niet zijn proza. Het redeneerspoor staat in
+**Agentactiviteit** en in het gesprek achter **Gesprek tonen**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Bij een bash-stap is **Uitvoer** de getrimde stdout die het script bij exit 0
+heeft geschreven. Een exitcode die niet nul is, laat de stap mislukken met de
+staart van stderr als foutmelding.
 
-## Recover a failed run
+## Een mislukte run herstellen
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Lees de foutsamenvatting op de metastrook; die noemt de stap die is mislukt.
+   De melding **Fout** in het stappenpaneel bevat het bericht.
+2. Controleer de **Invoer** van de stap — een ontbrekende of verkeerd gespelde
+   statussleutel is de meest voorkomende oorzaak. Een prompt-agentstap mislukt
+   meteen en noemt de onopgeloste placeholders; een bash-stap zet ze om in lege
+   strings en loopt toch door, wat zich meestal een stap later openbaart.
+3. Open bij een agentstap **Gesprek tonen** en lees wat de agent daadwerkelijk
+   heeft gedaan.
+4. Druk op de metastrook op **Opnieuw proberen**. Stappen met de status
+   **Completed** of **Skipped** behouden hun uitvoer; al het andere wordt
+   verwijderd en opnieuw uitgevoerd en de run springt terug naar Running. De
+   duurklok begint opnieuw voor deze poging.
 
-Common causes worth checking first:
+Veelvoorkomende oorzaken die je eerst moet controleren:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Time-out** — de stap heeft zijn **Time-out (ms)** overschreden. Onthoud dat
+  het veld in milliseconden rekent.
+- **Scriptfout** — het bash-commando is afgesloten met een exitcode die niet nul
+  is, of `bash` staat niet in de `PATH` van de serverhost.
+- **Schemavalidatie** — de `submit_output`-payload van de agent voldeed niet aan
+  het uitvoerschema van de stap.
+- **Onopgeloste placeholder** — een `{{key}}` waarnaar een prompt-agentstap
+  verwees, is nooit stroomopwaarts geschreven. De fout noemt elke onopgeloste
+  sleutel.
+- **Niet-geregistreerde body** — een stap waarvan de bodysleutel niet is
+  geregistreerd, waarschuwt bij het laden van het sjabloon en wordt daarna
+  simpelweg nooit uitgevoerd.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Opnieuw proberen werkt alleen bij een mislukte of geannuleerde run]
+De knop **Opnieuw proberen** verschijnt alleen wanneer de run `failed` of
+`cancelled` is. Voor elke andere status keert de engine onmiddellijk terug.
 :::
 
-## Stop a step that is stuck
+## Een vastgelopen stap stoppen
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Selecteer de lopende stap en druk op de knop **Actieve stoppen** in de kop van
+het stappenpaneel. Dat beëindigt het proces van de stap, markeert de stap als
+mislukt en laat daarmee de hele run mislukken — elke open zustertak wordt mee
+afgesloten.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Er is op dit scherm geen bediening om een run te annuleren. `pipeline.cancel`
+bestaat als RPC-operatie en de engine implementeert hem, maar niets in de
+pipeline-interface roept hem aan; **Actieve stoppen** op een stap, of
+**Verwijderen** op de run, zijn de enige manieren om iets te stoppen.
 
-## Track cost
+## Kosten volgen
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Kosten worden per stap gerapporteerd, in de rechterkolom van de tijdlijn en op
+elke tegel onder **Agentactiviteit**. Er is geen totaal per run op de
+detailpagina en geen kostenkolom in de runwachtrij, dus de kosten van twee runs
+vergelijken betekent hun stappen bij elkaar optellen.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Run a pipeline manually](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
-- [Create a pipeline template](/nl-NL/handleiding/gidsen/pipeline-maken/)
-- [Manage costs](/nl-NL/handleiding/gidsen/kosten-beheren/)
-- [Pipeline steps reference](/nl-NL/handleiding/referentie/pipeline-stappen/)
+- [Een pipeline handmatig uitvoeren](/nl-NL/handleiding/gidsen/pipeline-uitvoeren/)
+- [Een pipeline-sjabloon maken](/nl-NL/handleiding/gidsen/pipeline-maken/)
+- [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/)
+- [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Pipelines](/nl-NL/handleiding/concepten/pipelines/)
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/)

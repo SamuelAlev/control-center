@@ -1,153 +1,227 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Установка
+description: Пользуйтесь Control Center в браузере или установите приложение для компьютера, настройте бэкенд агента и выберите, где запускается его сервер.
 slug: ru-RU/руководство/установка
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center работает двумя способами: как **веб-приложение** по адресу
+[app.usectrl.dev](https://app.usectrl.dev), которое не нужно скачивать, или как
+**приложение для компьютера**, которое вы устанавливаете. Это одно и то же приложение
+с одними и теми же возможностями. Разница только в том, где запускается сервер, — а
+веб-приложение не может запустить его за вас.
 
-## Use it in your browser
+## Использование в браузере
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) — это то же приложение, скомпилированное для
+браузера. Ничего устанавливать и обновлять не нужно. Откройте его и подключитесь.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Чего вкладка браузера не может — так это _быть_ сервером. Каждый клиент — настольный,
+веб- и телефонный — это тонкий рендерер поверх headless `cc_server`, который владеет
+базой данных и выполняет работу, поэтому веб-приложение всегда обращается к серверу,
+который запускаете вы. Дать ему сервер можно двумя способами:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Сервер на вашей собственной машине.** Запустите `cc_server` локально и укажите
+веб-приложению `ws://localhost:9030`. Браузеры считают `localhost` доверенным, поэтому
+здесь не нужны ни сертификат, ни туннель. Это самый быстрый способ попробовать
+веб-приложение, и ваши данные не покидают вашу машину.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Сервер на другой машине.** Поскольку `app.usectrl.dev` отдаётся по HTTPS, сервер не на
+локальной машине должен быть доступен по `wss://` с сертификатом, которому браузер уже
+доверяет. `cc_server` отказывается привязываться к адресу, отличному от loopback, без
+TLS, поэтому выберите одно из:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- выдайте ему сертификат напрямую, с помощью `--tls-cert` и `--tls-key`
+- поставьте его за обратный прокси, терминирующий TLS, и запустите с `--insecure`
+- откройте к нему доступ через туннель или VPN, который предоставляет сертификат, —
+  Tailscale, cloudflared или похожие. В разделе **Настройки → Сервер → Подключение и
+  состояние** встроенный туннель включается в пункте **Открыть доступ к серверу**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Когда сервер находится за прокси, NAT или туннелем, задайте `--public-url` — адрес, по
+которому клиенты должны фактически подключаться. По умолчанию он берётся из локальной
+привязки, поэтому без него клиенты обращаются не к тому хосту.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Размещаете собственную копию веб-клиента?]
+`cc_server` принимает браузерные origin только из своего списка `--allowed-origins`,
+который по умолчанию равен `https://app.usectrl.dev`. Если вы сами размещаете
+веб-сборку, добавьте туда свой origin. Loopback-клиенты и нативные клиенты разрешены
+всегда, независимо от этого списка.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Некоторые вещи остаются только в приложении для компьютера, потому что им нужно нативное
+окно или собственные аудиоустройства машины: плавающая пилюля режима фокуса, системные
+всплывающие уведомления (центр уведомлений внутри приложения работает везде), «начать
+запись и привязать» из события календаря и повторный запуск резюме встречи. Всё
+остальное — пространства, агенты, проверка pull request, конвейеры, тикеты, память и
+сама запись встреч — ведёт себя одинаково.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/). To host the server,
-follow [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
+Чтобы подключить веб-приложение к серверу, см.
+[Подключиться к удалённому серверу](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/). Чтобы разместить сервер самостоятельно, см.
+[Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
 
-## Desktop system requirements
+## Системные требования приложения для компьютера
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Требование   | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Версия ОС    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ или другой дистрибутив с glibc 2.35+ и GTK 3 |
+| Архитектура  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Требуется                                             | Требуется   | Требуется                                                  |
+| Место на диске | ~200 МБ для приложения плюс каталог данных сервера  | ~200 МБ     | ~200 МБ                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Для Mac с Intel готовой сборки нет. Вместо неё [соберите из исходного кода](#сборка-из-исходного-кода).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Каталог данных сервера разрастается куда сильнее самого приложения. При первом запуске
+`cc_server` принудительно устанавливает модели на устройстве — текстовые эмбеддинги
+(~90 МБ), диаризацию говорящих (~35 МБ) и выбранную речевую модель (по умолчанию
+Parakeet TDT v3, ~600 МБ; варианты Whisper — 198–626 МБ) — а также встроенную сборку
+code-server; кроме того, каждая беседа агента получает worktree с copy-on-write из
+репозиториев, с которыми работает (в Windows — обычный `git worktree`). Речь не
+опциональна: без модели ASR операции встреч и диктовки не выполняются. Первая загрузка
+речевой модели всё равно требует одной перезагрузки, прежде чем запись станет доступна.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Приложение для компьютера указывает своему серверу каталог поддержки приложений текущего
+пользователя ОС. `cc_server`, запущенный вручную без `--data-dir`, по умолчанию
+использует `<application data>/control-center` — `~/Library/Application Support/control-center` в macOS, `%APPDATA%\control-center` в Windows, `$XDG_DATA_HOME/control-center` (или `~/.local/share/control-center`) в Linux.
 
-## Download
+## Скачивание
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Все перечисленные ниже артефакты публикуются в [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Скачайте `Control-Center-<version>-arm64.dmg`, откройте его и перетащите Control Center в
+папку «Программы». Сборка подписана Developer ID и нотаризована Apple, поэтому
+открывается обычным образом.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe` — установщик для текущего пользователя.
+- `Control-Center-<version>-windows-x64.zip` — портативный zip-архив.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+В Windows checkout'ы пространств делаются через `git worktree` (без copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage содержит сведения об обновлениях, поэтому [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) или appimaged могут обновить его до последнего релиза на месте, скачивая только изменившееся.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Оба собраны на Ubuntu 22.04 и работают на нём или на чём-то более новом (Debian 12,
+Fedora 36 и новее): они линкуются с glibc 2.35 и libstdc++ из GCC 12, а GTK 3 берут из
+системы. Немногочисленные библиотеки, которых может не хватать в обычной системе,
+поставляются внутри них, поэтому больше ничего устанавливать не нужно. Звук —
+воспроизведение встреч, звуковой пейзаж, звук rig и звуки уведомлений — идёт через
+системный libmpv (`libmpv1` в Ubuntu 22.04, `libmpv2` в более новых Ubuntu и Debian,
+`mpv-libs` в Fedora); без него приложение запускается, а эти элементы управления
+скрыты.
 
-### Standalone server
+### Отдельный сервер
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
+В каждом релизе headless-сервер поставляется и сам по себе — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — вместе с образами `cc-server`, `cc-webapp` и `cc-remote` в GHCR. См. [Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Архив для Linux собран на Ubuntu 22.04, и его встроенные нативные библиотеки линкуются с
+glibc 2.35 и libstdc++ из GCC 12, поэтому ему нужен хост не старее этого (Ubuntu 22.04,
+Debian 12, Fedora 36 или новее). На более старом дистрибутиве запускайте вместо него
+образ `cc-server` — контейнер приносит собственный userland, так что вашим должно быть
+только ядро.
 
-## Agent backend
+## Бэкенд агента
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center запускает агентов через **адаптеры**. Их два, список фиксирован, и они
+обнаруживаются автоматически — зарегистрировать третий нельзя.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Адаптеру **Control Center (built-in)** внешний CLI не нужен: цикл агента выполняется
+внутри сервера и обращается к провайдерам моделей по HTTP, поэтому он доступен всегда.
+Подключите провайдера в разделе **Настройки → Сервер → Провайдеры моделей**. OpenAI,
+Codex, Cursor и Kimi Code предлагают вход в браузере; Anthropic, OpenRouter, Groq,
+Google Gemini, DeepSeek, Mistral, xAI, z.ai и Moonshot принимают API-ключ. Codex и
+Cursor — это провайдеры на этом раннере, а не отдельные CLI. z.ai указан дважды
+намеренно: **z.ai** — это открытая платформа с оплатой по мере использования, счёт по
+которой идёт с баланса вашего аккаунта, а **z.ai GLM Coding Plan** — это подписка. Ключ
+аккаунта один и тот же, но план z.ai обслуживается с другого хоста — вставьте ключ
+тарифного плана в обычную плитку z.ai, и каждый запрос будет возвращать `429 … "Insufficient balance or no resource package"`, потому что у плана нет баланса. Подписка
+Claude Pro/Max — это не вход в Anthropic API; до этого тарифа добирайтесь через адаптер
+Claude Code. А вот что вы _можете_ добавить на этой странице, так это **своего
+провайдера** — любую конечную точку, совместимую с OpenAI или Anthropic (Ollama,
+LM Studio, vLLM, приватное развёртывание), — в разделе **Свои провайдеры → Добавить
+провайдера**.
 
-The other adapter wraps an external CLI:
+Другой адаптер оборачивает внешний CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Обнаружение проверяет `PATH` машины, на которой запущен `cc_server`, — той же машины,
+если приложение для компьютера запускает собственный сервер, иначе удалённого хоста.
+Установите CLI Claude Code именно там, а не на клиенте. Кнопка **Обновить** на этой
+странице повторяет проверку.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ru-RU/руководство/практические-руководства/адаптеры/).
+Списки моделей каждый подключённый провайдер отдаёт в реальном времени;
+[models.dev](https://models.dev) поставляет только метаданные о ценах и размере
+контекстного окна. См. [Управлять адаптерами и моделями](/ru-RU/руководство/практические-руководства/адаптеры/).
 
-## GitHub authentication
+## Аутентификация в GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Учётные данные GitHub принадлежат **вам и хранятся на сервере**, привязанные к вашему
+идентификатору пользователя, — а не в связке ключей клиентской ОС. Все устройства, с
+которых вы входите, используют их же, и ни один другой участник их не прочитает.
 
-If the server has a GitHub App registered ([Create the GitHub App](/ru-RU/руководство/практические-руководства/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Если на сервере зарегистрирован GitHub App ([Создать GitHub App](/ru-RU/руководство/практические-руководства/github-app/)), в разделе **Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода** доступен пункт **Войти через GitHub** (это поток с кодом устройства, который выполняет сервер). Иначе вставьте личный токен доступа:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Классический: `repo` и `read:org`
+- Fine-grained: **Contents** и **Pull requests** (read and write), **Checks** и **Actions** (read)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Создайте токен на странице [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Сервер проверяет токен на имя аккаунта в том виде, в каком оно сохранено, поэтому строка может сообщать «Вы вошли как …»; неудачная проверка всё равно сохраняет токен, а опечатка или нехватка области действия проявится позже как неудачный запрос.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ru-RU/руководство/практические-руководства/подключить-хост-кода/).
+Первый шаг онбординга — именно это подключение. Дальше на этой же карточке его можно
+заменить или удалить. GitLab и Bitbucket используют ту же карточку; см.
+[Подключить хост кода](/ru-RU/руководство/практические-руководства/подключить-хост-кода/).
 
-## Choose where the server runs
+## Выберите, где запускается сервер
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/) explains what that split means for the desktop, web and phone.
+Control Center — тонкий клиент поверх процесса headless `cc_server`, который владеет
+базой данных и выполняет всю работу; [Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/) объясняет, что это разделение значит для приложения для компьютера, веб-клиента и телефона.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+При первом запуске приложение для компьютера спрашивает: **«Как запускать Control Center?»**
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ru-RU/руководство/быстрый-старт/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Запустить в этом приложении**: приложение порождает и контролирует `cc_server` на
+  этой машине и общается с ним через loopback. Больше настраивать нечего. Именно этот
+  вариант предполагает [быстрый старт](/ru-RU/руководство/быстрый-старт/).
+- **Подключиться к удалённому экземпляру**: укажите приложению `cc_server`, работающий в
+  другом месте, вместе с его URL WebSocket, идентификатором устройства и либо ключом
+  сопряжения, либо одноразовым кодом-приглашением. Данными владеет тот сервер; это
+  приложение только отображает их.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/).
+Добавить или переключить серверы можно позже в разделе **Настройки → Сервер →
+Подключение и состояние**. Переключение переподключается на месте, без перезапуска.
+Браузер не может запустить сервер, поэтому веб-клиент всегда удалённый; см.
+[Подключиться к удалённому серверу](/ru-RU/руководство/практические-руководства/подключиться-к-удалённому-серверу/).
 
-To host a server yourself, follow [Run a headless server](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Чтобы разместить сервер самостоятельно, следуйте руководству
+[Запустить headless-сервер](/ru-RU/руководство/практические-руководства/запустить-headless-сервер/). В нём описаны сборка бинарника, создание ключа сопряжения перед первым запуском и флаги `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Проверьте настройку
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. В разделе **Настройки → Сервер → Провайдеры моделей** перечислены оба адаптера.
+   Строка «Control Center (built-in)» показывает статус «найден» с версией `built-in`;
+   строка Claude Code показывает «найден», если его CLI есть в `PATH` хоста сервера.
+   Если адаптер не найден, нажмите **Обновить**.
+2. В разделе **Настройки → Рабочее пространство → Репозитории** перечислены репозитории
+   этого рабочего пространства, а **Добавить репозиторий** открывает папки хоста
+   сервера.
+3. В разделе **Настройки → Рабочее пространство → Агенты** перечислены пять агентов,
+   заведённых при создании вашего первого рабочего пространства. Каждому нужно задать
+   **Адаптер** и **Модель**, прежде чем он сможет запуститься.
+4. Раздел **Настройки → Сервер → Диагностика и конфиденциальность** сообщает, какие
+   бэкенды песочницы предлагает этот хост, состояние модели эмбеддингов и параметры
+   логирования.
 
-## Build from source
+## Сборка из исходного кода
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Нативные библиотеки обязательны, и режима с деградацией нет: отсутствующая библиотека —
+это жёсткий сбой при старте, а не более медленный путь. Подготовьте их прежде всего
+остального. Каждая команда Flutter и Dart выполняется через `fvm`, потому что версия SDK
+закреплена репозиторием.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +233,22 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+В macOS для защищённого хранилища (вход через GitHub, Linear и Google) нужно, чтобы
+приложение было подписано командой Apple — достаточно бесплатного Apple ID; это разовая
+настройка, описанная в разделе [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Без неё приложение всё равно запускается; недоступно только защищённое хранилище. Windows и Linux в подписи не нуждаются.
 
-To build the headless server binary, stage the natives the same way first, then:
+Чтобы собрать бинарник headless-сервера, сначала так же подготовьте нативные
+библиотеки, а затем:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Хук сборки копирует в бандл то, что уже лежит в `build/natives/`, поэтому сборка до
+подготовки нативных библиотек даёт бандл без них и сервер, который отказывается
+запускаться.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Для веб-клиента используйте `scripts/build_web.sh` (`--target remote` для телефонного
+PWA). Именно это запускает CI: обычный `flutter build web` пропускает штамп идентичности
+сборки, перегенерацию Web Worker, манифест развёртывания и проверку бюджета ресурсов.

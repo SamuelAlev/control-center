@@ -1,192 +1,179 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: แบ็กเอนด์แซนด์บ็อกซ์
+description: แบ็กเอนด์แซนด์บ็อกซ์ จุดที่มันถูกนำไปใช้ และออบเจ็กต์ค่าทุกตัวที่รันไทม์แซนด์บ็อกซ์ใช้
 slug: th-TH/คู่มือ/อ้างอิง/แบ็กเอนด์แซนด์บ็อกซ์
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[การรันจะอยู่ในแซนด์บ็อกซ์หรือไม่นั้นขึ้นอยู่กับโฮสต์]
+`cc_server` ตรวจหาโฮสต์ครั้งเดียวตอนบูต และห่อการสั่งงานเอเจนต์ด้วยแบ็กเอนด์เนทีฟเมื่อการตรวจหารายงานว่ามีให้ใช้ และ `--sandbox` ไม่ใช่ `off` รอยต่อการสั่งงานทั้งสองถูกห่อ: Claude Code CLI ผ่านพอร์ตแซนด์บ็อกซ์ และ ACP บวกเครื่องมือ `bash` ของฮาร์เนสในตัวผ่านตัวจัดการแซนด์บ็อกซ์
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+ที่ใดการตรวจหารายงานว่าไม่มีแบ็กเอนด์ — **Windows เสมอ** และ Linux หรือ WSL2 ที่ไม่มี `bwrap` และ `socat` — การรันของเอเจนต์จะ **ไม่ถูกแซนด์บ็อกซ์** ACP และเครื่องมือ `bash` ของฮาร์เนสยังสปอว์นพร้อมการชำระล้างสภาพแวดล้อม; Claude Code ผ่าน `NoSandboxAdapter` และสืบทอดสภาพแวดล้อมของโฮสต์ ขอบเขตที่เหลืออยู่คือ worktree ของการรันเอง (แบบ copy-on-write ที่ใดที่ `rift` ถูกส่งมาให้ใช้; `git worktree` บน Windows) ข้อมูลรับรองที่กั้นด้วยความสามารถซึ่งผ่านนายหน้าต่อการเรียกใช้หนึ่งครั้งและถูกเพิกถอนเมื่อรื้อถอน นโยบายคำสั่งรายโหมด [กฎคุมการกระทำ](/th-TH/คู่มือ/แนวคิด/กฎคุม/)แบบรวมศูนย์ (ปิดเมื่อล้มเหลว) การชำระล้างสภาพแวดล้อมบนเส้นทาง ACP และ `bash` ของฮาร์เนส และพื้นผิวเครื่องมือที่โหมดของมันอนุญาต
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+เครื่องมือไฟล์ในโปรเซสของฮาร์เนส (read, write, edit, apply patch, search, find, search_files) อยู่นอกแซนด์บ็อกซ์บนทุกโฮสต์: มันรันในโปรเซสของเซิร์ฟเวอร์ จึงมีเพียง `bash` เท่านั้นที่ถูกห่อ
 :::
 
-## Backend overview
+## ภาพรวมแบ็กเอนด์
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
+| แบ็กเอนด์     | ค่า     | แพลตฟอร์ม                                      | ความพร้อมใช้                                                                                                      |
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/th-TH/คู่มือ/แนวคิด/ริก/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| VM ที่หุ้ม | `microvm` | macOS, Linux, Windows (ไฮเปอร์ไวเซอร์ microVM)    | ถูกกั้นด้วยการตรวจหาบนรันไทม์ของ microVM; ใช้กับเทอร์มินัลแบบโต้ตอบ — เชลล์รันอยู่ภายใน[ริก](/th-TH/คู่มือ/แนวคิด/ริก/) ไม่ใช่บนโฮสต์ |
+| เนทีฟ      | `native`  | macOS (Seatbelt), Linux และ WSL2 (bubblewrap) | ตรวจหาตอนบูต; Linux ปฏิเสธการรันที่ต้องมีข้อปฏิเสธการเขียนตามกลอบชื่อไฟล์ ซึ่ง bubblewrap บังคับใช้ไม่ได้ |
+| ไม่แยก      | `none`    | ทั้งหมด                                           | ค่าเริ่มต้นของการแยกวิเคราะห์ ค่าเริ่มต้นของเทอร์มินัล และตัวถอยกลับเมื่อไม่มีแบ็กเอนด์ให้ใช้ หรือเมื่อตั้ง `--sandbox off` |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` คืนค่า `none` สำหรับค่าที่จัดเก็บไว้เป็น null หรือที่ไม่รู้จัก ค่า `"docker"` ที่จัดเก็บไว้จะถูกแมปไปที่ `native`
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/th-TH/คู่มือ/อ้างอิง/ริก/).
+**`microvm` เป็นแบ็กเอนด์เดียวที่มีขอบเขตระดับเคอร์เนล** — งานที่รันอยู่ไม่ได้รันบนโฮสต์จริง ๆ มันไม่เคยเป็นตัวถอยกลับแบบเงียบในทิศทางใดเลย: การขอมันอย่างชัดเจนบนโฮสต์ที่บูต VM ไม่ได้จะล้มเหลวอย่างส่งเสียง (“ผมขอ VM แต่ได้แล็ปท็อปของผมเอง” คือการเสื่อมสภาพอย่างเดียวที่เอนโคลเจอร์รับไม่ได้) และมีเพียง *ค่าเริ่มต้นที่ไม่ระบุ* เท่านั้นที่ถอยลงไปใช้ `native` พร้อมบรรทัดล็อกที่บอกเช่นนั้น แบ็กเอนด์จริงของเซสชันจะถูกรายงานกลับไปยังไคลเอนต์และติดป้าย เทอร์มินัลจึงอ้างว่าถูกปิดล้อมอยู่ทั้งที่รันบนโฮสต์ไม่ได้ วงจรชีวิต อิมเมจ และการเชื่อมต่อขาออกของ VM เองมีอยู่ใน[เอกสารอ้างอิงริก](/th-TH/คู่มือ/อ้างอิง/ริก/)
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows ไม่มีแซนด์บ็อกซ์เนทีฟ** `NativeSandboxAdapter.probe` คืนค่า `available: false` บนทุกโฮสต์ที่ไม่ใช่ macOS หรือ Linux/WSL2 การสั่งงานเอเจนต์บน Windows จึงใช้ `none` แบ็กเอนด์ `microvm` แยกต่างหาก: มันถูกกั้นด้วยการตรวจหาบนรันไทม์ของ microVM และใช้กับเทอร์มินัลแบบโต้ตอบและริก ไม่ใช่กับการห่อ `bash` บนโฮสต์
 
-## Probe results
+## ผลการตรวจหา
 
-The probe is what gates enforcement. It runs once, at server boot.
+การตรวจหาคือสิ่งที่กั้นการบังคับใช้ มันรันครั้งเดียว ตอนบูตเซิร์ฟเวอร์
 
-| Host                                   | `available` | Note / hint                                                               |
+| โฮสต์                                   | `available` | บันทึก / คำแนะนำ                                                               |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — การแยกตัวระดับเนมสเปซ ไม่มีขอบเขตระดับเคอร์เนล       |
+| Linux หรือ WSL2 ที่มี `bwrap` และ `socat` | `true`      | bubblewrap — การแยกตัวระดับเนมสเปซ ไม่มีขอบเขตระดับเคอร์เนล                      |
+| Linux หรือ WSL2 ที่ขาดเครื่องมือตัวใดตัวหนึ่ง      | `false`     | `requiresInstall: true` พร้อมคำแนะนำการติดตั้งที่ระบุชื่อแพ็กเกจที่ขาดไป |
+| แพลตฟอร์มอื่นใด                     | `false`     | แซนด์บ็อกซ์เนทีฟไม่ถูกเสนอบนแพลตฟอร์มนี้                            |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+เซิร์ฟเวอร์บันทึกผลลัพธ์ไว้ในบรรทัดเริ่มต้นบรรทัดเดียว: `agent sandbox ON` บวกกับบันทึก, `no OS-native agent sandbox on this host` บวกกับคำแนะนำ หรือ `agent sandbox DISABLED by --sandbox off` `GET /healthz` ไม่มีฟิลด์แซนด์บ็อกซ์
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` รับค่า `on` (ค่าเริ่มต้น) หรือ `off` มันเป็นการเลือกปิด ไม่ใช่การเปิดใช้: `on` หมายถึง “ห่อเมื่อโฮสต์มีแบ็กเอนด์ให้ใช้” ไม่เคยหมายถึง “บังคับว่าต้องมี”
 
-## Native backend
+## แบ็กเอนด์เนทีฟ
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+ใช้กลไกแซนด์บ็อกซ์ Seatbelt ของ Apple (ระบบเดียวกับที่ macOS App Sandbox ใช้)
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+โปรไฟล์ที่สร้างขึ้น **ผ่อนปรนโดยค่าเริ่มต้น** (`(allow default)`) แล้วเจาะออกเป็นข้อปฏิเสธ เพราะโปรไฟล์ที่ปฏิเสธโดยค่าเริ่มต้นทั้งหมดจะทำให้เชลล์แบบโต้ตอบใช้ไม่ได้ — มีการเรียก dyld, XPC และ Mach มากเกินกว่าจะแจกแจงได้ ผลในทางปฏิบัติคือเอเจนต์ยังอ่านโฮสต์ส่วนใหญ่ได้; เช็กเอาต์ที่ลงทะเบียนไว้ของคุณได้รับการปกป้องด้วยข้อปฏิเสธการเขียนและการเปลี่ยนชื่อที่ระบุชัดเจน ไม่ใช่ด้วยการมองไม่เห็น
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **การอ่านระบบไฟล์**: ถูกปฏิเสธสำหรับเส้นทางลับ (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` และส่วนที่เหลือของชุดปฏิเสธการอ่าน)
+- **การเขียนระบบไฟล์**: รีเซ็ตเป็นปฏิเสธ แล้วจึงมีข้อยกเว้นแบบอนุญาตสำหรับพาธย่อยที่ระบุชัดเจน โดยเส้นทางที่ห้ามตายตัว (ไฟล์ rc ของเชลล์, `.git/hooks`, การกำหนดค่า Claude, เช็กเอาต์ที่ได้รับการปกป้อง) ถูกบล็อกแม้จะอยู่ภายในรูทที่เขียนได้ `file-write-unlink` ถูกปฏิเสธบนทุกเส้นทางที่ถูกปฏิเสธและบรรพบุรุษของมัน การเปลี่ยนชื่อจึงข้ามข้อปฏิเสธการเขียนไม่ได้
+- **โปรเซส**: `process-exec` ปฏิเสธไบนารีที่อันตรายเสมอ บวกกับการบล็อกการเรียกใช้ทุกอย่างจากไดเรกทอรีที่เขียนได้
+- **เครือข่าย**: จำกัดไว้ที่พอร์ตพร็อกซีในโปรเซสบวก DNS — ลูปแบ็กไม่ถูกอนุญาตแบบครอบคลุม และยูนิกซ์ซ็อกเก็ตไม่ถูกอนุญาต พร็อกซีบังคับใช้รายการที่อนุญาตระดับโดเมนต่อเซสชัน (ดู[เครือข่ายขาออก](#เครือข่ายขาออก))
+- **การกำหนดค่า**: โปรไฟล์ถูกสร้างต่อการเรียกใช้หนึ่งครั้งจาก `SandboxSpec`
 
-Requirements:
+สิ่งที่ต้องมี:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`) ซึ่งมีอยู่ในการติดตั้ง macOS ทุกเครื่อง — ไม่ต้องมีเครื่องมือเพิ่มเติม
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+ใช้ bubblewrap (`bwrap`) เพื่อสร้างเมานต์เนมสเปซและเนมสเปซ PID
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **ระบบไฟล์**: สร้างเมานต์เนมสเปซที่มองเห็นเฉพาะเส้นทางที่ถูกผูกเข้ามา
+- **เครือข่าย**: รันในเนมสเปซเครือข่ายที่ไม่ใช้ร่วมกัน; ทราฟฟิกไปถึงพร็อกซีของโฮสต์ผ่านบริดจ์ยูนิกซ์ซ็อกเก็ตของ `socat`
+- **โปรเซส**: การแยกตัวด้วยเนมสเปซ PID
 
-Requirements:
+สิ่งที่ต้องมี:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- ติดตั้ง `bubblewrap` และ `socat` (`sudo apt-get install bubblewrap socat` บน Debian/Ubuntu)
+- การรองรับเนมสเปซของเคอร์เนล (มาตรฐานบน Linux สมัยใหม่)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap ซ่อนเส้นทางที่มีอยู่แล้วได้ แต่ห้ามไฟล์ `.env`, `*.key` หรือ `*.pem` *ใหม่* ภายในบินด์ที่เขียนได้ไม่ได้ นโยบายการสั่งงานมาตรฐานต้องมีข้อปฏิเสธตามกลอบชื่อไฟล์เหล่านี้ การสั่งงานเอเจนต์แบบเนทีฟบน Linux/WSL2 ตอนนี้จึง **ปิดเมื่อล้มเหลวแม้การตรวจหาจะพบ bubblewrap** มันไม่รันด้วยนโยบายที่อ่อนกว่าอย่างเงียบ ๆ ต้องมีแบ็กเอนด์ที่มีกฎชื่อไฟล์ตอนสร้างจึงจะคืนการสั่งงานแบบเนทีฟบน Linux ได้ การปิดแซนด์บ็อกซ์เป็นการเลือกปิดโดยเจตนาให้ไม่ถูกกักขอบ ไม่ใช่ทางแก้ที่เทียบเท่ากัน
 
-## None backend
+## แบ็กเอนด์ที่ไม่แยก
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+ไม่มีการแซนด์บ็อกซ์ โปรเซสรันบนโฮสต์โดยตรงด้วยการเข้าถึงระบบไฟล์ เครือข่าย และโปรเซสของโฮสต์ ACP และเครื่องมือ `bash` ของฮาร์เนสยังได้รับการชำระล้างสภาพแวดล้อมและนโยบายคำสั่ง; Claude Code ผ่าน `NoSandboxAdapter` สืบทอดสภาพแวดล้อมของโฮสต์ นี่คือสิ่งที่การสั่งงานเอเจนต์ถอยกลับไปใช้บนโฮสต์ที่ไม่มีแบ็กเอนด์ให้ใช้ หรือที่ตั้ง `--sandbox off` และเป็นค่าเริ่มต้นของเทอร์มินัลเมื่อไคลเอนต์ไม่ระบุแบ็กเอนด์ใด
 
-## Server-hosted terminal
+## เทอร์มินัลที่โฮสต์บนเซิร์ฟเวอร์
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+เทอร์มินัลถูกแซนด์บ็อกซ์ตามเงื่อนไขของตัวเอง ไม่ใช่โดยการตรวจหาของการสั่งงาน `defaultBackend` ของ `TerminalSessionService` คือ `none` และ `cc_server` ไม่เขียนทับมัน เซสชันเทอร์มินัลจึงรันเชลล์ของโฮสต์ เว้นแต่ไคลเอนต์จะขอ `native` อย่างชัดเจน — แผงเทอร์มินัลของเดสก์ท็อปไม่ขอ
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+เมื่อมีการขอ `native` เชลล์จะถูกห่อผ่าน `SandboxManager` ภายใต้โปรไฟล์เทอร์มินัลแบบตายตัว: `$HOME` และไดเรกทอรีทำงานของเซสชันเขียนได้ เครือข่ายเปิด และ `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` และ `~/Library/Keychains` ถูกปฏิเสธการอ่าน การกั้นด้วยความสามารถไม่ใช้ที่นี่ — นั่นเป็นเรื่องของการสั่งงาน หากการห่อไม่รองรับ เซสชันจะล้มเหลว แทนที่จะแสดงป้ายเนทีฟบน PTY ของเชลล์โฮสต์
 
-## Network egress
+## เครือข่ายขาออก
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+เมื่อแซนด์บ็อกซ์ถูกเรียกใช้ การเข้าถึงเครือข่ายขาออกถูกบังคับใช้ด้วยพร็อกซีในโปรเซส ไม่ใช่ด้วยกฎไฟร์วอลล์ของเคอร์เนล บนโฮสต์ที่ไม่มีแบ็กเอนด์ให้ใช้ ทั้งหมดนี้ใช้ไม่ได้ และโปรเซสที่สปอว์นขึ้นจะเข้าถึงเครือข่ายได้เหมือนที่ผู้ใช้เซิร์ฟเวอร์จะทำ
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- รันไทม์แซนด์บ็อกซ์รันพร็อกซี HTTP/HTTPS และพร็อกซี SOCKS5 บน `127.0.0.1` ภายในโปรเซส `cc_server`, **หนึ่งคู่ต่อเซสชันที่ถูกจำกัด** (`http_proxy.dart`, `socks_proxy.dart`) การรันพร้อมกันไม่ใช้คู่ร่วมกัน
+- โปรเซสที่อยู่ในแซนด์บ็อกซ์ได้รับตัวแปรสภาพแวดล้อมของพร็อกซี (`HTTP_PROXY`/`HTTPS_PROXY` → พร็อกซี HTTP, `ALL_PROXY` → พร็อกซี SOCKS; `GIT_SSH_COMMAND` ทำให้ git-over-SSH ผ่านพร็อกซี SOCKS) บน Linux เนมสเปซเครือข่ายไม่ถูกใช้ร่วมกัน พร็อกซีจึงเป็นทางออกเดียว; บน macOS แซนด์บ็อกซ์ใช้ลูปแบ็กของโฮสต์ร่วมกันและคุยกับพร็อกซีโดยตรง
+- โฮสต์เป้าหมายของการเชื่อมต่อแต่ละครั้งถูกจับคู่กับรายการที่อนุญาตระดับโดเมนของเซสชัน; อะไรนอกนั้นถูกปฏิเสธ มีไวลด์การ์ดสองรูปแบบ แต่ละรูปแบบมี `*` ตัวเดียวพอดี: รูปแบบที่ขึ้นต้นด้วย `*.example.com` จับคู่ซับโดเมนใดก็ได้ (รวม `a.b.example.com`) แต่ไม่ใช่โดเมนหลักเอง; รูปแบบป้ายกลางอย่าง `bedrock.*.amazonaws.com` จับคู่พอดีหนึ่งเลเบล (`bedrock.us-east-1.amazonaws.com` ไม่ใช่ `bedrock.evil.attacker.amazonaws.com`)
+- รายการที่อนุญาตถูกแปลงค่าต่อเซสชันจากฐานที่คัดสรรไว้ (`kBaselineAllowedDomains`: ผู้ให้บริการ LLM, โฮสติ้ง Git, รีจิสทรีแพ็กเกจ) บวกโดเมน GitHub เมื่อเอเจนต์มีความสามารถด้าน GitHub หรือการพุช บวก `SandboxSpec.egressAllowlist` ตัวแปลงยังรับโดเมนของผู้ให้บริการตั๋วงานเมื่อเอเจนต์เรียกตั๋วงานได้ แต่เส้นทางการสั่งงานไม่เคยส่งรายการนั้น (หรือรายการ `egressAllowlist` เพิ่มเติม) มา ดังนั้นในทางปฏิบัติทุกการรันจะได้ฐานบวกโดเมน GitHub ที่ความสามารถของมันหาให้
+- รายการที่ถูกปฏิเสธแบบตายตัว (`kBaselineDeniedDomains`: ปลายทางเมทาดาทาของคลาวด์, จุดรับส่งเทเลเมตรี) มาก่อนการอนุญาตทั้งหมด
+- `networkEnabled: false` (หรือเอเจนต์ที่ไม่มีความสามารถเครือข่าย) ยังเริ่มพร็อกซีต่อเซสชัน แต่รายการที่อนุญาตว่างเปล่า ทุกการเชื่อมต่อขาออกจึงถูกปฏิเสธ
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+สเปกที่ส่งให้ `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| ฟิลด์             | ชนิด                                        | คำอธิบาย                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId`       | `String`                                    | ตัวระบุเซสชันที่คงที่ (โดยทั่วไปคือไอดีสเปซ)                                                                                          |
+| `workspaceId`     | `String`                                    | ไอดีเวิร์กสเปซเจ้าของ                                                                                                                         |
+| `agentId`         | `String?`                                   | เอเจนต์ที่ผูกกับแซนด์บ็อกซ์อยู่ในขณะนี้ หากมี                                                                                                |
+| `bindMounts`      | `List<SandboxBindMount>`                    | การเมานต์โฮสต์→เกสต์; แซนด์บ็อกซ์มองเห็นเฉพาะเส้นทางโฮสต์ที่ระบุไว้ที่นี่                                                                         |
+| `networkEnabled`  | `bool` (ค่าเริ่มต้น `true`)                     | ทำงานร่วมกับความสามารถเครือข่ายของเอเจนต์ เมื่อปิด พร็อกซีต่อเซสชันยังเริ่มทำงานแต่รายการที่อนุญาตว่างเปล่า ทุกการเชื่อมต่อขาออกจึงถูกปฏิเสธ |
+| `egressAllowlist` | `List<String>` (ค่าเริ่มต้น `[]`)               | โดเมนขาออกที่อนุญาตเพิ่มเติม; รองรับไวลด์การ์ด (`*.example.com` บวกแบบป้ายกลางหนึ่งเลเบล) การสั่งงานไม่เคยใส่ค่านี้ การรันที่ถูกห่อจึงได้ฐานที่คัดสรรไว้บวกโดเมน GitHub ที่ความสามารถของมันหาให้ |
+| `guestWorkdir`    | `String?`                                   | ไดเรกทอรีทำงานเริ่มต้นภายในแซนด์บ็อกซ์; การเรียก `exec` แต่ละครั้งเขียนทับได้                                                       |
+| `mode`            | `Mode` (ค่าเริ่มต้น `chat`)                     | กำหนดกฎการเขียนระบบไฟล์: `chat` ทำให้การเมานต์แบบผูกเขียนได้; `review`, `plan` และ `orchestrate` เป็นอ่านอย่างเดียว                      |
+| `capabilities`    | `AgentCapabilities` (ค่าเริ่มต้น `safeDefault`) | เป็นที่มาของการตัดสินเปิด/ปิดเครือข่ายและโดเมนขาออกของ GitHub โดเมนตั๋วงานเป็นอาร์กิวเมนต์ของตัวแปลงที่เส้นทางการสั่งงานไม่เคยส่งให้ |
+| `protectedPaths`  | `List<String>` (ค่าเริ่มต้น `[]`)               | เส้นทางโฮสต์ที่ต้องไม่เขียนได้ภายในแซนด์บ็อกซ์ในโหมดใดเลย                                                                      |
+| `runnerStateDirs` | `List<String>` (ค่าเริ่มต้น `[]`)               | ไดเรกทอรีโฮสต์ที่ตัวรันเก็บสถานะของตัวเองไว้ เขียนได้ในทุกโหมด (`CLAUDE_CONFIG_DIR` ที่ Control Center จัดการคือตัวปัจจุบัน) |
+| `execGrantRoots`  | `List<String>` (ค่าเริ่มต้น `[]`)               | โครงไดเรกทอรีที่ผู้ปฏิบัติงานอนุมัติ ซึ่งเปิดการบล็อก exec ในไดเรกทอรีที่เขียนได้กลับคืนบน macOS Linux ไม่สนใจค่าเหล่านี้ — bwrap ไม่มีการบล็อก exec ของ `$HOME` ให้เปิดกลับคืน |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` เก็บเช็กเอาต์รีโปที่ลงทะเบียนต้นฉบับ ซึ่งแปลงค่าต่อการสั่งงานหนึ่งครั้งจากรีโปของเวิร์กสเปซ เอเจนต์ทำงานใน worktree แบบ copy-on-write ต่อการสนทนาเท่านั้น ต้นฉบับจึงต้องไม่เขียนได้จากภายในแซนด์บ็อกซ์ — บน macOS การอนุญาตเขียน `$HOME` แบบครอบคลุมของ Seatbelt จะทำให้มันยังเขียนได้ผ่าน `bash` พวกมันเข้าร่วมชุดปฏิเสธการเขียนข้อมูลลับในทุกโหมด รวมถึง `chat`
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+เส้นทางที่ถูกปฏิเสธการอ่านและปฏิเสธการเขียนทุกเส้นทางถูกปล่อยออกมาทั้งในรูปตามตัวอักษรและรูปที่แปลงซิมลิงก์แล้ว เคอร์เนลจับคู่กฎปฏิเสธกับเส้นทางที่แปลงค่าแล้ว กฎที่เขียนกับเส้นทางที่เป็นซิมลิงก์จึงไม่เคยทำงาน — และบน macOS นั่นคือกรณีปกติมากกว่ากรณีพิเศษ เพราะ `/tmp` แปลงค่าเป็น `/private/tmp` และ `/var/folders/…` เป็น `/private/var/folders/…` รายการที่มี `*` หรือ `?` ถูกถือเป็นกลอบและปล่อยไว้ตามเดิม; เส้นทางที่แปลงค่าไม่ได้จะถูกเก็บตามที่เขียนไว้
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| ฟิลด์       | ชนิด                     | คำอธิบาย                                                                                             |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | เส้นทางแบบสัมบูรณ์บนโฮสต์                                                                               |
+| `guestPath` | `String`                 | เส้นทางภายในแซนด์บ็อกซ์ (กับแซนด์บ็อกซ์เนทีฟ มันเท่ากับ `hostPath`; เก็บไว้เพื่อความสมมาตรของอะแดปเตอร์) |
+| `readOnly`  | `bool` (ค่าเริ่มต้น `false`) | เมานต์แบบอ่านอย่างเดียวเมื่อเป็น true                                                                               |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+คืนค่าจาก `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| ฟิลด์       | ชนิด                   | คำอธิบาย                                                              |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | ตัวระบุเซสชัน                                                       |
+| `backend`   | `SandboxBackend`       | แบ็กเอนด์ใดกำลังทำงานอยู่                                                 |
+| `state`     | `SandboxState`         | สถานะวงจรชีวิต                                                          |
+| `error`     | `Object?`              | ถูกตั้งค่าเมื่อ `state` เป็น `error`                                              |
+| `details`   | `Map<String, Object?>` | การบันทึกภายในของอะแดปเตอร์ (ไดเรกทอรีทำงาน, PID, เส้นทางโปรไฟล์ ฯลฯ) |
 
 ### SandboxState
 
-| State       | Description                                 |
+| สถานะ       | คำอธิบาย                                 |
 | ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| `created`   | สร้างสเปกแล้วแต่ VM ยังไม่เริ่ม |
+| `warm`      | กำลังทำงานและพร้อมรับคำสั่ง exec          |
+| `active`    | กำลังรันคำสั่งอยู่               |
+| `suspended` | หยุดชั่วคราว / เช็กพอยต์ลงดิสก์เพื่อประหยัด RAM   |
+| `destroyed` | รื้อถอนแล้ว; แฮนเดิลใช้ไม่ได้อีกต่อไป    |
+| `error`     | การเรียกใช้ล้มเหลว — ดู `SandboxHandle.error`   |
 
-## Sandbox events
+## เหตุการณ์ของแซนด์บ็อกซ์
 
-| Event type  | Description                                                  |
+| ชนิดเหตุการณ์  | คำอธิบาย                                                  |
 | ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| `stdout`    | เอาต์พุตมาตรฐานจากแซนด์บ็อกซ์                             |
+| `stderr`    | ข้อผิดพลาดมาตรฐานจากแซนด์บ็อกซ์                              |
+| `exit`      | โปรเซสแซนด์บ็อกซ์ออกแล้ว (พก `exitCode` มาด้วย)                  |
+| `starting`  | แซนด์บ็อกซ์กำลังเริ่มทำงาน                                       |
+| `ready`     | แซนด์บ็อกซ์พร้อมรับการเรียก exec                        |
+| `killed`    | โปรเซสถูกลงมือฆ่าโดยโฮสต์ (OOM, หมดเวลา, หยุดด้วยมือ)       |
+| `violation` | นโยบายแซนด์บ็อกซ์ถูกละเมิด (พก `SandboxViolation` มาด้วย) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| ฟิลด์                 | ชนิด      | คำอธิบาย                                                                |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | คำกริยาที่ถูกปฏิเสธ (เช่น `file-read*`, `network-outbound`)                    |
+| `target`              | `String`  | เส้นทางหรือโฮสต์ที่เป็นเป้าหมายของการดำเนินการที่ถูกปฏิเสธ                   |
+| `suggestedCapability` | `String?` | แฟล็กความสามารถที่จะอนุญาตการกระทำนี้ (เช่น `canCallGitHubApi`) |
+| `raw`                 | `String?` | บรรทัดล็อกดิบ มีประโยชน์สำหรับดีบัก                                         |
 
-## See also
+## ดูเพิ่มเติม
 
-- [Sandbox security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
-- [Sandbox policies](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/)
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
-- [cc_server CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/): the `--sandbox` flag
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
+- [นโยบายแซนด์บ็อกซ์](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/)
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/)
+- [cc_server CLI](/th-TH/คู่มือ/อ้างอิง/cc-server-cli/): แฟล็ก `--sandbox`

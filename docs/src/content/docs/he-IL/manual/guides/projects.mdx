@@ -1,94 +1,92 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: ארגון עבודה בפרויקטים
+description: קבצו כרטיסים לפרויקטים מסרגל הצד, עקבו אחר ההתקדמות והעבירו פרויקט לארכיון כשהעבודה בו מסתיימת.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+פרויקט הוא קיבוץ של כרטיסים המשויך לסביבת עבודה אחת, סביב מטרה משותפת. פרויקטים
+קיימים רק ב-Control Center — הם לעולם אינם מסתנכרנים עם ספק חיצוני כמו Linear.
 
-## Create a project
+## יצירת פרויקט
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. הרחיבו את הקבוצה **כרטיסים** בסרגל הצד של סביבת העבודה. היא מציגה את
+   **כל הכרטיסים**, שורה לכל פרויקט שאינו בארכיון, ואחר כך **פרויקט חדש**.
+2. לחצו על **פרויקט חדש**.
+3. מלאו **שם הפרויקט**, **תיאור** אופציונלי ובחרו **צבע**.
+4. לחצו על **יצירת פרויקט**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+אתם מגיעים לסקירה של הפרויקט החדש, והפרויקט מופיע כשורה בסרגל הצד תחת
+**כרטיסים**.
 
-## Add tickets to a project
+## הוספת כרטיסים לפרויקט
 
-Project is a single-ticket field, set in either of two places:
+הפרויקט הוא שדה של כרטיס בודד, שנקבע באחד משני מקומות:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- פתחו את הכרטיס והגדירו **פרויקט** בפס המאפיינים שלו.
+- לחצו לחיצה ימנית על הכרטיס ברשימה והשתמשו בתפריט המשנה **פרויקט**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+הבורר שבפס המאפיינים מציע גם **פרויקט חדש**, כך שאפשר לשייך כרטיס לפרויקט
+שיצרתם באותו רגע. **ללא פרויקט** מנקה את השדה.
 
-A ticket belongs to at most one project.
+כרטיס משתייך לפרויקט אחד לכל היותר.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[פרויקט אינו פעולה גורפת]
+הסרגל הצף שמופיע כשאתם בוחרים כמה כרטיסים מכסה סטטוס, עדיפות, אחראי, תוויות
+ומחיקה. אין בו צ'יפ של פרויקט, ולכן שיוך כרטיסים רבים פירושו לעשות זאת
+אחד-אחד.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+אפשר גם להתחיל מהפרויקט: **כרטיס חדש** בסקירה של הפרויקט יוצר כרטיס ומשבץ אותו
+שם.
 
-## Read project progress
+## קריאת התקדמות הפרויקט
 
-Open a project from its sidebar row, or go to
+פתחו פרויקט מהשורה שלו בסרגל הצד, או עברו אל
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+הסקירה מציגה את הסמל והשם של הפרויקט, תג סטטוס, את התיאור ופס התקדמות של הושלמו
+מתוך הסך הכול. מתחת לזה, הכרטיסים של הפרויקט מקובצים לפי סטטוס.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+הסקירה אינה מקבצת שום דבר אחר — אין פילוח לפי אחראי ואין התפלגות עדיפויות.
+לשם כך, סננו את רשימת הכרטיסים הראשית במקום.
 
-## Change project status
+## שינוי סטטוס הפרויקט
 
-Projects have three states:
+לפרויקטים יש שלושה מצבים:
 
-| Status        | Meaning              |
+| סטטוס       | משמעות              |
 | ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| **פעיל**    | העבודה נמשכת      |
+| **הושלם** | כל העבודה הושלמה     |
+| **בארכיון**  | לעיון היסטורי |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+השתמשו בתפריט **⋯** בכותרת הפרויקט. הוא מציע **עריכת פרויקט**,
+**סימון כהושלם** / **סימון כפעיל**, **העברה לארכיון** / **שחזור**
+ו**מחיקת פרויקט**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+העברה לארכיון מסתירה את הפרויקט מרשימת סרגל הצד ומבוררי הכרטיסים. היא הפיכה —
+**שחזור** מחזיר את הפרויקט למצב פעיל — אבל כל עוד הפרויקט בארכיון אפשר להגיע
+אליו רק דרך כתובת URL.
 
-## Projects created for you
+## פרויקטים שנוצרים עבורכם
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/).
+אישור תזמור יוצר פרויקט ומשייך אליו את כרטיס האב, לצד כל מה ששייכתם ידנית.
+פריטי עבודה שנוצרים הם שלבי פייפליין, לא שורות כרטיס, ולכן הם אינם מופיעים
+בלוח הפרויקט. זהו הנתיב האוטומטי היחיד: אף צומת פייפליין אינו יוצר כרטיסים,
+ולכן פייפליין אינו יכול לאכלס פרויקט. ראו
+[הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[פרויקטים הם משטח למפעילים]
+יצירה, הצגה, עדכון ומחיקה של פרויקטים נעשים באפליקציה. לסוכנים אין כלים
+לפרויקטים.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create and manage tickets](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
-- [Delegate work to agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
-- [Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
+- [יצירה וניהול של כרטיסים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים/)
+- [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
+- [הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
+- [כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)

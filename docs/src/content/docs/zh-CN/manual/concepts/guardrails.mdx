@@ -1,248 +1,218 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: 护栏——为每一种会改变状态的操作统一策略
+description: 为什么 Control Center 让智能体的每一个副作用都经过同一个允许／先询问／拒绝引擎，ActionClass 分类法为何刻意保持精简，以及自主程度旋钮究竟改变了什么。
 slug: zh-CN/手册/概念/护栏
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center 中的智能体可以删除文件、推送分支、发布 pull request，
+也可以调用外部 API。这些操作各自属于不同 _种类_ 的风险，而在很长一段时间
+里，其中只有一种——shell 命令——有策略约束。护栏的存在，就是为了对智能体
+能执行的每一种会改变状态的操作，统一回答同一个问题，无论它是哪个运行时或
+哪个工具提出的：**这是被允许的、需要批准的，还是被拒绝的？**
 
-## One engine, every chokepoint
+## 一个引擎，覆盖每一处卡点
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+策略引擎有且只有一个。凡是操作可能离开系统的位置，都会向它查询：内置运行
+器的工具注册表、服务器端的 MCP 调度器门禁，以及仓库操作的变更。因此，一条
+写下的规则会同时作用于内置运行时和外部智能体 CLI——不存在第二条更隐蔽的
+绕行路径。更早的、仅针对 bash 的命令策略仍然有效：规则可以匹配命令前缀，
+而不是操作类别，这两种形式共存于同一个存储中。
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/zh-CN/手册/概念/沙盒与安全/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+不过，这套引擎不能替代操作系统沙盒，沙盒也不能替代它。它们回答的是不同的
+问题：护栏决定一次 Control Center 看得见的调用究竟能否发生，而沙盒限定由此
+产生的进程可以触达哪里。当宿主机提供后端时，`cc_server` 会应用沙盒——但
+[Windows 不提供任何后端，而 Linux 需要 `bwrap` 和 `socat`](/zh-CN/手册/概念/沙盒与安全/)。
+在这类宿主机上，护栏是最外层的强制执行层，而不是坐落在一层底线之上的策略；
+在你决定要把尺度放多宽时，这一点值得了解。
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass：刻意封闭的分类法
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+每一种会改变状态的工具都会声明自己属于哪些 **ActionClasses**，取值来自一个
+封闭的、由十三种效果类别组成的集合。其中五种默认先询问；其余默认允许，
+需要靠规则来改变。
 
-| Class                      | Built-in default | What it covers                                                   |
+| 类别                       | 内置默认值       | 涵盖内容                                                         |
 | -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| `fileDelete`               | **先询问**       | 删除文件（形如删除的写入，`rm`）                                 |
+| `gitPush`                  | **先询问**       | 推送到 git 远程仓库                                              |
+| `prCreate`                 | **先询问**       | 创建 pull request                                                |
+| `prPublish`                | **先询问**       | 发布评审、合并 PR                                                |
+| `vendorSyncWrite`          | **先询问**       | 写入外部工单服务商（Linear、Jira、GitHub 同步）                  |
+| `fileWriteOutsideWorktree` | 允许             | 写入隔离工作树之外的文件                                         |
+| `gitCommit`                | 允许             | 创建 git 提交                                                    |
+| `networkEgress`            | 允许             | 网络出站（网页抓取、任意 HTTP）                                  |
+| `secretAccess`             | 允许             | 读取密钥或凭据                                                   |
+| `packageInstall`           | 允许             | 安装软件包（npm、pip、pub、brew）                                |
+| `processSpawn`             | 允许             | 派生进程（shell 以及任何会调用 shell 的操作）                    |
+| `workspaceMutation`        | 允许             | 改变工作区结构（仓库、空间、智能体）                             |
+| `enclosureControl`         | 允许             | 操控隔离舱（rig）：启动虚拟机、向它发送输入                      |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+那八个默认允许的类别，是在假设其下存在沙盒底线的前提下选定的。在宿主机提供
+后端的场合，这条底线确实存在；而在 Windows 上，或者在缺少 `bwrap` 和
+`socat` 的 Linux 机器上，它并不存在——所以如果你希望在这些环境里给
+`fileWriteOutsideWorktree` 或 `packageInstall` 加上门禁，就必须自己写一条
+规则。
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+这个集合是刻意封闭的。新的会改变状态的工具若不声明任何类别，就无法通过棘轮
+测试，因此分类法只能通过明确且有论证的决定来扩张——“分类法的蔓延会杀死这个
+功能”。十三个类别，足以表达人们真正会写的策略（未经询问绝不推送、绝不在
+工作树之外删除、读取一律允许），又少到足以让设置界面保持可理解。
 
-## Rules and scope resolution
+## 规则与作用域解析
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+一条规则把 `(scope, ActionClass | command prefix) → allow | prompt | deny`
+映射成一个决定。作用域从最具体到最宽泛依次嵌套：
 
-**space > agent > workspace > mode preset > built-in default**
+**空间 > 智能体 > 工作区 > 模式预设 > 内置默认值**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+解析遵循**具体优先**：第一个命中规则的作用域作出决定，解析就此停止。最严格
+只是平局时的裁决依据——包括同一作用域内两条同样具体的规则之间，以及把单个
+操作声明的多个类别合并时。在同一个作用域内，命令规则按最长的命令前缀匹配。
+在任何地方，允许都压不过拒绝。
 
-Two decisions carry hard guarantees:
+有两项决定带有硬性保证：
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **先询问的失效即拒绝。** 没有批准人连接时，`prompt` 决定会解析为 _拒绝_。
+  没有得到回答的问题永远不算“是”。
+- **最严格组合。** 一个操作若跨越多个类别，这些类别会按最严格的方式合并；
+  当多个类别都要求先询问时，一次确认会把它们全部列出。
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+这里刻意不设按轮次生效的闩锁。每一次工具调用都会从头重新解析策略，因此同一个
+操作被反复询问，只受限于操作者自己是否选择“记住这个决定”，而不受任何以轮次
+为范围的东西限制。
 
-## Argument-level rules
+## 参数级规则
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+规则约束的不只是一个操作的动作词，还可以是它的参数。“可以推送”和“可以推送
+到 `feature/*`”是两种不同的主张，只有后者才是一项管控——只授权动作词的能力
+门禁，正是大多数已公开的智能体事故背后的形态。
 
-A constraint may name:
+约束可以指定：
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **路径**——glob 模式（`repos/**`、`!**/.env`）
+- **引用**——git ref，可用 `!` 取反（`['**', '!main']` 读作“除 main 之外的
+  任何分支”）
+- **主机**——网络目标，支持子域通配（`*.internal`）
+- **命令**——命令前缀，按词边界匹配
+- **上限**——`maxCount` / `maxCents`，因此“最多删除 50 个文件”也能表达
+  出来
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+保持这套文法封闭且无环，会带出三个特性，而这三者正是重点：每条规则都能表述
+成一句可以读回来的话；每次拒绝都能指出命中的是哪个约束；整份策略都可以被
+枚举——你能在智能体运行 _之前_ 看到它可以做什么。
 
-Three rules that matter:
+有三条规则很重要：
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- 在同一作用域下，**带约束的规则比不带约束的规则更具体**，因此“拒绝对
+  `main` 的推送”无需任何人考虑顺序，就能压过“允许推送”。
+- **限制型**规则（拒绝／先询问）在请求触及它所列出的 _任何_ 一个值时生效；
+  **放行型**规则（允许）只在请求 _完全_ 落在其范围内时生效。若把两者按同一
+  种方式解读，智能体就能把一条被禁止的路径和一条无辜的路径打包在一起，把
+  前者洗白。
+- 如果规则指定了某个维度，而请求对它只字未提，这条规则既不会被应用，也不会
+  被跳过：它会**升级为一次批准**。静默跳过会让每一条保护分支的规则，对那些
+  不上报自身 ref 的工具彻底失效；静默拒绝则会拒绝提取器无法描述的所有推送。
+  在没有批准人连接时，既有的失效即拒绝规则会把这次升级变成拒绝。
 
-## What a command rule can and cannot catch
+## 命令规则能拦住什么，拦不住什么
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+`commandPrefix` 规则按词边界匹配：`git push` 能覆盖
+`git push origin main`，但覆盖不了 `git pushx`。它**不**对 shell 做规范化。
+`git  push`（两个空格）、`cd sub && git push` 和 `GIT_DIR=… git push` 都是
+不同的字符串，没有一条能命中关于 `git push` 的规则。
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+这是一个真实的局限，我们把它讲明，而不是粉饰过去：命令规则是操作者用来塑造
+智能体日常行为的便利手段，**而不是**对抗蓄意攻击者的边界。真正的边界是效果
+类别（由工具自己声明，且无法改写措辞）、策略存储之下的模式命令网，以及位于
+两者之下的操作系统沙盒。一条解析为 `allow` 的命令规则绝不会放松其中任何
+一道——模式命令网会在其后运行，它的 `deny` 是最终决定。
 
-## Standing approvals
+## 常设批准
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+用“记住这个”来回答一次询问，会写入一条真正的策略规则：它带有作用域（空间／
+智能体／工作区）、**受参数约束**（批准一次推送到 `feature/login`，授予的是
+`feature/**`，而不是 `main`），并会在明确的 TTL 到期时**自动撤销**。答应
+接下来几个小时的请求，并不等于悄悄改写你的永久策略；它写入的规则会落在同一
+个存储中，带有 `remembered` 来源和到期时间，因此可以提前撤销。
 
-## Enforcement levels
+## 强制执行级别
 
-Each rule carries one:
+每条规则都带有一种级别：
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **建议**——允许，但记录该规则命中过。这是一条落地路径：先把一条严格规则
+  以建议级别铺开，读一周的审计追踪，看看它 _本会_ 拦住什么，然后再把它提升。
+  没有这一层级，严格策略永远不会被真正打开。
+- **软性**——拒绝，但持有覆盖权限的人可以覆盖，并需记录理由。覆盖本身也是
+  一次被审计的事件。
+- **硬性**（默认）——拒绝。任何东西都无法覆盖它。
 
-## The managed tier
+## 托管层级
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+安装操作者可以钉住一些策略，任何工作区管理员都无法放松它们。托管规则存放在
+服务器端，并与每个工作区自身的规则链按**最严格**方式合并——它们并不是位于
+规则链之首的一个作用域，因为一条位于链首的托管 `allow` 会让安装级设置覆盖
+工作区的拒绝，而钳制的目的恰恰相反。因此，托管规则只可能收紧，不可能放松。
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+把 `CC_SERVER_MANAGED_POLICY` 指向一个 JSON 文件，其优先级会完全高于已存储
+的规则；正因如此，操作者才能钉住一种任何管理界面都无法翻转的姿态——这就是
+“我能阻止开发者关掉这些安全控制吗？”的答案。
 
-## The autonomy dial is a profile, not a parallel system
+## 自主程度旋钮是一套配置档，而不是一套并行系统
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+按空间设置的自主程度旋钮，是同一份策略存储之上的一套具名配置档，而不是第二
+套机制。它的三档设置在存储和传输时分别是 `proposeOnly`、`actWithApproval`
+和 `actFreely`（带连字符的形式只用于界面文案，`autonomy.setForSpace` 会拒绝
+其他任何取值）。不设置它时，行为等同于 `actWithApproval`。
 
-What each one does to a resolved decision:
+每一档对已解析出的决定会做什么：
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** 直接拒绝所有受门禁管控的工具。智能体仍然可以推理和
+  回复；它只是不能行动，并且它的消息会说明原因。
+- **`actWithApproval`**（以及未设置）就是上文描述的失效即拒绝批准门禁。
+- **`actFreely`** 会对一切未解析为硬性 `deny` 的操作预先批准。
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+最后一档值得直白说明，而不是轻描淡写：在 `actFreely` 下，`prompt` 决定
+**不会**升级给批准人——它直接被允许，不会询问任何人。只有显式的 `deny` 规则
+能在这档下存活。因此 `actFreely` 是一次刻意的自主权授予，而不是一个图方便的
+开关；而失效即拒绝规则恰好保护了真正要紧的那种情况（`actWithApproval`，
+也就是默认值）。
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+智能体之间的委派，在 `delegate_task` 这一卡点由全部四道防线把守：深度上限
+（默认 3）、循环检测、**自主程度上限**（受托方行动时的自主程度永远不能高于
+其委派方——权限无法通过把工作交给一个更自由的智能体来洗白），以及**预算
+封套**（委派会从委派方的剩余预算中扣减，且无法凭空造出更多预算）。任何一项
+被触发都会被高声拒绝，并把对应防线的理由原样返回给智能体。
 
-## The adapter honesty matrix
+## 适配器诚实度矩阵
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+并非每个运行时都允许 Control Center 拦截每一个操作。外部智能体 CLI 会在进程
+内原生地运行某些工具，那里无法设置任何门禁。与其假装并非如此，每个适配器都
+带有一份**诚实度矩阵**：对每个适配器而言，Control Center 是否筛选工具面、是否
+拦截工具调用、是否观测成果物契约、能否看到运行器自带的工具，以及进程内工具
+是否受沙盒配置档的约束。
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+在信任某个配置之前，有两行值得一读。内置运行器声明它的进程内文件工具**不受**
+沙盒约束——工具面和这套策略引擎是它仅有的文件系统边界。Claude Code 声明它
+自己的工具调用**不可**拦截，因为它以 `--dangerously-skip-permissions` 启动；
+Control Center 只能看到它的 `mcp__*` 调用，而它自带的读取、写入、编辑和 shell
+工具则在无人察觉的情况下运行。
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+设置界面会展示这份矩阵，因为对一个护栏系统来说，唯一不可原谅的失败，就是
+声称拥有并不存在的覆盖范围。
 
-## Probing policy before it bites
+## 在策略咬人之前先试探它
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+护栏位于 **设置 → 工作区 → 智能体权限**
+（`/workspaces/<id>/settings/workspace/permissions`）。该界面包含用于编写
+规则的策略矩阵、策略模板、预演探针、授权审计追踪，以及适配器诚实度矩阵。
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+探针接受一个操作类别（或一条命令）和一个作用域，并显示是哪条规则作出的决定、
+以及为什么。由于解析是纯粹且确定性的——同样的操作、同样的作用域、同样的
+决定——探针给出的答案就是智能体将会得到的答案。
 
-## Related concepts
+## 相关概念
 
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/zh-CN/手册/概念/多人协作/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/zh-CN/手册/操作指南/配置护栏/): writing and testing rules in practice
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)：真正约束智能体运行的是什么，以及这套引擎之下的操作系统底线能延伸多远
+- [多人协作——身份、成员资格与在线状态](/zh-CN/手册/概念/多人协作/)：空间、主体，以及自主程度旋钮所在的位置
+- [配置护栏](/zh-CN/手册/操作指南/配置护栏/)：在实践中编写和测试规则

@@ -1,159 +1,164 @@
 ---
-title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
+title: Налаштувати тригери конвеєра
+description: Зв’яжіть шаблон так, щоб він запускався від доменної події, за розкладом або від вхідного вебхука — з бібліотеки вузлів і з інспектора вибраного тригера.
 slug: uk-UA/керівництво/практичні-посібники/тригери-конвеєра
+sourceHash: b97903070a8b7975609ae2c287cdc71b20b39db6
 ---
 
-A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
-from the **Triggers** section of the node library. Selecting that node opens
-its inspector on the right — there is no always-on triggers list, no triggers
-tab, and no triggers screen.
+Тригер — це те, що запускає конвеєр. Кожен із них — вузол на полотні, який
+перетягують із розділу **Тригери** в бібліотеці вузлів. Вибір цього вузла
+відкриває його інспектор праворуч — немає постійного списку тригерів, вкладки
+тригерів чи окремого екрана тригерів.
 
-## Open a trigger inspector
+## Відкрити інспектор тригера
 
-1. Go to **Settings → Workspace → Pipeline templates**.
-2. Press the pencil on the template's row to open the editor.
-3. Select a trigger node on the canvas. The right panel appears with that
-   trigger's settings. With nothing selected, the panel is hidden.
+1. Перейдіть до **Налаштування → Робочий простір → Шаблони конвеєрів**.
+2. Натисніть олівець у рядку шаблону, щоб відкрити редактор.
+3. Виберіть вузол тригера на полотні. Праворуч з’явиться панель із
+   налаштуваннями цього тригера. Якщо нічого не вибрано, панель прихована.
 
-## Add a trigger
+## Додати тригер
 
-The **Triggers** section of the node library lists every start kind as its own
-node: manual, schedule, webhook, and one card per domain event. Search for
-`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
-canvas. A new template also shows an **Add a trigger** ghost tile at the entry
-anchor — pick from the same searchable list.
+Розділ **Тригери** в бібліотеці вузлів показує кожен спосіб старту окремим
+вузлом: ручний запуск, розклад, вебхук і по одній картці на кожну доменну подію.
+Знайдіть `merged`, `ticket` або назву типу (`PrMerged`) і перетягніть картку на
+полотно. Новий шаблон також показує плитку-заглушку **Додати тригер** біля
+вхідного якоря — виберіть з того самого списку з пошуком.
 
-The trigger is inserted immediately. New automatic triggers start disabled so a
-drop does not fire a run before you have configured it. Use the inspector's
-**Enabled** switch to turn it on, or the bin icon to delete it.
+Тригер вставляється одразу. Нові автоматичні тригери створюються вимкненими,
+щоб перетягування не запустило конвеєр до того, як ви його налаштуєте.
+Перемикач **Увімкнено** в інспекторі вмикає тригер, а іконка кошика видаляє
+його.
 
-:::note[One trigger per event type]
-`pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker. Every webhook trigger
-shares the synthetic event type `webhook`, so a template can hold at most one
-webhook.
+:::note[Один тригер на тип події]
+`pipeline_triggers` є унікальним за робочим простором, типом події та шаблоном.
+Тип події, який ви вже підключили, зникає із селектора. Усі вебхук-тригери мають
+спільний синтетичний тип події `webhook`, тож шаблон може містити щонайбільше
+один вебхук.
 :::
 
-## Allow manual runs
+## Дозволити ручні запуски
 
-Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
-its inspector. That is what makes the template appear in the run launcher. It
-is not a special case — the switch writes an ordinary trigger row whose event
-type is `manual`. It persists immediately; there is nothing to save.
+Перетягніть **Ручний запуск** (або виберіть його з плитки-заглушки) і увімкніть
+**Увімкнено** в його інспекторі. Саме це змушує шаблон з’явитися в селекторі
+запуску. Це не особливий випадок — перемикач записує звичайний рядок тригера з
+типом події `manual`. Він зберігається одразу; зберігати нічого не треба.
 
-The same switch is behind **Manual run** in the editor header, where it sits
-alongside the template's declared inputs.
+Той самий перемикач стоїть за кнопкою **Ручний запуск** у заголовку редактора,
+поруч із оголошеними входами шаблону.
 
-## On an event
+## За подією
 
-These events start a run:
+Ці події запускають конвеєр:
 
-| Picker label              | Event                      |
-| ------------------------- | -------------------------- |
-| External PR opened        | `ExternalPrDetected`       |
-| PR published              | `PullRequestPublished`     |
-| PR status changed         | `PullRequestStatusChanged` |
-| PR merged                 | `PrMerged`                 |
-| Message received          | `MessageReceived`          |
-| Ticket created            | `TicketCreated`            |
-| Ticket status changed     | `TicketStatusChanged`      |
-| Ticket assigned           | `TicketAssigned`           |
-| Ticket completed          | `TicketCompleted`          |
-| Ticket failed             | `TicketFailed`             |
-| Ticket cancelled          | `TicketCancelled`          |
-| Budget threshold crossed  | `BudgetThresholdCrossed`   |
-| Repository added          | `RepoAdded`                |
-| Meeting recording stopped | `MeetingRecordingStopped`  |
-| Skill updated             | `SkillUpdated`             |
-| Space deleted             | `SpaceDeleted`             |
+| Напис у селекторі         | Подія                       |
+| ------------------------- | --------------------------- |
+| Відкрито зовнішній PR     | `ExternalPrDetected`        |
+| PR опубліковано           | `PullRequestPublished`      |
+| Змінено статус PR         | `PullRequestStatusChanged`  |
+| PR злито                  | `PrMerged`                  |
+| Отримано повідомлення     | `MessageReceived`           |
+| Тікет створено            | `TicketCreated`             |
+| Статус тікета змінено     | `TicketStatusChanged`       |
+| Тікет призначено          | `TicketAssigned`            |
+| Тікет завершено           | `TicketCompleted`           |
+| Тікет завершився помилкою | `TicketFailed`              |
+| Тікет скасовано           | `TicketCancelled`           |
+| Перетнуто поріг бюджету   | `BudgetThresholdCrossed`    |
+| Додано репозиторій        | `RepoAdded`                 |
+| Запис зустрічі зупинено   | `MeetingRecordingStopped`   |
+| Навичку оновлено          | `SkillUpdated`              |
+| Простір видалено          | `SpaceDeleted`              |
 
-`SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
-carries the deleted space's id, so the run reclaims exactly that space's
-worktrees instead of sweeping the whole workspace.
+`SpaceDeleted` — це подія, на яку слухає вбудований конвеєр прибирання робочих
+дерев: вона несе ідентифікатор видаленого простору, тож запуск прибирає робочі
+дерева саме цього простору, а не прочісує весь робочий простір.
 
-For the payload keys each event carries, see the
-[domain events reference](/uk-UA/керівництво/довідка/доменні-події/).
+Ключі корисного навантаження, які несе кожна подія, дивіться в
+[довідці з доменних подій](/uk-UA/керівництво/довідка/доменні-події/).
 
-### Filter an event trigger
+### Фільтрувати тригер події
 
-Select the **PR status changed** node. The inspector's status chips are the
-only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
-`opened`, `reopened`; the trigger then fires only when the event's `status`
-matches one of them. Leaving every chip unselected means no filter.
+Виберіть вузол **Змінено статус PR**. Чіпи статусів в інспекторі — це єдиний
+фільтр, який можна задати в інтерфейсі. Натисніть будь-який із `merged`,
+`closed`, `approved`, `opened`, `reopened`; тоді тригер спрацьовує, лише коли
+`status` події збігається з одним із них. Якщо не вибрано жодного чіпа, фільтра
+немає.
 
-There is no free-form JSON filter field. A filter key that the event's payload
-does not carry never matches, so do not hand-author one against a key you have
-not confirmed in the domain events reference.
+Поля для довільного JSON-фільтра немає. Ключ фільтра, якого немає в корисному
+навантаженні події, ніколи не збігається, тож не задавайте його вручну для
+ключа, який ви не підтвердили в довідці з доменних подій.
 
-## On a schedule
+## За розкладом
 
-Select the **Schedule** node to edit when it fires. The inspector fields persist
-as you leave them:
+Виберіть вузол **Розклад**, щоб змінити час його спрацьовування. Поля в
+інспекторі зберігаються такими, якими ви їх залишаєте:
 
-| Field                                | Description                                                                                                                                                                         |
+| Поле                                 | Опис                                                                                                                                                                                |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
-| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
-| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+| **Розклад (cron або every:seconds)** | Cron-вираз із п’яти полів, як-от `0 9 * * 1`, або інтервал, як-от `every:86400`. Голе число приводиться до `every:<n>`.                                                            |
+| **Часовий пояс (необов’язково)**     | Зона IANA, як-от `Europe/Paris`. Типово UTC.                                                                                                                                        |
+| **Пропущені запуски**                | Що робити зі спрацьовуваннями, пропущеними, поки сервер був недоступний: **Запустити один раз** згортає всі пропущені слоти в одне спрацьовування після перезапуску (типово), **Пропустити** відновлюється з наступного майбутнього слота. |
 
-The canvas tile's summary line only spells out the interval for the
-`every:<seconds>` form; a cron expression shows as just "Schedule".
+Рядок підсумку на плитці полотна розписує інтервал лише для форми
+`every:<seconds>`; cron-вираз показується просто як «Розклад».
 
-## Via a webhook
+## Через вебхук
 
-Dropping **Webhook** mints a random token. Select the node to copy the path
-`POST /webhooks/<token>` from the inspector.
+Перетягування **Webhook** створює випадковий токен. Виберіть вузол, щоб
+скопіювати шлях `POST /webhooks/<token>` з інспектора.
 
-The token is also the HMAC secret: the request must carry
-`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
-A delivery that fails verification is rejected and logged and is not
-replayable. Duplicates are ignored by their dedupe key.
+Токен також є секретом HMAC: запит має нести
+`X-Hub-Signature-256: sha256=<hex>`, де hex — це `HMAC-SHA256(body, token)`.
+Доставку, яка не проходить перевірку, відхиляють і записують у журнал, і її не
+можна відтворити повторно. Дублікати відкидаються за їхнім ключем дедуплікації.
 
-:::caution[The token is in the database]
-The inspector shows the path. The token itself is the path segment; it is also
-stored on the `pipeline_triggers` row.
+:::caution[Токен зберігається в базі даних]
+Інспектор показує шлях. Сам токен — це сегмент шляху; він також зберігається в
+рядку `pipeline_triggers`.
 :::
 
-Each start is its own graph node. Pulling a wire from **Schedule** attaches
-only Schedule; **Manual run** can take a different path (for example a
-condition node) before it joins the same work. A run enters the start that
-matches its event type and skips subgraphs that belong to the other starts.
+Кожен старт — це окремий вузол графа. З’єднання, проведене від **Розкладу**,
+приєднує лише Розклад; **Ручний запуск** може йти іншим шляхом (наприклад, через
+вузол умови), перш ніж приєднатися до тієї самої роботи. Запуск входить у старт,
+що відповідає його типу події, і пропускає підграфи, які належать іншим стартам.
 
-## How a trigger reaches a run
+## Як тригер доходить до запуску
 
-An enabled trigger whose event type and filter both match starts a run with the
-event's payload as the run's trigger payload — that is what `{{key}}` in a
-step's prompt or script resolves against. Events that carry a natural key are
-de-duplicated, so the same event firing twice does not start two runs.
+Увімкнений тригер, у якого збігаються і тип події, і фільтр, запускає конвеєр, а
+корисне навантаження події стає тригерним навантаженням запуску — саме з ним
+зіставляється `{{key}}` у промпті чи скрипті кроку. Події, що несуть природний
+ключ, дедуплікуються, тож одна подія, що спрацювала двічі, не запускає два
+запуски.
 
-A disabled _template_ is refused even when its trigger matches. Eight of the
-thirteen built-in templates ship disabled, so their seeded triggers fire into
-nothing until you turn the template on.
+Вимкнений _шаблон_ відхиляється, навіть коли його тригер збігається. Вісім із
+тринадцяти вбудованих шаблонів постачаються вимкненими, тож їхні засіяні
+тригери спрацьовують у порожнечу, поки ви не ввімкнете шаблон.
 
-## Useful patterns
+## Корисні патерни
 
-- **Gate only the manual path** — wire **Manual run** through a condition node,
-  and **Schedule** straight to the work. Each start owns its own wires.
-- **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR status changed**, filtered to
-  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
-  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
-  and a daily schedule that is force-enabled on every re-seed because it is
-  garbage collection.
-- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
-  first node is a bash script.
-- **React to an external system** — a webhook trigger, with the calling system
-  signing its request body as above.
+- **Обмежити лише ручний шлях** — з’єднайте **Ручний запуск** через вузол умови,
+  а **Розклад** — напряму з роботою. Кожен старт має власні з’єднання.
+- **Перевіряти кожен новий PR** — подія **PR опубліковано** на шаблоні
+  `pr_review`.
+- **Прибирати після злиття** — подія **Змінено статус PR**, відфільтрована до
+  `merged` / `closed` / `approved`. Вбудований шаблон `pr_merged_cleanup` уже
+  слухає саме так, а також тікет завершено/скасовано, `SpaceDeleted` і щоденний
+  розклад, який примусово вмикається під час кожного повторного засівання, бо це
+  збирання сміття.
+- **Щонічне прибирання** — розклад `0 2 * * *` із часовим поясом, на шаблоні,
+  чий перший вузол — скрипт bash.
+- **Реагувати на зовнішню систему** — вебхук-тригер, де система, що викликає,
+  підписує тіло свого запиту, як описано вище.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create a pipeline template](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/)
-- [Run a pipeline manually](/uk-UA/керівництво/практичні-посібники/запустити-конвеєр/)
-- [Monitor pipeline runs](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
-- [Domain events reference](/uk-UA/керівництво/довідка/доменні-події/)
+- [Створити шаблон конвеєра](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/)
+- [Запустити конвеєр вручну](/uk-UA/керівництво/практичні-посібники/запустити-конвеєр/)
+- [Моніторити запуски конвеєрів](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
+- [Довідка з доменних подій](/uk-UA/керівництво/довідка/доменні-події/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Pipelines](/uk-UA/керівництво/поняття/конвеєри/)
-- [Domain events](/uk-UA/керівництво/поняття/доменні-події/)
+- [Конвеєри](/uk-UA/керівництво/поняття/конвеєри/)
+- [Доменні події](/uk-UA/керівництво/поняття/доменні-події/)

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Refatorar código de forma estrutural
+description: Faça um agente encontrar e reescrever código pela forma em vez de pelo texto, e reveja a alteração antes de ela ser aplicada.
 slug: pt-PT/manual/guias/refatoracao-estrutural
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Este guia mostra-lhe como conseguir que um agente faça uma alteração mecânica e ampla — um codemod, uma migração em massa de uma API, um padrão que quer ver desaparecer — usando pesquisa e reescrita estruturais, com a alteração preparada para revisão antes de algo ser escrito.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+O `ast_grep` faz corresponder código pela **forma**. O `ast_edit` reescreve-o. O `resolve` confirma ou descarta.
 
-## Before you start
+## Antes de começar
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+As ferramentas estruturais abrangem as linguagens que o grafo de código analisa: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB e Ada. Precisam de ter as gramáticas do tree-sitter preparadas, o que acontece sempre numa build distribuída — uma gramática em falta impede o servidor, em vez de degradar a pesquisa.
 
-## Find the shape first
+## Encontrar primeiro a forma
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Nunca reescreva algo que não tenha observado. Peça ao agente para pesquisar:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Encontre todos os locais onde chamamos `dispose()` a um nullable que acabámos de verificar contra null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+A saída é `file:line` mais o código-fonte correspondido em cada local.
 
-### What the pattern syntax buys you
+### O que a sintaxe do padrão lhe dá
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| Token      | Corresponde                                 |
+| ---------- | ------------------------------------------- |
+| `$NAME`    | Qualquer nó único, capturado                |
+| `$$$NAME`  | Qualquer sequência de irmãos — argumentos, instruções |
+| `$_`       | Qualquer coisa, capturada sem nome          |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+A que importa: **um `$NAME` repetido tem de capturar o mesmo texto**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+encontra uma guarda que descarta aquilo que testou. **Não** encontra `if (a != null) b.dispose()` — que é normalmente o erro que estava à procura. Nenhuma pesquisa textual consegue exprimir isso.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Não corresponde dentro de uma string nem de um comentário]
+O padrão é analisado pela mesma gramática do ficheiro, por isso `dispose(x)` escrito num comentário de documentação ou num literal de string não é uma chamada e não corresponde. É exatamente essa a razão para recorrer a isto em vez do `grep`.
 :::
 
-### When the pattern finds nothing
+### Quando o padrão não encontra nada
 
-Two things to try, in order:
+Duas coisas a experimentar, por ordem:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Torne-o mais pequeno.** `foo($X)` antes de `if (a) { foo($X); }`. Um padrão que não é código válido por si só muitas vezes não é a construção que pretendia.
+2. **Indique a linguagem.** O `language:` só é inferido quando o `path` indica um único ficheiro.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Um padrão que nenhum contexto de análise aceita é reportado como não analisável — a ferramenta di-lo, em vez de reportar "sem correspondências" para algo que nunca estava a ser lido tal como parece.
 
-## Rewrite, and look before it lands
+## Reescrever, e olhar antes de aplicar
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+O resultado é uma **proposta**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Ainda não está nada no disco. Leia a lista, verifique alguns dos locais que a pesquisa reportou e, em seguida:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+ou
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[A confirmação é tudo ou nada]
+Cada ficheiro é comparado com o conteúdo capturado quando a alteração foi preparada. Se algum deles tiver mudado — o agente editou-o à mão, um formatador foi executado, uma passagem de diagnósticos reescreveu-o — a alteração **inteira** é recusada e descartada. Uma reescrita estrutural aplicada em parte deixa uma árvore que não compila nem na forma antiga nem na nova.
 
-Re-run the tool against the current files; do not retry the stale id.
+Volte a executar a ferramenta sobre os ficheiros atuais; não tente novamente o id obsoleto.
 :::
 
-## Check your work with the compiler
+## Verifique o seu trabalho com o compilador
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+A razão de fazer isto estruturalmente é que é amplo. As alterações amplas são exatamente onde uma reescrita com bom aspeto quebra um tipo. Peça diagnósticos depois de confirmar:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` executa o próprio verificador do projeto (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) em vez de uma consulta ficheiro a ficheiro — a forma certa de pergunta depois de uma alteração que tocou em quarenta ficheiros.
 
-## Worked example: migrating a call
+## Exemplo prático: migrar uma chamada
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Digamos que `log(msg, level)` vai passar a ser `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Observe as ocorrências. Se algumas delas forem um `log` de dois argumentos *diferente*, restrinja o padrão limitando o `path` ao diretório onde está o que pretende, em vez de tentar exprimir a diferença no padrão.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Depois `resolve`, e a seguir `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Quando usar outra coisa
 
-| Situation                                 | Better tool                          |
+| Situação                                  | Ferramenta melhor                    |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/pt-PT/manual/guias/pesquisar-codigo/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Renomear um símbolo                       | `lsp_rename` — segue referências, não formas |
+| Encontrar uma string, um comentário ou um nome de ficheiro | `search` (conteúdo) / `search_files` (nomes) |
+| "O que é que quebra se eu alterar isto?"  | O [grafo de código](/pt-PT/manual/guias/pesquisar-codigo/) |
+| Uma linguagem que as gramáticas não abrangem | `search` mais `edit`              |
 
-## Related
+## Relacionados
 
-- [Code intelligence](/pt-PT/manual/conceitos/inteligencia-de-codigo/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/pt-PT/manual/referencia/ferramentas-de-agente/) — the full argument list
-- [Search code with the code graph](/pt-PT/manual/guias/pesquisar-codigo/) — the symbol and impact side
+- [Inteligência de código](/pt-PT/manual/conceitos/inteligencia-de-codigo/) — porque é que a correspondência estrutural não é uma expressão regular com passos extra
+- [Ferramentas de agente integradas](/pt-PT/manual/referencia/ferramentas-de-agente/) — a lista completa de argumentos
+- [Pesquisar código com o grafo de código](/pt-PT/manual/guias/pesquisar-codigo/) — o lado dos símbolos e do impacto

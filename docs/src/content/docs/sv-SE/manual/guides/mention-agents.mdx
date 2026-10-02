@@ -1,121 +1,124 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "@-nämn agenter"
+description: Nämn agenter i en yta för att dispatchera dem, och medarbetare för att avisera dem.
 slug: sv-SE/handbok/how-to-guider/namna-agenter
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Den här guiden visar hur du @-nämner agenter och medarbetare i en yta.
 
-## Mention an agent
+## Nämn en agent
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Skriv `@` i meddelandefältet och välj en agent i autokompletteringen, eller skriv
+namnet själv:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Den omnämnda agenten läggs till i ytan som deltagare om den inte redan är det och
+dispatchers med ytans kontext och läge. Deltagare som inte nämns ser meddelandet
+men dispatchers inte.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Om du skickar ett meddelande utan något agentomnämnande väljer Control Center
+själv en svarande: agenten som talade senast i samtalet, annars samtalets ägare
+när det har en, annars den första toppnivåagenten bland ytans deltagare. I en yta
+med en enda agent är det alltid den enda agenten.
 
-## Know how a name is matched
+## Så matchas ett namn
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+En omnämnandetoken matchas **skiftlägesokänsligt**, efter **exakt namn eller
+prefix**. Så når `@arch` en agent som heter `architect` och `@Alice` når `alice`.
 
-Two consequences worth planning around:
+Två konsekvenser värda att ta höjd för:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **En kort token är inte ett fel.** Om två agenter delar ett prefix vinner den
+  första som hittas, och vilken det är beror på ordningen — inte på någon regel
+  för att lösa lika fall. Använd hela namnet när namn överlappar.
+- **Endast bokstäver, siffror och understreck ingår i en token.** Parsern matchar
+  `@(\w+)`, så `@code-reviewer` läses som token `code` och `@my agent` som `my`.
+  En agent vars namn innehåller ett bindestreck, en punkt eller ett mellanslag kan
+  inte nämnas tillförlitligt — inte ens via autokompletteringen, som infogar
+  namnet som vanlig text. Döp agenter till ett enda ord, eller använd understreck.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Omnämnanden tas bort från texten innan den når agenten. Ett meddelande som _bara_
+består av omnämnanden (`@alice`) dispatchers därför ingenting — ge det något att
+göra.
 
-## Mention several agents at once
+## Nämn flera agenter samtidigt
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Båda agenterna dispatchers parallellt in i samma samtal och båda tar emot hela
+meddelandet.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+De **delar också den ytans worktrees**. Repo-worktrees etableras per yta, inte per
+agent; varje agent får sin egen overlay-arbetskatalog för sin `AGENTS.md`, sina
+skills och sin konfiguration, med de delade repona länkade läs-och-skriv. Så två
+agenter som nämns tillsammans kan se — och krocka med — varandras ändringar.
 
-## Mention a teammate
+## Nämn en medarbetare
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Varje `@token` som inte matchar en agent prövas mot arbetsytans mänskliga
+medlemmar, efter handle, med samma skiftlägesokänsliga regel om exakt namn eller
+prefix.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Ett matchat medarbetaromnämnande **dispatchers inte**. Det följer bara med i
+meddelandets metadata så att aviseringsroutern kan pinga den personen.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Agentnamn prövas alltid först, och en token som en agent har gjort anspråk på
+erbjuds aldrig till medlemslistan — ett `@word` kan bara matcha en enda principal.
 
-## What the agent receives
+## Vad agenten tar emot
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+En dispatchad agent får ett ”Summons”-block i sin prompt som namnger vem som
+kallade på den och listar ytans närvarolista — de andra agenterna (markerade som
+toppnivå eller underordnade) och de mänskliga medlemmarna — så att den vet vem den
+kan lämna över till. Blocket berättar också att ett omnämnande av en annan agent i
+svaret väcker den agenten och att ett omnämnande av sig själv ignoreras.
 
-## When an agent mentions an agent
+## När en agent nämner en agent
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+En agent kan lämna över i sitt eget svar. När en tur **avslutas rent** matchas
+omnämnandena i dess text, och de agenterna läggs till i ytan och dispatchers in i
+samma samtal, med den nämnande turen som sin prompt. En tur som misslyckades eller
+avbröts väcker ingen — den stannade mitt i tanken.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Reglerna är avsiktligt strängare än meddelandefältets, eftersom ingen sitter och
+tittar och kan rätta en felaktig gissning:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
+- **Endast exakta namn.** Ingen prefixmatchning. `@arch` når `architect` när en
+  människa skriver det; från en agent når det ingen. Ett namn som matchar två
+  agenter når inte heller någon.
+- **Kod är inte prosa.** Omnämnanden inuti staketavgränsade block eller
+  `` `backticks` `` ignoreras, så att citera en `@Override`-annotering eller ett
+  `pip install foo@1.2` är säkert. Ett oavslutat staket gör allt efter det tomt.
+- **Ett `@` som sitter ihop med föregående token är inget omnämnande** —
+  `sam@host.com`, `pkg/@scope` och `node@20` matchar ingen.
+- **Bindestreck behålls**, så `@code-reviewer` matchar sig själv i stället för
   token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Högst tre agenter per tur.** En agent som listar sex medarbetare i en
+  sammanfattning listar dem, den kallar inte på dem.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+En väckningskedja begränsas på samma sätt som delegering: **djup 3**, och en agent
+som redan finns i kedjan kan inte väckas av den igen (ingen `A → B → A`). Ett
+ordnat par är också frekvensbegränsat mellan kedjor. Ett avvisat väckningsförsök
+lägger ett systemmeddelande i samtalet som säger vilket omnämnande som inte
+levererades och varför — ett namn som inte matchar gör det inte, eftersom varje
+`@` i en mening annars skulle berätta om sig själv.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+För en överlämning som inte får bero på prosa — en fråga/svar, eller att nå en
+agent utanför ytan — använd verktygen `send_to_agent`, `ask_agent` och
+`delegate_task` i stället.
 
-## Related guides
+## Relaterade guider
 
-- [Chat with an agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
-- [Use spaces](/sv-SE/handbok/how-to-guider/ytor/)
-- [Run agents in parallel](/sv-SE/handbok/how-to-guider/parallella-agenter/)
+- [Chatta med en agent](/sv-SE/handbok/how-to-guider/chatta-med-agent/)
+- [Använd ytor](/sv-SE/handbok/how-to-guider/ytor/)
+- [Kör agenter parallellt](/sv-SE/handbok/how-to-guider/parallella-agenter/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)

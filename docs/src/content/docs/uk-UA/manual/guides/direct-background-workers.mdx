@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Керувати фоновими воркерами
+description: Використовуйте режим vibe, щоб перестати робити роботу самому й почати керувати кількома агентами, які виконують її паралельно.
 slug: uk-UA/керівництво/практичні-посібники/керувати-фоновими-воркерами
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Цей посібник показує, як вести розмову в ролі **директора**, а не воркера: сесія читає й перевіряє, а редагуванням займаються фонові агенти.
 
-## What changes when you type `/vibe`
+## Що змінюється, коли ви вводите `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Дві речі, і лише першу примусово забезпечує механізм:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Власні інструменти сесії опускаються до рівня лише для читання**, плюс п’ять дієслів воркера. Єдиний спосіб вплинути на репозиторій — через воркера, а єдиний спосіб дізнатися, що сталося, — прочитати файли, яких торкнувся воркер.
+2. **Їй наказано перевіряти читанням, а не вірою.** Звіт воркера — це заява про те, що він зробив, а не доказ, що це спрацювало.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Навантаження несе перший пункт. Директор, який усе ще може виконувати grep і редагувати, під тиском зробить роботу сам — а це саме той режим відмови, якому цей підхід покликаний запобігти.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Воркери стартують з нуля
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Воркер ніколи не бачив вашої розмови й ніколи не побачить. Бриф — це весь його контекст.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Саме це робить цей підхід дешевим — двадцять воркерів, кожен із яких тримав би історію директора, коштували б у двадцять разів більше за контекст директора — і водночас це єдине, що робить брифи складними для написання. «Тепер зроби й інше» для директора читається як повна інструкція, а для свіжої сесії — як ніщо.
 
-A good brief names files, commands and the definition of done:
+Добрий бриф називає файли, команди й визначення готовності:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> У `lib/features/auth/` замініть кожен виклик `SessionStore.read(key)` на `SessionStore.get(key)`. Новий метод повертає `Future<String?>` там, де старий повертав `String?`, тож викликам потрібен `await`. Коли завершите, запустіть `fvm flutter analyze lib/features/auth` і повідомте про будь-які помилки, які не змогли виправити.
 
-## The five verbs
+## П’ять дієслів
 
-| Verb         | What it does                                            |
+| Дієслово     | Що робить                                                |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Запускає воркера з брифом. **Повертає керування негайно.** |
+| `vibe_list`  | Рівень, статус, витрачений час і останній результат для всіх |
+| `vibe_send`  | Наступний хід для воркера, який завершив роботу            |
+| `vibe_wait`  | Блокує, доки один воркер не завершиться                   |
+| `vibe_kill`  | Зупиняє одного                                            |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Запуск асинхронний за задумом. Директор, який блокується на кожному запуску, виконує воркерів по одному — а це повільніший спосіб робити те, що він і так робив сам. Використовуйте `vibe_wait` лише тоді, коли справді не можете рухатися далі без конкретної відповіді.
 
-## Two tiers
+## Два рівні
 
-| Tier   | For                                                              |
+| Рівень | Для чого                                                         |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Механічна робота з чіткою специфікацією — правки, перейменування, чернетки, запуск команд |
+| `good` | Проєктування, судження або перевірка того, що створив воркер `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Поширений підхід — розподілити `fast`-воркерів між незалежними файлами, а потім запустити одного `good`-воркера, щоб перевірити те, що вони зробили разом.
 
-## Verifying
+## Перевірка
 
-This is the part that decides whether the pattern is worth anything.
+Саме від цієї частини залежить, чи вартий цей підхід хоч чогось.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Потім **прочитайте файли, які він назвав**. Директор має `read`, `search`, `lsp` і `ast_grep`; саме в цьому сенс того, що їх залишили. Директор, який приймає звіт на віру, — це переказувач оптимізму інших агентів.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` після кола воркерів зазвичай є найшвидшою окремою перевіркою.
 
-## When a worker loses the thread
+## Коли воркер втрачає нить
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Зупиніть його й напишіть бриф заново. Свіжий, виправлений бриф дешевший за суперечку, а `vibe_send` працює лише з воркером, який уже завершив свій хід.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Обмеження
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Вісім одночасних воркерів.** Стеля витрат, а не технічна межа: кожен із них — повноцінна сесія моделі, а директор, який розподілив двадцятьох, уже перестав стежити за тим, що всі вони роблять.
+- **Жоден воркер не переживає режим.** Коли запуск завершується, їх усіх зупиняють, а транскрипт показує, скільки їх було. Фоновий агент, який досі редагує файли після того, як розмова пішла далі, — це єдина відмова, якої тут не можна допустити.
+- **Під капотом воркери — звичайні субагенти.** Те саме обмеження глибини, та сама політика обмежень, той самий дочірній запис журналу запусків. Vibe змінює те, хто ними керує, а не те, що їм дозволено, — тож запити на схвалення, як і раніше, з’являються для викликів write і exec воркера.
 
-## When not to use it
+## Коли не варто його використовувати
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/) or an [orchestration](/uk-UA/керівництво/практичні-посібники/запустити-оркестрацію/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Режим vibe призначений для роботи, яка розкладається на незалежні брифи. Якщо наступний крок залежить від результату попереднього, ви описуєте [конвеєр](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/) або [оркестрацію](/uk-UA/керівництво/практичні-посібники/запустити-оркестрацію/), і обидва належно виражають залежності, замість того щоб змушувати директора імітувати їх за допомогою `vibe_wait`.
 
-## Related
+## Пов’язане
 
-- [Run agents in parallel](/uk-UA/керівництво/практичні-посібники/паралельні-агенти/) — the other ways to fan out
-- [Orchestration](/uk-UA/керівництво/поняття/оркестрація/) — when the work has a shape
-- [Built-in agent tools](/uk-UA/керівництво/довідка/інструменти-агента/) — the verbs and their arguments
+- [Запускати агентів паралельно](/uk-UA/керівництво/практичні-посібники/паралельні-агенти/) — інші способи розподіляти роботу між агентами
+- [Оркестрація](/uk-UA/керівництво/поняття/оркестрація/) — коли робота має форму
+- [Вбудовані інструменти агента](/uk-UA/керівництво/довідка/інструменти-агента/) — дієслова та їхні аргументи

@@ -1,310 +1,310 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP 工具
+description: cc_server 所註冊 MCP 工具的完整目錄，依功能家族分類。
 slug: zh-TW/手冊/參考/mcp-工具
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` 託管單一 MCP（JSON-RPC 2.0）工具登錄，於主伺服器連接埠（預設 `9030`）以 `POST /mcp` 與 `GET /sse` 提供，通訊協定版本為 `2024-11-05`。每個用戶端存取的都是同一個登錄：桌面版、網頁版、外部 MCP 用戶端，以及內建代理執行環境。外部 MCP 伺服器可以動態層的形式橋接進同一個登錄。
 
-## Registry size
+## 登錄大小
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| 指標                                                                      | 數量 |
+| ------------------------------------------------------------------------- | ---- |
+| 由 `cc_server` 註冊的工具                                                 | 110  |
+| 來自 `packages/cc_mcp`                                                    | 108  |
+| 來自 `packages/cc_mcp_client`（工具探索）                                 | 2    |
+| 註冊於基礎登錄（`server_mcp_registry.dart`）                              | 63   |
+| 開機後隨其服務啟動而註冊（`cc_server_runtime.dart`）                      | 47   |
+| 基礎登錄的 63 個之中，以程式碼圖儲存庫為條件者                            | 5    |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+這五個程式碼圖工具只有在主機把程式碼圖儲存庫傳給 `buildServerMcpRegistry` 時才會註冊。`cc_server` 一律會傳入一個，因此出貨的執行檔中 110 個全部可用。
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+完整登錄會透過 `tools/list` 完整公告，沒有任何探索閘門。工單編輯是具型別的工具。
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[外部用戶端一律看到完整目錄]
+`tools/list` 絕不會被裁剪。MCP 用戶端會以自己的那份快取清單驗證工具名稱，並直接拒絕任何未列出的項目，不會去詢問伺服器，因此從中藏起來的工具是無法觸及，而不只是安靜無聲。
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/zh-TW/手冊/概念/工具情境).
+**內建執行環境**則不同：每次請求它只載入常駐的一部分定義，其餘則在第一次用到時才取入；這是執行環境端的行為，並不會改變這個登錄。請參閱[工具情境與提示快取](/zh-TW/手冊/概念/工具情境/)。
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[每個工具類別都會被註冊]
+`packages/cc_mcp/lib/src/tools/` 下的每個原始檔，都是代理可以呼叫的一個工具。
+若有新的工具類別沒有被任何地方建構，`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+會讓建置失敗。
 :::
 
-## Common parameters
+## 通用參數
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+凡是會碰到工作區範圍資料的工具，此參數皆為**必填**。缺少或無效的 `workspace_id` 會回傳明確的錯誤，而與目標實體所屬工作區不符的值會被拒絕，而不是被默默忽略。在真正全域的工具上則省略它：`list_workspaces` 以及六個新聞動態工具（`list_feeds`、`list_articles`、`get_article`、`set_article_read`、`set_article_saved`、`refresh_feeds`），它們使用的是伺服器擁有者每位使用者的摘要來源清單。探索工具（`search_tool_bm25`、`list_my_tools`）則選填此參數，這樣它們才能依對話模式分類可呼叫性。當代理由伺服器派送時，工作區是在伺服器端強制決定的，因此代理無法藉由傳入外來的 id 觸及另一個工作區。
 
-## Tool discovery
+## 工具探索
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+兩者都來自 `cc_mcp_client`，而非 `cc_mcp`，且都會查詢模式守門程式，因此它們回報的是_當前_對話模式中可呼叫的項目。
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| 工具               | 說明                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | 依關鍵字搜尋工具目錄；回傳相符的工具、其引數結構描述，以及每個工具目前是否可呼叫                            |
+| `list_my_tools`    | 列出此對話中目前可呼叫的工具，並依其模式篩選                                                               |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+第三個探索工具 **`search_tools`** 只存在於內建執行環境內，並不屬於這個 MCP 登錄。它會為該次執行自身的工具介面排名，而且與 `search_tool_bm25` 不同，它會**載入**找到項目的結構描述，好讓代理能在下一個回合呼叫相符的工具。在執行環境上執行的代理應優先使用它；MCP 用戶端則有 `search_tool_bm25`。
 
-## Agent tools
+## 代理工具
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| 工具          | 說明                               |
+| ------------- | ---------------------------------- |
+| `list_agents` | 列出工作區中已註冊的代理           |
 
-## Agent peer messaging and delegation
+## 代理對等訊息與委派
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+代理彼此透過空間交談（持久、名冊可見）。`ask_agent` 是請求／回覆，且有強制逾時；`delegate_task` 則在伺服器端受深度上限、循環偵測、預算包絡與自主程度上限保護。
 
-| Tool            | Description                                                                                    |
+| 工具            | 說明                                                                                           |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | 傳送單向訊息給另一個代理，以 `to_agent_id` 或完全相符的 `to_agent_name` 指定對象                |
+| `ask_agent`     | 向另一個代理提問並等待其回覆，或逾時                                                           |
+| `delegate_task` | 以受追蹤的子工單形式，將任務委派給另一個代理                                                   |
+| `consult_agent` | 依技能把最相符的專家加入該空間，並以聚焦的簡報派送它                                           |
+| `todo_read`     | 讀取此對話已持久化的任務檢查清單                                                               |
 
-## Skill tools
+## 技能工具
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+每一次安裝與更新，都會先通過一道失效即關閉的掃描閘門，技能內容才會進入磁碟或代理提示。
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| 工具                 | 說明                                                                         |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `list_skills`        | 列出工作區中可用的技能 slug                                                  |
+| `create_skill`       | 以 markdown 內容建立新技能                                                   |
+| `install_skill`      | 從 GitHub 儲存庫以釘選的 ref 安裝技能的整個目錄                              |
+| `update_skill`       | 將已安裝的 GitHub 技能更新至新的 ref，並重新掃描與重新釘選                    |
+| `list_skill_updates` | 列出有較新版本可用的技能                                                     |
+| `verify_skills`      | 依磁碟上的內容雜湊驗證已鎖定的技能                                           |
+| `pin_skill`          | 將磁碟上既有的技能雜湊後寫入 `skills-lock.json`                              |
 
-## Plan, playbook and artifact tools
+## 計畫、playbook 與成品工具
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| 工具               | 說明                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `submit_plan`      | 規劃模式的輸出契約：發出一個具型別的 `PlanDocument`，會在 Plan Studio 中開啟                                  |
+| `create_playbook`  | 將計畫儲存為具名、有版本、帶具型別 `{{param}}` 預留位置的範本                                                |
+| `run_playbook`     | 以參數值具現化 playbook，產出一份由操作者核准的計畫                                                           |
+| `publish_artifact` | 發佈一串有序的具型別區塊（markdown、table、chart、mermaid、code、JSON），由用戶端原生呈現                     |
+| `revise_artifact`  | 取代已發佈成品的內容                                                                                          |
+| `list_artifacts`   | 列出工作區的成品                                                                                              |
+| `get_artifact`     | 讀取單一成品                                                                                                  |
+| `complete_goal`    | 宣告此對話作用中的持久目標（以 `/goal` 或 `/loop` 啟動）已達成                                                |
 
-## Workspace tools
+## 工作區工具
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| 工具              | 說明                                                                       |
+| ----------------- | -------------------------------------------------------------------------- |
+| `list_workspaces` | 列出所有工作區及其 id 與名稱（全域；無 `workspace_id`）                    |
 
-## Repo tools
+## 儲存庫工具
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| 工具         | 說明                                                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | 列出工作區中已註冊的儲存庫。以代理身分呼叫者收到的是其對話專屬、隔離的寫入時複製工作樹路徑，絕不會是原始檢出                                                |
 
-## Messaging tools
+## 訊息工具
 
-| Tool                   | Description                                                                 |
+| 工具                   | 說明                                                                        |
 | ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| `list_spaces`          | 列出工作區中的訊息空間                                                      |
+| `get_messages`         | 從空間取得訊息                                                              |
+| `send_message`         | 以具名傳送代理的身分，傳送訊息至空間                                        |
+| `get_space_notes`      | 讀取空間的共用交接文件                                                      |
+| `update_space_notes`   | 取代空間的共用交接文件                                                      |
+| `todo_write`           | 在一次呼叫中取代此對話的任務檢查清單（傳入完整清單）                        |
 
-## Review tools
+## 審查工具
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| 工具                       | 說明                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | 為 PR 開始 AI 審查：計算審查區域、將專家審查者展開至該 PR 的空間、撰寫導覽並收尾                                  |
+| `add_review_node`          | 將結構化的審查發現（檔案、行、P0–P3 優先順序）加入審查空間                                                       |
+| `confirm_review_node`      | 確認同儕的發現；作者不能自行確認                                                                                  |
+| `resolve_review_node`      | 在實際做出變更後將發現標記為已修正；會將一筆軌跡貼入審查空間                                                      |
+| `dismiss_review_node`      | 忽略不適用的發現；會記錄一筆抑制事實，讓審查者不再重複標記它                                                      |
+| `request_peer_review`      | 請另一個審查代理對某項發現再看一眼                                                                                |
+| `dispatch_reviewers`       | 將相符的審查代理同時派送至審查空間                                                                                |
+| `submit_reviewer_verdict`  | 張貼每位審查者的 ship/hold/block 判定，附上信心程度與說明                                                         |
+| `finalize_review`          | 計算各節點共識與整份 PR 的判定，並關閉該次審查                                                                    |
+| `set_cohort_summary`       | 設定審查群組的白話摘要                                                                                            |
+| `add_review_diagram`       | 將結構化、經圖形驗證的圖表（`sequence`、`entityRelation`、`stateMachine`）附加到群組                              |
+| `publish_review_to_github` | 將已收尾的審查以行內留言加上摘要本文的形式發佈到 GitHub                                                           |
 
-## Memory tools
+## 記憶工具
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| 工具                    | 說明                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `search_memory`         | 搜尋事實與政策（關鍵字、語意或混合——混合為預設）                                                            |
+| `propose_fact`          | 在領域中儲存一則簡短的 markdown 事實                                                                        |
+| `supersede_fact`        | 將某事實標記為已被另一則取代                                                                                |
+| `propose_policy`        | 在領域中儲存一條規範性規則（需要對該領域的寫入權限）                                                        |
+| `supersede_policy`      | 讓某條政策退場——將其標記為停用，但保留供稽核                                                                |
+| `list_policies`         | 列出啟用中的政策，可選擇依領域篩選                                                                          |
+| `list_memory_domains`   | 列出工作區的記憶領域及其事實與政策數量                                                                      |
+| `record_observation`    | 將一筆原始觀察記錄到代理的工作記憶                                                                          |
+| `get_my_notes`          | 讀取呼叫代理的工作記憶便條區                                                                                |
+| `update_my_notes`       | 更新呼叫代理的工作記憶便條區                                                                                |
+| `remember`              | 在此工作階段為代理的熱工作記憶新增一則備註（受 TTL 與數量限制）                                             |
+| `consolidate_memory`    | 執行一次整併（「睡眠」）階段：逐出過期的熱項目，並將持久的項目捲入長期事實                                  |
+| `harmonize_memory`      | 執行跨代理的信念調和（SHMR）並標記矛盾                                                                      |
+| `list_memory_conflicts` | 列出偵測到的矛盾以及各自的解決方式                                                                          |
 
-## Governance tools
+## 治理工具
 
-| Tool                         | Description                                                                                           |
+| 工具                         | 說明                                                                                                  |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| `create_goal`                | 建立組織目標（公司、團隊、代理或任務層級）                                                            |
+| `list_goals`                 | 列出目標及其層級、狀態與彙總進度                                                                      |
+| `update_goal_progress`       | 設定目標的進度                                                                                        |
+| `create_approval`            | 為受治理的動作開啟董事會核准（退出計畫、合併、發佈、聘用、自訂）                                      |
+| `list_approvals`             | 列出核准，可選擇依狀態篩選                                                                            |
+| `decide_approval`            | 記錄決定：核准、拒絕、要求修訂或重新提交                                                              |
+| `comment_approval`           | 對董事會核准留言                                                                                      |
+| `exit_plan_mode`             | 開啟（並在核准後消耗）一個 `plan_exit` 核准，使對話離開規劃模式                                        |
+| `agent_heartbeat`            | 回報存活狀態（存活、閒置、卡住）；靜默會使執行階段健康狀態轉為 recently-lost，接著轉為 offline         |
+| `list_runtime_health`        | 列出各代理的執行階段健康狀態                                                                          |
+| `list_agent_presence`        | 列出各代理的線上狀態（健康、生命週期、執行中與排隊中的數量、容量）                                    |
+| `get_org_chart`              | 讀取回報樹，根節點為 CEO，依 `reports_to` 巢狀                                                         |
+| `create_work_product`        | 建立附屬於工單的持久交付項目                                                                          |
+| `save_work_product_revision` | 儲存新修訂版；傳入 `base_revision_id` 可在並行編輯時遭到拒絕                                          |
+| `list_work_products`         | 列出工作成品，可選擇篩選至單一工單                                                                    |
+| `get_work_product`           | 讀取工作成品及其修訂歷史                                                                              |
+| `create_runtime_profile`     | 定義可重複使用的執行階段設定檔（通訊協定家族、CLI 命令、固定啟動引數）                                |
+| `list_runtime_profiles`      | 列出工作區的執行階段設定檔                                                                            |
 
-## Code graph tools
+## 程式碼圖工具
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+只有在主機提供程式碼圖儲存庫時才會註冊。索引涵蓋出貨的語法集（Dart、JS/TS、PHP、Python、Rust、Zig、C/C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB、Ada）；其他任何語言的符號都不在其中。
 
-| Tool           | Description                                                                        |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| 工具           | 說明                                                                        |
+| -------------- | --------------------------------------------------------------------------- |
+| `search_code`  | 依名稱、簽章與文件註解搜尋已索引的符號（混合 BM25 + 語意）                  |
+| `code_symbol`  | 依完全相符的名稱查詢符號；回傳 `file:line` 與簽章                           |
+| `code_callers` | 列出呼叫該符號或相依於該符號的符號（入邊）                                  |
+| `code_callees` | 列出某符號所呼叫或相依的符號（出邊）                                        |
+| `code_impact`  | 計算某符號的遞移影響半徑，至指定深度                                        |
 
-## Ticketing tools
+## 工單工具
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| 工具                      | 說明                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `create_ticket`           | 在已設定的供應商上建立工單                                                                                                    |
+| `get_ticket`              | 依 id 取得單一工單                                                                                                            |
+| `list_tickets`            | 列出工單，可選擇依狀態或指派對象篩選                                                                                          |
+| `update_ticket`           | 更新狀態、標題、描述、優先順序或標籤（狀態接受如 `in_progress` / `completed` 的別名）                                          |
+| `assign_ticket`           | 將工單指派給代理及／或團隊                                                                                                    |
+| `reassign_ticket`         | 將工單重新指派給不同的代理                                                                                                    |
+| `add_ticket_collaborator` | 邀請代理協作某張工單（會加入其空間）                                                                                          |
+| `comment_on_ticket`       | 對工單留言                                                                                                                    |
+| `close_ticket`            | 關閉工單（標記為完成），可附上選用的輸出                                                                                      |
+| `fail_ticket`             | 以錯誤訊息將工單標記為失敗                                                                                                    |
+| `delegate_ticket`         | 將工單委派給代理，並建立一張受追蹤的工單                                                                                      |
+| `ticket_pr_link`          | 依 PR 節點 id 連結或解除連結工單與 pull request（`action`：`link` \| `unlink`）                                                |
+| `ticket_relation`         | 新增或移除兩張工單之間的關聯——`blocked_by`、`blocking`、`related_to`、`duplicate_of`、`duplicated_by`、`sub_issue_of`、`parent_of`（`action`：`add` \| `remove`） |
+| `list_ticket_relations`   | 列出工單的父工單、子問題與相依連結                                                                                            |
 
-## Team and pipeline tools
+## 團隊與管線工具
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| 工具                   | 說明                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | 記錄團隊領導者對某張工單的活動項目                                                                                               |
+| `preview_trigger`      | 試跑某個假設事件會啟動哪些管線執行，不實際提交任何內容                                                                           |
+| `submit_output`        | 為呼叫者當前的管線執行提交結構化輸出承載資料；會依該次執行宣告的輸出結構描述驗證                                                  |
 
-## Orchestration tools
+## 編排工具
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| 工具                    | 說明                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `propose_orchestration` | 發出結構化的多代理編排計畫以取得一次前置核准；會驗證並回傳任何違規                                       |
 
-## Newsfeed tools
+## 新聞動態工具
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| 工具                | 說明                                                      |
+| ------------------- | --------------------------------------------------------- |
+| `list_feeds`        | 列出已註冊的 RSS/Atom 摘要來源                            |
+| `list_articles`     | 列出文章，可選擇依摘要來源、未讀或已儲存篩選              |
+| `get_article`       | 取得單篇文章                                              |
+| `set_article_read`  | 將文章標記為已讀或未讀                                    |
+| `set_article_saved` | 儲存或取消儲存文章                                        |
+| `refresh_feeds`     | 立即重新抓取每個已啟用的摘要來源                          |
 
-## Enclosure (rig) tools
+## 隔離艙（機台）工具
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/zh-TW/手冊/概念/護欄/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/zh-TW/手冊/參考/機台/#action-verbs).
+在執行過程中驅動用完即丟的機器——封閉的瀏覽器或 Linux 桌面、Android
+模擬器，或 iOS 模擬器。開機後無條件註冊：某台機器是否真的能開機，是這些
+工具每次呼叫時回答的探測問題。同一對話中重複呼叫會重用同一台機器；
+螢幕截圖會以圖片內容回傳，且每個結果僅限一張圖片，擷取到的頁面／UI
+內容則會圍籬標記為不受信任的資料。四個使用類工具加上
+`rig_close` 會宣告 `enclosureControl` [動作類別](/zh-TW/手冊/概念/護欄/)
+（使用類工具也會宣告 `networkEgress` 與 `processSpawn`；`mobile_use` 與
+`ios_use` 還會宣告 `packageInstall`），因此唯讀模式會拒絕它們。`rig_list`
+不宣告任何類別——它只讀取工作區狀態。每個表面完整的動詞詞彙請見
+[機台參考](/zh-TW/手冊/參考/機台/#action-verbs)。
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| 工具           | 說明                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `computer_use` | 在封閉的 VM 中驅動 Linux 桌面：移動、點擊、拖曳、捲動、輸入、調整大小、剪貼簿、螢幕截圖                 |
+| `browser_use`  | 驅動無頭 Chromium、Firefox 或 WebKit（`engine`）：瀏覽、點擊、填寫、擷取（a11y/DOM/console）、剪貼簿、螢幕截圖 |
+| `mobile_use`   | 透過 ADB 驅動 Android：檢視／輸入、螢幕截圖、安裝／啟動／停止／重設／解除安裝應用程式、深層連結與 argv 形式的裝置命令 |
+| `ios_use`      | 透過 WebDriverAgent/CoreSimulator 驅動 iOS 模擬器：檢視／輸入、螢幕截圖、安裝／啟動／停止／解除安裝應用程式、深層連結與 argv 形式的模擬器程序 |
+| `rig_list`     | 列出工作區的機台，包含表面、狀態、顯示大小與控制者                                                     |
+| `rig_close`    | 銷毀機台並捨棄其擁有的機器狀態                                                                         |
 
-## Not exposed over MCP
+## 未透過 MCP 暴露
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/zh-TW/手冊/概念/會議/), not as a tool an agent can call.
+日曆與會議沒有 MCP 工具。代理無法讀取你的日曆、會議、逐字稿、行動項目或決議。產出這些行動項目與決議的摘要是以內建的 [`meeting_summary` 管線](/zh-TW/手冊/概念/會議/)執行，而不是代理可呼叫的工具。
 
-## Tool gating by mode
+## 依模式的工具閘門
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+閘門由單一表格（`ModeToolPolicy`）強制執行兩次：一次在 Claude Code 配接器的 MCP 分派器中，一次在內建執行環境登錄中。被阻擋的呼叫會回傳原因。
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| 模式          | 工具介面                                                                                                                                                                                                                            |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | 所有已註冊的工具；沒有允許清單                                                                                                                                                                                                      |
+| `plan`        | 一份精選的允許清單。不可寫入工作樹，也沒有 `create` / `assign` / `delegate` 工單動詞，但允許記憶、成品、待辦事項、`submit_plan`、`exit_plan_mode`，以及對已派送工單的工單完成動詞                                                |
+| `review`      | 一份精選的允許清單：審查參與、溝通、唯讀情境取得器，以及包含 `create_ticket` 與 `assign_ticket` 的完整工單動詞集                                                                                                                     |
+| `orchestrate` | 一份精選的允許清單：研究與讀取工具，加上 `propose_orchestration`、`create_playbook` 與 `run_playbook`。聘用、分解與工單完成會在核准後確定性地發生，絕不會在執行途中進行                                                              |
 
-Permitted in every mode regardless of allow-list:
+無論允許清單為何，在每個模式中都允許：
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| 集合                 | 工具                                                                                                                                                                                                                                                              |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| 記憶與成品           | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| 程式碼圖             | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| 執行機制             | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+名列允許清單並不代表工具就可呼叫，反之亦然：向操作者提問的能力是**執行環境**工具（`ask_user`），因此它完全不會出現在這個 MCP 目錄中。
 
-## Approval-gated tools
+## 需核准的工具
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+工具可以宣告 `requiresApproval`。分派器接著會建構 `ApprovalPayload`，並在工具執行前透過 `ConfirmationPort` 呈現；`cc_server` 會接上該埠，因此這道閘門是實際生效的。
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+宣告此項的已註冊工具：`create_ticket`、`update_ticket`、`assign_ticket`、`reassign_ticket`、`close_ticket`、`ticket_relation`、`create_goal`、`update_goal_progress`、`create_approval`、`decide_approval`、`comment_approval`、`create_work_product`、`save_work_product_revision`、`create_runtime_profile`、`install_skill`、`update_skill`。
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/zh-TW/手冊/概念/護欄/).
+另外，統一的動作護欄會對任何宣告非空 `ActionClass` 集合的工具設下閘門。在沒有連接任何核准者的情況下，`prompt` 決策一律拒絕。請參閱[護欄](/zh-TW/手冊/概念/護欄/)。
 
-## Capabilities with no tool behind them
+## 背後沒有工具的能力
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+產品中的每個能力並非都能由代理觸及。以下這些完全沒有工具，
+因此你可能在別處看過被引用的名稱，會回傳「unknown tool」：
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/zh-TW/手冊/操作指南/專案/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/zh-TW/手冊/操作指南/診斷代理/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| 能力                                    | 實際所在位置                                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 聘用、解僱或編輯代理                    | 代理介面。沒有 `hire_agent` / `fire_agent` / `update_agent` 工具                             |
+| 建立工作區                              | 透過 RPC 的 `workspace.upsert`，它會播種並蓋上擁有權                                          |
+| 專案（建立／列出／更新／歸入）           | 工單介面。專案是操作者介面——請參閱[專案](/zh-TW/手冊/操作指南/專案/)                          |
+| 向操作者提出會阻擋的問題                | **執行環境**的 `ask_user` 工具，而非 MCP。它會在對話中呈現表單並等待答案                      |
+| 個別代理診斷                            | 沒有。沒有 `doctor`——請參閱[診斷代理](/zh-TW/手冊/操作指南/診斷代理/)                         |
+| 日曆與會議                              | 僅供人類用戶端使用的 RPC（見上文）                                                            |
 
-## See also
+## 另請參閱
 
-- [Use Control Center as an MCP server](/zh-TW/手冊/操作指南/mcp-伺服器/)
-- [Modes](/zh-TW/手冊/概念/模式/)
-- [Guardrails](/zh-TW/手冊/概念/護欄/)
+- [將 Control Center 當作 MCP 伺服器使用](/zh-TW/手冊/操作指南/mcp-伺服器/)
+- [模式](/zh-TW/手冊/概念/模式/)
+- [護欄](/zh-TW/手冊/概念/護欄/)

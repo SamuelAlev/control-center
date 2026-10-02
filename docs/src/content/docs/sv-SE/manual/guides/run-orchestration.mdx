@@ -1,126 +1,137 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Kör en orkestrering
+description: Be en orkestrerare om en plan, granska och redigera den i Plan Studio, godkänn den en gång och låt en genererad pipeline göra jobbet.
 slug: sv-SE/handbok/how-to-guider/kor-orkestrering
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/sv-SE/handbok/koncept/orkestrering/) for how it works.
+Den här guiden visar hur du förvandlar ett stort mål till en plan för hela
+teamet som kör sig själv. Se [Orkestrering](/sv-SE/handbok/koncept/orkestrering/)
+för hur det fungerar.
 
-## When to use an orchestration
+## När du ska använda en orkestrering
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/sv-SE/handbok/how-to-guider/chatta-med-agent/); for a process you can spell out by
-hand, build a [pipeline template](/sv-SE/handbok/how-to-guider/skapa-pipeline/).
+Välj en orkestrering när förfrågan är större än en enskild agent och du inte
+redan vet exakt vilka steg som behövs. För en enstaka uppgift skickar du ett
+meddelande till en agent i en
+[yta](/sv-SE/handbok/how-to-guider/chatta-med-agent/); för en process du kan
+beskriva för hand bygger du en
+[pipelinemall](/sv-SE/handbok/how-to-guider/skapa-pipeline/).
 
-## Step 1: Ask for the plan
+## Steg 1: Be om planen
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Öppna (eller skapa) en yta och ett **ankarärende**. Varje förslag kräver ett
+   (`propose_orchestration` tar `ticket_id`); den delade ytan kommer från det
+   ärendet.
+2. Byt vid behov meddelandefältets lägesväljare till **Orkestrera**. Det läget
+   begränsar agenten till att läsa och föreslå – minnet, kodgrafen, läsning av
+   repos och ärenden, `propose_orchestration` och playbook-verktygen – så att
+   den inte börjar skriva kod i stället för att planera.
+3. @-nämn din orkestrerare (oftast din CEO-agent) och formulera målet med
+   vanliga ord:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Undersök konkurrensbilden för en offline-first mötesinspelare och skriv
+> ett positioneringsdokument på en sida.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orkestreraren svarar med ett strukturerat **förslagskort** i ytan: rollerna den
+behöver, arbetet uppdelat i underärenden, en valfri forsknings- och
+diskussionsfas, ett syntessteg som tar fram leveransen och en budget.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Eftersom förslaget är ett typat objekt validerar appen det (välformade roller,
+deklarerade utdatascheman, en DAG utan cykler) innan något körs. Ett förslag som
+inte klarar valideringen kan inte godkännas.
 
-## Step 2: Review and edit the proposal
+## Steg 2: Granska och redigera förslaget
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Kortet i chatten erbjuder tre åtgärder: **Godkänn plan**, **Avvisa** och
+**Öppna** – den sista öppnar planen i Plan Studio som en flik i redigeraren.
+Själva kortet går inte att redigera.
 
-To change anything, press **Open** and work in the right-hand inspector:
+För att ändra något trycker du på **Öppna** och arbetar i inspektören till
+höger:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Titel**, **beskrivning**, **roll**, **beroenden** och **utdataschema** för
+  valfritt arbetssteg. Roll betyder här vilken av planens befintliga rollnycklar
+  som äger steget – du kan inte låsa en roll till en namngiven agent eller
+  redigera anställningslistan från inspektören, och du kan inte redigera
+  budgeten.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Två saker är skrivskyddade: strukturella noder (forskning, diskussion, syntes)
+och alla noder vars arbete redan har körts. Redigering är bara möjlig så länge
+orkestreringen fortfarande är `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/sv-SE/handbok/how-to-guider/plan-studio/) for the full editor.
+Tryck på **Uppskatta** i godkännandefältet för intervall för kostnad,
+varaktighet och spridningsradie innan du godkänner. Se
+[Arbeta i Plan Studio](/sv-SE/handbok/how-to-guider/plan-studio/) för hela
+redigeraren.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/sv-SE/handbok/how-to-guider/hantera-kostnader/).
+:::note[Budgeten är ingen utgiftsgräns]
+Ett förslags budget jämförs med _uppskattningen_ i godkännandefältet: när
+uppskattningens övre gräns överstiger den blir totalen röd med en varning om
+över budget. Ingenting kontrollerar utgifterna medan planen körs, så den stoppar
+eller felförklarar inte en körning. För ett faktiskt utgiftsstopp använder du
+budgetpolicyer per agent – se
+[Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/).
 :::
 
-## Step 3: Approve
+## Steg 3: Godkänn
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Godkänn planen, antingen från kortet i chatten eller från godkännandefältet i
+Plan Studio. **Det här är ditt enda beslut.** Godkännande är förbehållet en
+operatör – det finns inget MCP-verktyg för det, så en agent kan föreslå och
+revidera men aldrig godkänna sin egen plan.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/sv-SE/handbok/koncept/pipelines/) and creates the
-scaffolding:
+Härifrån omvandlar en deterministisk materialiserare (en ren funktion, ingen
+LLM) förslaget till en riktig
+[pipeline](/sv-SE/handbok/koncept/pipelines/) och skapar stommen:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- anställer eventuella nya roller (och registrerar id:n för de anställda
+  agenterna så att en krasch mitt i godkännandet kan återupptas utan
+  dubbelanställningar)
+- grupperar rollerna i ett **team**
+- skapar ett **projekt** och registrerar föräldraärendet under det
+- startar **pipelinekörningen** som driver allt
 
-The status moves to `approved`, then `executing`.
+Statusen går till `approved` och sedan `executing`.
 
-## Step 4: Watch it run
+## Steg 4: Se den köra
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Underärendena körs som pipelinesteg; om du aktiverade en diskussionsomgång
+lägger varje roll först fram en position. Förloppet syns där du redan tittar:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
-- the **project** the parent ticket was filed under
+- **föräldraärendet** som orkestreringen förankrades i
+- den delade **ytan** som teamet pratar i, där planens rad visar varje nods
+  status
+- detaljvyn för **pipelinekörningen**, med sin vanliga tidslinje och kostnad per
+  steg – se
+  [Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
+- **projektet** som föräldraärendet registrerades under
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+När underärendena är klara går statusen till `synthesizing` och syntessteget tar
+fram leveransen. Den texten publiceras i den delade ytan och föräldraärendet
+markeras som slutfört, därefter `completed`.
 
-## Stop it early
+## Avbryt i tid
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Tryck på **Avbryt orkestrering** på kortet i chatten, eller **Avbryt körning** i
+godkännandefältet i Plan Studio. Ett avbrott river ner arbetet som pågår.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+En orkestrering misslyckas när materialiseringen misslyckas, eller när dess
+genererade pipelinekörning misslyckas (forskning, diskussion, syntes eller
+persist – de stegen fortsätter inte vid fel). Genererade **arbetssteg** fortsätter
+alltid vid fel, så ett misslyckat underärende får inte körningen att misslyckas.
+Det finns ingen felfallsväg för överskriden budget och ingen tröskel för "alla
+underärenden misslyckades".
 
-## Related guides
+## Relaterade guider
 
-- [Work in Plan Studio](/sv-SE/handbok/how-to-guider/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/sv-SE/handbok/how-to-guider/hantera-arenden/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/sv-SE/handbok/how-to-guider/projekt/): where the parent ticket is filed
-- [Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/sv-SE/handbok/how-to-guider/bygg-agentteam/): the roles an orchestration fills or hires
+- [Arbeta i Plan Studio](/sv-SE/handbok/how-to-guider/plan-studio/): redigera, uppskatta, diffa och godkänn planen
+- [Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/): föräldraärendet som en orkestrering förankras i
+- [Organisera arbete med projekt](/sv-SE/handbok/how-to-guider/projekt/): där föräldraärendet registreras
+- [Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/): hur en materialiserad orkestrering ser ut i motorn
+- [Bygg ett agentteam](/sv-SE/handbok/how-to-guider/bygg-agentteam/): rollerna som en orkestrering fyller eller anställer
 
-## Related concepts
+## Relaterade koncept
 
-- [Orchestration](/sv-SE/handbok/koncept/orkestrering/)
-- [Modes](/sv-SE/handbok/koncept/lagen/)
+- [Orkestrering](/sv-SE/handbok/koncept/orkestrering/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)

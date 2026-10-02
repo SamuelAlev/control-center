@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Pracovní prostory a izolace
+description: Proč je pracovní prostor tvrdá hranice tenanta, jak rozdělení databází tu hranici dělá strukturální a co ji záměrně překračuje.
 slug: cs-CZ/prirucka/koncepty/pracovni-prostory
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Co je pracovní prostor?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Pracovní prostor je v Control Center nejvyšší tenant izolace. Sdružuje agenty, repozitáře, prostory, tickety, paměť, pipeline a členy do ohraničeného kontextu. Všechno, co se v pracovním prostoru stane, v něm zůstane.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Běžný pracovní prostor odpovídá jednomu projektu nebo jedné kódové základně. Můžeš mít zvlášť pracovní prostory „api-service“, „frontend-v2“ a „infrastructure“.
 
-## Workspace-scoped data
+## Data v rozsahu pracovního prostoru
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Řádky pracovního prostoru žijí v jeho vlastním souboru SQLite, na `<dataDir>/<workspaceId>/workspace.db`. Každý pracovní prostor dostane adresář, ne holý soubor, protože nasbírá víc než databázi: worktree po konverzacích, soubory agentů a skillů, přihlašovací údaje chatovacího bota. Složka znamená, že tohle všechno žije a maže se pohromadě.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entita                                              | Rozsah                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| Agenti                                              | Patří právě jednomu pracovnímu prostoru                        |
+| Repozitáře                                          | Registrované do jednoho pracovního prostoru (viz níže)         |
+| Prostory, konverzace a zprávy                       | V rozsahu pracovního prostoru                                  |
+| Tickety, projekty, plány, orchestrace               | V rozsahu pracovního prostoru                                  |
+| Fakta paměti, politiky, domény, přístupové granty   | V rozsahu pracovního prostoru                                  |
+| Běhy pipeline, šablony, spouštěče                   | V rozsahu pracovního prostoru                                  |
+| Stav pull requestu, prostory kontroly, kohorty kontroly | V rozsahu pracovního prostoru                              |
+| Záznamy běhů agenta a pracovní paměť                | V rozsahu pracovního prostoru                                  |
+| Členové, pozvánky, přidělení na repozitář           | V rozsahu pracovního prostoru                                  |
+| Symboly a hrany grafu kódu                          | Podle `repoId` uvnitř souboru pracovního prostoru              |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Většina těch řádků nese sloupec `workspaceId`. Izolaci vynucují oddělené soubory databáze. Viz invariant izolace níže.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repozitáře patří pracovnímu prostoru; identita napříč prostory je podle cesty
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Řádek repozitáře žije v databázovém souboru svého pracovního prostoru. Soubor _je_ ten rozsah, takže tabulka nemá sloupec `workspaceId` ani spojovací tabulku.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Repozitář do pracovního prostoru přidáš v Nastavení → Pracovní prostor → Repozitáře. Registrace téhož checkoutu ve dvou pracovních prostorech vytvoří dva nezávislé řádky se dvěma id. Identita repozitáře _napříč_ pracovními prostory je cesta na souborovém systému (nebo vlastník a jméno na GitHubu), nikdy id.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Registrace je přísná: cesta musí ležet v pracovním stromu gitu, musí mít remote `origin` a ten remote musí mířit na podporovaného hostitele kódu (github.com, gitlab.com nebo bitbucket.org). Hostitel se přečte z remote a uloží se na repozitář, takže jeden pracovní prostor může držet repozitáře od všech tří. Cokoli jiného se odmítne. Prohlížeč složek, ze kterého vybíráš, vypisuje souborový systém **hostitele serveru**, omezený na seznam povolených kořenů `--repo-roots` (výchozí je domovský adresář uživatele serveru).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Odebrání repozitáře z pracovního prostoru řádek smaže rovnou a kaskádou vezme jeho symboly kódu, hrany, soubory, checkpointy indexu a přidělení jednotlivých členů. Checkout na disku zůstane.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Graf kódu žije v tomtéž souboru, klíčovaný `repoId`, protože různé pracovní prostory můžou mít stejný repozitář na jiných větvích s jiným kódem.
 
-## The isolation invariant
+## Invariant izolace
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Únik dat mezi pracovními prostory se bere jako chyba. Izolace je **strukturální** a vynucuje se na několika úrovních:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Vrstva databáze.** Každý pracovní prostor má vlastní soubor SQLite, který vydává `WorkspaceDatabaseManager.of(workspaceId)`. Databáze pracovního prostoru nedeklaruje `users`, `workspaces` ani tabulky jiného pracovního prostoru, takže čtení napříč se jako chyba napsat nedá: nepřeloží se. Repozitáře si DAO berou při každém volání, místo aby si jedno držely, a protože každá metoda repozitáře bere povinné `workspaceId`, pracovní prostor se nikdy neodvodí ani nedoplní výchozí hodnotou.
+- **Id pracovního prostoru je segment cesty.** Z id se stane jméno adresáře, takže musí sedět na bezpečný vzor jednoho segmentu (začátek alfanumerický, pak alfanumerické znaky, tečky, podtržítka a spojovníky; žádné `..`). Id jsou v produktu všude UUID. Cokoli jiného vyhodí výjimku, místo aby se to očistilo. To je ochrana proti path traversal a selže nahlas, místo aby zapsala data pracovního prostoru na cestu, kterou si vybral někdo jiný.
+- **Obrana do hloubky.** Sloupce `workspaceId` tam pořád jsou a pořád se zapisují. Uvnitř souboru jsou redundantní, drží triggery synchronizačního feedu, indexy FTS a stávající tvary řádků beze změny a soubor se díky nim popisuje sám, když se prohlíží samostatně. O to se opírá export a import.
+- **Doménová vrstva.** Služby, které mění entity podle id, ověří `entity.workspaceId == workspaceId` na jediném kontrolním bodě, než pokračují, a při neshodě vyhodí `WorkspaceMismatchException`. To je hlasité selhání pro id, které přišlo ze špatného kontextu. Hlasité odmítnutí je podstatné: tiché nic neudělání chybu schová a pokračování ji pustí ven.
+- **Vrstva RPC.** Dispečer repo-RPC je ten kontrolní bod. Každá operace v rozsahu pracovního prostoru musí nést `workspace_id` ve vlastních argumentech. Relace žádný „aktuální pracovní prostor“ nedrží, o který by se dalo zakopnout, a neznámé id se odmítne jako nenalezené _dřív_, než se cokoli otevře jako databáze, takže špatné id nemůže zhmotnit ducha `workspace.db`. Opravdu globální operace (kanál novinek, fronta flotily) se deklarují jako bez rozsahu, a to výslovným, zkontrolovaným rozhodnutím. Nástroje MCP jedou podle téhož pravidla: každý nástroj, který sahá na data v rozsahu pracovního prostoru, vyžaduje `workspace_id`.
+- **Rozvětvení napříč pracovními prostory jde vyjmenovat.** Odpověď na otázku o několika pracovních prostorech znamená otevřít několik databází. To rozvětvení je sevřené v jednom pomocníkovi, `CrossWorkspaceQueries`, takže úplný seznam věcí, které hranici legitimně překročí, žije v místech volání jednoho souboru, ne rozptýlený za komentáři v dokumentaci. Ta místa volání jsou: agregace přes celý server, rekoncilery při startu, úklidy retence a GC, záloha, směrovače událostí a vyhledání členství níže.
+- **Přístup jen podle ID nestačí.** Vyhledání entity podle UUID nedokazuje, že patří do pracovního prostoru volajícího. Rozdělení na soubory udělá špatný soubor nedosažitelným. Validace v doménové vrstvě chytí špatné id, které přijde skrz legitimní soubor.
 
-## Membership, not the pairing key, is what grants access
+## Přístup dává členství, ne párovací klíč
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Držení přihlašovacích údajů zařízení ověřuje _zařízení_. Uvnitř pracovního prostoru tím nic nepovoluje. Každá operace v rozsahu pracovního prostoru vyřeší roli členství volajícího a vynutí práh podle druhu operace: čtení potřebuje `guest`, mutace potřebuje `member`, destruktivní operace potřebuje `admin`. Operace, které ukazují obsah repozitáře, navíc kontrolují přidělení volajícího na ten repozitář. Platný párovací klíč bez členství dostane `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Důsledek pro izolaci je jednoduchý: řádky členství žijí v souboru _samotného pracovního prostoru_, takže „kdo je v tomhle pracovním prostoru?“ je obyčejné čtení v rozsahu. Opačná otázka, „ve kterých pracovních prostorech jsem?“, je z definice rozložená přes soubory, takže je to jedno z mála povolených rozvětvení `CrossWorkspaceQueries` a právě to spouští výběr pracovního prostoru, než je nějaký vybraný.
 
-See [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/) for the role ladder and repo grants.
+Žebřík rolí a přidělení na repozitář jsou v [Multiplayer a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/).
 
-## The global registry
+## Globální registr
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Ne všechno je vázané na pracovní prostor. Druhá databáze, `<dataDir>/global.db`, drží to, co opravdu patří celému serveru:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **registr pracovních prostorů**, aby přepínač vypsal každý pracovní prostor, aniž otevřel jediný jeho soubor, a aby jméno, logo, vlastník, ruční pořadí a značka měkkého smazání žily mimo soubor, který popisují;
+- **identita**: uživatelé, předvolby uživatele a spárovaná zařízení, protože jeden člověk je jeden uživatel ve všech pracovních prostorech a spárované zařízení přežije smazání pracovního prostoru;
+- **fronta flotily** (workeři, úlohy, záznam umístění), jejíž plánovač při každém tiku porovná celou frontu s každým workerem;
+- **kanál novinek**, který je na uživatele (ne na pracovní prostor): přidaný zdroj tě následuje do každého pracovního prostoru;
+- **`workspace_routes`**, index před ověřením, který odpovídá na „který pracovní prostor vlastní tenhle klíč?“ u vstupů, které přijdou jen s tajemstvím nebo s neprůhledným id (hash pozvánky, token webhooku, deep link) a bez pracovního prostoru. Minutí je nenalezené. Záložní prohledání schválně není;
+- **nastavení a identita celé instalace**: id instalace, nastavení hostitele, spojení SSO a spravované politiky akcí (svorka na celou instalaci, která guardraily pracovního prostoru umí jen přitáhnout).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Při startu se otevře jen tenhle soubor. Soubory pracovních prostorů se otevírají líně, při prvním sáhnutí, takže cena startu zůstává plochá, ať pracovní prostory nasbíraly historie kolik chtěly, a `quick_check` za soubor se platí při prvním použití, ne na cestě k banneru, že je server připravený.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Soubor pracovního prostoru nese jen jednořádkové `workspace_meta` pro sebeidentifikaci (své id, instalaci, která ho vytvořila, verzi schématu, se kterou vznikl, a kdy). Všechno popisné o pracovním prostoru je v registru.
 
-## Creating a workspace
+## Vytvoření pracovního prostoru
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Vytvoření pracovního prostoru je víc než vložení řádku do registru. V jedné operaci server zapíše zakládajícího uživatele jako `ownerUserId`, zaznamená jeho členství v roli vlastníka a publikuje doménovou událost `WorkspaceCreated`. Posluchači té události pak nasadí, idempotentně a na pozadí:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **agenta CEO** a čtyři specialisty, `qa`, `architect`, `engineer`, `librarian`, přičemž specialisté se zodpovídají CEO;
+- **vestavěné šablony pipeline** a jejich spouštěče (spouštěče na událost a ruční se dodávají zapnuté; plánované jsou volitelné, kromě denního úklidu worktree přes GC);
+- **startovací sady evalů**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/).
+Děje se to u _každého_ pracovního prostoru, ne jen u prvního. Nasazení agenti vzniknou bez adaptéru, takže běží na **Control Center (built-in)** s výchozím modelem Anthropic (`claude-opus-4-8`, pokud nepřipneš jiný), dokud u každého agenta nenastavíš adaptér a model v Nastavení → Pracovní prostor → Agenti. Viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Zápis členství vlastníka je důležitější, než vypadá: bez něj by čerstvý pracovní prostor neměl členy a každé další volání vázané na pracovní prostor, které tvůrce udělá, by bylo odmítnuté.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agenti pracovní prostor vytvořit neumí]
+Nástroj MCP `create_workspace` neexistuje. Člověk pracovní prostor zakládá přes `workspace.create` (kontrolní bod jen se jménem) nebo `workspace.upsert` (celý záznam, slouží i k úpravám). Obojí zapíše zakládajícího uživatele jako `owner` a publikuje `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Mazání, export a import
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Smazání pracovního prostoru **označí řádek v registru a odpojí adresář**. Pracovní prostor zmizí z každého seznamu i vyhledání. Řádek v registru zůstane (měkce smazaný), aby id pořád znala záloha a údržba, ale `workspace.delete` hned zahodí adresář toho pracovního prostoru (databázi, worktree, soubory agentů a zbytek) přes `WorkspaceDatabaseManager.dropAndClose`. Smazat ho může jen **vlastník** pracovního prostoru.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Protože jeden pracovní prostor je jeden soubor, předání pracovního prostoru je operace se souborem, ne výpis tabulku po tabulce:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` je jedno `VACUUM INTO`: konzistentní, defragmentovaný snímek pořízený pod čtecí transakcí, zatímco server dál obsluhuje.
+- `workspace.import` takový soubor převezme a nahradí jím to, co cílový pracovní prostor právě drží. Vestavěné `workspace_meta` nechá import rozeznat „můj vlastní soubor, znovu převzatý“ od „souboru z jiné instalace“ (ten druhý je povolený, ale zalogovaný, ne neviditelný).
+- `server.backupNow` udělá snímek celé instalace do adresáře s časovým razítkem, který zrcadlí živý datový adresář: `manifest.json`, `global.db` a jedno `<workspaceId>/workspace.db` na pracovní prostor. Obnova je zkopírování zpátky.
+- `server.listBackups` ten adresář čte zpátky, od nejnovějšího, s velikostí a seznamem pracovních prostorů každého snímku. Snímek, kterému chybí manifest nebo který jmenuje soubory, jež tam nejsou, se pořád nahlásí a označí jako neúplný. Schovat ho by operátora nechalo věřit v zálohu, která neexistuje.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Operace zálohy žijí pod **Nastavení → Server → Záloha a obnovení**:
+**Zálohovat teď** vezme snímek instalace, seznam ukáže, které snímky jsou
+úplné, a vlastník instalace může jeden po potvrzení smazat. Každý
+pracovní prostor nabízí export a import. Vestavěná pipeline **Workspace backup**
+bere jen databázi toho pracovního prostoru, jednou týdně, a maže vlastní
+zálohy starší než nastavený věk retence. Obnova pracovního prostoru ze
+snímku instalace je `workspace.import` namířený na
+`<workspaceId>/workspace.db` ve snímku. Obnova celé instalace zůstává
+zkopírováním adresáře snímku zpátky při zastaveném serveru.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/cs-CZ/prirucka/referencni-prirucka/zaloha/#what-a-backup-does-not-contain) has the full table.
+Co žádná z nich nenese, je zbytek adresáře pracovního prostoru. Pracovní prostor nasbírá víc než databázi: vložené obrázky, soubory skillů a agentů, přihlašovací údaje chatu, worktree. Export a import přesouvají **soubor**, takže všechno vedle něj zůstane, kde je. U přihlašovacích údajů je to schválně, u worktree je to na odpis a u zbytku je to mez, o které máš vědět, ne funkce. Úplná tabulka je v [referenci zálohy](/cs-CZ/prirucka/referencni-prirucka/zaloha/#co-záloha-neobsahuje).
 
-## Moving a backup between the server and your device
+## Přesun zálohy mezi serverem a tvým zařízením
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Každá operace výše mluví v cestách na **serveru**, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj. Tři podepsané HTTP cesty, [`/backup/workspace`, `/backup/snapshot` a `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#trasy-přenosu), přenesou bajty pro každou jinou topologii, po stejné ověřené lince, kterou už používá proxy médií a úložiště obrázků. Na stránce je to tlačítko **Stáhnout** vedle každého exportu a každého snímku (vybereš, kam soubor spadne) a **Vybrat soubor a nahrát**, když obnovuješ ze souboru na stroji, u kterého sedíš. Nahrání je to, co funguje, když server není tvůj stroj: `workspace.import` potřebuje, aby soubor už ležel na hostiteli, a tudy se tam dostane.
 
-Three properties are worth knowing:
+Tři vlastnosti stojí za to znát:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Stažení vytvoří čerstvou kopii a server si z ní nic nenechá.** Při stažení se export spustí znovu, výsledek se streamuje a pak se smaže. Odpověď je `no-store` s `Accept-Ranges: none` ze stejného důvodu: obnovený rozsah by slepil dva různé exporty do jednoho souboru, který vypadá platně a není.
+- **Nahrání se streamuje na disk a nikdy se nebufferuje**, na obou koncích, a dočasná kopie se smaže na každé cestě ven, včetně odmítnutí. Databáze pracovního prostoru není snímek obrazovky.
+- **Spojení přes relay nemá HTTP origin**, takže ovládání přenosu je tam vypnuté a poznámka říká proč. Všechno, co mluví v cestách na straně serveru, přes relay dál funguje. Přímé spojení potřebuje jen samotný přenos bajtů.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Čí jsou které cesty]
+Cesty, které stránka *ukazuje* (adresář snímku, soubor, který zapsal export, zdroj, který čte import), jsou na stroji, kde běží `cc_server`. Cesta, kterou hlásí **stažení**, je na stroji, u kterého sedíš. Proto existují obě: první potřebuje skript údržby nebo relace ssh, druhou člověk, který si zálohu odnáší.
 :::
 
-## Multiple workspaces
+## Víc pracovních prostorů
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Pracovních prostorů můžeš mít víc vedle sebe. Každý jede sám: agenti v jednom pracovním prostoru nemůžou psát agentům v jiném, číst jeho paměť ani vidět jeho tickety. Rozlišení příjemce u zpráv mezi agenty je přesné a pracovní prostor nikdy nepřekročí.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Nástěnka napříč pracovními prostory neexistuje. Analytická plocha na `/workspaces/:workspaceId/observability` se přihlásí k omezenému globálnímu feedu nedávných běhů a hned ho zúží na aktivní pracovní prostor, takže tam vidíš vždycky jeden. Jediné plochy, na které člověk opravdu sáhne napříč víc pracovními prostory, jsou výběr pracovního prostoru a přepínač.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Jedna praktická mez, o které stojí za to vědět: pracovní prostor, který někdo používá, zůstane otevřený. LRU tu není. Po 32 takových server varuje, místo aby odmítal, protože každý otevřený soubor drží isolate na pozadí a page cache. Rozvětvení napříč pracovními prostory soubory otevírá jen na chvíli a potom je zavře, pokud je mezitím nic jiného nedrží.
 
-## Related concepts
+## Související koncepty
 
-- [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): agents belong to exactly one workspace
-- [Memory and knowledge](/cs-CZ/prirucka/koncepty/pamet-a-znalosti/): memory is workspace-scoped
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/): where the databases sit in the client/server split
-- [Back up and restore](/cs-CZ/prirucka/navody/zaloha-a-obnoveni/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/cs-CZ/prirucka/referencni-prirucka/zaloha/): every operation, route, manifest field and limit
-- [Add repositories](/cs-CZ/prirucka/navody/pridani-repozitaru/): registering a checkout into a workspace
+- [Multiplayer a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): členství, role a přidělení na repozitář, přístupová polovina izolace
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): agenti patří právě jednomu pracovnímu prostoru
+- [Paměť a znalosti](/cs-CZ/prirucka/koncepty/pamet-a-znalosti/): paměť je vázaná na pracovní prostor
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/): kde databáze sedí v rozdělení klienta a serveru
+- [Záloha a obnovení](/cs-CZ/prirucka/navody/zaloha-a-obnoveni/): pořízení snímku, přesun pracovního prostoru, kopie jinde
+- [Záloha, export a import](/cs-CZ/prirucka/referencni-prirucka/zaloha/): každá operace, cesta, pole manifestu a mez
+- [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/): registrace checkoutu do pracovního prostoru

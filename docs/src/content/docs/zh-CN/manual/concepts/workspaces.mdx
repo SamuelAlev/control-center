@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: 工作区与隔离
+description: 为什么工作区是一道严格的租户边界，数据库拆分如何让这道边界成为结构性的，以及有哪些东西被刻意允许跨越它。
 slug: zh-CN/手册/概念/工作区
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## 什么是工作区？
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+工作区是 Control Center 中最高层级的隔离租户。它把智能体、仓库、空间、工单、记忆、流水线和成员归入同一个有界上下文。工作区内发生的一切都留在其中。
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+一个典型的工作区对应一个项目或一个代码库。你可能为 “api-service”、“frontend-v2” 和 “infrastructure” 分别建立工作区。
 
-## Workspace-scoped data
+## 工作区范围的数据
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+工作区的数据行存放在该工作区自己的 SQLite 文件中，路径为 `<dataDir>/<workspaceId>/workspace.db`。每个工作区得到的是一个目录，而不是一个裸文件——因为工作区积累的不止是一个数据库：每个对话的工作树、智能体与技能文件、聊天机器人凭据——给它一个文件夹，意味着这一切同生共死、一起被删除。
 
-| Entity                                              | Scope                                        |
+| 实体                                              | 范围                                        |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| 智能体                                              | 恰好属于一个工作区              |
+| 仓库                                                | 注册到一个工作区（见下文）    |
+| 空间、对话与消息                  | 工作区范围                             |
+| 工单、项目、计划、编排            | 工作区范围                             |
+| 记忆事实、策略、域、访问授权      | 工作区范围                             |
+| 流水线运行、模板、触发器                  | 工作区范围                             |
+| Pull request 状态、审查空间、审查队列   | 工作区范围                             |
+| 智能体运行日志与工作记忆                   | 工作区范围                             |
+| 成员、邀请、按仓库的授予权限                   | 工作区范围                             |
+| 代码图符号与边                        | 在工作区文件中按 `repoId` 限定范围 |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+这些数据行大多带有 `workspaceId` 列；独立的数据库文件强制实施隔离。参见下文的隔离不变式。
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## 仓库属于工作区范围；跨工作区的身份由路径决定
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+仓库数据行存放在其工作区自己的数据库文件中——文件_本身_就是作用范围，因此该表没有 `workspaceId` 列，也没有关联表。
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+你在 设置 → 工作区 → 仓库 中把仓库添加到工作区。把同一个检出注册到两个工作区会创建两行彼此独立、各带一个 id 的记录；仓库_跨_工作区的身份由文件系统路径（或 GitHub owner/name）决定，绝不依赖 id。
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+注册很严格：路径必须位于某个 git 工作树内，必须存在 `origin` 远程，且该远程必须指向受支持的代码托管（github.com、gitlab.com 或 bitbucket.org）。代码托管从远程读取并存储在仓库上，因此一个工作区可以同时容纳来自这三者的仓库。其它情况一律拒绝。你用来选择的文件夹浏览器列出的是**服务器主机**的文件系统，且被限制在服务器的 `--repo-roots` 允许列表内（默认是服务器用户的主目录）。
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+从工作区中移除仓库会直接删除该行，并级联删除其代码符号、边、文件、索引检查点和按成员的授予权限。磁盘上的检出不受影响。
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+代码图存放在同一个文件中，以 `repoId` 为键，因为不同的工作区可能在不同分支上持有同一个仓库，代码也各不相同。
 
-## The isolation invariant
+## 隔离不变式
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+跨工作区数据泄漏被视为缺陷。隔离是**结构性的**，在多个层面上强制实施：
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **数据库层。** 每个工作区都有自己的 SQLite 文件，由 `WorkspaceDatabaseManager.of(workspaceId)` 分发。工作区数据库不声明 `users`、`workspaces` 或任何其它工作区的表，因此跨工作区读取不是你能写出来的缺陷——它根本无法编译。仓库在每次调用时解析自己的 DAO，而不是缓存一个；并且由于每个仓库方法都接收一个必填的 `workspaceId`，工作区永远无法被推断或取默认值。
+- **工作区 id 是一个路径段。** 由于该 id 会成为一个目录名，它必须匹配安全的单段模式（以字母数字开头，之后是字母数字、点、下划线、连字符；不能有 `..`）。在产品中，id 处处都是 UUID。其它情况会抛错，而不是被清洗——这就是路径遍历防护，它会大声失败，而不是把工作区的数据写到别人选定的路径上。
+- **纵深防御。** `workspaceId` 列依然存在，也依然会被写入。在单个文件内它们是冗余的，但能让同步馈送触发器、FTS 索引和现有行结构保持不变，也让文件在被单独检视时能自我描述——导出与导入正是依赖这一点。
+- **领域层。** 按 id 变更实体的服务会在继续之前，在一个唯一的收口点校验 `entity.workspaceId == workspaceId`，不匹配时抛出 `WorkspaceMismatchException`——对于来自错误上下文的 id，这就是那种响亮的失败。大声拒绝很重要：静默的空操作会掩盖缺陷，而继续执行则会造成泄漏。
+- **RPC 层。** 仓库 RPC 分发器就是收口点。每个工作区范围的操作都必须在自己的参数中携带 `workspace_id`——不存在会泄漏的按会话 “当前工作区”，未知 id 会在任何东西打开数据库_之前_就被当作未找到拒绝，因此一个错误的 id 无法凭空造出一个幽灵 `workspace.db`。真正全局的操作（新闻流、机群队列）会自我声明为不限范围，这是一个显式且经过评审的决定。MCP 工具遵循同样的规则：任何触及工作区范围数据的工具都需要 `workspace_id`。
+- **跨工作区扇出是可枚举的。** 回答关于多个工作区的问题意味着打开多个数据库。这种扇出被限制在一个辅助类 `CrossWorkspaceQueries` 中，因此所有合法跨越边界的东西完整地列在这一个文件的调用点上，而不是散落在文档注释背后。这些调用点是：服务器范围的聚合、启动对账器、保留与 GC 清扫、备份、事件路由器——以及下文的成员身份查找。
+- **仅凭 ID 访问是不够的。** 用 UUID 查出一个实体，并不能证明它属于调用者的工作区。文件拆分让错误的文件根本不可达；领域层校验则能抓住经由合法文件传来的错误 id。
 
-## Membership, not the pairing key, is what grants access
+## 授予访问权的是成员身份，而不是配对密钥
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+持有设备凭据只认证一台_设备_。它不授权工作区内的任何东西。每个工作区范围的操作都会解析调用者的成员身份角色，并强制实施由操作种类推导出的下限——读取需要 `guest`，变更需要 `member`，破坏性操作需要 `admin`——而暴露仓库内容的操作还会额外检查调用者的按仓库授予权限。一个有效但没有成员身份的配对密钥会得到 `Not a member of this workspace`。
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+它对隔离的影响很利落：成员身份行存放在_工作区自己的_文件里，因此 “谁在这个工作区里？” 是一次普通的限定范围读取。反过来的问题——“我属于哪些工作区？”——按定义就跨文件，因此它是少数被认可的 `CrossWorkspaceQueries` 扇出之一，也是工作区选择器在任何工作区被选中之前所运行的查询。
 
-See [Multiplayer](/zh-CN/手册/概念/多人协作/) for the role ladder and repo grants.
+角色阶梯与仓库授予权限参见[多人协作](/zh-CN/手册/概念/多人协作/)。
 
-## The global registry
+## 全局注册表
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+并非所有东西都属于工作区范围。第二个数据库 `<dataDir>/global.db` 存放真正服务器范围的内容：
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **工作区注册表**，让切换器无需打开任何工作区文件就能列出所有工作区——也让工作区的名称、logo、所有者、手动排序和软删除标记存放在它们所描述的文件之外；
+- **身份**：用户、用户偏好设置和已配对设备——因为一个人在跨所有工作区时都是同一个用户，而一台已配对的设备能在工作区被删除后继续存在；
+- **机群队列**（工作进程、作业、放置日志），其调度器在每一轮都会把整个队列与所有工作进程进行匹配；
+- **新闻流**，它按用户划分（而不是按工作区）——你添加的源会跟着你进入每一个工作区；
+- **`workspace_routes`**，这个认证前的索引为那些只带着一个密钥或不透明 id（邀请哈希、webhook 令牌、深度链接）而不带工作区到来的入口回答 “哪个工作区拥有这个密钥？”。在那里未命中就是未找到；这里刻意没有扫描兜底；
+- **安装级设置与身份**：安装 id、主机级设置、SSO 连接和受管操作策略（一个全安装范围的约束，只能收紧工作区护栏）。
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+启动时只打开这个文件。工作区文件在首次触及时才惰性打开，因此无论各工作区积累了多少历史，启动开销都保持平稳，每个文件的 `quick_check` 也只在首次使用时付出，而不在通往就绪横幅的路径上付出。
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+工作区文件只保留一行 `workspace_meta` 用于自我标识（它的 id、创建它的那次安装、创建时使用的 schema 版本、创建时间）。关于工作区的所有描述性信息都在注册表里。
 
-## Creating a workspace
+## 创建工作区
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+创建工作区不只是插入一行注册表记录。服务器在一次操作中把创建者标记为 `ownerUserId`，记录该用户的所有者角色成员身份，并发布一个 `WorkspaceCreated` 领域事件。该事件的监听器随后会幂等地、在后台预置：
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- 一个 **CEO 智能体**外加四名专家——`qa`、`architect`、`engineer`、`librarian`——这些专家向 CEO 汇报；
+- **内置流水线模板**及其触发器（事件触发器和手动触发器默认启用；除每日的工作树 GC 清扫外，定时触发器需要主动开启）；
+- **入门评测套件**。
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/zh-CN/手册/概念/智能体模型/).
+这会发生于_每一个_工作区，而不只是第一个。预置的智能体在创建时不带适配器，因此它们运行在 **Control Center (built-in)** 上，使用 Anthropic 的默认模型（除非你另行指定，否则是 `claude-opus-4-8`），直到你在 设置 → 工作区 → 智能体 中为每个智能体设置适配器和模型。参见[智能体模型](/zh-CN/手册/概念/智能体模型/)。
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+写入所有者成员身份这件事比看上去更重要：没有它，刚创建的工作区将没有任何成员，创建者接下来发起的每一次工作区范围调用都会被拒绝。
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[智能体无法创建工作区]
+不存在 `create_workspace` MCP 工具。人类通过 `workspace.create`（仅名称的收口点）或 `workspace.upsert`（完整记录，也用于更新）来创建工作区。两者都会把创建者标记为 `owner` 并发布 `WorkspaceCreated`。
 :::
 
-## Deleting, exporting, importing
+## 删除、导出与导入
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+删除工作区会**标记注册表行并解除目录的链接**。该工作区会从所有列表和查找中消失。注册表行会保留（软删除），因此 id 仍然为备份和维护所知晓，但 `workspace.delete` 会立即通过 `WorkspaceDatabaseManager.dropAndClose` 丢弃该工作区的目录——数据库、工作树、智能体文件及其余内容。只有工作区**所有者**才能删除它。
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+由于一个工作区就是一个文件，传递工作区是一次文件操作，而不是逐表转储：
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` 就是一次 `VACUUM INTO`——在服务器持续提供服务的同时，于一个读事务下取得的、一致且已整理碎片的快照。
+- `workspace.import` 会接纳这样的文件，替换目标工作区当前持有的内容。内嵌的 `workspace_meta` 让导入能够区分 “重新接纳自己的文件” 与 “来自另一次安装的文件”（后者是允许的，但会被记录，而不是不留痕迹）。
+- `server.backupNow` 把整个安装快照到一个带时间戳的目录，其结构与实际的数据目录一致——`manifest.json`、`global.db`，以及每个工作区一个 `<workspaceId>/workspace.db`——因此恢复就是把它复制回来。
+- `server.listBackups` 读回该目录，按最新优先，并给出每个快照的大小和工作区列表。清单缺失或引用了不存在文件的快照仍会被报告，并标记为未完成——把它藏起来，正是让运维人员误以为自己有一份实际上并不存在的备份的原因。
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+备份操作位于 **设置 → 服务器 → 备份与恢复** 下：**立即备份** 会生成一份安装快照，列表会显示哪些快照已完成，并允许安装所有者确认后删除其中之一，每个工作区也都提供导出与导入。内置的 **Workspace backup** 流水线按每周计划只备份该工作区的数据库，并删除自身早于所配置保留期限的备份。从安装快照恢复某个工作区，就是用 `workspace.import` 指向该快照的 `<workspaceId>/workspace.db`；恢复整个安装仍然是在停止服务器后把快照目录复制回来。
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/zh-CN/手册/参考/备份/#what-a-backup-does-not-contain) has the full table.
+它们都不携带工作区目录的其余部分。工作区积累的不止是一个数据库——粘贴的图片、技能文件与智能体文件、聊天凭据、工作树——而导出和导入移动的是**文件**，因此它旁边的一切都留在原处。对凭据来说是刻意为之，对工作树来说无所谓；对其它内容而言，这是一个需要知道的限制，而不是一项特性。[备份参考](/zh-CN/手册/参考/备份/#what-a-backup-does-not-contain)中有完整的表格。
 
-## Moving a backup between the server and your device
+## 在服务器与你的设备之间移动备份
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/zh-CN/手册/参考/备份/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+上面的每个操作都以**服务器**上的路径来表达，只有当服务器就是你自己的机器时，这才算一个完整的答案。三条签名的 HTTP 路由——[`/backup/workspace`、`/backup/snapshot` 和 `/backup/restore`](/zh-CN/手册/参考/备份/#transfer-routes)——为其它所有拓扑结构承载字节流，走的是媒体代理和图片存储已经在用的那条带认证的通道。在页面上，这表现为每个导出和每个快照旁边的 **下载** 按钮（落点由你选择），以及用于从你正在使用的机器上的文件恢复的 **选择文件并上传**。当服务器不是你的机器时，能派上用场的是上传：`workspace.import` 要求文件已经位于主机上，而这就是它到达主机的方式。
 
-Three properties are worth knowing:
+有三点值得了解：
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **下载会新生成一份副本，服务器不留存它。** 下载并不是 “取回导出按钮生成的那个文件”——它会重新导出、流式发送，然后删除。响应带 `no-store` 和 `Accept-Ranges: none`，原因相同：续传的范围请求会把两次不同的导出拼接成一个看起来有效、实则无效的文件。
+- **上传是流式写入磁盘、绝不缓冲的**，两端都是如此，暂存的副本在每一条退出路径上都会被删除——包括被拒绝时。工作区数据库不是一张截图。
+- **中继连接没有 HTTP 源**，因此那里的传输控件会被禁用，并附上说明原因的提示。一切以服务器端路径来表达的东西在中继上都能继续工作；只有承载字节流的通道需要直连。
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[哪些路径属于哪台机器]
+页面*显示*的路径——快照目录、导出写入的文件、导入读取的来源——都在运行 `cc_server` 的机器上。**下载**报告的路径则在你正坐着的机器上。正是这一区别让两者同时存在：前者是维护脚本或 ssh 会话需要的，后者是收集备份的人需要的。
 :::
 
-## Multiple workspaces
+## 多个工作区
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+你可以并行运行多个工作区。它们各自独立运作：一个工作区中的智能体无法给另一个工作区中的智能体发消息，无法读取另一个工作区的记忆，也看不到它的工单。智能体之间消息传递的收件人解析是精确的，绝不跨越工作区。
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+不存在跨工作区的仪表盘。位于 `/workspaces/:workspaceId/observability` 的分析界面订阅一个有界的近期运行全局馈送，并立即把它收窄到当前活动的工作区，因此你在那里看到的始终是一次一个工作区。人真正会接触到的多工作区界面，只有工作区选择器和切换器。
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+有一个值得了解的实际限制：有人正在使用的工作区会保持打开——没有 LRU 淘汰。超过 32 个时，服务器会发出警告而不是拒绝，因为每个打开的文件都持有一个后台 isolate 和一个页面缓存。跨工作区扇出会临时打开文件，之后如果没有任何其它地方占用它们，就把它们关闭。
 
-## Related concepts
+## 相关概念
 
-- [Multiplayer](/zh-CN/手册/概念/多人协作/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/zh-CN/手册/概念/智能体模型/): agents belong to exactly one workspace
-- [Memory and knowledge](/zh-CN/手册/概念/记忆与知识/): memory is workspace-scoped
-- [Architecture](/zh-CN/手册/概念/架构/): where the databases sit in the client/server split
-- [Back up and restore](/zh-CN/手册/操作指南/备份与恢复/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/zh-CN/手册/参考/备份/): every operation, route, manifest field and limit
-- [Add repositories](/zh-CN/手册/操作指南/添加仓库/): registering a checkout into a workspace
+- [多人协作](/zh-CN/手册/概念/多人协作/)：成员身份、角色与仓库授予权限——隔离中与访问相关的那一半
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：智能体恰好属于一个工作区
+- [记忆与知识](/zh-CN/手册/概念/记忆与知识/)：记忆属于工作区范围
+- [架构](/zh-CN/手册/概念/架构/)：在客户端/服务器的拆分中，各数据库位于何处
+- [备份与恢复](/zh-CN/手册/操作指南/备份与恢复/)：生成快照、迁移工作区、在别处保留副本
+- [备份、导出与导入](/zh-CN/手册/参考/备份/)：每个操作、路由、清单字段与限制
+- [添加仓库](/zh-CN/手册/操作指南/添加仓库/)：把检出注册到工作区

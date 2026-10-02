@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Conectează Slack la spațiul tău de lucru
+description: Creează aplicația Slack, conecteaz-o, leagă-ți contul și fă un agent să răspundă într-un fir Slack.
 slug: ro-RO/manual/tutoriale/prima-punte-de-chat
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Ce vei construi
 
-By the end of this tutorial, you will have:
+La finalul acestui tutorial vei avea:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- O aplicație Slack creată pentru spațiul tău de lucru, cu permisiunile și evenimentele potrivite deja configurate
+- O conexiune activă între Slack și Control Center
+- Contul tău Slack legat de utilizatorul tău Control Center
+- Un agent care îți răspunde într-un fir Slack și un tichet înregistrat dintr-o comandă slash
 
-Prerequisites:
+Cerințe preliminare:
 
-- [Your first workspace](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/) and [Dispatch your first agent](/ro-RO/manual/tutoriale/primul-agent/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [Primul tău spațiu de lucru](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/) și [Trimite primul agent](/ro-RO/manual/tutoriale/primul-agent/) finalizate — un spațiu de lucru fără agenți poate primi un mesaj Slack, dar nu are cine să îi răspundă
+- **Agentul CEO** al spațiului de lucru are un adaptor și un model setate în **Setări → Spațiu de lucru → Agenți**. Puntea trezește agentul CEO, nu agentul pe care l-ai configurat în tutorialul anterior, iar un agent fără adaptor rulează pe bucla integrată, cu modelul implicit al Anthropic.
+- Rolul `owner` sau `admin` în spațiul de lucru Control Center (conectarea unei aplicații de chat vorbește în numele întregului spațiu de lucru)
+- Permisiunea de a crea și instala aplicații în spațiul tău de lucru Slack
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Nimic de aici nu are nevoie de o adresă publică, de un tunel sau de un port de intrare. Control Center inițiază conexiunea _spre exterior_ către Slack prin Socket Mode, așa că funcționează de pe un laptop aflat în spatele unui NAT.
 
-## Step 1: Get a Slack app configuration token
+## Pasul 1: Obține un token de configurare a aplicației Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Acesta este singurul secret pe care trebuie să îl obții manual. Îi permite Control Center să creeze aplicația în locul tău și, mai târziu, să o editeze.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Deschide [api.slack.com/apps](https://api.slack.com/apps)
+2. Derulează până la secțiunea de tokenuri de configurare a aplicației, în josul paginii
+3. Generează o pereche de tokenuri pentru spațiul tău de lucru Slack
+4. Copiază **tokenul de reîmprospătare** — începe cu `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Pasul 2: Lasă Control Center să creeze aplicația
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. În Control Center, mergi la **Setări → Spațiu de lucru → General** și găsește cardul **Punți de chat**
+2. În blocul **Slack**, apasă **Creează aplicația pentru mine**
+3. Lipește tokenul de configurare a aplicației
+4. Verifică cum va arăta botul:
+   - **Nume aplicație**: cum listează Slack aplicația, de ex. `Control Center · Acme`
+   - **Nume bot**: ce tastează oamenii după `@`, de ex. `control-center`
+   - **Descriere scurtă** și **Ce spune botul că poate face**
+   - **Comandă slash**: implicit `cc`, așa că comanda este `/cc`
+   - **Mesaje directe**: lasă activat pentru ca membrii să îi poată scrie botului în DM
+5. Apasă **Creează aplicația**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center compune întreaga definiție a aplicației — Socket Mode activat, scope-urile de bot și abonamentele la evenimente de care are nevoie, comanda slash, fila Messages — și o creează în Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## Pasul 3: Finalizează cei doi pași pe care doar Slack îi poate face
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack nu are niciun API pentru a genera un token la nivel de aplicație sau pentru a instala o aplicație, așa că dialogul ți le dă pe amândouă sub formă de linkuri:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Generează un token la nivel de aplicație** — deschide **Basic Information → App-Level Tokens**. Creează un token cu scope-ul `connections:write` și copiază-l. Începe cu `xapp-`
+2. **Instalează aplicația** — deschide **Install App**. Instalează-o în spațiul tău de lucru, apoi copiază **Bot User OAuth Token**. Începe cu `xoxb-`
 
-Keep both values around for the next step.
+Păstrează ambele valori la îndemână pentru pasul următor.
 
-## Step 4: Connect
+## Pasul 4: Conectează
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Înapoi în dialog, apasă **Lipește datele de autentificare**
+2. Introdu **Token bot** (`xoxb-…`) și **Token la nivel de aplicație** (`xapp-…`)
+3. Lasă **Token de configurare a aplicației** gol — cel de la pasul 1 a fost deja stocat (Slack l-a rotit, iar Control Center l-a salvat pe cel nou)
+4. Apasă **Conectează**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center verifică tokenul de bot cu Slack înainte de a stoca ceva, apoi deschide socketul. Rândul afișează acum numele botului și numele spațiului tău de lucru Slack, cu o etichetă **Live**.
 
-## Step 5: Link your own Slack account
+## Pasul 5: Leagă-ți propriul cont Slack
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Conexiunea face botul accesibil; legarea te face pe _tine_ recognoscibil. Până când identitatea ta Slack este legată, botul nu va acționa pe baza mesajelor tale — nu atribuie niciodată un mesaj celui care a instalat aplicația.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Legarea este personală, așa că se află pe altă pagină decât conexiunea la nivel de spațiu de lucru.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Mergi la **Setări → Spațiu de lucru → Profil și identitate** și găsește cardul **Conturi de chat legate**
+2. Apasă **Leagă-mi contul Slack**
+3. Copiază comanda pe care o afișează, de exemplu `/cc link K7M2QP`
+4. În Slack, trimite acea comandă botului într-un DM
+5. Botul răspunde „Legat — ești …”
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Codul se folosește o singură dată și expiră în 15 minute. Dacă emailul tău Slack corespunde unui utilizator Control Center care este deja membru al acestui spațiu de lucru, puntea te leagă automat prima dată când vorbești cu ea, iar tu poți sări peste acest pas.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Dacă menționezi botul înainte de a face asta, acesta refuză și explică de ce. Cele trei refuzuri sunt distincte, așa că citește care ți s-a aplicat:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Expeditor nelegat**: botul îți spune cum să faci legarea. Reia acest pas.
+- **Legat, dar nu ești membru al acestui spațiu de lucru**: cere unui admin să te invite.
+- **Membru cu rol doar-citire** (vizualizator sau invitat): botul nu va începe munca în numele tău.
 
-## Step 6: Put an agent on something
+## Pasul 6: Pune un agent la treabă
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. În Slack, invită botul într-un canal: `/invite @control-center`
+2. Menționează-l cu o cerere reală:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center rezumă PR-urile deschise din repo-ul api
 
-The bridge:
+Puntea:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Creează un spațiu Control Center pentru acel fir Slack, numit după canalul Slack și cererea ta
+2. Trezește agentul de prim contact al spațiului de lucru (agentul CEO, când există unul, altfel primul agent)
+3. Transmite în flux răspunsul agentului înapoi în firul Slack, pe măsură ce este scris
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Răspunde în același fir Slack pentru a continua — nu mai sunt necesare alte mențiuni, pentru că firul Slack are acum o punte. Sau scrie-i botului în DM în loc să folosești un canal; fiecare conversație DM își conduce propriul spațiu Control Center, cu un titlu și o linie de stare „is thinking…” cât timp lucrează agentul.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Streamingul are nevoie de API-ul de streaming al Slack, pe care nu îl are orice plan. Dacă aplicației tale i se refuză, puntea nu mai încearcă pentru întreaga conexiune și postează fiecare răspuns ca un singur mesaj, iar cardul Punți de chat afișează „Streamingul live este oprit pentru această aplicație Slack — răspunsurile sosesc ca un singur mesaj.” Tot restul funcționează la fel.
 
-## Step 7: File a ticket without leaving Slack
+## Pasul 7: Înregistrează un tichet fără să părăsești Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Botul răspunde cu cheia tichetului pe care l-a înregistrat. Tichetul este un tichet Control Center local obișnuit, raportat de tine, gata să fie atribuit unui agent. `/cc help` listează tot ce poate face comanda.
 
-## Recap
+## Recapitulare
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Ai creat o aplicație Slack din Control Center, ai conectat-o printr-un socket spre exterior, ai legat identitatea ta Slack de utilizatorul tău Control Center și ai dirijat un agent dintr-un fir Slack. Tot ce s-a întâmplat în Slack există și în Control Center: firul Slack este un spațiu, răspunsul este un transcript, tichetul este un tichet.
 
-**Next:** [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/).
+**În continuare:** [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/) acoperă calea manuală, rotirea tokenurilor și depanarea. Pentru modelul din spate, citește [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/).

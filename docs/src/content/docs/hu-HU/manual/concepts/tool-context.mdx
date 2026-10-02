@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Eszközkontextus és promptgyorsítótár
+description: Miért csak az eszközök egy kis részét látja egy ügynök a teljes készlet helyett, hogyan érheti el a többit, és mely szabályok tartják melegen a szolgáltató promptgyorsítótárát egy-egy futás során.
 slug: hu-HU/kezikonyv/fogalmak/eszkozkontextus
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+A beépített harness minden kérésére két dolog igaz: az eszközdefiníciók a legnagyobb fix költséget jelentik benne, és szinte egyet sem fognak használni belőlük. Ez az oldal elmagyarázza, mit tesz ez ellen a Control Center, és miért nem egyszerűen az a válasz, hogy „küldjünk kevesebb eszközt”.
 
-## The problem is attention, not bytes
+## A probléma a figyelem, nem a bájtok
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+A Control Center körülbelül 126 eszközt regisztrál. Teljes terjedelmükben elküldve a definícióik **minden kérésben nagyjából 23 000 tokent** tesznek ki — olyan költség ez, amelyhez egyetlen tömörítés sem tud hozzányúlni, mert az eszközdefiníciók a kérésnek a beszélgetéstől elkülönülő részében utaznak.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+A tokentöbblet a kézenfekvő panasz, és a promptgyorsítótárral ez a kisebbik tétel is. A valódi költség a **kiválasztás pontossága**. Az eszközhívásról szóló publikált kiértékelések egyetértenek abban, hogy a modellek megbízhatóan választják ki a megfelelő eszközt egészen addig, amíg körülbelül 30–50 eszköz van a kontextusban, azon túl viszont fokozatosan romlanak. A megnevezett ok nem a tokenek száma, hanem a **szemantikai átfedés**: ha egyszer egy katalógusban több hasonló leírású eszköz szerepel, a modell hasonmások közül választ, ahelyett hogy egy képességre emlékezne.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+126 eszköznél egy ügynök minden egyes körben jóval túl van ezen a sávon — még azokban a körökben is, amelyekben csak egy fájlt kellett elolvasnia.
 
-## The two-tier surface
+## A kétszintű felület
 
-A run is therefore shown two things:
+Egy futás ezért két dolgot lát:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- egy **rezidens** készletet — nagyjából két tucat eszközt, amelyek minden kérésben a teljes sémájukkal együtt elküldésre kerülnek;
+- minden másról egy **névindexet**, „Tickets and projects” vagy „Memory and knowledge” típusú fejlécek alá csoportosítva, amely a teljes katalógusért néhány száz tokenbe kerül.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+A jelenlegi katalóguson mérve ez az eszközblokkot **~23,1 ezer tokenről ~5,0 ezerre, mintegy 78%-kal kisebbre** viszi, az állandóan látható készletet pedig abba a sávba teszi, ahol a kiválasztás megbízható.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/hu-HU/kezikonyv/fogalmak/modok) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+A rezidens készlet azokból az eszközökből áll, amelyeket egy futás a futások *többségében* használ: a fájl- és shell-szókincsből (`read`, `write`, `edit`, `search`, `bash`, …), a felfedezőeszközökből, a feladatlistából, a memóriakeresésből, valamint mindabból, amit az aktuális [mód](/hu-HU/kezikonyv/fogalmak/modok) kimeneti műveletként meg kell hívnia a kimenete előállításához. Egy mód saját kimeneti művelete mindig rezidens — egy futásnak soha nem szabad utánajárnia annak az egyetlen hívásnak, amely a szállítandóját előállítja.
 
-### Deferred does not mean unavailable
+### A halasztott nem jelent elérhetetlent
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Ez az a rész, amely biztonságossá teszi a konstrukciót, nem csupán olcsóvá. **Egy halasztott eszköz már az első körtől hívható.** Csupán a sémája marad visszatartva.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Az ügynök látja a nevet a promptjában. Ha közvetlenül meghívja ezt a nevet, a harness betölti a sémát, és ugyanabban a lépésben lefuttatja az eszközt — hiba és plusz oda-vissza út nélkül. A modellnek nem kell tudnia, hogy az eszköz valaha „nem volt betöltve”.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Ha az ügynök ismeri a feladatot, de nem tudja a nevet, a `search_tools` egy természetes nyelvű leírást fogad („ossz hozzá egy jegyet valakihez”), rangsorolja a futás teljes felületét, és visszaadja a találatokat *a sémáikkal együtt már betöltve*, így a rögtön következő kör már hívhat belőlük egyet. Ha egy keresés semmit nem talál, ezt nyíltan megmondja, és más megfogalmazást vagy szélesebb keresést javasol — szándékosan, mert az az ügynök, amely az üres keresést úgy értelmezi, hogy „ez a képesség nem létezik”, új megoldást talál ki ahelyett, hogy újra keresne.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+A `search_tools` csak a beépített harnessben létezik. A külső MCP-klienseknek ehelyett `search_tool_bm25` áll rendelkezésre, amely ugyanazt az indexet rangsorolja, de csak leírja a találatokat — ezek a kliensek ugyanis már megkapták az összes sémát a `tools/list` hívástól, így nincs mit betölteni.
 
-### What deferral never does
+### Amit a halasztás soha nem tesz meg
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/hu-HU/kezikonyv/fogalmak/korlatok) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+A halasztás a mód eszközszűrője **után** érvényesül, soha nem helyette. Elrejt egy sémát; nem tud felfedni egy olyan eszközt, amelyet a mód megtagadott. Egy aktivált eszköz ugyanúgy átmegy a jóváhagyási kérésen és a [műveleti korlátokon](/hu-HU/kezikonyv/fogalmak/korlatok), ahogy egy rezidens eszköz tenné, és egy eszköz nem tud betölteni olyan nevet, amely eleve nem szerepelt a futás felületén.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Amit a külső kliensek MCP-felületként látnak, az **nincs** érintve. A `tools/list` továbbra is a teljes katalógust adja vissza. Egy korábbi kísérlet a megkurtítására csúnyán meg is törte az ügynököket: az MCP-kliensek a saját gyorsítótárazott listájukhoz ellenőrzik az eszközneveket, és mindent megtagadnak, ami nem szerepel rajta, anélkül hogy valaha is kérdeznék a szervertől, így egy „rejtett, de hívható” eszköz egyszerűen elérhetetlen volt. A halasztás a harnessben él, ahol egy eszköz futás közbeni betöltése valóban olyasmi, amire a harness képes.
 
-### Turning it off
+### Kikapcsolása
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/hu-HU/kezikonyv/referencia/cc-server-cli).
+A `--tool-deferral=off` (vagy a `CC_SERVER_TOOL_DEFERRAL=off`) minden beengedett eszközt újra rezidenssé tesz, pontosan azokat a kéréseket állítva elő, amelyeket a szerver a halasztás megjelenése előtt küldött. Lásd a [`cc_server` CLI-referenciát](/hu-HU/kezikonyv/referencia/cc-server-cli).
 
-## Prompt caching
+## Promptgyorsítótár
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Az ügynökös munkaterhelés aszimmetrikus: hatalmas promptokat küld, és kis válaszokat kap, körről körre, mindig ugyanazzal a prefixummal. A szolgáltatók gyorsítótárazzák ezt a prefixumot, és egy gyorsítótár-olvasás nagyjából a tizedébe kerül egy frissének. A gyorsítótár találati aránya ezért a harness első osztályú tulajdonsága, nem pedig optimalizálás — az Anthropicnál pedig áteresztőképességet is hoz, mert a gyorsítótárazott tokenek nem számítanak bele a percenkénti bemeneti korlátba.
 
-Caching works on an exact prefix match, which yields one governing rule.
+A gyorsítótárazás pontos prefixumegyezésen alapul, amiből egyetlen irányadó szabály következik.
 
-### Never rewrite what was already sent
+### Soha ne írjuk újra, amit már elküldtünk
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Bármely bájt, amely megváltozik, érvényteleníti a gyorsítótárat onnantól kezdve. A harness ezért csak **hozzáfűz**: az új üzeneteket a végére, az újonnan aktivált eszközsémákat pedig a gyorsítótárazott eszközblokk *után*, nem pedig beleolvasztva. Ez a sorrend az oka annak, hogy az aktiválás olcsó — a gyorsítótárazott prefixum változatlan marad, és a futás csak az imént betöltött sémákért fizet.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+A ciklus emellett a régebbi körök elavult eszközkimenetét is levágja, hogy kontextust szabadítson fel. Addig vár, amíg elég felszabadítanivaló gyűlik össze ahhoz, hogy megérje az újraírás, így a levágás ritka, mély újraírás lesz, nem pedig folyamatos gyorsítótár-kihagyás.
 
-### Where the breakpoints go
+### Hová kerülnek a töréspontok
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Egy szolgáltató korlátozott számú gyorsítótár-jelölőt engedélyez, és a Control Center ezeket megfontoltan használja fel:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Jelölő                      | Lefedi                                  | Élettartam |
+| --------------------------- | --------------------------------------- | ---------- |
+| Utolsó **rezidens** eszköz  | Az eszközblokk                          | 1 óra      |
+| Utolsó rendszerblokk        | Eszközök + rendszerprompt               | 1 óra      |
+| Az előző kör vége           | Az előzmények a legutóbbi kérésig       | 5 perc     |
+| Az aktuális kör vége        | A teljes előzmény                       | 5 perc     |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Az utolsó kettő egy gördülő pár, és a pár oka nem nyilvánvaló: a gyorsítótár-keresés korlátozott számú blokkon keresztül visszafelé kutat valami után, amit egy korábbi kérés tárolt el. Egyetlen kör, amely sok eszközt futtat párhuzamosan, több blokkot bocsáthat ki ennél az ablaknál, ilyenkor az egyik zárójelölő észrevétlenül kimarad, és a kérés a teljes árat fizeti, anélkül hogy a válasz bármivel jelezné ezt. Annak a pontos helynek a megjelölése, ahol az előző kérés megállt, szerkezetivé teszi a találatot a versenyfutás helyett.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Az eszközökből és a rendszerpromptból álló prefixum azért kapja a hosszú élettartamot, mert a teljes futás alatt állandó, minden azonos alakú futás és alügynök osztozik rajta, és mert az óra akkor indul, amikor egy kérés *elkezdődik* — egy több percig streamelő kör már el is költötte egy rövid ablak nagy részét, mire a következő kérés összeáll.
 
-### Subagents share one prefix
+### Az alügynökök egy prefixumon osztoznak
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Az azonos típusú alügynökök bájtazonos promptprefixumokat állítanak elő, ezért egyetlen gyorsítótár-bejegyzést kellene olvasniuk ahelyett, hogy mindegyik a sajátját írná. Egy bejegyzés azonban csak akkor válik olvashatóvá, amikor az őt író kérés válaszolni kezd, ezért egy egyszerre elindított fan-outnál minden gyermek megfizeti a felárat egy olyan prefixumért, amelyen mindannyian osztoznak.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+A harness hagyja, hogy egy adott alak első gyermeke elinduljon, majd amint az streamelni kezd, elengedi a testvéreit. A várakozás korlátozott: egy lassú első gyermek egy gyorsítótár-találatba kerül, soha nem magába a fan-outba. Ugyanezen okból minden alügynök ugyanazt a rezidens eszközkészletet kapja, függetlenül a profiljától — profilonként változtatni széttagolná a közös prefixumot minden haszon nélkül, hiszen a profil már eldöntötte, mit hívhat a gyermek.
 
-## Watching it work
+## Működés közben
 
-Both halves are observable rather than assumed:
+Mindkét fél megfigyelhető, nem pusztán feltételezett:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- A beszélgetéshez tartozó **Kontextus** nézet jelentést ad a rezidens eszközökről, a halasztott indexről és arról, hogy az egyes visszatartott sémák mennyibe *kerülnének* — ugyanabból a kódútból felépítve, amelyet egy valódi futás használ.
+- Minden futás rögzíti, mely halasztott eszközöket töltötte be, és mi váltotta ki azt, így egy semmit nem találó keresés visszakeresési kihagyásként látható, ahelyett hogy eltűnne egy csendben valami mellékesbe kezdő ügynökben.
+- A Megfigyelhetőség **Gyorsítótár-arány** néven adja meg a gyorsítótár-olvasások és a feldolgozott összes prompttoken hányadosát, a gyorsítótár-írásokat is beleértve — egy futás, amely folyton újraépíti a prefixumát, alacsony értéket ér el, ahelyett hogy úgy teljesítene, mint amelyiknek soha nem is kellett gyorsítótár.

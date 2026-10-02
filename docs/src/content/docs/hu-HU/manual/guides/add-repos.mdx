@@ -1,79 +1,126 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Repók hozzáadása munkaterülethez
+description: Regisztráljon Git-checkoutokat egy munkaterületbe, hogy az ügynökök dolgozhassanak rajtuk.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Ez az útmutató bemutatja, hogyan regisztrálhat egy Git-checkoutot egy
+munkaterületbe, hogyan indexelheti újra, és hogyan távolíthatja el ismét.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+A repók **munkaterülethez kötöttek**. Nincs globális nyilvántartás és nincs
+összekapcsolási lépés: egy repó hozzáadása és munkaterületbe helyezése ugyanaz a
+művelet. Ugyanaz a checkout két munkaterületen regisztrálva két független sorrá
+válik, két különböző azonosítóval — a munkaterületeken átnyúlóan egy repó
+identitása a fájlrendszerbeli útvonala, soha nem az azonosítója.
 
-## Before you start
+## Mielőtt elkezdené
 
-A folder can only be registered if all three of these hold:
+Egy mappa csak akkor regisztrálható, ha mindhárom feltétel teljesül:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Egy **git worktree** belsejében van.
+2. Ennek a worktree-nek van egy **`origin` remote-ja**.
+3. Az `origin` remote egy **támogatott kódhosztra** mutat: github.com, gitlab.com
+   vagy bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Bármi más esetén a regisztráció egyértelmű üzenettel utasítja el: „Folder is not
+inside a git work tree.”, „No `origin` remote configured for this repository.”
+vagy „The `origin` remote is not hosted on a supported forge (github.com,
+gitlab.com, bitbucket.org).” Nincs csak helyben működő mód.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+A kódhosztot a rendszer a remote-ból olvassa ki, és a repón tárolja — soha nem
+Ön választja ki. Egy munkaterület mindhárom kódhoszt repóit tartalmazhatja
+egyszerre, és mindegyikkel a saját API-ján, a saját hitelesítő adatával
+kommunikál. A GitLab beágyazott névterei megmaradnak, így a
+`gitlab.com/group/subgroup/project` tulajdonosként `group/subgroup`, névként
+`project` adatokkal regisztrálódik.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+A mappának emellett a `cc_server`-t futtató gépen kell lennie, a szerver egyik
+`--repo-roots` könyvtárán belül. Ez az engedélyezett lista alapértelmezésben a
+szerverfelhasználó kezdőkönyvtára, és a gyökér fölé navigálást elutasítja.
 
-## Register a checkout
+## Egy checkout regisztrálása
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Nyissa meg a **Beállítások → Munkaterület → Tárolók** oldalt
+   (`/workspaces/<id>/settings/workspace/repositories`).
+2. Kattintson a **Tároló hozzáadása** gombra.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+A párbeszédablak a **szerver** fájlrendszerében tallózható böngésző, nem a
+sajátjában. A folyamat ugyanaz asztali gépen, weben és telefonon, mert egy natív
+mappaválasztó a rossz gépen választana mappát.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Navigáljon a szerver beállított gyökerein belül. A git-checkoutokat tartalmazó
+   mappák meg vannak jelölve.
+4. Jelöljön be belőlük tetszőleges számút. A kijelölés navigálás közben is
+   megmarad, így több mappából is összegyűjtheti a checkoutokat.
+5. Regisztrálja őket egyetlen kötegben.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Egy sikertelen kijelölés soha nem ejti el a köteg többi tagját — megkapja a
+létrehozott azonosítókat, valamint útvonalanként egy hibát mindegyikhez, amelyet
+elutasított. Ha egy ezen a munkaterületen már létező útvonalat regisztrál újra, a
+meglévő repót kapja vissza ahelyett, hogy duplikátum jönne létre.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Minden regisztrált repó megjelenik a listában az `owner/name` értékével, a
+kódhosztját megnevező jelvénnyel és a szerveren lévő útvonalával. A GitHub-repók a
+tulajdonos avatarját is mutatják; a többi kódhoszt tulajdonos-avatar URL-je nem
+kitalálható, ezért azok a kezdőbetűkre esnek vissza.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+A kódhosztjelvény vegyes munkaterületen számít: két repó is lehet `acme/web`
+néven, különböző kódhosztokon, és eltérően viselkednek — más, amit egy átnézés
+megtehet, és más, ahová egy hivatkozás vezet.
 
-## What happens next
+## Mi történik ezután
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+A regisztráció egy erre a munkaterületre hatókörözött `RepoAdded` eseményt vált
+ki, ami elindítja az `index_code` pipeline-t ehhez a checkouthez. Ez tölti fel a
+kódgráfot, így a keresésnek és a hatáselemzésnek lesz mire válaszolnia.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/).
+Csak azok a fájlok indexelődnek, amelyek nyelvéhez van szállított nyelvtan (Dart,
+JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#,
+Swift, Kotlin, R, Assembly, MATLAB és Ada). Lásd: [Kód keresése a
+kódgráffal](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/).
 
-## Re-index a repo
+## Repó újraindexelése
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Minden soron van egy **Kód indexelése** gomb. Kattintson rá az adott checkout
+indexelőjének újrafuttatásához; amíg fut, a gomb folyamatjelzővé alakul, amely az
+elkészült és az összes fájl arányát mutatja, megszakítás vezérlővel. Amikor
+befejeződik, egy pipába rendeződik a szimbólumok számával, vagy
+figyelmeztetéssé, ha a futás sikertelen volt.
 
-## Reorder repos
+## Repók átrendezése
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Húzza el egy sor fogantyúját. A beállított sorrend az, amit az alkalmazás minden
+repólistája visszaolvas.
 
-## Fix the GitHub link
+## A GitHub-hivatkozás javítása
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+A soron lévő hivatkozásikon megnyit egy szerkesztőt a repó GitHub-tulajdonosához
+és tárolónevéhez — hasznos, ha a remote-ot átnevezték vagy áttelepítették.
 
-## Remove a repo
+## Repó eltávolítása
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Nyissa meg a **Beállítások → Munkaterület → Tárolók** oldalt.
+2. Kattintson a soron lévő kukaikonra.
+3. Erősítse meg: „Eltávolítja a tárolót a munkaterületről?”
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+A párbeszédablak megmondja, mit tesz: „A(z) _name_ el lesz távolítva ebből a
+munkaterületből. A lemezen lévő helyi fájlokhoz nem nyúl.”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Az eltávolítás törli a repó sorát ebből a munkaterületből, és kaszkádolva
+eltünteti a kódgráf sorait — szimbólumok, élek, fájlok és indexelési checkpointok
+—, valamint a repón lévő összes tagonkénti repó-jogosultságot, a tér–repó
+kapcsolatait és az elszigetelt checkout rekordjait. Ugyanaz a checkout egy másik
+munkaterületen regisztrálva független sor, és nem érinti semmi. A lemezen lévő
+worktree-k, amelyekre ezek a rekordok mutattak, nem szűnnek meg a törléstől.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Search code with the code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/)
-- [Run agents in parallel](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/)
-- [Set up GitHub integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
-- [Your first workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/)
+- [Kód keresése a kódgráffal](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/)
+- [Ügynökök párhuzamos futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok/)
+- [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
+- [Az első munkaterületed](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/)
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/)

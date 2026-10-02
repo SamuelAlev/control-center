@@ -1,172 +1,173 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Spravujte adaptéry a modely
+description: Připojte poskytovatele modelů, vyberte model, na kterém agent běží, a zkontrolujte, která CLI runnerů má hostitel serveru.
 slug: cs-CZ/prirucka/navody/adaptery
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Tento návod ukazuje, jak připojit poskytovatele modelů a vybrat, na čem agent
+běží.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Všechno je na jedné stránce: **Nastavení → Server → Poskytovatelé modelů**.
+Položka v postranním panelu zní „Poskytovatelé modelů“, nadpis stránky zní
+„Adaptéry“.
 
-## What an adapter is
+## Co je adaptér
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Adaptér je _runner_, který provede tah agenta. Jsou dva a seznam je pevný:
+třetího přidat nejde.
 
-| Adapter                   | CLI      | Transport                                           |
+| Adaptér                   | CLI      | Přenos                                              |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (built-in) | žádné    | Smyčka agenta v procesu, s poskytovateli mluví po HTTP |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI a ostatní jsou **poskytovatelé** vestavěného
+adaptéru, ne samostatná CLI. Přidat _jde_ dalšího poskytovatele, libovolný
+endpoint kompatibilní s OpenAI nebo Anthropic. O tom je další část.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Detekce se ptá serveru, ne vašeho počítače]
+Karta **Zjištění runneři** vypisuje, co `cc_server` našel na `PATH`
+_hostitele serveru_. U tenkého nebo webového klienta je to jiný stroj než ten,
+na který se díváte. CLI nainstalujte na stroj, na kterém běží `cc_server`.
 :::
 
-## Connect a model provider
+## Připojte poskytovatele modelu
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Vestavěný adaptér potřebuje před spuštěním aspoň jednoho připojeného
+poskytovatele. V katalogu jich je čtrnáct.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Jděte do **Nastavení → Server → Poskytovatelé modelů**
+2. Sjeďte k **Poskytovatelé a modely**
+3. Najděte svého poskytovatele a připojte ho:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Poskytovatel                                                                                            | Jak připojit                                                                                                      |
+| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Anthropic                                                                                               | API klíč. Předplatné Claude Pro/Max není přihlášení k API Anthropic. Pro tenhle tarif použijte adaptér Claude Code |
+| OpenAI, Codex, Cursor                                                                                   | Přihlášení OAuth v prohlížeči, nebo API klíč. Codex je ChatGPT Plus/Pro přes backend Codex Responses, ne spuštění CLI |
+| Kimi Code                                                                                               | Jen OAuth v prohlížeči, průběh s kódem zařízení. Jde o paušál, takže nemá cenu za token                            |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API klíč                                                                                                          |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Kontrola: odznak řádku se změní na **Připojeno** a po rozbalení vypíše modely,
+které poskytovatel nabízí, každý s cenou za milion tokenů a kontextovým oknem.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+Tokeny OAuth se ukládají do vlastního úložiště přihlašovacích údajů serveru
+a obnovují se před vypršením. Přihlašovací údaje poskytovatelů jsou
+**globální pro hostitele**: sdílí je každý pracovní prostor v instalaci, nejsou
+vázané na jeden.
 
-### Add a custom provider
+### Přidejte vlastního poskytovatele
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Hodí se pro Ollama, LM Studio, vLLM nebo soukromé nasazení.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. V **Poskytovatelé a modely**, pod **Vlastní poskytovatelé**, stiskněte **Přidat poskytovatele**
+2. Vyplňte **Název**, vyberte **Typ API** (**Kompatibilní s OpenAI** nebo
+   **Kompatibilní s Anthropic**) a zadejte **Základní URL** (například
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Přidejte **API klíč**, pokud ho endpoint vyžaduje, a stiskněte **Přidat poskytovatele**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Vlastní poskytovatel se objeví ve stejném seznamu a má tlačítko pro smazání,
+které vestavění nemají.
 
-## Pick a model for an agent
+## Vyberte agentovi model
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Jděte do **Nastavení → Pracovní prostor → Agenti** a vyberte agenta
+2. Na kartě **Nastavení** zvolte **Adaptér**
+3. Z rozevíracího seznamu vedle něj vyberte **Model**
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+U vestavěného adaptéru se rozevírací seznam skládá za běhu z vlastního katalogu
+každého připojeného poskytovatele. Poskytovatel bez uloženého přihlašovacího
+údaje nepřidá ani jeden model. Prázdný seznam proto skoro vždy znamená „ještě
+nic není připojené“, ne „nic není k dispozici“.
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev jen obohacuje, nikdy není zdrojem id]
+Přibalený katalog [models.dev](https://models.dev) dodává cenu a kontextové
+okno modelu, který už je v živém seznamu. Id modelu nikdy nepřidá. Když model,
+který čekáte, chybí, endpoint poskytovatele ho nevrací.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Id modelů vestavěného adaptéru mají tvar `provider/model` a mohou nést řetězec
+záloh oddělený `|`. Při záloze se náklady účtují podle modelu, který tah
+skutečně obsloužil, ne podle toho, o který jste požádali.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Agent bez adaptéru běží na vestavěné smyčce]
+Každý pracovní prostor založí pět agentů, CEO a `qa`, `architect`, `engineer`
+a `librarian`, bez adaptéru a bez modelu. Odeslání spadne zpět na
+**Control Center (built-in)**, ne na nastavení **Výchozí runnery** na této
+stránce. To je preference klienta, kterou cesta odeslání nikdy nečte. Záznam
+běhu u těchto běhů zapíše `cc-harness`, takže přepis pojmenuje, co skutečně
+běželo.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Když chybí i model, vestavěná smyčka si od Anthropic vyžádá jeho výchozí model.
+Agent ponechaný úplně bez nastavení tedy běží, když máte připojený účet
+Anthropic, a jinak spadne s `No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Dokončení kroku s adaptérem v úvodním nastavení zpětně doplní **každého**
+agenta, kterému pořád chybí adaptér nebo model, CEO i specialisty, ve všech
+pracovních prostorech, které v tu chvíli existují, dvojicí, kterou jste vybrali.
+Pracovní prostory vytvořené později pořád založí všech pět bez nastavení.
+Adaptér a model nastavte výslovně u každého agenta, kterého chcete používat.
 :::
 
-## Install a runner CLI
+## Nainstalujte CLI runneru
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Vestavěný adaptér se neinstaluje. U Claude Code nainstalujte jeho
+CLI **na hostiteli serveru** správcem balíčků toho nástroje, například:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Pak nahoře na stránce stiskněte **Obnovit**. Každý nalezený řádek ukáže
+zjištěnou verzi a cestu a štítky, jestli umí **Režim JSON** a **Výběr modelu**.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Externí CLI si drží vlastní přihlašovací údaje ve vlastní konfiguraci na
+hostiteli serveru. Control Center je nespravuje.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Další argumenty a proměnné prostředí zůstávají na tomto zařízení]
+Každý řádek adaptéru nabízí pole **Další argumenty** a dialog **Proměnné prostředí**.
+Tyto hodnoty se ukládají na vašem zařízení. Server čte argv a env při spuštění
+z vlastního úložiště nastavení. Klíče poskytovatelů dejte na server (OAuth nebo
+pole **API klíč** na stránce Poskytovatelé modelů), ne do těchto dvou polí.
 :::
 
-## Restrict which providers a workspace may use
+## Omezte, které poskytovatele smí pracovní prostor použít
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Řízení poskytovatelů je po pracovních prostorech a rozhoduje poslední shoda.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. V **Poskytovatelé a modely** vypněte na řádku poskytovatele přepínač **Povolit**
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Tím se pro daného poskytovatele v aktivním pracovním prostoru zapíše pravidlo
+`deny` a jeho modely z katalogu tohoto pracovního prostoru zmizí. Zapnutí
+přepínače zpět pravidlo smaže.
 
-## Troubleshooting
+## Řešení problémů
 
-### A runner shows as not found
+### Runner se ukazuje jako nenalezený
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Zkontrolujte, že CLI je na `PATH` **hostitele serveru**, ne jen na vašem
+- Desktopová aplikace spuštěná z grafického rozhraní startuje server s minimálním `PATH`. CLI nainstalované jen na cestě, kterou vidí shell, pro ni může být neviditelné
+- Po instalaci stiskněte **Obnovit**
 
-### The model dropdown is empty
+### Rozevírací seznam modelů je prázdný
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Adaptér je vestavěný a žádný poskytovatel není připojený. Připojte ho v
+  **Poskytovatelé a modely**
+- Nebo je poskytovatel připojený, ale přepínač řízení tohoto pracovního prostoru ho zakazuje
 
-### A model runs but the price shows as unknown
+### Model běží, ale cena se ukazuje jako neznámá
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Živý seznam modelů nese id. Cenu a kontext dodává models.dev. Zcela nový model,
+nebo model od vlastního poskytovatele, v katalogu ještě položku nemá.
 
-## Related guides
+## Související návody
 
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
-- [Manage API keys](/cs-CZ/prirucka/navody/api-klice/)
-- [Diagnose an agent](/cs-CZ/prirucka/navody/diagnostika-agenta/)
-- [Manage costs](/cs-CZ/prirucka/navody/sprava-nakladu/)
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
+- [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
+- [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/)
+- [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/)
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/)
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/)
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)

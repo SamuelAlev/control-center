@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: توجيه عمال الخلفية
+description: استخدم وضع vibe لتكفّ عن إنجاز العمل بنفسك، ولتوجّه عدة وكلاء ينجزونه بالتوازي.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/توجيه-عمال-الخلفية
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+يشرح هذا الدليل كيف تشغّل محادثة بصفتك **موجّهًا** لا عاملًا: الجلسة تقرأ وتتحقق، ووكلاء الخلفية يتولون التعديل.
 
-## What changes when you type `/vibe`
+## ما الذي يتغيّر حين تكتب `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+أمران، والأول وحده ما تفرضه الآلية:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **أدوات الجلسة نفسها تنحصر في القراءة فقط**، ويبقى معها خمسة أفعال لتشغيل العمال. لا سبيل للجلسة إلى التأثير في المستودع إلا عبر عامل، ولا سبيل لها إلى معرفة ما حدث إلا بقراءة الملفات التي لمسها عامل.
+2. **تُؤمَر الجلسة بالتحقق بالقراءة لا بالتصديق.** تقرير العامل ادّعاء عمّا فعله، لا دليل على أن العمل نجح.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+الأول هو الذي يقوم عليه الأمر. الموجّه الذي يبقى قادرًا على البحث والتعديل سينجز العمل بنفسه تحت الضغط، وهذا نمط الفشل الذي وُجد هذا الوضع لمنعه.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## العمال يبدؤون من الصفر
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+العامل لم يرَ محادثتك قط، ولن يراها. التكليف هو سياقه كله.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+هذا ما يبقي النمط رخيصًا: عشرون عاملًا، لكل منهم تاريخ الموجّه الكامل، يكلّفون عشرين ضعف سياق الموجّه. وهو أيضًا ما يصعّب كتابة التكليف. «والآن افعل الأخرى أيضًا» تُقرأ في عين الموجّه تعليمات مكتملة، ولا تعني لجلسة جديدة شيئًا على الإطلاق.
 
-A good brief names files, commands and the definition of done:
+التكليف الجيد يسمّي الملفات والأوامر وتعريف الإنجاز:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> في `lib/features/auth/`، ضع `SessionStore.get(key)` محل كل استدعاء لـ `SessionStore.read(key)`. يعيد الأسلوب الجديد `Future<String?>` حيث كان القديم يعيد `String?`، لذلك يحتاج المستدعون إلى `await`. شغّل `fvm flutter analyze lib/features/auth` حين تنتهي، وأبلغ عن أي أخطاء عجزت عن إصلاحها.
 
-## The five verbs
+## الأفعال الخمسة
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| الفعل | ما يفعله |
+| --- | --- |
+| `vibe_spawn` | يبدأ عاملًا بتكليف. **يعيد فورًا.** |
+| `vibe_list` | المستوى والحالة والوقت المنقضي وآخر نتيجة لكل عامل |
+| `vibe_send` | جولة متابعة لعامل أنهى جولته |
+| `vibe_wait` | يتوقف حتى يستقر عامل واحد |
+| `vibe_kill` | يوقف واحدًا |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+الإطلاق غير متزامن عمدًا. الموجّه الذي يتوقف عند كل إطلاق يشغّل العمال واحدًا واحدًا، وهذا أبطأ مما كان ينجزه بنفسه أصلًا. لا تستخدم `vibe_wait` إلا حين تعجز حقًا عن المتابعة من غير جواب بعينه.
 
-## Two tiers
+## مستويان
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| المستوى | الغرض |
+| --- | --- |
+| `fast` | عمل روتيني بمواصفة واضحة — تعديلات، وإعادة تسمية، ومسودات، وتشغيل أوامر |
+| `good` | التصميم، أو التقدير، أو مراجعة ما أنتجه عامل `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+الشكل الشائع أن تفرّع عمال `fast` على ملفات مستقلة، ثم تطلق عامل `good` واحدًا يراجع ما فعلوه مجتمعين.
 
-## Verifying
+## التحقق
 
-This is the part that decides whether the pattern is worth anything.
+هذا الجزء هو الذي يقرّر ألهذا النمط قيمة.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+ثم **اقرأ الملفات التي سمّاها**. يملك الموجّه `read` و`search` و`lsp` و`ast_grep`، وهذا كل المغزى من إبقائها. الموجّه الذي يصدّق التقرير على ظاهره ليس إلا ملخّصًا لتفاؤل وكلاء سواه.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` بعد دفعة من العمال هو في العادة أسرع فحص منفرد.
 
-## When a worker loses the thread
+## حين يضيع الخيط على العامل
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+أوقفه وأعد التكليف. تكليف جديد مصحَّح أرخص من جدال، و`vibe_send` لا يعمل إلا على عامل أنهى جولته أصلًا.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## الحدود
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **ثمانية عمال متزامنين.** سقف للإنفاق لا حد تقني: كل واحد جلسة نموذج كاملة، والموجّه الذي يوزّع عشرين يكون قد كفّ عن تتبّع ما يفعلونه جميعًا.
+- **لا عامل يبقى بعد الوضع.** حين ينتهي التشغيل يُوقَف كل واحد منهم، ويذكر نص المحادثة عددهم. وكيل خلفية ما زال يعدّل الملفات بعد أن مضت المحادثة هو الفشل الذي لا يحتمله هذا الوضع.
+- **العمال وكلاء فرعيون عاديون في الأصل.** سقف العمق نفسه، وسياسة الضوابط نفسها، وابن سجل التشغيل نفسه. وضع vibe يغيّر من يسيّرهم، لا ما يُسمح لهم بفعله — فتظل مطالبات الموافقة تظهر لاستدعاءات الكتابة والتنفيذ لدى العامل.
 
-## When not to use it
+## متى لا تستخدمه
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/) or an [orchestration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+وضع vibe للعمل الذي يتفكك إلى تكليفات مستقلة. إن كانت الخطوة التالية تعتمد على مخرج الخطوة السابقة، فأنت تصف [خط أنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب/) أو [تنسيقًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-تنسيق/)، وكلاهما يعبّر عن التبعيات على وجهها بدل أن تجعل الموجّه يحاكيها بـ `vibe_wait`.
 
-## Related
+## ذات صلة
 
-- [Run agents in parallel](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/) — the other ways to fan out
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) — when the work has a shape
-- [Built-in agent tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — the verbs and their arguments
+- [تشغيل الوكلاء بالتوازي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وكلاء-بالتوازي/) — الطرق الأخرى لتوزيع العمل
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) — حين يكون للعمل شكل
+- [أدوات الوكيل المضمّنة](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — الأفعال ووسائطها

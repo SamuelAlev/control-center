@@ -1,172 +1,189 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Спілкуватися з агентом
+description: Створіть простір з агентом, надішліть йому роботу, коригуйте його під час запуску та зупиніть.
 slug: uk-UA/керівництво/практичні-посібники/спілкуватися-з-агентом
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Цей посібник показує, як працювати з агентом у просторі.
 
-## Create a space
+## Створіть простір
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Перейдіть до **Простори** на бічній панелі
+2. Натисніть кнопку **+** поряд із заголовком «Простори»
+3. Введіть **назву** — це обов’язково. Порожню назву відхилено;
+   діалог залишається відкритим
+4. За бажанням додайте агентів із робочого простору
+5. Якщо в робочому просторі є хоч один репозиторій, з’являється вибір
+   репозиторіїв. Спочатку вибрано всі репозиторії; звузьте вибір (зокрема
+   знявши позначку з окремого репозиторію) до тих, для яких цей простір має
+   готувати worktree
+6. Підтвердьте
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center відкриває простір і у фоновому режимі починає готувати по одному
+worktree з copy-on-write для кожного вибраного репозиторію.
 
-## Send the first message
+## Надішліть перше повідомлення
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Введіть повідомлення в редакторі повідомлень і натисніть Enter. Агента запущено,
+і він починає потоково передавати свою відповідь.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Якщо простір ще готується, ваше повідомлення не втрачається, а притримується —
+редактор повідомлень тримає його й надсилає автоматично, щойно завершиться
+підготовка worktree.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+Поки агент працює, ви бачите, як надходить потік його ходу: сегменти міркувань,
+виклики інструментів (читання й запис файлів, команди оболонки) і текст
+відповіді — усе в межах одного повідомлення ходу агента.
 
-## Steer a running agent
+## Коригуйте агента, який працює
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+Поки агент працює, звичайний розмовний текст **не** ставить новий хід у чергу.
+Він стає карткою коригування в черзі на смузі над редактором повідомлень і
+вставляється в активний запуск на наступній межі ходу. Жодного спливного
+повідомлення немає — сама картка і є зворотним зв’язком.
 
-Three things change that behaviour:
+Три речі змінюють цю поведінку:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Повідомлення з **@-згадкою** завжди надсилається як повідомлення, ніколи як
+  коригування
+- Повідомлення, що починається зі **slash-команди**, завжди обробляється як ця
+  команда
+- Повідомлення з **вкладенням** завжди надсилається як повідомлення — черга
+  коригування приймає лише текст
+- Якщо всі активні запуски вже завершилися, текст проходить далі й надсилається
+  як звичайне повідомлення
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Коригування потребує вбудованого harness]
+Під час запуску текст вставляє лише вбудований harness Control Center. На
+адаптері Claude Code текст усе одно стає в чергу як картка коригування; коли
+запуск завершується, усе, що ще стоїть у черзі, перетворюється на звичайне
+повідомлення.
 :::
 
-## Approve a blocked action
+## Схваліть заблоковану дію
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+Коли агент натрапляє на дію, яку пропускають через обмеження — руйнівну команду,
+привілейований інструмент — сервер **блокує запуск** і публікує запит на
+схвалення всім під’єднаним клієнтам. Якщо в цей момент у вас відкрито цю
+розмову, запит з’являється **у чаті**, над редактором повідомлень, у вигляді
+тієї самої картки з пронумерованими варіантами, що й для `ask_user` (відхилити,
+схвалити і, за бажанням, схвалити на 8 годин). Пропустити не можна: заблокований
+агент чекає на рішення.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Якщо ви перебуваєте в іншому місці застосунку, панель, що завжди зверху, в
+оболонці все одно показує, що саме чекає, тож ви можете розблокувати агента, не
+шукаючи потрібний простір. Ця накладна панель ховає запит тієї ж миті, коли
+розмова цього простору з’являється на екрані, тож ви ніколи не відповідаєте на
+той самий запит двічі.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Тут немає тайм-ауту: заблокований агент чекає, доки хтось ухвалить рішення. Той
+самий запит також з’являється на смузі уваги у «Вхідних» і в мобільному клієнті.
 
-## Answer an agent's question
+## Дайте відповідь на запитання агента
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+Агент, якому потрібна ваша перевага, якого бракує вимоги або який стоїть перед
+справжнім роздоріжжям, **мусить** викликати `ask_user`. Якщо написати запитання
+як повідомлення в чаті, хід завершиться, і вам доведеться звертатися до агента
+ще раз. Інструмент показує в розмові картку з пронумерованими варіантами —
+варіанти, необов’язкове поле вільного тексту або й те, і те — а запуск чекає на
+вашу відповідь.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Торкніться одного варіанта, щоб надіслати його (кінцева цифра перетворюється на
+стрілку під час наведення). Для вибору кількох варіантів і введених відповідей
+використовуйте **Продовжити** (`⌘↵` / `Ctrl↵`). **Пропустити** каже агенту
+вибрати розумний типовий варіант і більше не питати.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+Це окремий механізм від картки схвалення вище: схвалення — це «чи можна мені це
+зробити?», а запитання — «що саме з цього ви мали на увазі?». Запитувати можна на
+вбудованому harness у будь-якому режимі, зокрема в режимах лише для читання (він
+нічого не змінює), і його навмисно не загорнуто в запит на схвалення — діалог
+перед діалогом закрився б із відмовою, якби не було під’єднаного того, хто
+схвалює. Запуск, який не має розмови, куди це відобразити, просто не отримує
+цього інструмента.
 
-## Stop an agent
+## Зупиніть агента
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Поки запуски тривають, кнопка надсилання в редакторі повідомлень стає кнопкою
+**Зупинити**. Очистьте редактор і натисніть її — це зупиняє всіх агентів, які
+працюють у цій розмові.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+У заголовку простору немає елемента керування зупинкою, як і гарячої клавіші для
+неї. Щоб зупинити лише один запуск, коли їх триває кілька, відкрийте вкладку
+активності цього запуску — у її заголовку є призупинення/відновлення й зупинка в
+межах запуску (зупинка просить підтвердження). **Спостережуваність → Наживо**
+перелічує кожного агента, який працює в робочому просторі, з тим самим елементом
+керування.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+Зупинений запуск позначено як зупинений. Надішліть нове повідомлення, щоб
+запустити знову.
 
-## Use slash commands
+## Використовуйте slash-команди
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Введіть `/` у редакторі повідомлень, щоб побачити список команд. Ось ті, які
+змінюють поведінку розмови:
 
-| Command        | What it does                                                                                                                         |
+| Команда        | Що вона робить                                                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | Перемикає простір у режим плану. Сам `/plan` лише вмикає режим; `/plan <request>` вмикає його й надсилає решту як ваше повідомлення |
+| `/goal <text>` | Записує робочу ціль розмови                                                                                                          |
+| `/loop <text>` | Ітерує завдання, доки його не завершено                                                                                              |
+| `/compact`     | Згортає старішу історію в закріплений підсумок і продовжує на стисненому контексті                                                   |
+| `/todo …`      | Переглядає та редагує збережений список завдань цієї розмови                                                                         |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+Навички з’являються в тому самому списку у власному просторі назв `skill:`, тож
+вони ніколи не збігаються з командами вище — навичка з назвою `plan` чи `compact`
+залишається доступною:
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| Команда                | Що виконується                                                            |
+| ---------------------- | ------------------------------------------------------------------------- |
+| `/skill:<name>`        | Навичка, встановлена в робочому просторі або прикріплена до агента        |
+| `/skill:<repo>:<name>` | Навичка, яку постачає один із репозиторіїв, вивантажених у цьому просторі |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+Навички репозиторію позначено значком того репозиторію, з якого вони походять, бо
+сама назва не каже, чиї домовленості вона відображає, а два репозиторії можуть
+кожен постачати навичку `testing`. Щоб знайти таку навичку, не потрібно вводити
+префікс: введення самої назви навички також збігається із записами з простором
+назв.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+Агент завжди несе лише навички того репозиторію, у якому він працює зараз — див.
+[Навички в межах репозиторію](/uk-UA/керівництво/поняття/модель-агента/#repo-scoped-skills).
+Редактор повідомлень так не обмежений: ви можете викликати навичку будь-якого
+репозиторію, назвавши її.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` і `/todo` перехоплює клієнт, і вони ніколи не зберігаються як
+повідомлення — рядок `/compact` у транскрипті відсунув би межу наступної
+компакції на один хід назад. `/plan` перемикає збережений режим простору, а не
+подорожує як текст. Тож жодна з цих трьох не є «повідомленням, яке ви надсилаєте
+агенту»; не сподівайтеся побачити їх в історії.
 
-## Ask for a plan first
+## Спершу попросіть план
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/uk-UA/керівництво/практичні-посібники/режим-плану/).
+Перед складною зміною перемкніть простір у режим плану за допомогою `/plan`,
+випадаючого списку режимів на панелі інструментів редактора повідомлень або
+Shift+Tab. Тоді агент досліджує в режимі лише для читання й видає типізований
+план, який ви схвалюєте, перш ніж почнеться будь-яка робота. Див.
+[Використовувати режим плану](/uk-UA/керівництво/практичні-посібники/режим-плану/).
 
-## Reach an agent without a dedicated space
+## Дістаньтеся агента без окремого простору
 
-You do not need a space per agent. In any space:
+Вам не потрібен окремий простір для кожного агента. У будь-якому просторі:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/) for how names are
-matched.
+Згаданого агента додають до простору й запускають із контекстом цього простору.
+Про те, як зіставляються імена, див.
+[@-згадувати агентів](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/).
 
-## Related guides
+## Пов’язані практичні посібники
 
-- [Use spaces](/uk-UA/керівництво/практичні-посібники/простори/)
-- [@-mention agents](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/)
-- [Use plan mode](/uk-UA/керівництво/практичні-посібники/режим-плану/)
-- [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/) to do the same from Slack
+- [Використовувати простори](/uk-UA/керівництво/практичні-посібники/простори/)
+- [@-згадувати агентів](/uk-UA/керівництво/практичні-посібники/згадувати-агентів/)
+- [Використовувати режим плану](/uk-UA/керівництво/практичні-посібники/режим-плану/)
+- [Налаштувати інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/), щоб робити те саме зі Slack
 
-## Related concepts
+## Пов’язані поняття
 
-- [Modes](/uk-UA/керівництво/поняття/режими/)
+- [Режими](/uk-UA/керівництво/поняття/режими/)

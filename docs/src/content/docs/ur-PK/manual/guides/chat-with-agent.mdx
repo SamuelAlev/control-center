@@ -1,172 +1,172 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: ایجنٹ سے چیٹ کریں
+description: ایجنٹ کے ساتھ ایک اسپیس بنائیں، اسے کام بھیجیں، چلتے ہوئے اسٹیر کریں اور روکیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+یہ گائیڈ دکھاتی ہے کہ کسی اسپیس میں ایجنٹ کے ساتھ کام کیسے کیا جائے۔
 
-## Create a space
+## اسپیس بنائیں
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. سائیڈبار میں **اسپیسز** پر جائیں
+2. اسپیسز ہیڈنگ کے ساتھ والے **+** بٹن پر کلک کریں
+3. ایک **نام** ٹائپ کریں — یہ لازمی ہے۔ خالی نام مسترد ہو جاتا ہے؛
+   ڈائیلاگ کھلا رہتا ہے
+4. اختیاری طور پر ورک اسپیس سے ایجنٹس شامل کریں
+5. اگر ورک اسپیس میں کوئی ریپو موجود ہو تو ریپو پکر ظاہر ہوتا ہے۔ یہ شروع میں
+   ہر ریپو منتخب لیے ہوتا ہے؛ اسے محدود کریں (بشمول ایک ریپو غیر منتخب کرنے) تاکہ
+   صرف وہی ریپوز رہیں جن کے لیے یہ اسپیس ورک ٹریز بنائے
+6. تصدیق کریں
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center اسپیس کھولتا ہے اور پس منظر میں ہر منتخب ریپو کے لیے ایک copy-on-write
+ورک ٹری بنانا شروع کر دیتا ہے۔
 
-## Send the first message
+## پہلا پیغام بھیجیں
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+کمپوزر میں اپنا پیغام ٹائپ کریں اور Enter دبائیں۔ ایجنٹ ڈسپیچ ہوتا ہے اور اپنا
+جواب اسٹریم کرنا شروع کر دیتا ہے۔
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+اگر اسپیس ابھی تیار ہو رہی ہو تو آپ کا پیغام ضائع ہونے کے بجائے پارک ہو جاتا ہے —
+کمپوزر اسے روکے رکھتا ہے اور ورک ٹریز تیار ہوتے ہی خود بخود بھیج دیتا ہے۔
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+جیسے جیسے ایجنٹ کام کرتا ہے، آپ اس کی باری اسٹریم ہوتی دیکھتے ہیں: استدلال کے حصے،
+ٹول کالز (فائل پڑھنا، لکھنا، shell کمانڈز) اور جوابی متن — سب ایک ہی agent-turn
+پیغام کے اندر۔
 
-## Steer a running agent
+## چلتے ہوئے ایجنٹ کو اسٹیر کریں
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+جب کوئی ایجنٹ کام کر رہا ہو تو عام گفتگویی متن نئی باری قطار میں **نہیں** ڈالتا۔
+وہ کمپوزر کے اوپر والی پٹی میں قطار میں اسٹیرنگ کارڈ بن جاتا ہے اور اگلی باری کی حد
+پر لائیو رن میں انجیکٹ ہو جاتا ہے۔ کوئی ٹوسٹ نہیں آتا — کارڈ ہی فیڈبیک ہے۔
 
-Three things change that behaviour:
+تین چیزیں اس برتاؤ کو بدلتی ہیں:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- جس پیغام میں **@-ذکر** ہو وہ ہمیشہ پیغام کے طور پر بھیجا جاتا ہے، کبھی
+  اسٹیرنگ کے طور پر نہیں
+- جو پیغام **سلیش کمانڈ** سے شروع ہو وہ ہمیشہ اُسی کمانڈ کے طور پر سنبھالا جاتا ہے
+- **منسلکہ** والا پیغام ہمیشہ پیغام کے طور پر بھیجا جاتا ہے — اسٹیرنگ
+  قطار صرف متن کی ہے
+- اگر ہر لائیو رن پہلے ہی ختم ہو چکا ہو تو متن آگے گر کر ایک عام پیغام کے طور پر
+  بھیج دیا جاتا ہے
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[اسٹیرنگ کے لیے بلٹ اِن ہارنس درکار ہے]
+صرف بلٹ اِن Control Center ہارنس رن کے دوران انجیکٹ کرتا ہے۔ Claude Code
+اڈاپٹر پر متن پھر بھی ایک اسٹیرنگ کارڈ کے طور پر قطار میں رہتا ہے؛ رن ختم ہونے پر جو
+کچھ اب بھی قطار میں ہو وہ عام پیغام میں بدل دیا جاتا ہے۔
 :::
 
-## Approve a blocked action
+## بلاک شدہ کارروائی منظور کریں
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+جب کوئی ایجنٹ اُس کارروائی پر پہنچتا ہے جس پر اس کے گارڈریلز گیٹ لگاتے ہیں — کوئی
+تباہ کن کمانڈ، کوئی مراعات یافتہ ٹول — تو سرور **رن بلاک کر دیتا ہے** اور ہر منسلک
+کلائنٹ کو منظوری کی درخواست شائع کرتا ہے۔ اگر وہ گفتگو آپ کے پاس کھلی ہو تو درخواست
+**چیٹ میں**، کمپوزر کے اوپر، اُسی نمبر شدہ آپشن کارڈ کے طور پر ظاہر ہوتی ہے جو
+`ask_user` کے لیے استعمال ہوتا ہے (منع کریں، منظور کریں، اور اختیاری طور پر آٹھ گھنٹے
+کے لیے منظور کریں)۔ کوئی چھوڑنے کا راستہ نہیں: بلاک شدہ ایجنٹ کسی فیصلے کا انتظار
+کر رہا ہوتا ہے۔
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+اگر آپ ایپ میں کسی اور جگہ ہوں تو شیل میں ایک ہمیشہ اوپر رہنے والا پینل پھر بھی
+دکھاتا ہے کہ کیا منتظر ہے، تاکہ آپ اسپیس ڈھونڈنے کے جھنجھٹ کے بغیر ایجنٹ کو اَن بلاک
+کر سکیں۔ جس لمحے اُس اسپیس کی گفتگو اسکرین پر آتی ہے، اوورلے درخواست چھپا دیتا ہے،
+چنانچہ آپ ایک ہی پرامپٹ کا جواب دو بار نہیں دیتے۔
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+کوئی ٹائم آؤٹ نہیں: بلاک شدہ ایجنٹ اُس وقت تک انتظار کرتا ہے جب تک کوئی فیصلہ نہ کرے۔
+وہی درخواست ان باکس کی توجہ پٹی میں اور فون کلائنٹ پر بھی ظاہر ہوتی ہے۔
 
-## Answer an agent's question
+## ایجنٹ کے سوال کا جواب دیں
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+کوئی ایجنٹ جسے کوئی ترجیح، کوئی گم شدہ ضرورت یا کوئی حقیقی دو راہا موڑ درکار ہو،
+**لازماً** `ask_user` کال کرے۔ سوال کو چیٹ پیغام کے طور پر لکھنا باری ختم کر دیتا ہے
+اور آپ کو دوبارہ پرامپٹ کرنا پڑتا ہے۔ یہ ٹول گفتگو میں ایک نمبر شدہ کارڈ دکھاتا ہے
+— آپشنز، اختیاری آزاد متن، یا دونوں — اور رن آپ کے جواب پر انتظار کرتا ہے۔
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+کسی ایک آپشن کو بھیجنے کے لیے اس پر ٹیپ کریں (ہوور پر آخر والا نمبر ایک تیر بن جاتا
+ہے)۔ ملٹی سلیکٹ اور ٹائپ کیے گئے جوابات **جاری رکھیں** (`⌘↵` / `Ctrl↵`) استعمال کرتے
+ہیں۔ **چھوڑیں** ایجنٹ کو بتاتا ہے کہ کوئی مناسب ڈیفالٹ چن لے اور دوبارہ نہ پوچھے۔
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+یہ اوپر والے منظوری کارڈ سے الگ میکانزم ہے: منظوری "کیا میں یہ کر سکتا ہوں؟" ہوتی ہے،
+اور سوال "آپ کی مراد ان میں سے کون سا تھا؟" ہوتا ہے۔ پوچھنا بلٹ اِن ہارنس پر ہر موڈ میں
+دستیاب ہے، بشمول صرف پڑھنے والے موڈز (یہ کچھ تبدیل نہیں کرتا)، اور اسے دانستہ طور پر
+منظوری پرامپٹ میں نہیں لپیٹا جاتا — ایک ڈائیلاگ کے سامنے دوسرا ڈائیلاگ، جب کوئی
+منظوری دینے والا منسلک نہ ہو، بند حالت میں ناکام ہو جائے گا۔ جس رن کے پاس دکھانے کو
+کوئی گفتگو ہی نہ ہو، اسے یہ ٹول ملتا ہی نہیں۔
 
-## Stop an agent
+## ایجنٹ روکیں
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+جب رنز لائیو ہوں تو کمپوزر کا بھیجنے والا بٹن **روکیں** بٹن بن جاتا ہے۔ کمپوزر صاف
+کریں اور اسے دبائیں — یہ اُس گفتگو میں چل رہے ہر ایجنٹ کو روک دیتا ہے۔
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+اسپیس ہیڈر میں کوئی اسٹاپ کنٹرول نہیں اور اس کے لیے کوئی کی بورڈ شارٹ کٹ بھی نہیں۔
+جب کئی رنز لائیو ہوں اور صرف ایک روکنا ہو تو اُس رن کا activity ٹیب کھولیں — اس کے
+ہیڈر میں رن تک محدود pause/resume اور اسٹاپ ہوتا ہے (اسٹاپ آپ سے تصدیق مانگتا ہے)۔
+**آبزرویبلٹی → لائیو** ورک اسپیس میں چل رہے ہر ایجنٹ کو اُسی کنٹرول کے ساتھ فہرست
+کرتا ہے۔
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+جو رن روک دیا جائے اُس پر روکے جانے کا نشان لگ جاتا ہے۔ دوبارہ ڈسپیچ کرنے کے لیے نیا پیغام بھیجیں۔
 
-## Use slash commands
+## سلیش کمانڈز استعمال کریں
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+کمانڈ فہرست دیکھنے کے لیے کمپوزر میں `/` ٹائپ کریں۔ وہ کمانڈز جو گفتگو کے برتاؤ کو
+بدلتی ہیں:
 
-| Command        | What it does                                                                                                                         |
+| کمانڈ          | یہ کیا کرتی ہے                                                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | اسپیس کو پلان موڈ میں بدل دیتی ہے۔ اکیلا `/plan` صرف موڈ تیار کرتا ہے؛ `/plan <request>` اسے تیار کر کے باقی حصہ آپ کے پیغام کے طور پر بھیج دیتا ہے |
+| `/goal <text>` | گفتگو کا جاری کام کا ہدف ریکارڈ کرتی ہے                                                                                              |
+| `/loop <text>` | کسی کام پر اُس کے مکمل ہونے تک تکرار کرتی ہے                                                                                          |
+| `/compact`     | پرانی تاریخ کو ایک اینکر شدہ خلاصے میں سمیٹ کر کمپیکٹ شدہ کانٹیکسٹ پر جاری رکھتی ہے                                                  |
+| `/todo …`      | اِس گفتگو کی محفوظ todo فہرست دیکھتی اور ترمیم کرتی ہے                                                                                |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+مہارتیں اسی فہرست میں اپنے `skill:` نام فضا کے تحت ظاہر ہوتی ہیں، چنانچہ وہ اوپر کی
+کمانڈز سے کبھی نہیں ٹکراتیں — `plan` یا `compact` نامی مہارت قابلِ رسائی رہتی ہے:
 
-| Command                     | What it runs                                                       |
+| کمانڈ                       | یہ کیا چلاتی ہے                                                    |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | ورک اسپیس میں انسٹال شدہ، یا ایجنٹ کے ساتھ منسلک ایک مہارت            |
+| `/skill:<repo>:<name>`      | اِس اسپیس میں چیک آؤٹ شدہ ریپوز میں سے کسی ایک کی بھیجی ہوئی مہارت     |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+ریپو کی مہارتوں پر وہ ریپو بیج لگا ہوتا ہے جہاں سے وہ آئیں، کیونکہ اکیلے نام سے یہ
+ظاہر نہیں ہوتا کہ وہ کس سروس کے معاہدوں کو مجسم کرتی ہیں اور دو ریپوز میں سے ہر ایک
+`testing` بھیج سکتا ہے۔ کسی مہارت کو ڈھونڈنے کے لیے prefix ٹائپ کرنا ضروری نہیں: خالی
+مہارت کا نام ٹائپ کرنے سے نام فضا والی اندراجات بھی مماثل ہوتی ہیں۔
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+ایجنٹ کے پاس کبھی صرف اُسی ریپو کی مہارتیں ہوتی ہیں جس میں وہ اس وقت کام کر رہا ہو —
+[ریپو تک محدود مہارتیں](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills) دیکھیں۔
+کمپوزر اُس طرح محدود نہیں: آپ نام لے کر کسی بھی ریپو کی مہارت استعمال کر سکتے ہیں۔
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` اور `/todo` کو کلائنٹ روک لیتا ہے اور وہ کبھی پیغامات کے طور پر محفوظ نہیں
+ہوتے — ٹرانسکرپٹ میں `/compact` کی ایک سطر اگلی کمپیکشن کے کٹ کو ایک باری پیچھے دھکیل
+دے گی۔ `/plan` متن کے طور پر سفر کرنے کے بجائے اسپیس کا محفوظ موڈ پلٹ دیتا ہے۔ چنانچہ
+تینوں میں سے کوئی بھی "وہ پیغام جو آپ ایجنٹ کو بھیجتے ہیں" نہیں ہے؛ تاریخ میں انہیں
+دیکھنے کی توقع نہ رکھیں۔
 
-## Ask for a plan first
+## پہلے پلان طلب کریں
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/).
+کسی پیچیدہ تبدیلی سے پہلے اسپیس کو `/plan`، کمپوزر ٹول بار کے موڈ ڈراپ ڈاؤن، یا
+Shift+Tab سے پلان موڈ میں بدلیں۔ پھر ایجنٹ صرف پڑھتے ہوئے تحقیق کرتا ہے اور ایک ٹائپ
+شدہ پلان پیش کرتا ہے جسے آپ کام شروع ہونے سے پہلے منظور کرتے ہیں۔
+[پلان موڈ استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/) دیکھیں۔
 
-## Reach an agent without a dedicated space
+## مخصوص اسپیس کے بغیر ایجنٹ تک پہنچیں
 
-You do not need a space per agent. In any space:
+آپ کو ہر ایجنٹ کے لیے الگ اسپیس کی ضرورت نہیں۔ کسی بھی اسپیس میں:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/) for how names are
-matched.
+ذکر کردہ ایجنٹ اسپیس میں شامل کر دیا جاتا ہے اور اُس اسپیس کے کانٹیکسٹ کے ساتھ
+ڈسپیچ کیا جاتا ہے۔ نام کیسے مماثل کیے جاتے ہیں یہ جاننے کے لیے
+[ایجنٹس کا @-ذکر](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/) دیکھیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Use spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
-- [@-mention agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/)
-- [Use plan mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/)
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/) to do the same from Slack
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
+- [ایجنٹس کا @-ذکر](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹس-کا-ذکر/)
+- [پلان موڈ استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پلان-موڈ/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/) تاکہ یہی کام Slack سے بھی کریں
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)

@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: ایجنٹ بنائیں اور کنفیگر کریں
+description: ورک اسپیس میں ایجنٹ شامل کریں، اسے اڈاپٹر، ماڈل، مہارتیں اور اجازتیں دیں اور تصدیق کریں کہ یہ چلتا ہے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+یہ گائیڈ دکھاتی ہے کہ کسی ورک اسپیس میں ایجنٹ کیسے شامل کریں اور اسے کس طرح کنفیگر کریں کہ وہ واقعی چل سکے۔
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+ہر ورک اسپیس میں پانچ ایجنٹ پہلے سے موجود ہوتے ہیں — ایک CEO کے علاوہ `qa`، `architect`، `engineer` اور `librarian` — یعنی عام طور پر کوئی ایجنٹ کنفیگر کرنے سے پہلے ہی آپ کے پاس ایجنٹ موجود ہوتے ہیں۔ نیچے دیے گئے مراحل پہلے سے موجود ایجنٹ اور نئے ایجنٹ، دونوں پر یکساں لاگو ہوتے ہیں۔
 
-## Before you start
+## شروع کرنے سے پہلے
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- آپ ایک ورک اسپیس کے اندر ہیں۔ ساری سطح **ترتیبات → ورک اسپیس → ایجنٹس** (`/settings/workspace/agents`) پر موجود ہے۔
+- ایجنٹ کو بیک اینڈ درکار ہوگا۔ یا تو **ترتیبات → سرور → ماڈل فراہم کنندگان** کے تحت بلٹ اِن ہارنس کے لیے کوئی فراہم کنندہ جوڑیں، یا `cc_server` کی میزبانی کرنے والی مشین پر Claude Code CLI انسٹال کریں۔
+- اگر آپ چاہتے ہیں کہ ایجنٹ کے پاس مہارتیں ہوں تو پہلے انہیں **ترتیبات → ورک اسپیس → مہارتیں** کے تحت انسٹال کریں۔ ایجنٹ فارم صرف اُن مہارتوں کو ٹوگل کرنے دیتا ہے جو ورک اسپیس میں پہلے سے موجود ہوں۔
 
-## Add the agent
+## ایجنٹ شامل کریں
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں۔
+2. **نیا ایجنٹ** پر کلک کریں۔
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+کوئی ڈائیلاگ اور کوئی رول چننے والا نہیں ہوتا۔ “بے نام ایجنٹ” کے نام سے ایجنٹ فوراً بنا دیا جاتا ہے اور دائیں طرف کے تفصیلی پین میں منتخب ہو جاتا ہے۔
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+اب آپ کو بائیں طرف روسٹر میں “بے نام ایجنٹ” نظر آنا چاہیے، ساتھ ہی اس کے تفصیلی پین کا **ترتیبات** ٹیب کھلا ہوگا اور **نام** فیلڈ میں “بے نام ایجنٹ” درج ہوگا۔
 
-## Name it
+## اس کا نام رکھیں
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **نام** — وہ مختصر شناخت کنندہ جو @-ذکر میں استعمال ہوتا ہے، مثلاً `alice`۔ ذکر کی پارسنگ `@` کے بعد آنے والے ورڈ کریکٹرز سے مماثلت رکھتی ہے، اس لیے ہائفن، ڈاٹ یا اسپیس پر مشتمل نام کا ذکر کبھی نہیں ہو سکتا۔
+- **عنوان** — انسان کے پڑھنے کے قابل لیبل، مثلاً “سینئر کوڈر”۔
+- **سسٹم پرامپٹ** — اختیاری اضافی ہدایات، جو «ایجنٹ کی ہدایات» کے سیکشن کے طور پر شامل کی جاتی ہیں؛ یہ تیار شدہ پرامپٹ کے باقی حصے کی جگہ نہیں لیتیں۔
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+فارم کے نیچے **تبدیلیاں محفوظ کریں** پر کلک کریں۔ اس صفحے کی ہر فیلڈ اسی ایک بٹن سے محفوظ ہوتی ہے۔
 
-## Give it an adapter and a model
+## اسے اڈاپٹر اور ماڈل دیں
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**اڈاپٹر** ڈراپ ڈاؤن میں وہ رنرز درج ہوتے ہیں جو سرور ہوسٹ پر واقعی موجود ہیں۔ بلٹ اِن اڈاپٹر ہمیشہ مل جاتا ہے (وہ خود سرور ہے)۔ Claude Code صرف اُس وقت ظاہر ہوتا ہے جب اُس ہوسٹ پر اس کی CLI کا پتہ چل جائے:
 
-| Adapter                   | Backend                                     |
+| اڈاپٹر                   | بیک اینڈ                                     |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | ان پروسیس ایجنٹ لوپ — کوئی بیرونی CLI نہیں   |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+صرف بلٹ اِن اڈاپٹر ہی موڈز، اسٹیرنگ، توقف اور دوبارہ آغاز، مکمل ہونے کے معاہدوں اور سب ایجنٹس کو نافذ کرتا ہے۔ Claude Code ان میں سے کوئی چیز نہیں دیتا۔ Cursor، Codex اور دیگر ماڈل فراہم کنندگان الگ رنرز کے طور پر نہیں بلکہ بلٹ اِن اڈاپٹر کے ساتھ منسلک ہوتے ہیں۔
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[خالی اڈاپٹر کا مطلب بلٹ اِن لوپ ہے]
+جس ایجنٹ کا اڈاپٹر غیر مقرر ہو، اسے **Control Center (built-in)** یعنی سرور کے اندر موجود لوپ پر بھیجا جاتا ہے، اس لیے ہوسٹ پر کچھ انسٹال کرنے کی ضرورت نہیں۔ ماڈل بھی غیر مقرر ہونے پر یہ اپنے ڈیفالٹ کے لیے Anthropic سے پوچھتا ہے، یعنی مکمل طور پر غیر مقرر ایجنٹ صرف اُس صورت میں چلتا ہے جب آپ نے Anthropic اکاؤنٹ جوڑا ہو۔ پہلے سے موجود ماہرین ان میں سے کوئی چیز لے کر نہیں آتے؛ جو بھی ایجنٹ آپ استعمال کرنا چاہیں، اُس پر دونوں مقرر کریں۔
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**ماڈل** ڈراپ ڈاؤن آپ کے منتخب کردہ اڈاپٹر کے مطابق چلتا ہے۔ بلٹ اِن اڈاپٹر کے لیے فہرست براہِ راست اُن فراہم کنندگان سے آتی ہے جو آپ نے **ترتیبات → سرور → ماڈل فراہم کنندگان** کے تحت جوڑے ہیں، اس لیے جس فراہم کنندہ کے پاس کوئی محفوظ کریڈنشل نہ ہو، وہ صفر ماڈلز فراہم کرتا ہے۔
 
-## Add skills
+## مہارتیں شامل کریں
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**مہارتیں** اس ورک اسپیس میں انسٹال شدہ مہارت بنڈلز کے اوپر ایک چپ پکر ہے۔ کسی چپ کو ٹوگل کرنے کے لیے اس پر ٹیپ کریں؛ چیک کا نشان منتخب شدہ مہارتوں کو ظاہر کرتا ہے۔ اگر ورک اسپیس میں کوئی مہارت نہ ہو تو فیلڈ یہ دکھاتی ہے: “کوئی مہارت دستیاب نہیں۔ پہلے ترتیبات → مہارتیں میں مہارتیں بنائیں۔”
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills).
+آپ یہاں کسی ریپو کی اپنی مہارتیں منتخب نہیں کرتے۔ جو ریپو انہیں اپنے ساتھ بھیجتا ہے (`.agents/skills/`، `.claude/skills/` یا `.opencode/skills/` میں)، وہ انہیں خودکار طور پر اُس ایجنٹ کو فراہم کرتا ہے جو اُس ریپو میں کام کر رہا ہو، اور جب وہ کسی دوسرے ریپو میں منتقل ہو تو وہ بدل جاتی ہیں — دیکھیں [ریپو کے دائرہ کار کی مہارتیں](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/#repo-scoped-skills)۔
 
-## Set the reporting line and persona
+## رپورٹنگ لائن اور شخصیت مقرر کریں
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **رپورٹ کرتا ہے** — نام کے ذریعے کوئی دوسرا ایجنٹ چنیں۔ یہ وہ رپورٹنگ ٹری بناتا ہے جو صفحے کے ہیڈر میں **آرگ چارٹ** بٹن دکھاتا ہے۔ یہ وہ روسٹر نہیں ہے جو ٹیم لیڈر تفویض کرتے وقت استعمال کرتا ہے — وہ ٹیم کے اراکین اور ان کی مہارتوں سے آتا ہے۔
+- **شخصیت** — آزاد متن جو لہجے اور رویے کو تشکیل دیتا ہے، مثلاً: “سادہ، پڑھنے کے قابل حل پسند کرتا ہے۔ تمام نئے کوڈ کے لیے ٹیسٹ لکھتا ہے۔”
 
-## Tune the run
+## رن کو ایڈجسٹ کریں
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **ریزننگ کا زور** — اختیارات منتخب ماڈل کی اپنی شائع شدہ سطحوں سے آتے ہیں: کم / درمیانہ / زیادہ، اور OpenAI طرز کے ماڈلز پر Extra High نیز Claude طرز کے ماڈلز پر Extra High + Max۔ جب منتخب ماڈل سوچ کی کوئی سطح ظاہر نہ کرے تو یہ فیلڈ مکمل طور پر چھپ جاتی ہے اور یہ ماڈل کے اپنے ڈیفالٹ پر رہتی ہے۔
+- **سیاق ونڈو سائز** — جب بھی آپ ماڈل بدلیں، یہ ماڈل کی سیاق ونڈو سے پیشگی بھری جاتی ہے، ساتھ ہی ماڈل ڈیفالٹ، 200k، 500k اور 1M کے لیے ایک ٹیپ والی چپس ہوتی ہیں۔ ماڈل چننے کے بعد آپ کی ٹائپ کردہ قدر اگلے ماڈل تبدیلی تک غالب رہتی ہے۔
+- **خاموشی ٹائم آؤٹ (منٹ)** — اتنی دیر بغیر آؤٹ پٹ گزرنے پر رن ختم کر دیں۔ فی موڈ ڈیفالٹ استعمال کرنے کے لیے اسے خالی چھوڑ دیں۔
 
-## Grant permissions
+## اجازتیں دیں
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**سینڈ باکس اجازتیں** “ورک اسپیس ڈیفالٹ استعمال کریں” پر شروع ہوتی ہیں۔ اس ایجنٹ کے لیے انہیں مقرر کرنے کے لیے سوئچ آن کریں، پھر ٹوگل کریں:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **git push کی اجازت دیں** — وہ GitHub ٹوکن انجیکٹ کرتا ہے جو ایجنٹ کو پش کرنے کے لیے درکار ہوتا ہے
+- **GitHub API کالز کی اجازت دیں** — ایجنٹ کو PRs، ایشوز اور ریپو میٹاڈیٹا پڑھنے دیتا ہے
+- **ٹکٹنگ API کالز کی اجازت دیں** — ٹکٹنگ فراہم کنندہ کی کلید انجیکٹ کرتا ہے
+- **عام نیٹ ورک رسائی کی اجازت دیں** — بلٹ اِن ہارنس کے `web_fetch` اور `web_search` ٹولز بھی فعال کرتا ہے
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+ہر ٹوگل کو رن کے آغاز پر کریڈنشل بروکر جانچتا ہے: جو قابلیت بند ہو، اس کا سیدھا مطلب یہ ہے کہ متعلقہ ٹوکن رن کے ماحول میں کبھی جاری نہیں کیا جاتا۔
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[ورک اسپیس ڈیفالٹ کا مطلب سرور کا محتاط سیٹ ہے]
+“ورک اسپیس ڈیفالٹ استعمال کریں” پر چھوڑا گیا ایجنٹ git push، GitHub API اور ٹکٹنگ سب **بند** کے ساتھ چلتا ہے اور نیٹ ورک **آن** ہوتا ہے۔ ترتیبات → سرور → تشخیص اور پرائیویسی کے تحت دکھائے گئے قابلیت ڈیفالٹس کلائنٹ کی طرف کی ترجیح ہیں۔ اگر آپ چاہتے ہیں کہ کوئی ایجنٹ پش کرے یا PRs کھولے تو سوئچ آن کریں اور قابلیتیں واضح طور پر دیں۔
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) for the full set of boundaries.
+یہ قابلیتیں کریڈنشلز اور ہارنس ٹولز کو گیٹ کرتی ہیں، جو OS سینڈ باکس سے الگ پرت ہے۔ جہاں ایسا سینڈ باکس موجود ہو، `cc_server` ایجنٹ رنز کو ہوسٹ کے سینڈ باکس میں لپیٹ دیتا ہے — Windows کا کوئی نیٹو بیک اینڈ نہیں، اور Linux اور WSL2 کو `bwrap` اور `socat` درکار ہوتے ہیں۔ تمام سرحدوں کا مکمل سیٹ دیکھنے کے لیے [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) دیکھیں۔
 :::
 
-## Verify it runs
+## تصدیق کریں کہ یہ چلتا ہے
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. **ترتیبات → سرور → ماڈل فراہم کنندگان** کھولیں اور تصدیق کریں کہ آپ کے منتخب کردہ اڈاپٹر نے “نہیں ملا” کے بجائے کوئی انسٹال شدہ ورژن بتایا ہو۔ دوبارہ جانچنے کے لیے **تازہ کریں** پر کلک کریں — جانچ اُس مشین پر چلتی ہے جو `cc_server` کی میزبانی کرتی ہے، نہ کہ اُس مشین پر جو آپ دیکھ رہے ہیں۔
+2. ایجنٹ کے ساتھ کوئی اسپیس کھولیں اور اسے پیغام بھیجیں، یا کسی موجودہ اسپیس میں اس کا @-ذکر کریں۔
+3. **ترتیبات → ورک اسپیس → ایجنٹس** پر واپس آئیں، ایجنٹ منتخب کریں اور اس کا **لاگز** ٹیب کھولیں۔ ایک رن نظر آنا چاہیے جس میں اسٹیٹس بیج، مدت، شروع ہونے کا وقت اور استعمال شدہ اڈاپٹر ہو۔ **دیکھیں** اُس رن کا ایونٹ اسٹریم کھولتا ہے۔
 
-If no run appears at all, work through [Run agent diagnostics](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/).
+اگر کوئی رن بالکل نظر نہ آئے تو [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/) پر عمل کریں۔
 
-## Delete an agent
+## ایجنٹ حذف کریں
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+روسٹر میں اسے منتخب کریں۔ **ترتیبات** ٹیب پر، فارم کے نیچے **خطرناک زون** تک اسکرول کریں اور **حذف کریں** پر کلک کریں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run agents in parallel](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
-- [Build an agent team](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/)
-- [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
-- [Run agent diagnostics](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
-- [Agent configuration reference](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/)
+- [ایجنٹس متوازی چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/متوازی-ایجنٹس/)
+- [ایجنٹ ٹیم بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/)
+- [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
+- [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
+- [ایجنٹ کنفیگریشن](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-کنفیگریشن/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)

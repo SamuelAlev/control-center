@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: İşleri projelerle düzenleme
+description: Biletleri kenar çubuğundan projelerde gruplayın, ilerlemeyi izleyin ve bir proje bittiğinde arşivleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/projeler
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Proje, ortak bir hedefe yönelik biletlerin çalışma alanına kapsanmış bir
+gruplamasıdır. Projeler yalnızca Control Center'a özeldir — Linear gibi harici
+bir sağlayıcıyla hiçbir zaman eşitlenmezler.
 
-## Create a project
+## Proje oluşturma
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Çalışma alanı kenar çubuğundaki **Biletler** grubunu genişletin. **Tüm
+   biletler**'i, arşivlenmemiş her proje için bir satır ve ardından **Yeni
+   proje**'yi listeler.
+2. **Yeni proje**'ye tıklayın.
+3. **Proje adı**'nı, isteğe bağlı **Açıklama**'yı doldurun ve bir **Renk**
+   seçin.
+4. **Proje oluştur**'a basın.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Yeni projenin genel bakışına gelirsiniz ve proje, **Biletler** altında bir
+kenar çubuğu satırı olarak görünür.
 
-## Add tickets to a project
+## Bir projeye bilet ekleme
 
-Project is a single-ticket field, set in either of two places:
+Proje, tek bir bilete ait bir alandır ve iki yerden birinde ayarlanır:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Bileti açın ve özellikler panelinden **Proje**'yi ayarlayın.
+- Listedeki bilete sağ tıklayın ve **Proje** alt menüsünü kullanın.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Özellikler panelindeki seçici ayrıca **Yeni proje**'yi sunar; böylece bir bileti
+anında oluşturduğunuz bir projeye yerleştirebilirsiniz. **Proje yok** alanı
+temizler.
 
-A ticket belongs to at most one project.
+Bir bilet en fazla bir projeye ait olur.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Proje bir toplu işlem değildir]
+Birkaç bilet seçtiğinizde görünen yüzen çubuk; durum, öncelik, atanan kişi,
+etiketler ve silmeyi kapsar. İçinde proje çipi yoktur, dolayısıyla çok sayıda
+bileti yerleştirmek bunları tek tek yapmak anlamına gelir.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Projeden de başlayabilirsiniz: proje genel bakışındaki **Yeni bilet** bir bilet
+oluşturur ve onu oraya yerleştirir.
 
-## Read project progress
+## Proje ilerlemesini okuma
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+Bir projeyi kenar çubuğu satırından açın ya da
+`/workspaces/<workspace-id>/projects/<project-id>` adresine gidin.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Genel bakış; projenin simgesini ve adını, bir durum rozetini, açıklamayı ve
+tamamlanan/toplam ilerleme çubuğunu gösterir. Altında, projenin biletleri
+duruma göre gruplanır.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Başka hiçbir şeyi toplamaz — atanan kişi dökümü ve öncelik dağılımı yoktur.
+Bunlar için ana bilet listesini filtreleyin.
 
-## Change project status
+## Proje durumunu değiştirme
 
-Projects have three states:
+Projelerin üç durumu vardır:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Durum          | Anlam             |
+| -------------- | ----------------- |
+| **Aktif**      | İş sürüyor        |
+| **Tamamlandı** | Tüm işler bitti   |
+| **Arşivlendi** | Tarihsel referans |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Proje başlığındaki **⋯** menüsünü kullanın. **Projeyi düzenle**, **Tamamlandı
+olarak işaretle** / **Aktif olarak işaretle**, **Arşivle** / **Geri yükle** ve
+**Projeyi sil** seçeneklerini sunar.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Arşivlemek, projeyi kenar çubuğu listesinden ve bilet seçicilerinden gizler.
+Geri alınabilir — **Geri yükle** projeyi yeniden aktif hâle getirir — ancak
+arşivlendiği sürece projeye yalnızca URL üzerinden ulaşılabilir.
 
-## Projects created for you
+## Sizin için oluşturulan projeler
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/).
+Bir orkestrasyonu onaylamak bir proje oluşturur ve üst bileti, elle
+yerleştirdiklerinizin yanı sıra onun altına yerleştirir. Üretilen iş öğeleri
+bilet satırları değil, pipeline adımlarıdır; bu yüzden proje panosunda
+görünmezler. Otomatik tek yol budur: hiçbir pipeline düğümü bilet oluşturmaz,
+dolayısıyla bir pipeline bir projeyi dolduramaz. Bkz.
+[Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Projeler bir operatör yüzeyidir]
+Projeleri uygulamada oluşturun, listeleyin, güncelleyin ve silin. Ajanların
+proje araçları yoktur.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
-- [Delegate work to agents](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/)
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Tickets](/tr-TR/kilavuz/kavramlar/biletler/)
+- [Biletler ve devretme](/tr-TR/kilavuz/kavramlar/biletler/)

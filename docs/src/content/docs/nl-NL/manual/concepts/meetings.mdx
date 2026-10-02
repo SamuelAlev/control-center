@@ -1,213 +1,230 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Vergaderingen en transcriptie
+description: Hoe Control Center een gesprek opneemt, op de server transcribeert en diariseert, en waar de ene stap zit die de host verlaat.
 slug: nl-NL/handleiding/concepten/vergaderingen
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center kan een gesprek opnemen en je een net verslag teruggeven — een
+samenvatting, actiepunten en beslissingen — waarbij spraakherkenning en
+sprekersscheiding op je eigen hardware draaien. Denk aan Granola, maar dan
+self-hosted en verweven met dezelfde werkruimte waarin je agenten leven.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Opnemen vereist een spraakmodel en een herstart van de server]
+Opnemen en dicteren beginnen pas nadat er een spraakmodel (ASR) op schijf staat
+**en** de server opnieuw is gestart. Een normale boot force-installeert het
+geselecteerde model (standaard Parakeet TDT 0.6B v3) op de achtergrond, maar de
+server bepaalt de paden naar spraakmodellen precies één keer, vlak bij het begin
+van de boot — minuten voordat die download klaar kan zijn. Start `cc_server`
+opnieuw zodra het model als geïnstalleerd wordt gemeld. Wil je een andere build,
+gebruik dan Instellingen → Server → Spraak- en vergadermodellen — dat vereist
+ook een herstart.
 :::
 
-## What a meeting is
+## Wat een vergadering is
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/nl-NL/handleiding/concepten/agenda/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Een **vergadering** is een opgenomen, getranscribeerde sessie. Dat is _niet_
+hetzelfde als een [agenda-afspraak](/nl-NL/handleiding/concepten/agenda/): een
+afspraak is een geplande verplichting die uit Google wordt gesynchroniseerd,
+terwijl een vergadering iets is dat je daadwerkelijk hebt opgenomen. De twee
+kunnen gekoppeld worden, want je kunt vanuit een afspraak een opname starten,
+maar het blijven afzonderlijke records.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Elke vergadering is werkruimtegebonden, net als alles in Control Center.
+Vergaderingen die in de ene werkruimte zijn opgenomen, duiken nooit op in een
+andere.
 
-## Where the work happens
+## Waar het werk gebeurt
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+"On-device" is het juiste instinct maar het verkeerde woord. De client vangt
+audio op en streamt 16 kHz PCM16-frames naar de **machine waarop `cc_server`
+draait**. Die host doet al het overige: hij schrijft de WAV's per kanaal onder
+`<dataDir>/meetings/<meetingId>/`, transcribeert in een worker-isolate, filtert
+echo en diariseert achteraf. Op een standalone desktop is die host dezelfde
+machine. Wijs je naar een externe server, dan is dat niet zo — dus "er verlaat
+niets mijn laptop" geldt alleen als de server je laptop is.
 
-There is one further exception and it is the important one.
+Er is nog één uitzondering, en dat is de belangrijkste.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[De samenvatting verlaat de host]
+Het transcript en je notities worden naar de modelaanbieder gestuurd waartegen
+de samenvattende agent is geconfigureerd. Bij een cloudaanbieder betekent dat
+dat het volledige transcript naar de API van die aanbieder gaat. Als een
+transcript de host niet mag verlaten, wijs de samenvattende agent dan naar een
+lokaal endpoint (Ollama, LM Studio of een andere lokale server).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Alles vóór de samenvatting — opname, transcriptie, echo-onderdrukking,
+diarisatie, matching van stemafdrukken — draait op de server zonder
+netwerkverkeer.
 
-## Which models ship
+## Welke modellen worden meegeleverd
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+De modellen voor **embedding, diarisatie en spraak (ASR)** worden bij de eerste
+boot force-geïnstalleerd (overgeslagen bij een demo), zodat sprekersscheiding en
+opnemen werken zonder dat je naar de instellingen hoeft. ASR is nog steeds
+**selecteerbaar** — het is enkele honderden megabytes groot, en er worden vier
+builds meegeleverd in de keuzelijst. Spraak vereist na die eerste download nog
+één herstart, omdat de transcriber zijn model bepaalt voordat de download klaar
+kan zijn.
 
-The four picker entries, differing in size, language coverage and accuracy:
+De vier opties in de keuzelijst, met verschillen in grootte, taaldekking en
+nauwkeurigheid:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — meertalig, de aanbevolen standaard (~600 MB)
+- Parakeet TDT 0.6B v2 — Engels (~480 MB)
+- Whisper large-v3-turbo — meertalig (~626 MB)
+- Whisper base.en — alleen Engels, de kleine historische standaard (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Modellen zijn de enige artefacten die de server tijdens runtime ophaalt; elke
+native bibliotheek wordt meegeleverd in de bundel.
 
-## How capture works
+## Hoe het opnemen werkt
 
-A meeting records **two audio channels at once**:
+Een vergadering neemt **twee audiokanalen tegelijk** op:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Jij ("me")**: je microfoon.
+- **Zij ("them")**: de audio-uitvoer van de vergadering, opgevangen via een
+  loopback zonder driver — Core Audio process/device-taps op macOS,
+  WASAPI-loopback op Windows, een PipeWire-/PulseAudio-monitor op Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Omdat de twee kanalen apart worden opgevangen, is het transcript vanaf het
+begin aan sprekers toegewezen: jouw woorden krijgen het label `me`, iedereen in
+het gesprek krijgt het label `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Je eigen stem lekt vanuit de systeemuitvoer terug naar de microfoon en zou
+anders twee keer worden getranscribeerd. Twee filters voorkomen dat. **AEC3 op
+signaalniveau draait bij elke opname in externe modus en is vereist** — als de
+native AEC-bibliotheek niet kan laden, weigert de opname te starten in plaats
+van stil een met echo vervuilde microfoon te streamen. (De persoonlijke modus
+heeft geen referentie aan de andere kant om tegen te onderdrukken, dus daar laat
+AEC de audio ongewijzigd door.) Daarbovenop draait op elk platform een
+tekstfilter voor echo aan de hostzijde.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Alle microfoonverwerking op OS-niveau is bewust uitgeschakeld. Het inschakelen
+van de eigen echo-onderdrukking of automatische versterking van het platform op
+macOS schakelt de microfoon over op Voice Processing I/O, wat in deze build
+zowel de microfoon _als_ de systeemaudiotap om zeep hielp.
 
-## Transcription and diarization
+## Transcriptie en diarisatie
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Terwijl je opneemt, wordt audio in **rollende vensters** gedecodeerd — afgekapt
+bij een korte stilte aan het einde, of op een maximale vensterlengte — buiten de
+UI-thread. Elk venster wordt een aan een spreker gekoppeld transcriptsegment met
+offsets in milliseconden.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Vensters die nooit boven een RMS-drempel uitkwamen, worden overgeslagen
+**zonder te worden gedecodeerd**, omdat een spraakmodel stilte weergeeft als
+gehallucineerde non-speech-tokens en het decoderen verspilde CPU is. De
+praktische consequentie: een aanhoudend zeer stille spreker levert geen
+transcript op. Komt iemand met niets terug, controleer dan het ingangsniveau
+voordat je het model de schuld geeft.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Nadat je stopt, draait **diarisatie** offline over de opname en splitst het
+externe kanaal op in afzonderlijke sprekers (`Person 1`, `Person 2`, …) die je
+kunt hernoemen. Het aantal sprekers wordt afgeleid uit een clusterdrempel, niet
+uit een aantal dat je zelf instelt — dus het is een drempelartefact en een
+stille of overlappende spreker kan bij een buur worden samengevoegd. Het
+transcript wordt weergegeven als regels `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Stemprofielen
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Een spreker hernoemen doet meer dan één transcript van een label voorzien.
+Control Center kan de stemafdruk van de spreker opslaan als een **stemprofiel**,
+zodat het die persoon in toekomstige vergaderingen automatisch herkent. Wanneer
+je een gediariseerde spreker een naam geeft, wordt gevraagd of je de stemafdruk
+wilt opslaan; doe je dat, dan wordt die verwerkt in een doorlopend centroid voor
+die naam en met nieuwe sprekers vergeleken op cosinusgelijkenis, zodat dezelfde
+persoon de volgende keer met zijn naam opduikt zonder dat je hem opnieuw labelt.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Stemprofielen zijn werkruimtegebonden en overschrijden de grens nooit. Beheer ze
+via **Instellingen → Werkruimte → Vergaderingen**. Een spreker hernoemen die
+eerder werd opgeslagen, schrijft de oude naam uit en biedt aan de nieuwe naam in
+te schrijven; een profiel verwijderen haalt de opgeslagen stemafdruk weg, maar
+laat namen die al op eerdere vergaderingen zijn toegepast intact.
 
-## The summary pipeline
+## De samenvattingspipeline
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/nl-NL/handleiding/concepten/domeingebeurtenissen/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Wanneer een opname stopt, publiceert de server een `MeetingRecordingStopped`
+[domeingebeurtenis](/nl-NL/handleiding/concepten/domeingebeurtenissen/). Het
+ingebouwde pipeline-sjabloon **`meeting_summary`** wordt door die gebeurtenis
+getriggerd. De recorder wacht er niet op; de vergadering doorloopt simpelweg
+zijn statuslevenscyclus:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+De samenvattingsagent ontvangt de titel, je ruwe live-notities en het
+transcript, en geeft **gestructureerde JSON** terug. Welke secties hij schrijft,
+wordt bepaald door het **actieve sjabloon voor vergadernotities** van de
+werkruimte (Instellingen → Werkruimte → Vergaderingen); het actieve sjabloon
+geldt voor nieuwe en opnieuw uitgevoerde samenvattingen. De persist-stappen van
+de pipeline schrijven die JSON vervolgens naar afzonderlijke rijen:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` en `summary` → de notities van de vergadering
+- elk actiepunt → een rij `MeetingActionItem` (inhoud, eigenaar, optionele ticketkoppeling)
+- elke beslissing → een rij `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Actiepunten en beslissingen worden **nooit** uit vrije markdown gehaald, alleen
+uit de gestructureerde arrays van de agent. Als een run geen gestructureerde
+uitvoer oplevert, worden de persist-stappen overgeslagen en blijft het ruwe
+transcript als fallback bewaard, zodat je het record nooit kwijtraakt. Niets in
+de pipeline markeert de vergadering als `done` — dat doet één enkele reconciler
+op basis van de terminale gebeurtenis van de run, zodat een andere stap die
+faalt geen halfgeschreven vergadering kan achterlaten die al klaar lijkt.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/nl-NL/handleiding/gidsen/mcp-server/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agenten kunnen je vergaderingen niet lezen]
+Er zijn geen MCP-tools voor vergaderingen of de agenda. Een agent die via
+[MCP](/nl-NL/handleiding/gidsen/mcp-server/) is verbonden, kan geen vergaderingen
+opsommen, geen transcript lezen en geen actiepunten en beslissingen zien — die
+gegevens bereiken menselijke clients alleen via RPC. Beslissingen bereiken
+agenten wel indirect, als geheugenfeiten in het domein `decisions`.
 :::
 
-## Where meetings show up
+## Waar vergaderingen verschijnen
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Oppervlak              | Wat het toont                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `/meetings`            | De lijst met vergaderingen, met aantallen actiepunten en beslissingen                |
+| `/meetings/record`     | De live-opname-HUD: je notities aan de ene kant, het streamende transcript aan de andere |
+| `/meetings/:meetingId` | De details van een vergadering: tabbladen Notities, Transcript, Actiepunten en Beslissingen |
+| Instellingen → Werkruimte → Vergaderingen | Sjablonen voor vergadernotities en opgeslagen stemprofielen voor deze werkruimte |
 
-## Platform support
+## Platformondersteuning
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Opnemen gebeurt zonder driver op alle drie de desktopplatforms (Core
+Audio-taps op macOS, WASAPI op Windows, PipeWire op Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**De webclient neemt ook op**, wat de rest van deze pagina met zijn desktopbril
+kan verbergen: de browser krijgt je microfoon via `getUserMedia` en de
+vergaderaudio via `getDisplayMedia` (schermdeling), verlaagt naar 16 kHz PCM16
+en streamt naar dezelfde host. Daar gelden drie kanttekeningen:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Wat je deelt **moet** een audiotrack bevatten. Safari, Firefox en schermdeling
+  op volledig scherm in macOS leveren er geen en de opname weigert te starten.
+- Er is geen native AEC3. De eigen echo-onderdrukking van de browser wordt op de
+  microfoon aangevraagd; het tekstuele echofilter aan de hostzijde draait nog
+  steeds. De HUD toont een ingangsniveaumeter die wordt aangestuurd door de PCM
+  van de microfoon.
+- Opnieuw samenvatten en verwerking annuleren zijn alleen op de desktop
+  beschikbaar.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+De actie **Opnemen en koppelen** in de agenda is alleen op de desktop beschikbaar
+en meldt dat op het web ronduit, ook al werkt de opnameflow van het
+vergaderingscherm zelf daar wel.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Een vergadering verwijderen laat de audio achter]
+Een vergadering verwijderen haalt alleen de databaserijen weg. De bewaarde
+audiomap per kanaal `<dataDir>/meetings/<meetingId>/` wordt nooit opgeruimd — er
+is geen retentiebeleid, groottelimiet of GC-sweep voor. Die schijfruimte
+terugwinnen is handwerk op de serverhost.
 :::
 
-## See also
+## Zie ook
 
-- [Calendar and scheduling](/nl-NL/handleiding/concepten/agenda/): record a meeting straight from a calendar event
-- [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/): the engine behind `meeting_summary`
-- [Tickets and delegation](/nl-NL/handleiding/concepten/tickets/): link a meeting's action items to tickets
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/nl-NL/handleiding/gidsen/vergadering-opnemen/)
+- [Agenda en planning](/nl-NL/handleiding/concepten/agenda/): neem een vergadering direct op vanuit een agenda-afspraak
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/): de engine achter `meeting_summary`
+- [Tickets en delegatie](/nl-NL/handleiding/concepten/tickets/): koppel de actiepunten van een vergadering aan tickets
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): `MeetingRecordingStopped` en `MeetingStartingSoon`
+- [Een vergadering opnemen en samenvatten](/nl-NL/handleiding/gidsen/vergadering-opnemen/)

@@ -1,166 +1,116 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: 设置 GitHub 集成
+description: 登录 GitHub，让 PR 界面、仓库注册和智能体运行正常运作。
 slug: zh-CN/手册/操作指南/github-集成
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/zh-CN/手册/操作指南/连接代码托管/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+本指南介绍设置中与 GitHub 相关的部分。GitHub 是三种受支持的代码托管平台之一——连接 GitLab 或 Bitbucket，以及一个工作区如何混用它们，参见[连接代码托管](/zh-CN/手册/操作指南/连接代码托管/)。
 
-## Prerequisites
+## 前提条件
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/zh-CN/手册/操作指南/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- 一个 GitHub 账号，且能访问你想处理的仓库
+- 要么为你的服务器注册一个 GitHub App（参见[创建 GitHub App](/zh-CN/手册/操作指南/github-app/)），以便你**登录**；**要么**准备一个带 `repo` 和 `read:org` 权限、可供粘贴的个人访问令牌
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[凭据存放在服务器上，归属于你]
+你正在输入的那台机器上不存储任何内容。你的凭据由你的 `cc_server` 持有，以你的用户 id 为键，你登录的每台设备都会使用它——桌面端、Web 端和手机端。同一服务器上的其他成员无法读取它，而登录这件事得由他们自己完成。
 :::
 
-## Sign in with GitHub
+## 使用 GitHub 登录
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+这是一种**设备流程**：GitHub 向你显示一个短代码，你在 github.com 上批准它，服务器随即收到凭据——不需要回调 URL，不需要端口，也没有任何东西需要对外暴露。只要服务器有 client id 就可用，而官方构建已经自带。
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. 前往 **设置 → 工作区 → 个人资料与身份 → 代码托管**（或入门流程的第一步）
+2. 在 **GitHub** 行上，点击 **使用 GitHub 登录**
+3. 对话框会显示一个由八个字符组成的代码，并在你的浏览器中打开
+   [github.com/login/device](https://github.com/login/device)。
+   该代码已经复制到你的剪贴板
+4. 粘贴代码，批准该应用，然后返回。该行会自动变为
+   “已以 _your-username_ 身份登录”
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+你可以在浏览器中继续操作的同时关闭该对话框——服务器会持续轮询，直到代码过期（约 15 分钟），所以登录仍然会完成。
 
-## Or paste a token
+## 或粘贴令牌
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+当服务器没有 App、App 未安装在你要用的账号上，或者你干脆更想使用 PAT 时，这是后备方案。
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. 前往 **设置 → 工作区 → 个人资料与身份 → 代码托管**
+2. 在 **GitHub** 行上，点击 **添加令牌**
+3. 粘贴一个带 `repo` 和 `read:org` 权限的令牌（经典）并保存。**细粒度**
+   令牌需要仓库的 **Contents** 和 **Pull requests**（读和写）权限，
+   外加 **Checks** 和 **Actions**（读）权限。
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+令牌在保存时就会被探测，因此该行能指出它属于哪个账号。点击**断开连接**即可移除它。
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+检查点：**GitHub** 行显示“已以 _your-username_ 身份登录”。如果应答的凭据不是你的，末尾会标出来源——“通过此服务器的应用”或“来自环境”。
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[优先级固定不变]
+代表你发出的请求使用的是**你的**凭据，别无其他——环境对应的是服务器的凭据，不是你的，所以它绝不会顶替你。没有真人参与的工作（webhook、PR 轮询、工单同步）依次使用服务器的 App 身份、服务器所有者的凭据，最后才是环境。
 :::
 
-## What the integration gives you
+## 集成为你提供什么
 
-| Feature             | How                                                                                                            |
+| 功能                | 实现方式                                                                                                       |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| PR 列表与详情       | 通过服务器调用 GitHub REST API，使用 App 身份或你自己的凭据                                                    |
+| 检查运行            | GitHub Checks API                                                                                              |
+| 发布审查            | 一个需要用户确认的步骤，会把你的审查发布到 PR 上                                                               |
+| 仓库注册            | 只要检出副本的 `origin` 远程指向 github.com——或指向 gitlab.com / bitbucket.org，就会被接受                     |
+| 智能体的 GitHub 访问 | 凭据代理会把令牌以 `GH_TOKEN` / `GITHUB_TOKEN` 注入，并受智能体能力的约束                                      |
+| 通知提醒            | 服务器端轮询你的 GitHub 通知收件箱，触发“在 pull request 中被提及”和“已请求评审”                              |
+| 用户资料            | 资料悬浮卡片，以及按作者筛选 PR                                                                                |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+在更划算的地方，某些路径会改用 GraphQL API 而不是 REST——例如撰写 PR 时选择器所需的分支活动，以及用来判断某条“已请求评审”通知是否仍处于待处理状态的实时审查状态。
 
-## Watch for GitHub outages
+## 留意 GitHub 服务中断
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+当某个提供方降级时，标题栏会显示一个状态标签，涵盖 GitHub、Claude、OpenAI 和 Kimi。**一切正常时它是隐藏的**——它的出现是在报告问题，而不是报告没有问题。
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+点击该标签会打开一个浮出面板，其中列出每个提供方的状态，并带有一个刷新按钮。这些状态每两分钟会自动刷新一次。
 
-## Know how agents act on GitHub
+## 了解智能体在 GitHub 上的行为
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/zh-CN/手册/操作指南/沙盒策略/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- 只有当智能体具备**允许调用 GitHub API** 或**允许 git push**能力时，它才会获得
+  GitHub 令牌。参见[配置沙盒策略](/zh-CN/手册/操作指南/沙盒策略/)
+- 智能体创建的提交**以智能体的身份**署名——显示名称加上 ` (agent)`，地址是由智能体 id 派生的合成地址——绝不会作为人来署名。发起请求的人则通过 `Co-Authored-By` 尾注记入贡献
+- 配置了 GitHub App 后，代理会在每次运行时签发细粒度、限定到仓库、有效期约一小时的安装令牌，而不是交出一个权限宽泛的令牌。安装实例根据该次运行的仓库**所有者**来解析，因此一个 App 装在多个账号上时，会正确限定到该次运行所触及的那个账号。没有 App 时，智能体收到的是环境令牌
+- 由已登录成员发起的运行会以**该成员的** GitHub 身份行事——其凭据在代理的环境之后被合并进来，因此智能体代表他们所做的提交或评论都可以归到他们名下
 
-## Troubleshooting
+## 故障排查
 
-### The PR list is empty and says GitHub is not connected
+### PR 列表为空，并提示 GitHub 未连接
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+你在这台服务器上没有任何 GitHub 凭据。请在**代码托管**下登录或粘贴令牌。其他托管平台上的仓库不受影响——只有 GitHub 的仓库不会贡献任何内容。
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### 该行只提供“添加令牌”，没有“使用 GitHub 登录”
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/zh-CN/手册/操作指南/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+服务器没有 client id——这是从源码构建的常规状态，因为凭据只会烘焙进官方构建中。参见[创建 GitHub App](/zh-CN/手册/操作指南/github-app/)：大约只需两分钟，而且只有服务器所有者需要做，做一次即可。
 
-### The sign-in dialog says the provider returned no device code
+### 登录对话框提示提供方未返回设备代码
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App 存在，但其 **Device flow** 复选框处于关闭状态。在该应用的设置中（General → Device flow）将它打开，然后重试。
 
-### The row says "via this server's app" when I expected my own account
+### 该行显示“通过此服务器的应用”，但我预期的是自己的账号
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+你尚未登录；你看到的是服务器的 App 身份在应答。请在该行点击 **使用 GitHub 登录**。
 
-### A fine-grained PAT shows no merge button or check status
+### 细粒度 PAT 不显示合并按钮或检查状态
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+该令牌需要 **Contents** 和 **Pull requests**（读和写）权限，外加 **Checks** 和 **Actions**（读）权限。更改之后，请在代码托管下重新粘贴。
 
-### Adding a repo is rejected
+### 添加仓库被拒绝
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/zh-CN/手册/操作指南/添加仓库/).
+注册需要同时满足以下三项：该路径位于一个 git 工作树内、它有一个 `origin` 远程，并且该远程指向受支持的托管平台（github.com、gitlab.com 或 bitbucket.org）。参见[向工作区添加仓库](/zh-CN/手册/操作指南/添加仓库/)。
 
-### Everything stops working for a while after heavy use
+### 重度使用后一切会停止工作一段时间
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+那是限流熔断器。GitHub 用带有 `x-ratelimit-remaining: 0` 的 `403` 以及重置时间来表示它的主要限流；客户端一旦看到，就会在窗口期结束前不再发起网络调用、直接在本地让后续请求失败，因此重试风暴无法加深限流。瞬时故障会以指数退避最多重试三次，并遵循 `retry-after`。
 
-## Related guides
+## 相关指南
 
-- [Create the GitHub App](/zh-CN/手册/操作指南/github-app/)
-- [Connect a code host](/zh-CN/手册/操作指南/连接代码托管/)
-- [Manage API keys](/zh-CN/手册/操作指南/api-密钥/)
-- [Add repos to a workspace](/zh-CN/手册/操作指南/添加仓库/)
-- [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/)
-- [Set up Slack integration](/zh-CN/手册/操作指南/slack-集成/)
+- [创建 GitHub App](/zh-CN/手册/操作指南/github-app/)
+- [连接代码托管](/zh-CN/手册/操作指南/连接代码托管/)
+- [管理 API 密钥](/zh-CN/手册/操作指南/api-密钥/)
+- [向工作区添加仓库](/zh-CN/手册/操作指南/添加仓库/)
+- [审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)
+- [设置 Slack 集成](/zh-CN/手册/操作指南/slack-集成/)

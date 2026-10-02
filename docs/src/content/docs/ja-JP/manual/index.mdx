@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: 紹介
+description: Control Center は、マルチエージェントのソフトウェア開発のためのコックピットです。
 slug: ja-JP/マニュアル
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center を使えば、AI コーディングエージェントのフリートを自在に指揮できます。エージェントを起動し、リアルタイムで作業の様子を眺め、その PR をレビューし、リポジトリ、ワークスペース、インテグレーションを管理できます — ネイティブのデスクトップアプリ、ブラウザー、スマートフォンのどこからでも。
 
 <div className="docs-start not-content">
-  <LinkButton href="/ja-JP/マニュアル/クイックスタート/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/ja-JP/マニュアル/インストール/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/ja-JP/マニュアル/クイックスタート/" icon="right-arrow">クイックスタート</LinkButton>
+  <LinkButton href="/ja-JP/マニュアル/インストール/" variant="minimal" icon="download">Control Center をインストール</LinkButton>
 </div>
 
-## What you can do
+## できること
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/ja-JP/マニュアル/コンセプト/パイプライン/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/ja-JP/マニュアル/ハウツーガイド/リグの利用/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **エージェントにメッセージを送る**: スペースはフリートを動かす主要な手段です。エージェントを @メンションすると、そのエージェントは専用のコピーオンライト worktree にディスパッチされるため、複数のエージェントがあなたのチェックアウトに触れることなく、並行してコードを書き、レビューできます
+- **大きな依頼をオーケストレーション**: オーケストレーターにゴールを与え、提案されたチーム全体のプランを一度承認すれば、生成された[パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)がそれを実行します
+- **PR のレビューとマージ**: 内蔵の差分ビューアー、インラインコメント、AI を活用したレビューで行えます
+- **エージェントに使い捨てのマシンを渡す**: [リグ](/ja-JP/マニュアル/ハウツーガイド/リグの利用/)は使い捨ての VM です — ブラウザー、デスクトップ、スマートフォン、またはエンクロージャー内のターミナル — エージェントがこれを操作し、あなたはライブで見守りながら引き継ぐこともできます。内部の開発サーバーは `localhost`、エージェントのブラウザー、`https://myapp.test` に転送されます
+- **ワークフローを自動化**: イベントやスケジュールでトリガーされる DAG ベースのパイプラインで
+- **ナレッジを管理**: ワークスペーススコープのメモリ、ファクト、ポリシーで
+- **作業を追跡**: ベンダー中立のチケット、プロジェクト、委任で
+- **ミーティングを録画**: オンデバイスでの録音、文字起こし、話者分離を行い、ノート、アクションアイテム、決定事項に要約します
+- **1 日を見渡す**: Google Calendar の同期、RSVP、ミーティングのアラート、録画とリンク付け
+- **スマートフォンからフリートを追う**: デバイスをサーバーとペアリングすれば、メッセージを読み、返信し、チケットをトリアージできます。スマートフォンは到達できる最良の経路 — ループバック、LAN、tailnet、TLS — を使い、どれも使えなければ、読めないフレームを転送するエンドツーエンドで密封されたリレーにフォールバックします
+- **Slack からエージェントを操作**: ワークスペースをチャットアプリにブリッジし、ボットにメンションする、Slack スレッドで返信する、スラッシュコマンドでチケットを起票する — いずれも外向きの接続を経由するため、公開エンドポイントは不要です
+- **連携**: GitHub、Linear、Slack、Google Calendar、および 100 を超える MCP ツールに対応します
 
-## You do not have to install it
+## インストールは必須ではありません
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+同じアプリケーションが、同じ機能を備えたまま
+[app.usectrl.dev](https://app.usectrl.dev) のブラウザーで動作します。
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+デスクトップ、Web、スマートフォンのどのクライアントも、あなたのデータを所有し実際の処理を行う
+ヘッドレスサーバーの上で画面を描画する薄いレンダラーにすぎません。デスクトップはそのサーバーを
+代わりに起動できますが、ブラウザーのタブにはそれができないため、Web アプリは自分で動かす
+サーバーに接続します。そのサーバーは自分のマシン上（`ws://localhost:9030`、証明書は不要）に
+置くことも、TLS、VPN、トンネル経由で到達できるリモートホストに置くこともできます。
 
-See [Install](/ja-JP/マニュアル/インストール/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/) for how the three clients relate.
+ブラウザーで使う方法は[インストール](/ja-JP/マニュアル/インストール/#use-it-in-your-browser)を、
+3 つのクライアントの関係は[デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)を参照してください。
 
-## Next steps
+## 次のステップ
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/ja-JP/マニュアル/インストール/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/ja-JP/マニュアル/クイックスタート/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/ja-JP/マニュアル/チュートリアル/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/ja-JP/マニュアル/ハウツーガイド/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/ja-JP/マニュアル/コンセプト/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/ja-JP/マニュアル/リファレンス/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="インストール" href="/ja-JP/マニュアル/インストール/" description="ダウンロード、システム要件、サーバーが動作する場所。" />
+  <LinkCard title="クイックスタート" href="/ja-JP/マニュアル/クイックスタート/" description="エージェントがあなたのリポジトリで作業するまでの、最短の完全な道筋。" />
+  <LinkCard title="チュートリアル" href="/ja-JP/マニュアル/チュートリアル/" description="順を追って進む、より長いレッスン。最初のワークスペースから始めます。" />
+  <LinkCard title="ハウツーガイド" href="/ja-JP/マニュアル/ハウツーガイド/" description="一度にひとつのタスクをこなすためのレシピ集。リポジトリの追加、ガードレールの設定、スマートフォンのペアリングなど。" />
+  <LinkCard title="コンセプト" href="/ja-JP/マニュアル/コンセプト/" description="この製品がなぜこのように動作するのか。デプロイメントとクライアントから始めます。" />
+  <LinkCard title="リファレンス" href="/ja-JP/マニュアル/リファレンス/" description="ルート、MCP ツール、キーボードショートカット、ドメインイベントの完全な一覧表。" />
 </div>

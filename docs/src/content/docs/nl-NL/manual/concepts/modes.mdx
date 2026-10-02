@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Modi
+description: Waarom een ruimte, en niet een agent, een modus draagt; wat elk van de vier modi garandeert; en waar die garantie structureel is in plaats van louter in de prompt.
 slug: nl-NL/handleiding/concepten/modi
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Wat een modus is
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Een modus is een eigenschap van een **ruimte**, opgeslagen als één kolom in de rij van de ruimte. Elk gesprek in een ruimte deelt die eigenschap, threads inbegrepen — een thread neemt de modus van zijn ruimte over zoals elk ander gesprek. Dezelfde agent kan dus tegelijk in verschillende ruimtes in verschillende modi zitten, en het wisselen van de modus van een ruimte verandert wat er in de volgende beurt gebeurt zonder de agent aan te raken.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Er zijn er precies vier: `chat`, `review`, `plan`, `orchestrate`. De enum zelf bevat geen beleid. Alles wat een modus garandeert, staat één keer vastgelegd in een **capaciteitsprofiel**, waaruit elke afdwingingslaag afleidt:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Toolaanbod** — welke tools überhaupt bestaan in die modus, uitgedrukt als een maximaal goedkeuringsniveau, een toelatingslijst, een weigerlijst en een set geweigerde effectsoorten.
+2. **Vereist uitvoerwerkwoord** — wat de run moet aanroepen om iets te hebben opgeleverd.
+3. **Geweigerde effectsoorten** — wat de actiebewaker zonder meer weigert.
+4. **Worktree-houding** — of er in de worktree mag worden geschreven. Dit wordt afgedwongen door de muterende tools uit het aanbod te halen, en dat is wat het op elke host laat standhouden. Waar de host een OS-sandbox heeft, bepaalt dezelfde houding ook de regels voor schrijven naar het bestandssysteem — een alleen-lezen modus koppelt de worktree alleen-lezen aan — maar dat is een tweede kopie van de garantie, niet degene die het werk doet.
+5. **Systempromptblok** — een _gegenereerde_ capaciteitspreambule die is afgeleid van de daadwerkelijk gematerialiseerde tool-lijst, plus met de hand geschreven richtlijnen.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Elke afdwingingslaag leidt af uit dat ene profiel, zodat het toolaanbod, de bewaker, de worktree-houding en de prompt het niet met elkaar oneens kunnen zijn.
 
-## The four modes
+## De vier modi
 
-### Chat — displayed as "Agent"
+### Chat — getoond als "Agent"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+De standaardmodus en de enige modus zonder extra beperkingen: het volledige toolaanbod tot en met het uitvoeringsniveau, een beschrijfbare worktree, geen geweigerde effectsoorten en geen voltooiingscontract. Gebruik hem voor implementatie, bugfixes, vragen over de codebase en alles wat ad hoc is.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Let op het label: in de composer wordt de modus weergegeven als **"Agent"**, niet als "Chat".
 
-### Plan — read-only, one deliverable
+### Plan — alleen-lezen, één resultaat
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+De planmodus maakt de worktree alleen-lezen en haalt de schrijftools volledig uit het aanbod, zodat de beperking structureel is in plaats van opgedragen. De agent leest, zoekt en onderzoekt, en levert precies één ding op: een `submit_plan`-aanroep met een getypeerde afhankelijkheidsgraaf — een doel plus nodes met sleutels, titels, beschrijvingen en de nodesleutels waarvan elke node afhangt.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Het plan verschijnt als een compacte rij in het gesprek en opent Plan Studio in een tab ernaast. Als je het goedkeurt, wordt de graaf omgezet in een orkestratie, wordt het gegenereerde werk uitgevoerd en gaat de ruimte waarin het plan is gemaakt terug naar de agentmodus.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Als een run in planmodus eindigt zonder ooit `submit_plan` aan te roepen, voegt de loop eerst een aansporing toe die zegt dat het plan niet bestaat totdat die aanroep slaagt. De aansporing staat expliciet een eerlijke uitweg toe met "hier is geen plan nodig", omdat planmodus een ruimte-instelling is en een gewone vraag die daarbinnen wordt gesteld geen onzinnig plan zou moeten afdwingen.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).
+:::note[Een niet-nagekomen contract is geen mislukte run]
+Een run die zonder zijn plan eindigt, wordt nog steeds vastgelegd met status `completed` — het proces is netjes afgesloten. De waarheid zit in de levendigheid van de run (`empty`), de foutenfamilie (`silentRun`) en een samenvatting die benoemt wat niet is geproduceerd. Zie [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Er is een tweede, aparte uitweg: `exit_plan_mode`. Het is een harde goedkeuringspoort, geen uitvoerwerkwoord — een agent die het aanroept in plaats van `submit_plan`, heeft niets opgeleverd. De eerste aanroep opent een duurzame goedkeuring `plan_exit` en geeft `pending` terug, en de ruimte blijft alleen-lezen; herhaalde aanroepen blijven `pending` in plaats van een tweede poort te openen. Pas nadat de goedkeuring is verleend, zet een volgende aanroep de ruimte om naar chat. Bij een afwijzing kan de agent een nieuw verzoek openen voor een herzien plan.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Om planmodus zelf te verlaten, wissel je de vervolgkeuzelijst in de composer (of Shift+Tab). `exit_plan_mode` wordt besloten met de MCP-tool `decide_approval`. Rijen met "agentgoedkeuring" in Postvak in zijn iets anders: bevestigingsvragen per beurt van een draaiende agent.
 
-### Review — read-only, no contract
+### Review — alleen-lezen, geen contract
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+De reviewmodus is voor PR-reviews. Hij maakt de worktree alleen-lezen, houdt het toolaanbod onder het uitvoeringsniveau en past een samengestelde toelatingslijst toe van review-, ticket- en communicatietools. Een ruimte die voor een pull request wordt geopend, wordt automatisch in reviewmodus aangemaakt.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+De uitvoer van de agent bestaat uit gestructureerde bevindingen — **reviewnodes** — en, wanneer een review wordt afgerond, een **oordeel**. Een node heeft een soort (`bug`, `suggestion`, `recommendation`, `question` of `ticket`), een prioriteit van P0 (blokkeert de release) tot P3 (mooi meegenomen), een zelf ingeschatte zekerheid, een optioneel anker (bestand plus een regelbereik; notities voor de hele repository hebben er geen) en een levenscyclusstatus die van `open` naar `consensusReady` gaat zodra een medereviewer — nooit de auteur — die bevestigt. Een bevinding waarvan de prioriteit of zekerheid ontbreekt of buiten het bereik valt, wordt bij de leesgrens weggegooid in plaats van het oordeel te vervuilen.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Het oordeel is Ship, Hold of Block en het kan alleen maar _strenger_ worden door de resultaten per as die erin worden meegenomen: een as met een poort die is mislukt, dwingt `block` af, en een as met een poort die niet kon draaien, dwingt minstens `hold` af. Het ontbreken van bewijs maakt een poort nooit groen.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Anders dan plan en orkestratie heeft review **geen voltooiingscontract**. Bevindingen verzamelen zich via `add_review_node` en worden gepubliceerd door `finalize_review`, en beide mogen terecht nul keer worden aangeroepen — een pipeline-agent die in reviewmodus draait, kan er juist zijn om een ticket af te ronden.
 
-### Orchestrate — read-only, proposes a team
+### Orkestratie — alleen-lezen, stelt een team voor
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+De orkestratiemodus verandert één doel in een plan voor een heel team. Net als de planmodus is hij alleen-lezen en kan hij geen bestanden schrijven; boven op het onderzoeksaanbod heeft hij één geprivilegieerd werkwoord, `propose_orchestration`, dat een gestructureerd voorstel uitzendt: rollen, een boom van subtickets, een synthesestap en een budget. De prompt noemt alleen de tools in het aanbod, zodat het model geen beurten verspilt aan het beschrijven van aanstellingen of ticketwerk dat het niet kan aanroepen.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/nl-NL/handleiding/concepten/orkestratie/).
+Niets in het voorstel wordt uitgevoerd totdat je het goedkeurt. Bij goedkeuring neemt een deterministische materialisator de agents aan, maakt hij de tickets en een project aan en draait hij een gegenereerde pipeline. Goedkeuren is alleen voor de operator: er is geen MCP-tool voor, dus een agent kan zijn eigen plan voorstellen maar nooit goedkeuren. Nieuwe voorstellen die door een agent worden gestart, worden beperkt door een afkoelperiode van twee minuten, dus opeenvolgende herplanningen worden geweigerd en krijgen de opdracht om samen te voegen. Zie [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/).
 
-## Two rules worth knowing
+## Twee regels die je moet kennen
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Het eigen uitvoerwerkwoord van een modus kan nooit worden geweigerd.** `submit_plan` en `propose_orchestration` zijn vastgezet in het toolaanbod en vooraf goedgekeurd langs het toolfilter, de goedkeuringspoort en de actiebewaker heen, zodat de autonomieschakelaar per ruimte het resultaat van een modus niet kan dempen. De `ask_user` van de harness is om dezelfde reden vastgezet: het _is_ de manier waarop een run de operator bereikt, dus het afschermen ervan zou een run die iets moet vragen, vastlopen. Het zit op leesniveau, dus elke alleen-lezen modus houdt het, en het is vrijgesteld van de goedkeuringswrapper — een prompt vóór een prompt valt gesloten wanneer er geen goedkeurder is verbonden, wat een agent het stellen van een vraag zou ontzeggen.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Alleen-lezen modi weigeren geen netwerktoegang of secrets.** De effectsoorten die review, plan en orkestratie weigeren, zijn de soorten die de wereld veranderen: bestanden verwijderen, schrijven buiten de worktree, commits, pushes, het aanmaken en publiceren van PR's, schrijfacties bij het synchroniseren met externe systemen, pakketinstallaties, processen starten, werkruimtestructuur wijzigen en omhullingen aansturen. Netwerktoegang naar buiten en toegang tot secrets blijven bewust op hun standaardwaarden — onderzoek is juist het hele doel van een alleen-lezen modus.
 
-## Choosing and changing a mode
+## Een modus kiezen en wijzigen
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+De modusvervolgkeuzelijst van de composer biedt **drie** opties: Agent (chat), Plan en Orkestratie. `review` is **niet door de gebruiker te selecteren** — die wordt door het systeem ingesteld wanneer een PR-reviewruimte wordt aangemaakt, en door pipelinestappen.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Een pipelinenode die **een ruimte opent**, kan de modus van die ruimte vastzetten met een `extras['mode']`-sleutel (`chat`, `review` of `plan`). De sleutel moet exact overeenkomen: elke andere spelling — ook `orchestrate` — wordt stil genegeerd en de ruimte krijgt de standaardwaarde van de body (`review` in de create-space-body). Een agentstap voegt zich bij een ruimte die hij niet zelf heeft gemaakt en past de rechten ervan niet aan.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+De bepaling zelf is eenvoudig. De dispatcher leest de kolom `mode` van de ruimte; een dispatch zonder ruimte — een one-shot, een CLI-aanroep, of een ruimte-id uit een andere werkruimte, die simpelweg niet in het databasebestand van deze werkruimte staat — komt uit op `chat`. De modus wijzigen gaat in vanaf de volgende beurt.
 
-## Where the guarantee actually holds
+## Waar de garantie daadwerkelijk standhoudt
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Het toolaanbod van een modus wordt opgebouwd en afgedwongen door de **ingebouwde harness**. Het is het enige transport dat een tool onzichtbaar kan maken in plaats van alleen te weigeren, elke aanroep kan afschermen voordat die draait, en een voltooiingscontract kan waarnemen.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/nl-NL/handleiding/concepten/agentmodel/).
+Op het Claude Code-transport wordt een niet-chatmodus doorgegeven als `--permission-mode plan`. Claude respecteert dat op basis van conventie; zijn eigen lees-, schrijf-, bewerk- en shelltools draaien ongezien. Voor dat transport is de modus een richtlijn, geen grens van Control Center — zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+De toelatingslijsten begrenzen tools vanaf schrijfniveau. Het leesniveau van de ingebouwde harness bereikt nog steeds tools die geen enkele lijst noemt; op Claude Code wordt een tool die de toelatingslijst niet vermeldt, geweigerd, of de server hem nu heeft of niet.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/): where the mode is resolved and projected
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): which transports can enforce a mode
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/nl-NL/handleiding/concepten/orkestratie/): what an approved orchestrate proposal does
-- [Use plan mode](/nl-NL/handleiding/gidsen/planmodus/): the practical walkthrough
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/): waar de modus wordt bepaald en geprojecteerd
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): welke transporten een modus kunnen afdwingen
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): het effectsoortenbeleid waarin de voorinstelling van een modus uitmondt
+- [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/): wat een goedgekeurd orkestratievoorstel doet
+- [Planmodus gebruiken](/nl-NL/handleiding/gidsen/planmodus/): de praktische handleiding

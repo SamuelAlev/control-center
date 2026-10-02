@@ -1,137 +1,151 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: Állomások
+description: Minden állomásfelület, háttérrendszer, műveleti ige, életciklus-állapot, port, alapérték és szerződés – a teljes tényszerű katalógus.
 slug: hu-HU/kezikonyv/referencia/allomasok
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/); to open a machine, follow [the
-guide](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/).
+Csak tények. A mögöttük lévő modellhez lásd: [Állomások és elszigetelt
+környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/); egy gép megnyitásához
+kövesse [az útmutatót](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/).
 
-## Surfaces and backends
+## Felületek és háttérrendszerek
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Felület | Mit vezérel | Háttérrendszer | Érték | Elszigetelt kimenő forgalom |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminál (exec) | Shell a VM exec-csatornáján | microVM | `smolvm` | Igen |
+| Böngésző | Headless Chromium (CDP), Firefox (WebDriver BiDi) vagy WebKit (W3C WebDriver) | microVM | `smolvm` | Igen |
+| Számítógép | X11-es asztal: bemenet a hypervisoron keresztül, rögzítés a vendéggép ügynökén keresztül | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (gyorsítás nélküli tartalék, soha nem választódik automatikusan) | Igen |
+| Android | Android ADB-n keresztül | A Google emulátora | `android-emulator` | **Nem** – az emulátor maga kezeli a hálózatát |
+| iOS | iOS-szimulátor WebDriverAgenten keresztül | CoreSimulator | `ios-simulator` | **Nem** – a hálózat a gazdagép Macet követi |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+A terminál és a `computer_use` felület ugyanazt a `computer` felületértéket
+használja; a terminált az exec-képe jelölője különbözteti meg, és soha nem
+hasznosul újra vezérelhető asztalként (és fordítva). Egy beszélgetés egy
+terminálgépet használ újra.
 
-## Browser engines
+## Böngészőmotorok
 
-| Engine | Value | Protocol | Live view | Stills |
+| Motor | Érték | Protokoll | Élő nézet | Állóképek |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (alapértelmezett) | Chrome DevTools Protocol | Képernyőközvetítés – a böngésző képkockákat küld, ahogy az oldal újrarajzolódik | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Lekérdezéssel gyűjtött állóképek (a BiDi-nek nincs képernyőközvetítése), legfeljebb 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (klasszikus) | Lekérdezéssel gyűjtött állóképek, a gazdagép ffmpeg-je által transzkódolva | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+Egy állomás a teljes élettartama alatt **egyetlen** motort futtat. Egy
+beszélgetés **motoronként egy** állomást tarthat, és éppen ez teszi lehetővé az
+egymás melletti összehasonlítást: a „Firefox (VM)” és a „Chromium (VM)” egymás
+mellé nyitása két gép, és az egyik bezárása nem érinti a másikat.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Adja át az `engine` paramétert a `rig.open` számára vagy a `browser_use`
+eszköznek. Az ismeretlen nevet nem cseréljük alapértelmezésre, hanem
+elutasítjuk – ha valaki egy böngészőt kér, és csendben egy másikat kap, az egy
+kompatibilitási kérdésre ad rossz választ.
 
-Engine-specific limits, stated rather than worked around:
+A motorokra jellemző korlátok, kimondva ahelyett hogy megkerülnénk őket:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **A Firefoxnak** nincs gyorsítótárat megkerülő újratöltése (a BiDi
+  `ignoreCache` paraméterét egyenesen elutasítja), így a kemény újratöltés egy
+  hétköznapi újratöltés.
+- **A WebKitnek** szintén nincs gyorsítótárat megkerülő újratöltése, és nincs
+  konzolcsatornája sem (a kimenetet úgy rögzíti, hogy minden navigáció után
+  beköt a `console.*`-ba, így a betöltés közben naplózott sorok elvesznek –
+  minden konzolkinyerés ezt is mondja), az élő nézetéhez pedig `ffmpeg` kell a
+  gazdagépen.
+- **Egyik sem** tár fel platformszintű kisegítőlehetőség-fát a protokollján
+  keresztül, így az `extract (a11y)` egy DOM-ból származtatott közelítést ad
+  vissza, amelyet annak is jelöl meg.
+- **Egyik sem** fogad valódi fájlejtést; egy fájlbemenet ettől még
+  ráirányítható a gépen belüli elérési utakra.
 
-## Machine images
+## Gépképek
 
-| Surface | Image | Fetched |
+| Felület | Kép | Letöltés |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminál | `ubuntu:24.04`, digesttel rögzített | Automatikusan az első indításkor, a gép saját kapuzott hálózatán keresztül |
+| Böngésző (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digesttel rögzített, valamint a motor saját csomagjai | Automatikusan az első indításkor, majd előmelegített csomagként gyorsítótárazva |
+| Számítógép | Egy qcow2 asztali kép Chromiummal, Firefoxszal, WebKitkel és ugyanazzal a GitHub által üzemeltetett runnerhez hasonló parancssori alapszinttel, amelyet a terminál melegít elő | **Importálás** a Beállítások → Szerver → Állomások alatt (ahol elérhető, ellenőrzőösszeggel rögzített letöltések) |
+| Android | A Google rendszerképei | Az Android SDK-n keresztül |
+| iOS | Egy Xcode-szimulátor futtatókörnyezet, valamint ellenőrzőösszeggel rögzített WebDriverAgent | A futtatókörnyezet az Xcode-on keresztül; az automatizálási híd a Beállítások → Szerver → Állomások alatt |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Miután minden microVM-fajta először elindult, a szerver egy előre kicsomagolt
+másolatot gyorsítótáraz az adatkönyvtárban, és minden későbbi gépet abból indít
+– beleértve azokat az előmelegített képeket is, amelyekben a csomagok már
+telepítve vannak. A terminál egy GitHub által üzemeltetett runnerhez hasonló
+parancssori eszközkészletet melegít elő (`git`, `gcc`, `python3`, `jq`,
+`rsync`, archiváló eszközök és az apt alapszint többi eleme; nem a Docker és
+nem a nyelvi eszköz-gyorsítótárak). A Számítógép qcow2 képe ugyanezeket a
+parancssori neveket már a kép buildelésekor beégeti, az XFCE és a három
+böngésző mellé. Minden böngésző előmelegíti a saját motorját. Mindhárom motor
+ugyanazt a Debian-alapot használja, de soha nem osztoznak egy csomagon: a
+gyorsítótár kulcsa a kép, a motor **és** egy hangrevízió
+(`audio-v1-<engine>`), mert egy adott motorhoz – vagy még azelőtt, hogy a
+PulseAudio és az ffmpeg a munkaterhelés része lett volna – előmelegített gépen
+a másikból semmi sincs benne. A terminálcsomag kulcsa ugyanezen okból egy
+eszközkészlet-revízió (`tools-v1`): egy olyan csomag, amely még azelőtt
+melegedett elő, hogy a fordító a kép része lett volna, nem szolgálhat ki egy
+olyan gépet, amelynek állítólag van fordítója.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Nincs olyan beégetett automatizálási kép, amelyet érdemes lenne átvenni – a
+Chromium `chromedp/headless-shell` képe az ALSA-t és a PulseAudio-t is
+kikompilálja, így soha nem tud hangot kiadni; az egyetlen gondozott Firefox-kép
+a Debian-alap 33×-osa, és még mindig nem tartalmaz `socat`-ot; gondozott
+WebKit-kép pedig egyáltalán nincs. Ezért minden motor az első indításkor
+telepíti magát (`chromium`, `firefox-esr` vagy `webkit2gtk-driver`), és közben
+eléri a Debian csomagtárait (`deb.debian.org`, `security.debian.org`,
+`cloudfront.debian.net`). A Chromium a disztribúció binárisa, amelyet a
+`chromium --headless=new` parancs indít el.
 
-### Per-workspace custom images
+### Munkaterületenkénti egyéni képek
 
-| Setting key | Overrides |
+| Beállításkulcs | Mit ír felül |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | A Terminál (VM) képét |
+| `rigs.smolvm.browserImage` | A Chromium Böngésző (VM) képét |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Az adminisztrátori kapuval védett munkaterület-beállítástáron keresztül íródik
+(Beállítások → Szerver → Állomások → Egyéni képek (ez a munkaterület)). Az
+értéknek registryhivatkozásnak kell lennie – a helyi elérési utakat,
+archívumokat és kapcsolószerű sztringeket elutasítjuk, mind a mezőnél, mind
+pedig újra indításkor. Az érvénytelen tárolt értéket hangosan figyelmen kívül
+hagyjuk, és helyette az alapértelmezett indul el. A kép saját registryje
+(valamint a Docker Hub, a GHCR, a Quay, a GitLab és a GCR ismert blob-CDN-társai)
+a letöltéshez a kimenőforgalmi kapun keresztül kap beengedést.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Terminálkép-szerződés** – `bash` jelen van; a `git`, a `curl` és a `socat`
+előre telepítve *vagy* egy Debian/Ubuntu apt-alap (a környezet az első
+indításkor telepíti azt a hármat, valamint egy GitHub által üzemeltetett
+runnerhez hasonló parancssori eszközkészletet: fordítók, Python 3, `jq`,
+archiváló eszközök, `rsync`. A nyelvi eszköz-gyorsítótárak és a Docker nem
+települnek).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Böngészőkép-szerződés** – egy Debian/Ubuntu apt-alap (vagy a már telepített
+csomagok) `bash`-sal és `socat`-tal, valamint egy `chromium` bináris, amelyet a
+szerver maga indít el `chromium --headless=new` formában, a DevTools a
+vendéggép loopback `9223`-án, a vendéggép `9222` portjára továbbítva. A
+PulseAudio és az ffmpeg az első indításkor települ a hangsávhoz. Ne építsen
+`FROM chromedp/headless-shell` alapot: a felsőbb szintű `headless.gn` az ALSA-t
+és a PulseAudio-t is kikompilálja, így az a bináris nem tud hangot kiadni. A
+felülbírálás **csak Chromium-állomásokra** vonatkozik – az általa indított
+munkaterhelés-parancs a Chromiumé, és ha a Firefoxnak vagy a WebKitnek adnánk
+át, egy nem létező binárist indítana el. A Firefox- vagy WebKit-állomás
+hangosan figyelmen kívül hagyja, és a rögzített képét indítja el.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Automatizálási portok** – minden böngészőgép pontosan egy gazdagép-loopback
+portot továbbít a vendéggép `9222` portjára. Mögötte: a Chromium DevTools-a és
+a Firefox távoli ügynöke a vendéggép loopback `9223`-án ül, előttük egy `socat`
+továbbító (mindkettő feltétel nélkül a loopbackhez kötődik); a WebKit
+illesztőprogramja egy `--host` paramétert vesz át, és maga köti a vendéggép
+hálózati kártyáját. A Firefox emellett a `Host` fejlécet a saját portjához
+validálja, így a kliens a vendég oldali authorityt küldi, nem pedig azt,
+amelyet felhívott.
 
-## Action verbs
+## Műveleti igék
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Minden művelet feldolgozása teljes: a hibás szerkezetű payload egy, a mezőt
+megnevező üzenetet ad vissza, soha nem kivételt. A megfigyelő igék (○
+jelöléssel) akkor is engedélyezettek maradnak, amikor egy ember tartja a
+vezérlést; a módosító igéket elutasítjuk.
 
 ### `computer_use`
 
@@ -141,219 +155,238 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+A koordináták a vendéggép aktuális módjában értendő vendégpixelek; minden
+képernyőkép megadja a kijelző méretét. A billentyűkombinációk X11-es írásmódot
+használnak (`ctrl+s`, `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+A `clipboard_read` egy `selection` paramétert vesz át: `clipboard` (amit a
+ctrl+C megtölt, ez az alapértelmezett), `primary` (X11 kijelöléssel másolás)
+vagy `xdnd` (egy folyamatban lévő húzás). Az üres eredmény mindhárom esetben
+normális válasz. A `clipboard_write` csak `text` paramétert vesz át – a képek
+és a fájlok a fájlsávon utaznak, mert egy művelet argumentumai bekerülnek az
+auditnaplóba, és a képbájtoknak ott nincs keresnivalójuk. A vágólap tartalma
+nem megbízható adatként, elhatárolva érkezik vissza.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (csak http/https), `reload` (`hard` opcionális), `stop_loading`,
+`click` (szelektor vagy koordináta), `fill`, `type`, `key` (DOM-kulcsnevek),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+opcionális), `set_viewport` (min. 320×240), `history`, `wait_for`○ (szelektor,
+0,1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+A kinyert oldaltartalom nem megbízható adatként, elhatárolva érkezik vissza.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+A böngészőnek pontosan egy vágólapja van, így a `clipboard_read` nem vesz át
+`selection` paramétert. Mindkét vágólapige **biztonságos környezetet** igényel:
+a sima `http://`-n kiszolgált oldalnak egyáltalán nincs vágólap API-ja, és az
+ige ezt ki is mondja ahelyett, hogy üres vágólapot jelentene – ilyenkor
+használja a `type`-ot, amely a kurzornál szúr be, anélkül hogy a vágólapot
+használná.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (aliasok: `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power`, vagy bármely `KEYCODE_*`),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(az állomás worktree-jére és a szerver adatkönyvtárára korlátozva), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` és `shell`.
+A `shell` egy argv-listát vesz át, és az Androidon belül fut, soha nem egy
+gazdagép-shellen keresztül; lefedi a fejlesztői diagnosztikát, például a
+`logcat`, `dumpsys` és `pm grant` használatát.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+A `mobile_use`-nak nincsenek vágólapigéi. Az Android 10 óta csak a fókuszált
+alkalmazás olvashatja a vágólapot.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, nyílbillentyűk vagy egy nyomtatható karakter; opcionális `command`,
+`control`, `option` és `shift` módosítók), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (egy szimulátor `.app` könyvtár, az
+állomás worktree-jére vagy a szerver adatkönyvtárára korlátozva), `start_app`,
+`stop_app`, `uninstall_app`, `open_url` és `spawn`. A `spawn` argv-t vesz át,
+és a szimulátoron belül, a `simctl`-en keresztül hajtja végre; soha nem hív
+gazdagép-shellt.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+A koordináták iOS-képernyő**pontok**, nem képernyőkép-pixelek. Az élő
+adatfolyam megtartja a szimulátor rögzített méretét, és fekete sávokkal illeszti
+be ahelyett, hogy átméretezné az eszközt. A gazdagép és a szimulátor közötti,
+mindkét irányú szöveges vágólapátvitel ugyanazt a felhasználónkénti,
+irányonkénti engedélyszabályzatot használja, mint a többi állomás; a fájlokat és
+a képeket az iOS vágólapsávja nem fogadja el.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Minden állomás egy saját tulajdonú CoreSimulator-eszközt és
+WebDriverAgent-munkamenetet hoz létre. Bezárásakor leállítja a WebDriverAgentet,
+leállítja és törli azt az eszközt, valamint eltávolítja a nyilvántartási
+bejegyzését. Az iOS-állomások csak Xcode-dal, telepített iOS futtatókörnyezettel
+és a rögzített automatizálási híddal rendelkező macOS-szerveren futnak. Nem
+kínálnak hangot, mikrofont, fájlejtést, gazdagép-shellt vagy elszigetelt
+hálózati garanciát.
 
-### Management tools
+### Kezelőeszközök
 
-| Tool | Description |
+| Eszköz | Leírás |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | Egy munkaterület állomásainak listázása felülettel, állapottal, kijelzővel és vezérlővel |
+| `rig_close` | Egy állomás megsemmisítése és a lemezének eldobása |
 
-## Lifecycle
+## Életciklus
 
-| Phase | Meaning |
+| Fázis | Jelentés |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Indul; az állapot részletei szó szerint hozzák az aktuális lépést |
+| `ready` | Elérhető, és fogadja a műveleteket |
+| `parked` | Tétlenség miatt parkolva: a vCPU-k leállítva, a RAM továbbra is rezidens; a következő művelet felébreszti |
+| `closing` | Leállás alatt |
+| `closed` | Eltűnt; a sor megmarad az auditnyomhoz |
+| `failed` | Elpusztult, vagy soha nem indult el; megkülönböztethető, hogy a felület újrapróbálkozást kínálhasson |
 
-| Close reason | Fired when |
+| Lezárás oka | Mikor következik be |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | Egy ember vagy ügynök kérte |
+| `idleTimeout` | A tétlenségi időablak kétszeresén túli tétlenség, vagy memória miatti kilakoltatás |
+| `ttlExpired` | A kemény élettartam lejárt |
+| `conversationEnded` | A tulajdonos beszélgetés véget ért |
+| `workspaceGone` | A munkaterületet törölték, vagy megszűnt a tagság |
+| `serverShutdown` | A szerver leáll |
+| `backendFailure` | Alatta elpusztult a hypervisor |
 
-## Defaults and ceilings
+## Alapértékek és felső korlátok
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Érték | Terminál | Böngésző | Számítógép | Mobil |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Memória | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU-k | 2 | 2 | 4 | 4 |
+| Kemény TTL | 8 óra | 2 óra | 2 óra | 2 óra |
+| Tétlenségi időablak | 45 perc | 15 perc | 15 perc | 15 perc |
+| Indítási kijelző | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Az ügynöki sáv állóképei **1280×800**-ra vannak korlátozva; az emberi sáv
+  **2560×1600**-ig tárgyal fel.
+- A gazdagép összes állomásra vonatkozó rezidensmemória-kerete alapértelmezés
+  szerint **12 GB**, rezidens megabájtban számolva (egy parkolt VM továbbra is
+  fogja a RAM-ját). A kilakoltatás a legrégebben használt gépet érinti, és soha
+  nem visz el olyan gépet, amelyet éppen vezetnek, néznek, vagy amelyben nyitva
+  van egy terminál.
+- Egy nyitott terminál vagy figyelősáv hozzákötözi az állomást,
+  megakadályozva a parkolást és a tétlenségi begyűjtést; a kemény TTL ettől
+  függetlenül érvényes.
 
-## Ports and dev domains
+## Portok és fejlesztői tartományok
 
-| Port | Where | Reserved for |
+| Port | Hol | Mire fenntartva |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Terminál vendéggép | A portmultiplexer, amelyen minden továbbítás halad |
+| `9222`, `9223` | Böngésző vendéggép | Az automatizálási továbbító és végpont (a WebKit közvetlenül a `9222`-t köti, és nem használ továbbítót) |
+| `80`, `443` | Böngésző vendéggép loopbackje | A fejlesztői tartomány HTTP/HTTPS sávjai |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- A felderítés szerveroldalon körülbelül 4 másodpercenként lekérdezi a terminál
+  vendéggépének figyelt TCP-portjait.
+- Állomásonként legfeljebb **16** port továbbítódik automatikusan; a többiek
+  megjelennek a naplóban, de nem kerülnek továbbításra.
+- A gazdagép oldali továbbítás a loopbackhez kötődik, előnyben részesítve a
+  vendéggép saját portszámát; a **Megosztás a helyi hálózaton** hozzáad egy
+  operációs rendszer által kiosztott LAN-portot.
+- A fejlesztői tartományoknak meg kell felelniük a `name.test` vagy a
+  `name.localhost` mintának (kisbetűs, legfeljebb 63 karakteres címke). Egy
+  tartomány egy portra képeződik.
+- A fejlesztői tartomány HTTPS-e egy szerveren helyi hitelesítésszolgáltatót
+  használ (EC P-256, a `<dataDir>/rigs/tls/` alatt, 0600 jogosultságú
+  kulcsokkal, amelyek soha nem kerülnek a vendéggépbe), egyetlen helyettesítő
+  karakteres levéltanúsítvánnyal a `*.test` / `*.localhost` számára. Ha a
+  gazdagépen nincs `openssl`, nincs HTTPS-sáv; a sima HTTP továbbra is működik.
 
-## Egress defaults
+## A kimenő forgalom alapértékei
 
-| Surface | Default allowlist |
+| Felület | Alapértelmezett engedélylista |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminál | A homokozó fejlesztői alapszintje (kódhosztok, csomagregisztrációk, modellszolgáltatók) + az Ubuntu apt-tükrök + magának a worktree-nek a kódhosztja |
+| Böngésző | `usectrl.dev` (a termék oldala) – plusz a Debian csomagtárai minden motor első indításakor, amíg az telepíti a csomagjait. A kezdőlap egy helyi `file://` dokumentum, amelyhez nem kell kimenő forgalom |
+| Számítógép | Üres – mindent megtagad –, amíg egy hívó gazdagépeket nem engedélyez |
+| Mobil | Nincs kikényszerítve (az emulátor kezeli a hálózatot) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Minden microVM emellett megkapja a képe registrygazdagépeit, kizárólag a
+letöltéshez. A hitelesítőadat-közvetítő engedélyezett gazdagépeinek halmaza
+ugyanabból az engedélylistából származik: nem készül token olyan gazdagéphez,
+amelyet a vendéggép nem ér el.
 
-## Clipboard and file transfer
+## Vágólap és fájlátvitel
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+A másolás/beillesztés mindkét iránya, valamint a fájlok be- és kihúzása. Egy
+állomást vezérlő ember számára elérhető; egy ügynök a vágólapot a fenti igéken
+keresztül kapja meg, fájlátvitelt pedig egyáltalán nem (hiszen már van egy
+shelle az elszigetelt környezetben).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+A vágólap átlépése felhasználónként és irányonként szabályozott. Az állomásra
+beillesztés alapértelmezés szerint engedélyezett; az állomásról kifelé másolás
+rákérdez (tízperces engedély, vagy mindig engedélyezés a Beállítások → Szerver →
+Állomások → Vágólap-hozzáférés alatt). A két választás független egymástól, és
+soha nem munkaterületi beállítás.
 
-| Lane | Route | Carries |
+| Sáv | Útvonal | Mit szállít |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Vágólap | `GET`/`POST /rig/clipboard/<rigId>` | Szöveg, egy PNG/JPEG (≤16 MB), valamint a vágólapon lévő fájlok vendéggépbeli elérési útjai |
+| Fájlok | `POST /rig/files/<rigId>` | Legfeljebb 64 fájl, egyenként ≤256 MB és ejtésenként ≤512 MB, opcionális vendégpixel-ejtési ponttal |
+| Fájlok | `GET /rig/files/<rigId>?p=<base64url path>` | Egy fájl bájtjai, kifelé |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, nem RPC.** Az RPC-socket lezárja a kapcsolatot, ha egy bejövő keret
+  meghaladja a 256 KB-ot – ez egy DoS-védelem, amely helyes a JSON-parancsoknál,
+  és végzetes egy beillesztett képernyőképnél. A bájtok ugyanolyan útvonalon
+  haladnak, mint az állomásképkockák és a megbeszélés hangja.
+- **A hitelesítés** a `rig-files:<workspaceId>/<rigId>` aláírt cél plusz a
+  munkaterületi tagság – ez saját cél, így egy gép *megnézésére* kiállított URL
+  nem tud fájlokat is írni bele.
+- **Az átvétel érvényesül.** A vágólap írása és a fájlok ejtése módosító
+  művelet, ezért elutasításra kerül, amíg más tartja a vezérlést; a vágólap
+  olvasása és egy fájl kiolvasása megfigyelés, ezért nem.
+- **Hová kerülnek az ejtett fájlok:** `~/Drops` (asztal), `~/drops` (terminál –
+  a worktree mellett, soha nem benne, így egy ejtés soha nem jelenik meg
+  követetlen változásként), `/tmp/cc-drops` (böngésző). A könyvtárat a szerver
+  választja; a hívó nem nevezheti meg. A meglévő fájlok soha nem íródnak felül
+  – egy ütköző név `2-name.ext` formában kerül be.
+- **Mit tud meg a vendéggép:** a böngészőoldal egy valódi drop eseményt kap a
+  kért ponton (`Input.dispatchDragEvent`); az asztal a fájlokat és azok URI-jait
+  kapja meg a vágólapján, mert egyetlen gazdagép sem tud XDND-húzást
+  szintetizálni egy tetszőleges eszközkészletbe privilegizált, vendégen belüli
+  démon nélkül. A válasz megmondja, melyik történt meg a kettő közül.
+- **A kifelé húzás** csak asztali gépen működik, és a vendéggép
+  `XdndSelection`-jét olvassa, amíg egy húzás él. Az a payload, amely azonos
+  azzal, amit a vendéggép már tartott a lenyomás kezdetekor, egy befejezett
+  húzás elavult kijelöléseként kezelendő, nem újként – az X-nek nincs „a húzás
+  véget ért” lépése.
+- **Képkövetelmények:** az asztali képnek 2-es vagy újabb protokollt kell
+  használnia (a vágólaptámogatás megérkezése után épült). Egy régebbi kép
+  404-gyel válaszol, és az alkalmazás azt mondja, hogy újra kell építeni,
+  ahelyett hogy hibás gépként jelentené.
+- **Az auditnapló az alakot rögzíti, soha nem a tartalmat**: a
+  `clipboard_read`, `clipboard_write`, `drop_files` és `read_file` sorok
+  darabszámokat, méreteket és elérési utakat hordoznak. A vágólap az a hely,
+  ahol a hitelesítő adatok néhány másodpercre megfordulnak, és ebből semmi sem
+  íródik le.
 
-## Guardrails, events, storage
+## Korlátok, események, tárolás
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/hu-HU/kezikonyv/referencia/domainesemenyek/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Az állománeszközök a **`enclosureControl`** műveletosztályt deklarálják
+  (valamint a `networkEgress` és a `processSpawn` osztályt a használati
+  eszközökön; a `mobile_use` és az `ios_use` a `packageInstall` osztályt is
+  deklarálja). A `rig_close` a `enclosureControl` osztályt deklarálja; a
+  `rig_list` egyet sem. Alapértelmezés szerint engedélyezett; a csak olvasható
+  módok teljes egészében megtagadják; a térenkénti autonómiatárcsa „előbb
+  kérdez” szintre sorolhatja le.
+- Domainesemények: `RigClosedEvent` (a lezárás okával), `RigControlChanged`
+  (átvétel / visszaadás), `RigReaped` (tétlenségi, TTL- vagy memóriakiürítés,
+  a vezérlő ügynökkel). Egy állomás megnyitása nem esemény.
+  Lásd: [domainesemények](/hu-HU/kezikonyv/referencia/domainesemenyek/).
+- Tárolás: `rig_sessions` és `rig_action_log` minden munkaterület
+  adatbázisában. A műveletnapló minden bemeneti eseményt rögzít a végrehajtó
+  szereplővel és egy állomásonkénti monoton sorszámmal; a beírt szöveget írás
+  előtt a hosszára és egy hashre cseréljük.
+- Adatkönyvtár: `rigs/images/` (importált qcow2 képek), `rigs/smolvm/`
+  (állomásonkénti futásidejű állapot), `rigs/smolvm-packs/` (előre kicsomagolt
+  gépcsomagok), `rigs/tls/` (a fejlesztői tartomány hitelesítésszolgáltatója),
+  `rigs/run/` (QEMU overlay rétegek és seedek).
+- Útvonalak: az élő nézet egy fül egy térben vagy egy PR-oldalon;
+  a `/settings/server/rigs` az Állomások beállításképernyő.

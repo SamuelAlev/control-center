@@ -1,60 +1,63 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Налаштувати користувачів через SCIM
+description: Дозвольте своєму IdP автоматично створювати, оновлювати та скасовувати підготовку облікових записів Control Center.
 slug: uk-UA/керівництво/практичні-посібники/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Скористайтеся цим посібником, якщо вам потрібен контроль життєвого циклу: під
+час вибуття доступ має відкликатися автоматично, а не просто блокувати майбутні
+входи. SCIM — це протокол надсилання, який IdP (Okta, Entra ID та інші)
+використовують саме для цього.
 
-## Prerequisites
+## Передумови
 
-- SSO already working (the [SSO tutorial](/uk-UA/керівництво/посібники/sso) or the
-  [OIDC guide](/uk-UA/керівництво/практичні-посібники/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO уже працює ([посібник із SSO](/uk-UA/керівництво/посібники/sso) або
+  [посібник з OIDC](/uk-UA/керівництво/практичні-посібники/sso-oidc)),
+- **сервер, до якого IdP може дістатися через HTTPS** — виклики SCIM надходять
+  від IdP, а не з браузера користувача. Використайте вбудований тунель
+  (Налаштування → Сервер → Підключення та стан → Надати доступ до цього сервера → Cloudflared/ngrok/Tailscale) або публічний URL. Сервер,
+  доступний лише через WebSocket-релей, не може приймати надсилання SCIM;
+  JIT-підготовка там усе ще працює, а цей посібник — ні.
 
-## Steps
+## Кроки
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Відкрийте **Налаштування → Сервер → Єдиний вхід** → картку
+   **Підготовка користувачів (SCIM)**. Картка показує кінцеву точку, наприклад
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Натисніть **Згенерувати токен** (або **Перегенерувати токен**, якщо він уже
+   існує) — bearer-токен з’являється один раз у діалозі та копіюється в буфер
+   обміну. Збережіть його в менеджері паролів; сервер зберігає лише копію,
+   яку можна перевірити за сталий час.
+3. У налаштуваннях підготовки вашого IdP увімкніть SCIM з такими параметрами:
+   - **Базова URL-адреса**: кінцева точка вище
+   - **Автентифікація**: `Authorization: Bearer <token>`
+   - **Ідентифікатор користувача**: `userName` (email) або `externalId` — підходять обидва
+4. Перевірте на одному користувачі: надішліть його з IdP і переконайтеся, що він
+   з’явився (створення через SCIM прив’язує `externalId` провайдера до облікового
+   запису — та сама прив’язка, яку задає перший вхід через SSO).
 
-## What deprovisioning does
+## Що робить скасування підготовки
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Коли IdP надсилає `active: false` (або `DELETE`), SCIM спершу відмовляє, якщо
+обліковий запис є **власником** робочого простору (спершу передайте володіння).
+Інакше:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. спершу відкликаються всі облікові дані пристроїв — активні сесії
+   розриваються за лічені секунди,
+2. видаляється кожне членство в робочих просторах,
+3. обліковий запис позначається як деактивований (він більше ніколи не зможе
+   увійти, хоч би що IdP казав пізніше, доки його явно не реактивують).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Сам рядок користувача залишається — авторство в тікетах, повідомленнях і
+комітах зберігається назавжди. Реактивація (SCIM `active: true`) відновлює
+вхід, але **не** членство: для нього потрібне нове запрошення або політика
+автоматичного додавання під час входу.
 
-## Troubleshooting
+## Усунення несправностей
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 на кожен виклик** — токен змінився; перегенеруйте його та оновіть IdP.
+- **Кінцева точка недоступна** — тунель не працює, або сервер працює лише через
+  релей. SCIM потребує прямого HTTPS; JIT усе одно продовжує працювати.
+- **Помилки надсилання груп (501)** — це навмисно: зіставлення груп із ролями
+  відбувається під час входу за атрибутами груп SAML/OIDC, а не з надісланих груп.

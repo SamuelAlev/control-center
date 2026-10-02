@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Rechercher du code avec le graphe de code
+description: Indexez un dépôt et utilisez les outils du graphe de code pour trouver des symboles et voir ce qu’un changement casserait.
 slug: fr-CA/manuel/guides/recherche-de-code
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Ce guide vous montre comment faire entrer un dépôt dans le graphe de code, puis comment l’utiliser pour répondre à la question qui vous préoccupe réellement avant une refactorisation : qu’est-ce qui dépend de ceci ?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Le graphe de code est une base de données de symboles et d’arêtes construite en analysant vos copies de dépôts enregistrées avec tree-sitter. Ses outils sont **destinés aux agents** : vous y accédez en demandant à un agent.
 
-## Before you start
+## Avant de commencer
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Le graphe indexe Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB et Ada. Les fichiers dans toute autre langue ne sont pas analysés : ils n’apparaissent donc pas dans `search_code`, `code_symbol`, `code_callers`, `code_callees` ni `code_impact`.
 
-Two more things shape what gets indexed:
+Deux autres éléments déterminent ce qui est indexé :
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Dans un arbre de travail git, l’énumération s’en remet à `git ls-files --cached --others --exclude-standard` : tous les `.gitignore`, les fichiers d’exclusion imbriqués, `.git/info/exclude` et le fichier d’exclusions global sont donc respectés. C’est ce qui tient `node_modules` et les artefacts de compilation hors du graphe.
+- Le Dart généré est écarté dans tous les cas. Les fichiers générés sont habituellement validés dans le dépôt, de sorte que git seul ne les exclurait pas, et ils changent constamment à chaque exécution de génération de code.
 
-## Get a repo indexed
+## Faire indexer un dépôt
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/fr-CA/manuel/guides/ajouter-des-depots/).
+L’enregistrement d’une copie de dépôt déclenche `RepoAdded`, qui démarre automatiquement le pipeline `index_code` pour celle-ci. Voir [Ajouter des dépôts à un espace de travail](/fr-CA/manuel/guides/ajouter-des-depots/).
 
-To re-index by hand:
+Pour réindexer manuellement :
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Ouvrez **Paramètres → Espace de travail → Dépôts**.
+2. Cliquez sur le bouton **Indexer le code** dans la ligne du dépôt.
+3. Pendant l’exécution, le bouton affiche le nombre de fichiers traités sur le total, avec une commande d’annulation. Une fois terminé, il se stabilise en une coche accompagnée du nombre de symboles.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Le graphe est partitionné par espace de travail, par dépôt et par copie de dépôt : la copie de dépôt liée constitue une partition, et chaque arbre de travail d’espace obtient la sienne (indexée par son identifiant de dépôt isolé).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Deux mécanismes de régulation valent la peine d’être connus, car ils expliquent une attente qui ressemble à un blocage :
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- L’observateur de fichiers n’admet qu’**une seule** exécution d’indexation à la fois sur l’hôte : une deuxième copie de dépôt attend. Le pipeline `index_code` est par ailleurs plafonné à une exécution par espace de travail, de sorte que deux dépôts du même espace de travail font la queue ; des espaces de travail différents peuvent s’indexer en parallèle. L’indexeur lui-même sérialise deux exécutions de la **même** copie de dépôt, afin qu’un démarrage de pipeline et un balayage de l’observateur ne puissent pas l’analyser deux fois.
+- Les arbres de travail appartenant à des **espaces dormants** (aucun message depuis une semaine) ne sont ni observés ni indexés. Les copies de dépôts liées restent observées. Une décision de saut est revérifiée après cinq minutes, de sorte qu’un espace redevenu actif est pris en charge.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Une grammaire manquante arrête le serveur, pas la recherche]
+Tree-sitter et ses grammaires sont des modules natifs requis. Si l’une d’elles manque, `cc_server` refuse de démarrer et nomme la dylib manquante : le symptôme est un serveur qui ne démarre pas, jamais une recherche dégradée. Installez-les avec `scripts/natives/build_natives.sh` et recompilez le binaire du serveur.
 :::
 
-## Find a symbol
+## Trouver un symbole
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Demandez à un agent de faire la recherche. L’outil est `search_code` et il exige à la fois un espace de travail et un dépôt :
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Les identifiants de dépôt proviennent de `list_repos`. L’argument facultatif `mode` prend la valeur `keyword`, `semantic` ou `hybrid` et vaut `hybrid` par défaut : BM25 sur les noms, les signatures et les commentaires de documentation, fusionné avec la similarité vectorielle.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Chaque résultat porte l’identifiant, le nom, le nom qualifié, le type, le chemin de fichier, la ligne de début et de fin du symbole, ainsi que sa signature lorsqu’il en a une. L’**id** est la référence que vous transmettez à tous les autres outils de cette page.
 
-When you know the exact name, look it up directly instead:
+Lorsque vous connaissez le nom exact, consultez-le directement à la place :
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Retracer les appels
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Les deux prennent un `symbol_id` issu d’un résultat de recherche, ainsi qu’un `limit` facultatif (50 par défaut) :
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` renvoie les symboles ayant une arête entrante vers celui-ci ; `code_callees` renvoie ceux dont il dépend.
 
-## Check what a change would break
+## Vérifier ce qu’un changement casserait
 
-This is the tool the whole page exists for:
+Voici l’outil pour lequel toute cette page existe :
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Il calcule le rayon de dépendance **inverse** : tout ce qui dépend directement ou transitivement du symbole le long des arêtes `calls`, `extends` et `implements` (les imports, les mixes-in et les références génériques sont stockés dans le graphe, mais ne sont pas parcourus ici). `depth` est le nombre maximal de sauts, entre 1 et 6, avec une valeur par défaut de 2.
 
-The result is three fields:
+Le résultat comporte trois champs :
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — le symbole sur lequel portait votre question
+- `impacted` — l’ensemble atteignable, y compris la racine à la profondeur 0, chacun portant sa `depth` depuis la racine
+- `edgeCount` — le nombre d’arêtes franchies par la traversée, sous forme de compte plutôt que des arêtes elles-mêmes
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Exécutez-le avant de renommer quoi que ce soit ou de modifier une signature, et donnez à l’agent la liste des éléments touchés comme périmètre.
 
-## Results are checked against the caller's own working copy
+## Les résultats sont vérifiés par rapport à la copie de travail de l’appelant
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Pour un appelant agent, l’identifiant d’espace est injecté automatiquement et les résultats sont vérifiés par rapport à la copie de travail de **cet espace**. Un symbole dont le fichier n’existe plus dans l’arbre de l’appelant est omis, et la réponse porte un compte `staleOmitted` ainsi qu’une note indiquant que l’index est périmé pour ces symboles.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+C’est pourquoi vous et un agent pouvez obtenir des réponses différentes à la même requête, et pourquoi un agent d’un espace peut obtenir une réponse différente de celle d’un agent d’un autre espace. Toutes les conversations d’un espace partagent ce même arbre de travail. La vérification échoue en mode ouvert : une réponse périmée est préférée à une réponse vide.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/fr-CA/manuel/guides/calcul-de-revision/).
+Demandez à un agent d’exécuter `code_impact` (ou `review_studio.blastRadius`) lorsque vous voulez le rayon d’impact d’un changement. Voir [Calcul de révision](/fr-CA/manuel/guides/calcul-de-revision/).
 
-## Semantic search needs the embedding model
+## La recherche sémantique exige le modèle d’embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Les symboles et les faits sont vectorisés au moment de l’écriture, et seulement lorsque le modèle d’embedding local est installé. D’ici là, `mode: "semantic"` et la moitié sémantique du mode hybride n’ont rien à quoi se comparer, et la recherche est de fait limitée aux mots-clés.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Installez le modèle dans **Paramètres → Serveur → Diagnostics et confidentialité → Recherche sémantique** avant d’indexer. Les symboles obtiennent un vecteur lorsque leur fichier est ingéré.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Notez aussi que toute recompilation du binaire du serveur réinstalle les dylibs de grammaires et modifie leur mtime, ce qui invalide chaque point de contrôle d’index et force un nouveau balayage complet de chaque copie de dépôt à l’exécution suivante. Il recalcule les empreintes, mais il n’extrait pas de nouveau les fichiers inchangés.
 
-## What is in the graph
+## Ce que contient le graphe
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Types de symboles :** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Types d’arêtes :** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/fr-CA/manuel/reference/outils-mcp/).
+Les signatures de référence de ces outils se trouvent dans [Outils MCP](/fr-CA/manuel/reference/outils-mcp/).
 
-## Related guides
+## Guides connexes
 
-- [Add repos to a workspace](/fr-CA/manuel/guides/ajouter-des-depots/)
-- [Review compute (cohorts and axes)](/fr-CA/manuel/guides/calcul-de-revision/)
-- [Use the MCP server](/fr-CA/manuel/guides/serveur-mcp/)
+- [Ajouter des dépôts à un espace de travail](/fr-CA/manuel/guides/ajouter-des-depots/)
+- [Calcul de révision (cohortes et axes)](/fr-CA/manuel/guides/calcul-de-revision/)
+- [Utiliser le serveur MCP](/fr-CA/manuel/guides/serveur-mcp/)
 
-## Related concepts
+## Concepts connexes
 
-- [Workspaces and isolation](/fr-CA/manuel/concepts/espaces-de-travail/)
+- [Espaces de travail et isolation](/fr-CA/manuel/concepts/espaces-de-travail/)

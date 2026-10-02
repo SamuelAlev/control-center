@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: بیک اپ، ایکسپورٹ اور امپورٹ
+description: اسنیپ شاٹ کی ساخت، مینی فیسٹ، ہر بیک اپ آپریشن اور منتقلی کا راستہ، اور یہ کہ بیک اپ میں کون سی فائلیں آتی ہیں اور کون سی نہیں۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/); for why persistence is
-split this way, see [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/).
+ہر وہ چیز جو Control Center نقل، حوالے یا اپنا سکتا ہے، اور ہر
+آرٹی فیکٹ کی عین ساخت۔ اصل میں بیک اپ لینے کے لیے
+[بیک اپ اور بحالی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/) دیکھیں؛ اور یہ کہ پائیداری اِس
+طرح کیوں بٹی ہوئی ہے، جاننے کے لیے [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) دیکھیں۔
 
-## Artifacts
+## آرٹی فیکٹس
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+ڈیٹا بیس کی نقل کے تین آرٹی فیکٹس ہیں، جن کے دائرے اور حذف کی پالیسیاں مختلف ہیں۔
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| آرٹی فیکٹ                | کس نے لکھا                   | شکل                                 | احاطہ                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **انسٹال اسنیپ شاٹ**    | `server.backupNow`           | ایک ٹائم اسٹیمپ والی **ڈائریکٹری**    | انسٹال کی ہر ڈیٹا بیس |
+| **ورک اسپیس بیک اپ**    | `Workspace backup` پائپ لائن | ٹائم اسٹیمپ والی ڈائریکٹری، ایک `.db` کے ساتھ | ایک ورک اسپیس کی ڈیٹا بیس      |
+| **ورک اسپیس ایکسپورٹ**  | `workspace.export`           | ایک واحد `.db` **فائل**               | ایک ورک اسپیس کی ڈیٹا بیس      |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+یہ سب SQLite کے `VACUUM INTO` سے لکھے جاتے ہیں، جو زندہ WAL ڈیٹا بیس کے خلاف بھی محفوظ ہے:
+یہ ایک ریڈ ٹرانزیکشن لیتا ہے، ایک ڈی فرگمنٹ شدہ اور ٹرانزیکشن کے لحاظ سے ہم آہنگ
+نقل بناتا ہے، اور کبھی سرور روکنے کا تقاضا نہیں کرتا۔
 
-## Snapshot layout
+## اسنیپ شاٹ کی ساخت
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,124 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+ساخت زندہ ڈیٹا ڈائریکٹری کی عین نقل ہے، اور یہی چیز انسٹال کی بحالی کو ترجمے کے
+بجائے ایک واپسی نقل بناتی ہے۔ ڈائریکٹری کا نام UTC ٹائم اسٹیمپ ہے جس میں `:` اور `.`
+کو `-` سے بدل دیا گیا ہوتا ہے، چنانچہ یہ Windows پر فائل سسٹم کے لیے محفوظ ہے اور
+سادہ متن کی صورت میں زمانی ترتیب سے ترتیب پاتا ہے۔
 
-Scheduled workspace backups live separately at
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+شیڈول شدہ ورک اسپیس بیک اپس الگ سے
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` پر رہتے ہیں۔
+اِن میں کوئی مینی فیسٹ یا `global.db` شامل نہیں ہوتا اور یہ انسٹال اسنیپ شاٹس نہیں ہیں۔
+ہفتہ وار پائپ لائن کا برقراری کا قدم صرف اپنی ورک اسپیس کے اُن بیک اپس کو ہٹاتا ہے جو
+اُس کی مقرر کردہ عمر (بطور ڈیفالٹ 30 دن) سے پرانے ہوں؛ دستی طور پر بنائے گئے انسٹال
+اسنیپ شاٹس اُس قدم کے ذریعے کبھی نہیں ہٹائے جاتے۔ `server.listBackups` صرف انسٹال
+اسنیپ شاٹس کی فہرست دیتا ہے، نامکمل سمیت۔
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| فیلڈ                      | قسم            | مطلب                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | مینی فیسٹ فارمیٹ کا ورژن۔ اس وقت `1`                                |
+| `created_at`               | ISO-8601 UTC    | اسنیپ شاٹ کب لیا گیا                                                |
+| `global.file`              | string          | ہمیشہ `global.db`                                                   |
+| `global.schema_version`    | int             | گرفت کے وقت `GlobalDatabase` اسکیما کا ورژن                         |
+| `global.bytes`             | int             | لکھی گئی `global.db` کا سائز                                        |
+| `workspace_schema_version` | int             | `WorkspaceDatabase` اسکیما کا ورژن، جو ہر ورک اسپیس فائل میں مشترک ہے |
+| `workspaces[]`             | array           | ہر گرفت شدہ ورک اسپیس کے لیے ایک اندراج                             |
+| `workspaces[].workspace_id`| string          | وہ ورک اسپیس جس کی یہ فائل ہے                                       |
+| `workspaces[].file`        | string          | اسنیپ شاٹ روٹ کے حوالے سے پاتھ، `<workspaceId>/workspace.db`         |
+| `workspaces[].bytes`       | int             | اُس فائل کا سائز                                                    |
+| `skipped_workspaces[]`     | array of string | وہ ورک اسپیسز جنہیں بیک اپ گرفت **نہ** سکا                           |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+کوئی ورک اسپیس اُس وقت چھوڑ دی جاتی ہے جب وہ رجسٹر ہو مگر اُس میں کبھی لکھا نہ گیا ہو
+(چنانچہ ابھی کوئی فائل موجود نہیں)، یا جب اُس کا `VACUUM INTO` ناکام ہو جائے۔ دونوں
+صورتوں میں اسنیپ شاٹ پھر بھی مکمل ہوتا ہے اور مینی فیسٹ بتا دیتا ہے کہ کیا غائب ہے۔
 
-### Completeness
+### مکملیت
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` فی اسنیپ شاٹ ایک `complete` فلیگ بتاتا ہے۔ یہ false ہوتا ہے جب
+مینی فیسٹ موجود نہ ہو یا پارس نہ ہو سکے، جب `global.db` غائب ہو، یا جب مینی فیسٹ
+کسی ایسی ورک اسپیس فائل کا نام لے جو ڈسک پر نہ ہو۔
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+نامکمل اسنیپ شاٹ پھر بھی فہرست میں شامل رہتا ہے، کیونکہ جو اسنیپ شاٹ کسی آپریٹر کو
+نظر نہ آئے، وہ اُس کے خیال میں اُس کے پاس موجود ہوتا ہے۔ جب مینی فیسٹ ناقابلِ مطالعہ
+ہو تو فہرست خود ساخت پر واپس گر جاتی ہے اور جو بھی `<workspaceId>/workspace.db` فائلیں
+اُسے ملتی ہیں اُنہیں بتا دیتی ہے — ایسی فائلیں `workspace.import` کے ذریعے انفرادی
+طور پر اپنائی جا سکتی رہتی ہیں، چاہے پورا اسنیپ شاٹ کسی انسٹال کو بحال نہ کر سکے۔
 
-## What a backup does not contain
+## بیک اپ میں کیا کچھ نہیں ہوتا
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+دونوں آرٹی فیکٹس **صرف ڈیٹا بیسز** ہیں۔ ورک اسپیس کی ڈائریکٹری اپنی ڈیٹا بیس سے
+زیادہ کچھ رکھتی ہے، اور باقی میں سے کچھ بھی ساتھ نہیں جاتا:
 
-| Path                                | In a snapshot? | In a workspace export? |
+| پاتھ                                | اسنیپ شاٹ میں؟ | ورک اسپیس ایکسپورٹ میں؟ |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | ہاں            | نہیں                     |
+| `<workspaceId>/workspace.db`        | ہاں            | ہاں (یہ *خود* وہ فائل ہے) |
+| `<workspaceId>/blobs/`              | نہیں             | نہیں                     |
+| `<workspaceId>/skills/`             | نہیں             | نہیں                     |
+| `<workspaceId>/agents/`             | نہیں             | نہیں                     |
+| `<workspaceId>/chat_credentials/`   | نہیں             | نہیں                     |
+| `<workspaceId>/spaces/<spaceId>/`   | نہیں             | نہیں                     |
+| `<workspaceId>/pr_clones/`          | نہیں             | نہیں                     |
+| `secrets.json`                      | نہیں             | نہیں                     |
+| `models/`                           | نہیں             | نہیں                     |
+| `meetings/<meetingId>/`             | نہیں             | نہیں                     |
+| `rigs/`                             | نہیں             | نہیں                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/).
+اِس میں سے کچھ قابلِ ضیاع ہے — `spaces/` میں copy-on-write worktrees رکھے ہوتے ہیں جو
+ریپوز سے دوبارہ تیار کیے جاتے ہیں، `pr_clones/` ایک کیش ہے، `models/` دوبارہ ڈاؤن لوڈ
+ہو جاتا ہے، `rigs/` مشین کی حالت ہے۔ کچھ ایسا نہیں ہے: `blobs/` میں وہ پیسٹ کی گئی
+تصاویر رکھی ہوتی ہیں جن کی طرف ڈیٹا بیس کی قطاریں اشارہ کرتی ہیں، `skills/` اور
+`agents/` میں وہ فائلیں رکھی ہوتی ہیں جن کے ساتھ کوئی ایجنٹ چلتا ہے، اور
+`secrets.json` میں انسٹال کی ہر پیئرنگ کلید، فراہم کنندہ کی اسناد اور SSO ترتیب رکھی
+ہوتی ہے۔ باقی سب ڈھانپنے کے لیے [بیک اپ اور بحالی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/#copy-backups-off-the-machine)
+دیکھیں۔
+:::note[چیٹ ٹوکن دانستہ طور پر پیچھے رہ جاتے ہیں]
+`chat_credentials/` کا ڈیٹا بیس کے اندر کے بجائے اُس کے پہلو میں رہنا ہی وجہ ہے کہ
+کسی اور کو دی گئی ورک اسپیس اپنے ساتھ کوئی زندہ بوٹ ٹوکن نہیں لے جاتی۔
+[چیٹ برج حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/) دیکھیں۔
 :::
 
-## Operations
+## آپریشنز
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+انسٹال بیک اپ کے RPCs اور ورک اسپیس ایکسپورٹ/امپورٹ صرف `fullClient` کے لیے ہیں: کوئی
+پیئر شدہ فون اُنہیں شروع نہیں کر سکتا۔ ایسے سرور پر، جہاں کوئی بیک اپ پورٹ وائر ہی نہ
+ہو — مثلاً ڈیمو سرور — یہ سب مکمل طور پر غائب ہوتے ہیں، مسترد نہیں بلکہ ساختی طور پر
+غائب۔
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
+| آپریشن                   | قسم   | دائرہ     | کم سے کم کردار | آرگیومنٹس     | واپسی                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| `server.backupNow`   | mutate | انسٹال   | انسٹال کا **مالک** | کوئی نہیں     | `{ok, path}`                  |
+| `server.listBackups` | read   | انسٹال   | انسٹال کا **مالک** | کوئی نہیں     | `{backups: [...]}`            |
+| `server.deleteBackup` | mutate | انسٹال | انسٹال کا **مالک** | `name` | `{ok}` |
+| `workspace.export`   | read   | ورک اسپیس | `admin`      | کوئی نہیں          | `{ok, path}`                  |
+| `workspace.import`   | mutate | ورک اسپیس | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | mutate | انسٹال*  | `owner`      | `id`          | رجسٹری قطار حذف شدہ نشان زد   |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` کا کوئی ورک اسپیس دائرہ نہیں، کیونکہ جس قطار کو یہ نشان زد کرتا
+ہے وہ عالمی رجسٹری میں رہتی ہے؛ اُس کا ہینڈلر کال کرنے والے کی بتائی گئی ورک اسپیس
+میں رکنیت جانچتا ہے اور `owner` کا تقاضا کرتا ہے۔
 
-`path` in every response is a path on the **server host**.
+ہر جواب میں `path` **سرور ہوسٹ** پر ایک پاتھ ہوتا ہے۔
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[پورے انسٹال کا اسنیپ شاٹ دونوں لینوں پر مالک سے مشروط ہے]
+`server.backupNow`، `server.listBackups` اور `server.deleteBackup` کو انسٹال کا
+**مالک** درکار ہوتا ہے (`ServerAuthority.serverOwner`)، یعنی وہی گیٹ جو
+`GET /backup/snapshot` پر لگتا ہے۔ ایک اسنیپ شاٹ ہر ورک اسپیس کی ڈیٹا بیس گرفت میں
+لیتا ہے، چنانچہ صرف ایک ورک اسپیس کا ایڈمن ہونا باقیوں کے نظم کے لیے کافی نہیں ہوتا۔
+حذف صرف فہرست میں شامل ٹائم اسٹیمپ ڈائریکٹری کا نام قبول کرتا ہے، کوئی من مانا سرور
+پاتھ نہیں، اور پورا اسنیپ شاٹ ہٹاتا ہے (نامکمل اسنیپ شاٹس سمیت)۔
+فی ورک اسپیس ایکسپورٹ/امپورٹ ورک اسپیس کے ایڈمن/مالک پر ہی رہتے ہیں، انسٹال کے مالک
+پر نہیں۔
 :::
 
-### `server.listBackups` response
+### `server.listBackups` کا جواب
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+نئے سے پرانے کی ترتیب میں، ڈائریکٹری کے نام سے ترتیب دیے گئے (جو ٹائم اسٹیمپ ہے،
+چنانچہ ترتیب اُس اسنیپ شاٹ کے لیے بھی برقرار رہتی ہے جس کا مینی فیسٹ پڑھا نہ جا سکا
+ہو)۔
 
 ```json
 {
@@ -169,99 +174,104 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` اُس وقت حذف ہو جاتا ہے جب مینی فیسٹ پڑھا نہ جا سکا ہو۔ اوپر کی سطح پر
+`bytes` پوری ڈائریکٹری کا ڈسک پر اصل سائز ہے، نہ کہ مینی فیسٹ کا اپنا مجموعہ — جو
+آپریٹر اسنیپ شاٹس چھانٹتے ہوئے پوچھ رہا ہوتا ہے، وہ یہ ہے کہ ڈائریکٹری کتنی جگہ لیتی
+ہے، نہ یہ کہ بیک اپ نے کتنا لکھنا چاہا تھا۔
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+ہر `workspaces[].path` بالکل وہی چیز ہے جو `workspace.import` `source_path` کے طور پر
+لیتا ہے۔ یہ جان بوجھ کر ایسا ہے: ”اِس ورک اسپیس کو اِس اسنیپ شاٹ سے بحال کریں“ *وہی*
+امپورٹ آپریشن ہے، چنانچہ یہ دونوں ایک ہی فائل کے ساتھ مختلف سلوک کی طرف سرک نہیں
+سکتے۔
 
-### `workspace.import` validation
+### `workspace.import` کی توثیق
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+کچھ بھی تبدیل ہونے سے پہلے، امیدوار فائل کو ایک قلیل المدت خام SQLite کنکشن کے ساتھ
+صرف پڑھنے کے لیے کھولا جاتا ہے اور اُس کی `workspace_meta` قطار پڑھی جاتی ہے۔
 
-| Condition                                        | Result                                                          |
+| شرط                                        | نتیجہ                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| کوئی خواندہ SQLite ڈیٹا بیس نہ ہو، یا `workspace_meta` نہ ہو | مسترد۔ کچھ بھی نہیں چھیڑا جاتا                                |
+| ریکارڈ شدہ ورک اسپیس id ≠ ہدف                | **اجازت**، لاگ ہوتا ہے۔ اِسی طرح کوئی ورک اسپیس نئی id کے تحت نقل یا بحال کی جاتی ہے |
+| ریکارڈ شدہ انسٹال id ≠ یہ انسٹال                | **اجازت**، لاگ ہوتا ہے۔ اُس کے پیئر شدہ ڈیوائسز اور صارف ids اُس انسٹال سے تعلق رکھتے ہیں اور یہاں حل نہیں ہوں گے |
+| غلط ورک اسپیس id، یا فائل موجود نہ ہو      | مسترد                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+قبول ہونے پر ہدف ورک اسپیس کی ڈیٹا بیس بند کر کے مینیجر سے ہٹا دی جاتی ہے، پھر اُس کے
+اوپر فائل کاپی کی جاتی ہے (ایک کھلا drift کنکشن فائل اور اُس کی `-wal` کو تھامے رکھتا
+ہے)، اور پھر دوبارہ کھولی جاتی ہے تاکہ `beforeOpen` FTS اور سنک ٹرگرز دوبارہ نصب کرے،
+اور FTS انڈیکسز دوبارہ بنائے جاتے ہیں — کسی امپورٹ شدہ فائل کے مواد کے ٹیبل بھرے
+ہوئے ہوتے ہیں مگر اُس کا انڈیکس باسی ہو سکتا ہے۔
 
-## Transfer routes
+## منتقلی کے راستے
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+اوپر کا ہر آپریشن سرور کی طرف کے پاتھوں میں بات کرتا ہے، جو صرف اُس وقت مکمل جواب ہے
+جب سرور آپ کی اپنی مشین ہو۔ یہ تینوں بائٹس منتقل کرتے ہیں، اُسی PSK سے دستخط شدہ لین
+پر جسے میڈیا پراکسی اور بلاب اسٹور استعمال کرتے ہیں۔ کال کرنے والا اپنی ڈیوائس کی
+پری شیئرڈ کلید سے ایک ہدف سٹرنگ پر دستخط کرتا ہے اور دستخط کو `s` کے طور پر بھیجتا
+ہے۔
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| راستہ                   | میتھڈ | کوئری           | دستخط شدہ ہدف                  | درکار                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | ورک اسپیس کا **ایڈمن**   |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | انسٹال کا **مالک**     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | ورک اسپیس کا **مالک**   |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` ایک ورک اسپیس id ہے، `n` اسنیپ شاٹ ڈائریکٹری کا نام، `d` کال کرنے والے ڈیوائس کی
+id، اور `s` دستخط۔ `n` بیک اپ فہرست کے خلاف حل کیا جاتا ہے، بیک اپس روٹ پر جوڑ کر
+نہیں، چنانچہ راستے کو کسی ایسی ڈائریکٹری کی طرف نہیں موڑا جا سکتا جو فہرست ظاہر ہی
+نہ کرتی ہو۔
 
-| Status | Cause                                                                              |
+| اسٹیٹس | وجہ                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | کوئی لازمی کوئری پیرامیٹر غائب ہو، یا اپ لوڈ باڈی خالی ہو                   |
+| `403`  | نامعلوم یا منسوخ شدہ ڈیوائس، خراب دستخط، یا کال کرنے والے کے پاس مطلوبہ کردار نہ ہو              |
+| `404`  | اِس ہوسٹ پر کوئی بیک اپ پورٹ نہ ہو، یا بتائی گئی اسنیپ شاٹ/ورک اسپیس فائل موجود نہ ہو    |
+| `405`  | `/backup/restore` کو `POST` کے سوا کسی اور چیز کے ساتھ کال کیا گیا ہو                                   |
+| `413`  | اپ لوڈ باڈی 8 GiB سے بڑھ جائے، خواہ اعلان شدہ content-length سے یا واقعی پڑھے گئے بائٹس سے     |
+| `500`  | ایکسپورٹ یا آرکائیو سرور کی طرف ناکام ہو گیا ہو                                            |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+دونوں ڈاؤن لوڈز `Cache-Control: no-store` کے ساتھ `Accept-Ranges: none` کا جواب دیتے
+ہیں۔ ہر درخواست ایک **تازہ** نقل بناتی ہے اور اسٹریم ہونے کے بعد اُسے حذف کر دیتی ہے،
+چنانچہ کیش شدہ یا دوبارہ شروع کیا گیا جواب دو مختلف ایکسپورٹس کے بائٹس کو ایک ایسی
+فائل میں جوڑ دے گا جو دیکھنے میں درست لگتی ہے مگر ہے نہیں۔
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot`، `<name>.zip` واپس کرتا ہے، جس کے اندراجات اسنیپ شاٹ روٹ کے حوالے
+سے ہوتے ہیں، چنانچہ اَن پیک کرنے پر `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db` دوبارہ بن جاتے ہیں۔ اندراجات ترتیب شدہ صورت میں لکھے
+جاتے ہیں، لہٰذا ایک ہی اسنیپ شاٹ کے دو آرکائیو ایک ہی آرکائیو ہوتے ہیں۔
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` باڈی کو بفر کرنے کے بجائے براہِ راست ایک اسٹیجنگ فائل میں اسٹریم
+کرتا ہے، اُسے پڑھنے سے پہلے اور دورانِ مطالعہ محدود کرتا ہے، اور اسٹیج شدہ فائل کو
+باہر نکلنے کے **ہر** راستے پر حذف کر دیتا ہے، مسترد ہونے کی صورت سمیت۔
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[ریلے شدہ کنکشن کا کوئی HTTP اوریجن نہیں ہوتا]
+بروکرڈ ریلے RPC فریمز لے جاتا ہے، فائل ٹرانسفرز نہیں۔ جو کچھ سرور کی طرف کے پاتھوں
+میں بات کرتا ہے، وہ اُس پر چلتا رہتا ہے؛ تینوں منتقلی راستوں کو براہِ راست کنکشن
+درکار ہوتا ہے، اور UI اُنہیں ڈاؤن لوڈ کے بیچ میں ناکام کرنے کے بجائے ایک نوٹ کے
+ساتھ غیر فعال کر دیتا ہے۔
 :::
 
-## Paths and limits
+## پاتھ اور حدیں
 
-| Thing                          | Value                                                        |
+| چیز                          | قدر                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| اسنیپ شاٹس                      | `<dataDir>/backups/<timestamp>/`                             |
+| شیڈول شدہ ورک اسپیس بیک اپس    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| ورک اسپیس ایکسپورٹس              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| منتقلی کی اسٹیجنگ               | `<dataDir>/backups/transfer/` — ایک ورک بینچ، جسے وہی راستہ صاف کرتا ہے جو اُسے لکھتا ہے |
+| اسنیپ شاٹ آرکائیو کا نام          | `<snapshot directory name>.zip`                              |
+| اپ لوڈ کی حد                 | فی `POST /backup/restore` 8 GiB                             |
+| برقراری                      | انسٹال اسنیپ شاٹس: دستی حذف۔ ورک اسپیس بیک اپس: ہفتہ وار پائپ لائن، بطور ڈیفالٹ 30 دن |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+`exports/`، `transfer/` اور `workspace-backups/` ڈائریکٹریاں انسٹال اسنیپ شاٹس نہیں
+ہیں اور `server.listBackups` سے خارج ہیں۔ صرف آخری ڈائریکٹری کی برقراری شیڈول شدہ ہے؛
+کسی انسٹال اسنیپ شاٹ کو حذف کرنے کے لیے انسٹال کے مالک کی صریح کارروائی درکار ہوتی
+ہے۔
 
-## See also
+## مزید دیکھیں
 
-- [Back up and restore](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/) — the recipes these operations belong to
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) — why one workspace is one file
-- [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ/) — where the UI lives
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/) — the client/server split the paths follow
+- [بیک اپ اور بحالی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/) — وہ ترکیبیں جن سے یہ آپریشنز تعلق رکھتے ہیں
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/) — ایک ورک اسپیس ایک فائل کیوں ہے
+- [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/) — وہ ڈیٹا ڈائریکٹری جس میں یہ پاتھ رہتے ہیں
+- [روٹ میپ](/ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ/) — UI کہاں رہتا ہے
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/) — وہ کلائنٹ/سرور تقسیم جس کی پیروی یہ پاتھ کرتے ہیں

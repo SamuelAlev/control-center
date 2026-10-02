@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Code structureel refactoren
+description: Laat een agent code vinden en herschrijven op vorm in plaats van op tekst, en review de wijziging voordat ze landt.
 slug: nl-NL/handleiding/gidsen/structureel-refactoren
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Deze gids laat zien hoe je een agent een brede, mechanische wijziging laat doorvoeren — een codemod, een bulk-API-migratie, een patroon dat je weg wilt — met structureel zoeken en herschrijven, waarbij de wijziging klaarstaat voor review voordat er iets wordt geschreven.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` matcht code op **vorm**. `ast_edit` herschrijft die. `resolve` voert de wijziging door of gooit haar weg.
 
-## Before you start
+## Voordat je begint
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Structurele tools dekken de talen die de codegraph parseert: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB en Ada. Ze hebben de tree-sitter-grammatica's klaargezet nodig, wat in een uitgebrachte build altijd zo is — een ontbrekende grammatica stopt de server in plaats van het zoeken te verslechteren.
 
-## Find the shape first
+## Vind eerst de vorm
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Herschrijf nooit iets waar je niet naar hebt gekeken. Vraag de agent om te zoeken:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Vind elke plek waar we `dispose()` aanroepen op een nullable die we net op null hebben gecontroleerd.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+De uitvoer is `file:line` plus de gematchte broncode voor elke plek.
 
-### What the pattern syntax buys you
+### Wat de patroonsyntaxis je oplevert
 
-| Token      | Matches                                    |
+| Token      | Matcht                                     |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | Elk afzonderlijk knooppunt, vastgelegd     |
+| `$$$NAME`  | Elke reeks broers en zussen — argumenten, statements |
+| `$_`       | Alles, zonder naam vastgelegd              |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Degene die ertoe doet: **een herhaalde `$NAME` moet dezelfde tekst vastleggen**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+vindt een guard die opruimt wat hij heeft getest. Hij vindt **niet** `if (a != null) b.dispose()` — en dat is meestal precies de bug die je zocht. Geen enkele tekstuele zoekopdracht kan dat uitdrukken.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Hij kan niet matchen in een string of een commentaar]
+Het patroon wordt geparseerd door dezelfde grammatica als het bestand, dus `dispose(x)` in een doc-commentaar of een stringliteral is geen aanroep en wordt niet gematcht. Dat is precies de reden om dit te pakken in plaats van `grep`.
 :::
 
-### When the pattern finds nothing
+### Als het patroon niets vindt
 
-Two things to try, in order:
+Twee dingen om te proberen, in deze volgorde:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Maak het kleiner.** `foo($X)` vóór `if (a) { foo($X); }`. Een patroon dat op zichzelf geen geldige code is, is vaak niet het construct dat je bedoelde.
+2. **Noem de taal.** `language:` wordt alleen afgeleid als `path` naar één enkel bestand wijst.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Een patroon dat geen enkele parsecontext accepteert, wordt als onparseerbaar gemeld — de tool zegt dat, in plaats van "geen overeenkomsten" te melden voor iets dat nooit werd gelezen zoals het eruitziet.
 
-## Rewrite, and look before it lands
+## Herschrijven, en kijken voordat het landt
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Het resultaat is een **voorstel**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Er staat nog niets op schijf. Lees de lijst, controleer een paar van de plekken die de zoekopdracht meldde, en dan:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+of
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Het doorvoeren is alles-of-niets]
+Elk bestand wordt vergeleken met de inhoud die werd vastgelegd toen de wijziging klaarstond. Als er ook maar één is gewijzigd — de agent heeft het met de hand bewerkt, er liep een formatter, een diagnoseronde heeft het herschreven — wordt de **hele** wijziging geweigerd en weggegooid. Een gedeeltelijk toegepaste structurele herschrijving laat een boom achter die noch onder de oude noch onder de nieuwe vorm compileert.
 
-Re-run the tool against the current files; do not retry the stale id.
+Draai de tool opnieuw tegen de huidige bestanden; probeer het verouderde id niet opnieuw.
 :::
 
-## Check your work with the compiler
+## Controleer je werk met de compiler
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Het punt van dit structureel aanpakken is dat het breed is. Brede wijzigingen zijn precies waar een ogenschijnlijk plausibele herschrijving een type breekt. Vraag na het doorvoeren om diagnostiek:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` draait de eigen checker van het project (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) in plaats van een query per bestand — de juiste vorm van vraag na een wijziging die veertig bestanden raakte.
 
-## Worked example: migrating a call
+## Uitgewerkt voorbeeld: een aanroep migreren
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Stel dat `log(msg, level)` verandert in `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Bekijk de treffers. Als sommige ervan een *andere* `log` met twee argumenten zijn, beperk het patroon dan door `path` te richten op de map die de bedoelde bevat, in plaats van het verschil in het patroon te willen uitdrukken.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Dan `resolve`, dan `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Wanneer je iets anders gebruikt
 
-| Situation                                 | Better tool                          |
+| Situatie                                  | Betere tool                          |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/nl-NL/handleiding/gidsen/code-zoeken/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Een symbool hernoemen                     | `lsp_rename` — die volgt referenties, geen vormen |
+| Een string, een commentaar of een bestandsnaam vinden | `search` (inhoud) / `search_files` (namen) |
+| "Wat breekt er als ik dit wijzig?"        | De [codegraph](/nl-NL/handleiding/gidsen/code-zoeken/) |
+| Een taal die de grammatica's niet dekken  | `search` plus `edit`                 |
 
-## Related
+## Gerelateerd
 
-- [Code intelligence](/nl-NL/handleiding/concepten/code-intelligentie/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/nl-NL/handleiding/referentie/agenttools/) — the full argument list
-- [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/) — the symbol and impact side
+- [Code-intelligentie](/nl-NL/handleiding/concepten/code-intelligentie/) — waarom structureel matchen geen regex met extra stappen is
+- [Ingebouwde agenttools](/nl-NL/handleiding/referentie/agenttools/) — de volledige argumentenlijst
+- [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/) — de symbolen- en impactkant

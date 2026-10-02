@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Mô hình agent
+description: Agent thực ra là gì trong Control Center, những trường nào của nó làm thay đổi hành vi và cách adapter mà nó chạy trên đó quyết định những gì có thể được thi hành.
 slug: vi-VN/so-tay/khai-niem/mo-hinh-agent
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Agent là gì?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Agent là một tác nhân có tên, với một persona, một tập kỹ năng, một adapter để chạy trên đó và một tập quyền hạn. Agent là những chủ thể theo đúng nghĩa mà con người là vậy: chúng viết tin nhắn, sở hữu phiếu, để lại bản rà soát và xuất hiện trên cùng một danh sách hiện diện. Chúng chính là những thứ thực sự làm ra công việc.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Mỗi agent thuộc về đúng một không gian làm việc. Đây là một bất biến cứng — `agent.workspaceId` là non-null, chính không gian làm việc của agent quyết định tệp cơ sở dữ liệu mà các hàng của nó nằm trong đó, và việc tạo một agent không thuộc không gian làm việc nào sẽ bị từ chối.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Agent cũng là một thư mục. Định nghĩa của nó nằm tại `agents/<slug>/AGENTS.md` trong thư mục dữ liệu của không gian làm việc, với những kỹ năng mà nó nắm giữ được tạo symlink vào `agents/<slug>/.agents/skills`. Hàng trong cơ sở dữ liệu và tệp được ghi cùng nhau. Việc gieo tạo có tính lũy đẳng: nếu hàng agent đã tồn tại thì các tệp trên đĩa và liên kết kỹ năng vẫn được ghi lại. Bên gọi trong môi trường thực tế là thao tác tạo không gian làm việc, chứ không phải mỗi lần khởi chạy máy chủ.
 
-## What an agent carries
+## Agent mang theo những gì
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| Thuộc tính              | Tác dụng                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `name`                  | Mã định danh ngắn kiểu slug (`architect`, `qa`). Cũng là căn cứ để `@mentions` phân giải |
+| `title`                 | Chức danh dễ đọc với con người                                                         |
+| `persona`               | Chỉ dẫn về tính cách và hành vi dạng văn bản tự do, được chèn thành một phần của prompt |
+| `systemPrompt`          | Chỉ dẫn bổ sung tùy chọn, được chèn thành một mục “Agent instructions” — chúng không thay thế phần còn lại của prompt đã lắp ghép |
+| `skills`                | Tập tên kỹ năng không phân biệt chữ hoa chữ thường, được phản chiếu thành các liên kết kỹ năng trên đĩa |
+| `adapterId`             | Trình chạy mà agent điều phối tới. **Null sẽ quay về vòng lặp tích hợp**                |
+| `modelId`               | Mô hình nào trong adapter đó                                                           |
+| `effort`                | Mức suy luận, lấy từ bộ từ vựng của chính mô hình được chọn                            |
+| `contextSize`           | Ghi đè cửa sổ ngữ cảnh                                                                 |
+| `capabilities`          | Các cờ về thông tin đăng nhập và lưu lượng mạng ra, được kiểm tra lúc khởi chạy         |
+| `silenceTimeoutMinutes` | Ghi đè theo từng agent (1–240) cho cơ chế canh hết hạn im lặng                          |
+| `reportsTo`             | Id agent cha — chuỗi báo cáo mà sơ đồ tổ chức vẽ ra                                     |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Bạn chỉnh sửa tất cả những thứ này tại Cài đặt → Không gian làm việc → Agent. **Agent mới** tạo ra một agent chưa có tên để bạn điền vào sau.
 
-## Skills
+## Kỹ năng
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Kỹ năng là những cái tên không phân biệt chữ hoa chữ thường trên thực thể agent. Hai việc riêng biệt diễn ra với chúng:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Những cái tên được liệt kê trong prompt đã lắp ghép dưới một tiêu đề “Skills”. Chỉ vậy thôi là toàn bộ việc mà tập hợp của thực thể tự làm — không có thư viện prompt riêng cho từng kỹ năng dựa vào nó.
+- Thư mục của mỗi kỹ năng được đặt tên (`skills/<slug>/SKILL.md` trong không gian làm việc) được liên kết vào thư mục riêng của agent. Trên harness tích hợp, frontmatter của các kỹ năng được liên kết sẽ tự động được nạp vào prompt hệ thống, và agent đọc phần thân khi cần; gõ `/skill:<name>` trong một cuộc trò chuyện sẽ nạp phần thân đó như một chỉ thị cho lượt đó.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-skill/).
+Những kỹ năng được tải từ bên ngoài phải đi qua một đợt quét chuỗi cung ứng theo cơ chế fail-closed giữa bước tải về và bước ghi — không nội dung kỹ năng nào chạm tới đĩa hay một prompt mà chưa có phán quyết. Bên ngoài đó là những kho mã GitHub do chính bạn đăng ký làm nguồn kỹ năng: không có cửa hàng nào được tuyển chọn, nên siêu dữ liệu của chính kho mã (phần mô tả, số sao, tên kỹ năng) là dữ liệu hiển thị không đáng tin, và phán quyết của đợt quét là tín hiệu an toàn duy nhất. Một lần cài đặt sẽ tải toàn bộ thư mục của kỹ năng, ghim nó vào commit mà nó đến từ đó trong `skills-lock.json`, và một lần cập nhật sau đó phải qua lại cổng kiểm tra trước khi thay thế bất cứ thứ gì. Hướng dẫn chi tiết nằm ở [cài đặt và quản lý kỹ năng](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-skill/).
 
-### Repo-scoped skills
+### Kỹ năng theo phạm vi kho mã
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Một kho mã có thể mang theo kỹ năng của riêng nó, ở bất kỳ vị trí quy ước nào (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). Một space checkout mọi kho mã được liên kết song song dưới `repos/<name>/`, nhưng một agent chỉ làm việc trong một kho mã tại một thời điểm — nên nó chỉ mang **kỹ năng của chính kho mã đó**, và bộ kỹ năng sẽ đổi khi nó chuyển sang kho khác.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Kho mã nào đang hoạt động được suy ra từ những tệp mà agent chạm vào: ghi một tệp dưới `repos/<name>/` sẽ biến kho đó thành kho đang hoạt động, còn chỉ đọc xuyên qua các kho thì không, nên việc lần theo một ký hiệu sang một dịch vụ anh em sẽ không bao giờ hoán đổi bộ kỹ năng ngay dưới chân một tác vụ. Trên một space chỉ có một kho mã, câu trả lời đã biết trước lượt đầu tiên.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Việc giới hạn phạm vi là một quyết định về ngân sách ngữ cảnh. Danh mục kỹ năng nằm trong prompt ở mọi lượt còn phần thân thì không, nên liệt kê kỹ năng của mọi kho mã cùng lúc sẽ ngốn token liên tục — và một kỹ năng `testing` của dịch vụ này sẽ chủ động gây nhầm lẫn khi công việc nằm ở dịch vụ khác. Cùng lý lẽ đó giải thích vì sao danh mục của agent chỉ mang một kho mã nhưng khung soạn tin thì không bị giới hạn như vậy: tự bạn gọi tên một kỹ năng là một hành vi minh thị, nên `/skill:<repo>:<name>` với tới bất kỳ kho mã nào trong space.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Kỹ năng của kho mã được nạp cho **mọi** adapter, không chỉ harness tích hợp. Kỹ năng của kho mã đang hoạt động được hiện thực hóa vào thư mục làm việc của agent, vốn là đường dẫn mà Claude Code đã quét sẵn; cùng danh mục đó cũng được dựng vào `AGENTS.md` mà harness tích hợp đọc. Kỹ năng của một kho mã phải qua đúng đợt quét fail-closed như một kỹ năng đã cài đặt, trước khi bất kỳ điều nào ở trên diễn ra — một kho mã đã checkout là nội dung được sao chép về, và frontmatter của nó sẽ chạm tới một prompt.
 
-## Capabilities
+## Quyền hạn
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Quyền hạn quyết định thứ mà một lượt chạy được _trao_, chứ không phải thứ mà hệ thống tệp cho phép nó chạm vào. Bộ môi giới thông tin đăng nhập kiểm tra chúng lúc khởi chạy: nếu một quyền hạn bị tắt thì token tương ứng đơn giản là không được chèn vào.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Đẩy lên kho mã** — quyết định việc chèn token GitHub dùng cho `git push`.
+- **GitHub API** — quyết định việc chèn `GH_TOKEN` và lưu lượng mạng ra tới api.github.com.
+- **Phiếu** — quyết định khóa API của nhà cung cấp phiếu và lưu lượng mạng ra tới các tên miền của nó.
+- **Lưu lượng mạng ra** — các yêu cầu gửi ra ngoài tùy ý.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Một lượt chạy phân giải chúng từ chính hàng của agent. Khi agent không có quyền hạn nào thì một mặc định cố định theo hướng thận trọng sẽ được áp dụng: ba cờ thông tin đăng nhập tắt, lưu lượng mạng ra bật. Nút bật/tắt “Quyền sandbox” trong biểu mẫu agent chọn giữa phương án dự phòng đó và một bộ tùy chỉnh được lưu trên agent.
 
-See [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết nửa còn lại của câu chuyện, bao gồm những gì được và không được thi hành ở mức hệ thống tệp.
 
-## The adapter decides what can be enforced
+## Adapter quyết định những gì có thể được thi hành
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Trường có hệ quả lớn nhất trên một agent là adapter của nó, bởi phương thức vận chuyển của adapter quyết định bao nhiêu phần chính sách của Control Center thực sự có thể được thi hành.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Phương thức vận chuyển | Adapter                   | Những gì Control Center thi hành                                                                                                                                                                                                                                          |
+| ---------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Harness tích hợp       | Control Center (built-in) | Mọi thứ. Bề mặt công cụ được _dựng_ từ chế độ, nên một công cụ không được phép sẽ vô hình chứ không chỉ đơn thuần bị từ chối; mọi lệnh gọi đều đi qua cổng phê duyệt và các rào chắn thao tác; hợp đồng hoàn thành có thể thúc rồi đánh dấu thất bại một lượt chạy kết thúc mà không có sản phẩm bàn giao |
+| Claude CLI             | Claude Code               | Chỉ những công cụ `mcp__*` mà nó được phục vụ. Các công cụ đọc, ghi, sửa và shell của chính Claude nằm trong tiến trình của nó và chạy mà không ai thấy — và nó được khởi chạy với `--dangerously-skip-permissions`, vì nếu không thì `claude -p` không tương tác sẽ chặn đứng mãi mãi ở prompt của chính nó |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Cụ thể, **chỉ harness tích hợp mới hỗ trợ subagent, điều hướng giữa lượt chạy, tạm dừng và tiếp tục (và do đó cả tiếp quản) cùng việc thực thi chế độ theo cấu trúc.** Claude Code không có bất kỳ thứ nào trong số đó.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[Sandbox của hệ điều hành là mức sàn, không phải bộ thi hành chế độ, và không phải máy chủ nào cũng có]
+Ma trận trên nói về những gì Control Center có thể _thấy và chặn_. Bên dưới nó, `cc_server` bọc CLI Claude Code trong sandbox hệ điều hành của máy chủ ở nơi có một sandbox như vậy — Seatbelt trên macOS, bubblewrap trên Linux và WSL2 — nên một lệnh `rm` không ai thấy hay một thao tác ghi không ai thấy vẫn bị hệ điều hành giới hạn. Trên **Windows thì hoàn toàn không có backend**, còn trên Linux hay WSL2 thiếu `bwrap` và `socat` thì bước dò báo không có backend nào, nên ở đó những lượt chạy này quay về việc làm sạch môi trường, thông tin đăng nhập do bộ môi giới cấp, các rào chắn trên những lệnh gọi mà Control Center thấy được, và worktree riêng của cuộc trò chuyện (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
+Điều mà sandbox không phải là một _cổng chặn_. Nó giới hạn nơi mà một tiến trình được phép đọc, ghi và kết nối — chế độ chỉ đọc có chạm tới nó, dưới dạng các bind mount chỉ đọc — nhưng nó không thể chặn đứng một lệnh gọi, dựng lên một yêu cầu phê duyệt, hay cho bạn biết sau đó CLI đã thử làm gì. Điều đó, cộng với bốn quyền hạn vừa nêu ngay trên, vẫn là thứ mà harness tích hợp có còn những cái khác thì không. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+Một agent **không có** adapter sẽ quay về **Control Center (built-in)** — vòng lặp bên trong máy chủ, nên không có CLI nào phải cài — và nhật ký lượt chạy của nó ghi lại `cc-harness`. Mọi agent được gieo tạo đều được tạo ra mà không có adapter hay mô hình, nên năm agent của một không gian làm việc mới đều chạy ở đó, trên mô hình mặc định của Anthropic, cho tới khi bạn đặt adapter và mô hình cho từng agent. Lựa chọn “adapter mặc định” trong bước thiết lập ban đầu là một tùy chọn phía máy khách mà máy chủ không bao giờ đọc, và nó không áp dụng ngược lại cho những agent đã được tạo trước đó.
 
-## Where agents come from
+## Agent đến từ đâu
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Được gieo tạo cùng không gian làm việc.** Mọi không gian làm việc — không chỉ cái đầu tiên — đều có một CEO cùng bốn chuyên gia (`qa`, `architect`, `engineer`, `librarian`) báo cáo cho nó, được tạo một cách lũy đẳng trong nền khi không gian làm việc được tạo. Xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
+- **Được thêm thủ công** tại Cài đặt → Không gian làm việc → Agent. Việc yêu cầu một agent thuê đồng nghiệp không tạo ra hàng nào; hãy dùng màn hình đó.
 
-## Live state
+## Trạng thái trực tiếp
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Một agent không có cột trạng thái được lưu trữ. Trạng thái trực tiếp của nó được suy ra từ các nhật ký lượt chạy gần nhất mỗi lần nó được đọc:
 
-| State      | Meaning                                                              |
+| Trạng thái | Ý nghĩa                                                              |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | Không tồn tại nhật ký lượt chạy nào                                   |
+| `running`  | Có ít nhất một lượt chạy đang diễn ra                                |
+| `failed`   | Lượt chạy mới nhất gặp lỗi, hoặc trạng thái sống của nó là failed hay dead |
+| `blocked`  | Trạng thái sống của lượt chạy mới nhất là blocked, stalled hoặc looping |
+| `idle`     | Mọi trường hợp còn lại — agent đã từng chạy và không có gì đang thực thi |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+Hai trạng thái nữa, `queued` và `succeeded`, tồn tại cho từng lượt chạy riêng lẻ trong cây lượt chạy của cuộc trò chuyện; danh sách hiện diện không bao giờ tạo ra chúng, bởi một lượt chạy đã xong mà xanh là sự thật về lượt chạy đó, chứ không phải về agent.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/vi-VN/so-tay/khai-niem/da-nguoi-dung/).
+Danh sách hiện diện hiển thị một bức tranh song song, thô hơn, được tổng hợp ở phía máy chủ từ các sự kiện lượt chạy trực tiếp — đang suy nghĩ, đang chạy, bị chặn chờ phê duyệt, đã xong — và chính điều đó khiến agent xuất hiện bên cạnh con người. Xem [Đa người dùng và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/).
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): what happens when an agent is actually run
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): what constrains a run today
-- [Agent configuration reference](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/): the full field list
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): điều gì xảy ra khi một agent thực sự được chạy
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/): thiết lập theo từng cuộc trò chuyện định hình bề mặt công cụ của agent
+- [Đa người dùng và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): agent với tư cách chủ thể, hiện diện và núm tự chủ
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): những gì đang giới hạn một lượt chạy hiện nay
+- [Tham chiếu cấu hình agent](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/): danh sách đầy đủ các trường

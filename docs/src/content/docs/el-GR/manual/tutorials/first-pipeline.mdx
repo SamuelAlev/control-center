@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Δημιουργήστε το πρώτο σας pipeline
+description: Δημιουργήστε ένα πρότυπο pipeline, ρυθμίστε το βήμα του, επιτρέψτε τις χειροκίνητες εκτελέσεις και ξεκινήστε μία.
 slug: el-GR/εγχειρίδιο/οδηγοί/πρώτο-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Τι θα φτιάξετε
 
-By the end of this tutorial, you will have:
+Μέχρι το τέλος αυτού του οδηγού θα έχετε:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Ένα αποθηκευμένο πρότυπο pipeline που αποστέλλει έναν πράκτορα με μια προτροπή
+- Χειροκίνητες εκτελέσεις ενεργοποιημένες σε αυτό, ώστε να μπορεί να ξεκινήσει με το χέρι
+- Μία ολοκληρωμένη εκτέλεση, με την είσοδο και την έξοδο του βήματος ορατές
 
-Prerequisites: [Dispatch your first agent](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/) completed, so you have an agent with an adapter and a model.
+Προαπαιτούμενα: ολοκληρωμένος ο [Αποστείλετε τον πρώτο σας πράκτορα](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-πράκτορας/), ώστε να έχετε έναν πράκτορα με προσαρμογέα και μοντέλο.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/); for the full step vocabulary, [Pipeline step kinds](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
+Ένα pipeline είναι ένα DAG από βήματα. Τα πρότυπα ορίζουν το γράφημα· οι εκτελέσεις είναι μεμονωμένες εκτελέσεις. Για το μοντέλο που κρύβεται από πίσω, διαβάστε το [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/)· για το πλήρες λεξιλόγιο βημάτων, τα [Είδη βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
 
-## Step 1: Create a template
+## Βήμα 1: Δημιουργήστε ένα πρότυπο
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Πρότυπα pipeline**
+2. Κάντε κλικ στο **Νέο πρότυπο**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Ο επεξεργαστής ανοίγει σε έναν προπαρασκευασμένο σκελετό με όνομα **Νέο pipeline** (id `pipeline_N`).
+Κάντε κλικ στον τίτλο στην κεφαλίδα και μετονομάστε τον — για αυτόν τον οδηγό,
+το `code_quality_check` είναι καλό όνομα. Δεν υπάρχει παράθυρο διαλόγου για το id
+ούτε πεδίο περιγραφής.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Ο καμβάς δεν είναι κενός. Ένα νέο πρότυπο έρχεται προ-συνδεδεμένο ως **Trigger → Step →
+τερματικός**, όπου το «Step» είναι κόμβος πράκτορα προτροπής και ο τερματικός είναι ένας
+αόρατος αισθητήρας που ο επεξεργαστής επανασυνδέει σε κάθε προσβάσιμη κατάληξη.
 
-You configure the Step that is already there.
+Ρυθμίζετε το Step που βρίσκεται ήδη εκεί.
 
-## Step 2: Configure the step
+## Βήμα 2: Ρυθμίστε το βήμα
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Κάντε κλικ στον κόμβο **Step** στον καμβά
+2. Στο πλαίσιο **Ρύθμιση κόμβου** στα δεξιά, ορίστε:
+   - **Πράκτορας**: τον πράκτορά σας από τον προηγούμενο οδηγό
+   - **Πρότυπο προτροπής**: «Έλεγξε τον κώδικα στον τρέχοντα κλάδο για θέματα ποιότητας. Κατάγραψε ό,τι βρεις.»
+3. Αφήστε το **Εναύσματα από** ήσυχο — ο κόμβος είναι ήδη συνδεδεμένος ώστε να πυροδοτείται μετά το Trigger
 
-## Step 3: Save
+## Βήμα 3: Αποθήκευση
 
-Press **Save** in the editor header.
+Πατήστε **Αποθήκευση** στην κεφαλίδα του επεξεργαστή.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Σημείο ελέγχου.** Η λεζάντα «Μη αποθηκευμένες αλλαγές» σβήνει.
 
-## Step 4: Allow manual runs
+## Βήμα 4: Επιτρέψτε τις χειροκίνητες εκτελέσεις
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Κάντε κλικ στο διακεκομμένο πλακίδιο **Προσθήκη εναύσματος** στον καμβά (ή σύρετε τη
+   **Χειροκίνητη εκτέλεση** από την ενότητα Εναύσματα της βιβλιοθήκης κόμβων) και
+   επιλέξτε **Χειροκίνητη εκτέλεση**.
+2. Επιλέξτε αυτόν τον κόμβο. Στον επιθεωρητή στα δεξιά, ενεργοποιήστε το **Ενεργοποιημένο** —
+   «Εμφάνιση στη σελίδα εκτέλεσης και έναρξη χειροκίνητα.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Αυτό δεν είναι προαιρετικό και είναι εύκολο να το παραλείψετε. Ένα νέο πρότυπο δημιουργείται με **καθόλου γραμμή εναύσματος**, οπότε μέχρι να το ενεργοποιήσετε η σελίδα εκτέλεσης δεν θα το εμφανίζει και δεν υπάρχει τίποτα να ξεκινήσετε. Ο διακόπτης γράφει αμέσως το έναυσμα· δεν περιμένει άλλη αποθήκευση.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Ο ίδιος διακόπτης βρίσκεται πίσω από τη **Χειροκίνητη εκτέλεση** στην κεφαλίδα του επεξεργαστή, όπου στέκεται δίπλα στις δηλωμένες εισόδους του προτύπου.
 
-## Step 5: Run it
+## Βήμα 5: Εκτελέστε το
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Κάντε κλικ στο **Pipelines** στην πλαϊνή στήλη
+2. Πατήστε **Εκτέλεση pipeline** στην κεφαλίδα
+3. Επιλέξτε το `code_quality_check` στην αριστερή στήλη
+4. Πατήστε **Εκτέλεση pipeline** στη φόρμα — το πρότυπό σας δεν δηλώνει εισόδους, οπότε δεν υπάρχει τίποτα να συμπληρώσετε
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Σημείο ελέγχου.** Ένα αναδυόμενο μήνυμα επιβεβαιώνει ότι η εκτέλεση ξεκίνησε και το Control Center ανοίγει τις λεπτομέρειες της εκτέλεσης.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Η μηχανή δημιουργεί την εγγραφή εκτέλεσης, ολοκληρώνει το έναυσμα, προγραμματίζει το βήμα, αποστέλλει τον πράκτορα και ολοκληρώνει την εκτέλεση όταν ολοκληρωθεί ο εισερχόμενος κλάδος του τερματικού.
 
-## Step 6: Inspect the result
+## Βήμα 6: Ελέγξτε το αποτέλεσμα
 
-Click the step in the run to open its detail panel:
+Κάντε κλικ στο βήμα μέσα στην εκτέλεση για να ανοίξετε το πλαίσιο λεπτομερειών του:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Χρονικές σημάνσεις **Ξεκίνησε** και **Ολοκληρώθηκε** και **Διάρκεια**
+- **Είσοδος**: η κατάσταση που περνά στο βήμα
+- **Έξοδος**: τι παρήγαγε — εδώ, η απάντηση του πράκτορα
+- **Δραστηριότητα πράκτορα**, με σύνδεσμο προς τη συνομιλία που οδήγησε το βήμα
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Σημείο ελέγχου.** Το βήμα εμφανίζεται ολοκληρωμένο και η έξοδός του περιέχει την ανασκόπηση του πράκτορα.
 
-## Adding more steps
+## Προσθήκη περισσότερων βημάτων
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Οι κόμβοι προστίθενται σύροντας μια καταχώριση από τη βιβλιοθήκη κόμβων στα αριστερά
+στον καμβά ή πατώντας **Προσθήκη βήματος** (`+`) ακριβώς μετά από έναν κόμβο. Σύρετε
+από τη θύρα εξόδου ενός κόμβου σε άλλον κόμβο για να τους συνδέσετε ή επιλέξτε τον νέο
+κόμβο και σημειώστε το ανάντη βήμα του στο **Εναύσματα από**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Ο κόμβος τερματικού δεν σχεδιάζεται και δεν μπορεί να επιλεγεί. Ο επεξεργαστής τον
+επανασυνδέει σε κάθε προσβάσιμη κατάληξη, ώστε ένας κόμβος που προσθέτετε μετά το
+προπαρασκευασμένο **Step** να εκτελείται κανονικά.
 
-## Recap
+## Σύνοψη
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Δημιουργήσατε ένα πρότυπο, ρυθμίσατε τον κόμβο πράκτορα προτροπής με τον οποίο προπαρασκευάστηκε, το αποθηκεύσατε, το κάνατε χειροκίνητα εκτελέσιμο, ξεκινήσατε μια εκτέλεση και διαβάσατε την είσοδο και την έξοδο του βήματος.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Τα pipelines γίνονται πολύ μεγαλύτερα από αυτό — δρομολογητές με συνθήκες, παράλληλοι κλάδοι, κόμβοι join, εξάπλωση for-each, πύλες ανθρώπινης έγκρισης — αλλά το σχήμα δεν αλλάζει ποτέ: βήματα σε ένα DAG, που περνούν κατάσταση.
 
-**Next:** [Bridge Slack to your workspace](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/), the last tutorial in this sequence.
+**Επόμενο:** [Συνδέστε το Slack στον χώρο εργασίας σας](/el-GR/εγχειρίδιο/οδηγοί/πρώτη-γέφυρα-συνομιλίας/), ο τελευταίος οδηγός αυτής της σειράς.
 
-- [Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/) to start pipelines from events or a schedule
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/) for the model underneath
-- [Pipeline step kinds](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/) for every step type
+- [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/) για να ξεκινάτε pipelines από γεγονότα ή ένα χρονοδιάγραμμα
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/) για το μοντέλο από κάτω
+- [Είδη βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/) για κάθε τύπο βήματος

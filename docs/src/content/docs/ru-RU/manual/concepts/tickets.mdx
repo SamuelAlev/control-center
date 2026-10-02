@@ -1,155 +1,168 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Тикеты и делегирование
+description: Почему тикет отслеживает работу, но не запускает её, как защищено делегирование и чем зеркало внешней системы владеет, а чем нет.
 slug: ru-RU/руководство/понятия/тикеты
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Тикет — это единица работы, которую отслеживает Control Center. Он намеренно
+сделан _примитивным_ артефактом: заголовок, тело, статус, владелец и место в
+дереве. Он не то, что исполняют агенты, — работа агента живёт в разговорах, а
+структурированный вывод запуска — в журнале запуска.
 
-## Assignment records ownership; it dispatches nothing
+## Назначение фиксирует владение; оно ничего не запускает
 
-This is the single most important thing to get right about tickets.
+Это самое важное, что нужно усвоить про тикеты.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ru-RU/руководство/понятия/доменные-события/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Установка `assignedAgentId` записывает поле и публикует
+[доменное событие](/ru-RU/руководство/понятия/доменные-события/)
+`TicketAssigned`. Это событие — сигнал для аудита и уведомлений и триггер
+конвейера. **Назначение агенту не инициирует запуск.** Диспетчера тикетов,
+который следил бы за `assignedAgentId` и будил этого агента, нет.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Исключение — команда: когда задан `assignedTeamId`, `TeamRoutingService`
+запускает лидера команды с рабочим протоколом и составом.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Если вы хотите, чтобы над тикетом поработал конкретный агент, попросите его в
+разговоре, либо это сделает шаг конвейера, либо его делегирует другой агент.
+Назначить тикет агенту и ждать — единственное, что никогда не даст работы.
 
-## Mirror and overlay
+## Зеркало и оверлей
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Тикет может быть чисто локальным или опираться на внешний трекер, и то и
+другое он несёт в одной строке.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Зеркало** — провайдер, внешний ключ, URL, заголовок, описание, приоритет,
+метки, сырой и нормализованный статус, отметки времени — это кэш, когда тикет
+удалённый. Источник истины там — удалённая система, и обновление переписывает
+зеркало целиком.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Оверлей** — назначение, делегирование, привязка к пространству, родитель,
+проект, связанные PR — существует только в Control Center. Трекер о нём ничего
+не знает, и обновление его никогда не трогает.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Именно это разделение и делает синхронизацию безопасной: выгрузка из внешней
+системы может разрушительно обойтись с зеркалом, так и не потеряв метаданные
+оркестрации, надстроенные сверху.
 
-## The lifecycle graph binds agents, not you
+## Граф жизненного цикла обязателен для агентов, а не для вас
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Статусы идут так: `backlog → open → inProgress → inReview → done`, где
+`blocked` — боковой цикл, а `failed` / `cancelled` — остальные терминальные
+состояния.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Граф переходов применяется **только на пути агента и автоматизации** —
+инструментами MCP и реконсилерами. Недопустимый переход там логируется и
+игнорируется, поэтому запутавшийся агент не может провести тикет назад из
+терминального состояния.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Любое изменение в интерфейсе, сделанное пользователем, передаёт `force: true`
+и полностью обходит граф. Человек может перевести тикет в любой статус,
+который есть в селекторе, — в том числе открыть заново терминальный. Селектор
+не предлагает `failed`; агенты ставят его через `fail_ticket`. Граф — это
+ограждение для автоматизации, а не правило о том, как позволено двигаться
+работе.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` владеет каждой мутацией через единственную узловую
+точку: она загружает строку, проверяет, что та принадлежит рабочему
+пространству вызывающего, и записывает с ожидаемым `version`, чтобы два
+параллельных изменения не перезаписали друг друга молча.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ru-RU/руководство/справка/жизненный-цикл-тикета/).
+Полную таблицу статусов, переходы, список полей и виды связей см. в разделе
+[Жизненный цикл тикета](/ru-RU/руководство/справка/жизненный-цикл-тикета/).
 
-## Provenance: how a ticket came to exist
+## Происхождение: как тикет появился
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+У каждого тикета есть `originKind`. В перечислении пять значений — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery`, — но сегодня
+записываются только два: `manual` (значение по умолчанию в `createTicket`, в
+том числе для делегированных дочерних тикетов) и `externalSync` (движок
+синхронизации, при выгрузке из внешней системы).
+`TicketWorkflowService.createTicket` не принимает аргумент происхождения,
+поэтому `pipelineStep`, `agentDelegation` и `recovery` никогда не попадают в
+строку.
 
-## Guarded delegation
+## Делегирование с защитными проверками
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Делегирование — это когда агент создаёт работу для другого агента, и именно
+здесь могли бы утечь привилегии, поэтому защитные проверки живут на сервере в
+узловой точке, а не в инструкциях промпта.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` проходит через `TicketWorkflowService.delegateGuarded`, который
+вычисляет глубину и корень дочернего тикета по цепочке родителей, а затем
+выполняет все четыре проверки `DelegationGuards`: переход, который превысил бы
+**предел глубины 3**, переход назад к агенту, уже находящемуся в цепочке
+(**обнаружение циклов**), **потолок автономии** (действующий уровень делегата
+в пространстве не должен превышать уровень делегатора) и **бюджетный конверт**
+(делегирование списывается с оставшегося бюджета жёсткой остановки делегатора
+и не может выдать больше). Боевая конфигурация предоставляет оба
+порта-резолвера. Автономия и бюджет пропускаются, когда `from_agent_id` не
+указан (неограниченный бюджет или бюджет без политики тоже проходит). Отказ
+выбрасывается как `DelegationRefusedException`, сообщение которого доходит до
+делегирующего агента дословно, — громкий отказ, а не тихое бездействие.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` — старший брат, **лишённый защитных проверок**: он вызывает
+`createTicket` напрямую и пропускает все проверки. Предпочитайте
+`delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Не путайте предел глубины делегирования (3, для цепочек `delegate_task`) с
+пределом вложенности субагентов встроенного раннера (2). Это разные
+ограничения разных механизмов.
 
-## Hierarchy, links and projects
+## Иерархия, связи и проекты
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Отношения «родитель — подзадача» живут в `tickets.parent_ticket_id` и находятся
+в ведении `setParent` / `clearParent`. Это **не** строки `ticket_links`,
+поэтому всё, что читает связи тикета, должно объединять оба источника.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` хранит направленные рёбра между в остальном несвязанными
+тикетами:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Тип связи     | Значение                         |
+| ------------- | -------------------------------- |
+| `blocks`      | Исходный тикет блокирует целевой |
+| `relatesTo`   | Два тикета связаны (симметрично) |
+| `duplicateOf` | Исходный — дубликат целевого     |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**Проект** — это группировка тикетов в рамках рабочего пространства ради общей
+цели. Проекты существуют только в Control Center и никогда не синхронизируются
+с внешним провайдером.
 
-## Collaborators
+## Соисполнители
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Строки `TicketCollaborator` — это способ привязать к тикету больше одного
+субъекта с ролью `assignee`, `collaborator` или `reviewer`. Люди и агенты —
+равноправные строки: `principalId` плюс `collaboratorType`, без сигнального
+значения для «пользователя» и без внешнего ключа к любой из таблиц.
 
-## External sync
+## Внешняя синхронизация
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Тикет Control Center — первичен. Удаление тикета происходит **только
+локально**, поэтому тикет, опирающийся на внешнюю систему, при удалении не
+удаляется в трекере и может появиться снова при следующей синхронизации.
+Соисполнители и дочерние тикеты удаляются каскадом.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Учётные данные адаптера берутся из хранилищ учётных данных сервера (ключ
+Linear или токен GitHub, вставленный в разделе «Настройки», подхватывается при
+следующем запросе; окружение лишь заполняет эти хранилища начальными
+значениями).
 
-## Tickets and pipelines
+## Тикеты и конвейеры
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Ни один узел конвейера не создаёт, не завершает и не отменяет тикеты — в
+палитре нет такого шага, и движок не вызывает `TicketWorkflowService`. Триггер
+конвейера всё же может сработать на `TicketAssigned`, `TicketCompleted`,
+`TicketFailed` или `TicketCancelled` (именно эти четыре события тикета реально
+отображает `EventPayloadMapper`). Столбца `pipelineRunId` у тикета нет; связь с
+конвейером живёт в журнале запуска агента.
 
-## See also
+## См. также
 
-- [Pipelines and automation](/ru-RU/руководство/понятия/конвейеры/): ticket events can trigger a pipeline
-- [Orchestration](/ru-RU/руководство/понятия/оркестрация/): where a DAG of sub-tickets comes from
-- [The agent model](/ru-RU/руководство/понятия/модель-агента/): who a ticket is assigned to
-- [Domain events](/ru-RU/руководство/понятия/доменные-события/): the ticket lifecycle events
-- [Ticket lifecycle](/ru-RU/руководство/справка/жизненный-цикл-тикета/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
-- [Delegate work to agents](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
-- [Organize work with projects](/ru-RU/руководство/практические-руководства/проекты/)
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/): события тикета могут запускать конвейер
+- [Оркестрация](/ru-RU/руководство/понятия/оркестрация/): откуда берётся DAG подтикетов
+- [Модель агента](/ru-RU/руководство/понятия/модель-агента/): кому назначается тикет
+- [Доменные события](/ru-RU/руководство/понятия/доменные-события/): события жизненного цикла тикета
+- [Жизненный цикл тикета](/ru-RU/руководство/справка/жизненный-цикл-тикета/): статусы, поля, переходы, связи
+- [Создавать и управлять тикетами](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
+- [Делегировать работу агентам](/ru-RU/руководство/практические-руководства/делегировать-тикеты/)
+- [Организовать работу через проекты](/ru-RU/руководство/практические-руководства/проекты/)

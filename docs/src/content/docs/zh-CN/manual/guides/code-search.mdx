@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: 用代码图搜索代码
+description: 为仓库建立索引，并使用代码图工具查找符号、查看某项改动会破坏什么。
 slug: zh-CN/手册/操作指南/代码搜索
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+本指南介绍如何把仓库纳入代码图，然后用它来回答重构之前你真正关心的问题：哪些东西依赖它？
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+代码图是一个符号与边的数据库，由 tree-sitter 解析你已注册的检出内容构建而成。它的工具**面向智能体**——你需要通过请求智能体来使用它们。
 
-## Before you start
+## 开始之前
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+代码图为 Dart、JavaScript、TypeScript、TSX、PHP、Python、Rust、Zig、C、C++、Go、Java、Ruby、C#、Swift、Kotlin、R、Assembly、MATLAB 和 Ada 建立索引。其他任何语言的文件都不会被解析，因此不会出现在 `search_code`、`code_symbol`、`code_callers`、`code_callees` 或 `code_impact` 中。
 
-Two more things shape what gets indexed:
+还有两件事会决定哪些内容会被索引：
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- 在 git 工作树中，枚举工作交由 `git ls-files --cached --others --exclude-standard` 处理，因此每个 `.gitignore`、嵌套忽略文件、`.git/info/exclude` 以及全局排除文件都会生效。正是这一点让 `node_modules` 和构建产物不会被纳入代码图。
+- 生成的 Dart 一律会剔除。生成的文件通常会被提交，因此仅靠 git 无法排除它们，而且它们在每次代码生成运行时都会变动。
 
-## Get a repo indexed
+## 为仓库建立索引
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/zh-CN/手册/操作指南/添加仓库/).
+注册检出会触发 `RepoAdded`，从而自动为它启动 `index_code` 流水线。参见[向工作区添加仓库](/zh-CN/手册/操作指南/添加仓库/)。
 
-To re-index by hand:
+手动重新索引：
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. 打开 **设置 → 工作区 → 仓库**。
+2. 点击仓库所在行上的 **索引代码** 按钮。
+3. 运行期间，按钮会显示已完成文件数与总数，并提供取消控件。完成后它会变成一个带有符号数量的对勾。
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+代码图按工作区、仓库和检出分区：关联的检出是一个分区，每个空间工作树也各自拥有一个分区（以其隔离仓库 id 为键）。
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+有两个限流机制值得了解，因为它们能解释那种看起来像卡死的等待：
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- 文件监视器在主机上一次只允许**一个**索引任务运行——第二个检出需要等待。`index_code` 流水线另有单独限制，每个工作区只能有一个运行，因此同一工作区中的两个仓库会排队，而不同工作区可以并行建立索引。索引器本身会把**同一个**检出的两次运行串行化，这样流水线启动和监视器扫描就不会重复解析它。
+- 属于**休眠空间**（过去一周内没有任何消息）的工作树既不会被监视，也不会被索引。关联的检出仍会被监视。跳过决定会在五分钟后重新检查，因此重新活跃起来的空间会被重新纳入。
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[缺少语法会阻止服务器启动，而不是影响搜索]
+Tree-sitter 及其语法是必需的原生库。如果缺少某一个，`cc_server` 会拒绝启动并指出缺失的 dylib——症状是服务器无法启动，而绝不会是搜索功能降级。请用 `scripts/natives/build_natives.sh` 暂存它们，然后重新构建服务器二进制文件。
 :::
 
-## Find a symbol
+## 查找符号
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+让智能体去搜索。所用的工具是 `search_code`，它同时需要一个工作区和一个仓库：
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+仓库 id 来自 `list_repos`。可选的 `mode` 参数取值为 `keyword`、`semantic` 或 `hybrid`，默认是 hybrid——对名称、签名和文档注释做 BM25 检索，并与向量相似度融合。
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+每个结果都带有该符号的 id、名称、限定名、种类、文件路径、起始行和结束行，以及它的签名（如果有）。这个 **id** 就是你传给本页其他每个工具的句柄。
 
-When you know the exact name, look it up directly instead:
+如果你知道确切的名称，也可以直接查找：
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## 追踪调用
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+两者都接受来自搜索结果的 `symbol_id`，外加一个可选的 `limit`（默认 50）：
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` 返回有边指向该符号的那些符号；`code_callees` 返回它所依赖的那些符号。
 
-## Check what a change would break
+## 查看某项改动会破坏什么
 
-This is the tool the whole page exists for:
+整页内容就是为了介绍这个工具：
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+它计算**反向**依赖半径：沿 `calls`、`extends` 和 `implements` 边直接或间接依赖该符号的所有内容（导入、混入和泛型引用虽然存储在代码图中，但这里不会遍历）。`depth` 是最大跳数，取值在 1 到 6 之间，默认是 2。
 
-The result is three fields:
+结果包含三个字段：
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` —— 你所查询的符号
+- `impacted` —— 可达集合，包括深度为 0 的根符号，每个符号都带有它到根的 `depth`
+- `edgeCount` —— 遍历经过了多少条边，给出的是计数而不是边本身
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+在重命名或修改签名之前运行它，并把受影响列表作为范围交给智能体。
 
-## Results are checked against the caller's own working copy
+## 结果会对照调用方自己的工作副本进行检查
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+对于智能体调用方，空间 id 会自动注入，结果会与该**空间**的工作副本进行核对。如果某个符号的文件在调用方的目录树中已不存在，该符号会被略去，响应中会带有 `staleOmitted` 计数，并附一条说明：索引中这些符号已经过期。
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+这就是为什么你和智能体对同一个查询可能得到不同的答案，也是为什么一个空间中的智能体与另一个空间中的智能体会得到不同的答案。一个空间中的每次对话都共用同一个工作树。核对采用失效开放策略：宁可给出过期的答案，也不返回空结果。
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/zh-CN/手册/操作指南/审查计算/).
+当你想要某项改动的影响范围时，可以让智能体运行 `code_impact`（或 `review_studio.blastRadius`）。参见[审查计算](/zh-CN/手册/操作指南/审查计算/)。
 
-## Semantic search needs the embedding model
+## 语义搜索需要嵌入模型
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+符号和事实会在写入时生成嵌入，且仅当设备端嵌入模型已安装时才会如此。在此之前，`mode: "semantic"` 以及 hybrid 的语义部分没有可匹配的内容，搜索实际上只按关键词进行。
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+请在建立索引之前，先在 **设置 → 服务器 → 诊断与隐私 → 语义搜索** 中安装该模型。符号会在其文件被摄取时获得向量。
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+另请注意，任何一次服务器二进制文件的重建都会重新暂存语法 dylib 并改变它们的 mtime，从而使所有索引检查点失效，并迫使下次运行时对每个检出做一次完整重新遍历。它会重新计算哈希，但不会重新提取未发生变化的文件。
 
-## What is in the graph
+## 代码图里有什么
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**符号种类：** function、method、class、field、enum、constructor、getter、setter、typedef、extension、mixin、variable。
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**边种类：** calls、imports、extends、implements、mixes in、references。
 
-The canonical signatures for these tools live in [MCP tools](/zh-CN/手册/参考/mcp-工具/).
+这些工具的规范签名见 [MCP 工具](/zh-CN/手册/参考/mcp-工具/)。
 
-## Related guides
+## 相关指南
 
-- [Add repos to a workspace](/zh-CN/手册/操作指南/添加仓库/)
-- [Review compute (cohorts and axes)](/zh-CN/手册/操作指南/审查计算/)
-- [Use the MCP server](/zh-CN/手册/操作指南/mcp-服务器/)
+- [向工作区添加仓库](/zh-CN/手册/操作指南/添加仓库/)
+- [审查计算（队列与轴）](/zh-CN/手册/操作指南/审查计算/)
+- [使用 MCP 服务器](/zh-CN/手册/操作指南/mcp-服务器/)
 
-## Related concepts
+## 相关概念
 
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/)
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)

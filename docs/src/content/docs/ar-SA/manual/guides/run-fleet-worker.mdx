@@ -1,166 +1,162 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: تشغيل عامل أسطول
+description: ابنِ منفّذ cc_worker بلا واجهة، واقرنه، وشغّله حتى يسجّل نفسه لدى cc_server ويظهر في لوحة الأسطول.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-عامل-أسطول
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+شغّل `cc_worker` على جهاز متفرّغ لتضيف سعة تنفيذ إلى أسطولك. هو ثنائي
+Dart خالص — بلا محرّك Flutter — يقترن بـ `cc_server`، ويصرّح بقدرات
+المضيف، وينبض، ويسحب المهام المؤجَّرة، وينفّذها، ويبث أحداث العملية
+عائدة. لا يحتفظ بحالة دائمة: يعيد مشرف تشغيله فيسجّل نفسه من جديد.
 
-You need a running `cc_server` first — see [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
+تحتاج أولًا إلى `cc_server` يعمل — انظر [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/).
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
+يسجّل العامل المقترن نفسه، وينبض، وينتظر المهام المؤجَّرة. تُرسل العمل
+بـ `fleet.submitJob`. إرسال الوكيل على هذا الخادم لا يمر بالأسطول؛ وعلامة
+النجاح في هذا الدليل أن يظهر العامل في لوحة الأسطول بنبضة حديثة. يُسجَّل
+عند الإقلاع عامل داخل العملية وخريطة منفّذاته فارغة، فتعيد المهمة الموضوعة
+عليه `No local runner for
 job kind …`.
 
-## Prerequisites
+## المتطلبات
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart). يحصر هذا المستودع إصدار الحزمة بـ [fvm](https://fvm.app)، فابدأ الأوامر بـ `fvm`.
+- نسخة من هذا المستودع على جهاز العامل.
+- `cc_server` يمكن بلوغه (loopback للتطوير، وLAN أو بعيد للإنتاج).
+- `git` على `PATH` — يُجسّد العامل المستودعات ويشغّل سبر `git`.
 
-## Step 1: Build the binary
+## الخطوة 1: بناء الثنائي
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+ينتج هذا حزمة مكتفية بذاتها في `./build/cli/<os_arch>/bundle/bin/cc_worker`.
 
-## Step 2: Mint the worker's credential
+## الخطوة 2: صك بيانات اعتماد العامل
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+لا يقبل `cc_server` إلا عاملًا يقدّم معرّف جهاز مقترن ومفتاحًا مشتركًا
+مسبقًا — بما في ذلك خادم loopback. صُكّهما على جهاز **الخادم** (يمكن
+تشغيل `pair` والخادم قائم؛ ويُلتقط الجهاز الجديد من غير إعادة تشغيل):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+يطبع `Device id` و`Pairing key` — وهما ما يأخذه `--device-id` و`--psk` / `--psk-file` / `CC_WORKER_PSK`.
 
-## Step 3: Start the worker
+## الخطوة 3: تشغيل العامل
 
-Against a paired server:
+إلى خادم مقترن:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+إلى خادم loopback (مقترن هو أيضًا — `cc_server` يجري مصافحة PSK دائمًا):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| العلم | الوصف | الافتراضي |
+| --- | --- | --- |
+| `--server <url>` | عنوان cc_server (`ws://`/`wss://`؛ ويُحوَّل `http(s)` ومسار `/rpc` إن غاب). **مطلوب.** | — |
+| `--name <name>` | اسم العامل كما يراه المشغّل. | اسم المضيف |
+| `--device-id <id>` | معرّف جهاز مقترن ثابت، وهو معرّف العامل أيضًا. | `cc-worker` |
+| `--psk-file <path>` | ملف يكون أول سطر غير فارغ فيه مفتاح الاقتران. يُفضَّل على `--psk`. | — |
+| `--psk <key>` | مفتاح الاقتران على سطر الأمر. يظهر في `ps` وفي سجل الصدفة — والثنائي يحذّر. | — |
+| `--max-jobs <n>` | سقف صارم للمهام التي تنفّذها هذه العملية في وقت واحد (عدد صحيح موجب). | `4` |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+ترتيب حل المفتاح هو `--psk-file` → `CC_WORKER_PSK` → `--psk`.
+إسقاط المصادر كلها يتخطى مصافحة مصادقة العامل، فيرفض `cc_server`
+الحقيقي الجلسة (`auth_denied`) بدل أن يقبل عاملًا بلا مصادقة. الأعلام
+المجهولة خطأ استعمال (`exit 64`) — وبخلاف `cc_server`، يستخدم هذا
+الثنائي `package:args` ولا يتجاهل الخطأ الإملائي.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+يتجاوز `CC_WORKER_CACHE` دليل الذاكرة المؤقتة لتجسيد شجرة العمل
+(الافتراضي: دليل `cc_worker_cache` تحت دليل النظام المؤقت).
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+يسجّل العامل نفسه بـ `fleet.registerWorker`، ثم ينبض كل 20 ثانية
+ويستطلع الإيجارات كل ثانيتين. يبقى يعمل حتى `SIGINT`/`SIGTERM`؛ ضعه تحت
+systemd أو launchd ليعيد التشغيل والتسجيل بعد انهيار أو إعادة إقلاع.
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
+:::caution[لا نافذة توافق بين إصدارات البروتوكول]
+العامل الذي يختلف إصدار بروتوكول الأسطول لديه عن إصدار الخادم يُسجَّل
+**غير متوافق**، فلا يُعرَض عليه إيجار، ويُجهض `cc_worker` نفسه بالرسالة
 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+to match the server release`. ابنِ العامل من إصدار الخادم نفسه.
 :::
 
-## Step 4: Verify it in the fleet panel
+## الخطوة 4: التحقق منه في لوحة الأسطول
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+افتح **قابلية الملاحظة** في تطبيق الحاسوب أو الويب، وانتقل إلى علامة
+التبويب **مباشر**، وانزل إلى الأسفل. يعرض **العمّال** كل عامل مسجّل مع
+منصته وأنويته ومفاتيح قدراته وآخر نبضة، ويعرض **المهام** المهام
+الموزَّعة عليها.
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+ظهور عاملك هناك بنبضة حديثة هو ما يؤكد أن الاقتران والتسجيل تمّا.
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+من بطاقة العامل تستطيع **تصريف**ه (ينهى المهام الجارية ولا يأخذ إيجارات
+جديدة)، أو **استئناف** عامل قيد التصريف، أو **إلغاء** بيانات اعتماده، أو
+**إزالة** الصف.
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+تعيش صفوف العمال والمهام في `global.db` على الخادم — والعامل نفسه لا
+يكتب إلى القرص شيئًا سوى ذاكرة التجسيد المؤقتة.
 
-## What the worker advertises
+## ما يعلنه العامل
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+عند التسجيل يكتشف العامل قدراته تلقائيًا، ويطابق المجدول المهام بها. لا
+تضبط هذه يدويًا:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **نظام التشغيل والمعمارية** (`macos`/`linux`/`windows`، `arm64`/`x64`) — سبر دقيق، مع الرجوع إلى `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **الأنوية والذاكرة** — عدد الأنوية دقيق؛ وتتدهور الذاكرة إلى `0` حين يتعذّر سبرها
+- **`flutter`** — تُضبط حين يُبلَغ Flutter SDK (`flutter` المجرّد، ثم `fvm flutter`)؛ ومهام التصيير الذهبي تشترطها
+- **`sandbox`** — `native-macos` على macOS، و`native-linux` على Linux. هذه إشارة توزيع لا وعد: يعلن العامل الخلفية التي *تملكها* منصته، لكنه لا يغلّف المهام التي يشغّلها بها. وبخلاف `cc_server`، يطلق `cc_worker` المهمة المؤجَّرة مباشرة
+- **`always-on` و`parallel`** — يعلن `cc_worker` المخصّص الاثنتين دائمًا، فيصير مؤهّلًا لدفعات التقييم ولسائر السعة المتوازية العابرة
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+الكشف بأفضل جهد: ما يتعذّر سبره يتدهور إلى افتراض آمن بدل أن يفشل
+الإقلاع.
 
-## What the worker would execute
+## ما ينفّذه العامل
 
-The lease protocol carries six job kinds:
+يحمل بروتوكول الإيجار ستة أنواع من المهام:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| النوع | ما هو |
+| --- | --- |
+| `agentRun` | تشغيل وكيل واحد (إرسال) |
+| `pipelineStep` | تنفيذ خطوة خط أنابيب |
+| `codeIndex` | بناء فهرس الشفرة لمستودع |
+| `goldenRender` | تصيير ذهبي مرئي للواجهة (يتطلب `flutter`) |
+| `benchmark` | تشغيل معيار أداء |
+| `evalBatch` | دفعة تقييم (تفضّل سعة `parallel`) |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+التنفيذ تنفيذ حقيقي يبث مخرجات العمليات الفرعية، لا بيئة تشغيل وكيل
+مضمّنة كاملة. حين يحمل الإيجار `repoRemote`، ينفّذ العامل
+`git clone --depth 1` في دليل ذاكرة مؤقتة مفتاحه المستودع البعيد وSHA،
+ثم `git fetch` و`git checkout`. وفي `agentRun` يشغّل الأمر الذي في
+`CC_JOB_COMMAND` ضمن بيئة الإيجار، داخل دليل العمل، ويبث stdout وstderr
+عائدة في صورة أحداث؛ وإن غاب `CC_JOB_COMMAND` أعاد المطالبة بالصدى حتى
+يُمارَس النقل من الطرف إلى الطرف. وتشغّل الأنواع الأخرى أوامر حقيقية
+صغيرة (`git rev-parse HEAD`، `git --version`) سبرًا صادقًا. بيانات
+الاعتماد المحصورة بالمهمة، داخل بيئة الإيجار، تُحقن في كل عملية فرعية
+ولا تُكتب في سجل.
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+تُجمَّع الأحداث وتُفرَّغ كل 250 مللي ثانية أو كل 32 حدثًا، وتنتهي كل
+مهمة بحدث انتهاء وتقرير إتمام. النموذج نبضات مع إيجارات قصيرة الأجل: إن
+انقطع اتصال عامل انتهت صلاحية إيجاره واسترد الخادم المهمة لإعادة
+المحاولة. لا حالة دائمة على العامل، ولا إجماع ولا انتزاع عمل بين العمال.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
-- [Connect to a remote server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/)
-- [Pair a device](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/)
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
+- [الاتصال بخادم بعيد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/)
+- [اقتران جهاز](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/)

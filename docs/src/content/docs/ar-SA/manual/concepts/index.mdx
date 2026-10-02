@@ -1,64 +1,62 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: المفاهيم
+description: كيف يعمل Control Center ولماذا بُني بهذه الطريقة — القراءة الخلفية وراء الأدلة الإرشادية.
 slug: ar-SA/دليل-المستخدم/مفاهيم
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ar-SA/دليل-المستخدم/أدلة-إرشادية/); when you want to look
-something up, go to the [reference](/ar-SA/دليل-المستخدم/مرجع/).
+تشرح هذه الصفحات **كيف يعمل Control Center ولماذا**. وُضعت للفهم لا للتنفيذ، فما من صفحة هنا إجراء يُتَّبع. حين تريد إنجاز مهمة محددة، انتقل إلى [الأدلة الإرشادية](/ar-SA/دليل-المستخدم/أدلة-إرشادية/)؛ وحين تريد الرجوع إلى معلومة، انتقل إلى [المرجع](/ar-SA/دليل-المستخدم/مرجع/).
 
-Read them in any order. If you are new, the core model is the place to start.
+اقرأها بأي ترتيب. إن كنت جديدًا، فالنموذج الأساسي هو ما تبدأ به.
 
-## Core model
+## النموذج الأساسي
 
-The four ideas everything else is built on.
+الأفكار الأربع التي يُبنى عليها كل ما عداها.
 
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) — what happens between your message and the agent's first token
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ar-SA/دليل-المستخدم/مفاهيم/سجل-المحادثة/) — persistence, compaction and forking a transcript
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) — حد المستأجر، ولماذا يُفرض بتخطيط قاعدة البيانات لا بانضباط الاستعلامات
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/) — ممّ يتكوّن الوكيل: الهوية، والدور، والمهارات، والقدرات، والمحوّل، والنموذج
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) — ما يحدث بين رسالتك وأول رمز يخرجه الوكيل
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) — كيف تغيّر `chat` و`plan` و`review` و`orchestrate` ما يجوز للوكيل أن يفعله
+- [سياق الأدوات وتخزين المطالبات مؤقتًا](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات/) — لماذا يرى الوكيل جزءًا من أدواته، وكيف يصل إلى البقية، وما يُبقي ذاكرة المزوّد المؤقتة دافئة
+- [ذكاء الشفرة](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/) — مخطط الشفرة، وخادم اللغة، والبحث البنيوي، والمصحّح
+- [سجل المحادثة](/ar-SA/دليل-المستخدم/مفاهيم/سجل-المحادثة/) — الحفظ، والضغط، وتشعيب النص
 
-## Safety and control
+## الأمان والتحكم
 
-What an agent is allowed to touch and who decides.
+ما يُسمح للوكيل بلمسه، ومن يقرر.
 
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) — what actually constrains an agent run today
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ar-SA/دليل-المستخدم/مفاهيم/تفويض/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ar-SA/دليل-المستخدم/مفاهيم/منصات/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) — ما الذي يقيّد تشغيل الوكيل فعلًا اليوم
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) — محرك سياسة واحد لكل إجراء يعدّل الحالة، وكيف تُحسم القاعدة
+- [التفويض](/ar-SA/دليل-المستخدم/مفاهيم/تفويض/) — الأدوار، وفهرس الصلاحيات، وسجل التدقيق
+- [المنصات والحاويات المعزولة](/ar-SA/دليل-المستخدم/مفاهيم/منصات/) — لماذا يحصل الوكلاء على آلات افتراضية تُرمى عوضًا عن جهازك، وما الحد فعلًا
 
-## Directing the work
+## توجيه العمل
 
-Turning intent into work that gets done.
+تحويل النيّة إلى عمل يُنجز.
 
-- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) — one goal, one approval, a generated pipeline
-- [AI review](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ar-SA/دليل-المستخدم/مفاهيم/محادثات-طلبات-السحب/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ar-SA/دليل-المستخدم/مفاهيم/تقييمات-وجودة/) — eval suites and the Quality tab
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/) — وحدة العمل المحايدة تجاه المورّد، ويشترك فيها الأسطول كله
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) — مسارات DAG، والمشغّلات، وتشغيلات قابلة للاستئناف
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) — هدف واحد، وموافقة واحدة، وخط أنابيب يُولَّد
+- [مراجعة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/) — كيف يصبح طلب السحب طلبًا مُراجَعًا: مساحات المراجعة، وإجماع الأقران، والمحاور، وحكم Ship أو Hold أو Block
+- [محادثات طلبات السحب](/ar-SA/دليل-المستخدم/مفاهيم/محادثات-طلبات-السحب/) — الرد على إشارة GitHub أو وسم `ai-review` من مضيف الشفرة نفسه
+- [الذاكرة والمعرفة](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/) — الحقائق، والسياسات، وما يُسمح للوكيل بمعرفته
+- [التقييمات والجودة](/ar-SA/دليل-المستخدم/مفاهيم/تقييمات-وجودة/) — حزم التقييم وعلامة تبويب الجودة
 
-## People and reach
+## الأشخاص والوصول
 
-Working with other humans and reaching the fleet from elsewhere.
+العمل مع بشر آخرين، والوصول إلى الأسطول من مكان آخر.
 
-- [Multiplayer and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ar-SA/دليل-المستخدم/مفاهيم/تسجيل-الدخول-الموحد/) — SAML and OIDC logins
-- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/) — Google Calendar sync and meeting alerts
+- [تعدد اللاعبين والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/) — البشر والوكلاء فاعلون متكافئون، وما يضبط الوصول
+- [تسجيل الدخول الموحّد](/ar-SA/دليل-المستخدم/مفاهيم/تسجيل-الدخول-الموحد/) — تسجيل الدخول عبر SAML وOIDC
+- [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/) — لماذا يبادر جسر Slack بالاتصال نحو الخارج، وما الذي يجيز رسالة قادمة من الدردشة
+- [التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) — كيف يبلغ الهاتف خادمك، ونموذج الأمان من حوله
+- [الاجتماعات والنسخ النصي](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) — التسجيل على الجهاز، والنسخ النصي، والتلخيص
+- [التقويم والجدولة](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/) — مزامنة Google Calendar وتنبيهات الاجتماعات
 
-## Under the hood
+## ما تحت الغطاء
 
-The shape of the system itself.
+شكل النظام نفسه.
 
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/) — the in-process bus features talk over
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/) — الطبقات، والنواة المشتركة، والمنافذ والمحوّلات
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) — كيف يتصل عملاء الحاسوب والويب والهاتف بخادم واحد
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/) — الناقل داخل العملية الذي تتحدث الميزات عبره

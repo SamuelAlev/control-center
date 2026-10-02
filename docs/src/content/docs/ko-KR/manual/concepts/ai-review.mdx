@@ -1,225 +1,233 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: AI 리뷰
+description: 풀 리퀘스트가 리뷰된 PR이 되는 과정 — 리뷰 스페이스, 리뷰 노드와 동료 합의, 코호트와 축, Ship/Hold/Block 판정, 그리고 게시가 왜 사용자가 직접 밟는 단계로 남는지 설명합니다.
 slug: ko-KR/매뉴얼/개념/ai-리뷰
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## 리뷰의 구조
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+AI 리뷰는 열려 있는 풀 리퀘스트 하나를 대상으로 기본 제공되는 `pr_review`
+파이프라인을 한 번 실행한 것입니다. 파이프라인은 PR의 리뷰 스페이스를 열고,
+리뷰어 에이전트를 전개해 그 스페이스의 격리된 체크아웃에서 diff를 읽게 하며,
+각 리뷰어는 발견 사항을 구조화된 **리뷰 노드**로 제출하고, 리드 에이전트가
+이를 하나의 워크스루로 통합하며, 파이널라이저가 **Ship**, **Hold**,
+**Block** 중 하나의 판정을 계산합니다. 파이프라인이 결코 하지 않는 일은
+게시입니다. GitHub에 올리는 것은 사람이 밟는 별도의 의도적인 단계입니다.
 
-The rest of this page explains the pieces and why they are shaped this way.
+이 페이지의 나머지 부분에서는 각 구성 요소와 그것이 왜 이런 형태인지
+설명합니다.
 
-## One review space per PR
+## PR당 하나의 리뷰 스페이스
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+PR의 리뷰 컨텍스트는 모드 `review`, 종류 `pr`인 메시징 스페이스로,
+**리뷰 스페이스 연결**을 통해 풀 리퀘스트에 연결됩니다. 이 스페이스는
+멱등하게 생성됩니다. PR 페이지, 리뷰 파이프라인, 채팅 화면이 모두 같은 코드
+경로를 통해 PR의 _하나뿐인_ 기반 스페이스를 찾아내므로, PR을 리뷰하는
+템플릿과 PR을 여는 사람이 서로 다른 두 방에서 서로 다른 두 체크아웃을 보는
+일은 결코 생기지 않습니다.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+스페이스의 격리된 워크트리에는 PR이 head ref 기준으로 체크아웃되어 있습니다.
+방이 하나라는 것은 체크아웃도 하나라는 뜻입니다. 모든 리뷰어가 각자
+워크스페이스 사본을 받는 대신 같은 스페이스에서 작업합니다.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+각 리뷰어는 그 하나의 스페이스 안에서 자신의 이름이 붙은 스트림에 게시하며,
+발견 사항은 일반 산문이 아니라 `review_node` 메시지입니다. 마지막에
+스페이스 전체를 모으는 것은 의도된 설계입니다. 스레드 하나의 발견 사항으로
+계산한 판정은 조용히 리뷰어 한 명에 대한 판정이 되어버리기 때문입니다.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+이 연결에는 상태 사다리 — `requested` → `in progress` →
+`awaiting approval` → `completed` — 가 있으며, 이것이 PR의 리뷰 탭에서
+**GitHub에 게시**를 제어합니다.
 
-## Review levels
+## 리뷰 수준
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+리뷰가 얼마나 깊이 들어가는지는 세 단계로 된 워크스페이스 정책이며,
+**설정 → 워크스페이스 → 일반**의 **워크스페이스 정책** 카드에서 설정합니다.
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| 수준        | 전개되는 리뷰어                               | 보고                                          |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | 엔지니어만                                    | 실질적으로 중요한 것만                        |
+| `balanced`  | 엔지니어, QA, 아키텍트 (기본값)               | 기본 점검                                     |
+| `thorough`  | 보안과 성능을 포함한 다섯 명 전부             | 강등되는 발견 사항 없음                       |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+이 수준은 두 개의 다이얼을 동시에 움직입니다. 하나는 어떤 리뷰어가
+전개되는지로, 이는 프롬프트 문구가 아니라 파이프라인 템플릿의 `runWhen`
+상태 게이트로 강제됩니다. 프롬프트 문구는 무시될 수 있지만 게이트는 그럴 수
+없습니다. 다른 하나는 임계값 미만의 발견 사항이 어디에 표시되는지입니다.
+어느 다이얼도 발견 사항을 삭제하지 않습니다. 더 적게 보고하는 수준도 똑같은
+양을 제출하고 나머지를 묶어서 그룹화할 뿐입니다.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+보안과 성능 점검은 새 에이전트를 도입하는 대신 기본 제공되는 아키텍트와
+엔지니어 에이전트를 재사용합니다. 전문성은 리뷰어가 디스패치될 때 받는
+지시문에 있는 것이지 축마다 별도의 에이전트가 있는 것이 아닙니다. 축마다
+에이전트를 두면 추가 역량도 없이 모든 워크스페이스에 다섯 개의 행이 더
+늘어날 뿐입니다. 리뷰어 선택은 언어나 도메인을 위해 diff를 검사하지
+않습니다.
 
-## Review nodes: findings as data, not prose
+## 리뷰 노드: 산문이 아닌 데이터로서의 발견 사항
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+`add_review_node`로 제출한 발견 사항은 PR의 **리뷰 노드**가 되며, 이것이
+리뷰 탭이 렌더링하는 대상이고, 판정이 계산되는 근거이며, "GitHub에 게시"가
+인라인 댓글로 바꾸는 대상입니다. 산문만 반환하는 리뷰어는 성공해 보이는
+파이프라인 실행과 텅 빈 리뷰 화면을 만들어냅니다. 핵심을 지탱하는 부분은
+제출입니다.
 
-Each node carries:
+각 노드는 다음을 담습니다.
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| 필드        | 값                                                                          |
+| ----------- | --------------------------------------------------------------------------- |
+| 종류        | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| 우선순위    | P0 (치명적) → P3 (사소함)                                                   |
+| 트리아지 3요소 | 카테고리 (`security`, `stability`, …), 심각도, 노력                      |
+| 앵커        | 파일 경로, 시작 줄과 끝 줄                                                  |
+| 수정 첨부   | 제안된 대체 줄, 선택적 diff, 선택적 수정 프롬프트                            |
+| 신뢰도      | [0, 1] 점수                                                                 |
+| 추론        | 발견 사항보다 먼저 작성되는 분석                                            |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+두 가지 세부 사항은 의도된 것입니다. 한 번의 클릭으로 적용하는 GitHub
+제안은 리뷰어가 정확한 대체 줄을 제공했을 때만 제시됩니다. 통합 diff에서
+이를 추론하면 조용히 잘못되고, 잘못 추론한 내용을 한 번의 클릭으로 커밋하는
+것은 버튼이 아예 없는 것보다 나쁩니다. 또한 `add_review_node` 스키마는
+발견 사항보다 `reasoning`을 먼저 제시하므로, 스키마 순서대로 객체를 채우는
+모델은 분석을 먼저 작성합니다. 이 필드는 선택 사항입니다. 생략해도 노드가
+거부되지 않습니다. 페이로드가 잘못된 노드는 리뷰를 오염시키는 대신
+사라집니다.
 
-## Peer consensus
+## 동료 합의
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+노드는 `open` → `consensus-ready` → `resolved` 또는 `dismissed` 순으로
+이동합니다. 중간 단계가 이 모델의 핵심입니다. **발견 사항은 동료 리뷰어가
+확인해야만 승격되며, 에이전트는 자신의 발견 사항을 결코 확인할 수
+없습니다.** MCP 도구 `publish_review_to_github`와 RPC 기본값은 여전히 동료가
+확인한 발견 사항만 게시합니다. 반면 리뷰 탭의 **GitHub에 게시** 버튼은 남아
+있는 열린 발견 사항을 모두 전송합니다.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+이 규칙은 확인 도구, 파이널라이저, 게시자라는 세 곳의 독립적인 지점에서
+강제되므로, 그중 한 곳에 버그가 있는 호출자가 있어도 규칙이 유지됩니다.
+상태 변경은 모두 하나의 서비스를 거치며, 그래서 상태가 의미를 갖습니다.
+그전에는 두 개의 반쪽 경로가 같은 발견 사항이 해결되었는지에 대해 서로
+다르게 볼 수 있었습니다.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+리뷰어들의 의견이 갈릴 때 — 같은 파일과 줄인데 우선순위가 두 단계 이상 차이
+나거나, 한쪽은 `bug`, 다른 쪽은 `suggestion`이라고 부를 때 — 그 불일치가
+발견 사항 목록 위에 표시됩니다. 바로 그 지점이 리뷰어들의 의견이 갈라지고
+사람의 판단이 가장 가치 있는 곳입니다.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+발견 사항을 무시하면 메모리 도메인에 낮은 신뢰도로 소프트 억제 사실이
+기록되기도 합니다. 한 번의 무시는 규칙이 아니라 선호일 뿐입니다.
 
-## Cohorts: what the review is grouped around
+## 코호트: 리뷰가 무엇을 기준으로 묶이는가
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+리뷰 컴퓨트 패스는 PR의 변경된 파일을 코드 그래프에서 도출한 **코호트**로
+묶습니다. 변경된 파일은 파일이 건드리는 심볼에 매핑되고, 심볼은 연결된
+컴포넌트에 매핑되며, 코호트는 영향 범위를 기준으로 순위가 매겨집니다.
+코호트는 평면적인 파일 목록이 아니라 안내된 읽기 순서, 다이어그램,
+인사이트를 함께 제공합니다.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+여기에는 두 가지 정직성 규칙이 있습니다. 코호트 키는 콘텐츠에서 도출되어
+푸시 간에도 안정적이므로, 발견 사항과 리뷰 진행 상황이 리베이스나 강제 푸시
+후에도 고아가 되지 않고 유지됩니다. 그리고 저장소에 코드 인덱스가 없으면
+그룹화는 일반 경로로 폴백하며 그 사실을 알려줍니다. 폴백은 결코 의미론적
+신뢰도를 꾸며내지 않습니다.
 
-## Review axes and gates
+## 리뷰 축과 게이트
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+리뷰어의 발견 사항과 더불어 리뷰에는 **축 결과**가 쌓입니다. 두 종류에 걸친
+여섯 개의 축입니다.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| 축                          | 종류          | 근거                                |
+| --------------------------- | ------------- | ----------------------------------- |
+| `correctness`, `security`   | 토큰 기반     | 리뷰어 자신의 발견 사항             |
+| `testGap`                   | 토큰 기반     | 리뷰어의 발견 사항                  |
+| `visual`, `apiContract`     | 결정적        | 토큰을 쓰지 않고 계산               |
+| `performance`               | 결정적        | 열거형만 — 제품에서 결과를 계산하는 것은 아무것도 없음 |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+축 판정은 `pass`, `warn`, `fail`, `partial`, `unavailable` 중 하나이며,
+`pass` 또는 `warn`만이 게이트를 통과시킵니다. `fail`, `partial`,
+`unavailable` 사이의 구분은 핵심을 지탱합니다. 완료하지 못했거나 아예
+실행할 수 없었던 게이트 대상 축은 전체 판정을 통과시키는 대신 붙잡아
+둡니다. **증거의 부재는 결코 초록 게이트로 바뀌지 않습니다.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+일부 축은 의도적으로 참고용입니다. 코호트에서 도출된 테스트 갭 축은 의존성
+주입이나 팩터리 커버리지를 볼 수 없습니다. 철저한 테스트 스위트를 갖춘
+인덱스 없는 저장소와 테스트가 전혀 없는 저장소가 그 축에서는 똑같아
+보이므로, 둘 중 어느 쪽이라고 주장하는 것은 거짓말이 됩니다. 이 축은
+게이트 없이 대시보드에 표시됩니다. 토큰 축이 참고용인 이유는 발견 사항의
+우선순위가 이미 판정을 이끌고 있어, 이 축으로 다시 게이트를 걸면 이중
+계산이 되기 때문입니다.
 
-## The verdict
+## 판정
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+파이널라이저는 상태가 `open` 또는 `consensus-ready`인 발견 사항을 대상으로
+판정을 계산합니다.
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- 신뢰도가 0.7 이상인 P0 발견 사항이 하나라도 있으면 → **Block**
+- 그렇지 않고 저신뢰도 P0가 하나라도 있거나 P1이 하나라도 있으면 → **Hold**
+- 그 외의 경우 → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+판정에는 기여한 신뢰도들의 분포에서 도출된 종합 신뢰도가 함께 있습니다.
+의견이 일치하면 높아지고, 갈리면 낮아집니다.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+리드(CEO) 에이전트의 통합은 발견 사항을 다시 나열하는 것이 아니라 편집
+작업입니다. 손으로 쓴 발견 사항의 두 번째 사본은 실제 사본과 어긋나기 딱
+좋습니다. 중복된 발견 사항은 반복되는 대신 강등됩니다. 여러 리뷰어가
+의도적으로 겹치는 담당 범위를 가지고 하나의 diff를 향하므로, 같은 결함이
+파이널라이저에 세 번 도달하는 것은 시스템이 제대로 동작하는 것이고, 그것을
+세 번 게시하는 것은 시스템이 자신의 아키텍처를 읽는 사람의 받은편지함으로
+흘리는 것입니다. 재리뷰에서는 발견 사항에 지문을 찍어 이전 라운드와
+비교하므로, 달라진 부분이 드러납니다.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+마지막으로 축이 합쳐지는데, 축은 판정을 **더** 엄격하게만 만들 수 있습니다.
+게이트 대상 축이 실패하면 Block이 강제되며, 이는 발견 사항으로 뒤집을 수
+없습니다. 완료하지 못한 게이트 대상 축은 최소한 Hold를 강제합니다.
 
-## Publishing stays with you
+## 게시는 사용자의 몫
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+파이프라인은 의도적으로 GitHub에 게시하지 않습니다. 게시는 사용자가
+게이트하므로 리뷰가 두 번 게시되는 일은 결코 없습니다. **GitHub에 게시**를
+누르면 다음과 같이 동작합니다.
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- GitHub 리뷰 하나가 제출됩니다. 이미 해결되었거나 무시된 발견 사항은
+  건너뜁니다. 이 버튼은 남아 있는 열린 발견 사항을 모두 게시합니다
+  (`selection: all_open`). MCP 도구 `publish_review_to_github`는 여전히 동료가
+  확인한 발견 사항만 기본으로 게시합니다(`consensus`).
+- 파일과 줄에 앵커된 발견 사항은 인라인 댓글이 되고, 나머지는 모두 요약
+  본문에 합쳐지며, 각 항목에는 출처가 분명하도록 "— Control Center AI review"
+  푸터가 붙습니다.
+- 앵커는 게시 시점에 PR의 _현재_ diff와 다시 대조해 검증합니다. 이미 다시
+  작성된 코드에 남긴 댓글은 리뷰어가 남길 수 있는 가장 신뢰를 무너뜨리는
+  것입니다. 그래도 GitHub이 인라인 앵커를 거부하면, 아무것도 조용히
+  누락되지 않도록 모든 발견 사항을 본문에 합쳐 전체 리뷰를 다시 보냅니다.
+- **Block** 판정은 `REQUEST_CHANGES`로, **Hold**는 `COMMENT`로, **Ship**은
+  버튼에서 `APPROVE`로 제출됩니다(`approve_on_ship: true`). MCP 도구는
+  `approve_on_ship`을 전달하지 않으면 Ship을 `COMMENT`로 둡니다.
+- 리뷰는 서버의 앱 아이덴티티로 게시됩니다. 누가 게시를 눌렀는지는 역할
+  게이트와 감사 로그를 위해 기록되며, GitHub 작성자가 되는 것은 아닙니다.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/ko-KR/매뉴얼/개념/가드레일/).
+게시는 `prPublish` 액션 클래스를 선언하므로, 가드레일 초크포인트가 다른 모든
+변경 액션과 마찬가지로 이를 게이트합니다. 기본적으로 프롬프트를 띄우고,
+승인자가 연결되어 있지 않으면 닫힌 상태로 실패합니다.
+[가드레일](/ko-KR/매뉴얼/개념/가드레일/)을 참고하세요.
 
-## What a reviewer may do
+## 리뷰어가 할 수 있는 일
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+리뷰어 에이전트는 `review` 모드로 실행됩니다. 읽기 전용 샌드박스와, 발견
+사항, 논평, 티켓, 동료 리뷰를 포괄하는 선별된 도구 허용 목록이 주어지지만
+변경 작업은 할 수 없습니다. 리뷰어는 자신이 비평한 코드를 고칠 수 없습니다.
+다만 사람이 적용할 수 있는 수정 제안을 첨부할 수는 있습니다. 이 모드의 거부
+메시지는 그럼에도 행동하려는 에이전트에게 리뷰를 마무리하고 사용자가 게시된
+요약을 바탕으로 행동하도록 하라고 알려줍니다.
 
-## Related concepts
+## 관련 개념
 
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/) — the policy engine that gates publishing
-- [Modes](/ko-KR/매뉴얼/개념/모드/) — what `review` mode changes for an agent
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/) — the engine the review runs on
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/) — where the isolated worktree comes from
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/) — 게시를 게이트하는 정책 엔진
+- [모드](/ko-KR/매뉴얼/개념/모드/) — `review` 모드가 에이전트에 대해 바꾸는 것
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/) — 리뷰가 실행되는 엔진
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/) — 격리된 워크트리가 어디서 오는지
 
-## Related guides
+## 관련 가이드
 
-- [Use AI-powered review](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/) — run a review and publish it
-- [Dispatch reviewer agents](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/) — choose the reviewers yourself
-- [Review compute](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/) — cohorts, axes and diffs
+- [AI 리뷰 사용](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/) — 리뷰를 실행하고 게시하기
+- [리뷰어 에이전트 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/) — 리뷰어를 직접 선택하기
+- [리뷰 컴퓨트](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/) — 코호트, 축, diff

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Διαχείριση κόστους
+description: Δείτε τι ξοδεύουν οι πράκτορές σας, περιορίστε μια αυτόνομη εκτέλεση και μειώστε τη χρήση token.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Αυτός ο οδηγός δείχνει πώς να δείτε τι κοστίζουν οι εκτελέσεις πρακτόρων και πώς να περιορίσετε μια αυτόνομη εκτέλεση.
 
-## How costs are recorded
+## Πώς καταγράφεται το κόστος
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Κάθε εκτέλεση πράκτορα γράφει ένα αρχείο καταγραφής εκτέλεσης που φέρει τα token εισόδου, τα token εξόδου, τα token συλλογισμού, τα token ανάγνωσης από cache και εγγραφής σε cache, ένα εκτιμώμενο κόστος σε σεντς και το κόστος κάθε υποπράκτορα που εκκίνησε.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Οι τιμές προέρχονται από τον κατάλογο models.dev, ο οποίος χρησιμοποιείται μόνο για να εμπλουτίσει τη λίστα μοντέλων με τιμή και παράθυρο πλαισίου — ποτέ ως πηγή αναγνωριστικών μοντέλων. Ένα μοντέλο που ο κατάλογος δεν μπορεί να τιμολογήσει καταγράφει **0 $** και οι εκτελέσεις μηδενικού κόστους εξαιρούνται από τη σύνοψη **Χρήση και κόστος**. Ένα τοπικό μοντέλο Ollama επομένως δεν εμφανίζει καθόλου δαπάνη, αν και τα πλήθη token του καταγράφονται ακόμη. Ένα πρόγραμμα σταθερής χρέωσης (kimi-code, μια συνδρομή Claude) είναι το ίδιο μόνο όταν ο κατάλογος δεν έχει τιμή για το μοντέλο που εξυπηρέτησε· αν έχει, η εκτέλεση εκτιμάται ούτως ή άλλως με αυτές τις τιμές. Σε αλυσίδα εφεδρικών, η εκτέλεση τιμολογείται με βάση το μοντέλο που την εξυπηρέτησε πραγματικά, όχι αυτό που ζητήθηκε.
 
-## See what you are spending
+## Δείτε τι ξοδεύετε
 
-### Observability → Insights
+### Παρατηρησιμότητα → Στοιχεία
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Φτάστε εκεί από το υποσέλιδο της πλαϊνής στήλης → **Παρατηρησιμότητα**. Η καρτέλα **Χρήση** ανοίγει πρώτη (συνολικά token από την αρχή)· μεταβείτε στα **Στοιχεία** — τη δεύτερη καρτέλα — για την κύρια επιφάνεια κόστους:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- Έναν επιλογέα χρονικού εύρους: τελευταίες 24 ώρες, τελευταίες 7 ημέρες, τελευταίες 30 ημέρες ή όλο τον χρόνο
+- Φίλτρα με όψεις για πράκτορα, μοντέλο, κατάσταση και ρόλο, ως απορρίψιμα πλακίδια
+- Μια λωρίδα KPI: συνολικές εκτελέσεις, συνολικό κόστος, ποσοστό σφαλμάτων, ποσοστό cache, token ανά δευτερόλεπτο, μέση καθυστέρηση και χρόνος έως το πρώτο token, καθένα με μεταβολή έναντι της προηγούμενης περιόδου (κρύβεται στο «Όλος ο χρόνος»)
+- Γραφήματα δραστηριότητας και κόστους, καθώς και ανάλυση **κόστους ανά ρόλο** που μοιράζει τη δαπάνη στον κύριο πράκτορα, τους υποπράκτορές του και τον σύμβουλό του
+- Πίνακα ανά πράκτορα ταξινομημένο κατά κόστος, με τους δέκα κορυφαίους και διακόπτη εμφάνισης όλων. Το πάτημα μιας γραμμής φιλτράρει κάθε άλλη επιφάνεια σε αυτόν τον πράκτορα
+- Το λεπτομερές αρχείο καταγραφής εκτελέσεων, που ανοίγει συρτάρι μεταγραφής για μια επιλεγμένη εκτέλεση
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[Το «Όλος ο χρόνος» δεν είναι όλος ο χρόνος]
+Η ροή εκτελέσεων συνδρομεί στα 2000 πιο πρόσφατα αρχεία καταγραφής εκτελέσεων από κάθε χώρο εργασίας και μετά φιλτράρει στον ενεργό. Σε έναν πολυάσχολο διακομιστή με πολλούς χώρους εργασίας, παλαιότερο ιστορικό ενός ήσυχου χώρου εργασίας πέφτει έξω από αυτό το παράθυρο.
 :::
 
-### Settings → Server → Model providers
+### Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+Η κάρτα **Χρήση και κόστος** σε αυτή τη σελίδα δείχνει τη δαπάνη των τελευταίων επτά ημερών όπως παρατηρήθηκε, ως ένα μοναδικό ποσό σε δολάρια, με ανάλυση ανά πάροχο και, όταν ένας πάροχος δημοσιεύει σχετική ένδειξη, τον χρόνο έως την επαναφορά του επόμενου παραθύρου ποσόστωσης.
 
-### A single agent's runs
+### Οι εκτελέσεις ενός μόνο πράκτορα
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** → επιλέξτε έναν πράκτορα → τα **Αρχεία καταγραφής** παραθέτουν τις εκτελέσεις του με κατάσταση, διάρκεια, ώρες έναρξης και ολοκλήρωσης, PID και προσαρμογέα. Αυτή η καρτέλα **δεν** δείχνει κόστος — γι' αυτό χρησιμοποιήστε τον πίνακα ανά πράκτορα στην Παρατηρησιμότητα → Στοιχεία.
 
-## Cap an autonomous run
+## Περιορίστε μια αυτόνομη εκτέλεση
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Δύο εντολές κάθετου, που πληκτρολογούνται στο πεδίο σύνταξης ενός χώρου, είναι οι μόνες εκτελέσεις με όριο δαπάνης:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Κάθε τμήμα μιας εκτέλεσης `/goal` ή `/loop` σταματά όταν η τιμολογημένη δαπάνη του φτάσει τα **500 σεντς (5,00 $)**. Στο 80% αυτού, ο βρόχος κατευθύνει πρώτα το μοντέλο να ολοκληρώσει και να αφήσει μια καθαρή παράδοση, ώστε να μη σκοτωθεί στη μέση της εργασίας.
+- Ένας ολόκληρος ανθεκτικός στόχος οριοθετείται στα **5.000 σεντς (50,00 $)** εκτός αν περάσετε `--budget <dollars>`. Ο επόπτης περνά τον _εναπομείναντα_ προϋπολογισμό του στόχου σε κάθε τμήμα, ώστε ένας ρητός προϋπολογισμός να μην ξεπερνιέται ποτέ κατά ένα ολόκληρο τμήμα.
+- Το `--days N` προσθέτει προθεσμία πραγματικού χρόνου και το `--max N` ανώτατο όριο αριθμού εκτελέσεων. Και τα δύο είναι προαιρετικά· χωρίς αυτά, ο στόχος οριοθετείται μόνο από το κόστος.
+- Ένας στόχος που χτυπά το όριό του σταματά στο `budgetExhausted` και μπορεί να συνεχιστεί μόνο αυξάνοντας τον προϋπολογισμό.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Επειδή το όριο είναι τιμολογημένο, ένα μοντέλο που ο κατάλογος δεν μπορεί να τιμολογήσει δεν το φτάνει ποτέ. Μια τέτοια εκτέλεση οριοθετείται αντ' αυτού από τον φρουρό επαναλήψεων του μοιραίου βρόχου, την εγκατάλειψη του επόπτη μετά από τρεις συνεχόμενες αποτυχίες και εσάς.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Ένα μήνυμα σε έναν χώρο, μια αναφορά @ ή ένα βήμα pipeline δεν έχουν όριο δαπάνης. Η εκτέλεση τελειώνει όταν σταματήσει το μοντέλο, όταν τη σταματήσετε εσείς ή όταν την κατευθύνει ο φρουρός του μοιραίου βρόχου.
 
-## Cut token use
+## Μειώστε τη χρήση token
 
-### Compact a long conversation
+### Συμπυκνώστε μια μεγάλη συνομιλία
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Πληκτρολογήστε `/compact` στο πεδίο σύνταξης του χώρου. Η εντολή αναχαιτίζεται στην πλευρά του πελάτη και δεν φτάνει ποτέ στη μεταγραφή· ο διακομιστής διπλώνει το παλαιότερο ιστορικό σε μια αγκυρωμένη σύνοψη και η συνομιλία συνεχίζεται στο συμπυκνωμένο πλαίσιο.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+Η συμπύκνωση απορρίπτεται όταν ένας πράκτορας βρίσκεται στη μέση μιας στροφής και όταν δεν υπάρχει τίποτα αρκετά παλιό για δίπλωμα. Ο ενσωματωμένος μηχανισμός συμπυκνώνει επίσης μόνος του καθώς το ιστορικό πλησιάζει το παράθυρο πλαισίου του μοντέλου.
 
-### Choose the effort level deliberately
+### Διαλέξτε σκόπιμα το επίπεδο προσπάθειας
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+Η **Προσπάθεια συλλογισμού** ενός πράκτορα (Ρυθμίσεις → Χώρος εργασίας → Πράκτορες) προσφέρει όποια επίπεδα δημοσιεύει το επιλεγμένο μοντέλο. Τα υψηλότερα επίπεδα ξοδεύουν περισσότερα token συλλογισμού. Κρατήστε τα κορυφαία επίπεδα για εργασία που τα χρειάζεται.
 
-### Choose the model per agent
+### Διαλέξτε το μοντέλο ανά πράκτορα
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+Το μοντέλο είναι πεδίο ανά πράκτορα, οπότε ένας πράκτορας μορφοποίησης ή διαλογής μπορεί να εκτελείται σε φθηνό μοντέλο ενώ ένας πράκτορας αρχιτεκτονικής σε ακριβό. Φιλτράρετε τον πίνακα ανά πράκτορα στην Παρατηρησιμότητα → Στοιχεία κατά μοντέλο για να δείτε ποιος συνδυασμός σας κοστίζει πραγματικά.
 
-### Look for runs with outsized token counts
+### Αναζητήστε εκτελέσεις με δυσανάλογα πλήθη token
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Ανοίξτε το αρχείο καταγραφής εκτελέσεων των Στοιχείων (τις 50 νεότερες φιλτραρισμένες εκτελέσεις) και το συρτάρι μεταγραφής σε κάθε ασυνήθιστο στοιχείο. Οι συνήθεις αιτίες είναι μια υπερβολικά μακριά προτροπή συστήματος ή περσόνα, πλαίσιο που θα έπρεπε να έχει συμπυκνωθεί και μια εργασία που θα έπρεπε να ήταν αρκετές μικρότερες.
 
-## What happens if a budget is set out of band
+## Τι συμβαίνει όταν ένας προϋπολογισμός ορίζεται εκτός ζώνης
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+Για πληρότητα, αν το `monthlyBudgetCents` ή μια πολιτική προϋπολογισμού εγγραφεί απευθείας σε μια γραμμή πράκτορα:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Οι προϋπολογισμοί αξιολογούνται **αφού** ολοκληρωθεί μια εκτέλεση, όχι πριν από την αποστολή. Ένας ακροατής στην ολοκλήρωση εκτέλεσης συγκρίνει τη δαπάνη του πράκτορα από την αρχή του μήνα με το ανώτατό του όριο.
+- Η υπέρβαση του ήπιου κατωφλίου (80% από προεπιλογή) καταγράφει ένα περιστατικό προειδοποίησης και εκπέμπει ένα συμβάν `BudgetThresholdCrossed` στο οποίο μπορείτε να κρεμάσετε έναν ενεργοποιητή pipeline.
+- Η εξάντληση του προϋπολογισμού καταγράφει ένα σκληρό περιστατικό, εκπέμπει το ίδιο συμβάν και αναστρέφει την κατάσταση κύκλου ζωής του πράκτορα σε `paused`.
+- Ο αποκλεισμός πριν από την αποστολή υπάρχει, αλλά τον συμβουλεύονται μόνο ο καθαριστής ορφανών εκτελέσεων και ο συμφιλιωτής εγκαταλελειμμένων εισιτηρίων κατά τον προγραμματισμό ανάκαμψης — μια κανονική αποστολή δεν τον φτάνει ποτέ και τίποτα στη διαδρομή αποστολής δεν ελέγχει την κατάσταση παύσης. Το μόνο ορατό σήμα είναι το σήμα κύκλου ζωής στο οργανόγραμμα.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
-- [Run agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
-- [Agent configuration reference](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+- [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/)
+- [Αναφορά διαμόρφωσης πράκτορα](/el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)

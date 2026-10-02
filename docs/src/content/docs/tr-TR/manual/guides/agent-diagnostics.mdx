@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Bir ajanı tanılama
+description: Bir ajan çalıştırma üretmeyi bıraktığında çalıştırma günlüğü, adaptör yoklaması, sunucu durumu ve ana makine tanılamaları üzerinden ilerleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-tanilama
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Bu kılavuz, bir ajanın neden çalıştırma üretmediğini nasıl bulacağınızı gösterir.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Yukarıdan aşağıya doğru ilerleyin: önce ajanın kendi çalıştırmaları, sonra arka ucu, sonra sunucu, sonra ana makine.
 
-## 1. Check the agent's run history
+## 1. Ajanın çalıştırma geçmişini denetleyin
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Ayarlar → Çalışma alanı → Ajanlar** → ajanı seçin → **Loglar**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Her çalıştırma bir durum rozeti, bir süre (devam ederken "Running…"), başlangıç ve tamamlanma zamanları, PID'si ve kullandığı adaptörü gösterir. **Görünüm**, o çalıştırmanın ham olay akışını açar. **Durdur**, çalışan bir süreci sonlandırır ve çalıştırmayı "Killed by user" olarak işaretler; başlıktaki **Çalışanı sonlandır** ise o ajanın devam eden her çalıştırması için aynısını yapar.
 
-Read it like this:
+Şöyle okuyun:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Hiç çalıştırma yok** — gönderim hiç gerçekleşmedi. Composer'daki anmalar `@` ile sözcük karakterlerinden (harfler, rakamlar, alt çizgi) oluşur. Çözümleme, ajan adı üzerinde tam veya önek eşleşmesidir; bu nedenle `@code-reviewer`, `code` olarak ayrıştırılır ve yine de `code-reviewer` adlı bir ajanı uyandırabilir. Boşluk içeren bir ad, tek bir belirteç olarak anılamaz. Ardından 2. adıma geçin.
+- **Hemen hatayla biten bir çalıştırma** — **Görünüm**'ü açın. Arka ucun başlatılamaması burada bir süreç hatası olarak görünür.
+- **"Running…" durumunda takılı kalan bir çalıştırma** — durdurun, ardından Ayarlar sekmesinde ajanın **Sessizlik zaman aşımı** değerini denetleyin. Ayarlanmamış bir zaman aşımı, moda özgü varsayılanı kullanır.
+- **İşe yarar çıktısı olmayan tamamlanmış bir çalıştırma** — bildirdiği çıktıyı üretmeden biten bir çalıştırmada çalıştırma günlüğünün durumu `completed` olarak kalır; gerçek gösterge rozet değil, özet metnidir.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Loglar sekmesi maliyet göstermez. Harcama için **Gözlemlenebilirlik → İçgörüler** içindeki ajan başına tabloyu kullanın.
 
-## 2. Check the agent's backend
+## 2. Ajanın arka ucunu denetleyin
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Ayarlar → Sunucu → Model sağlayıcıları** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+**Algılanan runner'lar** listesi her adaptörü yoklama sonucuyla birlikte gösterir — kurulu bir sürüm, "Denetleniyor…" veya "Bulunamadı" — ayrıca çözümlenen yolu ve bulunan bir CLI için yetenek çipleri. Yeniden yoklamak için sayfa başlığındaki **Yenile**'ye tıklayın.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Yoklama, baktığınız makinede değil `cc_server`'ı barındıran makinede çalışır. Web istemcisindeyseniz veya eşleştirilmiş bir cihazdaysanız, "Bulunamadı" CLI'nin sunucu ana makinesinde eksik olduğu anlamına gelir.
 
-Two things to confirm:
+Doğrulanacak iki şey:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Ajanın hiç değilse bir adaptörü ayarlı mı.** Adaptörü boş olan bir ajan **Control Center (built-in)** adaptörüne gönderilir ve çalıştırma günlüğüne `cc-harness` yazılır; böylece döküm neyin çalıştığını adıyla söyler. Model de yoksa Anthropic'ten varsayılanını ister — bir Anthropic hesabı bağlamadıysanız bu, `No credential for provider "anthropic"` hatasıyla başarısız olur. Önceden tanımlı uzmanlar adaptörsüz gelir.
+- **Yerleşik adaptörün bir modeli var mı.** Model listesi, aynı sayfanın aşağısında bağlanan sağlayıcılardan canlı olarak gelir; bu nedenle kayıtlı kimlik bilgisi olmayan bir sağlayıcı hiç model sağlamaz.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Adaptör kataloğunun kendisi sabittir — yeni bir adaptör kaydetmenin hiçbir yolu yoktur. Burada adaptör başına değiştirebileceğiniz şeyler, o adaptörün başlatma argümanları ve ortam değişkenleridir. Kimlik bilgileri çözümlenirken adaptör başına ortam geçersiz kılmanın, bağlı bir sağlayıcı hesabını sessizce geçtiğini unutmayın.
 
-## 3. Check the server
+## 3. Sunucuyu denetleyin
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Ayarlar → Sunucu → Bağlantı ve durum** (`/settings/server/connection`), bu istemcinin hangi sunucuyla konuştuğunu ve sunucunun neler bildirdiğini gösterir.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Headless bir sunucuda `GET /healthz`, istemci olmadan aynı bilgiyi verir. Tasarımı gereği kimlik doğrulama istemez ve CORS'a açıktır:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Sunucunun durumunu, saniye cinsinden çalışma süresini, canlı bağlantı sayısını, bağlanılan portu, yapı sürümünü ve git SHA'sını, çalışma alanı şema sürümünü, RPC katalog sürümünü, sunucu kimliğini, adını ve kimlik parmak izini, bağlamanın güvensiz olup olmadığını ve `watching` / `indexing` / `pending` sayaçlarını içeren bir `codeGraph` bloğunu döndürür. Bir önbellek trafik gördüyse ayrıca bir `caches` bloğu içerir; bir demo sunucusu `demo: true` ekler.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Bir değişiklik "testlerde çalışıyor ama uygulamada çalışmıyor" olduğunda bilinmesi gereken iki şey:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Masaüstü uygulaması, kaynak kod yerine **önceden derlenmiş** bir `cc_server` ikili dosyasını başlatmayı tercih eder. Yeni bir RPC işlemi veya MCP aracı, ikili dosya yeniden derlenene kadar ortaya çıkmaz; alt sürecin git SHA'sı uygulamanınkinden farklıysa önyükleme günlüğe bir uyarı yazar.
+- Masaüstü uygulaması, 20 saniye içinde hazır olduğunu bildiren banner'ını yazdırmayan başlatılmış sunucuyu sonlandırır ve bir hata ekranına düşer.
 
-## 4. Check the host
+## 4. Ana makineyi denetleyin
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Ayarlar → Sunucu → Tanılama ve gizlilik** (`/settings/server/diagnostics`), ana makine düzeyindeki sayfadır. Şunları içerir:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Korumalı alan** — ana anahtar, algılanan arka uç, bir kurulum ipucu ve varsayılan yetenek anahtarları. Sunucudan yalnızca algılanan arka uç gelir; aşağıdaki Dikkat bölümüne bakın. Sıfırlama denetimi yoktur.
+- **Anlamsal arama** — cihaz üzerindeki gömme modelinin yaşam döngüsü: kurulu, yüzdeyle indiriliyor, kurulu değil veya kurulum hatası. Model kurulana kadar bellek ve kod araması yalnızca anahtar sözcükle çalışır.
+- **Sistem davranışı** — ajanlar çalışırken bilgisayarı uyanık tut.
+- **Senkronizasyon motoru** — biletler, mesajlaşma ve notlar için depo başına kapatma anahtarları. Bunlar, tam anlık görüntü aboneliklerine dönmek için acil durum çıkış kapılarıdır; bir değişiklik yalnızca yeni abonelikleri etkiler, bu nedenle ancak yeniden yüklemeden sonra tümüyle etkili olur.
+- **Log düzeyi** — bir hatayı yeniden üretmeden önce yükseltin.
+- **Gizlilik** — ham diff içeriğinin ajanın modeline iletilip iletilmeyeceği ve çökme raporlarının gönderilip gönderilmeyeceği.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Bu bölüm ana makineyi bildirir; denetimleri istemci tarafındadır]
+Algılama ve uygulama artık uyuşuyor: algılayıcı yerel bir arka uç bildiriyorsa, o ana makinedeki ajan çalıştırmaları gerçekten onun içine alınır. Ancak bu bölümdeki tek canlı şey algılayıcıdır. Ana anahtar, arka uç seçici ve varsayılan yetenek anahtarları cihazınızda saklanan tercihlerdir ve sunucu bunların hiçbirini okumaz — sunucunun kendi anahtarı `--sandbox`'tır (varsayılan olarak `on`, vazgeçmek için `off`) ve "Çalışma alanı varsayılanını kullan" olarak bırakılan her ajan için sunucu kendi tutucu varsayılanına döner: git push yok, GitHub API yok, biletleme anahtarı yok, ağ açık.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Dolayısıyla buradaki bir uyarı üzerinde durmaya değer, ancak genellikle bir ajanın başarısız olmasının nedeni değildir. Sunucunun hangi durumda olduğunu doğrulamak için başlangıç günlüğünü okuyun: arka uç notuyla birlikte `agent sandbox ON`, bir kurulum ipucuyla `no OS-native agent sandbox on this host` ya da `agent sandbox DISABLED by --sandbox off` yazar. `GET /healthz` hiçbir sandbox alanı taşımaz.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Arka ucun olmadığı yerlerde — Windows'ta her zaman, `bwrap` ve `socat` olmadan Linux veya WSL2'de — çalıştırmalar sandbox'a **alınmaz** ve onları sınırlayan şeyler şunlardır: konuşmanın kendi checkout'u, içine hangi kimlik bilgilerinin üretileceğini denetleyen yetenekler, eylem korumaları, ortam temizliği ve modunun izin verdiği araç yüzeyi.
 :::
 
-## Common failures
+## Sık karşılaşılan hatalar
 
-### The run never starts and the adapter shows "Not found"
+### Çalıştırma hiç başlamıyor ve adaptör "Bulunamadı" gösteriyor
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+CLI'yi **sunucu ana makinesine** kurun, ardından Model sağlayıcıları sayfasında **Yenile**'ye tıklayın. Ya da ajanı, CLI gerektirmeyen yerleşik adaptöre geçirin ve aynı sayfadan bir sağlayıcı bağlayın.
 
-### The agent cannot push or open a pull request
+### Ajan push yapamıyor veya pull request açamıyor
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Belirleyici olan yetenekleridir. **Ayarlar → Çalışma alanı → Ajanlar** → ajan → **Sandbox izinleri** yolunu açın, anahtarı açın ve **git push'a izin ver** ile **GitHub API çağrılarına izin ver** seçeneklerini etkinleştirin. Anahtarı "Çalışma alanı varsayılanını kullan" olarak bırakmak, ajana bunların hiçbirini vermez.
 
-### Semantic search returns nothing useful
+### Anlamsal arama işe yarar bir şey döndürmüyor
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+**Ayarlar → Sunucu → Tanılama ve gizlilik → Anlamsal arama** yolunu denetleyin. Gömme modeli kurulana kadar arama yalnızca anahtar sözcükle çalışır. Model kurulmadan önce yazılan satırlar hiçbir zaman geriye dönük doldurulmaz; bu nedenle sonrasında bile yalnızca anahtar sözcükle aranır.
 
-### The server will not boot at all
+### Sunucu hiç önyüklenmiyor
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Yerel kitaplıklar zorunludur ve bozulmuş bir mod yoktur. Eksik bir dylib yüzünden `cc_server` başlamayı reddeder ve hatada sorunlu dosyayı adıyla belirtir. Yerel dosyaları `scripts/natives/build_natives.sh` ile hazırlayın ve sunucu ikili dosyasını yeniden derleyin.
 
-### An action is silently denied
+### Bir eylem sessizce reddediliyor
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Onaylayıcı bağlı değilken `prompt` koruma kararı, tasarım gereği reddedilir. Çalışma alanının kurallarını **Ayarlar → Çalışma alanı → Ajan izinleri** altından denetleyin.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
-- [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)

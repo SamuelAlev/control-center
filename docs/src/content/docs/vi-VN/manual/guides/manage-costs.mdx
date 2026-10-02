@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Quản lý chi phí
+description: Xem các agent của bạn đang chi bao nhiêu, giới hạn một lượt chạy tự chủ và cắt giảm lượng token dùng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Hướng dẫn này chỉ cách xem các lượt chạy agent tốn bao nhiêu và cách giới hạn một lượt chạy tự chủ.
 
-## How costs are recorded
+## Chi phí được ghi lại như thế nào
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Mỗi lượt chạy agent đều ghi một bản ghi lượt chạy mang theo token đầu vào, token đầu ra, token suy luận, token đọc từ bộ nhớ đệm và ghi vào bộ nhớ đệm, chi phí ước tính theo cent, cùng chi phí của mọi subagent mà nó sinh ra.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Giá đến từ danh mục models.dev, vốn chỉ được dùng để làm phong phú danh sách mô hình bằng giá và cửa sổ ngữ cảnh — không bao giờ là nguồn id mô hình. Một mô hình mà danh mục không thể định giá sẽ ghi **$0** và những lượt chạy không tốn chi phí bị loại khỏi phần tóm tắt **Sử dụng và chi phí**. Vì vậy một mô hình Ollama cục bộ hoàn toàn không hiển thị chi tiêu nào, dù số token của nó vẫn được ghi lại. Một gói cước trọn gói (kimi-code, một thuê bao Claude) cũng vậy, nhưng chỉ khi danh mục không có giá cho mô hình đã phục vụ; nếu có, lượt chạy vẫn được ước tính theo chính mức giá đó. Trong một chuỗi dự phòng, lượt chạy được định giá theo mô hình thực sự phục vụ nó, chứ không phải mô hình được yêu cầu.
 
-## See what you are spending
+## Xem bạn đang chi bao nhiêu
 
-### Observability → Insights
+### Quan sát → Phân tích
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Truy cập từ chân thanh điều hướng phụ → **Quan sát**. Tab **Mức dùng** mở trước (tổng token trọn đời); hãy chuyển sang **Phân tích** — tab thứ hai — để vào bề mặt chi phí chính:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- Bộ chọn khoảng thời gian: 24 giờ qua, 7 ngày qua, 30 ngày qua hoặc mọi lúc
+- Bộ lọc theo khía cạnh trên agent, mô hình, trạng thái và vai trò, dưới dạng các chip có thể bỏ chọn
+- Dải KPI: tổng số lượt chạy, tổng chi phí, tỷ lệ lỗi, tỷ lệ cache, token mỗi giây, độ trễ trung bình và thời gian đến token đầu, mỗi chỉ số kèm mức thay đổi so với giai đoạn trước (ẩn ở "Mọi lúc")
+- Biểu đồ hoạt động và chi phí, cùng phần phân tích **Chi phí theo vai trò** chia chi tiêu giữa agent chính, các subagent và cố vấn của nó
+- Bảng theo từng agent sắp xếp theo chi phí, mười dòng đầu kèm nút bật/tắt hiện tất cả. Chạm vào một hàng sẽ lọc mọi bề mặt khác theo agent đó
+- Bản ghi lượt chạy chi tiết, nơi gắn một ngăn kéo bản ghi hội thoại cho lượt chạy được chọn
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note["Mọi lúc" không phải là mọi lúc]
+Nguồn cấp lượt chạy đăng ký 2000 bản ghi lượt chạy gần nhất trên mọi không gian làm việc, rồi lọc theo không gian đang hoạt động. Trên một máy chủ đông đúc có nhiều không gian làm việc, lịch sử cũ hơn của một không gian làm việc ít hoạt động sẽ rơi ra ngoài cửa sổ đó.
 :::
 
-### Settings → Server → Model providers
+### Cài đặt → Máy chủ → Nhà cung cấp mô hình
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+Thẻ **Sử dụng và chi phí** trên trang này hiển thị chi tiêu ghi nhận được trong bảy ngày qua dưới dạng một con số đô-la duy nhất, kèm phần phân tích theo từng nhà cung cấp và, khi nhà cung cấp có công bố, thời gian cho đến khi cửa sổ hạn ngạch kế tiếp được đặt lại.
 
-### A single agent's runs
+### Các lượt chạy của một agent
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Cài đặt → Không gian làm việc → Agent** → chọn một agent → **Nhật ký** liệt kê các lượt chạy của nó với trạng thái, thời lượng, thời điểm bắt đầu và kết thúc, PID và adapter. Tab này **không** hiển thị chi phí — hãy dùng bảng theo từng agent trong Quan sát → Phân tích cho việc đó.
 
-## Cap an autonomous run
+## Giới hạn một lượt chạy tự chủ
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Hai lệnh slash, gõ trong khung soạn tin của một space, là những lượt chạy duy nhất có mức trần chi tiêu:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Mỗi phân đoạn của một lượt chạy `/goal` hoặc `/loop` dừng lại khi chi tiêu được định giá của nó đạt **500 cent ($5.00)**. Ở mức 80% của ngưỡng đó, vòng lặp trước tiên điều hướng mô hình kết thúc gọn gàng và để lại một bàn giao sạch, nhờ đó nó không chết giữa tác vụ.
+- Toàn bộ một mục tiêu bền vững bị giới hạn ở **5000 cent ($50.00)** trừ khi bạn truyền `--budget <dollars>`. Bộ giám sát luồn ngân sách _còn lại_ của mục tiêu vào từng phân đoạn, nên một ngân sách tường minh không bao giờ bị vượt quá nguyên một phân đoạn.
+- `--days N` thêm một hạn chót theo đồng hồ thực và `--max N` một mức trần số lượt chạy. Cả hai đều là tùy chọn; nếu không có chúng, mục tiêu chỉ bị giới hạn bởi chi phí.
+- Một mục tiêu chạm mức trần của nó sẽ dừng ở `budgetExhausted` và chỉ có thể tiếp tục bằng cách nâng ngân sách.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Vì mức trần được định giá, một mô hình mà danh mục không thể định giá sẽ không bao giờ chạm tới nó. Thay vào đó, một lượt chạy như vậy bị giới hạn bởi rào chắn chống lặp vòng lặp chết, việc bộ giám sát bỏ cuộc sau ba lần thất bại liên tiếp, và chính bạn.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Một tin nhắn trong space, một lượt @-mention, hay một bước quy trình đều không có mức trần chi tiêu. Lượt chạy kết thúc khi mô hình dừng, khi bạn dừng nó, hoặc khi rào chắn vòng lặp chết điều hướng nó.
 
-## Cut token use
+## Cắt giảm lượng token dùng
 
-### Compact a long conversation
+### Nén một cuộc hội thoại dài
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Gõ `/compact` trong khung soạn tin của space. Lệnh này bị chặn ở phía máy khách và không bao giờ lọt vào bản ghi hội thoại; máy chủ gộp phần lịch sử cũ hơn thành một bản tóm tắt được neo và cuộc hội thoại tiếp tục trên ngữ cảnh đã nén.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+Việc nén bị từ chối khi một agent đang giữa lượt và khi không có gì đủ cũ để gộp. Harness tích hợp sẵn cũng tự nén khi lịch sử tiến gần cửa sổ ngữ cảnh của mô hình.
 
-### Choose the effort level deliberately
+### Chọn mức công sức một cách có chủ đích
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+**Mức suy luận** của một agent (Cài đặt → Không gian làm việc → Agent) cung cấp bất kỳ mức nào mà mô hình đã chọn công bố. Mức càng cao càng tiêu nhiều token suy luận. Hãy để dành những mức cao nhất cho công việc thực sự cần chúng.
 
-### Choose the model per agent
+### Chọn mô hình cho từng agent
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+Mô hình là một trường theo từng agent, nên một agent định dạng hay phân loại có thể chạy trên một mô hình rẻ trong khi một agent kiến trúc chạy trên một mô hình đắt. Hãy lọc bảng theo từng agent trong Quan sát → Phân tích theo mô hình để xem cặp đôi nào thực sự đang ngốn chi phí của bạn.
 
-### Look for runs with outsized token counts
+### Tìm những lượt chạy có số token vượt trội
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Mở bản ghi lượt chạy trong Phân tích (50 lượt chạy đã lọc mới nhất) và ngăn kéo bản ghi hội thoại với bất kỳ thứ gì bất thường. Nguyên nhân phổ biến là một prompt hệ thống hoặc persona quá dài, ngữ cảnh lẽ ra phải được nén, và một tác vụ lẽ ra nên tách thành vài tác vụ nhỏ hơn.
 
-## What happens if a budget is set out of band
+## Điều gì xảy ra nếu một ngân sách được đặt ngoài luồng
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+Để cho đầy đủ, nếu `monthlyBudgetCents` hoặc một chính sách ngân sách được ghi thẳng vào hàng của một agent:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Ngân sách được đánh giá **sau** khi một lượt chạy hoàn tất, chứ không phải trước khi điều phối. Một bộ lắng nghe khi lượt chạy hoàn tất sẽ so sánh chi tiêu từ đầu tháng đến nay của agent với mức trần của nó.
+- Vượt ngưỡng mềm (mặc định 80%) ghi lại một sự cố cảnh báo và phát một sự kiện `BudgetThresholdCrossed` mà bạn có thể gắn một trình kích hoạt quy trình vào.
+- Cạn ngân sách ghi lại một sự cố cứng, phát cùng sự kiện đó và đảo trạng thái vòng đời của agent thành `paused`.
+- Khối chặn trước điều phối vẫn tồn tại nhưng chỉ được bộ thu gom lượt chạy mồ côi và bộ đối soát phiếu mắc kẹt tham chiếu khi lên lịch khôi phục — một lần điều phối bình thường không bao giờ chạm tới nó và không có gì trên đường điều phối kiểm tra trạng thái tạm dừng. Tín hiệu duy nhất có thể thấy là huy hiệu vòng đời trong sơ đồ tổ chức.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
-- [Run agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
-- [Agent configuration reference](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
+- [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
+- [Tham chiếu cấu hình agent](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/)

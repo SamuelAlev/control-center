@@ -1,152 +1,166 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Gunakan tinjauan bertenaga AI
+description: Jalankan pipeline pr_review pada sebuah PR, baca temuan dan putusannya, lalu publikasikan tinjauan ke GitHub.
 slug: id-ID/panduan-pengguna/panduan-praktis/tinjauan-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Panduan ini menunjukkan cara membuat agen peninjau meninjau sebuah pull request
+dan cara memublikasikan hasilnya ke GitHub.
 
-## Start an AI review
+## Mulai tinjauan AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Buka PR dan buka tab **Ikhtisar**-nya
+2. Buka menu tambahan ⋯ di baris tindakan dan pilih **Tanya AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Item ini hanya muncul selama PR masih terbuka — ini tindakan sebelum
+penggabungan. Tombol yang sama ditawarkan sebagai **Tanya AI** pada keadaan
+kosong tab **Tinjau**, sebelum ada tinjauan apa pun.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center memulai pipeline `pr_review` bawaan dan membuka tab **Tinjau**
+milik PR agar Anda dapat memantaunya. Pipeline tersebut:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Membuka space tinjauan milik PR, yang worktree terisolasinya memuat PR dalam
+   keadaan checkout pada head-nya
+2. Menyebar para peninjau sesuai tingkat tinjauan ruang kerja — tiga secara
+   bawaan (agen bawaan **qa**, **architect**, dan **engineer**, secara paralel).
+   Tidak ada deteksi bahasa atau domain
+3. Menyuruh agen pemimpin (CEO) mengonsolidasikan temuan mereka menjadi
+   penelusuran terpandu
+4. Menyelesaikan: mengelompokkan temuan ke dalam wadah konsensus dan menghitung
+   putusan. Saat asosiasi mencapai `awaiting approval`, **Publikasikan ke
+   GitHub** muncul di tab Tinjau
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Seberapa dalam tinjauan berjalan ditentukan oleh **tingkat tinjauan** ruang
+kerja — `light` (satu peninjau), `balanced` (tiga, bawaan), atau `thorough`
+(kelima-limanya, menambahkan spesialis keamanan dan performa) — yang diatur di
+**Pengaturan → Ruang kerja → Umum**, pada kartu **Kebijakan ruang kerja**.
+Tingkat yang lebih ringan mencatat temuan sebanyak yang sama; ia melaporkan
+lebih sedikit di antaranya secara menonjol.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/id-ID/panduan-pengguna/konsep/tinjauan-ai/) for how the pieces fit together.
+Semua peninjau memposting ke satu space tinjauan milik PR, dan itulah yang
+membuat temuan mereka dapat dibandingkan. Lihat
+[Tinjauan AI](/id-ID/panduan-pengguna/konsep/tinjauan-ai/) tentang bagaimana
+bagian-bagiannya saling terkait.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/).
+`pr_review` hanya dilengkapi pemicu manual. Agar pemicunya menyala pada setiap
+PR yang dipublikasikan, tambahkan pemicu sendiri — lihat
+[Kirim agen peninjau](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/). Anda juga dapat
+memulainya dari GitHub sendiri, tanpa perlu pemicu pipeline: sebut bot server
+pada PR atau tambahkan label `ai-review` — lihat
+[Bicara ke Control Center dari PR GitHub](/id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Jika ada notifikasi yang menyatakan tinjauan sudah berjalan untuk pull request
+ini, berarti satu tinjauan sedang berlangsung; tetap di tab **Tinjau** atau buka
+**Pipeline** untuk menemukannya.
 
-## Read the findings
+## Baca temuan
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Para peninjau mencatat temuan sebagai **node tinjauan** di space tinjauan.
+Setiap node membawa:
 
-| Field          | Description                                                   |
+| Bidang          | Deskripsi                                                     |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Jenis          | `bug`, `suggestion`, `recommendation`, `question`, atau `ticket` |
+| Prioritas      | P0 (kritis) → P3 (sepele)                                     |
+| Kategori       | `security`, `stability`, `data_integrity`, `correctness`, `performance`, atau `maintainability` |
+| File dan baris | Tempat temuan di-anchor                                       |
+| Kode asli      | Kode yang menjadi pokok temuan                                |
+| Kode yang disarankan | Perbaikan yang diusulkan                                |
+| Keyakinan      | Seberapa yakin peninjau                                       |
+| Status         | `open` → `consensus-ready` → `resolved` atau `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Sebuah temuan hanya mencapai **consensus-ready** setelah peninjau _rekan_
+mengonfirmasinya. Agen tidak dapat mengonfirmasi temuannya sendiri, jadi
+pendapat satu peninjau tidak pernah naik kelas dengan sendirinya.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/) for what the pass produces.
+Tab **Tinjau** menampilkan daftar temuan, yang dapat difilter menurut jenis dan
+status, dengan tombol alih untuk temuan yang ditutup, di samping artefak yang
+dipublikasikan agen pengonsolidasi. Tampilan deterministik — kohort, dasbor
+multi-sumbu, serta diff kontrak dan visual — dihitung di sisi server tetapi
+tidak memiliki permukaan di aplikasi; lihat
+[Komputasi tinjauan](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/) untuk mengetahui apa
+yang dihasilkan proses tersebut.
 
-## Check the disagreements panel
+## Periksa panel ketidaksepakatan
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Ketika dua peninjau me-anchor temuan ke file dan baris yang sama tetapi
+menilainya sangat berbeda — prioritas yang terpaut dua tingkat atau lebih, atau
+satu menyebutnya `bug` sementara yang lain menyebutnya `suggestion` — panel
+ketidaksepakatan muncul di atas daftar temuan. Baca itu lebih dahulu: di sanalah
+pendapat para peninjau menyimpang dan penilaian Anda paling bernilai.
 
-## Read the verdict
+## Baca putusan
 
-When the lead agent finalizes, it computes a **verdict**:
+Saat agen pemimpin menyelesaikan, ia menghitung sebuah **putusan**:
 
-| Verdict   | Meaning                                      |
+| Putusan   | Arti                                         |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Tidak ada temuan yang menghambat             |
+| **Hold**  | Masalah yang harus ditangani sebelum penggabungan |
+| **Block** | Masalah kritis yang harus diperbaiki         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Putusan ini membawa skor keyakinan agregat dan jumlah temuan per prioritas.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Sumbu-sumbu tinjauan kemudian dilipat ke dalamnya dan hanya dapat membuatnya
+**lebih** berat. Sumbu bergerbang yang gagal memaksa **Block**; sumbu bergerbang
+yang tidak dapat diselesaikan (`partial`) atau tidak dapat dijalankan sama sekali
+(`unavailable`) memaksa setidaknya **Hold**. Tidak adanya bukti tidak pernah
+membuka gerbang.
 
-## Publish the review to GitHub
+## Publikasikan tinjauan ke GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publikasi adalah langkah terpisah yang sengaja dijaga oleh pengguna. Pipeline
+`pr_review` menyimpan tinjauan di Control Center; ia tidak mempostingnya ke
+GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Di tab **Tinjau**, tunggu hingga **Publikasikan ke GitHub** muncul
+2. Tekan **Publikasikan ke GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center mengirim **satu** tinjauan GitHub. Temuan yang sudah diselesaikan
+atau ditutup dilewati. Tombol ini menyertakan setiap temuan terbuka yang tersisa
+dan, pada **Ship**, mengirimkan `APPROVE`. (Alat MCP `publish_review_to_github`
+masih hanya menggunakan temuan yang dikonfirmasi rekan secara bawaan dan tidak
+menyetujui kecuali Anda meneruskan `approve_on_ship`.) Temuan yang membawa anchor
+file dan baris menjadi komentar inline; sisanya dilipat ke badan ringkasan,
+masing-masing dengan footer "— Control Center AI review" agar sumbernya tidak
+ambigu. Putusan **Block** dikirim sebagai `REQUEST_CHANGES`; **Hold** sebagai
+`COMMENT`; **Ship** sebagai `APPROVE` dari tombol ini. Sebuah notifikasi kemudian
+menampilkan **Dipublikasikan**. Tinjauan diposting dengan identitas aplikasi
+milik server.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Jika GitHub menolak anchor inline karena barisnya bukan bagian dari diff,
+seluruh tinjauan dikirim ulang dengan setiap temuan dilipat ke badan, sehingga
+tidak ada yang hilang diam-diam.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publikasi dijaga oleh pagar pengaman]
+`pr_review.publishReview` mendeklarasikan kelas tindakan `prPublish` dan berjalan
+melalui titik pengunci pagar pengaman. Jika keputusan yang dihasilkan adalah
+`prompt` dan tidak ada pemberi persetujuan yang terhubung, publikasi ditolak —
+pagar pengaman gagal tertutup. Tetapkan aturan eksplisit di
+Pengaturan → Ruang kerja → Izin agen jika Anda ingin ini berjalan tanpa
+pengawasan.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Pipeline bawaan lainnya memang memposting langsung ke GitHub: `cross_review`,
+`pr_triage`, `ticket_to_pr`, dan `pre_merge_gate` masing-masing diakhiri dengan
+langkah komentar. Hanya `pr_review` yang menahan keluarannya untuk Anda.
 
-## Dispatch reviewers yourself
+## Kirim peninjau sendiri
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/).
+Untuk mengendalikan peran mana yang meninjau PR dan file mana yang dilihat
+masing-masing peran, gunakan alat MCP `dispatch_reviewers` di dalam space
+tinjauan yang sudah ada, atau tambahkan node peninjau ke pipeline. Kedua jalur
+tersebut, beserta tanda tangan persis alatnya, ada di
+[Kirim agen peninjau](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/).
 
-## Related guides
+## Panduan terkait
 
-- [Review and merge a PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
-- [Dispatch reviewer agents](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/)
-- [Review compute (cohorts and axes)](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/)
+- [Tinjau dan gabungkan PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
+- [Kirim agen peninjau](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/)
+- [Komputasi tinjauan (kohort dan sumbu)](/id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan/)
 
-## Related concepts
+## Konsep terkait
 
-- [AI review](/id-ID/panduan-pengguna/konsep/tinjauan-ai/)
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/)
+- [Tinjauan AI](/id-ID/panduan-pengguna/konsep/tinjauan-ai/)
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/)

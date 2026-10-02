@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: チケットのライフサイクル
+description: チケットのフィールド、ステータス、遷移、関連、そして変更操作のチョークポイント。
 slug: ja-JP/マニュアル/リファレンス/チケットライフサイクル
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## チケットのステータス
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| ステータス   | 保存文字列     | 説明                                             |
+| ------------ | -------------- | ------------------------------------------------ |
+| `backlog`    | `backlog`      | 記録済みだが、まだアクティブなキューへトリアージされていない |
+| `open`       | `open`         | トリアージ済みで作業可能だが、未着手             |
+| `inProgress` | `inProgress`   | 現在作業中                                       |
+| `blocked`    | `blocked`      | 着手済みだが、外部要因でブロックされている       |
+| `inReview`   | `inReview`     | 作業は完了し、レビュー待ち                       |
+| `done`       | `done`         | 正常に完了（終端）                               |
+| `failed`     | `failed`       | エラーで終了（終端）                             |
+| `cancelled`  | `cancelled`    | 放棄（終端）                                     |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+ステータス値は camelCase（`inProgress`、`inReview`）で保存され、`in_progress` になることはありません。保存値が null の場合は `open` としてパースされ、不明な値は強制変換されずに例外をスローします。
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` はエージェントが指定した別名を受け付け、大文字小文字と `-` / `_` / スペースを無視します:
 
-| Status       | Accepted aliases                              |
+| ステータス   | 受け付ける別名                                |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## ステータスの遷移
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,160 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**このグラフが縛るのはエージェントと自動化だけです。** `TicketWorkflowService.transitionStatus` は `force` が false のときにこれをチェックします — MCP ツールとリコンサイラーです。そこで不正な遷移が行われるとログに記録されて無視されます。UI でのユーザー操作によるステータス変更はすべて `force: true` を渡してグラフを完全に迂回するため、人間はピッカーに並ぶ任意のステータス（`failed` を除くすべてのステータス）へチケットを移動でき、終端状態のチケットを再び開くこともできます。エージェントは `fail_ticket` で `failed` にします。
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+ステータスは常にそれ自身へ遷移できます。終端状態には外向きのエッジがありません。
 
-| From         | Allowed targets                                      |
+| 遷移元       | 許可される遷移先                                     |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | —（終端）                                            |
+| `failed`     | —（終端）                                            |
+| `cancelled`  | —（終端）                                            |
 
-## Ticket priorities
+## チケットの優先度
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+整数として Linear のネイティブな 0〜4 スケールで保存されます。不明な値は `none` にパースされます。
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| 優先度   | 保存値 |
+| -------- | ------ |
+| `none`   | `0`    |
+| `urgent` | `1`    |
+| `high`   | `2`    |
+| `medium` | `3`    |
+| `low`    | `4`    |
 
-## Ticket providers
+## チケットのプロバイダー
 
-An unknown or null stored value parses to `local`.
+保存値が不明または null の場合は `local` にパースされます。
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| プロバイダー | ステータス                                             |
+| ------------ | ------------------------------------------------------ |
+| `local`      | ワークスペースデータベースに完全に保存される。既定     |
+| `linear`     | リモートが所有し、ローカルにミラーリングされる         |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+同期アダプターは `packages/cc_infra/lib/src/tickets/sync/` 配下にあり、Linear、
+GitHub Issues、Jira Cloud、ClickUp に対応します。GitHub Issues はあくまで同期
+アダプターのベンダー（`vendorId: github`）であり、`TicketProvider` の値ではあり
+ません。そのため、プルされた GitHub イシューは `originKind: externalSync` と
+既定の `provider: local` で保存されます。ベンダーのマッピングは
+`ticket_sync_links` にあります。
 
-## Ticket origin
+## チケットのオリジン
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` は `manual` を書き込みます。ベンダーからのプルは `externalSync` を
+書き込みます。委任された子チケットは `manual` のままです。
 
-| Value          | Meaning                                                      |
+| 値             | 意味                                                         |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | `createTicket` の既定（人間、エージェント、委任された行）     |
+| `externalSync` | ベンダーからのプル時に `TicketSyncEngine` が設定              |
 
-## Ticket fields
+## チケットのフィールド
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+この集約は 1 つの行に 2 つの関心事をまたがって持ちます。**ミラー**（プロバイダー、キー、タイトル、説明、優先度、ラベル、ステータス、タイムスタンプ）はリモートプロバイダーのキャッシュであり、リフレッシュによって丸ごと書き換えられます。**オーバーレイ**（割り当て、委任、スペース、親、プロジェクト、リンクされた PR）は Control Center だけのものであり、リフレッシュが触れることはありません。
 
-| Field                    | Type                       | Description                                                                                |
+| フィールド               | 型                         | 説明                                                                                       |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | 所有するワークスペース                                                                     |
+| `provider`               | `TicketProvider`           | 正規データを所有するバックエンド（既定は `local`）                                         |
+| `externalKey`            | `String?`                  | プロバイダー固有のキー（例: `LIN-123`）。ローカルの `createTicket` はここに*別の* UUID を書き込み、行の `id` は書き込みません |
+| `url`                    | `String?`                  | リモートプロバイダー上の Web URL                                                           |
+| `title`                  | `String`                   | 短い要約。空にできません                                                                   |
+| `description`            | `String?`                  | 長めの Markdown 本文                                                                       |
+| `priority`               | `TicketPriority`           | 既定は `none`                                                                              |
+| `labels`                 | `List<String>`             | 自由形式のラベル                                                                           |
+| `status`                 | `TicketStatus`             | 正規化された正規のステータス                                                               |
+| `rawStatus`              | `String?`                  | リモートプロバイダーのネイティブな状態名。ロスレス表示のために保持される                   |
+| `externalSyncedAt`       | `DateTime?`                | 最後のマルチベンダー同期。初回までは null。ベンダーごとのマッピングは `ticket_sync_links` にあります |
+| `parentTicketId`         | `String?`                  | 委任／分解ツリーの親                                                                       |
+| `projectId`              | `String?`                  | 所有するプロジェクト。リモートへプッシュされることはありません                             |
+| `assignedAgentId`        | `String?`                  | 割り当てられたプリンシパルの id（メタデータのみ — 割り当てても何もディスパッチされません） |
+| `assigneeType`           | `PrincipalType`            | `assignedAgentId` が指すプリンシパルの種類 — `user` または `agent`（既定は `agent`）      |
+| `createdByType`          | `PrincipalType?`           | チケットを作成したプリンシパルの種類（`user` または `agent`）。レガシー／システム行では null |
+| `createdById`            | `String?`                  | 作成したプリンシパルの id                                                                  |
+| `assignedTeamId`         | `String?`                  | 割り当てられたチーム（メタデータのみ）                                                     |
+| `delegatedByAgentId`     | `String?`                  | このチケットを委任したエージェント                                                         |
+| `delegationDepth`        | `int`                      | 委任チェーン内の深さ。ルートは `0` で、最大深度の上限と照合される                          |
+| `delegationRootTicketId` | `String?`                  | 委任チェーンのルート。ルートチケットでは null                                              |
+| `spaceId`                | `String?`                  | チケットの元になった会話、または委任したエージェントのスペース                             |
+| `errorMessage`           | `String?`                  | `status` が `failed` のときに設定される                                                    |
+| `linkedPrIds`            | `List<String>`             | このチケットがリンクされている PR ノード id                                                |
+| `metadata`               | `Map<String, dynamic>`     | 自由形式のバッグ                                                                           |
+| `createdAt`              | `DateTime`                 | 作成日時                                                                                   |
+| `startedAt`              | `DateTime?`                | 作業を開始した日時                                                                         |
+| `blockedAt`              | `DateTime?`                | チケットがブロックされた日時                                                               |
+| `cancelledAt`            | `DateTime?`                | チケットがキャンセルされた日時                                                             |
+| `completedAt`            | `DateTime?`                | チケットが正常に完了した日時                                                               |
+| `finishedAt`             | `DateTime?`                | チケットが任意の終端状態に達した日時                                                       |
+| `updatedAt`              | `DateTime`                 | 最後の変更（ミラーのリフレッシュまたはオーバーレイの変更）                                 |
+| `version`                | `int`                      | 楽観的同時実行のカウンター。変更のたびにインクリメントされる                               |
+| `originKind`             | `TicketOriginKind`         | チケットがどのように作成されたか（既定は `manual`）                                        |
+| `collaborators`          | `List<TicketCollaborator>` | リポジトリによってオンデマンドでハイドレートされる                                         |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+派生: `isTerminal`、`isRemote`（`provider != local`）、`isAssignedToUser`、`displayKey`（`externalKey ?? id` — そのためローカルチケットは、行の `id` ではなく、作成時に付与された別の UUID を表示します）。
 
-## Ticket relations
+## チケットの関連
 
-Stored edges are directional rows in `ticket_links`:
+保存されるエッジは `ticket_links` 内の方向性を持つ行です:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| 種類          | 保存文字列     | 意味                             |
+| ------------- | -------------- | -------------------------------- |
+| `blocks`      | `blocks`       | ソースがターゲットをブロックする |
+| `relatesTo`   | `relates_to`   | 対称な関連                       |
+| `duplicateOf` | `duplicate_of` | ソースはターゲットの重複         |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+UI と `ticket_relation` が扱う語彙は `TicketRelationKind` で、保存されたエッジと、対象がどちらの端点に位置するかから導出されます:
 
-| Kind           | Derived from                                         |
-| -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| 種類           | 導出元                                                     |
+| -------------- | ---------------------------------------------------------- |
+| `blockedBy`    | 対象がターゲットである `blocks` 行                         |
+| `blocking`     | 対象がソースである `blocks` 行                             |
+| `relatedTo`    | `relates_to` 行（対称）                                    |
+| `duplicateOf`  | 対象がソースである `duplicate_of` 行                       |
+| `duplicatedBy` | 対象がターゲットである `duplicate_of` 行                   |
+| `subIssueOf`   | 対象側の `tickets.parent_ticket_id`                        |
+| `parentOf`     | もう一方のチケット側の `tickets.parent_ticket_id`          |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+親とサブイシューのリンクは `ticket_links` の行では**ありません** — これらは `tickets.parent_ticket_id` にあります。
 
-## Domain events
+## ドメインイベント
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+これら 8 つのクラスは `packages/cc_domain/lib/core/domain/events/ticketing_events.dart` にあります。`TicketStarted`、`TicketDelegated`、`TicketCollaboratorAdded`、`ExternalTicketWebhookReceived` は存在しません。
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| イベント                  | 発行されるタイミング                                       |
+| ------------------------- | ---------------------------------------------------------- |
+| `TicketCreated`           | チケットが作成されたとき                                   |
+| `TicketAssigned`          | チケットがプリンシパルまたはチームに割り当てられたとき     |
+| `TicketCompleted`         | 作業が正常に完了したとき                                   |
+| `TicketFailed`            | 作業が失敗したとき                                         |
+| `TicketCancelled`         | チケットがキャンセルされたとき                             |
+| `TicketStatusChanged`     | ステータスが変更されたとき                                 |
+| `TicketReassigned`        | チケットが再割り当てされたとき                             |
+| `TicketDetailsUpdated`    | タイトル、説明、優先度、またはラベルが変更されたとき       |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` は監査と通知のシグナルであり、パイプラインのトリガーでもあります。エージェントへの割り当ては実行を開始しません — `assignedAgentId` を監視するチケットディスパッチャーは存在しません。例外はチームへの割り当てです: `TeamRoutingService` がチームリーダーをディスパッチします。コラボレーターの追加は行を書き込むだけで、何も発行しません。ベンダーの Webhook は `TicketSyncEngine` を通じて適用され、ドメインイベントは伴いません。
 
-## Mutation chokepoint
+## 変更操作のチョークポイント
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` がすべての変更操作を所有します。
 
-| Mechanism              | Detail                                                                                                                                            |
+| 仕組み                 | 詳細                                                                                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| 単一のチョークポイント | すべての変更は `_mutate` を経由し、`_mutate` は行をロードして適用前に `_assertWorkspace` を呼び出す                                              |
+| ワークスペース分離     | ロードした行の `workspaceId` が呼び出し元のものと一致しない場合、`_assertWorkspace` は `WorkspaceMismatchException` をスローする                  |
+| 楽観的同時実行         | `_mutate` は、読み取ったばかりの `version` を `expectedVersion` に設定して書き込み、`ConcurrencyConflictException` では最新の状態を再読み取りして再試行する |
+| 排他的なチェックアウト | `tryCheckout` / `releaseCheckout`。チェックアウト済みのチケットを別のエージェントが要求すると `CheckoutConflictException` を受け取る              |
+| 遷移ガード             | `canTransitionTo`。`force` が false のときにのみ適用される                                                                                        |
 
-## See also
+## 関連項目
 
-- [Tickets](/ja-JP/マニュアル/コンセプト/チケット/)
-- [Manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
-- [Delegate tickets](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
-- [Domain events](/ja-JP/マニュアル/リファレンス/ドメインイベント/)
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/)
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
+- [エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
+- [ドメインイベント](/ja-JP/マニュアル/リファレンス/ドメインイベント/)

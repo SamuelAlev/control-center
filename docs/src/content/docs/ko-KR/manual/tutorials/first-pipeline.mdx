@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: 첫 파이프라인 만들기
+description: 파이프라인 템플릿을 만들고, 단계를 구성하고, 수동 실행을 허용한 뒤 실행을 시작합니다.
 slug: ko-KR/매뉴얼/튜토리얼/첫-파이프라인
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## 만들게 될 것
 
-By the end of this tutorial, you will have:
+이 튜토리얼을 마치면 다음을 갖추게 됩니다:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- 프롬프트로 에이전트를 디스패치하는, 저장된 파이프라인 템플릿
+- 직접 시작할 수 있도록 켜 둔 수동 실행
+- 단계의 입력과 출력이 보이는, 완료된 실행 하나
 
-Prerequisites: [Dispatch your first agent](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/) completed, so you have an agent with an adapter and a model.
+선행 조건: [첫 에이전트 디스패치](/ko-KR/매뉴얼/튜토리얼/첫-에이전트/)를 마쳐 어댑터와 모델이 설정된 에이전트가 있어야 합니다.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/); for the full step vocabulary, [Pipeline step kinds](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/).
+파이프라인은 단계의 DAG입니다. 템플릿은 그래프를 정의하고, 실행은 그 그래프를 수행한 것입니다. 그 바탕이 되는 모델은 [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/)에서, 단계 어휘 전체는 [파이프라인 단계 종류](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/)에서 다룹니다.
 
-## Step 1: Create a template
+## 1단계: 템플릿 만들기
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. **설정 → 워크스페이스 → 파이프라인 템플릿**으로 이동합니다
+2. **새 템플릿**을 클릭합니다
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+편집기는 **새 파이프라인**이라는 이름의 기본 제공 스켈레톤으로 열립니다(id `pipeline_N`).
+헤더의 제목을 클릭해 이름을 바꾸십시오 — 이 튜토리얼에서는
+`code_quality_check`가 좋은 이름입니다. ID 대화상자도, 설명 필드도
+없습니다.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+캔버스는 비어 있지 않습니다. 새 템플릿은 **트리거 → Step →
+터미널**로 미리 연결되어 열리는데, 여기서 "Step"은 프롬프트 에이전트 노드이고
+터미널은 편집기가 도달 가능한 모든 싱크에 다시 연결하는 보이지 않는
+센티널입니다.
 
-You configure the Step that is already there.
+여러분은 이미 있는 Step을 구성하면 됩니다.
 
-## Step 2: Configure the step
+## 2단계: 단계 구성
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. 캔버스에서 **Step** 노드를 클릭합니다
+2. 오른쪽의 **노드 설정** 패널에서 다음을 설정합니다:
+   - **에이전트**: 이전 튜토리얼에서 만든 여러분의 에이전트
+   - **프롬프트 템플릿**: "현재 브랜치의 코드에서 품질 문제를 검토하세요. 발견한 내용을 나열하세요."
+3. **Triggers from**은 그대로 둡니다 — 이 노드는 이미 트리거 다음에 발화하도록 연결되어 있습니다
 
-## Step 3: Save
+## 3단계: 저장
 
-Press **Save** in the editor header.
+편집기 헤더에서 **저장**을 누릅니다.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**체크포인트.** "저장되지 않은 변경 사항" 캡션이 사라집니다.
 
-## Step 4: Allow manual runs
+## 4단계: 수동 실행 허용
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. 캔버스의 점선 **트리거 추가** 타일을 클릭하거나(또는 노드 라이브러리의 트리거
+   섹션에서 **수동 실행**을 끌어다 놓고) **수동 실행**을 고릅니다.
+2. 그 노드를 선택합니다. 오른쪽 인스펙터에서 **활성화됨**을 켭니다 —
+   "실행 페이지에 표시하고 직접 시작합니다."
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+이것은 선택 사항이 아니며, 놓치기 쉽습니다. 새 템플릿은 **트리거 행이 전혀 없는** 상태로 만들어지므로, 이 스위치를 켜기 전까지는 실행 페이지에 템플릿이 표시되지 않고 시작할 것도 없습니다. 이 스위치는 트리거를 즉시 기록하며, 다음 저장을 기다리지 않습니다.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+같은 스위치는 편집기 헤더의 **수동 실행** 뒤에도 있으며, 템플릿이 선언한 입력과 나란히 있습니다.
 
-## Step 5: Run it
+## 5단계: 실행하기
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. 사이드바에서 **파이프라인**을 클릭합니다
+2. 헤더에서 **파이프라인 실행**을 클릭합니다
+3. 왼쪽 레일에서 `code_quality_check`를 선택합니다
+4. 양식에서 **파이프라인 실행**을 클릭합니다 — 템플릿이 입력을 선언하지 않으므로 채울 것이 없습니다
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**체크포인트.** 토스트가 실행 시작을 알리고 Control Center가 실행 상세 페이지를 엽니다.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+엔진은 실행 레코드를 만들고, 트리거를 완료하고, 단계를 예약하고, 에이전트를 디스패치하며, 터미널로 들어오는 브랜치가 끝나면 실행을 완료합니다.
 
-## Step 6: Inspect the result
+## 6단계: 결과 확인
 
-Click the step in the run to open its detail panel:
+실행에서 단계를 클릭하면 상세 패널이 열립니다:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- **시작**과 **종료** 타임스탬프, 그리고 **소요 시간**
+- **입력**: 단계로 전달된 상태
+- **출력**: 단계가 만들어 낸 것 — 여기서는 에이전트의 응답
+- **에이전트 활동**, 단계가 이끈 대화로 이동하는 링크 포함
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**체크포인트.** 단계가 완료로 표시되고, 출력에 에이전트의 리뷰가 담겨 있습니다.
 
-## Adding more steps
+## 단계 더 추가하기
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+노드는 왼쪽의 노드 라이브러리에서 항목을 캔버스로 끌어다 놓거나, 노드 바로
+뒤에서 **단계 추가**(`+`)를 눌러 추가합니다. 노드의 출력 포트에서 다른 노드로
+끌어 연결하거나, 새 노드를 선택해 **Triggers from** 아래에서 업스트림 단계를
+체크합니다.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+터미널 노드는 그려지지 않으며 선택할 수 없습니다. 편집기가 이 노드를
+도달 가능한 모든 싱크에 다시 연결하므로, 기본 제공 Step 뒤에 추가한 노드도
+실행됩니다.
 
-## Recap
+## 정리
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+템플릿을 만들고, 기본 제공된 프롬프트 에이전트 노드를 구성하고, 저장하고, 수동으로 실행할 수 있게 하고, 실행을 시작해 단계의 입력과 출력을 확인했습니다.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+파이프라인은 이보다 훨씬 커질 수 있습니다 — 조건부 라우터, 병렬 브랜치, 조인 노드, for-each 팬아웃, 사람 게이트 — 하지만 형태는 결코 바뀌지 않습니다. DAG 안의 단계들이 상태를 전달합니다.
 
-**Next:** [Bridge Slack to your workspace](/ko-KR/매뉴얼/튜토리얼/첫-채팅-브리지/), the last tutorial in this sequence.
+**다음:** [Slack을 워크스페이스에 브리지](/ko-KR/매뉴얼/튜토리얼/첫-채팅-브리지/), 이 연속 과정의 마지막 튜토리얼입니다.
 
-- [Set up pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/) to start pipelines from events or a schedule
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/) for the model underneath
-- [Pipeline step kinds](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/) for every step type
+- [파이프라인 트리거 설정](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/): 이벤트나 일정으로 파이프라인을 시작하려면
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/): 그 바탕이 되는 모델
+- [파이프라인 단계 종류](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/): 모든 단계 유형

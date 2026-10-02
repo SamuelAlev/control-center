@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: ورک اسپیس میموری منظم کریں
+description: ورک اسپیس میں ایجنٹس کی لکھی ہوئی فیکٹس اور پالیسیوں کا جائزہ لیں، انہیں درست کریں اور تراشیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میموری-منظم-کریں
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+یہ گائیڈ بتاتی ہے کہ ورک اسپیس کے علم کے اسٹور کے ساتھ کیسے کام کیا جائے۔
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+شروع کرنے سے پہلے ایک اہم بات جان لیں: **میموری کا UI جائزے کی سطح ہے، تحریر کی نہیں۔** فیکٹس اور پالیسیاں ایجنٹس لکھتے ہیں — `propose_fact` اور `propose_policy` کے ذریعے، اور ان کی جگہ لینے کے لیے `supersede_fact` اور `supersede_policy` موجود ہیں۔ `remember` سیشن تک محدود ہاٹ ٹیئر آئٹم لکھتا ہے جسے `consolidate_memory` بعد میں فیکٹ کا درجہ دے سکتا ہے۔ ریکارڈ شدہ میٹنگ فیصلے `decisions` ڈومین میں اکٹھے کیے جاتے ہیں؛ مکمل ہو چکے ایجنٹ رنز پر کوئی اکٹھا کرنے کا عمل نہیں ہوتا۔ یہاں آپ جو کرتے ہیں وہ یہ ہے کہ اُن کی لکھی ہوئی بات پڑھیں، درست کریں، غیر فعال کریں یا حذف کریں۔
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+میموری **ترتیبات → ورک اسپیس → میموری** پر ہے (`/workspaces/<id>/settings/memory`)۔ یہ سائیڈ بار کی کوئی اعلیٰ سطح کی منزل نہیں ہے۔
 
-## The three tabs
+## تین ٹیبز
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+صفحے پر بالکل تین ٹیبز ہیں۔ فیکٹس اور پالیسیاں لائیو گنتی دکھاتے ہیں؛ گراف نہیں:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **فیکٹس** — ورک اسپیس کی ہر فیکٹ، ساتھ اُن کی گنتی جو منسوخ نہیں ہوئیں
+- **پالیسیاں** — ڈومین کے لحاظ سے گروپ شدہ معیاری قواعد، ساتھ ایکٹو پالیسیوں کی گنتی
+- **نالج گراف** — ڈومینز، موضوعات، فیکٹس اور پالیسیوں کا متعامل کینوس
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+ڈومینز کوئی ایسی چیز نہیں جو آپ بنائیں۔ کوئی ڈومین اُس وقت وجود میں آتا ہے جب کوئی ایجنٹ اس میں پہلی فیکٹ یا پالیسی لکھتا ہے؛ UI میں کہیں ڈومین بنانے کا کوئی کنٹرول نہیں ہے۔
 
-## Review and correct a fact
+## کسی فیکٹ کا جائزہ لیں اور اسے درست کریں
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. **فیکٹس** ٹیب کھولیں۔
+2. فہرست مختصر کرنے کے لیے تلاش کا باکس استعمال کریں۔ یہ ہر فیکٹ کے ڈومین، موضوع اور مواد پر ایک سادہ سب اسٹرنگ فلٹر ہے — نہ کوئی کلیدی لفظ انڈیکس، نہ درجہ بندی۔
+3. دائرے کا فلٹر استعمال کریں تاکہ تمام دائرے، صرف پورے ورک اسپیس کی فیکٹس، یا کسی ایک ریپوزٹری کی فیکٹس دکھائی جائیں۔
+4. ترتیب بدلنے والا ٹوگل استعمال کریں تاکہ تازگی یا اعتماد کے مطابق ترتیب دی جائے۔
+5. کسی فیکٹ کے ترمیم کنٹرول پر کلک کریں۔
 
-The edit dialog lets you change:
+ترمیم کا ڈائلاگ آپ کو یہ تبدیلیاں کرنے دیتا ہے:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **ڈومین** — فیکٹ کو ایک ڈومین سے دوسرے میں منتقل کرنا
+- **موضوع** — اس کا مختصر لیبل
+- **مواد** — علم کا متن
+- **اعتماد** — 5% قدموں میں ایک سلائیڈر
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+لکھا ہوا واپس محفوظ کرنے کے لیے محفوظ کریں دبائیں۔ کوئی **فیکٹ شامل کریں** بٹن نہیں ہے؛ ڈائلاگ صرف کسی موجود قطار پر کھلتا ہے۔
 
-## See superseded facts
+## منسوخ شدہ فیکٹس دیکھیں
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+فیکٹس ٹیب میں **منسوخ شدہ دکھائیں** سوئچ موجود ہے۔ منسوخ شدہ فیکٹس بطور ڈیفالٹ چھپی رہتی ہیں اور اسی سوئچ سے سامنے آتی ہیں، اور آڈٹ ٹریل یہیں رہتا ہے — منسوخ کرنا کبھی حذف نہیں کرتا۔
 
-## Delete a fact
+## کسی فیکٹ کو حذف کریں
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+کسی فیکٹ کے حذف کنٹرول کا استعمال کریں اور تصدیق کریں۔ یہ حقیقی حذف ہے، منسوخی نہیں: اسے ایسی فیکٹس کے لیے استعمال کریں جو محض غلط ریکارڈ ہوئی تھیں، جبکہ ایسی فیکٹس جن کا _مواد_ آگے بڑھ چکا ہو، انہیں ایجنٹس کے منسوخ کرنے پر چھوڑ دیں۔
 
-## Manage policies
+## پالیسیاں منظم کریں
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+**پالیسیاں** ٹیب ایکٹو پالیسیوں کو ڈومین کے لحاظ سے گروپ کرتا ہے اور غیر فعال پالیسیوں کو آخر میں ایک الگ سیکشن میں ڈال دیتا ہے۔ ہر پالیسی کے لیے آپ یہ کر سکتے ہیں:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- اس کی **ترمیم**
+- اسے **حذف کریں**
+- اسے **غیر فعال کریں** / **فعال کریں** — یہ واپس پلٹائی جا سکنے والی صورت ہے اور عموماً درست بھی۔ ایجنٹ کے پرامپٹ تک صرف ایکٹو پالیسیاں پہنچتی ہیں۔
 
-As with facts, there is no create control.
+فیکٹس کی طرح یہاں بھی بنانے کا کوئی کنٹرول نہیں ہے۔
 
-## Explore the knowledge graph
+## نالج گراف دریافت کریں
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+**نالج گراف** ٹیب ڈومینز، موضوعات، فیکٹس اور پالیسیوں کو نیویگیٹ ہونے والے نوڈ کینوس کی صورت میں بچھا دیتا ہے — پین کریں، زوم کریں، نوڈز گھسیٹیں۔ کسی نوڈ پر ٹیپ کرنے سے اس کی تفصیلی شیٹ کھلتی ہے، جہاں سے وہی ترمیم والے ڈائلاگ قابلِ رسائی ہوتے ہیں۔ یہ دیکھنے کا سب سے تیز طریقہ ہے کہ کون سے ڈومینز واقعی بھرے ہوئے ہیں۔
 
-## Edit an agent's working memory
+## ایجنٹ کی ورکنگ میموری میں ترمیم کریں
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+ورکنگ میموری ہر ایجنٹ کا نجی اسکریچ پیڈ ہوتا ہے، جو ڈسپیچ کے وقت اس کے پرامپٹ میں شامل کیا جاتا ہے۔ ایجنٹس اسے خود `record_observation` اور `update_my_notes` کے ذریعے لکھتے ہیں، مگر آپ اسے براہِ راست پڑھ اور ترمیم کر سکتے ہیں:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**ترتیبات → ورک اسپیس → ایجنٹس** → ایجنٹ منتخب کریں → **میموری** ٹیب۔
 
-## Access grants
+## رسائی گرانٹس
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+میموری رسائی گرانٹس ایجنٹ کے کردار کو فی ڈومین ایک اجازت (`none`، `read`، `write`) سے جوڑتی ہیں۔ انہیں `memory_access_grant.*` اوپریشنز سے لکھیں۔
 
-Two things to understand about how they resolve:
+ان کے لاگو ہونے کے بارے میں دو باتیں سمجھ لینا ضروری ہیں:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **ریڈز فیل اوپن ہوتی ہیں۔** کسی (کردار، ڈومین) جوڑے کے لیے کوئی گرانٹ قطار نہ ہونے پر موثر اجازت `read` ہوتی ہے۔ `write` کے بغیر استثنا پھینکنے والی واحد رائٹ `propose_policy` ہے۔ فیکٹ کی رائٹس گرانٹ سے مشروط نہیں ہیں۔
+- **گرانٹس کی کلید ایجنٹ کے کردار پر ہوتی ہے۔** پروپوز کرنے والے ٹولز غائب `agent_role` کو ڈیفالٹ میں `general` مانتے ہیں۔ کسی دوسرے کردار کے لیے لکھی گئی گرانٹ اُن ایجنٹس پر لاگو نہیں ہوتی؛ `general` کی گرانٹ لاگو ہوتی ہے۔
 
-## Search is not the same everywhere
+## تلاش ہر جگہ ایک جیسی نہیں
 
-Three different things are called "memory search" and they do not agree:
+تین مختلف چیزوں کو “میموری تلاش” کہا جاتا ہے اور وہ ایک دوسرے سے متفق نہیں:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| کہاں | یہ کیا کرتا ہے |
+| --- | --- |
+| فیکٹس ٹیب کا تلاش باکس | کلائنٹ میں پہلے سے لوڈ شدہ فیکٹس پر سب اسٹرنگ فلٹر |
+| `memory_fact.search` RPC اوپ | صرف FTS5 کلیدی لفظ تلاش — ایک ہلکا کلائنٹ کوئری کی ایمبیڈنگ نہیں بھیج سکتا، اس لیے ہائبرڈ تلاش ہوسٹ کے اندر ہی رہتی ہے |
+| ایجنٹ کی طرف کا `search_memory` ٹول | `keyword`، `semantic` یا `hybrid` (ڈیفالٹ)۔ ہائبرڈ چار آوازیں ملاتا ہے: لغوی، معنوی، زمانی اور گراف |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+چنانچہ ایک ایجنٹ اور میموری کا صفحہ ایک ہی کوئری کو ایک ہی طرح درجہ بند نہیں کریں گے۔ جب آپ یہ جانچ رہے ہوں کہ کوئی ایجنٹ واقعی کیا یاد کر سکتا ہے، تو ایجنٹ سے ہی پوچھیں۔
 
-## Embeddings
+## ایمبیڈنگز
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+فیکٹس **لکھنے کے وقت** ایمبیڈ کی جاتی ہیں اور صرف اُس وقت جب ڈیوائس پر موجود ایمبیڈنگ ماڈل انسٹال ہو۔ اس کی اسٹیٹس **ترتیبات → سرور → تشخیص اور پرائیویسی → سیمانٹک تلاش** کے تحت دیکھیں۔ اگر آپ معنوی ری کال چاہتے ہیں تو ایجنٹس کے میموری لکھنا شروع کرنے سے پہلے ماڈل انسٹال کر لیں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Use the MCP server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [MCP سرور استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Memory and knowledge](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/)
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)
+- [میموری اور علم](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/)
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/)

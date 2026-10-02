@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: 管理工作区记忆
+description: 复核、纠正并修剪智能体写入工作区的事实与策略。
 slug: zh-CN/手册/操作指南/管理记忆
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+本指南介绍如何使用工作区的知识存储。
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+开始之前需要知道的最重要一点：**记忆界面是复核界面，而不是撰写界面。** 事实和策略由智能体写入 —— 通过 `propose_fact` 和 `propose_policy`，并用 `supersede_fact` 和 `supersede_policy` 替换它们。`remember` 写入一条受会话限制的热层条目，之后 `consolidate_memory` 可能会把它提升为事实。录制下来的会议决策会被采集进 `decisions` 域；已完成的智能体运行则没有这种采集。你在这里要做的，是读取它们写下的内容、纠正、停用或删除。
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+记忆位于**设置 → 工作区 → 记忆**（`/workspaces/<id>/settings/memory`）。它不是侧边栏的顶级入口。
 
-## The three tabs
+## 三个标签页
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+该页面只有三个标签页。事实和策略会显示实时计数；图谱则不会：
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **事实** —— 工作区中的每一条事实，并显示其中未被替代的数量
+- **策略** —— 按域分组的规范性规则，并显示其中已启用的数量
+- **知识图谱** —— 由域、主题、事实和策略构成的可交互画布
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+域不是由你创建的。当智能体向某个域写入第一条事实或策略时，该域便随之产生；界面中任何地方都没有创建域的控件。
 
-## Review and correct a fact
+## 复核并纠正事实
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. 打开**事实**标签页。
+2. 使用搜索框缩小列表范围。它只是对每条事实的域、主题和内容做简单的子串过滤 —— 没有关键词索引，也不做排序。
+3. 使用范围筛选器显示所有范围、仅整个工作区范围的事实，或某一个仓库的事实。
+4. 使用排序开关按时间新近度或置信度排序。
+5. 点击某条事实的编辑控件。
 
-The edit dialog lets you change:
+编辑对话框允许你更改：
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **域** —— 在域之间移动事实
+- **主题** —— 它的简短标签
+- **内容** —— 知识文本
+- **置信度** —— 以 5% 为步进的滑块
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+保存即可写回。不存在**添加事实**按钮；该对话框只能在已有行上打开。
 
-## See superseded facts
+## 查看已替代的事实
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+事实标签页有一个**显示已替代**开关。已替代的事实默认隐藏，由该开关显示出来，审计轨迹也正是在这里 —— 替代绝不会删除。
 
-## Delete a fact
+## 删除事实
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+使用某条事实的删除控件并确认。这是真正的删除，而不是替代：用于那些记录本身就是错误的事实，而让智能体去替代 _内容_ 已经变化的事实。
 
-## Manage policies
+## 管理策略
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+**策略**标签页按域对已启用的策略分组，并把未启用的策略降级到末尾的单独一节。针对每条策略，你可以：
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **编辑**它
+- **删除**它
+- **停用** / **启用**它 —— 这是可逆的选项，通常也是更恰当的选择。只有已启用的策略才会进入智能体的提示词。
 
-As with facts, there is no create control.
+与事实一样，这里也没有创建控件。
 
-## Explore the knowledge graph
+## 探索知识图谱
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+**知识图谱**标签页把域、主题、事实和策略铺陈为可导航的节点画布 —— 可平移、缩放、拖动节点。点按某个节点会打开它的详情面板，从那里可以进入同样的编辑对话框。它是查看哪些域真正有内容的最快方式。
 
-## Edit an agent's working memory
+## 编辑智能体的工作记忆
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+工作记忆是每个智能体私有的草稿本，在派发时注入它的提示词。智能体自己通过 `record_observation` 和 `update_my_notes` 写入它，但你也可以直接读取和编辑：
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**设置 → 工作区 → 智能体** → 选择该智能体 → **记忆**标签页。
 
-## Access grants
+## 访问授权
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+记忆访问授权把智能体的角色映射为每个域上的一项权限（`none`、`read`、`write`）。用 `memory_access_grant.*` 操作写入它们。
 
-Two things to understand about how they resolve:
+关于它们如何生效，有两点需要理解：
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **读取是失效开放的。** 当某个（角色，域）组合没有对应的授权记录时，实际生效的权限是 `read`。唯一在没有 `write` 时会抛错的写入是 `propose_policy`。事实写入不受授权限制。
+- **授权以智能体的角色为键。** 提议类工具会把缺失的 `agent_role` 默认为 `general`。为其他角色写入的授权不会约束这些智能体；而 `general` 授权会。
 
-## Search is not the same everywhere
+## 搜索在各处并不相同
 
-Three different things are called "memory search" and they do not agree:
+有三种不同的东西都被叫作“记忆搜索”，但它们并不一致：
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| 位置                            | 作用                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 事实标签页的搜索框              | 对客户端中已加载的事实做子串过滤                                                                      |
+| `memory_fact.search` RPC 操作   | 仅做 FTS5 关键词搜索 —— 瘦客户端无法提交查询嵌入，因此混合搜索始终留在主机内部                        |
+| 智能体侧的 `search_memory` 工具 | `keyword`、`semantic` 或 `hybrid`（默认）。混合模式融合四个声部：词法、语义、时序和图谱               |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+所以，智能体和记忆页面不会以相同方式对同一个查询排序。当你想确认智能体实际能回忆起什么时，去问智能体。
 
-## Embeddings
+## 嵌入
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+事实在**写入时**被嵌入，且仅在设备本地嵌入模型已安装时才会嵌入。在**设置 → 服务器 → 诊断与隐私 → 语义搜索**下查看它的状态。如果你想要语义召回，请在智能体开始写入记忆之前安装该模型。
 
-## Related guides
+## 相关指南
 
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Use the MCP server](/zh-CN/手册/操作指南/mcp-服务器/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [使用 MCP 服务器](/zh-CN/手册/操作指南/mcp-服务器/)
 
-## Related concepts
+## 相关概念
 
-- [Memory and knowledge](/zh-CN/手册/概念/记忆与知识/)
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/)
+- [记忆与知识](/zh-CN/手册/概念/记忆与知识/)
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)

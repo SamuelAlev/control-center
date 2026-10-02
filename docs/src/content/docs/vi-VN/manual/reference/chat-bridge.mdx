@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Cầu chat
+description: Nhà cung cấp, lệnh, thông tin xác thực, năng lực, thao tác RPC và lưu trữ của cầu nối chat.
 slug: vi-VN/so-tay/tham-chieu/cau-chat
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Nhà cung cấp
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Nhà cung cấp | Giá trị truyền | Transport                  | Loại space |
+| ------------ | -------------- | -------------------------- | ---------- |
+| Slack        | `slack`        | Socket Mode (WSS hướng ra) | `slack`    |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack là nhà cung cấp duy nhất.** `ChatProvider` là một enum đơn trị và `cc_server` đăng ký một plugin. Schema, mọi phép tra cứu và mọi chỉ mục duy nhất đều được khóa theo `provider`, nên id không bao giờ vượt qua ranh giới nhà cung cấp và việc thêm một nhà cung cấp chỉ là một thay đổi phía máy chủ.
 
-One provider-side app per **workspace × provider**.
+Một ứng dụng phía nhà cung cấp cho mỗi **không gian làm việc × nhà cung cấp**.
 
-## Chat commands
+## Lệnh chat
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+Tên lệnh là theo từng ứng dụng (`cc` theo mặc định, nên là `/cc`). Quản trị viên có thể đổi tên; khi đó cầu nối dùng bất kỳ tên nào mà nó được gọi lần gần nhất.
 
-| Command                               | Effect                                                        |
+| Lệnh                                  | Tác dụng                                                      |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (hoặc `/cc` không có động từ) | Liệt kê những gì bot có thể làm                            |
+| `/cc link <code>`                     | Đổi một mã dùng một lần và liên kết danh tính chat của người gửi |
+| `/cc ticket <title>`                  | Tạo một phiếu cục bộ do thành viên đã liên kết báo cáo        |
+| `/cc ticket <title> \| <description>` | Tương tự, với mọi thứ sau dấu `\|` đầu tiên là phần mô tả      |
+| Động từ không xác định                | Báo động từ không xác định kèm văn bản trợ giúp              |
 
-Ways to reach an agent:
+Những cách để tiếp cận một agent:
 
-| Gesture                    | Behavior                                                                                                               |
+| Thao tác                   | Hành vi                                                                                                                |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` trong một kênh    | Mở một luồng Slack và một space Control Center tương ứng; agent trả lời trong luồng Slack                              |
+| Trả lời trong một luồng Slack đã nối | Tiếp tục đúng space Control Center đó — không cần nhắc tên                                                     |
+| Tin nhắn thường trong một kênh | Bị bỏ qua (không gửi cho bot và không nằm trong một luồng Slack đã nối)                                             |
+| Tin nhắn riêng cho bot     | Một space Control Center cho mỗi cuộc hội thoại riêng; đặt tiêu đề luồng Slack và trạng thái "is thinking…" trong khi agent làm việc |
 
-## Credential fields (Slack)
+## Các trường thông tin xác thực (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Được khai báo bởi descriptor của nhà cung cấp — chính nó sinh ra hộp thoại kết nối và kiểm tra dữ liệu gửi lên.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Id trường            | Nhãn                  | Bắt buộc | Tiền tố | Vị trí                                                          |
+| -------------------- | --------------------- | -------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Token bot             | Có       | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Token cấp ứng dụng    | Có       | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | Token cấu hình app    | Không    | `xoxe`  | App configuration tokens trên api.slack.com/apps                |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` là thông tin xác thực quản lý ứng dụng: thiếu nó thì kết nối vẫn hoạt động, nhưng không thể tạo hay chỉnh sửa bot từ Control Center. Nó xoay vòng sau mỗi lần dùng và giá trị sau khi xoay được lưu ngay lập tức.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Các giá trị được cắt khoảng trắng ở hai đầu, những khóa không được khai báo bị loại bỏ và việc sai tiền tố bị từ chối bằng cùng một câu ở cả máy khách lẫn máy chủ. Các trường bắt buộc phải có mặt trong mọi lần kết nối; một trường tùy chọn để trống sẽ giữ nguyên giá trị đã được lưu trước đó.
 
-## Slack app requirements
+## Yêu cầu đối với ứng dụng Slack
 
-Bot token scopes:
+Các scope của token bot:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Các đăng ký sự kiện của bot:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Các cài đặt cấu trúc mà Control Center khẳng định khi tạo hoặc chỉnh sửa ứng dụng: bật Socket Mode, không có request URL, tab Messages được bật và cho phép ghi, bot `always_online`, các scope và sự kiện bắt buộc được hợp nhất vào những gì ứng dụng đã có (không bao giờ bị trừ đi) và một lệnh slash mang mô tả `File a ticket or link your Control Center account` — dấu hiệu nhận ra lệnh của chính Control Center trong một manifest đã xuất.
 
-## Connection states
+## Các trạng thái kết nối
 
-| State            | Wire           | Meaning                                                         |
+| Trạng thái       | Giá trị truyền | Ý nghĩa                                                         |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Chưa kết nối     | `disconnected` | Không có thông tin xác thực nào được lưu cho không gian làm việc × nhà cung cấp này |
+| Đang kết nối…    | `connecting`   | Đã lưu thông tin xác thực, transport đang quay số hoặc quay số lại |
+| Đang hoạt động   | `connected`    | Transport đã lên và đang nhận sự kiện                            |
+| Lỗi kết nối      | `error`        | Đã lưu nhưng đang lỗi; lỗi của chính nhà cung cấp được hiển thị kèm theo |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Việc kết nối lại dùng backoff lũy thừa kèm jitter, giới hạn ở 30 giây. Một lần xoay socket do nhà cung cấp khởi tạo sẽ kết nối lại ngay mà không làm tăng backoff. Một thông tin xác thực bị từ chối (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) hoặc một scope còn thiếu là dấu chấm hết: cầu nối ngừng thử lại cho tới khi có thông tin xác thực mới.
 
-## Provider capabilities (Slack)
+## Năng lực của nhà cung cấp (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+Cầu nối được viết dựa trên bề mặt giàu tính năng nhất rồi hạ cấp theo từng năng lực.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Năng lực                  | Slack  | Hành vi khi thiếu                                                                              |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | có     | Toàn bộ phản hồi được đăng một lần, ở cuối                                                     |
+| `streamingRequiresThread` | có     | Một đích phản hồi không có điểm neo luồng sẽ đăng nguyên phản hồi                              |
+| `ephemeralMessages`       | có     | Câu trả lời cho lệnh slash không có handle phản hồi dùng được sẽ bị bỏ (các lời từ chối luôn được đăng trong luồng) |
+| `threadStatus`            | có     | Không có dòng "is thinking…" tạm thời                                                          |
+| `threadTitle`             | có     | Luồng chat giữ tiêu đề mặc định của nó                                                         |
+| `slashCommands`           | có     | Không có bề mặt `/cc`                                                                          |
+| `taskCards`               | có     | Chỉ văn bản — không có thẻ phía trên phản hồi và không có liên kết "View in Control Center"    |
+| `maxMessageLength`        | 39.000 | Những phản hồi dài hơn bị cắt bớt kèm một con trỏ tới Control Center                            |
+| `maxStreamChunkLength`    | 3.800  | Các lần nối thêm được tách tại ranh giới đoạn, dòng hoặc khoảng trắng                          |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Quảng cáo truyền theo luồng không phải là cam kết truyền theo luồng: tính năng của Slack cần có Agents & AI Apps trên một gói trả phí. Một lời từ chối tại thời điểm gọi (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) được ghi nhớ trong suốt vòng đời của kết nối và được phơi ra dưới dạng `streamingAvailable: false`. Thẻ công việc của Slack đi cùng lệnh gọi đó, nên một Slack từ chối chế độ hiển thị của thẻ vẫn giữ được luồng và chỉ mất thẻ, một lần, trong suốt vòng đời của kết nối.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Một luồng cũng phải nêu tên người đọc mà nó hướng tới. Slack đòi cả người nhận lẫn team của người đó để mở luồng trong một **kênh** (tin nhắn riêng thì không) và từ chối bằng `missing_recipient_user_id` / `missing_recipient_team_id` nếu thiếu — một lời từ chối theo từng lần gọi, nên cầu nối vẫn tiếp tục thử và trong lúc đó lượt trả về dưới dạng một phản hồi được đăng trọn vẹn. Người nhận là người đã hỏi, lấy từ tin nhắn đi vào (team của họ, không phải của ứng dụng, nhờ vậy một kênh Slack Connect được phân giải đúng). Với một lượt không ai khởi tạo từ chat — công việc được khởi động trong Control Center trên một cuộc hội thoại đã được nối — người nhận là thành viên có liên kết đã tạo ra cầu nối; nếu từ đó họ đã hủy liên kết tài khoản chat của mình thì lượt đó được đăng trọn vẹn thay vì truyền theo luồng.
 
-## Task cards
+## Thẻ công việc
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Một thẻ được nhóm lại cho mỗi lượt của agent (`task_display_mode: plan`), với một dòng cho mỗi bước. Mỗi dòng là một `task_update` gồm `id` + `title` + `status`, cộng thêm một `details` dùng một lần khi suy nghĩ đã sẵn sàng. `details` và `output` cùng id được nối liền không có dấu phân cách, nên `details` chỉ được gửi một lần và `output` không bao giờ được truyền theo luồng. Tiêu đề của kế hoạch là yêu cầu; câu trả lời là một lần nối thêm riêng, muộn hơn, mang một khối `markdown_text`.
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Phần                | Nội dung                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tiêu đề kế hoạch    | Điều đã được hỏi                                                                                                                                               |
+| Dòng thiết lập      | `Working on it…`, rồi `Cloning …`, rồi `Starting the agent…` — một dòng, tiêu đề được thay thế                                                                 |
+| Dòng suy nghĩ       | `Thinking…`, được thêm khi agent bắt đầu suy luận; suy nghĩ chính là `details` của dòng này, được gửi một lần khi suy luận kết thúc                             |
+| Các dòng công cụ    | Một dòng cho mỗi công cụ (`Bash which swift`), id duy nhất để chúng nằm cạnh nhau                                                                              |
+| Trạng thái          | Đang thực hiện khi dòng đó chạy; hoàn tất khi dòng kế tiếp bắt đầu hoặc lượt kết thúc; lỗi khi thất bại, bị ngắt hoặc chạm giới hạn lượt                       |
+| Lời kêu gọi hành động | `View in Control Center` như một dòng cuối khi lượt kết thúc — vắng mặt khi công việc còn đang chạy và vắng mặt khi máy chủ không có URL công khai truy cập được |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Những gì một thẻ không bao giờ mang: đầu ra công cụ, một đối số nằm ngoài danh sách cho phép đó, hay bất cứ thứ gì đọc từ cơ sở dữ liệu. Phần văn xuôi suy luận chỉ là details của dòng `Thinking…` (giới hạn 256 ký tự), không phải phần thân tin nhắn. Một thẻ không nói thêm điều gì mới sẽ không được gửi lại. Một lượt nhắc mở luồng ngay lập tức để luồng Slack không im lặng; một lượt sau đó không tạo ra chút văn bản nào sẽ kết thúc chính thẻ đó bằng một ghi chú ngắn thay vì đăng tin nhắn thứ hai. Một lượt không lời trên một space chưa từng mở luồng (không có thẻ, hoặc đã bị từ chối truyền theo luồng) vẫn đăng một tin nhắn mang thẻ đã hoàn tất và ghi chú đó.
 
-Streamed and posted cards are different payloads:
+Thẻ được truyền theo luồng và thẻ được đăng là hai payload khác nhau:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Dạng              | Hình dạng                                               | Văn xuôi                                          |
+| ----------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| Truyền theo luồng | `plan_update` cộng các khối `task_update` có khóa `id`  | Chuỗi thuần, giới hạn 256 ký tự mỗi khối          |
+| Đăng trọn         | Một khối `plan` bọc các `task_card` có khóa `task_id`   | Văn bản giàu định dạng                            |
 
-Failure handling:
+Xử lý lỗi:
 
-| Situation                                    | Behavior                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Tình huống                                        | Hành vi                                                                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Nhà cung cấp từ chối thẻ trong một lần nối thêm   | Lần nối thêm được thử lại ngay mà không có thẻ; văn xuôi vẫn đến trực tiếp và thẻ bị bỏ trong suốt vòng đời của kết nối    |
+| Nhà cung cấp cũng từ chối cả văn xuôi             | Luồng bị đóng và phản hồi được đăng trọn vẹn                                                                                |
+| Luồng đứt sau khi một phần phản hồi đã đến        | Luồng bị đóng và không có gì được đăng lại                                                                                  |
 
-See [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/) for why the payload is split this way.
+Xem [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/) để hiểu vì sao payload được chia theo cách này.
 
-### Setup, before there is a turn
+### Thiết lập, trước khi có một lượt
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+Thẻ mở ra khi một lượt nhắc được chấp nhận, trước khi clone và trước token đầu tiên; lượt tiếp theo dùng lại chính thẻ và luồng đó. Phần tường thuật sau đó đến từ `SpaceProvisioningChanged` trên bus sự kiện miền — cùng tiến trình mà banner cấp phát của ứng dụng desktop đọc từ hàng của space.
 
-| Provisioning state          | Narration                                                      |
+| Trạng thái cấp phát         | Tường thuật                                                    |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Đã chấp nhận lượt nhắc      | `Working on it…`                                               |
+| Bước `repo`                 | `Cloning <repo>…`                                              |
+| Bước `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| Bước `script`               | `Running the setup script for <repo>…`                         |
+| Bước `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, chưa có bước nào | `Preparing the workspace…`                                |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Agent đang suy luận         | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Tường thuật thiết lập cần đủ cả bốn điều kiện:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Điều kiện                                  |
+| ------------------------------------------ |
+| Nhà cung cấp hiển thị được thẻ             |
+| Truyền theo luồng khả dụng trên kết nối này |
+| Space đang có một yêu cầu chat chờ xử lý   |
+| Chưa có thẻ nào đang báo cáo một lượt ở đó |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Yêu cầu vẫn chờ xử lý cho tới khi một lượt bắt đầu hoặc thiết lập thất bại. Một sự kiện `ready` không kèm thẻ nào đã mở là một space đã ấm sẵn, nên được để yên; còn việc cấp phát mà không ai trong chat đang chờ — một cuộc hội thoại được mở trong ứng dụng, hay một cuộc hội thoại bị bỏ dở được tiếp tục lúc khởi động — không tạo ra thẻ nào cả.
 
-## The `/open` bounce page
+## Trang chuyển hướng `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Các sản phẩm chat chỉ chấp nhận `http(s)` trong một liên kết và không gì khác, nên một lời kêu gọi hành động không thể nêu thẳng scheme của ứng dụng desktop.
 
-| Property   | Value                                                                                                                                       |
+| Thuộc tính | Giá trị                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Tuyến      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                  |
+| Nguồn gốc  | Được suy ra từ URL công khai của máy chủ (`ws` → `http`, `wss` → `https`); loopback được giữ nguyên                                           |
+| Phản hồi   | Một trang HTML no-store nhỏ, điều hướng tới `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` và hiển thị một nút để mở thủ công |
+| Kiểm tra   | Id phải khớp `[A-Za-z0-9_.-]{1,128}`; mọi thứ khác đều là 404                                                                                 |
+| Truy cập   | Công khai và vô hại — nó không đọc cơ sở dữ liệu nào, nên không phải một oracle kiểm tra sự tồn tại; ứng dụng mà nó mở ra mới là bên thực hiện ủy quyền |
 
-## Bot profile fields
+## Các trường hồ sơ bot
 
-| Field              | Limit       | Notes                                                                                             |
+| Trường             | Giới hạn    | Ghi chú                                                                                           |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 ký tự  | Mặc định là `Control Center · <workspace name>`                                                   |
+| `botDisplayName`   | 1–80 ký tự  | Mặc định là `control-center`                                                                      |
+| `description`      | ≤ 140 ký tự |                                                                                                   |
+| `agentDescription` | ≤ 300 ký tự | Được hiển thị phía trên cuộc trò chuyện riêng với bot                                              |
+| `command`          | ≤ 32 ký tự  | Được chuẩn hóa: bỏ dấu gạch chéo ở đầu, chuyển thành chữ thường, loại bỏ `[^a-z0-9_-]`, để trống thì quay về `cc` |
+| `agentEnabled`     | —           | Liệu trải nghiệm tin nhắn riêng/agent có được phơi ra hay không                                   |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Một ô để trống nghĩa là "để nguyên", chứ không phải "xóa đi". Các giới hạn là của Slack, vốn là những giới hạn chặt nhất trong số các sản phẩm được mô hình hóa.
 
-## Link codes
+## Mã liên kết
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Thuộc tính   | Giá trị                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Độ dài       | 6 ký tự                                                                                    |
+| Bảng chữ cái | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (không có `0`/`O`, `1`/`I`, `U`)                           |
+| Thời gian sống | 15 phút                                                                                  |
+| Số lần dùng  | Một                                                                                        |
+| Lưu trữ      | Trong bộ nhớ — khởi động lại máy chủ sẽ làm vô hiệu các mã còn hiệu lực                     |
+| Phạm vi      | Một không gian làm việc và một nhà cung cấp; việc tạo mã mới sẽ làm vô hiệu mã trước đó của thành viên |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Việc đổi mã được đối chiếu không phân biệt chữ hoa chữ thường. Mã không xác định, đã hết hạn, thuộc không gian làm việc khác và dành cho nhà cung cấp khác đều thất bại giống hệt nhau một cách có chủ đích.
 
-## Link methods
+## Phương thức liên kết
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Phương thức | Giá trị truyền | Cách thức                                                                        |
+| ----------- | -------------- | -------------------------------------------------------------------------------- |
+| Mã          | `code`         | Thành viên đã đổi `/cc link <code>`                                              |
+| Email       | `email`        | Email đã xác minh của nhà cung cấp khớp với một người dùng vốn đã là thành viên của không gian làm việc |
 
-## RPC operations
+## Các thao tác RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Tất cả đều thuộc phạm vi không gian làm việc. Máy chủ là phi trạng thái, nên mỗi lời gọi mang `workspace_id` của riêng nó trong args; bộ điều phối từ chối một thao tác thuộc phạm vi không gian làm việc mà thiếu trường đó, trước khi bất kỳ cơ sở dữ liệu nào mở ra. Thông tin xác thực chỉ đi _vào_ — các lần đọc trạng thái không bao giờ trả chúng ra.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
-| ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| Thao tác                | Loại       | Vai trò tối thiểu                              | Các lớp hành động               |
+| ----------------------- | ---------- | ---------------------------------------------- | ------------------------------- |
+| `chat.providers`        | đọc        | `guest`                                        | —                               |
+| `chat.status`           | đọc        | `guest`                                        | —                               |
+| `chat.connect`          | thay đổi   | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | phá hủy    | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | đọc        | `guest`                                        | —                               |
+| `chat.beginUserLink`    | thay đổi   | `member`                                       | —                               |
+| `chat.unlinkUser`       | thay đổi   | `member` cho chính bạn, `admin` cho người khác | —                               |
+| `chat.createApp`        | thay đổi   | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | đọc        | `admin`                                        | —                               |
+| `chat.botProfile`       | đọc        | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | thay đổi   | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Các thao tác đọc thừa hưởng mức sàn `guest` từ loại của chúng; các thao tác thay đổi không có mức sàn tường minh thì đòi hỏi `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` dựng một URL tạo ứng dụng của nhà cung cấp từ hồ sơ bot. Nó không khai báo lớp hành động nào vì không đọc secret và không gọi ra đâu cả — chính trình duyệt của người dùng thực hiện lời gọi duy nhất.
 
-One reactive query completes the surface:
+Một truy vấn phản ứng hoàn thiện bề mặt này:
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| Truy vấn              | Loại    | Phát ra                                                       |
+| --------------------- | ------- | ------------------------------------------------------------- |
+| `chat.watchUserLinks` | theo dõi | Danh sách thành viên, được đẩy lại mỗi khi có liên kết được tạo hoặc gỡ |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Nó tồn tại vì việc liên kết diễn ra ở phía _bên kia_: thành viên gõ mã dùng một lần vào bot, nên không phản hồi nào từ máy khách có thể mang kết quả trở về. Danh sách trong phần cài đặt và hộp thoại "liên kết tài khoản của tôi" đang mở đều theo dõi nó, và hộp thoại chuyển sang trạng thái xác nhận ngay khi liên kết của chính thành viên được ghi nhận.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` luôn tạo một mã cho chính danh tính của người gọi. `chat.updateBotProfile` chỉ trả về `remaining_step` khi còn một bước chưa xong (thường là cài đặt lại); việc nó vắng mặt nghĩa là thay đổi đã có hiệu lực.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` trả về một mục cho mỗi nhà cung cấp được cung cấp — descriptor cộng thêm, khi có, trạng thái kết nối. Mọi thứ mà giao diện cài đặt hiển thị đều đến từ payload đó, và đó là lý do vì sao thêm một nhà cung cấp chỉ là một thay đổi phía máy chủ.
 
-## Storage
+## Lưu trữ
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Nội dung                      | Vị trí                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Thông tin xác thực kết nối    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                    |
+| Thiết lập có hướng dẫn còn dang dở | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                         |
+| Các tệp Slack cũ              | `<dataDir>/<workspaceId>/slack_credentials.json` và `slack_app_setup.json`, được đọc một lần và migration tại chỗ |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Thông tin xác thực nằm bên cạnh cơ sở dữ liệu của không gian làm việc chứ không nằm trong đó: xóa một không gian làm việc là mang theo cả token chat của nó, còn `workspace.export` hay một bản sao lưu chỉ sao chép `workspace.db` — nên một không gian làm việc được chuyển cho người khác không mang theo token bot còn sống. Việc ghi là nguyên tử (tệp tạm cộng đổi tên) và được siết lại chỉ cho chủ sở hữu.
 
-## Database tables
+## Các bảng cơ sở dữ liệu
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Cả hai đều nằm trong cơ sở dữ liệu của không gian làm việc, vốn mang một đường cơ sở v1 đã được gộp gọn — nên một phép đọc xuyên không gian làm việc sẽ không biên dịch được.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — một cuộc hội thoại bên ngoài ↔ một space Control Center:
 
-| Column                                                 | Notes                                                                      |
-| ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
-| `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
-| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
-| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+| Cột                                                    | Ghi chú                                                                     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `id`                                                   | UUID v4                                                                     |
+| `workspace_id`                                         | Phạm vi không gian làm việc                                                 |
+| `provider`                                             | `ChatProvider.wire`                                                         |
+| `external_team_id`                                     | Team Slack `T…`, để trống với những nhà cung cấp không có khái niệm này     |
+| `external_channel_id`                                  | Kênh Slack `C…`, nhóm `G…`, tin nhắn riêng `D…`                             |
+| `external_thread_id`                                   | Điểm neo luồng Slack, hoặc null khi cả cuộc hội thoại là điểm neo (tin nhắn riêng với bot) |
+| `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                   |
+| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                             |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Duy nhất trên `(workspace_id, provider, external_channel_id, external_thread_id)`, kèm một chỉ mục bộ phận áp đặt điều tương tự cho các thread id null (SQLite coi các NULL là khác nhau).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — một thành viên bên ngoài ↔ một người dùng Control Center:
 
-| Column                                 | Notes                                           |
-| -------------------------------------- | ----------------------------------------------- |
-| `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
-| `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
-| `linked_at`                            |                                                 |
+| Cột                                    | Ghi chú                                          |
+| -------------------------------------- | ------------------------------------------------ |
+| `id`                                   | UUID v4                                          |
+| `workspace_id`                         | Phạm vi không gian làm việc                      |
+| `provider`                             | `ChatProvider.wire`                              |
+| `external_team_id`, `external_user_id` | Thành viên Slack `U…`                            |
+| `user_id`                              | Người dùng Control Center (toàn cục, nên không có khóa ngoại) |
+| `method`                               | `code` hoặc `email`                              |
+| `linked_at`                            |                                                  |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Duy nhất trên `(workspace_id, provider, external_team_id, external_user_id)` và trên `(workspace_id, provider, user_id)` — quy kết đơn trị theo cả hai hướng, trong khi một người có thể được liên kết trên nhiều nhà cung cấp.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Một liên kết là phân giải danh tính, **không phải** một sự cấp quyền truy cập: tư cách thành viên được kiểm tra lại ở mọi sự kiện đi vào, nên một liên kết trỏ tới thành viên đã bị gỡ từ đó sẽ phân giải thành một lời từ chối.
 
-## Space kind and message metadata
+## Loại space và metadata tin nhắn
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Một space đã nối được tạo với `SpaceKind` của nhà cung cấp (`slack`). Nó hành xử như một space thông thường dành cho con người — được thông báo và xếp nhóm như `topic` — và `isExternalChat` là phép kiểm tra mà mọi hành vi (phản chiếu, gắn huy hiệu, lưu giữ) đều đi qua.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Mọi tin nhắn mà cầu nối đưa vào đều mang một dấu `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Dấu này cũng chính là lá chắn chống tiếng vọng: bản phản chiếu hướng ra bỏ qua mọi tin nhắn mang nó, và chính điều đó ngăn một tin nhắn chat đi vào bị đăng thẳng trở lại.
 
-## Relay behavior
+## Hành vi chuyển tiếp
 
-| Behavior                               | Detail                                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Hành vi                                | Chi tiết                                                                                                        |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Những gì được chuyển ra                | Chỉ **văn bản** của agent, cộng dòng trạng thái của thẻ công việc. Phần văn xuôi suy luận và đầu ra công cụ ở lại Control Center |
+| Nhịp truyền theo luồng                 | Được điều tiết còn một lần đẩy mỗi giây trong lúc một lượt chạy; thẻ và đoạn văn bản mà nó giải thích đi trong cùng một lời gọi |
+| Tin nhắn do con người gõ trong Control Center | Được phản chiếu vào luồng đã liên kết, với tiền tố là tên hiển thị của tác giả                          |
+| Các lượt rỗng                          | Được báo bằng một ghi chú ngắn (lần chạy thất bại, bị ngắt hoặc dừng ở giới hạn lượt) thay vì im lặng          |
+| Khử trùng lặp                          | Được khóa theo id sự kiện của chính nhà cung cấp; 512 mục gần nhất được ghi nhớ                                |
+| Agent cửa trước                        | Một cuộc hội thoại đã nối mới sẽ đánh thức agent CEO của không gian làm việc, nếu không có thì agent đầu tiên, nếu cũng không thì không ai cả |
+| Đặt tên space                          | `#channel · <request>` cho một luồng kênh Slack, `Slack DM · <request>` cho tin nhắn riêng, tiêu đề giới hạn ở 48 ký tự |
+| Cô lập lỗi                             | Một sự kiện hỏng không bao giờ làm sập cầu nối; kết nối vẫn phục vụ mọi cuộc hội thoại khác                    |
 
-## See also
+## Xem thêm
 
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
-- [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
-- [Customize the chat bot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/)
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) for the action classes the ops declare
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
+- [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/)
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) để biết các lớp hành động mà các thao tác khai báo

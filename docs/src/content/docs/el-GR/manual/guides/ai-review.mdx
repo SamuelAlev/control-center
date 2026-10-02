@@ -1,152 +1,167 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Χρήση ελέγχου με AI
+description: Εκτελέστε το pipeline pr_review σε ένα PR, διαβάστε τα ευρήματα και την ετυμηγορία και μετά δημοσιεύστε την ανασκόπηση στο GitHub.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Αυτός ο οδηγός δείχνει πώς να βάλετε πράκτορες ελέγχου να ελέγξουν ένα pull
+request και πώς να δημοσιεύσετε το αποτέλεσμα στο GitHub.
 
-## Start an AI review
+## Ξεκινήστε έναν έλεγχο με AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Ανοίξτε το PR και μεταβείτε στην καρτέλα **Επισκόπηση**
+2. Ανοίξτε το μενού υπερχείλισης ⋯ στη γραμμή ενεργειών και επιλέξτε **Ερώτηση AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Το στοιχείο εμφανίζεται μόνο όσο το PR είναι ανοιχτό — είναι ενέργεια πριν από τη
+συγχώνευση. Το ίδιο κουμπί προσφέρεται ως **Ερώτηση AI** στην κενή κατάσταση της
+καρτέλας **Ανασκόπηση**, πριν υπάρξει οποιαδήποτε ανασκόπηση.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Το Control Center ξεκινά το ενσωματωμένο pipeline `pr_review` και ανοίγει την
+καρτέλα **Ανασκόπηση** του PR, ώστε να το παρακολουθήσετε. Το pipeline:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Ανοίγει τον δικό του χώρο ελέγχου του PR, του οποίου το απομονωμένο worktree
+   έχει το PR σε checkout στο head του
+2. Αποστέλλει παράλληλα τους ελεγκτές για το επίπεδο ανασκόπησης του χώρου
+   εργασίας — τρεις από προεπιλογή (τους ενσωματωμένους πράκτορες **qa**,
+   **architect** και **engineer**, παράλληλα). Δεν γίνεται ανίχνευση γλώσσας ή
+   τομέα
+3. Βάζει τον επικεφαλής (CEO) πράκτορα να ενοποιήσει τα ευρήματά τους σε μια
+   καθοδηγούμενη περιήγηση
+4. Οριστικοποιεί: ταξινομεί τα ευρήματα σε κάδους συναίνεσης και υπολογίζει την
+   ετυμηγορία. Όταν η συσχέτιση φτάσει σε `awaiting approval`, η **Δημοσίευση στο
+   GitHub** εμφανίζεται στην καρτέλα Ανασκόπηση
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Το πόσο βαθύς είναι ο έλεγχος εξαρτάται από το **επίπεδο ανασκόπησης** του χώρου
+εργασίας — `light` (ένας ελεγκτής), `balanced` (τρεις, η προεπιλογή) ή `thorough`
+(και οι πέντε, με τους ειδικούς ασφάλειας και απόδοσης) — που ορίζεται στις
+**Ρυθμίσεις → Χώρος εργασίας → Γενικά**, στην κάρτα **Πολιτική χώρου εργασίας**.
+Ένα ελαφρύτερο επίπεδο καταχωρίζει ακριβώς τα ίδια ευρήματα· απλώς αναφέρει
+λιγότερα από αυτά στο προσκήνιο.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/) for how the pieces fit together.
+Όλοι οι ελεγκτές αναρτούν στον μοναδικό χώρο ελέγχου του PR, κι αυτό είναι που
+κάνει τα ευρήματά τους συγκρίσιμα. Δείτε
+[Έλεγχος με AI](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/) για το πώς δένουν τα
+κομμάτια.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/).
+Το `pr_review` παρέχεται μόνο με χειροκίνητο ενεργοποιητή. Για να εκτελείται σε
+κάθε δημοσιευμένο PR, προσθέστε τον δικό σας ενεργοποιητή — δείτε
+[Αποστολή πρακτόρων ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/). Μπορείτε επίσης
+να ξεκινήσετε έναν από το ίδιο το GitHub, χωρίς ενεργοποιητή pipeline: αναφέρετε
+το bot του διακομιστή στο PR ή προσθέστε την ετικέτα `ai-review` — δείτε
+[Συνομιλία με το Control Center από GitHub PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλίες-github-pr/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Αν ένα αναδυόμενο μήνυμα λέει ότι εκτελείται ήδη ανασκόπηση για αυτό το pull
+request, τότε υπάρχει ήδη μία σε εξέλιξη· μείνετε στην καρτέλα **Ανασκόπηση** ή
+ανοίξτε το **Pipelines** για να τη βρείτε.
 
-## Read the findings
+## Διαβάστε τα ευρήματα
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Οι ελεγκτές καταχωρίζουν τα ευρήματα ως **κόμβους ελέγχου** στον χώρο ελέγχου.
+Κάθε κόμβος φέρει:
 
-| Field          | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Πεδίο          | Περιγραφή                                                   |
+| -------------- | ----------------------------------------------------------- |
+| Είδος           | `bug`, `suggestion`, `recommendation`, `question` ή `ticket` |
+| Προτεραιότητα   | P0 (κρίσιμο) → P3 (μικροπαρατήρηση)                          |
+| Κατηγορία       | `security`, `stability`, `data_integrity`, `correctness`, `performance` ή `maintainability` |
+| Αρχείο και γραμμή | Πού είναι αγκυρωμένο το εύρημα                             |
+| Αρχικός κώδικας | Ο κώδικας στον οποίο αφορά το εύρημα                         |
+| Προτεινόμενος κώδικας | Η προτεινόμενη διόρθωση                               |
+| Βεβαιότητα      | Πόσο βέβαιος είναι ο ελεγκτής                               |
+| Κατάσταση       | `open` → `consensus-ready` → `resolved` ή `dismissed`        |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Ένα εύρημα φτάνει στο **consensus-ready** μόνο όταν το επιβεβαιώσει ένας
+_ομότιμος_ ελεγκτής. Ένας πράκτορας δεν μπορεί να επιβεβαιώσει το δικό του
+εύρημα, οπότε η γνώμη ενός μόνο ελεγκτή δεν προάγεται ποτέ από μόνη της.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/) for what the pass produces.
+Η καρτέλα **Ανασκόπηση** εμφανίζει τη λίστα ευρημάτων, με φίλτρα κατά είδος και
+κατάσταση και με διακόπτη για τα απορριφθέντα ευρήματα, δίπλα στο τεχνούργημα που
+δημοσίευσε ο πράκτορας ενοποίησης. Η ντετερμινιστική προβολή — κοόρτες, το ταμπλό
+πολλαπλών αξόνων, τα diffs συμβολαίου και τα οπτικά diffs — υπολογίζεται στην
+πλευρά του διακομιστή αλλά δεν έχει επιφάνεια στην εφαρμογή· δείτε
+[Υπολογισμός ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/) για το τι παράγει το πέρασμα.
 
-## Check the disagreements panel
+## Ελέγξτε το πάνελ διαφωνιών
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Όταν δύο ελεγκτές αγκυρώνουν ευρήματα στο ίδιο αρχείο και την ίδια γραμμή αλλά τα
+αξιολογούν πολύ διαφορετικά — προτεραιότητες που απέχουν δύο ή περισσότερα
+επίπεδα, ή ο ένας να το χαρακτηρίζει `bug` ενώ ο άλλος `suggestion` — ένα πάνελ
+διαφωνιών εμφανίζεται πάνω από τη λίστα ευρημάτων. Διαβάστε τα πρώτα: εκεί
+αποκλίνουν οι γνώμες των ελεγκτών και εκεί αξίζει περισσότερο η κρίση σας.
 
-## Read the verdict
+## Διαβάστε την ετυμηγορία
 
-When the lead agent finalizes, it computes a **verdict**:
+Όταν ο επικεφαλής πράκτορας οριστικοποιεί, υπολογίζει μια **ετυμηγορία**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Ετυμηγορία | Σημασία                                      |
+| ---------- | -------------------------------------------- |
+| **Ship**   | Δεν βρέθηκε κάτι που να εμποδίζει            |
+| **Hold**   | Ζητήματα που πρέπει να αντιμετωπιστούν πριν τη συγχώνευση |
+| **Block**  | Κρίσιμα ζητήματα που πρέπει να διορθωθούν    |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Η ετυμηγορία φέρει μια συνολική βαθμολογία βεβαιότητας και καταμέτρηση των
+ευρημάτων ανά προτεραιότητα.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Έπειτα, οι άξονες ελέγχου ενσωματώνονται σε αυτήν και μπορούν μόνο να την κάνουν
+**πιο** αυστηρή. Ένας άξονας με πύλη που αποτυγχάνει επιβάλλει **Block**· ένας
+άξονας με πύλη που δεν μπόρεσε να ολοκληρωθεί (`partial`) ή που δεν μπόρεσε
+καθόλου να εκτελεστεί (`unavailable`) επιβάλλει τουλάχιστον **Hold**. Η απουσία
+τεκμηρίων δεν ανοίγει ποτέ μια πύλη.
 
-## Publish the review to GitHub
+## Δημοσιεύστε την ανασκόπηση στο GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Η δημοσίευση είναι ένα ξεχωριστό βήμα, σκόπιμα υπό τον έλεγχο του χρήστη. Το
+pipeline `pr_review` κρατά την ανασκόπηση στο Control Center· δεν αναρτά στο
+GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Στην καρτέλα **Ανασκόπηση**, περιμένετε ώσπου να εμφανιστεί η **Δημοσίευση στο GitHub**
+2. Πατήστε **Δημοσίευση στο GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Το Control Center στέλνει **μία** ανασκόπηση στο GitHub. Τα ευρήματα που έχουν
+ήδη επιλυθεί ή απορριφθεί παραλείπονται. Το κουμπί περιλαμβάνει κάθε εναπομείναν
+ανοιχτό εύρημα και, σε **Ship**, υποβάλλει `APPROVE`. (Το εργαλείο MCP
+`publish_review_to_github` εξακολουθεί να έχει ως προεπιλογή μόνο τα ευρήματα που
+έχουν επιβεβαιωθεί από ομότιμους και δεν εγκρίνει εκτός αν περάσετε
+`approve_on_ship`.) Όσα φέρουν άγκυρα αρχείου και γραμμής γίνονται ενσωματωμένα
+σχόλια· όλα τα υπόλοιπα διπλώνονται στο σώμα της σύνοψης, καθένα με υποσέλιδο
+«— Control Center AI review», ώστε η προέλευση να είναι σαφής. Μια ετυμηγορία
+**Block** υποβάλλεται ως `REQUEST_CHANGES`· η **Hold** ως `COMMENT`· η **Ship** ως
+`APPROVE` από αυτό το κουμπί. Ένα αναδυόμενο μήνυμα τότε εμφανίζει
+**Δημοσιεύτηκε**. Η ανασκόπηση δημοσιεύεται με την ταυτότητα εφαρμογής του
+διακομιστή.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Αν το GitHub απορρίψει μια ενσωματωμένη άγκυρα επειδή η γραμμή δεν είναι μέρος του
+diff, ολόκληρη η ανασκόπηση αποστέλλεται ξανά με κάθε εύρημα διπλωμένο στο σώμα,
+ώστε να μη χαθεί τίποτα σιωπηρά.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Η δημοσίευση φιλτράρεται από τους περιορισμούς]
+Το `pr_review.publishReview` δηλώνει την κλάση ενέργειας `prPublish` και περνά από
+το σημείο ελέγχου των περιορισμών. Αν η τελική απόφαση είναι `prompt` και δεν
+είναι συνδεδεμένος κανένας εγκριτής, η δημοσίευση απορρίπτεται — οι περιορισμοί
+αποτυγχάνουν κλειστά. Ορίστε έναν ρητό κανόνα στις Ρυθμίσεις → Χώρος εργασίας →
+Δικαιώματα πρακτόρων αν θέλετε να εκτελείται χωρίς επίβλεψη.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Άλλα ενσωματωμένα pipeline αναρτούν απευθείας στο GitHub: τα `cross_review`,
+`pr_triage`, `ticket_to_pr` και `pre_merge_gate` καταλήγουν το καθένα σε ένα βήμα
+σχολίου. Μόνο το `pr_review` κρατά την έξοδό του πίσω για εσάς.
 
-## Dispatch reviewers yourself
+## Αποστείλετε τους ελεγκτές μόνοι σας
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/).
+Για έλεγχο του ποιοι ρόλοι θα ελέγξουν το PR και ποια αρχεία κοιτάζει ο καθένας,
+χρησιμοποιήστε το εργαλείο MCP `dispatch_reviewers` μέσα σε έναν υπάρχοντα χώρο
+ελέγχου ή προσθέστε κόμβους ελεγκτών σε ένα pipeline. Και οι δύο διαδρομές, με την
+ακριβή υπογραφή του εργαλείου, βρίσκονται στην
+[Αποστολή πρακτόρων ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/).
 
-## Related guides
+## Σχετικοί οδηγοί πρακτικής
 
-- [Review and merge a PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
-- [Dispatch reviewer agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/)
-- [Review compute (cohorts and axes)](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/)
+- [Έλεγχος και συγχώνευση PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
+- [Αποστολή πρακτόρων ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/)
+- [Υπολογισμός ελέγχου (κοόρτες και άξονες)](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [AI review](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/)
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)
+- [Έλεγχος με AI](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/)
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/)

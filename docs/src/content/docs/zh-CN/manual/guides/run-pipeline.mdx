@@ -1,68 +1,60 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: 手动运行流水线
+description: 从运行选择器启动一次流水线运行，填写它的输入，然后落到运行详情页。
 slug: zh-CN/手册/操作指南/运行流水线
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/zh-CN/手册/操作指南/监控流水线/).
+本指南介绍如何手动启动一次运行。要观察运行的执行、读取步骤输出以及从失败中恢复，请参阅[监控流水线运行](/zh-CN/手册/操作指南/监控流水线/)。
 
-## Start a run
+## 启动一次运行
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. 在工作区侧栏中点击 **流水线**。
+2. 在页头按下 **运行流水线**。你会落到运行选择器
+   （`/workspaces/<workspace-id>/pipelines/run`）。
+3. 在左侧栏中挑选一个模板。每张卡片会显示模板的名称、描述，以及它是否接受输入。
+4. 在右侧填写输入表单。必填字段在有值之前会一直禁用按钮；没有输入的模板会明确说明这一点。
+5. 按下 **运行流水线**。
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+你会落到该次运行的详情页，并实时看到时序瀑布图和图画布。
 
-## If the rail is empty
+## 如果左侧栏为空
 
-The launcher shows a template only when **both** are true:
+只有当以下**两个**条件都成立时，运行选择器才会显示某个模板：
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- 该模板的开关已在 **设置 → 工作区 → 流水线模板** 中打开。
+- 模板编辑器的 **手动运行** 对话框中的 **允许手动运行** 已打开——
+  正是这个开关创建了运行选择器所读取的 `manual` 触发器。
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+十三个内置模板中有八个出厂即处于禁用状态：`external_pr_welcome`、
+`cross_review`、`ticket_to_pr`、`pr_triage`、`pre_merge_gate`、`release_notes`、
+`dep_audit` 和 `pr_digest`。引擎会拒绝启动已禁用的模板，因此请先打开它的开关，
+再到这里寻找它。
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+模板列表上没有针对单个模板的 **运行** 操作，编辑器内部也没有运行按钮——运行选择器是唯一的手动入口。
 
-## Fill in a repository input
+## 填写仓库输入
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+类型为 **仓库** 的输入会在工作区已注册的仓库之上渲染一个选择控件。选中一个仓库会把
+`repo_id`、`repo_local_path`、`repo_full_name`，以及——当该仓库有 GitHub 远端时——
+`repo_owner` 和 `repo_name` 一并填充进运行载荷，因此下游步骤可以读取自己需要的字段。
 
-## Watch it run
+## 观察运行
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+运行详情页由三个部分组成：元信息条（开始时间、有效时长、步骤进度、失败横幅、**重试** 和 **删除**）、
+一个可折叠的时序瀑布图（带每个步骤的时长与成本）以及图画布。选中某个节点会打开该步骤的详情面板。
 
-[Monitor pipeline runs](/zh-CN/手册/操作指南/监控流水线/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[监控流水线运行](/zh-CN/手册/操作指南/监控流水线/) 涵盖了所有这些内容，
+包括如何读懂已挂起的步骤，以及某个步骤失败时该怎么办。
 
-Every run you start from the app is a real one.
+你从应用中启动的每一次运行都是真实的运行。
 
-## Related guides
+## 相关指南
 
-- [Create a pipeline template](/zh-CN/手册/操作指南/创建流水线/)
-- [Set up pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/)
-- [Monitor pipeline runs](/zh-CN/手册/操作指南/监控流水线/)
+- [创建流水线模板](/zh-CN/手册/操作指南/创建流水线/)
+- [设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)
+- [监控流水线运行](/zh-CN/手册/操作指南/监控流水线/)
 
-## Related concepts
+## 相关概念
 
-- [Pipelines](/zh-CN/手册/概念/流水线/)
+- [流水线](/zh-CN/手册/概念/流水线/)

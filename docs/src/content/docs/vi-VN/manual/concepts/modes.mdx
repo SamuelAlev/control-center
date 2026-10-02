@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Chế độ
+description: Vì sao một space, chứ không phải một agent, mang chế độ; mỗi chế độ trong bốn chế độ bảo đảm điều gì; và ở đâu bảo đảm đó mang tính cấu trúc chứ không chỉ được nhắc trong prompt.
 slug: vi-VN/so-tay/khai-niem/che-do
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Chế độ là gì
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Chế độ là một thuộc tính của **space**, được lưu thành một cột trên hàng space. Mọi cuộc hội thoại bên trong một space đều dùng chung chế độ đó, kể cả các luồng — một luồng thừa hưởng chế độ của space chứa nó như mọi cuộc hội thoại khác. Vì vậy cùng một agent có thể ở những chế độ khác nhau trong các space khác nhau cùng một lúc, và đổi chế độ của một space sẽ thay đổi điều xảy ra ở lượt kế tiếp mà không đụng tới agent.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Có đúng bốn chế độ: `chat`, `review`, `plan`, `orchestrate`. Bản thân enum không mang chính sách nào. Mọi thứ mà một chế độ bảo đảm đều được khai báo một lần, trong một **hồ sơ năng lực**, và mọi lớp thực thi đều chiếu ra từ đó:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Bề mặt công cụ** — những công cụ tồn tại trong chế độ đó, được biểu diễn bằng cấp phê duyệt tối đa, một danh sách cho phép, một danh sách từ chối và một tập hợp các lớp hiệu ứng bị từ chối.
+2. **Động từ đầu ra bắt buộc** — thứ mà lượt chạy phải gọi thì mới được coi là đã giao được gì đó.
+3. **Các lớp hiệu ứng bị từ chối** — thứ mà bộ chặn hành động từ chối thẳng.
+4. **Trạng thái worktree** — liệu worktree có được ghi hay không. Điều này được thực thi bằng cách gỡ các công cụ thay đổi khỏi bề mặt, và chính điều đó khiến nó đúng trên mọi host. Ở đâu host có sandbox của hệ điều hành, trạng thái đó cũng vạch ra các quy tắc ghi lên hệ thống tệp — một chế độ chỉ đọc sẽ gắn kết worktree ở dạng chỉ đọc — nhưng đó là bản sao thứ hai của bảo đảm, không phải bản đang làm việc.
+5. **Khối prompt hệ thống** — một phần mở đầu về năng lực được _sinh tự động_ từ chính danh sách công cụ đã được hiện thực hóa, cộng với hướng dẫn viết tay.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Mọi lớp thực thi đều chiếu ra từ một hồ sơ duy nhất đó, nên bề mặt công cụ, bộ chặn, trạng thái worktree và prompt không thể mâu thuẫn nhau.
 
-## The four modes
+## Bốn chế độ
 
-### Chat — displayed as "Agent"
+### Trò chuyện — hiển thị là "Agent"
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Chế độ mặc định và là chế độ duy nhất không có ràng buộc thêm: toàn bộ bề mặt công cụ tới cấp thực thi, một worktree ghi được, không có lớp hiệu ứng nào bị từ chối và không có hợp đồng hoàn tất. Dùng nó cho triển khai, sửa lỗi, câu hỏi về cơ sở mã và mọi việc tùy hứng.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Lưu ý nhãn: trong trình soạn, chế độ này hiển thị là **"Agent"**, không phải "Trò chuyện".
 
-### Plan — read-only, one deliverable
+### Kế hoạch — chỉ đọc, một kết quả giao
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Chế độ Kế hoạch khiến worktree chỉ đọc và gỡ hẳn các công cụ ghi khỏi bề mặt, nên hạn chế này mang tính cấu trúc chứ không phải chỉ được chỉ thị. Agent đọc, tìm kiếm và nghiên cứu rồi giao đúng một thứ: một lời gọi `submit_plan` mang theo một đồ thị phụ thuộc có kiểu — một mục tiêu cùng các nút có khóa, tiêu đề, mô tả và các khóa nút mà mỗi nút phụ thuộc vào.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Kế hoạch hiển thị thành một hàng gọn trong cuộc hội thoại và mở Studio kế hoạch trong một tab bên cạnh. Phê duyệt nó sẽ biên dịch đồ thị thành một điều phối, chạy công việc đã sinh và chuyển space tác giả trở lại chế độ agent.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Nếu một lượt chạy ở chế độ Kế hoạch kết thúc mà không hề gọi `submit_plan`, vòng lặp trước tiên chèn một lời thúc nói rằng kế hoạch không tồn tại cho tới khi lời gọi đó thành công. Lời thúc này cho phép rõ ràng một lối thoát trung thực kiểu "ở đây không cần kế hoạch", vì chế độ Kế hoạch là một thiết lập của space và một câu hỏi đơn giản đặt ra trong đó không nên ép ra một kế hoạch giả tạo.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/).
+:::note[Hợp đồng chưa được đáp ứng không phải là một lượt chạy thất bại]
+Một lượt chạy kết thúc mà không có kế hoạch vẫn được ghi nhận với trạng thái `completed` — tiến trình đã thoát sạch. Sự thật nằm ở tính sống của lượt chạy (`empty`), nhóm lỗi (`silentRun`) và một bản tóm tắt nêu rõ thứ chưa được tạo ra. Xem [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Còn một lối thoát thứ hai, tách biệt: `exit_plan_mode`. Đây là một cổng phê duyệt cứng, không phải một động từ đầu ra — một agent gọi nó thay vì `submit_plan` thì chưa giao được gì. Lời gọi đầu tiên mở một phê duyệt `plan_exit` bền vững và trả về `pending`, còn space vẫn chỉ đọc; những lời gọi lặp lại vẫn ở `pending` thay vì mở thêm cổng thứ hai. Chỉ khi phê duyệt được chấp thuận thì một lời gọi sau đó mới chuyển space sang chế độ trò chuyện. Một lần từ chối cho phép agent mở một yêu cầu mới cho một kế hoạch đã chỉnh sửa.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Để tự mình rời chế độ Kế hoạch, hãy đổi hộp chọn trong trình soạn (hoặc Shift+Tab). `exit_plan_mode` được quyết định bằng công cụ MCP `decide_approval`. Các hàng "phê duyệt agent" trong Hộp thư là chuyện khác: đó là những lời nhắc xác nhận theo từng lượt từ một agent đang chạy.
 
-### Review — read-only, no contract
+### Rà soát — chỉ đọc, không có hợp đồng
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Chế độ Rà soát dùng cho việc xem xét PR. Nó khiến worktree chỉ đọc, giới hạn bề mặt công cụ xuống dưới cấp thực thi và áp dụng một danh sách cho phép được tuyển chọn gồm các công cụ xem xét, phiếu công việc và liên lạc. Một space mở cho một pull request sẽ tự động được tạo ở chế độ Rà soát.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Đầu ra của agent là những phát hiện có cấu trúc — **nút rà soát** — và, khi một cuộc rà soát được chốt, một **kết luận**. Một nút mang theo một loại (`bug`, `suggestion`, `recommendation`, `question` hoặc `ticket`), mức ưu tiên từ P0 (chặn phát hành) tới P3 (có thì tốt), một độ tin cậy tự đánh giá, một điểm neo tùy chọn (tệp kèm một khoảng dòng; ghi chú trên toàn kho lưu trữ thì không có) và một trạng thái vòng đời chuyển từ `open` sang `consensusReady` khi một đồng nghiệp — không bao giờ là tác giả — xác nhận nó. Một phát hiện thiếu mức ưu tiên hoặc độ tin cậy, hay có giá trị ngoài khoảng, sẽ bị loại bỏ ở ranh giới đọc thay vì làm nhiễu kết luận.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Kết luận là ship, hold hoặc block và nó chỉ có thể bị làm _nghiêm trọng hơn_ bởi các kết quả theo từng trục được gộp vào: một trục có cổng bị lỗi buộc `block`, và một trục có cổng không thể chạy buộc ít nhất `hold`. Thiếu bằng chứng không bao giờ làm một cổng chuyển xanh.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Khác với Kế hoạch và Điều phối, Rà soát **không mang hợp đồng hoàn tất**. Các phát hiện tích lũy qua `add_review_node` và được công bố bằng `finalize_review`, và cả hai đều có thể được gọi đúng không lần — một agent quy trình chạy ở chế độ Rà soát có thể ở đó để hoàn tất một phiếu thay vì vậy.
 
-### Orchestrate — read-only, proposes a team
+### Điều phối — chỉ đọc, đề xuất một đội
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Chế độ Điều phối biến một mục tiêu thành kế hoạch cho cả một đội. Giống chế độ Kế hoạch, nó chỉ đọc và không thể ghi tệp; trên nền bề mặt nghiên cứu, nó có một động từ đặc quyền duy nhất, `propose_orchestration`, phát ra một đề xuất có cấu trúc: các vai trò, một cây phiếu con, một bước tổng hợp và một ngân sách. Prompt chỉ nêu tên những công cụ có trên bề mặt, nên mô hình không tốn các lượt để kể lể việc tuyển người hay việc phiếu mà nó không thể gọi.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/).
+Không có gì trong đề xuất được thực thi cho tới khi bạn phê duyệt. Khi được phê duyệt, một bộ hiện thực hóa tất định sẽ tuyển các agent, tạo các phiếu cùng một dự án và chạy một quy trình đã sinh. Việc phê duyệt chỉ dành cho người vận hành: không có công cụ MCP nào cho nó, nên một agent có thể đề xuất nhưng không bao giờ tự phê duyệt kế hoạch của mình. Những đề xuất lại do agent khởi tạo bị giới hạn tần suất bởi thời gian chờ hai phút, nên các lần lập kế hoạch lại liên tiếp đều bị từ chối và được yêu cầu gộp lại. Xem [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/).
 
-## Two rules worth knowing
+## Hai quy tắc đáng biết
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Động từ đầu ra của chính một chế độ không bao giờ bị từ chối.** `submit_plan` và `propose_orchestration` được ghim vào bề mặt công cụ và được phê duyệt trước, vượt qua cả bộ lọc công cụ, cổng phê duyệt lẫn bộ chặn hành động, nên núm tự chủ theo từng space không thể làm im lặng kết quả giao của một chế độ. `ask_user` của harness cũng được ghim vì cùng lý do: nó _chính là_ cách một lượt chạy tiếp cận người vận hành, nên gác nó sẽ làm chết cứng một lượt chạy đang cần hỏi điều gì đó. Nó thuộc cấp đọc, nên mọi chế độ chỉ đọc đều giữ nó, và nó được miễn khỏi lớp bọc phê duyệt — một lời nhắc đặt trước một lời nhắc sẽ thất bại theo hướng đóng khi không có người phê duyệt nào được kết nối, điều sẽ tước của agent chính hành vi hỏi.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Các chế độ chỉ đọc không từ chối truy cập mạng hay secret.** Những lớp hiệu ứng mà Rà soát, Kế hoạch và Điều phối từ chối là những lớp làm thay đổi thế giới: xóa tệp, ghi bên ngoài worktree, tạo commit, push, tạo và xuất bản PR, ghi đồng bộ với nhà cung cấp, cài gói, sinh tiến trình, biến đổi không gian làm việc và điều khiển enclosure. Lưu lượng mạng ra ngoài và quyền truy cập secret vẫn giữ nguyên mặc định là có chủ đích — nghiên cứu chính là toàn bộ ý nghĩa của một chế độ chỉ đọc.
 
-## Choosing and changing a mode
+## Chọn và đổi chế độ
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Hộp chọn chế độ của trình soạn đưa ra **ba** lựa chọn: Agent (trò chuyện), Kế hoạch và Điều phối. `review` **không cho người dùng chọn** — nó do hệ thống đặt khi một space xem xét PR được tạo và do các bước quy trình đặt.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Một nút quy trình **mở một space** có thể ghim chế độ của phòng đó bằng khóa `extras['mode']` (`chat`, `review` hoặc `plan`). Khóa này khớp chính xác: mọi cách viết khác — kể cả `orchestrate` — đều bị bỏ qua âm thầm và phòng sẽ nhận mặc định của body (`review` trên body create-space). Một bước agent tham gia vào phòng mà nó không tạo ra và không cấp lại quyền cho phòng đó.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Bản thân việc phân giải rất đơn giản. Bộ điều phối đọc cột `mode` của space; một lượt điều phối không có space — một lượt chạy một lần, một lệnh gọi CLI, hay một id space từ một không gian làm việc khác, thứ đơn giản là không nằm trong tệp cơ sở dữ liệu của không gian làm việc này — sẽ phân giải thành `chat`. Đổi chế độ có hiệu lực từ lượt kế tiếp.
 
-## Where the guarantee actually holds
+## Bảo đảm thực sự nằm ở đâu
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Bề mặt công cụ của một chế độ được **harness tích hợp** dựng nên và thực thi. Đây là kênh truyền duy nhất có thể khiến một công cụ trở nên vô hình thay vì chỉ bị từ chối, gác mọi lời gọi trước khi nó chạy và quan sát một hợp đồng hoàn tất.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+Trên kênh truyền Claude Code, một chế độ không phải trò chuyện được truyền dưới dạng `--permission-mode plan`. Claude tôn trọng điều đó theo quy ước; các công cụ đọc, ghi, sửa và shell của riêng nó vẫn chạy mà không bị nhìn thấy. Với kênh truyền đó, chế độ chỉ là hướng dẫn, không phải ranh giới của Control Center — xem [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Các danh sách cho phép ràng buộc những công cụ từ cấp ghi trở lên. Cấp đọc của harness tích hợp vẫn chạm tới những công cụ mà không danh sách nào nêu tên; trên Claude Code, một công cụ bị danh sách cho phép bỏ qua sẽ bị từ chối dù máy chủ có nó hay không.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): where the mode is resolved and projected
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): which transports can enforce a mode
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/): what an approved orchestrate proposal does
-- [Use plan mode](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/): the practical walkthrough
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): nơi chế độ được phân giải và chiếu ra
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): những kênh truyền nào có thể thực thi một chế độ
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): chính sách lớp hiệu ứng mà preset của một chế độ đổ vào
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/): một đề xuất điều phối đã được phê duyệt sẽ làm gì
+- [Dùng chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/): hướng dẫn thực hành từng bước

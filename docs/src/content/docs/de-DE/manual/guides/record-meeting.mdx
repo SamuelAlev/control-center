@@ -1,118 +1,160 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Eine Besprechung aufzeichnen und zusammenfassen
+description: Nimm ein Gespräch auf, hol ein Transkript und mach daraus Notizen, Aufgaben und Entscheidungen.
 slug: de-DE/handbuch/anleitungen/besprechung-aufzeichnen
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/de-DE/handbuch/konzepte/besprechungen/) for how it works.
+Diese Anleitung zeigt, wie du eine Besprechung aufzeichnest und eine von der KI
+erzeugte Zusammenfassung bekommst. Wie das funktioniert, steht unter
+[Besprechungen und Transkription](/de-DE/handbuch/konzepte/besprechungen/).
 
-## Before you start
+## Vor dem Start
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Warte auf das Sprachmodell und starte den Server danach neu.** Ein normaler
+  Start installiert das gewählte ASR-Modell zwingend im Hintergrund nach
+  (Parakeet TDT 0.6B v3, der mehrsprachige Standard, etwa 600 MB). Der Server
+  löst das Modell **einmal beim Start** auf, deshalb hat der erste Lauf noch
+  keine Aufnahmeoperationen, bis du neu startest. Liegt kein Modell auf der
+  Platte, schlägt die Aufnahme mit `Could not start
+  recording on the host: …` fehl. Ein anderes Build wählst du unter **Einstellungen → Server →
+  Sprach- und Meeting-Modelle**. Auch das braucht einen Neustart.
+- Erteile die Berechtigung für das **Mikrofon**, wenn das Betriebssystem beim
+  ersten Aufnehmen danach fragt.
+- Unter **macOS 14.4+** wird das Systemaudio mit Core-Audio-Taps auf Prozesse
+  aufgenommen. Es ist kein Treiber zu installieren, aber das Betriebssystem
+  fragt ein zweites Mal nach einer Berechtigung zur _Audioaufnahme_. Das ist
+  nicht die Bildschirmaufnahme, und die Anzeige für die Bildschirmaufnahme
+  leuchtet nie auf. Verweigerst du sie, schlägt der Start mit
+  `System-audio capture permission denied.` fehl. Unterhalb von macOS 14.4
+  gibt es keine Aufnahme des Systemaudios.
+- Unter **Linux** müssen `parecord` (pulseaudio-utils) oder `pw-record`
+  (pipewire) auf dem `PATH` liegen. Die Aufnahme startet eines davon gegen
+  eine Monitor-Quelle von PipeWire oder PulseAudio. Fehlt beides, schlägt der
+  Start mit `No system-audio capture tool found` fehl.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Wohin das Audio deiner Besprechung geht]
+Aufnahme, Transkription, Echounterdrückung und Diarisierung laufen alle auf
+dem Gerät, ohne Cloud-Aufruf. „Gerät“ meint dabei den **Host von cc_server**,
+und das ist eine andere Maschine, wenn du den Server entfernt betreibst. Die
+fertige Zusammenfassung ist ein gewöhnlicher Agentenlauf: Die Pipeline
+`meeting_summary` schickt das vollständige Transkript und deine groben Notizen
+an den Modellanbieter, den dieser Agent nutzt. Richte den Agenten auf einen
+lokalen Anbieter, wenn das Transkript die Maschine nicht verlassen darf.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Der Aufnahmebildschirm sagt das, während du aufnimmst. Die Entscheidung liegt
+also vor dir, bevor es ein Transkript zum Verschicken gibt.
 :::
 
-## Start a recording
+## Eine Aufnahme starten
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Öffne **Besprechungen** in der Seitenleiste.
+2. Klicke auf **Besprechung aufnehmen**. Das HUD der laufenden Aufnahme öffnet
+   sich unter `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Die Aufnahme startet sofort und nimmt dein Mikrofon plus die Systemausgabe
+auf, also die anderen Teilnehmenden. Es gibt keine Modusabfrage und keine
+Auswahl der Audioquelle: Der Vor-Ort-Modus mit einem Mikrofon existiert in der
+API, hat heute aber keine Oberfläche.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Im Browser funktioniert derselbe Ablauf, mit einem Unterschied: Das
+„Systemaudio“ ist eine Bildschirmfreigabe, die eine Audiospur enthalten muss.
+Gib einen Browser-Tab (oder den ganzen Bildschirm) frei und aktiviere im
+Auswahldialog „Audio des Tabs teilen“ bzw. „Systemaudio teilen“. Safari,
+Firefox und die Vollbildfreigabe unter macOS können oft keine liefern.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+Das HUD zeigt eine Pegelanzeige, die verstrichene Zeit und auf einer Seite ein
+Live-Transkript, das mitwächst.
 
-## During the meeting
+## Während der Besprechung
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Mach grobe Notizen** im Notizbereich. Sie werden beim Tippen gespeichert
+  und später an den Zusammenfassungsagenten gegeben, also notiere, was das
+  Transkript verpassen könnte.
+- **Wähle die Notizvorlage** in der Zeile **Aktive Vorlage**. Sie formt die
+  Zusammenfassung dieser Besprechung und wird mit der Aufnahme festgehalten,
+  sodass ein späterer Neulauf die Vorlage reproduziert, die du hier gewählt
+  hast.
+- **Pausiere und setze fort** über **Pause**. Solange pausiert ist, stoppt die
+  Transkription und der Timer steht.
+- Das Transkript kommt mit Sprecher-Tags herein: deine Wörter als **Du**, alle
+  im Gespräch als **Andere**, bis die Diarisierung Andere in `Person 1`,
+  `Person 2`, … aufteilt, die du umbenennen kannst.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Ein sehr leiser Sprecher wird möglicherweise nicht transkribiert]
+Die Transkription überspringt jedes Audiofenster, das nie über eine
+Stille-Schwelle gestiegen ist, ganz ohne Dekodierung. So verbrennt ein leiser
+Kanal keine CPU an halluzinierten Token ohne Sprachinhalt. Ein leiser oder
+entfernter Sprecher kann dadurch aber kein Transkript erzeugen. Prüfe die
+Pegelanzeige früh, nicht erst am Ende.
 :::
 
-## Stop and summarize
+## Stoppen und zusammenfassen
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klicke auf **Stoppen und zusammenfassen**.
+2. Control Center bringt dich direkt in die Detailansicht der Besprechung,
+   markiert mit **Verarbeitung**: Die Diarisierung teilt den entfernten Kanal
+   in einzelne Sprecher, und die Pipeline `meeting_summary` erzeugt die
+   Zusammenfassung.
+3. Die Besprechung wechselt auf **Fertig**, sobald diese Pipeline fertig ist.
+   Du musst nicht darauf warten. Die Detailansicht aktualisiert sich von
+   selbst.
 
-## Review the writeup
+## Die Zusammenfassung prüfen
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Die Detailansicht der Besprechung (`/meetings/:meetingId`) hat vier Tabs:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Tab              | Was dort liegt                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| **Notizen**      | Die KI-Zusammenfassung und die aufbereiteten Notizen, aus deinen groben Notizen und dem Transkript |
+| **Transkript**   | Das vollständige, nach Sprechern markierte Transkript mit Zeitstempeln                 |
+| **Aufgaben**     | Extrahierte Aufgaben, jede mit einer optionalen verantwortlichen Person                |
+| **Entscheidungen** | Entscheidungen, die im Gespräch festgehalten wurden                                   |
 
-From here you can:
+Von hier aus kannst du:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/de-DE/handbuch/anleitungen/tickets-delegieren/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Sprecher umbenennen**: ändere `Person 1` in einen echten Namen. Das gilt
+  für das ganze Transkript.
+- **Aufgaben abhaken**, wenn du sie erledigt hast.
+- **Ticket erstellen** aus einer Aufgabe: Das legt ein neues, nicht
+  zugewiesenes Ticket an, betitelt mit der Aufgabe, und verknüpft es mit der
+  Zeile. Weise es vom Ticket aus einem Agenten zu (siehe
+  [Arbeit an Agenten delegieren](/de-DE/handbuch/anleitungen/tickets-delegieren/)).
+- **Zusammenfassung neu erstellen** für einen neuen Durchlauf (zum Beispiel
+  nach dem Umbenennen von Sprechern). Dabei wird die Vorlage wiederverwendet,
+  die beim Aufnehmen festgehalten wurde. Die aktive Vorlage wählst du unter
+  **Einstellungen → Arbeitsbereich → Besprechungen**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Notizen, Titel, Aufgaben und Entscheidungen lassen sich überall bearbeiten.
+**Zusammenfassung neu erstellen** und das Abbrechen einer Besprechung in
+Verarbeitung gibt es **nur auf dem Desktop**. Im Browser tun beide
+Schaltflächen nichts.
 
-## Record straight from a calendar event
+## Direkt aus einem Kalendertermin aufnehmen
 
-If you've [connected a calendar](/de-DE/handbuch/anleitungen/kalender-verbinden/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Wenn du [einen Kalender verbunden](/de-DE/handbuch/anleitungen/kalender-verbinden/)
+hast, kannst du den manuellen Start überspringen. Das gibt es **nur auf dem
+Desktop**; der Web-Client lehnt es ab.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Öffne den Termin unter **Kalender**.
+2. Klicke auf **Aufnehmen und verknüpfen**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Die Aufnahme startet mit dem Titel des Termins und ist mit ihm verknüpft,
+sodass die Notizen und der Kalendereintrag verbunden bleiben.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Das Löschen einer Besprechung löscht ihr Audio nicht]
+Das Löschen einer Besprechung entfernt ihre Zeilen, die aufgezeichneten
+WAV-Dateien unter `<dataDir>/meetings/<meetingId>/` bleiben aber auf der
+Platte. Es gibt keine Aufbewahrungsrichtlinie, keine Größenobergrenze und
+keinen Aufräumlauf. Entferne das Verzeichnis selbst, wenn das Audio eine
+Rolle spielt.
 :::
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Connect a Google Calendar](/de-DE/handbuch/anleitungen/kalender-verbinden/)
-- [Delegate work to agents](/de-DE/handbuch/anleitungen/tickets-delegieren/)
+- [Einen Google Calendar verbinden](/de-DE/handbuch/anleitungen/kalender-verbinden/)
+- [Arbeit an Agenten delegieren](/de-DE/handbuch/anleitungen/tickets-delegieren/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Meetings and transcription](/de-DE/handbuch/konzepte/besprechungen/)
+- [Besprechungen und Transkription](/de-DE/handbuch/konzepte/besprechungen/)

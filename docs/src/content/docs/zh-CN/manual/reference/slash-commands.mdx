@@ -1,156 +1,145 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: 斜杠命令
+description: 你可以在输入框中输入的每一个命令：它做什么，以及它在哪里运行。
 slug: zh-CN/手册/参考/斜杠命令
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+在空间输入框中输入的命令。它们按生效位置分为三组，而这一区别很重要：**本地**命令绝不会作为消息传递，因此既不出现在转录中，也不会到达任何智能体。
 
-| Where it runs | What that means                                                                    |
+| 运行位置 | 含义                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **本地**     | 在客户端处理（或由客户端发起的服务器操作）。该命令绝不会作为消息传递，因此没有智能体能看到它。 |
+| **旁路**      | 针对这段对话做一次服务端模型调用。对话不会被改变。 |
+| **派发**  | 为这条消息启动的运行设置一种模式或指令。                            |
 
 ---
 
-## Directing a run
+## 指挥一次运行
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**本地 → 派发。** 为对话开启计划模式：一个完全只读的工作树，以及上限为 `read` 的工具面。智能体的交付物是一份计划，而不是一次编辑。单独一个 `/plan` 只会翻转模式，绝不会作为消息传递；如果带上提示词，该行剩余的内容就是启动这次运行的东西。
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**派发。** 启动一个自主目标，目标监督器会在各个段之间以及重启后重新派发它。
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+先输入 `/goal` 再跟上文字，会打开**目标访谈**——这是一个简短的环节，在草稿凑齐以下全部五项之前拒绝接受它：评估者无需主观判断即可裁定的成功标准、一条确切的验证命令、尝试次数上限、范围边界，以及停止条件。每一步都提供*跳过并按原样运行*：访谈只是默认做法，而不是一道关卡。
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`、`/goal resume` 和 `/goal drop` 不是斜杠命令。暂停、继续和停止位于侧边栏中该对话的目标列表上。目标本身可用的启动标志有 `--budget <dollars>`、`--max <N>`（运行预算）和 `--days <N>`（截止时间）。触及成本上限的目标，只有提高该上限才能恢复，而且要在这同一个侧边栏控件中操作。
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[为什么它非要打断]
+自主目标是含糊简报真正昂贵的唯一场合。运行会为一个没人定义过“完成”的目标工作好几个小时，然后按自己的标准报告成功。五个问题，比一次什么时候“感觉完成了”就算完成的通宵运行更便宜。
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**派发。** 反复迭代直到完成。接受一个界限：`/loop 10`、`/loop 30m`、`/loop 1h30m`、`/loop 10 minutes fix the tests`。
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+一个*看起来*像限制的 token（以数字或符号开头）如果解析失败，就是一个硬错误。普通文字就是普通文字，因此 `/loop keep going until the tests pass` 是一个带内联提示词的无界循环，而不是一次误解析。
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/zh-CN/手册/操作指南/指挥后台工作进程/).
+**派发。** 把会话变成一名**指挥者**：它自己的工具降为 `read` 外加五个工作进程动词，由后台工作进程来执行编辑。参见[指挥后台工作进程](/zh-CN/手册/操作指南/指挥后台工作进程/)。
 
-Workers never outlive the mode — exiting kills every one of them.
+工作进程绝不会比这个模式活得更久——退出会终止其中每一个。
 
 ---
 
-## Managing context
+## 管理上下文
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**本地 → 服务器。** 把较早的历史折叠成一份带锚点的摘要，并在压缩后的上下文上继续。不接受任何面向模型的参数：该命令绝不会作为消息传递，压缩过程也不接受聚焦提示。
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**本地 → 服务器。****不**做摘要地丢弃沉重内容：不调用模型，每个字都保留，只把没人会再读一遍的大块内容清空。
 
-| Target        | Drops                             |
+| 目标        | 丢弃内容                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | 无异常的较早工具结果（默认） |
+| `images`      | 旧截图，保留它们的文本 |
+| `all`         | 两者                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+这就是“我的上下文很臃肿，但我又不想要摘要”时的逃生出口。
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**本地。** 在独立的标签页中打开这段对话中智能体的上下文浏览器：它上下文窗口的每一段和每一部分——系统提示词、技能、上下文文件、工具 schema、历史和图像——并显示每一部分占用了多少，以及它背后的逐字内容。
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+该标签页以（空间, 智能体）对为键，因此运行两次会重新聚焦同一个标签页，而不是把同一份分解堆叠成多份。
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+在拥有**多个智能体**的空间里，单独一个 `/context` 会打开页头上下文计量条正在读取的那个窗口——也就是最近在这里工作过的那个智能体，它的消息位于轨迹最底部——并且该标签页会被标记为 `上下文 · <name>`，以说明它属于谁。要切换到另一个，就指名它：`/context qa`（`@` 是可选的）。输入的名称会精确解析，绝不模糊匹配：两个智能体持有两个不同的窗口，因此一次差之毫厘却打开了另一个窗口的匹配，会是对一个你并未提出的问题给出看似合理的回答。
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+空间页头里的上下文计量条芯片背后也是同一个浏览器，它跟随的是同一个智能体——命令和该芯片对于这里“上下文”指什么，永远不会产生分歧。
 
 ---
 
-## Asking about the conversation
+## 询问这段对话
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+这些命令花一次模型调用，并且**绝不改变对话**。智能体下一个真正的回合看到的，与它本来就会看到的内容完全一样，而这正是“询问”的全部价值所在。
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**旁路。** 为冷启动接手这项工作的人写一份交接文档：任务是什么、已经了解到什么、还剩什么。
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**旁路。** 回答一个关于目前工作进展的问题，而不把问题或答案写进转录。
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[两个命令，一套实现]
+两者形状相同——拿现有的对话照原样，就它提一个问题，两边都不持久化。只实现一次，因此不会各自漂移出两个不同的“截至目前为止的上下文”概念。
 :::
 
 ---
 
-## Navigating and exporting
+## 导航与导出
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/zh-CN/手册/操作指南/分支对话/).
+**本地。** 打开分支导航器：对话在哪里分叉、当前在哪条路径上，以及如何回到你离开的那一条。参见[分支对话](/zh-CN/手册/操作指南/分支对话/)。
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**本地。** 把对话写成一个自包含的 HTML 文件——可折叠的工具卡片，没有样式表、没有脚本、没有图床。在桌面端落到 `Documents/ControlCenter/exports/`，在网页端则下载。
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**本地。** 把转录以 markdown 形式复制到剪贴板，工具调用放在可折叠的块中。推理内容被有意排除在外：粘贴进 bug 报告里的转录是要给人读的。
 
 ---
 
-## Everything else
+## 其他命令
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**本地。** 查看和编辑该对话持久化的待办列表。单独一个 `/todo` 会打开编辑器。子命令：`append`、`start`、`done`、`drop`（别名 `rm`）、`edit`、`copy`、`export`、`import`。
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**派发。** 应用一个已安装的技能。技能位于它们自己的 `skill:` 前缀下，因此与内置命令不共享命名空间——否则，一个名为 `plan` 的技能将永远无法被触达。
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**派发。** 仓库中 `.agents/commands`、`.agent/commands`、`.claude/commands`、`.codex/commands` 或 `.opencode/commands` 下的任意 markdown 文件。嵌套的 `foo/bar.md` 也可以通过 `foo:bar` 触达。
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+模板化：`$1`、`$@`、`$@[start:length]` 和 `$ARGUMENTS`。frontmatter 可以设置 `description`（输入框自动补全）。`allowed-tools` 和 `model` 会从文件中解析出来，但当前调用用户命令时只会把参数替换进正文——它们不会改变该运行的模型或工具面。
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+用户自行编写的命令优先于同名的技能——它是人类带着参数有意调用的一条快捷方式。
 
 ---
 
-## Magic keywords
+## 魔法关键词
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+它们不是命令。提示词任何位置出现的一个小写独立单词，都会为该回合附加一条隐藏指令。
 
-| Word          | Effect                                                             |
+| 单词          | 效果                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | 该回合使用最高推理强度                              |
+| `orchestrate` | 并行委派相互独立的工作，并验证每个阶段        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+匹配器刻意对边界要求严格。`orchestrate,` 会匹配；`orchestrated`、`orchestrate.ts`、`foo::orchestrate` 和 `orchestrate()` 不会，而且围栏代码块、内联代码片段和 XML 区块会先被屏蔽掉。否则，粘贴一段堆栈跟踪就会改变智能体的行为。
 
 ---

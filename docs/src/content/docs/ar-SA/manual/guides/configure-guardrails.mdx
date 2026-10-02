@@ -1,152 +1,146 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: تهيئة الضوابط
+description: اضبط قواعد السماح والسؤال أولًا والرفض لإجراءات الوكيل، واختبرها بمسبار «ماذا لو؟»، واضبط الاستقلالية لكل مساحة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+يشرح هذا الدليل كيف تضبط الضوابط: القواعد التي تقرر هل يُنفَّذ إجراء
+الوكيل، أم يُطلب له موافقة أولًا، أم يُرفض.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+تغطي الضوابط أصناف الأثر الثلاثة عشر التي تصرّح بها كل أداة تعدّل الحالة.
+تُفرض على الخادم عند استدعاء الأداة، لا بتعليمة داخل مطالبة.
 
-## Set a decision for an action class
+## اضبط قرارًا لصنف إجراء
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. انتقل إلى **الإعدادات ← مساحة العمل ← أذونات الوكلاء**
+2. اختر النطاق من المبدّل المقسّم: **مساحة العمل**، أو **الوكيل** (ثم اختر
+   الوكيل)، أو **المساحة** (ثم اختر المساحة)
+3. في صف صنف الإجراء، اختر **السماح** أو **السؤال أولًا** أو **الرفض**
+4. لإزالة قاعدة وضعتها، اضغط زر إعادة التعيين الذي يظهر في نهاية ذلك
+   الصف (**إعادة التعيين إلى الموروث**)، فيعود القرار إلى النطاق الأوسع
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+يظهر في كل صف القرار النافذ داخل وسم حالة، ومعه شارة لمصدره: **هذا النطاق**
+أو **موروث** أو **الافتراضي المضمّن**. تُبتّ المصفوفة على وضع الوكيل
+(`chat`)، فلا يظهر **الإعداد المسبق للوضع** هنا. لترى تلك الطبقة، استخدم
+مسبار «ماذا لو؟» بعد اختيار وضع للقراءة فقط.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+كتابة قاعدة تحتاج دور `admin`. قراءة المصفوفة لا تحتاج إليه.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+نقطة التحقق: اضبط **الدفع إلى مستودع بعيد** على **الرفض** في نطاق مساحة
+العمل، ثم شغّل مسبار «ماذا لو؟» أدناه على `git push origin main`. تظهر
+النتيجة `deny` والمصدر `workspace`.
 
-## Understand how a decision is resolved
+## افهم كيف يُبتّ القرار
 
-Resolution is **specificity first, then restrictiveness**:
+البتّ **للأكثر تحديدًا أولًا، ثم الأكثر تقييدًا**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. قواعد **المساحة**، ثم **الوكيل**، ثم **مساحة العمل**. أول نطاق فيه قاعدة
+   مطابقة هو الذي يقرر، ويقف البتّ هناك
+2. إن لم تطابق أي قاعدة، ينطبق **الإعداد المسبق للوضع**. وضع القراءة فقط
+   (تخطيط ومراجعة وتنسيق) يرفض أحد عشر صنفًا من الأصناف الثلاثة عشر
+3. إن لم يكن للوضع ما يفرضه، ينطبق **الافتراضي المضمّن**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+داخل النطاق الواحد، تُبتّ قاعدة الأمر بأطول بادئة مطابقة، والتعارض بين
+قاعدتين متساويتين في التحديد يُبتّ **بالأكثر تقييدًا**: الرفض يغلب السؤال
+أولًا، والسؤال أولًا يغلب السماح. والإجراء الذي يصرّح بعدة أصناف يُبتّ كل
+صنف على حدة، ثم تُجمع بالأكثر تقييدًا.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[السماح لا يغلب الرفض]
+تفوز القاعدة الأضيق لأنها أكثر تحديدًا، ويُكسر التعادل بالأكثر تقييدًا،
+فـ**السماح** في نطاق مساحة العمل لا يلغي **الرفض** في أي موضع.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+قرار **السؤال أولًا** يُظهر طلب موافقة واحدًا يغطي كل صنف بُتّ إلى `prompt`.
+**من غير معتمِد متصل يُرفض**، في أوامر الصدفة وفي استدعاءات أدوات الإطار
+المضمّن معًا. هذا مقصود: تشغيل بلا بوابة أسوأ من تشغيل مرفوض.
 
-### Action classes and built-in defaults
+### أصناف الإجراء والافتراضي المضمّن
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| صنف الإجراء | الافتراضي المضمّن |
+| --- | --- |
+| حذف ملف | السؤال أولًا |
+| الكتابة خارج شجرة العمل | السماح |
+| إنشاء إيداع | السماح |
+| الدفع إلى مستودع بعيد | السؤال أولًا |
+| فتح طلب سحب | السؤال أولًا |
+| نشر مراجعة أو إجراء دمج | السؤال أولًا |
+| الكتابة إلى متتبع خارجي | السؤال أولًا |
+| الوصول إلى الشبكة | السماح |
+| قراءة سر | السماح |
+| تثبيت حزمة | السماح |
+| تشغيل عملية | السماح |
+| تغيير بنية مساحة العمل | السماح |
+| قيادة حاوية معزولة (منصة) | السماح |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+التصنيف مغلق. الأداة الجديدة التي تُشحن من غير أن تصرّح بأصنافها تفشل في
+اختبار السقاطة في CI، فلا يصل شيء بمجموعة أثر فارغة في صمت.
 
-## Test a rule with the what-if probe
+## اختبر قاعدة بمسبار «ماذا لو؟»
 
-Before changing a rule, check how the current policy already resolves it.
+قبل تغيير قاعدة، انظر كيف تبتّ السياسة الحالية فيها أصلًا.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. في الصفحة نفسها، انزل إلى **ماذا لو؟**
+2. اختر **الإجراء** (واحدًا من الأصناف الثلاثة عشر)
+3. املأ إن شئت **الأمر** (مثل `git push origin main`) و**الوكيل**
+   و**المساحة** و**الوضع**
+4. اقرأ النتيجة: القرار، والسبب، و**المصدر:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+يشغّل المسبار محلّل البتّ نفسه الذي يستخدمه مسار الفرض، على قواعدك الحيّة،
+فالجواب مطابق لما سيحدث. إن فاجأك، غيّر قاعدة في المصفوفة أعلاه ثم أعد السبر.
 
-## Set a space's autonomy dial
+## اضبط قرص استقلالية المساحة
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+القرص لكل وكيل ولكل مساحة، ويتركّب مع القواعد من غير أن يستبدلها.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. افتح المساحة
+2. افتح **إدارة المشاركين** من ترويسة المساحة
+3. تحت **الاستقلالية** في صف الوكيل، اختر مستوى:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| المستوى | الأثر |
+| --- | --- |
+| **افتراضي** | لا ضبط للمساحة، ويسلك سلوك **التصرف بموافقة** |
+| **اقتراح فقط** | تُرفض كل أداة محكومة رفضًا باتًا، مع رسالة تطلب من الوكيل أن يقترح الإجراء بدلًا من تنفيذه |
+| **التصرف بموافقة** | الإجراءات الخطرة تصطدم ببوابة الموافقة المغلقة عند الفشل |
+| **التصرف بحرية** | يوافق مسبقًا على كل ما لم يُبتّ إلى رفض صارم |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[التصرف بحرية يبتلع كل سؤال]
+تحت **التصرف بحرية** يُمنح قرار **السؤال أولًا** من غير أن تُسأل.
+لا يحجب إلا `deny`، من قاعدة أو من الإعداد المسبق للوضع أو من الافتراضي
+المضمّن. استخدمه وأنت تراقب المساحة، لا كافتراض.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+يصل القرص إلى الإطار المضمّن وحده. محوّل Claude Code يشغّل أدواته خارج
+هذه البوابة.
 
-## Know where guardrails do not reach
+## اعرف أين لا تصل الضوابط
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+جدول **أين تُفرض القواعد** أسفل الصفحة نفسها هو نسخة هذا الشرح داخل
+التطبيق: لكل صنف أثر، يبيّن هل يلتقطه كل مشغّل عند بوابة السياسة، أو يتركه
+للبيئة المعزولة، أو يعجز عن اعتراضه أصلًا.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/).
+- **محوّل Claude Code** لا تُحرس استدعاءات أدواته. يُطلَق Claude
+  Code مع `--dangerously-skip-permissions`، فلا تمر استدعاءات read وwrite
+  وedit وbash ببوابة الضوابط. ما يُحرس في هذا المحوّل هو سطح أدوات MCP الذي
+  يعود فيستدعيه، وأمر الصدفة الذي يطلقه Control Center لتشغيله.
+- **فعل الإخراج الخاص بالوضع** (`submit_plan` و`propose_orchestration`)
+  مثبَّت ولا يُرفض أبدًا، وإلا عجز الوضع بنيويًا عن إنتاج تسليمه الوحيد.
+- **إسناد البيئة المعزولة لهذه القواعد مرهون بالمضيف.** حيث يجد
+  `cc_server` خلفية، يغلّف بها سطر أوامر Claude Code وأداة `bash` في
+  الإطار المضمّن، فتبقى تحت القاعدة التي لم تكتبها أرضية من نظام التشغيل.
+  على **Windows لا توجد خلفية**، وعلى Linux أو WSL2 من غير `bwrap`
+  و`socat` لا توجد أيضًا. هناك يكون الفرض كله هو الضوابط وسطح أدوات الوضع.
+  لتعرف أي الحالين أنت فيه، انظر
+  [تهيئة سياسات البيئة المعزولة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Configure sandbox policies](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/)
-- [Create and configure an agent](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
-- [Manage adapters and models](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
+- [تهيئة سياسات البيئة المعزولة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/سياسات-البيئة-المعزولة/)
+- [إنشاء وكيل وتهيئته](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-وكيل/)
+- [إدارة المحوّلات والنماذج](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محولات/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Guardrails — one policy for every mutating action](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/)
+- [الضوابط — سياسة واحدة لكل إجراء يعدّل الحالة](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/)

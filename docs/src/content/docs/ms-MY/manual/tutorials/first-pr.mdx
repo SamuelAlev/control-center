@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: Semak pull request pertama anda
+description: Buka PR dalam meja kerja, baca diff, komen, luluskan dan cantumkan.
 slug: ms-MY/manual-pengguna/tutorial/pr-pertama
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## Apa yang akan anda bina
 
-By the end of this tutorial, you will have:
+Menjelang akhir tutorial ini, anda akan mempunyai:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Pull request yang dibuka dalam meja kerja PR Control Center
+- Diff PR itu yang dibaca, dengan komen sebaris yang ditinggalkan
+- Keputusan semakan yang dihantar
+- PR yang telah dicantumkan
 
-Prerequisites: [Dispatch your first agent](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+Prasyarat: [Hantar ejen pertama anda](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) telah selesai dan satu pull request terbuka pada repo yang didaftarkan dalam ruang kerja ini. Untuk langkah semakan, pilih PR yang bukan anda buka sendiri — butang **Semakan** tersembunyi pada PR anda sendiri. Cantuman masih berfungsi pada PR yang anda buka sendiri.
 
-## Step 1: Open the pull request
+## Langkah 1: Buka pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. Klik **Pull request** di bar sisi
+2. Cari PR anda dan kliknya
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**Titik semak.** PR terbuka sebagai meja kerja bertab — Gambaran keseluruhan, Diff, Kawalan sumber, Sembang, Tindakan — dengan tumpuan pada **Gambaran keseluruhan**: tajuk dan tindakannya, penerangan serta garis masa aktiviti dan bar sisi dengan status, penyemak, penerima tugasan, pemeriksaan dan fail yang berubah. Mengklik fail di situ melompat kepadanya dalam tab Diff. Tab **Semakan PR** tidak terbuka sehingga seseorang meminta semakan AI.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[Baris gilir kosong dengan gesaan "sambungkan GitHub"]
+Keadaan itu bermakna _pelayan_ tidak memegang token GitHub — klien anda tidak pernah memegangnya. Tetapkan satu di bawah **Tetapan → Ruang kerja → Profil & identiti → Hos kod**, kemudian muat semula senarai itu.
 :::
 
-## Step 2: Read the diff
+## Langkah 2: Baca diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+Buka tab **Diff**. Pokok fail yang boleh diruntuhkan berada di sebelah kiri, dan jalur di atas diff membawa pemilih julat commit — sempitkan diff kepada satu commit atau satu rentang commit — serta bilangan fail dan penambahan serta pemadaman yang dikemas kini secara langsung.
 
-The settings button in the diff toolbar controls how it renders:
+Butang tetapan dalam bar alat diff mengawal cara ia dipaparkan:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- Paparan **Belah** atau **Bersatu**
+- **Balut baris** atau tatal baris panjang
+- **Ligatur fon kod**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci/).
+Tandakan fail sebagai dilihat untuk menjejak kemajuan anda merentas diff yang besar. Navigasi papan kekunci ada dalam [Pintasan papan kekunci](/ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci/).
 
-## Step 3: Leave an inline comment
+## Langkah 3: Tinggalkan komen sebaris
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. Tudingkan kursor pada satu baris dalam diff — pil `+` kecil muncul di margin
+2. Kliknya untuk mengomen baris itu, atau seretnya secara menegak dahulu untuk memilih julat
+3. Taip maklum balas anda. Komposer menawarkan dua cara hantar:
+   - **Mula semakan** (atau **Tambah ke semakan** jika semakan sedang berjalan) menyimpan komen itu dalam baris gilir. Utas itu memaparkan **Semakan tertunda** sehingga anda menghantar keputusan pada langkah 4.
+   - **Tambah komen tunggal** menyiarkannya ke GitHub serta-merta. Utas itu memaparkan **Menyiarkan…**, kemudian **Disegerakkan**, dan menawarkan cuba semula jika penyiatan gagal.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+Untuk tutorial ini, gunakan **Mula semakan** supaya komen itu keluar bersama keputusan.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[Komen dalam baris gilir belum ada di GitHub]
+**Mula semakan** / **Tambah ke semakan** menahan komen itu secara setempat sehingga anda menghantar keputusan. Hanya **Tambah komen tunggal** menyiarkan serta-merta. _Badan_ semakan yang anda tulis pada langkah 4 ialah draf yang berasingan.
 :::
 
-## Step 4: Submit a review
+## Langkah 4: Hantar semakan
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. Klik **Semakan** dalam baris tindakan Gambaran keseluruhan — butang yang sama juga ada dalam bar alat tab Diff. Ia tersembunyi pada PR yang anda buka sendiri dan pada PR yang ditutup atau dicantum.
+2. Tulis ringkasan dalam komposer. Ia disimpan secara automatik sebagai draf, jadi anda boleh menutupnya dan kembali semula.
+3. Pilih keputusan:
+   - **Minta perubahan**
+   - **Komen**
+   - **Luluskan**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+Keputusan itu _ialah_ butangnya. Selepas **Luluskan** atau **Minta perubahan**, butang itu melabel semula dirinya sebagai **Diluluskan** atau **Perubahan diminta**. Keputusan **Komen** membiarkan butang itu berlabel **Semakan**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**Titik semak.** Butang itu berbunyi "Diluluskan" atau "Perubahan diminta" jika anda memilih salah satu daripada kedua-duanya.
 
-## Step 5: Merge
+## Langkah 5: Cantum
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+Butang **Cantum** hadir setiap kali GitHub melaporkan PR itu boleh dicantum — ia tidak dikawal oleh kelulusan anda sendiri. Warnanya melaporkan kesediaan dan bukan kebenaran: utama apabila kelulusan yang diperlukan dan pemeriksaan berwarna hijau, sekunder semasa pemeriksaan masih berjalan, destruktif apabila penyemak yang diminta belum meluluskan atau pemeriksaan sedang gagal.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. Klik **Cantum**
+2. Pilih kaedah: **Squash dan cantum**, **Cipta commit cantuman**, atau **Rebase dan cantum**
+3. Untuk dua yang pertama, edit tajuk dan mesej commit yang telah diisi awal
+4. Sahkan
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+Sebarang masalah yang belum selesai — "Semakan gagal", "Beberapa semakan masih tertunda" — disenaraikan dalam panel timbul sebelum anda mengesahkan.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[Mencantum tidak boleh dipulihkan]
+Mencantum menolak commit ke GitHub. Ia tidak pernah masuk ke tindanan buat asal Control Center dan tidak boleh dibatalkan dari sini.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/ms-MY/manual-pengguna/rujukan/acara-domain/) for what else listens.
+Selepas mencantum, acara domain `PrMerged` tercetus; analitik dan pemberitahuan memakannya. Lihat [Acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/) untuk apa lagi yang mendengarnya.
 
-## Reviewing with AI
+## Menyemak dengan AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center boleh meletakkan pipeline penyemak pada PR yang terbuka, tetapi hanya apabila anda memintanya: templat `pr_review` mempunyai pencetus manual dan tiada yang lain.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. Buka menu limpahan dalam baris tindakan Gambaran keseluruhan dan pilih **Tanya AI**. Control Center memulakan larian itu dan membuka tab **Semakan PR**, supaya anda boleh menonton pakar-pakar itu bekerja.
+2. Ejen penyemak merekodkan penemuan mereka sebagai nod semakan dalam ruang PR itu; satu langkah akhir menggabungkannya menjadi satu laporan.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/).
+Pipeline itu sengaja tidak menyiarkan ke GitHub — ia tamat selepas menggabungkan. Penerbitan ialah langkah berasingan yang anda lakukan sendiri, dengan butang **Terbitkan ke GitHub** pada tab **Semakan PR**. Lihat [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/).
 
-## Recap
+## Ringkasan
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+Anda membuka PR dalam meja kerja, membaca diff dengan penonjolan sintaks, meninggalkan komen sebaris, menghantar keputusan dan mencantum — tanpa meninggalkan apl.
 
-**Next:** [Build your first pipeline](/ms-MY/manual-pengguna/tutorial/pipeline-pertama/) to automate multi-step workflows.
+**Seterusnya:** [Bina pipeline pertama anda](/ms-MY/manual-pengguna/tutorial/pipeline-pertama/) untuk mengautomasikan aliran kerja berbilang langkah.

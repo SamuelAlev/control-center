@@ -1,207 +1,192 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: التحكم عن بُعد والجوال
+description: كيف يصل الهاتف إلى خادمك عبر مرحّل بوساطة وسيط مختوم طرفًا لطرف، بدل رابط من نظير إلى نظير، ونموذج الوصول المتدرّج الذي يُبقي هذا الوصول ضيقًا.
 slug: ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center تطبيق حاسوب، لكن العمل الذي يتابعه لا يتوقف حين تبتعد عن مكتبك.
+**التحكم عن بُعد** يقرن هاتفك بـ `cc_server` عبر
+**[Remote](https://remote.usectrl.dev/)**، التطبيق المرافق على
+remote.usectrl.dev، فتتابع الأسطول من هناك: تقرأ الرسائل والتذاكر، وترد على
+وكيل، وتفرز موجز الأخبار، من غير أن يغادر الخادم الصوت أو النسخ النصي أو الشفرة
+المصدرية أو بيانات الاعتماد التي تعيش عليه.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+عدّه رفيقًا يغلب عليه الاطلاع، يلازم سطح المكتب. ليس بديلًا لعميل الحاسوب
+الكامل.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) for how the two differ.
+:::note[مساران بعيدان مختلفان]
+يقترن رفيق الهاتف بـ `cc_server` عبر **مرحّل WebSocket بوساطة وسيط** يحمل
+إطارات JSON-RPC مختومة طرفًا لطرف. **نسخة الويب** الكاملة (وحاسوب موجّه إلى
+خادم بعيد) هي المسار البعيد الآخر: تتصل بـ `cc_server` عبر WebSocket وتعرض
+التطبيق كاملًا. انظر
+[النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) لكيف يختلف المساران.
 :::
 
-## Transport
+## النقل
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+يصل الهاتف إلى `cc_server` عبر WebSocket: إما اتصال مباشر
+(loopback أو LAN أو tailnet أو `wss://`) أو غرفة مشروطة بدعوة على وسيط إشارات
+يرحّل الإطارات المختومة. لا توجد قناة بيانات من نظير إلى نظير.
 
-## What the phone can do
+## ما يستطيع الهاتف فعله
 
-The paired phone reaches a small, intentional slice of the server's surface:
+يصل الهاتف المقترن إلى شريحة صغيرة ومقصودة من سطح الخادم:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **قراءة** التذاكر والوكلاء والمساحات ورسائلها وموجز أخبارك
+- **الرد**: إرسال رسالة في مساحة، أو تحديث تذكرة أو إسنادها، أو تعليم مقالة
+  مقروءة أو محفوظة
+- **تشغيل كتيب التشغيل**: إنشاء مثيل من قالب خطة محفوظ بمعاملاته.
+  يقتصر ذلك على _اقتراح_ خطة، فلا يُنفَّذ شيء ولا يُنفَق شيء حتى يوافق مشغّل
+  عليها في Plan Studio من عميل كامل
+- **تبديل مساحات العمل** من منتقي الهاتف نفسه
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+وهذا قريب من كل ما يستطيعه. الهاتف **طرف بصلاحية أدنى** من العميل الكامل. لا
+يستطيع إطلاق عمليات، ولا إنفاق ميزانية LLM، ولا الدفع إلى GitHub، ولا إنشاء
+مساحات عمل. انظر
+[نموذج الوصول](#نموذج-الوصول) لكيف يُفرض ذلك فعلًا، لا لمجرد أنه مقصود.
 
-## How the link is built
+## كيف يُبنى الرابط
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+يسير الاتصال على **مرحّل بوساطة وسيط**: ينضم الخادم إلى غرفة واحدة مشروطة
+بدعوة على وسيط `wss://` بصفته مالكها، وينضم كل عميل مقترن — حاسوب أو ويب أو
+هاتف — إلى الغرفة نفسها برمز قبول محدود المدة. تجتمع ثلاث قطع:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| القطعة | الدور |
+| --- | --- |
+| **Remote (تطبيق الهاتف)** | تطبيق الويب المرافق، مستضاف على `remote.usectrl.dev` افتراضيًا أو باستضافة ذاتية. يُحمَّل في المتصفح، ويحتفظ بسجل الاقتران في IndexedDB. |
+| **وسيط المرحّل** | مرحّل `wss://` بلا حالة (`cc_signaling_server`) يستضيف غرفًا متعددة الأطراف. لا يحمل إلا **إطارات معتمة**: كل حمولة مختومة طرفًا لطرف بين الهاتف والخادم، فلا يرى الوسيط بيانات التطبيق ولا سر الاقتران، ولا يفسّر ما يمرّره. |
+| **`cc_server`** | مالك الغرفة. يجيب عن استدعاءات الهاتف عبر الموزّع نفسه الذي يستخدمه سائر العملاء. |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+يحمل عرض الاقتران **واصف اتصال** يسرد كل مسار إلى الخادم (LAN وtailnet
+و`wss://` عام والمرحّل) مع بصمة هويته. يختار محلّل الهاتف أفضل مسار يمكن بلوغه
+ويثبّت البصمة عند أول اتصال (TOFU). يضمن المرحّل الاتصال حتى حين لا يوجد مسار
+مباشر، من غير أن يستطيع قراءة الحركة.
 
-## What the pairing payload is
+## ما حمولة الاقتران
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/) for the procedure. The anatomy is
-what matters here.
+يُصدر الاقتران من التطبيق ويُسلَّم رابطًا عميقًا. انظر
+[اقتران جهاز](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/) للإجراء. التشريح هو
+ما يهم هنا.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+تسير الحمولة في **جزء** العنوان، وهو ما بعد `#`، ولا ترسله المتصفحات إلى
+الخادم، فلا يراه مضيف HTTPS لتطبيق PWA. تحمل كل ما يحتاج إليه الهاتف ليبلغ
+الخادم ويثبت من يكون: واصف الاتصال (كل مسار مع بصمة الهوية)، ومعرّف جهاز صادر
+للتو، ومفتاحًا مشتركًا مسبقًا بطول 32 بايتًا، وختم انتهاء. يفك الهاتف ترميزها،
+ويخزّن سجل اقتران محليًا، وينزع الجزء حتى يخرج السر من العنوان.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+لشكل الحمولة اثنان، وهما **غير قابلين للتبادل**. رمز QR للهاتف الصادر من لوحة
+الاقتران داخل التطبيق هو `PairingPayload` من الإصدار v2 أعلاه، وموجّه إلى مضيف
+PWA لتطبيق Remote. يُصدر `cc_server pair --client-url` رابط v1 أقدم ومختلفًا
+(`{s, i, k}` — عنوان الخادم، ومعرّف الجهاز، والمفتاح) مخصّصًا لعميل **الويب**
+وحده.
 
-They also differ in lifetime, which is easy to get wrong:
+ويختلفان أيضًا في مدة الصلاحية، وهذا مما يسهل الخطأ فيه:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| صادرة عن | انتهاء صلاحية بيانات الاعتماد |
+| --- | --- |
+| لوحة الاقتران داخل التطبيق (`pairing.mint`) | 30 يومًا، دائمًا |
+| `cc_server pair` من سطر الأوامر | **لا شيء** — بيانات الاعتماد لا تنتهي |
 
-## The access model
+## نموذج الوصول
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+الجهاز المقترن **مصادَق عليه وغير موثوق**. تُبقي بوابات مستقلة عدة اقترانًا
+مقبولًا (أو مسرّبًا) دون أن يصير تحكمًا كاملًا بالخادم.
 
-### 1. Membership, not pairing, is the boundary
+### 1. العضوية هي الحد، لا الاقتران
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+مفتاح الاقتران الصالح يثبت _أي جهاز_ أنت. ما يجوز لك قراءته أو تغييره يقرره
+**دور مساحة العمل**، ويُعاد حسمه في كل استدعاء، وتقيّده المنح لكل مستودع في أي
+شيء يعرض محتوى مستودع. الجهاز الذي يحمل مفتاحًا سليمًا تمامًا، لكنه يعود إلى
+مستخدم ليس عضوًا في مساحة العمل المسمّاة، يُرفض بالرسالة «لست عضوًا في مساحة
+العمل هذه».
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+يُشتق الحد الأدنى للدور من نوع العملية، ما لم تصرّح هي بحدها: القراءة تحتاج
+`guest`، والتعديل يحتاج `member`، والعمليات التدميرية تحتاج `admin`.
 
-### 2. A phone is a lower session tier
+### 2. جلسة الهاتف طبقة أدنى
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+إلى جانب فحص الدور، تحمل جلسة الهاتف قدرة أدنى من جلسة الحاسوب أو الويب.
+العمليات المصرَّح بأنها للعميل الكامل وحده تُرفض للهاتف قبل أن يعمل المعالج،
+مهما بلغت صلاحية المستخدم خلفها: إصدار اقترانات الأجهزة وسردها وإعادة تسميتها
+وإبطالها، وقراءة اتصال النفق وضبطه، والنسخ الاحتياطي للخادم وتصدير مساحة العمل
+واستيرادها، وكشف العمليات وإنهاؤها، وفحوص المحوّلات، وإعدادات الخادم، وإدارة
+SSO، والتحكم في الأسطول، وتولّي وكيل يعمل أو إرجاعه.
 
-### 3. A default-deny tool allow-list
+### 3. قائمة سماح برفض افتراضي
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+لسطح أدوات MCP تحديدًا (`tools/call`)، تحكم قائمة سماح برفض افتراضي في ما يجوز
+للهاتف استدعاؤه. ما ليس في القائمة يُرفض قبل أن يعمل. القائمة تميل إلى القراءة
+والملاحظة، ومعها حفنة من كتابات **محلية فقط** — رسالة، وتحديث تذكرة، وعلامة
+مقالة — لا تنفق ميزانية LLM، ولا تطلق عملية، ولا تمس نظامًا خارجيًا.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+يُرفض مثلًا: استشارة وكيل، وبدء مراجعة بالذكاء الاصطناعي، وإنهاء وكيل، ونشر
+مراجعة إلى GitHub، وتوظيف وكلاء أو فصلهم، وإنشاء مساحة عمل.
 
-### 4. Per-call workspace scoping
+### 4. نطاق مساحة العمل في كل استدعاء
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) invariant the rest of the
-product enforces.
+لا يحتفظ الخادم بأي «مساحة عمل حالية». هو بلا حالة عن قصد: كل استدعاء خاص
+بمساحة عمل يجب أن يسمّي `workspace_id` المستهدفة في وسائطه، ويرفض الموزّع
+الاستدعاء رفضًا باتًا إذا غاب المعرّف أو سمّى مساحة عمل غير مسجّلة لدى الخادم،
+قبل أن يُفتح أي قاعدة بيانات. لذلك لا يرث الهاتف نطاق عميل آخر ولا ينجرف إليه،
+وتسمية مساحة عمل غريبة عنه لا تنفع أيضًا، لأن فحص العضوية في البوابة 1 ما زال
+ساريًا. هذا هو ثابت
+[عزل مساحة العمل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) نفسه الذي يفرضه
+بقية المنتج.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. إطارات مختومة طرفًا لطرف بمفتاح مشترك مسبقًا
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+كل إطار بين الهاتف والخادم مختوم بمفتاح الاقتران. رمز القبول لا يُدخل العميل
+إلا إلى الغرفة، ولا يفك تشفير شيء. يرحّل الوسيط النص المشفّر ولا يرى المفتاح.
+الجهاز المُبطَل يجد بيانات اعتماده قد زالت، لذلك **يفشل مغلقًا** عند إعادة
+الاتصال.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+بيانات الاعتماد الصادرة من التطبيق محدودة بثلاثين يومًا. بعد ذلك ترفضها بوابة
+الاتصال، وعلى الهاتف إعادة الاقتران. الإبطال مباشر: يراقب الخادم جدول الأجهزة
+ويُسقط الجلسات المفتوحة للجهاز المُبطَل خلال ثوانٍ، بدل انتظار اتصاله التالي.
 
-### 6. Rate limiting per principal
+### 6. تحديد المعدّل لكل طرف
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+يحدّ محدّد بنافذة منزلقة حركة أدوات الوصول البعيد عند 120 استدعاءً في الدقيقة،
+مع سقف فرعي أضيق بمقدار 30 استدعاءً في الدقيقة على أفعال التعديل. الرصيد يخص
+**الطرف لا الجلسة**: ثلاثة من أجهزتك تسحب من رصيد واحد، فلا يكسب عميل مُختطَف
+هامشًا بفتح جلسات أكثر، ولا يجوّع عضو كثير الحركة سواه.
 
-### 7. A broker that learns nothing
+### 7. وسيط لا يطّلع على شيء
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+وسيط المرحّل لا يعرف شيئًا عن قصد: يستضيف الغرف، ويمرّر الإطارات المختومة، ولا
+يحتفظ بحسابات ولا ببيانات تطبيق ولا بمفاتيح. الغرف مشروطة بدعوة وعابرة. تبقى
+بيانات التطبيق والصوت والنسخ النصي والمصدر وبيانات الاعتماد كلها على الخادم.
 
-## Live updates
+## التحديثات الحيّة
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+بعد الاقتران يتلقى الهاتف **تحديثات حيّة** في إطارات إشعار — رسائل وكلاء جديدة،
+وتذاكر مسنَدة إليك، وتغيّرات في الحالة — على غرار إشعارات الحاسوب نفسها. يبث
+الخادم تلك الإطارات إلى كل جلسة متصلة، ويُطبَّق مرشح مساحة العمل على جهة
+العميل، فما تراه محصور في مساحة العمل التي تنظر إليها.
 
-## Where it lives
+## أين يوجد
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| السطح | ما يعرضه |
+| --- | --- |
+| **الإعدادات ← أنت ← أجهزتك** (`/workspaces/:workspaceId/settings/you/devices`) | عملاء مقترنون بحالتهم الحيّة، مع **اقتران عميل جديد** (متصفح ويب أو تطبيق سطح المكتب أو هاتف) والإبطال |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+تصدر اللوحة نفسها اقترانات لمتصفح ثانٍ أو لتطبيق سطح المكتب، لا للهواتف وحدها.
+المسار واحد، ولا يختلف إلا الرابط العميق.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+التحكم عن بُعد على جهة الخادم، وهو **غير** معروض عبر MCP. يتحدث الهاتف إلى
+موزّع الخادم نفسه عبر المرحّل، وليس عميل MCP لخادم خارجي.
 ::::
 
-## See also
+## انظر أيضًا
 
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): roles, membership and repo grants
-- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/): where remote control sits among the client tiers
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): where remote control sits in the stack
-- [Pair a device](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/)
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): تحديد النطاق في كل استدعاء الذي يستند إليه هذا
+- [تعدد اللاعبين — الهوية والعضوية والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): الأدوار والعضوية ومنح المستودعات
+- [النشر والعملاء](/ar-SA/دليل-المستخدم/مفاهيم/نشر/): موضع التحكم عن بُعد بين طبقات العملاء
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): موضع التحكم عن بُعد في المكدس
+- [اقتران جهاز](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/)

@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: วินิจฉัยเอเจนต์
+description: ไต่จากบันทึกการรัน การตรวจสอบอะแดปเตอร์ สถานะเซิร์ฟเวอร์ และการวินิจฉัยโฮสต์ เมื่อเอเจนต์หยุดสร้างการรัน
 slug: th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+คู่มือนี้แสดงวิธีค้นหาสาเหตุที่เอเจนต์ไม่สร้างการรัน
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+ไต่จากบนลงล่าง: การรันของเอเจนต์เองก่อน จากนั้นแบ็กเอนด์ของมัน แล้วจึงเซิร์ฟเวอร์ และสุดท้ายโฮสต์
 
-## 1. Check the agent's run history
+## 1. ตรวจสอบประวัติการรันของเอเจนต์
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**การตั้งค่า → เวิร์กสเปซ → เอเจนต์** → เลือกเอเจนต์ → **บันทึก**
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+การรันแต่ละครั้งแสดงป้ายสถานะ ระยะเวลา ("Running…" ขณะกำลังดำเนินอยู่) เวลาเริ่มและเวลาสิ้นสุด PID และอะแดปเตอร์ที่ใช้ **ดู** เปิดสตรีมเหตุการณ์ดิบของการรันนั้น **หยุด** ฆ่าโปรเซสที่กำลังรันและทำเครื่องหมายการรันว่า "Killed by user"; **ฆ่าที่กำลังรัน** ในส่วนหัวทำแบบเดียวกันกับการรันที่กำลังดำเนินอยู่ทุกตัวของเอเจนต์นั้น
 
-Read it like this:
+อ่านแบบนี้:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **ไม่มีการรันเลย** — การสั่งงานไม่เคยเกิดขึ้น การกล่าวถึงในคอมโพเซอร์คือ `@` บวกอักขระคำ (ตัวอักษร ตัวเลข ขีดล่าง) การจับคู่ชื่อเป็นแบบตรงทั้งหมดหรือตรงคำนำหน้า ดังนั้น `@code-reviewer` จึงถูกแยกวิเคราะห์เป็น `code` และยังปลุกเอเจนต์ที่ชื่อ `code-reviewer` ได้ ชื่อที่มีช่องว่างไม่อาจกล่าวถึงเป็นโทเคนเดียวได้ จากนั้นไปที่ขั้นตอนที่ 2
+- **การรันที่จบลงด้วยข้อผิดพลาดทันที** — เปิด **ดู** ความล้มเหลวในการเรียกแบ็กเอนด์จะปรากฏที่นี่เป็นข้อผิดพลาดของโปรเซส
+- **การรันที่ค้างอยู่ที่ "Running…"** — หยุดมัน แล้วตรวจสอบ **หมดเวลาเงียบ** ของเอเจนต์ในแท็บการตั้งค่า ไทม์เอาต์ที่ไม่ได้ตั้งไว้จะใช้ค่าเริ่มต้นของแต่ละโหมด
+- **การรันที่เสร็จสมบูรณ์แต่ไม่มีเอาต์พุตที่มีประโยชน์** — สถานะในบันทึกการรันยังคงเป็น `completed` สำหรับการรันที่จบลงโดยไม่มีสิ่งที่ประกาศไว้ว่าต้องส่งมอบ สัญญาณที่ตรงไปตรงมาคือข้อความสรุป ไม่ใช่ป้ายสถานะ
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+แท็บบันทึกไม่แสดงค่าใช้จ่าย หากต้องการดูค่าใช้จ่าย ให้ใช้ตารางรายเอเจนต์ใน **การสังเกตการณ์ → ข้อมูลเชิงลึก**
 
-## 2. Check the agent's backend
+## 2. ตรวจสอบแบ็กเอนด์ของเอเจนต์
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล** (`/settings/server/providers`)
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+รายการ **ตัวรันที่ตรวจพบ** แสดงอะแดปเตอร์ทุกตัวพร้อมผลการตรวจสอบ — เวอร์ชันที่ติดตั้งแล้ว "กำลังตรวจ…" หรือ "ไม่พบ" — รวมถึงพาธที่แปลงแล้วและชิปความสามารถสำหรับ CLI ที่ตรวจพบ คลิก **รีเฟรช** ในส่วนหัวของหน้าเพื่อตรวจใหม่
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+การตรวจสอบรันบนเครื่องที่โฮสต์ `cc_server` ไม่ใช่บนเครื่องที่คุณกำลังดูอยู่ หากคุณใช้เว็บไคลเอนต์หรืออุปกรณ์ที่จับคู่ไว้ "ไม่พบ" หมายความว่า CLI หายไปจากโฮสต์ของเซิร์ฟเวอร์
 
-Two things to confirm:
+มีสองอย่างที่ต้องยืนยัน:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **เอเจนต์มีการตั้งค่าอะแดปเตอร์หรือไม่** เอเจนต์ที่อะแดปเตอร์ว่างเปล่าจะถูกส่งงานไปที่ **Control Center (built-in)** และบันทึกการรันจะบันทึก `cc-harness` ทรานสคริปต์จึงระบุได้ว่าอะไรเป็นตัวรัน หากไม่มีโมเดลด้วย มันจะขอค่าเริ่มต้นจาก Anthropic — ซึ่งล้มเหลวด้วย `No credential for provider "anthropic"` เว้นแต่คุณจะเชื่อมต่อบัญชี Anthropic ไว้ ผู้เชี่ยวชาญที่มาพร้อมระบบถูกส่งมาโดยไม่มีอะแดปเตอร์
+- **อะแดปเตอร์ในตัวมีโมเดลหรือไม่** รายการโมเดลของมันดึงสด ๆ จากผู้ให้บริการที่เชื่อมต่ออยู่ถัดลงไปในหน้าเดียวกันนี้ ผู้ให้บริการที่ไม่มีข้อมูลรับรองจัดเก็บไว้จึงเพิ่มโมเดลให้เป็นศูนย์
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+แค็ตตาล็อกอะแดปเตอร์เองนั้นตายตัว — ไม่มีวิธีลงทะเบียนอะแดปเตอร์ใหม่ สิ่งที่คุณเปลี่ยนได้ต่ออะแดปเตอร์ตรงนี้คืออาร์กิวเมนต์สำหรับเรียกใช้และตัวแปรสภาพแวดล้อมของมัน โปรดทราบว่าการแทนที่ตัวแปรสภาพแวดล้อมรายอะแดปเตอร์จะชนะบัญชีผู้ให้บริการที่เชื่อมต่ออยู่อย่างเงียบ ๆ เมื่อมีการแก้ข้อมูลรับรอง
 
-## 3. Check the server
+## 3. ตรวจสอบเซิร์ฟเวอร์
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ** (`/settings/server/connection`) แสดงว่าไคลเอนต์นี้กำลังคุยกับเซิร์ฟเวอร์ตัวใดและเซิร์ฟเวอร์รายงานอะไร
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+สำหรับเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ `GET /healthz` ให้ข้อมูลชุดเดียวกันโดยไม่ต้องมีไคลเอนต์ มันไม่ต้องยืนยันตัวตนและเปิด CORS โดยเจตนา:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+มันคืนสถานะของเซิร์ฟเวอร์ เวลาทำงานเป็นวินาที จำนวนการเชื่อมต่อที่ใช้งานอยู่ พอร์ตที่ผูกไว้ เวอร์ชันบิลด์และ git SHA เวอร์ชันสคีมาของเวิร์กสเปซ เวอร์ชันแค็ตตาล็อก RPC id ชื่อ และลายนิ้วมือระบุตัวตนของเซิร์ฟเวอร์ ว่าการผูกไม่ปลอดภัยหรือไม่ และบล็อก `codeGraph` ที่มีจำนวน `watching` / `indexing` / `pending` เมื่อแคชเคยรับทราฟฟิกแล้ว มันยังมีบล็อก `caches` ด้วย ส่วนเซิร์ฟเวอร์เดโมจะเพิ่ม `demo: true`
 
-Two things worth knowing when a change "works in tests but not in the app":
+สองสิ่งที่ควรรู้เมื่อการเปลี่ยนแปลง "ทำงานได้ในการทดสอบแต่ไม่ทำงานในแอป":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- เดสก์ท็อปเรียกไบนารี `cc_server` ที่บิลด์ไว้ล่วงหน้าออกมาก่อนซอร์ส RPC op ใหม่หรือเครื่องมือ MCP ใหม่จะยังไม่ปรากฏจนกว่าจะบิลด์ไบนารีใหม่ และบันทึกการบูตจะเตือนเมื่อ git SHA ของโปรเซสลูกแตกต่างจากของแอป
+- เดสก์ท็อปจะฆ่าเซิร์ฟเวอร์ที่มันเปิดขึ้นซึ่งยังไม่พิมพ์แบนเนอร์พร้อมทำงานภายใน 20 วินาที แล้วตกลงสู่หน้าจอข้อผิดพลาด
 
-## 4. Check the host
+## 4. ตรวจสอบโฮสต์
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว** (`/settings/server/diagnostics`) คือหน้าในระดับโฮสต์ ประกอบด้วย:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **แซนด์บ็อกซ์** — สวิตช์หลัก แบ็กเอนด์ที่ตรวจพบ คำแนะนำการติดตั้ง และสวิตช์ความสามารถเริ่มต้น มีเพียงแบ็กเอนด์ที่ตรวจพบเท่านั้นที่มาจากเซิร์ฟเวอร์ โปรดดูคำเตือนด้านล่าง ไม่มีตัวควบคุมสำหรับรีเซ็ต
+- **ค้นหาเชิงความหมาย** — วงจรชีวิตของโมเดลฝังตัวบนอุปกรณ์: ติดตั้งแล้ว กำลังดาวน์โหลดพร้อมเปอร์เซ็นต์ ยังไม่ได้ติดตั้ง หรือเกิดข้อผิดพลาดในการติดตั้ง จนกว่าจะติดตั้ง หน่วยความจำและการค้นหาโค้ดจะยังเป็นแบบคำสำคัญเท่านั้น
+- **พฤติกรรมระบบ** — ทำให้คอมพิวเตอร์ตื่นอยู่ขณะเอเจนต์รัน
+- **เอนจินซิงค์** — สวิตช์ตัดการทำงานรายสโตร์สำหรับตั๋วงาน การรับส่งข้อความ และโน้ต สวิตช์เหล่านี้เป็นทางออกฉุกเฉินกลับไปใช้การสมัครรับแบบสแนปช็อตเต็ม การเปลี่ยนแปลงมีผลเฉพาะการสมัครรับใหม่ จึงมีผลเต็มที่หลังโหลดหน้าใหม่
+- **ระดับบันทึก** — เพิ่มระดับก่อนจำลองความล้มเหลว
+- **ความเป็นส่วนตัว** — ว่าเนื้อหา diff ดิบอาจถูกส่งต่อไปยังโมเดลของเอเจนต์ได้หรือไม่ และว่ารายงานข้อขัดข้องถูกส่งหรือไม่
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[ส่วนนี้รายงานเกี่ยวกับโฮสต์ และตัวควบคุมของมันอยู่ฝั่งไคลเอนต์]
+การตรวจจับและการบังคับใช้สอดคล้องกันแล้ว: เมื่อตัวตรวจจับรายงานว่าเป็นแบ็กเอนด์เนทีฟ การรันเอเจนต์บนโฮสต์นั้นก็ถูกห่อหุ้มด้วยมันจริง แต่ตัวตรวจจับคือสิ่งเดียวที่มีชีวิตในส่วนนี้ สวิตช์หลัก ตัวเลือกแบ็กเอนด์ และสวิตช์ความสามารถเริ่มต้นเป็นค่ากำหนดที่จัดเก็บบนอุปกรณ์ของคุณ และเซิร์ฟเวอร์ไม่อ่านค่าใดในนั้นเลย — สวิตช์ของเซิร์ฟเวอร์เองคือ `--sandbox` (`on` โดยค่าเริ่มต้น, `off` เพื่อเลือกไม่ใช้) และสำหรับเอเจนต์ที่ยังตั้งเป็น "ใช้ค่าเริ่มต้นของเวิร์กสเปซ" เซิร์ฟเวอร์จะถอยไปใช้ค่าเริ่มต้นแบบระมัดระวังของมัน: ไม่มี git push ไม่มี GitHub API ไม่มีคีย์ตั๋วงาน เปิดเครือข่าย
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+คำเตือนตรงนี้จึงควรค่าแก่การลงมือ แต่โดยปกติไม่ใช่สาเหตุที่เอเจนต์ล้มเหลว หากต้องการยืนยันว่าเซิร์ฟเวอร์อยู่ในสถานะใด ให้อ่านบันทึกตอนเริ่มทำงานของมัน: มันพิมพ์ `agent sandbox ON` พร้อมหมายเหตุแบ็กเอนด์, `no OS-native agent sandbox on this host` พร้อมคำแนะนำการติดตั้ง หรือ `agent sandbox DISABLED by --sandbox off` ส่วน `GET /healthz` ไม่มีฟิลด์แซนด์บ็อกซ์
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+เมื่อไม่มีแบ็กเอนด์ — Windows เสมอ ส่วน Linux หรือ WSL2 ที่ไม่มี `bwrap` และ `socat` — การรันจะ **ไม่** ถูกแซนด์บ็อกซ์ และสิ่งที่จำกัดมันคือเช็คเอาท์ของบทสนทนาเอง ความสามารถที่กั้นว่าข้อมูลรับรองใดถูกสร้างเข้าไปในนั้น กฎคุมการกระทำ การทำสภาพแวดล้อมให้ปลอดภัย และชุดเครื่องมือที่โหมดของมันอนุญาต
 :::
 
-## Common failures
+## ความล้มเหลวที่พบบ่อย
 
-### The run never starts and the adapter shows "Not found"
+### การรันไม่เริ่มเลยและอะแดปเตอร์ขึ้นว่า "ไม่พบ"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+ติดตั้ง CLI **บนโฮสต์ของเซิร์ฟเวอร์** แล้วคลิก **รีเฟรช** บนหน้าผู้ให้บริการโมเดล หรือสลับเอเจนต์ไปใช้อะแดปเตอร์ในตัวซึ่งไม่ต้องใช้ CLI แล้วเชื่อมต่อผู้ให้บริการบนหน้าเดียวกัน
 
-### The agent cannot push or open a pull request
+### เอเจนต์ push หรือเปิด pull request ไม่ได้
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+ความสามารถของมันคือประตูกั้น เปิด **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** → เอเจนต์ → **สิทธิ์แซนด์บ็อกซ์** เปิดสวิตช์แล้วเปิดใช้ **อนุญาต git push** และ **อนุญาตการเรียก GitHub API** การปล่อยสวิตช์ไว้ที่ "ใช้ค่าเริ่มต้นของเวิร์กสเปซ" จะไม่ให้สิ่งเหล่านี้แก่เอเจนต์เลย
 
-### Semantic search returns nothing useful
+### ค้นหาเชิงความหมายไม่คืนผลที่มีประโยชน์
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+ตรวจสอบ **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว → ค้นหาเชิงความหมาย** จนกว่าจะติดตั้งโมเดลฝังตัว การค้นหาจะเป็นแบบคำสำคัญเท่านั้น แถวที่เขียนไว้ก่อนติดตั้งโมเดลจะไม่ถูกเติมย้อนหลัง จึงยังเป็นแบบคำสำคัญเท่านั้นแม้หลังจากนั้น
 
-### The server will not boot at all
+### เซิร์ฟเวอร์บูตไม่ขึ้นเลย
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+ไลบรารีเนทีฟเป็นสิ่งจำเป็นและไม่มีโหมดลดความสามารถ dylib ที่หายไปทำให้ `cc_server` ไม่ยอมเริ่มทำงานและระบุตัวที่ก่อปัญหาในข้อความข้อผิดพลาด เตรียมเนทีฟด้วย `scripts/natives/build_natives.sh` แล้วบิลด์ไบนารีเซิร์ฟเวอร์ใหม่
 
-### An action is silently denied
+### การกระทำถูกปฏิเสธอย่างเงียบ ๆ
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+คำตัดสิน `prompt` ของกฎคุมที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะถูกปฏิเสธ โดยเจตนา ตรวจสอบกฎของเวิร์กสเปซได้ที่ **การตั้งค่า → เวิร์กสเปซ → สิทธิ์ของเอเจนต์**
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
-- [Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/)
-- [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
+- [ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/)
+- [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/)
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

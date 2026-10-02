@@ -1,132 +1,146 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Pengiraan semakan (kohort, paksi dan diff deterministik)
+description: Apa yang dihasilkan oleh laluan pengiraan semakan di pihak pelayan — kohort, diff kontrak API dan visual, pintu bagi setiap paksi — dan cara ia dilipat masuk ke dalam tab Semakan.
 slug: ms-MY/manual-pengguna/panduan-cara/pengiraan-semakan
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Tab **Semakan** PR itu ialah kemajuan langsung pipeline semakan semasa ia
+berfungsi, kemudian artifak yang diterbitkannya, berserta tindakan ke atasnya.
+Satu tab dengan dua keadaan, kerana kedua-duanya ialah perkara yang sama pada
+dua masa. Ia bukan tab lalai: sesuatu PR tidak mempunyai semakan sehingga ada
+yang memintanya, jadi **Tanya AI** itulah yang membukanya.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+Di sebalik tab itu, `cc_server` membina kohort fail, menjalankan paksi
+deterministik dan menyajikannya melalui operasi RPC `review_studio.*`
+(`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` dan kembar `watch*`-nya).
+Susun atur kekal yang masih menamakan `pr.reviewStudio` membuka tab Semakan
+yang sama ini.
 
-On the Review tab:
+Pada tab Semakan:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Ejen pengkonsolidasi menerbitkan artifak perbualan biasa dengan
+  `publish_artifact`, jadi tab itu merendernya melalui pemapar artifak yang
+  sama seperti yang dibuka oleh gelembung sembang — tiada salinan sistem
+  artifak yang berbentuk semakan.
+- Penemuan berada dalam rel di sisinya, dan keputusan berada pada bar nipis di
+  atas artifak dan bukan pada pengepala papan pemuka.
+- Sepanduk lapuk muncul apabila head PR sudah bergerak melepasi semakan.
 
-See [Use AI-powered review](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/) for the flow and
-[Review and merge a PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/) for acting on it.
+Lihat [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/) untuk alurnya dan
+[Semak dan cantumkan PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/) untuk bertindak ke atasnya.
 
-## Cohorts
+## Kohort
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Kohort mengelompokkan fail yang berubah dalam sesuatu PR kepada wadah yang
+diterbitkan daripada kandungan, iaitu fail yang memang berkelompok dari segi
+makna, disusun mengikut kesan supaya kumpulan paling berisiko dibaca dahulu.
+Kohort dikira semula pada setiap perubahan head-SHA dan diganti sepenuhnya;
+setiap kohort mempunyai kunci yang stabil terhadap push, jadi ringkasan dan
+kemajuan semakan bertahan melalui rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Jika repo tidak diindeks kod, kohort kembali kepada pengelompokan mengikut
+laluan. Untuk mengindeks repo, gunakan **Tetapan → Ruang kerja → Repositori** —
+setiap baris repo membawa tindakan **Indeks kod** yang menjalankan pipeline
+`index_code` dan melaporkan kemajuan di tempat.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+Graf kod hanya menghuraikan bahasa yang tatabahasanya sudah tersedia (Dart,
+JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R,
+Assembly, MATLAB, Ada). Repo dalam mana-mana bahasa lain tidak akan pernah
+menghasilkan kohort semantik, tidak kira berapa kerap anda mengindeksnya.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Ejen boleh merekod ringkasan markdown untuk sesuatu kohort dengan
+`set_cohort_summary` dan melampirkan gambar rajah penelusuran berstruktur
+dengan `add_review_diagram` — objek bertipe jujukan, entity-relation atau
+state-machine, tidak pernah teks mermaid. Setiap tepi diperiksa silang terhadap
+graf kod sebenar, dan tepi yang tidak dapat disokong graf itu ditandakan belum
+terverifikasi dan bukan dilukis sebagai fakta.
 
-## The API-contract axis
+## Paksi kontrak API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Paksi kontrak hanya melakukan diff pada fail spec yang **eksplisit**. Ia
+memadankan enam nama lalai — `openapi.yaml`, `openapi.yml`, `openapi.json`,
+`swagger.yaml`, `swagger.yml`, `swagger.json` — serta mana-mana fail yang
+berubah yang namanya mengandungi `openapi` atau `swagger` dan berakhir dengan
+`.yaml`, `.yml` atau `.json`. Kontrak yang disimpulkan daripada kod pengendali
+berada di luar skop dan skema GraphQL tidak di-diff.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Setiap perubahan dikelaskan — penambahan, pemadaman dan pengubahsuaian
+endpoint, parameter, skema dan respons — dan membawa keterukan: **breaking**
+(endpoint atau param dibuang, jenis diperketat, param wajib baharu),
+non-breaking (aditif), atau informational. Perubahan yang ditolak
+menggagalkan pintu kontrak, begitu juga perubahan breaking yang dibiarkan
+tanpa keputusan; breaking tetapi diluluskan memberi amaran; tiada perubahan
+breaking bermakna lulus. Diff yang ditandakan **derived (advisory)** tidak
+pernah menjadi pintu.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Meluluskan atau menolak sesuatu perubahan ialah
+`review_studio.setContractDecision`.
 
-## The visual axis
+## Paksi visual
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Jika PR mengubah komponen UI dalam repo Flutter yang mempunyai aplikasi
+Widgetbook, laluan pengiraan merender komponen yang berubah sebelum dan
+selepas melalui laluan golden `flutter test` tanpa kepala dalam worktree base
+dan head PR, kemudian melakukan diff pada pikselnya.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Ini memerlukan Flutter SDK pada hos pelayan]
+Pelayan Dart tulen tidak dapat merender widget Flutter dalam proses, jadi ia
+memanggil `flutter test` sebagai proses luar. SDK itu perlu dipasang pada mesin
+yang menjalankan `cc_server` — bukan pada klien anda. Tanpanya, paksi itu
+melaporkan **unavailable** dengan sebab "no Flutter SDK on host". Ia tidak
+pernah melaporkan kelulusan yang tidak diraihnya.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Snapshot yang ditandakan **changed** atau **removed** menahan pintu visual
+sehingga diluluskan; snapshot **unchanged**, **added** dan **approved**
+membukanya. Ketidaktersediaan mempunyai salah satu daripada empat sebab: tiada
+Flutter SDK pada hos, tiada aplikasi Widgetbook dalam repo, tiada kes penggunaan
+yang boleh diuji golden, atau ralat harness golden.
 
-Approving an intended change is `review_studio.approveVisual`.
+Meluluskan perubahan yang dimaksudkan ialah `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Paksi dan keputusan
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Paksi        | Digerakkan oleh                 |
+| ------------ | ------------------------------- |
+| Correctness  | Ejen penyemak (token)           |
+| Security     | Ejen penyemak (token)           |
+| Test gap     | Ejen penyemak (token)           |
+| Visual       | Deterministik (harness golden)  |
+| API contract | Deterministik (diff spec)       |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Ketiga-tiga paksi token dicatat apabila ejen ketua memanggil `finalize_review`;
+kedua-dua paksi deterministik dicatat oleh laluan pengiraan.
 
-Each axis reports one of:
+Setiap paksi melaporkan salah satu daripada:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Keadaan         | Maksud                                              |
+| --------------- | --------------------------------------------------- |
+| **Pass**        | Berjalan, tiada perkara yang menyekat ditemui       |
+| **Warn**        | Berjalan, ada kebimbangan yang tidak menyekat       |
+| **Fail**        | Berjalan, menemui masalah yang menyekat             |
+| **Partial**     | Berjalan tetapi tidak dapat diselesaikan; hasilnya tidak lengkap |
+| **Unavailable** | Tidak dapat dijalankan langsung                     |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Hanya **pass** dan **warn** membuka paksi berpintu. **Partial** dan
+**unavailable** sengaja dibezakan daripada **fail** dan kedua-duanya tidak
+membuka pintu.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Paksi-paksi itu beragregat menjadi **Ship**, **Hold** atau **Block**, dan ia
+hanya boleh menjadikan keputusan itu _lebih_ berat — ia tidak pernah
+diturunkan. Paksi berpintu yang **gagal** memaksa **Block**; paksi yang
+**partial** atau **unavailable** memaksa sekurang-kurangnya **Hold**. Jadi
+paksi yang menyekat yang tidak dapat dijalankan _menahan_ keputusan itu:
+ketiadaan bukti tidak pernah menjadikan pintu hijau.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Keputusan pada tab Semakan ialah keputusan yang diposkan oleh
+`finalize_review`.
 
-## Related guides
+## Panduan berkaitan
 
-- [Use AI-powered review](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/)
-- [Dispatch reviewer agents](/ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak/)
-- [Review and merge a PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
-- [Search code with the code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/)
+- [Gunakan semakan berkuasa AI](/ms-MY/manual-pengguna/panduan-cara/semakan-ai/)
+- [Hantar ejen penyemak](/ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak/)
+- [Semak dan cantumkan PR](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/)
+- [Cari kod dengan graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/)

@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: مستقل کرنل میں ڈیٹا دریافت کریں
+description: ایجنٹ کو Python یا JavaScript کا ایسا انٹرپریٹر دیں جو کالز کے درمیان اپنے ویری ایبلز سنبھالے رکھے، چیٹ میں چارٹ بنائے، اور سیل کے اندر سے آپ کے اپنے ٹولز کال کر سکے۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کرنل-میں-ڈیٹا-دریافت-کریں
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+یہ گائیڈ بتاتی ہے کہ ایجنٹ سے کوئی مہنگی چیز ایک بار لوڈ کروانے کے بعد اُس سے کئی سوال کیسے پوچھیں، بجائے اس کے کہ ہر سوال پر وہی لوڈنگ دہرانی پڑے۔
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+`eval` ٹول ایک **مستقل انٹرپریٹر** چلاتا ہے۔ ویری ایبلز، امپورٹس اور لوڈ شدہ ڈیٹا کالز کے درمیان برقرار رہتے ہیں۔
 
-## Why not just run a script
+## صرف اسکرپٹ چلانا کیوں کافی نہیں
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+ایک ہی بار چلنے والا `python -c` ہر سوال پر سیٹ اپ کی قیمت ادا کرواتا ہے۔ ڈیٹا فریم لوڈ کرنے میں سیکنڈز اور سو میگا بائٹس لگتے ہیں؛ اس کا چارٹ بنانے میں ملی سیکنڈز۔ جب ہر سوال کی قیمت یہی لوڈنگ ہو تو ایجنٹ ضرورت سے کم سوال پوچھتا ہے — اور ہر جواب متن کی صورت میں واپس آتا ہے جسے اسے دوبارہ پارس کرنا پڑتا ہے۔
 
-## Load once, then ask
+## ایک بار لوڈ کریں، پھر پوچھیں
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> `data/runs.csv` لوڈ کریں اور مجھے فی ایجنٹ p95 دورانیہ بتائیں۔
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+آخری ایکسپریشن ویسے ہی ظاہر ہوتا ہے جیسے نوٹ بک کرتی ہے، اس لیے `len(runs)` بغیر `print` کے قطاروں کی تعداد بتا دیتا ہے۔
 
-Then, in a **separate call**:
+پھر، ایک **الگ کال** میں:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` اب بھی لوڈ ہے۔ pandas فریم repr کے بجائے ٹیبل کی صورت میں واپس آتا ہے۔
 
-## Charts land in the chat
+## چارٹ چیٹ میں آ جاتے ہیں
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+فگر سیل کے بعد پکڑے جاتے ہیں اور تصاویر کی صورت میں واپس آتے ہیں، جنہیں ٹرانسکرپٹ رینڈر کرتا ہے۔ چارٹ آپ کو بھی دکھائی دیتا ہے اور ایجنٹ کو بھی۔
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+فگر پکڑے جانے کے بعد بند کر دیے جاتے ہیں۔ جو فگر وصول نہ کیا گیا ہو، اُسے *اگلا* سیل بھی دوبارہ بنائے گا اور دوبارہ بھیجے گا، چنانچہ پانچ سیلوں والا سیشن پہلا چارٹ پانچ بار خارج کرے گا۔
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[نہ Jupyter، نہ pip، نہ انسٹال کا کوئی قدم]
+رنر محض `python3 -u` ہے جو stdio پر لائن پروٹوکول بولتا ہے۔ یہ `display()`، MIME-بنڈل ڈسپیچ اور فگر کیپچر خود نافذ کرتا ہے، اس لیے کسی بھی Python 3 پر چلتا ہے — بشمول ایسے سینڈ باکس کے جس میں انسٹال کرنا ہی وہ چیز ہو جسے روکنے کے لیے سینڈ باکس موجود ہے۔
 :::
 
-## The idioms you would type anyway
+## وہ محاورے جو آپ ویسے بھی ٹائپ کرتے ہیں
 
-These are rewritten into plain code rather than erroring:
+یہ ایرر دینے کے بجائے سادہ کوڈ میں دوبارہ لکھ دیے جاتے ہیں:
 
-| You type    | What happens                                        |
+| آپ ٹائپ کرتے ہیں | کیا ہوتا ہے                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | pip چلاتا ہے، پھر **ماڈیول کیش صاف کرتا ہے** تاکہ اگلا `import` اسے دیکھ سکے |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | ایک پکڑا گیا سب پروسیس                             |
+| `%%bash`    | بقیہ سیل بطور شیل اسکرپٹ                            |
+| `%%timeit`  | 1000 وقت ناپے گئے رنز                               |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+`%pip` کا کیش انخلا ہی اصل چیز ہے: کسی زندہ انٹرپریٹر میں انسٹال کرنا اُس ماڈیول کے لیے کچھ نہیں کرتا جو پہلے ہی امپورٹ ہو چکا ہو، اس لیے اس کے بغیر جو ورژن آپ نے ابھی انسٹال کیا وہی چل نہیں رہا ہوتا۔
 
-## Calling your own tools from inside a cell
+## سیل کے اندر سے اپنے ٹولز کال کرنا
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` ایجنٹ کی اپنی ٹول رجسٹری میں دوبارہ داخل ہوتا ہے۔ اس کا مطلب ہے کہ ایک سیل سو فائلوں تک پھیل سکتا ہے، یا `task` کے ذریعے کام تفویض کر سکتا ہے، بغیر اس کے کہ ماڈل ہر آئٹم پر ایک ٹرن خرچ کرے۔
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[برج آپ کے گارڈریلز کو نظرانداز نہیں کرتا]
+برج کے ذریعے کی گئی کال **اُسی** ٹول رجسٹری کے خلاف حل ہوتی ہے جس کے خلاف ماڈل کی جاری کردہ کال ہوتی ہے، اس لیے `ActionClass` پالیسی، منظوری کے پرامپٹ اور ہر ریپر یکساں طور پر لاگو ہوتے ہیں۔ رجسٹری سے آگے نکل جانے والا برج بالکل ایسا سوراخ ہوتا جیسا “ایک لائن کا Python لکھ دو”۔
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+برج کے ذریعے کی گئی کال جب تک زیر التوا رہے، سیل کا **ٹائم آؤٹ معطل رکھتی ہے**۔ بجٹ غیر فعالیت ناپتا ہے، دیواری گھڑی نہیں — ایسا سیل جو سب ایجنٹس تک پھیل کر چار منٹ انتظار کرے وہ ہینگ نہیں ہوتا، اور اسے پھیلاؤ کے بیچ مار دینا پورے کرنل کی حالت ضائع کر دیتا۔
 
-## Starting over
+## نئے سرے سے شروع کرنا
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+انٹرپریٹر کو رد کر کے صاف سا نیا شروع کرتا ہے۔ جو کچھ لوڈ تھا سب ختم ہو جاتا ہے، اور یہی مقصود ہے۔
 
-## Where the kernel runs
+## کرنل کہاں چلتا ہے
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+گفتگو کا **انکلوژر** ہو تو اسی میں، ورنہ ہوسٹ پر۔
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+غیر قابلِ اعتماد ریپو پڑھنے والے ماڈل کے چلائے ہوئے مستقل انٹرپریٹر کے لیے ہی تو صرف-انکلوژر ایگزیکیوشن موجود ہے: ایک بار چلنے والی `bash` کال کم از کم ختم ہو جاتی ہے، جبکہ کرنل ایسا شیل ہے جو یاد رکھتا ہے۔
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/).
+یہ وہاں تک پہنچنے کے لیے انکلوژر **بوٹ نہیں** کرتا — وہی اصول جو رگ ٹیب کو خودکار شروع ہونے سے روکتا ہے۔ اگر آپ کرنل کو انکلوژر میں بند چاہتے ہیں تو پہلے گفتگو کا شیل کھولیں۔ دیکھیں [ایجنٹ کو ٹیسٹ کے لیے مشین دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/)۔
 
-## Limits
+## حدود
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **فی کرنل ایک وقت میں ایک سیل۔** ایک انٹرپریٹر میں دو سیل کا دوڑنا دو پروگراموں کے دو ادھورے حصے ہیں جو ایک ہی نیم اسپیس میں لپٹے ہوں۔
+- **آؤٹ پٹ محدود ہے۔** پرنٹ لوپ میں پھنسے سیل کو کانٹیکسٹ ونڈو بھرنے دینے کے بجائے کاٹ دیا جاتا ہے۔
+- **فی سیل چار تصاویر۔** پلاٹنگ لوپ ہر دہرائی پر ایک فگر خارج کر سکتا ہے، اور ہر تصویر اپنے ساتھ جانے والی درخواست میں ایک بڑی مقررہ لاگت ہے۔
+- **کرنل رن کے ساتھ مر جاتا ہے۔** گفتگو ختم ہونے کے بعد بھی ڈیٹا فریم تھامے رکھنے والا کرنل ایک رساؤ ہے۔
 
-## Related
+## متعلقہ
 
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) — what "enclosed" means here
-- [Give an agent a machine to test on](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) — opening the enclosure
-- [Built-in agent tools](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — the arguments
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/) — یہاں “بند” کا مطلب کیا ہے
+- [ایجنٹ کو ٹیسٹ کے لیے مشین دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/) — انکلوژر کھولنا
+- [بلٹ اِن ایجنٹ ٹولز](/ur-PK/ہدایت-نامہ/حوالہ/ایجنٹ-ٹولز/) — آرگیومنٹس

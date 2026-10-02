@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: Zrecenzuj pierwszy pull request
+description: Otwórz PR w warsztacie, przeczytaj diff, skomentuj, zatwierdź i scal.
 slug: pl-PL/podrecznik/samouczki/pierwszy-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## Co zbudujesz
 
-By the end of this tutorial, you will have:
+Po ukończeniu tego samouczka będziesz mieć:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Otwarty pull request w warsztacie PR Control Center
+- Przeczytany diff i zostawiony komentarz w linii
+- Wysłany werdykt recenzji
+- Scalony PR
 
-Prerequisites: [Dispatch your first agent](/pl-PL/podrecznik/samouczki/pierwszy-agent/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+Wymagania wstępne: ukończony samouczek [Wyślij pierwszego agenta](/pl-PL/podrecznik/samouczki/pierwszy-agent/) oraz jeden otwarty pull request w repozytorium zarejestrowanym w tym obszarze roboczym. Do kroków recenzji wybierz PR, którego nie otworzyłeś — przycisk **Recenzja** jest ukryty przy Twoich własnych PR-ach. Scalanie nadal działa na PR-ze, którego jesteś autorem.
 
-## Step 1: Open the pull request
+## Krok 1: Otwórz pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. W pasku bocznym kliknij **Pull requesty**
+2. Znajdź swój PR i kliknij go
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**Punkt kontrolny.** PR otwiera się jako warsztat z kartami — Przegląd, Diff, Kontrola wersji, Czat, Akcje — skupiony na karcie **Przegląd**: tytuł i akcje, opis wraz z osią czasu aktywności oraz panel boczny ze statusem, recenzentami, osobami przypisanymi, kontrolami i zmienionymi plikami. Kliknięcie pliku w tym miejscu przenosi do niego na karcie Diff. Karta **Recenzja PR** nie jest otwarta, dopóki ktoś nie poprosi o recenzję AI.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[Pusta kolejka z komunikatem „połącz GitHub”]
+Ten stan oznacza, że to _serwer_ nie ma tokenu GitHub — Twój klient nigdy go nie przechowuje. Ustaw go w **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**, a następnie odśwież listę.
 :::
 
-## Step 2: Read the diff
+## Krok 2: Przeczytaj diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+Otwórz kartę **Diff**. Po lewej znajduje się zwijane drzewo plików, a pasek nad diffem zawiera selektor zakresu commitów — pozwala zawęzić diff do jednego commita lub ich zakresu — a także liczbę plików oraz bieżącą liczbę dodanych i usuniętych linii.
 
-The settings button in the diff toolbar controls how it renders:
+Przycisk ustawień na pasku narzędzi diffu steruje sposobem jego renderowania:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- Widok **podzielony** lub **ujednolicony**
+- **Zawijaj wiersze** albo przewijaj długie wiersze
+- **Ligatury czcionki kodu**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe/).
+Oznacz plik jako wyświetlony, aby śledzić postęp w dużym diffie. Nawigacja klawiaturą znajduje się w [Skrótach klawiszowych](/pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe/).
 
-## Step 3: Leave an inline comment
+## Krok 3: Zostaw komentarz w linii
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. Najedź kursorem na wiersz w diffie — na marginesie pojawia się mały przycisk `+`
+2. Kliknij go, aby skomentować ten wiersz, albo przeciągnij go najpierw w pionie, aby zaznaczyć zakres
+3. Wpisz swoją opinię. Edytor oferuje dwa sposoby wysłania:
+   - **Rozpocznij recenzję** (albo **Dodaj do recenzji**, jeśli recenzja jest już w toku) umieszcza komentarz w kolejce. Wątek pokazuje **Recenzja w toku**, dopóki nie wyślesz werdyktu w kroku 4.
+   - **Dodaj pojedynczy komentarz** publikuje go na GitHubie od razu. Wątek pokazuje **Publikowanie…**, potem **Zsynchronizowano**, i proponuje ponowną próbę, jeśli publikacja się nie powiedzie.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+W tym samouczku użyj **Rozpocznij recenzję**, aby komentarz wyszedł razem z werdyktem.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[Zakolejkowany komentarz nie jest jeszcze w GitHubie]
+**Rozpocznij recenzję** i **Dodaj do recenzji** przetrzymują komentarz lokalnie, dopóki nie wyślesz werdyktu. Tylko **Dodaj pojedynczy komentarz** publikuje natychmiast. _Treść_ recenzji, którą napiszesz w kroku 4, to osobna wersja robocza.
 :::
 
-## Step 4: Submit a review
+## Krok 4: Wyślij recenzję
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. Kliknij **Recenzja** w wierszu akcji na karcie Przegląd — ten sam przycisk znajduje się też na pasku narzędzi karty Diff. Jest ukryty przy PR-ach, których jesteś autorem, oraz przy PR-ze zamkniętym lub scalonym.
+2. Napisz podsumowanie w edytorze. Jest automatycznie zapisywane jako wersja robocza, więc możesz zamknąć nakładkę i wrócić.
+3. Wybierz werdykt:
+   - **Zażądaj zmian**
+   - **Komentarz**
+   - **Zatwierdź**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+Werdykt to przycisk. Po **Zatwierdź** lub **Zażądaj zmian** przycisk zmienia swoją etykietę na **Zatwierdzono** lub **Zażądane zmiany**. Werdykt **Komentarz** pozostawia etykietę **Recenzja**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**Punkt kontrolny.** Przycisk głosi „Zatwierdzono” lub „Zażądane zmiany”, jeśli wybrałeś jedną z tych dwóch opcji.
 
-## Step 5: Merge
+## Krok 5: Scal
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+Przycisk **Scal** jest obecny zawsze, gdy GitHub uznaje PR za możliwy do scalenia — nie jest uzależniony od Twojego własnego zatwierdzenia. Jego kolor informuje o gotowości, a nie o uprawnieniach: podstawowy, gdy wymagane zatwierdzenia i kontrole są zielone, drugorzędny, gdy kontrola wciąż trwa, destrukcyjny, gdy poproszony recenzent nie zatwierdził lub kontrola nie przechodzi.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. Kliknij **Scal**
+2. Wybierz metodę: **Scal ze squashowaniem**, **Utwórz commit scalający** lub **Rebase i scal**
+3. W przypadku dwóch pierwszych edytuj wstępnie wypełniony tytuł i opis commita
+4. Potwierdź
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+Wszelkie nierozwiązane problemy — „Kontrole nie przechodzą”, „Oczekują recenzje” — są wymienione w panelu przed potwierdzeniem.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[Scalanie jest nieodwracalne]
+Scalanie wypycha commity do GitHuba. Nigdy nie trafia do stosu cofania Control Center i nie można go cofnąć z tego miejsca.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe/) for what else listens.
+Po scaleniu zostaje wywołane zdarzenie domenowe `PrMerged`; konsumują je analityka i powiadomienia. Zobacz [Zdarzenia domenowe](/pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe/), aby dowiedzieć się, co jeszcze na nie nasłuchuje.
 
-## Reviewing with AI
+## Recenzja z AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center może przypisać potok recenzentów do otwartego PR-a, ale tylko wtedy, gdy o to poprosisz: szablon `pr_review` ma wyzwalacz ręczny i nic więcej.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. Otwórz menu przepełnienia w wierszu akcji na karcie Przegląd i wybierz **Zapytaj AI**. Control Center uruchamia przebieg i otwiera kartę **Recenzja PR**, dzięki czemu możesz obserwować pracę specjalistów.
+2. Agenci-recenzenci zapisują swoje ustalenia jako węzły recenzji w przestrzeni PR-a; ostatni krok konsoliduje je w jeden raport.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/pl-PL/podrecznik/poradniki/recenzja-ai/).
+Potok celowo nie publikuje w GitHubie — kończy się po skonsolidowaniu. Publikacja to osobny krok, który wykonujesz samodzielnie, przyciskiem **Opublikuj na GitHubie** na karcie **Recenzja PR**. Zobacz [Używaj recenzji opartej na AI](/pl-PL/podrecznik/poradniki/recenzja-ai/).
 
-## Recap
+## Podsumowanie
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+Otworzyłeś PR w warsztacie, przeczytałeś diff z podświetlaniem składni, zostawiłeś komentarz w linii, wysłałeś werdykt i scaliłeś — nie wychodząc z aplikacji.
 
-**Next:** [Build your first pipeline](/pl-PL/podrecznik/samouczki/pierwszy-potok/) to automate multi-step workflows.
+**Dalej:** [Zbuduj pierwszy potok](/pl-PL/podrecznik/samouczki/pierwszy-potok/), aby zautomatyzować wieloetapowe przepływy pracy.

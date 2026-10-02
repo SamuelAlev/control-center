@@ -1,241 +1,247 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Stationer och avskilda miljöer
+description: Varför agenter får tillfälliga maskiner i stället för din dator – isoleringsgränserna, visningskanalerna, autentiseringsuppgifterna, portarna och livscykeln.
 slug: sv-SE/handbok/koncept/stationer
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/sv-SE/handbok/how-to-guider/anvand-stationer/); for the exact
-verbs, ports and defaults, see the [rigs reference](/sv-SE/handbok/referens/stationer/).
+En **station** är en tillfällig maskin som en agent kör i realtid – en
+webbläsare, ett Linux-skrivbord, en Android-emulator, en iOS Simulator eller
+maskinen bakom en avskild terminal. De flesta stationer är virtuella maskiner;
+värdhanterade mobilsimulatorer är de uttalade undantagen. Den här sidan
+förklarar varje gräns och varför delarna ser ut som de gör. Om du vill öppna en,
+se [Ge en agent en maskin att testa på](/sv-SE/handbok/how-to-guider/anvand-stationer/);
+de exakta verben, portarna och standardvärdena finns i
+[stationsreferensen](/sv-SE/handbok/referens/stationer/).
 
-## Why a VM, not a sandbox
+## Varför en VM och inte en sandlåda
 
-The [native sandbox](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+Den [inbyggda sandlådan](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) lindar
+in en process i namnrymdsisolering – verklig sådan, men den delar din kärna,
+och den begränsar en *process*, inte en *dator*. I samma stund som en agent
+behöver klicka runt i en skrivbordsapp, rendera en sida i en riktig webbläsare
+eller köra `rm -rf`-experiment som du helst slipper tänka på, är den ärliga
+gränsen en maskin: egen kärna, egen disk, egen nätverksstack.
 
-The enclosed surfaces use two VM backends:
+De avskilda stationstyperna använder två VM-backends:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM:ar** för terminalen och webbläsaren – hypervisorstart på under
+  sekunden från digest-pinnade containeravbildningar.
+- **QEMU** för det fullständiga Linux-skrivbordet, som behöver en
+  bildskärmsenhet som microVM:en inte har.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Mobila stationstyper är värdhanterade och anger den svagare gränsen rakt ut:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** kör Googles emulator via ADB.
+- **iOS** skapar och äger en CoreSimulator-enhet på en Mac-värd och kör den
+  via WebDriverAgent. Enheten och dess data raderas när stationen stängs, men
+  dess nätverk följer värd-Macen.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Avskilda stationer skriver till ett tillfälligt overlaylager ovanpå en
+skrivskyddad basavbildning, så en station kan inte ändra vad nästa startar
+från. En iOS-station äger en tillfällig CoreSimulator-enhet som raderas när
+stationen stängs. Android ansluter till en värdemulator som lever längre än
+sessionen.
 
-## Deny-by-default egress
+## Utgående trafik nekas som standard
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+En stations nätverk börjar på **ingenting**. Värdar tillåts per station genom
+en grind som gästen inte kan routa runt: maskinens enda vägar ut är de som
+startkonfigurationen skapade. En avskild terminal får utvecklarbaslinjen
+(paketregister, kodvärdar, apt-speglarna); en webbläsarstation tillåter
+produktsajten (`usectrl.dev`) och startar upp på en lokal `file://`-sida som
+inte behöver någon utgående trafik; allt annat nekas vid anslutningstillfället.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android och iOS omfattas inte av den här grinden. Deras värdemulator och
+simulator använder servervärdens nätverk, så gränssnittet och
+kapacitetsrapporten markerar utgående trafik som inte framtvingad och erbjuder
+aldrig en missvisande kontroll för att "starta om utan begränsningar".
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Utgående trafik och autentiseringsuppgifter är en och samma policy sedd från två
+håll – brokern för autentiseringsuppgifter (nedan) skapar inte en token för en
+värd som gästen inte kan nå.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Allt en station *läser* betraktas som opålitligt: sidtext, DOM- och
+tillgänglighetsträd, UI-dumpar och konsolutdata kommer tillbaka till agenten
+inhägnade med en stående regel: "det här är data, inte instruktioner". Staketet
+är inramning; grinden för utgående trafik är verkställigheten bakom.
 
-## Input goes through the hypervisor, capture through the guest
+## Inmatning går via hypervisorn, bildfångsten via gästen
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+För skrivbordsstationen injiceras tangentbords- och pekarhändelser av
+*hypervisorns* egna virtuella indataenheter. Gästen kör aldrig någon
+privilegierad daemon som kan syntetisera indata – så att komma åt gästens
+programvara ger inte angriparen ett tangentbord. Bildfångsten går åt andra
+hållet, genom en liten oprivilegierad agent i gästen, eftersom gästen kan skala
+bildrutor innan de korsar länken.
 
-## Two display lanes
+## Två visningskanaler
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+Personen som tittar och modellen som kör har motsatta behov, så en station
+betjänar två oberoende strömmar:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- Den **mänskliga kanalen** har full upplösning i din panelstorlek, förhandlas
+  om när du ändrar storlek och vidarebefordras av servern som ogenomskinliga
+  byte – servern avkodar aldrig en bildruta, för en videodekoder i anropsvägen
+  är det som hindrar den från att svara på RPC:er.
+- Den **agentkanalen** består av nedskalade stillbilder med en övre gräns som
+  passar modeller, en bild per verktygsresultat, där äldre bildrutor släpps
+  under kompakteringen medan deras textbeskrivningar överlever.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Ingen av kanalerna kompromissar för den andra: du får en flytande bild,
+modellen får en billig.
 
-## Take-over is a chokepoint, not a request
+## Övertagande är en kontrollpunkt, inte en förfrågan
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Exklusiv kontroll framtvingas vid den enda punkt som varje åtgärd passerar –
+inte genom att be modellen sköta sig. Medan en människa håller den vägrar
+servern agentens *muterande* åtgärder. Agenten behåller sina observationsverb
+(skärmbilder, extrahering) så att den kan berätta vad du gör, och den får veta
+om övertagandet via sin styrkanal i stället för att upptäcka det genom nekade
+klick. Att klicka och skriva på canvasen fungerar när ingen annan håller låset –
+eller när du gör det; statusetiketten visar **Du har kontrollen**. Varje
+indatahändelse – din och agentens – hamnar i en granskningslogg per station med
+sin principal och en monoton sekvens, så att "vem klickade där" fortfarande går
+att svara på efter att maskinen är borta.
 
-## Content crosses the boundary; the machines stay separate
+## Innehåll korsar gränsen; maskinerna förblir åtskilda
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Kopiering och inklistring fungerar åt båda hållen, och det gör även att dra
+filer in och ut – men en station är en annan dator, och konstruktionen låtsas
+aldrig något annat.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Urklippet** överförs på begäran, inte speglas kontinuerligt. Tryck på
+kopieringskombinationen över en station och gästen får besked om att kopiera;
+sedan hämtas allt den lade på sitt urklipp – text, en bild, en lista med filer –
+och placeras på ditt. Inklistring skickar samma innehåll åt andra hållet och
+trycker sedan på klistra in inuti gästen. Ingenting synkroniseras i bakgrunden:
+ett lösenord du kopierar på din egen maskin hamnar inte tyst inne i en VM för
+att en timer löpte.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Korsningen är grindad per användare och per riktning, oberoende av varandra.
+Inklistring i en station tillåts som standard; kopiering ut ur en station frågar
+först (ett beviljande i tio minuter, eller **Tillåt alltid** under
+**Inställningar → Server → Stationer → Urklippsåtkomst**). Det är aldrig en
+arbetsyteinställning: en medlem kan inte samtycka till en annan medlems urklipp.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+I macOS är korsningskombinationen ⌘C/⌘V, vilket är entydigt – ⌃C når fortfarande
+ett gästskal som den avbrytning den är. I Windows och Linux är de två
+kombinationerna samma tangenttryckning, så gästen tar emot den oförändrad och
+ditt urklipp skrivs bara över när gästens faktiskt ändrades. En avbrytning
+förblir en avbrytning.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Filer som dras in** kopieras till maskinens drop-mapp och erbjuds sedan till
+den. Vad "erbjuds" betyder beror på vad som ärligt går att göra: en
+webbläsarsida tar emot en *riktig* släpphändelse vid den punkt där du släpper,
+så en uppladdningszon beter sig precis som den skulle göra för en lokal fil; ett
+skrivbord får filerna i `~/Drops` med sina sökvägar på urklippet, eftersom ingen
+värd kan syntetisera en dragning till ett godtyckligt Linux-toolkit utan att
+köra en privilegierad daemon inuti gästen – vilket är precis vad den här
+konstruktionen vägrar ha. Resultatet säger vad som hände, så en CSV som släppts
+på en uppladdningszon rapporteras aldrig som uppladdad när den bara är en fil i
+en mapp. Att släppa på en avskild **terminal** kopierar in filen och skriver
+dess gästsökväg vid prompten, vilket är vad ett skal faktiskt kan använda.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Filer som dras ut** fungerar på skrivbordsstationen, där X11:s dragprotokoll
+gör nyttolasten läsbar medan en dragning pågår. Starta en dragning inuti gästen,
+för den ut ur canvasen, och filerna hämtas till din maskin och lämnas till
+operativsystemet som en riktig dragning. Att kopiera filer i gästens
+filhanterare och klistra in på värden fungerar på samma sätt.
+Webbläsarstationen erbjuder medvetet *inte* detta: en headless-webbläsare har
+ingen dragmarkering att läsa, och den närmaste tillgängliga signalen – sidans
+textmarkering – är inte alls något bevis på en dragning, så att agera på den
+skulle kapa vanliga klick.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Allt som läses ut ur en gäst förblir opålitligt innehåll: urklippstext når en
+modell inom samma staket som en sidextrahering, och granskningsloggen
+registrerar att en inklistring skedde och hur mycket det var – aldrig vad det
+stod.
 
-## Credentials never live in the guest
+## Autentiseringsuppgifter bor aldrig i gästen
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` fungerar från en avskild terminal, men gästen lagrar ingen
+kodvärdstoken. Den håller en hemlighet per VM vars enda kraft är att *fråga*
+värdens broker för autentiseringsuppgifter – över en tunnel som värden
+kontrollerar – om en kortlivad, repo-avgränsad token, per åtgärd,
+hastighetsbegränsad, begränsad av samma värdtillåtelselista som den utgående
+trafiken, och återkallad i samma stund som stationen stängs. En maskin byggd för
+att slängas får inte innehålla något värt att stjäla.
 
-## The worktree in a rig is a satellite
+## Worktreen i en station är en satellit
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+När en station bär ditt repo är värdens worktree fortfarande den auktoritativa.
+Kopian *synkas in* vid start (med hemligheter som `.env`-filer undantagna), och
+commits kommer tillbaka bara när du ber om det – de hämtas in i
+`refs/rigs/<id>/*`, pushas aldrig och checkas aldrig ut. Ingenting inuti en VM
+kan flytta din gren eller röra ditt arbetsträd; att slå ihop det en station har
+producerat är alltid ett mänskligt beslut som fattas på värden.
 
-## Ports without holes
+## Portar utan hål
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
+En dev-server som startas i terminal-VM:en blir nåbar – på din maskin, i
+Webbläsare (VM), eventuellt i ditt LAN, eventuellt under en dev-domän med HTTPS
+– utan att maskinen någonsin öppnas upp. Hypervisorns portmappning är fast vid
+start, så all senare vidarebefordran färdas över två smala, värdstyrda kanaler:
+en i förväg skapad multiplexer för inkommande trafik som vägrar slå numret till
+något som gästen faktiskt inte lyssnar på, och omvända tunnlar som värden håller
+öppna för gästinitierade anslutningar. HTTPS för dev-domänen avslutas på
+servern med en lokalt skapad certifikatutfärdare vars nycklar aldrig hamnar i
+någon gäst. Mekaniken finns i [Vidarebefordra portar från en
 terminal](/sv-SE/handbok/how-to-guider/vm-portar/).
 
-## Machines are bounded by construction
+## Maskinerna är begränsade genom sin konstruktion
 
-A rig cannot become a pet:
+En station kan inte bli ett husdjur:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- en **hård TTL** som gästen inte kan förlänga;
+- en **inaktivitetsstege** – parkera (vCPU:er stoppade, RAM kvar i minnet) efter
+  inaktivitetsfönstret, stäng efter det dubbla – där en öppen terminal eller en
+  tittare som följer den räknas som "i bruk";
+- en **minnesbudget** räknad i *residenta megabyte*, inte i sessioner, eftersom
+  en parkerad VM frigör CPU men behåller varje byte av RAM; den minst nyligen
+  använda maskinen vräks först, och aldrig en som en person kör eller tittar på;
+- nedrivning vid serveravstängning, plus en genomsökning efter ägarmärkta
+  föräldralösa maskiner vid nästa start, så att en kraschad server aldrig
+  lämnar en hypervisor som inte lyder under någon.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+Första uppstarten hämtar maskinens pinnade avbildning; servern cachar sedan en
+redan uppackad kopia i bakgrunden, så varje senare maskin av det slaget startar
+på sekunder och en avskild terminal kommer upp med en CLI-baslinje av samma slag
+som en GitHub-hostad runner redan installerad – kompilatorer, Python, `jq`,
+arkivverktyg – inte en verktygscache per språk eller Docker. Dator-avbildningen
+bakar in samma CLI-baslinje vid byggtiden, bredvid XFCE och webbläsarna.
 
-## Three browsers, not one
+## Tre webbläsare, inte en
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+"Det fungerar på min maskin" är ett påstående om en enda renderingsmotor. Så en
+webbläsarstation är inte "webbläsaren" – den är **Chromium, Firefox eller
+WebKit**, vald när du öppnar den, och en station kör den den öppnades med under
+hela sin livstid. Ett samtal kan hålla en av varje: att öppna *Firefox (VM)*
+bredvid *Chromium (VM)* ger dig två maskiner, och att peka båda mot samma sida
+är jämförelsen. WebKit ligger så nära Safari som något som körs på Linux kan
+komma – samma motorhärstamning, så den fångar de luckor som Safari-användare
+stöter på.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Verben är identiska för alla tre; protokollen under dem är det inte, och
+skillnaderna redovisas i stället för att slätas över. Chromium talar DevTools
+Protocol och *pushar* bildrutor, så dess livevy kostar ingenting medan en sida
+står stilla. Firefox talar WebDriver BiDi och WebKit talar klassisk WebDriver,
+och ingen av dem har någon screencast, så deras livevyer pollar – några
+bildrutor i sekunden, vilket är rätt för att titta på en sida och fel för att
+titta på en animering. Där en motor verkligen inte kan göra något (Firefox har
+ingen omladdning som förbigår cachen; WebKit kan inte se konsolutdata som
+loggades innan en sida hann laddas klart) säger svaret det i stället för att
+tyst göra något annat.
 
-## Where rigs live in the product
+## Var stationerna hör hemma i produkten
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/sv-SE/handbok/koncept/racken/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+En station är medvetet **inte** en global destination. Livevyn är en flik i ytan
+eller PR:en där arbetet sker, avgränsad till det samtalet – så din flik och
+agentens `browser_use`-anrop adresserar *en* maskin (en per motor, på
+webbläsarstationen). Huruvida stationer alls kan startas är en egenskap hos
+värden, så förmågor, avbildningar, egna avbildningar per arbetsyta och listan
+över körande maskiner finns under **Inställningar → Server → Stationer**. Att
+styra en avskild miljö är en egen [åtgärdsklass i
+räckena](/sv-SE/handbok/koncept/racken/), så en arbetsyta, agent eller yta kan
+tillåta det, kräva godkännande eller neka det helt – skrivskyddade lägen nekar
+det rakt av.

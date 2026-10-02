@@ -2,6 +2,7 @@
 title: Multiplayer — identity, membership and presence
 description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
 slug: en-GB/manual/concepts/multiplayer
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
 Control Center works for a single operator, but the model underneath it is
@@ -37,7 +38,7 @@ containment:
 
 Two separate credentials answer two separate questions. The **pairing key**
 (see [Remote control and mobile](/en-GB/manual/concepts/remote-control/))
-authenticates a _device_ to the server. **Membership** authorizes that
+authenticates a _device_ to the server. **Membership** authorises that
 device's user to act inside a _workspace_. A paired device whose user holds
 no membership in a workspace can neither read nor mutate it.
 
@@ -106,7 +107,7 @@ Two properties keep the lane trustworthy:
   the invisible toggle) removes the entry immediately.
 - **The roster is server-hubbed.** Peers never exchange presence directly,
   so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
+  have no client, so the server _synthesises_ their entries from live run
   state — thinking, running, blocked on an approval gate, done — with a
   single representative run deciding an agent's state and locus so
   concurrent runs don't make the roster flap.

@@ -1,31 +1,32 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Spusťte headless server
+description: Spusť headless binárku cc_server nebo její obraz pro Docker, spáruj s ní klienta a nastav ji přes celou plochu příznaků CLI a proměnných prostředí.
 dateModified: 2026-09-10
 slug: cs-CZ/prirucka/navody/spusteni-headless-serveru
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Spusť `cc_server` na stroji, který zůstane zapnutý, a připoj se k němu z počítače,
+prohlížeče nebo telefonu. Server je nativní binárka v čistém Dartu, bez enginu
+Flutteru, takže běží bez rozhraní na macOS, Linuxu i Windows. Vlastní databázi,
+spouští agenty a dělá každé volání externího API. Klienti jen vykreslují.
 
-## Run in Docker (prebuilt images)
+## Spuštění v Dockeru (předpřipravené obrazy)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Každé vydání publikuje sestavu čtyř obrazů na GHCR pro vlastní hosting: backend, dva
+statické tenké klienty a volitelné relé párování, plus samostatný obraz
+`cc-server-demo` pro veřejného hostitele dema. Instalace s vlastním hostingem
+nepotřebuje checkout zdrojů. Připni tag verze
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`), nebo jeď na `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
+| Obraz                                             | Co to je                                     | Publikuje        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | Backend: databáze, agenti, MCP, webhooky     | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Webový klient (statický nginx)               | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA telefonního společníka (statický nginx)  | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Relé párování WebRTC (volitelné)             | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+Celá sestava jako compose soubor:
 
 ```yaml
 services:
@@ -51,91 +52,91 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Než cokoli z toho vystavíš mimo loopback, vyplatí se vědět:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Obraz `cc-server` vozí `CC_SERVER_INSECURE=1`** (musí se vázat na `0.0.0.0`,
+  aby přijímal provoz z publikovaných portů), což je bezpečné jen za reverzní
+  proxy, která ukončuje TLS (Caddy, Traefik, nginx nebo Cloudflare Tunnel),
+  v důvěryhodné síti. Když chceš TLS ukončit přímo v procesu, připoj certifikát
+  a nastav `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (a pak zruš
+  `CC_SERVER_INSECURE`). Všechno přepíšeš přes `docker run -e …` nebo blok
+  `environment:` v compose.
+- **`/data` je jediný stav.** Databáze SQLite, tajemství spárovaných zařízení,
+  stažené modely i zvuk schůzek žijí ve svazku. Zálohuj ho a kontejner je na
+  odpis.
+- **Klienta spáruj zevnitř obrazu** ještě před prvním připojením, ekvivalent
+  kontejneru ke [kroku 3](#krok-3-spáruj-klienta-před-prvním-startem):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Oba klientské obrazy jsou statičtí hostitelé nginx.** Za běhu není co
+  nastavovat. Formulář připojení každého klienta bere URL serveru, ID zařízení
+  a párovací klíč. Signalizační relé stejně potřebuje jen svůj port
+  (`SIGNALING_HOST` / `SIGNALING_PORT` se dají přepsat). Je bezstavové, nedrží
+  žádná tajemství a je to **záloha**: telefon použije loopback, LAN, tailnet
+  nebo přímou cestu `wss://`, když je některá dosažitelná, a na relé spadne,
+  až když žádná není. Přeskoč ho, když klienti na server dosáhnou vždy přímo.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Zbytek návodu sestavuje server ze zdrojů. Příznaky a chování, které popisuje,
+jsou ty samé, které do obrazu přivádějí proměnné prostředí.
 
-## Prerequisites
+## Předpoklady
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). Tohle repo si SDK připíná přes [fvm](https://fvm.app), takže před každý příkaz dej `fvm`.
+- Checkout tohoto repozitáře.
+- Nativní toolchain, který potřebuje přípravný skript: Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` a překladač C++. Každý skript sestavení pojmenuje, co nenašel, a jak to nainstalovat.
+- Dosažitelný hostitel: loopback pro místní použití, nebo adresa v LAN či veřejná adresa s TLS pro vzdálené klienty.
 
-## Step 1: Stage the native libraries
+## Krok 1: Připrav nativní knihovny
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Nativní knihovny jsou **povinné**. Zhoršený režim neexistuje. Sestav je z kořene
+repozitáře dřív než cokoli jiného:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Sestaví se `rift`, `fff`, tree-sitter i s gramatikami, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` a nativní SAML do
+`build/natives/`. Build hook `cc_server`
+znovu vloží do balíku, co je tam připravené, takže přeskočení tohohle kroku
+buď sestavení rovnou shodí, nebo s únikovou cestou níže vyrobí binárku, jejíž
+preflight při startu odmítne naběhnout a pojmenuje chybějící knihovnu.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Úniková cesta jen pro kompilaci]
+Prázdný soubor `.cc_natives_allow_missing` v kořeni repozitáře sníží selhání
+sestavení kvůli chybějícím nativním knihovnám na varování. Je na kontrolu
+syntaxe čerstvého klonu. Server sestavený takhle nenaběhne. Musí to být
+**soubor**: spouštěč build hooku nepředává prostředí volajícího, takže
+proměnná prostředí se ignoruje.
 :::
 
-## Step 2: Build the binary
+## Krok 2: Sestav binárku
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
+Balík veze `libsqlite3` a připravené nativní knihovny vedle binárky. Systémové
+SQLite ani engine Flutteru nepotřebuje. Spustitelný soubor skončí v
 `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Krok 3: Spáruj klienta před prvním startem
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Čerstvý datový adresář nemá spárované zařízení ani předem sdílený klíč, takže
+výzvu na párovací klíč klient ještě neuspokojí. Vystav ho podpříkazem `pair`.
+Zapíše `global.db` a `secrets.json` přímo. Server, který ten datový adresář už
+obsluhuje, nové zařízení vezme bez restartu:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Vypíše tři hodnoty, které vložíš do formuláře připojení klienta:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +145,46 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Užitečné příznaky: `--device` (výchozí `web-client`; id zároveň volí vrstvu
+zařízení, tedy `desktop`, `ios`, `android`, a cokoli jiného je webový klient),
+`--label` (výchozí je název platformy plus hostname tohohle stroje), `--host`
+(hostitel, který se vypíše do URL, protože loopback z jiného stroje není
+dosažitelný) a `--client-url`. Opakované `pair` tomu zařízení otočí klíč a
+shodí jeho živé relace. Párování pracovní prostor nikdy nezaloží: onboarding
+připojujícího se klienta ten první pojmenuje a vytvoří.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+S `--client-url` navíc vypíše QR, které se dá naskenovat z terminálu a otevře
+webového klienta už vyplněného:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/).
+:::caution[Tohle QR není QR telefonu]
+`--client-url` skládá odkaz pro **webového klienta**: URL serveru, ID zařízení
+a klíč ve fragmentu URL. Telefonní aplikace **Remote** čeká jiný payload
+(úplný deskriptor spojení serveru plus expiraci), vystavený z
+**Nastavení → Vy → Vaše zařízení** v běžícím klientovi. Nejdou zaměnit. Viz
+[Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+Pověření vystavené přes `cc_server pair` **neexpiruje**. Pověření vystavené
+v aplikaci vyprší vždy po 30 dnech. Zařízení vystavené z CLI odvolej v
+**Nastavení → Vy → Vaše zařízení**, až ho nebudeš potřebovat.
 
-## Step 4: Start the server
+## Krok 4: Spusť server
 
-On loopback — the default and all you need for a client on the same machine:
+Na loopbacku, což je výchozí hodnota a všechno, co potřebuješ pro klienta na
+tom samém stroji:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Aby na něj dosáhl jiný stroj, navaž každé rozhraní. Vazba mimo loopback bez TLS
+se **při startu odmítne** (`Refusing to bind non-loopback address …
+without TLS`), takže dej certifikát:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +192,42 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Nebo ukonči TLS v reverzní proxy na důvěryhodné privátní síti a za ní se přihlas
+k nešifrované vazbě:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` se ignoruje, když jsou nastavené `--tls-cert` i `--tls-key`. TLS
+vždy vyhraje. Server nešifrovaný stav inzeruje jako `insecure: true` v
+`GET /healthz` a klienti takové spojení označí jako nezabezpečené.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Server běží do `SIGINT`/`SIGTERM` a pak se čistě vypne.
 
-## Step 5: Connect a client
+## Krok 5: Připoj klienta
 
-Point a client at the server URL and pairing key from step 3:
+Namiř klienta na URL serveru a párovací klíč z kroku 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/).
+- **Aplikace pro počítač**: na obrazovce prvního spuštění (**Jak má Control Center běžet?**) vyplň pole připojení místo **Spustit v této aplikaci**, nebo server přidej později v **Nastavení → Server → Připojení a stav**. Viz [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/).
+- **Webový klient**: otevři [app.usectrl.dev](https://app.usectrl.dev) (nebo vlastní kopii webového sestavení) a zadej URL serveru, ID zařízení a párovací klíč.
+- **Telefon**: aplikaci **Remote** spáruj z běžícího klienta. Viz [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server neservíruje webový balík]
+Samostatný `cc_server` nikdy nepřipojí webový kořen, takže `GET /` vrátí 404.
+Webový klient se hostuje zvlášť: použij `app.usectrl.dev`, nebo webové sestavení
+hostuj sám na libovolném statickém hostiteli HTTPS (obraz `cc-webapp` výše je
+přesně tohle). Origin prohlížeče jiný než loopback musí být v
+`--allowed-origins`, jinak se upgrade WebSocketu na `/rpc` odmítne. Výchozí
+seznam je `https://app.usectrl.dev` a `localhost` / `127.0.0.1` jsou povolené
+vždy.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Krok 6: Připoj Google Calendar (volitelné)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Kalendář pracovního prostoru bez připojeného rozhraní synchronizuješ tokem kódu
+zařízení:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +235,65 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
+Vypíše kód a URL ke schválení na jiném zařízení, refresh token uloží na serveru
+a skončí. Sestavení ze zdrojů žádného klienta Google neveze, takže proměnné
+prostředí s id a secretem jsou povinné. Příznak `--google-client-id` neexistuje.
+Viz [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/).
 
-## Configuration
+## Konfigurace
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
+Příznaky výše stačí na první nastavení. Celá plocha, 23 dvojic příznaku a
+proměnné prostředí, čtyři podpříkazy a rozložení datového adresáře, je v
+[CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Neznámé příznaky se tiše ignorují]
+Parser argumentů je ruční a přeskočí všechno, co nezná, takže překlep
+(`--tls-key-file`, `--bindany`) nevyvolá chybu. Server prostě naběhne s výchozí
+hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při startu.
 :::
 
-The four you are most likely to need:
+Čtyři, které budeš potřebovat nejspíš:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Příznak        | Výchozí                              | Význam                                                                                           |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | adresář dat aplikace pro uživatele podle OS | Databáze, tajemství, modely a mezipaměť médií                                              |
+| `--port`       | `9030`                               | TCP port (`0` = dočasný)                                                                         |
+| `--bind`       | `loopback`                           | `loopback`, nebo `any` pro každé rozhraní (chce TLS nebo `--insecure`)                          |
+| `--public-url` | odvozená z vazby                     | RPC URL inzerovaná spárovaným klientům. **Za proxy, NAT nebo tunelem ji nastav výslovně**       |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Výchozí datový adresář je `~/Library/Application Support/control-center` na
+macOS, `%APPDATA%\control-center` na Windows a `$XDG_DATA_HOME/control-center`
+(jinak `~/.local/share/control-center`) jinde. `.cc_server` relativní k cwd se
+použije jen tehdy, když se nevyřeší domovský adresář ani adresář dat aplikace.
 
-## What the server serves
+## Co server obsluhuje
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` je celá plocha produktu, ne její výsek: datová cesta repo-RPC a
+odběry, endpoint nástrojů MCP na `POST /mcp` a `GET /sse` na tom samém portu,
+příchozí webhooky, proxy médií a písem, callbacky jednotného přihlášení,
+protokol zápůjčky flotily, stahování RSS na straně serveru v třicetiminutovém
+rytmu a vektorové hledání (rozšíření `sqlite_vector` se registruje jako
+automatické rozšíření pro celý proces a tam, kde není k dispozici, se zhorší
+jen na fulltextové hledání).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Dispečer je **bezstavový**: vazba pracovního prostoru na relaci neexistuje.
+Každé volání v rozsahu pracovního prostoru veze vlastní `workspace_id` a přístup
+rozhoduje členství volajícího v pracovním prostoru a jeho role, ne držení
+párovacího klíče.
 
-Two things to know before you expose the port beyond loopback:
+Než port vystavíš mimo loopback, platí dvě věci:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP mimo hostitele selhává do zamítnutí.** Plocha MCP bez tokenu odpovídá jen na loopback. Vazba `any` ji nerozšíří. Požadavek mimo hostitele se odmítne hláškou „MCP requires a bearer token to answer non-loopback clients“, dokud token nenastavíš (`mcp.setToken`, nebo **Nastavení → Server → Servery MCP**).
+- **`GET /healthz` je schválně bez ověření**, s CORS na všechny originy, a publikuje id serveru, název, otisk identity a verzi sestavení. Klienti otisk potřebují, aby si server připnuli, takže je to záměr. Znamená to ale, že každý dosažitelný `cc_server` tolik prozradí komukoli, kdo se zeptá.
 
-## Related guides
+## Související návody
 
-- [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/)
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/)
-- [Run a fleet worker](/cs-CZ/prirucka/navody/spusteni-workeru-flotily/)
-- [Connect a Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
+- [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/)
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/)
+- [Spusťte worker flotily](/cs-CZ/prirucka/navody/spusteni-workeru-flotily/)
+- [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
 
-## Related concepts
+## Související koncepty
 
-- [Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/)
-- [Remote control and mobile](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)
+- [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/)
+- [Vzdálené ovládání a mobil](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)

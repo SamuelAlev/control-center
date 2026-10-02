@@ -1,207 +1,206 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: ควบคุมระยะไกลและมือถือ
+description: โทรศัพท์เข้าถึงเซิร์ฟเวอร์ของคุณผ่านรีเลย์แบบมีตัวกลางที่ปิดผนึกแบบต้นทางถึงปลายทาง ไม่ใช่ลิงก์แบบเพียร์ทูเพียร์ และโมเดลการเข้าถึงแบบเป็นชั้นที่จำกัดการเข้าถึงนั้นให้แคบ
 slug: th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center เป็นแอปเดสก์ท็อป แต่งานที่มันติดตามอยู่ไม่หยุดลงเมื่อคุณลุกจากโต๊ะ
+**การควบคุมระยะไกล**จับคู่โทรศัพท์ของคุณกับ `cc_server` โดยใช้
+**[Remote](https://remote.usectrl.dev/)** ซึ่งเป็นแอปคู่หูที่ remote.usectrl.dev
+เพื่อให้คุณติดตามฟลีตได้จากที่นั่น: อ่านข้อความและตั๋วงาน ตอบกลับเอเจนต์
+คัดแยกฟีดข่าวของคุณ โดยที่เสียง ถอดเสียง ซอร์สโค้ด หรือข้อมูลรับรองที่อยู่บน
+เซิร์ฟเวอร์จะไม่หลุดออกไปจากเซิร์ฟเวอร์เลย
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+คิดว่ามันเป็นคู่หูที่เน้นการอ่านเป็นหลักของหน้าจอหลัก ไม่ได้มีไว้แทนที่
+ไคลเอนต์เดสก์ท็อปเต็มรูปแบบ
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) for how the two differ.
+:::note[เส้นทางระยะไกลสองแบบที่ต่างกัน]
+แอปคู่หูบนโทรศัพท์จับคู่กับ `cc_server` ผ่าน**รีเลย์ WebSocket แบบมีตัวกลาง**
+ที่บรรทุกเฟรม JSON-RPC ซึ่งปิดผนึกแบบต้นทางถึงปลายทาง **บิลด์เว็บ**เต็มรูปแบบ
+(และเดสก์ท็อปที่ชี้ไปยังเซิร์ฟเวอร์ระยะไกล) คือเส้นทางระยะไกลอีกเส้นทางหนึ่ง
+โดยเชื่อมต่อไปยัง `cc_server` ผ่าน WebSocket และเรนเดอร์แอปทั้งหมด ดู
+[การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) เพื่อดูว่าทั้งสองต่างกันอย่างไร
 :::
 
-## Transport
+## การรับส่ง
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+โทรศัพท์เข้าถึง `cc_server` ผ่าน WebSocket ไม่ว่าจะเป็นการเชื่อมต่อโดยตรง
+(ลูปแบ็ก LAN tailnet หรือ `wss://`) หรือห้องที่ต้องมีคำเชิญบนโบรกเกอร์ส่งสัญญาณ
+ซึ่งส่งต่อเฟรมที่ปิดผนึกไว้ ไม่มีช่องข้อมูลแบบเพียร์ทูเพียร์
 
-## What the phone can do
+## โทรศัพท์ทำอะไรได้บ้าง
 
-The paired phone reaches a small, intentional slice of the server's surface:
+โทรศัพท์ที่จับคู่แล้วเข้าถึงพื้นผิวของเซิร์ฟเวอร์ได้เพียงส่วนเล็กๆ ที่จงใจจำกัดไว้:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **อ่าน** ตั๋วงาน เอเจนต์ สเปซ และข้อความของสิ่งเหล่านั้น รวมทั้งฟีดข่าวของคุณ
+- **ตอบกลับ**: ส่งข้อความในสเปซ อัปเดตหรือมอบหมายตั๋วงาน ทำเครื่องหมายบทความ
+  ว่าอ่านแล้วหรือบันทึกไว้
+- **รันเพลย์บุ๊ก**: สร้างอินสแตนซ์ของเทมเพลตแผนที่บันทึกไว้พร้อมพารามิเตอร์ของมัน
+  สิ่งนี้เพียง_เสนอ_แผนเท่านั้น ไม่มีอะไรทำงานหรือใช้จ่ายจนกว่าผู้ปฏิบัติงาน
+  จะอนุมัติใน Plan Studio บนไคลเอนต์เต็มรูปแบบ
+- **สลับเวิร์กสเปซ** จากตัวเลือกของโทรศัพท์เอง
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+เท่านี้ก็เกือบทั้งหมดแล้ว โทรศัพท์เป็น**พรินซิปัลที่มีสิทธิ์ต่ำกว่า**ไคลเอนต์
+เต็มรูปแบบ จึงสร้างกระบวนการ ใช้งบ LLM พุชไปยัง GitHub หรือสร้างเวิร์กสเปซไม่ได้
+ดู[โมเดลการเข้าถึง](#โมเดลการเข้าถึง)เพื่อดูว่าสิ่งนี้ถูกบังคับใช้อย่างไร
+ไม่ใช่แค่ตั้งใจไว้
 
-## How the link is built
+## ลิงก์ถูกสร้างขึ้นอย่างไร
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+การเชื่อมต่ออาศัย**รีเลย์แบบมีตัวกลาง**: เซิร์ฟเวอร์เข้าร่วมห้องที่ต้องมีคำเชิญ
+หนึ่งห้องบนโบรกเกอร์ `wss://` ในฐานะเจ้าของ และไคลเอนต์ที่จับคู่แล้วทุกตัว —
+เดสก์ท็อป เว็บ โทรศัพท์ — เข้าร่วมห้องเดียวกันด้วยโทเค็นอนุญาตเข้าที่จำกัดเวลา
+องค์ประกอบสามส่วนทำงานร่วมกัน:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
+| องค์ประกอบ                  | บทบาท                                                                                                                                                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| **Remote (แอปโทรศัพท์)** | เว็บแอปคู่หู ซึ่งโดยค่าเริ่มต้นโฮสต์ที่ `remote.usectrl.dev` หรือโฮสต์เองก็ได้ โหลดในเบราว์เซอร์ และเก็บบันทึกการจับคู่ไว้ใน IndexedDB                                                                                                                                   |
+| **โบรกเกอร์รีเลย์**       | รีเลย์ `wss://` ที่ไม่เก็บสถานะ (`cc_signaling_server`) ซึ่งโฮสต์ห้องแบบ N ทาง โดยบรรทุก**เฉพาะเฟรมทึบ**: ทุกเพย์โหลดถูกปิดผนึกแบบต้นทางถึงปลายทางระหว่างโทรศัพท์กับเซิร์ฟเวอร์ โบรกเกอร์จึงไม่เห็นข้อมูลแอปหรือความลับของการจับคู่ และไม่ตีความสิ่งที่มันส่งต่อเลย |
+| **`cc_server`**        | เจ้าของห้อง ตอบคำเรียกจากโทรศัพท์ผ่านตัวจ่ายงานตัวเดียวกับที่ไคลเอนต์อื่นทุกตัวใช้                                                                                                                                                                            |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+ข้อเสนอการจับคู่มี**ตัวบ่งชี้การเชื่อมต่อ**ที่ระบุทุกเส้นทางไปยังเซิร์ฟเวอร์
+(LAN tailnet `wss://` สาธารณะ รีเลย์) พร้อมลายนิ้วมือระบุตัวตนของเซิร์ฟเวอร์
+ตัวเลือกเส้นทางของโทรศัพท์จะเลือกเส้นทางที่ดีที่สุดที่เข้าถึงได้ และปักหมุด
+ลายนิ้วมือเมื่อเชื่อมต่อครั้งแรก (TOFU) รีเลย์รับประกันการเชื่อมต่อแม้ไม่มี
+เส้นทางโดยตรง โดยไม่สามารถอ่านทราฟฟิกได้เลย
 
-## What the pairing payload is
+## เพย์โหลดการจับคู่คืออะไร
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/) for the procedure. The anatomy is
-what matters here.
+การจับคู่ถูกสร้างจากแอปและส่งมอบเป็นดีปลิงก์ ดู
+[จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/) สำหรับขั้นตอน สิ่งที่สำคัญในที่นี้
+คือโครงสร้างของมัน
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+เพย์โหลดอยู่ใน**แฟรกเมนต์**ของ URL ซึ่งเป็นส่วนหลัง `#` ที่เบราว์เซอร์ไม่เคยส่ง
+ไปยังเซิร์ฟเวอร์ โฮสต์ HTTPS ของ PWA จึงไม่เคยเห็นมัน เพย์โหลดบรรทุกทุกอย่าง
+ที่โทรศัพท์ต้องใช้เพื่อเข้าถึงเซิร์ฟเวอร์และพิสูจน์ว่ามันคือใคร: ตัวบ่งชี้
+การเชื่อมต่อ (ทุกเส้นทางพร้อมลายนิ้วมือระบุตัวตน) รหัสอุปกรณ์ที่เพิ่งสร้างใหม่
+คีย์ที่แชร์ล่วงหน้า 32 ไบต์ และตราประทับเวลาหมดอายุ โทรศัพท์ถอดรหัสเพย์โหลด
+เก็บบันทึกการจับคู่ไว้ในเครื่อง และตัดแฟรกเมนต์ออกเพื่อให้ความลับหลุดออกจาก URL
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+เพย์โหลดมีสองรูปแบบและ**ใช้แทนกันไม่ได้** QR ของโทรศัพท์ที่สร้างจากแผงจับคู่
+ในแอปคือ `PairingPayload` v2 ข้างต้น ซึ่งชี้ไปที่โฮสต์ PWA ของ Remote
+ส่วน `cc_server pair --client-url` จะสร้างลิงก์ v1 ที่เก่ากว่าและต่างออกไป
+(`{s, i, k}` — URL เซิร์ฟเวอร์ รหัสอุปกรณ์ คีย์) ซึ่งมีไว้สำหรับไคลเอนต์**เว็บ**
+เท่านั้น
 
-They also differ in lifetime, which is easy to get wrong:
+ทั้งสองยังมีอายุการใช้งานต่างกัน ซึ่งเข้าใจผิดได้ง่าย:
 
-| Minted by                             | Credential expiry                         |
+| ออกโดย                             | การหมดอายุของข้อมูลรับรอง                         |
 | ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| แผงจับคู่ในแอป (`pairing.mint`) | 30 วันเสมอ                           |
+| `cc_server pair` บนบรรทัดคำสั่ง  | **ไม่มี** — ข้อมูลรับรองไม่หมดอายุ |
 
-## The access model
+## โมเดลการเข้าถึง
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+อุปกรณ์ที่จับคู่แล้ว**ผ่านการรับรองความถูกต้องแต่ไม่ได้รับความเชื่อถือ**
+ด่านอิสระหลายชั้นช่วยไม่ให้การจับคู่ที่ได้รับอนุมัติ (หรือรั่วไหล) กลายเป็น
+การควบคุมเซิร์ฟเวอร์ทั้งหมด
 
-### 1. Membership, not pairing, is the boundary
+### 1. การเป็นสมาชิกคือขอบเขต ไม่ใช่การจับคู่
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+คีย์จับคู่ที่ถูกต้องพิสูจน์ว่า_คุณคืออุปกรณ์ใด_ สิ่งที่คุณอ่านหรือแก้ไขได้
+ตัดสินจาก**บทบาทในเวิร์กสเปซ**ของคุณ ซึ่งคำนวณใหม่ในการเรียกทุกครั้ง
+และจากสิทธิ์ที่ให้ในระดับรีโปสำหรับทุกอย่างที่เปิดเผยเนื้อหาของรีโป อุปกรณ์
+ที่ถือคีย์ซึ่งใช้ได้ดีแต่เป็นของผู้ใช้ที่ไม่ได้เป็นสมาชิกของเวิร์กสเปซที่ระบุ
+จะถูกปฏิเสธด้วยข้อความ "Not a member of this workspace"
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+ระดับบทบาทขั้นต่ำอนุมานจากชนิดของการดำเนินการ เว้นแต่การดำเนินการนั้น
+จะประกาศระดับของตัวเอง: การอ่านต้องมี `guest` การเปลี่ยนแปลงต้องมี `member`
+และการดำเนินการที่ทำลายข้อมูลต้องมี `admin`
 
-### 2. A phone is a lower session tier
+### 2. โทรศัพท์เป็นเซสชันระดับต่ำกว่า
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+นอกเหนือจากการตรวจสอบบทบาท เซสชันของโทรศัพท์ยังมีความสามารถต่ำกว่าเซสชัน
+เดสก์ท็อปหรือเว็บ การดำเนินการที่ประกาศว่าใช้ได้เฉพาะไคลเอนต์เต็มรูปแบบ
+จะถูกปฏิเสธสำหรับโทรศัพท์ก่อนที่ตัวจัดการจะทำงาน ไม่ว่าผู้ใช้ที่อยู่เบื้องหลัง
+จะมีสิทธิ์มากเพียงใด: การออก รายการ เปลี่ยนชื่อ และเพิกถอนการจับคู่อุปกรณ์;
+การอ่านและตั้งค่าการเชื่อมต่ออุโมงค์; การสำรองข้อมูลเซิร์ฟเวอร์และการนำออก/
+นำเข้าเวิร์กสเปซ; การตรวจจับและฆ่ากระบวนการ; การตรวจสอบอะแดปเตอร์;
+การตั้งค่าเซิร์ฟเวอร์; การดูแล SSO; การควบคุมฟลีต; และการเข้ายึดหรือคืน
+เอเจนต์ที่กำลังทำงาน
 
-### 3. A default-deny tool allow-list
+### 3. รายการอนุญาตเครื่องมือแบบปฏิเสธโดยค่าเริ่มต้น
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+สำหรับพื้นผิวเครื่องมือ MCP โดยเฉพาะ (`tools/call`) รายการอนุญาตแบบปฏิเสธ
+โดยค่าเริ่มต้นจะควบคุมว่าโทรศัพท์เรียกเครื่องมือใดได้ สิ่งที่ไม่อยู่ในรายการ
+จะถูกปฏิเสธก่อนที่จะทำงาน รายการนี้เน้นการอ่านและการเฝ้าดูเป็นหลัก
+บวกการเขียน**เฉพาะในเครื่อง**ไม่กี่อย่าง — ข้อความหนึ่งข้อความ การอัปเดต
+ตั๋วงานหนึ่งครั้ง การทำเครื่องหมายบทความหนึ่งรายการ — ซึ่งไม่ใช้งบ LLM
+ไม่สร้างกระบวนการ และไม่แตะระบบภายนอก
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+ตัวอย่างที่ถูกปฏิเสธ: การปรึกษาเอเจนต์ การเริ่มรีวิวด้วย AI การฆ่าเอเจนต์
+การเผยแพร่รีวิวไปยัง GitHub การจ้างหรือปลดเอเจนต์ การสร้างเวิร์กสเปซ
 
-### 4. Per-call workspace scoping
+### 4. การกำหนดขอบเขตเวิร์กสเปซต่อการเรียก
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) invariant the rest of the
-product enforces.
+เซิร์ฟเวอร์ไม่มี "เวิร์กสเปซปัจจุบัน" เลย มันไม่เก็บสถานะโดยการออกแบบ:
+การเรียกที่ผูกกับเวิร์กสเปซทุกครั้งต้องระบุ `workspace_id` เป้าหมายในอาร์กิวเมนต์
+ของตน และตัวจ่ายงานจะปฏิเสธการเรียกทันทีเมื่อขาดค่านั้นหรือระบุเวิร์กสเปซ
+ที่เซิร์ฟเวอร์ไม่ได้ลงทะเบียนไว้ — ก่อนที่สิ่งใดจะเปิดฐานข้อมูล โทรศัพท์
+จึงสืบทอดหรือหลุดเข้าไปในขอบเขตของไคลเอนต์อื่นไม่ได้เลย และการระบุเวิร์กสเปซ
+ภายนอกก็ไม่ช่วยเช่นกัน เพราะการตรวจสอบการเป็นสมาชิกในด่านที่ 1 ยังมีผลอยู่
+นี่คือหลักประกัน[การแยกโดเมนของเวิร์กสเปซ](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
+แบบเดียวกับที่ผลิตภัณฑ์ส่วนที่เหลือบังคับใช้
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. เฟรมที่ปิดผนึกแบบต้นทางถึงปลายทางด้วยคีย์ที่แชร์ล่วงหน้า
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+ทุกเฟรมระหว่างโทรศัพท์กับเซิร์ฟเวอร์ถูกปิดผนึกด้วยคีย์จับคู่ โทเค็นอนุญาตเข้า
+เพียงนำไคลเอนต์เข้าห้องเท่านั้น ไม่ได้ถอดรหัสสิ่งใด โบรกเกอร์ส่งต่อข้อความ
+เข้ารหัสและไม่เคยเห็นคีย์ อุปกรณ์ที่ถูกเพิกถอนจะพบว่าข้อมูลรับรองของตนหายไปแล้ว
+จึง**ล้มเหลวแบบปิด**เมื่อเชื่อมต่อใหม่
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+ข้อมูลรับรองที่สร้างจากแอปถูกจำกัดเวลาไว้ 30 วัน เมื่อเกินกว่านั้นด่าน
+การเชื่อมต่อจะปฏิเสธ และโทรศัพท์ต้องจับคู่ใหม่ การเพิกถอนมีผลทันที:
+เซิร์ฟเวอร์เฝ้าดูตารางอุปกรณ์และตัดเซสชันที่เปิดอยู่ของอุปกรณ์ที่ถูกเพิกถอน
+ภายในไม่กี่วินาที แทนที่จะรอการเชื่อมต่อครั้งถัดไป
 
-### 6. Rate limiting per principal
+### 6. การจำกัดอัตราต่อพรินซิปัล
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+ตัวจำกัดแบบหน้าต่างเลื่อนกำหนดเพดานทราฟฟิกเครื่องมือระยะไกลไว้ที่ 120 ครั้ง
+ต่อนาที พร้อมเพดานย่อยที่เข้มกว่าคือ 30 ครั้งต่อนาทีสำหรับคำสั่งที่เปลี่ยนแปลง
+ข้อมูล งบนี้เป็นของ**พรินซิปัล ไม่ใช่ของเซสชัน**: อุปกรณ์สามเครื่องของคุณ
+ใช้โควตาเดียวกัน ไคลเอนต์ที่ถูกยึดจึงหาพื้นที่เพิ่มไม่ได้ด้วยการเปิดเซสชัน
+มากขึ้น และสมาชิกที่ส่งคำขอถี่ก็ทำให้สมาชิกคนอื่นอดโควตาไม่ได้
 
-### 7. A broker that learns nothing
+### 7. โบรกเกอร์ที่ไม่เรียนรู้อะไรเลย
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+โบรกเกอร์รีเลย์ถูกออกแบบให้เรียบง่ายโดยเจตนา: มันโฮสต์ห้อง ส่งต่อเฟรม
+ที่ปิดผนึก และไม่เก็บบัญชี ข้อมูลแอป หรือคีย์ใดๆ ห้องต้องมีคำเชิญและอยู่
+ชั่วคราว ข้อมูลแอป เสียง ถอดเสียง ซอร์สโค้ด และข้อมูลรับรองทั้งหมดยังคง
+อยู่บนเซิร์ฟเวอร์
 
-## Live updates
+## การอัปเดตสด
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+เมื่อจับคู่แล้ว โทรศัพท์จะได้รับ**การอัปเดตสด**เป็นเฟรมแจ้งเตือน — ข้อความใหม่
+จากเอเจนต์ ตั๋วงานที่มอบหมายให้คุณ การเปลี่ยนแปลงสถานะ — สะท้อนการแจ้งเตือน
+ของเดสก์ท็อปเอง เซิร์ฟเวอร์กระจายเฟรมเหล่านั้นไปยังทุกเซสชันที่เชื่อมต่ออยู่
+และตัวกรองเวิร์กสเปซถูกใช้ฝั่งไคลเอนต์ สิ่งที่คุณเห็นจึงจำกัดขอบเขตอยู่ที่
+เวิร์กสเปซที่คุณกำลังดูอยู่
 
-## Where it lives
+## อยู่ที่ไหน
 
-| Surface                                                                             | What it shows                                                                                               |
+| ส่วนติดต่อ                                                                             | สิ่งที่แสดง                                                                                               |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **การตั้งค่า → คุณ → อุปกรณ์ของคุณ** (`/workspaces/:workspaceId/settings/you/devices`) | ไคลเอนต์ที่จับคู่แล้วพร้อมสถานะสด พร้อมปุ่ม **จับคู่ไคลเอนต์ใหม่** (เว็บเบราว์เซอร์ แอปเดสก์ท็อป หรือโทรศัพท์) และเพิกถอน |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+แผงเดียวกันยังออกการจับคู่สำหรับเบราว์เซอร์หรือแอปเดสก์ท็อปเครื่องที่สอง
+ไม่ใช่แค่โทรศัพท์ — ขั้นตอนเหมือนกันทุกประการ ต่างกันแค่ดีปลิงก์
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+การควบคุมระยะไกลทำงานฝั่งเซิร์ฟเวอร์และ**ไม่**เปิดให้ใช้ผ่าน MCP โทรศัพท์
+สื่อสารกับตัวจ่ายงานของเซิร์ฟเวอร์เองผ่านรีเลย์ ไม่ใช่ไคลเอนต์ MCP ของ
+เซิร์ฟเวอร์ภายนอก
 ::::
 
-## See also
+## ดูเพิ่มเติม
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): roles, membership and repo grants
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): where remote control sits among the client tiers
-- [Architecture](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/): where remote control sits in the stack
-- [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): การกำหนดขอบเขตต่อการเรียกที่ส่วนนี้พึ่งพา
+- [การทำงานร่วมกันแบบหลายคน — ตัวตน การเป็นสมาชิก และสถานะออนไลน์](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): บทบาท การเป็นสมาชิก และสิทธิ์ในระดับรีโป
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): การควบคุมระยะไกลอยู่ตรงไหนในบรรดาระดับของไคลเอนต์
+- [สถาปัตยกรรม](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/): การควบคุมระยะไกลอยู่ตรงไหนในสแตก
+- [จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)

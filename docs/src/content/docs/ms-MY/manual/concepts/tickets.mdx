@@ -1,155 +1,170 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Tiket dan perwakilan
+description: Mengapa tiket menjejaki kerja tanpa menghantarnya, bagaimana perwakilan dikawal dan apa yang dimiliki dan tidak dimiliki oleh cermin vendor.
 slug: ms-MY/manual-pengguna/konsep/tiket
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Tiket ialah unit kerja yang dijejaki oleh Control Center. Ia sengaja merupakan
+artifak yang _bodoh_: tajuk, badan, status, pemilik dan kedudukan dalam pokok.
+Ia bukan perkara yang dijalankan oleh ejen — kerja ejen hidup dalam perbualan
+dan output berstruktur sesuatu larian terletak pada log larian.
 
-## Assignment records ownership; it dispatches nothing
+## Penugasan merekod pemilikan; ia tidak menghantar apa-apa
 
-This is the single most important thing to get right about tickets.
+Inilah perkara paling penting yang perlu difahami dengan betul tentang tiket.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ms-MY/manual-pengguna/konsep/acara-domain/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Menetapkan `assignedAgentId` menulis satu medan dan menerbitkan `TicketAssigned`
+[acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/). Acara itu ialah
+isyarat audit dan pemberitahuan serta pencetus pipeline. **Penugasan kepada ejen
+tidak memulakan sebarang larian.** Tiada penghantar tiket yang memantau
+`assignedAgentId` dan mengejutkan ejen itu.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Pengecualiannya ialah pasukan: apabila `assignedTeamId` ditetapkan,
+`TeamRoutingService` menghantar ketua pasukan dengan protokol operasi dan
+senarai ahli.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Jika anda mahu ejen tertentu mengerjakan sesuatu tiket, anda memintanya dalam
+perbualan, atau satu langkah pipeline menghantarnya, atau ejen lain mewakilkan
+kepadanya. Menugaskan tiket kepada ejen dan menunggu ialah satu-satunya perkara
+yang tidak akan pernah menghasilkan kerja.
 
-## Mirror and overlay
+## Cermin dan tindanan
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Tiket boleh bersifat tempatan semata-mata atau disandarkan oleh penjejak luar,
+dan ia membawa kedua-duanya pada satu baris.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Cermin** — penyedia, kunci luar, URL, tajuk, perihalan, keutamaan, label,
+status mentah dan ternormal, cap masa — ialah cache apabila tiket itu jauh.
+Sistem jauh ialah sumber kebenaran di situ dan penyegaran menulis semula cermin
+itu sepenuhnya.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Tindanan** — penugasan, perwakilan, pautan ruang, induk, projek, PR yang
+dipautkan — hanya wujud dalam Control Center. Penjejak tidak tahu apa-apa
+tentangnya dan penyegaran tidak pernah menyentuhnya.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Pemisahan itulah yang membolehkan penyegerakan dilakukan dengan selamat:
+tarikan vendor boleh merosakkan cermin tanpa sekali pun kehilangan metadata
+orkestrasi yang bertindan di atasnya.
 
-## The lifecycle graph binds agents, not you
+## Graf kitaran hayat mengikat ejen, bukan anda
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Status berjalan `backlog → open → inProgress → inReview → done`, dengan
+`blocked` sebagai gelung sisi dan `failed` / `cancelled` sebagai keadaan
+terminal yang lain.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Graf peralihan dikuatkuasakan **hanya pada laluan ejen dan automasi** — alat MCP
+dan penyelaras. Peralihan tidak sah di situ dilog dan diabaikan, jadi ejen yang
+keliru tidak boleh memundurkan tiket keluar daripada keadaan terminal.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Setiap perubahan yang dipacu pengguna dalam UI menghantar `force: true` dan
+melangkau graf itu sepenuhnya. Manusia boleh memindahkan tiket ke mana-mana
+status yang disenaraikan oleh pemilih — termasuk membuka semula tiket yang
+berada dalam keadaan terminal. Pemilih tidak menawarkan `failed`; ejen
+menetapkannya melalui `fail_ticket`. Graf itu ialah guardrail untuk automasi,
+bukan peraturan tentang cara kerja dibenarkan berjalan.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` memiliki setiap mutasi melalui satu titik kawalan
+tunggal yang memuatkan baris itu, mengesahkan ia milik ruang kerja pemanggil dan
+menulis dengan `version` yang dijangka supaya dua suntingan serentak tidak boleh
+menimpa satu sama lain secara senyap.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/).
+Untuk jadual status penuh, peralihan, senarai medan dan jenis hubungan, lihat
+[Kitaran hayat tiket](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/).
 
-## Provenance: how a ticket came to exist
+## Asal usul: bagaimana sesuatu tiket wujud
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Setiap tiket mempunyai `originKind`. Enum itu mempunyai lima nilai — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — tetapi hanya dua
+yang ditulis hari ini: `manual` (lalai pada `createTicket`, termasuk anak yang
+diwakilkan) dan `externalSync` (enjin penyegerakan, pada tarikan vendor).
+`TicketWorkflowService.createTicket` tidak menerima argumen origin, jadi
+`pipelineStep`, `agentDelegation` dan `recovery` tidak pernah sampai ke sesuatu
+baris.
 
-## Guarded delegation
+## Perwakilan yang dikawal
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Perwakilan ialah tempat ejen mencipta kerja untuk ejen lain dan di situlah
+keistimewaan boleh bocor, jadi guardrail itu terletak di sebelah pelayan pada
+satu titik kawalan dan bukan dalam arahan prompt.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` melalui `TicketWorkflowService.delegateGuarded`, yang mengira
+kedalaman dan akar anak itu daripada rantaian induk dan kemudian menjalankan
+kesemua empat pemeriksaan `DelegationGuards`: satu hop yang akan melebihi **had
+kedalaman 3**, satu hop kembali kepada ejen yang sudah berada dalam rantaian
+(**pengesanan kitaran**), satu **siling autonomi** (tahap berkesan penerima
+wakilan dalam ruang itu tidak boleh melebihi tahap pemberi wakilan) dan satu
+**peruntukan belanjawan** (perwakilan mengebilkan baki belanjawan hard-stop
+pemberi wakilan dan tidak boleh menjana lebih banyak). Pendawaian pengeluaran
+membekalkan kedua-dua port penyelesai. Autonomi dan belanjawan dilangkau apabila
+`from_agent_id` ditiadakan (belanjawan tanpa had / tanpa polisi juga lulus).
+Penolakan dilemparkan sebagai `DelegationRefusedException` yang mesejnya sampai
+kepada ejen yang mewakilkan secara verbatim — penafian yang lantang, bukan no-op
+senyap.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` ialah saudara yang lebih lama dan **tidak dikawal**: ia
+memanggil `createTicket` secara terus dan melangkau setiap guardrail. Utamakan
+`delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Jangan kelirukan had kedalaman perwakilan (3, pada rantaian `delegate_task`)
+dengan had bersarang subejen harness terbina dalam (2). Kedua-duanya had yang
+berbeza pada mekanisme yang berbeza.
 
-## Hierarchy, links and projects
+## Hierarki, pautan dan projek
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Hubungan induk dan sub-isu terletak pada `tickets.parent_ticket_id`, dimiliki
+oleh `setParent` / `clearParent`. Ia **bukan** baris `ticket_links`, jadi
+apa-apa yang membaca hubungan sesuatu tiket perlu menggabungkan kedua-dua
+sumber.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` menyimpan tepi berarah antara tiket yang sebaliknya tidak
+berkaitan:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| Jenis pautan  | Maksud                                   |
+| ------------- | ---------------------------------------- |
+| `blocks`      | Sumber menyekat sasaran                  |
+| `relatesTo`   | Kedua-dua tiket berkaitan (simetri)      |
+| `duplicateOf` | Sumber ialah pendua kepada sasaran       |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**Projek** ialah pengelompokan tiket yang berskop ruang kerja menuju matlamat
+bersama. Projek hanya wujud dalam Control Center dan tidak pernah disegerakkan
+ke penyedia luar.
 
-## Collaborators
+## Kolaborator
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Baris `TicketCollaborator` ialah cara lebih daripada satu prinsipal dilampirkan
+pada sesuatu tiket, pada peranan `assignee`, `collaborator` atau `reviewer`.
+Manusia dan ejen ialah baris yang setara — `principalId` tambah
+`collaboratorType` — tanpa nilai sentinel untuk "pengguna" dan tanpa kunci asing
+kepada mana-mana jadual itu.
 
-## External sync
+## Penyegerakan luar
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Tiket Control Center ialah yang utama. Memadam tiket adalah **tempatan sahaja**,
+jadi tiket bersandarkan vendor yang anda padam tidak dipadamkan pada penjejak
+dan mungkin muncul semula pada penyegerakan seterusnya. Kolaborator dan tiket
+anak melata.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Kelayakan penyesuai diselesaikan daripada stor kelayakan pelayan (kunci Linear
+atau token GitHub yang ditampal dalam Tetapan akan diambil pada permintaan
+seterusnya; persekitaran hanya menyemai stor itu).
 
-## Tickets and pipelines
+## Tiket dan pipeline
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Tiada nod pipeline mencipta, melengkapkan atau membatalkan tiket — palet tidak
+mempunyai langkah sedemikian dan enjin tidak memanggil `TicketWorkflowService`.
+Pencetus pipeline masih boleh terpicu pada `TicketAssigned`, `TicketCompleted`,
+`TicketFailed` atau `TicketCancelled` (empat itu ialah acara tiket yang
+benar-benar dipetakan oleh `EventPayloadMapper`). Tiada lajur `pipelineRunId`
+pada tiket; gandingan pipeline terletak pada log larian ejen.
 
-## See also
+## Lihat juga
 
-- [Pipelines and automation](/ms-MY/manual-pengguna/konsep/pipeline/): ticket events can trigger a pipeline
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/): where a DAG of sub-tickets comes from
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/): who a ticket is assigned to
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/): the ticket lifecycle events
-- [Ticket lifecycle](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
-- [Delegate work to agents](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
-- [Organize work with projects](/ms-MY/manual-pengguna/panduan-cara/projek/)
+- [Pipeline dan automasi](/ms-MY/manual-pengguna/konsep/pipeline/): acara tiket boleh mencetuskan pipeline
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/): dari mana DAG sub-tiket datang
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): kepada siapa tiket ditugaskan
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/): acara kitaran hayat tiket
+- [Kitaran hayat tiket](/ms-MY/manual-pengguna/rujukan/kitaran-hayat-tiket/): status, medan, peralihan, hubungan
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
+- [Wakilkan kerja kepada ejen](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
+- [Susun kerja dengan projek](/ms-MY/manual-pengguna/panduan-cara/projek/)

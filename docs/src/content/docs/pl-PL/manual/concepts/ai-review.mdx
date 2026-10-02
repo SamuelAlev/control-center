@@ -1,225 +1,128 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: Recenzja AI
+description: Jak pull request staje się zrecenzowanym pull requestem — przestrzenie recenzji, węzły recenzji i konsensus recenzentów, kohorty i osie, werdykt Ship/Hold/Block oraz dlaczego publikowanie pozostaje krokiem, który wykonujesz sam.
 slug: pl-PL/podrecznik/koncepcje/recenzja-ai
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Kształt recenzji
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Recenzja AI to jedno uruchomienie wbudowanego potoku `pr_review` względem jednego otwartego pull requesta. Potok otwiera przestrzeń recenzji PR-a, rozgałęzia agentów-recenzentów, którzy czytają diff w izolowanym checkoutcie tej przestrzeni, każdy zgłasza swoje ustalenia jako ustrukturyzowane **węzły recenzji**, agent prowadzący scala je w przewodnik, a finalizator oblicza jeden werdykt: **Ship**, **Hold** lub **Block**. Potok nigdy nie publikuje — zamieszczenie recenzji na GitHubie to osobny, świadomy krok, który wykonuje człowiek.
 
-The rest of this page explains the pieces and why they are shaped this way.
+W dalszej części strony wyjaśniamy te elementy i to, dlaczego mają właśnie taki kształt.
 
-## One review space per PR
+## Jedna przestrzeń recenzji na PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Kontekst recenzji PR-a to przestrzeń komunikacyjna — tryb `review`, rodzaj `pr` — powiązana z pull requestem przez **powiązanie z przestrzenią recenzji**. Powstaje idempotentnie: strona PR-a, potok recenzji i powierzchnie czatu rozwiązują _jedną_ przestrzeń bazową PR-a tą samą ścieżką kodu, więc szablon, który recenzuje PR, i człowiek, który go otwiera, nigdy nie trafią do dwóch różnych pokoi patrzących na dwa różne checkouty.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Izolowany worktree przestrzeni ma PR wyewidencjonowany na jego head ref. Jeden pokój oznacza też jeden checkout: każdy recenzent pracuje w tej samej przestrzeni, a nie w swoim własnym klonie obszaru roboczego.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Każdy recenzent publikuje we własnym nazwanym strumieniu wewnątrz tej jednej przestrzeni, a ustalenia to wiadomości `review_node`, a nie zwykły tekst. Zbieranie w całej przestrzeni na końcu jest celowe — werdykt obliczony na podstawie ustaleń z jednego wątku byłby po cichu werdyktem o jednym recenzencie.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Powiązanie ma drabinkę statusów — `requested` → `in progress` → `awaiting approval` → `completed` — która stanowi bramkę dla **Opublikuj na GitHubie** na karcie Recenzja PR-a.
 
-## Review levels
+## Poziomy recenzji
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+To, jak głęboko sięga recenzja, określają zasady obszaru roboczego z trzema poziomami, ustawiane w **Ustawienia → Obszar roboczy → Ogólne**, na karcie **Zasady obszaru roboczego**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| Poziom      | Recenzenci w rozgałęzieniu                    | Raportowanie                                  |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | Tylko inżynier                                | Tylko to, co naprawdę istotne                 |
+| `balanced`  | Inżynier, QA, architekt (domyślnie)           | Standardowy przebieg                          |
+| `thorough`  | Wszyscy pięciu, w tym bezpieczeństwo i wydajność | Nic nie jest degradowane                   |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Poziom przestawia dwa pokrętła naraz: to, którzy recenzenci się rozgałęziają (wymuszane przez bramki stanu `runWhen` w szablonie potoku, a nie przez brzmienie promptu — brzmienie promptu można zignorować, bramki nie), oraz to, gdzie renderowane są ustalenia poniżej progu. Żadne z tych pokręteł nigdy nie usuwa ustalenia: poziom, który raportuje mniej, wciąż zgłasza dokładnie tyle samo i grupuje resztę.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Przebiegi bezpieczeństwa i wydajności ponownie wykorzystują wbudowanych agentów architekta i inżyniera, zamiast wprowadzać nowych. Specjalizacja to zadanie, z którym wysyła się recenzenta, a nie osobny agent na każdą oś — agent na każdą oś to pięć dodatkowych wierszy w każdym obszarze roboczym bez żadnych dodatkowych możliwości. Wybór recenzentów nigdy nie analizuje diffu pod kątem języka ani domeny.
 
-## Review nodes: findings as data, not prose
+## Węzły recenzji: ustalenia jako dane, nie tekst
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Ustalenie zgłoszone przez `add_review_node` staje się **węzłem recenzji** w PR-zie — to właśnie renderuje karta Recenzja, z tego obliczany jest werdykt, a „Opublikuj na GitHubie” zamienia je w komentarz w linii. Recenzent, który zwraca tylko tekst, daje uruchomienie potoku wyglądające na udane i pustą powierzchnię recenzji; to zgłaszanie jest tu elementem nośnym.
 
-Each node carries:
+Każdy węzeł zawiera:
 
-| Field             | Values                                                                     |
+| Pole              | Wartości                                                                   |
 | ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Rodzaj            | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                |
+| Priorytet         | P0 (krytyczny) → P3 (drobiazg)                                             |
+| Trójka segregacji | kategoria (`security`, `stability`, …), waga, nakład                       |
+| Kotwica           | Ścieżka pliku, początek i koniec wiersza                                   |
+| Propozycja poprawki | Sugerowane wiersze zamienne, opcjonalny diff, opcjonalny prompt poprawki |
+| Pewność           | Ocena w przedziale [0, 1]                                                  |
+| Uzasadnienie      | Analiza, zapisana przed ustaleniem                                         |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Dwa szczegóły są celowe. Sugestia GitHub jednym kliknięciem jest oferowana tylko wtedy, gdy recenzent podał dokładne wiersze zamienne — wywnioskowanie ich z ujednoliconego diffu po cichu się myli, a zatwierdzenie błędnego wniosku jednym kliknięciem jest gorsze niż brak przycisku. A schemat `add_review_node` przedstawia `reasoning` przed ustaleniem, więc model, który wypełnia obiekt w kolejności schematu, najpierw zapisuje analizę. To pole jest opcjonalne: jego pominięcie nie odrzuca węzła. Węzeł o niepoprawnie zbudowanym ładunku znika, zamiast zanieczyszczać recenzję.
 
-## Peer consensus
+## Konsensus recenzentów
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Węzeł przechodzi przez `open` → `consensus-ready` → `resolved` lub `dismissed`. Środkowy krok to serce modelu: **ustalenie awansuje dopiero wtedy, gdy potwierdzi je inny recenzent, a agent nigdy nie może potwierdzić własnego ustalenia.** Narzędzie MCP `publish_review_to_github` i domyślne zachowanie RPC nadal publikują wyłącznie ustalenia potwierdzone przez innych recenzentów. Przycisk **Opublikuj na GitHubie** na karcie Recenzja wysyła natomiast każde pozostałe otwarte ustalenie.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Reguła jest wymuszana w trzech niezależnych miejscach — w narzędziu potwierdzania, w finalizatorze i w module publikującym — więc przetrwa błąd w wywołującym w dowolnym z nich. Zmiany statusu przechodzą przez jedną usługę, i to sprawia, że status coś znaczy: wcześniej dwie niepełne ścieżki mogły się nie zgadzać co do tego, czy to samo ustalenie zostało rozwiązane.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Gdy recenzenci się nie zgadzają — ten sam plik i wiersz, priorytety różniące się o dwa poziomy lub więcej, albo jeden nazywa coś `bug`, a drugi `suggestion` — niezgodność jest pokazywana nad listą ustaleń. To tam opinie recenzentów się rozchodzą i tam osąd człowieka jest najcenniejszy.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Odrzucenie ustalenia zapisuje też miękki fakt wyciszający w domenie pamięci, przy niskiej pewności — jedno odrzucenie to preferencja, a nie reguła.
 
-## Cohorts: what the review is grouped around
+## Kohorty: wokół czego grupuje się recenzja
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Przebieg obliczeniowy recenzji grupuje zmienione pliki PR-a w **kohorty** wyprowadzone z grafu kodu: zmienione pliki mapują się na dotykane symbole, symbole na połączone komponenty, a kohorty są uszeregowane według zasięgu zmian. Kohorta zawiera prowadzoną kolejność czytania, diagramy i spostrzeżenia, a nie jest płaską listą plików.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Nadają temu kształt dwie zasady uczciwości. Klucze kohort wywodzą się z treści i są stabilne między wypchnięciami, więc ustalenia i postęp recenzji przetrwają rebase czy force-push, zamiast zostać osierocone. A gdy repozytorium nie ma indeksu kodu, grupowanie cofa się do zwykłych ścieżek i mówi o tym wprost — mechanizm zastępczy nigdy nie udaje semantycznej pewności.
 
-## Review axes and gates
+## Osie recenzji i bramki
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Obok ustaleń recenzentów recenzja gromadzi **wyniki osi**: sześć osi dwojakiego rodzaju.
 
-| Axis                          | Kind          | Drawn from                          |
+| Oś                        | Rodzaj        | Źródło                              |
 | ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| `correctness`, `security` | Sterowana tokenami | Własne ustalenia recenzentów    |
+| `testGap`                 | Sterowana tokenami | Ustalenia recenzentów           |
+| `visual`, `apiContract`   | Deterministyczna | Obliczane bez zużywania tokenów |
+| `performance`             | Deterministyczna | Tylko enumeracja — nic w produkcie nie oblicza wyniku |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Werdykt osi to `pass`, `warn`, `fail`, `partial` lub `unavailable` — a bramkę przechodzi tylko `pass` lub `warn`. Rozróżnienie między `fail`, `partial` i `unavailable` jest nośne: oś objęta bramką, która nie mogła się dokończyć albo nie mogła w ogóle wystartować, wstrzymuje ogólny werdykt, zamiast go przepuścić. **Brak dowodów nigdy nie zamienia się w zieloną bramkę.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Niektóre osie są celowo doradcze. Oś luki testowej wyprowadzana z kohort nie widzi pokrycia wstrzykiwania zależności ani fabryk — niezaindeksowane repozytorium z dokładnym zestawem testów i takie bez żadnych testów wyglądają z tego miejsca identycznie, więc twierdzenie czegokolwiek byłoby kłamstwem; pojawia się na pulpicie, ale nie stanowi bramki. Osie tokenowe są doradcze, bo priorytety ustaleń już kierują werdyktem, a ponowne opieranie bramki na nich liczyłoby to samo dwa razy.
 
-## The verdict
+## Werdykt
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+Finalizator oblicza werdykt na podstawie ustaleń o statusie `open` lub `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- dowolne ustalenie P0 z pewnością ≥ 0,7 → **Block**
+- w przeciwnym razie dowolne P0 (o niskiej pewności) lub dowolne P1 → **Hold**
+- w przeciwnym razie → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Werdykt niesie zagregowaną pewność wyprowadzoną z rozrzutu pewności składowych — zgodność ją podnosi, rozbieżność obniża.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Scalenie przez agenta prowadzącego (CEO) to przebieg redakcyjny, a nie ponowne wypisanie: ręcznie napisana druga kopia ustaleń to dokładnie to, co się rozjeżdża z oryginałem. Zduplikowane ustalenia są degradowane, a nie powtarzane — kilku recenzentów kieruje się na jeden diff z celowo nakładającymi się zakresami, więc ten sam defekt docierający do finalizatora trzy razy to system działający poprawnie; opublikowanie go trzy razy to system wyciekający własną architekturą do skrzynki odbiorcy. Przy ponownej recenzji ustalenia dostają odcisk i są zestawiane z poprzednią rundą, więc na wierzch wychodzi właśnie różnica.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Na koniec dołączają osie i mogą wyłącznie zaostrzyć werdykt: oś objęta bramką, która zawodzi, wymusza Block — nie da się jej przegłosować ustaleniami — a oś objęta bramką, która nie mogła się dokończyć, wymusza co najmniej Hold.
 
-## Publishing stays with you
+## Publikowanie zostaje po Twojej stronie
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Potok celowo nie zamieszcza niczego na GitHubie; publikowanie jest uzależnione od użytkownika, więc recenzja nigdy nie opublikuje się dwa razy. Gdy naciśniesz **Opublikuj na GitHubie**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Przesyłana jest jedna recenzja GitHub. Ustalenia już rozwiązane lub odrzucone są pomijane. Przycisk publikuje każde pozostałe otwarte ustalenie (`selection: all_open`). Narzędzie MCP `publish_review_to_github` nadal domyślnie ogranicza się do ustaleń potwierdzonych przez innych recenzentów (`consensus`).
+- Ustalenia zakotwiczone w pliku i wierszu stają się komentarzami w linii; wszystko inne trafia do treści podsumowania, a każde niesie stopkę „— Control Center AI review”, żeby źródło było jednoznaczne.
+- Kotwice są ponownie weryfikowane wobec _bieżącego_ diffu PR-a w momencie publikowania. Komentarz do kodu, który został już przepisany, to najbardziej niszcząca zaufanie rzecz, jaką recenzent może zostawić; jeśli GitHub i tak odrzuci kotwicę w linii, cała recenzja jest wysyłana ponownie, a każde ustalenie trafia do treści, żeby nic nie zniknęło po cichu.
+- Werdykt **Block** jest przesyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako `APPROVE` z przycisku (`approve_on_ship: true`). Narzędzie MCP zostawia Ship jako `COMMENT`, chyba że przekażesz `approve_on_ship`.
+- Recenzja jest zamieszczana pod tożsamością aplikacji serwera. Kto nacisnął Opublikuj, jest zapisywane na potrzeby bramki roli i dziennika audytu; nie jest to autor z GitHuba.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/pl-PL/podrecznik/koncepcje/guardraile/).
+Publikowanie deklaruje klasę akcji `prPublish`, więc punkt kontrolny guardraili traktuje je jak każdą akcję zmieniającą stan — domyślnie pyta o zgodę, a gdy nie jest podłączony żaden zatwierdzający, odmawia działania. Zobacz [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 
-## What a reviewer may do
+## Co recenzent może robić
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Agenci-recenzenci działają w trybie `review`: to sandbox tylko do odczytu i wyselekcjonowana lista dozwolonych narzędzi obejmująca ustalenia, komentarze, zgłoszenia i wzajemne recenzowanie — ale żadnych zmian. Recenzent nie może naprawić kodu, który krytykuje; może dołączyć sugerowaną poprawkę, którą zastosuje człowiek. Komunikat odmowy tego trybu mówi agentowi, który i tak próbuje działać, żeby sfinalizował recenzję i pozwolił użytkownikowi zadziałać na podstawie opublikowanego podsumowania.
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Guardrails](/pl-PL/podrecznik/koncepcje/guardraile/) — the policy engine that gates publishing
-- [Modes](/pl-PL/podrecznik/koncepcje/tryby/) — what `review` mode changes for an agent
-- [Pipelines and automation](/pl-PL/podrecznik/koncepcje/potoki/) — the engine the review runs on
-- [Agent dispatch lifecycle](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/) — where the isolated worktree comes from
+- [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/) — silnik zasad, który stanowi bramkę dla publikowania
+- [Tryby](/pl-PL/podrecznik/koncepcje/tryby/) — co tryb `review` zmienia dla agenta
+- [Potoki i automatyzacja](/pl-PL/podrecznik/koncepcje/potoki/) — silnik, na którym działa recenzja
+- [Cykl życia wysyłania agentów](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/) — skąd bierze się izolowany worktree
 
-## Related guides
+## Powiązane poradniki
 
-- [Use AI-powered review](/pl-PL/podrecznik/poradniki/recenzja-ai/) — run a review and publish it
-- [Dispatch reviewer agents](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/) — choose the reviewers yourself
-- [Review compute](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/) — cohorts, axes and diffs
+- [Używaj recenzji opartej na AI](/pl-PL/podrecznik/poradniki/recenzja-ai/) — przeprowadź recenzję i opublikuj ją
+- [Wyślij agentów-recenzentów](/pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow/) — sam wybierz recenzentów
+- [Obliczenia recenzji](/pl-PL/podrecznik/poradniki/obliczenia-recenzji/) — kohorty, osie i diffy

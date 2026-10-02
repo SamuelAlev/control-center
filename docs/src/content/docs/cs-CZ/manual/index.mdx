@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Úvod
+description: Control Center je kokpit pro vývoj softwaru s více agenty.
 slug: cs-CZ/prirucka
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center ti dává velení nad flotilou AI agentů, kteří píšou kód. Spouštěj je, sleduj práci v reálném čase, kontroluj jejich PR a spravuj repozitáře, pracovní prostory a integrace — z nativní aplikace na počítači, z prohlížeče nebo z telefonu.
 
 <div className="docs-start not-content">
-  <LinkButton href="/cs-CZ/prirucka/rychly-start/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/cs-CZ/prirucka/instalace/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/cs-CZ/prirucka/rychly-start/" icon="right-arrow">Rychlý start</LinkButton>
+  <LinkButton href="/cs-CZ/prirucka/instalace/" variant="minimal" icon="download">Nainstalovat Control Center</LinkButton>
 </div>
 
-## What you can do
+## Co s tím můžeš dělat
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/cs-CZ/prirucka/navody/pouziti-stanic/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Piš agentům**: prostory jsou hlavní způsob, jak flotilu řídit. Zmiň agenta přes @ a ten se odešle do vlastního copy-on-write worktree, takže jich může několik kódovat a revidovat paralelně a tvého checkoutu se nedotknou
+- **Orchestruj velké zadání**: dej orchestrátorovi cíl, jednou schval plán pro celý tým, který navrhne, a vygenerovaná [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) ten plán provede
+- **Kontroluj a slučuj PR** s vestavěným prohlížečem diffu, vloženými komentáři a AI kontrolou
+- **Dej agentům jednorázové stroje**: [stanice](/cs-CZ/prirucka/navody/pouziti-stanic/) je jednorázové VM, které agent řídí — prohlížeč, plocha, telefon nebo izolovaný terminál — zatímco se díváš živě a můžeš převzít řízení; vývojové servery uvnitř se přesměrují na `localhost`, do prohlížeče agenta a na `https://myapp.test`
+- **Automatizuj postupy** přes pipeline na bázi DAG, spouštěné událostmi nebo plánem
+- **Spravuj znalosti** pamětí, fakty a politikami v rozsahu pracovního prostoru
+- **Sleduj práci** tickety nezávislými na dodavateli, projekty a delegováním
+- **Nahrávej schůzky** záznamem na zařízení, přepisem a diarizací; shrnutí z nich udělá poznámky, akční položky a rozhodnutí
+- **Měj přehled o dni** se synchronizací Google Calendar, RSVP, upozorněními na schůzky a akcí nahrát a propojit
+- **Sleduj flotilu z telefonu**: spáruj zařízení se svým serverem a čti zprávy, odpovídej a třiď tickety. Telefon si vezme nejlepší cestu, na kterou dosáhne — loopback, LAN, tailnet nebo TLS — a jako zálohu použije relé zapečetěné od konce ke konci, které přeposílá rámce, jež neumí přečíst
+- **Řiď agenty ze Slacku**: přemosti pracovní prostor do chatové aplikace a zmiň bota, odpověz ve vláknu Slacku, nebo založ ticket příkazem s lomítkem — přes odchozí spojení, takže veřejný koncový bod není potřeba
+- **Integruj** s GitHub, Linear, Slack, Google Calendar a s více než 100 nástroji MCP
 
-## You do not have to install it
+## Nemusíš nic instalovat
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Stejná aplikace běží v prohlížeči na
+[app.usectrl.dev](https://app.usectrl.dev), se stejnými funkcemi.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Každý klient — počítač, web i telefon — je tenká vrstva nad serverem bez
+rozhraní, který vlastní tvoje data a dělá práci. Aplikace na počítači ten
+server umí spustit za tebe; karta v prohlížeči ne, takže se webová aplikace
+připojí k serveru, který spustíš ty. Ten server může běžet na tvém stroji
+(`ws://localhost:9030`, certifikát není potřeba), nebo na vzdáleném hostiteli
+dosažitelném přes TLS, VPN nebo tunel.
 
-See [Install](/cs-CZ/prirucka/instalace/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/cs-CZ/prirucka/koncepty/nasazeni/) for how the three clients relate.
+Cestu prohlížečem popisuje [Instalace](/cs-CZ/prirucka/instalace/#použij-ho-v-prohlížeči), vztah tří klientů [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/).
 
-## Next steps
+## Další kroky
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/cs-CZ/prirucka/instalace/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/cs-CZ/prirucka/rychly-start/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/cs-CZ/prirucka/tutorialy/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/cs-CZ/prirucka/navody/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/cs-CZ/prirucka/koncepty/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/cs-CZ/prirucka/referencni-prirucka/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Instalace" href="/cs-CZ/prirucka/instalace/" description="Stažení, systémové požadavky a kde běží server." />
+  <LinkCard title="Rychlý start" href="/cs-CZ/prirucka/rychly-start/" description="Nejkratší úplná cesta k agentovi, který pracuje na tvém repozitáři." />
+  <LinkCard title="Tutoriály" href="/cs-CZ/prirucka/tutorialy/" description="Delší lekce v pořadí, od prvního pracovního prostoru." />
+  <LinkCard title="Návody" href="/cs-CZ/prirucka/navody/" description="Recepty po jednom úkolu: přidej repozitáře, nastav guardraily nebo spáruj telefon." />
+  <LinkCard title="Koncepty" href="/cs-CZ/prirucka/koncepty/" description="Proč produkt funguje tak, jak funguje, od nasazení a klientů." />
+  <LinkCard title="Referenční příručka" href="/cs-CZ/prirucka/referencni-prirucka/" description="Úplné tabulky tras, nástrojů MCP, klávesových zkratek a doménových událostí." />
 </div>

@@ -1,45 +1,47 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: استفاده از سرور MCP
+description: یک کلاینت MCP بیرونی را به سرور ابزار Control Center وصل کنید، یک توکن bearer تنظیم کنید و بدانید سطح چه چیزی ارائه می‌دهد.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+این راهنما نشان می‌دهد چگونه یک کلاینت MCP بیرونی — Claude Code، یک ویرایشگر،
+MCP Inspector — را به سرور ابزار خودِ Control Center وصل کنید.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center **۱۱۰** ابزار ثبت می‌کند و آن‌ها را از طریق پروتکل Model Context
+در نسخهٔ پروتکل `2024-11-05` ارائه می‌دهد. خانواده‌های کامل ابزاری که انتظارشان را
+دارید غایب‌اند: هیچ ابزار جلسه یا تقویمی و هیچ ابزار پروژه‌ای وجود ندارد.
 
-## Find the endpoint
+## یافتن نقطهٔ پایانی
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+سطح MCP از همان شنوندهٔ اصلی `cc_server` استفاده می‌کند. پورت جدایی برای MCP
+وجود ندارد.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| نقطهٔ پایانی | روش      | هدف                                                                    |
+| ------------ | -------- | ---------------------------------------------------------------------- |
+| `/mcp`       | `POST`   | انتقال Streamable HTTP — این همان چیزی است که یک کلاینت با آن گفتگو می‌کند |
+| `/mcp`       | `DELETE` | پایان دادن به یک نشست                                                   |
+| `/sse`       | `GET`    | جریان اعلان ارسالی از سرور                                              |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+پس یک نصب محلی پیش‌فرض روی `http://127.0.0.1:9030/mcp` قرار دارد.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. به **تنظیمات → سرور → سرورهای MCP** بروید
+2. کارت **سرور MCP** را بخوانید — نشان می‌دهد در حال اجراست یا متوقف، و روی
+   کدام پورت گوش می‌دهد
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+این سطح در یک نصب تازه به‌طور پیش‌فرض روشن است، پس یک کلاینت لوپ‌بک بدون
+دست‌زدن به تنظیمات کار می‌کند. **شروع هنگام راه‌اندازی برنامه** تعیین می‌کند که
+پس از راه‌اندازی دوباره بازگردد یا نه؛ **شروع** / **توقف** کنترل‌های نشست‌اند و آن
+ترجیح را تغییر نمی‌دهند.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+سرور به‌طور پیش‌فرض به لوپ‌بک می‌بندد، پس نقطهٔ پایانی تنها از ماشینی که
+`cc_server` روی آن اجرا می‌شود قابل‌دسترسی است، مگر آنکه آن را با `--bind any`
+راه‌اندازی کرده باشید.
 
-## Connect a client
+## اتصال یک کلاینت
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+کلاینت خود را به نقطهٔ پایانی Streamable HTTP اشاره دهید. شکل دقیق پیکربندی به
+خودِ کلاینت مربوط است؛ URL در هر دو حالت یکی است.
 
 ```json
 {
@@ -54,41 +56,43 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code این را از `.mcp.json` یک پروژه برنمی‌دارد — سرورهای MCP محدود به
+پروژه را پشت یک پرامپت تأیید قرار می‌دهد که `claude -p` غیرتعاملی هرگز به آن
+پاسخ نمی‌دهد. پیکربندی را صریح بدهید:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` باعث می‌شود Claude تنها از همان فایل استفاده کند، تا همان
+سرور از پروژه هم کشف نشود و دو بار ثبت نگردد.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+چک‌پوینت: از کلاینت بخواهید ابزارهایش را فهرست کند. باید ورودی‌های `mcp__*` را
+ببینید که تیکت‌ها، فضاها، حافظه، گراف کد و بازبینی را پوشش می‌دهند.
 
-## Serve MCP beyond the host
+## ارائهٔ MCP فراتر از میزبان
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. در **تنظیمات → سرور → سرورهای MCP**، روی ردیف **توکن احراز هویت**،
+   **تنظیم** را بزنید و یک توکن جای‌گذاری کنید
+2. آن را به‌صورت `Authorization: Bearer <token>` روی هر درخواست `POST /mcp`
+   بفرستید
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+سطحی که توکن ندارد هر فراخوانِ غیرلوپ‌بک را با 403 رد می‌کند. این عمداً با شکست
+بسته طراحی شده است: توکن همان چیزی است که سرویس‌دهی بیرون از میزبان را اساساً
+ممکن می‌کند.
 
-Token changes apply to the live surface immediately — no restart.
+تغییرات توکن بی‌درنگ روی سطح زنده اعمال می‌شوند — بدون راه‌اندازی دوباره.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` توکن را در رشتهٔ پرس‌وجو می‌گیرد]
+جریان اعلان هم مثل هر مسیر دیگری بررسی توکن می‌شود، اما `EventSource` مرورگر
+نمی‌تواند هدر `Authorization` بفرستد — پس `/sse` توکن را به‌صورت
+`?token=<token>` هم می‌پذیرد. بدون آن، پاسخ 401 می‌دهد.
 :::
 
-## Scope every call to a workspace
+## محدودکردن هر فراخوانی به یک فضای کاری
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+هر ابزاری که به دادهٔ محدود به فضای کاری دست می‌زند `workspace_id` لازم دارد و
+فراخوانی بدون آن رد می‌شود، نه اینکه در برابر فلان «فضای کاری جاری» حل شود:
 
 ```json
 {
@@ -98,56 +102,58 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+این شناسه همانی است که در URL مرورگر یا اپ شما هست:
+`/workspaces/<workspace_id>/…`. تنها استثناها ابزارهایی‌اند که واقعاً فراتر از
+فضای کاری‌اند، مانند `list_workspaces` و ابزارهای خوراک خبری — خوراک خبری
+هر-کاربر است و یک عامل کاربر خودش را ندارد، پس آن ابزارها روی خوراک‌های مالک
+سرور کار می‌کنند.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+ابزارهای محدود به مخزن نیز علاوه بر آن بررسی می‌کنند که مخزن به همان فضای کاری
+پیوند خورده باشد.
 
-## Know what the surface will refuse
+## بدانید سطح چه چیزی را رد می‌کند
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **دروازه‌گذاری حالت.** یک فراخوانی سمت سرور در برابر حالت فضای عامل فراخوان حل
+  می‌شود. عاملی در یک حالت فقط‌خواندنی نمی‌تواند با حذف `space_id` به یک ابزار
+  نوشتن برسد — در عوض، حالت از اجرای فعالش خوانده می‌شود.
+- **گاردریل‌های کنش.** ابزارهای تغییردهنده کلاس‌های اثرشان را اعلام می‌کنند و از
+  همان سیاستی می‌گذرند که بقیهٔ محصول استفاده می‌کند.
+  [پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/) را ببینید.
+- **تأیید.** بعضی ابزارهای مخرب یک محمولهٔ تأیید می‌سازند که باید پیش از ادامهٔ
+  فراخوانی تأیید شود.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+کاتالوگ کامل در `tools/list` اعلام می‌شود، بدون هیچ دروازه‌گذاری کشف — یک کلاینت
+MCP بیرونی از فراخوانی ابزاری که در فهرست کش‌شده‌اش نیست سر باز می‌زند، پس
+پنهان‌کردن ابزارها آن‌ها را مرتب نمی‌کند، بلکه از کار می‌اندازد.
 
-## Troubleshooting
+## عیب‌یابی
 
-### The client sees no tools
+### کلاینت هیچ ابزاری نمی‌بیند
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- بررسی کنید کارت **سرور MCP** در حال اجرا باشد
+- بررسی کنید پورت با پورت `cc_server` شما بخواند
+- روی Claude Code، بررسی کنید `--mcp-config` و `--strict-mcp-config` را
+  فرستاده باشید
 
-### 403 from a machine that is not the server
+### 403 از ماشینی که سرور نیست
 
-No bearer token is configured. Set one and send it.
+توکن bearer تنظیم نشده است. یکی تنظیم کنید و بفرستید.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### فراخوانی یک ابزار با «Missing or invalid argument: workspace_id» شکست می‌خورد
 
-Add `workspace_id`. There is no implicit workspace.
+`workspace_id` را اضافه کنید. هیچ فضای کاری ضمنی‌ای در کار نیست.
 
-### A tool call is refused as unknown
+### فراخوانی یک ابزار به‌عنوان ناشناخته رد می‌شود
 
-[MCP tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[ابزارهای MCP(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/) کاتالوگ را فهرست
+می‌کند. نام را دقیقاً همان‌طور که آنجا آمده فراخوانی کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [MCP tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/)
-- [Configure guardrails](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/)
-- [Run a headless server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
+- [ابزارهای MCP(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/)
+- [پیکربندی گاردریل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها/)
+- [اجرای سرور بدون رابط(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-سرور-بدون-رابط/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/)
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/)

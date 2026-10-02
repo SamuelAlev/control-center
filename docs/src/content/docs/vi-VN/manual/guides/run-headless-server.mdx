@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Chạy máy chủ không giao diện
+description: Chạy tệp nhị phân không giao diện cc_server hoặc ảnh Docker của nó, ghép nối một máy khách với nó và cấu hình nó với toàn bộ bề mặt cờ CLI và biến môi trường.
 dateModified: 2026-09-10
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Chạy `cc_server` trên một chiếc máy luôn bật, rồi kết nối tới nó từ máy tính,
+trình duyệt hoặc điện thoại của bạn. Máy chủ là một tệp nhị phân native viết thuần
+Dart — không có engine Flutter — nên nó chạy không giao diện trên macOS, Linux hoặc
+Windows. Nó sở hữu cơ sở dữ liệu, chạy các agent và thực hiện mọi lời gọi API bên
+ngoài; các máy khách chỉ dựng giao diện.
 
-## Run in Docker (prebuilt images)
+## Chạy trong Docker (các ảnh dựng sẵn)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Mỗi bản phát hành công bố một bộ ngăn xếp tự lưu trữ gồm bốn ảnh GHCR — backend,
+hai máy khách mỏng tĩnh và bộ chuyển tiếp ghép nối tùy chọn — cùng một ảnh
+`cc-server-demo` riêng cho máy chủ demo công khai. Một bản cài đặt tự lưu trữ không
+cần checkout mã nguồn. Hãy ghim một thẻ phiên bản
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) hoặc dùng `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
+| Ảnh                                               | Là gì                                        | Cổng công bố     |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | Backend: cơ sở dữ liệu, agent, MCP, webhook  | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Máy khách web (nginx tĩnh)                   | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA đồng hành trên điện thoại (nginx tĩnh)   | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Bộ chuyển tiếp ghép nối WebRTC (tùy chọn)    | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+Toàn bộ ngăn xếp dưới dạng một tệp compose:
 
 ```yaml
 services:
@@ -51,91 +53,94 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Những điều đáng biết trước khi bạn để lộ bất kỳ phần nào trong số này ra ngoài
+loopback:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Ảnh `cc-server` đi kèm `CC_SERVER_INSECURE=1`** (nó phải bind `0.0.0.0` để
+  nhận lưu lượng qua cổng đã công bố), điều chỉ an toàn phía sau một reverse proxy
+  kết thúc TLS — Caddy, Traefik, nginx hoặc Cloudflare Tunnel — trên một mạng tin
+  cậy. Để kết thúc TLS ngay trong tiến trình thay vào đó, hãy gắn một chứng chỉ và
+  đặt `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (rồi bỏ đặt
+  `CC_SERVER_INSECURE`). Mọi thứ đều có thể ghi đè bằng `docker run -e …` hoặc khối
+  `environment:` của compose.
+- **`/data` là trạng thái duy nhất.** Các cơ sở dữ liệu SQLite, bí mật của thiết bị
+  đã ghép nối, mô hình đã tải về và âm thanh cuộc họp đều nằm trong volume — hãy
+  sao lưu nó và container trở nên có thể vứt bỏ.
+- **Ghép nối một máy khách từ bên trong ảnh** trước kết nối đầu tiên, tương đương
+  với [bước 3](#bước-3-ghép-nối-một-máy-khách-trước-lần-khởi-động-đầu-tiên) trong container:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Hai ảnh máy khách là những máy chủ nginx tĩnh** — không có gì phải cấu hình lúc
+  chạy; biểu mẫu kết nối của mỗi máy khách nhận URL máy chủ, id thiết bị và khóa
+  ghép nối của bạn. Bộ chuyển tiếp signaling cũng chỉ cần cổng của nó
+  (`SIGNALING_HOST` / `SIGNALING_PORT` có thể ghi đè); nó phi trạng thái, không giữ
+  bí mật nào và là một **phương án dự phòng** — một chiếc điện thoại dùng loopback,
+  LAN, tailnet hoặc đường `wss://` trực tiếp khi có đường nào với tới được, và chỉ
+  quay về bộ chuyển tiếp khi không có đường nào. Hãy bỏ qua nó nếu các máy khách
+  của bạn luôn với tới máy chủ trực tiếp.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Phần còn lại của hướng dẫn này dựng máy chủ từ mã nguồn; các cờ và hành vi mà nó
+đề cập cũng chính là những thứ mà các biến môi trường của ảnh đưa vào.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [SDK Dart](https://dart.dev/get-dart). Kho mã này ghim SDK của nó bằng [fvm](https://fvm.app), nên hãy thêm tiền tố `fvm` vào mọi lệnh.
+- Kho mã này đã được checkout.
+- Bộ công cụ native mà script staging cần — Rust/`cargo`, cùng `meson`, `ninja`, `pkg-config`, `git` và một trình biên dịch C++. Mỗi script build đều nêu rõ thứ nó không tìm thấy và cách cài đặt.
+- Một máy chủ nhà có thể với tới: loopback cho dùng cục bộ, hoặc một địa chỉ LAN/công khai kèm TLS cho các máy khách từ xa.
 
-## Step 1: Stage the native libraries
+## Bước 1: Chuẩn bị các thư viện native
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Các thư viện native là **bắt buộc** — không có chế độ suy giảm nào. Hãy dựng chúng
+từ gốc kho mã trước mọi việc khác:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Lệnh này dựng `rift`, `fff`, tree-sitter cùng các ngữ pháp của nó, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` và thư viện native SAML vào
+`build/natives/`. Hook build của `cc_server` phát lại mọi thứ
+được chuẩn bị ở đó vào bundle, nên bỏ qua bước này hoặc làm build thất bại hoàn
+toàn, hoặc — với lối thoát bên dưới — tạo ra một tệp nhị phân mà bước kiểm tra
+trước khởi động từ chối chạy và nêu tên thư viện còn thiếu.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Lối thoát chỉ dành cho việc biên dịch]
+Tạo một tệp `.cc_natives_allow_missing` rỗng tại gốc kho mã sẽ hạ lỗi build do
+thiếu thư viện native xuống thành một cảnh báo. Nó dành cho việc kiểm tra cú pháp
+một bản clone mới; một máy chủ được dựng theo cách đó không thể khởi động. Nó phải
+là một **tệp** — trình chạy hook build không chuyển tiếp môi trường của bên gọi,
+nên một biến môi trường sẽ bị bỏ qua.
 :::
 
-## Step 2: Build the binary
+## Bước 2: Dựng tệp nhị phân
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
+Bản bundle đi kèm `libsqlite3` và các thư viện native đã chuẩn bị bên cạnh tệp nhị
+phân — không cần SQLite hệ thống và không cần engine Flutter. Tệp thực thi nằm tại
 `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Bước 3: Ghép nối một máy khách trước lần khởi động đầu tiên
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Một thư mục dữ liệu mới chưa có thiết bị nào được ghép nối và không có khóa chia sẻ
+trước, nên lời nhắc nhập khóa ghép nối của máy khách chưa thể được đáp ứng. Hãy tạo
+một khóa bằng lệnh con `pair`. Nó ghi trực tiếp `global.db` và `secrets.json`; một
+máy chủ đang phục vụ thư mục dữ liệu đó sẽ nhận thiết bị mới mà không cần khởi động
+lại:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Nó in ra ba giá trị để dán vào biểu mẫu kết nối của máy khách:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +149,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Các cờ hữu ích: `--device` (mặc định `web-client`; id cũng chọn hạng thiết bị —
+`desktop`, `ios`, `android`, bất kỳ giá trị nào khác là máy khách web), `--label`
+(mặc định là tên nền tảng cộng với hostname của máy này), `--host` (máy chủ để in
+trong URL, vì loopback không với tới được từ máy khác) và `--client-url`. Chạy lại
+`pair` sẽ xoay khóa của thiết bị đó và hủy các phiên đang hoạt động của nó. Việc
+ghép nối không bao giờ tạo không gian làm việc: phần hướng dẫn ban đầu của máy khách
+kết nối sẽ đặt tên và tạo không gian làm việc đầu tiên.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Với `--client-url`, nó cũng in một mã QR quét được từ terminal để mở máy khách web
+với các trường đã điền sẵn:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
+:::caution[Mã QR này không phải mã QR cho điện thoại]
+`--client-url` tạo một liên kết cho **máy khách web** — URL máy chủ, id thiết bị và
+khóa nằm trong fragment của URL. Ứng dụng **Remote** trên điện thoại mong đợi một
+payload khác (bộ mô tả kết nối đầy đủ của máy chủ kèm thời hạn), được tạo từ
+**Cài đặt → Bạn → Thiết bị của bạn** trong một máy khách đang chạy. Hai loại này
+không thể thay thế cho nhau. Xem [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+Thông tin xác thực do `cc_server pair` tạo **không có thời hạn**; thông tin xác thực
+tạo trong ứng dụng luôn hết hạn sau 30 ngày. Hãy thu hồi thiết bị do CLI tạo từ
+**Cài đặt → Bạn → Thiết bị của bạn** khi bạn không cần nữa.
 
-## Step 4: Start the server
+## Bước 4: Khởi động máy chủ
 
-On loopback — the default and all you need for a client on the same machine:
+Trên loopback — mặc định và là tất cả những gì bạn cần cho một máy khách trên cùng
+máy:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Để với tới nó từ máy khác, hãy bind mọi giao diện. Một bind không phải loopback mà
+không có TLS sẽ **bị từ chối ngay khi khởi động** (`Refusing to bind non-loopback address … without TLS`), nên hãy cung cấp một chứng chỉ:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +195,41 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Hoặc kết thúc TLS trong một reverse proxy trên mạng riêng đáng tin cậy và chọn một
+bind dạng thuần phía sau nó:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` bị bỏ qua khi cả `--tls-cert` và `--tls-key` đều được đặt — TLS luôn
+thắng. Máy chủ quảng bá trạng thái thuần là `insecure: true` trong `GET /healthz`
+và các máy khách đánh dấu kết nối như vậy là không an toàn.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Máy chủ chạy cho tới khi nhận `SIGINT`/`SIGTERM`, rồi tắt một cách sạch sẽ.
 
-## Step 5: Connect a client
+## Bước 5: Kết nối một máy khách
 
-Point a client at the server URL and pairing key from step 3:
+Trỏ một máy khách tới URL máy chủ và khóa ghép nối từ bước 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
+- **Ứng dụng máy tính**: trên màn hình lần chạy đầu tiên (**Control Center nên chạy như thế nào?**), hãy điền vào các trường kết nối thay vì **Chạy trong ứng dụng này**, hoặc thêm máy chủ sau tại **Cài đặt → Máy chủ → Kết nối & trạng thái**. Xem [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/).
+- **Máy khách web**: mở [app.usectrl.dev](https://app.usectrl.dev) (hoặc bản sao bản dựng web của riêng bạn) và nhập URL máy chủ, id thiết bị và khóa ghép nối.
+- **Điện thoại**: ghép nối ứng dụng **Remote** từ một máy khách đang chạy — xem [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server không phục vụ bundle web nào]
+Một `cc_server` độc lập không bao giờ gắn web root, nên `GET /` trả về 404. Máy
+khách web được lưu trữ riêng — hãy dùng `app.usectrl.dev`, hoặc tự lưu trữ bản dựng
+web trên bất kỳ máy chủ HTTPS tĩnh nào (ảnh `cc-webapp` ở trên chính là như vậy). Một
+origin trình duyệt khác loopback phải nằm trong `--allowed-origins`, nếu không việc
+nâng cấp WebSocket tới `/rpc` sẽ bị từ chối; danh sách mặc định là
+`https://app.usectrl.dev` và `localhost` / `127.0.0.1` luôn được cho phép.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Bước 6: Kết nối một Google Calendar (tùy chọn)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Để đồng bộ lịch của một không gian làm việc mà không cần giao diện, hãy dùng luồng
+mã thiết bị:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +237,67 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
+Nó in ra một mã và một URL để phê duyệt trên thiết bị khác, lưu refresh token ở
+phía máy chủ rồi thoát. Một bản dựng từ mã nguồn không kèm máy khách Google nào, nên
+các biến môi trường id và secret là bắt buộc — không có cờ `--google-client-id`. Xem
+[Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/).
 
-## Configuration
+## Cấu hình
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/vi-VN/so-tay/tham-chieu/cli-cc-server/).
+Các cờ dùng ở trên là những cờ mà lần thiết lập đầu tiên cần. Toàn bộ bề mặt — 23
+cặp cờ và biến môi trường, bốn lệnh con và cách bố trí thư mục dữ liệu — nằm trong
+[tham chiếu CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Các cờ không xác định bị bỏ qua âm thầm]
+Bộ phân tích đối số được viết thủ công và bỏ qua mọi thứ nó không nhận ra, nên một
+lỗi đánh máy (`--tls-key-file`, `--bindany`) không tạo ra lỗi nào — máy chủ chỉ khởi
+động với giá trị mặc định. Hãy kiểm tra các dòng log lúc khởi động khi một cờ có vẻ
+không có tác dụng.
 :::
 
-The four you are most likely to need:
+Bốn cờ bạn có nhiều khả năng cần nhất:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Cờ             | Mặc định                             | Ý nghĩa                                                                                          |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | thư mục dữ liệu ứng dụng theo từng người dùng của hệ điều hành | Cơ sở dữ liệu, bí mật, mô hình và nội dung đa phương tiện được lưu đệm                 |
+| `--port`       | `9030`                               | Cổng TCP (`0` = tạm thời)                                                                        |
+| `--bind`       | `loopback`                           | `loopback`, hoặc `any` cho mọi giao diện (cần TLS hoặc `--insecure`)                             |
+| `--public-url` | được suy ra từ bind                  | URL RPC được quảng bá cho các máy khách đã ghép nối. **Hãy đặt tường minh khi đứng sau proxy, NAT hoặc tunnel** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Thư mục dữ liệu mặc định là `~/Library/Application Support/control-center` trên
+macOS, `%APPDATA%\control-center` trên Windows và `$XDG_DATA_HOME/control-center`
+(nếu không thì `~/.local/share/control-center`) ở những nơi khác. Một `.cc_server`
+tương đối theo cwd chỉ được dùng khi không phân giải được thư mục home hay thư mục
+dữ liệu ứng dụng nào.
 
-## What the server serves
+## Máy chủ phục vụ những gì
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` là toàn bộ bề mặt sản phẩm chứ không phải một tập con: đường dữ liệu
+repo-RPC cùng các gói đăng ký, điểm cuối công cụ MCP tại `POST /mcp` và `GET /sse`
+trên cùng cổng, các webhook đến, proxy nội dung đa phương tiện và phông chữ,
+callback đăng nhập một lần, giao thức thuê của đội máy, việc lấy RSS phía máy chủ
+theo lịch 30 phút và tìm kiếm vector (tiện ích mở rộng `sqlite_vector` được đăng ký
+như một auto-extension toàn tiến trình, chỉ suy giảm xuống tìm kiếm toàn văn ở nơi
+không có tiện ích mở rộng đó).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Bộ điều phối là **phi trạng thái**: không có ràng buộc không gian làm việc theo từng
+phiên. Mọi lời gọi thuộc phạm vi không gian làm việc đều mang `workspace_id` của
+riêng nó, và quyền truy cập được quyết định bởi tư cách thành viên và vai trò không
+gian làm việc của bên gọi — chứ không phải bởi việc giữ một khóa ghép nối.
 
-Two things to know before you expose the port beyond loopback:
+Hai điều cần biết trước khi bạn để lộ cổng ra ngoài loopback:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP đóng an toàn khi ở ngoài máy chủ.** Một bề mặt MCP không token chỉ trả lời loopback. Việc bind `any` không mở rộng điều đó — một yêu cầu từ ngoài máy chủ bị từ chối với thông báo "MCP requires a bearer token to answer non-loopback clients" cho tới khi bạn cấu hình một token (`mcp.setToken`, hoặc **Cài đặt → Máy chủ → Máy chủ MCP**).
+- **`GET /healthz` không yêu cầu xác thực theo thiết kế**, có CORS ký tự đại diện và công bố id, tên, dấu vân tay danh tính và phiên bản build của máy chủ. Các máy khách cần dấu vân tay để ghim máy chủ, nên đây là chủ ý — nhưng điều đó cũng có nghĩa là bất kỳ `cc_server` nào với tới được cũng tiết lộ chừng đó cho bất kỳ ai hỏi.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/)
-- [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
-- [Run a fleet worker](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-worker-doi-may/)
-- [Connect a Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
+- [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/)
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/)
+- [Chạy một worker đội máy](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-worker-doi-may/)
+- [Kết nối Google Calendar](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/)
-- [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/)
+- [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)

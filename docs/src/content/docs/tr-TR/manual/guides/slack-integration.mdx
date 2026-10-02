@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Slack entegrasyonunu kurma
+description: Üyelerin ajanları Slack'ten yönlendirebilmesi için bir Slack uygulamasını Control Center çalışma alanına bağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Bu kılavuz, Slack'i bir Control Center çalışma alanına nasıl bağlayacağınızı gösterir: uygulamayı Control Center'ın oluşturmasına izin vererek ya da uygulamayı kendiniz oluşturarak.
 
-For a guided first run, see [Bridge Slack to your workspace](/tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu/).
+Rehberli bir ilk deneme için bkz. [Slack'i çalışma alanınıza bağlayın](/tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack tek sohbet sağlayıcısıdır]
+Köprü, tasarımı gereği sağlayıcıdan bağımsızdır — sağlayıcı başına tek bir
+adaptör üzerinde tanımlayıcı güdümlü bir arayüz — ama var olan tek adaptör
+Slack'tir. Discord, Telegram, Teams veya Matrix uygulaması yoktur.
 :::
 
-## Prerequisites
+## Önkoşullar
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Control Center çalışma alanında `owner` veya `admin` rolü — bir sohbet uygulaması bağlamak, çalışma alanı ayarlarında bir değişikliktir
+- Slack çalışma alanında uygulama oluşturma ve yükleme izni
+- Genel erişime açık hiçbir şey gerekmez: bağlantı dışa doğrudur (Socket Mode), bu yüzden sunucunun gelen bağlantı noktasına, tünele veya alan adına ihtiyacı yoktur
 
-## Three ways to get the app
+## Uygulamayı edinmenin üç yolu
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Yol                 | Sizin sağladığınız                      | Control Center'ın yaptığı                                                                                                        |
+| ------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Rehberli**        | Bir uygulama yapılandırma jetonu (`xoxe-…`) | Uygulamayı doğru kapsamlarla, olaylarla, Socket Mode ile ve slash komutuyla oluşturur; Slack'in API'sinin olmadığı iki adımı size bırakır |
+| **Slack içinde oluştur** | Hiçbir şey                         | Slack'i aynı yapılandırma önceden doldurulmuş halde açar; bir çalışma alanı seçip onaylarsınız                                   |
+| **Elle**            | Bitmiş uygulamanın token'ları           | Bunları doğrular ve bağlanır                                                                                                     |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Rehberli yol, uygulamayı Control Center'dan _yönetilebilir_ bırakan tek yoldur; [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/) bağlantısını mümkün kılan da budur. **Slack içinde oluştur** ile yapılmış bir uygulama, bağlantı iletişim kutusuna bir yapılandırma jetonu yapıştırılarak daha sonra yönetilen bir uygulamaya yükseltilebilir.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Bilinçli olarak "Control Center'ın Slack uygulamasını yükle" diye bir düğme yoktur. Dağıtılmış bir Slack uygulamasını yüklemek paylaşılan bir istemci sırrı gerektirir (Slack'te PKCE yoktur) ve Socket Mode, bir uygulamanın olaylarını bağlantıları arasında rastgele dağıtır — yani tek bir paylaşılan uygulama, çalışma alanınızın iletilerini başka kişilerin sunucularına iletirdi. Bu yüzden her çalışma alanı kendi uygulamasına sahiptir ve bu üç yol, bunun size ne kadar az iş çıkardığıyla ilgilidir.
 
-## Option A: let Control Center create the app
+## Seçenek A: uygulamayı Control Center oluştursun
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. [api.slack.com/apps](https://api.slack.com/apps) adresinde bir uygulama yapılandırma jeton çifti oluşturun ve **yenileme** jetonunu (`xoxe-…`) kopyalayın
+2. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+3. Slack bloğunda **Uygulamayı benim için oluştur**'a tıklayın
+4. Jetonu yapıştırın, uygulama adını, bot adını, açıklamaları ve slash komutunu ayarlayın, ardından **Uygulama oluştur**'a tıklayın
+5. İletişim kutusunun gösterdiği iki kalan adımı izleyin; her biri Slack'e açılan bir bağlantıdır:
+   - **Basic Information → App-Level Tokens**: `connections:write` kapsamıyla bir jeton oluşturun (`xapp-…`)
+   - **Install App**: çalışma alanına yükleyin ve **Bot User OAuth Token**'ı (`xoxb-…`) kopyalayın
+6. **Kimlik bilgilerini yapıştır**'a tıklayın ve [Bağlan](#bağlan) ile devam edin
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Yapılandırma jetonu her kullanımda rotasyona uğrar. Control Center rotasyona uğramış değeri ilerledikçe saklar, böylece onu bir daha yapıştırmanız gerekmez.
 
-## Option B: create it in Slack, pre-filled
+## Seçenek B: Slack içinde önceden doldurulmuş olarak oluşturun
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Aynı uygulama, yapılandırma jetonu yok — Slack kendi oluşturma ekranını, manifestin tamamı önceden doldurulmuş halde sunar.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+2. Slack bloğunda **Uygulamayı benim için oluştur**'a tıklayın
+3. Uygulama adını, bot adını, açıklamaları ve slash komutunu ayarlayın — bunlar bağlantıyla birlikte taşınır
+4. **Slack içinde oluştur**'a tıklayın. Tarayıcınız, yapılandırma önceden doldurulmuş olarak Slack'in uygulama oluşturma sayfasını açar
+5. Slack çalışma alanını seçin ve onaylayın. Kapsamlar, olaylar, Socket Mode ve slash komutu zaten doğrudur
+6. Control Center'a döndüğünüzde, iletişim kutusunun gösterdiği iki kalan adımı izleyin:
+   - **Basic Information → App-Level Tokens**: `connections:write` kapsamıyla bir jeton oluşturun (`xapp-…`)
+   - **Install App**: çalışma alanına yükleyin ve **Bot User OAuth Token**'ı (`xoxb-…`) kopyalayın
+7. **Kimlik bilgilerini yapıştır**'a tıklayın ve [Bağlan](#bağlan) ile devam edin
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack hangi uygulamayı oluşturduğunu bildirmez, bu yüzden Control Center uygulama kimliğini öğrenemez ve 6. adımdaki bağlantılar doğrudan o uygulamaya değil, uygulama listenize gider. **Botu özelleştir** için bir yapılandırma jetonu gerekir.
 
-## Option C: build the app yourself
+## Seçenek C: uygulamayı kendiniz oluşturun
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+[api.slack.com/apps](https://api.slack.com/apps) adresinde bir uygulama oluşturun, ardından aşağıdaki gibi ayarlayın.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: etkinleştirin ve her istek URL'sini boş bırakın. Slack, hem Socket Mode hem de webhook teslimi isteyen bir manifesti reddeder.
 
-**Bot token scopes** (OAuth & Permissions):
+**Bot token kapsamları** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Olay abonelikleri** (bot olayları):
 
 ```text
 app_home_opened
@@ -91,134 +92,136 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` ve `message.groups`, zaten köprülenmiş bir Slack dizisi içindeki bir _yanıtın_ çalışmasını sağlar. Bunlar olmadan yalnızca ilk etiketleme ulaşır.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Slash komutu**: `/cc` (herhangi bir ad işe yarar — köprü, en son hangi komutla çağrıldıysa onu kullanır).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: Messages sekmesini etkinleştirin ve yazılabilir bırakın, böylece üyeler bota DM gönderebilir.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Token'lar**: `connections:write` ile bir uygulama düzeyi token oluşturun, ardından uygulamayı yükleyin ve bot kullanıcı OAuth token'ını kopyalayın.
 
-## Connect
+## Bağlan
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+2. Slack bloğunda **Slack bağla**'ya tıklayın
+3. Alanları doldurun:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Alan                                             | Değer    | Slack'te bulunduğu yer                                     |
+| ------------------------------------------------ | -------- | ---------------------------------------------------------- |
+| **Bot kullanıcı OAuth token'ı**                   | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Uygulama düzeyi token**                         | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Uygulama yapılandırma yenileme jetonu** (isteğe bağlı) | `xoxe-…` | api.slack.com/apps üzerindeki uygulama yapılandırma jeton çifti |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Her değerin ön eki, herhangi bir şey gönderilmeden önce iki tarafta da denetlenir,
+bu yüzden yanlış kutuya yapıştırılan bir değer iki durumda da aynı cümleyle
+reddedilir.
 
-4. Click **Connect**
+4. **Bağlan**'a tıklayın
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center, bot token'ını herhangi bir şey saklamadan _önce_ Slack'in `auth.test` çağrısıyla doğrular; böylece bir yazım hatası, sessizce hiç çalışmayan bir sokete dönüşmek yerine size bildirilir. Uygulama düzeyi token yalnızca soket açılarak kanıtlanabilir, bu yüzden hatalı bir token biraz sonra aynı satırda bir bağlantı hatası olarak görünür.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+İsteğe bağlı uygulama yapılandırma jetonu olmadan bağlantı sorunsuz çalışır — yalnızca botu Control Center'dan düzenleyemezsiniz.
 
-## What connecting does
+## Bağlanmanın yaptıkları
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Kimlik bilgilerini çalışma alanının kendi dizininde, veritabanının yanında, yalnızca sahibinin okuyabileceği şekilde saklar. Bunlar hiçbir zaman bir istemciye geri gitmez
+- Bu çalışma alanı için tek bir Socket Mode bağlantısı açar ve etiketlemeleri, Slack dizi yanıtlarını, DM'leri ve slash komutlarını almaya başlar
+- Daha önce köprülenmiş her Slack dizisini yeniden etkinleştirir, böylece yeniden bağlanma var olan konuşmaları ortada bırakmak yerine sürdürür
+- Sohbet uygulaması olmayan çalışma alanları için hiçbir maliyeti yoktur: soket yok, zamanlayıcı yok, trafik yok
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Token'ların nerede durduğu ve neden anahtar zincirinde olmadığı]
+Bot kimlik bilgileri, sağlayıcı başına `<dataDir>/<workspaceId>/chat_credentials/`
+yolunda tek bir düz JSON dosyasıdır; atomik olarak yazılır ve yalnızca sahibine
+kısıtlanır. Bu bir gözden kaçma değil, bilinçli bir tercihtir: bir çalışma alanını
+silmek o dizinin bağlantısını keser, böylece token'ları da onunla gider ve
+`workspace.export` ile yedekler `workspace.db` dosyasını kopyalar — dizini değil
+— böylece başkasına verdiğiniz bir çalışma alanı içinde canlı bot token'ları
+taşımaz. Bunun doğal sonucu, bir çalışma alanını başka bir yerde geri
+yüklemenin orada Slack'i yeniden bağlamak anlamına gelmesidir.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Köprüye erişim bir token'a sahip olmak değil, çalışma alanı **üyeliğidir**. Bir
+Slack hesabı, yazma yetkisi olan bir rolü bulunan bir üye olan bir Control Center
+kullanıcısına bağlanmalıdır. Bağlanma, bağlantıyı kesme, rehberli kurulum,
+kurulum bağlantısı ve bot özelleştirmesi yönetici kısıtlamasına tabidir.
 :::
 
-## Verify
+## Doğrulama
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Slack satırı bir durum etiketi gösterir: **Canlı**, **Bağlanıyor…**, **Bağlantı hatası** (yanında Slack'in kendi hatasıyla) veya **Bağlı değil**. Uçtan uca denetlemek için:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Slack'te botu bir kanala davet edin: `/invite @your-bot-name`
+2. Onu bir istekle etiketleyin
+3. Bir Slack dizi yanıtı görünür ve Control Center'da buna karşılık gelen bir alan açılır
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/).
+Köprüyü kullanmak isteyen her üye daha sonra kendi hesabını bağlar — bkz. [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/).
 
-## What a reply looks like in Slack
+## Slack'te bir yanıtın görünümü
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Akış halinde gelen sözcüklerin üstünde, her adım için bir satır içeren tek bir gruplanmış kart bulunur. Kurulum, başlığı `Working on it…` konumundan `Cloning …` konumuna, oradan `Starting the agent…` konumuna geçen tek bir satırdır. Akıl yürütme bir `Thinking…` satırı ekler; bu adım bittiğinde satırda kısa bir düşünce görünebilir. Her araç kendi satırıdır (`Read lib/main.dart`). Yanıt, kartın altında sıradan metin olarak gelir. Kart, tur bittiğinde tamamlandı durumuna, çalışma başarısız olduğunda, kesintiye uğradığında veya tur sınırına takıldığında hata durumuna geçer.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Kart, bot etiketlemeyi kabul ettiği anda başlar — `Working on it…` — böylece çalışma alanı hâlâ oluşturulurken Slack dizisi sessiz kalmaz. Bir Slack kanalındaki ilk etiketlemeniz konuşmayı oluşturur; bu da ajanın çalıştığı depoları klonlar, dolayısıyla o kurulum satırı önce `Cloning acme/widgets…`, sonra `Setting up Reviewer…`, sonra `Starting the agent…` okunur ve ajan gerçekten akıl yürütmeye başlayınca bir `Thinking…` satırı gelir. Büyük bir depoda bu ilk kurulum bir süre alır; kart, sizi yok saymak yerine çalıştığını anlamanızın yoludur. Aynı Slack dizisindeki sonraki etiketlemeler yine `Working on it…` ile açılır, ardından çalışma alanı zaten var olduğu için klonlama adımlarını atlar.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Akıl yürütme, bir metin duvarı ve araç çıktısı olarak asla Control Center'dan çıkmaz — `Thinking…` satırındaki düşünce bir transkript değil, kısa bir satırdır. Karttaki **View in Control Center**, tam konuşmayı masaüstü uygulamasında açar — bağlantı, tarayıcıyı uygulamaya devreden kendi Control Center sunucunuza gider.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Tıkladığınızda hiçbir şey olmuyorsa, iletiyi gönderen sunucuya tıkladığınız makineden erişilemiyordur (örneğin yalnızca loopback'te çalışan bir sunucuya telefondan tıklamak) ya da orada Control Center çalışmıyordur. Erişilebilir adresi olmayan bir sunucu, hiçbir yere çıkmayan bir düğme yerine düğmesiz bir kart gönderir.
 
-## Rotate a token
+## Token rotasyonu
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Yeni değeri bağlantı iletişim kutusuna yeniden yapıştırın ve **Bağlan**'a tıklayın. Bağlanmak, bu çalışma alanı için çalışmakta olan bağlantıyı ne olursa olsun değiştirir, böylece soket yeni kimlik bilgileriyle yeniden kurulur.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+İki zorunlu token her bağlanmada mevcut olmalıdır. İsteğe bağlı uygulama yapılandırma jetonu, kutuyu boş bıraktığınızda saklanan değerini korur; böylece bir bot token'ını rotasyona sokmak, uygulamayı düzenleme olanağını size hiçbir zaman kaybettirmez.
 
-## Disconnect
+## Bağlantıyı kesme
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Slack satırındaki **Bağlantıyı kes**'e tıklayın (yalnızca yöneticiler). Soket kapanır ve kimlik bilgileri unutulur.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Alan ve kullanıcı bağlantıları bilinçli olarak korunur: aynı uygulamayı yeniden bağlamak, köprülenmiş her Slack dizisini geri getirir. Bunlar çalışma alanı kapsamlı satırlardır, bu yüzden çalışma alanını silmek onları zaten kaldırır.
 
-## Troubleshooting
+## Sorun giderme
 
-### The row says "Connection error"
+### Satır "Bağlantı hatası" diyor
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Etiketin yanında gösterilen hatayı okuyun. Reddedilen bir kimlik bilgisi (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) nihaidir — köprü yeniden denemeyi bırakır ve yeni token'ları bekler, çünkü iptal edilmiş bir token'ı sonsuza dek yeniden denemek size yalnızca hız sınırı kazandırır. Token'ları bağlantı iletişim kutusuna yeniden yapıştırın.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Bir `missing_scope` hatası, uygulamanın köprünün gerektirdiğinden daha az kapsamla yüklendiği anlamına gelir. Eksik kapsamı ekleyin, uygulamayı Slack'te yeniden yükleyin, ardından yeniden bağlanın.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Geçici olan her şey (düşen bir soket, bir Slack aksaklığı) 30 saniyeyle sınırlanmış üstel geri çekilmeyle kendiliğinden yeniden bağlanır ve Slack'in rutin soket rotasyonu bu geri çekilmeyi artırmaz.
 
-### The bot does not answer a mention
+### Bot bir etiketlemeyi yanıtlamıyor
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Bot kanalda mı?** Slack, kanal iletilerini yalnızca üye olan uygulamalara teslim eder. `/invite @your-bot-name` komutunu çalıştırın
+- **Bağlı mısınız?** Bağlı olmayan bir üye, o Slack dizisinde nasıl bağlanacağını açıklayan bir yanıt alır. Bkz. [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
+- **Yazma yetkisi olan bir rolle çalışma alanının üyesi misiniz?** Bir `viewer` veya `guest`'e rolünün salt okunur olduğu söylenir. Köprü, kime ait olduğunu belirleyemediği biri adına asla iş başlatmaz
+- **Çalışma alanında hiç ajan var mı?** Ajan yoksa ileti saklanır ama yanıtlayacak kimse yoktur
 
-### It answers in a channel but ignores plain messages
+### Bir kanalda yanıtlıyor ama düz iletileri yok sayıyor
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Bu amaçlanmıştır. Bir DM'in dışında köprü yalnızca botu etiketleyen bir iletiye veya zaten sahip olduğu bir Slack dizisi içindeki bir yanıta işlem yapar. Geri kalan her şey başkalarının konuşmasıdır.
 
-### Replies arrive as one big message instead of streaming
+### Yanıtlar akış yerine tek büyük ileti olarak geliyor
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Satır, "Bu Slack uygulamasında canlı akış kapalı — yanıtlar tek ileti olarak gelir." der. Slack'in akış halindeki yanıtları, ücretli bir planda Agents & AI Apps özelliğini gerektirir; Slack bunu reddettiğinde köprü, o bağlantının kalan ömrü boyunca sormayı bırakır ve bunun yerine yanıtların tamamını gönderir. Hiçbir şey kaybolmaz — tam transkript her zaman Control Center'da bulunur.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Akış ayrıca bir Slack dizi çapası gerektirir, bu yüzden içinde büyüyeceği bir Slack dizisi olmayan bir yanıt tek parça gönderilir. Görev kartı her iki durumda da gelir: tek parça bir yanıtta aynı iletiye binmiş, zaten tamamlanmış halde bulunur.
 
-### The reply has no card above it
+### Yanıtın üstünde kart yok
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Slack'in görev kartları, akışla aynı yeni Agents & AI Apps yüzeyinin parçasıdır ve Slack yalnızca çağrı anında reddeder. Reddettiğinde Control Center yanıtı korur ve o bağlantının kalan ömrü boyunca kartı düşürür — durum satırı olmayan bir yanıt, yanıtı olmayan bir durum satırından iyidir.
 
-### "Control Center needs an app configuration token to edit the bot"
+### "Control Center'ın botu düzenlemesi için bir uygulama yapılandırma jetonu gerekir"
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+**Botu özelleştir** satırı devre dışıdır çünkü bağlantının uygulama yapılandırma jetonu yoktur. Elle veya **Slack içinde oluştur** yoluyla yapılmış bir uygulama için bu beklenen bir durumdur — Slack, Control Center'a hangi uygulama olduğunu hiçbir zaman bildirmedi. api.slack.com/apps üzerinde bir jeton çifti oluşturun ve yenileme jetonunu doldurarak yeniden bağlanın.
 
-### A long answer is cut off
+### Uzun bir yanıt kesiliyor
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack tek bir iletiyi 40.000 karakterle sınırlar, bu yüzden köprü 39.000'de keser ve Control Center'a bir işaret ekler — kısaltılmış bir yanıt, Slack'in doğrudan reddettiği bir yanıttan iyidir. Tam metin her zaman alan transkriptinde bulunur.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
-- [Customize the chat bot](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
-- [Chat bridge](/tr-TR/kilavuz/referans/sohbet-koprusu/)
+- [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
+- [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
+- [Sohbet köprüsü](/tr-TR/kilavuz/referans/sohbet-koprusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
+- [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)

@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: 대화 브랜치
+description: 이미 가지고 있는 대화를 잃지 않고 이전 지점에서 다른 접근을 시도한 뒤, 남기고 싶은 것을 포크하거나 내보냅니다.
 slug: ko-KR/매뉴얼/사용-가이드/대화-브랜치
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+이 가이드에서는 대화의 이전 지점으로 돌아가 다른 방향으로 진행하면서, 떠나온 경로를 그대로 유지하는 방법을 설명합니다.
 
-## The one thing worth knowing
+## 꼭 알아야 할 한 가지
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**브랜치는 아무것도 기록하지 않습니다.** 대화는 끝에 포인터가 있는 메시지 트리이며, 이전으로 돌아가는 것은 포인터를 옮기는 일입니다. 삭제되는 것도, 숨겨지는 것도 없고, 다시 되돌아가는 것도 포인터를 한 번 더 옮기는 것뿐입니다.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+그래서 여기서는 프롬프트를 편집해 다시 실행해도 안전합니다. 비교하던 답변이 그대로 남아 있기 때문입니다.
 
-## See the branches
+## 분기 보기
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+탐색기는 모든 메시지를 나열하고 분기마다 들여쓰기하며, 현재 경로를 **이 분기**로 표시합니다. 한 번도 분기한 적 없는 대화는 늘 그랬듯 평평한 목록으로 표시됩니다. 탐색할 대상이 생기기 전까지는 탐색기를 봐도 부담이 없습니다.
 
-Each row offers two actions.
+각 행에는 두 가지 작업이 있습니다.
 
-| Action                          | Effect                                                    |
+| 작업                          | 효과                                                    |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **여기서 이어서 진행**          | 포인터를 옮깁니다. 다음 메시지는 그 메시지에서 이어집니다. |
+| **새 대화로 포크** | 그 메시지까지의 경로를 새 대화로 복사합니다. |
 
-## Branch: try a different approach
+## 브랜치: 다른 접근 시도
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. 다시 시작할 메시지를 찾습니다. 보통은 마지막으로 만족했던 메시지입니다.
+3. **여기서 이어서 진행.**
+4. 새 프롬프트를 입력합니다.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+이전 이어짐은 여전히 트리에 남아 있습니다. 이제 `/tree`는 그 지점에서 두 개의 경로를 보여주며, 둘 사이를 자유롭게 오갈 수 있습니다.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[떠나온 경로는 그대로 남아 있습니다]
+브랜치는 아무것도 숨기거나 삭제하지 않습니다. `/tree`는 모든 경로를 나열하고 현재 경로를 **이 분기**로 표시하며, 이것이 전환하는 방법입니다.
 :::
 
-## Fork: take it somewhere else
+## 포크: 다른 곳으로 가져가기
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+포크는 경로를 같은 스페이스의 **새 대화**로 복사합니다. 두 방향이 계속 갈라질 예정이고, 전환하기보다 나란히 두고 보고 싶을 때 사용합니다.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+복사본은 새 메시지 ID를 가집니다. 두 대화가 행을 공유하면 서로의 이후 메시지가 보이게 되는데, 포크는 바로 그것을 막기 위한 기능입니다.
 
-## Revert versus branch
+## 되돌리기와 브랜치 비교
 
-They are different tools and the difference matters.
+둘은 서로 다른 도구이며 그 차이는 중요합니다.
 
-|                     | Revert                                             | Branch                          |
+|                     | 되돌리기                                             | 브랜치                          |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| 이후 메시지  | 대화 기록에서 숨겨짐                          | `/tree`에 계속 표시됨         |
+| **워크트리**    | 해당 턴의 스냅샷으로 되돌림                 | 그대로 유지                        |
+| 실행 취소                | **되돌리기 취소**로 변경 묶음을 복원                  | 포인터를 뒤로 이동            |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+에이전트가 바꾼 *파일*을 되돌리고 싶을 때는 되돌리기가 알맞습니다. 대화가 잘못된 방향으로 흘렀지만 파일은 괜찮을 때는 브랜치가 알맞습니다.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+되돌리기는 브랜치 끝도 옮기므로, 다음 메시지가 아무도 볼 수 없는 꼬리가 아니라 올바른 지점에서 이어집니다.
 
-## Take it out of the app
+## 앱 밖으로 가져가기
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+**자체 포함형 HTML 파일**을 작성합니다. 대화 전체와, 각 호출에 무엇이 주어졌고 무엇이 반환되었는지 보여주는 접이식 도구 카드가 담깁니다. 스타일시트도, 스크립트도, 이미지 호스트도 필요 없습니다. USB 스틱에서도 열리고 5년 뒤에도 열립니다.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **데스크톱:** `Documents/ControlCenter/exports/`, 두 번째 내보내기가 첫 번째를 덮어쓰지 않도록 타임스탬프가 붙습니다.
+- **웹:** 브라우저 다운로드.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+대화 기록을 markdown으로 클립보드에 복사하며, 도구 호출은 접이식 블록에 들어갑니다. 이슈에 붙여넣을 때 쓰는 것이 바로 이것입니다.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+추론은 일부러 제외됩니다. 그것은 모델의 작업 공간이며, 버그 리포트는 사람이 읽기 때문입니다.
 
-## Related
+## 관련 항목
 
-- [Conversation history](/ko-KR/매뉴얼/개념/대화-기록/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/ko-KR/매뉴얼/레퍼런스/슬래시-명령/) — `/tree`, `/export`, `/dump`
+- [대화 기록](/ko-KR/매뉴얼/개념/대화-기록/) — 트리가 포인터 이동인 이유와, 재개가 실제로 복원하는 것
+- [슬래시 명령](/ko-KR/매뉴얼/레퍼런스/슬래시-명령/) — `/tree`, `/export`, `/dump`

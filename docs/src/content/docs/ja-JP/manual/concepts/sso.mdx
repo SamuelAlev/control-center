@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: シングルサインオン
+description: SAML と OIDC のログインがどのように機能し、何を検証し、アカウントがどのように安全に保たれるかを説明します。
 slug: ja-JP/マニュアル/コンセプト/シングルサインオン
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+シングルサインオンを使うと、外部の ID プロバイダー（IdP）が、あなたの
+Control Center サーバーに誰がサインインできるかを決めます。サポートされる
+プロトコルは SAML 2.0 と OpenID Connect の 2 つで、どちらも同じ場所に着地
+します。すなわち、以降のすべての経路で、招待や QR ペアリングと区別がつかない
+できたてのデバイス認証情報です。
 
-## The shape of a login
+## ログインの流れ
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+SAML ログインは**ブラウザ経由**です。IdP があなたのサーバーへの接続を開く
+ことは決してなく、すべてを運ぶのはユーザーのブラウザです:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,84 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+運び手がブラウザであるため、ログインでは**NAT の背後にあるサーバーでも問題
+なく動作します**。localhost、LAN、Tailscale、VPN、トンネルのいずれでも
+かまいません。必要なのは、ユーザーのブラウザが ACS URL に到達できることだけ
+です。スマートフォンのリモートコントロールが使う WebSocket リレーは HTTP の
+往復を運べないため、SSO のエントリーポイントは常にサーバーの HTTP オリジンを
+対象にします。
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect も同じ流れをたどり、認可コード + PKCE の往復を使います。
+クレームは発行者のトークンエンドポイントから TLS 経由で読み取られるため、
+ブラウザが身元データを渡すことは一切ありません。
 
-## The adapters
+## アダプター
 
-Control Center splits the responsibility deliberately:
+Control Center は責任を意図的に分割しています:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| 構成要素                      | 場所                               | 担当                                                                                                                                        |
+| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_saml` ネイティブ          | `packages/cc_natives/native/saml/` | XML-DSig の検証、正規化、SAML プロファイルの検証 — ステートレスな C ABI の背後にある、固定バージョンの純 Rust `saml` クレートに委譲されます |
+| `SamlService` / `OidcService` | `cc_server_core`                   | ログイン状態（保留中のリクエストトラッカー、リプレイの重複排除）、検証ポリシーの設定項目、共有のプロビジョニング呼び出し                     |
+| `SsoProvisioner`              | `cc_server_core`                   | ユーザーの検索または作成、プロバイダーのサブジェクトの固定、自動メンバーポリシーに基づくメンバーシップの付与                                |
+| `ScimService`                 | `cc_server_core`                   | SCIM 2.0 のプッシュサーフェス（プロビジョニング/プロビジョニング解除のライフサイクル）                                                       |
+| `SsoSettingsService`          | `cc_server_core`                   | 保存済みの接続行、ライブでの再適用、SCIM トークン                                                                                            |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+意図的に、**純 Dart の SAML 暗号フォールバックは存在しません**。手書きの
+XML-DSig や正規化は、まさに署名ラッピング脆弱性が潜む場所だからです。そのため
+`cc_saml` ライブラリが見つからない場合、SAML ログインとサーバー起動の両方が
+拒否されます。ネイティブは設計上ステートレスです。リクエストをまたぐ状態は
+Dart サービス側にあり、単回使用で短命です。
 
-## What a login verifies
+## ログインが検証するもの
 
-Inside the verified native and the service, in order:
+検証済みのネイティブとサービスの内部では、次の順序で検証します:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. アサーションの**署名**（常に必須。レスポンスエンベロープ側は設定により
+   任意）— 検証されたペイロードが検証済みの要素に束縛されるため、構造的に
+   署名ラッピングに耐えます,
+2. **発行者**が設定済みの IdP と一致すること,
+3. **オーディエンス**がこのサービスプロバイダーを名指ししていること,
+4. **送信先**が自社の ACS URL であること,
+5. `InResponseTo` が、こちらが発行した保留中の AuthnRequest と一致すること
+   （未要求の、IdP 開始によるレスポンスはデフォルトで無効）,
+6. **有効期間**のウィンドウがクロックスキュー（デフォルト 90 秒）の範囲内に
+   収まっていること,
+7. その**アサーション ID** がこれまでに見たことがないこと（リプレイ
+   キャッシュ）。
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+失敗は型付きのコード — signature、expired、audience、destination、issuer、
+request-match — として返され、エンドポイントは汎用エラーで応答します。その
+ため攻撃者は、偽造がなぜ失敗したのかを何も学べません。
 
-## Accounts and subject pinning
+## アカウントとサブジェクトの固定
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+最初の SSO ログイン時に、プロバイダーの不変のサブジェクト（`issuer` と、
+SAML の NameID / OIDC の `sub`、または SCIM の externalId）がアカウントに
+固定されます。以降は、メールアドレスではなくサブジェクトがログインを識別
+します。後になって、同じ、あるいは別の IdP から同じメールアドレスを提示する
+人が現れても、固定済みのアカウントはその人を拒否します。プロバイダーで再利用
+されたメールアドレスがアカウント乗っ取りに変わるのを、これが食い止めます。
 
-## Provisioning and deprovisioning
+## プロビジョニングとプロビジョニング解除
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT プロビジョニングはログイン時に行われます（`SsoProvisioner`）。SCIM は
+別個のプッシュサーフェス（`ScimService`）で、ユーザー行に同じサブジェクトを
+固定しますが、ワークスペースのメンバーシップは付与しません。プロビジョニング
+解除 — SCIM の `active: false` または `DELETE` — は、そのアカウントが
+ワークスペースのオーナーである場合に拒否します（先に所有権を譲渡して
+ください）。それ以外の場合は、まずすべてのデバイス認証情報を取り消し
+（デバイス監視によりセッションは数秒以内に切れます）、すべてのワークスペース
+メンバーシップを削除し、アカウントを無効化済みとして記録します。ユーザー行は
+残ります。帰属は永続的です。再有効化はログインを復元しますが、メンバーシップ
+を再付与することは決してありません。
 
-## What stays out
+## 含まれないもの
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **グループ→ロールのマッピングはログイン時に行われます** — SAML 属性 /
+  OIDC クレームからです。プッシュされた SCIM グループは保存されません。
+- **オーナーロールは SSO からは到達できません** — デフォルトロールとしても、
+  グループマッピングを通じても同様です。
+- WebSocket リレーが SSO のチャネルになることはありません。リレー経由でしか
+  サーバーに到達できないスマートフォンは、サーバーに対するブラウザの往復を
+  完了できません。

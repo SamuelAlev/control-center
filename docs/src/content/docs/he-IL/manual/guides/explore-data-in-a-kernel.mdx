@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: חקירת נתונים בקרנל מתמשך
+description: תנו לסוכן מפרש Python או JavaScript ששומר על המשתנים שלו בין קריאות, מצייר גרפים לתוך הצ'אט, ויכול לקרוא לכלים שלכם מתוך תא.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/חקירת-נתונים-בקרנל
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+המדריך הזה מראה איך לגרום לסוכן לטעון פעם אחת משהו יקר ואז לשאול עליו כמה שאלות, במקום לשלם את מחיר הטעינה בכל שאלה.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+הכלי `eval` מריץ **מפרש מתמשך**. משתנים, ייבואים ונתונים שנטענו ממשיכים להתקיים בין קריאה לקריאה.
 
-## Why not just run a script
+## למה לא פשוט להריץ סקריפט
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+הרצה חד-פעמית של `python -c` משלמת את מחיר ההכנה בכל שאלה. טעינת dataframe עולה שניות ומאה מגהבייט; יצירת גרף ממנה עולה אלפיות שנייה. כשכל שאלה גובה את מחיר הטעינה, הסוכן שואל פחות שאלות משכדאי — וכל תשובה חוזרת כטקסט שעליו לנתח מחדש.
 
-## Load once, then ask
+## לטעון פעם אחת, ואז לשאול
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> טען את `data/runs.csv` ותגיד לי מה משך ה־p95 לפי סוכן.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+הביטוי האחרון מוצג חזרה כפי שמחברת עושה, כך ש־`len(runs)` מדווח את מספר השורות בלי `print`.
 
-Then, in a **separate call**:
+ואז, ב**קריאה נפרדת**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` עדיין טעון. DataFrame של pandas חוזר מרונדר כטבלה ולא כ־repr.
 
-## Charts land in the chat
+## גרפים נוחתים בצ'אט
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+איורים נקלטים אחרי התא ומוחזרים כתמונות, שאותן התמלול מציג. אתם רואים את הגרף; גם הסוכן רואה אותו.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+האיורים נסגרים לאחר הקליטה. איור שלא נאסף היה מצויר מחדש ונשלח שוב גם בידי התא *הבא*, כך שסשן בן חמישה תאים היה פולט את הגרף הראשון חמש פעמים.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[בלי Jupyter, בלי pip, בלי שלב התקנה]
+המריץ הוא `python3 -u` פשוט שמדבר בפרוטוקול שורות מעל stdio. הוא מממש בעצמו `display()`, ניתוב חבילות MIME וקליטת איורים, ולכן עובד בכל Python 3 — כולל בתוך ארגז חול, ששם ההתקנה היא בדיוק מה שארגז החול נועד למנוע.
 :::
 
-## The idioms you would type anyway
+## הקיצורים שתקלידו ממילא
 
-These are rewritten into plain code rather than erroring:
+אלה נכתבים מחדש כקוד רגיל במקום להחזיר שגיאה:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| אתם מקלידים | מה קורה |
+| ----------- | ------- |
+| `%pip install x` | מריץ pip, ואז **מנקה את מטמון המודולים** כך שה־`import` הבא יראה אותו |
+| `%cd path`  | `os.chdir` |
+| `!command`  | תהליך בן שפלטו נקלט |
+| `%%bash`    | שארית התא כסקריפט מעטפת |
+| `%%timeit`  | 1000 הרצות מתוזמנות |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+פינוי המטמון של `%pip` הוא החשוב: התקנה לתוך מפרש חי לא עושה דבר למודול שכבר יובא, ולכן בלעדיו הגרסה שהרגע התקנתם אינה זו שרצה.
 
-## Calling your own tools from inside a cell
+## קריאה לכלים שלכם מתוך תא
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` נכנס מחדש למרשם הכלים של הסוכן עצמו. כלומר, תא יכול להסתעף על מאה קבצים, או להאציל דרך `task`, בלי שהמודל יבזבז סבב על כל פריט.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[הגשר לא עוקף את מעקות הבטיחות שלכם]
+קריאה דרך הגשר נפתרת מול **אותו** מרשם כלים שקריאה שהמודל שלח נפתרת מולו, ולכן מדיניות `ActionClass`, בקשות אישור וכל עטיפה חלות באופן זהה. גשר שחרג מהמרשם היה חור שצורתו בדיוק "כתיבת שורת Python אחת".
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+קריאה דרך הגשר **משהה את הזמן הקצוב של התא** בזמן שהיא מתבצעת. התקציב מודד אי־פעילות, לא זמן שעון — תא שמסתעף לסוכני משנה וממתין ארבע דקות אינו תקוע, והריגה שלו באמצע הפרישה תאבד את מצבו של הקרנל כולו.
 
-## Starting over
+## התחלה מחדש
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+משליך את המפרש ומתחיל מפרש נקי. כל מה שנטען נעלם — וזו בדיוק המטרה.
 
-## Where the kernel runs
+## היכן הקרנל רץ
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+בתוך ה**מתחם המבודד** של השיחה כשיש לה כזה, ואחרת במארח.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+מפרש מתמשך שמופעל בידי מודל שקורא מאגר שאינו מהימן הוא בדיוק המקרה שלשמו קיימת הרצה במתחם מבודד בלבד: קריאת `bash` חד-פעמית לפחות נגמרת, ואילו קרנל הוא מעטפת שזוכרת.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/).
+הוא **לא** מפעיל מתחם מבודד לשם כך — אותו כלל שמונע מלשונית תחנה לעלות מעצמה. אם אתם רוצים שהקרנל יהיה בתוך מתחם מבודד, פתחו קודם את המעטפת של השיחה. ראו [תנו לסוכן מחשב לבדיקות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/).
 
-## Limits
+## מגבלות
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **תא אחד בכל פעם לכל קרנל.** שני תאים שמתחרים במפרש אחד הם שני חצאים של שתי תוכניות שמשתלבים במרחב שמות אחד.
+- **הפלט מוגבל.** תא בלולאת הדפסה נחתך במקום שיורשה לו למלא את חלון ההקשר.
+- **ארבע תמונות לתא.** לולאת ציור יכולה לפלוט איור בכל איטרציה, וכל תמונה היא עלות קבועה גדולה בבקשה שנושאת אותה.
+- **הקרנל מת עם ההרצה.** קרנל שמחזיק dataframe אחרי שהשיחה הסתיימה הוא דליפה.
 
-## Related
+## מושגים קשורים
 
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) — what "enclosed" means here
-- [Give an agent a machine to test on](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/) — opening the enclosure
-- [Built-in agent tools](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — the arguments
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) — מה המשמעות של "בתוך מתחם מבודד" כאן
+- [תנו לסוכן מחשב לבדיקות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/) — פתיחת המתחם המבודד
+- [כלי סוכן מובנים](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — הארגומנטים

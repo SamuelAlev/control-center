@@ -1,118 +1,115 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: הקלטה וסיכום של פגישה
+description: הקליטו שיחה, קבלו תמלול והפכו אותו להערות, משימות לביצוע והחלטות.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הקלטת-פגישה
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/he-IL/מדריך-למשתמש/מושגים/פגישות/) for how it works.
+מדריך זה מראה כיצד להקליט פגישה ולקבל סיכום שנוצר ב-AI.
+ראו [פגישות ותמלול](/he-IL/מדריך-למשתמש/מושגים/פגישות/) כדי להבין איך זה עובד.
 
-## Before you start
+## לפני שמתחילים
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **המתינו למודל הדיבור ואז הפעילו מחדש את השרת.** אתחול רגיל מתקין בכוח את מודל
+  ה-ASR הנבחר (Parakeet TDT 0.6B v3, ברירת המחדל הרב־לשונית, כ-600 MB) ברקע. השרת
+  מפענח את המודל **פעם אחת באתחול**, כך שבהרצה הראשונה עדיין אין פעולות הקלטה עד
+  שתפעילו מחדש. בלי מודל על הדיסק, ההקלטה נכשלת עם `Could not start recording on
+  the host: …`. כדי לבחור גרסה אחרת, עברו אל **הגדרות ← שרת ← מודלי קול ופגישות** —
+  גם זה דורש הפעלה מחדש.
+- אשרו הרשאת **מיקרופון** כשמערכת ההפעלה תבקש זאת בהקלטה הראשונה.
+- ב-**macOS 14.4+**, אודיו המערכת נלכד באמצעות process taps של Core Audio — אין דרייבר להתקין, אך מערכת ההפעלה מבקשת פעם שנייה הרשאת _לכידת אודיו_. זו אינה הקלטת מסך, והיא לעולם לא מדליקה את חיווי הקלטת המסך. סירוב להרשאה מכשיל את ההתחלה עם `System-audio capture permission denied.` מתחת ל-macOS 14.4 אין לכידת אודיו מערכת.
+- ב-**Linux**, יש להציב את `parecord` (pulseaudio-utils) או `pw-record` (pipewire) ב-`PATH` — הלכידה מריצה את אחד מהם מול מקור ניטור של PipeWire/PulseAudio. בלי אף אחד מהם ההתחלה נכשלת עם `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[לאן הולך האודיו של הפגישה]
+לכידה, תמלול, ביטול הד והפרדת דוברים פועלים כולם על המכשיר, בלי קריאת ענן — אבל
+"מכשיר" פירושו **המארח של cc_server**, שהיא מכונה אחרת כשאתם מריצים את השרת
+מרחוק. והסיכום הסופי הוא הרצת סוכן רגילה: הפייפליין `meeting_summary` שולח את
+התמלול המלא ואת ההערות הגולמיות שלכם לספק המודל שסוכן זה משתמש בו. כוונו את הסוכן
+הזה לספק מקומי אם התמלול אסור ביציאה מהמכונה.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+מסך ההקלטה מציין זאת בזמן שאתם מקליטים, כך שההחלטה נמצאת מולכם לפני שיש תמלול
+לשלוח.
 :::
 
-## Start a recording
+## התחלת הקלטה
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. פתחו את **פגישות** בסרגל הצד.
+2. לחצו על **הקלטת פגישה**. תצוגת ההקלטה החיה נפתחת בכתובת `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+ההקלטה מתחילה מיד ולוכדת את המיקרופון שלכם ואת אודיו הפלט של המערכת — כלומר את שאר
+המשתתפים. אין שום בקשה לבחירת מצב ואין בורר מקור אודיו: מצב הנוכחות הפיזית עם
+מיקרופון אחד קיים ב-API אבל אין לו ממשק היום.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+בדפדפן אותה זרימה עובדת, בהבדל אחד: "אודיו המערכת" הוא שיתוף מסך שחייב לכלול
+רצועת אודיו. שתפו לשונית בדפדפן (או את כל המסך) והפעילו "שיתוף אודיו של הלשונית" /
+"שיתוף אודיו המערכת" בבורר. Safari ו-Firefox ושיתוף מסך מלא ב-macOS לרוב אינם
+מספקים כזו.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+התצוגה מציגה מד עוצמת קול, את הזמן שחלף ותמלול חי שנבנה בצד אחד.
 
-## During the meeting
+## במהלך הפגישה
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **רשמו הערות גולמיות** בחלונית ההערות. הן נשמרות תוך כדי הקלדה ומועברות לסוכן הסיכום מאוחר יותר, אז רשמו כל דבר שהתמלול עלול לפספס.
+- **בחרו את תבנית ההערות** בשורה **תבנית פעילה**. היא מעצבת את הסיכום של הפגישה הזו ונלכדת עם ההקלטה, כך שהרצה מחדש מאוחר יותר משחזרת את התבנית שבחרתם כאן.
+- **השהו והמשיכו** עם פקד ההשהיה. התמלול נעצר בזמן ההשהיה והטיימר קופא.
+- התמלול זורם מתויג לפי דובר: המילים שלכם כ**אתם**, וכל מי שבשיחה כ**אחרים** — עד שהפרדת הדוברים מפצלת את אחרים ל-`Person 1`, `Person 2`, … שאותם אפשר לשנות בשם.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[דובר שקט מאוד עלול לא להיות מתומלל]
+התמלול מדלג על כל חלון אודיו שלא חצה סף שקט, בלי לפענח אותו כלל. זה מונע מערוץ
+שקט לשרוף CPU על אסימוני לא-דיבור מדומים, אבל זה גם אומר שדובר חלש או מרוחק יכול
+לא להפיק תמלול. בדקו את מד עוצמת הקול מוקדם ולא בסוף.
 :::
 
-## Stop and summarize
+## עצירה וסיכום
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. לחצו על **עצירה וסיכום**.
+2. Control Center מעביר אתכם ישר לתצוגת הפרטים של הפגישה, המסומנת כ**בעיבוד**: הפרדת הדוברים מפצלת את הערוץ המרוחק לדוברים נפרדים והפייפליין `meeting_summary` מפיק את הסיכום.
+3. הפגישה עוברת ל**הושלם** כשהפייפליין הזה מסתיים. אין צורך להמתין לו — תצוגת הפרטים מתעדכנת מעצמה.
 
-## Review the writeup
+## סקירת הסיכום
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+לתצוגת הפרטים של הפגישה (`/meetings/:meetingId`) יש ארבע לשוניות:
 
-| Tab              | What's there                                                                    |
+| לשונית           | מה יש בה                                                                        |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **הערות**        | סיכום ה-AI וההערות המשופרות, שנבנו מההערות הגולמיות שלכם + מהתמלול                |
+| **תמלול**        | התמלול המלא המתויג לפי דובר, עם חותמות זמן                                        |
+| **משימות לביצוע** | משימות שחולצו, כל אחת עם בעלים אופציונלי                                        |
+| **החלטות**       | החלטות שנרשמו במהלך השיחה                                                        |
 
-From here you can:
+מכאן תוכלו:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **שנות שמות דוברים**: החליפו את `Person 1` בשם אמיתי; הדבר חל על כל התמלול.
+- **לסמן משימות לביצוע** כשאתם מסיימים אותן.
+- **ליצור כרטיס** מפריט משימה: פעולה זו פותחת כרטיס חדש וללא שיוך, שכותרתו כשם פריט המשימה, ומקשרת אותו בחזרה לשורה. שייכו אותו לסוכן מתוך הכרטיס עצמו (ראו [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)).
+- **להריץ את הסיכום מחדש** למעבר חדש (למשל אחרי שינוי שמות דוברים). ההרצה עושה שימוש חוזר בתבנית שנלכדה כשהפגישה הוקלטה. בחרו את התבנית הפעילה ב**הגדרות ← סביבת עבודה ← פגישות**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+עריכת הערות, הכותרת, משימות לביצוע והחלטות עובדת בכל מקום. **הרצת הסיכום מחדש**
+וביטול פגישה שנמצאת בעיבוד זמינים **במחשב השולחני בלבד** — בדפדפן שני הכפתורים לא
+עושים דבר.
 
-## Record straight from a calendar event
+## הקלטה ישירות מאירוע בלוח שנה
 
-If you've [connected a calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+אם [חיברתם לוח שנה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/), תוכלו לדלג
+על ההתחלה הידנית. זה זמין **במחשב השולחני בלבד**; לקוח הווב מסרב לכך.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. פתחו את האירוע מתוך **לוח שנה**.
+2. לחצו על **התחל הקלטה וקישור**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+ההקלטה מאותחלת עם כותרת האירוע ומקושרת אליו בחזרה, כך שההערות והרשומה בלוח השנה
+נשארות מחוברות.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[מחיקת פגישה אינה מוחקת את האודיו שלה]
+מחיקת פגישה מסירה את השורות שלה, אבל קובצי ה-WAV המוקלטים תחת
+`<dataDir>/meetings/<meetingId>/` נשארים על הדיסק — אין מדיניות שימור, תקרת גודל או
+סריקת ניקוי. הסירו את התיקייה הזו בעצמכם אם האודיו חשוב לכם.
 :::
 
-## Related guides
+## מדריכים קשורים
 
-- [Connect a Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
-- [Delegate work to agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
+- [חיבור Google Calendar](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-לוח-שנה/)
+- [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Meetings and transcription](/he-IL/מדריך-למשתמש/מושגים/פגישות/)
+- [פגישות ותמלול](/he-IL/מדריך-למשתמש/מושגים/פגישות/)

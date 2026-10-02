@@ -1,125 +1,100 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: 用 SSO 让团队登录
+description: 将 Okta（SAML）连接到你的 Control Center 服务器，并完整走一遍登录流程。
 slug: zh-CN/手册/教程/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+学完本教程后，你将拥有：
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- Control Center 服务器与身份提供方之间的一条 SAML 连接（我们以 Okta 为例），
+- 一名在首次登录时被自动预配的用户，以及
+- 一条由你审慎选择的工作区成员资格策略。
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+你需要一台由你管理的服务器（即**服务器所有者**——该安装的运营者），以及一个你可以
+配置的 IdP 应用。请预留 20 分钟。
 
-## 1. Open the single sign-on settings
+## 第 1 步：打开单点登录设置
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+登录 Control Center，然后前往**设置 → 服务器 → 单点登录**。该界面可在 **SAML** 与
+**OpenID Connect** 之间切换，另有一张**用户预配（SCIM）**卡片。请停留在 SAML。
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+此界面上的所有设置都作用于整个服务器：一个 IdP 会认证每个工作区里的人，因此只有
+服务器所有者可以编辑。
 
-## 2. Paste the IdP metadata
+## 第 2 步：粘贴 IdP 元数据
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+在 Okta 中，打开应用的 **Sign On** 标签页，复制元数据 XML（或将其下载下来并粘贴文件
+内容）。回到 Control Center，把它粘贴到 **IdP 元数据 XML** 中，然后按**测试连接**。
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+提示条会报告 IdP 的登录端点——这证明元数据已解析、证书已读取，并且服务器能据此构造
+登录请求（该测试会演练除浏览器往返之外的所有环节）。如果失败，说明该 XML 不是完整的
+`EntityDescriptor`（Okta 的 SAML 标签页称之为 “Metadata URL”；请打开该 URL 并复制它
+提供的内容）。**OpenID Connect** 上的同一按钮则改为检查你签发者的发现文档。若要同时
+发现即将过期的证书，并了解 IdP 是否能识别 Control Center，请使用[第 6 步中的检查器](#第-6-步从本页检查)。
 
-## 3. Register Control Center at the IdP
+## 第 3 步：在 IdP 处注册 Control Center
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+按**复制 SP 元数据**，把它交给负责配置 Okta 一侧的人（或读出他们索要的两个值）：
 
-- **ACS URL**: `https://<your-server>/saml/acs`
-- **Entity ID**: `https://<your-server>/saml`
+- **ACS URL**：`https://<your-server>/saml/acs`
+- **实体 ID**：`https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+这些 URL 派生自用户浏览器所访问的源。如果服务器运行在隧道或反向代理之后，请确保该源
+保持稳定（设置 → 服务器 → 连接与状态 → 共享此服务器会显示公共 URL）——或者在
+**SP 实体 ID** 字段中显式固定实体 ID。
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[在 NAT 之后？]
+SAML 登录**不需要**公网 IP 或域名：IdP 从不连接你的服务器——往返由用户的浏览器承载，
+因此 localhost、LAN、VPN、Tailscale 或隧道都能用。有两点需要分清楚：
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/zh-CN/手册/操作指南/sso-scim)).
+- 浏览器使用的源必须与在 IdP 处注册的 ACS URL / 实体 ID **一致**（如果用户会通过多个
+  源访问服务器，请固定实体 ID），
+- **SCIM 预配是例外**——IdP 会直接调用你的服务器，因此需要隧道或公共 URL
+  （[用 SCIM 预配用户](/zh-CN/手册/操作指南/sso-scim)）。
   :::
 
-## 4. Choose what a login grants
+## 第 4 步：选择一次登录授予什么
 
-Two policies decide what a first login does:
+两条策略决定首次登录会做什么：
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **首次登录时将用户加入每个工作区**——在 SSO 等同于信任的单团队部署中保持开启。当
+  多个团队或客户共享该服务器时，请将其关闭：这样每位新来者都需要明确的工作区邀请，
+  这是更安全的默认设置。
+- **首次登录时预配未知用户**——默认开启；关闭后，账户尚不存在的人会被拒绝。
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+可选地，映射一个承载组名称的属性（Okta 的通常是 `groups`），并用映射表把组转换为
+角色——例如 `{"platform-leads": "admin"}`。SSO 永远无法授予所有者角色。
 
-## 5. Enable and take a login
+## 第 5 步：启用并走一次登录
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+打开**使用 SAML 登录**，按**保存连接**，然后在隐私浏览窗口中打开
+`https://<your-server>/saml/login`。在 Okta 登录后，你会回到 Web 客户端——已登录，
+账户已创建，其成员资格按你所选的策略授予。
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+一旦你输入服务器地址，Web 连接界面上就会出现同一个入口（**使用 SAML 登录**）——表单
+会根据服务器提供的方式自适应（OpenID Connect 会显示**使用 OpenID Connect 登录**）。
+该按钮会在**新标签页**中打开登录；往返完成后，等待中的标签页会自动接管该会话。桌面端
+的服务器设置界面也是如此：输入服务器 URL 后会出现一个**使用 SAML 登录**按钮，它打开
+你的浏览器，往返完成后应用即完成登录。
 
-## 6. Check it from this page
+## 第 6 步：从本页检查
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+在全面推行 SSO 之前，或某次登录失败时，可以在这里检查各个环节。检查器完全在你的
+浏览器中运行：它读取你在本标签页中粘贴的元数据，并应用与服务器相同的规则。如果提供
+了服务器地址，它还会询问该服务器是否已启用 SAML 登录。
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+它能发现应用中的**测试连接**看不到的问题：临近过期的签名证书、坚持要求签名请求的
+IdP，以及借助测试登录来判断 IdP 是否根本不认识 Control Center。
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## 后续步骤
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/zh-CN/手册/操作指南/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/zh-CN/手册/操作指南/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/zh-CN/手册/概念/单点登录).
+- 也让你的 IdP 掌控生命周期：[用 SCIM 预配和取消预配用户](/zh-CN/手册/操作指南/sso-scim)。
+- 你的 IdP 说的是 OpenID Connect 而不是 SAML？[连接 OpenID Connect 提供方](/zh-CN/手册/操作指南/sso-oidc)。
+- 想知道浏览器往返究竟验证了什么？[单点登录如何运作](/zh-CN/手册/概念/单点登录)。

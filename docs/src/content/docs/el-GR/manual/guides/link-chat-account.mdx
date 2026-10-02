@@ -1,95 +1,97 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Σύνδεση του λογαριασμού σας στο Slack
+description: Αποδείξτε ότι μια ταυτότητα Slack είναι δική σας, ώστε οι πράκτορες να ενεργούν βάσει των μηνυμάτων σας και η εργασία σας να αποδίδεται σε εσάς.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-λογαριασμού-συνομιλίας
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Αυτός ο οδηγός δείχνει πώς να συνδέσετε την ταυτότητα συνομιλίας σας με τον χρήστη σας στο Control Center και πώς να αποσυνδέσετε μια σύνδεση.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Κάθε μέλος το κάνει μία φορά ανά πάροχο συνομιλίας. Είναι ξεχωριστό από τη σύνδεση της εφαρμογής: η σύνδεση της εφαρμογής κάνει το bot προσβάσιμο για ολόκληρο τον χώρο εργασίας, ενώ η σύνδεση του λογαριασμού κάνει _εσάς_ αναγνωρίσιμο μέσα σε αυτόν.
 
-## Why linking is required
+## Γιατί απαιτείται η σύνδεση
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Η γέφυρα αρνείται να ενεργήσει για έναν λογαριασμό συνομιλίας που δεν μπορεί να αντιστοιχίσει σε μέλος του χώρου εργασίας. Αυτό είναι σκόπιμο — χωρίς σύνδεση, κάθε μήνυμα από το Slack θα έπρεπε να αποδοθεί σε όποιον εγκατέστησε την εφαρμογή, και το ίχνος ελέγχου, τα όρια ρυθμού ανά υποκείμενο και όσοι αναφέρουν εισιτήρια θα κατονόμαζαν όλα το λάθος πρόσωπο.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Ένα μέλος χωρίς σύνδεση που κάνει @-αναφορά στο bot λαμβάνει απάντηση σε εκείνο το νήμα του Slack που εξηγεί πώς να συνδεθεί. Δεν αποστέλλεται τίποτα.
 
-## Link with a code
+## Σύνδεση με κωδικό
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα** και
+   μετακινηθείτε στην κάρτα **Συνδεδεμένοι λογαριασμοί συνομιλίας**
+2. Στο τμήμα Slack, κάντε κλικ στο **Σύνδεση του λογαριασμού μου Slack**
+3. Αντιγράψτε την εντολή που εμφανίζει, για παράδειγμα:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Στο Slack, στείλτε αυτή την εντολή στο bot — ένα άμεσο μήνυμα είναι το πιο εύκολο σημείο
+5. Το bot επιβεβαιώνει με τον χρήστη του Control Center με τον οποίο είστε πλέον συνδεδεμένοι και το παράθυρο διαλόγου που αφήσατε ανοιχτό ενημερώνεται ώστε να το δηλώνει την ίδια στιγμή — δεν χρειάζεται να το κλείσετε και να κοιτάξετε
 
-The code:
+Ο κωδικός:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Είναι μίας χρήσης και λήγει **15 λεπτά** αφού εκδοθεί
+- Εκδίδεται πάντα για _εσάς_, ποτέ για κάποιο μέλος της ομάδας
+- Αντικαθιστά οποιονδήποτε κωδικό κρατάτε ήδη, οπότε πατώντας ξανά το κουμπί ακυρώνετε τον προηγούμενο
+- Ζει μόνο στη μνήμη, οπότε μια επανεκκίνηση του διακομιστή ακυρώνει τους εκκρεμείς κωδικούς — πατήστε ξανά το κουμπί
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Ένας κωδικός που είναι άγνωστος, έχει λήξει ή έχει εκδοθεί για διαφορετικό χώρο εργασίας αποτυγχάνει με τον ίδιο δυσδιάκριτο τρόπο: «that code is not valid (or has expired)».
 
-## Automatic linking by email
+## Αυτόματη σύνδεση μέσω email
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Αν το προφίλ σας στο Slack φέρει ένα επαληθευμένο email που αντιστοιχεί σε χρήστη του Control Center ο οποίος **είναι ήδη μέλος αυτού του χώρου εργασίας**, η γέφυρα σας συνδέει την πρώτη φορά που θα της μιλήσετε. Δεν χρειάζεται κωδικός.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Και τα δύο σκέλη μετρούν: η αντιστοίχιση email αποδεικνύει την ταυτότητα, αλλά μόνο η ιδιότητα μέλους παρέχει πρόσβαση, οπότε ένας άγνωστος του οποίου το email τυχαίνει να υπάρχει στον διακομιστή δεν συνδέεται με τίποτα. Ο κατάλογος δείχνει πώς έγινε κάθε σύνδεση («αντιστοίχιση με email» ή «συνδέθηκε με κωδικό»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Η αυτόματη σύνδεση απαιτεί το scope `users:read.email`. Χωρίς αυτό, το Slack δεν αποκαλύπτει τη διεύθυνση και η διαδρομή μέσω κωδικού είναι η μόνη.
 
-## See who is linked
+## Δείτε ποιοι είναι συνδεδεμένοι
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Ο κατάλογος ανήκει στη διαχείριση του χώρου εργασίας, οπότε βρίσκεται στο άλλο
+μισό της επιφάνειας: **Ρυθμίσεις → Χώρος εργασίας → Γενικά → Γέφυρες συνομιλίας → Συνδεδεμένοι λογαριασμοί**. Καταγράφει
+κάθε συνδεδεμένο μέλος του χώρου εργασίας, με τον λογαριασμό Slack στον οποίο
+αντιστοιχεί καθένα και τον τρόπο με τον οποίο έγινε η σύνδεση.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Η δική σας κατάσταση βρίσκεται στη σελίδα του προφίλ σας: η γραμμή **Σύνδεση του
+λογαριασμού μου Slack** εμφανίζει «Συνδεδεμένος με _your-slack-id_» μόλις
+συνδεθείτε και σας προτρέπει να συνδεθείτε όταν δεν είστε.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Ο κατάλογος είναι μια ζωντανή συνδρομή, επειδή η αλλαγή συμβαίνει στην άλλη
+πλευρά — πληκτρολογείτε τον κωδικό στο Slack, οπότε κανένα αίτημα από την
+εφαρμογή δεν μπορεί να μεταφέρει την απάντηση πίσω.
 
-## Unlink
+## Αποσύνδεση
 
-Click **Unlink** on a row in the workspace roster.
+Κάντε κλικ στο **Αποσύνδεση** σε μια γραμμή του καταλόγου του χώρου εργασίας.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Ο καθένας μπορεί να αποσυνδέσει τον εαυτό του
+- Μόνο ένας διαχειριστής μπορεί να αποσυνδέσει άλλο μέλος
+- Η αποσύνδεση ανακαλεί επίσης κάθε εκκρεμή κωδικό σύνδεσης για αυτό το μέλος
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Μετά την αποσύνδεση, αυτός ο λογαριασμός Slack δεν μπορεί πλέον να κατευθύνει πράκτορες μέχρι να συνδεθεί ξανά. Οι υπάρχοντες χώροι, οι μεταγραφές και τα εισιτήρια διατηρούν την αρχική τους απόδοση — η αποσύνδεση δεν ανακαλεί προηγούμενη εργασία.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### The bot says I am not a member of this workspace
+### Το bot λέει ότι δεν είμαι μέλος αυτού του χώρου εργασίας
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/).
+Ο λογαριασμός σας στο Slack είναι συνδεδεμένος με έναν χρήστη του Control Center, αλλά αυτός ο χρήστης δεν έχει καμία ιδιότητα μέλους σε αυτόν τον χώρο εργασίας. Ζητήστε από έναν διαχειριστή να σας προσκαλέσει· δείτε [Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/).
 
-### The bot says my role is read-only
+### Το bot λέει ότι ο ρόλος μου είναι μόνο για ανάγνωση
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Οι ρόλοι `viewer` και `guest` δεν μπορούν να ξεκινήσουν εργασία. Ένας διαχειριστής πρέπει να ανεβάσει τον ρόλο σας σε `member` ή ανώτερο.
 
-### The slash command is not recognized
+### Η εντολή slash δεν αναγνωρίζεται
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Ελέγξτε ότι η εντολή slash υπάρχει στο Slack και ότι στέλνετε την εντολή που σας έδειξε το παράθυρο διαλόγου ρυθμίσεων — ένας διαχειριστής μπορεί να την έχει μετονομάσει, οπότε το παράθυρο διαλόγου δείχνει το τρέχον όνομα.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Set up Slack integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
-- [Customize the chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
-- [Chat bridge](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
+- [Ρύθμιση ενσωμάτωσης Slack](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-slack/)
+- [Προσαρμογή του chat bot](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογή-chat-bot/)
+- [Γέφυρα συνομιλίας](/el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
-- [Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/)
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/)
+- [Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/)

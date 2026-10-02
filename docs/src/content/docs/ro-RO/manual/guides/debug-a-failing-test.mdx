@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Depanează un test eșuat cu un agent
+description: Pune un agent să seteze un punct de întrerupere, să lanseze sub un depanator și să citească un cadru de stivă real, în loc să adauge instrucțiuni de tipărire.
 slug: ro-RO/manual/ghiduri-practice/depaneaza-test-esuat
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Acest ghid arată cum să pui un agent să folosească un depanator pentru o defecțiune pe care instrucțiunile de tipărire nu o explică.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Instrumentul `debug` conduce o sesiune reală Debug Adapter Protocol. Un cadru oprit răspunde deodată la orice întrebare despre acel moment — fiecare variabilă locală, fiecare apelant și o expresie evaluată în scopul propriu al cadrului —, în timp ce o instrucțiune de tipărire răspunde doar la întrebarea la care te-ai gândit înainte de a rula.
 
-## Before you start
+## Înainte de a începe
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Instrumentul rămâne pe suprafață, astfel încât agentul să poată întreba de ce nimic nu este utilizabil, în loc să ghicească. Un adaptor poate porni cu adevărat doar atunci când **ambele** condiții de mai jos sunt îndeplinite:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- un marker de proiect în copia locală și
+- binarul adaptorului se rezolvă.
 
-Ask the agent to check:
+Cere agentului să verifice:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Răspunde cu ce a găsit sau explică faptul că un adaptor are nevoie de ambele jumătăți.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
-| --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
-| Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
-| Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
+| Limbaj         | Adaptor                      | Marker                                          | Instalare                          |
+| -------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
+| Dart / Flutter | `dart debug_adapter`         | `pubspec.yaml`                                   | Vine cu SDK-ul — nimic de făcut    |
+| Python         | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
+| Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Vine cu LLVM                       |
+| Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python alege interpretorul proiectului]
+`debugpy` este căutat în `.venv/bin` sau `venv/bin` înainte de `$PATH`. Un Python din `$PATH` este un mediu diferit, iar atașarea din mediul greșit eșuează într-un fel care pare a fi cod stricat, nu un interpretor greșit.
 :::
 
-## Set the breakpoint first, then launch
+## Setează mai întâi punctul de întrerupere, apoi lansează
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Ordinea contează, iar instrumentul o impune: punctele de întrerupere pot fi setate **înainte** de a exista o sesiune, pentru că aceasta este secvența cerută de protocol.
 
-Ask the agent something like:
+Cere agentului ceva de genul:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Funcția `compute` din `bin/main.dart` returnează o valoare greșită. Setează un punct de întrerupere pe linia care atribuie `product`, lansează-o sub depanator și spune-mi ce sunt de fapt `a` și `b`.
 
-It will run roughly:
+Va rula, aproximativ:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Lansarea raportează unde s-a oprit:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Dacă în schimb raportează că programul s-a încheiat]
+Punctul de întrerupere nu s-a legat. O linie goală, un comentariu sau o linie care nu este compilată în build nu pot susține unul. Apelarea `breakpoints` pe o sesiune activă raportează câte dintre cele setate au fost plasate efectiv.
 :::
 
-## Read the frame
+## Citește cadrul
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Apoi pătrunde în el:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Un obiect cu noduri copil raportează `[expand: reference N]` — dar numai când există cu adevărat ceva în spate, așa că o extindere pe care agentul nu o poate folosi nu este niciodată oferită.
 
-For anything not visible as a local:
+Pentru orice nu este vizibil ca variabilă locală:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Parcurge pas cu pas
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Ce vrei să faci                   | Operație    |
+| --------------------------------- | ----------- |
+| Rulează până la următoarea oprire | `continue`  |
+| Linia următoare, în același cadru | `step_over` |
+| Intră în apel                     | `step_in`   |
+| Ieși la apelant                   | `step_out`  |
+| Oprește un program care rulează   | `pause`     |
 
-## Attach to something already running
+## Atașează-te la ceva care rulează deja
 
-For a wedged process rather than one you are starting:
+Pentru un proces blocat, nu pentru unul pe care îl pornești:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Încheiere
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Încheie întotdeauna sesiunea. Un adaptor de depanare deține un **proces oprit** care ține tot ce ține procesul respectiv — un port, o blocare, o conexiune la baza de date.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Nu poate scăpa de sub controlul tău]
+Fiecare sesiune are un TTL strict pe care nu îl poate prelungi, există exact una per conversație, iar totul este desființat când se oprește serverul. Un al doilea `launch` este refuzat în loc să îl înlocuiască pe primul: un agent care pornește unul fără să îl încheie pe celălalt și-a pierdut aproape sigur urma primului.
 :::
 
-## Bounded output
+## Ieșire delimitată
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+O extindere `variables` pe un graf de obiecte adânc este nelimitată prin natura ei — un singur widget Flutter ajunge la întregul arbore de elemente. Copiii per scop sunt plafonați la 50, valorile la 400 de caractere, iar cadrele de stivă la 30. Un rezultat de instrument care umple fereastra de context este un instrument care încheie rularea pe care o ajuta.
 
-## Related
+## Vezi și
 
-- [Code intelligence](/ro-RO/manual/concepte/intelligence-pentru-cod/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/ro-RO/manual/referinta/instrumente-agent/) — every `debug` op and argument
-- [Diagnose an agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) — when the problem is the agent, not the code
+- [Intelligence pentru cod](/ro-RO/manual/concepte/intelligence-pentru-cod/) — de ce un depanator, un compilator și un potrivitor răspund la întrebări diferite
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/) — fiecare operație `debug` și argumentul ei
+- [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) — când problema este agentul, nu codul

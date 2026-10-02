@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: 슬래시 명령
+description: 작성기에서 입력할 수 있는 모든 명령과, 그 명령이 하는 일, 그리고 실행되는 위치를 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/슬래시-명령
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+스페이스의 작성기에 입력하는 명령입니다. 이 명령은 효력이 발생하는 위치에 따라 세 그룹으로 나뉘며, 그 차이는 중요합니다. **로컬** 명령은 메시지로 전달되지 않으므로 트랜스크립트에 나타나지도 않고 에이전트에 도달하지도 않습니다.
 
-| Where it runs | What that means                                                                    |
+| 실행 위치 | 의미 |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **로컬**     | 클라이언트(또는 클라이언트가 시작한 서버 작업)에서 처리됩니다. 명령이 메시지로 전달되지 않으므로 어떤 에이전트도 이를 보지 못합니다. |
+| **사이드**      | 대화에 관한 서버 측 모델 호출 한 번입니다. 대화는 변경되지 않습니다. |
+| **디스패치**  | 메시지가 시작하는 실행의 모드나 지시를 설정합니다. |
 
 ---
 
-## Directing a run
+## 실행 지시
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**로컬 → 디스패치.** 대화에 플랜 모드를 켭니다. 완전히 읽기 전용인 워크트리와 `read`로 제한된 도구 표면이 적용됩니다. 에이전트의 산출물은 편집이 아니라 플랜입니다. `/plan`만 입력하면 모드를 전환하고 메시지로는 전달되지 않으며, 프롬프트를 함께 쓰면 그 줄의 나머지가 실행을 시작합니다.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**디스패치.** 목표 감독자가 구간과 재시작에 걸쳐 다시 디스패치하는 자율 목표를 시작합니다.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+`/goal`을 텍스트와 함께 입력하면 **목표 인터뷰**가 열립니다. 이는 다음 다섯 가지가 모두 갖춰질 때까지 초안을 받아들이지 않는 짧은 절차입니다. 평가자가 판단 없이 확정할 수 있는 성공 기준, 정확한 검증 명령, 시도 상한, 범위 경계, 중지 조건입니다. 각 단계는 *건너뛰고 작성된 대로 실행*을 제공합니다. 즉 인터뷰는 기본값이며 관문이 아닙니다.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`, `/goal resume`, `/goal drop`은 슬래시 명령이 아닙니다. 일시 중지, 재개, 중지는 사이드바에 있는 대화의 목표 목록에서 합니다. 목표를 시작할 때 지정하는 플래그는 `--budget <dollars>`, `--max <N>`(실행 예산), `--days <N>`(기한)입니다. 비용 상한에 도달한 목표는 같은 사이드바 컨트롤에서 그 상한을 올리는 방법으로만 재개됩니다.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[왜 굳이 끼어드는가]
+자율 목표는 모호한 지시가 정말로 비싸지는 유일한 지점입니다. 아무도 정의하지 않은 "완료"를 향해 실행이 몇 시간씩 돌아간 뒤, 스스로의 기준으로 성공을 보고합니다. 다섯 개의 질문이, 스스로 끝났다고 느낄 때 끝나 버리는 밤샘 실행 한 번보다 저렴합니다.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**디스패치.** 완료될 때까지 반복적으로 작업합니다. 상한을 받습니다: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+*상한처럼 보이는*(숫자나 부호로 시작하는) 토큰이 파싱에 실패하면 하드 오류가 됩니다. 산문은 그냥 산문이므로, `/loop keep going until the tests pass`는 잘못 파싱된 것이 아니라 인라인 프롬프트가 붙은 무제한 루프입니다.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ko-KR/매뉴얼/사용-가이드/백그라운드-워커-지시/).
+**디스패치.** 세션을 **디렉터**로 바꿉니다. 자신의 도구는 `read`와 다섯 개의 워커 동사로 줄어들고, 백그라운드 워커가 편집을 맡습니다. [백그라운드 워커 지시](/ko-KR/매뉴얼/사용-가이드/백그라운드-워커-지시/)를 참고하십시오.
 
-Workers never outlive the mode — exiting kills every one of them.
+워커는 모드보다 오래 살아남지 못합니다. 모드를 종료하면 워커가 모두 함께 종료됩니다.
 
 ---
 
-## Managing context
+## 컨텍스트 관리
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**로컬 → 서버.** 오래된 기록을 앵커된 요약으로 접어 넣고 압축된 컨텍스트로 계속합니다. 모델에 전달되는 인수는 없습니다. 명령이 메시지로 전달되지 않으며, 압축 단계도 포커스 힌트를 받지 않습니다.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**로컬 → 서버.** 요약하지 **않고** 무거운 콘텐츠를 제거합니다. 모델 호출이 없고 모든 단어가 유지되며, 다시 읽을 사람이 없는 덩치만 비워집니다.
 
-| Target        | Drops                             |
+| 대상        | 제거되는 것                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | 특별할 것 없는 오래된 도구 결과(기본값) |
+| `images`      | 오래된 스크린샷(텍스트는 유지) |
+| `all`         | 둘 다                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+"내 컨텍스트는 뚱뚱한데 요약은 원하지 않는다"를 위한 탈출구입니다.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**로컬.** 이 대화의 에이전트에 대한 컨텍스트 탐색기를 별도의 탭에서
+엽니다. 컨텍스트 윈도우의 모든 세그먼트와 부분 — 시스템 프롬프트, 스킬,
+컨텍스트 파일, 도구 스키마, 기록과 이미지 — 을 각각의 비용 및 그 배후의
+축자적 내용과 함께 보여줍니다.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+탭은 (스페이스, 에이전트) 쌍을 키로 삼으므로, 두 번 실행해도 같은 분석이 쌓이지
+않고 하나의 탭에 다시 포커스됩니다.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+**에이전트가 둘 이상인** 스페이스에서 `/context`만 입력하면 헤더의 컨텍스트 사용량
+표시기가 읽고 있는 윈도우가 열립니다. 이는 이곳에서 마지막으로 작업한 에이전트,
+즉 메시지가 대화 목록 맨 아래에 있는 에이전트의 윈도우입니다. 그리고 탭에는
+`컨텍스트 · <name>` 라벨이 붙어 그 윈도우가 누구의 것인지 알려 줍니다. 전환하려면 다른 이름을 지정합니다: `/context qa`
+(`@`는 선택 사항). 입력한 이름은 유사 매칭 없이 정확히 해석됩니다. 두 에이전트는
+서로 다른 두 윈도우를 가지므로, 다른 에이전트를 여는 근접 이름은 묻지 않은 질문에
+그럴듯하게 보이는 답이 될 뿐입니다.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+같은 탐색기는 스페이스 헤더의 컨텍스트 사용량 표시기 칩 뒤에도 있으며, 그 칩도
+같은 에이전트를 따릅니다. 따라서 명령과 칩이 여기서 말하는 "컨텍스트"가 서로
+어긋날 수 없습니다.
 
 ---
 
-## Asking about the conversation
+## 대화에 대해 묻기
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+이런 명령은 모델 호출 한 번을 쓰고 **대화를 절대 바꾸지 않습니다**. 에이전트의 다음 실제 턴은 어차피 봤을 것과 정확히 같은 것을 봅니다. 질문하기의 가치가 바로 여기에 있습니다.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**사이드.** 작업을 처음부터 이어받는 사람을 위한 핸드오프 문서를 작성합니다. 작업이 무엇이고, 무엇을 알아냈으며, 무엇이 남았는지 담습니다.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**사이드.** 지금까지의 작업에 관한 질문에 답하되, 질문과 답변 어느 쪽도 트랜스크립트에 추가하지 않습니다.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[두 명령, 하나의 구현]
+둘은 같은 형태입니다. 대화를 현재 상태 그대로 받아, 그것에 관한 질문 하나를 던지고, 어느 쪽도 저장하지 않습니다. 한 번만 구현되어 있어 "지금까지의 컨텍스트"에 대한 두 가지 다른 개념으로 갈라질 수 없습니다.
 :::
 
 ---
 
-## Navigating and exporting
+## 탐색과 내보내기
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ko-KR/매뉴얼/사용-가이드/대화-브랜치/).
+**로컬.** 브랜치 탐색기를 엽니다. 대화가 어디서 갈라졌는지, 지금 어느 경로에 있는지, 떠나온 경로로 어떻게 돌아가는지를 보여줍니다. [대화 브랜치](/ko-KR/매뉴얼/사용-가이드/대화-브랜치/)를 참고하십시오.
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**로컬.** 대화를 자체 포함형 HTML 파일로 작성합니다. 접이식 도구 카드가 들어가고, 스타일시트도 스크립트도 이미지 호스트도 없습니다. 데스크톱에서는 `Documents/ControlCenter/exports/`에 저장되고, 웹에서는 다운로드됩니다.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**로컬.** 트랜스크립트를 markdown으로 클립보드에 복사하며, 도구 호출은 접이식 블록에 담깁니다. 추론은 의도적으로 제외됩니다. 버그 보고서에 붙여넣은 트랜스크립트는 사람이 읽기 때문입니다.
 
 ---
 
-## Everything else
+## 그 밖의 모든 것
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**로컬.** 대화에 영속되는 체크리스트를 보고 편집합니다. `/todo`만 입력하면 편집기가 열립니다. 하위 명령: `append`, `start`, `done`, `drop`(별칭 `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**디스패치.** 설치된 스킬을 적용합니다. 스킬은 자체 `skill:` 접두사 아래에 있어 내장 명령과 네임스페이스를 공유하지 않습니다. 그렇지 않으면 `plan`이라는 스킬은 영영 도달할 수 없게 됩니다.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**디스패치.** 저장소의 `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands`, `.opencode/commands` 아래에 있는 모든 markdown 파일입니다. 중첩된 `foo/bar.md`는 `foo:bar`로도 접근할 수 있습니다.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+템플릿: `$1`, `$@`, `$@[start:length]`, `$ARGUMENTS`. 프런트매터로 `description`(작성기 자동 완성)을 설정할 수 있습니다. `allowed-tools`와 `model`은 파일에서 파싱되지만, 현재 사용자 명령 호출은 인수를 본문에 치환할 뿐이며 실행의 모델이나 도구 표면을 바꾸지 않습니다.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+사용자가 작성한 명령은 같은 이름의 스킬보다 우선합니다. 사람이 인수를 붙여 의도적으로 호출한 지름길이기 때문입니다.
 
 ---
 
-## Magic keywords
+## 매직 키워드
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+명령이 아닙니다. 프롬프트 어디에든 독립적으로 놓인 소문자 단어 하나가 그 턴에 숨은 지시를 붙입니다.
 
-| Word          | Effect                                                             |
+| 단어          | 효과                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | 해당 턴의 추론 강도를 최대로                              |
+| `orchestrate` | 독립적인 작업을 병렬로 위임하고 각 단계를 검증        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+매처는 경계에 의도적으로 엄격합니다. `orchestrate,`는 일치하지만 `orchestrated`, `orchestrate.ts`, `foo::orchestrate`, `orchestrate()`는 일치하지 않습니다. 또한 펜스 코드 블록, 인라인 스팬, XML 섹션은 먼저 가려집니다. 그렇지 않으면 스택 트레이스를 붙여넣는 것만으로 에이전트의 동작이 달라질 것입니다.
 
 ---

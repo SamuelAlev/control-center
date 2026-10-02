@@ -1,45 +1,47 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: MCP sunucusunu kullanma
+description: Harici bir MCP istemcisini Control Center’ın araç sunucusuna yöneltin, bir bearer token ayarlayın ve yüzeyin neleri açığa çıkardığını bilin.
 slug: tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Bu kılavuz, harici bir MCP istemcisini — Claude Code, bir düzenleyici veya MCP
+Inspector — Control Center’ın kendi araç sunucusuna nasıl bağlayacağınızı
+gösterir.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center **110** araç kaydeder ve bunları Model Context Protocol üzerinden,
+`2024-11-05` protokol sürümünde sunar. Bekleyebileceğiniz bazı araç aileleri
+yoktur: toplantı veya takvim araçları ve proje araçları bulunmaz.
 
-## Find the endpoint
+## Uç noktayı bulma
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+MCP yüzeyi, ana `cc_server` dinleyicisini paylaşır. Ayrı bir MCP portu yoktur.
 
-| Endpoint | Method   | Purpose                                                  |
+| Uç nokta | Yöntem   | Amaç                                                     |
 | -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| `/mcp`   | `POST`   | Streamable HTTP taşıması — bir istemcinin konuştuğu şey budur |
+| `/mcp`   | `DELETE` | Bir oturumu sonlandırır                                  |
+| `/sse`   | `GET`    | Sunucudan gönderilen bildirim akışı                      |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Yani varsayılan bir yerel kurulum `http://127.0.0.1:9030/mcp` adresindedir.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. **Ayarlar → Sunucu → MCP sunucuları** sayfasına gidin
+2. **MCP sunucusu** kartını okuyun — kart, sunucunun çalışıyor mu durduruldu mu
+   olduğunu ve dinlediği portu gösterir
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Yüzey, yeni bir kurulumda varsayılan olarak açıktır; bu yüzden bir loopback
+istemcisi hiçbir ayara dokunmadan çalışır. **Uygulama açılışında başlat**,
+yeniden başlatmadan sonra geri gelip gelmeyeceğini denetler; **Başlat** /
+**Durdur** ise bu tercihi değiştirmeyen oturum denetimleridir.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Sunucu varsayılan olarak loopback’e bağlanır; bu nedenle, `--bind any` ile
+başlatmadığınız sürece uç noktaya yalnızca `cc_server`’ın çalıştığı makineden
+erişilebilir.
 
-## Connect a client
+## Bir istemci bağlama
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+İstemcinizi Streamable HTTP uç noktasına yöneltin. Yapılandırmanın tam şekli
+istemcinizin işidir; URL her iki durumda da aynıdır.
 
 ```json
 {
@@ -54,41 +56,44 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code bunu bir projedeki `.mcp.json` dosyasından almaz — proje kapsamlı
+MCP sunucularını, etkileşimsiz bir `claude -p` çalıştırmasının asla
+yanıtlamayacağı bir onay isteminin arkasına koyar. Yapılandırmayı açıkça geçin:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config`, Claude’un yalnızca o dosyayı kullanmasını sağlar; böylece
+aynı sunucu projeden de keşfedilip iki kez kaydedilmez.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Kontrol noktası: istemciden araçlarını listelemesini isteyin. Biletleri, alanları,
+belleği, kod grafiğini ve incelemeyi kapsayan `mcp__*` girdileri görmelisiniz.
 
-## Serve MCP beyond the host
+## MCP’yi ana makine dışına sunma
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. **Ayarlar → Sunucu → MCP sunucuları** sayfasında, **Kimlik doğrulama token’ı**
+   satırında **Ayarla**’ya basın ve bir token yapıştırın
+2. Her `POST /mcp` isteğinde bunu `Authorization: Bearer <token>` olarak gönderin
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+Token’sız bir yüzey, loopback dışından gelen her çağrıyı 403 ile reddeder. Bu,
+tasarım gereği reddetme yönünde çalışır: ana makine dışına hizmet vermeyi asıl
+mümkün kılan şey token’dır.
 
-Token changes apply to the live surface immediately — no restart.
+Token değişiklikleri canlı yüzeye anında uygulanır — yeniden başlatma gerekmez.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` token’ı sorgu dizesinde alır]
+Bildirim akışı da diğer tüm rotalar gibi token denetiminden geçer, ancak bir
+tarayıcı `EventSource`’u bir `Authorization` başlığı gönderemez — bu yüzden
+`/sse` token’ı `?token=<token>` olarak da kabul eder. Token olmadan 401 yanıtı
+verir.
 :::
 
-## Scope every call to a workspace
+## Her çağrıyı bir çalışma alanına kapsamlandırma
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Çalışma alanı kapsamlı verilere dokunan her araç `workspace_id` gerektirir; bu
+değer olmadan yapılan bir çağrı, herhangi bir “geçerli” çalışma alanına göre
+çözülmek yerine reddedilir:
 
 ```json
 {
@@ -98,56 +103,58 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Bu kimlik, tarayıcınızın veya uygulamanın URL’sindeki kimliktir:
+`/workspaces/<workspace_id>/…`. Tek istisnalar, gerçekten çalışma alanlarını
+aşan araçlardır; örneğin `list_workspaces` ve haber akışı araçları — haber akışı
+kullanıcı başına olduğundan ve bir ajanın kendine ait bir kullanıcısı
+bulunmadığından, bu araçlar sunucu sahibinin akışları üzerinde çalışır.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Depo kapsamlı araçlar ayrıca deponun o çalışma alanına bağlı olduğunu denetler.
 
-## Know what the surface will refuse
+## Yüzeyin neyi reddedeceğini bilme
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Mod kapılaması.** Bir çağrı, sunucu tarafında çağıran ajanın alanının moduna
+  göre çözülür. Salt okunur bir moddaki bir ajan, `space_id` değerini atlayarak
+  bir yazma aracına ulaşamaz — mod bunun yerine etkin çalıştırmasından bulunur.
+- **Eylem korumaları.** Değişiklik yapan araçlar etki sınıflarını bildirir ve
+  ürünün geri kalanının kullandığı aynı politikadan geçer. Bkz.
+  [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/).
+- **Onay.** Bazı yıkıcı araçlar, çağrı ilerlemeden önce onaylanması gereken bir
+  onay yükü oluşturur.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Tam katalog, `tools/list` içinde hiçbir keşif kapılaması olmadan duyurulur —
+harici bir MCP istemcisi, önbelleğe aldığı listesinde bulunmayan bir aracı
+çağırmayı reddeder; dolayısıyla araçları gizlemek, onları düzenlemek yerine
+bozar.
 
-## Troubleshooting
+## Sorun giderme
 
-### The client sees no tools
+### İstemci hiç araç görmüyor
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- **MCP sunucusu** kartının çalışıyor gösterdiğini kontrol edin
+- Portun `cc_server` portunuzla eşleştiğini kontrol edin
+- Claude Code’da `--mcp-config` ve `--strict-mcp-config` seçeneklerini
+  geçtiğinizi kontrol edin
 
-### 403 from a machine that is not the server
+### Sunucu olmayan bir makineden 403
 
-No bearer token is configured. Set one and send it.
+Yapılandırılmış bir bearer token yok. Bir tane ayarlayın ve gönderin.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Bir araç çağrısı “Missing or invalid argument: workspace_id” hatasıyla başarısız oluyor
 
-Add `workspace_id`. There is no implicit workspace.
+`workspace_id` ekleyin. Örtük bir çalışma alanı yoktur.
 
-### A tool call is refused as unknown
+### Bir araç çağrısı bilinmeyen olarak reddediliyor
 
-[MCP tools](/tr-TR/kilavuz/referans/mcp-araclari/) lists the catalogue. Call the name
-exactly as it appears there.
+[MCP araçları](/tr-TR/kilavuz/referans/mcp-araclari/) kataloğu listeler. Adı,
+orada göründüğü şekilde tam olarak çağırın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [MCP tools](/tr-TR/kilavuz/referans/mcp-araclari/)
-- [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+- [MCP araçları](/tr-TR/kilavuz/referans/mcp-araclari/)
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/)
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/)

@@ -1,94 +1,95 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: จัดงานด้วยโปรเจกต์
+description: จัดกลุ่มตั๋วงานเป็นโปรเจกต์จากแถบด้านข้าง ติดตามความคืบหน้า และเก็บโปรเจกต์ถาวรเมื่อทำเสร็จ
 slug: th-TH/คู่มือ/วิธีทำ/โปรเจกต์
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+โปรเจกต์คือการจัดกลุ่มตั๋วงานภายในขอบเขตของเวิร์กสเปซเพื่อไปสู่วัตถุประสงค์ร่วม โปรเจกต์มีอยู่เฉพาะใน Control Center เท่านั้น — มันไม่เคยซิงก์ไปยังผู้ให้บริการภายนอกอย่าง
+Linear
 
-## Create a project
+## สร้างโปรเจกต์
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. ขยายกลุ่ม **ตั๋วงาน** ในแถบด้านข้างของเวิร์กสเปซ กลุ่มนี้แสดง
+   **ตั๋วงานทั้งหมด** หนึ่งแถวต่อโปรเจกต์ที่ยังไม่ถูกเก็บถาวร แล้วตามด้วย **โปรเจกต์ใหม่**
+2. คลิก **โปรเจกต์ใหม่**
+3. กรอก **ชื่อโปรเจกต์**, **คำอธิบาย** (ซึ่งไม่บังคับ) และเลือก **สี**
+4. กด **สร้างโปรเจกต์**
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+คุณจะเข้าสู่ภาพรวมของโปรเจกต์ใหม่ และโปรเจกต์จะปรากฏเป็นแถวในแถบด้านข้าง
+ใต้ **ตั๋วงาน**
 
-## Add tickets to a project
+## เพิ่มตั๋วงานเข้าโปรเจกต์
 
-Project is a single-ticket field, set in either of two places:
+โปรเจกต์เป็นฟิลด์ของตั๋วงานแต่ละใบ ตั้งค่าได้จากสองตำแหน่งต่อไปนี้:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- เปิดตั๋วงานแล้วตั้งค่า **โปรเจกต์** ในแถบคุณสมบัติของมัน
+- คลิกขวาที่ตั๋วงานในรายการ แล้วใช้เมนูย่อย **โปรเจกต์**
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+ตัวเลือกในแถบคุณสมบัติยังมี **โปรเจกต์ใหม่** ด้วย ดังนั้นคุณจึงจัดเก็บตั๋วงาน
+เข้าโปรเจกต์ที่สร้างขึ้นตรงนั้นได้เลย **ไม่มีโปรเจกต์** จะล้างฟิลด์นี้
 
-A ticket belongs to at most one project.
+ตั๋วงานหนึ่งใบเป็นสมาชิกของโปรเจกต์ได้ไม่เกินหนึ่งโปรเจกต์
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[โปรเจกต์ไม่ใช่การดำเนินการแบบกลุ่ม]
+แถบลอยที่ปรากฏเมื่อคุณเลือกตั๋วงานหลายใบครอบคลุมสถานะ ลำดับความสำคัญ
+ผู้รับมอบหมาย ป้ายกำกับ และการลบ แต่ไม่มีชิปโปรเจกต์ ดังนั้นการจัดเก็บตั๋วงาน
+หลายใบจึงหมายถึงต้องทำทีละใบ
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+คุณยังเริ่มจากโปรเจกต์ได้เช่นกัน: **ตั๋วงานใหม่** บนภาพรวมของโปรเจกต์
+จะสร้างตั๋วงานและจัดเก็บไว้ที่นั่น
 
-## Read project progress
+## อ่านความคืบหน้าของโปรเจกต์
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+เปิดโปรเจกต์จากแถวในแถบด้านข้าง หรือไปที่
+`/workspaces/<workspace-id>/projects/<project-id>`
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+ภาพรวมแสดงสัญลักษณ์และชื่อของโปรเจกต์ ป้ายสถานะ คำอธิบาย และแถบความคืบหน้า
+ที่บอกจำนวนที่เสร็จเทียบกับทั้งหมด ด้านล่างนั้น ตั๋วงานของโปรเจกต์ถูกจัดกลุ่ม
+ตามสถานะ
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+มันไม่สรุปข้อมูลอย่างอื่นเลย — ไม่มีการแจกแจงตามผู้รับมอบหมาย และไม่มี
+การกระจายตามลำดับความสำคัญ หากต้องการข้อมูลเหล่านั้น ให้กรองรายการตั๋วงาน
+หลักแทน
 
-## Change project status
+## เปลี่ยนสถานะโปรเจกต์
 
-Projects have three states:
+โปรเจกต์มีสามสถานะ:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| สถานะ           | ความหมาย             |
+| --------------- | -------------------- |
+| **ใช้งานอยู่**   | งานกำลังดำเนินอยู่     |
+| **เสร็จแล้ว**    | งานทั้งหมดเสร็จสิ้น   |
+| **เก็บถาวรแล้ว** | เอกสารอ้างอิงเชิงประวัติ |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+ใช้เมนู **⋯** บนส่วนหัวของโปรเจกต์ เมนูนี้มี **แก้ไขโปรเจกต์**,
+**ทำเครื่องหมายว่าเสร็จ** / **ทำเครื่องหมายว่าใช้งาน**, **เก็บถาวร** / **กู้คืน**
+และ **ลบโปรเจกต์**
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+การเก็บถาวรจะซ่อนโปรเจกต์จากรายการในแถบด้านข้างและจากตัวเลือกตั๋วงาน
+มันย้อนกลับได้ — **กู้คืน** จะทำให้โปรเจกต์กลับมาใช้งานอยู่ — แต่ระหว่างที่
+ถูกเก็บถาวร โปรเจกต์จะเข้าถึงได้ผ่าน URL เท่านั้น
 
-## Projects created for you
+## โปรเจกต์ที่สร้างให้คุณ
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/).
+การอนุมัติการประสานงานจะสร้างโปรเจกต์และจัดเก็บตั๋วงานแม่ไว้ใต้โปรเจกต์นั้น
+พร้อมกับสิ่งที่คุณจัดเก็บด้วยตัวเอง รายการงานที่สร้างขึ้นเป็นขั้นตอนของ
+ไปป์ไลน์ ไม่ใช่แถวของตั๋วงาน จึงไม่ปรากฏบนบอร์ดของโปรเจกต์ นั่นคือเส้นทาง
+อัตโนมัติเพียงเส้นทางเดียว: ไม่มีโหนดของไปป์ไลน์ใดสร้างตั๋วงาน ไปป์ไลน์จึง
+เพิ่มข้อมูลเข้าโปรเจกต์ไม่ได้ ดู
+[รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[โปรเจกต์เป็นพื้นผิวของผู้ดำเนินการ]
+สร้าง แสดงรายการ อัปเดต และลบโปรเจกต์ได้ในแอป เอเจนต์ไม่มีเครื่องมือสำหรับ
+โปรเจกต์
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
-- [Delegate work to agents](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
-- [Run an orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
+- [มอบงานให้เอเจนต์](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
+- [รันการประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Tickets](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)
+- [ตั๋วงาน](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/)

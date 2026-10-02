@@ -1,213 +1,226 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Rapat dan transkripsi
+description: Bagaimana Control Center merekam panggilan, mentranskripsi dan melakukan diarisasi di server, dan di mana satu langkah yang meninggalkan host berada.
 slug: id-ID/panduan-pengguna/konsep/rapat
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center dapat merekam panggilan dan mengembalikan tulisan yang bersih
+kepada Anda — ringkasan, item tindakan dan keputusan — dengan pengenalan ucapan
+dan pemisahan pembicara berjalan di perangkat keras Anda sendiri. Bayangkan
+Granola, tetapi dihosting sendiri dan terhubung ke ruang kerja yang sama tempat
+agen Anda berada.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Perekaman memerlukan model suara dan mulai ulang server]
+Perekaman dan dikte dimulai setelah model ucapan (ASR) ada di disk **dan** server
+telah dimulai ulang. Boot normal memasang paksa model yang dipilih
+(Parakeet TDT 0.6B v3 secara default) di latar belakang, tetapi server
+menyelesaikan jalur model suara tepat sekali di awal boot — beberapa menit
+sebelum unduhan itu dapat selesai. Setelah model melaporkan telah terinstal,
+mulai ulang `cc_server`. Untuk memilih build lain, gunakan
+Pengaturan → Server → Model suara & rapat — itu juga memerlukan mulai ulang.
 :::
 
-## What a meeting is
+## Apa itu rapat
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/id-ID/panduan-pengguna/konsep/kalender/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**Rapat** adalah sesi yang direkam dan ditranskripsi. Rapat _bukan_ hal yang
+sama dengan [acara kalender](/id-ID/panduan-pengguna/konsep/kalender/): acara
+adalah komitmen terjadwal yang disinkronkan dari Google, sedangkan rapat adalah
+sesuatu yang benar-benar Anda rekam. Keduanya dapat ditautkan, karena Anda dapat
+memulai rekaman dari sebuah acara, tetapi keduanya tetap merupakan catatan yang
+berbeda.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Setiap rapat dibatasi pada ruang kerja, seperti semua hal lain di Control Center.
+Rapat yang direkam di satu ruang kerja tidak pernah muncul di ruang kerja lain.
 
-## Where the work happens
+## Di mana pekerjaan berlangsung
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+"Di perangkat" adalah insting yang benar, tetapi kata bendanya salah. Klien
+menangkap audio dan mengalirkan frame PCM16 16 kHz ke **mesin yang menjalankan
+`cc_server`**. Host itu melakukan semua hal lainnya: ia menulis WAV per kanal di
+bawah `<dataDir>/meetings/<meetingId>/`, mentranskripsi di isolate pekerja,
+memfilter gema dan melakukan diarisasi setelah rekaman selesai. Pada desktop
+mandiri, host itu adalah mesin yang sama. Saat diarahkan ke server jarak jauh,
+tidak demikian — jadi "tidak ada yang meninggalkan laptop saya" hanya benar bila
+servernya adalah laptop Anda.
 
-There is one further exception and it is the important one.
+Ada satu pengecualian lain dan itulah yang penting.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Ringkasan meninggalkan host]
+Transkrip dan catatan Anda dikirim ke penyedia model apa pun yang dikonfigurasi
+untuk agen peringkas. Untuk penyedia cloud mana pun, itu berarti transkrip
+lengkap dikirim ke API penyedia tersebut. Jika transkrip tidak boleh
+meninggalkan host, arahkan agen peringkas ke endpoint lokal (Ollama, LM Studio,
+atau server lokal lainnya).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Semua yang sebelum ringkasan — penangkapan, transkripsi, pembatalan gema,
+diarisasi, pencocokan sidik suara — berjalan di server tanpa panggilan jaringan.
 
-## Which models ship
+## Model apa yang disertakan
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Model **embedding, diarisasi dan ucapan (ASR)** dipasang paksa saat boot pertama
+(dilewati dalam demo), sehingga pemisahan pembicara dan perekaman tersedia tanpa
+perlu membuka pengaturan. ASR tetap **dapat dipilih** — ukurannya beberapa ratus
+megabita, dan empat build tersedia di pemilih. Model ucapan tetap memerlukan
+satu kali mulai ulang setelah unduhan pertama itu, karena pentranskripsi
+menyelesaikan modelnya sebelum pengambilan selesai.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Keempat entri pemilih, yang berbeda dalam ukuran, cakupan bahasa dan akurasi:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — multibahasa, default yang direkomendasikan (~600 MB)
+- Parakeet TDT 0.6B v2 — bahasa Inggris (~480 MB)
+- Whisper large-v3-turbo — multibahasa (~626 MB)
+- Whisper base.en — hanya bahasa Inggris, default historis yang kecil (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Model adalah satu-satunya artefak yang diambil server saat runtime; setiap
+pustaka native disertakan dalam bundel.
 
-## How capture works
+## Cara penangkapan bekerja
 
-A meeting records **two audio channels at once**:
+Sebuah rapat merekam **dua kanal audio sekaligus**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Anda ("me")**: mikrofon Anda.
+- **Mereka ("them")**: keluaran audio rapat, ditangkap oleh loopback tanpa
+  driver — tap proses/perangkat Core Audio di macOS, loopback WASAPI di Windows,
+  monitor PipeWire / PulseAudio di Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Karena kedua kanal ditangkap secara terpisah, transkrip sudah diatribusikan ke
+pembicara sejak awal: kata-kata Anda diberi tag `me`, semua orang dalam
+panggilan diberi tag `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Suara Anda sendiri merembes dari keluaran sistem kembali ke mikrofon dan jika
+tidak ditangani akan ditranskripsi dua kali. Dua filter menghentikannya.
+**AEC3 tingkat sinyal berjalan pada setiap perekaman mode jarak jauh dan wajib
+ada** — jika pustaka AEC native gagal dimuat, perekaman menolak dimulai
+alih-alih secara diam-diam mengalirkan mikrofon yang tercemar gema. (Mode tatap
+muka tidak memiliki referensi ujung jauh untuk dibatalkan, jadi AEC di sana
+hanya meneruskan sinyal apa adanya.) Di atasnya, filter gema tingkat teks di
+sisi host berjalan di setiap platform.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Semua pemrosesan mikrofon tingkat OS sengaja dinonaktifkan. Mengaktifkan
+pembatalan gema atau penguatan otomatis milik platform di macOS mengalihkan
+mikrofon ke Voice Processing I/O, yang pada build ini mematikan mikrofon _dan_
+tap audio sistem.
 
-## Transcription and diarization
+## Transkripsi dan diarisasi
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Saat Anda merekam, audio didekode dalam **jendela bergulir** — dipotong pada
+keheningan pendek di akhir, atau pada panjang jendela maksimum — di luar thread
+UI. Setiap jendela menjadi segmen transkrip bertag pembicara dengan offset
+milidetik.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Jendela yang tidak pernah melewati ambang RMS akan dilewati **tanpa didekode
+sama sekali**, karena model ucapan merender keheningan sebagai token non-ucapan
+hasil halusinasi dan pendekodeannya hanya membuang CPU. Konsekuensi praktisnya:
+pembicara yang terus-menerus sangat pelan tidak menghasilkan transkrip. Jika
+seseorang tidak menghasilkan apa pun, periksa level masukannya sebelum
+menyalahkan model.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Setelah Anda berhenti, **diarisasi** berjalan offline atas rekaman dan memecah
+kanal jarak jauh menjadi pembicara individual (`Person 1`, `Person 2`, …) yang
+dapat Anda ganti namanya. Jumlah pembicara disimpulkan dari ambang pengelompokan,
+bukan dari jumlah yang Anda tetapkan — jadi ini artefak ambang dan pembicara yang
+pelan atau tumpang tindih dapat digabungkan ke pembicara tetangganya. Transkrip
+dirender sebagai baris `[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Profil suara
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Mengganti nama pembicara lebih dari sekadar memberi label pada satu transkrip.
+Control Center dapat menyimpan sidik suara pembicara sebagai **profil suara**,
+sehingga mengenali mereka secara otomatis di rapat mendatang. Saat Anda memberi
+nama pembicara hasil diarisasi, Anda ditanya apakah ingin menyimpan sidik
+suaranya; jika ya, sidik itu digabungkan ke centroid berjalan untuk nama tersebut
+dan dicocokkan dengan pembicara baru melalui kemiripan kosinus, sehingga orang
+yang sama muncul dengan namanya lain kali tanpa Anda melabelinya ulang.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Profil suara dibatasi per ruang kerja dan tidak pernah melewati batasnya. Kelola
+profil ini di **Pengaturan → Ruang kerja → Rapat**. Mengganti nama pembicara yang
+sebelumnya tersimpan akan membatalkan pendaftaran nama lama dan menawarkan
+mendaftarkan nama baru; menghapus profil menghapus sidik suara yang tersimpan
+tetapi membiarkan nama apa pun yang sudah diterapkan pada rapat sebelumnya tetap
+utuh.
 
-## The summary pipeline
+## Pipeline ringkasan
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/id-ID/panduan-pengguna/konsep/peristiwa-domain/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Saat perekaman berhenti, server menerbitkan
+[peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)
+`MeetingRecordingStopped`. Templat pipeline **`meeting_summary`** bawaan dipicu
+oleh peristiwa itu. Perekam tidak menunggunya; rapat hanya bertransisi melalui
+siklus hidup statusnya:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Agen ringkasan menerima judul, catatan langsung kasar Anda dan transkrip, lalu
+mengembalikan **JSON terstruktur**. Bagian yang ditulisnya ditentukan oleh
+**templat catatan rapat aktif** ruang kerja (Pengaturan → Ruang kerja → Rapat);
+templat aktif berlaku untuk ringkasan baru dan yang dijalankan ulang. Langkah
+persist pipeline kemudian menulis JSON itu ke baris terpisah:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` dan `summary` → catatan rapat
+- setiap item tindakan → baris `MeetingActionItem` (konten, pemilik, tautan tiket opsional)
+- setiap keputusan → baris `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Item tindakan dan keputusan **tidak pernah** diurai dari markdown bebas, hanya
+dari larik terstruktur agen. Jika suatu eksekusi tidak menghasilkan keluaran
+terstruktur, langkah persist dilewati dan transkrip mentah disimpan sebagai
+cadangan, sehingga Anda tidak pernah kehilangan catatannya. Tidak ada apa pun di
+pipeline yang menandai rapat `done` — satu reconciler yang melakukannya dari
+peristiwa terminal eksekusi, sehingga kegagalan langkah saudaranya tidak dapat
+meninggalkan rapat yang setengah tertulis tetapi sudah terlihat selesai.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agen tidak dapat membaca rapat Anda]
+Tidak ada alat MCP rapat atau kalender. Agen yang terhubung melalui
+[MCP](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/) tidak dapat
+mencantumkan rapat, membaca transkrip, atau melihat item tindakan dan keputusan —
+data itu hanya sampai ke klien manusia melalui RPC. Keputusan memang sampai ke
+agen secara tidak langsung, sebagai fakta memori di domain `decisions`.
 :::
 
-## Where meetings show up
+## Di mana rapat muncul
 
-| Surface                | What it shows                                                                         |
+| Permukaan              | Isinya                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | Daftar rapat, dengan jumlah item tindakan dan keputusan                               |
+| `/meetings/record`     | HUD perekaman langsung: catatan Anda di satu sisi, transkrip yang mengalir di sisi lain |
+| `/meetings/:meetingId` | Detail rapat: tab Catatan, Transkrip, Item tindakan dan Keputusan                     |
+| Pengaturan → Ruang kerja → Rapat | Templat catatan dan profil suara tersimpan untuk ruang kerja ini             |
 
-## Platform support
+## Dukungan platform
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Penangkapan tidak memerlukan driver di ketiga platform desktop (tap Core Audio di
+macOS, WASAPI di Windows, PipeWire di Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Klien web juga merekam**, yang bisa tersembunyi oleh kerangka desktop di sisa
+halaman ini: peramban mengambil mikrofon Anda melalui `getUserMedia` dan audio
+rapat melalui `getDisplayMedia` (berbagi layar), menurunkan sampelnya ke
+PCM16 16 kHz dan mengalirkannya ke host yang sama. Ada tiga catatan di sana:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Permukaan yang dibagikan **harus** membawa trek audio. Berbagi layar penuh di
+  Safari, Firefox dan macOS tidak menghasilkan trek itu dan perekaman menolak
+  dimulai.
+- Tidak ada AEC3 native. Pembatalan gema milik peramban diminta pada mikrofon;
+  filter gema teks di sisi host tetap berjalan. HUD menampilkan pengukur level
+  masukan yang digerakkan oleh PCM mikrofon.
+- Jalankan ulang ringkasan dan batalkan pemrosesan hanya tersedia di desktop.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Tindakan **Mulai rekaman & tautkan** di kalender hanya tersedia di desktop dan
+melaporkan hal itu secara terang-terangan di web, meskipun alur perekaman di
+layar rapat sendiri berfungsi di sana.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Menghapus rapat meninggalkan audionya]
+Menghapus rapat hanya menghapus baris basis datanya. Direktori audio per kanal
+yang disimpan `<dataDir>/meetings/<meetingId>/` tidak pernah dibersihkan — tidak
+ada kebijakan retensi, batas ukuran, atau penyapuan GC untuknya. Merebut kembali
+disk itu adalah pekerjaan manual di host server.
 :::
 
-## See also
+## Lihat juga
 
-- [Calendar and scheduling](/id-ID/panduan-pengguna/konsep/kalender/): record a meeting straight from a calendar event
-- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/): the engine behind `meeting_summary`
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/): link a meeting's action items to tickets
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/id-ID/panduan-pengguna/panduan-praktis/rekam-rapat/)
+- [Kalender dan penjadwalan](/id-ID/panduan-pengguna/konsep/kalender/): rekam rapat langsung dari acara kalender
+- [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/): mesin di balik `meeting_summary`
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/): tautkan item tindakan rapat ke tiket
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): `MeetingRecordingStopped` dan `MeetingStartingSoon`
+- [Rekam dan ringkas rapat](/id-ID/panduan-pengguna/panduan-praktis/rekam-rapat/)

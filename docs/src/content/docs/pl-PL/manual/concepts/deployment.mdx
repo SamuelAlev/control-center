@@ -1,239 +1,265 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Wdrażanie i klienci
+description: Jak architektura cienkiego klienta w Control Center rozdziela serwer headless od klientów desktopowych, webowych i mobilnych.
 slug: pl-PL/podrecznik/koncepcje/wdrazanie
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center to nie jeden program. To **architektura cienkiego klienta**:
+serwer headless, który zarządza Twoimi danymi, oraz zestaw klientów, które
+renderują interfejs przez jedno połączenie RPC z nim. Zrozumienie tego podziału
+wyjaśnia, dlaczego niektóre rzeczy działają tam, gdzie działają, i do czego
+każdy klient ma dostęp, a do czego nie.
 
-## The server owns the data
+## Serwer zarządza danymi
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/pl-PL/podrecznik/koncepcje/obszary-robocze/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+Proces o nazwie **`cc_server`** przechowuje bazy danych — mały plik `global.db`
+ze stanem całego serwera oraz po jednym pliku SQLite na każdy [obszar roboczy](/pl-PL/podrecznik/koncepcje/obszary-robocze/),
+otwieranym leniwie — i wykonuje długotrwałą pracę: silniki potoków,
+rekonsyliatory, zestaw narzędzi MCP i nasłuch orkiestracji. Wszystko, co musi
+przetrwać zamknięcie okna albo co dwa klienty powinny widzieć identycznie,
+znajduje się właśnie tam.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Żaden klient sam nie otwiera pliku bazy danych. Zamiast tego każdy klient trzyma
+jeden **`RemoteRpcClient`** i wykonuje przez niego operacje na repozytoriach oraz
+subskrypcje. Serwer uwierzytelnia połączenie na podstawie wstępnie
+współdzielonego klucza sparowanego urządzenia — a potem przestaje się
+połączeniem przejmować. **Sesja nie jest powiązana z obszarem roboczym.**
+Dyspozytor jest bezstanowy: każde wywołanie w zakresie obszaru roboczego niesie
+własny `workspace_id` w argumentach, a wywołanie, które go pomija, zostaje
+odrzucone.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+To celowe rozwiązanie: dzięki niemu dwa klienty na jednym serwerze mogą działać
+w różnych obszarach roboczych, bez przechowywanego na serwerze „bieżącego
+obszaru roboczego”, o który mogłyby się spierać. Izolację egzekwuje się
+natomiast przy każdym wywołaniu, w czterech krokach:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. Operacja deklaruje, czy działa w zakresie obszaru roboczego; jeśli tak, a nie
+   dotarł żaden `workspace_id`, wywołanie zostaje odrzucone.
+2. Podany identyfikator musi należeć do **zarejestrowanego** obszaru roboczego;
+   sprawdza się to, zanim cokolwiek otworzy bazę danych — inaczej nieznany
+   identyfikator tworzyłby przy każdym żądaniu pusty, widmowy plik
+   `workspace.db`. Brak trafienia oznacza odpowiedź „nie znaleziono”.
+3. Rola `WorkspaceRole` wywołującego musi spełniać minimalny próg operacji,
+   wynikający z jej rodzaju: odczyt wymaga roli guest, modyfikacja — member,
+   operacja destrukcyjna — admin.
+4. Operacja, która udostępnia zawartość repozytorium, wymaga dodatkowo
+   uprawnienia na poziomie repozytorium w zadeklarowanym zakresie — `none` /
+   `read` / `review` / `write` — dzięki czemu członkostwo w obszarze roboczym
+   nigdy po cichu nie daje większych uprawnień niż forge.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Zdanie, które ma znaczenie: **posiadanie klucza parowania nie jest granicą
+dostępu; jest nią członkostwo.**
 
-## Why split it this way
+## Dlaczego taki podział
 
-Three pressures pushed toward a server:
+Ku architekturze z serwerem skłoniły trzy czynniki:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Jedno źródło prawdy.** Komputer i telefon albo laptop i komputer powinny
+   widzieć ten sam stan floty. Gdyby każde miało własną bazę danych, rozjechałyby
+   się. Jeden serwer sprawia, że każdy klient czyta te same, bieżące dane.
+2. **Przeglądarka nie obsłuży się sama.** Przeglądarka nie może uruchomić
+   podprocesu ani otworzyć lokalnego pliku, więc wersja webowa nigdy nie może
+   zarządzać bazą danych ani uruchamiać agenta. Musi rozmawiać z serwerem, który
+   to potrafi. Zamiast budować drugą, wyłącznie webową ścieżkę dostępu do
+   danych, aplikację desktopową wprowadzono na tę samą ścieżkę.
+3. **Działanie bez interfejsu.** Serwer, który można uruchomić na małym
+   komputerze — dostępny z telefonu w pociągu albo z przeglądarki gdziekolwiek —
+   jest użyteczniejszy niż GUI, które trzeba trzymać otwarte.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Kompromis jest taki, że serwer staje się zależnością: jeśli nie działa, nic nie
+działa. Domyślną odpowiedzią aplikacji desktopowej jest **uruchomienie własnego
+serwera**.
 
-## The clients
+## Klienci
 
-Five clients reach the server, each with a different shape and trust profile.
+Do serwera sięga pięć klientów, każdy o innym kształcie i profilu zaufania.
 
-### Desktop app
+### Aplikacja desktopowa
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Aplikacja desktopowa we Flutterze (macOS, Windows, Linux) to pełny klient. Przy
+pierwszym uruchomieniu pyta, jak ma działać, a potem zapamiętuje wybór:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Lokalnie**: uruchomienie i nadzorowanie `cc_server` na tym komputerze —
+  domyślna, samowystarczalna konfiguracja dla jednego użytkownika. Aplikacja
+  desktopowa uruchamia serwer, który przechowuje bazę danych w katalogu
+  wsparcia aplikacji i komunikuje się z nią przez loopback.
+- **Zdalnie**: połączenie z `cc_server` działającym gdzie indziej przez
+  bezpieczny WebSocket. Dane znajdują się na tym serwerze; ten komputer jest
+  wyłącznie rendererem.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+W obu przypadkach powstały klient RPC zastępuje dostawcę danych aplikacji, więc
+cały interfejs — każdy ekran, każda funkcja — czyta i zapisuje przez serwer.
+Aplikacja desktopowa nigdy nie dotyka bezpośrednio pliku bazy danych.
 
-### Web client
+### Klient webowy
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Wersja webowa to ta sama aplikacja we Flutterze skompilowana do działania
+w przeglądarce, hostowana pod [app.usectrl.dev](https://app.usectrl.dev), więc
+nie ma nic do zainstalowania. Przeglądarka nie może uruchomić podprocesu,
+dlatego klient webowy jest **zawsze** zdalny: łączy się z `cc_server` przez
+`wss://` i renderuje pełny interfejs desktopowy. Po połączeniu pokazuje te same
+ekrany i tę samą flotę, bo to ten sam kod przez to samo RPC. Luki to garść
+miejsc wymagających natywnych możliwości, których przeglądarka nie ma — główną
+jest opisana niżej warstwa jakości nagrywania spotkań, a drugą powiadomienia
+systemowe.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Dlatego stwierdzenia „bez pobierania” i „bez serwera” to dwie różne rzeczy.
+Klient webowy usuwa instalację, ale nie usuwa serwera. To, z czym się łączy,
+może być `cc_server` na tym samym laptopie — `ws://localhost:9030`, który nie
+wymaga certyfikatu, bo przeglądarki uznają loopback za zaufany — albo na innym
+komputerze, który musi być dostępny przez `wss://` z certyfikatem, któremu
+przeglądarka ufa. `cc_server` odmawia bindowania adresu innego niż loopback bez
+TLS, więc zdalny serwer oznacza albo własny certyfikat, albo proxy kończące TLS,
+albo tunel lub VPN, który go dostarcza.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Sam pakiet jest hostowany oddzielnie od serwera, z którym rozmawia. Samodzielny
+`cc_server` obsługuje punkt końcowy RPC, zestaw MCP i swoje proxy, ale **nie**
+pakiet webowy — ścieżka plików statycznych istnieje w serwerze, jednak
+w samodzielnym binarium nie skonfigurowano katalogu głównego stron, więc nie ma
+czego udostępniać pod `/`. Opublikowany obraz kontenera `cc-webapp` hostuje
+pakiet, a `scripts/build_web.sh` go buduje. Serwer przyjmuje pochodzenia
+przeglądarek tylko z listy `--allowed-origins`, która domyślnie zawiera
+`https://app.usectrl.dev`, więc samodzielny hosting pakietu wymaga dodania jego
+pochodzenia.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Multimedia (awatary, obrazy w newsfeedzie, zrzuty ekranu z PR-ów) przechodzą
+przez punkt końcowy proxy serwera, a nie trafiają bezpośrednio do hostów
+źródłowych, więc przeglądarka nigdy nie pobiera danych z dowolnego pochodzenia.
+Wdrożony klient dodaje do każdego żądania politykę Content-Security Policy
+pochodzącą z niesensywnego pliku cookie, dzięki czemu dozwolone jest wyłącznie
+pochodzenie połączonego serwera.
 
-### Phone companion (cc_remote)
+### Towarzysz na telefonie (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+Aplikacja **Remote** to osobny, lżejszy klient — PWA we Flutterze dostępna pod
+[remote.usectrl.dev](https://remote.usectrl.dev/). Celowo **nie** jest pełną
+aplikacją. Paruje się przez brokerski, szyfrowany end-to-end przekaźnik
+WebSocket i obsługuje głównie odczytowy wycinek zestawu narzędzi: czytanie
+zgłoszeń, wiadomości i newsfeedu; wysyłanie odpowiedzi lub aktualizowanie
+zgłoszenia.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/) for the full
-security model.
+Telefon to **podmiot o niższych uprawnieniach** niż lokalny agent. Domyślnie
+odrzucająca polityka narzędzi, wstępnie współdzielony klucz zabezpieczający
+każdą ramkę, uprawnienie sesji, które wyklucza uprzywilejowane operacje (na
+przykład parowanie) z aplikacji towarzyszącej, opisane wyżej kontrole roli
+i uprawnień do repozytoriów przy każdym wywołaniu oraz ograniczanie tempa
+sprawiają, że zatwierdzone (lub ujawnione) parowanie nie staje się pełnym
+zdalnym sterowaniem. Pełny model bezpieczeństwa opisano w sekcji
+[Zdalne sterowanie i mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/).
 
-### MCP clients
+### Klienci MCP
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/pl-PL/podrecznik/poradniki/serwer-mcp/) and the
-[MCP tools reference](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/).
+Zewnętrzne narzędzia — edytory, inni agenci, narzędzia CLI — które mówią
+protokołem Model Context Protocol, łączą się z zestawem MCP serwera i korzystają
+z typowanego rejestru narzędzi. To programistyczna ścieżka integracji, a nie GUI.
+Zobacz [Używaj serwera MCP](/pl-PL/podrecznik/poradniki/serwer-mcp/)
+i [dokumentację referencyjną narzędzi MCP](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/).
 
-### Fleet executors (cc_worker)
+### Workery floty (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** to napisane w czystym Darcie binarium headless, które paruje się
+z `cc_server`, deklaruje możliwości swojego hosta i pobiera wydzierżawione
+zadania do wykonania. Strumieniuje zdarzenia procesów z powrotem tym samym
+kanałem RPC i nie przechowuje **żadnego trwałego stanu**: żadnej bazy danych,
+żadnych poświadczeń, zgód ani budżetów — te nigdy nie opuszczają `cc_server`.
+Worker jest kończyną, nie drugim mózgiem. Jeden autorytatywny serwer, N głupich
+kończyn; nie ma konsensusu ani ruchu między workerami.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Wydzierżawione wykonanie to nadal tylko mechanika dzierżawy. `agentRun` to
+jedyny rodzaj, który uruchamia prawdziwe polecenie (`CC_JOB_COMMAND` albo
+powtórzony prompt, jeśli żadnego nie podano). `pipelineStep`, `codeIndex`,
+`goldenRender`, `benchmark` i `evalBatch` na razie sondują poleceniem
+`git --version` / `rev-parse HEAD`, aby przetestować ścieżkę strumieniowania, nie
+udając, że te zadania naprawdę się wykonały.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Ogłasza system operacyjny, architekturę procesora, liczbę rdzeni, pamięć RAM,
+dostępność pakietu Flutter SDK oraz backendy sandboxa dostępne na hoście
+(w Windows żaden). Dedykowany worker zawsze ogłasza też `alwaysOn`
+i `acceptsParallel`, pod które planuje harmonogram przypnij → preferuj →
+przelej. Nie ma sondy GPU ani ML.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Samotny komputer desktopowy nic z tego nie zauważa, bo zwykłe wysyłanie zadań
+w ogóle nie przechodzi przez flotę. Istnieje wprawdzie niejawny worker działający
+w tym samym procesie, zarejestrowany dla hosta serwera, ale to jedynie szew
+rejestracyjny, do którego nie podłączono żadnych modułów wykonawczych — zadanie
+faktycznie umieszczone na lokalnym workerze kończy się niepowodzeniem, zamiast
+się wykonać. Dziś tylko prawdziwy `cc_worker` wykonuje wydzierżawione zadania.
 
-## What runs where
+## Co działa gdzie
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Zagadnienie                                    | Serwer (`cc_server`)       | Worker floty (`cc_worker`)   | Klient desktopowy | Klient webowy / na telefonie     |
+| ---------------------------------------------- | -------------------------- | ---------------------------- | ----------------- | -------------------------------- |
+| Bazy danych (Drift/SQLite)                     | zarządza nimi              | —                            | —                 | —                                |
+| Uwierzytelnianie, zgody, budżety, tożsamość    | zarządza nimi              | —                            | —                 | —                                |
+| Potoki, rekonsyliatory, nasłuch orkiestracji   | uruchamia je               | —                            | —                 | —                                |
+| Zestaw narzędzi MCP                            | obsługuje go               | —                            | —                 | —                                |
+| Wykonywanie agentów                            | uruchamia je (lub wydzierżawia) | wykonuje wydzierżawione zadania | —            | —                                |
+| Renderowanie interfejsu                        | —                          | —                            | pełne             | pełne (web) / głównie odczyt (telefon) |
+| Nagrywanie spotkań (mikrofon + dźwięk spotkania) | —                        | —                            | natywne nagrywanie | tylko web, przez dźwięk z udostępniania ekranu |
+| OAuth kalendarza (Google)                      | przechowuje tokeny         | —                            | —                 | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/)
-for what bounds a run in each case.
+Oba poziomy nie stosują takiego samego sandboxa. `cc_server` zamyka
+uruchomienia, które wykonuje samodzielnie, w sandboxie systemu operacyjnego hosta,
+gdy backend jest dostępny — Seatbelt w macOS, bubblewrap w Linuksie i WSL2 —
+a w Windows lub bez `bwrap` i `socat` sięga po pozostałe ograniczenia.
+**`cc_worker` w ogóle nie stosuje sandboxa.** Ogłasza możliwość `sandbox`, aby
+serwer mógł rozdzielać zadania według platformy, ale nic w workerze jej nie
+egzekwuje: wydzierżawione zadanie jest uruchamiane bezpośrednio, ograniczone
+środowiskiem dzierżawy i przydzielonym worktree. Wydzierżawianie pracy przenosi
+więc wykonanie poza sandbox, nawet na hoście, który go ma. Co ogranicza
+uruchomienie w każdym z tych przypadków, opisano w sekcji
+[Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Nagrywanie spotkań odbywa się po stronie klienta, bo wymaga mikrofonu i dźwięku
+spotkania — serwer stojący w szafie nie nagra Twojej rozmowy. Nagranie jest
+następnie podsumowywane przez potok serwera, a notatki trafiają tam, skąd każdy
+klient może je odczytać.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Klient webowy też nagrywa, co układ tabeli może przesłaniać: przechwytuje
+w przeglądarce mikrofon oraz ścieżkę dźwięku z udostępniania ekranu i strumieniuje
+PCM 16 kHz do serwera. Ta ścieżka dźwięku jest _wymagana_, więc gdy przeglądarka
+jej nie udostępni, nagrywanie jawnie zawodzi. Wyłącznie desktopowa jest natomiast
+warstwa jakości wokół nagrywania — anulowanie echa na poziomie sygnału przez
+natywny procesor, miernik poziomu wejścia i ostrzeżenie o niedziałającym
+mikrofonie, ponowne generowanie podsumowania, anulowanie przetwarzania oraz
+akcja „Nagraj i podlinkuj” w kalendarzu.
 
-## Pairing and trust
+## Parowanie i zaufanie
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Każdy klient potwierdza swoją tożsamość **wstępnie współdzielonym kluczem**,
+który nadaje się jednorazowo:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Aplikacja desktopowa w trybie lokalnym generuje świeży klucz przy każdym
+  starcie i przekazuje go uruchomionemu serwerowi przez zmienne środowiskowe,
+  więc na komputerze nie zapisuje się żaden sekret.
+- Klienci zdalni (desktopowy w trybie zdalnym, webowy, telefon) używają klucza
+  utworzonego przez polecenie `pair` serwera i przechowywanego w pęku kluczy
+  systemu operacyjnego (a na telefonie — lokalnie).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+Unieważnianie działa **na bieżąco**, a nie leniwie. Serwer obserwuje tabelę
+sparowanych urządzeń i w ciągu kilku sekund zrywa każdą otwartą sesję, której
+urządzenie opuściło aktywny zbiór — zarówno na bezpośredniej ścieżce WebSocket,
+jak i przez przekaźnik. Nie trzeba czekać, aż urządzenie połączy się ponownie,
+żeby je odciąć.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Klucz nigdy nie podróżuje w adresie URL, który może zobaczyć statyczny host. Gdy
+trafia przez link — na telefonie lub w przeglądarce — jedzie we **fragmencie
+URL**, czyli części po `#`, której przeglądarka nigdy nie wysyła do serwera
+hostującego stronę. To niezmiennik wart zapamiętania i dotyczy obu przypadków.
+Klient webowy ma dwa inne punkty wejścia: formularz połączenia, w którym wkleja
+się serwer i klucz bezpośrednio, oraz kod zaproszenia, wymieniany na
+poświadczenie utworzone wyłącznie dla tej przeglądarki.
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/pl-PL/podrecznik/koncepcje/architektura/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/): the phone pairing and security model
+- [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/): dlaczego każde wywołanie RPC niesie własny identyfikator obszaru roboczego i jak podział bazy danych czyni izolację strukturalną
+- [Architektura](/pl-PL/podrecznik/koncepcje/architektura/): jak kod jest zorganizowany wokół serwera i jego klientów
+- [Zdalne sterowanie i mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/): model parowania telefonu i bezpieczeństwa
 
-## Related guides
+## Powiązane poradniki
 
-- [Run a headless server](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): start `cc_server` and pair a client
-- [Connect to a remote server](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/): point the desktop or web client at a server elsewhere
-- [Pair a device](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/pl-PL/podrecznik/poradniki/uruchamianie-workera-floty/): add a `cc_worker` that pulls leased jobs
+- [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): uruchom `cc_server` i sparuj klienta
+- [Połącz się ze zdalnym serwerem](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/): skieruj klienta desktopowego lub webowego na serwer działający gdzie indziej
+- [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): dodaj telefon, drugą przeglądarkę lub inny komputer
+- [Uruchom workera floty](/pl-PL/podrecznik/poradniki/uruchamianie-workera-floty/): dodaj `cc_worker`, który pobiera wydzierżawione zadania

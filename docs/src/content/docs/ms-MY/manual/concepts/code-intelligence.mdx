@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Kepintaran kod
+description: Mengapa ejen memerlukan pengkompil, pemadan struktur dan nyahpepijat — dan apa yang setiap satu jawab yang tidak dapat dijawab oleh yang lain.
 slug: ms-MY/manual-pengguna/konsep/kepintaran-kod
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center memberikan ejen empat cara untuk memahami kod selain membacanya. Setiap satu menjawab soalan yang benar-benar berbeza, dan sebabnya ada empat dan bukan satu ialah tiada satu mekanisme pun yang menjawab kesemuanya.
 
-| Mechanism            | Answers                                          | Costs                                  |
+| Mekanisme            | Menjawab                                         | Kos                                    |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **Graf kod**         | Apa yang ada di sini, dan apa yang bergantung padanya | Satu laluan pengindeksan; murah untuk ditanya |
+| **Pelayan bahasa**   | Adakah ini benar-benar dikompil, dan apakah jenis ini | Satu proses pelayan bagi setiap projek |
+| **Carian struktur**  | Di manakah BENTUK ini muncul                     | Satu penghuraian bagi setiap fail      |
+| **Nyahpepijat**      | Apa yang benar pada saat ini, dalam bingkai ini   | Proses yang dihentikan                 |
 
-## The gap the language server closes
+## Jurang yang ditutup oleh pelayan bahasa
 
-The [code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) dibina daripada tree-sitter: simbol, tepi panggilan, jejari kesan. Ia pantas, ia murah, dan ia tidak tahu apa-apa tentang **jenis**. Ia tidak dapat memberitahu anda sama ada panggilan yang baru anda tulis dapat dikompil, sama ada medan itu wujud pada objek, atau sama ada penamaan semula anda terlepas satu eksport semula.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Tanpa pelayan bahasa, ejen hanya mengetahuinya pada masa ujian — atau tidak pernah. Ia menulis sesuatu yang kelihatan munasabah, terus bergerak, dan kegagalan itu muncul tiga pusingan kemudian, terlekat pada perubahan yang berbeza.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Jadi hasilnya bukanlah alat `lsp` itu sendiri. Yang penting ialah `write`, `edit` dan `apply_patch` dibalut: selepas setiap tulisan, fail itu melalui pelayan bahasa dan diagnostik yang **baru diperkenalkan** dilipat masuk ke dalam hasil alat. Ejen tahu ia telah memecahkan binaan pada saat ia memecahkannya, sama ada ia terfikir untuk bertanya atau tidak.
 
-### Only new diagnostics
+### Hanya diagnostik baharu
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Mengulang apa yang telah diberitahu kepada ejen lebih buruk daripada berdiam diri: ia memenuhi hasil dengan hingar yang dipelajari oleh ejen untuk dilangkau, dan satu ralat baharu itu turut terlepas bersama. Satu lejar setiap larian menjejaki apa yang telah dilaporkan, berkunci pada keterukan, kod dan mesej — **bukan** kedudukan, jadi diagnostik yang hanya berpindah turun empat baris tidak dilaporkan semula sebagai baharu.
 
-### Lazy, and honest about being absent
+### Pemuatan malas, dan jujur apabila tidak hadir
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Tiada pelayan dimulakan semasa but. Satu pelayan dimulakan pada permintaan pertama yang memerlukannya, yang hampir selalu merupakan suntingan pertama pada fail yang dituntutnya, dan pelayan yang menganggur akan disapu keluar. Hos yang tidak pernah menyentuh Dart tidak pernah memulakan penganalisis.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Pengesanan ialah satu **persilangan**: penanda akar mesti wujud dalam checkout *dan* binari mesti dapat diselesaikan. Penanda sahaja berkata "projek ini ialah Python" dan tidak berkata apa-apa tentang sama ada pelayan dipasang; binari yang dapat diselesaikan sahaja berkata hos ini mempunyai rantaian alat dan tidak berkata apa-apa tentang checkout ini. Hanya kedua-duanya bersama-sama bermakna satu pertanyaan boleh berjaya, dan alat yang ditawarkan tetapi selalu gagal lebih buruk daripada alat yang tidak hadir.
 
-## Why structural search, when grep exists
+## Mengapa carian struktur, sedangkan grep wujud
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` memadankan aksara. Itu alat yang betul untuk satu nama dan alat yang salah untuk satu bentuk.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Corak struktur dihuraikan oleh **tatabahasa yang sama seperti fail itu**, jadi `dispose($X)` menemui panggilan itu tidak kira bagaimana ia dijarakkan, dibalut atau dipecahkan baris, dan tidak pernah memadankan aksara yang sama di dalam literal rentetan atau komen.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Sifat yang menjadikannya lebih daripada satu regex dengan beberapa langkah tambahan ialah metapembolehubah yang berulang dalam satu corak mesti menangkap teks yang sama:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+memadankan satu pengawal yang membuang apa yang diujinya, dan tidak memadankan pengawal yang membuang benda lain. Itu kelas pepijat yang tidak boleh anda ungkapkan secara tekstual sama sekali.
 
-### It runs on the tree-sitter already linked
+### Ia berjalan atas tree-sitter yang sudah dipautkan
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Tiada enjin kedua. `cc_natives` sudah memuatkan tree-sitter dan tatabahasanya untuk graf kod, dengan cache pertanyaan terkompil dan jadual bahasa. Pemadan itu Dart tulen atas pokok yang memang sedang dihuraikan. Enjin struktur kedua akan bermakna penghurai kedua, set tatabahasa kedua untuk dibina dan disediakan pada setiap platform, serta dua jawapan kepada "apakah itu ungkapan panggilan".
 
-### A fragment needs somewhere to live
+### Serpihan perlu tempat untuk berada
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Tatabahasa hanya mentakrifkan apa itu satu *fail* penuh. Apabila dihuraikan secara mentah pada aras atas Dart, `dispose(x)` ialah **tandatangan fungsi** yang sah sepenuhnya — satu pengisytiharan bernama `dispose` yang mengambil parameter `x` — tanpa sebarang ralat yang mendedahkannya. Pemadan yang dibina atas huraian itu mencari pengisytiharan, tidak menemui panggilan, dan melaporkan "tiada padanan" untuk corak yang memang tidak pernah dibaca seperti rupanya.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Jadi sesuatu corak dicuba dalam satu tangga perancah — pernyataan, ungkapan, ahli kelas, aras atas — dan yang pertama menerimanya menang. Serpihan yang tidak diterima oleh mana-mana konteks dilaporkan sebagai tidak boleh dihuraikan, dan bukan dicari lalu secara senyap tidak ditemui.
 
-## Why a rewrite stages instead of writing
+## Mengapa penulisan semula melalui peringkat, bukan terus menulis
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Penulisan semula struktur ialah suntingan paling luas yang boleh dilakukan oleh ejen: satu corak, empat puluh fail, dan tiada siapa membaca hasilnya baris demi baris — bukan model, dan bukan orang yang memintanya. Menulisnya dan melaporkan "selesai" bermakna pandangan jujur pertama terhadap perubahan itu ialah `git diff` selepasnya.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Jadi `ast_edit` melaporkan apa yang *akan* dilakukannya — kiraan, fail, tapak yang dipadankan — dan perubahan itu hanya mendarat apabila `resolve` mengkomitnya. Itulah juga yang membolehkan satu diff dan pilihan Terima/Buang terletak di hadapan manusia sebelum apa-apa pun sampai ke cakera.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Komit itu bersifat semua-atau-tiada dan setiap fail disemak terhadap kandungan yang ditangkap pada masa peringkat. Antara peringkat dan komit, ejen mungkin telah menyunting salah satu fail itu secara manual, satu laluan diagnostik mungkin telah menulis semulanya, atau pemformat mungkin telah menyentuhnya — mengkomit juga akan membuang kerja itu dan diff tersebut akan kelihatan disengajakan. Sebarang ketakpadanan menolak keseluruhan perubahan, kerana penulisan semula struktur yang hanya sebahagian diterapkan meninggalkan pokok yang tidak dapat dikompil dalam mana-mana bentuk.
 
-## What a debugger answers that a print statement cannot
+## Apa yang nyahpepijat jawab yang tidak dapat dijawab oleh pernyataan cetak
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Gelung pernyataan cetak ialah: tambah satu cetakan, jalankan semuanya semula, baca output, padam cetakan itu. Ia memakan satu larian ujian penuh bagi setiap soalan, dan ia hanya menjawab soalan yang anda terfikir untuk tanyakan *sebelum* menjalankannya.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Bingkai yang dihentikan menjawab setiap soalan tentang saat itu sekali gus — setiap pembolehubah setempat, setiap pemanggil, dan satu ungkapan yang dinilai dalam skop bingkai itu sendiri. Untuk proses yang tersekat atau kegagalan yang hanya berulang sekali dalam sepuluh larian, itulah bezanya antara satu petang dengan satu minit.
 
-### Bounded like an enclosure, and for the same reason
+### Terbatas seperti kepungan, dan atas sebab yang sama
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Penyesuai nyahpepijat memiliki satu **proses yang dihentikan** yang memegang apa sahaja yang dipegang oleh proses itu — satu port, satu kunci, satu sambungan pangkalan data. Sesi yang tidak dipandu oleh sesiapa ialah kebocoran yang hidup lebih lama daripada pusingan yang memulakannya. Jadi terdapat TTL keras, tepat satu sesi bagi setiap perbualan, dan `launch` kedua ditolak dan bukan secara senyap menggantikan yang pertama: ejen yang memulakan sesi kedua tanpa menamatkan yang pertama hampir pasti telah hilang jejak yang pertama.
 
-### One transport, two protocols
+### Satu pengangkutan, dua protokol
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol berkongsi rangka `Content-Length` Language Server Protocol dan tiada apa-apa di atasnya — kunci korelasi yang berbeza, bentuk kegagalan yang berbeza, dan jenis mesej ketiga (peristiwa) yang tiada padanan dalam LSP. Rangka itu tinggal di satu tempat; protokol-protokol itu duduk di atasnya secara berasingan.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Menulis rangka itu dua kali akan bermakna dua jawapan kepada "satu mesej merentangi dua ketulan", "satu ketulan memegang tiga mesej" dan "pelayan menulis sepanduk ke stdout sebelum rangka pertamanya", dan hanya satu daripadanya akan menerima pembaikan.
 
-## Related
+## Berkaitan
 
-- [Search code with the code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) — the symbol and impact side
-- [Debug a failing test](/ms-MY/manual-pengguna/panduan-cara/nyahpepijat-ujian-gagal/) — the debugger, end to end
-- [Refactor structurally](/ms-MY/manual-pengguna/panduan-cara/refaktor-struktur/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — every operation and argument
+- [Cari kod dengan graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) — sisi simbol dan kesan
+- [Nyahpepijat ujian yang gagal](/ms-MY/manual-pengguna/panduan-cara/nyahpepijat-ujian-gagal/) — nyahpepijat, dari hujung ke hujung
+- [Refaktor kod secara struktur](/ms-MY/manual-pengguna/panduan-cara/refaktor-struktur/) — `ast_grep` dan `ast_edit`
+- [Alat ejen terbina](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — setiap operasi dan argumen

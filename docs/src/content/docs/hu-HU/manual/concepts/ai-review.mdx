@@ -1,225 +1,246 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: MI-átnézés
+description: Hogyan lesz egy pull requestből átnézett pull request — átnézési terek, átnézési csomópontok és társi konszenzus, kohorszok és tengelyek, a Ship/Hold/Block ítélet, és hogy miért marad a közzététel egy Ön által megtett lépés.
 slug: hu-HU/kezikonyv/fogalmak/mi-atnezes
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Egy átnézés felépítése
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Az MI-átnézés a beépített `pr_review` pipeline egyetlen futása egyetlen nyitott
+pull requesttel szemben. A pipeline megnyitja a PR átnézési terét, átnéző
+ügynököket oszt szét, hogy elolvassák a diffet a tér elszigetelt checkoutjában,
+mindegyikük strukturált **átnézési csomópontokként** rögzíti a megállapításait,
+egy vezető ügynök bejárássá konszolidálja ezeket, végül egy véglegesítő
+kiszámít egyetlen ítéletet: **Ship**, **Hold** vagy **Block**. Amit a pipeline
+soha nem tesz meg, az a közzététel — a GitHubra posztolás külön, szándékos
+lépés, amelyet egy ember tesz meg.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Az oldal hátralévő része elmagyarázza az alkotóelemeket, és hogy miért pont így
+épülnek fel.
 
-## One review space per PR
+## PR-enként egy átnézési tér
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+A PR átnézési kontextusa egy üzenetküldő tér — `review` mód, `pr` típus —,
+amelyet egy **átnézési tértársítás** kapcsol a pull requesthez. Idempotensen jön
+létre: a PR oldala, az átnézési pipeline és a csevegőfelületek ugyanazon a
+kódúton oldják fel a PR _egyetlen_ mögöttes terét, így egy PR-t átnéző sablon és
+egy azt megnyitó ember soha nem kerülhet két különböző szobába, két különböző
+checkoutot nézve.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+A tér elszigetelt worktree-jében a PR a head refjén van checkoutolva. Az egy
+szoba egyben egy checkoutot is jelent: minden átnéző ugyanabban a térben
+dolgozik, ahelyett hogy mindegyik a munkaterület saját klónját kapná.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Minden átnéző a saját elnevezett adatfolyamába posztol azon az egyetlen téren
+belül, és a megállapítások `review_node` üzenetek, nem pedig egyszerű próza. A
+tér szintű összegyűjtés a végén szándékos — az egyetlen szál megállapításaiból
+számított ítélet csendben egyetlen átnézőről szóló ítélet lenne.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+A társítás egy állapotlétrát hordoz — `requested` → `in progress` →
+`awaiting approval` → `completed` —, és ez az, ami a **Közzététel a GitHubon**
+gombot kapuzza a PR Átnézés fülén.
 
-## Review levels
+## Átnézési szintek
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Az, hogy milyen mélyre megy egy átnézés, egy munkaterület-szabályzat három
+szinttel, amelyet a **Beállítások → Munkaterület → Általános** helyen, a
+**Munkaterület-szabályzat** kártyán állít be:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| Szint       | Szétosztott átnézők                           | Jelentés                                      |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | Csak mérnök                                   | Csak ami érdemben számít                      |
+| `balanced`  | Mérnök, QA, architekt (az alapértelmezett)    | A szokásos kör                                |
+| `thorough`  | Mind az öt, a biztonságit és a teljesítményit is beleértve | Semmi sem lefokozva             |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+A szint egyszerre két tárcsát mozgat: hogy mely átnézők kerülnek szétosztásra —
+amit a pipeline-sablon `runWhen` állapotkapui kényszerítenek ki, nem pedig a
+prompt szövegezése (a prompt szövegét figyelmen kívül lehet hagyni, egy kaput
+nem) —, és hogy hol jelennek meg a küszöb alatti megállapítások. Egyik tárcsa
+sem töröl soha megállapítást: a kevesebbet jelentő szint pontosan ugyanannyit
+rögzít, és a maradékot csoportosítja.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+A biztonsági és teljesítményi vizsgálatok a beépített architekt- és
+mérnökügynököket használják újra, nem vezetnek be újakat. A szakterület az a
+megbízás, amellyel az átnézőt kiküldik, nem pedig külön ügynök tengelyenként —
+egy tengelyenkénti ügynök minden munkaterületen öt további sor lenne, minden
+többletképesség nélkül. Az átnézők kiválasztása soha nem vizsgálja a diffet
+nyelv vagy domain szerint.
 
-## Review nodes: findings as data, not prose
+## Átnézési csomópontok: a megállapítások adatként, nem prózaként
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Az `add_review_node` eszközzel rögzített megállapítás **átnézési csomóponttá**
+válik a PR-en — ezt rendereli az Átnézés fül, ebből számítjuk ki az ítéletet, és
+ezt alakítja soron belüli megjegyzéssé a „Közzététel a GitHubon”. Az az átnéző,
+amelyik csak prózát ad vissza, sikeresnek látszó pipeline-futtatást és üres
+átnézési felületet eredményez; a rögzítés a lényeg.
 
-Each node carries:
+Minden csomópont a következőket hordozza:
 
-| Field             | Values                                                                     |
+| Mező              | Értékek                                                                    |
 | ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Típus             | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Prioritás         | P0 (kritikus) → P3 (apróság)                                                |
+| Triázs-hármas     | kategória (`security`, `stability`, …), súlyosság, ráfordítás               |
+| Horgony           | Fájlútvonal, kezdő és záró sor                                              |
+| Javítás hordozása | Javasolt cseresorok, opcionális diff, opcionális javítási prompt            |
+| Megbízhatóság     | Egy [0, 1] pontszám                                                         |
+| Indoklás          | Az elemzés, amely a megállapítás előtt íródik                               |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Két részlet szándékos. Egy kattintásos GitHub-javaslatot csak akkor kínálunk fel,
+ha az átnéző pontos cseresorokat adott meg — ezeket egy unified diffből
+kikövetkeztetni csendben elromlik, és egy hibás következtetés egy kattintásos
+commitolása rosszabb, mint ha egyáltalán nincs gomb. Az `add_review_node` séma
+pedig a `reasoning` mezőt a megállapítás előtt mutatja, így az a modell, amely
+séma szerinti sorrendben tölti ki az objektumot, először az elemzést írja meg. A
+mező opcionális: a kihagyása nem utasítja el a csomópontot. Az a csomópont,
+amelynek a hasznos tartalma hibás formátumú, eltűnik, ahelyett hogy
+beszennyezné az átnézést.
 
-## Peer consensus
+## Társi konszenzus
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Egy csomópont az `open` → `consensus-ready` → `resolved` vagy `dismissed` úton
+halad át. A középső lépés a modell szíve: **egy megállapítás csak akkor lép
+tovább, ha egy társ-átnéző megerősíti, és egy ügynök soha nem erősítheti meg a
+saját megállapítását.** A `publish_review_to_github` MCP eszköz és az RPC
+alapértelmezése továbbra is csak a társak által megerősített megállapításokat
+teszi közzé. Az Átnézés fül **Közzététel a GitHubon** gombja ezzel szemben
+minden még nyitott megállapítást elküld.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+A szabály három egymástól független helyen érvényesül — a megerősítő eszközben,
+a véglegesítőben és a közzétevőben —, így túlél egy hibás hívót bármelyikben. Az
+állapotváltozások mind egyetlen szolgáltatáson keresztül mennek át, és ez az,
+amitől egy állapot jelent valamit: ez előtt két félig kész útvonal is
+vitatkozhatott róla, hogy ugyanaz a megállapítás megoldódott-e.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Amikor az átnézők nézeteltérnek — ugyanaz a fájl és sor, legalább két szintnyire
+eltérő prioritások, vagy az egyik `bug`-nak, míg a másik `suggestion`-nek
+nevezi —, a nézeteltérés a megállapítások listája fölött jelenik meg. Ott térnek
+el az átnézők véleményei, és ott éri meg a legtöbbet egy ember mérlegelése.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Egy megállapítás elvetése egy puha elnyomási tényt is ír a memóriadomainbe,
+alacsony megbízhatósággal — egy elvetés preferencia, nem szabály.
 
-## Cohorts: what the review is grouped around
+## Kohorszok: mi köré csoportosul az átnézés
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Az átnézési számítási kör a PR módosított fájljait **kohorszokba** csoportosítja,
+amelyeket a kódgráfból származtat: a módosított fájlok ahhoz a szimbólumhoz
+rendelődnek, amelyeket érintenek, a szimbólumok a kapcsolódó komponensekhez, a
+kohorszokat pedig a változás hatósugara szerint rangsorolja. Egy kohorsz
+vezetett olvasási sorrendet, diagramokat és betekintéseket hordoz, nem pedig egy
+lapos fájllistát.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Két őszinteségi szabály alakítja ezt. A kohorszkulcsok tartalom-alapúak és
+stabilak a push-ok között, így a megállapítások és az átnézési folyamat túlélnek
+egy rebase-t vagy force-push-t, ahelyett hogy elárvulnának. Ha pedig a repóban
+nincs kódindex, a csoportosítás egyszerű útvonalakra esik vissza, és ezt ki is
+mondja — a visszaesés soha nem színlel szemantikai megbízhatóságot.
 
-## Review axes and gates
+## Átnézési tengelyek és kapuk
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Az átnézők megállapításai mellett egy átnézés **tengelyeredményeket** is gyűjt:
+hat tengelyt, kétfélét.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Tengely                   | Típus           | Honnan származik                    |
+| ------------------------- | --------------- | ----------------------------------- |
+| `correctness`, `security` | Tokenvezérelt   | Az átnézők saját megállapításaiból  |
+| `testGap`                 | Tokenvezérelt   | Az átnézők megállapításaiból        |
+| `visual`, `apiContract`   | Determinisztikus | Tokenek elköltése nélkül számítva  |
+| `performance`             | Determinisztikus | Csak enum — a termék nem számít eredményt |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Egy tengely ítélete `pass`, `warn`, `fail`, `partial` vagy `unavailable` — és
+csak a `pass` vagy a `warn` nyit át egy kaput. A `fail`, `partial` és
+`unavailable` közti különbség lényeges: a kapuzott tengely, amely nem tudott
+befejeződni, vagy egyáltalán nem tudott lefutni, visszatartja a végső ítéletet,
+ahelyett hogy átengedné. **A bizonyíték hiánya soha nem alakul zöld kapuvá.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Néhány tengely szándékosan tanácsadó jellegű. A kohorszokból származtatott
+teszthiány-tengely nem látja a dependency injection vagy factory lefedettséget —
+egy index nélküli repó alapos tesztekkel és egy tesztek nélküli repó ugyanúgy
+néz ki onnan, így bármelyik állítása hazugság lenne; az irányítópulton megjelenik,
+de nem kapuz. A tokenes tengelyek azért tanácsadók, mert a megállapítások
+prioritásai már vezérlik az ítéletet, és az azokra való újbóli kapuzás duplán
+számolná.
 
-## The verdict
+## Az ítélet
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+A véglegesítő az `open` vagy `consensus-ready` állapotú megállapítások fölött
+számítja ki az ítéletet:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- bármely ≥ 0,7 megbízhatóságú P0 megállapítás → **Block**
+- egyébként bármely P0 (alacsony megbízhatóságú) vagy bármely P1 → **Hold**
+- egyébként → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Az ítélet egy összesített megbízhatóságot hordoz, amelyet a hozzájáruló
+megbízhatóságok szórásából származtatunk — az egyetértés növeli, a széttartás
+csökkenti.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+A vezető (CEO) ügynök konszolidációja szerkesztői kör, nem újbóli felsorolás: egy
+kézzel írt második példány a megállapításokról pontosan az, ami eltávolodik az
+igazitól. Az ismétlődő megállapítások lefokozódnak, nem megismétlődnek — több
+átnézőt irányítanak ugyanarra a diffre szándékosan átfedő hatáskörrel, így az,
+hogy ugyanaz a hiba háromszor ér el a véglegesítőig, a rendszer működése;
+háromszori közzététele viszont az, hogy a rendszer kiszivárogtatja a saját
+architektúráját az olvasó postaládájába. Ismételt átnézésnél a megállapítások
+ujjlenyomatot kapnak, és az előző körhöz vetjük őket, így a delta az, ami
+megjelenik.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Végül behajlanak a tengelyek, és csak **súlyosabbá** tehetik az ítéletet: egy
+kapuzott, bukó tengely Blockot kényszerít — a megállapítások nem szavazhatják
+felül —, és egy kapuzott tengely, amely nem tudott befejeződni, legalább Holdot
+kényszerít.
 
-## Publishing stays with you
+## A közzététel az Ön kezében marad
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+A pipeline szándékosan nem posztol a GitHubra; a közzététel felhasználó által
+kapuzott, így egy átnézés soha nem tehető közzé kétszer. Amikor megnyomja a
+**Közzététel a GitHubon** gombot:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Egy GitHub-átnézés kerül beküldésre. A már megoldott vagy elvetett
+  megállapítások kimaradnak. A gomb minden még nyitott megállapítást közzétesz
+  (`selection: all_open`). A `publish_review_to_github` MCP eszköz továbbra is
+  csak a társak által megerősített megállapításokat veszi alapul
+  (`consensus`).
+- A fájlhoz és sorhoz horgonyzott megállapítások soron belüli megjegyzésekké
+  válnak; minden más az összefoglaló törzsébe hajlik, mindegyik egy
+  „— Control Center AI review” láblécet kap, hogy a forrás egyértelmű legyen.
+- A horgonyokat közzétételkor újra ellenőrizzük a PR _aktuális_ diffjével
+  szemben. Egy hozzászólás olyan kódról, amelyet már újraírtak, a leginkább
+  bizalomromboló dolog, amit egy átnéző hagyhat; ha a GitHub mégis elutasít egy
+  soron belüli horgonyt, a teljes átnézés újraküldésre kerül, minden
+  megállapítást az összefoglalóba hajtva, hogy semmi ne vesszen el csendben.
+- A **Block** ítélet `REQUEST_CHANGES`-ként, a **Hold** `COMMENT`-ként, a
+  **Ship** `APPROVE`-ként kerül beküldésre a gombbal (`approve_on_ship: true`).
+  Az MCP eszköz a Shipet `COMMENT`-ként hagyja, hacsak nem adja át az
+  `approve_on_ship` értéket.
+- Az átnézés a szerver alkalmazásidentitása alatt kerül közzétételre. Az, hogy ki
+  nyomta meg a Közzétételt, a szerepkör-kapu és az auditnapló számára kerül
+  rögzítésre; ez nem a GitHub szerzője.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/).
+A közzététel a `prPublish` műveletosztályt deklarálja, így a korlátok központi
+ellenőrzési pontja ugyanúgy kapuzza, mint bármely módosító műveletet —
+alapértelmezés szerint rákérdez, és nincs csatlakoztatott jóváhagyó esetén
+elutasítja. Lásd: [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/).
 
-## What a reviewer may do
+## Mit tehet egy átnéző
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Az átnéző ügynökök `review` módban futnak: írásvédett homokozó és gondosan
+válogatott eszköz-engedélyezési lista, amely lefedi a megállapításokat, a
+hozzászólásokat, a jegyeket és a társ-átnézést — de mindenféle módosítást nem.
+Az átnéző nem javíthatja ki azt a kódot, amelyet kritizál; csatolhat viszont egy
+javasolt javítást, amelyet egy ember alkalmaz. A mód elutasító üzenete megmondja
+az ügynöknek, amelyik mégis cselekedni próbál, hogy fejezze be az átnézést, és
+hagyja, hogy a felhasználó cselekedjen a közzétett összefoglalón.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) — the policy engine that gates publishing
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/) — what `review` mode changes for an agent
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) — the engine the review runs on
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) — where the isolated worktree comes from
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) — a szabályzatmotor, amely a közzétételt kapuzza
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/) — mit változtat meg a `review` mód egy ügynöknél
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) — a motor, amelyen az átnézés fut
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) — honnan származik az elszigetelt worktree
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use AI-powered review](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/) — run a review and publish it
-- [Dispatch reviewer agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/) — choose the reviewers yourself
-- [Review compute](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/) — cohorts, axes and diffs
+- [MI-alapú átnézés használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes/) — futtasson egy átnézést, és tegye közzé
+- [Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/) — válassza ki Ön az átnézőket
+- [Átnézési számítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/) — kohorszok, tengelyek és diffek

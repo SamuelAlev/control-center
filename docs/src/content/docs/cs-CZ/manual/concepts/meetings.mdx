@@ -1,213 +1,218 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Schůzky a přepis
+description: Jak Control Center nahrává hovor, přepisuje ho a diarizuje na serveru a kde je ten jediný krok, který hostitele opouští.
 slug: cs-CZ/prirucka/koncepty/schuzky
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center umí nahrát hovor a vrátit ti čistý zápis: shrnutí,
+akční položky a rozhodnutí. Rozpoznávání řeči i oddělení řečníků běží
+na tvém hardwaru. Je to jako Granola, jen na vlastním serveru a ve stejném
+pracovním prostoru, ve kterém žijí agenti.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Nahrávání potřebuje hlasový model a restart serveru]
+Nahrávání a diktování se spustí, až je model řeči (ASR) na disku **a**
+server se restartoval. Běžný start na pozadí vynuceně nainstaluje vybraný
+model (ve výchozím stavu Parakeet TDT 0.6B v3), ale cesty k hlasovým
+modelům si server vyřeší přesně jednou, blízko začátku startu. To je
+minuty předtím, než stahování může doběhnout. Jakmile model ohlásí, že
+je nainstalovaný, restartuj `cc_server`.
+Jinou sestavu vybereš v Nastavení → Server → Hlasové a schůzkové modely.
+I to chce restart.
 :::
 
-## What a meeting is
+## Co je schůzka
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/cs-CZ/prirucka/koncepty/kalendar/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**Schůzka** je nahraná a přepsaná relace. _Není_ totéž co
+[událost v kalendáři](/cs-CZ/prirucka/koncepty/kalendar/): událost je naplánovaný
+závazek synchronizovaný z Google, schůzka je to, co se skutečně nahrálo.
+Obojí jde propojit, protože nahrávání můžeš spustit z události, ale zůstávají
+to samostatné záznamy.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Každá schůzka patří do pracovního prostoru, jako všechno ostatní v Control Center.
+Schůzky nahrané v jednom pracovním prostoru se v jiném nikdy neukážou.
 
-## Where the work happens
+## Kde práce probíhá
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+„Na zařízení“ je správný instinkt a špatné slovo. Klient zvuk zachytí
+a na **stroj, kde běží `cc_server`**, streamuje rámce 16 kHz PCM16.
+Hostitel udělá zbytek: WAV po kanálech zapíše do
+`<dataDir>/meetings/<meetingId>/`, přepisuje v izolátu workeru, odfiltruje
+ozvěnu a diarizaci spustí až dodatečně. Na samostatném desktopu je hostitel
+tentýž stroj. U vzdáleného serveru ne. „Z notebooku nic neodejde“ tedy
+platí jen tehdy, když je server tvůj notebook.
 
-There is one further exception and it is the important one.
+Je tu ještě jedna výjimka a právě ta je důležitá.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Shrnutí opouští hostitele]
+Přepis a tvoje poznámky se pošlou poskytovateli modelu, na kterého je
+agent pro shrnutí nastavený. U cloudového poskytovatele to znamená, že
+celý přepis odchází na jeho API. Když přepis nesmí opustit hostitele,
+namiř agenta pro shrnutí na místní endpoint (Ollama, LM Studio nebo
+jiný místní server).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Všechno před shrnutím běží na serveru a bez síťového volání: záznam,
+přepis, potlačení ozvěny, diarizace i párování hlasových otisků.
 
-## Which models ship
+## Které modely se dodávají
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Modely pro **embedding, diarizaci a řeč (ASR)** se při prvním startu
+vynuceně nainstalují (u dema se to přeskočí), takže oddělení řečníků
+i nahrávání jsou k dispozici bez návštěvy nastavení. ASR pořád
+**vybíráš**. Má několik set megabajtů a ve výběru jsou čtyři sestavení.
+Řeč po tom prvním stažení pořád potřebuje jeden restart, protože
+přepisovač si model vyřeší dřív, než stahování doběhne.
 
-The four picker entries, differing in size, language coverage and accuracy:
+Čtyři položky ve výběru se liší velikostí, pokrytím jazyků a přesností:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — vícejazyčný, doporučený výchozí (~600 MB)
+- Parakeet TDT 0.6B v2 — angličtina (~480 MB)
+- Whisper large-v3-turbo — vícejazyčný (~626 MB)
+- Whisper base.en — jen angličtina, malý historický výchozí (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Modely jsou jediné artefakty, které server za běhu stahuje. Každá nativní
+knihovna je v balíčku.
 
-## How capture works
+## Jak záznam funguje
 
-A meeting records **two audio channels at once**:
+Schůzka nahrává **dva zvukové kanály najednou**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Vy („me“)**: tvůj mikrofon.
+- **Ostatní („them“)**: zvukový výstup schůzky, zachycený loopbackem
+  bez ovladače. Na macOS jsou to tap procesů a zařízení v Core Audio,
+  na Windows WASAPI loopback, na Linuxu monitor PipeWire / PulseAudio.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Protože se kanály berou odděleně, přepis má řečníky od začátku: tvoje
+slova nesou značku `me`, všichni na hovoru značku `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Vlastní hlas se ze systémového výstupu vrací do mikrofonu a jinak by se
+přepsal dvakrát. Zastaví to dva filtry. **AEC3 na úrovni signálu běží
+u každého nahrávání na dálku a je povinné.** Když nativní knihovna AEC
+nejde načíst, nahrávání se odmítne spustit, místo aby tiše streamovalo
+mikrofon plný ozvěny. (Při osobní schůzce chybí vzdálený referenční
+signál, proti kterému by se ozvěna rušila, takže AEC tam signál jen
+propustí.) Nad tím na každé platformě běží textový filtr ozvěny na
+straně hostitele.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+Veškeré zpracování mikrofonu v operačním systému je schválně vypnuté.
+Když na macOS zapneš vlastní potlačení ozvěny nebo automatické zesílení,
+mikrofon přepne na Voice Processing I/O. V tomhle sestavení to vyřadilo
+mikrofon _i_ tap systémového zvuku.
 
-## Transcription and diarization
+## Přepis a diarizace
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Během nahrávání se zvuk dekóduje v **posuvných oknech**, ustřižených na
+krátkém koncovém tichu nebo na maximální délce okna, mimo vlákno UI.
+Z každého okna vznikne úsek přepisu se značkou řečníka a offsetem
+v milisekundách.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Okna, která nikdy nepřekročila práh RMS, se přeskočí **úplně bez
+dekódování**. Model řeči z ticha vyrábí halucinované tokeny, které
+nejsou řeč, a dekódování je zbytečné CPU. Prakticky: trvale velmi tichý
+řečník v přepisu není. Když se někdo vrátí prázdný, nejdřív zkontroluj
+úroveň vstupu, než to svedeš na model.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+Po zastavení běží **diarizace** offline nad nahrávkou a rozdělí vzdálený
+kanál na jednotlivé řečníky (`Person 1`, `Person 2`, …), které můžeš
+přejmenovat. Počet řečníků se odvodí z prahu shlukování, ne z čísla,
+které zadáš. Je to artefakt prahu: tichý nebo překrývající se řečník se
+může sloučit se sousedem. Přepis se vykreslí jako řádky
+`[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Hlasové profily
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Přejmenování řečníka není jen popisek v jednom přepisu. Control Center
+umí hlasový otisk uložit jako **hlasový profil** a v dalších schůzkách
+ho pozná samo. Když diarizovaného řečníka pojmenuješ, zeptá se, jestli
+otisk uložit. Když ano, přimíchá se do průběžného centroidu toho jména
+a s novými řečníky se porovná kosinovou podobností. Stejný člověk se
+příště ukáže pod svým jménem a nemusíš ho znovu přejmenovávat.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Hlasové profily patří do pracovního prostoru a hranici nepřekročí.
+Spravuješ je v **Nastavení → Pracovní prostor → Schůzky**. Přejmenování
+řečníka, který už byl uložený, zruší zápis starého jména a nabídne
+zapsat nové. Smazání profilu odstraní uložený hlasový otisk. Jména,
+která už u starších schůzek jsou, zůstanou.
 
-## The summary pipeline
+## Pipeline shrnutí
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/cs-CZ/prirucka/koncepty/domenove-udalosti/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+Když nahrávání skončí, server publikuje `MeetingRecordingStopped` jako
+[doménovou událost](/cs-CZ/prirucka/koncepty/domenove-udalosti/). Vestavěná
+šablona pipeline **`meeting_summary`** se tou událostí spustí. Nahrávač
+na ni nečeká. Schůzka jen projde stavy:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Agent pro shrnutí dostane název, tvoje hrubé živé poznámky a přepis
+a vrátí **strukturované JSON**. Které oddíly napíše, určuje **aktivní
+šablona poznámek ze schůzky** v pracovním prostoru (Nastavení → Pracovní
+prostor → Schůzky). Aktivní šablona platí pro nová i znovu spuštěná
+shrnutí. Kroky pipeline, které data ukládají, pak zapíšou to JSON do
+samostatných řádků:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` a `summary` → poznámky schůzky
+- každá akční položka → řádek `MeetingActionItem` (obsah, vlastník, volitelný odkaz na ticket)
+- každé rozhodnutí → řádek `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Akční položky a rozhodnutí se **nikdy** nečtou z volného markdownu, jen
+ze strukturovaných polí agenta. Když běh nevrátí strukturovaný výstup,
+kroky uložení se přeskočí a jako záloha zůstane surový přepis, takže
+o záznam nepřijdeš. Nic v pipeline neoznačí schůzku jako `done`. To udělá
+jeden reconciler z koncové události běhu. Pád sousedního kroku tak
+nenechá napůl zapsanou schůzku, která už vypadá jako hotová.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/cs-CZ/prirucka/navody/mcp-server/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agenti tvoje schůzky nečtou]
+Nástroje MCP pro schůzky ani kalendář nejsou. Agent připojený přes
+[MCP](/cs-CZ/prirucka/navody/mcp-server/) neumí vypsat schůzky, přečíst
+přepis ani vidět akční položky a rozhodnutí. K lidským klientům ta data
+jdou jen přes RPC. K agentům se rozhodnutí dostanou nepřímo, jako fakta
+paměti v doméně `decisions`.
 :::
 
-## Where meetings show up
+## Kde se schůzky ukazují
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Plocha                                 | Co ukazuje                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `/meetings`                            | Seznam schůzek s počty akčních položek a rozhodnutí                                       |
+| `/meetings/record`                     | HUD živého nahrávání: na jedné straně poznámky, na druhé streamovaný přepis              |
+| `/meetings/:meetingId`                 | Detail schůzky: záložky Poznámky, Přepis, Akční položky a Rozhodnutí                      |
+| Nastavení → Pracovní prostor → Schůzky | Šablony poznámek a uložené hlasové profily pro tento pracovní prostor                     |
 
-## Platform support
+## Podpora platforem
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Záznam je na všech třech desktopových platformách bez ovladače (tap
+Core Audio na macOS, WASAPI na Windows, PipeWire na Linuxu).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Nahrává i webový klient**, což rámování zbytku stránky kolem desktopu
+snadno schová. Prohlížeč vezme mikrofon přes `getUserMedia` a zvuk
+schůzky přes `getDisplayMedia` (sdílení obrazovky), převzorkuje ho na
+16 kHz PCM16 a streamuje na stejného hostitele. Platí tam tři výhrady:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Sdílená plocha **musí** nést zvukovou stopu. Safari, Firefox a sdílení
+  celé obrazovky na macOS žádnou nedají a nahrávání se odmítne spustit.
+- Nativní AEC3 tam není. U mikrofonu se požádá o potlačení ozvěny
+  v prohlížeči. Textový filtr ozvěny na hostiteli pořád běží. HUD ukazuje
+  měřič úrovně vstupu z PCM mikrofonu.
+- Znovu spustit shrnutí a zrušit zpracování jde jen na desktopu.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Akce kalendáře **Spustit nahrávání a propojit** je jen na desktopu a na
+webu to řekne napřímo, i když vlastní nahrávání na obrazovce schůzek
+tam funguje.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Smazání schůzky nechá zvuk na disku]
+Smazání schůzky odstraní jen řádky v databázi. Ponechaný adresář zvuku
+po kanálech `<dataDir>/meetings/<meetingId>/` se nikdy neuklidí. Není
+na něj politika uchovávání, strop velikosti ani průchod GC. Místo na
+disku bereš zpátky ručně, na hostiteli serveru.
 :::
 
-## See also
+## Viz také
 
-- [Calendar and scheduling](/cs-CZ/prirucka/koncepty/kalendar/): record a meeting straight from a calendar event
-- [Pipelines and automation](/cs-CZ/prirucka/koncepty/pipelines/): the engine behind `meeting_summary`
-- [Tickets and delegation](/cs-CZ/prirucka/koncepty/tickety/): link a meeting's action items to tickets
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/cs-CZ/prirucka/navody/nahravani-schuzky/)
+- [Kalendář a plánování](/cs-CZ/prirucka/koncepty/kalendar/): nahraj schůzku přímo z události v kalendáři
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/): motor za `meeting_summary`
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/): propoj akční položky schůzky s tickety
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): `MeetingRecordingStopped` a `MeetingStartingSoon`
+- [Nahrajte a shrňte schůzku](/cs-CZ/prirucka/navody/nahravani-schuzky/)

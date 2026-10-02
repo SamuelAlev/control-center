@@ -1,115 +1,80 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: API キーを管理
+description: 各認証情報がどこに保存されるか — サーバー上の自分のユーザーアカウント、サーバー自身、外部 CLI — と、その設定・ローテーション・削除の方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/api-キー
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+このガイドでは、Control Center が使用する各認証情報がどこに保存されるか、そしてその変更方法を説明します。
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**入力しているマシンには何も保存されません。** すべての認証情報はサーバー上にあり、あるリクエストにどの認証情報が応答するかは、その背後に人間がいるかどうかによって決まります。
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| 認証情報                             | 保存場所                                                  | 使用者                                                          |
+| ------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------- |
+| 自分のコードホスト / チケットの認証情報 | サーバーの 0600 シークレットファイル。自分のユーザー id をキーとする | 自分が依頼したものすべて: PR 画面、自分のエージェント実行、自分のイメージ |
+| サーバーのアプリ識別情報             | 同じファイル。シークレット以外は `server_settings`        | 人間が依頼していない作業: webhook、PR のポーリング、チケット同期  |
+| モデルプロバイダーのキーと OAuth トークン | サーバー自身の認証情報ストア                             | インストール上のすべてのワークスペースで使用される組み込みアダプター |
+| Slack ボットトークン                 | サーバー上の `<dataDir>/<workspaceId>/chat_credentials/` | そのワークスペースのチャットブリッジ                            |
+| 外部 CLI の認証情報                  | その CLI が使用する任意の場所                            | サーバーホスト上の Claude Code                                  |
 
-## Two GitHub credentials, and they answer different questions
+## 2 つの GitHub 認証情報と、それぞれが答える別々の問い
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **自分の認証情報**。サインイン（デバイスフロー）またはトークンの貼り付けによって取得します。*自分の代理*で行われるすべてのリクエストがこれを使用するため、自分のために投稿されたコメントには自分の名前が付きます。他のメンバーはこれを読むことができず、各自が自分の認証情報を接続します
+- **サーバーの認証情報**。オペレーターが登録した GitHub App から取得します。呼び出し元のいないものすべてに応答するため、誰かが離脱したりトークンをローテーションしたりしてもコードホストへのアクセスが失われることはありません
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
-and [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/).
+自分の認証情報は、**設定 → ワークスペース → プロフィールと識別情報**の**コードホスティング**カードで設定します。サーバーの認証情報は、**設定 → サーバー → シングルサインオン**の**プロバイダーアプリ**で設定します。詳しくは [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/) と [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/) を参照してください。
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[URL 専用の画面もあります]
+`/workspaces/<workspaceId>/api-keys` は、オンボーディングの最初のステップと同じ 2 つのカードを表示します。**UI のどこにもナビゲーションの項目はありません**。URL を入力した場合にのみ到達できます。代わりに 設定 → ワークスペース → プロフィールと識別情報 を使用してください。
 :::
 
-## Set model provider keys
+## モデルプロバイダーのキーを設定する
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+組み込みアダプターはプロバイダーの認証を自身で行い、それらの認証情報はサーバー上に保存されます。
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. **設定 → サーバー → モデルプロバイダー**に移動します
+2. **プロバイダーとモデル**までスクロールします
+3. プロバイダーを接続します — OpenAI、Codex、Cursor、Kimi Code はブラウザー OAuth、Anthropic とその他は API キーです
 
-See [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/) for the full list and
-for adding a custom endpoint.
+完全なリストとカスタムエンドポイントの追加方法については、[アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/) を参照してください。
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+これらの認証情報は**ホスト全体で共通**です。1 つのキーがインストール上のすべてのワークスペースで使われます。OAuth トークンは有効期限が切れる前に更新されます。
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+外部アダプター CLI は、サーバーホスト上の独自の設定の中に、独自の認証情報を保持します — Control Center はそれらを管理しません。Claude Code は、`cc_server` が実行されているマシン上で、そのドキュメントに記載されている方法で認証してください。
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/).
+アダプターごとの**環境変数**ダイアログは、それらのいずれかのキーを入れる場所のように見えますが、そうではありません。これは自分のデバイスに書き込むのに対し、サーバーは自身のコピーを読み取り、両者をつなぐものはありません。詳しくは [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/) を参照してください。
 
-## Connect a ticketing vendor
+## チケッティングベンダーを接続する
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+**設定 → ワークスペース → 全般**の**チケット管理**カードは、1 つの決定の両方の側面を扱います。チケットがどのベンダーにあるか、そしてそのための認証情報です。**ローカル**を選ぶと認証情報の行は非表示になります — ローカルのチケットはこのサーバー自身のデータベースにあり、認証する対象がないためです。
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ja-JP/マニュアル/ハウツーガイド/linear-インテグレーション/).
+自分のキーは、コードホストのものと同様に、サーバー上で自分のユーザー id に紐づけて保存されます。サーバーは自身の Linear キーを別途（**プロバイダーアプリ**に）保持しており、人間が依頼していないときにチケット同期が動作するのはこれによります。エージェントが受け取るキーは、そのエージェントが**チケット API の呼び出しを許可**のケイパビリティを持っている場合にのみ注入されます。詳しくは [Linear インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/linear-インテグレーション/) を参照してください。
 
-## Rotate or revoke
+## ローテーションまたは失効
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- **自分の GitHub 認証情報**: **切断**を押してから、もう一度サインインするか新しいトークンを貼り付けます。古いトークンは GitHub 側で失効させます
+- **サーバーのアプリ**: アプリの GitHub ページで新しい秘密鍵またはクライアントシークレットを生成し、**プロバイダーアプリ**に貼り付けて**テスト**を押します
+- **モデルプロバイダー**: その行でサインアウトする（OAuth）かキーを削除してから、もう一度接続します
+- **Slack**: 接続ダイアログでトークンを貼り直します。詳しくは [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/) を参照してください
 
-## Troubleshooting
+## トラブルシューティング
 
-### The PR list is empty but my token works in `curl`
+### PR 一覧が空なのに、トークンは `curl` では機能する
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+**コードホスティング**の行のサブタイトルを確認します。そこに別のソース（「このサーバーのアプリ経由」「環境変数から」）が示されている場合、テストしている認証情報は応答しているものではありません — 自分の認証情報は保存されていません。
 
-### The token is accepted but later requests fail
+### トークンは受け入れられるのに、後続のリクエストが失敗する
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+トークンは保存された状態のまま検証されるため、その行には背後にあるアカウント名が表示されます — ただしアカウントのみで、スコープは表示されません。スコープが足りないトークンは接続には成功しますが、個々のリクエストで失敗します。スコープと有効期限を確認してください:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## 関連ガイド
 
-- [Set up GitHub integration](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
-- [Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/)
-- [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
-- [Set up Linear integration](/ja-JP/マニュアル/ハウツーガイド/linear-インテグレーション/)
+- [GitHub インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/github-インテグレーション/)
+- [GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)
+- [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [Linear インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/linear-インテグレーション/)

@@ -1,45 +1,37 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: 使用 MCP 伺服器
+description: 讓外部 MCP 用戶端指向 Control Center 的工具伺服器、設定 Bearer 權杖，並了解該介面會曝露哪些內容。
 slug: zh-HK/手冊/操作指南/mcp-伺服器
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+本指南說明如何把外部 MCP 用戶端——Claude Code、編輯器、MCP Inspector——連接到 Control Center 自己的工具伺服器。
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center 註冊了 **110** 個工具，並透過 Model Context Protocol 以協定版本
+`2024-11-05` 提供它們。有些你可能預期會有的工具系列完全從缺：沒有會議或日曆工具，也沒有項目工具。
 
-## Find the endpoint
+## 找到端點
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+MCP 介面共用主要的 `cc_server` 監聽器。沒有另外的 MCP 連接埠。
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| 端點   | 方法     | 用途                                            |
+| ------ | -------- | ----------------------------------------------- |
+| `/mcp` | `POST`   | Streamable HTTP 傳輸——用戶端溝通的就是這個      |
+| `/mcp` | `DELETE` | 結束工作階段                                    |
+| `/sse` | `GET`    | 伺服器推送的通知串流                            |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+因此，預設的本機安裝位於 `http://127.0.0.1:9030/mcp`。
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. 前往 **設定 → 伺服器 → MCP 伺服器**
+2. 查看 **MCP 伺服器**卡片——它會顯示執行中還是已停止，以及它正在監聽的連接埠
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+全新安裝時該介面預設為開啟，因此回送用戶端毋須調整任何設定即可使用。**應用程式啟動時開始**決定它在重新啟動後是否再次啟動；**開始** / **停止**是工作階段層級的控制項，不會改變該偏好設定。
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+伺服器預設繫結回送，因此除非你以 `--bind any` 啟動它，否則只有執行 `cc_server` 的那部機器可以連到該端點。
 
-## Connect a client
+## 連接用戶端
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+把你的用戶端指向 Streamable HTTP 端點。具體的設定形式由你的用戶端決定；無論哪種方式，URL 都一樣。
 
 ```json
 {
@@ -54,41 +46,32 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code 不會從專案的 `.mcp.json` 讀取這份設定——它把專案範圍的 MCP 伺服器擋在一個核准提示之後，而非互動式的 `claude -p` 永遠不會回應這個提示。請明確傳入設定：
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` 讓 Claude 只使用該檔案，這樣同一個伺服器就不會再從專案中被發現並註冊兩次。
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+檢查點：請用戶端列出它的工具。你應該會看到涵蓋工單、空間、記憶、程式碼圖與審查的 `mcp__*` 項目。
 
-## Serve MCP beyond the host
+## 在本機之外提供 MCP 服務
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. 在 **設定 → 伺服器 → MCP 伺服器**的**驗證權杖**資料列上，按**設定**並貼上權杖
+2. 在每個 `POST /mcp` 請求上以 `Authorization: Bearer <token>` 傳送它
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+未設定權杖的介面會以 403 拒絕任何非回送的呼叫者。這是刻意採用的失敗即關閉設計：權杖正是讓主機外服務得以成立的前提。
 
-Token changes apply to the live surface immediately — no restart.
+權杖變更會立即套用到運作中的介面——毋須重新啟動。
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` 從查詢字串取得權杖]
+通知串流和其他所有路由一樣會檢查權杖，但瀏覽器的 `EventSource` 無法傳送 `Authorization` 標頭——因此 `/sse` 也接受以 `?token=<token>` 形式提供的權杖。沒有權杖時它會回應 401。
 :::
 
-## Scope every call to a workspace
+## 把每次呼叫限定到一個工作區
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+每個涉及工作區範圍資料的工具都要求提供 `workspace_id`，缺少它的呼叫會被拒絕，而不會改為對照某個「目前」工作區來解析：
 
 ```json
 {
@@ -98,56 +81,45 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+這個 id 就是你瀏覽器或應用程式 URL 中的那個：`/workspaces/<workspace_id>/…`。唯一的豁免是真正跨越工作區的工具，例如 `list_workspaces` 和資訊動態工具——資訊動態是按使用者劃分的，而代理沒有屬於自己的使用者，因此那些工具操作的是伺服器擁有者的動態。
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+程式庫範圍的工具還會額外檢查該程式庫是否已連結到該工作區。
 
-## Know what the surface will refuse
+## 了解介面會拒絕哪些呼叫
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/zh-HK/手冊/操作指南/設定護欄/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **模式把關。** 呼叫會在伺服器端按發起呼叫的代理所在空間的模式來解析。處於唯讀模式的代理無法藉由省略 `space_id` 來觸達寫入工具——模式會改為從它作用中的執行查找。
+- **動作護欄。** 變更類工具會宣告自己的效果類別，並走產品其餘部分所用的同一套政策。參見
+  [設定護欄](/zh-HK/手冊/操作指南/設定護欄/)。
+- **確認。** 某些具破壞性的工具會建立一份確認載荷，必須先獲得核准，呼叫才能繼續。
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+完整目錄會在 `tools/list` 中公佈，沒有任何探索層面的把關——外部 MCP 用戶端會拒絕呼叫不在其快取清單中的工具，因此隱藏工具只會把它們弄壞，而不是把它們整理乾淨。
 
-## Troubleshooting
+## 疑難排解
 
-### The client sees no tools
+### 用戶端看不到任何工具
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- 檢查 **MCP 伺服器**卡片是否顯示執行中
+- 檢查連接埠是否與你的 `cc_server` 連接埠一致
+- 在 Claude Code 上，檢查你是否傳入了 `--mcp-config` 和 `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 從並非伺服器的機器收到 403
 
-No bearer token is configured. Set one and send it.
+尚未設定 Bearer 權杖。設定一個並傳送它。
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### 工具呼叫失敗並顯示「Missing or invalid argument: workspace_id」
 
-Add `workspace_id`. There is no implicit workspace.
+加入 `workspace_id`。並不存在隱含的工作區。
 
-### A tool call is refused as unknown
+### 工具呼叫因為未知而被拒絕
 
-[MCP tools](/zh-HK/手冊/參考/mcp-工具/) lists the catalogue. Call the name
-exactly as it appears there.
+[MCP 工具](/zh-HK/手冊/參考/mcp-工具/)列出了完整目錄。請完全按照那裏出現的名稱來呼叫。
 
-## Related guides
+## 相關指南
 
-- [MCP tools](/zh-HK/手冊/參考/mcp-工具/)
-- [Configure guardrails](/zh-HK/手冊/操作指南/設定護欄/)
-- [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/)
+- [MCP 工具](/zh-HK/手冊/參考/mcp-工具/)
+- [設定護欄](/zh-HK/手冊/操作指南/設定護欄/)
+- [執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)
 
-## Related concepts
+## 相關概念
 
-- [Architecture](/zh-HK/手冊/概念/架構/)
+- [架構](/zh-HK/手冊/概念/架構/)

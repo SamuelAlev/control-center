@@ -1,34 +1,35 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: إعداد تكامل Linear
+description: خزّن مفتاح API لـ Linear على الخادم حتى يستطيع الوكلاء استدعاء Linear، واختر Linear ليكون مزوّد التذاكر للتذاكر الجديدة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/).
+الصق مفتاح API لـ Linear على الخادم مقابل مستخدمك، بالطريقة نفسها التي تربط بها
+مضيف شفرة. التذاكر والمشاريع والروابط والمتعاونون والتفويض والإسناد، كلها تعمل
+على قاعدة بيانات Control Center الخاصة، بلا حاجة إلى خدمة خارجية —
+انظر [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/).
 
-## Store your Linear key
+## تخزين مفتاح Linear
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**مفتاح API للتذاكر** موجود في **الإعدادات ← مساحة العمل ← عام**، على بطاقة
+التذاكر. يُخزَّن المفتاح على الخادم مقابل معرّف المستخدم. مفتاح الخادم نفسه
+للعمل الذي لا إنسان خلفه يأتي من `LINEAR_API_KEY` أو من بطاقة
+**تطبيقات الموفّرين**، ولا يُحقن باسم `TICKETING_API_KEY` إلا حين يملك ذلك
+الوكيل قدرة **السماح باستدعاءات API للتذاكر**.
 
-## Stamp new tickets as Linear
+## ختم التذاكر الجديدة بـ Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**مزوّد التذاكر** (الخطوة الأولى من الإعداد الأولي، و
+`/workspaces/<workspaceId>/api-keys`) يعرض `local` و`linear`. اختيار
+`linear` يختم التذاكر التي تنشئها من ذلك الحين بـ `provider: linear`.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Create and manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
-- [Manage API keys](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [إدارة مفاتيح API](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مفاتيح-api/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)

@@ -1,92 +1,97 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: התחלה מהירה
+description: התקינו את Control Center, הגדירו סוכן אחד וצפו בו עובד על המאגר שלכם.
 slug: he-IL/מדריך-למשתמש/התחלה-מהירה
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+זהו המסלול השלם והקצר ביותר מאפס ועד סוכן שרץ על הקוד שלכם. עברו עליו לפי הסדר; כל שלב תלוי בקודמו.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+תצטרכו את Git, חשבון GitHub, ובנוסף או חשבון אצל ספק מודלים (Anthropic, OpenAI, Codex, Cursor, Kimi Code, או כל ספק עם מפתח API) או את ה-CLI של Claude Code מותקן מראש. את כל השאר מגדירים תוך כדי הדרך.
 
-## Step 1: Install and launch
+## שלב 1: התקנה והפעלה
 
-Install Control Center as described in [Install](/he-IL/מדריך-למשתמש/התקנה/), then open it.
+התקינו את Control Center כמתואר ב[התקנה](/he-IL/מדריך-למשתמש/התקנה/), ואז פתחו אותו.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+בהפעלה הראשונה שולחן העבודה שואל **"כיצד להריץ את Control Center?"**. בחרו **הרץ באפליקציה זו**. Control Center מפעיל `cc_server` ללא ממשק על המכונה הזו, והוא מחזיק בנתונים שלכם ועושה את כל העבודה. אתם אף פעם לא רואים אותו; במקומו נפתח מסך תהליך ההיכרות.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/he-IL/מדריך-למשתמש/התקנה/#use-it-in-your-browser) for the browser route.
+:::note[מעדיפים לא להתקין דבר?]
+אותה אפליקציה בדיוק פועלת בדפדפן בכתובת [app.usectrl.dev](https://app.usectrl.dev) עם
+אותן תכונות. לשונית דפדפן אינה יכולה לארח את השרת, ולכן תצטרכו לספק אחד בעצמכם — הריצו
+`cc_server` מקומית והתחברו אל `ws://localhost:9030`, או כוונו אותו לשרת במכונה אחרת.
+ההתחלה המהירה הזו עוברת במסלול של אפליקציית המחשב מפני שאינה דורשת הגדרת שרת; ראו
+[התקנה](/he-IL/מדריך-למשתמש/התקנה/#use-it-in-your-browser) למסלול הדפדפן.
 :::
 
-## Step 2: Work through onboarding
+## שלב 2: מעבר על תהליך ההיכרות
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+תהליך ההיכרות כולל חמישה שלבים, והם מתבצעים לפי הסדר — אין דרך לדלג קדימה.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **חיבור**: היכנסו עם GitHub או הדביקו אסימון גישה אישי עם ההרשאות `repo` ו־`read:org`. פרטי הגישה נשמרים בשרת ומשויכים לחשבון שלכם.
+2. **סביבת עבודה**: תנו שם לסביבת העבודה הראשונה שלכם, ובחרו לוגו אם תרצו. היצירה שלה זורעת חמישה סוכנים — CEO בתוספת `qa`, `architect`, `engineer` ו־`librarian` — ואת תבניות הפייפליין המובנות.
+3. **ארגז חול**: רושם העדפת בידוד. כל אחת מהבחירות מאפשרת להמשיך.
+4. **מתאם**: בחרו את המתאם ואת המודל שסוכנים אמורים להשתמש בהם כברירת מחדל. בחרו **Control Center (built-in)**, ואז השתמשו בבורר הספקים שנפתח כדי להיכנס לספק מודלים — רשימת המודלים נשארת ריקה עד שמחברים ספק אחד. סיום השלב הזה חותם את המתאם והמודל גם על סוכן ה-CEO של סביבת העבודה.
+5. **קול (אופציונלי)**: התקינו מודל דיבור על המכשיר לצורך הכתבה, או דלגו עליו.
 
-Control Center then opens your workspace inbox.
+לאחר מכן Control Center פותח את דואר הנכנס של סביבת העבודה שלכם.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/).
+:::note[מה מגביל הרצה של סוכן]
+פקודות של סוכן עטופות בארגז החול הנייטיבי של מערכת ההפעלה המארחת כשיש כזה — Seatbelt
+ב-macOS, bubblewrap ב-Linux. ב-Windows אין מנוע כזה, ולכן הרצות שם מוגבלות רק בשכבות
+האחרות: עץ העבודה של השיחה עצמה (`git worktree` ב-Windows; העתקה בזמן כתיבה היכן
+ש־`rift` נשלח), פרטי גישה שמתווכים בכל הפעלה ומבוטלים בסיום, ומעקות הבטיחות של הפעולות.
+ראו [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/).
 :::
 
-## Step 3: Add a repository
+## שלב 3: הוספת מאגר
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+עברו אל **הגדרות ← סביבת עבודה ← מאגרים** ולחצו על **הוספת מאגר**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+תיבת הדו־שיח סורקת את התיקיות במכונה שמריצה את השרת, ולא בלקוח שלכם, והיא נשארת בתוך השורשים שהשרת מוגדר לחשוף (ספריית הבית של המשתמש שלו כברירת מחדל). רק checkouts של git מקבלים תיבת סימון. סמנו את השלכם ורשמו אותו.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+checkout מתקבל רק אם הוא נמצא בתוך עץ עבודה של git, יש לו remote בשם `origin` וה-remote הזה מצביע על forge נתמך — github.com, gitlab.com או bitbucket.org. כל דבר אחר נדחה עם הצגת הסיבה.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+מאגרים משויכים לסביבת עבודה: רישום checkout כאן מכניס אותו אל סביבת העבודה _הזו_. אין שלב קישור נפרד.
 
-## Step 4: Give an agent an adapter and a model
+## שלב 4: מתן מתאם ומודל לסוכן
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+עברו אל **הגדרות ← סביבת עבודה ← סוכנים**. בחרו את הסוכן `engineer` בסגל.
 
-On the **Settings** tab, set:
+בלשונית **הגדרות**, הגדירו:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **מתאם**: `Control Center (built-in)`
+- **מודל**: בחרו מודל מהספק שחיברתם בתהליך ההיכרות
 
-Press **Save changes**.
+לחצו על **שמור שינויים**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+בפועל, השלב הזה אינו אופציונלי. רק סוכן ה-CEO יורש את המתאם שנבחר בתהליך ההיכרות; ארבעת המומחים נוצרים בלעדיו. הם נופלים חזרה אל **Control Center (built-in)** עם מודל ברירת המחדל של Anthropic, ולכן רצים רק אם חיברתם חשבון Anthropic — ואם חיברתם, על מודל שלא בחרתם.
 
-## Step 5: Send the agent a task
+## שלב 5: שליחת משימה לסוכן
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. בסרגל הצד, מצאו את הקטע **מרחבים** ולחצו על כפתור **+**.
+2. תנו שם למרחב, הוסיפו את הסוכן `engineer` תחת **הוספת סוכנים** וצרו אותו.
+3. הקלידו משימה קונקרטית וקטנה על המאגר שרשמתם ולחצו על Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center מקצה לשיחה הזו עץ עבודה בהעתקה בזמן כתיבה של מאגרי סביבת העבודה, מרכיב הנחיה מתפקיד הסוכן, הפרסונה שלו, המיומנויות שלו וההקשר של המרחב, ושולח את ההרצה. ב-checkout המקורי שלכם לא נוגעים לעולם.
 
-## Step 6: Watch it work
+## שלב 6: צפייה בעבודה
 
-You should see, in order:
+אמורים להופיע, לפי הסדר:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- כפתור השליחה של תיבת הכתיבה הופך לכפתור **עצור**, כי סוכן עובד בשיחה הזו
+- החשיבה של הסוכן, קריאות הכלים והטקסט זורמים אל התמלול
+- כפתור השליחה חוזר כשההרצה מסתיימת
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+לאחר מכן עברו אל **הגדרות ← סביבת עבודה ← סוכנים**, בחרו את הסוכן ופתחו את הלשונית **יומנים**: שורת הרצה אחת, עם הסטטוס, משך ההרצה, זמני ההתחלה והסיום שלה והמתאם שבו רצה.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+זו הלולאה. כל השאר ב-Control Center — סקירת בקשות משיכה, פייפליינים, כרטיסים, פגישות, Slack — נשען עליה.
 
-## Next steps
+## הצעדים הבאים
 
-- [Your first workspace](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/he-IL/מדריך-למשתמש/מדריכים/בקשת-המשיכה-הראשונה/): take an agent's branch through review and merge
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): what an agent is made of
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/): the rest of the agent form
-- [Run an orchestration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/): one goal, one approval, a generated pipeline
-- [Pair your phone](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/): follow the fleet from anywhere
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/): how the desktop, web and phone clients relate to the server
+- [סביבת העבודה הראשונה שלכם](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/): אותה קרקע, בקצב איטי יותר, עם הסבר על מודל הבידוד
+- [סקרו את בקשת המשיכה הראשונה](/he-IL/מדריך-למשתמש/מדריכים/בקשת-המשיכה-הראשונה/): קחו ענף של סוכן דרך סקירה ומיזוג
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): ממה מורכב סוכן
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/): שאר טופס הסוכן
+- [הרצת תזמור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הרצת-תזמור/): מטרה אחת, אישור אחד, פייפליין שנוצר
+- [שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/): עקבו אחר הצי מכל מקום
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/): כיצד הלקוחות של המחשב, הווב והטלפון מתייחסים לשרת

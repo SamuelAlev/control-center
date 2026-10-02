@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: 에이전트 모델
+description: Control Center에서 에이전트가 실제로 무엇인지, 어떤 필드가 동작을 바꾸는지, 에이전트가 실행되는 어댑터가 무엇을 강제할 수 있는지를 결정하는 방식.
 slug: ko-KR/매뉴얼/개념/에이전트-모델
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## 에이전트란 무엇인가?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+에이전트는 페르소나, 스킬 집합, 실행할 어댑터, 기능 집합을 가진 이름 있는 주체입니다. 에이전트는 사람과 같은 의미의 주체입니다. 메시지를 작성하고, 티켓을 소유하고, 리뷰를 남기고, 같은 로스터에 나타납니다. 실제로 일을 하는 것이 바로 에이전트입니다.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+각 에이전트는 정확히 하나의 워크스페이스에 속합니다. 이는 강력한 불변식입니다. `agent.workspaceId`는 null일 수 없고, 에이전트의 행이 기록될 데이터베이스 파일은 그 에이전트의 워크스페이스가 결정하며, 워크스페이스가 없는 에이전트를 만드는 것은 거부됩니다.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+에이전트는 디렉터리이기도 합니다. 에이전트의 정의는 워크스페이스 데이터 디렉터리 아래 `agents/<slug>/AGENTS.md`에 있으며, 보유한 스킬은 `agents/<slug>/.agents/skills`로 심볼릭 링크됩니다. 데이터베이스 행과 파일은 함께 기록됩니다. 시딩은 멱등입니다. 에이전트 행이 이미 존재하더라도 디스크상의 파일과 스킬 링크는 다시 기록됩니다. 프로덕션에서 이 호출을 하는 곳은 서버를 시작할 때마다가 아니라 워크스페이스를 생성할 때입니다.
 
-## What an agent carries
+## 에이전트가 지니는 것
 
-| Attribute               | What it does                                                                          |
+| 속성                    | 하는 일                                                                                |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `name`                  | 짧은 슬러그 형태의 식별자(`architect`, `qa`). `@mentions`가 해석되는 대상이기도 합니다    |
+| `title`                 | 사람이 읽을 수 있는 직함                                                              |
+| `persona`               | 자유 형식의 성격 및 행동 지침이며, 프롬프트 섹션으로 주입됩니다                       |
+| `systemPrompt`          | 선택적 추가 지침이며, "Agent instructions" 섹션으로 주입됩니다. 조립된 프롬프트의 나머지 부분을 대체하지는 않습니다 |
+| `skills`                | 대소문자를 구분하지 않는 스킬 이름 집합이며, 디스크의 스킬 링크로 반영됩니다          |
+| `adapterId`             | 에이전트가 디스패치되는 러너. **null이면 내장 루프로 폴백합니다**                     |
+| `modelId`               | 해당 어댑터 내에서 사용할 모델                                                        |
+| `effort`                | 선택한 모델 자체의 어휘에서 가져온 추론 수준                                          |
+| `contextSize`           | 컨텍스트 창 재정의                                                                     |
+| `capabilities`          | 자격 증명 및 이그레스 플래그이며, 실행 시점에 확인됩니다                              |
+| `silenceTimeoutMinutes` | 무응답 감시(silence watchdog)에 대한 에이전트별 재정의 (1–240)                         |
+| `reportsTo`             | 상위 에이전트 id. 조직도가 그리는 보고 체인입니다                                      |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+이 모든 항목은 **설정 → 워크스페이스 → 에이전트**에서 편집합니다. **새 에이전트**는 이름 없는 에이전트를 만들며, 이후에 내용을 채우면 됩니다.
 
-## Skills
+## 스킬
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+스킬은 에이전트 엔터티에 있는 대소문자 비구분 이름입니다. 스킬과 관련해서는 두 가지 별개의 일이 일어납니다:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- 이 이름들은 조립된 프롬프트에 "Skills" 제목으로 나열됩니다. 엔터티의 집합 자체가 하는 일은 이것뿐입니다. 이를 키로 삼는 스킬별 프롬프트 라이브러리는 없습니다.
+- 이름이 지정된 각 스킬의 디렉터리(워크스페이스의 `skills/<slug>/SKILL.md`)는 에이전트 자체 폴더로 링크됩니다. 내장 하네스에서는 링크된 스킬의 프런트매터가 시스템 프롬프트에 자동으로 로드되고, 에이전트는 필요할 때 본문을 읽습니다. 대화에서 `/skill:<name>`을 입력하면 해당 본문이 그 턴의 지시로 로드됩니다.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ko-KR/매뉴얼/사용-가이드/스킬-관리/).
+외부에서 가져온 스킬은 가져오기와 쓰기 사이에 닫힌 상태로 실패하는(fail-closed) 공급망 스캔을 통과합니다. 판정 없이는 어떤 스킬 콘텐츠도 디스크나 프롬프트에 도달하지 않습니다. '외부'란 직접 스킬 소스로 등록한 GitHub 리포지토리입니다. 큐레이션된 스토어가 없으므로 리포지토리 자체의 메타데이터(설명, 스타 수, 스킬 이름)는 신뢰할 수 없는 표시 데이터이며, 스캔 판정만이 유일한 안전 신호입니다. 설치는 스킬의 디렉터리 전체를 가져와 `skills-lock.json`에 가져온 커밋으로 고정하고, 이후 업데이트는 무엇이든 교체하기 전에 같은 게이트를 다시 통과합니다. 사용법은 [스킬 설치 및 관리](/ko-KR/매뉴얼/사용-가이드/스킬-관리/)에 있습니다.
 
-### Repo-scoped skills
+### 저장소 범위 스킬
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+저장소는 관례적인 위치(`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`) 중 어디에든 자체 스킬을 포함할 수 있습니다. 스페이스는 연결된 모든 저장소를 `repos/<name>/` 아래에 나란히 체크아웃하지만, 에이전트는 한 번에 하나의 저장소에서만 작업합니다. 따라서 **해당 저장소의** 스킬만 지니며, 저장소가 바뀌면 스킬 집합도 바뀝니다.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+어느 저장소가 활성인지는 에이전트가 건드린 파일에서 추론합니다. `repos/<name>/` 아래에 파일을 쓰면 그 저장소가 활성 저장소가 되지만, 저장소를 가로질러 읽기만 하는 것은 그렇지 않으므로, 심볼을 따라 형제 서비스로 들어가도 작업 도중에 스킬 집합이 바뀌는 일은 없습니다. 단일 저장소 스페이스에서는 첫 턴 전에 답이 정해져 있습니다.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+이 범위 지정은 컨텍스트 예산에 관한 결정입니다. 스킬 인덱스는 매 턴 프롬프트에 들어가지만 본문은 그렇지 않으므로, 모든 저장소의 스킬을 한꺼번에 나열하면 토큰이 계속 소모됩니다. 또한 한 서비스의 `testing` 스킬은 작업이 다른 곳에 있을 때 오히려 잘못된 방향으로 이끕니다. 에이전트의 인덱스는 저장소 하나만 담지만 컴포저는 그렇게 범위가 정해지지 않는 이유도 같습니다. 스킬 이름을 직접 지정하는 것은 명시적인 행동 하나이므로, `/skill:<repo>:<name>`은 스페이스의 어느 저장소에든 닿습니다.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+저장소 스킬은 내장 하네스뿐 아니라 **모든** 어댑터에 로드됩니다. 활성 저장소의 스킬은 에이전트의 작업 디렉터리에 구체화되는데, 이는 Claude Code가 이미 스캔하는 경로입니다. 같은 인덱스가 내장 하네스가 읽는 `AGENTS.md`에 조합됩니다. 저장소의 스킬은 그 전에 설치된 스킬과 동일한 닫힌 상태로 실패하는 스캔을 통과합니다. 체크아웃된 저장소는 복제된 콘텐츠이며, 그 프런트매터는 프롬프트에 도달합니다.
 
-## Capabilities
+## 기능
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+기능은 실행이 _넘겨받는_ 것을 게이트하며, 파일 시스템이 무엇을 건드릴 수 있는지를 게이트하지 않습니다. 자격 증명 브로커가 실행 시점에 이를 확인합니다. 기능이 꺼져 있으면 해당 토큰은 그냥 주입되지 않습니다.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **저장소로 푸시** — `git push`에 사용되는 GitHub 토큰 주입을 게이트합니다.
+- **GitHub API** — `GH_TOKEN` 주입과 api.github.com으로의 이그레스를 게이트합니다.
+- **티켓팅** — 티켓팅 공급자의 API 키와 해당 도메인으로의 이그레스를 게이트합니다.
+- **네트워크 이그레스** — 임의의 아웃바운드 요청.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+실행은 에이전트 자체의 행에서 이들을 결정합니다. 에이전트에 아무것도 없으면 고정된 보수적 기본값이 적용됩니다. 세 가지 자격 증명 플래그는 꺼지고, 네트워크 이그레스는 켜집니다. 에이전트 양식의 "샌드박스 권한" 토글이 이 폴백과 에이전트에 저장된 사용자 지정 집합 중에서 선택합니다.
 
-See [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/) for the other half of the story, including what is and is not enforced at the filesystem level.
+파일 시스템 수준에서 무엇이 강제되고 강제되지 않는지를 포함한 나머지 이야기는 [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을 참고하세요.
 
-## The adapter decides what can be enforced
+## 어댑터가 무엇을 강제할 수 있는지 결정합니다
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+에이전트에서 가장 영향이 큰 단일 필드는 어댑터입니다. 어댑터의 전송 방식이 Control Center 정책 중 얼마나 실제로 강제될 수 있는지를 결정하기 때문입니다.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| 전송 방식        | 어댑터                    | Control Center가 강제하는 것                                                                                                                                                                                                                                               |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| 내장 하네스      | Control Center (built-in) | 모든 것. 도구 표면이 모드로부터 _구성_되므로, 허용되지 않은 도구는 단순히 거부되는 것이 아니라 보이지 않습니다. 모든 호출이 승인 게이트와 액션 가드레일을 통과합니다. 완료 계약은 결과물 없이 끝나는 실행을 재촉한 뒤 실패시킬 수 있습니다 |
+| Claude CLI       | Claude Code               | 제공받는 `mcp__*` 도구만. Claude 자체의 읽기, 쓰기, 편집, 셸 도구는 자체 프로세스 안에서 실행되며 보이지 않습니다. 또한 비대화형 `claude -p`가 자체 프롬프트에서 영원히 멈추게 되므로 `--dangerously-skip-permissions`와 함께 실행됩니다    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+구체적으로 **내장 하네스만 서브에이전트, 실행 중 조종(mid-run steering), 일시 중지와 재개(따라서 넘겨받기), 구조적 모드 강제를 지원합니다.** Claude Code는 이 중 어느 것도 제공받지 못합니다.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[OS 샌드박스는 바닥일 뿐, 모드 강제자가 아니며 모든 호스트에 있는 것도 아닙니다]
+위의 표는 Control Center가 _보고 게이트할 수 있는_ 것에 관한 것입니다. 그 아래에서 `cc_server`는 존재하는 경우 Claude Code CLI를 호스트의 OS 샌드박스로 감쌉니다. macOS에서는 Seatbelt, Linux와 WSL2에서는 bubblewrap입니다. 따라서 보이지 않는 `rm`이나 보이지 않는 쓰기도 여전히 OS에 의해 제한됩니다. **Windows에는 백엔드가 아예 없고**, `bwrap`과 `socat`이 없는 Linux 또는 WSL2에서는 프로브가 none을 보고합니다. 따라서 그런 환경에서 이 실행들은 환경 정리(sanitization), 중개된 자격 증명, Control Center가 볼 수 있는 호출에 대한 가드레일, 대화 자체의 워크트리로 폴백합니다(`rift`가 제공되는 곳에서는 기록 중 복사, Windows에서는 `git worktree`).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/).
+샌드박스가 아닌 것은 _게이트_입니다. 샌드박스는 프로세스가 읽고, 쓰고, 연결할 수 있는 범위를 제한합니다. 읽기 전용 모드는 읽기 전용 바인드 마운트로서 샌드박스에 도달하지만, 샌드박스는 호출을 가로채거나 승인을 요구하거나 나중에 CLI가 무엇을 시도했는지 알려줄 수는 없습니다. 이것과 바로 위에서 언급한 네 가지 기능이 여전히 내장 하네스에는 있고 다른 어댑터에는 없는 것입니다. [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을 참고하세요.
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+어댑터가 **없는** 에이전트는 **Control Center (built-in)**으로 폴백합니다. 서버 내부의 루프이므로 설치할 CLI가 없으며, 실행 로그에 `cc-harness`가 기록됩니다. 시딩된 모든 에이전트는 어댑터나 모델 없이 생성되므로, 새 워크스페이스의 다섯 에이전트는 에이전트별로 어댑터와 모델을 설정할 때까지 Anthropic의 기본 모델로 그곳에서 실행됩니다. 온보딩의 "default adapter" 선택은 서버가 결코 읽지 않는 클라이언트 측 기본 설정이며, 이미 생성된 에이전트에 소급 적용되지 않습니다.
 
-## Where agents come from
+## 에이전트는 어디에서 오는가
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **워크스페이스와 함께 시딩됩니다.** 첫 번째 워크스페이스뿐 아니라 모든 워크스페이스에 CEO 한 명과 그에게 보고하는 네 명의 전문 에이전트(`qa`, `architect`, `engineer`, `librarian`)가 주어지며, 워크스페이스를 만들 때 백그라운드에서 멱등하게 생성됩니다. [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)를 참고하세요.
+- **수동으로 추가**합니다: 설정 → 워크스페이스 → 에이전트. 에이전트에게 동료를 채용하라고 요청해도 행이 생성되지 않습니다. 그 화면을 사용하세요.
 
-## Live state
+## 실시간 상태
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+에이전트에는 저장된 상태 열이 없습니다. 실시간 상태는 읽을 때마다 가장 최근 실행 로그에서 도출됩니다:
 
-| State      | Meaning                                                              |
+| 상태       | 의미                                                                 |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | 실행 로그가 없습니다                                                  |
+| `running`  | 현재 진행 중인 실행이 하나 이상 있습니다                              |
+| `failed`   | 최신 실행이 오류가 났거나, 그 생존 상태(liveness)가 failed 또는 dead입니다 |
+| `blocked`  | 최신 실행의 생존 상태가 blocked, stalled 또는 looping입니다           |
+| `idle`     | 나머지 전부. 에이전트가 이전에 실행된 적이 있고 진행 중인 것이 없습니다 |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+두 가지 추가 상태인 `queued`와 `succeeded`는 대화 실행 트리에서 개별 실행에 대해 존재합니다. 로스터는 이들을 만들어 내지 않습니다. 끝난 실행이 초록색이라는 것은 에이전트가 아니라 실행에 관한 사실이기 때문입니다.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ko-KR/매뉴얼/개념/멀티플레이어/).
+프레즌스 로스터는 라이브 실행 이벤트로부터 서버 측에서 합성된, 더 거친 병렬 그림을 보여줍니다. 즉 생각 중, 실행 중, 승인 대기로 차단됨, 완료이며, 이것이 에이전트가 사람 옆에 나타나게 하는 것입니다. [멀티플레이어](/ko-KR/매뉴얼/개념/멀티플레이어/)를 참고하세요.
 
-## Related concepts
+## 관련 개념
 
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/): what happens when an agent is actually run
-- [Modes](/ko-KR/매뉴얼/개념/모드/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ko-KR/매뉴얼/개념/멀티플레이어/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/): what constrains a run today
-- [Agent configuration reference](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/): the full field list
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/): 에이전트가 실제로 실행될 때 일어나는 일
+- [모드](/ko-KR/매뉴얼/개념/모드/): 에이전트의 도구 표면을 형성하는 대화별 설정
+- [멀티플레이어](/ko-KR/매뉴얼/개념/멀티플레이어/): 주체로서의 에이전트, 프레즌스, 자율성 다이얼
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/): 오늘날 실행을 제약하는 것
+- [에이전트 구성 레퍼런스](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/): 전체 필드 목록

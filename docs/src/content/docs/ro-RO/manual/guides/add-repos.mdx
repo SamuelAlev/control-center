@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Adaugă repo-uri într-un spațiu de lucru
+description: Înregistrează checkout-uri Git într-un spațiu de lucru pentru ca agenții să poată lucra pe ele.
 slug: ro-RO/manual/ghiduri-practice/adauga-repo-uri
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Acest ghid arată cum să înregistrezi un checkout Git într-un spațiu de lucru, cum să îl reindexezi și cum să îl elimini din nou.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repo-urile sunt **limitate la spațiul de lucru**. Nu există un registru global și nici un pas de legare: adăugarea unui repo și punerea lui într-un spațiu de lucru sunt același act. Același checkout înregistrat în două spații de lucru devine două rânduri independente, cu două id-uri diferite — între spații de lucru, identitatea unui repo este calea lui din sistemul de fișiere, niciodată id-ul lui.
 
-## Before you start
+## Înainte de a începe
 
-A folder can only be registered if all three of these hold:
+Un folder poate fi înregistrat doar dacă sunt îndeplinite toate cele trei condiții:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Se află în interiorul unui **worktree git**.
+2. Acel worktree are un **remote `origin`**.
+3. Remote-ul `origin` indică spre o **forge suportată**: github.com, gitlab.com sau bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Orice altceva este refuzat în momentul înregistrării, cu un mesaj explicit: „Folder is not inside a git work tree.”, „No `origin` remote configured for this repository.” sau „The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).”. Nu există un mod doar-local.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forge-ul este citit din remote și stocat pe repo — nu îl alegi niciodată. Un spațiu de lucru poate conține repo-uri de la toate cele trei simultan, iar comunicarea cu fiecare se face prin propria ei API, cu propria ei credențială. Namespace-urile imbricate ale GitLab sunt păstrate, astfel încât `gitlab.com/group/subgroup/project` se înregistrează cu proprietarul `group/subgroup` și numele `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Folderul trebuie să se afle și pe mașina care găzduiește `cc_server`, într-unul dintre directoarele `--repo-roots` ale acelui server. Această listă de permisiuni are ca valoare implicită directorul home al utilizatorului serverului, iar navigarea deasupra unei rădăcini este refuzată.
 
-## Register a checkout
+## Înregistrează un checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Deschide **Setări → Spațiu de lucru → Depozite** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Apasă **Adaugă depozit**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Dialogul este un navigator parcurgibil prin sistemul de fișiere **al serverului**, nu al tău. Fluxul este același pe desktop, pe web și pe telefon, pentru că un selector nativ de foldere ar alege un folder de pe mașina greșită.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Navighează în interiorul rădăcinilor configurate ale serverului. Folderele care sunt checkout-uri git sunt marcate.
+4. Bifează oricâte dintre ele. Selecția persistă în timp ce navighezi, așa că poți aduna checkout-uri din mai multe foldere.
+5. Înregistrează-le într-un singur lot.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+O alegere eșuată nu elimină niciodată restul lotului — primești id-urile care au fost create, plus o eroare pentru fiecare cale refuzată. Reînregistrarea unei căi deja prezente în acest spațiu de lucru returnează repo-ul existent, în loc să genereze un duplicat.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Fiecare repo înregistrat apare în listă cu `owner/name`, o insignă cu numele forge-ului și calea lui pe server. Repo-urile GitHub afișează și avatarul proprietarului; celelalte forge-uri nu au un URL de avatar de proprietar care să poată fi dedus, așa că recurg la inițiale.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Insigna forge-ului contează într-un spațiu de lucru mixt: două repo-uri se pot numi amândouă `acme/web` pe forge-uri diferite și se comportă diferit — ce poate face o revizuire și unde duce o legătură.
 
-## What happens next
+## Ce se întâmplă în continuare
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Înregistrarea declanșează un eveniment `RepoAdded` limitat la acest spațiu de lucru, care pornește pipeline-ul `index_code` pentru acel checkout. El este cel care populează graful de cod, astfel încât căutarea și analiza de impact au cu ce să răspundă.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/).
+Sunt indexate doar fișierele a căror limbă are o gramatică inclusă (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB și Ada). Vezi [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/).
 
-## Re-index a repo
+## Reindexează un repo
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Fiecare rând are un buton **Indexează codul**. Apasă-l pentru a rula din nou indexatorul pentru acel checkout; cât timp rulează, butonul devine o afișare a progresului care arată fișierele terminate din total, împreună cu un control de anulare. Când se termină, se stabilizează într-o bifă cu numărul de simboluri sau într-un avertisment dacă rularea a eșuat.
 
-## Reorder repos
+## Reordonează repo-urile
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Trage de mânerul de pe un rând. Ordinea pe care o stabilești este ordinea în care este citită fiecare listă de repo-uri din aplicație.
 
-## Fix the GitHub link
+## Corectează legătura GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Pictograma de legătură de pe un rând deschide un editor pentru proprietarul GitHub și numele depozitului ale repo-ului — util când remote-ul a fost redenumit sau transferat.
 
-## Remove a repo
+## Elimină un repo
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Deschide **Setări → Spațiu de lucru → Depozite**.
+2. Apasă pictograma coșului de gunoi de pe rând.
+3. Confirmă „Elimini depozitul din spațiul de lucru?”
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Dialogul spune ce face: „_name_ va fi eliminat din acest spațiu de lucru. Fișierele locale de pe disc nu sunt atinse.”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Eliminarea șterge rândul repo-ului din acest spațiu de lucru și propagă ștergerea către rândurile lui din graful de cod — simboluri, muchii, fișiere și puncte de verificare ale indexării —, plus fiecare permisiune de repo acordată pe membru asupra lui, legăturile lui spațiu-repo și înregistrările lui de checkout-uri izolate. Același checkout înregistrat într-un alt spațiu de lucru este un rând independent și nu este afectat. Worktree-urile de pe disc spre care indicau acele înregistrări nu sunt demolate de ștergere.
 
-## Related guides
+## Ghiduri conexe
 
-- [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/)
-- [Run agents in parallel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-- [Your first workspace](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/)
+- [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/)
+- [Rulează agenți în paralel](/ro-RO/manual/ghiduri-practice/agenti-in-paralel/)
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Primul tău spațiu de lucru](/ro-RO/manual/tutoriale/primul-spatiu-de-lucru/)
 
-## Related concepts
+## Concepte conexe
 
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/)
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/)

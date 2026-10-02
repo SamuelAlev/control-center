@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Ramifică o conversație
+description: Încearcă o abordare diferită dintr-un punct anterior fără a o pierde pe cea pe care o ai deja, apoi bifurcă sau exportă ce vrei să păstrezi.
 slug: ro-RO/manual/ghiduri-practice/ramifica-conversatie
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Acest ghid îți arată cum să revii la un punct anterior dintr-o conversație și să o duci în altă direcție — păstrând totodată calea pe care ai părăsit-o.
 
-## The one thing worth knowing
+## Singurul lucru care merită știut
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Ramificarea nu scrie nimic.** O conversație este un arbore de mesaje cu un pointer în vârf, iar întoarcerea înapoi mută pointerul. Nimic nu este șters, nimic nu este ascuns, iar comutarea înapoi este o altă mutare de pointer.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+De aceea, editarea unui prompt și rularea lui din nou este sigură aici: răspunsul cu care îl comparai este încă acolo.
 
-## See the branches
+## Vezi ramurile
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Navigatorul listează fiecare mesaj, indentat la fiecare bifurcare, cu calea curentă marcată **Pe această ramură**. O conversație care nu a fost niciodată bifurcată se afișează ca lista plată care a fost dintotdeauna — navigatorul nu costă nimic privit până când nu există ceva de navigat.
 
-Each row offers two actions.
+Fiecare rând oferă două acțiuni.
 
-| Action                          | Effect                                                    |
+| Acțiune                          | Efect                                                    |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **Continuă de aici**          | Mută pointerul. Următorul tău mesaj continuă din acel mesaj. |
+| **Bifurcă într-o conversație nouă** | Copiază calea până la acel mesaj într-o conversație nouă. |
 
-## Branch: try a different approach
+## Ramură: încearcă o abordare diferită
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Găsește mesajul de la care vrei să reîncepi — de obicei ultimul care ți-a convenit.
+3. **Continuă de aici.**
+4. Scrie noul prompt.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Continuarea veche este încă în arbore; `/tree` va arăta acum două căi din acel punct, iar tu poți comuta liber între ele.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Calea pe care ai părăsit-o este încă acolo]
+Ramificarea nu ascunde și nu șterge nimic. `/tree` listează fiecare cale, o marchează pe cea curentă cu **Pe această ramură** și este modalitatea prin care comuți.
 :::
 
-## Fork: take it somewhere else
+## Bifurcare: du-o în altă parte
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Bifurcarea copiază calea într-o **conversație nouă** din același spațiu. Folosește-o atunci când cele două direcții vor continua să divergă și le vrei una lângă alta, în loc să comuți.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Copia are id-uri de mesaj noi. Două conversații care ar partaja rânduri ar arăta mesajele ulterioare ale celeilalte, iar asta este exact lucrul pe care o bifurcare trebuie să îl împiedice.
 
-## Revert versus branch
+## Revert versus ramură
 
-They are different tools and the difference matters.
+Sunt instrumente diferite, iar diferența contează.
 
-|                     | Revert                                             | Branch                          |
+|                     | Revert                                             | Ramură                          |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| Mesajele ulterioare  | Ascunse din transcript                          | Încă vizibile în `/tree`         |
+| **Worktree**-ul    | Revenit la snapshotul acelui tur                 | Neatins                        |
+| Anulare                | **Anulează revertul** restaurează lotul                  | Mută pointerul înapoi            |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Revert este ceea ce vrei atunci când agentul a modificat *fișiere* pe care vrei să le recuperezi. Ramura este ceea ce vrei atunci când conversația a luat-o în direcția greșită, dar fișierele sunt în regulă.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Revenirea mută și vârful ramurii, așa că următorul tău mesaj continuă din locul potrivit, nu dintr-o coadă pe care nu o mai vede nimeni.
 
-## Take it out of the app
+## Scoate-o din aplicație
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Scrie un **fișier HTML autonom**: întreaga conversație, cu carduri de instrument pliabile care arată ce a primit fiecare apel și ce a returnat. Fără foaie de stil, fără script, fără gazdă de imagini — funcționează de pe un stick USB și va funcționa și peste cinci ani.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Desktop:** `Documents/ControlCenter/exports/`, cu marcă de timp, astfel încât un al doilea export să nu îl suprascrie pe primul.
+- **Web:** o descărcare în browser.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Copiază transcriptul în clipboard ca markdown, cu apelurile de instrument în blocuri pliabile. Acesta este cel pe care să îl lipești într-un issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Raționamentul este lăsat deoparte în mod deliberat: este spațiul de lucru al modelului, iar un raport de eroare este citit de o persoană.
 
-## Related
+## Vezi și
 
-- [Conversation history](/ro-RO/manual/concepte/istoricul-conversatiilor/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/ro-RO/manual/referinta/comenzi-slash/) — `/tree`, `/export`, `/dump`
+- [Istoricul conversațiilor](/ro-RO/manual/concepte/istoricul-conversatiilor/) — de ce arborele este o mutare de pointer și ce anume restaurează reluarea
+- [Comenzi slash](/ro-RO/manual/referinta/comenzi-slash/) — `/tree`, `/export`, `/dump`

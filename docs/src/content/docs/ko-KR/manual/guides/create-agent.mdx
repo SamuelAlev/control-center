@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: 에이전트 생성 및 구성
+description: 워크스페이스에 에이전트를 추가하고 어댑터, 모델, 스킬, 권한을 부여한 뒤 실제로 실행되는지 확인합니다.
 slug: ko-KR/매뉴얼/사용-가이드/에이전트-생성
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+이 가이드에서는 워크스페이스에 에이전트를 추가하고 실제로 실행될 때까지 구성하는 방법을 설명합니다.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+모든 워크스페이스에는 다섯 개의 에이전트가 시딩됩니다. CEO 한 명과 `qa`, `architect`, `engineer`, `librarian`입니다. 따라서 아무것도 구성하기 전부터 에이전트가 있는 것이 보통입니다. 아래 단계는 시딩된 에이전트와 새 에이전트 모두에 똑같이 적용됩니다.
 
-## Before you start
+## 시작하기 전에
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- 워크스페이스 안에서 작업합니다. 관련 화면은 모두 **설정 → 워크스페이스 → 에이전트**(`/settings/workspace/agents`)에 있습니다.
+- 에이전트에는 백엔드가 필요합니다. **설정 → 서버 → 모델 제공업체**에서 내장 하네스용 프로바이더를 연결하거나, `cc_server`를 호스팅하는 머신에 Claude Code CLI를 설치합니다.
+- 에이전트가 스킬을 지니게 하려면 먼저 **설정 → 워크스페이스 → 스킬**에서 스킬을 설치합니다. 에이전트 양식에서는 이미 워크스페이스에 존재하는 스킬만 켜고 끌 수 있습니다.
 
-## Add the agent
+## 에이전트 추가
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. **설정 → 워크스페이스 → 에이전트**를 엽니다.
+2. **새 에이전트**를 클릭합니다.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+대화 상자도, 역할 선택기도 없습니다. "이름 없는 에이전트"라는 에이전트가 즉시 만들어지고 오른쪽 상세 창에서 선택됩니다.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+이제 왼쪽 로스터에 "이름 없는 에이전트"가 보이고, 상세 창의 **설정** 탭이 열려 있으며 **이름** 필드에 "이름 없는 에이전트"가 들어 있어야 합니다.
 
-## Name it
+## 이름 지정
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **이름** — @멘션에 사용되는 짧은 식별자입니다(예: `alice`). 멘션 파싱은 `@` 뒤에 단어 문자가 오는 형태를 인식하므로, 하이픈이나 마침표, 공백이 들어간 이름은 멘션될 수 없습니다.
+- **제목** — 사람이 읽을 수 있는 레이블입니다(예: "숙련 개발자").
+- **시스템 프롬프트** — 선택적 추가 지침이며, Agent instructions 섹션으로 주입됩니다. 조립된 프롬프트의 나머지 부분을 대체하지는 않습니다.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+양식 맨 아래에서 **변경 사항 저장**을 클릭합니다. 이 페이지의 모든 필드는 이 버튼 하나로 저장됩니다.
 
-## Give it an adapter and a model
+## 어댑터와 모델 지정
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**어댑터** 드롭다운에는 서버 호스트가 실제로 가지고 있는 러너가 나열됩니다. 내장 어댑터는 항상 검색됩니다(그 자체가 서버이기 때문입니다). Claude Code는 해당 호스트에서 CLI가 감지된 경우에만 나타납니다:
 
-| Adapter                   | Backend                                     |
+| 어댑터                    | 백엔드                                      |
 | ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Control Center (built-in) | 프로세스 내 에이전트 루프 — 외부 CLI 없음   |
 | Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+내장 어댑터만이 모드, 스티어링, 일시 중지/재개, 완료 계약, 서브에이전트를 강제합니다. Claude Code는 이 중 어느 것도 제공하지 않습니다. Cursor, Codex 및 기타 프로바이더는 별도의 러너가 아니라 내장 어댑터에 붙습니다.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[어댑터가 비어 있으면 내장 루프를 사용합니다]
+어댑터가 설정되지 않은 에이전트는 서버 내부의 루프인 **Control Center (built-in)**으로 디스패치되므로, 호스트에 아무것도 설치할 필요가 없습니다. 모델도 설정하지 않으면 Anthropic에 기본값을 요청하므로, 완전히 설정되지 않은 에이전트는 Anthropic 계정을 연결한 경우에만 실행됩니다. 시딩된 전문 에이전트는 둘 다 없이 제공되므로, 사용할 에이전트에는 두 가지를 모두 설정하세요.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**모델** 드롭다운은 선택한 어댑터에 따라 달라집니다. 내장 어댑터의 경우 목록은 **설정 → 서버 → 모델 제공업체**에서 연결한 프로바이더에서 실시간으로 가져오므로, 저장된 자격 증명이 없는 프로바이더는 모델을 하나도 제공하지 않습니다.
 
-## Add skills
+## 스킬 추가
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**스킬**은 이 워크스페이스에 설치된 스킬 번들을 대상으로 하는 칩 선택기입니다. 칩을 눌러 켜고 끄며, 체크 글리프가 선택된 칩을 나타냅니다. 워크스페이스에 스킬이 없으면 이 필드에는 "No skills available. Create skills in Settings → Skills first."가 표시됩니다.
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills).
+여기서는 저장소 자체의 스킬을 고르지 않습니다. 스킬을 함께 제공하는 저장소(`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`)는 그 저장소에서 작업하는 에이전트에게 스킬을 자동으로 제공하며, 에이전트가 다른 저장소로 옮기면 스킬도 교체됩니다. 자세한 내용은 [저장소 범위 스킬](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills)을 참고하세요.
 
-## Set the reporting line and persona
+## 보고 체계와 페르소나 설정
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **보고 대상** — 다른 에이전트를 이름으로 고릅니다. 이것이 페이지 헤더의 **조직도** 버튼에 표시되는 보고 트리를 만듭니다. 팀 리더가 위임할 때 사용하는 명단은 이것이 아닙니다. 그 명단은 팀의 멤버와 그들의 스킬에서 나옵니다.
+- **페르소나** — 어조와 행동을 형성하는 자유 텍스트입니다. 예: "단순하고 읽기 쉬운 해법을 선호합니다. 모든 새 코드에 테스트를 작성합니다."
 
-## Tune the run
+## 실행 조정
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **추론 강도** — 선택지는 선택한 모델이 자체적으로 공개한 수준에서 나옵니다. Low / Medium / High, 그리고 OpenAI 스타일 모델에서는 Extra High, Claude 스타일 모델에서는 Extra High + Max가 추가됩니다. 선택한 모델이 사고 수준을 선언하지 않으면 이 필드는 완전히 숨겨지고, 모델 자체의 기본값이 적용됩니다.
+- **컨텍스트 윈도우 크기** — 모델을 변경할 때마다 해당 모델의 컨텍스트 윈도우로 미리 채워지며, 모델 기본값, 200k, 500k, 1M을 위한 원탭 칩이 있습니다. 모델을 고른 뒤 직접 입력한 값은 다음 모델 변경 전까지 우선합니다.
+- **무응답 제한 시간(분)** — 이 시간 동안 출력이 없으면 실행을 종료합니다. 비워 두면 모드별 기본값을 사용합니다.
 
-## Grant permissions
+## 권한 부여
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**샌드박스 권한**은 "워크스페이스 기본값 사용"에서 시작합니다. 스위치를 켜면 이 에이전트에 대해 권한을 설정할 수 있으며, 그다음 다음 항목을 켜고 끕니다:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **git push 허용** — 에이전트가 푸시하는 데 필요한 GitHub 토큰을 주입합니다
+- **GitHub API 호출 허용** — 에이전트가 PR, 이슈, 저장소 메타데이터를 읽을 수 있게 합니다
+- **티켓팅 API 호출 허용** — 티켓팅 프로바이더 키를 주입합니다
+- **일반 네트워크 접근 허용** — 내장 하네스의 `web_fetch` 및 `web_search` 도구도 사용하도록 설정합니다
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+각 토글은 실행이 시작될 때 자격 증명 브로커가 확인합니다. 기능이 꺼져 있으면 해당 토큰이 실행 환경에 발급되지 않을 뿐입니다.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[워크스페이스 기본값은 서버의 보수적인 집합을 뜻합니다]
+"워크스페이스 기본값 사용"으로 남겨 둔 에이전트는 git push, GitHub API, 티켓팅이 모두 **꺼진** 상태로, 네트워크는 **켜진** 상태로 실행됩니다. 설정 → 서버 → 진단 및 개인정보 보호에 표시되는 기능 기본값은 클라이언트 측 기본 설정입니다. 에이전트가 푸시하거나 PR을 열게 하려면 스위치를 켜고 해당 기능을 명시적으로 부여하세요.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/) for the full set of boundaries.
+이 기능들은 자격 증명과 하네스 도구를 게이트하며, 이는 OS 샌드박스와는 별개의 계층입니다. `cc_server`는 샌드박스가 있는 호스트에서 에이전트 실행을 호스트의 샌드박스로 감쌉니다. Windows에는 네이티브 백엔드가 없고, Linux와 WSL2에는 `bwrap`과 `socat`이 필요합니다. 경계의 전체 목록은 [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을 참고하세요.
 :::
 
-## Verify it runs
+## 실행 확인
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. **설정 → 서버 → 모델 제공업체**를 열고 선택한 어댑터가 "찾을 수 없음"이 아니라 설치된 버전을 보고하는지 확인합니다. **새로 고침**을 클릭하면 다시 프로브합니다. 프로브는 지금 보고 있는 머신이 아니라 `cc_server`를 호스팅하는 머신에서 실행됩니다.
+2. 해당 에이전트가 있는 스페이스를 열고 메시지를 보내거나, 기존 스페이스에서 @멘션합니다.
+3. **설정 → 워크스페이스 → 에이전트**로 돌아와 에이전트를 선택하고 **로그** 탭을 엽니다. 상태 배지, 기간, 시작 시각, 사용한 어댑터와 함께 실행이 나타나야 합니다. **보기**를 클릭하면 해당 실행의 이벤트 스트림이 열립니다.
 
-If no run appears at all, work through [Run agent diagnostics](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/).
+실행이 전혀 나타나지 않으면 [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)을 차례로 확인하세요.
 
-## Delete an agent
+## 에이전트 삭제
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+로스터에서 에이전트를 선택합니다. **설정** 탭에서 양식 맨 아래의 **위험 영역**으로 스크롤한 뒤 **삭제**를 클릭합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Run agents in parallel](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/)
-- [Build an agent team](/ko-KR/매뉴얼/사용-가이드/에이전트-팀-구성/)
-- [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/)
-- [Run agent diagnostics](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
-- [Agent configuration reference](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/)
+- [에이전트 병렬 실행](/ko-KR/매뉴얼/사용-가이드/병렬-에이전트/)
+- [에이전트 팀 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-팀-구성/)
+- [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)
+- [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
+- [에이전트 구성 레퍼런스](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/)
 
-## Related concepts
+## 관련 개념
 
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/)
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)

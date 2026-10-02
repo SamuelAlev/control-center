@@ -1,207 +1,223 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Control remote și mobil
+description: Cum ajunge telefonul la serverul tău printr-un releu intermediat, sigilat cap la cap, în loc de o legătură de la egal la egal, și modelul de acces pe straturi care ține această accesare restrânsă.
 slug: ro-RO/manual/concepte/control-remote
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center este o aplicație de desktop, dar munca pe care o urmărește nu se
+oprește când te ridici de la birou. **Controlul remote** îți asociază telefonul
+cu `cc_server`, folosind **[Remote](https://remote.usectrl.dev/)**, aplicația
+companion de la remote.usectrl.dev, ca să urmărești flota de acolo: să citești
+mesaje și tichete, să răspunzi unui agent, să triezi fluxul de știri, fără ca
+audio-ul, transcrierea, codul sursă sau credențialele care există pe server să îl
+părăsească vreodată.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Gândește-te la el ca la un companion al biroului, folosit mai ales pentru
+citire. Nu este menit să înlocuiască clientul complet de desktop.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/ro-RO/manual/concepte/implementare/) for how the two differ.
+:::note[Două căi remote diferite]
+Companionul de pe telefon se asociază cu un `cc_server` printr-un **releu
+WebSocket intermediat** care transportă cadre JSON-RPC sigilate cap la cap.
+**Versiunea web** completă (și un desktop îndreptat spre un server remote) este
+cealaltă cale remote; ea se conectează la `cc_server` prin WebSocket și redă
+aplicația completă. Vezi
+[Implementare și clienți](/ro-RO/manual/concepte/implementare/) pentru diferențele dintre cele două.
 :::
 
 ## Transport
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Telefonul ajunge la `cc_server` printr-un WebSocket: fie o conexiune directă
+(loopback, LAN, Tailnet sau `wss://`), fie o cameră cu acces pe bază de
+invitație pe un broker de semnalizare care retransmite cadre sigilate. Nu există
+niciun canal de date de la egal la egal.
 
-## What the phone can do
+## Ce poate face telefonul
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Telefonul asociat ajunge la o felie mică și intenționată din suprafața
+serverului:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Citește** tichete, agenți, spații și mesajele lor, plus fluxul tău de știri
+- **Răspunde**: trimite un mesaj într-un spațiu, actualizează sau atribuie un
+  tichet, marchează un articol ca citit sau salvat
+- **Rulează un playbook**: instanțiază un șablon de plan salvat, cu parametrii
+  lui. Acest lucru doar _propune_ un plan; nimic nu se execută și nu se cheltuie
+  până când un operator nu îl aprobă în Plan Studio pe un client complet
+- **Comută între spațiile de lucru**, din selectorul propriu al telefonului
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Asta este aproape tot. Un telefon este un **principal cu privilegii mai reduse**
+decât un client complet. Nu poate porni procese, nu poate cheltui buget LLM, nu
+poate face push pe GitHub și nu poate crea spații de lucru. Vezi
+[modelul de acces](#modelul-de-acces) pentru felul în care acest lucru este impus,
+nu doar intenționat.
 
-## How the link is built
+## Cum se construiește legătura
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Conexiunea merge pe un **releu intermediat**: serverul se alătură unei camere cu
+acces pe bază de invitație pe un broker `wss://`, în calitate de proprietar, iar
+fiecare client asociat — desktop, web, telefon — se alătură aceleiași camere cu
+un token de admitere cu durată limitată. Trei piese se întâlnesc aici:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Piesă | Rol |
+| ----- | --- |
+| **Remote (aplicația de telefon)** | Aplicația web companion, găzduită implicit la `remote.usectrl.dev` sau auto-găzduită. Se încarcă într-un browser și păstrează înregistrarea de asociere în IndexedDB. |
+| **Broker de releu** | Un releu `wss://` fără stare (`cc_signaling_server`) care găzduiește camere cu N căi. Transportă **numai cadre opace**: fiecare payload este sigilat cap la cap între telefon și server, astfel încât brokerul nu vede niciodată datele aplicației sau secretul de asociere și nu interpretează niciodată ce retransmite. |
+| **`cc_server`** | Proprietarul camerei. Răspunde apelurilor telefonului prin același dispatcher pe care îl folosesc toți ceilalți clienți. |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+O ofertă de asociere conține un **descriptor de conexiune** care enumeră fiecare
+cale către server (LAN, Tailnet, `wss://` public, releu) plus amprenta lui de
+identitate. Rezolvitorul telefonului alege cea mai bună cale accesibilă și
+fixează amprenta la prima conectare (TOFU); releul garantează conectivitatea chiar
+și atunci când nu există nicio cale directă, fără a putea citi vreodată traficul.
 
-## What the pairing payload is
+## Ce este payload-ul de asociere
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/) for the procedure. The anatomy is
-what matters here.
+Asocierea este emisă din aplicație și livrată ca link profund; vezi
+[Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/) pentru procedură. Aici contează
+anatomia.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Payload-ul călătorește în **fragmentul** URL-ului, partea de după `#` pe care
+browserele nu o trimit niciodată serverului, așa că gazda HTTPS a PWA nu îl vede
+niciodată. El conține tot ce îi trebuie telefonului ca să ajungă la server și să
+dovedească cine este: descriptorul de conexiune (fiecare cale plus amprenta de
+identitate), un ID de dispozitiv emis proaspăt, o cheie prepartajată de 32 de
+octeți și un marcaj de expirare. Telefonul îl decodează, stochează local o
+înregistrare de asociere și elimină fragmentul, astfel încât secretul părăsește
+URL-ul.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Există două forme de payload și ele **nu sunt interschimbabile**. Codul QR al
+telefonului, emis din panoul de asociere din aplicație, este `PairingPayload` v2
+de mai sus, îndreptat spre gazda PWA Remote. `cc_server pair --client-url` emite
+un link v1 diferit, mai vechi (`{s, i, k}` — URL de server, ID de dispozitiv,
+cheie), destinat exclusiv clientului **web**.
 
-They also differ in lifetime, which is easy to get wrong:
+Ele diferă și prin durata de viață, lucru ușor de greșit:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Emis de | Expirarea credențialului |
+| ------- | ------------------------ |
+| Panoul de asociere din aplicație (`pairing.mint`) | 30 de zile, întotdeauna |
+| `cc_server pair` din linia de comandă | **Niciuna** — credențialul nu expiră |
 
-## The access model
+## Modelul de acces
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Un dispozitiv asociat este **autentificat, dar nu de încredere**. Mai multe porți
+independente împiedică o asociere aprobată (sau scursă) să devină control deplin
+asupra serverului.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Apartenența, nu asocierea, este granița
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+O cheie de asociere validă dovedește _ce dispozitiv_ ești. Ce poți citi sau
+modifica este decis de **rolul tău în spațiul de lucru**, re-rezolvat la fiecare
+apel în parte, și de acordările per repo pentru orice expune conținut de repo. Un
+dispozitiv care deține o cheie perfect validă, dar aparține unui utilizator care
+nu este membru al spațiului de lucru numit, este refuzat cu "Not a member of this
+workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Pragul de rol este derivat din tipul operațiunii, cu excepția cazului în care
+aceasta își declară propriul prag: citirile necesită `guest`, mutațiile necesită
+`member`, operațiunile distructive necesită `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Un telefon este un nivel de sesiune inferior
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Dincolo de verificarea rolului, o sesiune de telefon are o capabilitate mai
+redusă decât o sesiune de desktop sau web. Operațiunile declarate ca exclusiv
+pentru clientul complet sunt refuzate pentru un telefon înainte ca handlerul să
+ruleze, indiferent cât de privilegiat este utilizatorul din spate: emiterea,
+listarea, redenumirea și revocarea asocierilor de dispozitive; citirea și setarea
+conectivității prin tunel; backupul serverului și exportul/importul spațiului de
+lucru; detectarea și terminarea proceselor; probele de adaptoare; setările de
+server; administrarea SSO; controlul flotei; și preluarea sau predarea unui agent
+aflat în rulare.
 
-### 3. A default-deny tool allow-list
+### 3. O listă de permitere cu refuz implicit pentru instrumente
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Pentru suprafața de instrumente MCP în special (`tools/call`), o listă de
+permitere cu refuz implicit guvernează ce instrumente poate invoca telefonul.
+Orice nu este în listă este respins înainte de a rula. Lista este dominată de
+operațiuni de citire și observare, plus o mână de scrieri **doar locale** — un
+mesaj, o actualizare de tichet, un marcaj pe un articol — care nu cheltuie buget
+LLM, nu pornesc niciun proces și nu ating niciun sistem extern.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Refuzate, de exemplu: consultarea unui agent, pornirea unei revizuiri IA,
+terminarea unui agent, publicarea unei revizuiri pe GitHub, angajarea sau
+concedierea agenților, crearea unui spațiu de lucru.
 
-### 4. Per-call workspace scoping
+### 4. Delimitare pe spații de lucru la fiecare apel
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/ro-RO/manual/concepte/spatii-de-lucru/) invariant the rest of the
-product enforces.
+Serverul nu păstrează **niciun** "spațiu de lucru curent". Este fără stare prin
+proiectare: fiecare apel delimitat de spațiul de lucru trebuie să numească
+`workspace_id`-ul țintă în argumentele sale, iar dispatcherul refuză apelul de la
+bun început atunci când acesta lipsește sau numește un spațiu de lucru pe care
+serverul nu îl are înregistrat — înainte ca ceva să deschidă o bază de date. Un
+telefon nu poate, prin urmare, nici să moștenească, nici să alunece în domeniul
+altui client, iar numirea unui spațiu de lucru străin nu ajută nici ea, pentru că
+verificarea apartenenței de la poarta 1 se aplică în continuare. Aceasta este
+aceeași invariantă de
+[izolare a spațiilor de lucru](/ro-RO/manual/concepte/spatii-de-lucru/) pe care o impune restul
+produsului.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Cadre sigilate cap la cap, cu cheia prepartajată
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Fiecare cadru dintre telefon și server este sigilat cu cheia de asociere; tokenul
+de admitere doar aduce un client în cameră, nu decriptează nimic. Brokerul
+retransmite text cifrat și nu vede niciodată cheia. Un dispozitiv revocat își
+găsește credențialul deja dispărut, așa că **eșuează închis** la reconectare.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Un credențial emis din aplicație este limitat la 30 de zile; după aceea, poarta
+de conectare îl respinge și telefonul trebuie să se asocieze din nou. Revocarea
+este în timp real: serverul supraveghează tabelul de dispozitive și închide
+sesiunile deschise ale unui dispozitiv revocat în câteva secunde, în loc să
+aștepte următoarea lui conectare.
 
-### 6. Rate limiting per principal
+### 6. Limitarea ratei per principal
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Un limitator cu fereastră glisantă plafonează traficul de instrumente remote la
+120 de apeluri pe minut, cu un subplafon mai strict de 30 pe minut pentru verbele
+care modifică date. Bugetul aparține **principalului, nu sesiunii**: trei dintre
+dispozitivele tale trag dintr-o singură alocație, așa că un client deturnat nu
+poate cumpăra spațiu suplimentar deschizând mai multe sesiuni, iar un membru
+gălăgios nu îi poate înfometa pe ceilalți.
 
-### 7. A broker that learns nothing
+### 7. Un broker care nu află nimic
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Brokerul de releu este deliberat simplu: găzduiește camere, retransmite cadre
+sigilate și nu deține conturi, date ale aplicației sau chei. Camerele sunt cu
+acces pe bază de invitație și efemere. Datele aplicației, audio-ul, transcrierea,
+sursa și credențialele rămân toate pe server.
 
-## Live updates
+## Actualizări în timp real
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Odată asociat, telefonul primește **actualizări în timp real** sub formă de cadre
+de notificare — mesaje noi de la agenți, tichete atribuite ție, schimbări de
+stare — în oglindă cu notificările desktopului. Serverul difuzează acele cadre
+către fiecare sesiune conectată, iar filtrul de spațiu de lucru este aplicat pe
+partea de client, așa că ceea ce vezi este delimitat la spațiul de lucru la care
+te uiți.
 
-## Where it lives
+## Unde se află
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Suprafață | Ce arată |
+| --------- | -------- |
+| **Setări → Tu → Dispozitivele tale** (`/workspaces/:workspaceId/settings/you/devices`) | Clienți asociați cu stare în timp real, plus **Asociază un client nou** (browser web, aplicație de desktop sau telefon) și revocare |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Același panou emite asocieri și pentru un al doilea browser sau o a doua
+aplicație de desktop, nu doar pentru telefoane — fluxul este identic, doar linkul
+profund diferă.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Controlul remote este pe partea de server și **nu** este expus prin MCP. Telefonul
+vorbește cu dispatcherul propriu al serverului prin releu; nu este un client MCP
+al unui server extern.
 ::::
 
-## See also
+## Vezi și
 
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/ro-RO/manual/concepte/multiplayer/): roles, membership and repo grants
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/): where remote control sits among the client tiers
-- [Architecture](/ro-RO/manual/concepte/arhitectura/): where remote control sits in the stack
-- [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/)
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): delimitarea pe apel pe care se sprijină
+- [Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/): roluri, apartenență și acordări per repo
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/): unde se situează controlul remote între nivelurile de clienți
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/): unde se situează controlul remote în stivă
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/)

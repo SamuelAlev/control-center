@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Historie konverzací
+description: Jak běh drží, sbaluje, větví a obnovuje kontext — strategie komprimace, strom sezení a co „obnovení“ opravdu znamená.
 slug: cs-CZ/prirucka/koncepty/historie-konverzaci
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Dlouhá konverzace narazí na tvrdou zeď: kontextové okno modelu. Tahle stránka je tu kvůli té zdi. Zajímavé je, co se zahodí, co zůstane a co se dá dostat zpátky.
 
-## Four ways to reclaim context
+## Čtyři způsoby, jak uvolnit kontext
 
-They are not alternatives so much as a ladder, cheapest first.
+Nejsou to alternativy. Je to žebřík a začíná se nejlevnějším.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Mechanismus | Cena | Ponechá | Ztratí |
+| --- | --- | --- | --- |
+| **Elize** | Nic | Každé slovo vyprávění | Starší výsledky nástrojů, ve kterých se nic nestalo |
+| **Odhození obrázků** | Nic | Text kolem nich | Staré snímky obrazovky |
+| **Snímky** | Nic | Každé slovo, jako pixely | Čitelnost pro model bez vidění |
+| **Shrnutí** | Jedno volání modelu | Vyprávění | Podrobnosti, které nevybralo |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Elize a odhození obrázků jdou první, protože jsou zadarmo a bezeztrátové tam, kde na tom záleží: zahodí objem, ke kterému se už nikdo nevrátí.
 
-### Why summarizing is the last resort
+### Proč je shrnutí až poslední možnost
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Shrnutí je z těch čtyř jediné, které **spotřebuje volání modelu**, a jediné, které **rozhodne za tebe**, co bylo podstatné. Obojí je skutečná cena. Zajímavější je to volání, kvůli chvíli, kdy k němu dojde.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Komprimace obvykle běží *před* zdí, na prahu. Běží ale i **reaktivně**, až když poskytovatel sám odmítne požadavek jako příliš velký: heuristický odhad podhodnotil to, co poskytovatel skutečně naměřil. V té situaci musí komprimace shrnutím poslat požadavek, který kontext zmenší, a ten požadavek je právě ten, který přetekl.
 
-### Snapshots
+### Snímky
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Komprimace snímky vykreslí zahozenou historii na husté stránky pixelových glyfů a vrátí je jako obrázky.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+Stojí to na zvláštnosti účtování: vizuální model účtuje obrázek paušálem nebo úměrně ploše, bez ohledu na to, kolik je v něm znaků. Dvanáct tisíc znaků zahozené konverzace stojí dvanáct tisíc znaků v textových tokenech. Tytéž znaky vykreslené na jednu stránku stojí jeden obrázek.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Není to jen chytrý trik. Vyplatí se to proto, že nepotřebuje **žádné volání modelu, žádný klíč a žádnou síť**. Je to jediná strategie, která je při zotavení z přetečení vždy po ruce.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Tvar rekonstrukce je doslovný začátek, střed jako obrázek a doslovný konec. Začátek je úkol a omezení, na která se odvolává všechno, co následuje. Konec je tam, kde práce právě je. Střed se čte znovu nejmíň a stojí nejvíc.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Zhoršuje se poctivě]
+Model bez vidění nepřečte stránky pixelů. Vykreslit text, na který se nikdo nepodívá, není zhoršená komprimace, ale smazaná konverzace. Rozhoduje tedy schopnost čtenáře a model bez vidění dostane vždy shrnutí.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Tvar stránky se cení podle API, ne podle vah]
+Gemini účtuje za obrázek paušál, takže každý znak navíc na stránce je zadarmo a stránky Gemini jsou nejširší. OpenAI a Anthropic účtují podle plochy, takže větší stránka nic nekoupí. Některé procesory po překročení prahu sníží rozlišení a potichu tím zničí glyfy o velikosti 5 pixelů, proto stránky zůstávají pod prahem. Claude servírovaný přes bránu účtuje brána, takže tvar sleduje id modelu tak, jak ho pojmenuje trasa.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Snímky se při každém průchodu vykreslují znovu z **uchovaného zdrojového textu**, nikdy z pixelů předchozího průchodu. Snímek ze snímku kazí glyfy o jednu generaci s každou komprimací, dokud je nepřečte vůbec nic.
 
-## What a run actually resumes from
+## Z čeho se běh vlastně obnovuje
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Historicky každý běh harnessu začínal s prázdnou historií a návaznost skládal z bloku `<context>` v promptu, tedy ze *shrnutí* konverzace, ne z konverzace samotné. Z toho plynuly tři věci:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Obnovení bylo převyprávění.** Model nikdy neviděl vlastní dřívější uvažování ani skutečné bajty, které vrátily nástroje, jen jejich popis.
+- **Přetočení zemřelo s procesem.** `checkpoint` je index do živého seznamu zpráv, takže restart ztratil každý štítek, který model nastavil.
+- **Opakování nerozeznalo „není co opakovat“ od „nic se nenačetlo“.** Po restartu je neúspěšný tah z živého stavu pryč v obou případech.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Všechny tři řeší uložený přepis. Ukládá se na každé **hranici tahu** a nikdy uprostřed tahu: historie zachycená mezi voláním nástroje a jeho výsledkem je historie, kterou žádný poskytovatel nepřijme. Pád v tu chvíli proto obnoví tah *předtím*, ne půltah, který nejde přehrát.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Obnovený běh se ořízne na nejnovější zprávy a řez jde po hranici, která není osiřelý výsledek nástroje. Výsledek, jehož volání ořez odstranil, poskytovatelé rovnou odmítnou, a přepis, který nejde poslat, je horší než krátký.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Kde je to uložené]
+Jeden soubor JSON na dvojici konverzace a agenta, ve vlastním adresáři pracovního prostoru vedle jeho databáze. Dva agenti v jedné konverzaci drží dvě historie: viděli jiné výsledky nástrojů a dostali jiné systémové prompty. Sloučení by každému podstrčilo uvažování toho druhého jako jeho vlastní.
 :::
 
-## The session tree
+## Strom sezení
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Každá zpráva si pamatuje tu, na kterou navazuje, a každá konverzace pojmenuje aktuální **špičku větve**. Tohle jediné rozhodnutí je celá funkce.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Větvení nic nezapisuje.** Posune ukazatel. Cesta, kterou jsi opustil, tam pořád je, takže návrat je další posun ukazatele, ne obnova. A úprava promptu kvůli novému běhu tě už nestojí odpověď, se kterou jsi porovnával.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Bez toho se každá cesta zpátky musí schovat nebo smazat zprávy a schování je lež, kterou další čtenář neprohlédne.
 
-### Branch versus fork
+### Větev a fork
 
-|                | Branch              | Fork                        |
-| -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| | Větev | Fork |
+| --- | --- | --- |
+| Co se stane | Ukazatel se posune | Cesta se zkopíruje |
+| Kam to jde | Stejná konverzace | Nová konverzace |
+| Cena | Nic | Jedna kopie větve |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Fork kopíruje s **novými id** a řádky nesdílí. Dvě konverzace se sdílenými řádky by si navzájem ukazovaly pozdější zprávy, a právě to fork nesmí.
 
-### Rewind rides the same pointer
+### Přetočení jede po stejném ukazateli
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Dvojice `checkpoint` / `rewind` uvnitř běhu označí čistou hranici tahu a po průzkumu se na ni vrátí, i s výtahem. Checkpointy se ukládají spolu s přepisem, takže štítek, který model nastavil před restartem, pořád sedí tam, kde byl nastaven. Checkpoint, jehož cíl ořez nepřežil, se **zahodí**, nepřipne se na nejbližší zbylou zprávu. Přetočit „na štítek“ a přistát jinde je přesně ta chyba, které má štítek zabránit.
 
-## Related
+## Související
 
-- [Branch a conversation](/cs-CZ/prirucka/navody/vetveni-konverzace/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/cs-CZ/prirucka/koncepty/kontext-nastroju/) — the other half of what fills a context window
-- [Slash commands](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Větvení konverzace](/cs-CZ/prirucka/navody/vetveni-konverzace/) — navigátor stromu, fork a export
+- [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/) — druhá polovina toho, co plní kontextové okno
+- [Slash příkazy](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/) — `/compact`, `/shake`, `/context`, `/tree`

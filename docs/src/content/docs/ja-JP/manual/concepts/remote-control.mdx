@@ -1,207 +1,122 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: リモートコントロールとモバイル
+description: スマートフォンが、ピアツーピア接続ではなくブローカー経由のエンドツーエンドで密封されたリレーを介してサーバーに到達する仕組みと、その到達範囲を狭く保つ多層のアクセスモデルについて説明します。
 slug: ja-JP/マニュアル/コンセプト/リモートコントロール
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center はデスクトップアプリですが、それが追跡する作業は、デスクを離れたとたんに止まるものではありません。**リモートコントロール**は、あなたのスマートフォンと `cc_server` をペアリングします。使用するのは、remote.usectrl.dev にあるコンパニオンアプリ **[Remote](https://remote.usectrl.dev/)** です。これにより、外出先からフリートを追いかけられます。メッセージやチケットを読み、エージェントに返信し、ニュースフィードをトリアージできます。その間、サーバー上にある音声、文字起こし、ソースコード、資格情報がサーバーから出ることはありません。
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+読み取り中心の、デッキのコンパニオンだと考えてください。フルのデスクトップクライアントを置き換えるものではありません。
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/) for how the two differ.
+:::note[2 つの異なるリモート経路]
+スマートフォンのコンパニオンは、エンドツーエンドで密封された JSON-RPC フレームを運ぶ**ブローカー経由の WebSocket リレー**を介して `cc_server` とペアリングします。もう 1 つのリモート経路は、完全な **Web ビルド**（およびリモートサーバーを指定したデスクトップ）です。これは WebSocket 経由で `cc_server` に接続し、アプリ全体を描画します。両者の違いは[デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)を参照してください。
 :::
 
-## Transport
+## トランスポート
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+スマートフォンは WebSocket 経由で `cc_server` に到達します。直接接続（ループバック、LAN、tailnet、または `wss://`）か、密封されたフレームをリレーするシグナリングブローカー上の招待制のルームです。ピアツーピアのデータチャネルはありません。
 
-## What the phone can do
+## スマートフォンでできること
 
-The paired phone reaches a small, intentional slice of the server's surface:
+ペアリングされたスマートフォンが到達できるのは、サーバーのサーフェスのうち、意図的に絞り込まれた小さな一部分です。
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **読み取り**: チケット、エージェント、スペースとそのメッセージ、およびニュースフィード
+- **返信**: スペースへのメッセージ送信、チケットの更新または割り当て、記事を既読または保存済みにする
+- **プレイブックの実行**: 保存済みのプランテンプレートをそのパラメーターでインスタンス化します。これはプランを_提案_するだけで、フルクライアントの Plan Studio でオペレーターが承認するまで、何も実行も消費もされません
+- **ワークスペースの切り替え**: スマートフォン自身のピッカーから行います
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+ほぼこれで全部です。スマートフォンは、フルクライアントよりも**低い権限のプリンシパル**です。プロセスの起動、LLM 予算の消費、GitHub へのプッシュ、ワークスペースの作成はできません。これが単なる意図ではなく実際に強制される仕組みは[アクセスモデル](#アクセスモデル)を参照してください。
 
-## How the link is built
+## リンクがどのように構築されるか
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+接続は**ブローカー経由のリレー**に乗ります。サーバーは `wss://` ブローカー上の 1 つの招待制のルームにそのオーナーとして参加し、ペアリングされたすべてのクライアント（デスクトップ、Web、スマートフォン）が、期限付きの入室トークンを使って同じルームに参加します。3 つの要素が組み合わさります。
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| 要素                     | 役割                                                                                                                                                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote（スマートフォンアプリ）** | コンパニオンの Web アプリ。デフォルトでは `remote.usectrl.dev` でホストされ、セルフホストも可能です。ブラウザーで読み込まれ、ペアリングの記録を IndexedDB に保持します。                                                                                                                     |
+| **リレーブローカー**     | ステートレスな `wss://` リレー（`cc_signaling_server`）で、N 者間のルームをホストします。運ぶのは**不透明なフレームだけ**です。すべてのペイロードはスマートフォンとサーバーの間でエンドツーエンドに密封されるため、ブローカーがアプリのデータやペアリングの秘密を目にすることはなく、転送するものを解釈することもありません。 |
+| **`cc_server`**          | ルームのオーナー。他のすべてのクライアントが使うのと同じディスパッチャーを通じて、スマートフォンからの呼び出しに応答します。                                                                                                                                                                 |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+ペアリングオファーは、サーバーへのすべての経路（LAN、tailnet、公開 `wss://`、リレー）とその識別フィンガープリントを列挙した**接続記述子**を運びます。スマートフォンのリゾルバーは到達可能な最良の経路を選び、初回接続時にフィンガープリントをピン留めします（TOFU）。リレーは、直接経路が存在しない場合でも接続性を保証しつつ、そのトラフィックを読むことは決してできません。
 
-## What the pairing payload is
+## ペアリングペイロードとは
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/) for the procedure. The anatomy is
-what matters here.
+ペアリングはアプリから発行され、ディープリンクとして届けられます。手順については[デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)を参照してください。ここで重要なのはその構造です。
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+ペイロードは URL の**フラグメント**、つまり `#` の後ろの、ブラウザーがサーバーに送ることのない部分に乗るため、PWA の HTTPS ホストがそれを目にすることはありません。ペイロードには、スマートフォンがサーバーに到達し、自分が誰であるかを証明するために必要なものがすべて含まれます。接続記述子（すべての経路と識別フィンガープリント）、新たに発行されたデバイス id、32 バイトの事前共有キー、そして有効期限のスタンプです。スマートフォンはそれをデコードし、ペアリングの記録をローカルに保存し、フラグメントを取り除いて秘密が URL から消えるようにします。
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+ペイロードの形は 2 つあり、それらは**互換性がありません**。アプリ内のペアリングパネルから発行されるスマートフォン用 QR は、上記の v2 `PairingPayload` で、Remote PWA ホストを指しています。`cc_server pair --client-url` は、**Web** クライアント専用の、異なる古い v1 リンク（`{s, i, k}` — サーバー URL、デバイス id、キー）を発行します。
 
-They also differ in lifetime, which is easy to get wrong:
+両者は有効期間も異なり、これを取り違えるのはたやすいことです。
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| 発行元                                 | 資格情報の有効期限                         |
+| -------------------------------------- | ------------------------------------------ |
+| アプリ内のペアリングパネル（`pairing.mint`） | 常に 30 日                                 |
+| コマンドラインの `cc_server pair`      | **なし** — 資格情報は失効しません          |
 
-## The access model
+## アクセスモデル
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+ペアリングされたデバイスは**認証済みですが信頼されていません**。承認された（あるいは漏洩した）ペアリングがサーバーの完全な制御につながることを、いくつかの独立したゲートが防ぎます。
 
-### 1. Membership, not pairing, is the boundary
+### 1. 境界はペアリングではなくメンバーシップ
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+有効なペアリングキーが証明するのは、_どのデバイス_であるかということだけです。何を読み、何を変更できるかは**ワークスペースロール**によって決まり、これは呼び出しのたびに再解決されます。また、リポジトリの内容を公開するものについては、リポジトリ単位の許可によっても決まります。完全に有効なキーを保持していても、指定されたワークスペースのメンバーではないユーザーに属するデバイスは、「Not a member of this workspace」で拒否されます。
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+ロールの下限は、操作が自ら宣言しない限り、その操作の種類から導かれます。読み取りには `guest`、変更には `member`、破壊的操作には `admin` が必要です。
 
-### 2. A phone is a lower session tier
+### 2. スマートフォンは下位のセッション階層
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+ロールチェックに加えて、スマートフォンのセッションは、デスクトップや Web のセッションよりも低いケイパビリティを持ちます。フルクライアント専用と宣言された操作は、その背後にいるユーザーがどれほど特権を持っていても、ハンドラーが実行される前にスマートフォンに対して拒否されます。デバイスペアリングの発行、一覧表示、名前変更、失効。トンネル接続の読み取りと設定。サーバーのバックアップとワークスペースのエクスポート／インポート。プロセスの検出と停止。アダプターのプローブ。サーバー設定。SSO 管理。フリート制御。そして実行中のエージェントの引き継ぎまたは返却です。
 
-### 3. A default-deny tool allow-list
+### 3. デフォルト拒否のツール許可リスト
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+特に MCP ツールサーフェス（`tools/call`）では、スマートフォンが呼び出せるツールをデフォルト拒否の許可リストが管理します。リストにないものは、実行される前に拒否されます。このリストは読み取りと観察が中心で、それに加えて**ローカル専用**の書き込みがいくつかあります。メッセージ、チケットの更新、記事のフラグなどで、LLM 予算を消費せず、プロセスを起動せず、外部システムに触れません。
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+例えば、拒否されるものは次のとおりです。エージェントへの相談、AI レビューの開始、エージェントの停止、レビューの GitHub への公開、エージェントの採用または解雇、ワークスペースの作成。
 
-### 4. Per-call workspace scoping
+### 4. 呼び出しごとのワークスペーススコープ
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/) invariant the rest of the
-product enforces.
+サーバーは「現在のワークスペース」を**保持しません**。設計上ステートレスです。ワークスペーススコープのすべての呼び出しは、引数で対象の `workspace_id` を指定しなければならず、それが欠けている場合、あるいはサーバーに登録されていないワークスペースを指定している場合、ディスパッチャーは — 何かがデータベースを開く前に — その呼び出しを即座に拒否します。したがってスマートフォンが別のクライアントのスコープを継承したり、そこへ流れ込んだりすることは決してできませんし、外部のワークスペースを指定しても意味がありません。ゲート 1 のメンバーシップチェックが依然として適用されるからです。これは、プロダクトの他の部分が強制しているのと同じ[ワークスペースの分離](/ja-JP/マニュアル/コンセプト/ワークスペース/)の不変条件です。
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. 事前共有キーを鍵とするエンドツーエンド密封フレーム
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+スマートフォンとサーバーの間のすべてのフレームは、ペアリングキーで密封されます。入室トークンはクライアントをルームに入れるだけで、何も復号しません。ブローカーは暗号文をリレーし、キーを目にすることはありません。失効したデバイスは、自分の資格情報がすでに消えていることに気づきます。つまり、再接続時には**フェイルクローズ**します。
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+アプリが発行した資格情報は 30 日に期限付けられています。それを過ぎると接続ゲートがそれを拒否し、スマートフォンは再度ペアリングする必要があります。失効は即時です。サーバーはデバイステーブルを監視し、失効したデバイスの開いているセッションを、次回の接続を待つことなく数秒以内に切断します。
 
-### 6. Rate limiting per principal
+### 6. プリンシパル単位のレート制限
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+スライディングウィンドウ方式のリミッターが、リモートのツールトラフィックを毎分 120 呼び出しに制限し、変更系の動詞にはより厳しい毎分 30 のサブ上限を課します。予算は**セッションではなくプリンシパル**に属します。あなたの 3 台のデバイスは 1 つの許容量から消費するため、乗っ取られたクライアントがセッションを増やして余裕を稼ぐことはできず、1 人の騒がしいメンバーが他のメンバーを枯渇させることもできません。
 
-### 7. A broker that learns nothing
+### 7. 何も知らないブローカー
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+リレーブローカーは意図的に単純です。ルームをホストし、密封されたフレームを転送し、アカウントもアプリのデータもキーも保持しません。ルームは招待制で一時的です。アプリのデータ、音声、文字起こし、ソース、資格情報はすべてサーバー上にとどまります。
 
-## Live updates
+## ライブ更新
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+ペアリングが済むと、スマートフォンは通知フレームとして**ライブ更新**を受け取ります。新しいエージェントのメッセージ、自分に割り当てられたチケット、ステータスの変更などで、デスクトップ自身の通知を反映したものです。サーバーはそれらのフレームを接続中のすべてのセッションにブロードキャストし、ワークスペースのフィルターはクライアント側で適用されるため、表示される内容は今見ているワークスペースに限定されます。
 
-## Where it lives
+## どこにあるか
 
-| Surface                                                                             | What it shows                                                                                               |
+| サーフェス                                                                          | 表示内容                                                                                                    |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **設定 → 自分 → 自分のデバイス**（`/workspaces/:workspaceId/settings/you/devices`） | ライブステータス付きのペアリング済みクライアント、および**新しいクライアントをペアリング**（Web ブラウザー、デスクトップアプリ、スマートフォン）と失効 |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+同じパネルは、スマートフォンだけでなく、2 つ目のブラウザーやデスクトップアプリ用のペアリングも発行します。手順は同じで、異なるのはディープリンクだけです。
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+リモートコントロールはサーバー側の機能であり、MCP 経由では**公開されません**。スマートフォンはリレーを介してサーバー自身のディスパッチャーと通信します。外部サーバーの MCP クライアントではありません。
 ::::
 
-## See also
+## 関連項目
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): roles, membership and repo grants
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/): where remote control sits among the client tiers
-- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): where remote control sits in the stack
-- [Pair a device](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): これが依拠する呼び出しごとのスコープ
+- [マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): ロール、メンバーシップ、リポジトリの許可
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/): クライアント層の中でリモートコントロールが位置する場所
+- [アーキテクチャ](/ja-JP/マニュアル/コンセプト/アーキテクチャ/): スタックの中でリモートコントロールが位置する場所
+- [デバイスをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/)

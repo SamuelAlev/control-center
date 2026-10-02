@@ -1,60 +1,63 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Cấp phát người dùng bằng SCIM
+description: Để IdP của bạn tự động tạo, cập nhật và hủy cấp phát tài khoản Control Center.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Hãy dùng hướng dẫn này khi bạn muốn kiểm soát vòng đời — quy trình cho nhân sự
+rời đi phải tự động thu hồi quyền truy cập, chứ không chỉ chặn các lần đăng nhập
+trong tương lai. SCIM là giao thức đẩy mà các IdP (Okta, Entra ID và những nhà
+cung cấp khác) dùng đúng cho mục đích đó.
 
-## Prerequisites
+## Trước khi bắt đầu
 
-- SSO already working (the [SSO tutorial](/vi-VN/so-tay/huong-dan/sso) or the
-  [OIDC guide](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO đã hoạt động (xem [hướng dẫn SSO](/vi-VN/so-tay/huong-dan/sso) hoặc
+  [hướng dẫn OIDC](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc)),
+- **một máy chủ mà IdP có thể truy cập qua HTTPS** — các lệnh gọi SCIM đến từ
+  IdP, chứ không phải từ trình duyệt của người dùng. Hãy dùng tunnel tích hợp
+  sẵn (Cài đặt → Máy chủ → Kết nối & trạng thái → Chia sẻ máy chủ này → Cloudflared/ngrok/Tailscale) hoặc một URL công khai. Một
+  máy chủ chỉ tiếp cận được qua relay WebSocket thì không thể nhận các đợt đẩy
+  SCIM; việc cấp phát JIT vẫn hoạt động ở đó, còn hướng dẫn này thì không.
 
-## Steps
+## Các bước
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Mở **Cài đặt → Máy chủ → Đăng nhập một lần** → thẻ
+   **Cấp phát người dùng (SCIM)**. Thẻ này hiển thị endpoint, ví dụ
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Nhấn **Tạo token** (hoặc **Tạo lại token** nếu đã có sẵn một token) — bearer
+   token xuất hiện một lần trong hộp thoại và được sao chép vào clipboard. Hãy
+   lưu nó vào trình quản lý mật khẩu của bạn; máy chủ chỉ giữ một bản sao
+   có thể xác minh theo thời gian hằng số.
+3. Trong phần cài đặt cấp phát của IdP, hãy bật SCIM với:
+   - **URL gốc**: endpoint ở trên
+   - **Xác thực**: `Authorization: Bearer <token>`
+   - **ID người dùng**: `userName` (email) hoặc `externalId` — cả hai đều khớp
+4. Kiểm thử với một người dùng: đẩy họ từ IdP, xác nhận họ xuất hiện (thao tác
+   tạo của SCIM ghim `externalId` của nhà cung cấp lên tài khoản, đúng kiểu ghim
+   mà lần đăng nhập SSO đầu tiên thiết lập).
 
-## What deprovisioning does
+## Việc hủy cấp phát làm gì
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Khi IdP gửi `active: false` (hoặc `DELETE`), SCIM từ chối trước tiên nếu tài
+khoản là **chủ sở hữu** không gian làm việc (hãy chuyển giao quyền sở hữu
+trước). Nếu không:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. mọi thông tin xác thực thiết bị bị thu hồi trước — các phiên đang hoạt động
+   biến mất trong vài giây,
+2. mọi tư cách thành viên không gian làm việc bị gỡ bỏ,
+3. tài khoản bị đánh dấu là đã vô hiệu hóa (nó không bao giờ đăng nhập được,
+   bất kể sau này IdP nói gì, cho tới khi được kích hoạt lại một cách rõ ràng).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+Dòng người dùng vẫn tồn tại — quy kết trên phiếu, tin nhắn và commit là vĩnh
+viễn. Việc kích hoạt lại (SCIM `active: true`) khôi phục đăng nhập nhưng
+**không** khôi phục tư cách thành viên: những thứ đó cần một lời mời mới hoặc
+chính sách tự động kết nạp thành viên lúc đăng nhập.
 
-## Troubleshooting
+## Xử lý sự cố
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **Lỗi 401 ở mọi lệnh gọi** — token đã thay đổi; hãy tạo lại rồi cập nhật IdP.
+- **Không thể tiếp cận endpoint** — tunnel đã ngừng hoạt động, hoặc máy chủ chỉ
+  dùng relay. SCIM cần HTTPS trực tiếp; JIT vẫn tiếp tục hoạt động bất kể điều đó.
+- **Lỗi đẩy nhóm (501)** — có chủ đích: việc ánh xạ nhóm→vai trò diễn ra lúc
+  đăng nhập từ các thuộc tính nhóm SAML/OIDC, chứ không từ các nhóm được đẩy.

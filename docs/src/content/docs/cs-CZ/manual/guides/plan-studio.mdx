@@ -1,180 +1,186 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Pracujte v Plan Studio
+description: Projdi, uprav, odhadni, porovnej a schval plán v editoru Plan Studio a spusť parametrizované playbooky.
 slug: cs-CZ/prirucka/navody/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/) and
-[Use plan mode](/cs-CZ/prirucka/navody/rezim-planu/).
+Tenhle návod ukazuje, jak pracovat s plány v Plan Studio. Co jsou
+orchestrace a dokumenty plánů, je v
+[orchestraci](/cs-CZ/prirucka/koncepty/orchestrace/) a v návodu
+[Používejte režim plánu](/cs-CZ/prirucka/navody/rezim-planu/).
 
-## Open a plan
+## Otevři plán
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Plán patří konverzaci, která ho vytvořila, a tam se k němu obvykle
+dostaneš: řádek plánu v konverzaci má akci **Otevřít** a Plan Studio
+se otevře jako karta editoru vedle konverzace.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[V postranním panelu není položka „Plány“]
+Je to schválně. Přehled na
+`/workspaces/<workspace-id>/plans` je jen přímý odkaz, takže si ho
+přidej do záložek, když chceš stálý seznam.
 :::
 
-The hub lists three sections:
+Přehled má tři oddíly:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/cs-CZ/prirucka/navody/rezim-planu/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Aktivní plány** — orchestrace, nejdřív navržené, se stavem, počtem
+  kroků a číslem revize.
+- **Dokumenty plánů** — plány, které jeden agent odeslal přes `submit_plan`
+  v [režimu plánu](/cs-CZ/prirucka/navody/rezim-planu/), dokud jsou navržené
+  nebo schválené.
+- **Playbooky** — uložené, parametrizované šablony plánů.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Kliknutím na kartu ho otevřeš v Plan Studio. Trasa je
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, kde `kind` je
+`orchestration` nebo `document`, takže jde odkázat i na jeden plán.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Když otevřeš **orchestraci**, dostaneš upravitelné plátno, časovou osu
+verzí a lištu schválení. Když otevřeš **dokument plánu**, stejný graf
+je jen ke čtení. Dokumenty plánů píše agent; ty je kontroluješ,
+odhaduješ a schvaluješ, nebo odmítáš. Schválený dokument ukazuje živý
+stav běhu po uzlech z orchestrace, do které se zkompiloval.
 
-## Edit the DAG
+## Uprav DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Úpravy jdou u **orchestrace**, dokud je ve stavu `proposed`. Plátno se
+upravuje jen z klávesnice:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Klikni na plátno a výběr posouvej **šipkami**.
+2. **n** přidá krok. Objeví se vybraný jako „Nový krok“; přejmenuj ho
+   v inspektoru vpravo.
+3. Na kroku, který má běžet jako první, stiskni **e**, pak klikni na
+   závislý krok (nebo ho vyber a stiskni **Enter**) a propojíš
+   závislost. **Esc** rozpracované spojení zahodí.
+4. **x** odebere nejnovější závislost vybraného kroku. Jednotlivé
+   závislosti zaškrtáváš v editoru závislostí v inspektoru.
+5. **Delete** vybraný krok smaže; odkazy na něj zmizí ze závislostí
+   zbylých kroků.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+V inspektoru upravíš i popis kroku, roli a výstupní schéma. Úpravy se
+po krátké pauze samy uloží jako nová revize. Chyba ověření (v liště
+schválení) uložení zablokuje, dokud ji neopravíš.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Upravovat jde jen pracovní kroky. Strukturální uzly — průzkum, diskuse
+a syntéza — jsou jen ke čtení, stejně jako krok, jehož práce už
+proběhla. Ten je označený „Už provedeno“, protože úprava by plán
+rozvětvila.
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Uložení drží optimistickou souběžnost vůči revizi, ze které jsi vyšel.
+Když orchestrátor pod tebou plán přeplánuje, uložení se odmítne hláškou
+„the plan moved on“, cizí změna se nesloučí a potichu se nepřepíše.
+Načti aktuální revizi znovu a úpravu udělej znovu. Přeplánování, která
+spouští agent, mají sama limit jedno za dvě minuty, takže se to stává
+zřídka.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Plátno nejde přetahováním přeskládat. Rozložení se počítá ze struktury
+závislostí, takže posunout krok znamená přepojit jeho závislosti.
 :::
 
-## Read cost, time and risk estimates
+## Přečti odhady nákladů, času a rizika
 
-Press **Estimate** in the approval bar.
+V liště schválení stiskni **Odhadnout**.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Každý krok na plátně dostane odznak s rozsahem nákladů a velikostí
+  vzorku za ním, nebo „Zatím žádná historie“, když role kroku ještě
+  nikdy neběžela. Vyber krok a v inspektoru uvidíš celý detail: rozsah
+  nákladů s velikostí vzorku, rozsah trvání a dosah dopadu (soubory
+  a symboly) odvozený z původu kroku, nebo „neznámý“, když krok
+  původ nemá.
+- Lišta schválení ukáže součet plánu: celkový rozsah nákladů, rozsah
+  trvání kritické cesty (paralelní větve se překrývají, takže to není
+  součet) a strop rozpočtu, když ho plán nastaví.
+- Když má historii jen část kroků, součet je označený **částečný**
+  a kryje jen odhadnutelné kroky. Když horní konec odhadu překročí
+  strop rozpočtu, součet zčervená s varováním „nad rozpočtem“.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Odhady jsou poctivé, nebo žádné. Krok, jehož role nemá historii
+dokončených běhů, hlásí velikost vzorku nula, žádné rozsahy a ukáže
+se jako neznámý. „Zatím žádná historie“ ber jako „nikdo neví“, ne jako
+„levné“.
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/cs-CZ/prirucka/navody/sprava-nakladu/) for controls that actually stop
-spending.
+Strop rozpočtu je jen zobrazené srovnání s tímhle odhadem. Jakmile
+plán běží, nic ho nevynucuje. Ovládání, které výdaje doopravdy zastaví,
+je v návodu [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/).
 
-## Diff a revision against an earlier proposal
+## Porovnej revizi se starším návrhem
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Každá úprava a každé přeplánování orchestrátorem se připíše na časovou
+osu revizí, do které se jen přidává. U orchestrace ji ukazuje panel
+**Verze** vlevo.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Klikni na revizi a porovnáš ji s aktuálním návrhem. Bez výběru panel
+   porovná předchozí revizi s tou aktuální.
+2. Diff čti v dolní polovině panelu: kroky přidané, odebrané nebo
+   změněné mezi oběma revizemi.
+3. Dokud je plán ve stavu `proposed`, klikni na ikonu přetočení u
+   revize a vrať se k ní. Přetočení ten návrh uloží jako **novou**
+   revizi a nic se neztratí.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` i editor odmítnou změny, jakmile plán už není
+`proposed`, takže probíhající běh nepřevezme přeplánování uprostřed
+provádění.
 
-## Approve, reject, or widen a plan
+## Schval, odmítni nebo plán rozšiř
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Z aplikace je navržený plán jedno rozhodnutí, celé naráz: **Schválit
+plán**, nebo **Odmítnout** v liště schválení. **Schválit plán** schválí
+vždy každý krok. Podmnožinu předem vybrat nejde. Schválení je
+zablokované, dokud má návrh chyby ověření; ty se ukážou vedle tlačítek.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Schvalovat smí jen operátor. Nástroj MCP na to není, takže agent umí
+plán navrhnout a revidovat, schválit ho ale nikdy.
 
-Once an orchestration is executing, the bar changes:
+Jakmile se orchestrace provádí, lišta se změní:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Když se krok uprostřed běhu zastavil, aby se zeptal, vyber ho a
+  stiskni **Pokračovat v uzlu**.
+- **Schválit vybrané** rozšíří _částečné_ schválení na vybraný krok
+  a na všechno, na čem tranzitivně závisí (krok bez svých závislostí
+  schválit nejde). Ovládání je na liště provádění u každé orchestrace.
+  Když byl plán schválený celý, nic neudělá.
+- **Zrušit běh** zastaví celou orchestraci.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Kroky mimo částečně schválenou množinu se vykreslí jako odložené a
+neběží, dokud množinu nerozšíříš.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Částečné schválení v aplikaci nevznikne]
+Částečné schválení existuje, jen když něco zavolalo `orchestration.approve`
+přes RPC s explicitním seznamem `approved_node_keys`. **Schválit plán**
+v aplikaci schválí vždy každý krok. Dokumenty plánů se schvalují celé
+vždy, takže prováděný dokument nabízí jen **Zrušit běh**.
 :::
 
-## Run a playbook with parameters
+## Spusť playbook s parametry
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/) instead.
+Playbook je uložená šablona plánu s typovanými zástupnými symboly `{{param}}`
+v cíli, názvech kroků, popisech a promptech. Dosazení je doslovné
+a žádný výrazový jazyk v tom není. Když potřebuješ logiku, použij
+[pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/).
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. V oddílu **Playbooky** v přehledu stiskni na playbooku **Spustit**
+   (nebo otevři paletu ⌘K a playbook vyber tam).
+2. Vyplň parametry. Výčtové parametry se vykreslí jako rozevírací
+   seznamy. Parametry repozitáře a agenta berou odkaz na repozitář
+   nebo agenta. Volitelné parametry spadnou na svou výchozí hodnotu.
+3. Vyber **Kotvicí ticket**, proti kterému se plán navrhne, a potvrď.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Spuštění playbooku plán jen **navrhne**. Zinstancovaná orchestrace se
+v Plan Studio otevře jako `proposed` a nic se neprovede, dokud ji tam
+neschválíš. Playbook smažeš ikonou koše na jeho kartě.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
+Agenti playbooky zakládají a spouštějí nástroji MCP `create_playbook`
+a `run_playbook`. Viz
+[nástroje MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
 
-## Related guides
+## Související návody
 
-- [Use plan mode](/cs-CZ/prirucka/navody/rezim-planu/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/cs-CZ/prirucka/navody/spusteni-orchestrace/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/cs-CZ/prirucka/navody/vytvoreni-pipeline/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/cs-CZ/prirucka/navody/sledovani-pipeline/): the engine view of an approved plan
+- [Používejte režim plánu](/cs-CZ/prirucka/navody/rezim-planu/): jak agent nástrojem `submit_plan` vytvoří dokument plánu
+- [Spusťte orchestraci](/cs-CZ/prirucka/navody/spusteni-orchestrace/): životní cyklus jednoho schválení ze strany konverzace
+- [Vytvořte šablonu pipeline](/cs-CZ/prirucka/navody/vytvoreni-pipeline/): když potřebuješ logiku, kterou playbook nevyjádří
+- [Sledujte běhy pipeline](/cs-CZ/prirucka/navody/sledovani-pipeline/): pohled enginu na schválený plán
 
-## Related concepts
+## Související koncepty
 
-- [Orchestration](/cs-CZ/prirucka/koncepty/orchestrace/)
+- [Orchestrace](/cs-CZ/prirucka/koncepty/orchestrace/)

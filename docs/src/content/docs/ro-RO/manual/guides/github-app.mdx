@@ -1,138 +1,148 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Creează GitHub App
+description: Înregistrează o GitHub App pentru serverul tău, ca membrii să se poată autentifica și ca munca din fundal să ruleze ca aplicația, nu ca o persoană.
 slug: ro-RO/manual/ghiduri-practice/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Acest ghid îți arată cum să îi dai serverului tău propria identitate GitHub.
+Durează aproximativ două minute, doar proprietarul serverului îl face și trebuie
+făcut o singură dată per server.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[S-ar putea să nu ai nevoie de ea]
+O construcție oficială include deja un **id client** GitHub, așa că
+[Autentifică-te cu GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+funcționează din start fără nimic înregistrat — un flux de dispozitiv se
+autentifică doar cu id-ul client, deci este sigur de livrat. Înregistrează-ți
+propria aplicație când vrei ca SERVERUL să acționeze ca el însuși (webhook-uri,
+interogare periodică a PR-urilor și sincronizare a tichetelor care rulează pe o
+instalare a aplicației, nu pe credențialul unei persoane), sau când construiești
+din surse.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/).
+Pentru a-ți conecta propriul cont ulterior, vezi
+[Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/).
 
-## Why your server needs its own app
+## De ce serverul tău are nevoie de propria aplicație
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Dintr-o singură înregistrare ies două lucruri diferite, iar aplicația este cea
+care le face pe amândouă oneste:
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Sarcină | Ce răspunde la ea | De ce contează |
+| --- | --- | --- |
+| **O persoană se autentifică** | Id-ul client al aplicației, prin fluxul de dispozitiv | Obții un credențial care este al tău, pe server, pe fiecare dispozitiv — fără niciun token de lipit sau de rotit |
+| **Serverul acționează** | Id-ul aplicației + cheia privată → token de instalare | Webhook-urile, interogarea periodică a PR-urilor și sincronizarea tichetelor nu mai depind de faptul că tokenul unui singur om mai este valid |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Observă ce **nu** apare în acel tabel: un client secret. Fluxul de dispozitiv al
+GitHub se autentifică doar cu id-ul client — atât cererea de cod de dispozitiv,
+cât și interogarea tokenului — așa că nu există niciun secret de păstrat pentru
+autentificare.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Fără o aplicație proprie, primul funcționează totuși prin id-ul client livrat de
+construcție; al doilea revine la credențialul proprietarului serverului, așa că
+munca din fundal se sprijină pe cine a făcut prima configurare.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Nu există un buton „instalează GitHub App al Control Center”]
+O GitHub App distribuită ar însemna un singur client secret partajat și o singură
+instalare partajată pe serverele tuturor, așa că accesul la depozite al fiecărui
+spațiu de lucru ar trece prin credențiale pe care nimeni din acel spațiu de lucru
+nu le controlează. Prin urmare, fiecare server își deține propria aplicație —
+acest ghid arată cât de puțin costă asta.
 :::
 
-## Prerequisites
+## Cerințe prealabile
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Ești **proprietarul serverului** — operațiunile `providerApps.*` sunt
+  restricționate la el, iar cardul este invizibil pentru toți ceilalți
+- Un cont GitHub, sau o organizație în care poți crea aplicații
+- Nimic accesibil public: autentificarea este un **flux de dispozitiv**, deci
+  serverul nu are nevoie de niciun port de intrare, tunel, URL de callback sau
+  domeniu
 
-## Register the app
+## Înregistrează aplicația
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Mergi la [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (pentru o organizație: **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — orice; `Control Center (yourname)` este în regulă. Apare
+   pe commit-urile și comentariile pe care le face serverul
+3. **Homepage URL** — orice, de ex. `https://github.com/your-name`
+4. **Callback URL** — lasă-l gol. Fluxul de dispozitiv nu are niciunul
+5. Bifează **Enable Device Flow**. Aceasta este singura setare fără de care
+   autentificarea nu poate funcționa
+6. Debifează **Webhook → Active** dacă nu conectezi webhook-urile separat
+7. La **Repository permissions**, acordă cel puțin:
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (obligatoriu)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, dacă folosești GitHub Issues pentru tichete, și
+     pentru căutarea de comentarii din conversațiile PR ale botului
+     (vezi [Vorbește cu Control Center dintr-un PR GitHub](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/))
+   - **Checks**: Read-only, pentru starea CI din pagina PR-ului
+8. La **Where can this GitHub App be installed?**, alege ce ți se potrivește —
+   „Only on this account” este potrivit pentru un server personal
+9. Apasă **Create GitHub App**
 
-## Collect the three values
+## Colectează cele trei valori
 
-On the app's page, immediately after creation:
+Pe pagina aplicației, imediat după creare:
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Valoare | Unde |
+| --- | --- |
+| **App ID** | Fila **General**, aproape de sus |
+| **Client ID** | Fila **General**, sub „Client secrets” |
+| **Private key** | **Generate a private key** — se descarcă un `.pem` |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Fișierul cu cheia privată se descarcă o singură dată, iar GitHub nu îl mai
+afișează niciodată. Păstrează-l până îl lipești; poți oricând genera altul.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+Un **client secret** este opțional și îți cumpără exact un lucru: dacă lași
+„Expire user authorization tokens” activat, el este cel care reînnoiește
+silențios tokenul cuiva, în loc să îi ceară să se autentifice din nou la fiecare
+opt ore. Autentificarea în sine nu îl folosește niciodată.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+Configurarea mai simplă este să dezactivezi acea expirare, iar atunci nu mai este
+nevoie de niciun secret nicăieri. Dacă o păstrezi activată, generează un secret
+și lipește-l în **Setări → Server → Autentificare unică** (cardul
+**Aplicații provider**) — nu există nicio variabilă de mediu pentru el, și
+niciuna nu este inclusă în construcție, așa că rămâne pe serverul tău.
 
-## Install it on your account
+## Instalează-o pe contul tău
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+O aplicație înregistrată, dar neinstalată, poate autentifica oameni și nu poate
+citi nimic.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Pe pagina aplicației, deschide **Install App**
+2. Instalează-o pe contul sau organizația ta
+3. Alege **All repositories** sau selectează depozitele pe care acest server ar
+   trebui să le vadă
 
-## Paste it into Control Center
+## Lipește-o în Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Mergi la **Setări → Server → Autentificare unică** și derulează până la
+   cardul **Aplicații provider**
+2. În blocul **GitHub**, setează fiecare câmp:
+   - **App id** — ID-ul numeric al aplicației
+   - **Cheie privată** — lipește tot fișierul `.pem`, inclusiv liniile `BEGIN` și
+     `END`
+   - **Client id** — de pe aceeași pagină
+   - **Client secret** — doar dacă ai generat unul (pentru reînnoirea tokenului)
+3. Apasă **Test**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+Cheia este analizată în momentul în care este salvată, așa că o lipire trunchiată
+sau cu format greșit este respinsă pe loc, în loc să eșueze într-o cerere din
+fundal ore mai târziu. **Test** merge mai departe și îl întreabă pe GitHub pe ce
+conturi este instalată aplicația — „salvat” și „funcționează” sunt afirmații
+diferite, iar doar a doua înseamnă că ceva va rula.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Punct de verificare: blocul GitHub afișează „Serverul poate acționa ca el însuși,
+iar oamenii se pot autentifica”, iar rândul **GitHub** din
+**Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** oferă acum
+**Autentifică-te cu GitHub**.
 
-## Configure it with environment variables instead
+## Configurează-o în schimb cu variabile de mediu
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Pentru o instalare headless sau scriptată, serverul inițializează fiecare câmp
+din mediul înconjurător prima dată când nu are o valoare stocată:
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +150,67 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Nu există opțiuni de linie de comandă pentru acestea — un secret de pe linia de
+comandă este citibil de orice proces de pe gazdă prin `ps`. Mediul înconjurător
+este singurul loc unde le poți configura, și are prioritate față de ce livrează
+construcția. `.env.template` este lista completă.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Pentru dezvoltarea locală, `.env` din rădăcina depozitului conține aceleași
+valori, iar aplicația desktop le transmite serverului pe care îl pornește. Pune
+cheia pe **o singură linie** acolo: o valoare din `.env` este o singură linie,
+iar `\n` dintre ghilimele duble se decodează într-o linie nouă.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` și `GITHUB_APP_PRIVATE_KEY` sunt aceleași nume pe care le citește
+deja brokerul de tokenuri al sandbox-ului, așa că o gazdă care a configurat
+tokenuri de agent cu granulație fină primește gratuit calea de autentificare.
+Inițializarea se face **o singură dată per câmp** — după aceea câștigă valoarea
+stocată, așa că editarea din Setări nu este anulată la următoarea repornire.
 
-## Do the same for Linear
+## Fă același lucru pentru Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear nu are flux de dispozitiv, așa că autentificarea sa este un tur dus-întors
+prin browser și chiar are nevoie de un URL de callback — cardul
+**Aplicații provider** îți arată exact ce URL să înregistrezi.
 
-1. Create an OAuth application at
+1. Creează o aplicație OAuth la
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Setează **Callback URL** la URL-ul pe care îl arată cardul, întocmai
+3. Lipește **Client ID** și **Client secret** în blocul Linear
+4. Opțional, adaugă o **cheie API** de spațiu de lucru — acesta este credențialul
+   pe care serverul îl folosește pentru a sincroniza tichete când nu a cerut
+   niciun om
 
-## Troubleshooting
+## Depanare
 
-### The sign-in dialog says the provider returned no device code
+### Dialogul de autentificare spune că furnizorul nu a returnat niciun cod de dispozitiv
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** este dezactivat în aplicație. Activează-l la **General** și
+încearcă din nou.
 
-### Test says the credentials work but the app is not installed anywhere
+### Testul spune că datele de autentificare funcționează, dar aplicația nu este instalată nicăieri
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+Înregistrarea și instalarea sunt pași separați. Deschide **Install App** pe pagina
+aplicației și instalează-o.
 
-### Test says the private key could not be read
+### Testul spune că cheia privată nu a putut fi citită
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Lipește tot fișierul `.pem`, inclusiv liniile `-----BEGIN` și `-----END`. O cheie
+`ed25519` sau EC nu poate fi folosită — GitHub Apps semnează cu RSA.
 
-### A member signed in but sees no repositories
+### Un membru s-a autentificat, dar nu vede niciun depozit
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+Aplicația nu este instalată pe contul care le deține, sau instalarea ei
+selectează alte depozite. Autentificarea proprie a membrului acordă doar ce are
+voie să vadă aplicația.
 
-## Related guides
+## Ghiduri conexe
 
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-- [Talk to Control Center from a GitHub PR](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/)
-- [Connect a code host](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
-- [Manage API keys](/ro-RO/manual/ghiduri-practice/chei-api/)
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Vorbește cu Control Center dintr-un PR GitHub](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/)
+- [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/)
+- [Gestionează cheile API](/ro-RO/manual/ghiduri-practice/chei-api/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)

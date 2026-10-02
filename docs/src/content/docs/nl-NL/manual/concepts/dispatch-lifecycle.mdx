@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Levenscyclus van agent-dispatch
+description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Wat een dispatch is
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Een dispatch is één run van één agent, in één gesprek, op één adapter. Alles eromheen gebeurt op `cc_server`: de client stuurt een bericht en kijkt daarna hoe gebeurtenissen terugstromen. Er is geen dispatchpad in welke client dan ook.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Agenten worden om zes redenen gewekt; de run draagt die reden mee als zijn **wekcontext**, zodat de agent weet _waarom_ hij wakker is:
 
-| Wake reason      | Trigger                                                      |
+| Wekreden        | Trigger                                                     |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Iemand heeft een bericht in een ruimte gestuurd, of heeft de agent vermeld |
+| `assignment`     | Er is een ticket aan de agent toegewezen                     |
+| `pipelineStep`   | Een pipelinestap heeft hem gedispatcht                       |
+| `childCompleted` | Een kindticket is afgerond                                   |
+| `followUp`       | Een geplande vervolghartslag                                 |
+| `recovery`       | Het herstelpad heeft hem na een fout opnieuw gedispatcht     |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+De wekcontext draagt de id's mee die bij de reden horen — ticket, ruimte, bericht, pipelinerun — en die worden in de omgeving en de prompt van de agent geïnjecteerd.
 
-## Prompt assembly
+## Promptopbouw
 
-The prompt is built in layers, each one a labelled section:
+De prompt wordt in lagen opgebouwd, elk een gelabelde sectie:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identiteit** — de eigen id, naam en werkruimte-id van de agent, met een expliciete instructie om die exacte UUID's aan werkruimtegebonden tools door te geven. De werkruimte is intrinsiek aan de agent en is dus altijd aanwezig.
+- **Toolcatalogus en resourceprotocollen**, daarna de **indeling van de werkruimte**.
+- **Systeemprompt-override**, als de agent er een heeft, daarna **persona** (geparametriseerd op rol) en de **teambriefing**.
+- **Skills** — de namen die aan de agent hangen.
+- **Uitvoeringscontract en -procedure** voor de huidige modus.
+- **Wekcontext** en **vermeldingscontext**: wie de agent heeft opgeroepen en het rooster eromheen.
+- **Modusblok** — gegenereerd uit het mogelijkhedenprofiel van de modus _en de gematerialiseerde toollijst ervan_, zodat een prompt nooit een tool kan noemen die de run niet echt heeft.
+- **Geheugencontext** — feiten die voor de taak zijn opgehaald.
+- **Gesprekscontext** — recente geschiedenis van de ruimte, begrensd op 50.000 tekens letterlijk venster, ongeacht de ingestelde contextgrootte van de agent. Oudere geschiedenis wordt niet weggeknipt: de agent haalt die op verzoek op met `get_messages`, en semantisch relevante oudere berichten komen alsnog boven.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Slash-commando's worden uit de ruwe gebruikerstekst geparseerd]
+De gelaagde prompt begint met een contextblok en begint dus niet met een slash. Commando's worden letterlijk uit het bericht van de gebruiker geparseerd en daarna uit de staart van de gelaagde prompt geknipt, zodat elke contextlaag behouden blijft.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Commando's zijn over twee plekken verdeeld. `/todo` en `/compact` worden in de composer onderschept en bewust nooit als bericht opgeslagen of naar de agent gestuurd — het opslaan van `/compact` zou de compactiegrens een beurt terugschuiven en het transcript vervuilen. `/plan` wordt op beide plekken afgehandeld: de composer zet de modus van de ruimte om, en dat is wat het tooloppervlak, de beveiligingspreset en de prompt voor deze beurt en elke beurt daarna met elkaar laat kloppen. `/goal`, `/loop` en `/skill:<name>` worden binnen de run zelf afgehandeld en alleen op de ingebouwde harness — `/goal` en `/loop` starten autonoom werk met een kostenbudget, en een naam met het voorvoegsel `skill:` wordt als skill opgezocht, waarbij de inhoud van de `SKILL.md` de richtlijn voor de beurt wordt. De namespace is wat de twee vocabularia uit elkaar houdt: een kale naam tegen skills oplossen betekende dat een skill met de naam `plan` of `compact` permanent door de ingebouwde variant werd overschaduwd. Een kale, niet-ingebouwde naam wordt nog steeds opgelost, voor berichten die zijn geschreven voordat de namespace bestond. Een niet-herkende naam valt gewoon door als platte tekst.
 
-## Worktree provisioning
+## Worktree-voorbereiding
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Voordat er iets draait, krijgt het gesprek zijn eigen werk-root, met daaronder per repo een geïsoleerde copy-on-write-worktree. Standaard is dat elke repo die aan de werkruimte is gekoppeld; een PR-ruimte — of een ruimte die met een expliciete selectie is aangemaakt — provisioneert alleen de toegestane repo's, en een PR-reviewgesprek zet zijn ene repo vast op de head-ref van de pull request terwijl de andere op hun standaardbranch blijven. De broncheckout wordt nooit gewijzigd en de hele gespreksmap wordt vrijgegeven wanneer de ruimte wordt verwijderd.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write is de **enige** implementatie overal waar `rift` meelevert, ondersteund door de meegeleverde native. Een bestandssysteem dat niet kan reflinken — of een datadir op een ander volume dan de repo — laat de provisioning mislukken in plaats van terug te vallen. `git worktree` is de backend op Windows, waar geen copy-on-write-backend te bouwen is, en het is op andere hosts geen stille verslechtering. Een ontbrekende `rift` op een platform dat het meelevert is een kapotte installatie — de server weigert op te starten in plaats van stil terug te vallen, want een stille terugval verbergt de breuk voor altijd achter een langzamer pad.
 
-## Identity and credentials
+## Identiteit en inloggegevens
 
-Two identities are resolved per run, before any process launches.
+Per run worden twee identiteiten bepaald, voordat er een proces start.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git-auteurschap.** Commits die een agent maakt, worden _als de agent_ toegeschreven — `<Name> (agent) <agentId@agents.control-center.local>` in zowel `GIT_AUTHOR_*` als `GIT_COMMITTER_*` — en nooit als een mens. Het local-part is de UUID van de agent, niet de slug van zijn naam. De mens die het verzoek doet, krijgt een `Co-Authored-By:`-trailer, die in de omgeving wordt meegegeven en in de systeemprompt wordt geïnstrueerd. Een expliciete identiteit die de aanroeper instelt, wint altijd van beide.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Codehost-identiteit.** De GitHub-inloggegevens van de run zijn altijd alleen die van de broker — een App-installatietoken met repo-scope, of de PAT-fallback uit de omgeving — nooit het eigen opgeslagen token van het aanvragende lid. `actingUserId` begrenst de PAT-fallback, zodat een lid dat niet de servereigenaar is niet het bereik van de server erft; het legt geen persoonlijk token over de agentomgeving heen.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Inloggegevens van modelproviders** worden in een vaste volgorde bepaald, en die volgorde is belangrijk:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. een omgevings-override per adapter,
+2. de omgeving van de aanroeper,
+3. de credential-store van de server (waarbij een OAuth-token wordt vernieuwd als het bijna verloopt),
+4. de omgeving van het proces.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Omdat de override per adapter vooraan staat, wint die stil van een provideraccount dat in de app is gekoppeld. Als een run op de verkeerde rekening afrekent, is die override de eerste plek om te kijken. Providergegevens zijn host-globaal — gedeeld over elke werkruimte op de installatie.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/nl-NL/handleiding/concepten/agentmodel/).
+Tokens die aan mogelijkheden zijn gebonden (GitHub, ticketing) komen van de credentialbroker, die alleen injecteert wat de mogelijkheden van de run toestaan. Zie [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/).
 
-## Launch
+## Starten
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+De run wordt gestart met zijn worktree als werkmap en — voor Claude Code — een gegenereerde MCP-configuratie, zodat de agent het tooloppervlak van Control Center kan bereiken. ACP en de `bash` van de harness krijgen een gesaneerde omgeving; Claude Code via `NoSandboxAdapter` erft de omgeving van de host.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[De OS-sandbox omhult een run alleen waar de host een backend heeft]
+`cc_server` probeert de host één keer bij het opstarten en omhult agentprocessen ermee wanneer er een backend beschikbaar is — Seatbelt op macOS, bubblewrap op Linux en WSL2. Beide dispatchnaden worden omhuld, omdat ze er geen delen: de Claude Code CLI gaat via de sandboxpoort; ACP-adapters en de `bash`-tool van de ingebouwde harness gaan via de sandboxmanager. Het is ook wat de beschermde paden van de run toepast: je geregistreerde repocheckouts zijn deny-write binnen de sandbox, in elke modus.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Waar geen backend is, wordt de run **niet** gesandboxed en verandert er verder niets als compensatie. Dat betekent: altijd Windows (geen native omhulling — `microvm` is een apart, door een probe geactiveerd pad voor terminals en rigs) en Linux of WSL2 zonder `bwrap` en `socat` op het `PATH`. De server noemt in welke toestand hij verkeert op zijn opstartregel in het log, en `--sandbox off` kiest er bewust voor om af te zien van sandboxing.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Twee hiaten overleven de sandbox, ook waar die aanstaat. De in-process bestandstools van de harness (read, write, edit, apply patch, search, find, search_files) draaien in het serverproces, dus geen enkel profiel beperkt ze — hun grens is de eigen padbeperking van de tools plus de beveiligingen. En Claude Code wordt gestart met `--dangerously-skip-permissions`, dus zijn eigen bestands- en shellaanroepen worden niet door Control Center bewaakt; de OS-sandbox is de grens eromheen.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+De overige grenzen gelden op elke host, met of zonder sandbox: de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), inloggegevens die per start via de broker worden verstrekt en bij het opruimen worden ingetrokken, de uniforme actiebeveiligingen (fail-closed — een `prompt`-beslissing zonder verbonden goedkeurder wordt geweigerd) en het tooloppervlak dat de modus van het gesprek toestaat. ACP en de `bash` van de harness saneren de omgeving nog steeds; Claude Code via `NoSandboxAdapter` erft de omgeving van de host.
 :::
 
-## Streaming
+## Streamen
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+De run streamt een getypeerde reeks gebeurtenissen terug, die de streamprocessor opslaat als berichtdelta's, samenvoegt tot transcriptsegmenten en omzet in berichtgebeurtenissen:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| Gebeurtenis        | Wat het meedraagt                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `thinking`         | Redeneeruitvoer, inline weergegeven                                                                                        |
+| `text`             | Zichtbare uitvoer                                                                                                          |
+| `toolCall`         | Een toolaanroep, met zijn id en gestructureerde argumenten                                                                 |
+| `toolResult`       | Het bijbehorende resultaat, gemarkeerd wanneer het een fout gaf of een gedeeltelijke stream is                             |
+| `usage`            | Tokentellingen en kosten voor een meetvenster                                                                              |
+| `error`            | Een fout, met de gestructureerde code van de adapter wanneer die er een rapporteerde                                       |
+| `sandboxViolation` | Het besturingssysteem weigerde een syscall. Wordt alleen uitgezonden waar een sandbox het proces daadwerkelijk omhult — zie de opmerking hierboven |
+| `debug`            | Runtime-diagnostiek (startmarkeringen, beveiligingsbeslissingen, contractduwtjes)                                          |
+| `done`             | De run is afgerond                                                                                                         |
 
-## What bounds a run
+## Wat een run begrenst
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Er is bewust **nergens een beurtplafond**. Een harde iteratietelling doodt legitiem lang werk (migraties, fan-out-opruiming) en vangt niets wat de beveiligingen hieronder eerder vangen. Een run eindigt wanneer:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **het model zelf stopt**;
+- **een mens hem stopt**, of het gesprek overneemt (waardoor de ingebouwde harness pauzeert bij zijn volgende schone beurtgrens — een Claude Code-run, die geen veilige grens heeft, wordt in plaats daarvan gestopt);
+- **de stiltewatchdog afgaat.** Geen uitvoer binnen de drempel en de sessie wordt beëindigd met een `silentRun`-fout. De standaard is 15 minuten, wat terugloopt naar 10 in de vooral lezende modi (review en plan); een agent mag hem tussen 1 en 240 minuten overschrijven. De watchdog wordt bewapend wanneer een kindproces zijn PID rapporteert, dus hij dekt de Claude Code CLI — **niet** de ingebouwde harness, die niets start;
+- **een kostenplafond toeslaat** — maar alleen voor autonome commando's.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+De doom-loopbeveiliging is geen terminator: drie identieke toolaanroepen op een rij en de lus _stuurt_ de agent bij om van aanpak te veranderen.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Een normale beurt heeft geen kostenplafond]
+De kostenbeveiliging binnen de sessie is alleen aangesloten voor `/goal` en `/loop`; elke andere run geeft helemaal geen budget mee. Voor die commando's mag één onbeheerd segment standaard 500 cent ($5.00) verbruiken, met een zachte bijsturing op 80% die de agent vraagt om netjes af te ronden vóór de harde stop, en een duurzaam doelbudget van 5000 cent ($50.00) over segmenten heen. Een expliciet `/goal --budget` wordt nooit met een heel segment overschreden.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Alles bij elkaar heeft een gewone interactieve beurt op de ingebouwde harness geen beurtplafond, geen kostenplafond en geen stiltewatchdog. Hij eindigt wanneer het model stopt of wanneer jij hem stopt. Dat is een bewuste afweging — de alternatieven doden allemaal legitiem lang werk — maar het betekent wel dat een onbeheerde interactieve run door niets anders wordt begrensd dan het eigen oordeel van het model.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Tijdens een run wordt een bericht dat naar een draaiende agent wordt gestuurd in de wachtrij gezet als **bijsturing** en bij de volgende beurtgrens geleegd, zodat je een run kunt bijsturen zonder hem te doden. Bijsturing, pauzeren, subagenten en het afrondingscontract zijn functies van de ingebouwde harness; Claude Code heeft ze geen van alle.
 
-## How a run is recorded
+## Hoe een run wordt vastgelegd
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Elke dispatch schrijft een `AgentRunLog`: begin- en eindtijd, samenvatting, tokentellingen en geschatte kosten (inclusief kosten die van subagenten worden opgeteld), adapter en model, proces-id en logpad, het gesprek en elk ticket of pipelinerun waartoe hij hoort, plus twee classificatievelden die het meeste van de waarheid dragen.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Status** is grof: `pending`, `running`, `completed`, `error`.
+- **Levendigheid** is de fijnere lezing: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Foutfamilie** groepeert fouten nuttig: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` betekent niet "geleverd"]
+Wanneer een run eindigt zonder het resultaat dat zijn modus vereiste — een planmodus-run die nooit `submit_plan` heeft aangeroepen, een orkestratierun die nooit iets heeft voorgesteld — blijft de status `completed`, omdat het proces wel netjes is afgesloten. Het eerlijke signaal zit op levendigheid (`empty`), foutfamilie (`silentRun`) en een samenvatting die precies zegt wat er niet is geproduceerd. Die samenvatting is beschermd: de afronding overschrijft hem niet met het laatste geklets van het model.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Dit is bewust. De status omzetten zou ticket- en pipelinestatemachines verplaatsen die niets met het ontbrekende artefact te maken hebben. Het betekent ook dat "status: completed" alleen nooit genoeg is om te concluderen dat een run is geslaagd — lees de samenvatting.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Het sluiten van de run publiceert `AgentRunCompleted` en daar hangt veel aan: het meldingsframe en zijn duurzame feedvermelding, de live-doorstuurder die hem naar verbonden clients pusht, kostenoptelling van de pipeline, het hervatten van een pipelinestap die op de run wachtte, het afronden van het onderliggende ticket, het mappen van een orkestratie op een eindtoestand, de voort-of-stopbeslissing van de doelsupervisor, de rol van controleur en de budgetevaluatie na de run. Het aanwezigheidsrooster volgt apart, door naar de recente run-logs te kijken in plaats van naar de gebeurtenis.
 
-## Budgets, after the fact
+## Budgetten, achteraf
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Budgethandhaving is een _reactie_, geen poort. Wanneer een run klaar is, vergelijkt de evaluator de uitgaven van de agent van deze maand tot nu toe met het effectieve plafond (een gekoppeld budgetbeleid als dat er is, anders het eigen maandbedrag van de agent; nul betekent onbeperkt). Het overschrijden van de zachte drempel legt een waarschuwingsincident vast; het uitputten van het budget legt een hard incident vast en zet de levenscyclusstatus van de agent op `paused` in het organigram. Dispatch accepteert nog steeds werk van die agent. Een pipelinetrigger `BudgetThresholdCrossed` kan vervolgwerk vanuit dezelfde gebeurtenis starten.
 
-## Retry lineage
+## Afstamming van nieuwe pogingen
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Elke run-log kan afstamming van nieuwe pogingen bevatten — een bovenliggende run-id, een pogingsteller en een samenvatting voor continuering. De gespreksrunboom toont het pogingsnummer wanneer dat niet nul is. Een "opnieuw proberen" vanuit de chat is een nieuwe dispatch met een verse run-log.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): what the adapter can and cannot enforce
-- [Modes](/nl-NL/handleiding/concepten/modi/): where the tool surface and the completion contract come from
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/): the effect-class policy every gated call passes
-- [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): the isolation story in full
-- [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/): steering, take-over and the autonomy dial
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/): what `AgentRunCompleted` sets off
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): wat de adapter wel en niet kan afdwingen
+- [Modi](/nl-NL/handleiding/concepten/modi/): waar het tooloppervlak en het afrondingscontract vandaan komen
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): het effectklassebeleid dat elke bewaakte aanroep passeert
+- [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): het volledige isolatieverhaal
+- [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/): bijsturing, overnemen en de autonomieknop
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): wat `AgentRunCompleted` in gang zet

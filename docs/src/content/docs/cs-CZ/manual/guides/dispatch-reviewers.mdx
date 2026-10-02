@@ -1,26 +1,27 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Odešlete review agenty
+description: Odešli specializované review agenty na PR z obrazovky PR, nástrojem MCP nebo krokem pipeline.
 slug: cs-CZ/prirucka/navody/odeslani-review-agentu
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Tenhle návod ukazuje, jak odeslat review agenty na kontrolu pull requestu.
 
-## From the PR view
+## Z obrazovky PR
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Otevři PR a přejdi na jeho záložku **Přehled**
+2. Otevři rozbalovací nabídku ⋯ a zvol **Zeptat se AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Tím se spustí předpřipravená pipeline `pr_review`. Otevře prostor kontroly
+daného PR a odešle recenzenty podle úrovně kontroly pracovního prostoru, ve
+výchozím stavu tři (předpřipravené agenty **qa**, **architect** a
+**engineer**). Pak vedoucí agent jejich výstupy složí. Role na téhle cestě
+nevybíráš. Když chceš určit, které role poběží a na které soubory se každá
+podívá, použij níže nástroj MCP nebo krok pipeline.
 
-## Via the `dispatch_reviewers` MCP tool
+## Přes nástroj MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Zavolej ho z existujícího prostoru kontroly:
 
 ```
 dispatch_reviewers(
@@ -33,109 +34,111 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` a `reviewers` jsou povinné. Každá specifikace
+recenzenta bere `role`, volitelný glob souborů `scope` a `prompt_override`,
+který nahradí výchozí zadání. Volitelná `concurrency` (1–8) omezí počet
+paralelních odeslání. Když ji vynecháš, platí nastavení `review_concurrency`
+pracovního prostoru (výchozí 3, v Nastavení → Pracovní prostor → Obecné).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Nástroj se vrátí hned, se seznamy `dispatched` a `unmatched`. Každý odeslaný
+recenzent se do prostoru přidá jako účastník, ohlásí se systémovou zprávou a
+odešle se se svým zadáním. Zjištění se v tom prostoru objeví jako zprávy
+`review_node`.
 
-## From a pipeline step
+## Z kroku pipeline
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Otevři **Nastavení → Pracovní prostor → Šablony pipeline**, otevři šablonu a
+pak:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Z knihovny uzlů přidej uzel **Reviewer (prompt)**
+2. Vyber agenta, kterého odešleš, a napiš prompt recenzenta. Pro výstupy
+   předchozích kroků použij zástupné symboly `{{key}}` (třeba
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Nastav výstupní klíč (výchozí `reviewer_findings`), aby navazující kroky
+   mohly zjištění číst
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Krok agenta odešle a pozastaví se, dokud ten běh neskončí. Engine pak uloží
+payload `submit_output` daného běhu do stavu pipeline pod výstupní klíč uzlu.
+(Popis v knihovně uzlů pořád říká, že krok čeká na volání `complete_task`. Ten
+nástroj neexistuje, ten text ignoruj.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Rozvětvení uděláš tak, že několik uzlů recenzentů napojíš na stejný předchozí
+krok a jejich výstupy složíš uzlem **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Editor znovu napojí skrytý terminál na každý dosažitelný konec, takže uzel
+přidaný za předpřipravený **Step** pořád doběhne. Uzly rozvětvení napojené na
+stejný předchozí krok běží paralelně.
 
-## Automatic dispatch on a new PR
+## Automatické odeslání u nového PR
 
-To have a review pipeline fire by itself:
+Aby se pipeline kontroly spouštěla sama:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Otevři šablonu v **Nastavení → Pracovní prostor → Šablony pipeline**
+2. Ze sekce **Spouštěče** v knihovně uzlů přetáhni na plátno **PR zveřejněn**
+   nebo **Otevřen externí PR** (nebo ho vyber ze zástupné dlaždice **Přidat
+   spouštěč**)
+3. Vyber nový uzel, v jeho inspektoru zapni **Zapnuto** a pak zapni i šablonu
 
-Two events matter here and they are not interchangeable:
+Rozhodují tu dvě události a nejsou zaměnitelné:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Událost                | Kdy se spustí                                                                                                          | Klíče payloadu                                               |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `PullRequestPublished` | PR se otevře **přes Control Center**, na ploše pro sestavení PR, nebo ho otevře agent voláním `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
+| `ExternalPrDetected`   | Služba dotazování PR najde PR otevřený přímo na GitHubu                                                                | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+PR otevřený na github.com událost `PullRequestPublished` nikdy nevyvolá, takže
+šablona napojená jen na ni ho neuvidí. `PullRequestPublished` navíc nenese
+`pr_number`. Krok, jehož skript nebo prompt sahá na `{{pr_number}}`, musí
+dostat data z `ExternalPrDetected`, nebo z ručního běhu, který hodnotu dodá.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Kontrolní bod: po zapnutí otevři **Pipelines** a ověř, že se u dalšího
+odpovídajícího PR objeví běh. Šablona ponechaná vypnutá nechá spouštěč
+vystřelit do prázdna. Engine vypnutou šablonu odmítne a vrátí se, aniž by běh
+spustil.
 
-## How a role is matched to an agent
+## Jak se role páruje s agentem
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` ohodnotí každého agenta v pracovním prostoru proti
+každému požadovanému popisku role, bez rozlišení velikosti písmen:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Shoda                                | Skóre |
+| ------------------------------------ | ----- |
+| Skill obsahující popisek role        | +3    |
+| Titul obsahující popisek role        | +2    |
+| Jméno agenta obsahující popisek role | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Skóre se sčítají a vyhrává nejvyšší součet. Při shodě to je první nalezený
+kandidát. Když žádný kandidát nezíská víc než nulu, specifikace se vrátí v
+seznamu `unmatched` a neodešle se. Role, kterou nikdo neodpovídá, se nahlásí a
+tiše se nepřeskočí.
 
-## The review space
+## Prostor kontroly
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+PR má právě **jeden** prostor kontroly, ne jeden na každého recenzenta. Vzniká
+idempotentně voláním `pr.ensureSpace`, s PR je svázaný přes
+`ReviewSpaceAssociation` a připraví se na head ref daného PR. Každý odeslaný
+recenzent se do toho prostoru přidá a zapíše tam zjištění `review_node`. Díky
+tomu jdou zjištění porovnat a vedoucí agent mezi nimi dojde ke shodě.
 
-## Monitor the dispatch
+## Sleduj odeslání
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Každý odeslaný recenzent dostane vlastní `AgentRunLog`. Průběh sleduj tady:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- V **prostoru kontroly**, kam zjištění přicházejí živě
+- Na záložce **Kontrola** daného PR, která ukazuje lištu stavu kontroly a
+  verdikt
+- V **Observabilita → Živé** (`/workspaces/:id/observability`): seznam agentů
+  se stavem každého běhu, průběžně běžícím časem, zásuvkou s přepisem a
+  ovládáním **Ukončit agenta**. Klávesová zkratka na to není. Dostaneš se tam
+  z patičky postranního panelu.
 
-## Related guides
+## Související návody
 
-- [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/)
-- [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Set up pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/)
+- [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/)
+- [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
+- [Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/)
 
-## Related concepts
+## Související koncepty
 
-- [AI review](/cs-CZ/prirucka/koncepty/ai-kontrola/)
-- [Pipelines](/cs-CZ/prirucka/koncepty/pipelines/)
+- [AI kontrola](/cs-CZ/prirucka/koncepty/ai-kontrola/)
+- [Pipelines a automatizace](/cs-CZ/prirucka/koncepty/pipelines/)

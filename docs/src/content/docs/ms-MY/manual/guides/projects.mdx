@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Susun kerja dengan projek
+description: Kumpulkan tiket ke dalam projek dari bar sisi, jejak kemajuan dan arkibkan projek apabila ia selesai.
 slug: ms-MY/manual-pengguna/panduan-cara/projek
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Projek ialah kumpulan tiket berskop ruang kerja yang menuju satu matlamat
+bersama. Projek hanya wujud dalam Control Center — ia tidak pernah disegerakkan
+ke penyedia luaran seperti Linear.
 
-## Create a project
+## Cipta projek
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Kembangkan kumpulan **Tiket** dalam bar sisi ruang kerja. Ia menyenaraikan
+   **Semua tiket**, satu baris bagi setiap projek yang belum diarkibkan,
+   kemudian **Projek baharu**.
+2. Klik **Projek baharu**.
+3. Isi **Nama projek**, **Perihalan** yang pilihan dan pilih **Warna**.
+4. Tekan **Cipta projek**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Anda tiba di gambaran keseluruhan projek baharu itu dan projek tersebut muncul
+sebagai baris bar sisi di bawah **Tiket**.
 
-## Add tickets to a project
+## Tambah tiket ke dalam projek
 
-Project is a single-ticket field, set in either of two places:
+Projek ialah medan satu-tiket, ditetapkan di salah satu daripada dua tempat:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Buka tiket dan tetapkan **Projek** dalam rel sifatnya.
+- Klik kanan tiket dalam senarai dan gunakan submenu **Projek**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Pemilih dalam rel sifat juga menawarkan **Projek baharu**, jadi anda boleh
+memasukkan tiket ke dalam projek yang anda cipta serta-merta. **Tiada projek**
+mengosongkan medan itu.
 
-A ticket belongs to at most one project.
+Sesuatu tiket tergolong dalam paling banyak satu projek.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Projek bukan tindakan pukal]
+Bar terapung yang muncul apabila anda memilih beberapa tiket merangkumi status,
+keutamaan, penerima tugasan, label dan padam. Ia tiada cip projek, jadi
+memasukkan banyak tiket bermakna melakukannya satu demi satu.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Anda juga boleh bermula dari projek: **Tiket baharu** pada gambaran keseluruhan
+projek mencipta tiket dan memasukkannya ke situ.
 
-## Read project progress
+## Baca kemajuan projek
 
-Open a project from its sidebar row, or go to
+Buka projek dari baris bar sisinya, atau pergi ke
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Gambaran keseluruhan menunjukkan glif dan nama projek, lencana status,
+perihalan dan bar kemajuan selesai-daripada-jumlah. Di bawahnya, tiket projek
+dikelompokkan mengikut status.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Ia tidak mengagregat apa-apa lagi — tiada pecahan penerima tugasan dan tiada
+taburan keutamaan. Untuk itu, tapis senarai tiket utama sebaliknya.
 
-## Change project status
+## Tukar status projek
 
-Projects have three states:
+Projek mempunyai tiga keadaan:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Status        | Maksud              |
+| ------------- | ------------------- |
+| **Aktif**     | Kerja sedang berjalan |
+| **Selesai**   | Semua kerja selesai |
+| **Diarkibkan** | Rujukan sejarah    |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Gunakan menu **⋯** pada pengepala projek. Ia menawarkan **Sunting projek**,
+**Tanda selesai** / **Tanda aktif**, **Arkibkan** / **Pulihkan** dan
+**Padam projek**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Mengarkibkan menyembunyikan projek daripada senarai bar sisi dan daripada
+pemilih tiket. Ia boleh diterbalikkan — **Pulihkan** mengembalikan projek
+kepada aktif — tetapi projek hanya boleh dicapai melalui URL semasa
+diarkibkan.
 
-## Projects created for you
+## Projek yang dicipta untuk anda
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/).
+Meluluskan sesuatu orkestrasi mencipta projek dan memasukkan tiket induk di
+bawahnya, berserta apa sahaja yang anda masukkan sendiri secara manual. Item
+kerja yang dijana ialah langkah pipeline, bukan baris tiket, jadi ia tidak
+muncul pada papan projek. Itulah satu-satunya laluan automatik: tiada nod
+pipeline mencipta tiket, jadi pipeline tidak boleh mengisi sesuatu projek.
+Lihat [Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Projek ialah permukaan pengendali]
+Cipta, senaraikan, kemas kini dan padam projek dalam aplikasi. Ejen tiada alat
+projek.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
-- [Delegate work to agents](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
-- [Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/)
+- [Wakilkan kerja kepada ejen](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
+- [Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Tickets](/ms-MY/manual-pengguna/konsep/tiket/)
+- [Tiket dan perwakilan](/ms-MY/manual-pengguna/konsep/tiket/)

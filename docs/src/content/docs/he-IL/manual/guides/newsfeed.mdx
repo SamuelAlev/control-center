@@ -1,130 +1,127 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: עריכת עדכוני החדשות
+description: הוסיפו ונהלו פידים של RSS/Atom, קראו כתבות עם חסימת תוכן ודעו שהפידים שלכם עוקבים אחריכם בכל סביבת עבודה.
 dateModified: 2026-09-19
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/עדכוני-חדשות
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+המדריך הזה מראה איך לעצב את עדכוני החדשות: מאילו מקורות הם נשלפים, איך נקראות
+כתבות ומה עושה חסימת התוכן.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[עדכוני החדשות הם לכל משתמש, ולא ברמת סביבת העבודה]
+פידים וכתבות שייכים למשתמש המחובר: רשימת הפידים, מצב הקריאה והסימניות שלכם
+עוקבים אחריכם לכל סביבת עבודה ולכל מכשיר שממנו אתם נכנסים, ואף משתמש אחר לא רואה
+אותם. הפידים נמצאים במסד הנתונים הגלובלי של השרת, כך שכתובת ה-`/newsfeed` נושאת
+מזהה של סביבת עבודה רק מפני שכל נתיב בתוך היישום עושה זאת.
 :::
 
-## Read articles
+## קריאת כתבות
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. לחצו על **עדכוני חדשות** בסרגל הצד
+2. עברו בין **הכול**, **שלא נקראו** ו**נשמר** באמצעות מקטעי סרגל הכלים
+3. צמצמו את הרשימה באמצעות תיבת החיפוש או בורר המקורות
+4. עברו בין רשת המגזין לרשימה הצפופה באמצעות לחצני הפריסה
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+פתיחת כתבה מסמנת אותה כנקראה. השתמשו ב**סימון הכול כנקרא** בכותרת העמוד — הוא
+מופיע רק כשמשהו אינו נקרא — כדי לפנות את הצבר בבת אחת, ובפקד הסימנייה בכרטיס כדי
+לשמור כתבה להמשך.
 
-The layout choice persists across launches.
+בחירת הפריסה נשמרת בין הפעלות.
 
-## Add a feed
+## הוספת פיד
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. פתחו את **הגדרות ← אישי ← עדכוני חדשות** (סמל ההגדרות בכותרת עדכוני החדשות
+   מוביל לשם ישירות)
+2. לחצו על **הוספת פיד**
+3. מלאו **שם** ואת **כתובת URL של הפיד** (RSS או Atom)
+4. לחלופין, פרשו את **מתקדם** והגדירו **User-Agent** מותאם אישית — יש מפרסמים
+   שמגישים תשובה שונה ללקוח ברירת מחדל
+5. לחצו על **הוספת פיד**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+נקודת ביקורת: הפיד מופיע ברשימת **פידים** והכתבות שלו מגיעות לאחר השליפה
+הראשונה. כתובת URL שכבר רשומה נדחית עם ההודעה "פיד עם כתובת URL זו כבר קיים."
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+ארבעה עשר פידים נוצרים מראש לכל משתמש בשימוש הראשון: Control Center,‏ The Verge,‏
+TechCrunch,‏ Hacker News,‏ ByteByteGo,‏ Product Hunt,‏ TLDR AI,‏ Import AI,‏ The
+Pragmatic Engineer,‏ Martin Fowler,‏ Will Larson's Irrational Exuberance,‏ The
+Engineering Manager,‏ Lea Verou ו-CSS-Tricks.
 
-## Manage feeds
+## ניהול פידים
 
-Each row in the **Feeds** list gives you three controls:
+כל שורה ברשימת **פידים** מציעה שלושה פקדים:
 
-| Control      | Effect                                                              |
+| פקד          | השפעה                                                               |
 | ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| מתג          | השבתת הפיד. שורה מושבתת מעומעמת ואינה נשלפת עוד                       |
+| סמל רענון    | שליפת הפיד הזה כעת                                                   |
+| סמל פח       | מחיקת הפיד, לאחר אישור                                               |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**רענן הכול** בראש הרשימה שולף כל פיד מופעל.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+כותרת המשנה של פיד מציגה את התיאור שלו ואת הזמן שחלף מאז השליפה; פיד שנכשל מציג
+במקומה את השגיאה, בצבע אזהרה.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+אין אפשרות עריכה — כדי לשנות שם, כתובת URL או user agent של פיד, מחקו אותו והוסיפו
+אותו מחדש.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+השליפה מתבצעת כולה בשרת: פעם אחת לכל משתמש בעת האתחול (ובשימוש הראשון עבור חשבונות
+שנוצרו מאוחר יותר), ואחר כך כל 30 דקות.
 
-## Block ads and trackers in the reader
+## חסימת פרסומות ורכיבי מעקב בקורא
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. בהגדרות ← אישי ← עדכוני חדשות, אתרו את **העדפות קריאה**
+2. השאירו את **פתח כתבות בתוך היישום** פעיל כדי להשתמש בקורא המובנה, או כבו אותו
+   כדי למסור כתבות לדפדפן המערכת
+3. השאירו את **חסימת פרסומות, רכיבי מעקב ובאנרים של עוגיות** פעיל
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+החסימה פעילה כברירת מחדל. הקורא המובנה קיים ב-macOS וב-Windows בלבד: בגרסת הווב
+וב-Linux דפדפן המערכת _הוא_ הקורא והכתבה נפתחת בו (לשונית חדשה בווב). בווב מתג
+החסימה, הכרטיס **רשימות סינון** והכרטיס **אתרים מהימנים** מוסתרים.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+הקורא בתוך היישום אינו מעצב מחדש את הכתבה. הוא מציג את העמוד של המפרסם בתוך webview
+מוטמע ומדכא פרסומות, רכיבי מעקב ובאנרים של עוגיות באמצעות רשימות סינון שמורות
+במטמון.
 
-### Check or update the filter lists
+### בדיקה או עדכון של רשימות הסינון
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+הכרטיס **רשימות סינון** מציג כמה כללים להסתרת עוגיות, להסתרת פרסומות ולחסימת רשת
+נטענו, וגם אילו פרמטרי מעקב הוא מסיר ומתי הרשימות עודכנו לאחרונה. לחצו על **בדיקת
+עדכונים** כדי לרענן אותן.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+המקורות הם EasyList,‏ i-dont-care-about-cookies,‏ Fanboy Cookiemonster,‏ כמה רשימות
+של uBlock Origin ורשימת פרמטרי המעקב של uBO. עד שההורדה תצליח, הכרטיס מתייג את
+הרשימות כברירות מחדל מצורפות שמעולם לא עודכנו — מוני כללי הפרסומות, העוגיות והרשת
+נשארים על אפס; הסרת פרמטרי המעקב עדיין משתמשת בקבוצת ברירת מחדל מובנית.
 
-### Allowlist a site
+### הוספת אתר לרשימת המותרים
 
-Some sites break under blocking.
+יש אתרים שנשברים תחת החסימה.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. בהגדרות ← אישי ← עדכוני חדשות, עברו אל **אתרים מהימנים**
+2. לחצו על **הוספת אתר מהימן** והזינו את הדומיין
 
-Blocking is skipped there.
+החסימה מדולגת שם.
 
-## Troubleshooting
+## פתרון תקלות
 
-### A feed I added shows up in another workspace
+### פיד שהוספתי מופיע בסביבת עבודה אחרת
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+זו התוצאה הצפויה. עדכוני החדשות הם לכל משתמש ולא לפי סביבת עבודה — הפידים שלכם
+עוקבים אחריכם לכל מקום שאתם מחוברים בו. ראו את תיבת האזהרה בראש העמוד.
 
-### A feed row shows an error instead of a description
+### שורת פיד מציגה שגיאה במקום תיאור
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+השליפה האחרונה נכשלה והשורה מציגה את הסיבה כפי שהיא. לחצו על סמל הרענון כדי לנסות
+שוב ובדקו שכתובת ה-URL עדיין מגישה RSS או Atom. מפרסם שדוחה לקוחות לא מוכרים עשוי
+להזדקק ל-user agent מותאם אישית, כלומר למחוק את הפיד ולהוסיף אותו מחדש.
 
-### An article page renders badly
+### עמוד כתבה מוצג באופן לקוי
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+כבו את **חסימת פרסומות, רכיבי מעקב ובאנרים של עוגיות** עבור אותו דומיין דרך **אתרים
+מהימנים**, או כבו את **פתח כתבות בתוך היישום** וקראו אותה בדפדפן שלכם.
 
-## Related guides
+## מדריכים קשורים
 
-- [Configure notifications](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התראות/)
-- [Triage your inbox](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)
+- [הגדרת התראות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התראות/)
+- [טריאז' לדואר הנכנס](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)

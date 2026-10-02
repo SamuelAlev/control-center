@@ -1,126 +1,133 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Bir orkestrasyon çalıştırma
+description: Bir orkestratörden plan isteyin, Plan Studio’da inceleyip düzenleyin, bir kez onaylayın ve işi üretilen bir pipeline’ın yapmasına izin verin.
 slug: tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/) for how it works.
+Bu kılavuz, tek bir büyük hedefi kendi kendine yürüyen ekip çapında bir plana nasıl
+dönüştüreceğinizi gösterir. Nasıl çalıştığını
+[Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/) sayfasından öğrenebilirsiniz.
 
-## When to use an orchestration
+## Orkestrasyon ne zaman kullanılır
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/); for a process you can spell out by
-hand, build a [pipeline template](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/).
+İstek tek bir ajanın üstesinden gelemeyeceği kadar büyükse ve tam adımları henüz
+bilmiyorsanız orkestrasyona başvurun. Tek bir görev için bir
+[alanda](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/) bir ajana mesaj gönderin; elle
+adım adım yazabileceğiniz bir süreç için bir
+[pipeline şablonu](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/) oluşturun.
 
-## Step 1: Ask for the plan
+## 1. Adım: Planı isteyin
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Bir alan ve bir **çapa bileti** açın (ya da oluşturun). Her öneri bir tane
+   gerektirir (`propose_orchestration` bir `ticket_id` alır); paylaşılan alan o
+   biletten gelir.
+2. İsteğe bağlı olarak ileti alanındaki mod açılır menüsünü **Orkestrasyon**
+   olarak değiştirin. Bu mod, ajanı okuma ve öneri sunmayla sınırlar — bellek, kod
+   grafiği, depo ve bilet okumaları, `propose_orchestration` ve playbook araçları —
+   böylece planlama yerine kod yazmaya başlayamaz.
+3. Orkestratörünüzü @ ile anın (genellikle CEO ajanıdır) ve hedefi sade bir
+   dille belirtin:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Çevrimdışı öncelikli bir toplantı kaydedici için rekabet ortamını araştır
+> ve bir sayfalık bir konumlandırma belgesi yaz.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orkestratör, alanda yapılandırılmış bir **öneri** kartıyla yanıt verir: ihtiyaç
+duyduğu roller, alt biletlere bölünmüş iş, isteğe bağlı bir araştırma ve tartışma
+aşaması, teslimatı üreten bir sentez adımı ve bir bütçe.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Öneri tipli bir nesne olduğundan, uygulama herhangi bir şey çalışmadan önce onu
+doğrular (iyi biçimli roller, bildirilmiş çıktı şemaları, döngüsüz bir DAG).
+Doğrulamadan geçemeyen bir öneri onaylanamaz.
 
-## Step 2: Review and edit the proposal
+## 2. Adım: Öneriyi inceleyin ve düzenleyin
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Sohbet içindeki kart üç eylem sunar: **Planı onayla**, **Reddet** ve planı Plan
+Studio’da bir düzenleyici sekmesi olarak açan **Aç**. Kartın kendisi
+düzenlenemez.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Herhangi bir şeyi değiştirmek için **Aç**’a basın ve sağdaki denetçide çalışın:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- Herhangi bir iş adımının **Başlık**, **Açıklama**, **Rol**, **Bağımlılıklar** ve
+  **Çıktı şeması** alanları. Burada rol, planın mevcut rol anahtarlarından
+  hangisinin adıma sahip olduğu anlamına gelir — bir rolü adlandırılmış bir ajana
+  sabitleyemez, denetçiden işe alım listesini düzenleyemez ve bütçeyi
+  düzenleyemezsiniz.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+İki şey salt okunurdur: yapısal düğümler (araştırma, tartışma, sentez) ve işi
+hâlihazırda çalışmış olan her düğüm. Düzenleme yalnızca orkestrasyon hâlâ
+`proposed` durumundayken mümkündür.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/tr-TR/kilavuz/nasil-yapilir/plan-studio/) for the full editor.
+Onaylamadan önce maliyet, süre ve etki yarıçapı aralıkları için onay çubuğundaki
+**Tahmin et**’e basın. Düzenleyicinin tamamı için
+[Plan Studio’da çalışma](/tr-TR/kilavuz/nasil-yapilir/plan-studio/) sayfasına bakın.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/).
+:::note[Bütçe bir harcama sınırı değildir]
+Bir önerinin bütçesi, onay çubuğundaki _tahminle_ karşılaştırılır: tahminin üst
+ucu bütçeyi aştığında toplam, bütçe aşımı uyarısıyla birlikte kırmızıya döner.
+Plan yürütülürken harcamayı hiçbir şey denetlemez; bu yüzden bir çalıştırmayı
+durdurmaz veya başarısız kılmaz. Harcamayı gerçekten durdurmak için ajan başına
+bütçe politikalarını kullanın — bkz.
+[Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/).
 :::
 
-## Step 3: Approve
+## 3. Adım: Onaylayın
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Planı sohbet kartından ya da Plan Studio’nun onay çubuğundan onaylayın.
+**Verdiğiniz tek karar budur.** Onaylama yalnızca operatöre aittir — bunun için
+bir MCP aracı yoktur; dolayısıyla bir ajan öneri sunabilir ve revize edebilir ama
+kendi planını asla onaylayamaz.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/tr-TR/kilavuz/kavramlar/pipelinelar/) and creates the
-scaffolding:
+Buradan itibaren deterministik bir materyalize edici (saf bir işlev, LLM yok)
+öneriyi gerçek bir [pipeline’a](/tr-TR/kilavuz/kavramlar/pipelinelar/) dönüştürür
+ve iskeleti oluşturur:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- yeni rolleri işe alır (ve onay ortasında bir çökme yaşanırsa yinelenen işe
+  alımlar olmadan sürdürülebilmesi için işe alınan ajan kimliklerini kaydeder)
+- rolleri bir **ekip** halinde gruplar
+- bir **proje** oluşturur ve üst bileti onun altına kaydeder
+- tüm bunları yürüten **pipeline çalıştırmasını** başlatır
 
-The status moves to `approved`, then `executing`.
+Durum `approved`, ardından `executing` olur.
 
-## Step 4: Watch it run
+## 4. Adım: Çalışmasını izleyin
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Alt biletler pipeline adımları olarak yürütülür; bir tartışma turu
+etkinleştirdiyseniz önce her rol bir görüş paylaşır. İlerleme, zaten baktığınız
+yerlerde görünür:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
-- the **project** the parent ticket was filed under
+- orkestrasyonun dayandığı **üst bilet**
+- ekibin konuştuğu paylaşılan **alan**; planın satırı burada her düğümün
+  durumunu izler
+- olağan şelalesi ve adım başına maliyetiyle **pipeline çalıştırması** ayrıntısı —
+  bkz. [Pipeline çalıştırmalarını izleme](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/)
+- üst biletin kaydedildiği **proje**
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Alt biletler bittiğinde durum `synthesizing` olur ve sentez adımı teslimatı
+üretir. Bu metin paylaşılan alanda yayımlanır ve üst bilet tamamlandı olarak
+işaretlenir, ardından durum `completed` olur.
 
-## Stop it early
+## Erken durdurun
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Sohbet içindeki kartta **Orkestrasyonu iptal et**’e ya da Plan Studio’nun onay
+çubuğunda **Çalıştırmayı iptal et**’e basın. İptal, yürüyen işi söker.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Bir orkestrasyon, materyalizasyon başarısız olduğunda ya da ürettiği pipeline
+çalıştırması başarısız olduğunda başarısız olur (araştırma, tartışma, sentez veya
+persist — bu adımlar başarısızlıkta devam etmez). Üretilen **iş** adımları her
+zaman başarısızlıkta devam eder; böylece başarısız olan tek bir alt bilet
+çalıştırmayı başarısız kılmaz. Bütçe aşımı diye bir başarısızlık yolu ve “tüm alt
+biletler başarısız oldu” diye bir eşik yoktur.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Work in Plan Studio](/tr-TR/kilavuz/nasil-yapilir/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/tr-TR/kilavuz/nasil-yapilir/projeler/): where the parent ticket is filed
-- [Monitor pipeline runs](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/): the roles an orchestration fills or hires
+- [Plan Studio’da çalışma](/tr-TR/kilavuz/nasil-yapilir/plan-studio/): planı düzenleyin, tahmin edin, farkını görün ve onaylayın
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/): bir orkestrasyonun dayandığı üst bilet
+- [İşleri projelerle düzenleme](/tr-TR/kilavuz/nasil-yapilir/projeler/): üst biletin kaydedildiği yer
+- [Pipeline çalıştırmalarını izleme](/tr-TR/kilavuz/nasil-yapilir/pipeline-izleme/): materyalize edilmiş bir orkestrasyonun motorda nasıl göründüğü
+- [Ajan ekibi kurma](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/): bir orkestrasyonun doldurduğu veya işe aldığı roller
 
-## Related concepts
+## İlgili kavramlar
 
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/)
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)

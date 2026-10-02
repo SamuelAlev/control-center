@@ -1,123 +1,137 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Σύνδεση Google Calendar
+description: Συνδέστε το Google Calendar σε έναν χώρο εργασίας, διαχειριστείτε πολλούς λογαριασμούς και επανασυνδεθείτε όταν λήξει ένα token.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/) for the full picture.
+Αυτός ο οδηγός δείχνει πώς να συνδέσετε το Google Calendar σε έναν χώρο
+εργασίας. Η σύνδεση είναι ανά χώρο εργασίας: συγχρονίζει τα γεγονότα αυτού του
+χώρου στο Control Center, μόνο για ανάγνωση. Δείτε το
+[Ημερολόγιο και προγραμματισμός](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/) για την
+πλήρη εικόνα.
 
-## Connect an account
+## Σύνδεση λογαριασμού
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Ανοίξτε το **Ημερολόγιο** στην πλαϊνή στήλη.
+2. Κάντε κλικ στο **Προσθήκη λογαριασμού ημερολογίου** στην πλαϊνή στήλη του ημερολογίου. (Η ίδια ενότητα βρίσκεται στις **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα**, κάτω από το **Google Calendar**.)
+3. Επιλέξτε τον τρόπο εξουσιοδότησης:
+   - **Χρήση της εφαρμογής Google του Control Center** — δεν χρειάζεται καμία ρύθμιση. Είναι η προεπιλογή όταν το build σας τη συνοδεύει.
+   - **Χρήση του δικού μου πελάτη Google Cloud** — επικολλήστε ένα client id και ένα secret από το δικό σας έργο (δείτε [Φέρτε τον δικό σας πελάτη Google](#φέρτε-τον-δικό-σας-πελάτη-google-forks-και-αυτοφιλοξενία)).
+4. Κάντε κλικ στο **Σύνδεση Google Calendar**. Το παράθυρο διαλόγου εμφανίζει έναν σύντομο κωδικό και έναν σύνδεσμο προς τη σελίδα συσκευών της Google.
+5. Ανοίξτε αυτή τη σελίδα σε οποιαδήποτε συσκευή, εισαγάγετε τον κωδικό και εγκρίνετε την πρόσβαση που ζητείται. Το παράθυρο διαλόγου κλείνει μόνο του και τα γεγονότα σας αρχίζουν να συγχρονίζονται.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Την ανταλλαγή την εκτελεί ο διακομιστής, όχι η συσκευή σας, και αυτός κρατά το
+refresh token που προκύπτει — γι' αυτό ο κωδικός εγκρίνεται σε «οποιαδήποτε
+συσκευή» και όχι ειδικά σε αυτή την εφαρμογή.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Ο λογαριασμός συνδέεται **μόνο στον ενεργό χώρο εργασίας**. Αν αλλάξετε χώρο
+εργασίας, θα δείτε τα ημερολόγια εκείνου του χώρου.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Η ροή σύνδεσης ζητά το `calendar.readonly` καθώς και το email σας — τα ίδια
+scopes για την ενσωματωμένη εφαρμογή και για τον πελάτη που επικολλάτε. Το
+Control Center διαβάζει γεγονότα· δεν δημιουργεί, δεν επεξεργάζεται, δεν
+διαγράφει ούτε απαντά σε προσκλήσεις στη Google.
 
-## How syncing works
+## Πώς λειτουργεί ο συγχρονισμός
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+Τον προγραμματισμό τον έχει ο **διακομιστής**: σαρώνει τους συνδεδεμένους
+λογαριασμούς κάθε χώρου εργασίας κάθε δύο λεπτά και γράφει τα γεγονότα στη βάση
+δεδομένων του χώρου εργασίας. Οι πελάτες δεν μιλούν ποτέ απευθείας με τη Google
+— διαβάζουν ό,τι έγραψε ο διακομιστής.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Η σάρωση είναι σταδιακή. Το πρώτο πέρασμα για κάθε ημερολόγιο αντλεί ένα
+κυλιόμενο παράθυρο (60 ημέρες πίσω, 90 ημέρες μπροστά) και καταγράφει το sync
+token της Google· τα επόμενα περάσματα παρουσιάζουν αυτό το token και
+λαμβάνουν μόνο ό,τι άλλαξε, και αυτό είναι που κάνει βιώσιμη τη συχνότητα των
+δύο λεπτών. Το παράθυρο επαναπροσδιορίζεται με πλήρη συγχρονισμό κάθε 24 ώρες
+και κάθε φορά που η Google ακυρώνει το token.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Τα refresh tokens βρίσκονται στην πλευρά του διακομιστή, στο `secrets.json` στον
+κατάλογο δεδομένων του διακομιστή, με δικαιώματα μόνο για τον ιδιοκτήτη
+(`0600`) — όχι στην αποθήκη κλειδιών του λειτουργικού συστήματος και ποτέ σε
+συσκευή-πελάτη.
 
-## Connect multiple accounts
+## Σύνδεση πολλών λογαριασμών
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Ένας χώρος εργασίας μπορεί να συνδέσει πολλούς λογαριασμούς Google (για
+παράδειγμα έναν για την εργασία και έναν προσωπικό). Επαναλάβετε το βήμα της
+σύνδεσης για τον καθένα· τα γεγονότα τους ενσωματώνονται στις ίδιες προβολές
+μήνα / εβδομάδας / ατζέντας. Κάθε λογαριασμός συγχρονίζεται και ανανεώνεται
+ανεξάρτητα και ο καθένας μπορεί να αποσυνδεθεί χωριστά.
 
-## Reconnect an expired account
+## Επανασύνδεση λογαριασμού που έληξε
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Αν η Google ακυρώσει οριστικά το token ενός λογαριασμού (ανακληθείσα ή από καιρό
+ληγμένη συνεδρία), ο συγχρονισμός σταματά και το Control Center εμφανίζει ένα
+πλαίσιο **Επανασύνδεση** στο ημερολόγιο, μαζί με ειδοποίηση επιφάνειας
+εργασίας. Κάντε κλικ στο **Επανασύνδεση** και εγκρίνετε έναν νέο κωδικό· το
+πλαίσιο εξαφανίζεται στον επόμενο επιτυχή συγχρονισμό.
 
-## Disconnect an account
+## Αποσύνδεση λογαριασμού
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Από την πλαϊνή στήλη του ημερολογίου (ή από τις **Ρυθμίσεις → Χώρος εργασίας →
+Προφίλ και ταυτότητα**), κάντε κλικ στο **Αποσύνδεση** για τον λογαριασμό. Αυτό
+διαγράφει τα συγχρονισμένα γεγονότα του και καθαρίζει τα αποθηκευμένα tokens του
+στον διακομιστή.
 
-## Connect from a headless server
+## Σύνδεση από headless διακομιστή
 
-A server with no GUI attached connects the same account from its own terminal:
+Ένας διακομιστής χωρίς γραφικό περιβάλλον συνδέει τον ίδιο λογαριασμό από το
+δικό του τερματικό:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Εκτυπώνει έναν κωδικό και ένα URL, περιμένει την έγκριση, και μετά αποθηκεύει τα
+tokens και συγχρονίζει στην επόμενη σάρωση.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Ένα build από τον πηγαίο κώδικα δεν περιλαμβάνει **κανέναν** πελάτη Google,
+οπότε το id και το secret είναι υποχρεωτικά — ορίστε τα `GOOGLE_OAUTH_CLIENT_ID`
+και `GOOGLE_OAUTH_CLIENT_SECRET`. Δεν υπάρχει flag `--google-client-id` (τα
+άγνωστα flags αγνοούνται). Χωρίς το ζεύγος μεταβλητών περιβάλλοντος, η εντολή
+τερματίζεται με σφάλμα ελλιπούς πελάτη.
 
-## Bring your own Google client (forks and self-hosting)
+## Φέρτε τον δικό σας πελάτη Google (forks και αυτοφιλοξενία)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Οι εκδόσεις που κυκλοφορούν περιλαμβάνουν πελάτη Google, οπότε οι περισσότεροι
+δεν χρειάζεται να αγγίξουν ποτέ αυτή τη ρύθμιση. Φέρτε τον δικό σας αν κάνετε
+build από τον πηγαίο κώδικα, αν εκτελείτε δικό σας διακομιστή ή αν θέλετε η οθόνη
+συγκατάθεσης να αναφέρει το δικό σας έργο.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Στο [Google Cloud Console](https://console.cloud.google.com/apis/credentials), ενεργοποιήστε το **Google Calendar API** και ρυθμίστε το **OAuth consent screen**, προσθέτοντας τα scopes `calendar.readonly`, `openid` και `email`. Όσο η εφαρμογή δεν έχει επαληθευτεί, προσθέστε τον εαυτό σας ως **test user**. Η προσθήκη του `calendar.events` στην οθόνη συγκατάθεσης δεν ενεργοποιεί το RSVP — το Control Center δεν ζητά ποτέ αυτό το scope.
+2. Δημιουργήστε ένα **OAuth client ID** με τύπο εφαρμογής **TVs and limited input devices** και αντιγράψτε τόσο το client id όσο και το client secret.
+3. Δώστε τα είτε ανά σύνδεση (επιλέξτε **Χρήση του δικού μου πελάτη Google Cloud** στο παράθυρο διαλόγου) είτε για ολόκληρο τον διακομιστή με τα `GOOGLE_OAUTH_CLIENT_ID` και `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Ένα ζεύγος για ολόκληρο τον διακομιστή αντικαθιστά το ενσωματωμένο παντού, ακόμη
+και πίσω από την επιλογή «χρήση της εφαρμογής Google του Control Center» — έτσι,
+στον δικό σας διακομιστή αυτή η επιλογή είναι η δική σας εφαρμογή.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Το client secret δεν εγκαταλείπει ποτέ τον διακομιστή: καμία απάντηση RPC δεν το
+μεταφέρει και ένας λογαριασμός που συνδέθηκε μέσω του πελάτη του ίδιου του
+διακομιστή αποθηκεύει έναν δείκτη και όχι αντίγραφο του ζεύγους, οπότε η εναλλαγή
+του είναι ζήτημα επανεκκίνησης με νέα τιμή.
 
-### Troubleshooting
+### Αντιμετώπιση προβλημάτων
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Σύμπτωμα                                            | Πιθανή αιτία                                                                                                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Το παράθυρο διαλόγου δεν προσφέρει ενσωματωμένη επιλογή | Αυτό το build δεν περιλαμβάνει πελάτη Google (build από τον πηγαίο κώδικα) ή ο διακομιστής ξεκίνησε με μόνο το ένα μισό του ζεύγους. Χρειάζονται και το id και το secret |
+| `invalid_scope` κατά την έναρξη της ροής            | Το Ημερολόγιο δεν επιτρέπεται για πελάτη device-code σε αυτό το έργο Cloud. Χρησιμοποιήστε αντ' αυτού έργο με πελάτη loopback ή web                                  |
+| `invalid_client` από τη Google                      | Ο πελάτης δεν είναι τύπου **TVs and limited input devices** ή το id και το secret προέρχονται από διαφορετικούς πελάτες                                              |
+| Η έγκριση πετυχαίνει αλλά ο συγχρονισμός είναι κενός | Ο λογαριασμός σας δεν είναι **test user** στην οθόνη συγκατάθεσης ή δεν παραχωρήθηκε το `calendar.readonly`                                                              |
+| Ο κωδικός λήγει πριν τον εγκρίνετε                  | Οι κωδικοί συσκευής έχουν σύντομη διάρκεια. Ξεκινήστε ξανά τη σύνδεση για νέο κωδικό                                                                                  |
+| «Δεν ήταν δυνατή η ενημέρωση της απάντησής σας» σε ένα RSVP | Αναμενόμενο: η ροή σύνδεσης δεν ζητά ποτέ το `calendar.events`                                                                                              |
+| Ο συγχρονισμός σταματά με προειδοποίηση ανανέωσης στο αρχείο καταγραφής του διακομιστή | Ο λογαριασμός συνδέθηκε με πελάτη που δεν είναι πλέον ρυθμισμένος. Επανασυνδέστε τον λογαριασμό ή επαναφέρετε αυτό το client id και το secret                        |
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Record and summarize a meeting](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/): turn an event into a recording
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+- [Καταγραφή και σύνοψη σύσκεψης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/): μετατρέψτε ένα γεγονός σε καταγραφή
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): πού βρίσκονται τα tokens και το πρόγραμμα συγχρονισμού
+- [Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Calendar and scheduling](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/)
+- [Ημερολόγιο και προγραμματισμός](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/)

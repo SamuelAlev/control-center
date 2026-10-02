@@ -1,199 +1,114 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: 記憶與知識
+description: Control Center 如何儲存代理知識、實際進入代理提示的內容，以及為何記憶讀取採取失效開放。
 slug: zh-HK/手冊/概念/記憶與知識
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## 記憶的用途
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+沒有記憶，每一次代理對話都從零開始：同一條慣例要重新解釋、同一個決定要重新爭論、同一條死路要重新探索。記憶是以工作區為範圍、能跨越多次執行而存續的儲存庫，它的存在是為了讓一個代理產生的知識，日後能被另一個代理找到。
 
-It has three layers and they answer different questions:
+它有三層，各自回答不同問題：
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **事實** — 甚麼是真的（一條慣例、一個結果、一個決定）。
+2. **政策** — 代理必須據此做甚麼（一條規範性規則）。
+3. **工作記憶** — 某個代理當時正做到哪裏。
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+這個區分之所以重要，是因為它們經由不同途徑到達代理。事實是被搜尋的。政策是被推送的。工作記憶是私有的。
 
-## Facts
+## 事實
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` 是一個以工作區和領域為範圍的知識單元。
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| 屬性                                        | 是甚麼                                                       |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| `domain`                                    | 知識領域（"conventions"、"decisions"、"codebase"）            |
+| `topic`                                     | 簡短的主題標籤                                               |
+| `content`                                   | 知識文字                                                     |
+| `confidence`                                | 0.0–1.0，由來源奠定初始值，並在再次提及時提升                |
+| `memoryType`                                | 事實的種類 — 決定其時間衰減曲線                              |
+| `veracity`                                  | 如何得知 — 奠定信心值，並決定每次再次提及的提升幅度          |
+| `sourceObservationIds`                      | 由哪些觀察得出                                               |
+| `supersededBy`                              | 取代它的較新事實（如有）                                     |
+| `validUntil`, `recallCount`, `mentionCount` | 召回時使用的到期與使用量訊號                                 |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+最後兩列是人們常忽略的，而它們決定了_哪一則_事實會浮現。`memoryType` 帶有逐類型的 Weibull 衰減參數，因此有時限的承諾會迅速消退，而穩定的個人側寫事實則不會。`veracity` 記錄來源 — 由人陳述（權重 1.0）、由代理推斷（0.7）、由工具產生（0.5）、匯入（0.6）— 而該權重奠定事實的初始信心值。
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+事實在被推翻時，絕不會就地編輯。寫入事實會對同領域、同主題的事實執行衝突偵測，並取代落敗的一方，同時記錄一列衝突。稽核軌跡正是重點所在：你永遠可以看到先前相信的是甚麼，以及甚麼取代了它。
 
-## Policies
+## 政策
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` 是從事實衍生、以工作區和領域為範圍的規範性規則，帶有啟用標記與選用的 `requiredRole`。
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+工作區內每一條**啟用中的**政策都會注入**每一次**派發，不經篩選 — 不按領域、角色、任務或空間篩選。在你寫下第二十條政策之前，這一點值得知道，因為政策會與任務爭奪同一個上下文窗口。這也是政策上的 `requiredRole` 只屬建議性質的原因：它描述規則針對誰，但無法阻止規則到達其他所有人。
 
-## Domains
+## 領域
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` 在工作區內將事實與政策分組。領域為知識提供組織結構，也是存取授權所依據的單位 — 但在把領域當成機密界線之前，請先看下方的注意事項。
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+領域可以是全工作區（`architecture`）或限定於一個程式庫（`repo:<slug>/architecture`）。兩個範圍中的同名領域是兩個獨立儲存庫：對某個程式碼庫為真的事實，不會覆寫全工作區的那一個。當代理正在該程式庫中工作時，`search_memory` 與派發前言會把程式庫範圍的記憶排在前面；但它們不會把其餘的篩掉。在 `propose_fact` / `propose_policy` / `search_memory` 上傳入 `repo`，即可寫入或提升該範圍。
 
-## Access control is fail-open for reads
+## 讀取的存取控制採取失效開放
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` 將代理角色與領域對應到三種權限層級之一：
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| 權限    | 含義                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| `none`    | 沒有存取權                                                                                       |
+| `read`    | 可搜尋並擷取事實                                                                                 |
+| `write`   | 為 `propose_policy` 所需。事實寫入（`propose_fact`、`supersede_fact`）不受授權限制                |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[缺少授權代表可讀，而非拒絕]
+當 `(role, domain)` 配對沒有授權資料列時，有效權限是 **`read`**。讀取按設計採取失效開放。唯一會拋出的寫入，是沒有 `write` 權限的 `propose_policy`（`InsufficientMemoryPermission`）。把敏感內容放進記憶領域，並不會限制誰能讀取它 — 除非你為每個不應看到它的角色明確寫入 `none` 授權。
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+產品目前任何地方也都沒有授權的 UI。記憶畫面只有事實、政策與圖譜分頁，沒有別的；授權只能透過 `memory_access_grant.*` RPC 操作存取。
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+這種不對稱 — 對讀取寬鬆、對政策寫入嚴格 — 是刻意的取捨。記憶在流通時最有用，而拒絕讀取會產生一個悄悄知道得更少的代理，而不是一個回報問題的代理。相較之下，拒絕政策寫入既明顯又可修正，所以強制執行就放在那裏。新建的領域會為每個角色種入 `write`；之後要收緊只能透過 RPC 編輯，因為沒有授權 UI。
 
-## Working memory
+## 工作記憶
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+每個代理都有一個 `AgentWorkingMemory`：以工作區和代理為鍵的自由文字記事板。它跨執行存續、只屬於該代理，並在每次派發時注入其提示。它存放的是「我重構 auth 做到一半」這類東西 — 值得帶到下一次執行、但不值得提升為持久事實的狀態。
 
-## What actually reaches an agent's prompt
+## 實際進入代理提示的內容
 
-At dispatch, the memory preamble is assembled from exactly three things:
+派發時，記憶前言恰好由三樣東西組成：
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **每一條啟用中的工作區政策**，以 `- [domain] rule` 形式呈現。
+- **代理自己的工作記憶**，原文照錄。
+- **按關鍵字配對的事實候選清單**，針對此任務 — 最多五項，在約 1,200 字元的預算內，且僅在任務描述至少 20 個字元長時才會出現。較短的任務完全不會取得事實。
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+候選清單只採 FTS/關鍵字，並且刻意設上限。嵌入查詢很慢，而派發路徑是延遲會立即顯現的地方，所以慢速的語意路徑被刻意排除在外。前言最後會指示代理用 `search_memory` 驗證關鍵項目，完整的召回模型就在那裏。
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+這條路徑不查詢任何存取授權。候選清單找到甚麼，代理就看到甚麼。
 
-## Recall: one query, four voices
+## 召回：一次查詢，四道聲部
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+代理面向的 `search_memory` 工具有三種模式，而它們是真正不同的搜尋：
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — 僅 FTS5。
+- **`semantic`** — BM25 與向量結果以倒數排名融合。
+- **`hybrid`**（預設）— 多聲部召回：四道排名的聲部融合在一起，然後多樣化。
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+四道聲部是詞彙（FTS）、語意（向量 KNN）、時間（近期啟用的事實）與圖譜 — 從最強的詞彙與語意種子出發，沿情節邊走兩跳。圖譜聲部正是情節邊存在的理由：它浮現與你的答案_相連_、但不符合你任何字詞的事實。聲部按分類後的查詢意圖加權（預設語意權重最大，然後是圖譜與詞彙，再之後是近期程度），每個候選的分數會按其 Weibull 衰減縮放，結果集再以 MMR 多樣化，使同一則事實的五種重述不會擠掉四則不同的事實。
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[在模型安裝之前，語意召回保持靜默]
+只有在裝置上的嵌入模型已下載後，向量聲部才會起作用。在那之前，混合召回以三道聲部運作，而且沒有追溯回填 — 在模型安裝前寫入的事實永遠不會取得向量。如果 SQLite 向量擴充功能本身載入失敗，向量路徑會進一步降級為在已封裝的嵌入向量上進行 Dart 內部掃描；召回仍會回答，只是更慢。
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+桌面與網頁的記憶搜尋是一條獨立、較簡單的路徑：`memory_fact.search` RPC 操作**僅採 FTS5**，因為精簡用戶端無法附上查詢嵌入，而混合路徑留在主機內部。所以你在記憶瀏覽器中看到的排名，並不是代理從 `search_memory` 取得的排名。這是預期行為，不是錯誤，但它確實意味著在 UI 中「我搜尋過但找不到」並不證明代理找不到。
 
-## Where memory lives and who writes it
+## 記憶所在之處與由誰寫入
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+記憶瀏覽器位於 **設定 → 工作區 → 記憶**（`/workspaces/<id>/settings/memory`），設有事實、政策與圖譜分頁。
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+那裏有一個令人意外的不對稱：**你可以編輯和刪除記憶，但不能建立記憶。** 事實分頁和政策分頁都沒有新增的操作入口。撰寫是在代理一方，透過 `propose_fact` 和 `propose_policy` 進行（用 `supersede_fact` / `supersede_policy` 取代它們）。`remember` 寫入一個以對話為界的熱層項目，`consolidate_memory` 之後可能把它提升為事實；`record_observation` 和 `update_my_notes` 寫入派發時注入的私人記事板。瀏覽器是檢閱與修正的介面，不是撰寫介面 — 所以如果你想要一則事實進入記憶，辦法就是告訴一個代理。
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+兩項維護操作同樣由代理叫用，而非按排程執行：`consolidate_memory` 合併與修剪累積的事實，`harmonize_memory` 調和不同代理之間分歧的信念。`list_memory_conflicts` 顯示衝突偵測已記錄的內容。沒有任何定時器會替你執行它們。當會議保存步驟記錄會議決定時，這些決定會收集到 `decisions` 領域；那不是對已完成代理執行所設的定時器。
 
-## Related concepts
+## 相關概念
 
-- [The agent model](/zh-HK/手冊/概念/代理模型/): roles are what grants are written against
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/zh-HK/手冊/操作指南/管理記憶/): working with memory in practice
+- [代理模型](/zh-HK/手冊/概念/代理模型/)：角色是授權所依據的對象
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/)：記憶以工作區為範圍，並存放在該工作區自己的資料庫檔案中
+- [管理工作區記憶](/zh-HK/手冊/操作指南/管理記憶/)：實際上如何操作記憶

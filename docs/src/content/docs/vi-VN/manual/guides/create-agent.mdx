@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: Tạo và cấu hình một agent
+description: Thêm một agent vào không gian làm việc, gán cho nó bộ điều hợp, mô hình, kỹ năng và quyền hạn rồi xác nhận rằng nó chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+Hướng dẫn này chỉ cho bạn cách thêm một agent vào không gian làm việc và cấu hình nó cho tới khi nó thực sự chạy được.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Mỗi không gian làm việc được gieo tạo sẵn năm agent — một CEO cùng `qa`, `architect`, `engineer` và `librarian` — nên bạn thường đã có agent trước khi cấu hình bất kỳ agent nào. Những bước dưới đây áp dụng như nhau cho một agent được gieo tạo sẵn lẫn một agent mới.
 
-## Before you start
+## Trước khi bắt đầu
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- Bạn đang ở trong một không gian làm việc. Toàn bộ bề mặt nằm tại **Cài đặt → Không gian làm việc → Agent** (`/settings/workspace/agents`).
+- Agent sẽ cần một backend. Hoặc kết nối một nhà cung cấp cho harness tích hợp sẵn tại **Cài đặt → Máy chủ → Nhà cung cấp mô hình**, hoặc cài Claude Code CLI trên máy đang chạy `cc_server`.
+- Nếu bạn muốn agent mang theo kỹ năng, hãy cài chúng trước tại **Cài đặt → Không gian làm việc → Kỹ năng**. Biểu mẫu agent chỉ cho phép bật/tắt những kỹ năng đã tồn tại trong không gian làm việc.
 
-## Add the agent
+## Thêm agent
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. Mở **Cài đặt → Không gian làm việc → Agent**.
+2. Nhấp **Agent mới**.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+Không có hộp thoại và không có trình chọn vai trò. Một agent tên “Agent chưa đặt tên” được tạo ngay lập tức và được chọn sẵn trong khung chi tiết bên phải.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+Giờ bạn sẽ thấy “Agent chưa đặt tên” trong danh sách bên trái, với tab **Cài đặt** của khung chi tiết đang mở và trường **Tên** chứa “Agent chưa đặt tên”.
 
-## Name it
+## Đặt tên cho nó
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **Tên** — mã định danh ngắn dùng trong @-mention, ví dụ `alice`. Việc phân tích mention khớp `@` theo sau là các ký tự chữ, nên một cái tên chứa dấu gạch nối, dấu chấm hay dấu cách sẽ không bao giờ được mention tới.
+- **Tiêu đề** — nhãn dễ đọc với con người, ví dụ “Lập trình viên cao cấp”.
+- **Prompt hệ thống** — chỉ dẫn bổ sung tùy chọn, được chèn thành một mục Agent instructions; chúng không thay thế phần còn lại của prompt đã lắp ghép.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+Nhấp **Lưu thay đổi** ở cuối biểu mẫu. Mọi trường trên trang này đều được lưu bằng chính nút đó.
 
-## Give it an adapter and a model
+## Gán bộ điều hợp và mô hình
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+Danh sách thả xuống **Bộ điều hợp** liệt kê những trình chạy mà máy chủ thực sự có. Bộ điều hợp tích hợp sẵn luôn được tìm thấy (nó chính là máy chủ). Claude Code chỉ xuất hiện khi CLI của nó được phát hiện trên máy chủ đó:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| Bộ điều hợp               | Backend                                                     |
+| ------------------------- | ----------------------------------------------------------- |
+| Control Center (built-in) | Vòng lặp agent trong tiến trình — không có CLI bên ngoài    |
+| Claude Code               | `claude -p --output-format stream-json`                     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+Chỉ bộ điều hợp tích hợp sẵn mới thi hành chế độ, điều hướng giữa lượt chạy, tạm dừng/tiếp tục, hợp đồng hoàn thành và subagent. Claude Code không cho bạn bất kỳ thứ nào trong số đó. Cursor, Codex và những nhà cung cấp mô hình khác gắn vào bộ điều hợp tích hợp sẵn, chứ không phải những trình chạy riêng.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[Bộ điều hợp để trống nghĩa là vòng lặp tích hợp sẵn]
+Một agent không đặt bộ điều hợp sẽ được điều phối tới **Control Center (built-in)**, vòng lặp bên trong máy chủ, nên không phải cài gì trên máy chủ. Khi cũng không đặt mô hình, nó hỏi Anthropic mặc định của mình, nên một agent để trống hoàn toàn chỉ chạy nếu bạn đã kết nối tài khoản Anthropic. Những chuyên gia được gieo tạo sẵn không có cả hai; hãy đặt cả hai cho bất kỳ agent nào bạn định dùng.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+Danh sách thả xuống **Mô hình** do bộ điều hợp bạn đã chọn quyết định. Với bộ điều hợp tích hợp sẵn, danh sách đến trực tiếp từ những nhà cung cấp bạn đã kết nối tại **Cài đặt → Máy chủ → Nhà cung cấp mô hình**, nên một nhà cung cấp không có thông tin xác thực nào được lưu sẽ đóng góp 0 mô hình.
 
-## Add skills
+## Thêm kỹ năng
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**Kỹ năng** là bộ chọn dạng chip trên các gói kỹ năng đã cài trong không gian làm việc này. Nhấp một chip để bật/tắt nó; dấu tích đánh dấu những cái đã được chọn. Nếu không gian làm việc không có kỹ năng nào, trường này hiển thị “No skills available. Create skills in Settings → Skills first.”
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
+Bạn không chọn kỹ năng riêng của kho mã ở đây. Một kho mã mang theo chúng (trong `.agents/skills/`, `.claude/skills/` hoặc `.opencode/skills/`) sẽ tự động đóng góp chúng cho bất kỳ agent nào đang làm việc trong kho đó, và chúng được hoán đổi khi agent chuyển sang kho khác — xem [Kỹ năng theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
 
-## Set the reporting line and persona
+## Đặt tuyến báo cáo và persona
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **Báo cáo cho** — chọn một agent khác theo tên. Việc này dựng nên cây báo cáo mà nút **Sơ đồ tổ chức** ở đầu trang hiển thị. Đây không phải danh sách mà một trưởng nhóm dùng khi ủy thác — danh sách đó đến từ các thành viên của nhóm và kỹ năng của họ.
+- **Persona** — văn bản tự do định hình giọng điệu và hành vi, ví dụ: “Ưu tiên những giải pháp đơn giản, dễ đọc. Viết kiểm thử cho mọi mã mới.”
 
-## Tune the run
+## Tinh chỉnh lượt chạy
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **Mức suy luận** — các tùy chọn đến từ chính những mức mà mô hình đã chọn công bố: Low / Medium / High, cộng Extra High trên các mô hình kiểu OpenAI và Extra High + Max trên các mô hình kiểu Claude. Trường này bị ẩn hoàn toàn khi mô hình đã chọn không khai báo mức tư duy nào, và nó mặc định theo mặc định của chính mô hình.
+- **Kích thước cửa sổ ngữ cảnh** — được điền sẵn từ cửa sổ ngữ cảnh của mô hình mỗi khi bạn đổi mô hình, kèm các chip một chạm cho mặc định của mô hình, 200k, 500k và 1M. Giá trị bạn gõ vào sau khi chọn mô hình sẽ được giữ cho tới lần đổi mô hình tiếp theo.
+- **Hết hạn im lặng (phút)** — kết thúc một lượt chạy sau khoảng thời gian này mà không có đầu ra. Để trống để dùng mặc định theo từng chế độ.
 
-## Grant permissions
+## Cấp quyền hạn
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**Quyền sandbox** khởi đầu ở “Dùng mặc định không gian làm việc”. Bật công tắc lên để đặt quyền riêng cho agent này, rồi bật/tắt:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **Cho phép git push** — chèn token GitHub mà agent cần để push
+- **Cho phép gọi GitHub API** — cho phép agent đọc PR, issue và siêu dữ liệu kho mã
+- **Cho phép gọi API phiếu** — chèn khóa của nhà cung cấp dịch vụ phiếu
+- **Cho phép truy cập mạng chung** — cũng bật các công cụ `web_fetch` và `web_search` của harness tích hợp sẵn
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+Mỗi công tắc được bộ môi giới thông tin đăng nhập kiểm tra khi lượt chạy khởi chạy: một quyền hạn bị tắt đơn giản có nghĩa là token tương ứng không bao giờ được phát hành vào môi trường của lượt chạy.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Mặc định không gian làm việc nghĩa là bộ thiết lập thận trọng của máy chủ]
+Một agent để ở “Dùng mặc định không gian làm việc” sẽ chạy với git push, GitHub API và dịch vụ phiếu đều **tắt** và mạng **bật**. Những mặc định về quyền hạn hiển thị tại Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư là một tùy chọn phía máy khách. Nếu bạn muốn một agent push hoặc mở PR, hãy bật công tắc lên và cấp các quyền hạn một cách minh thị.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) for the full set of boundaries.
+Những quyền hạn này đóng vai trò cổng cho thông tin đăng nhập và các công cụ của harness, một tầng tách biệt với sandbox của hệ điều hành. `cc_server` bọc các lượt chạy agent trong sandbox của máy chủ ở nơi có một sandbox như vậy — Windows không có backend gốc, còn Linux và WSL2 cần `bwrap` và `socat`. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết toàn bộ các ranh giới.
 :::
 
-## Verify it runs
+## Xác nhận nó chạy
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. Mở **Cài đặt → Máy chủ → Nhà cung cấp mô hình** và xác nhận bộ điều hợp bạn đã chọn báo một phiên bản đã cài thay vì “Không tìm thấy”. Nhấp **Làm mới** để dò lại — bước dò chạy trên máy đang chạy `cc_server`, chứ không phải trên máy bạn đang nhìn.
+2. Mở một space có agent đó và gửi cho nó một tin nhắn, hoặc @-mention nó trong một space hiện có.
+3. Quay lại **Cài đặt → Không gian làm việc → Agent**, chọn agent và mở tab **Nhật ký**. Một lượt chạy sẽ xuất hiện kèm nhãn trạng thái, thời lượng, thời điểm bắt đầu và bộ điều hợp mà nó đã dùng. **Xem** mở dòng sự kiện của lượt chạy đó.
 
-If no run appears at all, work through [Run agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/).
+Nếu không có lượt chạy nào xuất hiện, hãy xem qua [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/).
 
-## Delete an agent
+## Xóa một agent
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+Chọn nó trong danh sách. Trên tab **Cài đặt**, cuộn xuống **Vùng nguy hiểm** ở cuối biểu mẫu và nhấp **Xóa**.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run agents in parallel](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
-- [Build an agent team](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/)
-- [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
-- [Run agent diagnostics](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
-- [Agent configuration reference](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/)
+- [Chạy agent song song](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
+- [Xây dựng đội agent](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/)
+- [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
+- [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/)
+- [Tham chiếu cấu hình agent](/vi-VN/so-tay/tham-chieu/cau-hinh-agent/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)

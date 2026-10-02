@@ -1,241 +1,268 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Δημιουργία προτύπου pipeline
+description: Συντάξτε ένα πρότυπο ροής εργασίας DAG στον επεξεργαστή pipeline — προσθέστε κόμβους, συνδέστε τους, δηλώστε εισόδους και κάντε το εκτελέσιμο.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Τα πρότυπα pipeline συντάσσονται στις ρυθμίσεις του χώρου εργασίας. Η καταχώριση
+**Pipelines** στην πλαϊνή στήλη του χώρου εργασίας είναι η _ουρά εκτελέσεων_, όχι
+η λίστα προτύπων — δεν έχει ενέργεια «δημιουργία προτύπου».
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
+Για το τι σημαίνει κάθε είδος βήματος, κλειδί body και πεδίο διαμόρφωσης, δείτε την
+[αναφορά βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
 
-## Create a template
+## Δημιουργία προτύπου
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Μεταβείτε στις **Ρυθμίσεις → Χώρος εργασίας → Πρότυπα pipeline**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Πατήστε **Νέο πρότυπο**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Δεν υπάρχει παράθυρο διαλόγου για το id. Ο επεξεργαστής ανοίγει αμέσως σε έναν
+προπαρασκευασμένο σκελετό με όνομα **Νέο pipeline**, με αυτόματα εκχωρημένο id
+(`pipeline_1`, μετά `pipeline_2`, …). Κάντε κλικ στον τίτλο στην κεφαλίδα για να
+τον μετονομάσετε.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Ο καμβάς δεν είναι κενός: ένας κόμβος εισόδου **Trigger**, ένας κόμβος πράκτορα
+προτροπής με ετικέτα **Step** και ένας τερματικός αισθητήρας που τερματίζει την
+εκτέλεση. Ο αισθητήρας δεν σχεδιάζεται. Ο επεξεργαστής επανασυνδέει αυτό το κρυφό
+τερματικό σε κάθε προσβάσιμη κατάληξη, ώστε η εργασία που συνδέετε μετά το
+**Step** να εκτελείται κανονικά.
 
-## Add nodes
+## Προσθήκη κόμβων
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Η πλαϊνή στήλη **Βιβλιοθήκη κόμβων** βρίσκεται μόνιμα στα αριστερά του
+επεξεργαστή. Φιλτράρετέ την με το πλαίσιο **Αναζήτηση κόμβων** και σύρετε μια
+καταχώριση στον καμβά — ο κόμβος προσγειώνεται εκεί που τον αφήνετε, χωρίς
+εισερχόμενη σύνδεση.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Κόμβος παλέτας                  | Είδος βήματος | Τι κάνει                                                                                       |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen        | Εκτελεί ένα σενάριο κελύφους με αντικατάσταση `{{state}}`· δεν αποστέλλεται πράκτορας           |
+| **Open conversation**           | listen        | Ανοίγει τον έναν ορατό χώρο της εκτέλεσης και το checkout του· οι κόμβοι πρακτόρων συμμετέχουν σε αυτόν τον χώρο |
+| **Clone PR branch**             | listen        | Εντοπίζει τον head branch του PR μέσω `gh pr view` και τον κλωνοποιεί στον κατάλογο εκτέλεσης  |
+| **Post PR comment**             | listen        | Δημοσιεύει τα ενοποιημένα ευρήματα στο PR ως σχόλιο ελέγχου GitHub                             |
+| **Reviewer (prompt)**           | listen        | Αποστέλλει έναν εξειδικευμένο πράκτορα ελέγχου· αναστέλλεται μέχρι ο πράκτορας να υποβάλει το αποτέλεσμά του |
+| **Consolidate (join)**          | join          | Περιμένει πολλούς ανάντη κλάδους και μετά ζητά από έναν πράκτορα να ενοποιήσει τις εξόδους τους |
+| **Custom prompt**               | listen        | Γενικός κόμβος καθοδηγούμενος από προτροπή, που δρομολογείται μέσω του body `promptAgent`       |
+| **Post to space**               | listen        | Στέλνει μήνυμα σε έναν χώρο μηνυμάτων                                                          |
+| **Condition / switch (router)** | router        | Διακλαδώνει τη ροή με βάση μια τιμή κατάστασης                                                 |
+| **If file exists (router)**     | router        | Δρομολογεί `"true"` όταν υπάρχει μια διαδρομή κάτω από το κλωνάρι, αλλιώς `"false"`            |
+| **Any file exists (OR router)** | router        | Δρομολογεί `"true"` όταν υπάρχει οποιαδήποτε από τις καταγεγραμμένες διαδρομές                 |
+| **All conditions (AND router)** | router        | Δρομολογεί `"true"` μόνο όταν υπάρχουν όλες οι καταγεγραμμένες διαδρομές                       |
+| **Team dispatch**               | listen        | Αποστέλλει ολόκληρη ομάδα και αναστέλλεται μέχρι να ολοκληρωθεί                                |
+| **Approval gate**               | listen        | Παύει για μια απόφαση έγκρισης                                                                 |
+| **For each (map)**              | forEach       | Αποδίδει μια προτροπή ανά στοιχείο και μετά αποστέλλει τον πράκτορα μία φορά με αυτές τις προτροπές ενωμένες |
+| **Call sub-pipeline**           | listen        | Εκτελεί άλλο πρότυπο ως ένθετο βήμα                                                            |
+| **Clean up worktrees**          | listen        | Αφαιρεί παρωχημένα απομονωμένα worktrees· ντετερμινιστικό, δεν αποστέλλεται πράκτορας          |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Η βιβλιοθήκη τα ομαδοποιεί στις κατηγορίες **Ροή και λογική**, **Ανασκόπηση PR**,
+**Πράκτορες**, **Μηνύματα** και **Κώδικας**. Δεν υπάρχει κατηγορία Demo.
 
-## Wire nodes together
+## Σύνδεση κόμβων μεταξύ τους
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Κάθε κόμβος εργασίας έχει μια κυκλική **θύρα εξόδου** στη δεξιά του πλευρά. Σύρετε
+από αυτή τη θύρα σε άλλον κόμβο για να τους συνδέσετε. Τα εναύσματα έναρξης
+λειτουργούν το ίδιο: το καθένα έχει τη δική του θύρα, ώστε ένα καλώδιο από το
+**Χρονοδιάγραμμα** να μην ξεκινά και από τη **Χειροκίνητη εκτέλεση**. Πατήστε
+**Προσθήκη βήματος** (`+`) ακριβώς μετά από έναν κόμβο για να εισαγάγετε έναν τύπο
+μετά από αυτόν. Τοποθετήστε τον δείκτη στο μέσο μιας υπάρχουσας ακμής και πατήστε
+× για να την αποσυνδέσετε.
 
-Connections are also edited from the node that _receives_ them:
+Οι συνδέσεις επεξεργάζονται και από τον κόμβο που τις _δέχεται_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Επιλέξτε τον κατάντη κόμβο. Το πλαίσιο διαμόρφωσής του ανοίγει στα δεξιά.
+2. Μετακινηθείτε στο **Εναύσματα από** και πατήστε το τσιπ για κάθε ανάντη κόμβο
+   στον οποίο θέλετε να ακούει αυτός. Το πάτημα σε επιλεγμένο τσιπ αφαιρεί τη
+   σύνδεση.
+3. Αν ένας ανάντη κόμβος είναι δρομολογητής, κάτω από τα τσιπ εμφανίζεται ένα
+   τμήμα **Κλειδιά δρομολόγησης** με ένα πεδίο **Κλειδί δρομολόγησης από
+   &lt;node&gt;** ανά ακμή δρομολογητή. Εισαγάγετε το κλειδί στο οποίο
+   πυροδοτείται αυτή η ακμή — `true` ή `false` για τους δρομολογητές ύπαρξης
+   αρχείου, ή το όνομα της περίπτωσης για έναν διακόπτη.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Κάθε κόμβος εναύσματος είναι σημείο εισόδου. Ένας κόμβος μπορεί να ακούει σε
+πολλούς ανάντη (fan-in) και να τροφοδοτεί πολλούς κατάντη (fan-out) και το
+γράφημα πρέπει να παραμένει άκυκλο — τίποτα στον επεξεργαστή δεν σας εμποδίζει να
+συνδέσετε κύκλο, οπότε ελέγξτε τη δουλειά σας.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Ο τερματικός αισθητήρας φιλτράρεται έξω από τον καμβά, οπότε δεν μπορεί να
+επιλεγεί. Ο επεξεργαστής τον επανασυνδέει σε κάθε προσβάσιμη κατάληξη κάθε φορά
+που αλλάζει το γράφημα, ώστε η εργασία που συνδέετε μετά το προπαρασκευασμένο
+**Step** να εκτελείται κανονικά. Ένα κενό γράφημα (έναυσμα χωρίς διαδόχους
+εργασίας) καταγράφει το ίδιο το έναυσμα, ώστε μια εκτέλεση να ολοκληρώνεται
+αμέσως.
 
-## Configure a node
+## Διαμόρφωση κόμβου
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Επιλέξτε έναν κόμβο για να ανοίξει το πλαίσιο διαμόρφωσής του. Ποια πεδία
+εμφανίζονται εξαρτάται από το body του κόμβου.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Κάθε κόμβος έχει **Ετικέτα**, **Κλειδιά εισόδου** (κλειδιά κατάστασης χωρισμένα
+με κόμμα, που διαβάζονται κατά την εκτέλεση) και, κάτω από το **Για
+προχωρημένους**, τα **Reducer**, **Χρονικό όριο (ms)**, **Προσπάθειες
+επανάληψης**, **Συνέχεια σε αποτυχία** και **Σχήμα εξόδου**. Οι κόμβοι listen και
+join μπορούν επίσης να αλλάξουν το **Είδος** τους μεταξύ των δύο.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Προσθέτει έναν επιλογέα **εύρους αποθετηρίων** (ποια αποθετήρια του χώρου
+εργασίας θα γίνουν checkout· κενό σημαίνει κανένα), ένα **Όνομα χώρου** και ένα
+πλαίσιο επιλογής **Δημιουργία συνομιλίας**. Όταν το πλαίσιο είναι επιλεγμένο, ένα
+πεδίο **Τίτλος συνομιλίας** ονομάζει τη ροή με την οποία ανοίγει ο χώρος. Οι
+κόμβοι πρακτόρων συμμετέχουν σε αυτόν τον χώρο — δεν ανοίγουν δικό τους.
 
 ### Prompt agent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Προσθέτει το **Πράκτορας** (ποιον πράκτορα θα αποστείλει), την **Προτροπή**
+(χρησιμοποιήστε `{{key}}` για να αναφερθείτε σε εισόδους ή εξόδους ανάντη κόμβων)
+και το **Κλειδί εξόδου**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+Το **Χρονικό όριο (ms)** είναι σε _χιλιοστά του δευτερολέπτου_, όχι σε
+δευτερόλεπτα — το `900000` είναι 15 λεπτά. Η εισαγωγή `900` δίνει στο βήμα 0,9
+δευτερόλεπτα.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Η λειτουργία συνομιλίας υπό την οποία εκτελείται ένας κόμβος πράκτορα προτροπής
+δεν έχει πεδίο στον επεξεργαστή για τον κόμβο πράκτορα. Μεταφέρεται στο
+`extras['mode']` (`chat`, `plan` ή `review`) στον κόμβο **Open conversation** που
+δημιούργησε τον χώρο (προεπιλογή `review`). Ο ορισμός της σε βήμα πράκτορα
+αγνοείται. Το κλειδί αντιστοιχίζεται ακριβώς: κάθε άλλη γραφή αγνοείται σιωπηλά.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Προσθέτει το **Σενάριο**. Δεν υπάρχουν πεδία καταλόγου εργασίας ή περιβάλλοντος,
+γιατί κανένα από τα δύο δεν είναι παραμετροποιήσιμο:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Κάθε βήμα bash σε μια εκτέλεση μοιράζεται το cwd `<cc_root>/pipelines/<runId>/`.
+- Το `GITHUB_TOKEN` εγχέεται από την αποθήκη διαπιστευτηρίων, ώστε τα `gh` και
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` να λειτουργούν χωρίς ρύθμιση.
+- Το σενάριο εκκινείται ως το κυριολεκτικό εκτελέσιμο `bash`, οπότε το `bash`
+  πρέπει να βρίσκεται στο `PATH` του κεντρικού υπολογιστή του διακομιστή. Αυτό
+  είναι ένα ζήτημα στα Windows.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Ένας δρομολογητής αξιολογεί μια συνθήκη και επιστρέφει ένα κλειδί δρομολόγησης· η
+μηχανή πυροδοτεί μόνο την κατάντη ακμή της οποίας το κλειδί δρομολόγησης
+ταιριάζει και σημειώνει τους άλλους κλάδους ως παραλειφθέντες.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Η επιλογή ενός δρομολογητή αντικαθιστά το πεδίο **Κλειδί εξόδου** με τον
+επεξεργαστή συνθηκών. Διαλέξτε μία από τις τέσσερις λειτουργίες του:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Υπάρχει αρχείο(-α) — οποιοδήποτε** — δρομολογεί `"true"` όταν υπάρχει
+  οποιαδήποτε καταγεγραμμένη διαδρομή.
+- **Υπάρχουν αρχεία — όλα** — δρομολογεί `"true"` μόνο όταν υπάρχουν όλες οι
+  καταγεγραμμένες διαδρομές.
+- **Σύγκριση** — συγκρίνει μια τιμή κατάστασης με ένα κυριολεκτικό.
+- **Διακόπτης** — δρομολογεί με βάση την τιμή ενός κλειδιού κατάστασης, με μια
+  προεπιλεγμένη περίπτωση.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Έπειτα ορίστε τα αντίστοιχα κλειδιά δρομολόγησης στις εξερχόμενες ακμές (δείτε
+[Σύνδεση κόμβων μεταξύ τους](#σύνδεση-κόμβων-μεταξύ-τους)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
+Οι ομάδες boolean `and` / `or` / `not` υποστηρίζονται από το body αλλά δεν μπορούν
+να συνταχθούν από αυτή τη φόρμα — χρειάζονται ένα χειροποίητο δέντρο κατηγορημάτων
+στο `extras.predicate`. Το πλήρες λεξιλόγιο κατηγορημάτων και τελεστών βρίσκεται
+στην [αναφορά βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Δεν έχει δική του διαμόρφωση: περιμένει όλα τα ανάντη βήματά του.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Η πύλη αποστέλλει τον πράκτορα έγκρισης σε μια κρυφή συνομιλία με την προτροπή της
+πύλης και αναστέλλεται. Ο εγκρίνων ζητά την απόφασή σας στη συνομιλία και την
+υποβάλλει με το `submit_output` ως `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Η απόφαση καταλήγει στο κλειδί εξόδου (προεπιλογή
+`approval_decision`), ώστε ένας κατάντη δρομολογητής διακόπτη να μπορεί να
+διακλαδωθεί με βάση αυτή.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Ορίστε το **Πράκτορας** στον εγκρίνοντα και την **Προτροπή** στην ερώτηση της
+πύλης. Η πύλη επιλύεται μέσω `submit_output` ως `{ "decision": "approved" |
+"rejected", "reason": "..." }`. Οι κόμβοι **Reviewer (prompt)** υποβάλλουν με τον
+ίδιο τρόπο.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Προσθέτει το **ID ομάδας** και τη **Λειτουργία αποστολής**. Ο επιλογέας προσφέρει
+ακριβώς δύο λειτουργίες:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — μία εργασία ανά μέλος, αναστέλλεται μέχρι να ολοκληρωθούν όλα.
+- `manager` — αποστέλλει τον ηγέτη, ο οποίος αναθέτει.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Οποιαδήποτε άλλη αποθηκευμένη τιμή συμπεριφέρεται ως `allParallel`. Ορίστε το
+**Reducer** σε `append` για να συλλέξετε το αποτέλεσμα κάθε μέλους σε μια λίστα
+κάτω από το κλειδί εξόδου.
 
 ### For each and Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+Το **For each** αντιστοιχίζει προεπιλεγμένα πάνω στο κλειδί κατάστασης `items`
+(`extras.iterableKey` / `extras.itemKey` στον κόμβο). Αποδίδει την προτροπή του μία
+φορά ανά στοιχείο (`{{item}}` προεπιλεγμένα) και αποστέλλει τον πράκτορα **μία**
+φορά με αυτές τις προτροπές συνενωμένες. Μια κενή συλλογή ολοκληρώνεται αμέσως με
+κενή λίστα. Δεν είναι μία παράλληλη αποστολή ανά στοιχείο.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+Το **Call sub-pipeline** αναστέλλεται μέχρι η θυγατρική εκτέλεση να φτάσει σε
+τερματική κατάσταση και μετά συγχωνεύει την τελική κατάσταση του παιδιού κάτω από
+το κλειδί εξόδου (προεπιλογή `subflow_result`). Στοχεύστε σε ένα παιδί με το
+`extras.templateId`. Ένα πρότυπο δεν μπορεί να καλέσει τον εαυτό του· ένα
+αποτυχημένο ή ακυρωμένο παιδί αποτυγχάνει το γονικό βήμα, το οποίο μετά
+τροφοδοτεί την πολιτική επανάληψης και συνέχειας-σε-αποτυχία αυτού του βήματος.
 
-## Declare inputs and allow manual runs
+## Δήλωση εισόδων και χειροκίνητες εκτελέσεις
 
-Both live behind **Manual run** in the editor header.
+Και τα δύο βρίσκονται πίσω από το **Χειροκίνητη εκτέλεση** στην κεφαλίδα του
+επεξεργαστή.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Πατήστε **Χειροκίνητη εκτέλεση**.
+2. Ενεργοποιήστε το **Να επιτρέπεται χειροκίνητη εκτέλεση**. Αυτός ο διακόπτης
+   αποθηκεύεται αμέσως — δημιουργεί (ή διαγράφει) τη γραμμή εναύσματος `manual`
+   που κάνει το πρότυπο να εμφανίζεται στον εκκινητή εκτελέσεων.
+3. Ορίστε τις **Μέγιστες παράλληλες εκτελέσεις** αν θέλετε όριο (αφήστε κενό για
+   απεριόριστο). Οι επιπλέον εκκινήσεις περιμένουν σε κατάσταση `queued` μέχρι να
+   ελευθερωθεί θέση.
+4. Πατήστε **Προσθήκη εισόδου** για κάθε πεδίο φόρμας που πρέπει να συλλέγει μια
+   χειροκίνητη εκτέλεση:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Πεδίο                 | Περιγραφή                                                          |
+| --------------------- | ------------------------------------------------------------------ |
+| **Κλειδί**            | Κλειδί κατάστασης κάτω από το οποίο αποθηκεύεται η τιμή· ανατρέξτε σε αυτό ως `{{key}}` |
+| **Ετικέτα**           | Ετικέτα εμφάνισης (προεπιλογή είναι το κλειδί)                      |
+| **Τύπος**             | Κείμενο, Κείμενο πολλών γραμμών, Αριθμός, Διακόπτης, Επιλογή, Αποθετήριο |
+| **Επιλογές**          | Επιλογές χωρισμένες με κόμμα, μόνο για την Επιλογή                  |
+| **Προεπιλεγμένη τιμή** | Προσυμπληρωμένη τιμή                                              |
+| **Υπόδειξη**          | Κείμενο υπόδειξης μέσα στο κενό πεδίο                              |
+| **Κείμενο βοήθειας**  | Κείμενο βοήθειας κάτω από το πεδίο                                 |
+| **Υποχρεωτικό**       | Αν η φόρμα εκτέλεσης μπλοκάρει σε κενή τιμή                        |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Μια είσοδος **Αποθετήριο** αποδίδει έναν επιλογέα πάνω από τα αποθετήρια του
+χώρου εργασίας και συμπληρώνει τα `repo_id`, `repo_local_path`, `repo_full_name`
+και — όταν το αποθετήριο έχει απομακρυσμένο GitHub — τα `repo_owner` και
+`repo_name` στο ωφέλιμο φορτίο της εκτέλεσης.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Πατήστε **Αποθήκευση** στο παράθυρο διαλόγου. Οι αλλαγές στις εισόδους
+   ενσωματώνονται στο προσχέδιο· παραμένουν όταν αποθηκεύσετε το πρότυπο.
 
-## Save and enable
+## Αποθήκευση και ενεργοποίηση
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/).
+1. Πατήστε **Αποθήκευση** στην κεφαλίδα του επεξεργαστή. Η κεφαλίδα εμφανίζει
+   «Μη αποθηκευμένες αλλαγές» μέχρι να το κάνετε.
+2. Επιστρέψτε στις **Ρυθμίσεις → Χώρος εργασίας → Πρότυπα pipeline** και ελέγξτε
+   ότι ο διακόπτης της γραμμής του προτύπου είναι ενεργός. Η μηχανή αρνείται να
+   ξεκινήσει ένα απενεργοποιημένο πρότυπο και ένα απενεργοποιημένο πρότυπο δεν
+   εμφανίζεται ποτέ στον εκκινητή εκτελέσεων.
+3. Για να ξεκινά αυτόματα, σύρετε ένα έναυσμα από τη βιβλιοθήκη κόμβων στον καμβά
+   — δείτε
+   [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run a pipeline manually](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
-- [Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
-- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
-- [Pipeline steps reference](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/)
+- [Χειροκίνητη εκτέλεση pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
+- [Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/)
+- [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+- [Αναφορά βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/)

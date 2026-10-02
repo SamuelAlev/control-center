@@ -1,131 +1,137 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Deleger arbeid til agenter
+description: Gi en sak til en agent i en samtale, og la agenter delegere deloppgaver til hverandre innenfor dybde- og syklusbeskyttelsen.
 slug: nb-NO/handbok/slik-gjor-du/deleger-saker
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Denne veiledningen handler om å få arbeid bort fra tallerkenen din og over til
+en agent, og om hva som skjer når agenter sender arbeid mellom seg.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Å tildele en sak til en agent sender den ikke ut]
+Det finnes ingen utsender for saker når mottakeren er en agent. Tildeling
+registrerer eierskap og ingenting mer — det opprettes ikke noe område, ingen
+status endres, ingen agent starter. Unntaket er en sak som er tildelt et
+**team**, som vekker teamlederen. Agentarbeid for en navngitt mottaker lever i
+samtaler, så det er der du starter det.
 :::
 
-## Hand a ticket to an agent
+## Gi en sak til en agent
 
-1. [Create the ticket](/nb-NO/handbok/slik-gjor-du/administrer-saker/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Opprett saken](/nb-NO/handbok/slik-gjor-du/administrer-saker/) med en tittel og en
+   beskrivelse som er presis nok til å jobbe ut fra.
+2. Sett **Tildelt** til agenten, slik at eierskapet står i protokollen.
+3. Åpne (eller opprett) et område og @-nevn den agenten.
+4. Vis til saken med en `#`-omtale i meldingen din — skrivefeltet
+   fullfører saker i arbeidsområdet automatisk — og si hva du vil skal gjøres.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agenten plukker opp arbeidet fra samtalen. Fremdriften strømmes inn i det
+området.
 
-## What the agent receives
+## Hva agenten mottar
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Meldingen din, inkludert sakreferansen du tagget.
+- Området den skal jobbe og rapportere i.
+- Et isolert worktree fra arbeidsområdets koblede repoer.
+- **Modusen** til området, som er det som styrer verktøyflaten til kjøringen.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/nb-NO/handbok/konsepter/moduser/).
+Modus er en egenskap ved området, ikke ved saken — en sak har ingen
+modus. Én agent kan derfor være i `chat` i ett område og `plan` i et
+annet. Velg den fra modusvelgeren i skrivefeltet (**Agent**, **Plan** eller
+**Orkestrer**); `review` settes av PR-gjennomgangsområder og kan ikke velges.
+Se [Moduser](/nb-NO/handbok/konsepter/moduser/).
 
-## Require a structured result
+## Krev et strukturert resultat
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+En utdatakontrakt deklareres på utsendingen, ikke på saken:
+`expected_output_schema` pluss `output_contract_mode` (streng som standard).
+Agenten oppfyller den ved å kalle `submit_output`, som validerer nyttelasten
+mot skjemaet og avviser en som ikke samsvarer.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Både den godtatte utdataen og eventuelle avvisninger havner i **kjøreloggen
+til agenten**. Saken sin egen status røres ikke av dette — en mislykket
+kontrakt gjør ikke saken mislykket.
 
-## Monitor progress
+## Overvåk fremdriften
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Området** — aktivitet fra agenter i sanntid, hovedvisningen.
+- **Saken** — statusen, slik den som flytter den, setter den.
+- **Observabilitet → Live** (`/workspaces/<workspace-id>/observability`) —
+  oversikten over aktive agenter.
+- **Observabilitet → Innsikt** — kjøreloggen, med kostnad og varighet.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Det finnes ingen dashbordskjerm; en arbeidsområde-URL alene omdirigeres til
+innboksen.
 
-## Let agents delegate to each other
+## La agenter delegere til hverandre
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+En agent som støter på et delproblem, delegerer med MCP-verktøyet
+`delegate_task`. Det oppretter en underordnet sak tildelt en annen agent, og —
+når du oppgir `parent_ticket_id` — registrerer kjeden slik at beskyttelsene kan
+se den.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+To strukturelle beskyttelser kjører alltid ved knutepunktet for saker, aldri
+etter promptinstruksjon:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Dybdemaksimum** — en kjede som er dypere enn 3 hopp, avvises.
+- **Syklusdeteksjon** — et hopp tilbake til en agent som allerede er i kjeden,
+  avvises.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Når du oppgir `from_agent_id`, kjører to beskyttelser til (produksjon leverer
+alltid resolverportene):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Autonomitak** — delegatens effektive nivå i området må ikke overskride
+  delegatorens.
+- **Budsjettramme** — delegering belaster delegatorens gjenværende
+  hardstopp-budsjett og kan ikke lage mer. Ingen policy, eller en ubegrenset
+  policy, går gjennom.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+En avvisning er høylytt: verktøyet returnerer begrunnelsen fra beskyttelsen
+ordrett, slik at den delegerende agenten ser nøyaktig hvorfor. Feltet
+`delegatedByAgentId` registrerer hvem som delegerte, og danner et
+delegeringstre.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` hopper over hver beskyttelse]
+Det eldre verktøyet `delegate_ticket` er fortsatt registrert og kaller
+`createTicket` direkte — ingen dybdemaksimum, ingen syklussjekk, ingen
+autonomitak, ingen budsjettramme. Foretrekk `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Dette dybdemaksimumet på 3 for delegering er en annen grense enn grensen på 2
+for subagentnesting i det innebygde harnesset — den ene begrenser saker mellom
+agenter, den andre begrenser subagenter inne i én enkelt kjøring.
 
-## Put several agents on one ticket
+## Sett flere agenter på én sak
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Legg dem til som **samarbeidspartnere** på saken (roller: tildelt,
+samarbeidspartner, reviewer). Det er en oversikt — en registrering av hvem som
+er involvert — og gir ingenting i seg selv.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/nb-NO/handbok/slik-gjor-du/omrader/).
+For å faktisk sette agenter i den samme samtalen, legger du dem til som
+deltakere fra områdeoverskriften. De kan da @-nevne hverandre der. Se
+[Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/).
 
-## Automated ticket creation
+## Automatisk oppretting av saker
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Ingen node i pipeline-paletten oppretter saker, så en pipeline kan ikke spre
+arbeid ut som tildelte saker.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/).
+Veien som faktisk finnes, er orkestrering: å godkjenne et forslag oppretter et
+prosjekt og et team, kompilerer DAG-en av undersaker i forslaget til en
+**pipeline-mal** (ett `promptAgent`-steg per undersak, ikke én `Ticket`-rad
+hver) og starter den kjøringen. Se
+[Kjør en orkestrering](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/).
 
-## Related guides
+## Relaterte guider
 
-- [Create and manage tickets](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [Run an orchestration](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
-- [Organize work with projects](/nb-NO/handbok/slik-gjor-du/prosjekter/)
-- [Ticket lifecycle reference](/nb-NO/handbok/referanse/livssyklus-for-saker/)
+- [Opprett og administrer saker](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [Kjør en orkestrering](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
+- [Organiser arbeid med prosjekter](/nb-NO/handbok/slik-gjor-du/prosjekter/)
+- [Livssyklus for saker](/nb-NO/handbok/referanse/livssyklus-for-saker/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Tickets](/nb-NO/handbok/konsepter/saker/)
-- [Dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)
-- [Modes](/nb-NO/handbok/konsepter/moduser/)
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/)
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/)
+- [Moduser](/nb-NO/handbok/konsepter/moduser/)

@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Diagnostichează un agent
+description: Parcurge jurnalul de rulare, verificarea adaptorului, starea serverului și diagnosticările gazdei atunci când un agent nu mai produce rulări.
 slug: ro-RO/manual/ghiduri-practice/diagnosticare-agent
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Acest ghid îți arată cum să afli de ce un agent nu produce rulări.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Lucrează de sus în jos: mai întâi rulările agentului însuși, apoi backendul lui, apoi serverul, apoi gazda.
 
-## 1. Check the agent's run history
+## 1. Verifică istoricul rulărilor agentului
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Setări → Spațiu de lucru → Agenți** → selectează agentul → **Jurnale**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Fiecare rulare afișează o insignă de stare, o durată („Running…” cât timp este în curs), orele de început și de final, PID-ul și adaptorul folosit. **Vizualizează** deschide fluxul brut de evenimente al acelei rulări. **Oprește** ucide un proces aflat în rulare și marchează rularea ca „Killed by user”; **Oprește forțat ce rulează** din antet face același lucru pentru fiecare rulare în curs a acelui agent.
 
-Read it like this:
+Citește-le astfel:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Nicio rulare** — trimiterea nu a avut loc niciodată. Mențiunile din compozitor sunt `@` plus caractere de cuvânt (litere, cifre, liniuță de subliniere). Rezolvarea este o potrivire exactă sau de prefix pe numele agentului, așa că `@code-reviewer` este interpretat ca `code` și poate totuși trezi un agent numit `code-reviewer`. Un nume care conține un spațiu nu poate fi menționat ca un singur token. Apoi treci la pasul 2.
+- **O rulare care s-a încheiat imediat cu eroare** — deschide **Vizualizează**. O eroare de lansare a backendului apare aici ca eroare de proces.
+- **O rulare blocată pe „Running…”** — oprește-o, apoi verifică **Timeout de tăcere** al agentului în tab-ul Setări. Un timeout nesetat folosește implicitul modului.
+- **O rulare încheiată fără rezultat util** — starea din jurnalul de rulare rămâne `completed` pentru o rulare care s-a încheiat fără livrabilul declarat; semnalul onest este textul rezumatului, nu insigna.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Tab-ul Jurnale nu arată niciun cost. Pentru cheltuieli, folosește tabelul pe agent din **Observabilitate → Insights**.
 
-## 2. Check the agent's backend
+## 2. Verifică backendul agentului
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Setări → Server → Provideri de modele** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Lista **Runnere detectate** arată fiecare adaptor cu rezultatul verificării sale — o versiune instalată, „Se verifică…” sau „Negăsit” — plus calea rezolvată și etichetele de capabilități pentru un CLI găsit. Dă clic pe **Reîmprospătează** în antetul paginii ca să reverifici.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Verificarea rulează pe mașina care găzduiește `cc_server`, nu pe mașina la care te uiți. Dacă ești pe clientul web sau pe un dispozitiv asociat, „Negăsit” înseamnă că CLI-ul lipsește pe gazda serverului.
 
-Two things to confirm:
+Două lucruri de confirmat:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Agentul are măcar un adaptor setat.** Un agent cu adaptorul gol este trimis către **Control Center (built-in)**, iar jurnalul de rulare înregistrează `cc-harness`, așa că transcrierea numește ce a rulat. Fără model de asemenea, cere implicitul de la Anthropic — ceea ce eșuează cu `No credential for provider "anthropic"` dacă nu ai conectat un cont Anthropic. Specialiștii predefiniți vin fără adaptor.
+- **Adaptorul încorporat are un model.** Lista lui de modele vine în direct de la providerii conectați mai jos pe aceeași pagină, deci un provider fără date de autentificare stocate nu contribuie cu niciun model.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Catalogul de adaptoare în sine este fix — nu există nicio cale de a înregistra un adaptor nou. Ce poți schimba aici pentru fiecare adaptor sunt argumentele de lansare și variabilele de mediu. Reține că o suprascriere de mediu la nivel de adaptor bate în tăcere un cont de provider conectat atunci când se rezolvă datele de autentificare.
 
-## 3. Check the server
+## 3. Verifică serverul
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Setări → Server → Conexiune și stare** (`/settings/server/connection`) arată cu ce server vorbește acest client și ce raportează el.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Pentru un server headless, `GET /healthz` oferă aceleași informații fără un client. Este neautentificat și deschis la CORS prin concepție:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Returnează starea serverului, timpul de funcționare în secunde, numărul de conexiuni active, portul de ascultare, versiunea de build și SHA-ul git, versiunea schemei spațiului de lucru, versiunea catalogului RPC, id-ul, numele și amprenta de identitate ale serverului, dacă legarea la rețea este nesigură și un bloc `codeGraph` cu contoarele `watching` / `indexing` / `pending`. Când un cache a văzut trafic, include și un bloc `caches`; un server demo adaugă `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Două lucruri care merită știute când o modificare „merge în teste, dar nu în aplicație”:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Aplicația desktop lansează cu prioritate un binar `cc_server` **precompilat** în locul surselor. O nouă operație RPC sau un nou instrument MCP nu apare până când binarul nu este recompilat, iar jurnalul de pornire emite un avertisment când SHA-ul git al procesului copil diferă de cel al aplicației.
+- Aplicația desktop ucide un server pornit care nu și-a afișat bannerul de disponibilitate în 20 de secunde și trece pe un ecran de eroare.
 
-## 4. Check the host
+## 4. Verifică gazda
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Setări → Server → Diagnosticări și confidențialitate** (`/settings/server/diagnostics`) este pagina la nivel de gazdă. Conține:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Sandboxing** — comutatorul principal, backendul detectat, un indiciu de instalare și comutatoarele de capabilități implicite. Doar backendul detectat vine de la server; vezi atenționarea de mai jos. Nu există niciun control de resetare.
+- **Căutare semantică** — ciclul de viață al modelului de embedding de pe dispozitiv: instalat, în curs de descărcare cu un procent, neinstalat sau o eroare de instalare. Până când este instalat, memoria și căutarea în cod rămân doar pe cuvinte-cheie.
+- **Comportament sistem** — menține computerul treaz cât timp rulează agenții.
+- **Motor de sincronizare** — comutatoare de oprire forțată pe depozit pentru tichete, mesagerie și note. Sunt ieșiri de siguranță de urgență înapoi la abonamentele cu instantaneu complet; o modificare afectează doar abonamentele noi, așa că își face pe deplin efectul după o reîncărcare.
+- **Nivel jurnal** — ridică-l înainte de a reproduce o defecțiune.
+- **Confidențialitate** — dacă conținutul brut al diff-urilor poate fi transmis modelului agentului și dacă se trimit rapoarte de eroare.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Această secțiune raportează gazda, iar controalele ei sunt pe client]
+Detectarea și aplicarea sunt acum în acord: acolo unde detectorul raportează un backend nativ, rulările agenților de pe acea gazdă sunt într-adevăr înfășurate în el. Dar detectorul este singurul lucru activ din această secțiune. Comutatorul principal, selectorul de backend și comutatoarele de capabilități implicite sunt preferințe stocate pe dispozitivul tău, iar serverul nu citește niciuna dintre ele — comutatorul propriu al serverului este `--sandbox` (`on` implicit, `off` pentru a renunța), iar pentru orice agent lăsat pe „Folosește implicitul spațiului de lucru” serverul revine la implicitul său conservator: fără git push, fără API GitHub, fără cheie de tichete, rețeaua activată.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Deci un avertisment de aici merită tratat, dar de obicei nu este motivul pentru care eșuează un agent. Ca să confirmi în ce stare este serverul, citește jurnalul lui de pornire: afișează `agent sandbox ON` cu nota despre backend, `no OS-native agent sandbox on this host` cu un indiciu de instalare sau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` nu conține niciun câmp de sandbox.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Acolo unde nu există backend — pe Windows întotdeauna, pe Linux sau WSL2 fără `bwrap` și `socat` — rulările **nu** sunt izolate, iar ce le limitează este checkout-ul propriu al conversației, capabilitățile care decid ce date de autentificare sunt emise în el, guardrail-urile de acțiune, sanitizarea mediului și suprafața de instrumente pe care o permite modul său.
 :::
 
-## Common failures
+## Eșecuri frecvente
 
-### The run never starts and the adapter shows "Not found"
+### Rularea nu pornește niciodată, iar adaptorul afișează „Negăsit”
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Instalează CLI-ul **pe gazda serverului**, apoi dă clic pe **Reîmprospătează** în pagina Provideri de modele. Sau comută agentul pe adaptorul încorporat, care nu are nevoie de niciun CLI, și conectează un provider pe aceeași pagină.
 
-### The agent cannot push or open a pull request
+### Agentul nu poate face push și nu poate deschide un pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Capabilitățile sale sunt poarta. Deschide **Setări → Spațiu de lucru → Agenți** → agentul → **Permisiuni sandbox**, activează comutatorul și bifează **Permite git push** și **Permite apeluri GitHub API**. Dacă lași comutatorul pe „Folosește implicitul spațiului de lucru”, agentul nu primește niciuna dintre ele.
 
-### Semantic search returns nothing useful
+### Căutarea semantică nu returnează nimic util
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Verifică **Setări → Server → Diagnosticări și confidențialitate → Căutare semantică**. Până când modelul de embedding este instalat, căutarea este doar pe cuvinte-cheie. Rândurile scrise înainte de instalarea modelului nu sunt niciodată completate retroactiv, așa că rămân doar pe cuvinte-cheie chiar și după aceea.
 
-### The server will not boot at all
+### Serverul nu pornește deloc
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Bibliotecile native sunt obligatorii și nu există mod degradat. O dylib lipsă face `cc_server` să refuze pornirea și numește vinovatul în eroare. Pregătește bibliotecile native cu `scripts/natives/build_natives.sh` și recompilează binarul serverului.
 
-### An action is silently denied
+### O acțiune este refuzată în tăcere
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+O decizie `prompt` de guardrail fără niciun aprobator conectat este refuzată, prin concepție. Verifică regulile spațiului de lucru în **Setări → Spațiu de lucru → Permisiuni agent**.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/)
-- [Configure guardrails](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/)
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/)
+- [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/)
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
 
-## Related concepts
+## Concepte conexe
 
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/)
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/)
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)

@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: دستورات اسلش
+description: هر دستوری که می‌توانید در ویرایشگر پیام تایپ کنید، چه می‌کند و کجا اجرا می‌شود.
 slug: fa-IR/راهنمای-کاربر/مرجع/دستورات-اسلش
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+دستوراتی که در ویرایشگر پیام یک فضا تایپ می‌شوند. بر پایهٔ جایی که اثر می‌گذارند به سه گروه تقسیم می‌شوند و این تفاوت مهم است: یک دستور **محلی** هرگز به‌عنوان پیام سفر نمی‌کند، پس نه در رونوشت ظاهر می‌شود و نه به عاملی می‌رسد.
 
-| Where it runs | What that means                                                                    |
+| محل اجرا | معنایش                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **محلی**     | در کارخواه (یا یک عملیات سمت سرور که کارخواه آغازش می‌کند) رسیدگی می‌شود. دستور هرگز به‌عنوان پیام سفر نمی‌کند، پس هیچ عاملی آن را نمی‌بیند. |
+| **کناری**      | یک فراخوانی مدل سمت سرور دربارهٔ گفتگو. گفتگو تغییر نمی‌کند. |
+| **اعزام**  | برای اجرایی که این پیام آغاز می‌کند، حالتی یا دستورالعملی تعیین می‌کند.                            |
 
 ---
 
-## Directing a run
+## هدایت یک اجرا
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**محلی → اعزام.** حالت برنامه را روی گفتگو مسلح می‌کند: یک worktree کاملاً فقط‌خواندنی و سطح ابزاری که حداکثر تا `read` محدود شده است. خروجیِ عامل یک برنامه است، نه یک ویرایش. `/plan` خالی فقط حالت را برمی‌گرداند و هرگز به‌عنوان پیام سفر نمی‌کند؛ با یک پرامپت، باقی خط همان چیزی است که اجرا را آغاز می‌کند.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**اعزام.** هدفی خودمختار را آغاز می‌کند که سرپرست هدف آن را در میان بخش‌ها دوباره اعزام و از نو راه‌اندازی می‌کند.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+تایپ `/goal` همراه با متن، ابتدا **مصاحبهٔ هدف** را باز می‌کند — گذر کوتاهی که از پذیرفتن یک پیش‌نویس سر باز می‌زند تا وقتی هر پنج مورد زیر را داشته باشد: معیارهای موفقیتی که یک ارزیاب بتواند بی‌قضاوت شخصی درباره‌شان تصمیم بگیرد، یک فرمان راستی‌آزمایی دقیق، سقفی برای تعداد تلاش، مرزهای دامنه، و شرایط توقف. هر گام گزینهٔ *رد کردن و اجرا به‌همان صورت* را پیشنهاد می‌دهد: این مصاحبه یک پیش‌فرض است، نه یک دروازه.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`، `/goal resume` و `/goal drop` دستور اسلش نیستند. مکث، ادامه و توقف روی فهرست اهداف گفتگو در نوار کناری قرار دارند. فلگ‌های آغاز روی خود هدف عبارت‌اند از `--budget <dollars>`، `--max <N>` (بودجهٔ اجرا) و `--days <N>` (مهلت). هدفی که به سقف هزینه‌اش رسیده باشد، تنها با بالا بردن همان سقف و از همان کنترل نوار کناری از سر گرفته می‌شود.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[چرا اصلاً وسط کار می‌آید]
+هدف خودمختار تنها جایی است که یک بریف مبهم واقعاً گران تمام می‌شود. اجرا ساعت‌ها روی هدفی کار می‌کند که «تمام‌شدنش» را هیچ‌کس تعریف نکرده، و بعد به‌سلیقهٔ خودش موفقیت اعلام می‌کند. پنج پرسش ارزان‌تر از یک اجرای شبانه است که هر وقت خودش خواست تمام شود.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**اعزام.** تا کامل شدن، به‌صورت تکراری کار می‌کند. یک حد می‌پذیرد: `/loop 10`، `/loop 30m`، `/loop 1h30m`، `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+توکنی که *به نظر* یک حد می‌رسد (با یک رقم یا یک علامت آغاز می‌شود) و تجزیه نمی‌شود، یک خطای سخت است. نثر خودش نثر است، پس `/loop keep going until the tests pass` یک حلقهٔ بی‌کران با یک پرامپت درون‌خطی است، نه یک تجزیهٔ نادرست.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-کارگران-پسزمینه/).
+**اعزام.** نشست را به یک **هدایتگر** تبدیل می‌کند: ابزارهای خودش به `read` به‌علاوهٔ پنج فعل کارگر فرو می‌افتد و کارگران پس‌زمینه ویرایش را انجام می‌دهند. به [هدایت کارگران پس‌زمینه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/هدایت-کارگران-پسزمینه/) نگاه کنید.
 
-Workers never outlive the mode — exiting kills every one of them.
+کارگرها هرگز از این حالت بیشتر عمر نمی‌کنند — خروج از آن همه‌شان را می‌کشد.
 
 ---
 
-## Managing context
+## مدیریت بافت
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**محلی → سرور.** تاریخچهٔ قدیمی‌تر را در یک خلاصهٔ لنگرشده می‌گنجاند و روی بافت فشرده‌شده ادامه می‌دهد. هیچ آرگومانی رو به مدل ندارد: دستور هرگز به‌عنوان پیام سفر نمی‌کند و گذر فشرده‌سازی هیچ اشارهٔ تمرکزی نمی‌گیرد.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**محلی → سرور.** محتوای سنگین را **بدون** خلاصه‌کردن دور می‌ریزد: هیچ فراخوانی مدلی در کار نیست، هر واژه حفظ می‌شود، و تنها حجمی که هیچ‌کس قرار نبود دوباره بخواندش پاک می‌شود.
 
-| Target        | Drops                             |
+| هدف        | چه چیزی را دور می‌ریزد                             |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | نتایج ابزار قدیمی و بی‌حادثه (پیش‌فرض) |
+| `images`      | تصاویر صفحه‌نمایش قدیمی، با نگه‌داشتن متنشان |
+| `all`         | هر دو                              |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+این همان راه فرار برای «بافتم چاق است اما خلاصه نمی‌خواهم» است.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**محلی.** کاوشگر بافت را برای عامل این گفتگو در زبانهٔ جداگانهٔ خودش باز می‌کند:
+هر بخش و جزئی از پنجرهٔ بافت آن — پرامپت سیستمی، مهارت‌ها، فایل‌های بافت،
+شِمای ابزارها، تاریخچه و تصاویر — همراه با هزینهٔ هرکدام و محتوای عین‌به‌عین
+پشت آن.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+این زبانه با جفت (فضا، عامل) کلید می‌خورد، پس اجرای دوبارهٔ آن همان یک زبانه را
+دوباره فوکوس می‌کند، نه اینکه نسخه‌های تکراری از یک تفکیک را روی هم بچیند.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+در فضایی با **بیش از یک عامل**، `/context` خالی همان پنجره‌ای را باز می‌کند که
+نشانگر بافت در سرصفحه می‌خواند — یعنی عاملی که آخرین بار اینجا کار کرده، همان
+که پیامش پایین رد است — و زبانه با `Context · <name>` برچسب می‌خورد تا بگوید از
+کیست. برای جابه‌جایی نام دیگری را بیاورید: `/context qa` (علامت `@` اختیاری است). نام تایپ‌شده
+دقیق تطبیق داده می‌شود، نه تقریبی: دو عامل دو پنجرهٔ متفاوت دارند، پس یک
+انطباق نزدیک که پنجرهٔ دیگری را باز کند، پاسخی موجه‌نما به پرسشی است که شما
+نپرسیده‌اید.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+همان کاوشگر پشت تراشهٔ نشانگر بافت در سرصفحهٔ فضا است که همان عامل را دنبال
+می‌کند — دستور و تراشه هرگز نمی‌توانند بر سر اینکه «بافت» اینجا یعنی چه با هم
+اختلاف پیدا کنند.
 
 ---
 
-## Asking about the conversation
+## پرسیدن دربارهٔ گفتگو
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+این‌ها یک فراخوانی مدل خرج می‌کنند و **هرگز گفتگو را تغییر نمی‌دهند**. نوبت واقعی بعدی عامل دقیقاً همان چیزی را می‌بیند که در هر حال می‌دید، و تمام ارزش پرسیدن همین است.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**کناری.** برای هر کسی که کار را از سرد شروع می‌کند یک سند تحویل می‌نویسد: کار چیست، چه چیزی آموخته شد، چه چیزی باقی مانده است.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**کناری.** به پرسشی دربارهٔ کار تا اینجای کار پاسخ می‌دهد، بی‌آنکه پرسش یا پاسخ را به رونوشت اضافه کند.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[دو دستور، یک پیاده‌سازی]
+هر دو یک شکل‌اند — گفتگو را همان‌طور که هست بردار، یک پرسش دربارهٔ آن بپرس، هیچ‌یک از دو طرف را ماندگار نکن. یک بار پیاده‌سازی شده‌اند تا نتوانند به دو برداشت متفاوت از «بافت تا اینجا» منحرف شوند.
 :::
 
 ---
 
-## Navigating and exporting
+## پیمایش و برون‌بری
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/شاخه-کردن-گفتگو/).
+**محلی.** ناوبر شاخه را باز می‌کند: گفتگو کجا فورک شده، هم‌اکنون روی کدام مسیر است، و چگونه به مسیری که ترک کرده‌اید برگردید. به [شاخه‌کردن یک گفتگو(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/شاخه-کردن-گفتگو/) نگاه کنید.
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**محلی.** گفتگو را در یک فایل HTML خودبسنده می‌نویسد — کارت‌های ابزار جمع‌شونده، بدون شیوه‌نامه، بدون اسکریپت، بدون میزبان تصویر. در دسکتاپ در `Documents/ControlCenter/exports/` می‌افتد و در وب دانلود می‌شود.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**محلی.** رونوشت را به‌صورت markdown در کلیپ‌بورد کپی می‌کند، با فراخوانی‌های ابزار در بلوک‌های جمع‌شونده. استدلال عمداً کنار گذاشته شده است: رونوشتی که در یک گزارش باگ چسبانده می‌شود را یک انسان می‌خواند.
 
 ---
 
-## Everything else
+## بقیهٔ موارد
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**محلی.** فهرست کارهای ماندگار گفتگو را می‌بیند و ویرایش می‌کند. `/todo` خالی ویرایشگر را باز می‌کند. زیردستورها: `append`، `start`، `done`، `drop` (نام جایگزین `rm`)، `edit`، `copy`، `export`، `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**اعزام.** یک مهارت نصب‌شده را اعمال می‌کند. مهارت‌ها زیر پیشوند `skill:` خودشان زندگی می‌کنند تا با دستورهای داخلی هیچ فضای‌نام مشترکی نداشته باشند — بدون آن، مهارتی به نام `plan` برای همیشه دست‌نیافتنی می‌ماند.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**اعزام.** هر فایل markdown زیر `.agents/commands`، `.agent/commands`، `.claude/commands`، `.codex/commands` یا `.opencode/commands` در مخزن. یک `foo/bar.md` تودرتو هم با `foo:bar` قابل فراخوانی است.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+قالب‌بندی: `$1`، `$@`، `$@[start:length]` و `$ARGUMENTS`. Frontmatter فایل می‌تواند `description` را تعیین کند (تکمیل خودکار ویرایشگر پیام). `allowed-tools` و `model` از فایل تجزیه می‌شوند، اما فراخوانی یک دستور کاربر هم‌اکنون فقط آرگومان‌ها را در بدنه جایگزین می‌کند — مدل یا سطح ابزار اجرا را تغییر نمی‌دهند.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+یک دستور نوشته‌شده توسط کاربر بر مهارتی هم‌نام پیروز می‌شود — میان‌بری است که یک انسان آگاهانه و همراه با آرگومان فراخوانی کرده است.
 
 ---
 
-## Magic keywords
+## واژه‌های کلیدی جادویی
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+دستور نیستند. یک واژهٔ کوچک‌نویس مستقل در هرجای پرامپت، برای همان نوبت یک رهنمود پنهان ضمیمه می‌کند.
 
-| Word          | Effect                                                             |
+| واژه          | اثر                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | بیشترین تلاش استدلال برای نوبت                              |
+| `orchestrate` | کارهای مستقل را موازی واگذار می‌کند و هر مرحله را راستی‌آزمایی می‌کند        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+تطبیق‌دهنده عمداً دربارهٔ مرزها سخت‌گیر است. `orchestrate,` تطبیق می‌خورد؛ `orchestrated`، `orchestrate.ts`، `foo::orchestrate` و `orchestrate()` نه، و بلوک‌های کد حصارکشیشده، بازه‌های درون‌خطی و بخش‌های XML اول پوشانده می‌شوند. بدون آن، چسباندن یک رد پشته رفتار عامل را عوض می‌کرد.
 
 ---

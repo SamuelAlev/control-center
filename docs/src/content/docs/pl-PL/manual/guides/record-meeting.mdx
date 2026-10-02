@@ -1,118 +1,148 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Nagraj i podsumuj spotkanie
+description: Nagraj rozmowę, otrzymaj transkrypt i zamień go na notatki, zadania i decyzje.
 slug: pl-PL/podrecznik/poradniki/nagrywanie-spotkania
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/pl-PL/podrecznik/koncepcje/spotkania/) for how it works.
+Ten poradnik pokazuje, jak nagrać spotkanie i otrzymać opracowanie wygenerowane przez
+AI. Zobacz [Spotkania i transkrypcja](/pl-PL/podrecznik/koncepcje/spotkania/), aby
+poznać zasadę działania.
 
-## Before you start
+## Zanim zaczniesz
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Poczekaj na model mowy, a potem zrestartuj serwer.** Zwykły rozruch wymusza w tle
+  instalację wybranego modelu ASR (Parakeet TDT 0.6B v3, wielojęzyczny model domyślny,
+  około 600 MB). Serwer ustala model **raz, przy rozruchu**, więc pierwsze uruchomienie
+  nadal nie ma żadnych operacji nagrywania, dopóki nie zrestartujesz serwera. Bez modelu
+  na dysku nagrywanie kończy się błędem `Could not start recording on the host: …`. Aby
+  wybrać inną kompilację, przejdź do **Ustawienia → Serwer → Modele głosu i spotkań** —
+  to również wymaga restartu.
+- Przyznaj uprawnienie do **mikrofonu**, gdy system zapyta o nie przy pierwszym
+  nagraniu.
+- W systemie **macOS 14.4+** dźwięk systemowy jest przechwytywany przez przechwytywanie
+  procesów Core Audio — nie trzeba instalować sterownika, ale system pyta drugi raz o
+  uprawnienie do _przechwytywania dźwięku_. To nie jest Nagrywanie ekranu i nigdy nie
+  zapala wskaźnika nagrywania ekranu. Odmowa kończy start błędem `System-audio capture
+  permission denied.` Poniżej macOS 14.4 przechwytywanie dźwięku systemowego nie
+  istnieje.
+- W systemie **Linux** w `PATH` musi znajdować się `parecord` (pulseaudio-utils) albo
+  `pw-record` (pipewire) — przechwytywanie uruchamia jedno z nich na źródle monitora
+  PipeWire/PulseAudio. Bez żadnego z nich start kończy się błędem `No system-audio
+  capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Dokąd trafia dźwięk Twojego spotkania]
+Przechwytywanie, transkrypcja, usuwanie echa i diaryzacja mówców działają na
+urządzeniu, bez żadnego wywołania chmurowego — ale „urządzenie" oznacza **hosta
+cc_server**, a to inna maszyna, gdy serwer działa zdalnie. A końcowe opracowanie to
+zwykłe uruchomienie agenta: potok `meeting_summary` wysyła pełny transkrypt i Twoje
+pobieżne notatki do dowolnego dostawcy modeli, którego używa ten agent. Wskaż temu
+agentowi lokalnego dostawcę, jeśli transkrypt nie może opuścić maszyny.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Ekran nagrywania mówi o tym w trakcie nagrywania, więc decyzja stoi przed Tobą, zanim
+powstanie transkrypt do wysłania.
 :::
 
-## Start a recording
+## Rozpocznij nagrywanie
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Otwórz **Spotkania** na pasku bocznym.
+2. Kliknij **Nagraj spotkanie**. HUD nagrywania na żywo otworzy się pod
+   `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Nagrywanie rusza natychmiast i przechwytuje Twój mikrofon oraz wyjściowy dźwięk
+systemowy — czyli pozostałych uczestników. Nie ma pytania o tryb ani wyboru źródła
+dźwięku: tryb osobisty z jednym mikrofonem istnieje w API, ale nie ma dziś interfejsu.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+W przeglądarce ten sam przepływ działa, z jedną różnicą: „dźwięk systemowy" to
+udostępnianie ekranu, które musi zawierać ścieżkę dźwiękową. Udostępnij kartę
+przeglądarki (albo cały ekran) i włącz w oknie wyboru „Udostępnij dźwięk karty" /
+„Udostępnij dźwięk systemu". Safari i Firefox oraz udostępnianie pełnego ekranu w
+systemie macOS często nie potrafią jej dostarczyć.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD pokazuje miernik poziomu, upływ czasu i transkrypt na żywo, który narasta z jednej
+strony.
 
-## During the meeting
+## W trakcie spotkania
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Rób pobieżne notatki** w panelu notatek. Są zapisywane w trakcie pisania i później
+  przekazywane agentowi podsumowującemu, więc zanotuj wszystko, co transkrypt może
+  pominąć.
+- **Wybierz szablon notatek** w wierszu **Aktywny szablon**. Kształtuje on podsumowanie
+  tego spotkania i jest zapisywany razem z nagraniem, więc późniejsze ponowne
+  uruchomienie odtworzy szablon wybrany tutaj.
+- **Wstrzymuj i wznawiaj** za pomocą kontrolki pauzy. W trakcie pauzy transkrypcja się
+  zatrzymuje, a licznik czasu zastyga.
+- Transkrypt napływa z przypisanymi mówcami: Twoje słowa jako **Ty**, wszyscy pozostali
+  w rozmowie jako **Inni** — dopóki diaryzacja nie rozdzieli Innych na `Person 1`,
+  `Person 2`, … którym możesz zmienić nazwę.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Bardzo cichy mówca może nie zostać transkrybowany]
+Transkrypcja pomija każde okno dźwięku, które nigdy nie przekroczyło progu ciszy, bez
+dekodowania go w ogóle. Dzięki temu cichy kanał nie spala CPU na halucynowanych tokenach
+niebędących mową, ale oznacza też, że cichy lub odległy mówca może nie dać żadnego
+transkryptu. Sprawdzaj miernik poziomu wcześnie, a nie na końcu.
 :::
 
-## Stop and summarize
+## Zatrzymaj i podsumuj
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Kliknij **Zatrzymaj i podsumuj**.
+2. Control Center przenosi Cię prosto do widoku szczegółów spotkania, oznaczonego jako
+   **Przetwarzanie**: diaryzacja rozdziela kanał zdalny na poszczególnych mówców, a
+   potok `meeting_summary` generuje opracowanie.
+3. Spotkanie przechodzi w stan **Gotowe**, gdy ten potok się zakończy. Nie musisz na
+   niego czekać — widok szczegółów aktualizuje się sam.
 
-## Review the writeup
+## Przejrzyj opracowanie
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Widok szczegółów spotkania (`/meetings/:meetingId`) ma cztery karty:
 
-| Tab              | What's there                                                                    |
+| Karta            | Co się w niej znajduje                                                          |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **Notatki**      | Podsumowanie AI i rozszerzone notatki, zbudowane z Twoich pobieżnych notatek i transkryptu |
+| **Transkrypt**   | Pełny transkrypt z przypisanymi mówcami i znacznikami czasu                     |
+| **Zadania**      | Wyciągnięte zadania do zrobienia, każde z opcjonalnym właścicielem              |
+| **Decyzje**      | Decyzje zapisane w trakcie rozmowy                                              |
 
-From here you can:
+Z tego miejsca możesz:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Zmieniać nazwy mówców**: zmień `Person 1` na prawdziwe imię; zastosuje się to w
+  całym transkrypcie.
+- **Odhaczać zadania**, gdy je wykonasz.
+- **Utwórz zgłoszenie** na podstawie zadania: tworzy nowe, nieprzypisane zgłoszenie z
+  tytułem zadania i wiąże je z powrotem z tym wierszem. Przypisz je do agenta już z
+  poziomu samego zgłoszenia (zobacz [Deleguj pracę agentom](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)).
+- **Ponów podsumowanie**, aby uzyskać świeże przejście (na przykład po zmianie nazw
+  mówców). Wykorzystuje ponownie szablon zapisany przy nagrywaniu spotkania. Aktywny
+  szablon wybierzesz w **Ustawienia → Obszar roboczy → Spotkania**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Edytowanie notatek, tytułu, zadań i decyzji działa wszędzie. **Ponów podsumowanie** i
+anulowanie przetwarzanego spotkania są **dostępne tylko na komputerze** — w
+przeglądarce oba przyciski nic nie robią.
 
-## Record straight from a calendar event
+## Nagraj bezpośrednio z wydarzenia w kalendarzu
 
-If you've [connected a calendar](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Jeśli [połączyłeś kalendarz](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/),
+możesz pominąć ręczne rozpoczęcie. Ta opcja jest **dostępna tylko na komputerze**;
+klient webowy jej odmawia.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Otwórz wydarzenie w **Kalendarz**.
+2. Kliknij **Rozpocznij nagrywanie i powiąż**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Nagranie jest wypełniane tytułem wydarzenia i powiązane z powrotem z nim, dzięki czemu
+notatki i wpis w kalendarzu pozostają połączone.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Usunięcie spotkania nie usuwa jego dźwięku]
+Usunięcie spotkania usuwa jego wiersze, ale nagrane pliki WAV w
+`<dataDir>/meetings/<meetingId>/` pozostają na dysku — nie ma polityki retencji, limitu
+rozmiaru ani przeglądu czyszczącego. Usuń ten katalog samodzielnie, jeśli dźwięk ma
+znaczenie.
 :::
 
-## Related guides
+## Powiązane poradniki
 
-- [Connect a Google Calendar](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/)
-- [Delegate work to agents](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)
+- [Połącz Google Calendar](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/)
+- [Deleguj pracę agentom](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Meetings and transcription](/pl-PL/podrecznik/koncepcje/spotkania/)
+- [Spotkania i transkrypcja](/pl-PL/podrecznik/koncepcje/spotkania/)

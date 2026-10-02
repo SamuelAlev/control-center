@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Inteligencja kodu
+description: Dlaczego agent potrzebuje kompilatora, dopasowywacza strukturalnego i debuggera — oraz na co odpowiada każde z nich, czego nie potrafią pozostałe.
 slug: pl-PL/podrecznik/koncepcje/inteligencja-kodu
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center daje agentowi cztery sposoby rozumienia kodu poza jego czytaniem. Odpowiadają one na naprawdę różne pytania, a powód, dla którego są cztery, a nie jeden, jest taki, że żaden pojedynczy mechanizm nie odpowiada na wszystkie.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mechanizm              | Odpowiada na                                          | Koszty                                  |
+| ---------------------- | ----------------------------------------------------- | --------------------------------------- |
+| **Graf kodu**          | Co tu jest i co od tego zależy                        | Przebieg indeksowania; tanie zapytania  |
+| **Serwer językowy**    | Czy to się w ogóle kompiluje i czym jest ten typ      | Proces serwera na projekt               |
+| **Wyszukiwanie strukturalne** | Gdzie występuje ten KSZTAŁT                    | Parsowanie na plik                      |
+| **Debugger**           | Co było prawdą w tym momencie, w tej ramce            | Zatrzymany proces                       |
 
-## The gap the language server closes
+## Luka, którą zamyka serwer językowy
 
-The [code graph](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Graf kodu](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/) jest budowany na podstawie tree-sittera: symbole, krawędzie wywołań, promień wpływu. Jest szybki, jest tani i nie wie nic o **typach**. Nie powie, czy wywołanie, które właśnie napisano, się kompiluje, czy dane pole istnieje w obiekcie ani czy zmiana nazwy pominęła jakiś reeksport.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Bez serwera językowego agent dowiaduje się o tym na etapie testów — albo nigdy. Pisze coś wiarygodnie wyglądającego, idzie dalej, a błąd wypływa trzy tury później, przypisany do innej zmiany.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Zysk nie polega więc tak naprawdę na narzędziu `lsp`. Polega na tym, że `write`, `edit` i `apply_patch` są opakowane: po każdym zapisie plik przechodzi przez serwer językowy, a **nowo wprowadzone** komunikaty diagnostyczne są dołączane do wyniku narzędzia. Agent dowiaduje się, że zepsuł kompilację, w momencie, w którym ją zepsuł — niezależnie od tego, czy wpadł na to, żeby o to zapytać.
 
-### Only new diagnostics
+### Tylko nowe komunikaty diagnostyczne
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Powtarzanie tego, co agent już usłyszał, jest gorsze niż milczenie: wypełnia wynik szumem, który agent uczy się pomijać wzrokiem, a razem z nim ucieka ten jedyny nowy błąd. Rejestr prowadzony dla każdego uruchomienia śledzi, co zostało zgłoszone, z kluczem opartym na wadze, kodzie i komunikacie — **nie** na pozycji, więc komunikat, który jedynie przesunął się o cztery linie w dół, nie zostaje ponownie zgłoszony jako nowy.
 
-### Lazy, and honest about being absent
+### Leniwy i uczciwy co do swojej nieobecności
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Żaden serwer nie startuje przy uruchomieniu. Serwer startuje przy pierwszym żądaniu, które go potrzebuje — czyli prawie zawsze przy pierwszej edycji pliku, który obsługuje — a bezczynne są zamykane. Host, który nigdy nie dotyka Darta, nigdy nie uruchamia analizatora.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Wykrywanie to **część wspólna**: znacznik korzenia musi istnieć w kopii roboczej *i* plik binarny musi dać się odnaleźć. Sam znacznik mówi „to projekt w Pythonie” i nic o tym, czy serwer jest zainstalowany; sam odnajdywalny plik binarny mówi, że host ma zestaw narzędzi, i nic o tej kopii roboczej. Dopiero oba razem oznaczają, że zapytanie może się udać, a narzędzie oferowane i zawsze zawodzące jest gorsze od nieobecnego.
 
-## Why structural search, when grep exists
+## Po co wyszukiwanie strukturalne, skoro istnieje grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` dopasowuje znaki. To właściwe narzędzie do nazwy i niewłaściwe do kształtu.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Wzorzec strukturalny jest parsowany przez **tę samą gramatykę co plik**, więc `dispose($X)` znajduje wywołanie niezależnie od tego, jak jest rozstawione, zawinięte czy łamane, i nigdy nie dopasowuje tych samych znaków wewnątrz literału tekstowego lub komentarza.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Cechą, która czyni go czymś więcej niż wyrażeniem regularnym z dodatkowymi krokami, jest to, że metazmienna powtórzona w jednym wzorcu musi przechwycić ten sam tekst:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+pasuje do warunku ochronnego, który zwalnia to, co sprawdził, a nie pasuje do takiego, który zwalnia coś innego. To klasa błędów, której nie da się w ogóle wyrazić tekstowo.
 
-### It runs on the tree-sitter already linked
+### Korzysta z tree-sittera, który już jest podłączony
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Nie ma drugiego silnika. `cc_natives` już ładuje tree-sittera i jego gramatyki na potrzeby grafu kodu, z pamięcią podręczną skompilowanych zapytań i tabelą języków. Dopasowywacz to czysty Dart operujący na drzewach, które i tak były parsowane. Drugi silnik strukturalny oznaczałby drugi parser, drugi zestaw gramatyk do zbudowania i wdrożenia na każdej platformie oraz dwie odpowiedzi na pytanie „czym jest wyrażenie wywołania”.
 
-### A fragment needs somewhere to live
+### Fragment musi mieć gdzie zamieszkać
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Gramatyka definiuje tylko to, czym jest cały *plik*. Sparsowany samodzielnie na najwyższym poziomie Darta, `dispose(x)` jest całkowicie poprawną **sygnaturą funkcji** — deklaracją o nazwie `dispose` przyjmującą parametr `x` — i żaden błąd nigdzie tego nie zdradza. Dopasowywacz zbudowany na takim parsowaniu szuka deklaracji, nie znajduje wywołań i zgłasza „brak dopasowań” dla wzorca, który nigdy nie był czytany tak, jak wygląda.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Dlatego wzorzec jest próbowany w drabinie rusztowań — instrukcja, wyrażenie, składowa klasy, najwyższy poziom — i wygrywa pierwsze, które go przyjmie. Fragment, którego nie przyjmuje żaden kontekst, jest zgłaszany jako nieparsowalny, a nie przeszukiwany i po cichu nieznaleziony.
 
-## Why a rewrite stages instead of writing
+## Dlaczego przepisanie strukturalne najpierw trafia do poczekalni, a nie jest od razu zapisywane
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Przepisanie strukturalne to najszersza edycja, jakiej może dokonać agent: jeden wzorzec, czterdzieści plików, a nikt nie czyta wyniku linia po linii — ani model, ani osoba, która o to poprosiła. Zapisanie go i zaraportowanie „gotowe” oznacza, że pierwszym uczciwym spojrzeniem na zmianę jest późniejszy `git diff`.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Dlatego `ast_edit` raportuje, co *zrobiłoby* — liczbę, pliki, dopasowane miejsca — a zmiana trafia na miejsce dopiero wtedy, gdy zatwierdzi ją `resolve`. To także pozwala postawić przed człowiekiem diff i wybór Zaakceptuj/Odrzuć, zanim cokolwiek dotrze na dysk.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Zatwierdzenie jest typu wszystko albo nic, a każdy plik jest porównywany z treścią zapisaną w momencie przygotowania. Między przygotowaniem a zatwierdzeniem agent mógł ręcznie edytować jeden z tych plików, przebieg diagnostyki mógł go przepisać albo formater mógł go dotknąć — zatwierdzenie mimo to odrzuciłoby tę pracę, a diff wyglądałby na zamierzony. Każda niezgodność odrzuca całą zmianę, bo częściowo zastosowane przepisanie strukturalne zostawia drzewo, które nie kompiluje się w żadnym z tych dwóch kształtów.
 
-## What a debugger answers that a print statement cannot
+## Na co odpowiada debugger, czego nie potrafi instrukcja print
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Pętla z instrukcją print wygląda tak: dodaj print, uruchom wszystko jeszcze raz, przeczytaj wynik, usuń print. Kosztuje pełne uruchomienie testów na każde pytanie i odpowiada tylko na pytanie, które przyszło do głowy *przed* uruchomieniem.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Zatrzymana ramka odpowiada naraz na każde pytanie o ten moment — o każdą zmienną lokalną, każdego wywołującego i o wyrażenie obliczone w zasięgu samej ramki. W przypadku zawieszonego procesu albo błędu, który powtarza się raz na dziesięć uruchomień, to różnica między całym popołudniem a minutą.
 
-### Bounded like an enclosure, and for the same reason
+### Ograniczona jak wybieg — i z tego samego powodu
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Adapter debuggera posiada **zatrzymany proces**, który trzyma wszystko, co trzyma ten proces — port, blokadę, połączenie z bazą danych. Sesja, której nikt nie prowadzi, to wyciek, który przeżywa turę, w której ją rozpoczęto. Dlatego obowiązuje twardy TTL, dokładnie jedna sesja na rozmowę, a drugie `launch` jest odrzucane, zamiast po cichu zastępować pierwsze: agent, który rozpoczyna drugie bez zakończenia pierwszego, prawie na pewno zgubił pierwsze z oczu.
 
-### One transport, two protocols
+### Jeden transport, dwa protokoły
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol dzieli z Language Server Protocol ramkowanie `Content-Length` i nic ponadto — inne klucze korelacji, inny kształt błędów i trzeci typ komunikatu (zdarzenia), który nie ma odpowiednika w LSP. Ramkowanie mieszka w jednym miejscu, a protokoły leżą na nim osobno.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Napisanie ramkowania dwa razy oznaczałoby dwie odpowiedzi na pytania „komunikat rozciąga się na dwa fragmenty”, „fragment zawiera trzy komunikaty” i „serwer wypisał baner na stdout przed pierwszą ramką”, a poprawkę dostałaby tylko jedna z nich.
 
-## Related
+## Zobacz też
 
-- [Search code with the code graph](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/) — the symbol and impact side
-- [Debug a failing test](/pl-PL/podrecznik/poradniki/debugowanie-padajacego-testu/) — the debugger, end to end
-- [Refactor structurally](/pl-PL/podrecznik/poradniki/refaktoryzacja-strukturalna/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow/) — every operation and argument
+- [Szukaj kodu w grafie kodu](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/) — strona symboli i wpływu
+- [Debuguj padający test z agentem](/pl-PL/podrecznik/poradniki/debugowanie-padajacego-testu/) — debugger od początku do końca
+- [Refaktoryzuj kod strukturalnie](/pl-PL/podrecznik/poradniki/refaktoryzacja-strukturalna/) — `ast_grep` i `ast_edit`
+- [Wbudowane narzędzia agentów](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow/) — każda operacja i argument

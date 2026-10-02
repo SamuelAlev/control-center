@@ -1,98 +1,97 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: チャットボットをカスタマイズ
+description: ボットの名前や自己紹介の文言を変え、スラッシュコマンドを Control Center から変更する方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+このガイドでは、Control Center を離れずに、プロバイダー側のボットアプリを作り変える方法を説明します。
 
-## Prerequisites
+## 前提条件
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- ワークスペースでの `owner` または `admin` ロール
+- **接続済み**のプロバイダー。**ボットをカスタマイズ**の行は、ワークスペースが接続されてから初めて表示されます
+- Control Center が管理できるアプリ。Slack の場合は、接続がアプリ設定のリフレッシュトークン（`xoxe-…`）を保持している必要があります。保持していない場合、その行はその旨を表示して無効のままになります
 
-## What you can change
+## 変更できるもの
 
-| Field                 | Meaning                                         | Limit                                                      |
+| フィールド | 意味 | 制限 |
 | --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| **アプリ名** | プロバイダーがアプリを一覧表示するときの名前 | 1〜35 文字 |
+| **ボット名（メンバーが@の後に入力するもの）** | メンバーが `@` の後に入力するもの | 1〜80 文字 |
+| **簡単な説明** | プロバイダーが表示する 1 行 | 140 文字以内 |
+| **ボットの自己紹介** | ボットとの DM の上に表示される | 300 文字以内 |
+| **スラッシュコマンド** | メンバーが呼び出すコマンド（スラッシュを除く） | 小文字化され、`a–z 0–9 _ -` のみ、32 文字で切り詰め |
+| **ダイレクトメッセージ** | ボットが DM とエージェントの体験を公開するかどうか | オンまたはオフ |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center はプロバイダーを呼び出す前に 4 つのテキストフィールドを検証します。そのため、見ることのできないサーバーから不透明な `invalid_manifest` が返る代わりに、「the app name must be between 1 and 35 characters」が返ります。コマンドは拒否されず、正規化されます。先頭のスラッシュは取り除かれ、残りは小文字化され、`a–z 0–9 _ -` 以外の文字は削除され、結果が空になった場合は `cc` にフォールバックします。
 
-## Edit the bot
+## ボットを編集する
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. **設定 → ワークスペース → 全般**に移動し、**チャットブリッジ**カードまでスクロールします
+2. プロバイダーのブロックで、**ボットをカスタマイズ**をクリックします
+3. ダイアログは、プロバイダーから読み戻された、アプリの_ライブ_の値で開きます — そのため、誰かが Slack 自身の UI で加えた変更が、あなたの出発点になります
+4. 必要な箇所を編集して保存します
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+これらのライブの値を読み取ると、Slack 側でトークンのローテーションが発生します。だからこそこの行は、ページの読み込み時に自動で実行されるのではなく、意図してクリックするものになっています。
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+書き込みは、あなたの変更をアプリの現在の定義に重ねます。Control Center がモデル化していないもの — Slack で追加した 2 つ目のスラッシュコマンド、ワークフローのステップ、無関係な設定 — はそのまま残ります。スコープとイベントはマージされ、差し引かれることはありません。
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+保存後、Control Center はボットのアイデンティティを読み直すため、設定の名前とチャットアプリの名前が一致します。
 
-## Reinstall when permissions change
+## 権限が変わったら再インストールする
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[権限変更後の再インストール]
+Slack は新しいアプリ定義を即座に適用しますが、インストール済みの付与はそのまま
+保持します。権限の変更を反映するには、アプリを再インストールしてください。
+それを行うまで、ブリッジは以前の付与で動き続けます。
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+保存によって権限が変わると、ダイアログは開いたままになり、「Slackがアプリの権限を変更しました。反映するにはアプリを再インストールしてください。」と表示します。あわせて、そのアプリを Slack のチームにインストールするページを開く**アプリを再インストール**ボタンも表示されます。Slack 側では、これが **Install App → Reinstall to Workspace** です。
 
-## Rename the slash command
+## スラッシュコマンドの名前を変更する
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+**スラッシュコマンド**を変更して保存します。するとブリッジは、最後に呼び出されたときのコマンドを使って案内を書き出すため、ヘルプテキストとリンクの案内は、存在しなくなったコマンドを名指しするのではなく、名前の変更に追随します。
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+名前を変更しても、既存のブリッジ済みスレッドは壊れません。スレッドはコマンドではなく会話をキーにしているためです。
 
-## What Control Center will not change
+## Control Center が変更しないもの
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **構造的な設定。** トランスポート（Socket Mode）、必須のスコープ、イベント購読は表明されるものであり、提供されるものではありません。設定画面から設定して沈黙させられるアプリは、機能ではなくサポートチケットです
+- **ボットのアイコン。** 変更できるのはプロバイダー自身のアプリ設定だけで、ダイアログにもその旨が表示されます
+- **プロバイダー自身の機能マイグレーション。** すでに Slack の旧来のアシスタント形態にあるアプリはそれを維持します。このダイアログは説明文を編集するものであり、アプリを移行するものではありません
 
-## Troubleshooting
+## トラブルシューティング
 
-### There is no Customize bot row at all
+### 「ボットをカスタマイズ」の行がまったく表示されない
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/).
+ワークスペースがまだ接続されていません。この行は、プロバイダーのブロックが
+稼働中の接続を示してから初めて表示されます。[Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)を参照してください。
 
-### The Customize bot row is disabled
+### 「ボットをカスタマイズ」の行が無効になっている
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+接続にアプリ管理用の資格情報がありません — 行のサブタイトルには
+「ボットを編集するには、Control Centerにアプリ設定トークンが必要です。再接続して、
+トークンを含めてください。」と表示されます。Slack の場合は、
+[api.slack.com/apps](https://api.slack.com/apps) でアプリ設定トークンのペアを生成し、
+リフレッシュトークンを入力して再接続してください。これは、手作業で構築したアプリや
+**Slackで作成**を通じて作成したアプリでは想定どおりの動作です。Slack はどのアプリを
+作成したかを決して報告しないためです。
 
-### "Control Center does not know which app to edit"
+### 「Control Center does not know which app to edit」
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+保存された接続にアプリ id が含まれていません — 通常は、id が記録される前に手作業で接続されたアプリです。ワークスペースを再接続するか、Control Center からアプリを作成してください。
 
-### The bot's new name has not appeared in chat
+### ボットの新しい名前がチャットに表示されない
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+プロバイダーはアプリのメタデータを一時的にキャッシュします。1 分経っても名前が古いままなら、保存時にアプリの再インストールを求められたかどうかを確認してください。
 
-## Related guides
+## 関連ガイド
 
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
-- [Link your Slack account](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
-- [Chat bridge](/ja-JP/マニュアル/リファレンス/チャットブリッジ/)
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [Slack アカウントをリンク](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
+- [チャットブリッジ](/ja-JP/マニュアル/リファレンス/チャットブリッジ/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)

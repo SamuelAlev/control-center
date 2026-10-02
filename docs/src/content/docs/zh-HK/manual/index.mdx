@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: 簡介
+description: Control Center 是多代理軟件開發的駕駛艙。
 slug: zh-HK/手冊
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center 讓你掌控一隊 AI 編程代理。啟動代理、即時觀察它們工作、審查它們的 PR，並管理程式庫、工作區與整合——無論你用的是原生桌面應用程式、瀏覽器還是手機。
 
 <div className="docs-start not-content">
-  <LinkButton href="/zh-HK/手冊/快速入門/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/zh-HK/手冊/安裝/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/zh-HK/手冊/快速入門/" icon="right-arrow">快速入門</LinkButton>
+  <LinkButton href="/zh-HK/手冊/安裝/" variant="minimal" icon="download">安裝 Control Center</LinkButton>
 </div>
 
-## What you can do
+## 你可以做甚麼
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/zh-HK/手冊/概念/管線/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/zh-HK/手冊/操作指南/使用測試機/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **向代理發訊息**：空間是驅動整隊代理的主要方式。@ 提及代理，它就會派發到自己的寫入時複製 worktree，讓多個代理可以同時編寫和審查程式碼，而不會干擾你的 checkout
+- **編排大型任務**：給編排器一個目標，一次過核准它提出的全隊計劃，然後由自動產生的[管線](/zh-HK/手冊/概念/管線/)執行
+- **審查並合併 PR**：內建差異檢視器、行內註解與 AI 輔助審查
+- **給代理用完即棄的機器**：[測試機](/zh-HK/手冊/操作指南/使用測試機/)是一部用完即棄的虛擬機——可以是瀏覽器、桌面、手機或隔離終端——由代理操作，你可以即時觀看並接手；當中的開發伺服器會轉送到 `localhost`、代理的瀏覽器及 `https://myapp.test`
+- **自動化工作流程**：以事件或排程觸發的 DAG 管線
+- **管理知識**：工作區範圍的記憶、事實與政策
+- **追蹤工作**：不綁定特定供應商的工單、項目與委派
+- **錄製會議**：在裝置上擷取、轉寫並區分發言人，然後摘要為筆記、行動項目與決定
+- **掌握你的一天**：Google Calendar 同步、回覆邀請、會議提醒與錄製並連結
+- **用手機追蹤整隊代理**：將裝置與你的伺服器配對，然後閱讀訊息、回覆及整理工單。手機會選用可達的最佳路徑——loopback、LAN、tailnet 或 TLS——並在必要時退回端對端密封的中繼，只轉送它無法解讀的訊框
+- **從 Slack 驅動代理**：將工作區橋接到聊天應用程式，然後提及機械人、在 Slack 討論串中回覆，或以斜線指令開立工單——經由對外連線進行，因此無需公開端點
+- **整合** GitHub、Linear、Slack、Google Calendar 及超過 100 個 MCP 工具
 
-## You do not have to install it
+## 你不一定要安裝它
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+同一個應用程式也可在瀏覽器上於
+[app.usectrl.dev](https://app.usectrl.dev) 執行，功能完全相同。
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+每個用戶端——桌面、網頁與手機——都只是無介面伺服器上的精簡轉譯層，
+伺服器擁有你的資料並實際執行工作。桌面應用程式可以代你啟動該伺服器；
+瀏覽器分頁無法做到，因此網頁應用程式會連接到由你自行執行的伺服器。
+該伺服器可以位於你自己的電腦上（`ws://localhost:9030`，無需憑證），
+也可以位於可經 TLS、VPN 或隧道連線的遠端主機上。
 
-See [Install](/zh-HK/手冊/安裝/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/zh-HK/手冊/概念/部署/) for how the three clients relate.
+瀏覽器途徑請參閱[安裝](/zh-HK/手冊/安裝/#use-it-in-your-browser)，
+三個用戶端之間的關係請參閱[部署與用戶端](/zh-HK/手冊/概念/部署/)。
 
-## Next steps
+## 下一步
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/zh-HK/手冊/安裝/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/zh-HK/手冊/快速入門/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/zh-HK/手冊/教學/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/zh-HK/手冊/操作指南/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/zh-HK/手冊/概念/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/zh-HK/手冊/參考/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="安裝" href="/zh-HK/手冊/安裝/" description="下載、系統需求，以及伺服器的執行位置。" />
+  <LinkCard title="快速入門" href="/zh-HK/手冊/快速入門/" description="讓代理在你的程式庫上工作，最短而完整的途徑。" />
+  <LinkCard title="教學" href="/zh-HK/手冊/教學/" description="較長的課程，按順序進行，由你的第一個工作區開始。" />
+  <LinkCard title="操作指南" href="/zh-HK/手冊/操作指南/" description="一次一項任務的做法：加入程式庫、設定護欄，或配對你的手機。" />
+  <LinkCard title="概念" href="/zh-HK/手冊/概念/" description="產品為何這樣運作，由部署與用戶端談起。" />
+  <LinkCard title="參考" href="/zh-HK/手冊/參考/" description="路由、MCP 工具、鍵盤快捷鍵與領域事件的完整表格。" />
 </div>

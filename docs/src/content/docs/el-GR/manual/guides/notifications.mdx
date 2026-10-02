@@ -1,149 +1,165 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Ρύθμιση ειδοποιήσεων
+description: Ενεργοποιήστε ή απενεργοποιήστε κατηγορίες, ορίστε Quiet hours και έναν ήχο και μάθετε ποιες ειδοποιήσεις σας φτάνουν και πού.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Αυτός ο οδηγός δείχνει πώς να ρυθμίσετε τις ειδοποιήσεις και τι ελέγχει
+πραγματικά κάθε ρύθμιση.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Οι ειδοποιήσεις φτάνουν σε δύο επιφάνειες. Το **κέντρο ειδοποιήσεων** — η
+καμπάνα στη γραμμή τίτλου — διαβάζει μια διαρκή ροή ανά χώρο εργασίας στον
+διακομιστή. Οι **αναδυόμενες ειδοποιήσεις του λειτουργικού συστήματος**
+είναι ένα ξεχωριστό μονοπάτι, μόνο για υπολογιστές, που τροφοδοτείται από
+ζωντανά πλαίσια που στέλνει ο διακομιστής.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Η έκδοση για web δεν εμφανίζει ειδοποιήσεις του λειτουργικού συστήματος]
+Η διοχέτευση των αναδυόμενων ειδοποιήσεων χτίζεται μόνο από το bootstrap της
+έκδοσης για υπολογιστές. Στο `app.usectrl.dev` δεν υπάρχουν αναδυόμενες
+ειδοποιήσεις, ούτε ήχοι ειδοποιήσεων, ούτε περιβάλλοντα πανό — η καμπάνα και
+το ιστορικό της εξακολουθούν να λειτουργούν, επειδή διαβάζουν τη ροή του
+διακομιστή. Ο πελάτης για κινητά δεν έχει καθόλου επιφάνεια ειδοποιήσεων.
 :::
 
-## Turn categories on or off
+## Ενεργοποίηση ή απενεργοποίηση κατηγοριών
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Μεταβείτε στις **Ρυθμίσεις → Εσείς → Ειδοποιήσεις**
+2. Αφήστε την επιλογή **Ενεργοποίηση ειδοποιήσεων** ενεργή
+3. Ενεργοποιήστε ή απενεργοποιήστε τις κατηγορίες που θέλετε. Είναι ακριβώς δεκαέξι:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Κατηγορία                                | Ενεργοποιείται όταν                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Ο πράκτορας ολοκλήρωσε                   | Ένας πράκτορας ολοκλήρωσε μια εκτέλεση                                                       |
+| Το PR δημοσιεύτηκε                       | Ένας πράκτορας δημοσίευσε ένα PR                                                             |
+| Το PR συγχωνεύθηκε                       | Ένα PR συγχωνεύθηκε                                                                          |
+| Νέα μηνύματα                             | Ένα μήνυμα έφτασε σε έναν χώρο που δεν κοιτάτε                                               |
+| Αναφορά σε pull request                  | Ο έλεγχος ειδοποιήσεων του GitHub είδε ότι σας ανέφεραν σε ένα PR                           |
+| Ζητήθηκε ανασκόπηση                      | Η ανασκόπησή σας ζητήθηκε πραγματικά για ένα PR που δεν είναι πρόχειρο                      |
+| Η ανασκόπηση είναι παλιά                 | Νέα commits έφτασαν σε ένα pull request που έχετε ήδη ανασκοπήσει                           |
+| Έτοιμο για συγχώνευση                    | Ένα pull request που συντάξατε έγινε συγχωνεύσιμο ή έπαψε να είναι                           |
+| Αποφάσεις ανασκόπησης                    | Ένας ανασκοπητής ενέκρινε, ζήτησε αλλαγές ή απορρίφθηκε μια έγκριση                         |
+| Έλεγχοι                                  | Το CI απέτυχε σε ένα pull request που συντάξατε ή ανέκαμψε                                  |
+| Νήματα ανασκόπησης                       | Κάποιος απάντησε ή έκλεισε ένα νήμα στο οποίο συμμετέχετε                                   |
+| Ανατέθηκε εισιτήριο                      | Ανατέθηκε ένα εισιτήριο                                                                      |
+| Άλλαξε η κατάσταση εισιτηρίου            | Ένα εισιτήριο άλλαξε κατάσταση                                                               |
+| Η σύσκεψη ξεκινά σύντομα                 | Μια σύσκεψη ημερολογίου βρίσκεται μέσα στο παράθυρο προειδοποίησής σας                      |
+| Το ημερολόγιο αποσυνδέθηκε               | Το διακριτικό OAuth ενός συνδεδεμένου ημερολογίου έληξε                                     |
+| Ενημερώσεις απομονωμένου περιβάλλοντος   | Ένα περίβλημα καταλήφθηκε, ανακτήθηκε ή απέτυχε                                             |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Οτιδήποτε εκτός αυτής της λίστας δεν μπορεί να ειδοποιήσει ούτε να
+φιλτραριστεί — δεν υπάρχει κατηγορία «όλα τα άλλα».
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Αυτές οι προτιμήσεις ακολουθούν τον χρήστη σας σε όλες τις συσκευές, ώστε το
+τηλέφωνο και ο φορητός υπολογιστής να μένουν συγχρονισμένα. Η ένταση είναι η
+σκόπιμη εξαίρεση και παραμένει ανά συσκευή.
 
-## Set quiet hours
+## Ορισμός Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Στην ίδια σελίδα, ενεργοποιήστε τις **Quiet hours**
+2. Πληκτρολογήστε ώρα έναρξης και λήξης σε μορφή `HH:MM` (το προεπιλεγμένο παράθυρο είναι 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Κατά τις Quiet hours, οι μη επείγουσες ειδοποιήσεις απορρίπτονται — δεν μπαίνουν
+σε ουρά για να εμφανιστούν αργότερα.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Δύο κατηγορίες είναι **επείγουσες** και φτάνουν πάντα, παρακάμπτοντας τις Quiet
+hours _και_ τη λειτουργία εστίασης: **Η σύσκεψη ξεκινά σύντομα** και **Το PR
+δημοσιεύτηκε**. Μια ειδοποίηση σύσκεψης που τη βλέπετε μόνο εκ των υστέρων
+είναι άχρηστη — αυτός είναι ο λόγος.
 
-## Choose a sound
+## Επιλογή ήχου
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Μετακινηθείτε στο **Ήχος ειδοποίησης**
+2. Διαλέξτε έναν από τους έντεκα ενσωματωμένους ήχους ή **Κανένας**
+3. Πατήστε το κουμπί δοκιμής για να τον ακούσετε και ρυθμίστε την ένταση με τον δείκτη
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Η εφαρμογή αναπαράγει η ίδια τον ήχο· η ειδοποίηση του λειτουργικού συστήματος
+παραδίδεται σιωπηλά, ώστε να μην τον ακούσετε δύο φορές.
 
-## Set the meeting lead time
+## Ορισμός χρόνου προειδοποίησης για συσκέψεις
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Μετακινηθείτε στο **Προειδοποίηση πριν**
+2. Διαλέξτε **5**, **10**, **15** ή **30** λεπτά
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Τόσο νωρίτερα από ένα γεγονός ημερολογίου ενεργοποιείται η ειδοποίηση **Η
+σύσκεψη ξεκινά σύντομα**. Η προεπιλογή είναι 5 λεπτά.
 
-## Know when a notification is suppressed
+## Πότε μια ειδοποίηση καταστέλλεται
 
-A notification is dropped, silently, when any of these is true:
+Μια ειδοποίηση απορρίπτεται σιωπηλά όταν ισχύει οποιοδήποτε από τα παρακάτω:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Οι ειδοποιήσεις είναι απενεργοποιημένες συνολικά ή η κατηγορία της είναι
+  απενεργοποιημένη
+- Βρίσκεστε ήδη στη διαδρομή στην οποία θα σας πήγαινε — και, για ένα μήνυμα,
+  είστε ήδη σε αυτόν τον χώρο
+- Η λειτουργία εστίασης είναι ενεργή και η κατηγορία δεν είναι επείγουσα
+- Οι Quiet hours είναι ενεργές και η κατηγορία δεν είναι επείγουσα
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Αυτοί οι έλεγχοι ισχύουν για τις αναδυόμενες ειδοποιήσεις του λειτουργικού
+συστήματος. Η διαρκής καμπάνα καταγράφει ακόμη το γεγονός.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Δύο ακόμη καταστολές βρίσκονται πιο πάνω, σε αυτό που στέλνει ο διακομιστής
+εξαρχής:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Ένα μήνυμα από άλλον **άνθρωπο** στο οποίο δεν σας ανέφεραν δεν γίνεται ποτέ
+  ειδοποίηση
+- Οι χώροι μεταξύ πρακτόρων είναι σε σίγαση στην πλαϊνή στήλη, οπότε δεν
+  αυξάνουν ποτέ το σήμα μη αναγνωσμένων του ανθρώπου
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Μέσα σε έναν χώρο δεν υπάρχει ήσυχη γωνιά: κάθε συνομιλία ειδοποιεί το ίδιο,
+μαζί και τα νήματα. Η κατάσταση ανάγνωσης αφορά ολόκληρο τον χώρο, οπότε τα μη
+αναγνωσμένα συγκεντρώνονται από όλες τις συνομιλίες του χώρου αντί να
+παρακολουθούνται ανά συνομιλία.
 
-## Read and clear the notification centre
+## Ανάγνωση και καθαρισμός του κέντρου ειδοποιήσεων
 
-1. Click the bell in the title bar
+1. Κάντε κλικ στην καμπάνα στη γραμμή τίτλου
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Το αναδυόμενο παράθυρο δείχνει πρόσφατη δραστηριότητα, συνδέοντας κάθε
+καταχώριση απευθείας με το θέμα της. Το άνοιγμά του **δεν** σημειώνει τα πάντα
+ως αναγνωσμένα — χρησιμοποιήστε τη **Σήμανση όλων ως αναγνωσμένων** στην
+κεφαλίδα ή σημειώστε μία μόνο γραμμή. Η κατάσταση ανάγνωσης ακολουθεί τον
+χρήστη σας σε όλες τις συσκευές.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Ο καθαρισμός όλων είναι υδατογράφημα, όχι διαγραφή]
+Ο **Καθαρισμός όλων** τοποθετεί ένα υδατογράφημα ανά χρήστη που κρύβει όλα τα
+παλαιότερα· οι γραμμές παραμένουν. Ξεχωριστά, κάθε χώρος εργασίας διατηρεί μόνο
+τις πιο πρόσφατες **200** γραμμές ροής, οι οποίες κόβονται καθώς φτάνουν νέες,
+ενώ η καμπάνα εγγράφεται στις πιο πρόσφατες **50** και το αναδυόμενο παράθυρο
+εμφανίζει έως **15** από αυτές. Το ιστορικό πέρα από αυτό χάνεται ανεξάρτητα
+από την κατάσταση ανάγνωσης.
 :::
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### No OS notifications on macOS
+### Καμία ειδοποίηση λειτουργικού συστήματος στο macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Η εξουσιοδότηση ζητείται εγγενώς κατά την εκκίνηση της εφαρμογής. Αν την
+αρνηθήκατε, ενεργοποιήστε ξανά το Control Center στις Ρυθμίσεις συστήματος →
+Ειδοποιήσεις· δεν υπάρχει προτροπή μέσα στην εφαρμογή για να την ξαναζητήσετε.
 
-### Nothing arrives on the web build
+### Δεν φτάνει τίποτα στην έκδοση για web
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Αναμενόμενο — η έκδοση για web δεν έχει διοχέτευση ειδοποιήσεων λειτουργικού
+συστήματος. Χρησιμοποιήστε την καμπάνα.
 
-### The bell badge shows zero but there is clearly new activity
+### Το σήμα της καμπάνας δείχνει μηδέν, αλλά υπάρχει σαφώς νέα δραστηριότητα
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Μέχρι να ολοκληρωθεί η ροή σημάτων ανάγνωσης μετά τη σύνδεση, οι καταχωρίσεις
+εμφανίζονται ως αναγνωσμένες, ώστε να αποφευχθεί ένα σήμα που αναβοσβήνει και
+μετά αδειάζει. Σταθεροποιείται μόλις φορτωθεί το σήμα.
 
-### An agent's run finished but nothing pinged me
+### Η εκτέλεση ενός πράκτορα ολοκληρώθηκε, αλλά τίποτα δεν με ειδοποίησε
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Ελέγξτε ότι δεν βρισκόσασταν ήδη στον χώρο όπου συνέβη — μια ενεργή διαδρομή
+καταστέλλει τη δική της αναδυόμενη ειδοποίηση λειτουργικού συστήματος.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Use focus mode and soundscapes](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-εστίασης/)
-- [Triage your inbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)
-- [Curate your newsfeed](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ροή-ειδήσεων/)
+- [Χρήση λειτουργίας εστίασης και ηχητικών περιβαλλόντων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-εστίασης/)
+- [Ταξινόμηση εισερχομένων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)
+- [Επιμέλεια της ροής ειδήσεων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ροή-ειδήσεων/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)

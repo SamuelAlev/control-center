@@ -1,95 +1,91 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: OpenID Connect 공급자 연결
+description: Pocket ID, Keycloak, Auth0, Zitadel 등 모든 OIDC 발급자를 Control Center 로그인에 연결합니다.
 slug: ko-KR/매뉴얼/사용-가이드/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+ID 공급자가 SAML이 아니라 **OpenID Connect**를 사용한다면 이 가이드를
+참고하십시오. OIDC 인증을 받은 발급자라면 무엇이든 됩니다 — Pocket ID,
+Keycloak, Auth0, Zitadel, Google Workspace 등도 모두 같은 단계를 따르며,
+공급자가 값을 보여 주는 위치만 다릅니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- 클라이언트를 만들 수 있는 OIDC 공급자 — 해당 클라이언트의 **client id**와
+  **issuer URL**(`.well-known/openid-configuration` 문서가 위치하는 기준
+  URL)을 확인해 두고, 클라이언트가 기밀 유형이면 **client secret**도 함께
+  확인합니다(공개 PKCE 클라이언트에는 없습니다),
+- 관리 권한이 있는 Control Center 서버(**서버 소유자**).
 
-## Steps
+## 단계
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. **설정 → 서버 → 싱글 사인온**을 열고 **OpenID Connect**로 전환합니다.
+2. 공급자가 발급한 경우 **Issuer URL**, **Client ID**, **Client secret(선택)**을
+   입력합니다. Control Center는 발급자의 표준 디스커버리 문서에서
+   엔드포인트를 찾아내므로 공급자별 설정이 필요하지 않습니다.
+3. 공급자에서 해당 클라이언트에 리디렉션
+   `https://<your-server>/oidc/callback`을 등록합니다.
+4. 그룹이 `groups`가 아닌 다른 클레임에 들어 있다면 **그룹 클레임** 이름을
+   설정합니다. 원한다면 그룹을 역할에 매핑할 수 있습니다(SSO로는 소유자
+   역할을 부여할 수 없습니다).
+5. 멤버십 정책을 선택하고(모든 워크스페이스에 자동 추가 또는 워크스페이스별
+   초대 요구), **OpenID Connect로 로그인**을 켠 뒤 **연결 저장**을 누릅니다.
+6. **연결 테스트**를 누릅니다 — 서버가 발급자의 디스커버리 문서를 가져와
+   엔드포인트를 확인하므로, 녹색 토스트가 뜨면 브라우저 왕복을 제외한 모든
+   것이 정상이라는 뜻입니다. 클라이언트 등록까지 확인하려면 아래의
+   [검사기](#이-페이지에서-구성-확인)를 사용하십시오.
+7. 로그인을 시도해 보십시오. 웹 연결 화면에는 **OpenID Connect(으)로
+   로그인**이 표시되며, `https://<your-server>/oidc/login`을 직접 열어도
+   됩니다.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+클레임(이메일, 이름, 그룹)은 서버가 TLS를 통해 발급자의 토큰 엔드포인트에서
+읽습니다 — 브라우저가 이를 제공하는 일은 없으므로 로컬 JWT 서명 검증은
+관여하지 않습니다. 클라이언트는 `openid profile email` 스코프를 요청할 수
+있어야 하며, Control Center는 정확히 이 스코프를 요청합니다.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+그 TLS 채널만이 클레임을 인증하므로 발급자 URL은 반드시 **https**여야
+합니다 — 평문 발급자는 경로상의 공격자가 신원을 통째로 위조할 수 있게
+합니다. `http`는 로컬 개발을 위해 루프백 발급자(`localhost`, `127.0.0.1`,
+`::1`)에만 허용됩니다.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[공개 클라이언트인가, 기밀 클라이언트인가?]
+기본이자 권장 형태는 **PKCE**(RFC 7636)와 함께 권한 부여 코드 흐름을
+사용하는 **공개 클라이언트**입니다. 서버가 보관하는 일회용 코드 검증자가
+시크릿을 대신하며, 토큰 교환은 이를 시작한 인증 요청에 묶입니다. 유출될
+시크릿이 없고, 인증 코드를 탈취당해도 검증자가 없으면 쓸모가 없습니다.
+일부 공급자는 클라이언트를 만들 때 이 유형을 "SPA" 또는 "native" 클라이언트
+유형이라고 부릅니다.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+공급자가 대신 **기밀** 클라이언트를 발급했다면, 공급자에서 해당 클라이언트를
+공개로 표시하거나(어느 쪽이든 PKCE는 켜진 상태로 유지됩니다), 클라이언트
+시크릿을 연결의 **Client secret(선택)** 필드에 붙여넣으십시오. 시크릿은
+서버의 0600 시크릿 파일에 저장되며(데이터베이스에는 절대 저장되지 않음)
+`client_secret_post`로 토큰 엔드포인트에 전송되고 RPC로는 반환되지 않습니다.
+저장할 때 이 필드를 비워 두면 저장된 시크릿이 유지됩니다. 토큰 교환
+단계에서 로그인이 실패하면 서버 로그에 공급자 자체의 오류가 기록됩니다
+(`invalid_client`는 거의 항상 시크릿이 없거나 잘못되었다는 뜻입니다).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ko-KR/매뉴얼/사용-가이드/sso-scim).
+:::note[연결 가능성]
+로그인 자체는 브라우저를 매개로 합니다. 발급자는 사용자의 브라우저를
+`/oidc/callback`으로 되돌려 보낼 뿐이고, 서버가 토큰 엔드포인트로 아웃바운드
+HTTPS 호출을 합니다 — 발급자로부터의 인바운드 연결은 필요하지 않습니다.
+따라서 NAT 뒤의 서버도 사용자 브라우저가 서버에 도달할 수 있으면(LAN, VPN,
+Tailscale, 터널) 동작합니다. **SCIM 프로비저닝은 예외입니다**: IdP가 서버를
+직접 호출하므로 터널이나 공개 URL이 필요합니다 — [SCIM으로 사용자 프로비저닝](/ko-KR/매뉴얼/사용-가이드/sso-scim)을
+참고하십시오.
 :::
 
-## Check your configuration from this page
+## 이 페이지에서 구성 확인
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+아래 검사기는 브라우저에서 실행됩니다. 발급자의 디스커버리 문서를 직접
+가져오므로 이 사이트는 그 내용을 보지 못하며, 서버의 규칙을 적용합니다:
+문서와 일치하는 https 발급자, 발급자 자체 오리진의 엔드포인트, PKCE S256,
+그리고 클라이언트 유형에 필요한 토큰 인증 방식입니다. 클라이언트 ID와 서버
+주소를 입력하면 클라이언트와 리디렉션 URI가 등록되었는지 보여 주는 테스트
+로그인을 열 수 있습니다. 클라이언트 시크릿은 절대 요구하지 않습니다.
 
 <SsoCheck kind="oidc" />

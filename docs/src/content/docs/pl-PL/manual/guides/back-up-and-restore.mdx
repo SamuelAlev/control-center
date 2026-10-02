@@ -1,162 +1,174 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Kopia zapasowa i przywracanie
+description: Wykonaj migawkę instalacji, przenieś obszar roboczy między maszynami, przywróć jeden obszar roboczy lub wszystkie i zachowaj kopie w innym miejscu.
 slug: pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/).
+Ten poradnik obejmuje pięć rzeczy, które faktycznie robi się z kopiami zapasowymi:
+wykonanie kopii, zgromadzenie jej, przeniesienie obszaru roboczego, przywrócenie kopii
+oraz trzymanie kopii poza maszyną. Dokładny kształt każdego artefaktu i każdej operacji
+opisuje [dokumentacja referencyjna kopii
+zapasowej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Wszystko, co tu opisano, znajduje się w **Ustawienia → Serwer → Kopia zapasowa i
+przywracanie**.
 
-## Prerequisites
+## Wymagania wstępne
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **Pełny klient** — aplikacja desktopowa lub webowa. Sparowany telefon celowo nie może wywołać żadnej z tych operacji.
+- Aby wykonać, wyświetlić, pobrać lub usunąć **migawkę instalacji**: rola **właściciela** instalacji.
+- W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować, a **właściciel** — importować go lub usuwać.
+- Do pobierania i wysyłania: **bezpośrednie** połączenie z serwerem. Relay pośredniczący przenosi ramki RPC, a nie transfery plików, więc elementy sterujące transferem wyłączają się z odpowiednią adnotacją, gdy przez niego przechodzisz.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Migawki instalacji wykonuje się ręcznie]
+**Wykonaj kopię teraz** nadal tworzy migawkę całej instalacji tylko na żądanie.
+Wbudowany potok **Workspace backup** może za to raz w tygodniu wykonać kopię zapasową
+bazy danych obszaru roboczego i usuwać kopie tego obszaru roboczego starsze niż 30 dni.
+Nie kopiuje przy tym `global.db`, innych obszarów roboczych ani plików leżących obok
+bazy danych. Kopie poza maszyną przechowuj osobno.
 :::
 
-## What a backup covers
+## Co obejmuje kopia zapasowa
 
-Both artifacts are **databases only**:
+Oba artefakty to **wyłącznie bazy danych**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **Migawka instalacji** to katalog ze znacznikiem czasu: `manifest.json`, `global.db` oraz po jednym pliku `<workspaceId>/workspace.db` na każdy obszar roboczy.
+- **Eksport obszaru roboczego** to właśnie ten pojedynczy plik `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Żaden z nich nie przenosi reszty katalogu danych: `secrets.json` (klucze parowania,
+poświadczenia dostawców, SSO), katalogu `blobs/` obszaru roboczego (obrazy wklejane do
+wiadomości), `skills/`, `agents/`, `chat_credentials/`, nagranego dźwięku ze spotkań ani
+obrazów rigów. Część z tego jest zbędna, a część nie — [pełna tabela znajduje się
+w dokumentacji
+referencyjnej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain),
+a objęcie tych danych kopią to zadanie [sekcji o kopiach poza
+maszyną](#kopiowanie-kopii-zapasowych-poza-maszynę).
 
-## Take a snapshot of the whole install
+## Wykonanie migawki całej instalacji
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Otwórz **Ustawienia → Serwer → Kopia zapasowa i przywracanie**.
+2. W sekcji **Migawki instalacji** naciśnij **Wykonaj kopię teraz**.
+3. Toast podaje nazwę katalogu, który został zapisany, na hoście serwera. Nowa migawka pojawia się na górze listy.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Serwer działa przez cały czas. Każdy plik jest zapisywany przez `VACUUM INTO`, co daje
+spójny obraz działającej bazy danych, więc nie ma okna konserwacyjnego ani potrzeby
+zatrzymywania agentów.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Każdy wiersz listy pokazuje znacznik czasu, rozmiar na dysku, liczbę przechwyconych
+obszarów roboczych oraz to, czy migawka jest **Kompletna**, czy **Niekompletna**.
+Niekompletna oznacza, że brakuje manifestu albo wymienia on pliki, których nie ma — kopia
+przerwana przez awarię lub zapełnienie dysku. Takie migawki są celowo nadal na liście:
+migawka, której nie widzisz, jest migawką, o której myślisz, że ją masz. Niekompletna
+migawka nie przywróci całej instalacji, ale zawarte w niej pliki obszarów roboczych można
+wciąż adoptować pojedynczo.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Wiersz może też zawierać informację **Nie uwzględniono _n_ obszarów roboczych**. To
+obszar roboczy zarejestrowany, ale nigdy niezapisany (nie ma jeszcze pliku) albo taki,
+którego kopiowanie się nie powiodło — sprawdź dziennik serwera.
 
-## Schedule workspace backups and retention
+## Planowanie kopii zapasowych obszarów roboczych i retencji
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Otwórz **Ustawienia → Potoki → Szablony potoków** dla danego obszaru roboczego i znajdź
+**Workspace backup**. Jego włączony harmonogram działa w każdą niedzielę o 03:00 UTC:
+**Back up workspace**, a po nim **Delete backups older than** (domyślnie 30 dni). Drugi
+węzeł uruchamia się dopiero po udanej kopii. Liczbę dni retencji możesz zmienić
+w węźle albo wyłączyć harmonogram. Jeśli serwer jest w zaplanowanym czasie wyłączony,
+harmonogram nadrobi zaległość raz po powrocie, zamiast odtwarzać każdy pominięty
+tydzień.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Kopie obszarów roboczych leżą na serwerze pod
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Węzeł retencji usuwa
+tylko stare kopie tego obszaru roboczego; nigdy nie usuwa migawek instalacji ani kopii
+innych obszarów roboczych. Te pliki zawierają wyłącznie bazy danych. Aby przechowywać je
+poza maszyną, kopiuj je niezależnie.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Te kopie są odrębne od listy **Migawki instalacji**. Aby przywrócić jedną z nich, użyj
+**Dane obszaru roboczego → Importuj**, podając ścieżkę `workspace.db` kopii po stronie
+serwera. Import zastępuje bieżącą bazę danych tego obszaru roboczego, więc najpierw go
+wyeksportuj, jeśli przywrócenie może wymagać cofnięcia.
 
-## Delete an install snapshot
+## Usuwanie migawki instalacji
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+W sekcji **Migawki instalacji** rozwiń migawkę, także niekompletną, i użyj pozycji
+**Usuń migawkę** w strefie niebezpieczeństwa. Potwierdź jej nazwę. Cały katalog migawki
+zostaje trwale usunięty z serwera; jeśli potrzebujesz kopii, najpierw ją pobierz. Potok
+kopii obszaru roboczego nigdy nie usuwa tych migawek.
 
-## Collect a copy on your own machine
+## Zgromadzenie kopii na własnej maszynie
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Ścieżki pokazywane na tej stronie znajdują się na maszynie, na której działa `cc_server`.
+Jeśli to nie ta maszyna, przy której siedzisz, skorzystaj z przycisków **Pobierz**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Przy każdym **obszarze roboczym** w sekcji **Dane obszaru roboczego** → **Pobierz**, dla jednego pliku `.db`.
+- Przy każdej **migawce** w sekcji **Migawki instalacji** → **Pobierz**, dla całej migawki jako pliku `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+W aplikacji desktopowej wybierasz miejsce zapisu pliku, a toast podaje jego nazwę;
+w wersji webowej plik trafia do pobranych w przeglądarce. W obu przypadkach postęp jest
+raportowany w bajtach, bo to dwa ładunki, które dochodzą do gigabajtów.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Oba tworzą świeżą kopię w momencie naciśnięcia przycisku, przesyłają ją strumieniowo,
+a następnie usuwają kopię po stronie serwera — pobieranie nie polega na „pobraniu pliku
+utworzonego wcześniej przez przycisk eksportu”.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Rozpakowanie archiwum migawki odtwarza dokładnie układ migawki, dzięki czemu przywrócenie
+jej to zwykłe skopiowanie z powrotem.
 
-## Move a workspace to another install
+## Przenoszenie obszaru roboczego do innej instalacji
 
-One workspace is one database file, so handing it over is a file operation.
+Jeden obszar roboczy to jeden plik bazy danych, więc przekazanie go jest operacją na
+pliku.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Na serwerze **źródłowym** otwórz **Ustawienia → Serwer → Kopia zapasowa i przywracanie → Dane obszaru roboczego**, rozwiń obszar roboczy i naciśnij **Pobierz**.
+2. Na serwerze **docelowym** utwórz (lub wybierz) obszar roboczy, który go przejmie.
+3. Rozwiń ten obszar roboczy i w sekcji **Przywróć z tego urządzenia** naciśnij **Wybierz plik i wyślij**. Wskaż pobrany plik `.db`.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Jeśli oba serwery to ta sama maszyna, przy której siedzisz, **Zapisz na serwerze** plus
+**Importuj** → **Wybierz plik** daje ten sam efekt bez dodatkowego obiegu; ścieżki
+w oknie importu są rozwiązywane na hoście serwera.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Import zastępuje wszystko]
+Import nadpisuje wszystko, co docelowy obszar roboczy obecnie zawiera, i nie można tego
+cofnąć. Jeśli docelowy obszar roboczy zawiera coś, co może ci się przydać, najpierw go
+wyeksportuj.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Dwie rzeczy są dozwolone i rejestrowane w dzienniku, a nie odrzucane: import pliku,
+którego zapisany identyfikator obszaru roboczego różni się od docelowego (tak duplikujesz
+obszar roboczy albo przywracasz go pod nowym identyfikatorem) oraz import pliku z **innej
+instalacji**. W tym drugim przypadku sparowane urządzenia i identyfikatory użytkowników
+z pliku należą do instalacji, z której pochodzi, i nie zostaną rozwiązane w tej instalacji
+— dane samego obszaru roboczego są nienaruszone, ale po jego adopcji ponownie sprawdź
+członkostwo.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Tokeny botów czatu leżą obok bazy danych, a nie w niej, więc obszar roboczy przekazany
+komuś innemu nie zawiera aktywnych poświadczeń. Przyjmująca instalacja podłącza własne.
 
-## Restore one workspace from a snapshot
+## Przywracanie jednego obszaru roboczego z migawki
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. W sekcji **Migawki instalacji** rozwiń wybraną migawkę.
+2. Znajdź wiersz tego obszaru roboczego i naciśnij **Przywróć**.
+3. Potwierdź. Wszystko, co ten obszar roboczy zrobił od wykonania migawki, przepada.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+To ta sama operacja co import, wskazująca na kopię pliku tego obszaru roboczego
+w migawce — celowo, aby nie istniał drugi mechanizm, który mógłby potraktować ten sam
+plik inaczej.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Wiersz może mówić **Nie ma go już na tym serwerze**, a pozycja **Przywróć** jest
+wyłączona: migawka zawiera obszar roboczy, którego ta instalacja już nie ma. Przywróć go
+ręcznie — utwórz obszar roboczy, a następnie w sekcji **Dane obszaru roboczego**
+zaimportuj do niego plik ze ścieżki
+`<snapshot path>/<old workspace id>/workspace.db`. Rozwinięta migawka pokazuje własną
+**Ścieżkę na serwerze** w polu do skopiowania, a tytuł wiersza to stary identyfikator
+obszaru roboczego, więc masz przed sobą obie połówki tej ścieżki.
 
-## Restore a whole install
+## Przywracanie całej instalacji
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Nie ma do tego przycisku i nie powinno go być: zastępuje ono bazy danych, które działający
+serwer trzyma otwarte.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Zatrzymaj `cc_server`.** Jeśli używasz aplikacji desktopowej z wbudowanym serwerem, zamknij aplikację.
+2. Skopiuj zawartość migawki do katalogu danych. Układ migawki odzwierciedla układ działającej instalacji, więc to zwykłe kopiowanie:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +183,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Usuń wszelkie pliki `-wal` i `-shm` leżące obok zastąpionych baz danych. Należą do starych plików, a nieaktualny plik obok przywróconej bazy danych grozi uszkodzeniem.
+4. Uruchom serwer ponownie.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Migawka nie zawiera `secrets.json`, więc instalacja przywrócona na **nowym** hoście
+zachowuje swoje dane, ale nie poświadczenia: sparowane urządzenia, tokeny dostawców
+i ustawienia SSO trzeba odtworzyć albo przywrócić z miejsca, w którym przechowujesz ten
+plik. Przywrócenie na ten sam host, na którym `secrets.json` nigdy nie zginął, zachowuje
+wszystko.
 
-## Copy backups off the machine
+## Kopiowanie kopii zapasowych poza maszynę
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Migawka na tym samym dysku co skopiowana baza danych chroni przed nieudanym importem,
+a nie przed awarią dysku. Nic w Control Center nie wysyła kopii w żadne miejsce, więc ta
+część należy do ciebie.
 
-### Sync the snapshots
+### Synchronizacja migawek
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Migawki są niezmienne po zapisaniu i nazwane znacznikiem czasu, więc każde narzędzie
+synchronizujące radzi sobie z nimi dobrze. Wyklucz `transfer/`, który jest warsztatem dla
+trwających pobierań i wysyłek:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +219,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` odzwierciedla lokalne czyszczenie na zdalnym celu. Usuń go, jeśli chcesz, aby
+zdalny cel przechowywał migawki dłużej niż host.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Nigdy nie synchronizuj działających baz danych bezpośrednio]
+Nie kieruj rsync, `aws s3 sync` ani agenta kopii zapasowych działającego na poziomie
+plików na `global.db` lub `<workspaceId>/workspace.db`, gdy serwer działa. Działająca
+baza SQLite ma plik towarzyszący `-wal`, a kopiowanie plik po pliku rejestruje oba
+w różnych momentach — wynikiem jest plik, który często się otwiera, ale po cichu brakuje
+mu ostatnich zapisów, albo nie otwiera się wcale. Kopiuj **migawkę**, zapisaną w ramach
+transakcji odczytu, albo wykonaj ją przez `VACUUM INTO`, jak poniżej.
 :::
 
-### Include what a snapshot leaves out
+### Uwzględnianie tego, co pomija migawka
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Aby móc odtworzyć instalację, a nie tylko jej dane, skopiuj także te elementy. To zwykłe
+pliki, które można bezpiecznie kopiować, gdy serwer działa:
 
 ```bash
 rsync -a \
@@ -234,20 +249,22 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+Plik `secrets.json` ma uprawnienia `0600` i zawiera każdy klucz parowania, poświadczenie
+dostawcy i ustawienie SSO w instalacji. Miejsce, w którym wyląduje, musi być chronione co
+najmniej tak dobrze jak host serwera — szyfrowane w spoczynku i nie może to być zasobnik,
+który ktokolwiek inny może odczytać.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Pomiń `spaces/` (drzewa robocze copy-on-write, odtwarzane z twoich repozytoriów),
+`pr_clones/` (pamięć podręczna), `models/` (pobierane ponownie), `media_cache/` oraz
+`rigs/` (stan maszyny i duże rozmiary). Nagrany dźwięk ze spotkań w `meetings/` warto
+uwzględnić, jeśli prowadzisz spotkania.
 
-### Schedule a whole-install snapshot outside the app
+### Planowanie migawki całej instalacji poza aplikacją
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Wbudowany potok wykonuje kopię tylko jednego obszaru roboczego. Dla bezobsługowej migawki
+**całej instalacji** nie ma podpolecenia CLI, a RPC migawki wymaga sparowanego pełnego
+klienta będącego właścicielem instalacji. Timer po stronie hosta może użyć `VACUUM INTO`
+względem działających baz danych:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +283,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Uruchamiaj go jako ten sam użytkownik, który jest właścicielem katalogu danych, z cron lub
+timera systemd, a po zakończeniu zsynchronizuj `DEST` poza host. `VACUUM INTO` wymaga
+SQLite 3.27 lub nowszego.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Zapisuj go **poza** `<dataDir>/backups/`. Wykonany ręcznie katalog w tym miejscu nie ma
+`manifest.json`, więc aplikacja wymieniłaby go jako niekompletną migawkę, a lista
+przestałaby być rzetelnym zapisem tego, co wyprodukował sam serwer.
 
-### Prune old whole-install snapshots
+### Usuwanie starych migawek całej instalacji
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Pojedyncze migawki instalacji możesz usuwać w aplikacji. Aby prowadzić politykę retencji po
+stronie hosta, trzymaj katalog kopii obszarów roboczych osobno od migawek instalacji:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +302,50 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Zanim dodasz `-exec`, sprawdź wynik uruchomienia z `-print`. Trzymaj więcej niż jedną
+kopię: awaria, przed którą się chronisz, to często „ostatnia kopia też ma ten problem”.
 
-## Check that a backup is good
+## Sprawdzanie, czy kopia zapasowa jest dobra
 
-A backup nobody has restored is a hypothesis.
+Kopia zapasowa, której nikt nie przywrócił, to hipoteza.
 
-Cheap check — the file opens and its pages are intact:
+Tania kontrola — plik się otwiera, a jego strony są nienaruszone:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Prawdziwa kontrola — zaadoptuj ją. Utwórz tymczasowy obszar roboczy na instalacji
+nieprodukcyjnej, zaimportuj do niego plik obszaru roboczego i sprawdź, czy są w nim
+przestrzenie, zgłoszenia i wiadomości, których oczekujesz. To przechodzi tę samą ścieżkę
+co prawdziwe przywracanie, wraz z odbudową FTS, i to jedyna kontrola, która mówi, że kopię
+da się przywrócić, a nie tylko odczytać.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Zrób to raz przy konfigurowaniu kopii zapasowych i ponownie za każdym razem, gdy zmienisz
+miejsce ich przechowywania.
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Objaw | Przyczyna i rozwiązanie |
+| --- | --- |
+| Elementy sterujące pobieraniem i wysyłaniem są wyłączone, z adnotacją o relay | Połączenie przechodzi przez relay pośredniczący, który nie przenosi transferów plików. Połącz się bezpośrednio |
+| „Serwer odmówił” | Rola. Wykonanie lub wyświetlenie migawki instalacji wymaga operatora instalacji. Pobranie obszaru roboczego wymaga roli administratora, przywrócenie go — roli właściciela, a archiwum całej migawki — operatora instalacji |
+| „Ten serwer nie ma powierzchni kopii zapasowych” | Na hoście nie podłączono portu kopii zapasowych — to serwer demonstracyjny. Operacje są nieobecne, a nie odrzucane |
+| „Plik jest większy, niż serwer akceptuje” | Wysyłanie jest ograniczone do 8 GiB. Umieść plik na hoście serwera i użyj zamiast tego **Importuj** → **Wybierz plik** |
+| Import odrzucony: to nie jest baza danych obszaru roboczego Control Center | Plik nie ma wiersza `workspace_meta` — to nie eksport obszaru roboczego albo jest obcięty. Nic nie zostało zastąpione |
+| Migawka jest oznaczona jako **Niekompletna** | Brakuje jej manifestu albo wymienia nieistniejące pliki. Wykonaj nową; w międzyczasie adoptuj z niej pojedyncze pliki obszarów roboczych |
+| Migawka informuje, że nie uwzględniono obszarów roboczych | Te obszary robocze nigdy nie były zapisywane albo ich kopiowanie się nie powiodło. Sprawdź dziennik serwera |
+| Przywrócona instalacja nie ma poświadczeń hosta kodu ani SSO | `secrets.json` nie wchodzi w skład migawki. Przywróć go z miejsca, w którym go przechowujesz, albo podłącz dostawców ponownie |
+| W przywróconym obszarze roboczym brakuje wklejonych obrazów | Bloby leżą obok bazy danych, a nie w niej. Skopiuj także `<workspaceId>/blobs/` |
 
-## Related guides
+## Powiązane poradniki
 
-- [Run a headless server](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): where the data directory comes from
-- [Connect to a remote server](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/): direct versus relayed connections
-- [Pair a device](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): the credential the transfer routes sign with
+- [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/): skąd pochodzi katalog danych
+- [Połącz się ze zdalnym serwerem](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/): połączenia bezpośrednie a połączenia przez relay
+- [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/): poświadczenie, którym podpisują się trasy transferu
 
-## Related concepts and reference
+## Powiązane koncepcje i dokumentacja referencyjna
 
-- [Backup, export and import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/): every operation, route, field and limit
-- [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/): why one workspace is one file
-- [`cc_server` CLI](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli/): the data directory layout
+- [Kopia zapasowa, eksport i import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/): każda operacja, trasa, pole i limit
+- [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/): dlaczego jeden obszar roboczy to jeden plik
+- [`cc_server` CLI](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli/): układ katalogu danych

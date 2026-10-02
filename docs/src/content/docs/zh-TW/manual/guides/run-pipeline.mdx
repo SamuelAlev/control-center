@@ -1,68 +1,64 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: 手動執行管線
+description: 從執行選取器啟動一次管線執行、填寫它的輸入，然後落在執行詳情頁。
 slug: zh-TW/手冊/操作指南/執行管線
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/zh-TW/手冊/操作指南/監控管線/).
+本指南說明如何手動啟動一次執行。若要觀察執行、讀取步驟輸出以及從失敗中復原，請參閱
+[監控管線執行](/zh-TW/手冊/操作指南/監控管線/)。
 
-## Start a run
+## 啟動一次執行
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. 在工作區側邊欄點選 **管線**。
+2. 在頁首按下 **執行管線**。你會落在執行選取器
+   （`/workspaces/<workspace-id>/pipelines/run`）。
+3. 從左側欄挑選一個範本。每張卡片會顯示範本的名稱、說明，以及它是否接受輸入。
+4. 在右側填寫輸入表單。必填欄位在有值之前會一直停用按鈕；沒有輸入的範本會明白說明
+   這一點。
+5. 按下 **執行管線**。
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+你會落在該次執行的詳情頁，時序瀑布圖與圖形畫布都會即時更新。
 
-## If the rail is empty
+## 如果左側欄是空的
 
-The launcher shows a template only when **both** are true:
+只有在下列**兩個**條件都成立時，執行選取器才會顯示某個範本：
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- 該範本的開關已在 **設定 → 工作區 → 管線範本** 中開啟。
+- 範本編輯器的 **手動執行** 對話框中的 **允許手動執行** 已開啟 ——
+  正是這個開關建立了執行選取器所讀取的 `manual` 觸發器。
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+十三個內建範本中有八個出廠時即為停用：`external_pr_welcome`、
+`cross_review`、`ticket_to_pr`、`pr_triage`、`pre_merge_gate`、`release_notes`、
+`dep_audit` 與 `pr_digest`。引擎會拒絕啟動已停用的範本，因此在這裡尋找它之前，請先
+開啟它的開關。
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+範本清單上沒有針對個別範本的 **執行** 動作，編輯器內也沒有執行按鈕 ——
+執行選取器是唯一的手動進入點。
 
-## Fill in a repository input
+## 填寫儲存庫輸入
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+類型為 **儲存庫** 的輸入會在該工作區已註冊的儲存庫之上顯示一個選擇器。選取其中一個會把
+`repo_id`、`repo_local_path`、`repo_full_name`，以及 —— 當該儲存庫有 GitHub 遠端時 ——
+`repo_owner` 與 `repo_name` 填入執行承載內容，讓下游步驟可以讀取各自需要的欄位。
 
-## Watch it run
+## 觀察執行
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+執行詳情頁由三個部分組成：中繼資訊列（開始時間、有效時長、步驟進度、失敗橫幅、
+**重試** 與 **刪除**）、可折疊的時序瀑布圖（含每個步驟的時長與成本），以及圖形畫布。
+選取某個節點會開啟該步驟的詳細資料面板。
 
-[Monitor pipeline runs](/zh-TW/手冊/操作指南/監控管線/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[監控管線執行](/zh-TW/手冊/操作指南/監控管線/)涵蓋了這一切，包括如何讀懂已暫停的
+步驟，以及某個步驟失敗時該怎麼辦。
 
-Every run you start from the app is a real one.
+你從應用程式啟動的每一次執行都是真實的執行。
 
-## Related guides
+## 相關指南
 
-- [Create a pipeline template](/zh-TW/手冊/操作指南/建立管線/)
-- [Set up pipeline triggers](/zh-TW/手冊/操作指南/管線觸發器/)
-- [Monitor pipeline runs](/zh-TW/手冊/操作指南/監控管線/)
+- [建立管線範本](/zh-TW/手冊/操作指南/建立管線/)
+- [設定管線觸發器](/zh-TW/手冊/操作指南/管線觸發器/)
+- [監控管線執行](/zh-TW/手冊/操作指南/監控管線/)
 
-## Related concepts
+## 相關概念
 
-- [Pipelines](/zh-TW/手冊/概念/管線/)
+- [管線與自動化](/zh-TW/手冊/概念/管線/)

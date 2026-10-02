@@ -1,33 +1,37 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Evaluasi dan kualitas
+description: Suite eval, kumpulan pemula yang ditanam ke setiap ruang kerja, dan tempat kemunculannya di Observabilitas.
 slug: id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Sebuah **suite eval** adalah definisi bercakupan ruang kerja atas sebuah tugas
+yang dijalankan terhadap agen: sebuah prompt, agen target beserta modenya,
+penyiapan opsional, fixture opsional dengan SHA yang dipatok, dan daftar
+penilai. Penilai mengutamakan yang deterministik; juri rubrik LLM menutupi
+hal yang tidak dapat diungkapkan oleh pemeriksaan tersebut.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Lima suite pemula ditanam saat ruang kerja dibuat. Suite-suite itu mencakup
+proposal orkestrasi, tinjauan yang menemukan bug yang ditanam, mode rencana
+yang tetap baca-saja, mode rencana yang menghasilkan rencana, dan tiket
+bolak-balik. Penanaman mendengarkan `WorkspaceCreated` (`workspace.upsert`
+atau `workspace.create`), melewati nama yang sudah ada, dan tidak mengisi
+mundur ruang kerja lama.
 
-## Where they appear
+## Di mana ini muncul
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Observabilitas → Kualitas** (`/workspaces/<id>/observability`) mendaftar
+setiap suite di ruang kerja.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Buat, daftar, edit, dan hapus suite melalui `evals.upsertSuite`,
+`evals.deleteSuite`, dan `evals.watchSuites`. Tab Kualitas adalah daftarnya;
+operasi-operasi tersebut adalah editornya.
 
-## Related concepts
+## Konsep terkait
 
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/): the configuration a suite
-  pins
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): the autonomy dial
-- [Manage costs and budgets](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/): spend recorded
-  alongside a run
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): konfigurasi yang
+  dipatok oleh sebuah suite
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): dial
+  otonomi
+- [Kelola biaya dan anggaran](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/):
+  pengeluaran yang tercatat bersama sebuah run

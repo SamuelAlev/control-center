@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Mapa de rotas
+description: Todas as rotas que o Control Center regista, com o respetivo ecrã e parâmetros de consulta.
 slug: pt-PT/manual/referencia/mapa-de-rotas
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Shell da aplicação
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+O shell da aplicação (`ControlCenterLayout`) envolve todas as rotas dentro de um espaço de trabalho através de um `ShellRoute`. **Todos os destinos dentro do shell têm o prefixo do espaço de trabalho — `/workspaces/:workspaceId/…` — e o id do espaço de trabalho no URL é a única fonte de verdade do espaço de trabalho ativo.** Só as superfícies anteriores ao contexto é que não têm prefixo: `/splash`, `/onboarding`, `/signed-out` e o seletor `/workspaces` simples, todos em ecrã inteiro e fora do shell.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+O portão está concluído quando está ligada pelo menos uma forge **para o utilizador com sessão iniciada** e existe pelo menos um espaço de trabalho.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+Uma credencial em falta e uma configuração em falta são ecrãs diferentes, e o critério de distinção é `users.onboarding_finished_at`, lido a partir do próprio `identity.me` de quem chama — nunca “existem espaços de trabalho”, que está errado no momento em que alguém é convidado para um espaço de trabalho que nunca criou. Sem nenhuma forge ligada, uma conta que já concluiu o onboarding vai para `/signed-out` para se autenticar de novo; uma que ainda não concluiu vai para `/onboarding`. Enquanto a flag ainda é desconhecida, a guarda retém o ecrã de arranque em vez de adivinhar, porque nunca redireciona de volta para fora do onboarding.
 
-## Unprefixed routes
+## Rotas sem prefixo
 
-| Path                       | Screen                                           |
+| Caminho                    | Ecrã                                             |
 | -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| `/splash`                  | Ecrã de arranque que resolve o portão de onboarding |
+| `/onboarding`              | Ligar uma forge, criar ou entrar num espaço de trabalho, sandbox, adaptador predefinido e, por fim, voz. O passo do espaço de trabalho é omitido quando a conta já pertence a um |
+| `/signed-out`              | Autenticar de novo: o mesmo cartão de ligações a forges que as Definições apresentam, sem barra de passos e sem botão de continuar — o router sai por si assim que uma forge reporta |
+| `/workspaces`              | Lista e seletor de espaços de trabalho           |
+| `/workspaces/:workspaceId` | Redireciona para `/workspaces/:workspaceId/inbox` |
 
-## Workspace routes
+## Rotas de espaço de trabalho
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Os caminhos abaixo omitem o prefixo `/workspaces/:workspaceId`.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| Caminho                                 | Parâmetros de consulta                    | Ecrã                                                                                                                                                                     |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | Caixa de entrada unificada: PRs classificadas pelo ciclo de vida de revisão, mais trabalho que não é PR e que bloqueia o operador. A rota de destino depois da guarda; um `/workspaces/:workspaceId` simples redireciona para aqui |
+| `/spaces`                               | —                                         | Superfície de espaços, sem espaço selecionado                                                                                                                            |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | Um espaço; `m` faz uma ligação direta a uma mensagem e é consumido uma vez na abertura                                                                                   |
+| `/tickets`                              | —                                         | Quadro de tickets                                                                                                                                                        |
+| `/tickets/:ticketId`                    | —                                         | Detalhe de ticket em formato mestre-detalhe                                                                                                                              |
+| `/projects/:projectId`                  | —                                         | Vista geral do projeto                                                                                                                                                   |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | Lista de PRs; `repo` seleciona esse repositório na barra lateral esquerda                                                                                                |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compor uma nova pull request; `space` indica o espaço cujo worktree isolado fornece o branch                                                                            |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | Detalhe da PR com visualizador de diffs; `comment` é o id REST numérico de um comentário                                                                                 |
+| `/pipelines`                            | —                                         | Lista de execuções de pipeline                                                                                                                                           |
+| `/pipelines/run`                        | `?templateId=<id>`                        | Lançador de execuções manuais                                                                                                                                            |
+| `/pipelines/:runId`                     | —                                         | Detalhe da execução de pipeline (cronologia de passos)                                                                                                                   |
+| `/plans`                                | —                                         | Hub do Plan Studio: planos ativos, documentos de plano, playbooks                                                                                                        |
+| `/plans/:kind/:id`                      | —                                         | Plan Studio para um plano; `kind` é `orchestration` ou `document`                                                                                                        |
+| `/meetings`                             | —                                         | Lista de reuniões                                                                                                                                                        |
+| `/meetings/record`                      | —                                         | Ecrã de gravação de reunião em direto                                                                                                                                    |
+| `/meetings/:meetingId`                  | —                                         | Detalhe da reunião: notas, transcrição, itens de ação, decisões                                                                                                          |
+| `/calendar`                             | —                                         | Calendário: vistas de mês, semana e agenda                                                                                                                               |
+| `/calendar/:eventId`                    | —                                         | Detalhe do evento de calendário (rota irmã; partilha a chave da página de calendário)                                                                                    |
+| `/newsfeed`                             | —                                         | Lista de notícias                                                                                                                                                        |
+| `/newsfeed/article/:articleId`          | —                                         | Leitor de artigos                                                                                                                                                        |
+| `/observability`                        | —                                         | Hub de observabilidade: separadores Uso, Resumo, Ao vivo e Qualidade sobre o feed de registos de execução do espaço de trabalho. Assume o separador Uso por predefinição  |
+| `/users/:login`                         | —                                         | Perfil de utilizador do GitHub                                                                                                                                           |
+| `/teams/:organization/:slug`            | —                                         | Perfil de equipa de uma organização do GitHub                                                                                                                            |
+| `/api-keys`                             | —                                         | Gestão de chaves de API. **Sem ponto de entrada na navegação** — só acessível por URL                                                                                    |
+| `/settings/…`                           | —                                         | Ecrãs de definições (abaixo)                                                                                                                                             |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+As conversas e os threads **não têm rota própria** — um thread é uma conversa dentro de `/spaces/:spaceId`, aberto como separador do editor em vez de ser endereçado por URL.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+Não existe **rota `/dashboard`** nem ecrã de dashboard. A superfície de análise é `/observability`, alcançada a partir do rodapé da barra lateral.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+Não existe **item “Planos” na barra lateral**. O Plan Studio abre como separador do editor a partir da linha do plano na conversa que o produziu; `/plans` e `/plans/:kind/:id` são ligações diretas.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` e `/pull-requests/compose` não têm entrada nos registos de títulos de rota nem de navegação estrutural, pelo que ambos mostram apenas o nome da aplicação no título da janela e nenhum rasto de navegação estrutural.
 
-## Settings routes
+## Rotas de definições
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` redireciona para `/settings/you/appearance`. O botão de definições da barra lateral e `Cmd/Ctrl + ,` vão ambos para `/settings/you/appearance`.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+Os caminhos das definições estão organizados por **âmbito** — `you/`, `workspace/`, `server/` — porque o segmento indica quem a alteração afeta. Dois caminhos são anteriores a esta organização e não têm âmbito no URL: `/settings/memory` e `/settings/pipelines`.
 
-### You
+### Você
 
-| Path                          | Screen                                                                     |
+| Caminho                       | Ecrã                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | Tema, idioma, tipografia, tema do editor (a página inicial das definições) |
+| `/settings/you/notifications` | Interruptores por evento, horas de silêncio                                |
+| `/settings/you/keybindings`   | Referência de atalhos de teclado (só de leitura)                           |
+| `/settings/you/audio`         | Microfone, ditado, deteção de reuniões e saída de paisagens sonoras        |
+| `/settings/you/devices`       | Telemóveis emparelhados e controlo remoto                                  |
+| `/settings/you/newsfeed`      | Gestão do feed: fontes, atualização, estado de leitura                     |
 
-### Workspace
+### Espaço de trabalho
 
-| Path                               | Screen                                                                                              |
+| Caminho                            | Ecrã                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | Perfil e identidade neste espaço de trabalho: nome, autor do git, hospedagem de código, calendário |
+| `/settings/workspace/general`      | Nome, logótipo, globs de segredos, concorrência de revisões, nomenclatura de branches, estado da sincronização, pontes de chat, zona de perigo |
+| `/settings/workspace/meetings`     | Modelos de notas de reunião e perfis de voz guardados                                               |
+| `/settings/workspace/members`      | Lista de membros, convites, registo de auditoria. O registo de auditoria tem paginação com `?cursor=` opcional |
+| `/settings/workspace/repositories` | Repositórios registados neste espaço de trabalho                                                    |
+| `/settings/workspace/agents`       | Identidades de agente registadas                                                                    |
+| `/settings/workspace/skills`       | Configuração de skills                                                                              |
+| `/settings/memory`                 | Memória do espaço de trabalho: factos, políticas, grafo de conhecimento                             |
+| `/settings/workspace/permissions`  | Permissões dos agentes: matriz de guardrails e sonda «E se?»                                        |
+| `/settings/pipelines`              | Modelos de pipeline                                                                                 |
+| `/settings/pipelines/:templateId`  | Editor de modelos de pipeline (canvas de arrastar e largar)                                         |
 
-### Server
+### Servidor
 
-| Path                           | Screen                                                                                |
+| Caminho                        | Ecrã                                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | Ligação e status                                                                      |
+| `/settings/server/sso`         | Início de sessão único (SAML, OIDC, provisionamento SCIM)                             |
+| `/settings/server/providers`   | Fornecedores de modelos e adaptadores                                                 |
+| `/settings/server/mcp`         | Servidores MCP integrados e externos                                                  |
+| `/settings/server/voice`       | Modelos de voz e de reuniões (ASR, diarização)                                        |
+| `/settings/server/rigs`        | Rigs: o que este anfitrião pode arrancar, imagens base, imagens personalizadas, máquinas em execução |
+| `/settings/server/sandbox`     | Concessões de execução em sandbox: programas que os agentes podem executar a partir da sua cópia de trabalho dos seus repositórios |
+| `/settings/server/diagnostics` | Diagnóstico e privacidade: sandbox, embeddings, motor de sincronização, registo, relatórios de falhas |
+| `/settings/server/backup`      | Cópia de segurança e restauro: instantâneos da instalação, exportação por espaço de trabalho, importação e eliminação |
+| `/settings/server/about`       | Sobre e atualizações                                                                  |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`kSettingsNav` em `lib/features/settings/settings_nav.dart` é a única fonte de verdade para esta lista. `settings_nav_test.dart` fixa ids únicos, rotas únicas, a ordem achatada J/K e os três âmbitos. Não percorre todas as `GoRoute` registadas.
 
-## Route configuration
+## Configuração de rotas
 
-| Concern             | File                                                    |
-| ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Aspeto                 | Ficheiro                                                |
+| ---------------------- | ------------------------------------------------------- |
+| Router                 | `lib/router/app_router.dart`                            |
+| Construtores de rotas  | `lib/router/routes.dart`                                |
+| Guardas de autenticação | `lib/router/guards.dart`                               |
+| Portão de onboarding   | `lib/features/auth/providers/onboarding_providers.dart` |
+| Navegação das definições | `lib/features/settings/settings_nav.dart`             |
 
-## See also
+## Ver também
 
-- [Workspaces](/pt-PT/manual/conceitos/espacos-de-trabalho/)
-- [Architecture](/pt-PT/manual/conceitos/arquitetura/)
-- [Keyboard shortcuts](/pt-PT/manual/referencia/atalhos-de-teclado/)
+- [Espaços de trabalho](/pt-PT/manual/conceitos/espacos-de-trabalho/)
+- [Arquitetura](/pt-PT/manual/conceitos/arquitetura/)
+- [Atalhos de teclado](/pt-PT/manual/referencia/atalhos-de-teclado/)

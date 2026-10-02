@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Zarządzaj pamięcią obszaru roboczego
+description: Przeglądaj, poprawiaj i przycinaj fakty oraz zasady, które agenci zapisali w obszarze roboczym.
 slug: pl-PL/podrecznik/poradniki/zarzadzanie-pamiecia
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Ten poradnik pokazuje, jak pracować z magazynem wiedzy obszaru roboczego.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Najważniejsza rzecz, którą warto wiedzieć przed rozpoczęciem: **interfejs pamięci służy do przeglądania, a nie do tworzenia treści.** Fakty i zasady zapisują agenci — przez `propose_fact` i `propose_policy`, a `supersede_fact` i `supersede_policy` służą do ich zastępowania. `remember` zapisuje element gorącej warstwy ograniczony do sesji, który `consolidate_memory` może później awansować na fakt. Decyzje ze spotkań są zbierane do domeny `decisions`; nie ma zbierania na zakończonych uruchomieniach agentów. To, co tutaj robisz, to odczyt tego, co zapisali, poprawianie, dezaktywowanie albo usuwanie.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Pamięć znajduje się w **Ustawienia → Obszar roboczy → Pamięć** (`/workspaces/<id>/settings/memory`). Nie jest to pozycja najwyższego poziomu na pasku bocznym.
 
-## The three tabs
+## Trzy karty
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Strona ma dokładnie trzy karty. Fakty i Zasady pokazują liczbę na bieżąco; graf nie:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fakty** — każdy fakt w obszarze roboczym wraz z liczbą tych, które nie zostały zastąpione
+- **Zasady** — reguły normatywne pogrupowane według domeny, wraz z liczbą aktywnych
+- **Graf wiedzy** — interaktywne płótno z domenami, tematami, faktami i zasadami
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domen nie tworzy się ręcznie. Domena powstaje, gdy agent zapisze w niej pierwszy fakt albo zasadę; w interfejsie nie ma nigdzie kontrolki do tworzenia domen.
 
-## Review and correct a fact
+## Przejrzyj i popraw fakt
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Otwórz kartę **Fakty**.
+2. Użyj pola wyszukiwania, aby zawęzić listę. To zwykły filtr podciągów po domenie, temacie i treści każdego faktu — bez indeksu słów kluczowych i bez rankingu.
+3. Użyj filtra zakresu, aby pokazać wszystkie zakresy, tylko fakty obejmujące cały obszar roboczy albo fakty z jednego repozytorium.
+4. Użyj przełącznika sortowania, aby uporządkować według świeżości albo pewności.
+5. Kliknij kontrolkę edycji faktu.
 
-The edit dialog lets you change:
+W oknie edycji możesz zmienić:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domena** — przenoszenie faktu między domenami
+- **Temat** — jego krótką etykietę
+- **Treść** — tekst wiedzy
+- **Pewność** — suwak z krokiem 5%
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Zapisz, aby utrwalić zmiany. Nie ma przycisku **Dodaj fakt**; okno otwiera się tylko dla istniejącego wiersza.
 
-## See superseded facts
+## Zobacz zastąpione fakty
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Karta **Fakty** ma przełącznik **Pokaż zastąpione**. Zastąpione fakty są domyślnie ukryte i odsłania je ten przełącznik — to w nim mieszka ścieżka audytu: zastąpienie nigdy nie usuwa.
 
-## Delete a fact
+## Usuń fakt
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Użyj kontrolki usuwania faktu i potwierdź. To prawdziwe usunięcie, a nie zastąpienie: używaj go w przypadku faktów, których po prostu nie warto było zapisywać, a fakty, których _treść_ się zmieniła, pozwól zastępować agentom.
 
-## Manage policies
+## Zarządzaj zasadami
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Karta **Zasady** grupuje aktywne zasady według domeny, a nieaktywne przenosi do sekcji na końcu. W przypadku każdej zasady możesz:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Edytować** ją
+- **Usunąć** ją
+- **Dezaktywować** ją / **Aktywować** ją — opcja odwracalna i zwykle ta właściwa. Tylko aktywne zasady trafiają do promptów agentów.
 
-As with facts, there is no create control.
+Podobnie jak w przypadku faktów, nie ma kontrolki tworzenia.
 
-## Explore the knowledge graph
+## Poznaj graf wiedzy
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Karta **Graf wiedzy** przedstawia domeny, tematy, fakty i zasady jako nawigowalne płótno węzłów — przesuwaj, powiększaj, przeciągaj węzły. Dotknięcie węzła otwiera panel ze szczegółami, z którego dostępne są te same okna edycji. To najszybszy sposób, aby zobaczyć, które domeny są faktycznie wypełnione.
 
-## Edit an agent's working memory
+## Edytuj pamięć roboczą agenta
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Pamięć robocza to prywatny notatnik każdego agenta, wstrzykiwany do jego promptu w momencie wysłania. Agenci zapisują go sami przez `record_observation` i `update_my_notes`, ale możesz go odczytać i edytować bezpośrednio:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Ustawienia → Obszar roboczy → Agenci** → wybierz agenta → karta **Pamięć**.
 
-## Access grants
+## Granty dostępu
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Granty dostępu do pamięci mapują rolę agenta na uprawnienie (`none`, `read`, `write`) w obrębie domeny. Zapisuje się je operacjami `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Dwie rzeczy warto zrozumieć w kwestii tego, jak są rozstrzygane:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Odczyty działają w trybie fail-open.** Gdy nie ma wiersza grantu dla pary (rola, domena), obowiązujące uprawnienie to `read`. Jedyny zapis, który rzuca błąd bez uprawnienia `write`, to `propose_policy`. Zapisy faktów nie wymagają grantu.
+- **Granty są kluczowane według roli agenta.** Narzędzia proponujące domyślnie przyjmują `general` dla brakującego `agent_role`. Grant zapisany dla innej roli nie wiąże tych agentów; wiąże ich grant `general`.
 
-## Search is not the same everywhere
+## Wyszukiwanie nie wszędzie działa tak samo
 
-Three different things are called "memory search" and they do not agree:
+Trzy różne rzeczy nazywa się „wyszukiwaniem pamięci” i nie są ze sobą zgodne:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Gdzie                                      | Co robi                                                                                                                                                  |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pole wyszukiwania na karcie Fakty          | Filtr podciągów po faktach już wczytanych w kliencie                                                                                                     |
+| Operacja RPC `memory_fact.search`          | Tylko wyszukiwanie słów kluczowych FTS5 — cienki klient nie może przesłać osadzenia zapytania, więc wyszukiwanie hybrydowe pozostaje wewnętrzne dla hosta |
+| Narzędzie `search_memory` po stronie agenta | `keyword`, `semantic` albo `hybrid` (domyślne). Hybrydowe łączy cztery głosy: leksykalny, semantyczny, czasowy i grafowy                                  |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Agent i strona Pamięć nie uszeregują więc tego samego zapytania w ten sam sposób. Gdy sprawdzasz, co agent faktycznie potrafi przywołać, zapytaj agenta.
 
-## Embeddings
+## Osadzenia
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Fakty są osadzane **w momencie zapisu** i tylko wtedy, gdy zainstalowany jest model osadzania na urządzeniu. Sprawdź jego stan w **Ustawienia → Serwer → Diagnostyka i prywatność → Wyszukiwanie semantyczne**. Jeśli chcesz przywoływania semantycznego, zainstaluj model, zanim agenci zaczną zapisywać pamięć.
 
-## Related guides
+## Powiązane poradniki
 
-- [Create and configure an agent](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
-- [Use the MCP server](/pl-PL/podrecznik/poradniki/serwer-mcp/)
+- [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
+- [Używaj serwera MCP](/pl-PL/podrecznik/poradniki/serwer-mcp/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Memory and knowledge](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/)
-- [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/)
+- [Pamięć i wiedza](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/)
+- [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/)

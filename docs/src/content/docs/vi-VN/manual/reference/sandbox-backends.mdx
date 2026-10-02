@@ -1,192 +1,195 @@
 ---
-title: Sandbox backends
-description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+title: Backend sandbox
+description: Các backend sandbox, nơi chúng được áp dụng và mọi value object mà runtime sandbox sử dụng.
 slug: vi-VN/so-tay/tham-chieu/backend-sandbox
+sourceHash: 9482e07b3f36e8bb2dffcfaa1dd8fac042843d23
 ---
 
-:::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+:::caution[Việc một lượt chạy có được sandbox hay không phụ thuộc vào máy chủ]
+`cc_server` dò máy chủ một lần lúc khởi động và bọc việc điều phối agent trong backend gốc khi bước dò báo có một backend khả dụng và `--sandbox` không phải `off`. Cả hai đường nối điều phối đều được bọc: CLI Claude Code qua cổng sandbox, và ACP cùng công cụ `bash` của harness tích hợp qua trình quản lý sandbox.
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/vi-VN/so-tay/khai-niem/rao-chan/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+Nơi bước dò báo không có backend — **Windows thì luôn vậy** và Linux hay WSL2 thiếu `bwrap` và `socat` — các lượt chạy agent **không** được sandbox. ACP và công cụ `bash` của harness vẫn được spawn với môi trường đã làm sạch; Claude Code đi qua `NoSandboxAdapter` và kế thừa môi trường của máy chủ. Những ranh giới còn lại là cây làm việc riêng của lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), thông tin xác thực được kiểm soát theo khả năng, do broker cấp theo từng lần khởi chạy và thu hồi khi kết thúc, chính sách lệnh theo từng chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) hợp nhất (đóng-khi-lỗi), việc làm sạch môi trường trên các đường ACP và `bash` của harness, và bề mặt công cụ mà chế độ của nó cho phép.
 
-The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+Các công cụ tệp in-process của harness (read, write, edit, apply patch, search, find, search_files) nằm ngoài sandbox trên mọi máy chủ: chúng chạy trong tiến trình máy chủ, nên chỉ `bash` được bọc.
 :::
 
-## Backend overview
+## Tổng quan backend
 
-| Backend     | Value     | Platform                                      | Availability                                                                                                      |
-| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/vi-VN/so-tay/khai-niem/rigs/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| Backend       | Giá trị   | Nền tảng                                      | Khả dụng                                                                                                          |
+| ------------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| VM khép kín   | `microvm` | macOS, Linux, Windows (hypervisor microVM)    | Được đặt cổng theo bước dò trên runtime microVM; áp dụng cho terminal tương tác — shell chạy bên trong một [rig](/vi-VN/so-tay/khai-niem/rigs/), không phải trên máy chủ |
+| Gốc           | `native`  | macOS (Seatbelt), Linux và WSL2 (bubblewrap)  | Được dò lúc khởi động; Linux từ chối một lượt chạy cần các lệnh từ chối ghi theo mẫu tên tệp mà bubblewrap không thể thực thi |
+| Không cô lập  | `none`    | Tất cả                                        | Giá trị mặc định khi phân tích, mặc định của terminal và phương án dự phòng khi không có backend nào khả dụng hoặc `--sandbox off` được đặt |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` trả về `none` khi giá trị được lưu là null hoặc không nhận ra. Giá trị `"docker"` được lưu sẽ ánh xạ thành `native`.
 
-**`microvm` is the one backend with a kernel boundary** — the workload
-genuinely does not run on the host. It is never a silent fallback in either
-direction: explicitly requesting it on a host that cannot boot a VM fails
-loudly ("I asked for a VM and got my laptop" is the one degradation the
-enclosure cannot afford), and only an *unspecified default* steps down to
-`native`, with a log line saying so. The session's actual backend is reported
-back to the client and badged, so a terminal can never claim to be enclosed
-while running on the host. Lifecycle, images and egress for the VM itself are
-covered by the [rigs reference](/vi-VN/so-tay/tham-chieu/rigs/).
+**`microvm` là backend duy nhất có ranh giới kernel** — khối lượng công việc
+thực sự không chạy trên máy chủ. Nó không bao giờ là phương án dự phòng âm thầm
+theo cả hai hướng: yêu cầu nó một cách tường minh trên một máy chủ không thể khởi
+động VM sẽ thất bại ồn ào ("tôi xin một VM mà lại nhận được laptop của mình" là
+kiểu suy giảm duy nhất mà môi trường khép kín không thể cho phép), và chỉ một
+*mặc định không được chỉ định* mới hạ xuống `native`, kèm một dòng log nói rõ
+điều đó. Backend thực tế của phiên được báo về máy khách và gắn nhãn, nên một
+terminal không bao giờ có thể tự nhận là khép kín trong khi đang chạy trên máy
+chủ. Vòng đời, image và egress cho chính VM được trình bày trong [tham chiếu
+rigs](/vi-VN/so-tay/tham-chieu/rigs/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows không có sandbox gốc.** `NativeSandboxAdapter.probe` trả về `available: false` trên mọi máy chủ không phải macOS hay Linux/WSL2. Do đó việc điều phối agent trên Windows dùng `none`. Backend `microvm` là riêng biệt: nó được đặt cổng theo bước dò trên runtime microVM và áp dụng cho terminal tương tác cùng rig, không áp dụng cho việc bọc `bash` trên máy chủ.
 
-## Probe results
+## Kết quả dò
 
-The probe is what gates enforcement. It runs once, at server boot.
+Bước dò chính là thứ đặt cổng cho việc thực thi. Nó chạy một lần, lúc máy chủ khởi động.
 
-| Host                                   | `available` | Note / hint                                                               |
+| Máy chủ                                | `available` | Ghi chú / gợi ý                                                            |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
-| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
-| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
-| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
-| Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — cô lập namespace, không có ranh giới kernel    |
+| Linux hoặc WSL2 có `bwrap` và `socat`  | `true`      | bubblewrap — cô lập namespace, không có ranh giới kernel                   |
+| Linux hoặc WSL2 thiếu một trong hai công cụ | `false` | `requiresInstall: true`, kèm một gợi ý cài đặt nêu tên các gói còn thiếu   |
+| Mọi nền tảng khác                      | `false`     | Sandbox gốc không được cung cấp trên nền tảng này                          |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Máy chủ ghi kết quả vào một dòng khởi động duy nhất: `agent sandbox ON` kèm ghi chú, `no OS-native agent sandbox on this host` kèm gợi ý, hoặc `agent sandbox DISABLED by --sandbox off`. `GET /healthz` không mang trường sandbox nào.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` chấp nhận `on` (mặc định) hoặc `off`. Đây là cơ chế chủ động tắt, không phải bật: `on` nghĩa là "bọc khi máy chủ cung cấp một backend", không bao giờ là "bắt buộc phải có một backend".
 
-## Native backend
+## Backend gốc
 
 ### macOS: Seatbelt
 
-Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+Dùng cơ chế sandbox Seatbelt của Apple (cùng hệ thống mà macOS App Sandbox dùng).
 
-The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+Profile được sinh ra **mặc định là dễ dãi** (`(allow default)`) và khoét ra các lệnh từ chối, bởi một profile từ chối-hoàn-toàn-theo-mặc-định sẽ khiến một shell tương tác không dùng được — có quá nhiều lệnh gọi dyld, XPC và Mach để liệt kê hết. Hệ quả thực tế là agent vẫn có thể đọc phần lớn máy chủ; những bản checkout đã đăng ký của bạn được bảo vệ bằng các lệnh từ chối ghi và rename tường minh, chứ không phải bằng sự vô hình.
 
-- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
-- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
-- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **Đọc hệ thống tệp**: bị từ chối với các đường dẫn bí mật (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` và phần còn lại của nhóm từ chối đọc)
+- **Ghi hệ thống tệp**: được đặt lại thành từ chối, rồi các lệnh cho phép tường minh cho từng đường dẫn con, với những đường dẫn bắt buộc từ chối (tệp rc của shell, `.git/hooks`, cấu hình Claude, các bản checkout được bảo vệ) bị chặn ngay cả bên trong một gốc có thể ghi. `file-write-unlink` bị từ chối trên mọi đường dẫn bị từ chối và các tổ tiên của nó, nên một lệnh rename không thể lách qua một lệnh từ chối ghi
+- **Tiến trình**: `process-exec` từ chối các tệp nhị phân luôn nguy hiểm, cộng thêm việc chặn thực thi bất cứ thứ gì từ một thư mục có thể ghi
+- **Mạng**: bị giới hạn ở các cổng proxy in-process cùng DNS — loopback không được cho phép toàn bộ và socket Unix không được phép. Các proxy thực thi danh sách cho phép theo tên miền của từng phiên (xem [Egress mạng](#egress-mạng))
+- **Cấu hình**: profile được sinh theo từng lần khởi chạy từ `SandboxSpec`
 
-Requirements:
+Yêu cầu:
 
-- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), có trong mọi bản cài macOS — không cần công cụ bổ sung
 
 ### Linux: bubblewrap
 
-Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+Dùng bubblewrap (`bwrap`) để tạo các namespace mount và PID.
 
-- **Filesystem**: creates a mount namespace with only the bound paths visible
-- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
-- **Process**: PID namespace isolation
+- **Hệ thống tệp**: tạo một namespace mount chỉ nhìn thấy những đường dẫn đã được gắn
+- **Mạng**: chạy trong một namespace mạng không chia sẻ; lưu lượng tới được các proxy của máy chủ qua những cầu socket Unix bằng `socat`
+- **Tiến trình**: cô lập namespace PID
 
-Requirements:
+Yêu cầu:
 
-- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
-- Kernel namespace support (standard on modern Linux)
+- Đã cài `bubblewrap` và `socat` (`sudo apt-get install bubblewrap socat` trên Debian/Ubuntu)
+- Kernel hỗ trợ namespace (tiêu chuẩn trên Linux hiện đại)
 
-Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
-`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
-requires these filename-glob denies, so native agent dispatch currently
-**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
-run with a silently weaker policy. A backend with create-time filename rules
-is required to restore Linux native dispatch. Disabling sandboxing is an
-explicit unconfined opt-out, not an equivalent workaround.
+Bubblewrap có thể che khuất một đường dẫn đã tồn tại nhưng không thể cấm một tệp
+`.env`, `*.key` hay `*.pem` *mới* nằm trong một bind có thể ghi. Chính sách điều
+phối tiêu chuẩn yêu cầu những lệnh từ chối theo mẫu tên tệp này, nên việc điều
+phối agent bằng backend gốc hiện **đóng-khi-lỗi trên Linux/WSL2 ngay cả khi bước
+dò tìm thấy bubblewrap**. Nó không chạy với một chính sách âm thầm yếu hơn. Cần
+một backend có quy tắc tên tệp tại thời điểm tạo để khôi phục việc điều phối gốc
+trên Linux. Tắt sandboxing là một lựa chọn chủ động từ bỏ mọi ràng buộc, không
+phải một cách lách tương đương.
 
-## None backend
+## Backend không cô lập
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+Không có sandbox. Tiến trình chạy trực tiếp trên máy chủ với quyền truy cập hệ thống tệp, mạng và tiến trình của máy chủ. ACP và công cụ `bash` của harness vẫn được làm sạch môi trường và áp chính sách lệnh; Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ. Đây là thứ việc điều phối agent quay về trên một máy chủ không có backend khả dụng hoặc có `--sandbox off`, và cũng là mặc định của terminal khi máy khách không nêu backend nào.
 
-## Server-hosted terminal
+## Terminal do máy chủ cung cấp
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+Terminal được sandbox theo những quy tắc riêng của nó, không theo bước dò của đường điều phối. `defaultBackend` của `TerminalSessionService` là `none` và `cc_server` không ghi đè nó, nên một phiên terminal chạy shell của máy chủ trừ khi máy khách yêu cầu `native` một cách tường minh — còn bảng terminal của ứng dụng desktop thì không.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+Khi `native` được yêu cầu, shell được bọc qua `SandboxManager` dưới một profile terminal cố định: `$HOME` và thư mục làm việc của phiên có thể ghi, mạng mở và `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` cùng `~/Library/Keychains` bị từ chối đọc. Việc kiểm soát theo khả năng không áp dụng ở đây — đó là chuyện của đường điều phối. Nếu việc bọc không được hỗ trợ, phiên sẽ thất bại thay vì hiển thị một nhãn native trên một PTY là shell của máy chủ.
 
-## Network egress
+## Egress mạng
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+Khi một sandbox được khởi chạy, quyền truy cập mạng ra ngoài được thực thi bởi các proxy in-process, không phải bởi các quy tắc tường lửa của kernel. Trên một máy chủ không có backend khả dụng, không điều nào ở đây áp dụng và một tiến trình được spawn tiếp cận mạng đúng như người dùng máy chủ sẽ làm.
 
-- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
-- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
-- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Two wildcard forms, each with exactly one `*`: a leading `*.example.com` matches any subdomain (including `a.b.example.com`) but not the apex itself; a middle-label `bedrock.*.amazonaws.com` matches exactly one label (`bedrock.us-east-1.amazonaws.com`, not `bedrock.evil.attacker.amazonaws.com`).
-- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus GitHub domains when the agent has GitHub or push capabilities, plus `SandboxSpec.egressAllowlist`. The resolver also accepts ticketing-provider domains when the agent can call ticketing, but the dispatch path never passes that list (or extra `egressAllowlist` entries), so in practice every run gets the baseline plus the GitHub domains its capabilities earn.
-- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
-- `networkEnabled: false` (or an agent without the network capability) still starts the per-session proxies, but the allowlist is empty so every outbound connection is refused.
+- Runtime sandbox chạy một proxy HTTP/HTTPS và một proxy SOCKS5 trên `127.0.0.1` bên trong tiến trình `cc_server`, **một cặp cho mỗi phiên bị giới hạn** (`http_proxy.dart`, `socks_proxy.dart`). Các lượt chạy đồng thời không dùng chung một cặp.
+- Các tiến trình được sandbox nhận các biến môi trường proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy HTTP, `ALL_PROXY` → proxy SOCKS; `GIT_SSH_COMMAND` định tuyến git-qua-SSH qua proxy SOCKS). Trên Linux, namespace mạng không được chia sẻ, nên các proxy là lối ra duy nhất; trên macOS, sandbox dùng chung loopback của máy chủ và nói chuyện trực tiếp với chúng.
+- Máy chủ đích của mỗi kết nối được đối chiếu với danh sách cho phép tên miền của phiên; mọi thứ khác đều bị từ chối. Có hai dạng ký tự đại diện, mỗi dạng có đúng một dấu `*`: dạng đứng đầu `*.example.com` khớp với mọi tên miền con (kể cả `a.b.example.com`) nhưng không khớp với chính tên miền gốc; dạng ở nhãn giữa `bedrock.*.amazonaws.com` khớp với đúng một nhãn (`bedrock.us-east-1.amazonaws.com`, không khớp `bedrock.evil.attacker.amazonaws.com`).
+- Danh sách cho phép được phân giải theo từng phiên từ đường cơ sở được tuyển chọn (`kBaselineAllowedDomains`: các nhà cung cấp LLM, nơi lưu trữ Git, các registry gói), cộng với các tên miền GitHub khi agent có khả năng GitHub hoặc push, cộng với `SandboxSpec.egressAllowlist`. Bộ phân giải cũng chấp nhận các tên miền nhà cung cấp phiếu khi agent có thể gọi hệ thống phiếu, nhưng đường điều phối không bao giờ truyền danh sách đó (hay các mục `egressAllowlist` bổ sung), nên trên thực tế mọi lượt chạy đều nhận đường cơ sở cộng với các tên miền GitHub mà khả năng của nó kiếm được.
+- Một danh sách từ chối cố định (`kBaselineDeniedDomains`: các endpoint metadata của cloud, các điểm thu thập telemetry) có quyền ưu tiên hơn mọi lệnh cho phép.
+- `networkEnabled: false` (hoặc một agent không có khả năng mạng) vẫn khởi động các proxy theo phiên, nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối.
 
 ## SandboxSpec
 
-The specification passed to `SandboxPort.launch`:
+Đặc tả được truyền cho `SandboxPort.launch`:
 
-| Field             | Type                                        | Description                                                                                                                                 |
+| Trường            | Kiểu                                        | Mô tả                                                                                                                                 |
 | ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
-| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
-| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
-| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
-| `networkEnabled`  | `bool` (default `true`)                     | Combined with the agent's network capability. When off, per-session proxies still start but the allowlist is empty so every outbound connection is refused |
-| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`, plus a one-label middle form). Dispatch never populates this, so a wrapped run gets the curated baseline plus GitHub domains its capabilities earn |
-| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
-| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
-| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the network on/off decision and GitHub egress domains. Ticketing domains are a resolver argument the dispatch path never supplies |
-| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
-| `runnerStateDirs` | `List<String>` (default `[]`)               | Host directories the runner keeps its own state in, writable in every mode (a Control-Center-managed `CLAUDE_CONFIG_DIR` is the current one) |
-| `execGrantRoots`  | `List<String>` (default `[]`)               | Operator-approved directory trees that re-open the writable-dir exec block on macOS. Linux ignores them — bwrap has no `$HOME` exec block to re-open |
+| `sessionId`       | `String`                                    | Mã định danh phiên ổn định (thường là id của space)                                                                                         |
+| `workspaceId`     | `String`                                    | Id của không gian làm việc sở hữu                                                                                                           |
+| `agentId`         | `String?`                                   | Agent hiện đang được gắn với sandbox, nếu có                                                                                                 |
+| `bindMounts`      | `List<SandboxBindMount>`                    | Các mount máy chủ→khách; sandbox chỉ nhìn thấy những đường dẫn máy chủ được liệt kê ở đây                                                    |
+| `networkEnabled`  | `bool` (mặc định `true`)                    | Kết hợp với khả năng mạng của agent. Khi tắt, các proxy theo phiên vẫn khởi động nhưng danh sách cho phép rỗng nên mọi kết nối ra ngoài đều bị từ chối |
+| `egressAllowlist` | `List<String>` (mặc định `[]`)              | Các tên miền egress được phép bổ sung; hỗ trợ ký tự đại diện (`*.example.com`, cùng dạng một nhãn ở giữa). Đường điều phối không bao giờ điền vào trường này, nên một lượt chạy được bọc sẽ nhận đường cơ sở được tuyển chọn cộng với các tên miền GitHub mà khả năng của nó kiếm được |
+| `guestWorkdir`    | `String?`                                   | Thư mục làm việc mặc định bên trong sandbox; từng lệnh gọi `exec` riêng lẻ có thể ghi đè nó                                                 |
+| `mode`            | `Mode` (mặc định `chat`)                    | Khoét ra các quy tắc ghi vào hệ thống tệp: `chat` giữ các bind mount ở chế độ có thể ghi; `review`, `plan` và `orchestrate` chỉ đọc          |
+| `capabilities`    | `AgentCapabilities` (mặc định `safeDefault`) | Suy ra quyết định bật/tắt mạng và các tên miền egress GitHub. Tên miền phiếu là một đối số của bộ phân giải mà đường điều phối không bao giờ cung cấp |
+| `protectedPaths`  | `List<String>` (mặc định `[]`)              | Các đường dẫn máy chủ không bao giờ được phép ghi bên trong sandbox, ở bất kỳ chế độ nào                                                    |
+| `runnerStateDirs` | `List<String>` (mặc định `[]`)              | Các thư mục máy chủ mà runner lưu trạng thái riêng của nó, có thể ghi ở mọi chế độ (hiện tại là một `CLAUDE_CONFIG_DIR` do Control Center quản lý) |
+| `execGrantRoots`  | `List<String>` (mặc định `[]`)              | Các cây thư mục được người vận hành phê duyệt, mở lại lệnh chặn exec trong thư mục có thể ghi trên macOS. Linux bỏ qua chúng — bwrap không có lệnh chặn exec `$HOME` nào để mở lại |
 
-`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+`protectedPaths` chứa các bản checkout repo đã đăng ký gốc, được phân giải theo từng lần điều phối từ các repo của không gian làm việc. Agent chỉ làm việc trong các cây làm việc copy-on-write theo từng cuộc hội thoại, nên các bản gốc không bao giờ được phép ghi từ bên trong sandbox — nếu không, trên macOS, lệnh cho phép ghi `$HOME` toàn diện của Seatbelt sẽ để chúng có thể ghi được qua `bash`. Chúng gia nhập nhóm từ chối ghi các thông tin bí mật ở mọi chế độ, kể cả `chat`.
 
-Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+Mọi đường dẫn từ chối đọc và từ chối ghi đều được phát ra theo cả cách viết nguyên văn lẫn cách viết đã phân giải symlink. Kernel so khớp một quy tắc từ chối với đường dẫn đã phân giải, nên một quy tắc viết theo một đường dẫn có symlink sẽ không bao giờ kích hoạt — và trên macOS đó là trường hợp phổ biến chứ không phải ngoại lệ, vì `/tmp` phân giải thành `/private/tmp` và `/var/folders/…` thành `/private/var/folders/…`. Các mục chứa `*` hoặc `?` được coi là glob và để nguyên; một đường dẫn không phân giải được thì được giữ nguyên như đã viết.
 
 ## SandboxBindMount
 
-| Field       | Type                     | Description                                                                                             |
+| Trường      | Kiểu                     | Mô tả                                                                                                   |
 | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
-| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
-| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+| `hostPath`  | `String`                 | Đường dẫn tuyệt đối trên máy chủ                                                                        |
+| `guestPath` | `String`                 | Đường dẫn bên trong sandbox (với sandbox gốc thì bằng `hostPath`; được giữ lại để các adapter đối xứng nhau) |
+| `readOnly`  | `bool` (mặc định `false`) | Gắn ở chế độ chỉ đọc khi là true                                                                        |
 
 ## SandboxHandle
 
-Returned by `SandboxPort.launch`:
+Được trả về bởi `SandboxPort.launch`:
 
-| Field       | Type                   | Description                                                              |
+| Trường      | Kiểu                   | Mô tả                                                                     |
 | ----------- | ---------------------- | ------------------------------------------------------------------------ |
-| `sessionId` | `String`               | Session identifier                                                       |
-| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
-| `state`     | `SandboxState`         | Lifecycle state                                                          |
-| `error`     | `Object?`              | Set when `state` is `error`                                              |
-| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+| `sessionId` | `String`               | Mã định danh phiên                                                       |
+| `backend`   | `SandboxBackend`       | Backend nào đang chạy                                                    |
+| `state`     | `SandboxState`         | Trạng thái vòng đời                                                      |
+| `error`     | `Object?`              | Được đặt khi `state` là `error`                                          |
+| `details`   | `Map<String, Object?>` | Thông tin ghi chép riêng của adapter (thư mục làm việc, PID, đường dẫn profile, v.v.) |
 
 ### SandboxState
 
-| State       | Description                                 |
-| ----------- | ------------------------------------------- |
-| `created`   | Spec created but the VM has not started yet |
-| `warm`      | Running and ready to exec commands          |
-| `active`    | Currently executing a command               |
-| `suspended` | Paused / checkpointed to disk to save RAM   |
-| `destroyed` | Torn down; the handle is no longer valid    |
-| `error`     | Launch failed — see `SandboxHandle.error`   |
+| Trạng thái  | Mô tả                                        |
+| ----------- | -------------------------------------------- |
+| `created`   | Đặc tả đã được tạo nhưng VM chưa khởi động   |
+| `warm`      | Đang chạy và sẵn sàng thực thi lệnh          |
+| `active`    | Đang thực thi một lệnh                       |
+| `suspended` | Tạm dừng / được checkpoint xuống đĩa để tiết kiệm RAM |
+| `destroyed` | Đã bị hủy; handle không còn hợp lệ           |
+| `error`     | Khởi chạy thất bại — xem `SandboxHandle.error` |
 
-## Sandbox events
+## Sự kiện sandbox
 
-| Event type  | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| `stdout`    | Standard output from the sandbox                             |
-| `stderr`    | Standard error from the sandbox                              |
-| `exit`      | Sandbox process exited (carries `exitCode`)                  |
-| `starting`  | Sandbox is starting up                                       |
-| `ready`     | Sandbox is ready to accept exec calls                        |
-| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
-| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+| Loại sự kiện | Mô tả                                                         |
+| ------------ | ------------------------------------------------------------- |
+| `stdout`     | Đầu ra chuẩn từ sandbox                                       |
+| `stderr`     | Đầu ra lỗi chuẩn từ sandbox                                   |
+| `exit`       | Tiến trình sandbox đã thoát (mang theo `exitCode`)            |
+| `starting`   | Sandbox đang khởi động                                        |
+| `ready`      | Sandbox sẵn sàng nhận các lệnh gọi exec                       |
+| `killed`     | Tiến trình bị máy chủ kill (OOM, hết thời gian chờ, dừng thủ công) |
+| `violation`  | Một chính sách sandbox đã bị vi phạm (mang theo một `SandboxViolation`) |
 
 ## SandboxViolation
 
-| Field                 | Type      | Description                                                                |
+| Trường                | Kiểu      | Mô tả                                                                     |
 | --------------------- | --------- | -------------------------------------------------------------------------- |
-| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
-| `target`              | `String`  | Path or host that was the target of the denied operation                   |
-| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
-| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+| `action`              | `String`  | Động từ bị từ chối (ví dụ `file-read*`, `network-outbound`)                |
+| `target`              | `String`  | Đường dẫn hoặc máy chủ là đích của thao tác bị từ chối                     |
+| `suggestedCapability` | `String?` | Cờ khả năng sẽ cho phép hành động này (ví dụ `canCallGitHubApi`)           |
+| `raw`                 | `String?` | Dòng log thô, hữu ích khi gỡ lỗi                                           |
 
-## See also
+## Xem thêm
 
-- [Sandbox security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
-- [Sandbox policies](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/)
-- [cc_server CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server/): the `--sandbox` flag
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
+- [Chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/)
+- [CLI cc_server](/vi-VN/so-tay/tham-chieu/cli-cc-server/): cờ `--sandbox`

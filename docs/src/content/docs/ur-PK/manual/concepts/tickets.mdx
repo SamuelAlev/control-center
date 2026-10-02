@@ -1,155 +1,155 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: ٹکٹس اور تفویض
+description: ایک ٹکٹ کام کو ڈسپیچ کیے بغیر کیوں ٹریک کرتا ہے، تفویض کیسے محفوظ کی جاتی ہے، اور وینڈر کا آئینہ کس چیز کا مالک ہے اور کس چیز کا نہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ٹکٹس
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+ٹکٹ کام کی وہ اکائی ہے جسے Control Center ٹریک کرتا ہے۔ یہ جان بوجھ کر ایک _سادہ_
+شے ہے: ایک عنوان، ایک باڈی، ایک اسٹیٹس، ایک مالک اور درخت میں ایک مقام۔ یہ وہ
+چیز نہیں جس پر ایجنٹ عمل کرتے ہیں — ایجنٹ کا کام گفتگو میں رہتا ہے اور کسی رن کا
+ساختی آؤٹ پٹ رن لاگ پر رہتا ہے۔
 
-## Assignment records ownership; it dispatches nothing
+## اسائنمنٹ صرف ملکیت درج کرتی ہے؛ کچھ ڈسپیچ نہیں کرتی
 
-This is the single most important thing to get right about tickets.
+ٹکٹس کے بارے میں سب سے اہم بات یہی سمجھنی ہے۔
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+`assignedAgentId` سیٹ کرنا ایک فیلڈ لکھتا ہے اور ایک `TicketAssigned`
+[ڈومین ایونٹ](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/) شائع کرتا ہے۔ وہ ایونٹ ایک آڈٹ اور
+اطلاعات کا سگنل اور ایک پائپ لائن ٹریگر ہے۔ **کسی ایجنٹ کو اسائن کرنے سے کوئی رن
+شروع نہیں ہوتا۔** کوئی ٹکٹ ڈسپیچر ایسا نہیں جو `assignedAgentId` پر نظر رکھے اور اس
+ایجنٹ کو جگائے۔
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+استثنا ایک ٹیم ہے: جب `assignedTeamId` سیٹ ہو، `TeamRoutingService` ٹیم لیڈر کو
+آپریٹنگ پروٹوکول اور روسٹر کے ساتھ ڈسپیچ کرتا ہے۔
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+اگر آپ چاہتے ہیں کہ کوئی مخصوص ایجنٹ کسی ٹکٹ پر کام کرے، تو آپ اس سے کسی گفتگو میں
+کہتے ہیں، یا کوئی پائپ لائن قدم اسے ڈسپیچ کرتا ہے، یا کوئی دوسرا ایجنٹ اسے تفویض
+کرتا ہے۔ ٹکٹ کسی ایجنٹ کو اسائن کر کے انتظار کرنا وہ واحد چیز ہے جو کبھی کام پیدا
+نہیں کرے گی۔
 
-## Mirror and overlay
+## آئینہ اور اضافی تہہ
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+ایک ٹکٹ خالصتاً مقامی ہو سکتا ہے یا کسی بیرونی ٹریکر کے سہارے، اور یہ دونوں چیزیں
+ایک ہی قطار میں رکھتا ہے۔
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**آئینہ** — فراہم کنندہ، بیرونی کلید، URL، عنوان، تفصیل، ترجیح، لیبلز، خام اور
+نارملائزڈ اسٹیٹس، ٹائم سٹیمپس — جب ٹکٹ ریموٹ ہو تو ایک کیش ہے۔ وہاں ریموٹ ہی اصل
+ماخذ ہے اور ریفریش آئینے کو مکمل طور پر دوبارہ لکھ دیتا ہے۔
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**اضافی تہہ** — اسائنمنٹ، تفویض، اسپیس لنک، والد، پروجیکٹ، لنک شدہ PRs — صرف
+Control Center میں ہوتی ہے۔ ٹریکر اس کے بارے میں کچھ نہیں جانتا اور ریفریش اسے کبھی
+نہیں چھوتا۔
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+یہی تقسیم سنک کو بہرصورت محفوظ بناتی ہے: وینڈر سے آنے والی ریفریش آئینے کے لیے
+تباہ کن ہو سکتی ہے مگر اوپر کی تہہ میں رکھا آرکیسٹریشن میٹا ڈیٹا کبھی ضائع نہیں
+ہوتا۔
 
-## The lifecycle graph binds agents, not you
+## لائف سائیکل گراف ایجنٹس کو باندھتا ہے، آپ کو نہیں
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+اسٹیٹس `backlog → open → inProgress → inReview → done` چلتے ہیں، جہاں `blocked` ایک
+طرفہ لوپ ہے اور `failed` / `cancelled` دیگر ٹرمینل حالتیں ہیں۔
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+منتقلی کا گراف **صرف ایجنٹ اور آٹومیشن کے راستے** پر نافذ ہوتا ہے — MCP ٹولز اور
+ری کنسائلرز۔ وہاں غیر قانونی منتقلی لاگ ہو کر نظر انداز ہو جاتی ہے، چنانچہ کوئی
+الجھا ہوا ایجنٹ ٹکٹ کو ٹرمینل حالت سے پیچھے نہیں لے جا سکتا۔
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+UI میں صارف کے ہر عمل سے ہونے والی تبدیلی `force: true` بھیجتی ہے اور گراف کو
+مکمل طور پر نظر انداز کر دیتی ہے۔ کوئی انسان ٹکٹ کو پکر کی فہرست میں موجود کسی بھی
+اسٹیٹس پر لے جا سکتا ہے — بشمول ٹرمینل حالت دوبارہ کھولنے کے۔ پکر `failed` پیش
+نہیں کرتا؛ ایجنٹس یہ `fail_ticket` سے سیٹ کرتے ہیں۔ گراف آٹومیشن کے لیے ایک گارڈ
+ریل ہے، اس بات کا قاعدہ نہیں کہ کام کیسے آگے بڑھ سکتا ہے۔
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` ہر میوٹیشن کی ملکیت ایک ہی چوک پوائنٹ سے رکھتی ہے جو قطار
+لوڈ کرتا ہے، تصدیق کرتا ہے کہ وہ کالر کے ورک اسپیس سے تعلق رکھتی ہے، اور متوقع
+`version` کے ساتھ لکھتا ہے تاکہ دو ہم وقت ترمیمات خاموشی سے ایک دوسرے کو اوور رائٹ
+نہ کر سکیں۔
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/).
+مکمل اسٹیٹس ٹیبل، منتقلیاں، فیلڈ فہرست اور تعلق کی اقسام کے لیے
+[ٹکٹ لائف سائیکل](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/) دیکھیں۔
 
-## Provenance: how a ticket came to exist
+## ماخذ: ٹکٹ وجود میں کیسے آیا
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+ہر ٹکٹ کا ایک `originKind` ہوتا ہے۔ اس enum میں پانچ ویلیوز ہیں — `manual`،
+`pipelineStep`، `agentDelegation`، `externalSync`، `recovery` — مگر آج صرف دو
+لکھی جاتی ہیں: `manual` (`createTicket` پر ڈیفالٹ، بشمول تفویض شدہ ذیلی ٹکٹس) اور
+`externalSync` (سنک انجن، وینڈر سے آنے والی ریفریش پر)۔
+`TicketWorkflowService.createTicket` کوئی origin آرگیومنٹ نہیں لیتا، اس لیے
+`pipelineStep`، `agentDelegation` اور `recovery` کبھی کسی قطار پر نہیں آتیں۔
 
-## Guarded delegation
+## محفوظ تفویض
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+تفویض وہ جگہ ہے جہاں ایک ایجنٹ دوسرے ایجنٹ کے لیے کام بناتا ہے اور یہیں استحقاق لیک
+ہو سکتا ہے، اسی لیے گارڈز پرامپٹ ہدایات کے بجائے سرور کی طرف، ایک چوک پوائنٹ پر
+رہتے ہیں۔
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` `TicketWorkflowService.delegateGuarded` سے گزرتا ہے، جو والد کی زنجیر
+سے چائلڈ کی گہرائی اور جڑ نکالتا ہے اور پھر `DelegationGuards` کے چاروں چیک چلاتا
+ہے: ایک ہاپ جو **گہرائی کی حد 3** سے تجاوز کرے، زنجیر میں پہلے سے موجود ایجنٹ تک
+واپس جانے والا ہاپ (**سائیکل کی نشان دہی**)، **خود مختاری کی چھت** (اسپیس میں
+ڈیلیگیٹ کی مؤثر سطح تفویض کرنے والے سے زیادہ نہ ہو) اور ایک **بجٹ لفافہ** (تفویض،
+تفویض کرنے والے کے بقایا ہارڈ اسٹاپ بجٹ پر بل لگاتی ہے اور مزید نہیں بنا سکتی)۔
+پروڈکشن وائرنگ دونوں ریزولور پورٹ مہیا کرتی ہے۔ جب `from_agent_id` چھوڑ دیا جائے
+تو خود مختاری اور بجٹ چھوٹ جاتے ہیں (لامحدود / بلا پالیسی بجٹ بھی پاس ہو جاتا ہے)۔
+انکار `DelegationRefusedException` کے طور پر پھینکا جاتا ہے جس کا پیغام تفویض کرنے
+والے ایجنٹ تک لفظ بہ لفظ پہنچتا ہے — ایک واضح انکار، کبھی خاموش بے عملی نہیں۔
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` پرانا، **بلا گارڈ** ساتھی ہے: یہ براہِ راست `createTicket` کال کرتا
+ہے اور ہر گارڈ کو چھوڑ دیتا ہے۔ `delegate_task` کو ترجیح دیں۔
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+تفویض کی گہرائی کی حد (3، `delegate_task` زنجیروں پر) کو بلٹ اِن ہارنس کی سب ایجنٹ
+نیسٹنگ کی حد (2) سے خلط نہ کریں۔ یہ مختلف میکانزم پر مختلف حدود ہیں۔
 
-## Hierarchy, links and projects
+## درجہ بندی، لنکس اور پروجیکٹس
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+والد اور ذیلی ایشو کے تعلقات `tickets.parent_ticket_id` پر رہتے ہیں، جن کے مالک
+`setParent` / `clearParent` ہیں۔ یہ `ticket_links` قطاریں **نہیں** ہیں، اس لیے جو
+کوئی بھی ٹکٹ کے تعلقات پڑھے اسے دونوں ماخذ ضم کرنے پڑتے ہیں۔
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` ورنہ غیر متعلق ٹکٹس کے درمیان سمتی کنارے رکھتا ہے:
 
-| Link type     | Meaning                                 |
-| ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| لنک کی قسم    | مطلب                              |
+| ------------- | --------------------------------- |
+| `blocks`      | ماخذ ہدف کو بلاک کرتا ہے          |
+| `relatesTo`   | دونوں ٹکٹس متعلق ہیں (دوطرفہ)      |
+| `duplicateOf` | ماخذ ہدف کی نقل ہے                |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**پروجیکٹ** مشترک مقصد کی طرف ٹکٹس کی ورک اسپیس کے دائرے میں گروہ بندی ہے۔ پروجیکٹس
+صرف Control Center میں ہوتے ہیں اور کبھی کسی بیرونی فراہم کنندہ سے سنک نہیں ہوتے۔
 
-## Collaborators
+## تعاون کنندگان
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+`TicketCollaborator` قطاریں یہی طریقہ ہیں جس سے ایک سے زیادہ پرنسپل کسی ٹکٹ سے منسلک
+ہوتے ہیں، `assignee`، `collaborator` یا `reviewer` کے کردار پر۔ انسان اور ایجنٹ
+برابر درجے کی قطاریں ہیں — ایک `principalId` اور ایک `collaboratorType` — جس میں
+"صارف" کے لیے کوئی سینٹینل ویلیو نہیں اور کسی بھی ٹیبل کی طرف کوئی فارن کی نہیں۔
 
-## External sync
+## بیرونی سنک
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Center کا ٹکٹ بنیادی ہے۔ ٹکٹ حذف کرنا **صرف مقامی** ہے، اس لیے وینڈر سے
+منسلک کوئی ٹکٹ جو آپ حذف کریں وہ ٹریکر پر حذف نہیں ہوتا اور اگلے سنک پر دوبارہ ظاہر
+ہو سکتا ہے۔ تعاون کنندگان اور ذیلی ٹکٹس کیسکیڈ ہوتے ہیں۔
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+اڈاپٹر کی اسناد سرور کے کریڈینشل اسٹورز سے حاصل ہوتی ہیں (ترتیبات میں پیسٹ کی گئی
+Linear کلید یا GitHub ٹوکن اگلی درخواست پر اٹھا لی جاتی ہے؛ ماحول صرف ان اسٹورز کو
+سیڈ کرتا ہے)۔
 
-## Tickets and pipelines
+## ٹکٹس اور پائپ لائنز
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+کوئی پائپ لائن نوڈ ٹکٹ نہ بناتا، نہ مکمل کرتا، نہ منسوخ کرتا ہے — پیلٹ میں ایسا
+کوئی قدم نہیں اور انجن `TicketWorkflowService` کو کال نہیں کرتا۔ پائپ لائن ٹریگر
+پھر بھی `TicketAssigned`، `TicketCompleted`، `TicketFailed` یا `TicketCancelled`
+پر چل سکتا ہے (یہ چار وہ ٹکٹ ایونٹس ہیں جو `EventPayloadMapper` واقعی میپ کرتا ہے)۔
+ٹکٹ پر کوئی `pipelineRunId` کالم نہیں ہوتا؛ پائپ لائن کا جوڑ ایجنٹ رن لاگ پر رہتا
+ہے۔
 
-## See also
+## مزید دیکھیں
 
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): ticket events can trigger a pipeline
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/): where a DAG of sub-tickets comes from
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): who a ticket is assigned to
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): the ticket lifecycle events
-- [Ticket lifecycle](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/): statuses, fields, transitions, relations
-- [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
-- [Delegate work to agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
-- [Organize work with projects](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): ٹکٹ ایونٹس ایک پائپ لائن ٹرگر کر سکتے ہیں
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/): ذیلی ٹکٹس کا DAG کہاں سے آتا ہے
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): ٹکٹ کس کو اسائن ہوتا ہے
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): ٹکٹ لائف سائیکل کے ایونٹس
+- [ٹکٹ لائف سائیکل](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/): اسٹیٹس، فیلڈز، منتقلیاں، تعلقات
+- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
+- [ایجنٹس کو کام تفویض کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں/)
+- [پروجیکٹس سے کام منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)

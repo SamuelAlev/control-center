@@ -1,123 +1,131 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: Kết nối Google Calendar
+description: Kết nối Google Calendar với một không gian làm việc, quản lý nhiều tài khoản và kết nối lại khi token hết hạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/vi-VN/so-tay/khai-niem/lich/) for the full picture.
+Hướng dẫn này chỉ cho bạn cách kết nối Google Calendar với một không gian làm
+việc. Việc này diễn ra theo từng không gian làm việc: nó đồng bộ sự kiện của
+không gian làm việc đó vào Control Center, ở chế độ chỉ đọc. Xem
+[Lịch và lên lịch](/vi-VN/so-tay/khai-niem/lich/) để có bức tranh đầy đủ.
 
-## Connect an account
+## Kết nối một tài khoản
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. Mở **Lịch** trên thanh bên.
+2. Nhấp **Thêm tài khoản lịch** trên thanh bên của lịch. (Mục này cũng nằm tại **Cài đặt → Không gian làm việc → Hồ sơ & danh tính**, trong **Google Calendar**.)
+3. Chọn cách ủy quyền:
+   - **Dùng app Google của Control Center** — không cần thiết lập gì. Đây là mặc định khi bản dựng của bạn có kèm sẵn app này.
+   - **Dùng client Google Cloud của tôi** — dán client id và secret từ dự án của riêng bạn (xem [Tự mang theo client Google của bạn](#tự-mang-theo-client-google-của-bạn-bản-fork-và-tự-lưu-trữ)).
+4. Nhấp **Kết nối Google Calendar**. Hộp thoại hiện một mã ngắn và liên kết tới trang thiết bị của Google.
+5. Mở trang đó trên bất kỳ thiết bị nào, nhập mã và phê duyệt quyền truy cập được yêu cầu. Hộp thoại tự đóng và các sự kiện của bạn bắt đầu được đồng bộ.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+Máy chủ, chứ không phải thiết bị của bạn, thực hiện trao đổi này và giữ refresh
+token thu được — đó là lý do mã được phê duyệt trên “bất kỳ thiết bị nào” thay
+vì cụ thể trong ứng dụng này.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+Tài khoản chỉ được kết nối **với không gian làm việc đang hoạt động**. Chuyển
+không gian làm việc, bạn sẽ thấy lịch của không gian làm việc đó thay vào.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+Luồng kết nối yêu cầu `calendar.readonly` cùng email của bạn — cùng các phạm vi
+cho cả app tích hợp sẵn và client bạn dán vào. Control Center đọc sự kiện; nó
+không tạo, sửa, xóa hay phản hồi lời mời trên Google.
 
-## How syncing works
+## Đồng bộ diễn ra thế nào
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**Máy chủ** nắm lịch quét: nó quét tài khoản đã kết nối của mọi không gian làm
+việc hai phút một lần và ghi sự kiện vào cơ sở dữ liệu của không gian làm việc.
+Máy khách không bao giờ nói chuyện với Google — chúng đọc những gì máy chủ đã
+ghi.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+Lần quét là tăng dần. Lần chạy đầu tiên cho mỗi lịch tải một cửa sổ trượt
+(60 ngày về trước, 90 ngày tới) và ghi lại token đồng bộ của Google; các lần sau
+trình token đó ra và chỉ nhận những gì đã thay đổi, nhờ vậy nhịp hai phút mới
+chấp nhận được. Cửa sổ được neo lại bằng một lần đồng bộ đầy đủ mỗi 24 giờ và
+mỗi khi Google vô hiệu hóa token.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+Refresh token nằm ở phía máy chủ trong `secrets.json` dưới thư mục dữ liệu của
+máy chủ, được ghi với quyền chỉ chủ sở hữu (`0600`) — không nằm trong keychain
+của hệ điều hành và không bao giờ nằm trên thiết bị máy khách.
 
-## Connect multiple accounts
+## Kết nối nhiều tài khoản
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+Một không gian làm việc có thể kết nối nhiều tài khoản Google (chẳng hạn tài
+khoản công việc và tài khoản cá nhân). Lặp lại bước kết nối cho từng tài khoản;
+sự kiện của chúng được gộp vào cùng các chế độ xem tháng / tuần / lịch trình.
+Mỗi tài khoản đồng bộ và làm mới độc lập, và mỗi tài khoản có thể được ngắt kết
+nối riêng.
 
-## Reconnect an expired account
+## Kết nối lại một tài khoản đã hết hạn
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+Nếu Google vô hiệu hóa vĩnh viễn token của một tài khoản (phiên bị thu hồi hoặc
+hết hạn từ lâu), quá trình đồng bộ dừng lại và Control Center hiện banner
+**Kết nối lại** trên lịch, kèm một thông báo trên máy tính để bàn. Nhấp
+**Kết nối lại** và phê duyệt một mã mới; banner sẽ biến mất ở lần đồng bộ thành
+công kế tiếp.
 
-## Disconnect an account
+## Ngắt kết nối một tài khoản
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+Từ thanh bên của lịch (hoặc **Cài đặt → Không gian làm việc → Hồ sơ & danh
+tính**), nhấp **Ngắt kết nối** trên tài khoản. Thao tác này xóa các sự kiện đã
+đồng bộ và xóa token đã lưu của tài khoản trên máy chủ.
 
-## Connect from a headless server
+## Kết nối từ một máy chủ không giao diện
 
-A server with no GUI attached connects the same account from its own terminal:
+Máy chủ không gắn giao diện đồ họa kết nối cùng tài khoản đó từ terminal của
+chính nó:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+Nó in ra một mã và một URL, chờ phê duyệt, rồi lưu token và đồng bộ ở lần quét
+kế tiếp.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+Bản dựng từ mã nguồn **không** kèm client Google nào, nên bắt buộc phải có id và
+secret — hãy đặt `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET`. Không
+có cờ `--google-client-id` (các cờ không rõ bị bỏ qua). Nếu thiếu cặp biến môi
+trường, lệnh thoát với lỗi thiếu client.
 
-## Bring your own Google client (forks and self-hosting)
+## Tự mang theo client Google của bạn (bản fork và tự lưu trữ)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+Các bản phát hành có kèm sẵn một client Google, nên hầu hết mọi người không bao
+giờ cần tới phần này. Hãy tự mang theo client của bạn nếu bạn dựng từ mã nguồn,
+tự chạy máy chủ riêng, hoặc muốn màn hình đồng ý hiển thị tên dự án của chính
+bạn.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. Trong [Google Cloud Console](https://console.cloud.google.com/apis/credentials), bật **Google Calendar API** và cấu hình **OAuth consent screen**, thêm các phạm vi `calendar.readonly`, `openid` và `email`. Khi app chưa được xác minh, hãy thêm chính bạn làm **test user**. Thêm `calendar.events` trên màn hình đồng ý không bật được RSVP — Control Center không bao giờ yêu cầu phạm vi đó.
+2. Tạo một **OAuth client ID** với loại ứng dụng **TVs and limited input devices** và sao chép cả client id lẫn client secret.
+3. Cung cấp chúng theo từng lần kết nối (chọn **Dùng client Google Cloud của tôi** trong hộp thoại) hoặc trên toàn máy chủ bằng `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+Một cặp đặt trên toàn máy chủ sẽ thay thế cặp tích hợp sẵn ở mọi nơi, kể cả
+đằng sau tùy chọn “dùng app Google của Control Center” — nên trên máy chủ của
+riêng bạn, tùy chọn đó chính là app của bạn.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+Client secret không bao giờ rời khỏi máy chủ: không có phản hồi RPC nào mang nó
+theo, và một tài khoản được kết nối qua client của chính máy chủ sẽ lưu một dấu
+tham chiếu thay vì bản sao của cặp khóa, nên việc xoay khóa chỉ là khởi động lại
+với giá trị mới.
 
-### Troubleshooting
+### Xử lý sự cố
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| Triệu chứng | Nguyên nhân có thể |
+| --- | --- |
+| Hộp thoại không có tùy chọn tích hợp sẵn | Bản dựng này không kèm client Google nào (bản dựng từ mã nguồn), hoặc máy chủ được khởi động chỉ với một nửa của cặp khóa. Cả id lẫn secret đều bắt buộc |
+| `invalid_scope` khi bắt đầu luồng | Calendar không được cho phép với máy khách mã thiết bị trong dự án Cloud đó. Hãy dùng dự án máy khách loopback hoặc web thay thế |
+| `invalid_client` từ Google | Máy khách không thuộc loại **TVs and limited input devices**, hoặc id và secret đến từ hai máy khách khác nhau |
+| Phê duyệt thành công nhưng đồng bộ trống | Tài khoản của bạn không phải **test user** trên màn hình đồng ý, hoặc `calendar.readonly` không được cấp |
+| Mã hết hạn trước khi bạn phê duyệt | Mã thiết bị có thời hạn ngắn. Hãy bắt đầu kết nối lại để lấy mã mới |
+| “Không thể cập nhật phản hồi của bạn” khi RSVP | Đúng như dự kiến: luồng kết nối không bao giờ yêu cầu `calendar.events` |
+| Đồng bộ dừng lại kèm cảnh báo làm mới trong nhật ký máy chủ | Tài khoản được kết nối bằng một máy khách không còn được cấu hình nữa. Hãy kết nối lại tài khoản, hoặc khôi phục client id và secret đó |
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Record and summarize a meeting](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/): turn an event into a recording
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Ghi và tóm tắt một cuộc họp](/vi-VN/so-tay/huong-dan-thuc-hanh/ghi-cuoc-hop/): biến một sự kiện thành bản ghi
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): nơi token và lịch đồng bộ nằm
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Calendar and scheduling](/vi-VN/so-tay/khai-niem/lich/)
+- [Lịch và lên lịch](/vi-VN/so-tay/khai-niem/lich/)

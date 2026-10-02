@@ -1,310 +1,315 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: MCP araçları
+description: cc_server'ın kaydettiği MCP araçlarının ailelere göre eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/mcp-araclari
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` tek bir MCP (JSON-RPC 2.0) araç kayıt defteri barındırır; bu kayıt defteri ana sunucu portunda (varsayılan `9030`) `POST /mcp` ve `GET /sse` üzerinden sunulur ve protokol sürümü `2024-11-05`'tir. Her istemci aynı kayıt defterine ulaşır: masaüstü, web derlemesi, harici MCP istemcileri ve yerleşik ajan çalışma zamanı. Harici MCP sunucuları, dinamik bir katman olarak aynı kayıt defterine köprülenebilir.
 
-## Registry size
+## Kayıt defteri boyutu
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Ölçüm                                                                              | Sayı |
+| ---------------------------------------------------------------------------------- | ----- |
+| `cc_server` tarafından kaydedilen araçlar                                          | 110   |
+| `packages/cc_mcp` kaynaklı                                                         | 108   |
+| `packages/cc_mcp_client` kaynaklı (araç keşfi)                                     | 2     |
+| Temel kayıt defterinde kayıtlı (`server_mcp_registry.dart`)                        | 63    |
+| Servisleri ayağa kalktıkça önyükleme sonrası kaydedilen (`cc_server_runtime.dart`) | 47    |
+| Temel kayıt defterindeki 63 araçtan kod grafiği deposuna bağlı olanlar             | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Beş kod grafiği aracı yalnızca ana makine `buildServerMcpRegistry`'ye bir kod grafiği deposu geçirdiğinde kaydedilir. `cc_server` her zaman bir tane geçirir; bu yüzden dağıtılan ikili dosyada 110 aracın tamamı etkindir.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Kayıt defterinin tamamı `tools/list` içinde duyurulur ve hiçbir keşif kapısına takılmaz. Bilet düzenlemeleri tipli araçlardır.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Harici istemciler her zaman kataloğun tamamını görür]
+`tools/list` hiçbir zaman kırpılmaz. MCP istemcileri araç adlarını bu listenin kendi önbelleğe alınmış kopyasına göre doğrular ve sunucuya sormadan listelenmemiş olan her şeyi reddeder; dolayısıyla orada gizlenen bir araç yalnızca sessiz kalmaz, erişilemez olur.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/tr-TR/kilavuz/kavramlar/arac-baglami).
+**Yerleşik harness** farklıdır: her istekte tanımların yalnızca sürekli bellekte tutulan bir alt kümesini yükler ve geri kalanını ilk kullanımda çeker; bu, harness tarafındaki bir davranıştır ve bu kayıt defterini değiştirmez. Bkz. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Her araç sınıfı kaydedilir]
+`packages/cc_mcp/lib/src/tools/` altındaki bir kaynak dosyası, bir ajanın
+çağırabileceği bir araçtır. Yeni bir araç sınıfı hiçbir şey tarafından
+oluşturulmuyorsa `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+derlemeyi başarısız kılar.
 :::
 
-## Common parameters
+## Ortak parametreler
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+Çalışma alanına kapsanmış verilere dokunan her araçta **zorunludur**. Eksik veya geçersiz bir `workspace_id` açık bir hata döndürür; hedef varlığın çalışma alanıyla eşleşmeyen bir değer ise sessizce yok sayılmak yerine reddedilir. Gerçekten küresel araçlarda bunu atlayın: `list_workspaces` ile sunucu sahibinin kullanıcı başına akış listesini kullanan altı haber akışı aracı (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`). Keşif araçları (`search_tool_bm25`, `list_my_tools`) bunu isteğe bağlı alır; böylece çağrılabilirliği konuşma moduna göre sınıflandırabilirler. Bir ajan sunucu tarafından gönderildiğinde çalışma alanı sunucu tarafında sabitlenir; dolayısıyla ajan yabancı bir kimlik geçirerek başka bir çalışma alanına ulaşamaz.
 
-## Tool discovery
+## Araç keşfi
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Her ikisi de `cc_mcp`'den değil `cc_mcp_client`'tan gelir ve ikisi de mod korumasına danışır; böylece _geçerli_ konuşma modunda nelerin çağrılabilir olduğunu bildirirler.
 
-| Tool               | Description                                                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| Araç               | Açıklama                                                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `search_tool_bm25` | Araç kataloğunda anahtar kelimeyle arama yapar; eşleşen araçları, argüman şemalarını ve her birinin şu anda çağrılabilir olup olmadığını döndürür |
+| `list_my_tools`    | Bu konuşmada şu anda çağrılabilir araçları, konuşmanın moduna göre filtrelenmiş olarak listeler                              |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Üçüncü bir keşif aracı olan **`search_tools`** yalnızca yerleşik harness'ın içinde bulunur ve bu MCP kayıt defterinin parçası değildir. Çalıştırmanın kendi araç yüzeyini sıralar ve `search_tool_bm25`'ten farklı olarak bulduklarının şemalarını **yükler**; böylece ajan bir sonraki turunda eşleşen bir aracı çağırabilir. Harness üzerindeki ajanlar bunu tercih etmelidir; MCP istemcilerinde ise `search_tool_bm25` vardır.
 
-## Agent tools
+## Ajan araçları
 
-| Tool          | Description                               |
-| ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| Araç          | Açıklama                                     |
+| ------------- | -------------------------------------------- |
+| `list_agents` | Bir çalışma alanındaki kayıtlı ajanları listeler |
 
-## Agent peer messaging and delegation
+## Ajanlar arası mesajlaşma ve devretme
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Ajanlar birbirleriyle alanlar üzerinden konuşur (kalıcı ve kadroya görünür). `ask_agent` zorunlu bir zaman aşımıyla istek/yanıt biçimindedir; `delegate_task` ise sunucu tarafında derinlik sınırı, döngü algılama, bütçe zarfı ve özerklik tavanıyla korunur.
 
-| Tool            | Description                                                                                    |
+| Araç            | Açıklama                                                                                       |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | `to_agent_id` ya da tam `to_agent_name` ile adreslenen başka bir ajana tek yönlü ileti gönderir |
+| `ask_agent`     | Başka bir ajana soru sorar ve yanıtını bekler ya da zaman aşımına uğrar                         |
+| `delegate_task` | Bir görevi başka bir ajana izlenen bir alt bilet olarak devreder                                |
+| `consult_agent` | Yeteneklerine göre en iyi eşleşen uzmanı alana ekler ve onu odaklanmış bir brifingle gönderir  |
+| `todo_read`     | Bu konuşmanın kalıcı görev kontrol listesini okur                                               |
 
-## Skill tools
+## Beceri araçları
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Her kurulum ve güncelleme, herhangi bir beceri içeriği diske ya da bir ajan istemine ulaşmadan önce hataya kapalı bir tarama kapısından geçer.
 
-| Tool                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| Araç                 | Açıklama                                                                    |
+| -------------------- | --------------------------------------------------------------------------- |
+| `list_skills`        | Bir çalışma alanında kullanılabilir beceri slug'larını listeler            |
+| `create_skill`       | Markdown içeriğinden yeni bir beceri oluşturur                              |
+| `install_skill`      | Bir becerinin tüm dizinini bir GitHub deposundan sabitlenmiş bir ref'te kurar |
+| `update_skill`       | Kurulu bir GitHub becerisini yeni bir ref'e günceller; yeniden tarar ve yeniden sabitler |
+| `list_skill_updates` | Daha yeni bir sürümü bulunan becerileri listeler                            |
+| `verify_skills`      | Kilitli becerileri diskteki içerik özetleriyle doğrular                     |
+| `pin_skill`          | Diskteki mevcut bir becerinin özetini hesaplayıp `skills-lock.json` içine yazar |
 
-## Plan, playbook and artifact tools
+## Plan, playbook ve artifact araçları
 
-| Tool               | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| Araç               | Açıklama                                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `submit_plan`      | Plan modunun çıktı sözleşmesi: Plan Studio'da açılan tipli bir `PlanDocument` üretir                                   |
+| `create_playbook`  | Bir planı, tipli `{{param}}` yer tutucularıyla adlandırılmış ve sürümlenmiş bir şablon olarak kaydeder                 |
+| `run_playbook`     | Bir playbook'u parametre değerleriyle somutlaştırır ve operatörün onayladığı bir plan üretir                           |
+| `publish_artifact` | İstemcide yerel olarak işlenen sıralı tipli bloklar (markdown, tablo, grafik, mermaid, kod, JSON) listesi yayımlar    |
+| `revise_artifact`  | Yayımlanmış bir artifact'ın içeriğini değiştirir                                                                       |
+| `list_artifacts`   | Çalışma alanının artifact'larını listeler                                                                              |
+| `get_artifact`     | Bir artifact'ı okur                                                                                                    |
+| `complete_goal`    | Konuşmanın etkin kalıcı hedefinin (`/goal` ya da `/loop` ile başlatılan) gerçekleştiğini bildirir                      |
 
-## Workspace tools
+## Çalışma alanı araçları
 
-| Tool              | Description                                                              |
-| ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| Araç              | Açıklama                                                                    |
+| ----------------- | --------------------------------------------------------------------------- |
+| `list_workspaces` | Tüm çalışma alanlarını kimlikleri ve adlarıyla listeler (küresel; `workspace_id` yok) |
 
-## Repo tools
+## Depo araçları
 
-| Tool         | Description                                                                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| Araç         | Açıklama                                                                                                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_repos` | Bir çalışma alanında kayıtlı depoları listeler. Ajan çağıranlar, konuşmalarının yalıtılmış kopyala-yaz çalışma ağacı yollarını alır; asla özgün checkout'ları almaz |
 
-## Messaging tools
+## Mesajlaşma araçları
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Araç                   | Açıklama                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `list_spaces`        | Bir çalışma alanındaki mesajlaşma alanlarını listeler                          |
+| `get_messages` | Bir alandan iletileri getirir                                                  |
+| `send_message` | Bir alana adlandırılmış bir gönderen ajan olarak ileti gönderir                |
+| `get_space_notes`    | Bir alanın paylaşılan devir teslim belgesini okur                              |
+| `update_space_notes` | Bir alanın paylaşılan devir teslim belgesini değiştirir                        |
+| `todo_write`           | Bu konuşmanın görev kontrol listesini tek çağrıda değiştirir (tam listeyi geçirin) |
 
-## Review tools
+## İnceleme araçları
 
-| Tool                       | Description                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| Araç                       | Açıklama                                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `start_ai_review`          | Bir PR için YZ incelemesini başlatır: inceleme alanlarını hesaplar, uzman inceleyicileri PR alanına dağıtır, rehberli anlatımı yazar ve sonuçlandırır |
+| `add_review_node`          | Bir inceleme alanına yapılandırılmış bir bulgu (dosya, satır, P0–P3 önceliği) ekler                        |
+| `confirm_review_node`      | Bir akranın bulgusunu doğrular; yazar kendi bulgusunu doğrulayamaz                                          |
+| `resolve_review_node`      | Değişikliği gerçekten yaptıktan sonra bulguyu çözüldü olarak işaretler; inceleme alanına bir iz bırakır     |
+| `dismiss_review_node`      | Geçerli olmayan bir bulguyu reddeder; inceleyicilerin onu yeniden işaretlemeyi bırakması için bir bastırma olgusu kaydeder |
+| `request_peer_review`      | Bir bulgu için başka bir inceleyici ajandan ikinci bir göz ister                                            |
+| `dispatch_reviewers`       | Eşleşen inceleyici ajanları bir inceleme alanına eşzamanlı olarak gönderir                                 |
+| `submit_reviewer_verdict`  | İnceleyici başına güven düzeyi ve bir açıklamayla birlikte ship/hold/block kararı yayımlar                  |
+| `finalize_review`          | Düğüm başına uzlaşmayı ve PR başına kararı hesaplar ve incelemeyi kapatır                                   |
+| `set_cohort_summary`       | Bir inceleme kohortunun sade dille yazılmış özetini ayarlar                                                 |
+| `add_review_diagram`       | Bir kohorta yapılandırılmış, grafikle doğrulanmış bir diyagram (`sequence`, `entityRelation`, `stateMachine`) ekler |
+| `publish_review_to_github` | Sonuçlanmış incelemeyi GitHub'a satır içi yorumlar ve bir özet gövdesi olarak yayımlar                      |
 
-## Memory tools
+## Bellek araçları
 
-| Tool                    | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| Araç                    | Açıklama                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `search_memory`         | Olguları ve politikaları arar (anahtar kelime, anlamsal ya da hibrit — varsayılan hibrittir)          |
+| `propose_fact`          | Bir bilgi alanına kısa bir markdown olgusu kaydeder                                                   |
+| `supersede_fact`        | Bir olguyu başka bir olguyla değiştirildi olarak işaretler                                            |
+| `propose_policy`        | Bir bilgi alanına normatif bir kural kaydeder (alanda yazma izni gerektirir)                          |
+| `supersede_policy`      | Bir politikayı yürürlükten kaldırır — denetim için saklayarak etkisiz olarak işaretler                |
+| `list_policies`         | Etkin politikaları listeler, isteğe bağlı olarak bilgi alanına göre filtreler                         |
+| `list_memory_domains`   | Çalışma alanının bilgi alanlarını olgu ve politika sayılarıyla listeler                               |
+| `record_observation`    | Ajanın çalışma belleğine ham bir gözlem kaydeder                                                      |
+| `get_my_notes`          | Çağıran ajanın çalışma belleği karalama defterini okur                                                |
+| `update_my_notes`       | Çağıran ajanın çalışma belleği karalama defterini günceller                                           |
+| `remember`              | Bu oturum için ajanın sıcak çalışma belleğine bir not ekler (TTL ve sayıyla sınırlı)                  |
+| `consolidate_memory`    | Bir pekiştirme ("uyku") geçişi çalıştırır: süresi geçmiş sıcak öğeleri çıkarır, kalıcı olanları uzun vadeli olgulara dönüştürür |
+| `harmonize_memory`      | Ajanlar arası inanç uyumlaştırması (SHMR) çalıştırır ve çelişkileri işaretler                         |
+| `list_memory_conflicts` | Saptanan çelişkileri ve her birinin nasıl çözüldüğünü listeler                                        |
 
-## Governance tools
+## Yönetişim araçları
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Araç                         | Açıklama                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `create_goal`                | Kurumsal bir hedef oluşturur (şirket, ekip, ajan veya görev düzeyi)                                    |
+| `list_goals`                 | Hedefleri düzey, durum ve toplulaştırılmış ilerlemeyle listeler                                        |
+| `update_goal_progress`       | Bir hedefin ilerlemesini ayarlar                                                                       |
+| `create_approval`            | Yönetilen bir eylem için kurul onayı açar (plan çıkışı, birleştirme, sürüm, işe alım, özel)             |
+| `list_approvals`             | Onayları listeler, isteğe bağlı olarak duruma göre filtreler                                           |
+| `decide_approval`            | Bir kararı kaydeder: onayla, reddet, revizyon iste ya da yeniden gönder                                |
+| `comment_approval`           | Bir kurul onayına yorum yapar                                                                          |
+| `exit_plan_mode`             | Bir `plan_exit` onayı açar (ve onaylandıktan sonra tüketir); konuşmayı plan modundan çıkarır            |
+| `agent_heartbeat`            | Canlılık bildirir (canlı, boşta, takılı); sessizleşmek çalışma zamanı sağlığını önce yeni kayıp, sonra çevrimdışı durumuna çevirir |
+| `list_runtime_health`        | Her ajanın çalışma zamanı sağlığını listeler                                                           |
+| `list_agent_presence`        | Her ajanın hazır bulunma durumunu listeler (sağlık, yaşam döngüsü, çalışan ve kuyruktaki sayılar, kapasite) |
+| `get_org_chart`              | Raporlama ağacını okur; kökte CEO, `reports_to` ile iç içe                                              |
+| `create_work_product`        | Bir bilete bağlı kalıcı bir teslimat oluşturur                                                          |
+| `save_work_product_revision` | Yeni bir revizyon kaydeder; eşzamanlı bir düzenlemede reddedilmek için `base_revision_id` geçirin       |
+| `list_work_products`         | İş ürünlerini listeler, isteğe bağlı olarak tek bir bilete filtreler                                    |
+| `get_work_product`           | Bir iş ürününü revizyon geçmişiyle birlikte okur                                                        |
+| `create_runtime_profile`     | Yeniden kullanılabilir bir çalışma zamanı profili tanımlar (protokol ailesi, CLI komutu, sabit başlatma argümanları) |
+| `list_runtime_profiles`      | Çalışma alanının çalışma zamanı profillerini listeler                                                   |
 
-## Code graph tools
+## Kod grafiği araçları
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Yalnızca ana makine bir kod grafiği deposu sağladığında kaydedilir. Dizin, dağıtılan dil bilgisi kümesini kapsar (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); başka herhangi bir dildeki semboller bulunmaz.
 
-| Tool           | Description                                                                        |
+| Araç           | Açıklama                                                                          |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Dizinlenmiş sembolleri ad, imza ve doküman yorumuna göre arar (hibrit BM25 + anlamsal) |
+| `code_symbol`  | Sembolleri tam adla arar; `file:line` ve imzayı döndürür                           |
+| `code_callers` | Bir sembolü çağıran veya ona bağımlı olan sembolleri listeler (gelen kenarlar)     |
+| `code_callees` | Bir sembolün çağırdığı veya bağımlı olduğu sembolleri listeler (giden kenarlar)    |
+| `code_impact`  | Bir sembolün geçişli etki yarıçapını belirli bir derinliğe kadar hesaplar          |
 
-## Ticketing tools
+## Biletleme araçları
 
-| Tool                      | Description                                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| Araç                      | Açıklama                                                                                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_ticket`           | Yapılandırılmış sağlayıcıda bir bilet oluşturur                                                                                                                                                 |
+| `get_ticket`              | Bir bileti kimliğine göre getirir                                                                                                                                                               |
+| `list_tickets`            | Biletleri listeler, isteğe bağlı olarak duruma veya atanan kişiye göre filtreler                                                                                                                |
+| `update_ticket`           | Durumu, başlığı, açıklamayı, önceliği veya etiketleri günceller (durum `in_progress` / `completed` gibi takma adları kabul eder)                                                               |
+| `assign_ticket`           | Bir bileti bir ajana ve/veya ekibe atar                                                                                                                                                         |
+| `reassign_ticket`         | Bir bileti farklı bir ajana yeniden atar                                                                                                                                                        |
+| `add_ticket_collaborator` | Bir ajanı bir bilette işbirliği yapmaya davet eder (biletin alanına eklenir)                                                                                                                    |
+| `comment_on_ticket`       | Bir bilete yorum yapar                                                                                                                                                                          |
+| `close_ticket`            | Bir bileti kapatır (tamamlandı olarak işaretler); isteğe bağlı çıktı alır                                                                                                                        |
+| `fail_ticket`             | Bir bileti bir hata iletisiyle başarısız olarak işaretler                                                                                                                                        |
+| `delegate_ticket`         | Bir bileti bir ajana devreder ve izlenen bir bilet oluşturur                                                                                                                                     |
+| `ticket_pr_link`          | Bir bileti ve bir pull request'i PR düğüm kimliğiyle bağlar ya da bağını kaldırır (`action`: `link` \| `unlink`)                                                                                |
+| `ticket_relation`         | İki bilet arasında bir ilişki ekler veya kaldırır — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Bir biletin üst öğesini, alt sorunlarını ve bağımlılık bağlantılarını listeler                                                                                                                  |
 
-## Team and pipeline tools
+## Ekip ve pipeline araçları
 
-| Tool                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| Araç                   | Açıklama                                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `record_team_activity` | Bir ekip liderinin etkinlik kaydını bir bilete karşı kaydeder                                                                                    |
+| `preview_trigger`      | Varsayımsal bir olayın hangi pipeline çalıştırmalarını başlatacağını, hiçbir şeyi işleme koymadan önceden dener                                   |
+| `submit_output`        | Çağıranın geçerli pipeline çalıştırması için yapılandırılmış çıktı yükünü gönderir; çalıştırmanın bildirdiği çıktı şemasına göre doğrulanır       |
 
-## Orchestration tools
+## Orkestrasyon araçları
 
-| Tool                    | Description                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| Araç                    | Açıklama                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `propose_orchestration` | Tek bir baştan onay için yapılandırılmış, çok ajanlı bir orkestrasyon planı üretir; doğrular ve varsa ihlalleri döndürür |
 
-## Newsfeed tools
+## Haber akışı araçları
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| Araç                | Açıklama                                                                  |
+| ------------------- | ------------------------------------------------------------------------- |
+| `list_feeds`        | Kayıtlı RSS/Atom akışlarını listeler                                      |
+| `list_articles`     | Makaleleri listeler, isteğe bağlı olarak akışa, okunmamışa veya kaydedilmişe göre filtreler |
+| `get_article`       | Bir makaleyi getirir                                                      |
+| `set_article_read`  | Bir makaleyi okundu ya da okunmadı olarak işaretler                       |
+| `set_article_saved` | Bir makaleyi kaydeder ya da kaydını kaldırır                              |
+| `refresh_feeds`     | Etkin tüm akışları şimdi yeniden çeker                                    |
 
-## Enclosure (rig) tools
+## Enclosure (rig) araçları
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/tr-TR/kilavuz/kavramlar/korumalar/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/tr-TR/kilavuz/referans/rigler/#action-verbs).
+Atılabilir makineleri — yalıtılmış bir tarayıcı veya Linux masaüstü, bir Android
+emülatörü ya da bir iOS Simulator'ı — bir çalıştırmanın içinden yönetir.
+Koşulsuz olarak önyükleme sonrasında kaydedilir: bir makinenin gerçekten
+önyüklenip önyüklenemeyeceği, araçların çağrı başına yanıtladığı bir yoklama
+sorusudur. Bir konuşmadaki yinelenen çağrılar tek bir makineyi yeniden kullanır;
+ekran görüntüleri, sonuç başına tek görüntü bütçesiyle görüntü içeriği olarak
+döner ve çıkarılan sayfa/arayüz içeriği güvenilmez veri olarak sınırlanır. Dört
+kullanım aracı ile `rig_close`, `enclosureControl` [eylem sınıfını](/tr-TR/kilavuz/kavramlar/korumalar/)
+bildirir (kullanım araçları ayrıca `networkEgress` ve `processSpawn` bildirir;
+`mobile_use` ile `ios_use` ayrıca `packageInstall` bildirir); bu yüzden salt
+okunur modlar onları reddeder. `rig_list` hiçbirini bildirmez — yalnızca çalışma
+alanı durumunu okur. Yüzey başına fiil dağarcığının tamamı
+[rig referansında](/tr-TR/kilavuz/referans/rigler/#action-verbs) bulunur.
 
-| Tool           | Description                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| Araç           | Açıklama                                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `computer_use` | Yalıtılmış bir VM'de Linux masaüstünü yönetir: taşı, tıkla, sürükle, kaydır, yaz, yeniden boyutlandır, pano, ekran görüntüsü |
+| `browser_use`  | Headless bir Chromium, Firefox veya WebKit'i (`engine`) yönetir: gezinme, tıklama, doldurma, çıkarma (a11y/DOM/console), pano, ekran görüntüsü |
+| `mobile_use`   | Android'i ADB üzerinden yönetir: inceleme/girdi, ekran görüntüleri, uygulama kurma/başlatma/durdurma/sıfırlama/kaldırma, derin bağlantılar ve argv biçimli aygıt komutları |
+| `ios_use`      | iOS Simulator'ı WebDriverAgent/CoreSimulator üzerinden yönetir: inceleme/girdi, ekran görüntüleri, uygulama kurma/başlatma/durdurma/kaldırma, derin bağlantılar ve argv biçimli simülatör süreçleri |
+| `rig_list`     | Bir çalışma alanının rig'lerini yüzey, durum, ekran boyutu ve denetleyiciyle listeler                                 |
+| `rig_close`    | Bir rig'i yok eder ve sahip olduğu makine durumunu atar                                                              |
 
-## Not exposed over MCP
+## MCP üzerinden sunulmayanlar
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/tr-TR/kilavuz/kavramlar/toplantilar/), not as a tool an agent can call.
+Takvimin ve toplantıların MCP aracı yoktur. Ajanlar takviminizi, toplantılarınızı, transkriptlerinizi, eylem maddelerinizi veya kararlarınızı okuyamaz. Eylem maddelerini ve kararları üreten özet, bir ajanın çağırabileceği bir araç olarak değil, yerleşik [`meeting_summary` pipeline'ı](/tr-TR/kilavuz/kavramlar/toplantilar/) olarak çalışır.
 
-## Tool gating by mode
+## Moda göre araç kapılama
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Kapılama tek bir tablodan (`ModeToolPolicy`) iki kez uygulanır: bir kez Claude Code adaptörü için MCP göndericisinde, bir kez de yerleşik harness kayıt defterinde. Engellenen bir çağrı nedeni döndürür.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| Mod           | Araç yüzeyi                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `chat`        | Kayıtlı her araç; izin listesi yok                                                                                                                                                                                                  |
+| `plan`        | Özenle seçilmiş bir izin listesi. Çalışma ağacına yazma yok ve `create` / `assign` / `delegate` bilet fiilleri yok; ancak bellek, artifact'lar, todo'lar, `submit_plan`, `exit_plan_mode` ve gönderilen biletteki bilet tamamlama fiillerine izin verilir |
+| `review`      | Özenle seçilmiş bir izin listesi: incelemeye katılım, iletişim, salt okunur bağlam getiricileri ve `create_ticket` ile `assign_ticket` dahil tam bilet fiil kümesi                                                                   |
+| `orchestrate` | Özenle seçilmiş bir izin listesi: araştırma ve okuma araçları ile `propose_orchestration`, `create_playbook` ve `run_playbook`. İşe alım, ayrıştırma ve bilet tamamlama onaydan sonra belirlenimci biçimde gerçekleşir, asla çalıştırma ortasında değil |
 
-Permitted in every mode regardless of allow-list:
+İzin listesinden bağımsız olarak her modda izin verilenler:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| Küme                 | Araçlar                                                                                                                                                                                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Bellek ve artifact'lar | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Kod grafiği          | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Çalıştırma mekaniği  | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Bir izin listesinde olmak bir aracı çağrılabilir kılmaz; tersi de geçerlidir: operatöre soru sorma yeteneği bir **harness** aracıdır (`ask_user`), bu yüzden bu MCP kataloğunda hiç görünmez.
 
-## Approval-gated tools
+## Onay kapısına tabi araçlar
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Bir araç `requiresApproval` bildirebilir. Bu durumda gönderici bir `ApprovalPayload` oluşturur ve aracı çalıştırmadan önce bunu `ConfirmationPort` üzerinden yüzeye çıkarır; `cc_server` bu portu bağlar, böylece kapı etkindir.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Bunu bildiren kayıtlı araçlar: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/).
+Bunun yanı sıra, birleşik eylem korumaları boş olmayan bir `ActionClass` kümesi bildiren her aracı kapıdan geçirir. Bağlı bir onaylayıcı yokken verilen `prompt` kararı reddedilir. Bkz. [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/).
 
-## Capabilities with no tool behind them
+## Arkasında araç olmayan yetenekler
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Üründeki her yetenek bir ajan tarafından erişilebilir değildir. Bunların hiç
+aracı yoktur; bu yüzden başka bir yerde atıfta bulunulduğunu görmüş
+olabileceğiniz bir ad “unknown tool” döndürür:
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/tr-TR/kilavuz/nasil-yapilir/projeler/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Yetenek                                | Bunun yerine nerede bulunur                                                                     |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Bir ajanı işe alma, işten çıkarma veya düzenleme | Ajanlar arayüzü. `hire_agent` / `fire_agent` / `update_agent` diye bir araç yoktur     |
+| Çalışma alanı oluşturma                | RPC üzerinden `workspace.upsert`; sahipliği tohumlar ve damgalar                                |
+| Projeler (oluşturma / listeleme / güncelleme / dosyalama) | Biletler arayüzü. Projeler bir operatör yüzeyidir — bkz. [Projeler](/tr-TR/kilavuz/nasil-yapilir/projeler/) |
+| Operatöre bloklayıcı bir soru sorma    | MCP değil, **harness**'ın `ask_user` aracı. Konuşmada bir form işler ve yanıt gelene kadar bloklar |
+| Ajan başına tanılama                   | Hiçbir şey. `doctor` diye bir şey yoktur — bkz. [Ajan tanılaması](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/) |
+| Takvim ve toplantılar                  | Yalnızca insan istemciler için RPC (yukarıya bakın)                                             |
 
-## See also
+## Ayrıca bakınız
 
-- [Use Control Center as an MCP server](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/)
+- [Control Center'ı MCP sunucusu olarak kullanma](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/)

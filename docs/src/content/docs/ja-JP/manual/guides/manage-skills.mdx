@@ -1,129 +1,135 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: スキルのインストールと管理
+description: GitHub リポジトリをスキルのソースとして追加し、そのカタログを閲覧して、ウイルス対策スキャンゲートを通してスキルをインストール、更新、アンインストールします。
 slug: ja-JP/マニュアル/ハウツーガイド/スキル管理
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+このガイドでは、GitHub からワークスペースにスキルを揃える方法を説明します。
+リポジトリをソースとして追加し、そこから必要なスキルをインストールし、その後も
+最新の状態に保ちます。
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/ja-JP/マニュアル/コンセプト/エージェントモデル/); this page stays
-on the doing.
+始める前に知っておくべき重要事項: **ソースリポジトリは信頼できません。** その
+名前、説明、スター数は、リポジトリの所有者が書いたものです。Control Center が
+信頼する唯一の安全シグナルはウイルス対策スキャンの判定であり、ディスクやエージェントの
+プロンプトに何かが届く前に、すべてのインストールがこの判定を通過します。理由を
+知りたい場合は [エージェントモデルのスキルのセクション](/ja-JP/マニュアル/コンセプト/エージェントモデル/)を
+お読みください。このページは実際の操作に徹します。
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+スキルは **設定 → ワークスペース → スキル**
+（`/workspaces/<id>/settings/workspace/skills`）にあります。スキルはワークスペース
+単位です。ここでインストールしたスキルは、このワークスペースにのみ属します。ページには
+2 つのタブがあります: **インストール済み**（ローカルのスキル。**新しいスキル**
+エディターを含みます）と **ソース**（GitHub のカタログ）です。どちらの書き込みも
+同じスキャンゲートを通過します。
 
-## Add a skill repository
+## スキルリポジトリを追加する
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. **設定 → ワークスペース → スキル**を開き、**ソース**タブに切り替えます。
+2. **リポジトリを追加**を押します。
+3. GitHub リポジトリの URL を貼り付けます（例:
+   `https://github.com/anthropics/skills`）。そして確定します。
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+サーバーは、そのリポジトリが存在し、資格情報で参照できることを確認してから、左側の
+レールに追加します。間にキュレーションされたストアはありません: どの GitHub
+リポジトリでも使えるということは、評判を判断するのはあなた自身だということでもあります
+— スター数は証拠にはなりますが、保証には決してなりません。
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+リポジトリのスキルとは、`SKILL.md` を含むディレクトリのことです（最大 3 階層まで。
+加えて Claude のプラグインマーケットプレイス形式
+`plugins/<plugin>/skills/<skill>` も対象となり、依存関係とベンダーのツリーは
+スキップされます）。後でグリッドにこのリポジトリにはスキルがないと表示されたら、
+それはそのとおりの意味です: リポジトリ内にスキルの規約に一致するディレクトリが
+ないということです。
 
-## Inspect a skill before installing
+## インストール前にスキルを確認する
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+レールでリポジトリを選択すると、そのスキルが右側にグリッドで表示され、上の
+フィルターフィールドで名前、説明、slug からカタログを絞り込めます。カードを
+クリックすると詳細ビューが開きます。詳細ビューには 3 つの情報があります:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README** — markdown としてレンダリングされます。スキルディレクトリの
+  `README.md`、または README がない場合は `SKILL.md` の本文です。
+- **スキャンプレビュー** — 判定（`pass`、`warn`、`quarantine`）、スキルの内容が
+  宣言するケイパビリティ（シェルを実行、ファイルを書き込む、ネットワークに
+  アクセス…）、そしてスキャナーが記録したすべての検出結果です。
+- **ファイル数** — インストールでは、その `SKILL.md` だけでなくスキルの
+  ディレクトリ全体が書き込まれます。
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+プレビューは、インストールが書き込むのとまったく同じバイト列をスキャンするため、
+目にしている判定がそのままインストール時の判定になります。あなたの知らないうちに
+判定し直されることはありません。
 
-## Install a skill
+## スキルをインストールする
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. スキルの詳細ビューを開きます。
+2. スキャン判定を読みます。`warn` または `pass` の判定なら、**インストール**を
+   押します。
+3. `quarantine` の判定の場合、**リスクを理解したうえでインストールする**に
+   チェックを入れるまでインストールは無効のままです。この上書きは記録されます。
+   暗黙に認められることはありません。
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+インストールするとスキルのディレクトリがワークスペースに書き込まれ、
+`skills-lock.json` にピン（ソースリポジトリ、パス、取得元のコミット、コンテンツ
+ハッシュ）が記録され、そのスキルがワークスペースのエージェントから利用できるように
+なります。**使用中の名前**と表示されたカードは、別のスキルがすでにその名前を
+ローカルで使用していることを意味します — 先にそちらをアンインストールしてください。
 
-## Update skills over time
+## スキルを継続的に更新する
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+インストール済みスキルのカードにはバッジが付きます: **インストール済み**、または
+ピンしたコミットよりリポジトリが先に進んでいる場合は **更新あり** です。詳細ビューを
+開いて **更新** を押すと、新しいコミットで再取得します。更新はインストールと同じ
+スキャンゲートを通過します — 新しいバージョンが隔離されるスキルは拒否され、手元の
+バージョンはそのまま残ります。古いバージョンのハッシュは、ロック内のロールバック
+参照として保持されます。
 
-## Uninstall a skill, remove a repository
+## スキルをアンインストールし、リポジトリを削除する
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**アンインストール**（インストール済みスキルの詳細ビュー、または **インストール済み**
+タブでの削除）は、スキルのディレクトリとロックのピンをまとめて削除します —
+アンインストールされたスキルは何も残しません。
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**レールからのリポジトリの削除**はカタログだけを削除します: そこからインストールした
+スキルはインストールされたままで、引き続き更新されます。ピンはソースエントリへの
+参照ではなく、リポジトリを名前で記録しているためです。もう一度閲覧したい場合は、
+リポジトリを追加し直してください。
 
-## Invoke a skill
+## スキルを呼び出す
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+スキルは独自の名前空間で呼び出されるため、組み込みのスラッシュコマンド
+（`/plan`、`/goal`、`/loop`、`/compact`）と衝突しません:
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — このワークスペースにインストールされたスキル、または
+  エージェントに添付されたスキル
+- `/skill:<repo>:<name>` — このスペースにチェックアウトされたリポジトリが
+  提供するスキル
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+名前空間ができる前に書かれたメッセージのために、組み込みでない裸の名前も解決されます。
+`plan` という名前のスキルに届くのは `/skill:plan` であり、`/plan` は常に組み込みです。
 
-## Repo-scoped skills
+## リポジトリ単位のスキル
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+チェックアウトされたリポジトリは、`.agents/skills/`、`.agent/skills/`、
+`.claude/skills/`、`.opencode/skills/` または `skills/` に、独自のスキルを
+同梱できます。それらは**このページからは**インストールされません。エージェントが
+保持するのは、現在作業しているリポジトリのスキルだけであり、リポジトリを移動すると
+入れ替わります。コンポーザーはそのようにはスコープされません:
+`/skill:<repo>:<name>` はスペース内のどのリポジトリにも届きます。
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+リポジトリのスキルは、そのフロントマターがプロンプトに届く前に、同じフェイル
+クローズドなスキャン（`pass` / `warn` / `quarantine`）を通過します。`warn` は
+許可され、`quarantine` は差し止められます。この経路に運用者による上書きは
+ありません。
 
-See [Repo-scoped skills](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills) and
-[Slash commands](/ja-JP/マニュアル/リファレンス/スラッシュコマンド/).
+[リポジトリ単位のスキル](/ja-JP/マニュアル/コンセプト/エージェントモデル/#repo-scoped-skills) と
+[スラッシュコマンド](/ja-JP/マニュアル/リファレンス/スラッシュコマンド/)を参照してください。
 
-## Related guides
+## 関連するガイド
 
-- [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
 
-## Related concepts
+## 関連する概念
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/)
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)

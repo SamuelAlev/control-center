@@ -1,34 +1,37 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: راه‌اندازی یکپارچه‌سازی Linear
+description: یک کلید API مربوط به Linear را روی سرور ذخیره کنید تا عامل‌ها بتوانند Linear را فراخوانی کنند، و Linear را به‌عنوان ارائه‌دهندهٔ تیکتینگ برای تیکت‌های جدید انتخاب کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/).
+کلید API مربوط به Linear را روی سرور و در برابر کاربر خودتان بچسبانید، درست همان
+شکلی که یک میزبان کد را وصل می‌کنید. تیکت‌ها، پروژه‌ها، پیوندها، همکاران، واگذاری و
+تخصیص همگی روی پایگاه‌دادهٔ خودِ Control Center کار می‌کنند و هیچ سرویس بیرونی
+لازم نیست — [ایجاد و مدیریت
+تیکت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/) را ببینید.
 
-## Store your Linear key
+## کلید Linear خود را ذخیره کنید
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**کلید API تیکتینگ** در **تنظیمات → فضای کاری → عمومی**، روی کارت تیکتینگ قرار
+دارد. کلید را روی سرور و در برابر شناسهٔ کاربری شما ذخیره می‌کند. کلید خودِ سرور
+برای کارهایی که انسانی پشتشان نیست از `LINEAR_API_KEY` یا کارت **برنامه‌های
+ارائه‌دهنده** می‌آید و تنها وقتی به‌عنوان `TICKETING_API_KEY` تزریق می‌شود که آن
+عامل قابلیت **اجازهٔ فراخوانی‌های API تیکتینگ** را داشته باشد.
 
-## Stamp new tickets as Linear
+## مهر Linear را روی تیکت‌های جدید بزنید
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**ارائه‌دهندهٔ تیکتینگ** (نخستین گام راه‌اندازی اولیه، و
+`/workspaces/<workspaceId>/api-keys`) گزینه‌های `local` و `linear` را ارائه می‌دهد.
+با انتخاب `linear`، از آن پس روی تیکت‌هایی که می‌سازید `provider: linear` مهر
+می‌خورد.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and manage tickets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
-- [Manage API keys](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/کلیدهای-api/)
+- [ایجاد و مدیریت تیکت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
+- [مدیریت کلیدهای API(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/کلیدهای-api/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Tickets and delegation](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
+- [تیکت‌ها و واگذاری(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)

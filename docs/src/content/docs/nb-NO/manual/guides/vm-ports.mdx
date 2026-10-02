@@ -1,137 +1,140 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Videresend porter fra en terminal
+description: Nå en utviklerserver som er startet i en Terminal (VM) eller et verts-shell — fra maskinen din, fra Nettleseren (VM), fra Android, på nettverket ditt, eller under et utviklingsdomene med HTTPS.
 slug: nb-NO/handbok/slik-gjor-du/vm-porter
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+En server du starter i terminalen til en samtale, publiseres bare for **det området**. Portpanelet oppdager lyttere denne appen startet der, kartlegger dem og gir deg en adresse for hvert sted du måtte ønske å nå dem fra. To områder kan begge lytte på `5173`; kartene deres blandes aldri.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Ingenting her åpner maskinen opp: hver bane opprettes av serveren, på forespørsel, og dør med terminalen eller stasjonen.
 
-## See what is listening
+## Se hva som lytter
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Åpne samtalens **Terminal (VM)** eller verts-shellet (i et område eller på en PR-side).
+2. Start serveren din — `pnpm dev`, `python -m http.server 8000`, hva som helst.
+3. I løpet av noen sekunder får **pluggikonet** i terminalens øvre høyre hjørne
+   en prikk. Klikk på det.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panelet viser hver lyttende port med prosessen som eier den, som
+`3000 → 3000`: porten prosessen bandt til, til venstre, og porten den svarer
+på lokalt, til høyre (det samme nummeret når den var ledig på
+maskinen din). Hver rad sier også om skrivebordets `localhost`, Nettleseren (VM)
+og Android kan nå den.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Oppdagelsen er innesluttet: en Terminal (VM) polles inne i den gjesten; et
+verts-shell polles fra den øktas PTY-prosesstre. Andre områder,
+og andre prosesser på Mac-en din, listes ikke opp.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Nye porter i **denne** terminalen videresendes automatisk. Slå
+**Videresend porter automatisk** av i samme panel hvis du bare vil ha dem du
+legger til selv.
 
-## Reach it from this computer
+## Nå den fra denne datamaskinen
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Bruk **Kopier lokal URL** på raden — `http://localhost:3000`. Videresendingen
+lytter bare på loopback, så ingenting annet på nettverket ditt kan se den.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Hvis to områder begge eksponerer gjestens `5173`, og maskinen din allerede har
+`127.0.0.1:5173`, beholder det andre området gjestens `5173` og får en
+efemær lokal port. Kopier URL bruker nummeret til høyre.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+På et verts-shell ligger prosessen allerede på maskinen din. Å kartlegge den
+samme lokale porten er en no-op; å velge en **annen** lokal port binder en
+loopback-proxy til den du valgte.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (eller å binde `0.0.0.0`) gjør **ikke** at en innesluttet Nettleser (VM)
+kan nå en server på Mac-en. Gjesten har sin egen loopback; serveren
+planter en tunnel inn i den gjesten når Nettleser-fanen står i
+**samme område**.
 
-## Reach it from the Browser (VM)
+## Nå den fra Nettleseren (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Åpne den innesluttede nettleseren i **samme samtale**. Skriv
+`localhost:<porten til venstre>` — nummeret prosessen bandt til. En ommapping
+(`5173 → 3000`) svarer også på nummeret til høyre i den nettleseren, så
+Kopier URL fungerer der også. En agents `browser_use` kan navigere til begge.
+En server i område A dukker aldri opp som `localhost:5173` i område Bs nettleser.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Bruk `localhost`, ikke en LAN-IP og ikke `--host`. Gjesten har sin egen
+loopback; tunnelen lytter der på både IPv4 og IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Sider som åpner mange tilkoblinger samtidig (dusinvis av ressurser, en
+socket for live-oppdatering) deler den samme tunnelen. Nettleseren (VM)
+multiplekser dem over én vedvarende exec, så en byge av hentinger ikke er én
+prosessoppstart per tilkobling og ikke timer ut som en hvit side.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Inne i ett område vinner en videresending fra en Terminal (VM) over et
+verts-shell på samme nummer. På tvers av områder finnes ingen presedens — de er
+separate kart.
 
-## Reach it from Android
+## Nå den fra Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Åpne **Android**-fanen for det området. Emulatorens `localhost:<port>` blir
+da reversert til dette områdets publiserte port (`adb reverse`). Én emulator
+er enhetsglobal: å koble til område B retter `:5173` mot B og slipper A sitt.
+Lukker du fanen, fjernes reversene denne stasjonen plantet.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS-simulatoren er allerede Mac-en — ingen revers. En fysisk iPhone trenger
+fortsatt en LAN-deling.
 
-## Share it on your network
+## Del den på nettverket ditt
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Del på lokalt nettverk** publiserer porten på
+`<server-ip>:<tilfeldig port>` — nyttig for å åpne siden på telefonen, eller
+når serveren kjører på en annen maskin.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- LAN-porten tildeles alltid av operativsystemet, aldri gjestens nummer, så
+  eksponeringen er en bevisst, synlig adresse i stedet for en gjettbar en.
+- Den forblir privat (bare loopback) til du slår den på, og **⋯ → Bare lokalt**
+  tar den av nettverket igjen.
 
-## Give it a name — with HTTPS
+## Gi den et navn — med HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Sett et nettleserdomene (.test)** tildeler porten et utviklingsdomene som
+`myapp.test`. Inne i Nettleseren (VM) laster `https://myapp.test` da serveren
+din med en gyldig hengelås — nyttig for alt som oppfører seg annerledes
+på en navngitt opprinnelse eller i en sikker kontekst (cookies, service workers,
+OAuth-tilbakeringinger).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domener må ende på `.test` eller `.localhost` — de to toppnivådomenene som er
+  reservert for utvikling, så et utviklingsnavn aldri kan skygge for et ekte nettsted.
+- Domene**navn** er unike på serveren; port**numre** er det ikke. To
+  områder kan begge bruke `5173`, men de kan ikke begge kreve `myapp.test`.
+- Sertifikatet kommer fra en lokal sertifikatmyndighet som opprettes på serveren
+  din første gang det trengs. Nøklene ligger under serverens datamappe
+  og kommer aldri inn i noen gjest; den innesluttede nettleseren stoler på
+  nøyaktig den ene nøkkelen, så TLS mot det ekte internett valideres fortsatt
+  normalt.
+- Domenet løses **bare inne i Nettleseren (VM)**. Din egen nettleser på
+  verten bruker `localhost:<port>` i stedet.
+- Vanlig `http://myapp.test` fungerer også.
 
-## Forward a port by hand
+## Videresend en port manuelt
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Legg til port** nederst i panelet kartlegger en port før (eller uansett om)
+noe lytter på den. En manuell videresending beholder adressen mens
+serveren din starter på nytt — raden viser *lytter ikke* til den kommer
+tilbake — mens automatiske videresendinger forsvinner når porten deres gjør det.
+På et verts-shell kan du også angi en annen lokal port.
 
-## How it stays contained
+## Hvordan den holdes innesluttet
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/nb-NO/handbok/konsepter/stasjoner/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/nb-NO/handbok/referanse/stasjoner/#ports-and-dev-domains).
+Porter nøkles etter arbeidsområde og område. Hypervisorens eget portkart er
+fastsatt når en maskin starter opp, så en Terminal (VM) rir på to smale kanaler
+som serveren kontrollerer: én forhåndsopprettet innkommende bane inn i gjesten
+som nekter å koble til en hvilken som helst port gjesten faktisk ikke lytter på,
+og reverse tunneler serveren holder åpne for Nettleseren (VM) og Android. Et
+verts-shell skanner aldri hele maskinen. Ingen lytter opprettes noensinne
+inne i en gjest som serveren ikke har satt der, og alt rives ned
+med terminalen eller stasjonen. Designet er forklart i
+[Stasjoner og isolerte miljøer](/nb-NO/handbok/konsepter/stasjoner/#ports-without-holes);
+de nøyaktige reserverte portene og domenereglene står i
+[stasjonsreferansen](/nb-NO/handbok/referanse/stasjoner/#ports-and-dev-domains).
 
-## Related
+## Relatert
 
-- [Give an agent a machine to test on](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/nb-NO/handbok/referanse/stasjoner/) — reserved ports, dev TLDs,
-  defaults
+- [Gi en agent en maskin å teste på](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/) — å åpne,
+  følge med på og overta stasjoner
+- [Stasjonsreferansen](/nb-NO/handbok/referanse/stasjoner/) — reserverte porter,
+  utviklings-TLD-er, standardverdier

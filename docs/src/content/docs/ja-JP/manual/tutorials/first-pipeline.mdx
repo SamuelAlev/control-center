@@ -1,102 +1,92 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: 初めてのパイプラインを構築する
+description: パイプラインのテンプレートを作成し、そのステップを設定して、手動実行を許可し、1 回実行します。
 slug: ja-JP/マニュアル/チュートリアル/初めてのパイプライン
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## 作成するもの
 
-By the end of this tutorial, you will have:
+このチュートリアルを終えると、次のものが揃っています:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- プロンプトでエージェントをディスパッチする、保存済みのパイプラインテンプレート
+- 手動で開始できるようにする、手動実行を有効にした状態
+- 完了した 1 回の実行 — そのステップの入力と出力を確認できる状態
 
-Prerequisites: [Dispatch your first agent](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/) completed, so you have an agent with an adapter and a model.
+前提条件: [初めてのエージェントをディスパッチする](/ja-JP/マニュアル/チュートリアル/初めてのエージェント/)を完了していること。これにより、アダプターとモデルを設定したエージェントができている状態になります。
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/); for the full step vocabulary, [Pipeline step kinds](/ja-JP/マニュアル/リファレンス/パイプラインステップ/).
+パイプラインはステップからなる DAG です。テンプレートがグラフを定義し、run はその実行にあたります。背景にあるモデルについては[パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/)を、ステップの語彙全体については[パイプラインステップ](/ja-JP/マニュアル/リファレンス/パイプラインステップ/)を参照してください。
 
-## Step 1: Create a template
+## ステップ 1: テンプレートを作成する
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. **設定 → ワークスペース → パイプラインテンプレート**に移動します
+2. **新しいテンプレート**をクリックします
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+エディターは、**新しいパイプライン**という名前の用意されたスケルトン（ID は `pipeline_N`）で開きます。ヘッダーのタイトルをクリックして名前を変更します — このチュートリアルでは `code_quality_check` が良い名前です。ID のダイアログはなく、説明フィールドもありません。
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+キャンバスは空白ではありません。新しいテンプレートは **Trigger → Step → terminal** としてあらかじめ配線されています。ここで「Step」はプロンプトエージェントノードで、terminal は不可視のセンチネルです。エディターはこのセンチネルを、到達可能なすべてのシンクに再接続します。
 
-You configure the Step that is already there.
+設定するのは、すでに配置されている Step ノードです。
 
-## Step 2: Configure the step
+## ステップ 2: ステップを設定する
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. キャンバス上の **Step** ノードをクリックします
+2. 右側の**ノード設定**パネルで次を設定します:
+   - **エージェント**: 前のチュートリアルで作成したエージェント
+   - **プロンプトテンプレート**: 「現在のブランチのコードを品質上の問題がないかレビューしてください。見つかったものを列挙してください。」
+3. **Triggers from** はそのままにします — このノードはすでに Trigger の後に発火するよう配線されています
 
-## Step 3: Save
+## ステップ 3: 保存する
 
-Press **Save** in the editor header.
+エディターのヘッダーで**保存**を押します。
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**チェックポイント。** 「未保存の変更」の表示が消えます。
 
-## Step 4: Allow manual runs
+## ステップ 4: 手動実行を許可する
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. キャンバス上の破線の**トリガーを追加**タイルをクリックし（またはノードライブラリのトリガーセクションから**手動実行**をドラッグし）、**手動実行**を選びます。
+2. そのノードを選択します。右側のインスペクターで**有効**をオンにします — 「実行ページに表示し、手動で開始します。」
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+これは省略できず、見落としやすい項目です。新しいテンプレートは**トリガー行がまったくない**状態で作成されるため、これをオンにするまで実行ページに一覧表示されず、開始するものもありません。このスイッチはトリガーを即座に書き込みます。別の保存を待ちません。
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+同じスイッチは、エディターのヘッダーにある**手動実行**の背後にもあります。そこでは、テンプレートが宣言した入力と並んで表示されます。
 
-## Step 5: Run it
+## ステップ 5: 実行する
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. サイドバーで**パイプライン**をクリックします
+2. ヘッダーの**パイプラインを実行**をクリックします
+3. 左のレールで `code_quality_check` を選びます
+4. フォームの**パイプラインを実行**をクリックします — このテンプレートは入力を宣言していないため、入力するものはありません
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**チェックポイント。** 実行が開始されたことをトーストが知らせ、Control Center が実行の詳細を開きます。
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+エンジンは実行レコードを作成し、トリガーを完了し、ステップをスケジュールし、エージェントをディスパッチし、終端センチネルへの入力ブランチが完了した時点で実行を完了します。
 
-## Step 6: Inspect the result
+## ステップ 6: 結果を確認する
 
-Click the step in the run to open its detail panel:
+実行内のステップをクリックして、その詳細パネルを開きます:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- **開始**と**終了**のタイムスタンプ、そして**所要時間**
+- **入力**: ステップに渡されたステート
+- **出力**: ステップが生成したもの — ここではエージェントの応答
+- **エージェントのアクティビティ**、ステップが実行した会話へのリンク付き
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**チェックポイント。** ステップが完了と表示され、その出力にエージェントのレビューが入っています。
 
-## Adding more steps
+## ステップをさらに追加する
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+ノードを追加するには、左側のノードライブラリから項目をキャンバスにドラッグするか、ノードのすぐ後ろで**ステップを追加**（`+`）を押します。ノードの出力ポートから別のノードへドラッグすると接続できます。または、新しいノードを選択し、**Triggers from** でその上流ステップにチェックを入れます。
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+終端ノードは描画されず、選択もできません。エディターはそれを到達可能なすべてのシンクに再接続するため、用意された Step の後に追加したノードも実行されます。
 
-## Recap
+## まとめ
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+テンプレートを作成し、もとからあるプロンプトエージェントノードを設定して保存し、手動で実行できるようにし、実行を開始して、ステップの入力と出力を確認しました。
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+パイプラインはこれよりはるかに大きくなります — 条件付きルーター、並列ブランチ、ジョインノード、For each のファンアウト、人間による承認ゲート — しかし形は変わりません。DAG 内のステップがステートを受け渡します。
 
-**Next:** [Bridge Slack to your workspace](/ja-JP/マニュアル/チュートリアル/初めてのチャットブリッジ/), the last tutorial in this sequence.
+**次:** [Slack をワークスペースにブリッジする](/ja-JP/マニュアル/チュートリアル/初めてのチャットブリッジ/)。このシーケンスの最後のチュートリアルです。
 
-- [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/) to start pipelines from events or a schedule
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/) for the model underneath
-- [Pipeline step kinds](/ja-JP/マニュアル/リファレンス/パイプラインステップ/) for every step type
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/) — イベントやスケジュールからパイプラインを開始します
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/) — 背後にあるモデル
+- [パイプラインステップ](/ja-JP/マニュアル/リファレンス/パイプラインステップ/) — すべてのステップ種別

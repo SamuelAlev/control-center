@@ -2,6 +2,7 @@
 title: AI review
 description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
 slug: en-GB/manual/concepts/ai-review
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
 ## The shape of a review
@@ -10,7 +11,7 @@ An AI review is one run of the seeded `pr_review` pipeline against one open pull
 request. The pipeline opens the PR's review space, fans out reviewer agents to
 read the diff in that space's isolated checkout, each files its findings as
 structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
+and a finaliser computes one verdict: **Ship**, **Hold** or **Block**. What the
 pipeline never does is publish — posting to GitHub is a separate, deliberate
 step a human takes.
 
@@ -99,7 +100,7 @@ peer-confirmed findings only. The Review tab's **Publish to GitHub** button
 instead sends every remaining open finding.
 
 The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
+finaliser and the publisher — so it survives a buggy caller in any one of
 them. Status changes all route through one service, which is what makes a
 status mean something: before that, two half-paths could disagree about
 whether the same finding was resolved.
@@ -152,7 +153,7 @@ verdict, and re-gating on them would double-count.
 
 ## The verdict
 
-The finalizer computes the verdict over the findings with status `open` or
+The finaliser computes the verdict over the findings with status `open` or
 `consensus-ready`:
 
 - any P0 finding with confidence ≥ 0.7 → **Block**
@@ -166,7 +167,7 @@ The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
 hand-written second copy of the findings is exactly what drifts from the real
 one. Duplicate findings are demoted rather than repeated — several reviewers
 are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
+defect reaching the finaliser three times is the system working; publishing it
 three times is the system leaking its own architecture into the reader's
 inbox. On a re-review, findings are fingerprinted and diffed against the
 previous round, so the delta is what surfaces.
@@ -208,7 +209,7 @@ Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
 allowlist covering findings, commentary, tickets and peer review — but no
 mutations. A reviewer cannot fix the code it critiques; it can attach a
 suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
+that tries to act anyway to finalise the review and let the user act on the
 published summary.
 
 ## Related concepts

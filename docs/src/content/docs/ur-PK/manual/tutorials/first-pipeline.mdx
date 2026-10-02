@@ -1,102 +1,106 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: اپنی پہلی پائپ لائن بنائیں
+description: ایک پائپ لائن ٹیمپلیٹ بنائیں، اس کا قدم کنفیگر کریں، دستی رنز کی اجازت دیں اور ایک شروع کریں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلی-پائپ-لائن
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اس ٹیوٹوریل کے اختتام تک، آپ کے پاس یہ ہوگا:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- ایک محفوظ شدہ پائپ لائن ٹیمپلیٹ جو کسی پرامپٹ کے ساتھ ایجنٹ ڈسپیچ کرتا ہے
+- اُس پر دستی رنز فعال، تاکہ اسے ہاتھ سے شروع کیا جا سکے
+- ایک مکمل شدہ رن، جس میں قدم کا ان پٹ اور آؤٹ پٹ نظر آتا ہو
 
-Prerequisites: [Dispatch your first agent](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) completed, so you have an agent with an adapter and a model.
+پیشگی ضروریات: [اپنا پہلا ایجنٹ بھیجیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) مکمل ہو، تاکہ آپ کے پاس اڈاپٹر اور ماڈل والا ایک ایجنٹ موجود ہو۔
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/); for the full step vocabulary, [Pipeline step kinds](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/).
+پائپ لائن قدموں کا ایک DAG ہے۔ ٹیمپلیٹس گراف کی تعریف کرتے ہیں؛ رنز اجرا ہوتے ہیں۔ اس کے پیچھے والے ماڈل کے لیے [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) پڑھیں؛ قدموں کی مکمل فرہنگ کے لیے [پائپ لائن قدم کی اقسام](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/) دیکھیں۔
 
-## Step 1: Create a template
+## مرحلہ 1: ایک ٹیمپلیٹ بنائیں
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. **ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** پر جائیں
+2. **نیا ٹیمپلیٹ** پر کلک کریں
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+ایڈیٹر **نئی پائپ لائن** نام کے ایک سیڈ شدہ خاکے پر کھلتا ہے (id `pipeline_N`)۔
+ہیڈر میں عنوان پر کلک کریں اور اس کا نام بدلیں — اِس ٹیوٹوریل کے لیے
+`code_quality_check` اچھا نام ہے۔ کوئی id ڈائیلاگ نہیں اور کوئی تفصیل
+کا فیلڈ نہیں۔
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+کینوس خالی نہیں ہے۔ نیا ٹیمپلیٹ پہلے سے **Trigger → Step → ٹرمینل** کے طور پر
+وائرڈ آتا ہے، جہاں "Step" ایک پرامپٹ-ایجنٹ نوڈ ہے اور ٹرمینل ایک
+غیر مرئی سینٹینل ہے جسے ایڈیٹر ہر قابلِ رسائی سنک سے دوبارہ جوڑ دیتا ہے۔
 
-You configure the Step that is already there.
+آپ وہی Step کنفیگر کرتے ہیں جو پہلے سے موجود ہے۔
 
-## Step 2: Configure the step
+## مرحلہ 2: قدم کنفیگر کریں
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. کینوس پر **Step** نوڈ پر کلک کریں
+2. دائیں طرف **نوڈ کنفیگ** پینل میں یہ مقرر کریں:
+   - **ایجنٹ**: پچھلے ٹیوٹوریل کا آپ کا ایجنٹ
+   - **پرامپٹ ٹیمپلیٹ**: "موجودہ برانچ کے کوڈ کا معیار کے مسائل کے لیے جائزہ لیں۔ جو کچھ ملے وہ فہرست کریں۔"
+3. **Triggers from** کو چھیڑیں نہیں — نوڈ پہلے ہی Trigger کے بعد چلنے کے لیے وائرڈ ہے
 
-## Step 3: Save
+## مرحلہ 3: محفوظ کریں
 
-Press **Save** in the editor header.
+ایڈیٹر ہیڈر میں **محفوظ کریں** دبائیں۔
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**چیک پوائنٹ۔** "غیر محفوظ تبدیلیاں" کی عبارت غائب ہو جاتی ہے۔
 
-## Step 4: Allow manual runs
+## مرحلہ 4: دستی رنز کی اجازت دیں
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. کینوس پر نقطہ دار **ٹرگر شامل کریں** ٹائل پر کلک کریں (یا نوڈ لائبریری کے
+   **ٹرگرز** حصے سے **دستی رن** گھسیٹیں) اور **دستی رن** چنیں۔
+2. اُس نوڈ کو منتخب کریں۔ دائیں طرف انسپیکٹر میں **فعال** آن کریں —
+   "رن صفحے پر دکھائیں اور ہاتھ سے شروع کریں۔"
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+یہ اختیاری نہیں ہے اور اسے نظر انداز کرنا آسان ہے۔ نیا ٹیمپلیٹ **کسی
+ٹرگر قطار کے بغیر** بنتا ہے، اس لیے جب تک آپ اسے آن نہ کریں، رن صفحہ اسے فہرست
+میں نہیں لائے گا اور شروع کرنے کو کچھ نہیں ہوگا۔ سوئچ ٹرگر فوراً لکھ دیتا ہے؛ یہ کسی اور محفوظ کرنے کا انتظار نہیں کرتا۔
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+وہی سوئچ ایڈیٹر ہیڈر میں **دستی رن** کے پیچھے بھی ہے، جہاں یہ ٹیمپلیٹ کے اعلان شدہ ان پٹس کے ساتھ بیٹھتا ہے۔
 
-## Step 5: Run it
+## مرحلہ 5: اسے چلائیں
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. سائیڈ بار میں **پائپ لائنز** پر کلک کریں
+2. ہیڈر میں **پائپ لائن چلائیں** پر کلک کریں
+3. بائیں ریل میں `code_quality_check` چنیں
+4. فارم پر **پائپ لائن چلائیں** پر کلک کریں — آپ کا ٹیمپلیٹ کوئی ان پٹ اعلان نہیں کرتا، اس لیے بھرنے کو کچھ نہیں
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**چیک پوائنٹ۔** ایک ٹوسٹ تصدیق کرتا ہے کہ رن شروع ہو گیا اور Control Center رن کی تفصیل کھولتا ہے۔
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+انجن رن کا ریکارڈ بناتا ہے، ٹرگر مکمل کرتا ہے، قدم شیڈیول کرتا ہے، ایجنٹ ڈسپیچ کرتا ہے اور ٹرمینل کی آنے والی برانچ مکمل ہونے پر رن مکمل کرتا ہے۔
 
-## Step 6: Inspect the result
+## مرحلہ 6: نتیجہ جانچیں
 
-Click the step in the run to open its detail panel:
+رن میں قدم پر کلک کر کے اس کا تفصیلی پینل کھولیں:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- **شروع ہوا** اور **ختم ہوا** کے ٹائم اسٹیمپس اور **مدت**
+- **ان پٹ**: وہ اسٹیٹ جو قدم میں دیا گیا
+- **آؤٹ پٹ**: جو کچھ اُس نے پیدا کیا — یہاں، ایجنٹ کا جواب
+- **ایجنٹ سرگرمی**، اُس گفتگو کے لنک کے ساتھ جو قدم نے چلائی
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**چیک پوائنٹ۔** قدم مکمل پڑھا جاتا ہے اور اس کے آؤٹ پٹ میں ایجنٹ کا ریویو موجود ہوتا ہے۔
 
-## Adding more steps
+## مزید قدم شامل کرنا
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+نوڈز بائیں جانب نوڈ لائبریری سے کوئی اندراج کینوس پر گھسیٹ کر، یا کسی نوڈ کے
+فوراً بعد **مرحلہ شامل کریں** (`+`) دبا کر شامل کیے جاتے ہیں۔ ایک نوڈ کے آؤٹ پٹ
+پورٹ سے دوسرے نوڈ تک گھسیٹ کر اُنہیں جوڑیں، یا نیا نوڈ منتخب کر کے
+**Triggers from** کے تحت اس کا بالائی قدم نشان زد کریں۔
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+ٹرمینل نوڈ نہیں بنایا جاتا اور اسے منتخب نہیں کیا جا سکتا۔ ایڈیٹر اسے
+ہر قابلِ رسائی سنک سے دوبارہ جوڑ دیتا ہے، اس لیے سیڈ شدہ Step کے بعد آپ کا
+شامل کردہ نوڈ بھی چلتا ہے۔
 
-## Recap
+## خلاصہ
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+آپ نے ایک ٹیمپلیٹ بنایا، اس کے سیڈ شدہ پرامپٹ-ایجنٹ نوڈ کو کنفیگر کیا، اسے محفوظ کیا، اسے ہاتھ سے چلانے کے قابل بنایا، ایک رن شروع کیا اور قدم کا ان پٹ اور آؤٹ پٹ پڑھا۔
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+پائپ لائنز اس سے کہیں بڑی ہوتی ہیں — مشروط روٹرز، متوازی شاخیں، جوائن نوڈز، for-each فین آؤٹ، انسانی گیٹس — مگر شکل کبھی نہیں بدلتی: DAG میں قدم، اسٹیٹ منتقل کرتے ہوئے۔
 
-**Next:** [Bridge Slack to your workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/), the last tutorial in this sequence.
+**اگلا:** [Slack کو اپنے ورک اسپیس سے جوڑیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/)، اِس سلسلے کا آخری ٹیوٹوریل۔
 
-- [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/) to start pipelines from events or a schedule
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) for the model underneath
-- [Pipeline step kinds](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/) for every step type
+- [پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/) تاکہ پائپ لائنز کو ایونٹس یا شیڈول سے شروع کریں
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) اس کے پیچھے والے ماڈل کے لیے
+- [پائپ لائن قدم کی اقسام](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/) ہر قسم کے قدم کے لیے

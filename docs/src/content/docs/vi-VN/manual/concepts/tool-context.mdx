@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Ngữ cảnh công cụ và bộ nhớ đệm prompt
+description: Vì sao agent chỉ được hiển thị một tập công cụ nhỏ thay vì toàn bộ, cách nó tiếp cận phần còn lại, và những quy tắc giữ cho bộ nhớ đệm prompt của nhà cung cấp luôn ấm suốt một lượt chạy.
 slug: vi-VN/so-tay/khai-niem/ngu-canh-cong-cu
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Có hai điều luôn đúng với mọi yêu cầu mà harness tích hợp sẵn gửi đi: định nghĩa công cụ là khoản chi phí cố định lớn nhất trong đó, và gần như không công cụ nào trong số đó sẽ được dùng đến. Trang này giải thích Control Center làm gì trước tình trạng ấy, và vì sao câu trả lời không đơn giản chỉ là “gửi ít công cụ hơn”.
 
-## The problem is attention, not bytes
+## Vấn đề nằm ở sự chú ý, không phải số byte
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center đăng ký khoảng 126 công cụ. Nếu gửi đầy đủ, định nghĩa của chúng tốn khoảng **23.000 token trong mỗi yêu cầu** — một khoản chi phí mà không phép nén nào chạm tới được, bởi định nghĩa công cụ đi trong một phần riêng của yêu cầu, tách khỏi phần hội thoại.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+Hóa đơn token là lời phàn nàn hiển nhiên, và khi đã có bộ nhớ đệm prompt thì nó cũng là khoản nhỏ hơn. Chi phí thật sự nằm ở **độ chính xác khi chọn lựa**. Các đánh giá đã công bố về việc gọi công cụ đều nhất trí rằng mô hình chọn đúng công cụ một cách đáng tin cậy cho tới khoảng 30–50 công cụ trong ngữ cảnh, rồi càng vượt qua mức đó càng kém dần. Nguyên nhân được chỉ ra không phải số lượng token mà là **chồng lấn ngữ nghĩa**: một khi danh mục có vài công cụ với phần mô tả đọc giống nhau, mô hình đang phải chọn giữa những thứ na ná nhau thay vì nhớ ra một năng lực.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Ở mức 126 công cụ, agent đã vượt xa vùng đó trong từng lượt một — kể cả nhiều lượt mà nó chỉ cần đọc một tệp.
 
-## The two-tier surface
+## Bề mặt hai tầng
 
-A run is therefore shown two things:
+Vì vậy một lượt chạy được hiển thị hai thứ:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- một tập **thường trú** — khoảng hai chục công cụ, được gửi kèm lược đồ đầy đủ trong mọi yêu cầu;
+- một **chỉ mục tên** của mọi thứ còn lại, được nhóm dưới các tiêu đề như “Tickets and projects” hay “Memory and knowledge”, tốn vài trăm token cho toàn bộ danh mục.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Đo trên danh mục hiện tại, cách này đưa khối công cụ từ **~23,1k token xuống ~5,0k, tức nhỏ hơn khoảng 78%**, đồng thời đặt tập luôn hiển thị vào đúng vùng mà việc chọn lựa diễn ra đáng tin cậy.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/vi-VN/so-tay/khai-niem/che-do) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+Tập thường trú là những công cụ mà một lượt chạy dùng trong *hầu hết* các lượt: từ vựng về tệp và shell (`read`, `write`, `edit`, `search`, `bash`, …), các công cụ khám phá, danh sách việc cần làm, tìm kiếm bộ nhớ, và động từ bất kỳ mà [chế độ](/vi-VN/so-tay/khai-niem/che-do) hiện tại phải gọi để tạo ra kết quả của nó. Động từ đầu ra của chính một chế độ luôn thường trú — một lượt chạy không bao giờ phải đi tìm lời gọi duy nhất tạo ra sản phẩm giao nộp của nó.
 
-### Deferred does not mean unavailable
+### Bị trì hoãn không có nghĩa là không dùng được
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Đây chính là phần khiến thiết kế này an toàn chứ không chỉ rẻ. **Một công cụ bị trì hoãn vẫn gọi được ngay từ lượt đầu tiên.** Chỉ có lược đồ của nó là bị giữ lại.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Agent nhìn thấy cái tên ấy trong prompt của mình. Nếu nó gọi thẳng tên đó, harness nạp lược đồ và chạy công cụ ngay trong cùng một bước — không lỗi, không phải đi thêm một vòng. Mô hình không cần biết rằng công cụ từng bị “dỡ ra”.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Khi agent biết việc cần làm nhưng không biết tên công cụ, `search_tools` nhận một mô tả bằng ngôn ngữ tự nhiên (“gán một phiếu cho ai đó”), xếp hạng toàn bộ bề mặt của lượt chạy, rồi trả về các kết quả khớp *cùng với lược đồ đã được nạp sẵn*, để lượt kế tiếp có thể gọi thẳng một trong số đó. Nếu tìm kiếm không ra gì, nó nói rõ điều đó và gợi ý cách diễn đạt khác hoặc một phạm vi tìm rộng hơn — một cách có chủ đích, bởi một agent đọc kết quả tìm kiếm rỗng thành “năng lực này không tồn tại” sẽ tự bịa ra thứ thay thế thay vì tìm lại.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` chỉ tồn tại trong harness tích hợp sẵn. Máy khách MCP bên ngoài thì có `search_tool_bm25`, công cụ này xếp hạng cùng chỉ mục đó nhưng chỉ mô tả các kết quả khớp — những máy khách ấy đã nhận mọi lược đồ từ `tools/list` rồi, nên không có gì để nạp.
 
-### What deferral never does
+### Việc trì hoãn không bao giờ làm gì
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/vi-VN/so-tay/khai-niem/rao-chan) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Việc trì hoãn được áp dụng **sau** bộ lọc công cụ của chế độ, chứ không bao giờ thay thế nó. Nó giấu một lược đồ; nó không thể để lộ ra một công cụ mà chế độ đã từ chối. Một công cụ được kích hoạt vẫn phải qua lời nhắc phê duyệt và [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan) đúng như một công cụ thường trú, và một công cụ không thể nạp một cái tên vốn không nằm trên bề mặt của lượt chạy ngay từ đầu.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Bề mặt MCP mà máy khách bên ngoài nhìn thấy **không** bị ảnh hưởng. `tools/list` vẫn trả về danh mục đầy đủ. Một nỗ lực trước đây nhằm cắt gọn nó đã làm hỏng agent hoàn toàn: máy khách MCP đối chiếu tên công cụ với danh sách đã lưu trong bộ nhớ đệm của chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ “bị ẩn nhưng vẫn gọi được” đơn giản là không thể tiếp cận. Việc trì hoãn nằm trong harness, nơi mà việc nạp một công cụ giữa lượt chạy là điều harness thực sự làm được.
 
-### Turning it off
+### Tắt tính năng này
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/vi-VN/so-tay/tham-chieu/cli-cc-server).
+`--tool-deferral=off` (hoặc `CC_SERVER_TOOL_DEFERRAL=off`) khiến mọi công cụ được chấp nhận trở lại thường trú, tạo ra đúng những yêu cầu mà máy chủ đã gửi trước khi có tính năng trì hoãn. Xem [tham chiếu CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server).
 
-## Prompt caching
+## Bộ nhớ đệm prompt
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Khối lượng công việc của agent rất lệch: chúng gửi những prompt khổng lồ và nhận về những câu trả lời nhỏ, hết lượt này đến lượt khác, lần nào cũng với cùng một tiền tố. Các nhà cung cấp lưu đệm tiền tố đó, và một lần đọc từ bộ nhớ đệm chỉ tốn khoảng một phần mười so với một lần đọc mới. Vì thế tỷ lệ trúng bộ nhớ đệm là một thuộc tính hạng nhất của harness chứ không phải một phép tối ưu — và trên Anthropic nó còn mua thêm thông lượng, bởi token đã lưu đệm không bị tính vào giới hạn đầu vào mỗi phút.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Bộ nhớ đệm hoạt động dựa trên khớp tiền tố chính xác, và điều đó dẫn tới một quy tắc chi phối.
 
-### Never rewrite what was already sent
+### Không bao giờ viết lại thứ đã gửi
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Bất kỳ byte nào thay đổi cũng vô hiệu hóa bộ nhớ đệm từ điểm đó trở đi. Vì vậy harness chỉ **nối thêm**: tin nhắn mới ở cuối, và những lược đồ công cụ vừa được kích hoạt nằm *sau* khối công cụ đã lưu đệm thay vì được gộp vào trong đó. Chính thứ tự ấy khiến việc kích hoạt trở nên rẻ — tiền tố đã lưu đệm giữ nguyên không đổi và lượt chạy chỉ trả tiền cho những lược đồ vừa nạp.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+Vòng lặp cũng cắt bớt những kết quả công cụ cũ từ các lượt trước để thu hồi ngữ cảnh. Nó chờ đến khi thu hồi được đủ nhiều để đáng công viết lại, nhờ đó một lần cắt bớt là một lần viết lại sâu hiếm hoi thay vì liên tục trượt bộ nhớ đệm.
 
-### Where the breakpoints go
+### Các điểm ngắt nằm ở đâu
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Mỗi nhà cung cấp chỉ cho phép một số lượng điểm đánh dấu bộ nhớ đệm nhất định, và Control Center dùng chúng một cách có tính toán:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Điểm đánh dấu                     | Bao phủ                             | Thời hạn |
+| --------------------------------- | ----------------------------------- | -------- |
+| Công cụ **thường trú** cuối cùng  | Khối công cụ                        | 1 giờ    |
+| Khối hệ thống cuối cùng           | Công cụ + system prompt             | 1 giờ    |
+| Đuôi lượt trước                   | Lịch sử tính đến yêu cầu cuối cùng  | 5 phút   |
+| Đuôi lượt hiện tại                | Toàn bộ lịch sử                     | 5 phút   |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Hai điểm cuối là một cặp luân chuyển, và lý do có cặp này khá tinh tế: một lần tra bộ nhớ đệm sẽ tìm ngược lại một số khối có giới hạn để tìm thứ mà một yêu cầu trước đó đã lưu. Một lượt chạy nhiều công cụ song song có thể phát ra nhiều khối hơn cửa sổ đó, và khi ấy một điểm đánh dấu ở đuôi sẽ lặng lẽ trượt, khiến yêu cầu phải trả đủ giá mà trong phản hồi chẳng có gì nói lên điều đó. Đánh dấu đúng vị trí mà yêu cầu trước đã dừng lại biến lần trúng bộ nhớ đệm thành chuyện tất yếu về mặt cấu trúc thay vì một cuộc đua may rủi.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Tiền tố công cụ-và-hệ thống nhận thời hạn dài bởi nó không đổi suốt cả lượt chạy, được mọi lượt chạy và agent con cùng hình dạng chia sẻ, và bởi đồng hồ bắt đầu chạy khi một yêu cầu *khởi đầu* — một lượt phát trực tiếp trong vài phút đã tiêu gần hết một cửa sổ ngắn trước khi yêu cầu kế tiếp hình thành.
 
-### Subagents share one prefix
+### Các agent con chia sẻ một tiền tố
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Các agent con cùng loại tạo ra những tiền tố prompt giống nhau đến từng byte, nên chúng nên cùng đọc một mục bộ nhớ đệm thay vì mỗi agent tự ghi mục riêng. Nhưng một mục chỉ trở nên đọc được sau khi yêu cầu đã ghi nó bắt đầu phản hồi, nên một đợt khởi chạy tỏa rộng cùng lúc sẽ khiến mọi agent con đều phải trả giá đắt cho một tiền tố mà tất cả cùng chia sẻ.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+Harness cho agent con đầu tiên của một hình dạng nhất định khởi chạy trước, rồi thả các anh em của nó ngay khi nó bắt đầu phát trực tiếp. Thời gian chờ là có giới hạn: một agent con đầu tiên chậm chạp chỉ khiến mất một lần trúng bộ nhớ đệm, chứ không bao giờ làm hỏng cả đợt tỏa rộng. Vì cùng lý do, mọi agent con đều nhận cùng một tập công cụ thường trú bất kể hồ sơ của nó — thay đổi theo từng hồ sơ sẽ chia cắt tiền tố dùng chung mà chẳng được lợi gì, bởi hồ sơ vốn đã quyết định agent con được gọi những gì.
 
-## Watching it work
+## Quan sát nó hoạt động
 
-Both halves are observable rather than assumed:
+Cả hai nửa đều quan sát được chứ không phải giả định:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **Trình khám phá ngữ cảnh** trên một cuộc hội thoại báo cáo các công cụ thường trú, chỉ mục bị trì hoãn và việc mỗi lược đồ bị giữ lại *sẽ* tốn bao nhiêu, được dựng từ đúng đường mã mà một lượt chạy thật dùng.
+- Mỗi lượt chạy ghi lại những công cụ bị trì hoãn mà nó đã nạp và điều gì đã kích hoạt việc đó, nên một tìm kiếm không ra kết quả sẽ hiện lên như một lần truy hồi trượt, thay vì biến mất vào một agent đang lặng lẽ làm một việc gì đó na ná.
+- Trang **Quan sát** báo cáo **Tỷ lệ cache** là số lần đọc từ bộ nhớ đệm trên toàn bộ token prompt đã xử lý, kể cả các lần ghi vào bộ nhớ đệm — một lượt chạy cứ mãi dựng lại tiền tố của mình sẽ đạt điểm thấp, thay vì được điểm như một lượt chạy chưa từng cần bộ nhớ đệm.

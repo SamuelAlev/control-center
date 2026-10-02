@@ -1,193 +1,220 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Configurer les politiques de bac à sable
+description: Ce qui limite l’exécution d’un agent, comment savoir si le bac à sable du système d’exploitation l’enveloppe et quels réglages de capacités le serveur lit réellement.
 slug: fr-CA/manuel/guides/politiques-de-bac-a-sable
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Le fait qu’une exécution d’agent soit isolée dans un bac à sable se décide sur le
+serveur, au démarrage (`--sandbox`). Le commutateur **Activer le bac à sable**,
+le sélecteur **Back-end** et les commutateurs **Capacités par défaut · nouvelles
+conversations** sous **Paramètres → Serveur → Diagnostics et confidentialité**
+sont des préférences stockées sur votre appareil. La détection d’hôte de la
+carte **Bac à sable** indique ce que l’hôte du serveur peut envelopper.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Deux réglages atteignent une exécution, et ce guide couvre les deux : les
+**Permissions du sandbox** propres à chaque agent, ci-dessous, et l’indicateur
+`--sandbox` du serveur lui-même.
 
-## What constrains an agent run
+## Ce qui limite l’exécution d’un agent
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Six éléments encadrent un agent. Le premier est le bac à sable du système
+d’exploitation, et c’est le seul qui soit conditionnel — les cinq autres tiennent
+sur tous les hôtes.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Frontière                                        | Ce qu’elle fait                                                                                                                                                                        |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le bac à sable du système d’exploitation         | Seatbelt sous macOS, bubblewrap sous Linux et WSL2. Enveloppe l’interface de ligne de commande Claude Code, les adaptateurs ACP et l’outil `bash` du harnais. **Absent sous Windows et sous Linux sans `bwrap` ni `socat`** |
+| Son propre arbre de travail                      | Chaque conversation obtient une copie de travail en copie sur écriture. La copie de travail d’origine est intégrée à l’exécution comme chemin en refus d’écriture, et c’est le bac à sable qui l’impose |
+| Identifiants délivrés par courtage               | Le courtier d’identifiants forge un environnement propre à chaque exécution à partir des capacités de l’agent et le révoque au démontage. Pas de capacité, pas de jeton dans l’environnement |
+| Garde-fous d’actions                             | Chaque outil modificateur déclare ses classes d’effet, et le garde-fou les résout avant l’exécution de l’appel. Un `prompt` sans approbateur connecté est refusé                        |
+| Assainissement de l’environnement                | ACP et l’outil `bash` du harnais reçoivent un environnement filtré. Claude Code par l’intermédiaire de `NoSandboxAdapter` hérite de l’environnement de l’hôte                            |
+| La surface d’outils du mode                      | Un mode en lecture seule retire carrément les outils qui modifient l’arbre de travail et épingle le verbe de sortie propre au mode pour qu’il puisse tout de même livrer              |
 
-Three things stay weaker than they look:
+Trois choses restent plus faibles qu’elles n’en ont l’air :
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Seul le **harnais intégré** applique la barrière d’outils, les contrats
+  d’achèvement et les règles structurelles de mode. L’adaptateur Claude Code, lui,
+  ne le fait pas. Claude Code en particulier est lancé avec
+  `--dangerously-skip-permissions`, parce qu’un `claude -p` non interactif
+  bloquerait autrement indéfiniment sur sa propre invite — les appels de lecture,
+  d’écriture, de modification et de bash de Claude ne sont donc ni vus ni
+  contrôlés par Control Center. Là où le bac à sable est actif, c’est lui qui
+  constitue la frontière autour d’eux.
+- Les outils de fichiers intraprocessus du harnais (read, write, edit, apply
+  patch, search, find, search_files) s’exécutent dans le processus du serveur, de
+  sorte qu’aucun profil de bac à sable ne les contraint. Seul l’outil `bash`
+  passe par le lanceur de commandes isolé. Ces outils sont bornés par leur propre
+  confinement des chemins, plus les garde-fous d’actions.
+- Sur un hôte dépourvu de backend, la première ligne ne s’applique pas du tout.
+  ACP et l’outil `bash` du harnais se rabattent sur l’assainissement de
+  l’environnement et la politique de commandes ; Claude Code hérite de
+  l’environnement de l’hôte par l’intermédiaire de `NoSandboxAdapter`. Le serveur
+  le signale dans son journal de démarrage. Vérifiez le vôtre ci-dessous.
 
-## Set an agent's capabilities
+## Définir les capacités d’un agent
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+C’est le seul réglage de capacités que le serveur lit. Il vaut par agent et
+détermine ce que le courtier d’identifiants place dans l’environnement de cet
+agent.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Allez dans **Paramètres → Espace de travail → Agents**
+2. Sélectionnez l’agent dans la liste
+3. Sous l’onglet **Paramètres**, faites défiler jusqu’à **Permissions du sandbox**
+4. Activez le commutateur — la légende de la ligne ne dit plus **Utiliser la
+   valeur par défaut de l’espace de travail**
+5. Réglez les quatre commutateurs :
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| Commutateur                          | Ce qu’il conditionne                                                                                                                                                                                                                             |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Autoriser git push**               | Lorsqu’il est désactivé, l’exécution reçoit `GIT_ASKPASS=/usr/bin/false` et `GIT_TERMINAL_PROMPT=0`, de sorte qu’une poussée ne peut pas demander d’identifiant                                                                   |
+| **Autoriser les appels API GitHub**  | Conjointement avec **Autoriser git push**, détermine si le courtier injecte le jeton GitHub sous `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                     |
+| **Autoriser les appels API de tickets** | Détermine si le courtier injecte `TICKETING_API_KEY`                                                                                                                                                                          |
+| **Autoriser l’accès réseau général** | Là où le bac à sable est actif, il s’agit d’une véritable barrière de sortie : lorsqu’il est désactivé, la liste d’autorisation de l’exécution est vide et chaque requête sortante est refusée au proxy. Là où il n’y a pas de backend, la capacité est consignée sur l’exécution, mais elle ne bloque rien de ce que fait un processus lancé |
 
-6. Save
+6. Enregistrez
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Point de contrôle : rouvrez l’agent et le commutateur est toujours activé avec
+vos réglages — un ensemble de capacités enregistré fait un aller-retour par le
+serveur, et un agent qui n’en a aucun revient à la valeur par défaut
+conservatrice (poussée désactivée, API GitHub désactivée, tickets désactivés,
+réseau activé).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Deux pièges]
+La légende affiche **Utiliser la valeur par défaut de l’espace de travail**, mais
+il n’existe aucun réglage de capacités à l’échelle de l’espace de travail que le
+serveur lit. Un agent dont le commutateur est désactivé obtient la valeur par
+défaut conservatrice intégrée.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Par ailleurs, l’identifiant GitHub de l’exécution est toujours celui du
+courtier — un jeton d’installation de GitHub App limité au dépôt, ou le repli sur
+le PAT d’environnement — jamais le jeton personnel stocké du membre à l’origine
+de la demande. `actingUserId` est transmis pour que le courtier puisse *retenir*
+le PAT du serveur d’un membre qui n’est pas propriétaire et qui n’a pas connecté
+GitHub ; il ne fusionne pas un jeton personnel par-dessus une capacité
+désactivée. Ne considérez pas **Autoriser les appels API GitHub** comme une
+frontière de sortie rigide sur un hôte sans bac à sable du système
+d’exploitation : un processus lancé peut tout de même atteindre le réseau.
 :::
 
-## Check whether your agent runs are sandboxed
+## Vérifier si vos exécutions d’agent passent par le bac à sable
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Deux éléments le déterminent, tous deux côté serveur : si l’hôte offre un backend
+et si `--sandbox` est activé. Vérifiez-les dans cet ordre.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Allez dans **Paramètres → Serveur → Diagnostics et confidentialité**
+2. Lisez la carte **Bac à sable**. Le fait **Hôte** désigne la machine sur
+   laquelle `cc_server` s’exécute, et non celle que vous consultez. Le champ
+   **Back-end** indique **Native sandbox** (Seatbelt sous macOS, bubblewrap sous
+   Linux et WSL2) ou **No isolation**. Le fait **En vigueur** correspond à la
+   préférence de cet appareil, et non à l’enveloppe que le serveur utilise
+   réellement.
+3. Lisez le journal de démarrage du serveur. Il affiche exactement l’une des
+   trois lignes suivantes :
+   - `agent sandbox ON` suivi de la note sur le backend — les exécutions sont
+     enveloppées
+   - `no OS-native agent sandbox on this host` suivi, s’il y en a un, d’un indice
+     d’installation — les exécutions ne sont pas enveloppées
+   - `agent sandbox DISABLED by --sandbox off` — une désactivation délibérée
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` ne signale pas l’état du bac à sable ; c’est donc le journal de
+démarrage qui fait foi.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Pour désactiver délibérément le bac à sable — un hôte où le profil se comporte
+mal est précisément la raison d’être de cette option — démarrez le serveur avec
+`--sandbox off`, ou définissez `CC_SERVER_SANDBOX=off`. La valeur par défaut est
+`on`, et `on` signifie « utiliser un backend si l’hôte en a un », jamais « en
+exiger un ».
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Deux situations n’obtiennent jamais d’enveloppe de bac à sable native. Sous
+**Windows**, la sonde native signale toujours que le bac à sable est
+indisponible et il n’y a rien à installer — le lancement d’agents utilise `none`.
+Le backend `microvm` est distinct (terminaux interactifs et rigs) et son
+activation dépend de la sonde sur son propre moteur d’exécution. Sous **Linux et
+WSL2**, `bwrap` et `socat` doivent tous deux se trouver dans le `PATH` ; sans
+eux, la sonde signale que le bac à sable est indisponible et nomme les paquets
+manquants.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+Sous Linux/WSL2 avec bubblewrap installé, les globs de fichiers secrets de la
+politique standard ne peuvent pas être appliqués aux fichiers qu’un agent crée
+par la suite. Une telle exécution native échoue désormais au lieu d’ignorer les
+règles en silence. Une sonde de démarrage positive ne garantit donc pas qu’un
+lancement sous Linux pourra démarrer. `--sandbox off` est une désactivation
+délibérée sans confinement, et non une frontière de sécurité de remplacement.
 
-## Know what a mode already forbids
+## Savoir ce qu’un mode interdit déjà
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Le mode est stocké par espace et alimente le résolveur de garde-fous comme
+couche **Préréglage du mode**. Trois des quatre modes sont en lecture seule, et
+un mode en lecture seule refuse d’emblée onze classes d’effet :
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Mode               | Arbre de travail | Refusé par le préréglage                                                                                                                                                         |
+| ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent** (`chat`) | Inscriptible     | Rien — les valeurs par défaut intégrées s’appliquent                                                                                                                             |
+| **Plan**           | Lecture seule    | Supprimer un fichier, écrire hors de l’arbre de travail, créer un commit, pousser, ouvrir une PR, publier ou fusionner, écrire dans un outil de suivi externe, installer un paquet, exécuter un processus, modifier la structure de l’espace de travail, démarrer ou piloter une enceinte |
+| **Review**         | Lecture seule    | Les mêmes onze. Non sélectionnable par l’utilisateur — le composeur n’offre que Agent, Plan et Orchestrate                                                                        |
+| **Orchestrate**    | Lecture seule    | Les mêmes onze                                                                                                                                                                   |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+L’accès réseau et l’accès aux secrets ne sont délibérément _pas_ refusés par un
+mode en lecture seule : la recherche est la raison d’être d’un tel mode.
 
-## Require approval before an action runs
+## Exiger une approbation avant l’exécution d’une action
 
-Approval is a guardrail decision, not a sandbox setting.
+L’approbation est une décision de garde-fou, et non un réglage du bac à sable.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Allez dans **Paramètres → Espace de travail → Autorisations des agents**
+2. Réglez la classe d’action sur **Demander d’abord** à la portée de l’espace de
+   travail, de l’agent ou de l’espace
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/fr-CA/manuel/guides/configurer-garde-fous/) for the full
-resolution order.
+Une décision **Demander d’abord** interrompt l’exécution et vous demande votre
+avis. Si aucun approbateur n’est connecté, elle échoue en mode fermé et l’action
+est refusée. Voir [Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/)
+pour l’ordre de résolution complet.
 
-## Troubleshooting
+## Dépannage
 
-### An agent cannot push and I never denied it
+### Un agent ne peut pas pousser et je n’ai jamais refusé quoi que ce soit
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Vérifiez les **Permissions du sandbox** de l’agent. Un agent sans ensemble de
+capacités personnalisé obtient la valeur par défaut conservatrice, où
+**Autoriser git push** est désactivé — le courtier n’injecte donc aucun jeton
+GitHub et git n’a aucun moyen de s’authentifier.
 
-### The Sandboxing card reports no native sandbox
+### La carte Bac à sable ne signale aucun bac à sable natif
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/fr-CA/manuel/guides/configurer-garde-fous/).
+Alors les exécutions d’agent sur cet hôte ne sont pas enveloppées par Seatbelt ou
+bubblewrap, et les frontières restantes sont tout ce qui vous protège. Sous Linux
+et WSL2, installez les deux outils manquants,
+`sudo apt-get install bubblewrap socat`, puis redémarrez le serveur ; le journal
+de démarrage devrait alors indiquer que le bac à sable est actif. Sous Windows,
+il n’y a aucun backend natif à installer ; resserrez plutôt les garde-fous :
+voir [Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/).
 
-### An agent reached a file outside its worktree
+### Un agent a atteint un fichier hors de son arbre de travail
 
-Which tool reached it decides whether this is expected.
+L’outil qui l’a atteint détermine si c’est normal.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Les outils de fichiers intraprocessus du harnais (read, write, edit, apply patch,
+search, find, search_files) s’exécutent dans le processus du serveur, de sorte
+qu’aucun profil de bac à sable ne s’y applique — leur limite est leur propre
+confinement des chemins, plus les garde-fous. Une commande `bash` ou l’interface
+de ligne de commande Claude Code _est_ enveloppée là où un backend existe, et vos
+copies de travail enregistrées sont en refus d’écriture à l’intérieur de cette
+enveloppe dans tous les modes, y compris sous leur forme résolue par lien
+symbolique (sous macOS, un chemin atteint par `/tmp` ou `/var/folders` se résout
+sous `/private`, et les deux graphies sont désormais refusées). Sur un hôte sans
+backend, rien de tout cela ne s’applique. Dans un cas comme dans l’autre, les
+garde-fous peuvent refuser catégoriquement **Écrire hors de l’arbre de travail**.
 
-## Related guides
+## Guides connexes
 
-- [Configure guardrails](/fr-CA/manuel/guides/configurer-garde-fous/)
-- [Create and configure an agent](/fr-CA/manuel/guides/creer-agent/)
-- [Diagnose an agent](/fr-CA/manuel/guides/diagnostiquer-agent/)
-- [Sandbox backends](/fr-CA/manuel/reference/backends-de-bac-a-sable/)
-- [cc_server CLI](/fr-CA/manuel/reference/cc-server-cli/): the `--sandbox` flag
+- [Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/)
+- [Créer et configurer un agent](/fr-CA/manuel/guides/creer-agent/)
+- [Diagnostiquer un agent](/fr-CA/manuel/guides/diagnostiquer-agent/)
+- [Backends de bac à sable](/fr-CA/manuel/reference/backends-de-bac-a-sable/)
+- [CLI cc_server](/fr-CA/manuel/reference/cc-server-cli/) : l’indicateur `--sandbox`
 
-## Related concepts
+## Concepts connexes
 
-- [Sandbox and security](/fr-CA/manuel/concepts/bac-a-sable-et-securite/)
+- [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/)
 - [Modes](/fr-CA/manuel/concepts/modes/)

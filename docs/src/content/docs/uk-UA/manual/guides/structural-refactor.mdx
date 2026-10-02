@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Рефакторити код структурно
+description: Дозвольте агенту знаходити й переписувати код за формою, а не за текстом, і перегляньте зміну, перш ніж вона потрапить на диск.
 slug: uk-UA/керівництво/практичні-посібники/структурний-рефакторинг
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+У цьому посібнику показано, як змусити агента виконати широку механічну зміну — codemod, масову міграцію API, патерн, якого ви хочете позбутися — за допомогою структурного пошуку й перезапису, причому зміну підготовлено для перегляду, перш ніж щось буде записано.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` зіставляє код за **формою**. `ast_edit` його переписує. `resolve` фіксує або відкидає.
 
-## Before you start
+## Перш ніж почати
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Структурні інструменти охоплюють мови, які розбирає граф коду: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB і Ada. Їм потрібні підготовлені граматики tree-sitter, а в готовій збірці вони завжди такі: відсутня граматика зупиняє сервер, а не погіршує пошук.
 
-## Find the shape first
+## Спершу знайдіть форму
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Ніколи не переписуйте те, чого не бачили. Попросіть агента виконати пошук:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Знайди кожне місце, де ми викликаємо `dispose()` у nullable, який щойно перевірили на null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Вивід — це `file:line` плюс зіставлений вихідний код для кожного місця.
 
-### What the pattern syntax buys you
+### Що дає синтаксис шаблону
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| Токен     | Зіставляє                                  |
+| --------- | ------------------------------------------ |
+| `$NAME`   | Будь-який окремий вузол, захоплений        |
+| `$$$NAME` | Будь-яка послідовність сусідів — аргументи, інструкції |
+| `$_`      | Будь-що, захоплене без імені               |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Найважливіше: **повторений `$NAME` має захопити той самий текст**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+знаходить захисну умову, яка звільняє саме те, що перевірила. Він **не** знаходить `if (a != null) b.dispose()` — а це зазвичай і є та помилка, яку ви шукали. Жоден текстовий пошук цього не виразить.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Він не зіставляє всередині рядка чи коментаря]
+Шаблон розбирають тією ж граматикою, що й файл, тож `dispose(x)`, написаний у doc-коментарі чи рядковому літералі, не є викликом і не зіставляється. Саме тому варто брати цей інструмент замість `grep`.
 :::
 
-### When the pattern finds nothing
+### Коли шаблон нічого не знаходить
 
-Two things to try, in order:
+Дві речі, які варто спробувати, у такому порядку:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Зробіть його меншим.** Спершу `foo($X)`, а вже потім `if (a) { foo($X); }`. Шаблон, який сам по собі не є коректним кодом, часто виявляється не тією конструкцією, яку ви мали на увазі.
+2. **Назвіть мову.** `language:` виводять лише тоді, коли `path` указує на один файл.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Шаблон, якого не приймає жоден контекст розбору, позначають як непридатний до розбору — інструмент каже про це прямо, а не повідомляє «збігів немає» для того, що ніколи не читалося так, як виглядає.
 
-## Rewrite, and look before it lands
+## Перепишіть — і подивіться, перш ніж зміна потрапить на диск
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Результат — це **пропозиція**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+На диску поки нічого немає. Прочитайте список, перевірте кілька місць, які повідомив пошук, і тоді:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+або
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Фіксація відбувається за принципом «усе або нічого»]
+Кожен файл звіряють із вмістом, зафіксованим у момент підготовки зміни. Якщо хоч один із них змінився — агент відредагував його вручну, пройшов форматувальник, прохід діагностики переписав його — **усю** зміну відхиляють і відкидають. Частково застосований структурний перезапис лишає дерево, яке не компілюється ні в старій формі, ні в новій.
 
-Re-run the tool against the current files; do not retry the stale id.
+Перезапустіть інструмент для поточних файлів; не повторюйте спробу із застарілим id.
 :::
 
-## Check your work with the compiler
+## Перевірте свою роботу компілятором
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Сенс робити це структурно в тому, що зміна широка. А широкі зміни — саме те місце, де правдоподібний на вигляд перезапис ламає тип. Попросіть діагностику після фіксації:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` запускає власний механізм перевірки проєкту (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`), а не запит до одного файлу — саме така форма питання доречна після зміни, що торкнулася сорока файлів.
 
-## Worked example: migrating a call
+## Розібраний приклад: міграція виклику
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Припустімо, `log(msg, level)` стає `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Погляньте на знайдені збіги. Якщо частина з них — *інший* `log` із двома аргументами, звузьте шаблон, обмеживши `path` каталогом, якому належить потрібний вам, а не намагайтеся виразити цю різницю в самому шаблоні.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Потім `resolve`, а потім `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Коли варто скористатися чимось іншим
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Ситуація                                        | Кращий інструмент                    |
+| ----------------------------------------------- | ------------------------------------ |
+| Перейменування символу                          | `lsp_rename` — він іде за посиланнями, а не за формами |
+| Пошук рядка, коментаря чи назви файлу           | `search` (вміст) / `search_files` (назви) |
+| «Що зламається, якщо я це зміню?»                | [Граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/) |
+| Мова, яку не покривають граматики               | `search` разом з `edit`              |
 
-## Related
+## Пов’язане
 
-- [Code intelligence](/uk-UA/керівництво/поняття/інтелект-коду/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/uk-UA/керівництво/довідка/інструменти-агента/) — the full argument list
-- [Search code with the code graph](/uk-UA/керівництво/практичні-посібники/пошук-коду/) — the symbol and impact side
+- [Інтелект коду](/uk-UA/керівництво/поняття/інтелект-коду/) — чому структурне зіставлення — це не regex із зайвими кроками
+- [Вбудовані інструменти агента](/uk-UA/керівництво/довідка/інструменти-агента/) — повний список аргументів
+- [Шукати код через граф коду](/uk-UA/керівництво/практичні-посібники/пошук-коду/) — символи та вплив

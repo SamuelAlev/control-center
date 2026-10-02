@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: چرخهٔ عمر اعزام عامل
+description: آنچه میان رسیدن یک پیام و بسته‌شدن گزارش اجرا رخ می‌دهد — مونتاژ پرامپت، worktree‌ها، هویت، آنچه یک اجرا را محدود می‌کند و اینکه نتیجه‌اش چگونه صادقانه ثبت می‌شود.
 slug: fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## اعزام چیست
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+اعزام، یک اجرا از یک عامل، در یک گفتگو و روی یک آداپتور است. همه‌چیزِ آن روی `cc_server` رخ می‌دهد: کلاینت پیامی می‌فرستد و سپس جریان رویدادهایی را که بازمی‌گردند تماشا می‌کند. هیچ مسیر اعزامی در هیچ کلاینتی وجود ندارد.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+عامل‌ها به شش دلیل بیدار می‌شوند و اجرا این دلایل را به‌صورت **بافت بیدارشدن** حمل می‌کند تا عامل بداند _چرا_ بیدار شده است:
 
-| Wake reason      | Trigger                                                      |
+| دلیل بیدارشدن   | محرک                                                       |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | کسی در یک فضا پیامی فرستاد، یا عامل را منشن کرد |
+| `assignment`     | یک تیکت به عامل واگذار شد                           |
+| `pipelineStep`   | یک گام پایپ‌لاین آن را اعزام کرد                                |
+| `childCompleted` | یک تیکت فرزند تمام شد                                      |
+| `followUp`       | یک ضربان پیگیری زمان‌بندی‌شده                              |
+| `recovery`       | مسیر بازیابی پس از یک شکست دوباره اعزام کرد              |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+بافت بیدارشدن شناسه‌هایی را که همراه دلیل‌اند حمل می‌کند — تیکت، فضا، پیام، اجرای پایپ‌لاین — و این‌ها در محیط و پرامپت عامل تزریق می‌شوند.
 
-## Prompt assembly
+## مونتاژ پرامپت
 
-The prompt is built in layers, each one a labelled section:
+پرامپت لایه‌به‌لایه ساخته می‌شود و هر لایه یک بخش برچسب‌دار است:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **هویت** — شناسهٔ خودِ عامل، نام و شناسهٔ فضای کاری، همراه با دستوری صریح برای سپردن همان UUIDها به ابزارهای محدود به فضای کاری. فضای کاری ذاتیِ عامل است، پس همیشه حاضر است.
+- **فهرست ابزارها و پروتکل‌های منابع**، سپس **چیدمان فضای کاری**.
+- **بازنویسی پرامپت سیستم**، اگر عامل یکی داشته باشد، سپس **شخصیت** (پارامتری‌شده بر اساس نقش) و **شرح مختصر تیم**.
+- **مهارت‌ها** — نام‌های روی عامل.
+- **قرارداد و رویهٔ اجرا** برای حالت جاری.
+- **بافت بیدارشدن** و **بافت منشن**: چه کسی عامل را فراخواند و فهرست حاضران گرد آن.
+- **بلوک حالت** — از نمایهٔ قابلیت‌های حالت _و فهرست ابزارهای مادی‌سازی‌شده‌اش_ تولید می‌شود، تا پرامپت هرگز ابزاری را نام نبرد که اجرا در واقع آن را ندارد.
+- **بافت حافظه** — واقعیت‌های بازیابی‌شده برای کار.
+- **بافت گفتگو** — تاریخچهٔ اخیر فضا، محدود به پنجرهٔ عین‌به‌عین 50,000 کاراکتری، بدون توجه به اندازهٔ بافت پیکربندی‌شدهٔ عامل. تاریخچهٔ قدیمی‌تر بریده نمی‌شود: عامل آن را به‌صورت درخواستی با `get_messages` بازیابی می‌کند و پیام‌های قدیمی‌ترِ مرتبط از نظر معنایی همچنان پدیدار می‌شوند.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[دستورات اسلش از متن خام کاربر تجزیه می‌شوند]
+پرامپت لایه‌ای با یک بلوک بافت آغاز می‌شود، پس با اسلش شروع نمی‌شود. دستورات عیناً از پیام کاربر تجزیه می‌شوند و سپس از انتهای پرامپت لایه‌ای بریده و بیرون کشیده می‌شوند تا هر لایهٔ بافت باقی بماند.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+دستورات میان دو جا تقسیم شده‌اند. `/todo` و `/compact` در جعبهٔ پیام رهگیری می‌شوند و عمداً هرگز به‌عنوان پیام ذخیره نمی‌شوند یا به عامل فرستاده نمی‌شوند — ذخیرهٔ `/compact` برش فشرده‌سازی را یک نوبت عقب می‌برد و رونوشت را آلوده می‌کند. `/plan` در هر دو جا رسیدگی می‌شود: جعبهٔ پیام حالت فضا را تغییر می‌دهد و همین است که سطح ابزار، پیش‌تنظیم گاردریل و پرامپت را برای این نوبت و هر نوبت پس از آن هماهنگ می‌کند. `/goal`، `/loop` و `/skill:<name>` درون خود اجرا و تنها روی هارنس داخلی رسیدگی می‌شوند — `/goal` و `/loop` کار خودمختار را با یک بودجهٔ هزینه آغاز می‌کنند، و نامی با پیشوند `skill:` به‌عنوان مهارتی جست‌وجو می‌شود که بدنهٔ `SKILL.md` آن به دستور این نوبت تبدیل می‌شود. همین فضای نام است که دو واژگان را از هم جدا نگه می‌دارد: تطبیق یک نام برهنه با مهارت‌ها باعث می‌شد مهارتی به نام `plan` یا `compact` برای همیشه زیر سایهٔ دستور توکار برود. یک نام برهنهٔ غیرتوکار همچنان تطبیق داده می‌شود، برای پیام‌هایی که پیش از وجود فضای نام نوشته شده‌اند. نامی که شناخته نشود صرفاً به‌عنوان متن ساده رد می‌شود.
 
-## Worktree provisioning
+## تأمین worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+پیش از آنکه چیزی اجرا شود، گفتگو ریشهٔ کاری خودش را می‌گیرد، با یک worktree جداگانه و copy-on-write به‌ازای هر مخزن در زیر آن. به‌طور پیش‌فرض این شامل هر مخزنی است که به فضای کاری پیوند خورده؛ یک فضای PR — یا فضایی که با یک انتخاب صریح ساخته شده است — تنها مخزن‌های مجاز را تأمین می‌کند و یک گفتگوی بازبینی PR تک‌مخزنش را به head ref مربوط به pull request سنجاق می‌کند، در حالی که بقیه روی شاخهٔ پیش‌فرض خود می‌مانند. checkout منبع هرگز تغییر نمی‌کند و کل پوشهٔ گفتگو هنگام حذف فضا پس گرفته می‌شود.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+copy-on-write **تنها** پیاده‌سازی است هر جا `rift` عرضه شود، که کتابخانهٔ native بسته‌بندی‌شده پشتیبان آن است. فایل‌سیستمی که نتواند reflink کند — یا پوشهٔ داده‌ای روی حجمی متفاوت از مخزن — تأمین را با شکست مواجه می‌کند، به‌جای آنکه عقب‌نشینی کند. `git worktree` بک‌اند روی Windows است، جایی که بک‌اند copy-on-write برای ساختن وجود ندارد، و روی میزبان‌های دیگر تنزلی خاموش نیست. نبودِ `rift` روی سکویی که آن را عرضه می‌کند یعنی نصبی خراب — سرور از راه‌اندازی سر باز می‌زند به‌جای آنکه بی‌صدا عقب‌نشینی کند، چون عقب‌نشینی خاموش، خرابی را برای همیشه پشت مسیری کندتر پنهان می‌کند.
 
-## Identity and credentials
+## هویت و اعتبارنامه‌ها
 
-Two identities are resolved per run, before any process launches.
+دو هویت به‌ازای هر اجرا و پیش از آنکه هر فرایندی راه‌اندازی شود تعیین می‌شوند.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**مؤلف‌بودن Git.** کامیت‌هایی که عامل می‌سازد _به نام خودِ عامل_ مؤلف می‌شوند — `<Name> (agent) <agentId@agents.control-center.local>` در هر دو `GIT_AUTHOR_*` و `GIT_COMMITTER_*` — و هرگز جعل هویت یک انسان نمی‌کنند. بخش محلی همان UUID عامل است، نه slug نامش. انسان درخواست‌کننده با یک trailer از نوع `Co-Authored-By:` اعتبار می‌گیرد که در محیط حمل می‌شود و در پرامپت سیستم به آن دستور داده می‌شود. هویتی که فراخوان به‌صراحت تعیین کرده باشد همیشه بر هر دو پیروز می‌شود.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**هویت میزبان کد.** اعتبارنامهٔ GitHub اجرا همیشه فقط از آنِ کارگزار است — یک توکن نصب App محدود به مخزن، یا fallback مربوط به PAT محیطی آن — و هرگز توکن ذخیره‌شدهٔ خودِ عضو درخواست‌کننده نیست. `actingUserId` بازهٔ fallback مربوط به PAT را محدود می‌کند تا عضوی که مالک سرور نیست دامنهٔ سرور را به ارث نبرد؛ اما یک توکن شخصی را روی محیط عامل نمی‌گذارد.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**اعتبارنامه‌های ارائه‌دهندهٔ مدل** به ترتیبی ثابت تعیین می‌شوند و این ترتیب مهم است:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. یک بازنویسی محیطی به‌ازای هر آداپتور،
+2. محیط فراخوان،
+3. مخزن اعتبارنامهٔ سرور (با تازه‌سازی توکن OAuth اگر نزدیک انقضا باشد)،
+4. محیط فرایند.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+چون بازنویسی هر آداپتور اول می‌آید، بی‌صدا بر حساب ارائه‌دهنده‌ای که در برنامه متصل شده چیره می‌شود. اگر اجرایی به حساب اشتباه صورت‌حساب می‌شود، همان بازنویسی نخستین جایی است که باید نگاه کنید. اعتبارنامه‌های ارائه‌دهنده در سطح میزبان‌اند — میان همهٔ فضاهای کاری روی این نصب مشترک‌اند.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/).
+توکن‌های مشروط به قابلیت (GitHub، تیکتینگ) از کارگزار اعتبارنامه می‌آیند که تنها همان چیزی را تزریق می‌کند که قابلیت‌های اجرا اجازه می‌دهند. به [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) رجوع کنید.
 
-## Launch
+## راه‌اندازی
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+اجرا با worktree خودش به‌عنوان پوشهٔ کاری راه‌اندازی می‌شود و — برای Claude Code — با یک پیکربندی MCP تولیدشده تا عامل بتواند به سطح ابزار Control Center برسد. ACP و `bash` هارنس محیطی پاک‌سازی‌شده می‌گیرند؛ Claude Code از مسیر `NoSandboxAdapter` محیط میزبان را به ارث می‌برد.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[سندباکس سیستم‌عامل فقط جایی اجرا را می‌پیچد که میزبان بک‌اند داشته باشد]
+`cc_server` میزبان را یک‌بار هنگام راه‌اندازی بررسی می‌کند و هرگاه بک‌اندی موجود باشد، فرایندهای عامل را درون آن می‌پیچد — Seatbelt روی macOS، bubblewrap روی Linux و WSL2. هر دو درزِ اعزام پیچیده می‌شوند، چون یکی مشترک ندارند: CLI مربوط به Claude Code از درگاه سندباکس می‌گذرد؛ آداپتورهای ACP و ابزار `bash` هارنس داخلی از مدیر سندباکس می‌گذرند. همین نیز چیزی است که مسیرهای محافظت‌شدهٔ اجرا را اعمال می‌کند: checkout‌های ثبت‌شدهٔ مخزن شما درون سندباکس نوشته‌ممنوع‌اند، در همهٔ حالت‌ها.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+جایی که بک‌اندی نیست، اجرا سندباکس **نمی‌شود** و چیز دیگری برای جبران تغییر نمی‌کند. یعنی همیشه Windows (بدون پیچش native — `microvm` مسیری جداگانه و مشروط به بررسی برای ترمینال‌ها و ریگ‌هاست) و Linux یا WSL2 بدون `bwrap` و `socat` روی `PATH`. سرور در خط گزارش راه‌اندازی‌اش نام همان حالتی را که در آن است می‌آورد و `--sandbox off` آگاهانه از آن صرف‌نظر می‌کند.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+حتی وقتی سندباکس روشن است، دو شکاف از آن جان سالم به در می‌برند. ابزارهای فایلی درون‌فرایندی هارنس (read، write، edit، apply patch، search، find، search_files) درون فرایند سرور اجرا می‌شوند، پس هیچ نمایه‌ای آن‌ها را محدود نمی‌کند — مرزشان حبس مسیر خودشان به‌علاوهٔ گاردریل‌هاست. و Claude Code با `--dangerously-skip-permissions` راه‌اندازی می‌شود، پس فراخوانی‌های فایل و پوستهٔ خودش توسط Control Center دروازه‌بانی نمی‌شوند؛ سندباکس سیستم‌عامل مرز پیرامون آن‌هاست.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+مرزهای باقی‌مانده روی هر میزبانی برقرارند، با سندباکس یا بی‌آن: worktree خودِ اجرا (copy-on-write هر جا `rift` عرضه شود؛ `git worktree` روی Windows)، اعتبارنامه‌های مشروط به قابلیت که به‌ازای هر راه‌اندازی کارگزاری و هنگام برچیدن ابطال می‌شوند، گاردریل‌های یکپارچهٔ کنش (در خطا بسته می‌شود — تصمیم `prompt` بدون اتصال هیچ تأییدکننده‌ای رد می‌شود) و سطح ابزاری که حالت گفتگو اجازه می‌دهد. ACP و `bash` هارنس همچنان محیط را پاک‌سازی می‌کنند؛ Claude Code از مسیر `NoSandboxAdapter` محیط میزبان را به ارث می‌برد.
 :::
 
-## Streaming
+## جریان‌دهی
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+اجرا یک توالی رویدادِ نوع‌دار را بازمی‌گرداند؛ پردازشگر جریان آن را به‌صورت دلتاهای پیام ذخیره می‌کند، در قطعه‌های رونوشت می‌تاکند و به رویدادهای پیام‌رسانی تبدیل می‌کند:
 
-| Event              | What it carries                                                                                                  |
+| رویداد              | آنچه حمل می‌کند                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | خروجی استدلال، که درون‌خط رندر می‌شود                                                                                |
+| `text`             | خروجی دیدنی                                                                                                   |
+| `toolCall`         | یک فراخوانی ابزار، با شناسه و آرگومان‌های ساخت‌یافته‌اش                                                          |
+| `toolResult`       | نتیجهٔ متناظر، علامت‌خورده وقتی که خطا داده باشد یا جریانی ناقص باشد                                              |
+| `usage`            | شمارش توکن‌ها و هزینه برای یک پنجرهٔ اندازه‌گیری                                                                   |
+| `error`            | یک خطا، همراه با کد ساخت‌یافتهٔ آداپتور وقتی آن را گزارش کرده باشد                                                |
+| `sandboxViolation` | سیستم‌عامل یک فراخوان سیستمی را رد کرد. تنها جایی منتشر می‌شود که سندباکسی واقعاً فرایند را می‌پیچد — یادداشت بالا را ببینید |
+| `debug`            | عیب‌یابی زمان اجرا (نشانگرهای راه‌اندازی، تصمیم‌های گاردریل، تلنگرهای قرارداد)                                           |
+| `done`             | اجرا تمام شد                                                                                                 |
 
-## What bounds a run
+## چه چیزی یک اجرا را محدود می‌کند
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+عمداً **هیچ سقف نوبتی در هیچ جا** وجود ندارد. یک شمارش تکرار سخت، کار طولانی مشروع (مهاجرت‌ها، پاک‌سازی پس از انشعاب) را از پا درمی‌آورد و چیزی را نمی‌گیرد که گاردریل‌های پایین زودتر نمی‌گیرند. یک اجرا پایان می‌یابد وقتی:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **مدل خودش متوقف می‌شود**؛
+- **یک انسان آن را متوقف می‌کند**، یا گفتگو را تصاحب می‌کند (که هارنس داخلی را در نخستین مرز نوبتِ تمیز متوقف می‌کند — اجرای Claude Code که مرز ایمنی ندارد، به‌جای آن متوقف می‌شود)؛
+- **نگهبان سکوت فعال می‌شود.** تا آستانه خروجی‌ای نمی‌آید و نشست با شکست `silentRun` پایان داده می‌شود. پیش‌فرض 15 دقیقه است و در حالت‌های عمدتاً خواندنی (بازبینی و برنامه) به 10 کاهش می‌یابد؛ عامل می‌تواند آن را میان 1 و 240 دقیقه بازنویسی کند. نگهبان وقتی مسلح می‌شود که یک فرایند فرزند PID خود را گزارش دهد، پس CLI مربوط به Claude Code را پوشش می‌دهد — **نه** هارنس داخلی را، که چیزی نمی‌سازد؛
+- **سقف هزینه به کار می‌افتد** — اما فقط برای دستورات خودمختار.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+گاردریل حلقهٔ مرگ پایان‌دهنده نیست: سه فراخوانی ابزار یکسان پشت سر هم، و حلقه عامل را _هدایت_ می‌کند تا رویکردش را تغییر دهد.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[یک نوبت عادی سقف هزینه ندارد]
+گاردریل هزینهٔ درون‌نشست فقط برای `/goal` و `/loop` سیم‌کشی شده است؛ هر اجرای دیگر هیچ بودجه‌ای نمی‌فرستد. برای آن دستورات، یک بخش بی‌سرپرست به‌طور پیش‌فرض ممکن است 500 سنت ($5.00) بسوزاند، با یک هدایت نرم در 80% که از عامل می‌خواهد پیش از ایست سخت کار را تمیز جمع کند، و یک بودجهٔ پایدار هدف به اندازهٔ 5000 سنت ($50.00) در سراسر بخش‌ها. یک `/goal --budget` صریح هرگز با یک بخش کامل از حد فراتر نمی‌رود.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+روی هم رفته، یک نوبت تعاملی معمولی روی هارنس داخلی نه سقف نوبت دارد، نه سقف هزینه و نه نگهبان سکوت. وقتی مدل متوقف شود یا شما متوقفش کنید پایان می‌یابد. این معامله‌ای آگاهانه است — چون گزینه‌های دیگر همه کار طولانی مشروع را از پا درمی‌آورند — اما یعنی یک اجرای تعاملی بی‌سرپرست با چیزی جز قضاوت خودِ مدل محدود نمی‌شود.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+در میانهٔ اجرا، پیامی که به عامل در حال اجرا فرستاده شود به‌عنوان **هدایت** در صف می‌نشیند و در مرز نوبت بعدی تخلیه می‌شود، پس می‌توانید اجرا را بدون کشتنش به‌آرامی هدایت کنید. هدایت، مکث، زیرعامل‌ها و قرارداد تکمیل ویژگی‌های هارنس داخلی‌اند؛ Claude Code هیچ‌یک از آن‌ها را ندارد.
 
-## How a run is recorded
+## یک اجرا چگونه ثبت می‌شود
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+هر اعزام یک `AgentRunLog` می‌نویسد: زمان شروع و پایان، خلاصه، شمارش توکن‌ها و هزینهٔ تخمینی (شامل هزینهٔ تجمیع‌شده از زیرعامل‌ها)، آداپتور و مدل، شناسهٔ فرایند و مسیر گزارش، گفتگو و هر تیکت یا اجرای پایپ‌لاینی که به آن تعلق دارد، به‌علاوه دو فیلد طبقه‌بندی که بیشترِ حقیقت را حمل می‌کنند.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **وضعیت** درشت است: `pending`، `running`، `completed`، `error`.
+- **زنده‌مانی** خوانش ریزتر است: `alive`، `productive`، `completed`، `blocked`، `empty`، `looping`، `failed`، `stalled`، `dead`.
+- **خانوادهٔ خطا** شکست‌ها را به‌شکلی سودمند گروه‌بندی می‌کند: `transientUpstream`، `sandboxInfrastructure`، `budgetExceeded`، `processLost`، `silentRun`، `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` به معنای «تحویل‌شده» نیست]
+وقتی اجرایی بدون خروجیِ موردنیازِ حالتش پایان می‌یابد — اجرایی در حالت برنامه که هرگز `submit_plan` را صدا نزده، یا اجرایی در حالت ارکستر که هرگز پیشنهادی نداده — وضعیت `completed` می‌ماند، چون فرایند به‌راستی تمیز خارج شده است. نشانهٔ صادقانه روی زنده‌مانی (`empty`)، خانوادهٔ خطا (`silentRun`) و خلاصه‌ای سوار است که دقیقاً می‌گوید چه چیزی تولید نشد. آن خلاصه محفوظ است: نهایی‌سازی آن را با آخرین پرحرفی‌های مدل بازنویسی نمی‌کند.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+این آگاهانه است. برگرداندن وضعیت، ماشین‌های حالت تیکت و پایپ‌لاین را که هیچ ربطی به خروجی غایب ندارند جابه‌جا می‌کند. همچنین یعنی «وضعیت: completed» به‌تنهایی هرگز برای نتیجه‌گرفتن از موفقیت یک اجرا کافی نیست — خلاصه را بخوانید.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+بستن اجرا `AgentRunCompleted` را منتشر می‌کند و چیزهای زیادی به آن آویزان‌اند: فریم اعلان و ورودی پایدار خوراکش، فرستندهٔ زنده‌ای که آن را به کلاینت‌های متصل می‌راند، تجمیع هزینهٔ پایپ‌لاین، ازسرگیری گامی از پایپ‌لاین که منتظر اجرا بود، کامل‌کردن تیکت پشتیبان، نگاشت یک ارکستراسیون به یک حالت پایانی، تصمیم ادامه-یا-توقفِ سرپرست هدف، نقش بررسی‌کننده و ارزیابی بودجهٔ پس از اجرا. فهرست حضور جداگانه دنبال می‌شود، با تماشای گزارش‌های اجرای اخیر به‌جای رویداد.
 
-## Budgets, after the fact
+## بودجه‌ها، پس از وقوع
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+اجرای بودجه یک _واکنش_ است، نه یک دروازه. وقتی اجرایی کامل می‌شود، ارزیاب هزینهٔ عامل را از ابتدای ماه با سقف مؤثرش مقایسه می‌کند (یک سیاست بودجهٔ پیوندخورده اگر وجود داشته باشد، وگرنه رقم ماهانهٔ خود عامل؛ صفر یعنی بی‌انتها). عبور از آستانهٔ نرم یک رخداد هشدار ثبت می‌کند؛ تمام‌کردن بودجه یک رخداد سخت ثبت می‌کند و وضعیت چرخهٔ عمر عامل را روی نمودار سازمانی به `paused` برمی‌گرداند. اعزام همچنان کار را از آن عامل می‌پذیرد. یک تریگر پایپ‌لاین از نوع `BudgetThresholdCrossed` می‌تواند کار پیگیری را از همان رویداد آغاز کند.
 
-## Retry lineage
+## تبار تلاش دوباره
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+هر گزارش اجرا می‌تواند تبار تلاش دوباره را حمل کند — شناسهٔ اجرای والد، یک شمارندهٔ تلاش و خلاصهٔ ادامه. درخت اجرای گفتگو شمارهٔ تلاش را وقتی غیرصفر باشد رندر می‌کند. یک «دوباره تلاش کن» از گفتگو، اعزامی تازه با گزارشی نو است.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): what the adapter can and cannot enforce
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/): where the tool surface and the completion contract come from
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): the effect-class policy every gated call passes
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): the isolation story in full
-- [Multiplayer](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): steering, take-over and the autonomy dial
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): what `AgentRunCompleted` sets off
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): آنچه آداپتور می‌تواند و نمی‌تواند اعمال کند
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/): سطح ابزار و قرارداد تکمیل از کجا می‌آیند
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): سیاست ردهٔ اثر که هر فراخوانی دروازه‌بندی‌شده از آن می‌گذرد
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/): روایت ایزوله‌سازی، کامل
+- [چندنفره(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): هدایت، تصاحب و شماره‌گیر خودمختاری
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): `AgentRunCompleted` چه چیزی را به راه می‌اندازد

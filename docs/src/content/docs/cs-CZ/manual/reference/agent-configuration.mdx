@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Konfigurace agentů
+description: Každé pole entity agenta a enumy, které používá.
 slug: cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/).
+Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kterými pracuje. Jak agenta v aplikaci krok za krokem založit nebo upravit, popisuje [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/).
 
-## Agent entity fields
+## Pole entity agenta
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Pole                    | Typ                    | Povinné | Popis                                                                                                                                                                      |
+| ----------------------- | ---------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Ano     | Jedinečný identifikátor agenta                                                                                                                                             |
+| `name`                  | `String`               | Ano     | Krátký identifikátor pro zmínky @                                                                                                                                          |
+| `title`                 | `String`               | Ano     | Lidsky čitelný název pozice                                                                                                                                                |
+| `agentMdPath`           | `String`               | Ano     | Absolutní cesta k definičnímu souboru `.md` agenta                                                                                                                         |
+| `workspaceId`           | `String`               | Ano     | Vlastnící pracovní prostor (není null)                                                                                                                                     |
+| `reportsTo`             | `String?`              | Ne      | Id nadřízeného agenta                                                                                                                                                      |
+| `skills`                | `AgentSkills`          | Ano     | Množina identifikátorů skillů                                                                                                                                              |
+| `persona`               | `String?`              | Ne      | Volný text s pokyny k chování                                                                                                                                              |
+| `systemPrompt`          | `String?`              | Ne      | Přepis výchozího systémového promptu                                                                                                                                       |
+| `adapterId`             | `String?`              | Ne      | Id inferenčního adaptéru                                                                                                                                                   |
+| `modelId`               | `String?`              | Ne      | Id modelu v rámci adaptéru                                                                                                                                                 |
+| `strictMode`            | `bool`                 | Ne      | Výchozí `false`. Zapisuje se do řádku i do `AGENTS.md` agenta                                                                                                              |
+| `effort`                | `String?`              | Ne      | Id úrovně uvažování (např. `'low'`, `'xhigh'`), brané z `thinkingLevels` vybraného modelu                                                                                  |
+| `contextSize`           | `int?`                 | Ne      | Maximální velikost kontextového okna                                                                                                                                       |
+| `role`                  | `AgentRole?`           | Ne      | Role agenta                                                                                                                                                                |
+| `capabilities`          | `AgentCapabilities?`   | Ne      | Výchozí schopnosti agenta; při null platí při odeslání výchozí stav uživatele a konverzace ho pořád může přepsat                                                           |
+| `monthlyBudgetCents`    | `int`                  | Ne      | Měsíční strop útraty v centech (výchozí `0`, bez omezení)                                                                                                                  |
+| `silenceTimeoutMinutes` | `int?`                 | Ne      | Přepis timeoutu ticha v minutách; musí být null, nebo v rozsahu 1–240 (kontrola v konstruktoru)                                                                           |
+| `maxConcurrentTasks`    | `int`                  | Ne      | Výchozí `1`. Kapacita, kterou hlásí model přítomnosti (počty běžících a čekajících běhů se s ní porovnávají)                                                               |
+| `visibility`            | `AgentVisibility`      | Ne      | Výchozí `workspace`                                                                                                                                                        |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Ne      | Stav správy (výchozí `active`). Zapisuje ho tvrdé zastavení rozpočtu a zobrazuje se v organizačním schématu i na soupisce přítomnosti. Odeslání od agenta ve stavu `paused` práci pořád bere |
+| `budgetPolicyId`        | `String?`              | Ne      | Id sdílené politiky rozpočtu; při null platí přímo `monthlyBudgetCents`                                                                                                    |
+| `runtimeProfileId`      | `String?`              | Ne      | Id vlastního profilu běhu                                                                                                                                                  |
+| `createdAt`             | `DateTime`             | Ano     | Časové razítko vytvoření                                                                                                                                                   |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name` i `title` musí být neprázdné (kontrola v konstruktoru). Výchozí
+`monthlyBudgetCents` s hodnotou `0` znamená bez omezení. Strop se zapisuje přes `agents.upsert`.
 
-## AgentRole enum
+## Enum AgentRole
 
-| Role       | Label    | Description                      |
+| Role       | Popisek  | Popis                            |
 | ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| `ceo`      | CEO      | Koordinace a delegování          |
+| `coder`    | Coder    | Implementace kódu                |
+| `reviewer` | Reviewer | Revize PR a analýza              |
+| `qa`       | QA       | Testování a zajištění kvality    |
+| `designer` | Designer | Implementace UI/UX               |
+| `security` | Security | Bezpečnostní revize a audit      |
+| `devops`   | DevOps   | Infrastruktura a nasazení        |
+| `pm`       | PM       | Řízení produktu                  |
+| `general`  | General  | Flexibilní, víceúčelová          |
 
-## AgentVisibility enum
+## Enum AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Hodnota     | Popis                                                          |
+| ----------- | -------------------------------------------------------------- |
+| `workspace` | Výchozí hodnota; neznámá i null hodnota z úložiště se na ni parsuje |
+| `private`   | Soukromé pro uživatele, který agenta vytvořil                  |
 
-## AgentLifecycleStatus enum
+## Enum AgentLifecycleStatus
 
-| Value      | Description                                                                           |
+| Hodnota    | Popis                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| `active`   | Výchozí stav. `isDispatchable` je true jen pro tuhle hodnotu                          |
+| `paused`   | Nastavuje ho tvrdé zastavení rozpočtu. Vidět je na soupisce přítomnosti; odeslání práci pořád bere |
+| `archived` | Vyřazený a skrytý z aktivních soupisek                                                |
 
-## AgentCapabilities flags
+## Příznaky AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Vyhodnocuje se při každém odeslání: výchozí stav agenta, při null výchozí stav na úrovni uživatele a nad tím přepis dané konverzace. Vynucení je nepřítomností. Broker přihlašovacích údajů prostě nevystaví ani nevloží to, co vypnutá schopnost pokrývá.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Příznak            | Typ    | Výchozí | Popis                                                                                        |
+| ------------------ | ------ | ------- | -------------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false` | Push commitů na remote; spolu s `canCallGitHubApi` řídí vložení tokenu GitHub                |
+| `canCallGitHubApi` | `bool` | `false` | Volání api.github.com; řídí vložení `GH_TOKEN` a odchozí domény GitHub                       |
+| `canCallTicketing` | `bool` | `false` | Volání API poskytovatele ticketů; řídí vložení API klíče poskytovatele a jeho odchozí domény |
+| `canAccessNetwork` | `bool` | `true`  | Libovolný odchozí provoz. Řídí také nástroje harnessu `web_fetch` a `web_search`             |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault` jsou všechny čtyři výchozí hodnoty konstruktoru. `legacyDefault` (všechny čtyři true) používá jen migrace, která zpětně doplnila konverzace založené před zavedením schopností. Poškozený nebo prázdný uložený blob se parsuje na `safeDefault`; starý klíč `canCallLinear` se čte jako `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Neměnná množina identifikátorů skillů bez rozlišení velikosti písmen. Při odeslání se tyhle slugy synchronizují jako odkazy na skilly v overlay agenta a harness pak do promptu automaticky načte frontmatter nalinkovaných skillů.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (odvozený)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Neukládá se. Sedm hodnot. Pořadí deklarace je pořadí priority (`sortPriority`, zafixované testem) a podle něj se řadí soupiska:
 
-| State       | `sortPriority` | Condition                                                                                                           |
+| Stav        | `sortPriority` | Podmínka                                                                                                            |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| `running`   | 0              | Libovolný záznam běhu má stav `running`                                                                             |
+| `blocked`   | 1              | Liveness posledního běhu je `blocked`, `stalled` nebo `looping`                                                     |
+| `failed`    | 2              | Stav posledního běhu je `error`, nebo je jeho liveness `failed` či `dead`                                           |
+| `queued`    | 3              | Běh je odeslaný, ale ještě neběží: čeká za jiným během téhož agenta, nebo je zapsaný a ještě se nespustil           |
+| `succeeded` | 4              | Běh úspěšně skončil                                                                                                 |
+| `idle`      | 5              | Agent už dřív běžel a nic nemá rozběhnuté                                                                           |
+| `neverRun`  | 6              | Neexistuje žádný záznam běhu                                                                                        |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued` a `succeeded` platí **jen pro jeden běh**. `deriveAgentLiveState`, které pro agenta počítá stav soupisky, ani jedno z nich nikdy nevrátí: vrací `neverRun`, `running`, `failed`, `blocked` nebo `idle`.
 
-## See also
+## Viz také
 
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/)
-- [Agent dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/)
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)

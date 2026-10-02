@@ -1,193 +1,200 @@
 ---
 title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+description: ہیڈلیس سرور کے تمام فلیگز، ماحول کے ویری ایبلز، ذیلی کمانڈز اور ڈیٹا ڈائر کے پاتھز۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+پروسیس کا ہر فلیگ یا تو CLI فلیگ سے آتا ہے یا ماحول کے ویری ایبل سے؛ پہلے فلیگ کا
+اختیار چلتا ہے، پھر ماحول کا، پھر ڈیفالٹ کا۔ فریقِ ثالث کی اسناد اس کا استثنا ہیں —
+نیچے دیکھیں۔
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[نامعلوم فلیگز خاموشی سے نظر انداز ہو جاتے ہیں]
+آرگیومنٹ پارسر ہاتھ سے بنا ہے اور جو چیز وہ نہ پہچانے اُسے چھوڑ دیتا ہے، چنانچہ کوئی ٹائپو
+(`--tls-key-file`، `--bindany`) کوئی خرابی پیدا نہیں کرتا — سرور محض ڈیفالٹ کے ساتھ
+شروع ہو جاتا ہے۔ جب کوئی فلیگ بے اثر لگے تو اسٹارٹ اپ لاگ کی لائنیں دیکھیں۔
 :::
 
-## Core
+## بنیادی
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| فلیگ            | ماحول                 | ڈیفالٹ                                           | مطلب                                                                                                           |
 | --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | OS کا فی صارف ایپلیکیشن-ڈیٹا ڈائر (نیچے دیکھیں)  | ڈیٹا بیسز، سیکرٹس، ماڈلز اور کیش شدہ میڈیا                                                                     |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP پورٹ (`0` = عارضی)                                                                                         |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`، یا ہر انٹرفیس کے لیے `any`/`all`/`0.0.0.0` (TLS یا `--insecure` درکار)                              |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | سرور صارف کی ہوم ڈائریکٹری                       | کوما سے الگ بیس ڈائریکٹریاں جنہیں کلائنٹ ریپو رجسٹر کرتے وقت براؤز کر سکتا ہے۔ کسی روٹ سے اوپر براؤز کرنے سے انکار ہوتا ہے |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`، `info`، `warning` یا `error`۔ بوٹ ہونے/تیار ہونے کی لائنیں ہمیشہ پرنٹ ہوتی ہیں                        |
+| `--server-name` | `CC_SERVER_NAME`       | مشین کا ہوسٹ نیم                                  | وہ نام جو پکرز، دریافت اور پیئرنگ کی سطحوں میں دکھایا جاتا ہے                                                  |
 
-## Reachability and TLS
+## رسائی اور TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
+| فلیگ                | ماحول                       | ڈیفالٹ                       | مطلب                                                                                                                                                          |
 | ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | غیر سیٹ                       | PEM سرٹیفکیٹ چین۔ کلید کے ساتھ مل کر سیٹ ہونے پر پروسیس کے اندر `wss://` پیش کرتا ہے                                                                          |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | غیر سیٹ                       | سرٹ کے مطابق PEM پرائیویٹ کلید                                                                                                                                |
+| `--insecure`        | `CC_SERVER_INSECURE`        | بند                           | غیر لوپ بیک پلین ٹیکسٹ بائنڈ کی اجازت دیں۔ صرف قابلِ اعتماد نیٹ ورک پر TLS ختم کرنے والے پراکسی کے پیچھے؛ TLS کنفیگر ہونے پر نظر انداز ہو جاتا ہے              |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | بائنڈ سے اخذ شدہ              | وہ RPC URL جو یہ سرور پیئر شدہ کلائنٹس کو بتاتا ہے۔ **پراکسی، NAT یا ٹنل کے پیچھے اسے واضح طور پر سیٹ کریں** — ڈیفالٹ مقامی بائنڈ کا محض ایک اندازہ ہے          |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | کوما سے الگ براؤزر اوریجنز جنہیں کراس اوریجن `/rpc` ڈائل کرنے کی اجازت ہے۔ لوپ بیک اور نیٹو کلائنٹس کو ہمیشہ اجازت ہوتی ہے                                     |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | غیر سیٹ                       | میزبان ویب کلائنٹ کا اوریجن جہاں سنگل سائن اَن کے کال بیک واپس آتے ہیں                                                                                         |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | وہ ریلے بروکر جس سے یہ سرور جڑتا ہے تاکہ کوئی فون بغیر کسی براہِ راست راستے کے اس تک پہنچ سکے                                                                    |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN اعلان: `auto` (صرف اُس وقت جب لوپ بیک سے آگے بائنڈ ہو)، `on`، `off`۔ دریافت صرف موجودگی کا اعلان کرتی ہے — جڑنے کے لیے پھر بھی پیئرنگ درکار ہے                |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | بند                           | منظم ٹنل فراہم کنندہ: `off`، `cloudflared`، `ngrok`، `tailscale`۔ عوامی نمائش اختیاری ہے                                                                       |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | `PATH` سے حل شدہ              | ٹنل بائنری کی واضح پاتھ                                                                                                                                       |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | غیر سیٹ                       | اُس بائنری کا متوقع SHA-256، جو ہر اسپان سے پہلے تصدیق ہوتا ہے                                                                                                 |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | خالی                          | ٹنل کی درخواست کے لیے کوما سے الگ اضافی آرگیومنٹس                                                                                                              |
 
-## Indexing and third-party credentials
+## انڈیکسنگ اور فریقِ ثالث کی اسناد
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
-| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| فلیگ                     | ماحول                           | ڈیفالٹ                                | مطلب                                                                                                                          |
+| ------------------------ | ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | کہ ایجنٹ رنز میزبان کے OS نیٹو سینڈ باکس میں لپیٹے جائیں یا نہیں، جب کوئی دستیاب ہو۔ یہ آپٹ آؤٹ ہے، آپٹ اِن نہیں — نیچے دیکھیں |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | بیک گراؤنڈ کوڈ گراف انڈیکسنگ کے لیے فیلڈ بندش سوئچ۔ `off` بغیر دوبارہ بلڈ صاف بوٹ ہوتا ہے                                      |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | تیار بینر کے بعد پہلی انڈیکس جھاڑو روکنے کے سیکنڈ (0–300 تک محدود)                                                             |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | کہ ہارنس رنز ایک چھوٹا ریذیڈنٹ ٹول سیٹ کے ساتھ نام کا انڈیکس بھیجیں، اور باقی پہلی استعمال پر لوڈ ہوں۔ نیچے دیکھیں              |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | وہ سیکنڈ جن تک کوئی رن ایسے کریڈنشل کے درست ہونے کے انتظار میں پارک رہتا ہے جو اُس کی خدمت نہیں کر سکتا (0–3600 تک محدود)۔ نیچے دیکھیں |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+کسی کریڈنشل کی خالی قدر غیر سیٹ سمجھی جاتی ہے، چنانچہ بلٹ اِن فال بیک پھر بھی لاگو رہتا
+ہے۔ سورس سے بنے بلڈ میں کوئی بلٹ اِن کریڈنشل بالکل نہیں ہوتا۔
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar اور Klipy GIF picker **صرف ماحول سے** چلتے ہیں — کوئی
+`--google-client-id` / `--klipy-app-key` فلیگ نہیں ہے (نامعلوم فلیگز نظر انداز ہو
+جاتے ہیں)۔ `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` اور
+`KLIPY_APP_KEY` ماحول میں سیٹ کریں (یا سرور کے ساتھ والی `.env` فائل میں)۔ خالی
+رکھنے سے بوٹ ناکام ہونے کے بجائے وہ خصوصیت بند ہو جاتی ہے۔
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+سرور بوٹ کے وقت ایک بار میزبان کا جائزہ لیتا ہے اور جب کوئی بیک اینڈ دستیاب ہو تو ایجنٹ
+کی کمانڈ ایگزیکیوشن کو OS نیٹو سینڈ باکس میں لپیٹ دیتا ہے: macOS پر `sandbox-exec`
+(Seatbelt)، اور Linux و WSL2 پر `bwrap` کے ساتھ `socat`۔ جہاں کوئی نہ ہو — Windows،
+یا وہ Linux ہوسٹ جس میں یہ ٹولز نہ ہوں — وہاں رنز ماحول کی صفائی، کمانڈ پالیسی اور
+ایکشن گارڈریلز پر واپس چلے جاتے ہیں، اور اسٹارٹ اپ لاگ بتا دیتا ہے کہ کون سی حالت
+لاگو ہے۔
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` اُس صورت کے لیے فیلڈ بندش سوئچ ہے جو جائزے کو نظر نہیں آتی: ایسا ہوسٹ
+جہاں خود سینڈ باکس پروفائل غلط برتاؤ کرتا ہو۔ اِسے دوبارہ بلڈ کی ضرورت نہیں اور سرور
+پروسیس کی پوری عمر کے لیے ایک انتباہ لاگ کرتا ہے تاکہ یہ حالت کبھی خاموش نہ رہے۔
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ).
+بلٹ اِن ہارنس کے رنز ٹول تعریفوں کا ایک چھوٹا ریذیڈنٹ مجموعہ اور باقی سب کا ایک نام
+انڈیکس بھیجتے ہیں، جو پہلی بار استعمال پر اپنے اسکیمے لوڈ کرتے ہیں۔ یہ ٹول بلاک کو
+تقریباً 78% کم کرتا ہے اور ہمیشہ نظر آنے والے مجموعے کو اُس حد کے اندر رکھتا ہے جہاں
+ماڈلز قابلِ اعتماد طریقے سے ٹولز منتخب کرتے ہیں۔ طلب پر لوڈ ٹولز ہر وقت نام سے کال
+کے قابل رہتے ہیں، اور `search_tools` اُنہیں ارادے سے ڈھونڈ لیتا ہے۔ دیکھیں
+[ٹول کانٹیکسٹ اور پرامپٹ کیشنگ](/ur-PK/ہدایت-نامہ/تصورات/ٹول-کانٹیکسٹ)۔
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` ہر منظور شدہ ٹول کو دوبارہ ریذیڈنٹ بنا دیتا ہے، اور بالکل وہی
+درخواستیں دوبارہ بناتا ہے جو سرور طلب پر لوڈ سے پہلے بناتا تھا۔ یہ ایسے ماڈل کے لیے
+بندش سوئچ ہے جو دو درجوں والی سطح کو بری طرح سنبھالتا ہو — دوبارہ بلڈ کے بجائے ایک
+فلیگ۔ یہ صرف بلٹ اِن ہارنس پر اثر کرتا ہے؛ بیرونی کلائنٹس کو نظر آنے والی MCP
+`tools/list` ہمیشہ مکمل کیٹلاگ ہوتی ہے۔
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+جس رن کا فراہم کنندہ کریڈنشل غائب ہو یا ختم ہو چکا ہو، وہ ناکام ہونے کے بجائے **پارک**
+کر دیا جاتا ہے: آپریٹر کو اُسے درست کرنے کا پرامپٹ ملتا ہے، اور اگر وہ درست کر دے تو رن
+دوبارہ شروع ہو جاتا ہے۔ ڈیفالٹ مہلت 900 سیکنڈ (15 منٹ) ہے، جو 0–3600 تک محدود ہے۔
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+یہ مہلت جان بوجھ کر منظوری کے پرامپٹ سے کہیں طویل ہے: منظوری ایک فیصلہ ہے جو کوئی
+سیکنڈوں میں کر لیتا ہے، جبکہ کریڈنشل درست کرنے کا مطلب ہے ٹرمنل کھولنا، سائن اِن کرنا
+اور واپس آنا۔ اونچی حد ہی اُس غیر حاضر رن کو — کوئی پائپ لائن قدم، کوئی cron ٹرگر،
+کوئی ویب ہک — اُس شخص کا انتظار کرنے سے روکتی ہے جو سو رہا ہو۔ جب یہ ختم ہو جاتی ہے تو
+رن اُسی پیغام کے ساتھ ناکام ہوتا ہے جس کے ساتھ وہ بہرحال ناکام ہوتا۔
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` بندش سوئچ ہے: کچھ بھی کبھی پارک نہیں ہوتا اور خراب کریڈنشل باری
+کو بالکل ویسے ہی ختم کر دیتا ہے جیسے گیٹ کے وجود سے پہلے ہوتا تھا۔
 
-## Subcommands
+## ذیلی کمانڈز
 
-| Command                                       | What it does                                                                                        |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| کمانڈ                                         | یہ کیا کرتی ہے                                                                                       |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `cc_server`                                   | سرور کو `SIGINT`/`SIGTERM` تک چلاتا ہے                                                               |
+| `cc_server pair`                              | ایک ڈیوائس فراہم کرتا ہے اور اُس کی id اور پیئرنگ کلید پرنٹ کرتا ہے۔ اُس ڈیٹا ڈائر کے خلاف محفوظ ہے جسے کوئی سرور پہلے سے پیش کر رہا ہو — چلتا ہوا سرور نئے ڈیوائس کو بغیر ری اسٹارٹ اُٹھا لیتا ہے |
+| `cc_server calendar connect --workspace <id>` | ڈیوائس کوڈ فلو کے ذریعے کسی ورک اسپیس سے Google اکاؤنٹ جوڑتا ہے، پھر ختم ہو جاتا ہے                  |
+| `cc_server update`                            | نئی اسٹینڈ اَلون ریلیز کی جانچ کرتا ہے، ڈاؤن لوڈ کرتا ہے اور تصدیق کرتا ہے                            |
+| `cc_server --version`                         | بلڈ ورژن اور git SHA پرنٹ کرتا ہے — وہی شناخت جو `/healthz` اور RPC ہینڈ شیک ظاہر کرتے ہیں          |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
-| -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| فلیگ           | ڈیفالٹ                                                   | مطلب                                                                                                                                                                  |
+| -------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--device`     | `web-client`                                              | ڈیوائس id۔ پلیٹ فارم اِسی سے اخذ ہوتا ہے، چنانچہ `--device desktop` ایک ڈیسک ٹاپ قطار بناتا ہے اور `--device ios`/`android` ایک فون قطار؛ باقی کچھ بھی ویب سمجھا جاتا ہے |
+| `--label`      | پلیٹ فارم کا نام اور اِس مشین کا ہوسٹ نیم                 | ڈیوائسز کی فہرست میں دکھایا جانے والا نام                                                                                                                              |
+| `--host`       | `localhost`، یا ہر انٹرفیس پر بائنڈ ہونے پر `<this-host>`  | پرنٹ شدہ URL میں شامل کرنے والا ہوسٹ۔ اِسے وہ LAN IP یا ٹنل ہوسٹ بنائیں جسے کلائنٹ واقعی ڈائل کرے گا                                                                   |
+| `--client-url` | غیر سیٹ                                                   | میزبان **ویب** کلائنٹ کا اوریجن۔ ایک اسکین کے قابل ڈیپ لنک اور ٹرمنل QR شامل کرتا ہے                                                                                    |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` بنیادی `--data-dir`، `--port` اور `--bind` فلیگز بھی قبول کرتا ہے: یہ لکھنے
+کے لیے ڈیٹا ڈائر منتخب کرتے ہیں اور پرنٹ ہونے والا سرور URL بناتے ہیں (لوپ بیک پر
+`ws`، اور `--bind any` پر `wss`)۔ ایک ہی `--device` کے لیے `pair` دوبارہ چلانے سے
+اُس کی کلید بدل جاتی ہے اور اُس ڈیوائس کے زندہ سیشنز گر جاتے ہیں۔ یہاں بنایا گیا
+کریڈنشل **بغیر میعاد** ہوتا ہے، اُن 30 دنوں کے برعکس جو ایپ کے اندر کی پیئرنگ مقرر
+کرتی ہے۔
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/).
+:::caution[`--client-url` کا QR فون کا QR نہیں ہے]
+`pair --client-url` **ویب** کلائنٹ کا کنیکٹ فارم بھر دیتا ہے (سرور URL،
+ڈیوائس id اور کلید URL فریگمنٹ میں)۔ فون ایک مختلف پے لوڈ سے پیئر ہوتا ہے جو
+ایپ کے اندر کے پیئرنگ پینل سے بنتا ہے — سرور کا مکمل کنکشن ڈسکرپٹر
+اور ایک میعاد۔ یہ دونوں ایک دوسرے کی جگہ استعمال نہیں ہو سکتے — دیکھیں
+[ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)۔
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` انسٹال کو بدل دیتا ہے؛ جب تک کوئی سرور کنفیگر شدہ پورٹ پر جواب دے رہا ہو
+اُس وقت یہ مسترد کر دیا جاتا ہے، الا یہ کہ آپ `--force` دیں۔ `--allow-downgrade`
+کسی پرانی ریلیز کی اجازت دیتا ہے۔
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+وہ انسٹالز جن کا یہ خود مالک نہ ہو، کمانڈ اُن کے لیے خرابی کے بجائے وضاحت کے ساتھ
+صاف انکار کر دیتی ہے:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| ماحول                          | کس سے پتہ چلتا ہے                            | یہ کیا کہتی ہے                                                |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------------------------- |
+| ڈیسک ٹاپ کا ایمبیڈڈ سرور       | `CC_EMBEDDED=1` یا `CC_BOOTSTRAP_DEVICE_ID`  | اس کے بجائے ایپ اپ ڈیٹ کریں — انسٹالر پورا درخت بدل دیتا ہے   |
+| `dart run` والا سورس چیک آؤٹ   | اسکرپٹ کی پاتھ `.dart` پر ختم ہوتی ہے        | اِسے git سے اپ ڈیٹ کریں                                       |
+| Docker                        | کنٹینر مارکرز                                | نئی امیج پل کریں                                              |
 
-## Process lifecycle
+## پروسیس لائف سائیکل
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` `SIGINT` / `SIGTERM` تک چلتا ہے۔ اِسے ایک اضافی ماحول ویری ایبل کنٹرول
+کرتا ہے، اور اُسے آپ کے بجائے ڈیسک ٹاپ سیٹ کرتا ہے:
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| ویری ایبل                 | اثر                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1`  | سرور اُس وقت ختم ہو جاتا ہے جب اُس کا پیرنٹ پروسیس ہو، جس کا پتہ پیرنٹ کے اپنے stdin پائپ کا رائٹ اینڈ بند کرنے سے چلتا ہے۔ ڈیسک ٹاپ اِسے اِس لیے سیٹ کرتا ہے تاکہ کوئی کریش شدہ ایپ کبھی ڈیٹا ڈائر تھامے ہوئے کوئی یتیم سرور پیچھے نہ چھوڑے |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+اِسے خود صرف اُس وقت سیٹ کریں جب آپ `cc_server` کو بطور چائلڈ پروسیس نگرانی میں رکھے
+ہوں اور وہی ضمانت چاہتے ہوں۔
 
-## Data directory layout
+## ڈیٹا ڈائر کی ترتیب
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+ڈیفالٹ ڈیٹا ڈائر macOS پر `~/Library/Application Support/control-center`، Windows پر
+`%APPDATA%\control-center` اور باقی جگہوں پر `$XDG_DATA_HOME/control-center` (ورنہ
+`~/.local/share/control-center`) ہوتا ہے۔ cwd کے نسبتی `.cc_server` صرف اُس وقت
+استعمال ہوتا ہے جب کوئی ہوم یا ایپ-ڈیٹا ڈائریکٹری حل نہ ہو۔
 
-| Path                              | Contents                                                                        |
+| پاتھ                              | مواد                                                                             |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | ورک اسپیس رجسٹری، صارفین، پیئر شدہ ڈیوائسز، نیوز فیڈ اور فلیٹ قطار               |
+| `<workspaceId>/workspace.db`      | ہر ورک اسپیس کے لیے ایک ڈیٹا بیس — ایجنٹس، اسپیسز، ٹکٹس، میموری، کوڈ گراف        |
+| `<workspaceId>/chat_credentials/` | چیٹ بوٹ ٹوکنز، سادہ JSON کی صورت میں، تاکہ وہ ورک اسپیس کے ساتھ ہی رہیں          |
+| `secrets.json`                    | پیئرنگ کلیدیں، فراہم کنندہ ایپ کی شناخت، فی صارف اور Google ٹوکنز، SSO (`0600`)  |
+| `backups/<timestamp>/`            | ایک انسٹال اسنیپ شاٹ — `manifest.json`، `global.db` اور ہر ورک اسپیس کی ایک کاپی |
+| `backups/exports/`                | واحد ورک اسپیس کی ایکسپورٹس، `<workspaceId>-<timestamp>.db`                     |
+| `backups/transfer/`               | بیک اپ ڈاؤن لوڈز اور اپ لوڈز کے لیے اسٹیجنگ؛ اُسی روٹ سے صاف ہوتا ہے جو اسے لکھتا ہے |
+| `models/`                         | ڈیوائس پر موجود ایمبیڈنگ، ڈائریائزیشن اور اسپیچ ماڈلز                            |
+| `meetings/<meetingId>/`           | محفوظ رکھی گئی میٹنگ آڈیو                                                        |
+| `rigs/images/`                    | درآمد شدہ رگ ڈسک امیجز (QEMU ڈیسک ٹاپ سطح)                                       |
+| `rigs/smolvm/<rigId>/`            | فی رگ microVM رن ٹائم حالت (بروکر سیکرٹ، `0600`)                                  |
+| `rigs/smolvm-packs/`              | پہلے سے ایکسٹریکٹ شدہ مشین پیکس — وہ کیش جو بار بار رگ بوٹ کو تیز بناتا ہے        |
+| `rigs/tls/`                       | رگ HTTPS کے لیے ڈیولپمنٹ ڈومین کی سرٹیفکیٹ اتھارٹی (کلیدیں `0600`)               |
+| `rigs/run/<rigId>/`               | QEMU اوورلے، سیڈ امیجز اور فی VM کلیدیں (`0600`)                                 |
 
-## See also
+## مزید دیکھیں
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/) — the setup recipe these flags belong to
-- [Run a fleet worker](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/) — copying this directory somewhere safe
-- [Backup, export and import](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/) — pointing a client at one
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) — why the server owns everything
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/) — یہ فلیگز جس سیٹ اپ ترکیب سے تعلق رکھتے ہیں
+- [فلیٹ ورکر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/) — الگ `cc_worker` بائنری جو اِس سرور کے ساتھ رجسٹر ہوتی ہے
+- [بیک اپ اور بحالی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/) — اِس ڈائریکٹری کو کسی محفوظ جگہ کاپی کرنا
+- [بیک اپ، ایکسپورٹ اور امپورٹ](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/) — اسنیپ شاٹ کی ترتیب اور ہر بیک اپ آپریشن
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/) — کسی کلائنٹ کو اُس کی طرف لگانا
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/) — سرور ہر چیز کا مالک کیوں ہے

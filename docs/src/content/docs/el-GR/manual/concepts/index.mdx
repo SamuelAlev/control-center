@@ -1,64 +1,67 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Έννοιες
+description: Πώς λειτουργεί το Control Center και γιατί είναι χτισμένο έτσι — το υλικό υποβάθρου πίσω από τους οδηγούς.
 slug: el-GR/εγχειρίδιο/έννοιες
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/); when you want to look
-something up, go to the [reference](/el-GR/εγχειρίδιο/αναφορά/).
+Αυτές οι σελίδες εξηγούν **πώς λειτουργεί το Control Center και γιατί**. Προορίζονται
+για κατανόηση, όχι για εκτέλεση: καμία σελίδα εδώ δεν είναι διαδικασία που
+ακολουθείτε. Όταν θέλετε να ολοκληρώσετε μια συγκεκριμένη εργασία, πηγαίνετε στους
+[οδηγούς πρακτικής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/)· όταν θέλετε να αναζητήσετε
+κάτι, πηγαίνετε στην [αναφορά](/el-GR/εγχειρίδιο/αναφορά/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Διαβάστε τις με όποια σειρά θέλετε. Αν ξεκινάτε τώρα, το βασικό μοντέλο είναι το
+καλύτερο σημείο για να αρχίσετε.
 
-## Core model
+## Βασικό μοντέλο
 
-The four ideas everything else is built on.
+Οι τέσσερις ιδέες πάνω στις οποίες χτίζονται όλα τα υπόλοιπα.
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/) — what happens between your message and the agent's first token
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα/) — the code graph, language server, structural search and debugger
-- [Conversation history](/el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών/) — persistence, compaction and forking a transcript
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) — το όριο του ενοικιαστή και γιατί επιβάλλεται από τη δομή της βάσης δεδομένων και όχι από την πειθαρχία στα ερωτήματα
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/) — από τι αποτελείται ένας πράκτορας: ταυτότητα, ρόλος, δεξιότητες, δυνατότητες, προσαρμογέας και μοντέλο
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/) — τι συμβαίνει ανάμεσα στο μήνυμά σας και στο πρώτο token του πράκτορα
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/) — πώς τα `chat`, `plan`, `review` και `orchestrate` αλλάζουν το τι επιτρέπεται να κάνει ένας πράκτορας
+- [Πλαίσιο εργαλείων και προσωρινή αποθήκευση προτροπών](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων/) — γιατί ένας πράκτορας βλέπει ένα υποσύνολο των εργαλείων του, πώς φτάνει στα υπόλοιπα και τι κρατά ζεστή την προσωρινή αποθήκευση του παρόχου
+- [Νοημοσύνη κώδικα](/el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα/) — το γράφημα κώδικα, ο διακομιστής γλώσσας, η δομική αναζήτηση και ο αποσφαλματωτής
+- [Ιστορικό συνομιλιών](/el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών/) — η μονιμότητα, η συμπύκνωση και η διακλάδωση ενός αντιγράφου συνομιλίας
 
-## Safety and control
+## Ασφάλεια και έλεγχος
 
-What an agent is allowed to touch and who decides.
+Τι επιτρέπεται να αγγίξει ένας πράκτορας και ποιος αποφασίζει.
 
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) — what actually constrains an agent run today
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/el-GR/εγχειρίδιο/έννοιες/εξουσιοδότηση/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) — τι πραγματικά περιορίζει μια εκτέλεση πράκτορα σήμερα
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) — μία μηχανή πολιτικών για κάθε ενέργεια που μεταβάλλει κατάσταση και πώς επιλύεται ένας κανόνας
+- [Εξουσιοδότηση](/el-GR/εγχειρίδιο/έννοιες/εξουσιοδότηση/) — ρόλοι, ο κατάλογος δικαιωμάτων και το ίχνος ελέγχου
+- [Σταθμοί και περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/) — γιατί οι πράκτορες παίρνουν αναλώσιμα VM αντί για το μηχάνημά σας και ποιο είναι πραγματικά το όριο
 
-## Directing the work
+## Κατεύθυνση της εργασίας
 
-Turning intent into work that gets done.
+Μετατρέποντας την πρόθεση σε έργο που ολοκληρώνεται.
 
-- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) — one goal, one approval, a generated pipeline
-- [AI review](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/el-GR/εγχειρίδιο/έννοιες/αξιολογήσεις-και-ποιότητα/) — eval suites and the Quality tab
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/) — η μονάδα εργασίας, ανεξάρτητη από τον προμηθευτή, που μοιράζεται ολόκληρος ο στόλος
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/) — ροές εργασίας DAG, ενεργοποιητές και εκτελέσεις με δυνατότητα συνέχισης
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) — ένας στόχος, μία έγκριση, ένα παραγόμενο pipeline
+- [Έλεγχος με AI](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/) — πώς ένα PR γίνεται ελεγμένο: χώροι ελέγχου, συναίνεση ομοτίμων, άξονες και η ετυμηγορία Ship/Hold/Block
+- [Συνομιλίες PR](/el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr/) — απάντηση σε μια αναφορά στο GitHub ή στην ετικέτα `ai-review` μέσα από την ίδια την πλατφόρμα φιλοξενίας κώδικα
+- [Μνήμη και γνώση](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/) — γεγονότα, πολιτικές και τι επιτρέπεται να γνωρίζει ένας πράκτορας
+- [Αξιολογήσεις και ποιότητα](/el-GR/εγχειρίδιο/έννοιες/αξιολογήσεις-και-ποιότητα/) — σουίτες αξιολόγησης και η καρτέλα Ποιότητα
 
-## People and reach
+## Άνθρωποι και εμβέλεια
 
-Working with other humans and reaching the fleet from elsewhere.
+Συνεργασία με άλλα άτομα και πρόσβαση στον στόλο από αλλού.
 
-- [Multiplayer and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/el-GR/εγχειρίδιο/έννοιες/ενιαία-σύνδεση/) — SAML and OIDC logins
-- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/) — Google Calendar sync and meeting alerts
+- [Συνεργασία και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/) — άνθρωποι και πράκτορες ως ισότιμοι συμμετέχοντες και τι ελέγχει την πρόσβαση
+- [Ενιαία σύνδεση](/el-GR/εγχειρίδιο/έννοιες/ενιαία-σύνδεση/) — συνδέσεις SAML και OIDC
+- [Γέφυρες συνομιλίας](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) — γιατί η γέφυρα του Slack καλεί προς τα έξω και τι εξουσιοδοτεί ένα μήνυμα από τη συνομιλία
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) — πώς ένα τηλέφωνο φτάνει στον διακομιστή σας και το μοντέλο ασφάλειας γύρω από αυτό
+- [Συσκέψεις και μεταγραφή](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) — καταγραφή στη συσκευή, μεταγραφή και σύνοψη
+- [Ημερολόγιο και προγραμματισμός](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/) — συγχρονισμός με το Google Calendar και ειδοποιήσεις συσκέψεων
 
-## Under the hood
+## Κάτω από το καπό
 
-The shape of the system itself.
+Η μορφή του ίδιου του συστήματος.
 
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/) — the in-process bus features talk over
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/) — επίπεδα, ο κοινός πυρήνας, θύρες και προσαρμογείς
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) — πώς οι πελάτες επιφάνειας εργασίας, ιστού και τηλεφώνου σχετίζονται με έναν διακομιστή
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/) — ο δίαυλος εντός της διεργασίας μέσω του οποίου επικοινωνούν τα χαρακτηριστικά

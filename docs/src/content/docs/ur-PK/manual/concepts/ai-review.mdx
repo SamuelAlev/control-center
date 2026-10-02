@@ -1,225 +1,128 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: AI ریویو
+description: ایک pull request کیسے ریویو شدہ بنتا ہے — ریویو اسپیسز، ریویو نوڈز اور ساتھیوں کا اتفاقِ رائے، کوہارٹس اور محور، Ship/Hold/Block کا فیصلہ، اور یہ کہ اشاعت کیوں ایک ایسا قدم رہتا ہے جو آپ خود اٹھاتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ai-ریویو
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## ریویو کی ساخت
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+ایک AI ریویو، کسی ایک کھلے pull request کے خلاف پہلے سے فراہم کردہ `pr_review` پائپ لائن کا ایک رن ہوتا ہے۔ پائپ لائن PR کا ریویو اسپیس کھولتی ہے، ریویوور ایجنٹس کو اس اسپیس کے الگ تھلگ چیک آؤٹ میں ڈف پڑھنے کے لیے پھیلا دیتی ہے، ہر ایک اپنے نتائج کو ساختہ **ریویو نوڈز** کے طور پر درج کرتا ہے، ایک لیڈ ایجنٹ انہیں یکجا کر کے ایک تفصیلی وضاحت بناتا ہے، اور ایک فائنلائزر ایک فیصلہ نکالتا ہے: **Ship**، **Hold** یا **Block**۔ پائپ لائن جو کام کبھی نہیں کرتی وہ اشاعت ہے — GitHub پر پوسٹ کرنا ایک الگ، سوچا سمجھا قدم ہے جو کوئی انسان اٹھاتا ہے۔
 
-The rest of this page explains the pieces and why they are shaped this way.
+اس صفحے کے باقی حصے میں یہ اجزاء اور یہ کہ انہیں اس انداز میں کیوں ڈھالا گیا ہے، بیان کیا گیا ہے۔
 
-## One review space per PR
+## فی PR ایک ریویو اسپیس
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+کسی PR کا ریویو کانٹیکسٹ ایک میسجنگ اسپیس ہوتا ہے — موڈ `review`، قسم `pr` — جو pull request سے ایک **ریویو اسپیس ایسوسی ایشن** کے ذریعے منسلک ہوتا ہے۔ اسے اس انداز میں بنایا جاتا ہے کہ دہرانے پر بھی وہی ایک اسپیس رہے: PR صفحہ، ریویو پائپ لائن اور چیٹ کی سطحیں سب ایک ہی کوڈ پاتھ کے ذریعے PR کے _ایک_ بیکنگ اسپیس تک پہنچتی ہیں، چنانچہ کوئی ٹیمپلیٹ جو PR کا ریویو کرتا ہے اور کوئی انسان جو اسے کھولتا ہے، کبھی دو مختلف کمروں میں دو مختلف چیک آؤٹس دیکھتے ہوئے نہیں پہنچ سکتے۔
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+اسپیس کے الگ تھلگ ورک ٹری میں PR اس کے head ref پر چیک آؤٹ ہوتا ہے۔ ایک کمرہ ایک ہی چیک آؤٹ کا مطلب بھی ہے: ہر ریویوور ایک ہی اسپیس میں کام کرتا ہے، بجائے اس کے کہ ہر ایک کو ورک اسپیس کا اپنا کلون ملے۔
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+ہر ریویوور اسی ایک اسپیس کے اندر اپنی نامزد اسٹریم میں پوسٹ کرتا ہے، اور نتائج سادہ نثر کے بجائے `review_node` پیغامات ہوتے ہیں۔ آخر میں پوری اسپیس پر محیط یکجا کرنا جان بوجھ کر ہے — ایک تھریڈ کے نتائج سے نکالا گیا فیصلہ خاموشی سے ایک ہی ریویوور کے بارے میں فیصلہ ہوگا۔
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+ایسوسی ایشن ایک اسٹیٹس سیڑھی رکھتی ہے — `requested` → `in progress` → `awaiting approval` → `completed` — اور یہی PR کے ریویو ٹیب پر **GitHub پر شائع کریں** کو گیٹ کرتی ہے۔
 
-## Review levels
+## ریویو کی سطحیں
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+ریویو کتنا گہرا جائے، یہ ایک ورک اسپیس پالیسی ہے جس کی تین سطحیں ہیں، جو **ترتیبات → ورک اسپیس → عام** پر، **ورک اسپیس پالیسی** کارڈ میں سیٹ ہوتی ہے:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| سطح       | کون سے ریویوورز پھیلتے ہیں                   | رپورٹنگ                                      |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | صرف انجینئر                                   | صرف وہی جو واقعی اہم ہو                       |
+| `balanced`  | انجینئر، QA، آرکیٹیکٹ (ڈیفالٹ)               | معمول کا پاس                                  |
+| `thorough`  | پانچوں، بشمول سیکیورٹی اور پرفارمنس          | کچھ بھی نیچے نہیں کیا جاتا                     |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+سطح بیک وقت دو ڈائل گھماتی ہے: کون سے ریویوورز پھیلتے ہیں، جو پائپ لائن ٹیمپلیٹ کے `runWhen` اسٹیٹ گیٹس سے نافذ ہوتا ہے نہ کہ پرامپٹ کے الفاظ سے — پرامپٹ کے الفاظ نظر انداز کیے جا سکتے ہیں، گیٹ نہیں — اور یہ کہ حد سے کم نتائج کہاں دکھائے جائیں۔ کوئی بھی ڈائل کبھی کوئی نتیجہ حذف نہیں کرتا: جو سطح کم رپورٹ کرتی ہے وہ بھی اتنا ہی درج کرتی ہے اور باقی کو گروپ کر دیتی ہے۔
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+سیکیورٹی اور پرفارمنس پاس نئے ایجنٹس متعارف کرانے کے بجائے پہلے سے فراہم کردہ آرکیٹیکٹ اور انجینئر ایجنٹس کو دوبارہ استعمال کرتے ہیں۔ تخصص وہ بریف ہے جس کے ساتھ ریویوور کو بھیجا جاتا ہے، نہ کہ ہر محور کے لیے ایک الگ ایجنٹ — ہر محور کے لیے ایک ایجنٹ کا مطلب ہر ورک اسپیس میں پانچ اضافی قطاریں ہوں گی، بغیر کسی اضافی صلاحیت کے۔ ریویوور کے انتخاب میں کبھی زبان یا ڈومین کے لیے ڈف کا معائنہ نہیں کیا جاتا۔
 
-## Review nodes: findings as data, not prose
+## ریویو نوڈز: نتائج بطور ڈیٹا، نثر کے طور پر نہیں
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+`add_review_node` کے ذریعے درج کیا گیا نتیجہ PR پر ایک **ریویو نوڈ** بن جاتا ہے — یہی وہ چیز ہے جو ریویو ٹیب دکھاتا ہے، جس سے فیصلہ شمار کیا جاتا ہے، اور جسے "GitHub پر شائع کریں" ایک اِن لائن تبصرے میں بدلتا ہے۔ جو ریویوور صرف نثر واپس کرتا ہے وہ ایک ایسا پائپ لائن رن پیدا کرتا ہے جو کامیاب دکھائی دیتا ہے اور ایک ایسی ریویو سطح جو خالی ہوتی ہے؛ درج کرنا ہی اصل بنیاد ہے۔
 
-Each node carries:
+ہر نوڈ یہ رکھتا ہے:
 
-| Field             | Values                                                                     |
+| فیلڈ             | اقدار                                                                     |
 | ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| قسم              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| ترجیح          | P0 (سنگین) → P3 (معمولی)                                                   |
+| ٹرائیج ٹرپل     | category (`security`, `stability`, …)، severity، effort                     |
+| اینکر            | فائل پاتھ، لائن کی شروعات اور اختتام                                       |
+| فکس کریریج      | تجویز کردہ متبادل لائنیں، ایک اختیاری ڈف، ایک اختیاری فکس پرامپٹ          |
+| اعتماد        | ایک [0, 1] اسکور                                                            |
+| استدلال         | وہ تجزیہ، جو نتیجے سے پہلے لکھا گیا                                        |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+دو تفصیلیں جان بوجھ کر ہیں۔ ایک کلک والی GitHub تجویز صرف اسی صورت پیش کی جاتی ہے جب ریویوور نے عین متبادل لائنیں فراہم کی ہوں — انہیں کسی unified ڈف سے اخذ کرنا خاموشی سے غلط ہو جاتا ہے، اور غلط اخذ کردہ چیز کا ایک کلک میں کمٹ کرنا کسی بٹن کے نہ ہونے سے بدتر ہے۔ اور `add_review_node` اسکیما نتیجے سے پہلے `reasoning` پیش کرتا ہے، چنانچہ جو ماڈل آبجیکٹ کو اسکیما کی ترتیب سے بھرتا ہے وہ پہلے تجزیہ لکھتا ہے۔ یہ فیلڈ اختیاری ہے: اسے چھوڑ دینے سے نوڈ مسترد نہیں ہوتا۔ جس نوڈ کا پے لوڈ خراب ہو وہ ریویو کو آلودہ کرنے کے بجائے غائب ہو جاتا ہے۔
 
-## Peer consensus
+## ساتھیوں کا اتفاقِ رائے
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+ایک نوڈ `open` → `consensus-ready` → `resolved` یا `dismissed` کے مراحل سے گزرتا ہے۔ درمیانی قدم اس ماڈل کا دل ہے: **کوئی نتیجہ صرف اسی وقت ترقی پاتا ہے جب کوئی ساتھی ریویوور اس کی تصدیق کرے، اور کوئی ایجنٹ کبھی اپنے ہی نتیجے کی تصدیق نہیں کر سکتا۔** MCP ٹول `publish_review_to_github` اور RPC ڈیفالٹ اب بھی صرف ساتھی کی تصدیق شدہ نتائج شائع کرتے ہیں۔ اس کے بجائے ریویو ٹیب کا **GitHub پر شائع کریں** بٹن ہر باقی ماندہ کھلے نتیجے کو بھیج دیتا ہے۔
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+یہ اصول تین آزاد مقامات پر نافذ کیا جاتا ہے — کنفرم ٹول، فائنلائزر اور پبلشر — چنانچہ ان میں سے کسی ایک میں خراب کالر ہونے پر بھی یہ برقرار رہتا ہے۔ تمام اسٹیٹس تبدیلیاں ایک ہی سروس سے گزرتی ہیں، اور یہی چیز اسٹیٹس کو معنی خیز بناتی ہے: اس سے پہلے، دو ادھورے راستے اس بات پر متفق نہیں ہو سکتے تھے کہ ایک ہی نتیجہ حل ہوا تھا یا نہیں۔
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+جب ریویوورز میں اختلاف ہو — ایک ہی فائل اور لائن، ترجیحات دو یا زیادہ درجوں کے فاصلے پر، یا ایک اسے `bug` کہے جبکہ دوسرا اسے `suggestion` کہے — تو یہ اختلاف نتائج کی فہرست کے اوپر نمایاں کیا جاتا ہے۔ یہی وہ جگہ ہے جہاں ریویوورز کی رائے الگ ہوتی ہے اور انسان کی رائے سب سے زیادہ قیمتی ہوتی ہے۔
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+کسی نتیجے کو برطرف کرنا میموری ڈومین میں کم اعتماد کے ساتھ ایک نرم سپریشن فیکٹ بھی لکھتا ہے — ایک بار برطرف کرنا ایک ترجیح ہے، کوئی اصول نہیں۔
 
-## Cohorts: what the review is grouped around
+## کوہارٹس: ریویو کس چیز کے گرد گروپ کیا جاتا ہے
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+ریویو کمپیوٹ پاس PR کی تبدیل شدہ فائلوں کو **کوہارٹس** میں گروپ کرتا ہے جو کوڈ گراف سے اخذ کیے جاتے ہیں: تبدیل شدہ فائلیں ان سمبلز پر نقش ہوتی ہیں جنہیں وہ چھوتی ہیں، سمبلز منسلک کمپونینٹس پر، اور کوہارٹس کو blast radius کے حساب سے درجہ بند کیا جاتا ہے۔ ایک کوہارٹ ایک فلیٹ فائل فہرست ہونے کے بجائے ایک رہنمائی شدہ پڑھنے کی ترتیب، خاکے اور بصیرتیں ساتھ رکھتا ہے۔
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+دو دیانت داری کے اصول اسے تشکیل دیتے ہیں۔ کوہارٹ کیز مواد سے اخذ شدہ اور پشز کے دوران مستحکم ہوتی ہیں، چنانچہ نتائج اور ریویو کی پیش رفت ری بیس یا فورس پش کے بعد بھی یتیم ہونے کے بجائے برقرار رہتی ہے۔ اور جب ریپو میں کوڈ انڈیکس موجود نہ ہو تو گروپ بندی سادہ پاتھز پر واپس چلی جاتی ہے اور یہ بات بتا دیتی ہے — یہ فال بیک کبھی سیمنٹک اعتماد کا جھوٹا روپ نہیں دھارتی۔
 
-## Review axes and gates
+## ریویو محور اور گیٹس
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+ریویوورز کے نتائج کے ساتھ ساتھ، ایک ریویو **محور نتائج** بھی جمع کرتا ہے: چھ محور، دو اقسام کے۔
 
-| Axis                          | Kind          | Drawn from                          |
+| محور                          | قسم          | کہاں سے لیا گیا                          |
 | ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| `correctness`, `security` | ٹوکن سے چلنے والا  | خود ریویوورز کے نتائج                         |
+| `testGap`                 | ٹوکن سے چلنے والا  | ریویوورز کے نتائج                             |
+| `visual`, `apiContract`   | ڈیٹرمنسٹک | ٹوکن خرچ کیے بغیر شمار کیا جاتا ہے                    |
+| `performance`             | ڈیٹرمنسٹک | صرف enum — پروڈکٹ میں کوئی چیز نتیجہ شمار نہیں کرتی |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+ایک محور کا فیصلہ `pass`، `warn`، `fail`، `partial` یا `unavailable` ہوتا ہے — اور صرف `pass` یا `warn` گیٹ پاس کراتا ہے۔ `fail`، `partial` اور `unavailable` کے درمیان فرق بنیادی اہمیت کا حامل ہے: کوئی گیٹڈ محور جو مکمل نہ ہو سکا یا بالکل چل ہی نہ سکا، مجموعی فیصلے کو پاس کرانے کے بجائے روکے رکھتا ہے۔ **ثبوت کی عدم موجودگی کبھی سبز گیٹ میں تبدیل نہیں ہوتی۔**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+کچھ محور جان بوجھ کر مشورہ دینے والے ہوتے ہیں۔ کوہارٹس سے اخذ کردہ ٹیسٹ گیپ محور dependency-injection یا فیکٹری کوریج نہیں دیکھ سکتا — ایک غیر انڈیکس شدہ ریپو جس میں مکمل ٹیسٹ سوٹ ہو اور ایک جس میں بالکل ٹیسٹ نہ ہوں، وہاں سے بالکل ایک جیسے دکھائی دیتے ہیں، چنانچہ ان میں سے کسی ایک کا دعویٰ کرنا جھوٹ ہوگا؛ یہ گیٹ کیے بغیر ڈیش بورڈ میں نمایاں ہوتا ہے۔ ٹوکن والے محور مشورہ دینے والے ہیں کیونکہ نتائج کی ترجیحات پہلے ہی فیصلہ چلاتی ہیں، اور ان پر دوبارہ گیٹ لگانا دوہرا شمار کرنا ہوگا۔
 
-## The verdict
+## فیصلہ
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+فائنلائزر ان نتائج پر فیصلہ شمار کرتا ہے جن کا اسٹیٹس `open` یا `consensus-ready` ہو:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- کوئی بھی P0 نتیجہ جس کا اعتماد ≥ 0.7 ہو → **Block**
+- بصورت دیگر، کوئی بھی P0 (کم اعتماد) یا کوئی بھی P1 → **Hold**
+- بصورت دیگر → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+فیصلہ ایک مجموعی اعتماد رکھتا ہے جو حصہ ڈالنے والے اعتمادوں کے پھیلاؤ سے اخذ ہوتا ہے — اتفاق اسے بڑھاتا ہے، اختلاف اسے گھٹاتا ہے۔
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+لیڈ (CEO) ایجنٹ کا یکجا کرنا ایک ادبی پاس ہے، دوبارہ فہرست بنانا نہیں: نتائج کی ہاتھ سے لکھی گئی دوسری نقل بالکل وہی چیز ہے جو اصل سے ہٹ جاتی ہے۔ نقل شدہ نتائج دہرانے کے بجائے نیچے کر دیے جاتے ہیں — کئی ریویوورز ایک ہی ڈف کی طرف جان بوجھ کر ایک دوسرے پر چھائی ہوئی ذمہ داریوں کے ساتھ بھیجے جاتے ہیں، چنانچہ ایک ہی نقص تین بار فائنلائزر تک پہنچنا نظام کے کام کرنے کی علامت ہے؛ اسے تین بار شائع کرنا نظام کا اپنی ہی ساخت پڑھنے والے کے ان باکس میں بہا دینا ہے۔ دوبارہ ریویو پر، نتائج کا فنگر پرنٹ لیا جاتا ہے اور پچھلے راؤنڈ سے ان کا موازنہ کیا جاتا ہے، چنانچہ جو فرق ہو وہی نمایاں ہوتا ہے۔
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+آخر میں محور شامل ہوتے ہیں، اور وہ فیصلے کو صرف **زیادہ** سخت ہی بنا سکتے ہیں: ناکام ہونے والا گیٹڈ محور Block نافذ کرتا ہے — اسے نتائج ووٹ دے کر شکست نہیں دے سکتے — اور جو گیٹڈ محور مکمل نہ ہو سکا وہ کم از کم Hold نافذ کرتا ہے۔
 
-## Publishing stays with you
+## اشاعت آپ کے پاس رہتی ہے
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+پائپ لائن جان بوجھ کر GitHub پر پوسٹ نہیں کرتی؛ اشاعت صارف کے گیٹ پر ہے تاکہ کوئی ریویو کبھی دو بار شائع نہ ہو۔ جب آپ **GitHub پر شائع کریں** دبائیں:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- ایک GitHub ریویو جمع کیا جاتا ہے۔ وہ نتائج جو پہلے ہی حل یا برطرف ہو چکے ہوں، چھوڑ دیے جاتے ہیں۔ بٹن ہر باقی ماندہ کھلے نتیجے کو شائع کرتا ہے (`selection: all_open`)۔ MCP ٹول `publish_review_to_github` اب بھی بطور ڈیفالٹ صرف ساتھی کی تصدیق شدہ نتائج (`consensus`) لیتا ہے۔
+- فائل اور لائن پر اینکر شدہ نتائج اِن لائن تبصرے بن جاتے ہیں؛ باقی سب کچھ سمری باڈی میں شامل ہو جاتا ہے، اور ہر ایک "— Control Center AI review" فوٹر رکھتا ہے تاکہ ماخذ واضح رہے۔
+- اشاعت کے وقت اینکرز کی PR کے _موجودہ_ ڈف کے خلاف دوبارہ تصدیق کی جاتی ہے۔ ایسے کوڈ پر تبصرہ جو پہلے ہی دوبارہ لکھا جا چکا ہو، سب سے زیادہ اعتماد تباہ کرنے والی چیز ہے جو ریویوور چھوڑ سکتا ہے؛ اگر GitHub پھر بھی کوئی اِن لائن اینکر مسترد کر دے تو پورا ریویو دوبارہ بھیجا جاتا ہے اور ہر نتیجہ باڈی میں شامل کر دیا جاتا ہے تاکہ کچھ بھی خاموشی سے ضائع نہ ہو۔
+- **Block** فیصلہ `REQUEST_CHANGES` کے طور پر جمع ہوتا ہے؛ **Hold** بطور `COMMENT`؛ **Ship** بٹن سے بطور `APPROVE` (`approve_on_ship: true`)۔ MCP ٹول Ship کو `COMMENT` ہی رہنے دیتا ہے جب تک آپ `approve_on_ship` نہ بھیجیں۔
+- ریویو سرور کی ایپ شناخت کے تحت پوسٹ کیا جاتا ہے۔ کس نے Publish دبایا یہ رول گیٹ اور آڈٹ لاگ کے لیے ریکارڈ کیا جاتا ہے؛ یہ GitHub مصنف نہیں ہوتا۔
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/).
+اشاعت `prPublish` ایکشن کلاس کا اعلان کرتی ہے، چنانچہ گارڈریل چوک پوائنٹ اسے کسی بھی میوٹیٹنگ ایکشن کی طرح گیٹ کرتا ہے — یہ بطور ڈیفالٹ پرامپٹ کرتا ہے اور جب کوئی منظور کنندہ منسلک نہ ہو تو بند ہو کر ناکام ہو جاتا ہے۔ [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) دیکھیں۔
 
-## What a reviewer may do
+## ریویوور کیا کر سکتا ہے
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+ریویوور ایجنٹس `review` موڈ میں چلتے ہیں: ایک صرف پڑھنے کے لیے سینڈ باکس اور ایک ترتیب شدہ ٹول اجازت فہرست جو نتائج، تبصروں، ٹکٹس اور ساتھی ریویو کا احاطہ کرتی ہے — لیکن کوئی میوٹیشن نہیں۔ ایک ریویوور جس کوڈ پر تنقید کرتا ہے اسے خود ٹھیک نہیں کر سکتا؛ وہ ایک تجویز کردہ فکس منسلک کر سکتا ہے جسے کوئی انسان لاگو کرتا ہے۔ موڈ کا انکار کا پیغام ایسے ایجنٹ کو جو پھر بھی عمل کرنے کی کوشش کرے، بتاتا ہے کہ ریویو مکمل کرے اور صارف کو شائع شدہ سمری پر عمل کرنے دے۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) — the policy engine that gates publishing
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) — what `review` mode changes for an agent
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) — the engine the review runs on
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) — where the isolated worktree comes from
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/) — وہ پالیسی انجن جو اشاعت کو گیٹ کرتا ہے
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/) — `review` موڈ ایک ایجنٹ کے لیے کیا بدلتا ہے
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) — وہ انجن جس پر ریویو چلتا ہے
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/) — الگ تھلگ ورک ٹری کہاں سے آتا ہے
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Use AI-powered review](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/) — run a review and publish it
-- [Dispatch reviewer agents](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/) — choose the reviewers yourself
-- [Review compute](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/) — cohorts, axes and diffs
+- [AI سے چلنے والا ریویو استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ai-ریویو/) — ایک ریویو چلائیں اور اسے شائع کریں
+- [ریویوور ایجنٹس بھیجیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں/) — ریویوورز خود منتخب کریں
+- [ریویو کمپیوٹ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویو-کمپیوٹ/) — کوہارٹس، محور اور ڈفز

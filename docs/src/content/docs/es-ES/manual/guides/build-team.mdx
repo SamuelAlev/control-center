@@ -1,69 +1,70 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: Formar un equipo de agentes
+description: Agrupa agentes bajo un líder para que el trabajo asignado pase por un único coordinador.
 slug: es-ES/manual/guias/formar-equipo
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+Esta guía explica cómo crear un equipo, darle un líder y dirigirle trabajo.
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+Un equipo es un grupo con nombre de agentes dentro de un espacio de trabajo, con un agente designado como su **líder**. Asignar un ticket al equipo despierta al líder, que descompone el trabajo y lo delega en los miembros; cuando termina la ejecución de un miembro, el líder se despierta de nuevo para decidir qué viene después.
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+Los equipos se crean, se renombran y se dotan de personal en **Ajustes → Espacio de trabajo → Agentes → Teams**. Hay dos formas de dirigir trabajo a un equipo: un agente llama a `assign_ticket` con el `team_id` de ese equipo, o un nodo de pipeline **Team dispatch** despacha el equipo (sin asignarle un ticket). El selector de asignados de un ticket te incluye a ti y a los agentes individuales.
 
-## Create a team
+## Crear un equipo
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. Abre **Ajustes → Espacio de trabajo → Agentes** (`/settings/workspace/agents`).
+2. Haz clic en **Teams** en la cabecera de la página.
+3. Haz clic en **Add team**.
+4. Introduce un **nombre** (por ejemplo, «backend» o «review squad») y una **descripción** opcional, y haz clic en **Crear**.
 
-The team is created and selected and its editor opens in the right-hand pane.
+El equipo se crea y queda seleccionado, y su editor se abre en el panel derecho.
 
-## Set the leader
+## Definir el líder
 
-This is the step the whole feature depends on. In the team's editor:
+Este es el paso del que depende toda la función. En el editor del equipo:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. En **Líder**, elige un agente. El texto de ayuda lo describe con exactitud: «El coordinador que recibe el trabajo asignado al equipo y lo delega al miembro más adecuado.»
+2. Opcionalmente, rellena **Instrucciones de operación**: texto libre que se entrega al líder con cada ticket dirigido al equipo.
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+Ascender a un agente a líder también lo convierte en miembro si no lo era ya. Un equipo que se deja en **Sin líder** es inerte: no se despacha nada cuando se le dirige trabajo, y quitar al líder actual de la lista de miembros vuelve a dejar al equipo sin líder.
 
-## Add members
+## Añadir miembros
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+En el mismo editor, usa la tarjeta de miembros para añadir agentes del espacio de trabajo y quitarlos. Los miembros son la lista de la que el líder toma a quién delegar.
 
-Teams are workspace-scoped: only agents in this workspace can join.
+Los equipos pertenecen a un espacio de trabajo: solo pueden unirse agentes de este espacio de trabajo.
 
-## Give the team a space
+## Dar un espacio al equipo
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+No hay ningún espacio de equipo automático. Si quieres uno, crea un espacio normal desde **Espacios** y añade a él los agentes del equipo. Un `Team` contiene un nombre, una descripción, un líder, instrucciones y miembros, pero ninguna asociación con un espacio.
 
-## Reporting lines are a separate thing
+## Las líneas de reporte son otra cosa
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+Cada agente tiene además un campo **Reporta a**, que se define en **Ajustes → Espacio de trabajo → Agentes**. Eso construye el árbol de reporte del espacio de trabajo, que puedes ver con el botón **Organigrama** de la página de agentes.
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+No rige el enrutamiento de equipos. El líder elige a quién delegar de la lista de miembros del equipo según sus skills y su rol, no siguiendo la cadena de reporte. Los permisos de acceso a la memoria dependen del rol de un agente, no de la cadena de reporte, y ninguna superficie de analítica agrega por equipo ni por jerarquía. Las protecciones de delegación limitan la profundidad y detectan ciclos, pero nunca exigen que el destino sea un subordinado.
 
-## What a routed ticket does
+## Qué ocurre con un ticket dirigido a un equipo
 
-When a ticket does carry a team assignment:
+Cuando un ticket sí lleva asignado un equipo:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. Se despacha al líder del equipo con el ticket, sus instrucciones de operación y la lista de miembros.
+2. El líder delega en los miembros y registra su evaluación con la herramienta `record_team_activity`: `action` (delegado), `no_action` (no hay nada más que hacer, lo que detiene nuevas reactivaciones) o `failed`.
+3. Cada ejecución de un miembro que termina vuelve a despertar al líder, con el límite de la protección de no-acción.
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+El nodo de pipeline **Team dispatch** es el otro punto de entrada. Recibe un id de equipo, un prompt y un modo de despacho:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel`: una tarea por miembro en una conversación oculta compartida, suspendiendo hasta que termina cada ejecución, con la salida de cada miembro recogida bajo la clave de salida del nodo
+- `manager`: despacha solo al líder, que coordina en la conversación
 
-## Related guides
+## Guías relacionadas
 
-- [Create and configure an agent](/es-ES/manual/guias/crear-agente/)
-- [Run agents in parallel](/es-ES/manual/guias/agentes-en-paralelo/)
-- [Delegate work to agents](/es-ES/manual/guias/delegar-tickets/)
+- [Crear y configurar un agente](/es-ES/manual/guias/crear-agente/)
+- [Ejecutar agentes en paralelo](/es-ES/manual/guias/agentes-en-paralelo/)
+- [Delegar trabajo a agentes](/es-ES/manual/guias/delegar-tickets/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [The agent model](/es-ES/manual/conceptos/modelo-de-agentes/)
-- [Tickets and delegation](/es-ES/manual/conceptos/tickets/)
+- [El modelo de agentes](/es-ES/manual/conceptos/modelo-de-agentes/)
+- [Tickets y delegación](/es-ES/manual/conceptos/tickets/)

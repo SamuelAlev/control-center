@@ -1,123 +1,68 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: 認可 — 誰が何をしてよいか、そしてそれをどう証明するか
+description: Control Center のロールを支える権限カタログ、すべての認可判断が記録される改ざん検知付きの監査証跡、そしてオペレーターが固定できるインストール全体の制御。
 slug: ja-JP/マニュアル/コンセプト/認可
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/).
+Control Center は 2 つの認可の問いに答えます。そしてこの 2 つは本質的に異なります。**「この人物はこの操作を呼び出してよいか？」** は、人、ロール、リポジトリに関する問いです。**「このエージェントはこの効果を引き起こしてよいか？」** は、アクション、引数、影響範囲に関する問いで、こちらは[ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)で扱います。
 
-This page is the first question, plus the record both of them leave behind.
+このページでは前者の問いを扱い、あわせて両者が残す記録について説明します。
 
-## One decision point
+## 単一の判断ポイント
 
-Every human-side authorization decision resolves through a single function:
+人側の認可判断はすべて、単一の関数を通じて解決されます。
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+**権限**は `<domain>:<tier>` の形式です — `tickets:write`、`members:administer`、`repos:read`。カタログは手書きではなく**導出**されます。つまり、操作サーフェスそのものから計算されます（操作名の接頭辞がドメインを、その操作がすでに要求しているロールの下限が階層を与えます）。おかげで約 550 件の操作すべてが、誰かが 1 つずつ入力しなくても権限を持ちます。
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+守る価値があるのは、この導出という性質です。つまり、新しい操作はデフォルトでゲートされるということです。手作業で注釈を付けるモデルの失敗パターンは、誰かが付け忘れることであり、その付け忘れる対象こそがゲートです。ラチェットテストが導出されたドメイン集合を固定するので、新しい接頭辞の下に操作を追加することは、偶然ではなく人間が下す命名の判断になります。
 
-The four tiers map exactly onto the built-in roles:
+4 つの階層は、組み込みロールに正確に対応します。
 
-| Tier | Role floor | Example |
+| 階層 | ロールの下限 | 例 |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | ゲスト | `tickets:read` |
+| `write` | メンバー | `tickets:write` |
+| `administer` | 管理者 | `members:administer` |
+| `own` | オーナー | `workspace:own` |
 
-## Roles
+## ロール
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+5 つの組み込みロール — **オーナー、管理者、メンバー、閲覧者、ゲスト** — は、このカタログに対するプリセットです。オーナー権はワークスペースごとに 1 席だけで、**所有権を譲渡**によって明示的に引き継ぎます（辞めるオーナーは、そうしなければ削除できません。SCIM のプロビジョニング解除はワークスペースのオーナーを拒否するので、先に譲渡してください）。
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**カスタムロールは減算方式です。** カスタムロールは、基底となるプリセット（`admin`、`member`、`viewer`、`guest` のいずれか — `owner` は不可）と、そこから**削除**する権限の集合を指定します — 「管理者だがメンバーを管理できない」のように。基底より多くを付与することは決してできません。だからこそ、既存のインストールへ安全に導入できるのです。既存のチェックはすべて、そのまま妥当な上限であり続けます。メンバーはこれを `custom:<id>` として保持し、この値を理解できないほど古いクライアントは、推測せずにゲストへフォールバックします。
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+ロールの下には**リポジトリ単位の権限付与**（`none` / `read` / `review` / `write`）があります。ワークスペースのメンバーシップが、暗黙にコードホストより強い権限を与えることはありません。コードを露出させるすべてのサーフェスがこれをチェックします。スペースのワークツリー上で開いたターミナルやエディターセッションのように、間接的にコードへ到達するものも含まれます。
 
-## Server authority
+## サーバー権限
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+一部の操作はワークスペースとはまったく関係ありません。インストール全体の設定、SSO 設定、プロバイダーの認証情報、モデル管理、インストール全体のバックアップなどです。これらは**サーバー権限**を宣言し、インストールのオペレーター（記録されたサーバーのオーナー）以外のすべてに対して拒否されます。オペレーターの ID とその定義は、意図的にそれぞれ 1 つだけです。
 
-## The audit trail
+## 監査証跡
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+すべての認可判断 — **許可と拒否の両方** — は、ワークスペース単位のハッシュチェーン化された監査証跡に追記されます。
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+拒否だけのログは「何をブロックしたか」には答えますが、「このエージェントが実際に何をし、誰がそれを認可したか」には答えられません。そして後者が、インシデントレビューが出発点とする問いです。そこで各エントリには、帰属の連鎖全体を記録します。行為主体であるプリンシパル、その代理として行動した人間、経由した委任、アクションとその引数（ダイジェストとして）、判断、そして**判断を下したルール**です。
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+エントリは連鎖します。各エントリのハッシュは前のエントリのハッシュを含むため、どの行を編集、削除、並べ替えても、それ以降のハッシュがすべて壊れます。**チェーンを検証**は、全体を再導出し、最初に破綻したリンクを名指しします。検証できない監査ログはただのログですが、再導出できるものは証拠になります。
 
-Two consequences worth knowing:
+知っておく価値のある帰結が 2 つあります。
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- 監査テーブルは**経過時間ベースのプルーニングの対象外**です。ハッシュチェーンは途中から切り詰めることができません。保持は「エクスポートしてから切り詰める」方式で、切り詰め時には、削除された区間の末尾ハッシュを保持するチェックポイントが残ります。そのため、残った部分も先頭まで検証できます。
+- これはアクティビティタイムラインの**横に並ぶ**もので、その上に載るものではありません。タイムラインは人が行ったことであり、こちらは何が認可され、何が拒否されたかです。共有の相関 ID を使えば、1 回の呼び出しを両方から読み取れます。
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+改行区切りの JSON としてエクスポートでき、SIEM（Splunk、Elastic、Sentinel — ベアラートークン付きの HTTP エンドポイント）へストリームできます。ストリーミングは設計上ベストエフォートです。SIEM がダウンしていてもエージェントのツール呼び出しをブロックしてはならず、耐久性があり検証可能なコピーはいずれにせよディスク上にあります。
 
-## Sessions
+## セッション
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+インストールでは、**セッションの最大有効期間**と**アイドルタイムアウト**を設定できます。どちらも、すべての認証済み経路が通るデバイス認証情報のチェック時に適用されます。クライアントが無視できる程度の制約では、攻撃者ではなくアンケートに答えることになります。インストールで SSO を必須にすることもでき、その場合、新しいデバイスの手動ペアリングが無効になります（ロックアウトガード付きで、機能する SSO 接続が 1 つも存在しない間は拒否します）。
 
-## What this is not
+## そうではないもの
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **オブジェクト単位の ACL ではありません。** チケット単位やメッセージ単位の権限は、意図的に存在しません。チームが実際に求めるのはリポジトリ単位の分離であり、それは存在します。オブジェクト単位の共有は組み合わせ的に膨らむ領域で、ここでは需要が示されたことはありません。
+- **DSL で設定するポリシーエンジンではありません。** 語彙は意図的に閉じており、そのためポリシー全体を描画、説明、列挙できます。
+- **サーバー以外では適用されません。** クライアント側のチェックは、拒否される操作を提示しないためにだけ存在します。権威ある判断は常にサーバー側のものです。

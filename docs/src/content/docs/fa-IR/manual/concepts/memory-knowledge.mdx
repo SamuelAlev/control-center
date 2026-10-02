@@ -1,199 +1,199 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: حافظه و دانش
+description: چگونه Control Center دانش عامل را ذخیره می‌کند، چه چیزی واقعاً به پرامپت یک عامل می‌رسد و چرا خواندن‌های حافظه در صورت خطا باز می‌مانند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## حافظه به چه کار می‌آید
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+بدون حافظه، هر گفتگوی عامل از صفر شروع می‌شود: همان قرارداد باید دوباره توضیح
+داده شود، همان تصمیم دوباره به بحث گذاشته شود، همان بن‌بست دوباره کشف شود.
+حافظه همان انبار محدود به فضای کاری است که از اجراها جان سالم به در می‌برد و
+وجود دارد تا دانشی که یک عامل تولید می‌کند، بعدها برای عامل دیگری قابل یافتن
+باشد.
 
-It has three layers and they answer different questions:
+سه لایه دارد و هرکدام به پرسشی متفاوت پاسخ می‌دهند:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **واقعیت‌ها** — آنچه درست است (یک قرارداد، یک نتیجه، یک تصمیم).
+2. **سیاست‌ها** — آنچه عامل‌ها باید دربارهٔ آن انجام دهند (یک قاعدهٔ هنجاری).
+3. **حافظهٔ کاری** — آنچه یک عامل در میانهٔ آن بوده است.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+این تمایز مهم است چون این لایه‌ها از مسیرهای متفاوتی به عامل می‌رسند. واقعیت‌ها
+جست‌وجو می‌شوند. سیاست‌ها تزریق می‌شوند. حافظهٔ کاری خصوصی است.
 
-## Facts
+## واقعیت‌ها
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+یک `MemoryFact` یک واحد دانش است که به یک فضای کاری و یک دامنه محدود می‌شود.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| ویژگی                                      | چیست                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `domain`                                   | دامنهٔ دانش («conventions»، «decisions»، «codebase»)                                              |
+| `topic`                                    | یک برچسب موضوعی کوتاه                                                                             |
+| `content`                                  | متن دانش                                                                                          |
+| `confidence`                               | 0.0–1.0، از منشأ مقدار می‌گیرد و با اشارهٔ دوباره بالا می‌رود                                     |
+| `memoryType`                               | نوع واقعیت — منحنی افت زمانی آن را تعیین می‌کند                                                   |
+| `veracity`                                 | چگونگی رسیدن به آن دانش — اطمینان را مقدار می‌دهد و اندازهٔ هر افزایشِ اشارهٔ دوباره را می‌سازد   |
+| `sourceObservationIds`                     | مشاهداتی که به آن انجامیدند                                                                       |
+| `supersededBy`                             | واقعیت تازه‌تری که جای آن را گرفته، در صورت وجود                                                  |
+| `validUntil`, `recallCount`, `mentionCount` | نشانه‌های انقضا و استفاده که هنگام یادآوری به کار می‌روند                                          |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+دو سطر آخر همان‌هایی‌اند که مردم از قلم می‌اندازند و تعیین می‌کنند _کدام_ واقعیت
+رو می‌شود. `memoryType` پارامترهای افت وایبول را به‌تفکیک نوع حمل می‌کند، پس یک
+تعهد زمان‌دار به‌سرعت محو می‌شود، در حالی که یک واقعیت پروفایلی پایدار محو
+نمی‌شود. `veracity` منشأ را ثبت می‌کند — اظهارشده توسط یک انسان (وزن 1.0)،
+استنتاج‌شده توسط یک عامل (0.7)، تولیدشده توسط یک ابزار (0.5)، درون‌بری‌شده (0.6) —
+و همان وزن، اطمینان آغازین واقعیت را مقدار می‌دهد.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+واقعیت‌ها وقتی نقض می‌شوند هرگز درجای خود ویرایش نمی‌شوند. نوشتن یک واقعیت،
+تشخیص تعارض را روی واقعیت‌های هم‌دامنه و هم‌موضوع اجرا می‌کند، بازنده را منسوخ
+می‌کند و یک سطر تعارض ثبت می‌کند. هدف همان ردپای حسابرسی است: همیشه می‌توانید
+ببینید پیش‌تر چه باوری وجود داشت و چه چیزی جایش را گرفت.
 
-## Policies
+## سیاست‌ها
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+یک `MemoryPolicy` قاعده‌ای هنجاری است که از واقعیت‌ها گرفته می‌شود، به یک فضای
+کاری و دامنه محدود است و یک فلگ فعال و یک `requiredRole` اختیاری دارد.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+هر سیاست **فعال** در فضای کاری به **هر** اعزامی تزریق می‌شود، بی‌پالایش — بدون
+پالایش بر پایهٔ دامنه، نقش، کار یا فضا. ارزش دانستن دارد پیش از آنکه بیستمین
+سیاست‌تان را بنویسید، چون سیاست‌ها بر سر همان پنجرهٔ بافتی که کار در اختیار دارد
+رقابت می‌کنند. به همین دلیل هم `requiredRole` روی یک سیاست فقط توصیه‌ای است:
+توصیف می‌کند قاعده خطاب به چه کسی است، اما جلوی رسیدن قاعده به بقیه را نمی‌گیرد.
 
-## Domains
+## دامنه‌ها
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+یک `MemoryDomain` واقعیت‌ها و سیاست‌ها را درون یک فضای کاری گروه می‌کند. دامنه‌ها
+به دانش ساختار سازمانی می‌دهند و همان واحدی هستند که اعطاهای دسترسی برایشان
+نوشته می‌شوند — اما پیش از آنکه با یک دامنه مثل مرز محرمانگی رفتار کنید، احتیاط
+زیر را ببینید.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+یک دامنه یا در سراسر فضای کاری است (`architecture`) یا به یک مخزن محدود است
+(`repo:<slug>/architecture`). نام یکسان در هر دو محدوده دو انبار مستقل است:
+واقعیتی که دربارهٔ یک کدبیس درست است، واقعیت سراسر فضای کاری را بازنویسی نمی‌کند.
+`search_memory` و مقدمهٔ اعزام وقتی عامل در آن مخزن کار می‌کند، حافظهٔ محدود به
+مخزن را اول رتبه‌بندی می‌کنند؛ اما بقیه را بیرون نمی‌گذارند. برای نوشتن در آن
+محدوده یا تقویت آن، `repo` را به `propose_fact` / `propose_policy` /
+`search_memory` بدهید.
 
-## Access control is fail-open for reads
+## کنترل دسترسی برای خواندن‌ها در صورت خطا باز است
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` نقش یک عامل و یک دامنه را به یکی از سه سطح دسترسی نگاشت
+می‌کند:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| دسترسی  | معنا                                                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `none`   | بدون دسترسی                                                                                                              |
+| `read`   | می‌تواند واقعیت‌ها را جست‌وجو و بازیابی کند                                                                               |
+| `write`  | `propose_policy` آن را لازم دارد. نوشتن واقعیت‌ها (`propose_fact`، `supersede_fact`) مشروط به اعطا نیست                   |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[نبود اعطا یعنی خواندن، نه منع]
+وقتی هیچ سطر اعطایی برای یک جفت `(role, domain)` وجود ندارد، دسترسی مؤثر
+**`read`** است. خواندن‌ها به‌عمد در صورت خطا باز هستند. تنها نوشتنی که خطا پرتاب
+می‌کند `propose_policy` بدون دسترسی `write` است (`InsufficientMemoryPermission`).
+گذاشتن محتوای حساس در یک دامنهٔ حافظه محدود نمی‌کند چه کسی می‌تواند آن را بخواند،
+مگر آنکه برای هر نقشی که نباید آن را ببیند صریحاً یک اعطای `none` نوشته باشید.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+همچنین امروز هیچ رابط کاربری‌ای برای اعطاها در هیچ‌جای محصول وجود ندارد. صفحهٔ
+حافظه زبانه‌های واقعیت‌ها، سیاست‌ها و گراف دانش را دارد و بس؛ اعطاها فقط از طریق
+عملیات RPC `memory_access_grant.*` قابل دسترسی‌اند.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+این ناهمسانی — نرم در خواندن، سخت در نوشتن سیاست — معامله‌ای عمدی است. حافظه
+وقتی بیشترین فایده را دارد که در گردش باشد، و رد شدن یک خواندن عاملی می‌سازد که
+بی‌صدا کمتر می‌داند، نه عاملی که مشکلی را گزارش می‌کند. در مقابل، رد شدن نوشتن
+یک سیاست پرصدا و قابل اصلاح است، پس اجرای اجباری همان‌جا نشسته است. یک دامنهٔ
+تازه‌ساخته برای هر نقش `write` را مقدار می‌دهد؛ سخت‌ترکردن آن پس از آن ویرایشی
+تنها با RPC ممکن است، چون هیچ رابطی برای اعطاها وجود ندارد.
 
-## Working memory
+## حافظهٔ کاری
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+هر عامل یک `AgentWorkingMemory` دارد: یک چرک‌نویس متنی آزاد که با فضای کاری و
+عامل کلید خورده است. از اجرایی به اجرای دیگر می‌ماند، خصوصیِ همان عامل است و در
+هر اعزام به پرامپت آن تزریق می‌شود. همان‌جایی است که «وسط بازآرایی احراز هویت
+بودم» زندگی می‌کند — وضعیتی که ارزش بردن به اجرای بعدی را دارد، اما ارزش ارتقا
+یافتن به یک واقعیت پایدار را ندارد.
 
-## What actually reaches an agent's prompt
+## چه چیزی واقعاً به پرامپت یک عامل می‌رسد
 
-At dispatch, the memory preamble is assembled from exactly three things:
+هنگام اعزام، مقدمهٔ حافظه دقیقاً از سه چیز ساخته می‌شود:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **هر سیاست فعال فضای کاری**، در قالب سطرهای `- [domain] rule`.
+- **حافظهٔ کاری خودِ عامل**، عیناً.
+- **یک فهرست کوتاه از واقعیت‌های تطبیق‌شده با کلیدواژه** برای همین کار — حداکثر
+  پنج مورد، در بودجه‌ای حدود 1,200 نویسه و تنها وقتی شرح کار دست‌کم 20 نویسه
+  باشد. کارهای کوتاه‌تر هیچ واقعیتی نمی‌گیرند.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+این فهرست کوتاه تنها FTS/کلیدواژه است و عمداً سقف دارد. جاسازی یک پرس‌وجو کند
+است و مسیر اعزام تنها جایی است که تأخیر بلافاصله دیده می‌شود، پس مسیر معنایی کند
+عمداً از آن بیرون نگه داشته شده است. مقدمه در پایان به عامل می‌گوید اقلام باربر
+را با `search_memory` راستی‌آزمایی کند؛ همان‌جایی که مدل کامل یادآوری زندگی
+می‌کند.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+در این مسیر هیچ اعطای دسترسی‌ای بررسی نمی‌شود. هر چیزی که فهرست کوتاه پیدا کند،
+همان چیزی است که عامل می‌بیند.
 
-## Recall: one query, four voices
+## یادآوری: یک پرس‌وجو، چهار صدا
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+ابزار `search_memory` که عامل با آن روبه‌روست سه حالت دارد و واقعاً جست‌وجوهایی
+متفاوت‌اند:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — فقط FTS5.
+- **`semantic`** — نتایج BM25 و برداری که با ادغام رتبهٔ متقابل به‌هم دوخته
+  می‌شوند.
+- **`hybrid`** (پیش‌فرض) — یادآوری چندصدایی: چهار صدای رتبه‌بندی‌شده که با هم
+  ادغام و سپس متنوع می‌شوند.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+چهار صدا عبارت‌اند از واژگانی (FTS)، معنایی (KNN برداری)، زمانی (واقعیت‌های فعال
+اخیر) و گراف — پیمایشی دوگامی روی یال‌های اپیزودیک از قوی‌ترین بذرهای واژگانی و
+معنایی. صدای گراف دلیل وجود یال‌های اپیزودیک است: واقعیتی را رو می‌کند که به پاسخ
+شما _پیوند دارد_ بی‌آنکه هیچ‌یک از واژه‌های شما را تطبیق دهد. صداها با یک قصدِ
+پرس‌وجوی دسته‌بندی‌شده وزن می‌گیرند (معنایی به‌طور پیش‌فرض بیشترین وزن را دارد،
+سپس گراف و واژگانی، و بعد تازگی)، امتیاز هر نامزد با افت وایبولش مقیاس می‌شود، و
+مجموعهٔ نتیجه با MMR متنوع می‌شود تا پنج بازگو از یک واقعیت جای چهار واقعیت متفاوت
+را تنگ نکند.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[یادآوری معنایی تا نصب‌شدن مدل بی‌صدا است]
+صدای برداری تنها زمانی سهم می‌آورد که مدل جاسازی روی دستگاه دانلود شده باشد. تا
+آن زمان، یادآوری ترکیبی با سه صدا اجرا می‌شود و هیچ پرکردن عقب‌گردی وجود ندارد —
+واقعیت‌هایی که پیش از نصب مدل نوشته شده‌اند هرگز بردار نمی‌گیرند. اگر خود افزونهٔ
+برداری SQLite بار نشود، مسیر برداری بیشتر پس‌رفت می‌کند و به پیمایشی درون Dart
+روی جاسازی‌های بسته‌بندی‌شده می‌رسد؛ یادآوری همچنان پاسخ می‌دهد، فقط کندتر.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+جست‌وجوی حافظه در دسکتاپ و وب مسیری جداگانه و ساده‌تر است: عملیات RPC
+`memory_fact.search` **تنها FTS5** است، چون یک کلاینت سبک نمی‌تواند جاسازی
+پرس‌وجو را با خود ببرد و مسیر ترکیبی درون میزبان می‌ماند. پس رتبه‌بندی‌ای که در
+مرورگر حافظه می‌بینید همان رتبه‌بندی‌ای نیست که یک عامل از `search_memory`
+می‌گیرد. این انتظارِ طبیعی است، نه اشکال؛ اما به این معنا هم هست که «جست‌وجو کردم
+و پیدایش نکردم» در رابط کاربری شاهدی بر این نیست که عامل پیدایش نخواهد کرد.
 
-## Where memory lives and who writes it
+## حافظه کجا زندگی می‌کند و چه کسی آن را می‌نویسد
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+مرورگر حافظه در **تنظیمات → فضای کاری → حافظه** قرار دارد
+(`/workspaces/<id>/settings/memory`) و زبانه‌های واقعیت‌ها، سیاست‌ها و گراف دانش
+را دارد.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+ناهمسانی‌ای آنجا هست که مردم را غافلگیر می‌کند: **می‌توانید حافظه را ویرایش و حذف
+کنید، اما نمی‌توانید آن را بسازید.** نه زبانهٔ واقعیت‌ها و نه زبانهٔ سیاست‌ها هیچ
+امکان افزودنی ندارد. نوشتن سمت عامل است، از طریق `propose_fact` و
+`propose_policy` (برای جایگزینی، `supersede_fact` / `supersede_policy`).
+`remember` یک قلم لایهٔ داغ محدود به نشست می‌نویسد که `consolidate_memory` ممکن
+است بعدها آن را به یک واقعیت ارتقا دهد؛ `record_observation` و `update_my_notes`
+چرک‌نویس خصوصی‌ای را می‌نویسند که هنگام اعزام تزریق می‌شود. مرورگر یک سطح بازبینی
+و اصلاح است، نه نویسندگی — پس اگر واقعیتی را در حافظه می‌خواهید، راه گذاشتنش این
+است که به یک عامل بگویید.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+دو عملیات نگهداشت نیز به‌جای زمان‌بندی‌شدن، با فراخوانی عامل اجرا می‌شوند:
+`consolidate_memory` واقعیت‌های انباشته را ادغام و هرس می‌کند و
+`harmonize_memory` باورهایی را که میان عامل‌ها واگرا شده‌اند آشتی می‌دهد.
+`list_memory_conflicts` نشان می‌دهد که تشخیص تعارض تا کنون چه چیزی ثبت کرده است.
+هیچ‌چیز آن‌ها را با تایمر برایتان اجرا نمی‌کند. تصمیم‌های جلسه وقتی یک گام
+ماندگارسازی جلسه آن‌ها را ثبت کند در دامنهٔ `decisions` جمع‌آوری می‌شوند؛ این یک
+تایمر روی اجراهای تکمیل‌شدهٔ عامل نیست.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): roles are what grants are written against
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-حافظه/): working with memory in practice
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): نقش‌ها همان چیزی هستند که اعطاها برایشان نوشته می‌شوند
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): حافظه محدود به فضای کاری است و در پروندهٔ پایگاه‌دادهٔ خودِ آن فضای کاری زندگی می‌کند
+- [مدیریت حافظهٔ فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-حافظه/): کار کردن با حافظه در عمل

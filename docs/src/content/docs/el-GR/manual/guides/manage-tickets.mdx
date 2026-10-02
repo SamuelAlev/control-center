@@ -1,39 +1,43 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Δημιουργία και διαχείριση εισιτηρίων
+description: Δημιουργήστε εισιτήρια, μετακινήστε τα στον κύκλο ζωής τους, προσθέστε ετικέτες και συνδέσμους και καταγράψτε ποιος κατέχει τι.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Αυτός ο οδηγός δείχνει πώς να δημιουργείτε και να διαχειρίζεστε εισιτήρια.
 
-## Create a ticket
+## Δημιουργία εισιτηρίου
 
-### From the UI
+### Από τη διεπαφή
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Κάντε κλικ στο **Εισιτήρια** στην πλαϊνή στήλη του χώρου εργασίας.
+2. Πατήστε **Νέο εισιτήριο**.
+3. Συμπληρώστε:
+   - **Τίτλος** — σύντομη σύνοψη. Είναι το μόνο υποχρεωτικό πεδίο.
+   - **Περιγραφή** — markdown, με γραμμή εργαλείων μορφοποίησης.
+   - **Κατάσταση** — **Προς εκτέλεση** (η προεπιλογή) ή **Ανεκτέλεστα**. Οι
+     εκκινημένες και οι τελικές καταστάσεις επιτυγχάνονται μέσω του κύκλου ζωής,
+     όχι κατά τη δημιουργία.
+   - **Προτεραιότητα** — καμία, επείγουσα, υψηλή, μεσαία ή χαμηλή.
+   - **Ανατεθειμένος** — ο εαυτός σας ή οποιοσδήποτε πράκτορας στον χώρο
+     εργασίας.
+   - **Έργο** — προαιρετική ομαδοποίηση.
+4. Πατήστε **Δημιουργία** ή ενεργοποιήστε πρώτα το **Δημιουργία περισσότερων**
+   για να παραμείνει ανοιχτό το παράθυρο διαλόγου και να καταχωρίζετε γρήγορα.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+Δεν υπάρχει επιλογέας παρόχου στο παράθυρο διαλόγου. Το εισιτήριο
+δημιουργείται με τον ενεργό πάροχο εισιτηρίων του χώρου εργασίας.
 
-### From an agent
+### Από έναν πράκτορα
 
-Ask an agent in a space:
+Ζητήστε από έναν πράκτορα σε έναν χώρο:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Δημιούργησε ένα εισιτήριο για τη διόρθωση του προβλήματος λήξης χρόνου
+> σύνδεσης σε αργές συνδέσεις.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Καλεί το εργαλείο MCP `create_ticket`. Η προτεραιότητα σε αυτό το εργαλείο είναι
+**ακέραιος αριθμός**, όχι όνομα:
 
 ```
 create_ticket(
@@ -44,21 +48,22 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Τιμή | Προτεραιότητα |
+| ---- | ------------- |
+| `0`  | Καμία         |
+| `1`  | Επείγον       |
+| `2`  | Υψηλή         |
+| `3`  | Μεσαία         |
+| `4`  | Χαμηλή         |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Μόνο τα `workspace_id` και `title` είναι υποχρεωτικά· τα `description`,
+`priority`, `assignee` (αναγνωριστικό πράκτορα) και `team_id` είναι προαιρετικά.
+Το εργαλείο χαρακτηρίζεται ως εγγραφή συγχρονισμού παρόχου και ζητά την έγκρισή
+σας πριν εκτελεστεί.
 
-## Update ticket status
+## Ενημέρωση κατάστασης εισιτηρίου
 
-Tickets follow this lifecycle:
+Τα εισιτήρια ακολουθούν αυτόν τον κύκλο ζωής:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +73,134 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+Οι `done`, `failed` και `cancelled` είναι τελικές. Η `cancelled` είναι προσβάσιμη
+από οποιαδήποτε μη τελική κατάσταση. Οι `done` και `failed` είναι προσβάσιμες από
+τις `inProgress` ή `inReview`· η `open` μπορεί επίσης να μεταβεί απευθείας σε
+`blocked`. Ο επιλογέας κατάστασης στη διεπαφή παραθέτει κάθε κατάσταση εκτός από
+τη `failed` — οι πράκτορες τη σημειώνουν με το `fail_ticket`.
 
-To change it, use any of:
+Για να την αλλάξετε, χρησιμοποιήστε οποιοδήποτε από τα εξής:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- τη γραμμή **Κατάσταση** στη λωρίδα ιδιοτήτων του εισιτηρίου,
+- το υπομενού **Κατάσταση** στο μενού δεξιού κλικ ενός εισιτηρίου στη λίστα,
+- το τσιπ **Κατάσταση** στην πλωτή γραμμή αφού επιλέξετε πολλά εισιτήρια.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Ο γράφος κύκλου ζωής δεσμεύει τους πράκτορες, όχι εσάς]
+Κάθε αλλαγή κατάστασης που γίνεται από τη διεπαφή εφαρμόζεται οπωσδήποτε,
+παρακάμπτοντας εντελώς τον γράφο — μπορείτε να μετακινήσετε ένα εισιτήριο σε
+οποιαδήποτε κατάσταση παραθέτει ο επιλογέας, ακόμη και να ανοίξετε ξανά ένα
+`done`, `failed` ή `cancelled`. Ο επιλογέας δεν προσφέρει τη `failed` ως
+προορισμό. Το παραπάνω διάγραμμα διέπει τους πράκτορες και τον αυτοματισμό: μια
+παράνομη μετάβαση που επιχειρεί ένα εργαλείο MCP ή ένας reconciler καταγράφεται
+και αγνοείται, δεν εφαρμόζεται.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/).
+Οι αλλαγές κατάστασης εκπέμπουν γεγονότα τομέα (`TicketStatusChanged`,
+`TicketCompleted` και άλλα) που μπορούν να ενεργοποιήσουν pipeline. Δείτε
+[Ρύθμιση ενεργοποιητών pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενεργοποιητές-pipeline/).
 
-## Assign a ticket
+## Ανάθεση εισιτηρίου
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Ανοίξτε το εισιτήριο.
+2. Στη λωρίδα ιδιοτήτων, ορίστε τον **Ανατεθειμένο** — τον εαυτό σας, άλλο μέλος
+   του χώρου εργασίας ή έναν πράκτορα.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)).
+:::caution[Η ανάθεση δεν ξεκινά καμία εργασία]
+Η ανάθεση καταγράφει την κυριότητα και τίποτα άλλο. Δεν δημιουργεί χώρο, δεν
+αλλάζει καμία κατάσταση και δεν αποστέλλει κανέναν πράκτορα — το `TicketAssigned`
+είναι καθαρό σήμα ελέγχου χωρίς αποστολέα πίσω του. Για να βάλετε έναν πράκτορα
+να δουλέψει, στείλτε του μήνυμα σε έναν χώρο (δείτε
+[Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Η μία εξαίρεση: το `TicketAssigned` είναι τύπος γεγονότος στον οποίο μπορείτε να
+συνδέσετε έναν ενεργοποιητή pipeline, ώστε ένα δικό σας πρότυπο να αντιδρά σε μια
+ανάθεση.
 :::
 
-## Add labels
+## Προσθήκη ετικετών
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Οι ετικέτες εφαρμόζονται μαζικά από τη λίστα εισιτηρίων, όχι από ένα μεμονωμένο
+εισιτήριο — η λωρίδα ιδιοτήτων δεν έχει χειριστήριο ετικετών.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Περάστε τον δείκτη πάνω από μια γραμμή στη λίστα εισιτηρίων και τσεκάρετε το
+   πλαίσιο ελέγχου της. Τσεκάρετε όσα χρειάζεστε· μόλις επιλεγεί κάτι, εμφανίζεται
+   μια πλωτή γραμμή.
+2. Σε αυτή τη γραμμή, ανοίξτε το τσιπ **Ετικέτες**.
+3. Διαλέξτε μια ετικέτα. Προστίθεται σε κάθε επιλεγμένο εισιτήριο που δεν την έχει·
+   οι υπάρχουσες ετικέτες δεν διαγράφονται ποτέ. Ο **Καθαρισμός ετικετών** τις
+   αφαιρεί όλες. Ο επιλογέας παραθέτει ετικέτες που υπάρχουν ήδη σε κάποιο
+   εισιτήριο του χώρου εργασίας. Οι πράκτορες μπορούν να προσθέσουν νέο όνομα μέσω
+   του `update_ticket` ή του `tickets.patch`.
 
-## Link tickets
+## Σύνδεση εισιτηρίων
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+Οι σχέσεις βρίσκονται στην κάρτα **Σχέσεις** του εισιτηρίου στη λωρίδα ιδιοτήτων
+ή πίσω από τη **Συσχέτιση με** στο μενού δεξιού κλικ της λίστας.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Ανοίξτε το εισιτήριο και βρείτε την κάρτα **Σχέσεις**.
+2. Πατήστε το χειριστήριο προσθήκης της και επιλέξτε τη σχέση:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| Σχέση                  | Σημασία                                        |
+| ---------------------- | ---------------------------------------------- |
+| **Υποζήτημα του…**     | Το γονικό αυτού του εισιτηρίου είναι το άλλο   |
+| **Γονικό του…**        | Το άλλο εισιτήριο είναι παιδί αυτού             |
+| **Αποκλείεται από…**   | Αυτό το εισιτήριο αποκλείεται από το άλλο      |
+| **Αποκλείει…**         | Αυτό το εισιτήριο αποκλείει το άλλο            |
+| **Σχετίζεται με…**     | Συμμετρική, χωρίς υποδηλούμενη κατεύθυνση      |
+| **Διπλότυπο του…**     | Αυτό το εισιτήριο είναι διπλότυπο του άλλου    |
 
-3. Pick the target ticket.
+3. Διαλέξτε το εισιτήριο-στόχο.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+Το **Διπλότυπα από** εμφανίζεται στην κάρτα αλλά όχι στον επιλογέα — είναι το
+αντίστροφο του **Διπλότυπο του…** και ορίζεται από το άλλο εισιτήριο. Μπορείτε να
+κάνετε κλικ σε κάθε καταγεγραμμένη σχέση για να ανοίξετε το συνδεδεμένο εισιτήριο
+και να την αφαιρέσετε περνώντας τον δείκτη από πάνω της.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Οι σχέσεις γονικού και υποζητήματος αποθηκεύονται στο ίδιο το εισιτήριο και όχι ως
+γραμμές συνδέσμων, οπότε η διαγραφή ενός γονικού συμπαρασύρει τα παιδιά του
+(δείτε παρακάτω), ενώ οι σύνδεσμοι αποκλεισμού και συσχέτισης όχι.
 
-## Add collaborators
+## Προσθήκη συνεργατών
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+Οι συνεργάτες είναι ένας κατάλογος στο εισιτήριο — ποιος εμπλέκεται και με ποια
+ιδιότητα.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Ανοίξτε το εισιτήριο.
+2. Πατήστε το χειριστήριο προσθήκης ατόμου στην κάρτα **Προσθήκη συνεργάτη**.
+3. Διαλέξτε έναν πράκτορα.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Οι τρεις ρόλοι είναι **assignee**, **collaborator** (ο προεπιλεγμένος) και
+**reviewer**. Ο επιλογέας της διεπαφής παραθέτει μόνο πράκτορες του χώρου
+εργασίας και γράφει πάντα τον προεπιλεγμένο ρόλο· οι άνθρωποι μπορούν να
+εμφανίζονται ως γραμμές αλλά δεν προσφέρονται σε αυτό το μενού. Το εργαλείο MCP
+`add_ticket_collaborator` δέχεται ένα `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/).
+Η προσθήκη ενός συνεργάτη γράφει μια γραμμή και δεν δημοσιεύει κανένα γεγονός
+τομέα· δεν παρέχει πρόσβαση σε χώρο. Για να βάλετε έναν πράκτορα σε μια συνομιλία,
+προσθέστε τον ως συμμετέχοντα από την κεφαλίδα του χώρου — δείτε
+[Χρήση χώρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/).
 
-## Delete a ticket
+## Διαγραφή εισιτηρίου
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Χρησιμοποιήστε τη **Διαγραφή εισιτηρίου** στο κάτω μέρος της λωρίδας ιδιοτήτων,
+το μενού δεξιού κλικ ή την ενέργεια διαγραφής της πλωτής γραμμής αφού επιλέξετε
+πολλά εισιτήρια.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Η διαγραφή είναι μόνο τοπική]
+Ένα εισιτήριο που προήλθε από εξωτερικό σύστημα παρακολούθησης δεν διαγράφεται
+εκεί — κανένας πάροχος δεν το υποστηρίζει — οπότε μπορεί να επανεμφανιστεί στον
+επόμενο συγχρονισμό. Η διαγραφή συμπαρασύρει επίσης: οι συνεργάτες του εισιτηρίου
+και τυχόν θυγατρικά εισιτήρια φεύγουν μαζί του.
 :::
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Delegate work to agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
-- [Organize work with projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)
-- [Chat with an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
-- [Ticket lifecycle reference](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/)
+- [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
+- [Οργάνωση εργασίας με έργα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/)
+- [Συνομιλία με πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)
+- [Κύκλος ζωής εισιτηρίου](/el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)
+- [Εισιτήρια](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)

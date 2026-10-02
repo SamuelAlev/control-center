@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: اولین pull request را بازبینی کنید
+description: یک PR را در میزکار باز کنید، دیف را بخوانید، نظر بگذارید، تأیید کنید و ادغام کنید.
 slug: fa-IR/راهنمای-کاربر/آموزشها/اولین-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## آنچه خواهید ساخت
 
-By the end of this tutorial, you will have:
+در پایان این آموزش، این‌ها را در اختیار خواهید داشت:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- یک pull request را در میزکار PR مربوط به Control Center باز کرده‌اید
+- دیف آن را خوانده‌اید و یک نظر درون‌خطی گذاشته‌اید
+- یک حکم بازبینی ثبت کرده‌اید
+- PR را ادغام کرده‌اید
 
-Prerequisites: [Dispatch your first agent](/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+پیش‌نیازها: [اولین عامل را اعزام کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) را کامل کرده باشید و یک pull request باز روی مخزنی داشته باشید که در این فضای کاری ثبت شده است. برای گام‌های بازبینی، PRی را برگزینید که خودتان باز نکرده‌اید — دکمهٔ **بازبینی** روی PRهای خودتان پنهان است. ادغام روی PRی که خودتان نوشته‌اید هم کار می‌کند.
 
-## Step 1: Open the pull request
+## گام 1: باز کردن pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. در نوار کناری روی **Pull requestها** کلیک کنید
+2. PR خود را پیدا کنید و روی آن کلیک کنید
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**نقطهٔ بررسی.** PR به‌شکل میزکاری زبانه‌دار باز می‌شود — نمای کلی، دیف، کنترل منبع، گفتگو، کنش‌ها — با تمرکز روی **نمای کلی**: عنوان و کنش‌ها، توضیحات و خط زمانی فعالیت، و یک نوار کناری با وضعیت، بازبین‌ها، تخصیص‌یافته‌ها، بررسی‌ها و فایل‌های تغییریافته. کلیک روی یک فایل در آنجا شما را به همان فایل در زبانهٔ دیف می‌برد. زبانهٔ **بازبینی PR** تا وقتی کسی درخواست بازبینی هوش مصنوعی نکند باز نمی‌شود.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[صف خالی با درخواست «GitHub را وصل کنید»]
+این وضعیت یعنی _سرور_ هیچ توکن GitHubی نگه نمی‌دارد — کلاینت شما هرگز توکنی نگه نمی‌دارد. یکی را در **تنظیمات → فضای کاری → نمایه و هویت → میزبانی کد** تنظیم کنید، سپس فهرست را تازه‌سازی کنید.
 :::
 
-## Step 2: Read the diff
+## گام 2: خواندن دیف
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+زبانهٔ **دیف** را باز کنید. یک درخت فایل جمع‌شدنی در سمت چپ می‌نشیند و نوار بالای دیف یک انتخابگر بازهٔ کامیت را حمل می‌کند — دیف را به یک کامیت یا بازه‌ای از آن‌ها محدود کنید — به‌همراه شمار فایل‌ها و افزوده‌ها و حذف‌های جاری.
 
-The settings button in the diff toolbar controls how it renders:
+دکمهٔ تنظیمات در نوارابزار دیف نحوهٔ رندر آن را کنترل می‌کند:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- نمای **شکافته** یا **یکپارچه**
+- **شکستن خط** یا پیمایش خطوط بلند
+- **لیگاتور فونت کد**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/fa-IR/راهنمای-کاربر/مرجع/میانبرهای-صفحه-کلید/).
+یک فایل را دیده‌شده علامت بزنید تا پیشرفتتان را در یک دیف بزرگ پیگیری کنید. پیمایش با صفحه‌کلید در [میانبرهای صفحه‌کلید(/fa-IR/راهنمای-کاربر/مرجع/میانبرهای-صفحه-کلید/) آمده است.
 
-## Step 3: Leave an inline comment
+## گام 3: گذاشتن نظر درون‌خطی
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. روی یک خط در دیف شناور شوید — یک دکمهٔ قرصی‌شکل کوچک `+` در حاشیه ظاهر می‌شود
+2. برای گذاشتن نظر روی آن خط کلیک کنید، یا نخست آن را عمودی بکشید تا بازه‌ای انتخاب شود
+3. بازخوردتان را بنویسید. کادر نوشتن دو راه ارسال پیشنهاد می‌دهد:
+   - **شروع بازبینی** (یا **افزودن به بازبینی** اگر بازبینی‌ای از قبل در جریان است) نظر را صف می‌کند. رشته تا وقتی در گام 4 حکمی ثبت نکنید **بازبینی در انتظار** را نشان می‌دهد.
+   - **افزودن نظر تکی** بی‌درنگ آن را در GitHub منتشر می‌کند. رشته **در حال ارسال…** و سپس **همگام‌شده** را نشان می‌دهد و اگر ارسال شکست بخورد، تلاش دوباره پیشنهاد می‌دهد.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+در این آموزش، از **شروع بازبینی** استفاده کنید تا نظر همراه با حکم بیرون برود.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[نظر صف‌شده هنوز در GitHub نیست]
+**شروع بازبینی** / **افزودن به بازبینی** نظر را تا وقتی حکمی ثبت نکنید به‌صورت محلی نگه می‌دارند. تنها **افزودن نظر تکی** بی‌درنگ منتشر می‌کند. _بدنهٔ_ بازبینی که در گام 4 می‌نویسید پیش‌نویسی جداست.
 :::
 
-## Step 4: Submit a review
+## گام 4: ارسال بازبینی
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. در ردیف کنش‌های نمای کلی روی **بازبینی** کلیک کنید — همان دکمه در نوارابزار زبانهٔ دیف هم می‌نشیند. روی PRهایی که خودتان نوشته‌اید و روی PRی بسته یا ادغام‌شده پنهان است.
+2. در کادر نوشتن خلاصه‌ای بنویسید. به‌صورت خودکار به‌عنوان پیش‌نویس ذخیره می‌شود، پس می‌توانید پوشش را ببندید و بازگردید.
+3. یک حکم برگزینید:
+   - **درخواست تغییرات**
+   - **نظر**
+   - **تأیید**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+حکم همان دکمه است. پس از **تأیید** یا **درخواست تغییرات**، دکمه خودش را به **تأییدشده** یا **تغییرات درخواست‌شده** برچسب می‌زند. حکم **نظر** آن را با برچسب **بازبینی** رها می‌کند.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**نقطهٔ بررسی.** اگر یکی از آن دو را برگزیده باشید، دکمه «تأییدشده» یا «تغییرات درخواست‌شده» را نمایش می‌دهد.
 
-## Step 5: Merge
+## گام 5: ادغام
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+دکمهٔ **ادغام** هر زمان که GitHub PR را قابل ادغام گزارش کند حاضر است — به تأیید خودتان گره نخورده است. رنگش آمادگی را گزارش می‌کند نه مجوز را: اصلی وقتی تأییدهای لازم و بررسی‌ها سبز باشند، ثانویه تا وقتی بررسی‌ای در حال اجراست، و تخریبی وقتی بازبین درخواست‌شده تأیید نکرده باشد یا بررسی‌ای ناموفق باشد.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. روی **ادغام** کلیک کنید
+2. یک روش برگزینید: **اسکواش و ادغام**، **ایجاد کامیت ادغام** یا **ریبیس و ادغام**
+3. برای دو مورد نخست، عنوان و پیام پیش‌پرشدهٔ کامیت را ویرایش کنید
+4. تأیید کنید
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+هر مشکل باقی‌مانده‌ای — «بررسی‌ها ناموفق»، «بعضی بازبینی‌ها در انتظارند» — پیش از تأیید در پنجرهٔ شناور فهرست می‌شود.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[ادغام بازگشت‌ناپذیر است]
+ادغام کامیت‌ها را به GitHub می‌فرستد. هرگز به پشتهٔ واگرد Control Center وارد نمی‌شود و از اینجا نمی‌توان آن را واگرد کرد.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/) for what else listens.
+پس از ادغام، یک رویداد دامنهٔ `PrMerged` برمی‌خیزد؛ تحلیل‌ها و اعلان‌ها آن را مصرف می‌کنند. برای اینکه چه چیز دیگری گوش می‌دهد، [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/) را ببینید.
 
-## Reviewing with AI
+## بازبینی با هوش مصنوعی
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center می‌تواند یک پایپ‌لاین بازبین را روی یک PR باز بگذارد، اما تنها وقتی که بخواهید: قالب `pr_review` یک تریگر دستی دارد و بس.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. منوی سرریز را در ردیف کنش‌های نمای کلی باز کنید و **پرسش از AI** را برگزینید. Control Center اجرا را شروع می‌کند و زبانهٔ **بازبینی PR** را باز می‌کند تا بتوانید کار متخصصان را تماشا کنید.
+2. عامل‌های بازبین یافته‌هایشان را به‌صورت گره‌های بازبینی در فضای PR ثبت می‌کنند؛ یک گام نهایی آن‌ها را در یک گزارش یکپارچه می‌کند.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/).
+پایپ‌لاین عمداً در GitHub منتشر نمی‌کند — پس از یکپارچه‌سازی پایان می‌یابد. انتشار گامی جداست که خودتان برمی‌دارید، با دکمهٔ **انتشار در GitHub** در زبانهٔ **بازبینی PR**. [استفاده از بازبینی مبتنی بر هوش مصنوعی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-هوش-مصنوعی/) را ببینید.
 
-## Recap
+## خلاصه
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+یک PR را در میزکار باز کردید، دیف را با برجسته‌سازی نحو خواندید، یک نظر درون‌خطی گذاشتید، حکمی ثبت کردید و ادغام کردید — بدون آنکه از برنامه بیرون بروید.
 
-**Next:** [Build your first pipeline](/fa-IR/راهنمای-کاربر/آموزشها/اولین-پایپلاین/) to automate multi-step workflows.
+**بعدی:** [اولین پایپ‌لاین را بسازید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-پایپلاین/) تا جریان‌های کاری چندگامی را خودکار کنید.

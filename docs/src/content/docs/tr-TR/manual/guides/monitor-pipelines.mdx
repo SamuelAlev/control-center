@@ -1,150 +1,160 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Pipeline çalıştırmalarını izleyin
+description: Çalıştırma kuyruğunda çalışın, bir çalıştırmanın şelalesini ve adım panelini okuyun, başarısız ya da takılı kalan bir adımdan kurtulun.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-izleme
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/).
+Bu sayfa, bir çalıştırma başladıktan sonraki her şeyi kapsar: onu bulmak, her
+adımın ne yaptığını okumak ve başarısız bir çalıştırmayı tekrar yoluna sokmak. Bir
+çalıştırma başlatmak için
+[Bir pipeline’ı elle çalıştırın](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
+sayfasına bakın.
 
-## Find a run
+## Bir çalıştırma bulun
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Çalışma alanı kenar çubuğunda **Pipelines**’a tıklayın. Açılan ekran çalışma
+   alanının çalıştırma kuyruğudur — en yeniden en eskiye tüm çalıştırmalar.
+2. Filtrelemek için sol kenar çubuğunu kullanın. Her biri canlı bir sayı gösteren
+   tam olarak üç filtre vardır: **Tümü**, **Çalışıyor**, **Başarısız**.
+3. <kbd>↑</kbd>/<kbd>↓</kbd> (ya da <kbd>j</kbd>/<kbd>k</kbd>) ile tabloda
+   gezinin ve odaklanmış çalıştırmayı açmak için <kbd>Enter</kbd> tuşuna basın.
+   Bir satıra tıklamak da aynı işi yapar.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Her satır, çalıştırmanın nasıl başladığını gösteren bir simge taşır (manuel için
+oynat simgesi; bir kod grafiği izlemesi için dosya simgesi; aksi halde otomatik
+tetikleyici). İpucu, tetikleyicinin adını verir — **Manuel**, **PR yayınlandı**,
+**Dosya değişikliği** vb. — ve bir izleme çalıştırması için hangi dosyaların
+değiştiğini söyler. Ardından pipeline adı, bir durum rozeti, etkin süre (ya da
+`queued` bir çalıştırma için kuyruk konumu) ve bu denemenin ne kadar önce
+başladığı gelir. Etkin süre, boşta durup yeniden başlama aralarını hariç tutar;
+bu yüzden geçen toplam süreyi göstermez.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Tamamlanmış, askıda ya da iptal edilmiş çalıştırmalar için filtre yoktur; şablon
+başına filtre, zaman aralığı ve şablon başına çalıştırma geçmişi görünümü de
+yoktur. Bir şablonun çalıştırmalarını karşılaştırmak, kuyruğu adına göre taramak
+anlamına gelir.
 
-## Read the run detail
+## Çalıştırma ayrıntısını okuyun
 
-A run's page has three stacked parts.
+Bir çalıştırmanın sayfası üst üste üç bölümden oluşur.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Meta şerit** başlangıç zamanını, etkin süreyi, adım ilerlemesini ("3/7 adım"),
+bozulan adımı ve nedenini belirten bir başarısızlık özetini ve **Yeniden dene**
+ile **Sil** eylemlerini taşır.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Zamanlama şelalesi** her adım için bir çubuk verir; çubuğun süresini ve —
+ajan adımları için — sent cinsinden maliyetini gösterir. Yeniden denenen bir
+adım, süresinin ardından `×N` son ekini gösterir; deneme sayıları yalnızca bu
+son ekte görünür.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Grafik tuvali** şablonu her düğümün canlı durumuyla çizer. Bir düğüm seçmek,
+o düğümün adım panelini açar.
 
-### Run and step statuses
+### Çalıştırma ve adım durumları
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Durum         | Anlamı                                             |
+| ------------- | -------------------------------------------------- |
+| **Beklemede** | Oluşturuldu, henüz başlamadı                        |
+| **Kuyrukta**  | Kabul edildi ama bekletiliyor: bu şablonun maks. paralel sınırı dolu; henüz adım satırı yok |
+| **Çalışıyor** | Yürütülüyor                                         |
+| **Askıda**    | Harici bir şeyi bekliyor — normal, takılmış değil   |
+| **Tamamlandı** | Başarıyla bitti                                    |
+| **Başarısız** | Bir hatayla sona erdi                               |
+| **İptal edildi** | Bir kullanıcı ya da sistem tarafından durduruldu |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Adımlar bu durumları **Kuyrukta** hariç taşır; buna bir router’ın girmediği bir
+dal (ve artık erişilemeyen alt adımları) için **Atlandı** eklenir.
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Askıda** durumu, bir ajan adımının ömrünün çoğunu geçirdiği yerdir: gönderilen
+bir ajan ya da bir onay kapısı, işi tamamlanana kadar adımı tutar. İki motor
+güvencesi, çalıştırmayı sürdürmek yerine tümünü başarısız kılar: 24 saatten uzun
+süre askıda kalan bir adım (`extras.awaitApproval` — yani
+`orchestration.awaitApproval` gövdesi — muaftır; `human.gate` değildir) ve sunucu
+durduğunda uçuşta olan, idempotent olmayan bir adım.
 
-## Inspect a step
+## Bir adımı inceleyin
 
-Select a node on the canvas. The step panel shows, in order:
+Tuvalde bir düğüm seçin. Adım paneli sırasıyla şunları gösterir:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Adım başarısız olduğunda bir **Hata** uyarısı, atlandığında ise nedeniyle
+  birlikte bir **Atlandı** uyarısı.
+- **Başladı**, **Bitti** ve süre.
+- **Dal** — paralel dallar için dal dizini.
+- **Konuşmayı görüntüle** — adımın içinde çalıştığı konuşmaya atlar. Pipeline
+  konuşmaları kenar çubuğunda gizlidir, dolayısıyla içeri girmenin tek yolu
+  budur.
+- Daraltılabilir JSON olarak **Girdi** ve **Çıktı**.
+- **Ajan etkinliği** — adımın gönderdiği her ajan çalıştırması için durumunu,
+  özetini, süresini ve maliyetini gösteren bir kutucuk.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Bir ajan adımı için **Çıktı**, ajanın `submit_output` ile gönderdiği
+yapılandırılmış yükün kendisidir, düzyazısı değil. Akıl yürütme izi **Ajan
+etkinliği** bölümünde ve **Konuşmayı görüntüle** ile açılan konuşmada bulunur.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Bir bash adımı için **Çıktı**, betiğin 0 çıkışında yazdığı kırpılmış stdout’tur.
+Sıfır olmayan bir çıkış adımı başarısız kılar ve hata mesajı olarak stderr’in son
+satırlarını gösterir.
 
-## Recover a failed run
+## Başarısız bir çalıştırmayı kurtarın
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Meta şeritteki başarısızlık özetini okuyun; başarısız adımın adını verir.
+   Mesajın kendisi adım panelindeki **Hata** uyarısındadır.
+2. Adımın **Girdi**'sini kontrol edin — eksik ya da yanlış yazılmış bir durum
+   anahtarı en sık görülen nedendir. Bir prompt-agent adımı doğrudan başarısız
+   olur ve çözülemeyen yer tutucuların adlarını verir; bir bash adımı ise bunları
+   boş dize olarak işler ve yine de çalışır, bu da genellikle bir adım sonra
+   ortaya çıkar.
+3. Bir ajan adımı için **Konuşmayı görüntüle**'yi açın ve ajanın gerçekte ne
+   yaptığını okuyun.
+4. Meta şeritte **Yeniden dene**'ye basın. Tamamlanan ve atlanan adımlar
+   çıktılarını korur; diğer her şey silinip yeniden yürütülür ve çalıştırma
+   yeniden çalışıyor durumuna döner. Bu deneme için süre sayacı baştan başlar.
 
-Common causes worth checking first:
+İlk bakılması gereken yaygın nedenler:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Zaman aşımı** — adım kendi **Zaman aşımı (ms)** değerini aştı. Bu alanın
+  milisaniye olduğunu unutmayın.
+- **Betik hatası** — bash komutu sıfır olmayan bir kodla çıktı ya da `bash`
+  sunucu ana makinesinin `PATH`'inde yok.
+- **Şema doğrulaması** — ajanın `submit_output` yükü adımın çıktı şemasını
+  karşılamadı.
+- **Çözülemeyen yer tutucu** — bir prompt-agent adımının başvurduğu bir `{{key}}`
+  yukarı akışta hiç yazılmadı. Hata, çözülemeyen her anahtarın adını verir.
+- **Kayıtlı olmayan gövde** — gövde anahtarı kayıtlı olmayan bir adım, şablon
+  yüklenirken uyarı verir ve ardından hiç çalışmaz.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Yeniden dene yalnızca başarısız ya da iptal edilmiş bir çalıştırmada işe yarar]
+**Yeniden dene** düğmesi yalnızca çalıştırma `failed` ya da `cancelled`
+olduğunda gösterilir. Motor, diğer tüm durumlarda hemen geri döner.
 :::
 
-## Stop a step that is stuck
+## Takılı kalan bir adımı durdurun
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Çalışan adımı seçin ve adım panelinin başlığındaki **Çalışanı sonlandır**
+düğmesine basın. Bu, adımın sürecini öldürür, adımı başarısız olarak işaretler
+ve dolayısıyla tüm çalıştırmayı başarısız kılar — açık olan her kardeş dal da
+onunla birlikte kapatılır.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Bu ekranda çalıştırmayı iptal etme denetimi yoktur. `pipeline.cancel` bir RPC
+işlemi olarak vardır ve motor onu uygular, ancak pipeline arayüzünde hiçbir şey
+onu çağırmaz; bir adımda **Çalışanı sonlandır** ya da bir çalıştırmada **Sil**,
+kullanılabilir tek durdurma hareketidir.
 
-## Track cost
+## Maliyeti izleyin
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Maliyet adım başına bildirilir: şelalenin sağ sütununda ve **Ajan etkinliği**
+altındaki her kutucukta. Ayrıntı sayfasında çalıştırma toplamı ve çalıştırma
+kuyruğunda maliyet sütunu yoktur; bu yüzden iki çalıştırmanın maliyetini
+karşılaştırmak, adımlarını toplamak anlamına gelir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run a pipeline manually](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
-- [Create a pipeline template](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
-- [Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
-- [Pipeline steps reference](/tr-TR/kilavuz/referans/pipeline-adimlari/)
+- [Bir pipeline’ı elle çalıştırın](/tr-TR/kilavuz/nasil-yapilir/pipeline-calistirma/)
+- [Bir pipeline şablonu oluşturun](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/)
+- [Maliyetleri yönetin](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
+- [Pipeline adımları](/tr-TR/kilavuz/referans/pipeline-adimlari/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/)
+- [Pipeline’lar](/tr-TR/kilavuz/kavramlar/pipelinelar/)

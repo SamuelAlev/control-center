@@ -1,121 +1,125 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: Zmiňujte agenty přes @
+description: Zmiň agenty v prostoru, ať se odešlou, a kolegy, ať dostanou oznámení.
 slug: cs-CZ/prirucka/navody/zminky-agentu
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Tenhle návod ukáže, jak v prostoru zmiňovat agenty a kolegy přes @.
 
-## Mention an agent
+## Zmiň agenta
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Do composeru napiš `@` a agenta vyber z našeptávače, nebo jméno napiš sám:
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+Zmíněný agent se do prostoru přidá jako účastník, pokud jím ještě není, a odešle
+se s kontextem a režimem toho prostoru. Účastníci bez zmínky zprávu uvidí, ale
+neodešlou se.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Když pošleš zprávu bez zmínky agenta, Control Center si vybere, kdo odpoví:
+agenta, který v konverzaci mluvil naposledy, jinak vlastníka konverzace, když
+nějakého má, jinak prvního agenta nejvyšší úrovně mezi účastníky prostoru.
+V prostoru s jedním agentem je to vždycky ten jediný.
 
-## Know how a name is matched
+## Jak se páruje jméno
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Token zmínky se páruje **bez rozlišení velikosti písmen**, podle **přesného
+jména nebo předpony**. `@arch` tedy dosáhne na agenta jménem `architect`
+a `@Alice` na `alice`.
 
-Two consequences worth planning around:
+Dva důsledky, se kterými se vyplatí počítat:
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Krátký token není chyba.** Když dva agenti sdílejí předponu, vyhraje první
+  nalezený a který to je, záleží na pořadí, ne na pravidle pro shodu. Když se
+  jména překrývají, piš celé jméno.
+- **Do tokenu patří jen písmena, číslice a podtržítka.** Parser páruje
+  `@(\w+)`, takže `@code-reviewer` se čte jako token `code` a `@my agent` jako
+  `my`. Agenta, jehož jméno obsahuje spojovník, tečku nebo mezeru, spolehlivě
+  zmínit nejde, a to ani přes našeptávač, který jméno vloží jako prostý text.
+  Pojmenuj agenty jedním slovem, nebo s podtržítky.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Zmínky se z textu vystřihnou, než se dostanou k agentovi. Zpráva, která je
+_jen_ zmínky (`@alice`), proto nic neodešle. Dej jí, co má udělat.
 
-## Mention several agents at once
+## Zmiň víc agentů najednou
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Oba agenti se odešlou paralelně do stejné konverzace a oba dostanou celou
+zprávu.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Taky **sdílejí worktree toho prostoru**. Worktree repozitářů se připravují na
+prostor, ne na agenta. Každý agent dostane vlastní overlay pracovní adresář
+pro své `AGENTS.md`, skilly a konfiguraci a sdílené repozitáře jsou v něm
+připojené pro čtení i zápis. Dva agenti zmínění společně si proto navzájem
+vidí úpravy a můžou do nich narazit.
 
-## Mention a teammate
+## Zmiň kolegu
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Každý `@token`, který nesedí na agenta, se zkusí proti lidským členům
+pracovního prostoru, podle handle, se stejným pravidlem přesné shody nebo
+předpony bez rozlišení velikosti písmen.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Rozlišená zmínka člověka **nic neodešle**. Veze se v metadatech zprávy jen
+proto, aby směrovač oznámení toho člověka upozornil.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Jména agentů se zkoušejí vždy první a token, který už patří agentovi, se do
+seznamu členů nikdy nedostane. Jedno `@word` se vždycky rozliší jen na jednoho
+principála.
 
-## What the agent receives
+## Co agent dostane
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Odeslaný agent dostane v promptu blok „Summons“. Ten jmenuje, kdo ho přivolal,
+a vypíše sestavu prostoru: ostatní agenty (označené jako top-level nebo
+subordinate) a lidské členy, aby věděl, komu může práci předat. Blok mu taky
+řekne, že zmínka jiného agenta v odpovědi toho agenta probudí a že zmínka sebe
+sama se ignoruje.
 
-## When an agent mentions an agent
+## Když agent zmíní agenta
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Agent může předat práci ve vlastní odpovědi. Když tah **doběhne v pořádku**,
+zmínky v jeho textu se rozliší, ti agenti se přidají do prostoru a odešlou se
+do stejné konverzace s tahem, který je zmínil, jako promptem. Tah, který
+selhal nebo byl přerušený, nikoho neprobudí. Zastavil se uprostřed úvahy.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Pravidla jsou schválně přísnější než u composeru, protože se nikdo nedívá, aby
+špatný odhad opravil:
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Jen přesná jména.** Shoda podle předpony neplatí. `@arch` dosáhne na
+  `architect`, když to napíše člověk. Od agenta nedosáhne na nikoho. Jméno,
+  které sedí na dva agenty, taky nedosáhne na nikoho.
+- **Kód není běžný text.** Zmínky uvnitř bloků v plotu nebo `` `backticks` ``
+  se ignorují, takže citovat anotaci `@Override` nebo `pip install foo@1.2`
+  je bezpečné. Neukončený plot vymaže všechno, co po něm následuje.
+- **`@` přilepené k předchozímu tokenu není zmínka.** `sam@host.com`,
+  `pkg/@scope` a `node@20` se nerozliší na nikoho.
+- **Spojovníky zůstanou**, takže `@code-reviewer` se rozliší samo o sobě, ne
+  jako token `code`.
+- **Nanejvýš tři agenti na tah.** Když agent v souhrnu vyjmenuje šest kolegů,
+  jen je vyjmenovává, nepřivolává je.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Řetěz probuzení má stejný strop jako delegování: **hloubka 3** a agenta, který
+už v řetězu je, tentýž řetěz znovu neprobudí (žádné `A → B → A`). Uspořádaná
+dvojice má navíc limit četnosti napříč řetězy. Odmítnuté probuzení vloží do
+konverzace systémovou zprávu, která řekne, která zmínka se nedoručila a proč.
+Nerozlišené jméno takovou zprávu nevloží, protože jinak by se každé `@` ve
+větě samo hlásilo.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+K předání, které nesmí záviset na textu, ať už jde o požadavek s odpovědí,
+nebo o dosažení agenta mimo prostor, použij místo toho nástroje
+`send_to_agent`, `ask_agent` a `delegate_task`.
 
-## Related guides
+## Související návody
 
-- [Chat with an agent](/cs-CZ/prirucka/navody/chat-s-agentem/)
-- [Use spaces](/cs-CZ/prirucka/navody/prostory/)
-- [Run agents in parallel](/cs-CZ/prirucka/navody/paralelni-agenti/)
+- [Chatujte s agentem](/cs-CZ/prirucka/navody/chat-s-agentem/)
+- [Používejte prostory](/cs-CZ/prirucka/navody/prostory/)
+- [Spouštějte agenty paralelně](/cs-CZ/prirucka/navody/paralelni-agenti/)
 
-## Related concepts
+## Související koncepty
 
-- [Dispatch lifecycle](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)
+- [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/)

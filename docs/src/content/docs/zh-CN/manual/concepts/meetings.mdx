@@ -1,213 +1,123 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: 会议与转录
+description: Control Center 如何录制通话、在服务器上完成转写和说话人分离，以及唯一离开主机的那一步发生在何处。
 slug: zh-CN/手册/概念/会议
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center 可以录制通话，并交回一份整洁的成稿——摘要、待办事项和决策——语音识别和说话人分离都运行在你自己的硬件上。可以把它想成 Granola，但由你自托管，并接入你的智能体所处的同一个工作区。
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[录制需要语音模型和重启服务器]
+录制和听写要在语音（ASR）模型已落到磁盘**且**服务器已重启之后才会开始。正常启动会在后台强制安装所选模型（默认是 Parakeet TDT 0.6B v3），但服务器只在启动初期解析一次语音模型路径——比那次下载完成要早好几分钟。模型报告安装完成后，重启 `cc_server`。若要换用其他构建，请使用 设置 → 服务器 → 语音与会议模型——这同样需要重启。
 :::
 
-## What a meeting is
+## 会议是什么
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/zh-CN/手册/概念/日历/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**会议**是一次被录制并转写的会话。它与[日历日程](/zh-CN/手册/概念/日历/)并不相同：日程是从 Google 同步来的既定安排，而会议是你实际录制下来的内容。两者可以关联——你可以从某个日程开始录制——但它们仍是彼此独立的记录。
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+和 Control Center 里的其他一切一样，每场会议都以工作区为范围。在一个工作区里录制的会议绝不会出现在另一个工作区中。
 
-## Where the work happens
+## 工作发生在哪里
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+“设备端”这个直觉没错，但用的名词不对。客户端采集音频，把 16 kHz PCM16 帧流式发送到**运行 `cc_server` 的那台机器**。其余一切都由那台主机完成：把各声道的 WAV 写到 `<dataDir>/meetings/<meetingId>/` 下，在工作进程隔离区中转写，事后过滤回声并做说话人分离。在单机桌面上，那台主机就是同一台机器；指向远程服务器时则不是——所以“什么都不离开我的笔记本电脑”只在服务器就是你笔记本电脑时才成立。
 
-There is one further exception and it is the important one.
+还有一处例外，而且恰恰是最重要的那处。
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[摘要会离开主机]
+转写内容和你的笔记会发送给总结智能体所配置的模型提供商。若使用云端提供商，就意味着整份转写内容都会发往该提供商的 API。如果转写内容绝不能离开主机，就把总结智能体指向本地端点（Ollama、LM Studio 或其他本地服务器）。
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+摘要之前的一切——采集、转写、回声消除、说话人分离、声纹匹配——都在服务器上运行，不发生任何网络调用。
 
-## Which models ship
+## 随附哪些模型
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+**嵌入、说话人分离和语音（ASR）**模型会在首次启动时强制安装（演示模式下跳过），因此无需进入设置就能使用说话人分离和录制。ASR 仍然**可选**——它有几百兆，选择器里提供四种构建。首次下载后，语音功能仍需要一次重启，因为转写器会在下载完成之前就解析好它的模型。
 
-The four picker entries, differing in size, language coverage and accuracy:
+选择器中的四项，在体积、语言覆盖和准确度上各有不同：
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 —— 多语言，推荐的默认项（约 600 MB）
+- Parakeet TDT 0.6B v2 —— 英语（约 480 MB）
+- Whisper large-v3-turbo —— 多语言（约 626 MB）
+- Whisper base.en —— 仅英语，体积较小的历史默认项（约 198 MB）
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+模型是服务器在运行时唯一会拉取的产物；所有原生库都随安装包一起提供。
 
-## How capture works
+## 采集如何工作
 
-A meeting records **two audio channels at once**:
+会议会**同时录制两个音频声道**：
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **你（“me”）**：你的麦克风。
+- **对方（“them”）**：会议的音频输出，通过免驱动的环回采集——macOS 上是 Core Audio 的进程/设备 tap，Windows 上是 WASAPI 环回，Linux 上是 PipeWire / PulseAudio 监听。
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+由于两个声道是分别采集的，转写从一开始就带有说话人归属：你说的话标记为 `me`，通话中的其他人标记为 `them`。
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+你自己的声音会从系统输出串回麦克风，否则会被转写两次。有两道过滤器阻止这一点。信号级的 **AEC3 会在每次远程模式录制中运行，并且是必需的**——如果原生 AEC 库无法加载，录制会拒绝启动，而不是默默地把被回声污染的麦克风流式送出。（面对面模式没有远端参考可供抵消，因此那里的 AEC 只是原样透传。）在此之上，主机侧还有一道文本级回声过滤器，在所有平台上都会运行。
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+操作系统层面的所有麦克风处理都被有意禁用。在 macOS 上启用系统自带的回声消除或自动增益会让麦克风切换到 Voice Processing I/O，而在当前构建中，这会让麦克风_和_系统音频 tap 双双失效。
 
-## Transcription and diarization
+## 转写与说话人分离
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+录制期间，音频会在 UI 线程之外以**滚动窗口**的方式解码——窗口在尾部出现短暂静音时切分，或达到最大窗口长度时切分。每个窗口都会变成一段带说话人标记的转写片段，并带有毫秒级偏移量。
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+从未超过某个 RMS 阈值的窗口会**被完全跳过、不做解码**，因为语音模型会把静音渲染成幻觉出的非语音 token，白白浪费 CPU。实际后果是：一直很轻的说话人不会产生任何转写。如果某个人一直是空白，先检查他的输入电平，再怪模型。
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+停止之后，**说话人分离**会离线地在整段录音上运行，把远端声道拆分成一个个可重命名的说话人（`Person 1`、`Person 2`……）。说话人数量是根据聚类阈值推断出来的，而不是你设定的数目——因此它只是阈值带来的产物，一个声音轻或与他人重叠的说话人可能会被并进相邻的那位。转写会渲染成 `[mm:ss] SPEAKER: text` 这样的行。
 
-## Voice profiles
+## 声纹档案
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+重命名说话人不只是给一段转写贴上标签。Control Center 可以把说话人的声纹保存为一个**声纹档案**，这样它就能在之后的会议中自动识别此人。当你给一个经说话人分离的说话人命名时，系统会询问你是否保存声纹；如果保存，它会被融入该名字对应的一个持续累积的质心，并在遇到新说话人时用余弦相似度进行匹配，因此同一个人下次出现时会直接带上名字，无需你重新标注。
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+声纹档案以工作区为范围，绝不会越界。可在**设置 → 工作区 → 会议**中管理它们。重命名一个此前已保存的说话人会注销旧名字，并询问是否登记新名字；删除档案会移除已存储的声纹，但之前已经应用到过往会议上的名字会原样保留。
 
-## The summary pipeline
+## 摘要流水线
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/zh-CN/手册/概念/领域事件/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+录制停止时，服务器会发布一个 `MeetingRecordingStopped` [领域事件](/zh-CN/手册/概念/领域事件/)。内置的 **`meeting_summary`** 流水线模板由该事件触发。录制器不会等它；会议只是经历自己的状态生命周期：
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+总结智能体会收到标题、你随手记的实时笔记和转写内容，并返回**结构化 JSON**。它写哪些小节，由工作区的**当前会议笔记模板**（设置 → 工作区 → 会议）决定；当前模板会应用于新建和重新生成的摘要。随后，流水线的持久化步骤会把这份 JSON 写入一条条独立的记录：
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` 和 `summary` → 会议的笔记
+- 每个待办事项 → 一行 `MeetingActionItem`（内容、负责人、可选的工单链接）
+- 每个决策 → 一行 `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+待办事项和决策**绝不会**从自由形式的 Markdown 中解析出来，只会取自智能体的结构化数组。如果某次运行没有产生结构化输出，持久化步骤会被跳过，原始转写会作为兜底保留下来，因此你永远不会丢失这份记录。流水线中没有任何环节会把会议标记为 `done`——那是由一个单独的对账器根据运行的终止事件来完成的，这样即便某个兄弟步骤失败，也不会让一场已经看起来完成、实际却只写了一半的会议卡在那里。
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/zh-CN/手册/操作指南/mcp-服务器/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[智能体无法读取你的会议]
+不存在会议或日历的 MCP 工具。通过 [MCP](/zh-CN/手册/操作指南/mcp-服务器/) 连接的智能体无法列出会议、读取转写，也看不到待办事项和决策——这些数据只会通过 RPC 到达人类客户端。决策确实会间接到达智能体，作为 `decisions` 领域中的记忆事实。
 :::
 
-## Where meetings show up
+## 会议会出现在哪里
 
-| Surface                | What it shows                                                                         |
+| 界面 | 显示内容 |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | 会议列表，含待办事项和决策的数量                            |
+| `/meetings/record`     | 实时录制 HUD：一侧是你的笔记，另一侧是流式转写 |
+| `/meetings/:meetingId` | 会议的详情：笔记、转写、待办事项和决策标签页                |
+| 设置 → 工作区 → 会议 | 此工作区的笔记模板和已保存的声纹档案                  |
 
-## Platform support
+## 平台支持
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+在三大桌面平台上，采集都是免驱动的（macOS 上是 Core Audio tap，Windows 上是 WASAPI，Linux 上是 PipeWire）。
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Web 客户端也能录制**，本页其余部分以桌面为主的叙述可能会掩盖这一点：浏览器通过 `getUserMedia` 获取你的麦克风，并通过 `getDisplayMedia`（屏幕共享）获取会议音频，降采样到 16 kHz PCM16 后流式发送到同一台主机。这里有三个注意事项：
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- 共享的界面**必须**带有音轨。Safari、Firefox 和 macOS 的全屏共享不会提供音轨，录制会直接拒绝启动。
+- 没有原生 AEC3。会对麦克风请求浏览器自带的回声消除；主机侧的文本回声过滤器仍会运行。HUD 会显示一个由麦克风 PCM 驱动的输入电平表。
+- 重新生成摘要和取消处理仅在桌面端可用。
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+日历的**录制并链接**操作仅在桌面端可用，在 Web 上会如实说明这一点，尽管会议界面自己的录制流程在 Web 上可以正常工作。
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[删除会议会留下音频]
+删除会议只会移除它的数据库记录。保留下来的各声道音频目录 `<dataDir>/meetings/<meetingId>/` 永远不会被清理——它没有保留策略、大小上限，也没有 GC 清扫。回收这部分磁盘是服务器主机上的一项手工活。
 :::
 
-## See also
+## 另请参阅
 
-- [Calendar and scheduling](/zh-CN/手册/概念/日历/): record a meeting straight from a calendar event
-- [Pipelines and automation](/zh-CN/手册/概念/流水线/): the engine behind `meeting_summary`
-- [Tickets and delegation](/zh-CN/手册/概念/工单/): link a meeting's action items to tickets
-- [Domain events](/zh-CN/手册/概念/领域事件/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/zh-CN/手册/操作指南/录制会议/)
+- [日历与日程](/zh-CN/手册/概念/日历/)：直接从日历日程开始录制会议
+- [流水线与自动化](/zh-CN/手册/概念/流水线/)：`meeting_summary` 背后的引擎
+- [工单与委派](/zh-CN/手册/概念/工单/)：把会议的待办事项关联到工单
+- [领域事件](/zh-CN/手册/概念/领域事件/)：`MeetingRecordingStopped` 和 `MeetingStartingSoon`
+- [录制并总结会议](/zh-CN/手册/操作指南/录制会议/)

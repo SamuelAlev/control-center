@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: ایجاد و پیکربندی یک عامل
+description: به یک فضای کاری عامل اضافه کنید، آداپتور، مدل، مهارت‌ها و مجوزهایش را تعیین کنید و مطمئن شوید که اجرا می‌شود.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+این راهنما نشان می‌دهد چطور به یک فضای کاری عامل اضافه کنید و آن را پیکربندی کنید تا واقعاً بتواند اجرا شود.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+هر فضای کاری با پنج عامل بذرکاری می‌شود — یک CEO به‌علاوهٔ `qa`، `architect`، `engineer` و `librarian` — پس معمولاً پیش از آنکه خودتان عاملی را پیکربندی کرده باشید، عامل‌هایی دارید. گام‌های زیر برای یک عامل بذرکاری‌شده و یک عامل تازه به یک اندازه کاربرد دارند.
 
-## Before you start
+## پیش از شروع
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- درون یک فضای کاری هستید. تمام این سطح در **تنظیمات → فضای کاری → عامل‌ها** (`/settings/workspace/agents`) قرار دارد.
+- عامل به یک بک‌اند نیاز خواهد داشت. یا زیر **تنظیمات → سرور → ارائه‌دهندگان مدل** برای هارنس داخلی یک ارائه‌دهنده وصل کنید، یا CLI مربوط به Claude Code را روی ماشینی که `cc_server` را میزبانی می‌کند نصب کنید.
+- اگر می‌خواهید عامل مهارت‌هایی داشته باشد، نخست آن‌ها را زیر **تنظیمات → فضای کاری → مهارت‌ها** نصب کنید. فرم عامل فقط اجازه می‌دهد مهارت‌هایی را روشن یا خاموش کنید که از قبل در فضای کاری وجود دارند.
 
-## Add the agent
+## افزودن عامل
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. **تنظیمات → فضای کاری → عامل‌ها** را باز کنید.
+2. روی **عامل جدید** کلیک کنید.
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+هیچ پنجرهٔ گفتگویی و هیچ انتخابگر نقشی وجود ندارد. بی‌درنگ عاملی با نام «عامل بی‌نام» ساخته می‌شود و در پنجرهٔ جزئیات در سمت راست انتخاب می‌شود.
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+اکنون باید «عامل بی‌نام» را در فهرست سمت چپ ببینید، با زبانهٔ **تنظیمات** پنجرهٔ جزئیاتش باز و فیلد **نام**ی که «عامل بی‌نام» در آن نوشته شده است.
 
-## Name it
+## نام‌گذاری آن
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **نام** — شناسهٔ کوتاهی که در منشن‌های @ استفاده می‌شود، مثلاً `alice`. تجزیهٔ منشن با `@` و سپس نویسه‌های واژه مطابقت می‌کند، پس نامی که خط تیره، نقطه یا فاصله داشته باشد هرگز قابل منشن‌شدن نیست.
+- **عنوان** — برچسب خوانا برای انسان، مثلاً «برنامه‌نویس ارشد».
+- **پرامپت سیستم** — دستورالعمل‌های اضافی اختیاری که به‌صورت بخشی با عنوان «دستورالعمل‌های عامل» تزریق می‌شوند؛ جای بقیهٔ پرامپت سرهم‌شده را نمی‌گیرند.
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+در پایین فرم روی **ذخیرهٔ تغییرات** کلیک کنید. همهٔ فیلدهای این صفحه با همان یک دکمه ذخیره می‌شوند.
 
-## Give it an adapter and a model
+## دادن آداپتور و مدل به آن
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+فهرست کشویی **آداپتور** اجراکننده‌هایی را نشان می‌دهد که میزبان سرور واقعاً دارد. آداپتور داخلی همیشه پیدا می‌شود (همان سرور است). Claude Code تنها وقتی ظاهر می‌شود که CLI آن روی آن میزبان تشخیص داده شده باشد:
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| آداپتور                   | بک‌اند                                         |
+| ------------------------- | --------------------------------------------- |
+| Control Center (داخلی)    | حلقهٔ عامل درون‌فرایندی — بدون CLI بیرونی      |
+| Claude Code               | `claude -p --output-format stream-json`       |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+تنها آداپتور داخلی حالت‌ها، هدایت میان‌اجرا، توقف و ازسرگیری، قراردادهای تکمیل و زیرعامل‌ها را اعمال می‌کند. Claude Code هیچ‌کدام از این‌ها را ندارد. Cursor، Codex و دیگر ارائه‌دهندگان مدل به آداپتور داخلی وصل می‌شوند، نه به‌عنوان اجراکننده‌های جداگانه.
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[آداپتور خالی یعنی حلقهٔ داخلی]
+عاملی که آداپتورش تعیین نشده باشد به **Control Center (داخلی)** اعزام می‌شود، همان حلقهٔ درون سرور، پس لازم نیست چیزی روی میزبان نصب شود. وقتی مدلی هم تعیین نشده باشد، مدل پیش‌فرض خود را از Anthropic می‌پرسد، پس عاملی که به‌طور کامل تعیین نشده باشد تنها وقتی اجرا می‌شود که حساب Anthropic را وصل کرده باشید. متخصص‌های بذرکاری‌شده بدون هیچ‌کدام از این دو عرضه می‌شوند؛ هر دو را روی هر عاملی که قصد استفاده از آن را دارید تعیین کنید.
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+فهرست کشویی **مدل** بر پایهٔ آداپتوری است که انتخاب کرده‌اید. برای آداپتور داخلی، فهرست به‌صورت زنده از ارائه‌دهندگانی می‌آید که زیر **تنظیمات → سرور → ارائه‌دهندگان مدل** وصل کرده‌اید، پس ارائه‌دهنده‌ای که اعتبارنامهٔ ذخیره‌ای ندارد صفر مدل می‌افزاید.
 
-## Add skills
+## افزودن مهارت‌ها
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**مهارت‌ها** یک انتخابگر چیپ روی بسته‌های مهارتی نصب‌شده در این فضای کاری است. روی یک چیپ بزنید تا وضعیتش عوض شود؛ نشانهٔ تیک موارد انتخاب‌شده را علامت می‌زند. اگر فضای کاری مهارتی نداشته باشد، این فیلد «No skills available. Create skills in Settings → Skills first.» را نشان می‌دهد.
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills).
+مهارت‌های خود یک مخزن را اینجا انتخاب نمی‌کنید. مخزنی که آن‌ها را ارائه می‌کند (در `.agents/skills/`، `.claude/skills/` یا `.opencode/skills/`) آن‌ها را به‌طور خودکار به هر عاملی که در آن مخزن کار می‌کند می‌دهد و با جابه‌جایی عامل به مخزنی دیگر عوض می‌شوند — [مهارت‌های محدود به مخزن(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills) را ببینید.
 
-## Set the reporting line and persona
+## تعیین خط گزارش‌دهی و پرسونا
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **گزارش به** — عاملی دیگر را با نام انتخاب کنید. این درخت گزارش‌دهی را می‌سازد که دکمهٔ **نمودار سازمانی** در سرصفحهٔ صفحه نشان می‌دهد. این همان فهرستی نیست که رهبر تیم هنگام تفویض استفاده می‌کند — آن از اعضای تیم و مهارت‌هایشان می‌آید.
+- **پرسونا** — متن آزادی که لحن و رفتار را شکل می‌دهد، مثلاً: «راه‌حل‌های ساده و خوانا را ترجیح می‌دهد. برای همهٔ کد جدید تست می‌نویسد.»
 
-## Tune the run
+## تنظیم اجرا
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **تلاش استدلال** — گزینه‌ها از سطوح منتشرشدهٔ خود مدل انتخاب‌شده می‌آیند: Low / Medium / High، به‌علاوهٔ Extra High روی مدل‌های سبک OpenAI و Extra High + Max روی مدل‌های سبک Claude. این فیلد وقتی مدل انتخاب‌شده هیچ سطح تفکری اعلام نکند به‌طور کامل پنهان می‌شود و در غیر این صورت روی پیش‌فرض خود مدل قرار می‌گیرد.
+- **اندازهٔ پنجرهٔ زمینه** — هر بار که مدل را عوض کنید از پنجرهٔ زمینهٔ مدل پیش‌پر می‌شود، با چیپ‌های یک‌ضربه‌ای برای پیش‌فرض مدل، 200k، 500k و 1M. مقداری که پس از انتخاب مدل تایپ می‌کنید تا تغییر بعدی مدل حاکم است.
+- **مهلت سکوت (دقیقه)** — یک اجرا را پس از این مدت بی‌خروجی پایان دهید. خالی بگذارید تا پیش‌فرض هر حالت استفاده شود.
 
-## Grant permissions
+## دادن مجوزها
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**مجوزهای سندباکس** با «استفاده از پیش‌فرض فضای کاری» شروع می‌شود. کلید را روشن کنید تا آن‌ها را برای این عامل تعیین کنید، سپس این‌ها را روشن یا خاموش کنید:
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **اجازهٔ git push** — توکن GitHub را که عامل برای پوش نیاز دارد تزریق می‌کند
+- **اجازهٔ فراخوانی‌های GitHub API** — به عامل اجازه می‌دهد PRها، ایشوها و فرادادهٔ مخزن را بخواند
+- **اجازهٔ فراخوانی‌های API تیکتینگ** — کلید ارائه‌دهندهٔ تیکتینگ را تزریق می‌کند
+- **اجازهٔ دسترسی عمومی به شبکه** — ابزارهای `web_fetch` و `web_search` هارنس داخلی را هم فعال می‌کند
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+هر کلید هنگام راه‌اندازی اجرا توسط کارگزار اعتبارنامه بررسی می‌شود: خاموش بودن یک قابلیت فقط یعنی توکن مربوط هرگز در محیط اجرا تزریق نمی‌شود.
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[پیش‌فرض فضای کاری یعنی مجموعهٔ محافظه‌کارانهٔ سرور]
+عاملی که روی گزینهٔ «استفاده از پیش‌فرض فضای کاری» رها شود با git push، GitHub API و تیکتینگ همه **خاموش** و شبکه **روشن** اجرا می‌شود. پیش‌فرض‌های قابلیت که زیر تنظیمات → سرور → تشخیص و حریم خصوصی نشان داده می‌شوند یک ترجیح سمت کلاینت‌اند. اگر می‌خواهید عاملی پوش کند یا PR باز کند، کلید را روشن کنید و قابلیت‌ها را صریحاً بدهید.
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) for the full set of boundaries.
+این قابلیت‌ها اعتبارنامه‌ها و ابزارهای هارنس را دروازه‌بانی می‌کنند، که لایه‌ای جدا از سندباکس سیستم‌عامل است. `cc_server` اجراهای عامل را در سندباکس میزبان، جایی که وجود داشته باشد، می‌پیچد — Windows بک‌اند بومی ندارد و Linux و WSL2 به `bwrap` و `socat` نیاز دارند. برای مجموعهٔ کامل مرزها [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) را ببینید.
 :::
 
-## Verify it runs
+## تأیید اینکه اجرا می‌شود
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. **تنظیمات → سرور → ارائه‌دهندگان مدل** را باز کنید و تأیید کنید آداپتوری که انتخاب کرده‌اید نسخهٔ نصب‌شده را گزارش می‌کند، نه «یافت نشد». برای کاوش دوباره روی **تازه‌سازی** کلیک کنید — کاوش روی ماشینی اجرا می‌شود که `cc_server` را میزبانی می‌کند، نه روی ماشینی که به آن نگاه می‌کنید.
+2. فضایی با آن عامل باز کنید و پیامی برایش بفرستید، یا آن را در فضایی موجود منشن کنید.
+3. به **تنظیمات → فضای کاری → عامل‌ها** برگردید، عامل را انتخاب کنید و زبانهٔ **گزارش‌ها** را باز کنید. باید یک اجرا با نشان وضعیت، مدت، زمان شروع و آداپتوری که استفاده کرده ظاهر شود. **نمایش** جریان رویداد آن اجرا را باز می‌کند.
 
-If no run appears at all, work through [Run agent diagnostics](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/).
+اگر اصلاً هیچ اجرایی ظاهر نشد، [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/) را گام‌به‌گام پیش ببرید.
 
-## Delete an agent
+## حذف یک عامل
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+آن را در فهرست انتخاب کنید. در زبانهٔ **تنظیمات**، تا **منطقهٔ خطر** در پایین فرم پایین بروید و روی **حذف** کلیک کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run agents in parallel](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
-- [Build an agent team](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/)
-- [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
-- [Run agent diagnostics](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
-- [Agent configuration reference](/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/)
+- [اجرای موازی عامل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عاملهای-موازی/)
+- [ساخت تیم عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ساخت-تیم/)
+- [مدیریت آداپتورها و مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
+- [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
+- [مرجع پیکربندی عامل(/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)

@@ -1,102 +1,105 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Az első pipeline felépítése
+description: Hozzon létre egy pipeline-sablont, konfigurálja annak lépését, engedélyezze a kézi futtatásokat, és indítson el egyet.
 slug: hu-HU/kezikonyv/oktatoanyagok/elso-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Mit fog felépíteni
 
-By the end of this tutorial, you will have:
+Az oktatóanyag végére a következőkkel rendelkezik:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Egy mentett pipeline-sablon, amely egy prompttal indít el egy ügynököt
+- A kézi futtatások engedélyezve rajta, így kézzel is elindítható
+- Egy befejezett futtatás, amelyben a lépés bemenete és kimenete látható
 
-Prerequisites: [Dispatch your first agent](/hu-HU/kezikonyv/oktatoanyagok/elso-ugynok/) completed, so you have an agent with an adapter and a model.
+Előfeltétel: [Az első ügynök elindítása](/hu-HU/kezikonyv/oktatoanyagok/elso-ugynok/) elvégzése, így már rendelkezik egy ügynökkel, adapterrel és modellel.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/); for the full step vocabulary, [Pipeline step kinds](/hu-HU/kezikonyv/referencia/pipeline-lepesek/).
+A pipeline lépésekből álló DAG. A sablonok határozzák meg a gráfot, a futtatások a végrehajtások. A mögötte lévő modellről a [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) oldalon olvashat, a lépések teljes szótáráért pedig lásd a [Pipeline-lépésfajták](/hu-HU/kezikonyv/referencia/pipeline-lepesek/) oldalt.
 
-## Step 1: Create a template
+## 1. lépés: Sablon létrehozása
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Nyissa meg a **Beállítások → Munkaterület → Pipeline-sablonok** pontot
+2. Kattintson az **Új sablon** elemre
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+A szerkesztő egy **Új pipeline** nevű, előre feltöltött vázon nyílik meg (azonosító: `pipeline_N`).
+Kattintson a fejlécben a címre, és nevezze át — ehhez az oktatóanyaghoz
+a `code_quality_check` jó név. Nincs azonosító-párbeszédablak, és nincs
+leírásmező sem.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+A vászon nem üres. Az új sablon eleve be van kötve **Trigger → Step →
+terminál** alakban, ahol a „Step” egy prompt-agent csomópont, a terminál pedig
+egy láthatatlan őrszem, amelyet a szerkesztő minden elérhető nyelőhöz átköt.
 
-You configure the Step that is already there.
+Ön a már meglévő Step csomópontot konfigurálja.
 
-## Step 2: Configure the step
+## 2. lépés: A lépés konfigurálása
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Kattintson a vászon **Step** csomópontjára
+2. A jobb oldali **Csomópont beállítása** panelen állítsa be:
+   - **Ügynök**: az előző oktatóanyagban létrehozott ügynök
+   - **Prompt sablon**: „Vizsgálja át az aktuális ág kódját minőségi problémák szempontjából. Sorolja fel, amit talál.”
+3. A **Triggers from** beállítást hagyja érintetlenül — a csomópont már be van kötve, hogy a Trigger után süljön el
 
-## Step 3: Save
+## 3. lépés: Mentés
 
-Press **Save** in the editor header.
+Nyomja meg a **Mentés** gombot a szerkesztő fejlécében.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Ellenőrzési pont.** A „Mentetlen módosítások” felirat eltűnik.
 
-## Step 4: Allow manual runs
+## 4. lépés: Kézi futtatások engedélyezése
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Kattintson a vászon szaggatott **Trigger hozzáadása** csempéjére (vagy húzza a **Kézi futtatás**
+   elemet a csomópontkönyvtár Triggerek szakaszából), és válassza a **Kézi futtatás** lehetőséget.
+2. Jelölje ki ezt a csomópontot. A jobb oldali vizsgálóban kapcsolja be az **Engedélyezve** beállítást —
+   „Megjelenítés a futtatási oldalon, és kézi indítás.”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Ez nem elhagyható, és könnyű kihagyni. Az új sablon **egyetlen trigger-sorral sem** jön létre, így amíg ezt be nem kapcsolja, a futtatási oldal nem listázza, és nincs mit elindítani. A kapcsoló azonnal kiírja a triggert; nem vár egy újabb mentésre.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Ugyanez a kapcsoló található a **Kézi futtatás** mögött a szerkesztő fejlécében, ahol a sablon deklarált bemenetei mellett kap helyet.
 
-## Step 5: Run it
+## 5. lépés: Futtassa le
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Kattintson az oldalsáv **Pipeline-ok** elemére
+2. Nyomja meg a **Pipeline futtatása** gombot a fejlécben
+3. Válassza a `code_quality_check` elemet a bal oldali sávban
+4. Nyomja meg a **Pipeline futtatása** gombot az űrlapon — a sablon nem deklarál bemenetet, így nincs mit kitölteni
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Ellenőrzési pont.** Egy felugró értesítés igazolja, hogy a futtatás elindult, és a Control Center megnyitja a futtatás részletező oldalát.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+A motor létrehozza a futtatás rekordját, végrehajtja a triggert, ütemezi a lépést, kiosztja az ügynököt, és befejezi a futtatást, amikor a terminál bejövő ága lefut.
 
-## Step 6: Inspect the result
+## 6. lépés: Az eredmény megvizsgálása
 
-Click the step in the run to open its detail panel:
+Kattintson a futtatásban a lépésre a lépéspaneljének megnyitásához:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- **Elindítva** és **Befejezve** időbélyegek, valamint **Időtartam**
+- **Bemenet**: a lépésbe átadott állapot
+- **Kimenet**: amit előállított — itt az ügynök válasza
+- **Ügynöktevékenység**, hivatkozással arra a beszélgetésre, amelyet a lépés vezetett
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Ellenőrzési pont.** A lépés befejezettként jelenik meg, kimenete pedig az ügynök átnézését tartalmazza.
 
-## Adding more steps
+## További lépések hozzáadása
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+A csomópontokat úgy adhatja hozzá, hogy a bal oldali csomópontkönyvtárból egy
+elemet a vászonra húz, vagy hogy egy csomópont után megnyomja a **Lépés
+hozzáadása** (`+`) gombot. A csomópontok összekötéséhez húzzon az egyik
+csomópont kimeneti portjáról a másikra, vagy jelölje ki az új csomópontot, és a
+**Triggers from** alatt pipálja ki a felsőbb lépését.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+A terminálcsomópont nincs kirajzolva, és nem jelölhető ki. A szerkesztő minden
+elérhető nyelőhöz átkötözi, így az alapból létrehozott Step után hozzáadott
+csomópont is lefut.
 
-## Recap
+## Összefoglaló
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Létrehozott egy sablont, beállította a hozzá előre létrehozott prompt-agent csomópontot, mentette, kézzel futtathatóvá tette, elindított egy futtatást, és elolvasta a lépés bemenetét és kimenetét.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+A pipeline-ok ennél jóval nagyobbak is lehetnek — feltételes routerek, párhuzamos ágak, join-csomópontok, for-each szétosztás, emberi jóváhagyási kapuk —, de a szerkezet soha nem változik: lépések egy DAG-ban, állapotot adva tovább.
 
-**Next:** [Bridge Slack to your workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/), the last tutorial in this sequence.
+**Következő:** [Slack összekötése a munkaterülettel](/hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid/), az oktatóanyag-sorozat utolsó része.
 
-- [Set up pipeline triggers](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/) to start pipelines from events or a schedule
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) for the model underneath
-- [Pipeline step kinds](/hu-HU/kezikonyv/referencia/pipeline-lepesek/) for every step type
+- [Pipeline-eseményindítók beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-esemenyinditok/) ahhoz, hogy eseményekből vagy ütemezésből indítson pipeline-okat
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) a mögötte lévő modellhez
+- [Pipeline-lépésfajták](/hu-HU/kezikonyv/referencia/pipeline-lepesek/) minden lépéstípushoz

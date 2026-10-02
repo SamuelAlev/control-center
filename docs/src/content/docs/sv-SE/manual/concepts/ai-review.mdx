@@ -1,225 +1,231 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: AI-granskning
+description: Hur en pull request blir granskad – granskningsytor, granskningsnoder och kollegakonsensus, kohorter och axlar, utfallet Ship/Hold/Block, och varför publiceringen är ett steg du själv tar.
 slug: sv-SE/handbok/koncept/ai-granskning
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Hur en granskning ser ut
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+En AI-granskning är en körning av den medföljande `pr_review`-pipelinen mot en
+öppen pull request. Pipelinen öppnar PR:ens granskningsyta, skickar ut
+granskaragenter för att läsa diffen i ytans isolerade utcheckning, var och en
+registrerar sina fynd som strukturerade **granskningsnoder**, en huvudagent
+sammanställer dem till en genomgång, och en finaliserare räknar fram ett utfall:
+**Ship**, **Hold** eller **Block**. Det pipelinen aldrig gör är att publicera –
+att lägga upp på GitHub är ett separat, medvetet steg som en människa tar.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Resten av den här sidan förklarar delarna och varför de är utformade så här.
 
-## One review space per PR
+## En granskningsyta per PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+En PR:s granskningskontext är en meddelandeyta – läge `review`, typ `pr` –
+kopplad till pull requesten via en **granskningsytekoppling**. Den skapas
+idempotent: PR-sidan, granskningspipelinen och chattvyerna löser alla ut PR:ens
+_enda_ bakomliggande yta genom samma kodväg, så en mall som granskar en PR och en
+människa som öppnar den kan aldrig hamna i två olika rum som tittar på två olika
+utcheckningar.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Ytans isolerade worktree har PR:en utcheckad på sin head-ref. Ett rum betyder
+också en utcheckning: varje granskare arbetar i samma yta i stället för att var
+och en får sin egen klon av arbetsytan.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Varje granskare postar i sin egen namngivna ström inuti den enda ytan, och fynd
+är `review_node`-meddelanden i stället för vanlig prosa. Insamlingen över hela
+ytan i slutet är avsiktlig – ett utfall som räknats fram från en enda tråds fynd
+skulle tyst bli ett utfall om en enda granskare.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Kopplingen har en statusstege – `requested` → `in progress` →
+`awaiting approval` → `completed` – och det är den som utgör grinden för
+**Publicera till GitHub** på PR:ens flik Granskning.
 
-## Review levels
+## Granskningsnivåer
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Hur djupt en granskning går är en arbetsytepolicy med tre nivåer, som ställs in
+under **Inställningar → Arbetsyta → Allmänt**, på kortet **Arbetsytepolicy**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Nivå       | Granskare som skickas ut                     | Rapportering                                  |
+| ---------- | -------------------------------------------- | --------------------------------------------- |
+| `light`    | Endast ingenjör                              | Bara det som är väsentligt                    |
+| `balanced` | Ingenjör, QA, arkitekt (standard)            | Den ordinarie genomgången                     |
+| `thorough` | Alla fem, inklusive säkerhet och prestanda   | Inget nedgraderas                             |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Nivån vrider två rattar samtidigt: vilka granskare som skickas ut, vilket
+framtvingas av pipelinemallens `runWhen`-tillståndsgrindar i stället för av
+formuleringar i prompten – promptformuleringar kan ignoreras, en grind kan inte –
+och var fynd under tröskeln visas. Ingen av rattarna tar någonsin bort ett fynd:
+en nivå som rapporterar mindre registrerar fortfarande exakt lika mycket och
+grupperar resten.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Säkerhets- och prestandagenomgångarna återanvänder de medföljande arkitekt- och
+ingenjörsagenterna i stället för att införa nya. Specialiseringen ligger i den
+uppdragsbeskrivning som granskaren skickas ut med, inte i en separat agent per
+axel – en agent per axel skulle bli fem rader till i varje arbetsyta utan någon
+ytterligare förmåga. Urvalet av granskare tittar aldrig på diffen efter språk
+eller domän.
 
-## Review nodes: findings as data, not prose
+## Granskningsnoder: fynd som data, inte prosa
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Ett fynd som registreras med `add_review_node` blir en **granskningsnod** på
+PR:en – det är vad fliken Granskning visar, vad utfallet räknas fram från, och
+vad "Publicera till GitHub" gör om till en inline-kommentar. En granskare som
+bara returnerar prosa ger en pipelinekörning som ser lyckad ut och en
+granskningsvy som är tom; registreringen är den bärande delen.
 
-Each node carries:
+Varje nod innehåller:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Fält           | Värden                                                                     |
+| -------------- | -------------------------------------------------------------------------- |
+| Typ            | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Prioritet      | P0 (kritisk) → P3 (petitess)                                                |
+| Triage-trippel | kategori (`security`, `stability`, …), allvarlighetsgrad, insats            |
+| Ankare         | Filsökväg, radens början och slut                                           |
+| Åtgärdsförslag | Föreslagna ersättningsrader, en valfri diff, en valfri fix-prompt           |
+| Konfidens      | En poäng i [0, 1]                                                           |
+| Resonemang     | Analysen, skriven före fyndet                                               |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Två detaljer är avsiktliga. Ett GitHub-förslag med ett klick erbjuds bara när
+granskaren har angett exakta ersättningsrader – att härleda dem ur en unified
+diff går fel i tysthet, och en ettklicks-commit av en felaktig härledning är
+värre än ingen knapp alls. Och schemat för `add_review_node` visar `reasoning`
+före fyndet, så en modell som fyller i objektet i schemats ordning skriver
+analysen först. Fältet är valfritt: att utelämna det avvisar inte noden. En nod
+med felaktig payload försvinner i stället för att förorena granskningen.
 
-## Peer consensus
+## Kollegakonsensus
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+En nod rör sig genom `open` → `consensus-ready` → `resolved` eller `dismissed`.
+Mellansteger är modellens kärna: **ett fynd godkänns bara när en kollegagranskare
+bekräftar det, och en agent kan aldrig bekräfta sitt eget fynd.** MCP-verktyget
+`publish_review_to_github` och RPC-standardvärdet publicerar fortfarande bara
+kollegabekräftade fynd. Knappen **Publicera till GitHub** på fliken Granskning
+skickar i stället samtliga återstående öppna fynd.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Regeln framtvingas på tre oberoende ställen – bekräftelseverktyget, finaliseraren
+och publiceraren – så den överlever en buggig anropare i vilket som helst av dem.
+Alla statusändringar går genom en enda tjänst, och det är vad som gör en status
+betydelsefull: innan dess kunde två halvvägar vara oense om samma fynd var
+åtgärdat.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+När granskare är oense – samma fil och rad, prioriteringar två eller fler nivåer
+isär, eller att en kallar det en `bug` medan den andra kallar det en
+`suggestion` – lyfts oenigheten fram ovanför fyndlistan. Det är där granskarnas
+åsikter går isär och en människas omdöme är värt som mest.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Att avvisa ett fynd skriver också ett mjukt undertryckningsfaktum till
+minnesdomänen, med låg konfidens – en avvisning är en preferens, inte en regel.
 
-## Cohorts: what the review is grouped around
+## Kohorter: vad granskningen grupperas kring
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Granskningsberäkningen grupperar en PR:s ändrade filer i **kohorter** som härleds
+ur kodgrafen: ändrade filer mappas till de symboler de berör, symboler till
+sammankopplade komponenter, och kohorterna rangordnas efter spridningsradie. En
+kohort bär en guidad läsordning, diagram och insikter i stället för att vara en
+platt fillista.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Två ärlighetsregler formar detta. Kohortnycklar härleds ur innehållet och är
+stabila mellan pushar, så fynd och granskningsframsteg överlever en rebase eller
+force-push i stället för att bli föräldralösa. Och när repot inte har något
+kodindex faller grupperingen tillbaka på vanliga sökvägar och säger det –
+reservvägen låtsas aldrig om semantisk konfidens.
 
-## Review axes and gates
+## Granskningsaxlar och grindar
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Vid sidan av granskarnas fynd samlar en granskning **axelresultat**: sex axlar av
+två slag.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Axel                      | Typ            | Hämtas från                                       |
+| ------------------------- | -------------- | ------------------------------------------------- |
+| `correctness`, `security` | Tokendrivna    | Granskarnas egna fynd                             |
+| `testGap`                 | Tokendrivna    | Granskarnas fynd                                  |
+| `visual`, `apiContract`   | Deterministiska | Beräknas utan att förbruka tokens                |
+| `performance`             | Deterministiska | Endast enum – inget i produkten beräknar ett resultat |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Ett axelutfall är `pass`, `warn`, `fail`, `partial` eller `unavailable` – och
+bara `pass` eller `warn` passerar en grind. Åtskillnaden mellan `fail`, `partial`
+och `unavailable` är bärande: en grindad axel som inte kunde slutföras eller inte
+kunde köras alls håller kvar det samlade utfallet i stället för att passera det.
+**Frånvaro av bevis blir aldrig en grön grind.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Vissa axlar är rådgivande med avsikt. Testgapsaxeln som härleds ur kohorter kan
+inte se beroendeinjektions- eller fabrikstäckning – ett oindexerat repo med en
+utförlig testsvit och ett helt utan tester ser identiska ut därifrån, så att påstå
+något av dem vore en lögn; den visas i instrumentpanelen utan att utgöra en
+grind. Tokenaxlarna är rådgivande eftersom fyndens prioriteringar redan driver
+utfallet, och att grinda på dem igen skulle dubbelräkna.
 
-## The verdict
+## Utfallet
 
-The finalizer computes the verdict over the findings with status `open` or
+Finaliseraren beräknar utfallet utifrån fynden med status `open` eller
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- vilket som helst P0-fynd med konfidens ≥ 0.7 → **Block**
+- annars, vilket som helst P0 (låg konfidens) eller vilket som helst P1 → **Hold**
+- annars → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Utfallet bär en sammanvägd konfidens som härleds ur spridningen av de bidragande
+konfidensvärdena – enighet höjer den, olikhet sänker den.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Huvudagentens (CEO) sammanställning är en redaktionell genomgång, inte en ny
+uppräkning: en handskriven andra kopia av fynden är precis det som glider ifrån
+den riktiga. Dubblerade fynd nedgraderas i stället för att upprepas – flera
+granskare riktas mot en och samma diff med avsiktligt överlappande uppdrag, så
+att samma defekt når finaliseraren tre gånger är systemet som fungerar; att
+publicera den tre gånger är systemet som läcker sin egen arkitektur in i läsarens
+inkorg. Vid en ny granskning får fynden fingeravtryck och diffas mot föregående
+runda, så det är deltat som lyfts fram.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Slutligen vävs axlarna in, och de kan bara göra utfallet **mer** allvarligt: en
+grindad axel som fallerar tvingar fram Block – den kan inte överröstas av fynd –
+och en grindad axel som inte kunde slutföras tvingar fram minst Hold.
 
-## Publishing stays with you
+## Publiceringen ligger hos dig
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Pipelinen lägger med avsikt inte upp något på GitHub; publiceringen är grindad av
+användaren så att en granskning aldrig kan publiceras dubbelt. När du trycker på
+**Publicera till GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- En GitHub-granskning skickas in. Fynd som redan är åtgärdade eller avvisade
+  hoppas över. Knappen publicerar varje återstående öppet fynd
+  (`selection: all_open`). MCP-verktyget `publish_review_to_github` använder
+  fortfarande som standard bara kollegabekräftade fynd (`consensus`).
+- Fynd som är ankrade till en fil och rad blir inline-kommentarer; allt annat
+  vävs in i sammanfattningstexten, och var och en bär en "— Control Center AI review"-fotnot så att källan är entydig.
+- Ankarna verifieras på nytt mot PR:ens _aktuella_ diff vid
+  publiceringstillfället. En kommentar på kod som redan har skrivits om är det
+  mest förtroenderaserande en granskare kan lämna efter sig; om GitHub ändå
+  avvisar ett inline-ankare skickas hela granskningen om med varje fynd invävt i
+  texten så att inget tyst tappas bort.
+- Ett **Block**-utfall skickas in som `REQUEST_CHANGES`; **Hold** som `COMMENT`;
+  **Ship** som `APPROVE` från knappen (`approve_on_ship: true`). MCP-verktyget
+  lämnar Ship som `COMMENT` om du inte skickar med `approve_on_ship`.
+- Granskningen publiceras under serverns appidentitet. Den som tryckte på
+  Publicera registreras för rollgrinden och revisionsloggen; det är inte
+  GitHub-författaren.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/sv-SE/handbok/koncept/racken/).
+Publicering deklarerar åtgärdsklassen `prPublish`, så räckesflaskhalsen grindar
+den precis som vilken muterande åtgärd som helst – den frågar som standard och
+faller stängt när ingen godkännare är ansluten. Se
+[Räcken](/sv-SE/handbok/koncept/racken/).
 
-## What a reviewer may do
+## Vad en granskare får göra
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Granskaragenter körs i läget `review`: en skrivskyddad sandlåda och en kurerad
+tillåtelselista för verktyg som täcker fynd, kommentarer, ärenden och
+kollegagranskning – men inga mutationer. En granskare kan inte åtgärda koden den
+kritiserar; den kan bifoga ett åtgärdsförslag som en människa tillämpar. Lägets
+avvisningsmeddelande säger till en agent som ändå försöker agera att slutföra
+granskningen och låta användaren agera utifrån den publicerade sammanfattningen.
 
-## Related concepts
+## Relaterade koncept
 
-- [Guardrails](/sv-SE/handbok/koncept/racken/) — the policy engine that gates publishing
-- [Modes](/sv-SE/handbok/koncept/lagen/) — what `review` mode changes for an agent
-- [Pipelines and automation](/sv-SE/handbok/koncept/pipelines/) — the engine the review runs on
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/) — where the isolated worktree comes from
+- [Räcken](/sv-SE/handbok/koncept/racken/) – policymotorn som grindar publiceringen
+- [Lägen](/sv-SE/handbok/koncept/lagen/) – vad läget `review` förändrar för en agent
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/) – motorn som granskningen körs på
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/) – varifrån det isolerade worktreet kommer
 
-## Related guides
+## Relaterade guider
 
-- [Use AI-powered review](/sv-SE/handbok/how-to-guider/ai-granskning/) — run a review and publish it
-- [Dispatch reviewer agents](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/) — choose the reviewers yourself
-- [Review compute](/sv-SE/handbok/how-to-guider/granskningsberakning/) — cohorts, axes and diffs
+- [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/) – kör en granskning och publicera den
+- [Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/) – välj granskarna själv
+- [Granskningsberäkning](/sv-SE/handbok/how-to-guider/granskningsberakning/) – kohorter, axlar och diffar

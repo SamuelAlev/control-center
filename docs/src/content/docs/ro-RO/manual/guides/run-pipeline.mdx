@@ -1,68 +1,75 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Rulează un pipeline manual
+description: Pornește o rulare de pipeline din lansator, completează intrările și ajungi pe detaliile rulării.
 slug: ro-RO/manual/ghiduri-practice/ruleaza-pipeline
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/).
+Acest ghid acoperă pornirea manuală a unei rulări. Pentru a urmări una, a citi
+ieșirea pașilor și a te recupera după un eșec, vezi
+[Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/).
 
-## Start a run
+## Pornește o rulare
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Dă clic pe **Pipeline-uri** în bara laterală a spațiului de lucru.
+2. Apasă **Rulează pipeline** din antet. Ajungi în lansatorul de rulări
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Alege un șablon din șina din stânga. Fiecare card afișează numele șablonului,
+   descrierea lui și dacă acceptă intrări.
+4. Completează formularul de intrări din dreapta. Câmpurile obligatorii
+   blochează butonul până când au o valoare; un șablon fără intrări afișează
+   acest lucru.
+5. Apasă **Rulează pipeline**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Ajungi pe pagina de detalii a rulării, cu cascada de durate și pânza grafului
+active.
 
-## If the rail is empty
+## Dacă șina este goală
 
-The launcher shows a template only when **both** are true:
+Lansatorul afișează un șablon doar când **ambele** sunt adevărate:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Comutatorul șablonului este pornit în **Setări → Spațiu de lucru → Șabloane
+  pipeline**.
+- **Permite rulare manuală** este pornit în dialogul **Rulare manuală** al
+  editorului de șabloane — acel comutator este cel care creează declanșatorul
+  `manual` pe care îl citește lansatorul.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Opt din cele treisprezece șabloane încorporate vin dezactivate:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` și `pr_digest`. Motorul refuză să
+pornească un șablon dezactivat, așa că pornește-i comutatorul înainte de a-l
+căuta aici.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+Nu există nicio acțiune **Rulează** per șablon în lista de șabloane și niciun
+buton de rulare în editor — lansatorul este singurul punct de intrare manual.
 
-## Fill in a repository input
+## Completează o intrare de depozit
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+O intrare de tip **Depozit** afișează un selector peste depozitele înregistrate
+ale spațiului de lucru. Alegerea unuia populează `repo_id`, `repo_local_path`,
+`repo_full_name` și — când depozitul are un remote GitHub — `repo_owner` și
+`repo_name` în payload-ul rulării, astfel încât pașii din aval să poată citi
+oricare dintre ele.
 
-## Watch it run
+## Urmărește rularea
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Pagina de detalii a rulării are trei părți: o bandă de metadate (ora de
+pornire, durata activă, progresul pașilor, un banner de eșec, **Reîncearcă** și
+**Șterge**), o cascadă de durate pliabilă, cu durata și costul fiecărui pas, și
+pânza grafului. Selectarea unui nod deschide panoul de detalii al acelui pas.
 
-[Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
+acoperă toate acestea, inclusiv cum să citești un pas suspendat și ce să faci
+când unul eșuează.
 
-Every run you start from the app is a real one.
+Fiecare rulare pe care o pornești din aplicație este o rulare reală.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create a pipeline template](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
-- [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
-- [Monitor pipeline runs](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
+- [Creează un șablon de pipeline](/ro-RO/manual/ghiduri-practice/creeaza-pipeline/)
+- [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
+- [Monitorizează rulările de pipeline](/ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri/)
 
-## Related concepts
+## Concepte conexe
 
-- [Pipelines](/ro-RO/manual/concepte/pipeline-uri/)
+- [Pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/)

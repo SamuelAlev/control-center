@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: 永続カーネルでデータを探索
+description: エージェントに、呼び出しをまたいで変数を保持し、チャットにグラフを描画し、セルの中から自分のツールを呼び出せる Python または JavaScript のインタープリターを与えます。
 slug: ja-JP/マニュアル/ハウツーガイド/カーネルでデータ探索
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+このガイドでは、コストの高い読み込みを一度だけ行わせ、その後はそのデータに何度も問い合わせるようにエージェントを使う方法を説明します。質問のたびに読み込みのコストを払う必要はありません。
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+`eval` ツールは**永続インタープリター**を実行します。変数、インポート、読み込んだデータは呼び出しをまたいで残ります。
 
-## Why not just run a script
+## スクリプトを実行するだけではだめな理由
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+単発の `python -c` は、質問のたびにセットアップのコストを払います。データフレームの読み込みには数秒と 100 メガバイトかかりますが、グラフ化にはミリ秒しかかかりません。質問のたびに読み込みのコストがかかると、エージェントは本来すべき数より少ない質問しかしなくなり、しかも各回答はテキストとして返ってくるため、それをまた解析し直さなければなりません。
 
-## Load once, then ask
+## 一度読み込んでから問い合わせる
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> `data/runs.csv` を読み込んで、エージェント別の p95 所要時間を教えて。
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+最後の式はノートブックと同じようにエコーされるため、`len(runs)` は `print` なしで行数を報告します。
 
-Then, in a **separate call**:
+次に、**別の呼び出し**で:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` はまだ読み込まれたままです。pandas のフレームは repr としてではなく、表としてレンダリングされて返ります。
 
-## Charts land in the chat
+## グラフはチャットに届く
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+図はセルの実行後にキャプチャされ、画像として返され、トランスクリプトがそれをレンダリングします。あなたがグラフを見られるだけでなく、エージェントも見られます。
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+図はキャプチャ後に閉じられます。回収されなかった図は、*次の*セルでも再描画されて再送信されてしまうため、5 セルのセッションでは最初のグラフが 5 回出力されることになります。
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Jupyter も pip もインストール手順も不要]
+ランナーは stdio 上で行プロトコルを話す素の `python3 -u` です。`display()`、MIME バンドルのディスパッチ、図のキャプチャを自前で実装しているため、任意の Python 3 で動作します — インストールを防ぐことこそがサンドボックスの役目であるような、サンドボックスの中であっても同様です。
 :::
 
-## The idioms you would type anyway
+## 結局自分で書くことになるイディオム
 
-These are rewritten into plain code rather than erroring:
+これらはエラーにはならず、素のコードに書き換えられます:
 
-| You type    | What happens                                        |
+| 入力するもの    | 何が起きるか                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `%pip install x` | pip を実行し、その後**モジュールキャッシュをクリア**するので、次の `import` がそれを認識します |
+| `%cd path`  | `os.chdir` を呼び出す                                 |
+| `!command`  | キャプチャされたサブプロセス                                |
+| `%%bash`    | セルの残りをシェルスクリプトとして実行                        |
+| `%%timeit`  | 1000 回の計時付き実行                                   |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+重要なのは `%pip` によるキャッシュ破棄のほうです。稼働中のインタープリターにインストールしても、すでにインポート済みのモジュールには何の効果もありません。したがって、これがなければ、いまインストールしたバージョンが実行されているバージョンにはなりません。
 
-## Calling your own tools from inside a cell
+## セルの中から自分のツールを呼び出す
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` は、エージェント自身のツールレジストリに再び入ります。これにより、モデルが項目ごとに 1 ターンを費やすことなく、セルが 100 個のファイルへファンアウトしたり、`task` を通じて委任したりできます。
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[ブリッジはガードレールを迂回しない]
+ブリッジ経由の呼び出しは、モデルが発行した呼び出しと**同じ**ツールレジストリに対して解決されるため、`ActionClass` ポリシー、承認プロンプト、あらゆるラッパーがまったく同じように適用されます。レジストリを飛び越えて到達するブリッジは、「Python のワンライナーを書く」という形をそっくりそのまました穴です。
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+ブリッジ経由の呼び出しは、それが未完了である間、**セルのタイムアウトを中断します**。この予算が測るのは実時間ではなく無操作時間です — サブエージェントへファンアウトして 4 分待つセルはハングしているのではなく、ファンアウトの途中で kill すればカーネルの状態全体を失うことになります。
 
-## Starting over
+## やり直す
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+インタープリターを破棄し、まっさらなものを起動します。読み込んだものはすべて失われますが、それこそが狙いです。
 
-## Where the kernel runs
+## カーネルがどこで実行されるか
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+会話に**エンクロージャー**があればその中で、なければホスト上で実行されます。
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+信頼できないリポジトリを読むモデルに駆動される永続インタープリターは、エンクロージャー内限定の実行が存在する理由そのものです。単発の `bash` 呼び出しは少なくとも終わりますが、カーネルは記憶するシェルです。
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/ja-JP/マニュアル/ハウツーガイド/リグの利用/).
+そのためにエンクロージャーを起動することは**ありません** — リグのタブを自動起動させないのと同じルールです。カーネルをエンクロージャー内で動かしたい場合は、先に会話のシェルを開いてください。[エージェントにテスト用マシンを渡す](/ja-JP/マニュアル/ハウツーガイド/リグの利用/)を参照してください。
 
-## Limits
+## 制限
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **カーネルごとに同時に実行できるセルは 1 つ。** 1 つのインタープリターで 2 つのセルが競合すると、2 つのプログラムの前半同士が 1 つの名前空間で交互に実行されることになります。
+- **出力には上限があります。** print ループに入ったセルは、コンテキストウィンドウを埋め尽くすことは許されず、切り詰められます。
+- **セルあたり画像 4 枚。** プロットのループはイテレーションごとに図を出力しうるため、画像 1 枚ごとに、それを運ぶリクエストへ大きな固定コストがかかります。
+- **カーネルは実行とともに終了します。** 会話が終わった後もデータフレームを保持し続けるカーネルはリークです。
 
-## Related
+## 関連項目
 
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) — what "enclosed" means here
-- [Give an agent a machine to test on](/ja-JP/マニュアル/ハウツーガイド/リグの利用/) — opening the enclosure
-- [Built-in agent tools](/ja-JP/マニュアル/リファレンス/エージェントツール/) — the arguments
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) — ここでいう「エンクロージャー内」の意味
+- [エージェントにテスト用マシンを渡す](/ja-JP/マニュアル/ハウツーガイド/リグの利用/) — エンクロージャーを開く
+- [内蔵エージェントツール](/ja-JP/マニュアル/リファレンス/エージェントツール/) — 引数

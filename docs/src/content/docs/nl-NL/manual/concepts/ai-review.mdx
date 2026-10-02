@@ -1,225 +1,247 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: AI-review
+description: Hoe een pull request een gereviewde pull request wordt — reviewruimtes, reviewnodes en consensus tussen peers, cohorten en assen, het oordeel Ship/Hold/Block, en waarom publiceren een stap blijft die je zelf zet.
 slug: nl-NL/handleiding/concepten/ai-review
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## De vorm van een review
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Een AI-review is één uitvoering van de meegeleverde `pr_review`-pipeline op één
+open pull request. De pipeline opent de reviewruimte van de PR, waaiert
+reviewer-agenten uit om de diff te lezen in de geïsoleerde checkout van die
+ruimte, elk legt zijn bevindingen vast als gestructureerde **reviewnodes**, een
+lead-agent bundelt ze tot een rondleiding, en een finalisatiestap berekent één
+oordeel: **Ship**, **Hold** of **Block**. Wat de pipeline nooit doet, is
+publiceren — posten naar GitHub is een aparte, bewuste stap die een mens zet.
 
-The rest of this page explains the pieces and why they are shaped this way.
+De rest van deze pagina legt de onderdelen uit en waarom ze zo zijn
+vormgegeven.
 
-## One review space per PR
+## Eén reviewruimte per PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+De reviewcontext van een PR is een berichtenruimte — modus `review`, soort `pr`
+— die via een **koppeling van de reviewruimte** aan de pull request hangt. Die
+wordt idempotent aangemaakt: de PR-pagina, de review-pipeline en de
+chat-oppervlakken vinden allemaal via hetzelfde codepad de _ene_ onderliggende
+ruimte van de PR, zodat een sjabloon dat een PR reviewt en een mens die hem
+opent nooit in twee verschillende ruimtes naar twee verschillende checkouts
+kunnen kijken.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+De geïsoleerde worktree van de ruimte heeft de PR uitgecheckt op zijn head-ref.
+Eén ruimte betekent ook één checkout: elke reviewer werkt in dezelfde ruimte in
+plaats van dat ieder zijn eigen kloon van de werkruimte krijgt.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Elke reviewer post in zijn eigen benoemde stream binnen die ene ruimte, en
+bevindingen zijn `review_node`-berichten in plaats van vrije tekst. Het
+verzamelen over de hele ruimte aan het eind is bewust — een oordeel dat uit de
+bevindingen van één thread wordt berekend, zou stil een oordeel over één
+reviewer zijn.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+De koppeling heeft een statusladder — `requested` → `in progress` →
+`awaiting approval` → `completed` — en die bepaalt of **Publiceren naar GitHub**
+op het tabblad **Review** van de PR beschikbaar is.
 
-## Review levels
+## Reviewniveaus
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Hoe diep een review gaat, is werkruimtebeleid met drie niveaus, ingesteld via
+**Instellingen → Werkruimte → Algemeen**, op de kaart **Werkruimtebeleid**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
+| Niveau       | Reviewers die uitwaaieren                        | Rapportage                                     |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| `light`     | Alleen engineer                                 | Alleen wat materieel van belang is             |
+| `balanced`  | Engineer, QA, architect (de standaard)          | De vaste ronde                                 |
+| `thorough`  | Alle vijf, inclusief beveiliging en performance | Niets gedegradeerd                             |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Het niveau draait aan twee knoppen tegelijk: welke reviewers uitwaaieren,
+afgedwongen door de `runWhen`-statuspoorten van het pipelinesjabloon in plaats
+van door de formulering van de prompt — de formulering van een prompt kun je
+negeren, een poort niet — en waar bevindingen onder de drempel worden getoond.
+Geen van beide knoppen verwijdert ooit een bevinding: een niveau dat minder
+meldt, legt nog steeds precies evenveel vast en groepeert de rest.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+De beveiligings- en performanceronde hergebruiken de meegeleverde architect- en
+engineeragenten in plaats van nieuwe te introduceren. De specialisatie zit in de
+briefing waarmee de reviewer wordt gestuurd, niet in een aparte agent per as —
+een agent per as zou vijf extra rijen in elke werkruimte opleveren zonder extra
+mogelijkheden. De selectie van reviewers kijkt nooit naar de taal of het domein
+in de diff.
 
-## Review nodes: findings as data, not prose
+## Reviewnodes: bevindingen als data, niet als proza
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Een bevinding die met `add_review_node` wordt vastgelegd, wordt een
+**reviewnode** op de PR — dat is wat het tabblad Review toont, waar het oordeel
+uit wordt berekend, en wat "Publiceren naar GitHub" omzet in een inline reactie.
+Een reviewer die alleen vrije tekst teruggeeft, levert een pipeline-run op die
+geslaagd lijkt en een review-oppervlak dat leeg is; het vastleggen is het
+onderdeel dat alles draagt.
 
-Each node carries:
+Elke node bevat:
 
-| Field             | Values                                                                     |
+| Veld              | Waarden                                                                     |
 | ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Soort             | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Prioriteit        | P0 (kritiek) → P3 (nit)                                                    |
+| Triagedrietal     | categorie (`security`, `stability`, …), ernst, inspanning                    |
+| Anker             | Bestandspad, begin- en eindregel                                            |
+| Meegestuurde fix  | Voorgestelde vervangende regels, een optionele diff, een optionele fixprompt |
+| Betrouwbaarheid   | Een score in [0, 1]                                                         |
+| Redenering        | De analyse, geschreven vóór de bevinding                                    |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Twee details zijn bewust. Een GitHub-suggestie met één klik wordt alleen
+aangeboden als de reviewer exacte vervangende regels heeft aangeleverd — die uit
+een unified diff afleiden gaat stilletjes mis, en een verkeerde afleiding met één
+klik committen is erger dan helemaal geen knop. En het schema van
+`add_review_node` zet `reasoning` vóór de bevinding, zodat een model dat het
+object in schemavolgorde invult, eerst de analyse schrijft. Het veld is
+optioneel: het weglaten ervan verwerpt de node niet. Een node met een misvormde
+payload verdwijnt in plaats van de review te vervuilen.
 
-## Peer consensus
+## Consensus tussen peers
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Een node doorloopt `open` → `consensus-ready` → `resolved` of `dismissed`. De
+middelste stap is het hart van het model: **een bevinding gaat pas verder als
+een peer-reviewer hem bevestigt, en een agent kan zijn eigen bevinding nooit
+bevestigen.** De MCP-tool `publish_review_to_github` en de RPC-standaard
+publiceren nog steeds alleen door peers bevestigde bevindingen. De knop
+**Publiceren naar GitHub** op het tabblad Review verstuurt juist elke resterende
+open bevinding.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+De regel wordt op drie onafhankelijke plekken afgedwongen — de bevestigingstool,
+de finalisatiestap en de publicatiestap — zodat hij een foutieve aanroeper in
+een van die drie overleeft. Alle statuswijzigingen lopen via één service, en dat
+is wat een status betekenis geeft: daarvoor konden twee halve paden het oneens
+zijn over of dezelfde bevinding was opgelost.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Als reviewers het oneens zijn — hetzelfde bestand en dezelfde regel, prioriteiten
+twee of meer niveaus uit elkaar, of de een noemt het een `bug` terwijl de ander
+het een `suggestion` noemt — wordt het meningsverschil boven de bevindingenlijst
+getoond. Daar lopen de meningen van de reviewers uiteen en is het oordeel van
+een mens het meest waard.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Het verwerpen van een bevinding schrijft ook een zacht onderdrukkingsfeit weg in
+het geheugendomein, met lage betrouwbaarheid — één verwerping is een voorkeur,
+geen regel.
 
-## Cohorts: what the review is grouped around
+## Cohorten: waar de review omheen is gegroepeerd
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+De review-compute-ronde groepeert de gewijzigde bestanden van een PR in
+**cohorten** die uit de codegraaf zijn afgeleid: gewijzigde bestanden verwijzen
+naar de symbolen die ze aanraken, symbolen naar verbonden componenten, en de
+cohorten worden gerangschikt op blast radius. Een cohort heeft een begeleide
+leesvolgorde, diagrammen en inzichten in plaats van een platte bestandslijst.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Twee eerlijkheidsregels bepalen dit. Cohortsleutels zijn van de inhoud afgeleid
+en stabiel over pushes heen, zodat bevindingen en reviewvoortgang een rebase of
+force-push overleven in plaats van verweesd te raken. En als de repo geen
+code-index heeft, valt de groepering terug op gewone paden en zegt dat ook — de
+terugvaloptie doet nooit alsof er semantische zekerheid is.
 
-## Review axes and gates
+## Reviewassen en poorten
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Naast de bevindingen van de reviewers verzamelt een review **asresultaten**: zes
+assen, van twee soorten.
 
-| Axis                          | Kind          | Drawn from                          |
+| As                          | Soort          | Bron                          |
 | ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| `correctness`, `security` | Token-gedreven  | De bevindingen van de reviewers zelf                         |
+| `testGap`                 | Token-gedreven  | De bevindingen van de reviewers                             |
+| `visual`, `apiContract`   | Deterministisch | Berekend zonder tokens te verbruiken                    |
+| `performance`             | Deterministisch | Alleen enum — niets in het product berekent een resultaat |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Het oordeel van een as is `pass`, `warn`, `fail`, `partial` of `unavailable` —
+en alleen `pass` of `warn` passeert een poort. Het onderscheid tussen `fail`,
+`partial` en `unavailable` is essentieel: een as met een poort die niet kon
+afronden of helemaal niet kon draaien, houdt het totale oordeel tegen in plaats
+van het te laten passeren. **Afwezigheid van bewijs wordt nooit een groene
+poort.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Sommige assen zijn bewust adviserend. De test-gap-as die uit cohorten is
+afgeleid, kan dependency-injection- of factory-dekking niet zien — een
+niet-geïndexeerde repo met een grondige testsuite en een repo zonder enige test
+zien er van daaruit identiek uit, dus het een of het ander beweren zou een
+leugen zijn; de as verschijnt in het dashboard zonder een poort te zijn. De
+token-assen zijn adviserend omdat de prioriteiten van de bevindingen het oordeel
+al sturen, en er opnieuw een poort van maken zou dubbel tellen.
 
-## The verdict
+## Het oordeel
 
-The finalizer computes the verdict over the findings with status `open` or
+De finalisatiestap berekent het oordeel over de bevindingen met status `open` of
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- elke P0-bevinding met betrouwbaarheid ≥ 0,7 → **Block**
+- anders, elke P0 (met lage betrouwbaarheid) of elke P1 → **Hold**
+- anders → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Het oordeel draagt een samengestelde betrouwbaarheid die is afgeleid van de
+spreiding van de betrokken betrouwbaarheden — overeenstemming verhoogt die,
+verdeeldheid verlaagt die.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Het bundelen door de lead-agent (CEO) is een redactionele ronde, geen tweede
+opsomming: een met de hand geschreven tweede kopie van de bevindingen is precies
+wat van het echte overzicht af gaat wijken. Dubbele bevindingen worden
+gedegradeerd in plaats van herhaald — meerdere reviewers worden met bewust
+overlappende opdrachten op één diff gezet, dus hetzelfde defect dat drie keer bij
+de finalisatiestap aankomt, betekent dat het systeem werkt; het drie keer
+publiceren betekent dat het systeem zijn eigen architectuur in de inbox van de
+lezer laat lekken. Bij een nieuwe review krijgen bevindingen een vingerafdruk en
+worden ze met de vorige ronde vergeleken, zodat het verschil naar boven komt.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Ten slotte wegen de assen mee, en die kunnen het oordeel alleen **strenger**
+maken: een gefaalde as met een poort dwingt Block af — bevindingen kunnen daar
+niet tegenop stemmen — en een as met een poort die niet kon afronden, dwingt
+minstens Hold af.
 
-## Publishing stays with you
+## Publiceren blijft aan jou
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+De pipeline post bewust niet naar GitHub; publiceren blijft aan de gebruiker,
+zodat een review nooit dubbel kan publiceren. Wanneer je op **Publiceren naar
+GitHub** drukt:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Er wordt één GitHub-review ingediend. Bevindingen die al zijn opgelost of
+  verworpen, worden overgeslagen. De knop publiceert elke resterende open
+  bevinding (`selection: all_open`). De MCP-tool `publish_review_to_github`
+  gebruikt standaard nog steeds alleen door peers bevestigde bevindingen
+  (`consensus`).
+- Bevindingen met een anker naar een bestand en regel worden inline reacties; al
+  het overige komt in de samenvattingstekst terecht, elk met een voettekst
+  "— Control Center AI review", zodat de bron ondubbelzinnig is.
+- Ankers worden op het moment van publiceren opnieuw geverifieerd tegen de
+  _huidige_ diff van de PR. Een reactie op code die al is herschreven, is het
+  meest vertrouwenvernietigende dat een reviewer kan achterlaten; als GitHub een
+  inline anker toch weigert, wordt de hele review opnieuw verstuurd met elke
+  bevinding in de tekst opgenomen, zodat niets stilzwijgend verdwijnt.
+- Een **Block**-oordeel wordt ingediend als `REQUEST_CHANGES`; **Hold** als
+  `COMMENT`; **Ship** als `APPROVE` vanaf de knop (`approve_on_ship: true`). De
+  MCP-tool laat Ship als `COMMENT` tenzij je `approve_on_ship` meegeeft.
+- De review wordt geplaatst onder de app-identiteit van de server. Wie op
+  Publiceren heeft gedrukt, wordt vastgelegd voor de rolpoort en het
+  auditlogboek; diegene is niet de GitHub-auteur.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/).
+Publiceren declareert de actieklasse `prPublish`, dus het controlepunt van de
+beveiligingen houdt het net als elke muterende actie tegen — het vraagt standaard
+om goedkeuring en faalt gesloten wanneer er geen goedkeurder is verbonden. Zie
+[Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/).
 
-## What a reviewer may do
+## Wat een reviewer mag doen
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Reviewer-agenten draaien in de modus `review`: een alleen-lezen sandbox en een
+zorgvuldig samengestelde allowlist van tools voor bevindingen, commentaar,
+tickets en peerreview — maar geen mutaties. Een reviewer kan de code die hij
+bekritiseert niet repareren; hij kan wel een voorgestelde oplossing meesturen die
+een mens toepast. Het weigeringsbericht van de modus zegt tegen een agent die
+het toch probeert, dat hij de review moet afronden en de gebruiker op de
+gepubliceerde samenvatting moet laten reageren.
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/) — the policy engine that gates publishing
-- [Modes](/nl-NL/handleiding/concepten/modi/) — what `review` mode changes for an agent
-- [Pipelines and automation](/nl-NL/handleiding/concepten/pipelines/) — the engine the review runs on
-- [Agent dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) — where the isolated worktree comes from
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) — de beleidsengine die publiceren achter een poort houdt
+- [Modi](/nl-NL/handleiding/concepten/modi/) — wat de modus `review` voor een agent verandert
+- [Pipelines en automatisering](/nl-NL/handleiding/concepten/pipelines/) — de engine waarop de review draait
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/) — waar de geïsoleerde worktree vandaan komt
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Use AI-powered review](/nl-NL/handleiding/gidsen/ai-review/) — run a review and publish it
-- [Dispatch reviewer agents](/nl-NL/handleiding/gidsen/reviewers-starten/) — choose the reviewers yourself
-- [Review compute](/nl-NL/handleiding/gidsen/review-compute/) — cohorts, axes and diffs
+- [AI-gestuurde review gebruiken](/nl-NL/handleiding/gidsen/ai-review/) — een review uitvoeren en publiceren
+- [Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/) — kies zelf de reviewers
+- [Review-compute (cohorten en assen)](/nl-NL/handleiding/gidsen/review-compute/) — cohorten, assen en diffs

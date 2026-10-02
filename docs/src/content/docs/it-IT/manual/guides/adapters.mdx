@@ -1,172 +1,189 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Gestisci adattatori e modelli
+description: Collega i fornitori di modelli, scegli il modello su cui viene eseguito un agente e verifica quali CLI dei runner degli agenti sono presenti sull'host del server.
 slug: it-IT/manuale/guide/adapter
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Questa guida mostra come collegare i fornitori di modelli e scegliere su cosa
+viene eseguito un agente.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Tutto ciò che segue sta su un'unica pagina: **Impostazioni → Server → Fornitori
+di modelli**. La voce della sotto-barra laterale è «Fornitori di modelli»; il
+titolo della pagina è «Adattatori».
 
-## What an adapter is
+## Che cos'è un adattatore
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Un adattatore è il _runner_ che esegue un turno di un agente. Ce ne sono due e
+l'elenco è fisso: non puoi aggiungerne un terzo.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Adattatore                | CLI      | Trasporto                                                    |
+| ------------------------- | -------- | ------------------------------------------------------------ |
+| Control Center (built-in) | nessuno  | Ciclo di agente in-process, che comunica con i fornitori via HTTP |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`                      |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI e gli altri sono **fornitori** dell'adattatore
+integrato, non CLI separate. Ciò che _puoi_ aggiungere è un altro fornitore:
+qualsiasi endpoint compatibile con OpenAI o con Anthropic. È l'argomento della
+sezione successiva.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Il rilevamento sonda il server, non la tua macchina]
+La scheda **Runner rilevati** elenca ciò che `cc_server` ha trovato nel `PATH`
+dell'_host del server_. Su un client leggero o web si tratta di una macchina
+diversa da quella che stai guardando. Installa la CLI sulla macchina che esegue
+`cc_server`.
 :::
 
-## Connect a model provider
+## Collega un fornitore di modelli
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+L'adattatore integrato ha bisogno di almeno un fornitore collegato prima di
+poter funzionare. Nel catalogo ne sono inclusi quattordici.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Vai su **Impostazioni → Server → Fornitori di modelli**
+2. Scorri fino a **Provider e modelli**
+3. Trova il tuo fornitore e collegalo:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Fornitore                                                                                                | Come collegarlo                                                                                                               |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | Chiave API. Un abbonamento Claude Pro/Max non è un accesso API di Anthropic: per quel piano usa l'adattatore Claude Code     |
+| OpenAI, Codex, Cursor                                                                                    | Accesso OAuth dal browser oppure una chiave API. Codex è ChatGPT Plus/Pro tramite il backend Codex Responses, non l'avvio di una CLI |
+| Kimi Code                                                                                                | Solo OAuth dal browser: un flusso con codice dispositivo. È un piano a tariffa fissa, quindi non ha un prezzo per token       |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | Chiave API                                                                                                                    |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Verifica: il badge della riga passa a «Connesso» e, espandendola, vengono
+elencati i modelli serviti da quel fornitore, ciascuno con il prezzo per milione
+di token e la finestra di contesto.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+I token OAuth finiscono nell'archivio delle credenziali del server stesso e
+vengono rinnovati prima della scadenza. Le credenziali dei fornitori sono
+**globali per l'host**: sono condivise da ogni spazio di lavoro
+dell'installazione, non limitate a uno.
 
-### Add a custom provider
+### Aggiungi un fornitore personalizzato
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Usalo per Ollama, LM Studio, vLLM o un deployment privato.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. In **Provider e modelli**, sotto **Provider personalizzati**, premi **Aggiungi provider**
+2. Compila un **Nome**, scegli il **Tipo di API** (compatibile con OpenAI o con
+   Anthropic) e indica l'**URL di base** (ad esempio
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Aggiungi una **Chiave API** se l'endpoint la richiede, poi premi **Aggiungi provider**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Un fornitore personalizzato compare nello stesso elenco, con un pulsante di
+eliminazione che i suoi fratelli integrati non hanno.
 
-## Pick a model for an agent
+## Scegli un modello per un agente
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Vai su **Impostazioni → Spazio di lavoro → Agenti** e seleziona l'agente
+2. Nella scheda **Impostazioni**, scegli l'**Adattatore**
+3. Scegli il **Modello** dal menu a discesa accanto
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Per l'adattatore integrato il menu a discesa viene composto in tempo reale dal
+catalogo di ogni fornitore collegato. Un fornitore senza credenziale memorizzata
+contribuisce con zero modelli: per questo un menu a discesa vuoto significa
+quasi sempre «niente ancora collegato» e non «niente disponibile».
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev è un arricchimento, mai una fonte di id]
+Il catalogo [models.dev](https://models.dev) incluso fornisce prezzo e finestra
+di contesto per un modello già presente nell'elenco in tempo reale. Non aggiunge
+mai un id di modello. Se un modello che ti aspetti manca, l'endpoint del
+fornitore non lo restituisce.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Gli id dei modelli per l'adattatore integrato sono qualificati `provider/model` e
+possono portare una catena di fallback separata da `|`. In caso di fallback, il
+costo è calcolato sul modello che ha effettivamente servito il turno, non su
+quello che hai richiesto.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Un agente senza adattatore viene eseguito sul ciclo integrato]
+Ogni spazio di lavoro viene popolato inizialmente con cinque agenti — un CEO più
+`qa`, `architect`, `engineer` e `librarian` — senza adattatore e senza modello.
+L'invio ricade su **Control Center (built-in)**, non sull'impostazione
+**Runner predefiniti** di questa pagina, che è una preferenza lato client che il
+percorso di invio non legge mai. Il log di esecuzione registra `cc-harness` per
+quelle esecuzioni, così la trascrizione indica che cosa è stato effettivamente
+eseguito.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Non essendoci nemmeno un modello, il ciclo integrato chiede ad Anthropic il suo
+modello predefinito. Un agente lasciato del tutto non configurato, quindi, viene
+eseguito se hai collegato un account Anthropic, altrimenti fallisce con
+`No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Completare il passaggio dell'adattatore dell'onboarding applica a posteriori a
+**ogni** agente a cui manca ancora un adattatore o un modello — CEO e
+specialisti, in ogni spazio di lavoro esistente in quel momento — la coppia che
+hai scelto. Gli spazi di lavoro creati in seguito popolano comunque tutti e
+cinque non configurati. Imposta esplicitamente adattatore e modello su ogni
+agente che intendi usare.
 :::
 
-## Install a runner CLI
+## Installa la CLI di un runner
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+L'adattatore integrato non richiede alcuna installazione. Per Claude Code,
+installa la sua CLI **sull'host del server** con il gestore di pacchetti di
+quello strumento, ad esempio:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Poi premi **Aggiorna** in cima alla pagina. Ogni riga rilevata mostra la versione
+risolta e il percorso, più i chip che indicano se supporta la modalità JSON e la
+selezione del modello.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Una CLI esterna conserva le proprie credenziali, nella propria configurazione,
+sull'host del server. Control Center non le gestisce.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Gli argomenti aggiuntivi e le variabili d'ambiente dell'adattatore restano su questo dispositivo]
+Ogni riga dell'adattatore offre un campo **Argomenti aggiuntivi** e una finestra
+di dialogo **Variabili d'ambiente**. Quei valori sono memorizzati sul tuo
+dispositivo. Il server legge argv ed env di avvio dal proprio archivio delle
+impostazioni. Metti le chiavi dei fornitori sul server (OAuth o il campo della
+chiave nella pagina Fornitori di modelli), non in quei due campi.
 :::
 
-## Restrict which providers a workspace may use
+## Limita i fornitori che uno spazio di lavoro può usare
 
-Provider governance is per workspace and is evaluated last-match-wins.
+La governance dei fornitori è per spazio di lavoro e viene valutata con la regola
+«last-match-wins».
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. In **Provider e modelli**, disattiva l'interruttore **Consenti** su una riga di un fornitore
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Così viene scritta un'istruzione `deny` per quel fornitore nello spazio di lavoro
+attivo e i suoi modelli escono dal catalogo per quello spazio. Riattivando
+l'interruttore, l'istruzione viene rimossa.
 
-## Troubleshooting
+## Risoluzione dei problemi
 
-### A runner shows as not found
+### Un runner risulta «Non trovato»
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Controlla che la CLI sia nel `PATH` dell'**host del server**, non solo nel tuo
+- Un'app desktop lanciata dalla GUI avvia il proprio server con un `PATH`
+  minimale; una CLI installata in un percorso disponibile solo da una shell può
+  risultare invisibile
+- Premi **Aggiorna** dopo l'installazione
 
-### The model dropdown is empty
+### Il menu a discesa dei modelli è vuoto
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- L'adattatore è quello integrato e non è collegato alcun fornitore: collegarne
+  uno in **Provider e modelli**
+- Oppure il fornitore è collegato ma negato dall'interruttore di governance di
+  questo spazio di lavoro
 
-### A model runs but the price shows as unknown
+### Un modello viene eseguito ma il prezzo risulta sconosciuto
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+L'elenco dei modelli in tempo reale contiene l'id; prezzo e contesto provengono
+da models.dev. Un modello nuovissimo, o uno di un fornitore personalizzato, non
+ha ancora una voce nel catalogo.
 
-## Related guides
+## Guide correlate
 
-- [Create and configure an agent](/it-IT/manuale/guide/crea-agente/)
-- [Manage API keys](/it-IT/manuale/guide/chiavi-api/)
-- [Diagnose an agent](/it-IT/manuale/guide/diagnostica-agente/)
-- [Manage costs](/it-IT/manuale/guide/gestisci-costi/)
+- [Crea e configura un agente](/it-IT/manuale/guide/crea-agente/)
+- [Gestisci le chiavi API](/it-IT/manuale/guide/chiavi-api/)
+- [Diagnostica un agente](/it-IT/manuale/guide/diagnostica-agente/)
+- [Gestisci i costi](/it-IT/manuale/guide/gestisci-costi/)
 
-## Related concepts
+## Concetti correlati
 
-- [The agent model](/it-IT/manuale/concetti/modello-agenti/)
-- [Agent dispatch lifecycle](/it-IT/manuale/concetti/ciclo-di-vita-invio/)
+- [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/)
+- [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/)

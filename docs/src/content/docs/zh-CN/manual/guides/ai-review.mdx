@@ -1,152 +1,132 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: 使用 AI 审查
+description: 对 PR 运行 pr_review 流水线，阅读发现项和判定，然后把审查发布到 GitHub。
 slug: zh-CN/手册/操作指南/ai-审查
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+本指南介绍如何让审查智能体审查一个 pull request，以及如何把结果发布到 GitHub。
 
-## Start an AI review
+## 开始一次 AI 审查
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. 打开该 PR，进入它的**概览**标签页
+2. 打开操作行中的 ⋯ 溢出菜单，选择**询问 AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+该菜单项只在 PR 处于打开状态时出现——它是一个合并前的操作。在**评审**标签页的空状态
+上（此时还没有任何审查），同一个按钮也会以**询问 AI** 的形式提供。
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center 会启动预置的 `pr_review` 流水线，并打开该 PR 的**评审**标签页，让你
+可以看着它运行。流水线会：
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. 打开该 PR 自己的审查空间，其隔离工作树已把该 PR 检出到它的 head
+2. 按工作区的审阅级别并行派出审查者——默认三个（预置的 **qa**、**architect** 和
+   **engineer** 智能体，同时运行）。不做任何语言或领域检测
+3. 由主导（CEO）智能体把他们的发现项汇总成一份走查
+4. 收尾：把发现项归入共识分桶并计算判定。当关联进入 `awaiting approval` 时，
+   **发布到 GitHub** 会出现在评审标签页上
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+审查的深入程度由工作区的**审阅级别**决定——`light`（一个审查者）、`balanced`（三个，
+默认值）或 `thorough`（全部五个，增加安全和性能专家）——在
+**设置 → 工作区 → 通用**中的**工作区策略**卡片上设置。更轻的级别提交的发现项数量完全
+一样，只是它一开始报告的更少。
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/zh-CN/手册/概念/ai-审查/) for how the pieces fit together.
+所有审查者都发布到该 PR 唯一的审查空间中，这正是他们的发现项可以相互比较的原因。
+各组成部分如何配合，见 [AI 审查](/zh-CN/手册/概念/ai-审查/)。
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/zh-CN/手册/操作指南/派发审查智能体/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/zh-CN/手册/操作指南/github-pr-对话/).
+`pr_review` 只附带手动触发器。要让它在每个已发布的 PR 上自动触发，请自行添加触发器——
+见[派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)。你也可以直接从 GitHub 启动
+一次审查，无需任何流水线触发器：在 PR 上 @ 提及服务器的机器人，或添加 `ai-review`
+标签——见[从 GitHub PR 与 Control Center 对话](/zh-CN/手册/操作指南/github-pr-对话/)。
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+如果弹出提示说此 pull request 上已经有一次审查正在运行，那就是确有一次仍在进行中；
+留在**评审**标签页，或打开**流水线**找到它。
 
-## Read the findings
+## 阅读发现项
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+审查者把发现项记录为审查空间中的**审查节点**。每个节点包含：
 
-| Field          | Description                                                   |
+| 字段           | 说明                                                          |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| 类型           | `bug`、`suggestion`、`recommendation`、`question` 或 `ticket` |
+| 优先级         | P0（严重）→ P3（细枝末节）                                     |
+| 类别           | `security`、`stability`、`data_integrity`、`correctness`、`performance` 或 `maintainability` |
+| 文件与行号     | 发现项锚定在何处                                              |
+| 原始代码       | 发现项所针对的代码                                            |
+| 建议代码       | 提议的修复                                                    |
+| 置信度         | 审查者有多确信                                                |
+| 状态           | `open` → `consensus-ready` → `resolved` 或 `dismissed`        |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+只有当一位_同行_审查者确认后，一个发现项才会到达 **consensus-ready**。智能体无法确认
+自己的发现项，因此单个审查者的意见永远不会自行升级。
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/zh-CN/手册/操作指南/审查计算/) for what the pass produces.
+**评审**标签页会显示发现项列表（可按类型和状态筛选，并有一个用于显示已驳回发现项的
+开关），旁边是汇总智能体发布的工件。确定性视图——队列、多轴仪表板、契约 diff 与视觉
+diff——在服务器端计算，但应用中没有对应的界面；这一遍会产生什么，见
+[审查计算](/zh-CN/手册/操作指南/审查计算/)。
 
-## Check the disagreements panel
+## 检查分歧面板
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+当两位审查者把发现项锚定到同一个文件和行、但评价相差很大时——优先级相差两级或更多，
+或是一个称其为 `bug` 而另一个称其为 `suggestion`——发现项列表上方会出现一个分歧面板。
+先读这些：正是在这里，审查者的意见出现分歧，而你的判断最有价值。
 
-## Read the verdict
+## 阅读判定
 
-When the lead agent finalizes, it computes a **verdict**:
+当主导智能体收尾时，它会计算出一个**判定**：
 
-| Verdict   | Meaning                                      |
+| 判定      | 含义                                         |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | 未发现任何阻塞性问题                         |
+| **Hold**  | 有应在合并前解决的问题                       |
+| **Block** | 有必须修复的严重问题                         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+该判定带有一个总体置信度评分，以及按优先级统计的发现项数量。
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+随后审查轴会加入进来，而它们只会让判定**更**严重。受门禁约束且失败的轴会强制给出
+**Block**；受门禁约束、无法完成（`partial`）或根本无法运行（`unavailable`）的轴至少
+会强制给出 **Hold**。证据缺失绝不会让门禁通过。
 
-## Publish the review to GitHub
+## 把审查发布到 GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+发布是一个单独的步骤，且刻意由用户把关。`pr_review` 流水线会把审查留在 Control Center
+里；它不会发布到 GitHub。
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. 在**评审**标签页上，等到**发布到 GitHub** 出现
+2. 按下**发布到 GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center 只发送**一条** GitHub 审查。已经解决或已驳回的发现项会被跳过。该按钮会
+包含所有仍然未解决的发现项，并且在 **Ship** 时提交 `APPROVE`。（MCP 工具
+`publish_review_to_github` 的默认行为仍然是只提交经同行确认的发现项，并且除非你传入
+`approve_on_ship`，否则不会批准。）锚定到文件和行号的发现项会变成行内评论；其余的一切
+都归入摘要正文，每一项都带有“— Control Center AI review”页脚，以便来源清楚明确。
+**Block** 判定会以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 则由
+该按钮以 `APPROVE` 提交。随后提示会显示**已发布**。审查会以服务器应用的标识发布。
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+如果 GitHub 因为某一行不属于 diff 而拒绝一个行内锚点，整条审查会重新发送，并把每一个
+发现项都归入正文，这样就不会有任何东西被悄悄丢弃。
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[发布受护栏门禁约束]
+`pr_review.publishReview` 声明了 `prPublish` 动作类别，并经由护栏卡点运行。如果解析出的
+裁决是 `prompt` 且未连接任何审批人，这次发布会被拒绝——护栏以失败关闭的方式处理。如果
+你希望它无人值守地运行，请在设置 → 工作区 → 智能体权限中设置一条明确的规则。
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+其他内置流水线会直接发布到 GitHub：`cross_review`、`pr_triage`、`ticket_to_pr` 和
+`pre_merge_gate` 都以一个评论步骤结尾。只有 `pr_review` 会把它的输出留给你来处理。
 
-## Dispatch reviewers yourself
+## 自己派发审查者
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/zh-CN/手册/操作指南/派发审查智能体/).
+如果你想控制由哪些角色审查该 PR、以及每个角色看哪些文件，请在已有的审查空间中使用
+`dispatch_reviewers` MCP 工具，或向流水线添加审查者节点。两条路径以及该工具的确切签名，
+见[派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)。
 
-## Related guides
+## 相关指南
 
-- [Review and merge a PR](/zh-CN/手册/操作指南/审查并合并-pr/)
-- [Dispatch reviewer agents](/zh-CN/手册/操作指南/派发审查智能体/)
-- [Review compute (cohorts and axes)](/zh-CN/手册/操作指南/审查计算/)
+- [审查并合并 PR](/zh-CN/手册/操作指南/审查并合并-pr/)
+- [派发审查智能体](/zh-CN/手册/操作指南/派发审查智能体/)
+- [审查计算（队列与轴）](/zh-CN/手册/操作指南/审查计算/)
 
-## Related concepts
+## 相关概念
 
-- [AI review](/zh-CN/手册/概念/ai-审查/)
-- [Guardrails](/zh-CN/手册/概念/护栏/)
+- [AI 审查](/zh-CN/手册/概念/ai-审查/)
+- [护栏](/zh-CN/手册/概念/护栏/)

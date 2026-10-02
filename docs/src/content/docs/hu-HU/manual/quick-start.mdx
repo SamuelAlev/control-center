@@ -1,92 +1,89 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Gyors kezdés
+description: Telepítse a Control Centert, konfiguráljon egy ügynököt, és nézze, ahogy a repóján dolgozik.
 slug: hu-HU/kezikonyv/gyors-kezdes
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Ez a legrövidebb teljes út attól, hogy semmije sincs, odáig, hogy egy ügynök a saját kódján dolgozik. Kövesse sorrendben; minden lépés az előzőre épül.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Szüksége van a Gitre, egy GitHub-fiókra, valamint vagy egy modellszolgáltatói fiókra (Anthropic, OpenAI, Codex, Cursor, Kimi Code vagy bármely API-kulccsal rendelkező szolgáltató), vagy egy már telepített Claude Code CLI-re. Minden mást menet közben állítunk be.
 
-## Step 1: Install and launch
+## 1. lépés: Telepítés és indítás
 
-Install Control Center as described in [Install](/hu-HU/kezikonyv/telepites/), then open it.
+Telepítse a Control Centert a [Telepítés](/hu-HU/kezikonyv/telepites/) oldalon leírtak szerint, majd nyissa meg.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Az első indításkor az asztali alkalmazás ezt kérdezi: **„Hogyan fusson a Control Center?”**. Válassza a **Futtatás ebben az alkalmazásban** lehetőséget. A Control Center elindít egy headless `cc_server` folyamatot ezen a gépen, amely a saját adatait birtokolja, és minden munkát elvégez. Ezt sosem látja; helyette a bevezető képernyő nyílik meg.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser) for the browser route.
+:::note[Inkább nem telepítene semmit?]
+Ugyanez az alkalmazás ugyanazokkal a funkciókkal fut böngészőben az [app.usectrl.dev](https://app.usectrl.dev) címen. A böngészőfül azonban nem tud szervert hosztolni, ezért Önnek kell biztosítania egyet — futtassa a `cc_server`-t helyben, és csatlakozzon a `ws://localhost:9030` címhez, vagy irányítsa egy másik gépen futó szerverre. Ez a gyors kezdés az asztali utat választja, mert nem igényel szerverbeállítást; a böngészős útvonalhoz lásd a [Telepítés](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser) oldalt.
 :::
 
-## Step 2: Work through onboarding
+## 2. lépés: A bevezető végigvitele
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+A bevezető öt lépésből áll, és ezek sorrendben futnak le — nincs lehetőség előreugrani.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Csatlakozás**: jelentkezzen be GitHubbal, vagy illesszen be egy személyes hozzáférési tokent a `repo` és `read:org` jogosultsággal. A hitelesítő adat a szerveren tárolódik, a fiókjához csatolva.
+2. **Munkaterület**: adjon nevet az első munkaterületének, és igény szerint válasszon logót. Létrehozásakor öt ügynök jön létre — egy CEO, valamint `qa`, `architect`, `engineer` és `librarian` —, továbbá a beépített pipeline-sablonok.
+3. **Homokozó**: rögzít egy homokozóra vonatkozó beállítást. Bármelyik választással folytathatja.
+4. **Adapter**: válassza ki, melyik adapter és modell legyen az ügynökök alapértelmezése. Válassza a **Control Center (built-in)** lehetőséget, majd a megjelenő szolgáltatóválasztóval jelentkezzen be egy modellszolgáltatóhoz — a modellista üresen marad, amíg nincs csatlakoztatva szolgáltató. A lépés befejezése az adaptert és a modellt a munkaterület CEO ügynökére is ráírja.
+5. **Hang (opcionális)**: telepítsen egy eszközön futó beszédfelismerő modellt a diktáláshoz, vagy hagyja ki.
 
-Control Center then opens your workspace inbox.
+Ezután a Control Center megnyitja a munkaterület beérkező üzeneteit.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
+:::note[Mi korlátozza egy ügynök futását]
+Az ügynökparancsok a gazdagép operációs rendszerének natív homokozójába csomagolódnak, amikor az elérhető — Seatbelt macOS-en, bubblewrap Linuxon. Windows rendszeren nincs háttérrendszer, így az ottani futásokat csak a többi réteg korlátozza: a beszélgetés saját worktree-je (`git worktree` Windows esetén; copy-on-write ott, ahol a `rift` elérhető), az indításonként közvetített és a lebontáskor visszavont hitelesítő adatok, valamint a műveletkorlátok. Lásd: [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
 :::
 
-## Step 3: Add a repository
+## 3. lépés: Tároló hozzáadása
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Lépjen a **Beállítások → Munkaterület → Tárolók** menüpontra, és kattintson a **Tároló hozzáadása** gombra.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+A párbeszédablak a szervert futtató gépen lévő mappákat böngészi, nem a kliensét, és azokon a gyökereken belül marad, amelyek közzétételére a szerver be van állítva (alapértelmezés szerint a felhasználója otthoni könyvtára). Csak a git checkoutok kapnak jelölőnégyzetet. Jelölje be a sajátját, és regisztrálja.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Egy checkout csak akkor fogadható el, ha egy git work tree-n belül van, rendelkezik `origin` remote-tal, és az a remote egy támogatott kódhosztra mutat — github.com, gitlab.com vagy bitbucket.org. Minden mást elutasítunk, az ok megjelölésével.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+A repók munkaterülethez kötöttek: egy checkout itteni regisztrálása _ebbe_ a munkaterületbe teszi. Nincs külön összekapcsolási lépés.
 
-## Step 4: Give an agent an adapter and a model
+## 4. lépés: Adjon az ügynöknek adaptert és modellt
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Lépjen a **Beállítások → Munkaterület → Ügynökök** menüpontra. Válassza ki a `engineer` ügynököt a listában.
 
-On the **Settings** tab, set:
+A **Beállítások** lapon állítsa be:
 
 - **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Modell**: válasszon egyet azon szolgáltató közül, amelyet a bevezető során csatlakoztatott
 
-Press **Save changes**.
+Nyomja meg a **Módosítások mentése** gombot.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Ez a lépés a gyakorlatban nem elhagyható. Csak a CEO ügynök örökli a bevezető során kiválasztott adaptert; a négy szakértő adapter nélkül jön létre. Ilyenkor a **Control Center (built-in)** adapterre esnek vissza az Anthropic alapértelmezett modelljével, így csak akkor futnak, ha csatlakoztatott egy Anthropic-fiókot — és ha csatlakoztatott, akkor is egy Ön által nem választott modellen.
 
-## Step 5: Send the agent a task
+## 5. lépés: Küldjön feladatot az ügynöknek
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Az oldalsávon keresse meg a **Terek** szakaszt, és kattintson a **+** gombra.
+2. Adjon nevet a térnek, adja hozzá az `engineer` ügynököt az **Ügynökök hozzáadása** alatt, majd hozza létre.
+3. Írjon be egy konkrét, kis feladatot a regisztrált repóval kapcsolatban, és nyomja meg az Entert.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+A Control Center ehhez a beszélgetéshez létrehoz egy copy-on-write worktree-t a munkaterület repóiból, összeállít egy promptot az ügynök szerepéből, perszónájából, készségeiből és a tér kontextusából, majd elindítja a futást. A forrás checkoutjához soha nem nyúl.
 
-## Step 6: Watch it work
+## 6. lépés: Nézze, ahogy dolgozik
 
-You should see, in order:
+Sorrendben a következőket kell látnia:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- A beviteli mező küldés gombja leállítás gombbá változik, mert egy ügynök dolgozik ebben a beszélgetésben
+- Az ügynök gondolatmenete, eszközhívásai és szövege streamelve bekerül az átiratba
+- A küldés gomb visszatér, amikor a futás véget ér
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Ezután nyissa meg a **Beállítások → Munkaterület → Ügynökök** menüpontot, válassza ki az ügynököt, és nézze meg a **Naplók** lapot: egy futássor, rajta az állapotával, időtartamával, kezdési és befejezési időpontjával, valamint a használt adapterrel.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Ez a ciklus. A Control Center minden más része — pull requestek átnézése, pipeline-ok, jegyek, megbeszélések, Slack — erre épül.
 
-## Next steps
+## Következő lépések
 
-- [Your first workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/hu-HU/kezikonyv/oktatoanyagok/elso-pr/): take an agent's branch through review and merge
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): what an agent is made of
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/): the rest of the agent form
-- [Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/): one goal, one approval, a generated pipeline
-- [Pair your phone](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): follow the fleet from anywhere
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/): how the desktop, web and phone clients relate to the server
+- [Az első munkaterületed](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/): ugyanaz a terep, lassabban, az elszigetelési modell elmagyarázásával
+- [Az első pull request átnézése](/hu-HU/kezikonyv/oktatoanyagok/elso-pr/): vigyen végig egy ügynök ágát az átnézésen és az összefésülésen
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): miből áll egy ügynök
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/): az ügynökűrlap többi része
+- [Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/): egy cél, egy jóváhagyás, egy generált pipeline
+- [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/): kövesse a flottát bárhonnan
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/): hogyan viszonyulnak az asztali, webes és telefonos kliensek a szerverhez

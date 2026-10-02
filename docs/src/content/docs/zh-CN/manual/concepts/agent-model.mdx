@@ -1,112 +1,177 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: 智能体模型
+description: 智能体在 Control Center 中究竟是什么，它的哪些字段会改变行为，以及它所运行的适配器如何决定哪些约束可以真正执行。
 slug: zh-CN/手册/概念/智能体模型
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## 什么是智能体？
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+智能体是一个具名的行动者，带有人格、一组技能、一个用于运行的适配器，以及一组
+能力。智能体与人类一样都是主体：它们撰写消息、拥有工单、留下评审，并出现在
+同一份名册上。它们才是真正做事的对象。
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+每个智能体只属于一个工作区。这是一条硬性不变量——`agent.workspaceId` 不可为
+空，由智能体自己的工作区决定它的行落在哪个数据库文件里，而创建一个没有工作区
+的智能体会被拒绝。
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+智能体同时还是一个目录。它的定义位于工作区数据目录下的
+`agents/<slug>/AGENTS.md`，它持有的技能则以符号链接的形式指向
+`agents/<slug>/.agents/skills`。数据库行与文件是一起写入的。预置是幂等的：如果
+智能体行已经存在，磁盘上的文件和技能链接依然会被重写。生产环境的调用方是创建
+工作区，而不是每次启动服务器。
 
-## What an agent carries
+## 智能体包含什么
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| 属性                    | 作用                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | 简短的类 slug 标识符（`architect`、`qa`），也是 `@mentions` 解析时所依据的名称                                            |
+| `title`                 | 人类可读的职位名称                                                                                                        |
+| `persona`               | 自由文本的性格与行为指令，会作为提示词的一个小节注入                                                                      |
+| `systemPrompt`          | 可选的附加指令，会作为 “Agent instructions” 小节注入——它们不会取代组装好的提示词的其余部分                               |
+| `skills`                | 不区分大小写的技能名称集合，会以磁盘上的技能链接形式镜像                                                                  |
+| `adapterId`             | 智能体派发到哪个运行器。**为空时回退到内置循环**                                                                          |
+| `modelId`               | 在该适配器内使用哪个模型                                                                                                  |
+| `effort`                | 推理强度档位，取自所选模型自身的词汇表                                                                                    |
+| `contextSize`           | 上下文窗口的覆盖值                                                                                                        |
+| `capabilities`          | 凭据与出站标志，在启动时检查                                                                                              |
+| `silenceTimeoutMinutes` | 针对静默看门狗的按智能体覆盖值（1–240）                                                                                   |
+| `reportsTo`             | 上级智能体 id——组织结构图据此绘制的汇报链                                                                                 |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+以上全部都在 设置 → 工作区 → 智能体 中编辑。**新建智能体**会创建一个未命名的
+智能体，之后由你来填写。
 
-## Skills
+## 技能
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+技能是智能体实体上不区分大小写的名称。围绕它们会发生两件彼此独立的事情：
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- 这些名称会列在组装好的提示词中一个名为 “Skills” 的小节下。这就是该实体的
+  集合本身所做的全部——并不存在以它为索引的按技能提示词库。
+- 每个具名技能的目录（工作区中的 `skills/<slug>/SKILL.md`）会被链接进智能体
+  自己的文件夹。在内置运行器上，被链接技能的前置元数据会自动加载到系统提示词
+  中，智能体按需读取正文；在对话中输入 `/skill:<name>` 会将该正文作为本轮的
+  指令加载。
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/zh-CN/手册/操作指南/管理技能/).
+从外部获取的技能会在抓取与写入之间经过一道失败关闭的供应链扫描——没有判定，
+任何技能内容都不会落到磁盘上或进入提示词。外部指的是你自己注册为技能来源的
+GitHub 仓库：产品没有精选商店，因此仓库自身的元数据（它的描述、它的星标数、
+技能的名称）都是不可信的展示数据，扫描判定才是唯一的安全信号。一次安装会抓取
+技能的整个目录，在 `skills-lock.json` 中把它固定到来源提交上，之后的更新在
+替换任何内容之前会重新过一遍这道关卡。具体做法见
+[安装和管理技能](/zh-CN/手册/操作指南/管理技能/)。
 
-### Repo-scoped skills
+### 仓库作用域的技能
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+仓库可以在任何常规位置（`.agents/skills/`、`.claude/skills/`、
+`.opencode/skills/`）随附自己的技能。空间会把每个已链接的仓库并排检出到
+`repos/<name>/` 下，但一个智能体一次只在一个仓库中工作——因此它只携带**该
+仓库的**技能，移动时技能集合也随之切换。
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+哪个仓库处于活动状态，是根据智能体触碰的文件推断出来的：在 `repos/<name>/`
+下写入一个文件会把该仓库设为活动仓库，而仅仅跨仓库读取则不会，所以为追踪一个
+符号而进入兄弟服务，绝不会让技能集合在任务进行中被换掉。在只有单个仓库的空间
+里，答案在第一轮开始前就已经确定。
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+这种作用域限定是一项上下文预算决策。技能索引在每一轮都位于提示词中，而技能
+正文不在，所以一次性列出每个仓库的技能会持续消耗 token——而且当工作其实发生在
+另一个服务里时，来自某个服务的 `testing` 技能会主动误导智能体。同样的道理也
+解释了为什么智能体的索引只携带一个仓库，而输入框不受这种作用域限制：自己给
+技能命名是一个明确的动作，因此 `/skill:<repo>:<name>` 可以触达空间中的任何
+仓库。
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+仓库技能会为**每一个**适配器加载，而不只是内置运行器。活动仓库的技能会被物化
+到智能体的工作目录中——这正是 Claude Code 本来就会扫描的路径；同一份索引也会
+被编入内置运行器所读取的 `AGENTS.md`。在这一切发生之前，仓库的技能要经过与
+已安装技能相同的失败关闭扫描——检出的仓库就是克隆来的内容，而它的前置元数据
+会进入提示词。
 
-## Capabilities
+## 能力
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+能力把关的是一次运行被_交付_了什么，而不是它的文件系统允许它触碰什么。凭据
+代理在启动时检查它们：如果某项能力被关闭，相应的令牌就根本不会被注入。
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **推送到仓库**——把关用于 `git push` 的 GitHub 令牌的注入。
+- **GitHub API**——把关 `GH_TOKEN` 的注入以及对 api.github.com 的访问。
+- **工单**——把关工单服务商的 API 密钥以及对其各域名的访问。
+- **网络出站**——任意的对外请求。
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+一次运行会从智能体自己的行中解析这些能力。当智能体没有任何设置时，会应用一套
+固定的保守默认值：三个凭据标志关闭，网络出站开启。智能体表单中的“沙箱权限”
+开关就在这套回退值与存储在智能体上的自定义集合之间做选择。
 
-See [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/) for the other half of the story, including what is and is not enforced at the filesystem level.
+关于这个故事的另一半——包括在文件系统层面哪些会被强制执行、哪些不会——见
+[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 
-## The adapter decides what can be enforced
+## 适配器决定哪些约束可以执行
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+智能体身上影响最大的单个字段就是它的适配器，因为适配器的传输方式决定了
+Control Center 的策略究竟有多大一部分可以真正执行。
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| 传输方式   | 适配器                    | Control Center 强制执行的内容                                                                                                                                                                                                                                             |
+| ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 内置运行器 | Control Center (built-in) | 全部。工具面是根据模式_构建_出来的，因此被禁用的工具是不可见的，而不仅仅是被拒绝；每次调用都会经过审批关卡与操作护栏；完成契约可以催促一次运行，并在它结束时缺少交付物的情况下将其判为失败                                                                                 |
+| Claude CLI | Claude Code               | 仅限它被提供的 `mcp__*` 工具。Claude 自带的读取、写入、编辑和 shell 工具运行在它自己的进程里且不被看见——而且它启动时带有 `--dangerously-skip-permissions`，因为非交互式的 `claude -p` 否则会永远阻塞在它自己的提示上                                                       |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+具体来说，**只有内置运行器支持子智能体、运行中引导、暂停与恢复（因而也支持
+接管）以及结构化的模式强制执行。** Claude Code 一样都没有。
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[操作系统沙箱是一层底线，而不是模式执行器，而且并非每台主机都有它]
+上面的矩阵讲的是 Control Center 能够_看见并门控_什么。在它下面，只要存在可用
+的后端，`cc_server` 就会把 Claude Code CLI 包在宿主机的操作系统沙箱里——
+macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap——所以一次不被看见的 `rm`
+或一次不被看见的写入仍然受操作系统约束。在 **Windows 上完全没有后端**，而在
+没有 `bwrap` 和 `socat` 的 Linux 或 WSL2 上，探测会报告没有后端，因此在那里
+这些运行会回退到环境净化、由凭据代理发放的凭据、对 Control Center 看得见的
+调用的护栏，以及对话自己的工作树（随附 `rift` 的地方用写时复制；Windows 上
+用 `git worktree`）。
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/).
+沙箱不是的东西是一道_关卡_。它约束一个进程可以读取、写入和连接的位置——只读
+模式确实会用到它，以只读绑定挂载的形式——但它无法拦截一次调用、发起一次审批，
+也无法在事后告诉你这个 CLI 尝试了什么。这一点，再加上上面提到的那四项能力，
+仍然只有内置运行器具备，而其他适配器没有。见
+[沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)。
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+**没有**适配器的智能体会回退到 **Control Center (built-in)**——服务器内部的
+循环，因此不必安装任何 CLI——它的运行日志会记录 `cc-harness`。每个预置的智能体
+在创建时都没有适配器和模型，所以新工作区的五个智能体都在那里运行，使用
+Anthropic 的默认模型，直到你为每个智能体设置适配器和模型。上手流程中的
+“默认适配器”选择只是客户端偏好，服务器从不读取它，它也不会追溯应用到
+已经创建的智能体上。
 
-## Where agents come from
+## 智能体的来源
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/zh-CN/手册/概念/工作区/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **随工作区预置。** 每个工作区——不只是第一个——都会得到一个 CEO 外加四个向
+  它汇报的专员（`qa`、`architect`、`engineer`、`librarian`），在工作区创建时
+  于后台幂等地创建。见[工作区与隔离](/zh-CN/手册/概念/工作区/)。
+- **手动添加**，在 设置 → 工作区 → 智能体 中。让智能体去雇佣一位同事
+  并不会创建一行记录；请使用那个界面。
 
-## Live state
+## 实时状态
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+智能体没有存储的状态列。它的实时状态在每次被读取时，都从它最近的运行日志中
+推导出来：
 
-| State      | Meaning                                                              |
+| 状态       | 含义                                                                 |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | 不存在运行日志                                                       |
+| `running`  | 当前至少有一次运行正在进行                                           |
+| `failed`   | 最近一次运行出错，或它的存活状态为失败或已死亡                       |
+| `blocked`  | 最近一次运行的存活状态为阻塞、停滞或陷入循环                         |
+| `idle`     | 其他一切情况——该智能体运行过，且当前没有任何进行中的任务             |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+另外两个状态 `queued` 和 `succeeded` 存在于对话运行树中的单次运行上；名册从不
+产生它们，因为一次已完成的运行为绿色是关于这次运行的事实，而不是关于这个智能体
+的事实。
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/zh-CN/手册/概念/多人协作/).
+在线状态名册展示的是一幅平行而更粗略的图景，由服务器端根据实时运行事件合成
+——思考中、运行中、等待审批、完成——正是它让智能体能出现在人类旁边。见
+[多人协作](/zh-CN/手册/概念/多人协作/)。
 
-## Related concepts
+## 相关概念
 
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/): what happens when an agent is actually run
-- [Modes](/zh-CN/手册/概念/模式/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/zh-CN/手册/概念/多人协作/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/): what constrains a run today
-- [Agent configuration reference](/zh-CN/手册/参考/智能体配置/): the full field list
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)：当智能体真正运行时会发生什么
+- [模式](/zh-CN/手册/概念/模式/)：塑造智能体工具面的按对话设置
+- [多人协作](/zh-CN/手册/概念/多人协作/)：作为主体的智能体、在线状态与自主程度旋钮
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)：今天究竟是什么在约束一次运行
+- [智能体配置参考](/zh-CN/手册/参考/智能体配置/)：完整的字段列表

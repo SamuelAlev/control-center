@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: 概念
+description: Control Center 如何运作，以及为何这样构建——操作指南背后的背景阅读材料。
 slug: zh-CN/手册/概念
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/zh-CN/手册/操作指南/); when you want to look
-something up, go to the [reference](/zh-CN/手册/参考/).
+这些页面解释 **Control Center 如何运作以及为何如此**。它们供你理解，而不是
+供你动手：这里没有哪一页是需要照着执行的步骤。当你想完成某项具体任务时，
+请前往[操作指南](/zh-CN/手册/操作指南/)；当你想查阅某项内容时，请前往
+[参考](/zh-CN/手册/参考/)。
 
-Read them in any order. If you are new, the core model is the place to start.
+你可以按任意顺序阅读。如果你是新手，从核心模型开始最合适。
 
-## Core model
+## 核心模型
 
-The four ideas everything else is built on.
+其他一切都建立在这四个概念之上。
 
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/zh-CN/手册/概念/智能体模型/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/) — what happens between your message and the agent's first token
-- [Modes](/zh-CN/手册/概念/模式/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/zh-CN/手册/概念/工具上下文/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/zh-CN/手册/概念/代码智能/) — the code graph, language server, structural search and debugger
-- [Conversation history](/zh-CN/手册/概念/对话历史/) — persistence, compaction and forking a transcript
+- [工作区与隔离](/zh-CN/手册/概念/工作区/) —— 租户边界，以及为何它由数据库布局强制实施，而不是靠查询纪律
+- [智能体模型](/zh-CN/手册/概念/智能体模型/) —— 智能体由什么构成：身份、角色、技能、能力、适配器和模型
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/) —— 从你的消息到智能体的第一个 token 之间发生了什么
+- [模式](/zh-CN/手册/概念/模式/) —— `chat`、`plan`、`review` 和 `orchestrate` 如何改变智能体可以做什么
+- [工具上下文与提示缓存](/zh-CN/手册/概念/工具上下文/) —— 为什么智能体只能看到部分工具、它如何访问其余工具，以及是什么让提供方的缓存保持预热
+- [代码智能](/zh-CN/手册/概念/代码智能/) —— 代码图、语言服务器、结构化搜索和调试器
+- [对话历史](/zh-CN/手册/概念/对话历史/) —— 持久化、压缩与转录分支
 
-## Safety and control
+## 安全与控制
 
-What an agent is allowed to touch and who decides.
+智能体被允许触及什么，以及由谁决定。
 
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/) — what actually constrains an agent run today
-- [Guardrails](/zh-CN/手册/概念/护栏/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/zh-CN/手册/概念/授权/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/zh-CN/手册/概念/机台/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/) —— 在当前版本中，究竟是什么在约束智能体运行
+- [护栏](/zh-CN/手册/概念/护栏/) —— 面向所有变更操作的一套策略引擎，以及规则如何被判定
+- [授权](/zh-CN/手册/概念/授权/) —— 角色、权限目录与审计追踪
+- [机台与隔离舱](/zh-CN/手册/概念/机台/) —— 为什么智能体拿到的是可丢弃的虚拟机而不是你的机器，以及边界究竟是什么
 
-## Directing the work
+## 指挥工作
 
-Turning intent into work that gets done.
+把意图转化为实际完成的工作。
 
-- [Tickets and delegation](/zh-CN/手册/概念/工单/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/zh-CN/手册/概念/流水线/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/zh-CN/手册/概念/编排/) — one goal, one approval, a generated pipeline
-- [AI review](/zh-CN/手册/概念/ai-审查/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/zh-CN/手册/概念/pr-对话/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/zh-CN/手册/概念/记忆与知识/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/zh-CN/手册/概念/评测与质量/) — eval suites and the Quality tab
+- [工单与委派](/zh-CN/手册/概念/工单/) —— 整个机群共用的、不依赖厂商的工作单元
+- [流水线与自动化](/zh-CN/手册/概念/流水线/) —— DAG 工作流、触发器和可恢复的运行
+- [编排](/zh-CN/手册/概念/编排/) —— 一个目标、一次批准，一条自动生成的流水线
+- [AI 审查](/zh-CN/手册/概念/ai-审查/) —— 一个 PR 如何变成已审查的 PR：审查空间、同伴共识、审查轴以及 Ship/Hold/Block 判定
+- [PR 对话](/zh-CN/手册/概念/pr-对话/) —— 直接从代码托管平台回应 GitHub 上的 @提及或 `ai-review` 标签
+- [记忆与知识](/zh-CN/手册/概念/记忆与知识/) —— 事实、策略，以及智能体被允许知道什么
+- [评测与质量](/zh-CN/手册/概念/评测与质量/) —— 评测套件与质量标签页
 
-## People and reach
+## 人员与触达
 
-Working with other humans and reaching the fleet from elsewhere.
+与其他人类协作，以及从别处触达机群。
 
-- [Multiplayer and presence](/zh-CN/手册/概念/多人协作/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/zh-CN/手册/概念/单点登录/) — SAML and OIDC logins
-- [Chat bridges](/zh-CN/手册/概念/聊天桥接/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/zh-CN/手册/概念/远程控制/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/zh-CN/手册/概念/会议/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/zh-CN/手册/概念/日历/) — Google Calendar sync and meeting alerts
+- [多人协作与在线状态](/zh-CN/手册/概念/多人协作/) —— 人类与智能体作为对等的参与者，以及访问受什么控制
+- [单点登录](/zh-CN/手册/概念/单点登录/) —— SAML 和 OIDC 登录
+- [聊天桥接](/zh-CN/手册/概念/聊天桥接/) —— 为什么 Slack 桥接是主动外连的，以及来自聊天的消息凭什么获得授权
+- [远程控制与移动端](/zh-CN/手册/概念/远程控制/) —— 手机如何访问你的服务器，以及围绕它的安全模型
+- [会议与转录](/zh-CN/手册/概念/会议/) —— 设备端录制、转录与摘要
+- [日历与日程](/zh-CN/手册/概念/日历/) —— Google Calendar 同步与会议提醒
 
-## Under the hood
+## 实现原理
 
-The shape of the system itself.
+系统本身的结构。
 
-- [Architecture](/zh-CN/手册/概念/架构/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/zh-CN/手册/概念/部署/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/zh-CN/手册/概念/领域事件/) — the in-process bus features talk over
+- [架构](/zh-CN/手册/概念/架构/) —— 分层、共享内核、端口与适配器
+- [部署与客户端](/zh-CN/手册/概念/部署/) —— 桌面端、网页端和手机客户端如何与同一台服务器关联
+- [领域事件](/zh-CN/手册/概念/领域事件/) —— 各功能相互通信所依赖的进程内总线

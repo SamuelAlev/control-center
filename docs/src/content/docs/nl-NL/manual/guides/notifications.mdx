@@ -1,149 +1,159 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Meldingen configureren
+description: Zet categorieën aan of uit, stel Quiet hours en een geluid in en zie welke meldingen je waar bereiken.
 slug: nl-NL/handleiding/gidsen/meldingen
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Deze gids laat je zien hoe je meldingen configureert en wat elke instelling
+werkelijk bepaalt.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Meldingen komen binnen op twee oppervlakken. Het **meldingencentrum** — de bel in
+de titelbalk — leest een blijvende feed per werkruimte op de server. **OS-toasts**
+zijn een apart pad, alleen op de desktop, gevoed door live-frames die de server
+doorstuurt.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[De webbuild toont geen OS-meldingen]
+De toast-pipeline wordt alleen door de desktop-bootstrap opgebouwd. Op
+`app.usectrl.dev` zijn er geen OS-toasts, geen meldingsgeluiden en geen ambient
+banners — de bel en zijn geschiedenis werken nog wel, omdat ze de feed op de
+server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 :::
 
-## Turn categories on or off
+## Categorieën aan- of uitzetten
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Ga naar **Instellingen → Jij → Meldingen**
+2. Laat **Meldingen inschakelen** aan staan
+3. Zet de categorieën aan die je wilt. Het zijn er precies zestien:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Categorie                  | Wordt geactiveerd wanneer                                                   |
+| -------------------------- | --------------------------------------------------------------------------- |
+| Agent voltooid             | Een agent heeft een run afgerond                                            |
+| PR gepubliceerd            | Een agent heeft een PR gepubliceerd                                         |
+| PR samengevoegd            | Een PR is samengevoegd                                                      |
+| Nieuwe berichten           | Er is een bericht aangekomen in een ruimte waar je niet naar kijkt          |
+| Vermeld in een pull request | De meldingspoll van GitHub zag dat je in een PR werd vermeld               |
+| Review aangevraagd         | Je review is daadwerkelijk aangevraagd voor een PR die geen concept is      |
+| Review verouderd           | Er zijn nieuwe commits geland op een pull request die je al hebt gereviewd  |
+| Klaar om te mergen         | Een pull request die jij hebt gemaakt is mergebaar geworden, of niet meer   |
+| Reviewbeslissingen         | Een reviewer heeft goedgekeurd, wijzigingen aangevraagd of een goedkeuring is vervallen |
+| Controles                  | CI is gefaald op een pull request die jij hebt gemaakt, of is hersteld      |
+| Reviewdraden               | Iemand heeft geantwoord in of een draad opgelost waarin je zit              |
+| Ticket toegewezen          | Een ticket is toegewezen                                                    |
+| Ticketstatus gewijzigd     | Een ticket is van status veranderd                                          |
+| Vergadering begint zo      | Een agenda-afspraak valt binnen je voorlooptijd                             |
+| Agenda losgekoppeld        | Het OAuth-token van een verbonden agenda is verlopen                        |
+| Omheining-updates          | Een omheining is overgenomen, teruggehaald of mislukt                       |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Alles buiten deze lijst kan niet worden gemeld of gefilterd — er is geen
+categorie "al het andere".
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Deze voorkeuren volgen je gebruiker naar elk apparaat, dus een telefoon en een
+laptop blijven gelijk lopen. Het volume is de bewuste uitzondering en blijft per
+apparaat.
 
-## Set quiet hours
+## Quiet hours instellen
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Zet op dezelfde pagina **Quiet hours** aan
+2. Typ een begin- en eindtijd in `HH:MM` (het standaardvenster is 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Tijdens Quiet hours worden niet-dringende meldingen verworpen — ze worden niet in
+de wachtrij gezet en later opnieuw afgespeeld.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+Twee categorieën zijn **dringend** en komen altijd aan; ze omzeilen Quiet hours
+_en_ de focusmodus: **Vergadering begint zo** en **PR gepubliceerd**. Een
+vergaderingsmelding die je pas achteraf ziet, is waardeloos — dat is precies de
+reden.
 
-## Choose a sound
+## Een geluid kiezen
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Scroll naar **Meldingsgeluid**
+2. Kies een van de elf meegeleverde geluiden, of **Geen**
+3. Druk op de knop **Testen** om het te horen en stel het volume in met de schuifregelaar
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+De app speelt het geluid zelf af; de OS-melding wordt stil afgeleverd, zodat je
+het nooit twee keer hoort.
 
-## Set the meeting lead time
+## De voorlooptijd voor vergaderingen instellen
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Scroll naar **Voorlooptijd melding**
+2. Kies **5**, **10**, **15** of **30** minuten
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Dat is hoeveel voor een agenda-afspraak de melding **Vergadering begint zo**
+wordt geactiveerd. De standaard is 5 minuten.
 
-## Know when a notification is suppressed
+## Weten wanneer een melding wordt onderdrukt
 
-A notification is dropped, silently, when any of these is true:
+Een melding wordt stil verworpen wanneer een van deze dingen waar is:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Meldingen staan globaal uit, of de categorie staat uit
+- Je bent al op de route waarheen ze je zou brengen — en, bij een bericht, al in
+  die ruimte
+- De focusmodus is actief en de categorie is niet dringend
+- Quiet hours zijn actief en de categorie is niet dringend
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Die controles gelden voor OS-toasts. De blijvende bel legt de gebeurtenis wel
+vast.
 
-Two more suppressions live further upstream, in what the server sends at all:
+Er zijn nog twee onderdrukkingen verder stroomopwaarts, in wat de server
+verstuurt:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Een bericht van een andere **mens** waarin je niet wordt vermeld, wordt nooit
+  een melding
+- Ruimtes van agent tot agent staan gedempt in de zijbalk, dus ze verhogen nooit
+  de ongelezen-badge van een mens
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Binnen een ruimte is er geen stille hoek: elk gesprek geeft evenveel meldingen,
+draden inbegrepen. De leesstatus hoort bij de ruimte, dus ongelezen telt samen
+over de gesprekken van een ruimte in plaats van per gesprek te worden
+bijgehouden.
 
-## Read and clear the notification centre
+## Het meldingencentrum lezen en wissen
 
-1. Click the bell in the title bar
+1. Klik op de bel in de titelbalk
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+De popover toont recente activiteit en geeft elk item een deep link naar waar het
+over gaat. Als je hem opent, wordt **niet** alles als gelezen gemarkeerd —
+gebruik **Alles als gelezen markeren** in de kopregel, of markeer één rij. De
+leesstatus volgt je gebruiker over alle apparaten.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Alles wissen is een watermerk, geen verwijdering]
+**Alles wissen** zet een watermerk per gebruiker dat alles wat ouder is verbergt;
+de rijen blijven staan. Daarnaast bewaart elke werkruimte alleen zijn nieuwste
+**200** feedrijen, die worden opgeschoond zodra er nieuwe binnenkomen, terwijl de
+bel zich abonneert op de nieuwste **50** en de popover daarvan maximaal **15**
+toont. Geschiedenis daarbuiten is weg, ongeacht de leesstatus.
 :::
 
-## Troubleshooting
+## Problemen oplossen
 
-### No OS notifications on macOS
+### Geen OS-meldingen op macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+De toestemming wordt bij het starten van de app native aangevraagd. Heb je die
+geweigerd, schakel Control Center dan weer in onder Systeeminstellingen →
+Meldingen; er is geen melding in de app die dat opnieuw aanvraagt.
 
-### Nothing arrives on the web build
+### Niets komt aan in de webbuild
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Verwacht — de webbuild heeft geen pipeline voor OS-meldingen. Gebruik de bel.
 
-### The bell badge shows zero but there is clearly new activity
+### De badge van de bel staat op nul, maar er is duidelijk nieuwe activiteit
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Zolang de stroom leesmarkeringen na het verbinden nog niet is opgelost, worden
+items als gelezen weergegeven om te voorkomen dat een badge even oplicht en dan
+weer leeg is. Het stabiliseert zodra de markering is geladen.
 
-### An agent's run finished but nothing pinged me
+### De run van een agent is afgerond, maar ik heb geen melding gekregen
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Controleer of je niet al in de ruimte was waar het gebeurde — een actieve route
+onderdrukt zijn eigen OS-toast.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Use focus mode and soundscapes](/nl-NL/handleiding/gidsen/focusmodus/)
-- [Triage your inbox](/nl-NL/handleiding/gidsen/postvak-in-trieren/)
-- [Curate your newsfeed](/nl-NL/handleiding/gidsen/nieuwsfeed/)
+- [Focusmodus en klanklandschappen gebruiken](/nl-NL/handleiding/gidsen/focusmodus/)
+- [Je postvak in triëren](/nl-NL/handleiding/gidsen/postvak-in-trieren/)
+- [Je nieuwsfeed samenstellen](/nl-NL/handleiding/gidsen/nieuwsfeed/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/)
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/)

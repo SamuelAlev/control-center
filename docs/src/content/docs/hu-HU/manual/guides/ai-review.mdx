@@ -1,152 +1,170 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: MI-alapú átnézés használata
+description: Futtassa a pr_review pipeline-t egy PR-en, olvassa el a megállapításokat és az ítéletet, majd tegye közzé az átnézést a GitHubon.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Ez az útmutató bemutatja, hogyan végeztethet átnézést átnéző ügynökökkel egy
+pull requesten, és hogyan teheti közzé az eredményt a GitHubon.
 
-## Start an AI review
+## MI-átnézés indítása
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Nyissa meg a PR-t, és lépjen az **Áttekintés** fülére
+2. Nyissa meg a ⋯ túlcsordulásmenüt a műveletsorban, és válassza a
+   **Kérdezze az AI-t** lehetőséget
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+A menüpont csak addig jelenik meg, amíg a PR nyitva van — ez egy összefésülés
+előtti művelet. Ugyanez a gomb **Kérdezze az AI-t** néven jelenik meg az
+**Átnézés** fül üres állapotában, mielőtt még bármilyen átnézés létezne.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+A Control Center elindítja az alapból létrehozott `pr_review` pipeline-t, és
+megnyitja a PR **Átnézés** fülét, hogy figyelemmel kísérhesse. A pipeline:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Megnyitja a PR saját átnézési terét, amelynek elszigetelt worktree-jében a PR
+   a head refjén van checkoutolva
+2. Szétosztja az átnézőket a munkaterület átnézési szintje szerint —
+   alapértelmezés szerint hármat (az alapból létrehozott **qa**, **architect**
+   és **engineer** ügynököt, párhuzamosan). Nincs nyelv- vagy domainfelismerés
+3. A vezető (CEO) ügynökkel bejárássá konszolidáltatja a megállapításaikat
+4. Véglegesít: a megállapításokat konszenzuscsoportokba rendezi, és kiszámítja
+   az ítéletet. Amikor a társítás eléri az `awaiting approval` állapotot, az
+   **Átnézés** fülön megjelenik a **Közzététel a GitHubon**
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Hogy milyen mélyre megy az átnézés, azt a munkaterület **átnézési szintje**
+dönti el — `light` (egy átnéző), `balanced` (három, az alapértelmezett) vagy
+`thorough` (mind az öt, a biztonsági és teljesítményi szakértőkkel együtt) —,
+amelyet a **Beállítások → Munkaterület → Általános** helyen, a
+**Munkaterület-szabályzat** kártyán állít be. Egy könnyebb szint pontosan
+ugyanannyi megállapítást rögzít; kevesebbet jelent belőlük előre.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/hu-HU/kezikonyv/fogalmak/mi-atnezes/) for how the pieces fit together.
+Minden átnéző a PR egyetlen átnézési terébe posztol, és éppen ez teszi
+összehasonlíthatóvá a megállapításaikat. Azt, hogy az alkotóelemek hogyan
+illeszkednek össze, lásd:
+[MI-átnézés](/hu-HU/kezikonyv/fogalmak/mi-atnezes/).
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek/).
+A `pr_review` kizárólag kézi eseményindítóval érkezik. Ha azt szeretné, hogy
+minden közzétett PR-nál lefusson, adjon hozzá saját eseményindítót — lásd:
+[Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/). Elindíthat
+egyet magából a GitHubból is, pipeline-eseményindító nélkül: említse meg a
+szerver botját a PR-en, vagy adja hozzá az `ai-review` címkét — lásd:
+[Beszélgetés a Control Centerrel GitHub PR-ből](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Ha egy felugró értesítés azt írja, hogy ehhez a pull requesthez már fut egy
+átnézés, akkor az már úton van; maradjon az **Átnézés** fülön, vagy nyissa meg a
+**Pipeline-ok** oldalt, hogy megkeresse.
 
-## Read the findings
+## A megállapítások elolvasása
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Az átnézők **átnézési csomópontokként** rögzítik a megállapításaikat az
+átnézési térben. Mindegyikük a következőket hordozza:
 
-| Field          | Description                                                   |
+| Mező           | Leírás                                                        |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Típus          | `bug`, `suggestion`, `recommendation`, `question` vagy `ticket` |
+| Prioritás      | P0 (kritikus) → P3 (apróság)                                  |
+| Kategória      | `security`, `stability`, `data_integrity`, `correctness`, `performance` vagy `maintainability` |
+| Fájl és sor    | Hol van horgonyozva a megállapítás                            |
+| Eredeti kód    | A kód, amelyre a megállapítás vonatkozik                      |
+| Javasolt kód   | A javasolt javítás                                            |
+| Megbízhatóság  | Mennyire biztos az átnéző                                     |
+| Állapot        | `open` → `consensus-ready` → `resolved` vagy `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Egy megállapítás csak akkor ér el a **consensus-ready** állapotba, ha egy
+_társ-átnéző_ megerősíti. Egy ügynök nem erősítheti meg a saját megállapítását,
+így egyetlen átnéző véleménye soha nem lép tovább magától.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/) for what the pass produces.
+Az **Átnézés** fül a megállapítások listáját mutatja, típus és állapot szerint
+szűrhetően, az elvetett megállapításokhoz tartozó kapcsolóval, a konszolidáló
+ügynök által közzétett artefaktum mellett. A determinisztikus nézetet —
+kohorszok, a többtengelyes irányítópult, szerződés- és vizuális diffek — a
+szerver oldalán számítjuk ki, de az alkalmazásban nincs felülete; arról, hogy
+mit állít elő a kör, lásd:
+[Átnézési számítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/).
 
-## Check the disagreements panel
+## A nézeteltérési panel ellenőrzése
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Amikor két átnéző ugyanahhoz a fájlhoz és sorhoz horgonyoz megállapításokat, de
+nagyon eltérően értékeli őket — a prioritások legalább két szintnyire vannak
+egymástól, vagy az egyik `bug`-nak, míg a másik `suggestion`-nek nevezi —, a
+megállapítások listája fölött egy nézeteltérési panel jelenik meg. Először
+ezeket olvassa el: itt térnek el az átnézők véleményei, és itt éri meg a
+legtöbbet az Ön mérlegelése.
 
-## Read the verdict
+## Az ítélet elolvasása
 
-When the lead agent finalizes, it computes a **verdict**:
+Amikor a vezető ügynök véglegesít, kiszámít egy **ítéletet**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Ítélet     | Jelentés                                        |
+| ---------- | ----------------------------------------------- |
+| **Ship**   | Nem találtunk semmit, ami blokkolna             |
+| **Hold**   | Az összefésülés előtt kezelendő problémák       |
+| **Block**  | Kijavítandó kritikus problémák                  |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Az ítélet egy összesített megbízhatósági pontszámot és prioritásonkénti
+megállapításszámokat hordoz.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Ezután az átnézési tengelyek is behajlanak az ítéletbe, és csak **súlyosabbá**
+tehetik azt. Egy kapuzott tengely, amely megbukik, **Blockot** kényszerít; egy
+kapuzott tengely, amely nem tudott befejeződni (`partial`), vagy egyáltalán nem
+tudott lefutni (`unavailable`), legalább **Holdot** kényszerít. A bizonyíték
+hiánya soha nem nyit ki egy kaput.
 
-## Publish the review to GitHub
+## Az átnézés közzététele a GitHubon
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+A közzététel külön, szándékosan a felhasználó által kapuzott lépés. A
+`pr_review` pipeline a Control Centerben tartja az átnézést; nem posztol a
+GitHubra.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Az **Átnézés** fülön várja meg, amíg megjelenik a
+   **Közzététel a GitHubon**
+2. Nyomja meg a **Közzététel a GitHubon** gombot
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+A Control Center **egyetlen** GitHub-átnézést küld. A már megoldott vagy
+elvetett megállapítások kimaradnak. A gomb minden még nyitott megállapítást
+tartalmaz, és **Ship** esetén `APPROVE`-ot küld. (A `publish_review_to_github`
+MCP eszköz továbbra is csak a társak által megerősített megállapításokat veszi
+alapul, és nem hagy jóvá, hacsak nem adja át az `approve_on_ship` értéket.)
+Azok, amelyek fájl- és sorhorgonyt hordoznak, soron belüli megjegyzésekké
+válnak; minden más az összefoglaló törzsébe hajlik, mindegyik egy
+„— Control Center AI review” láblécet kap, hogy a forrás egyértelmű legyen. A
+**Block** ítélet `REQUEST_CHANGES`-ként, a **Hold** `COMMENT`-ként, a **Ship**
+pedig ezzel a gombbal `APPROVE`-ként kerül beküldésre. Ekkor egy felugró
+értesítés ezt írja: **Közzétéve**. Az átnézés a szerver alkalmazásidentitása
+alatt kerül közzétételre.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Ha a GitHub elutasít egy soron belüli horgonyt, mert a sor nem része a diffnek,
+a teljes átnézés újraküldésre kerül, minden megállapítást az összefoglaló
+törzsébe hajtva, hogy semmi ne vesszen el csendben.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[A közzétételt korlátok kapuzzák]
+A `pr_review.publishReview` a `prPublish` műveletosztályt deklarálja, és a
+korlátok központi ellenőrzési pontján halad át. Ha a feloldott döntés a
+`prompt`, és nincs csatlakoztatott jóváhagyó, a közzététel elutasításra kerül —
+a korlátok zárt állapotba hibáznak. Állítson be kifejezett szabályt a
+Beállítások → Munkaterület → Ügynökjogosultságok helyen, ha felügyelet nélkül
+szeretné futtatni.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Más beépített pipeline-ok közvetlenül posztolnak a GitHubra: a `cross_review`, a
+`pr_triage`, a `ticket_to_pr` és a `pre_merge_gate` mind egy hozzászólás-lépéssel
+zárul. Egyedül a `pr_review` tartja vissza a kimenetét az Ön számára.
 
-## Dispatch reviewers yourself
+## Átnézők indítása saját maga
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/).
+Ha Ön szeretné kézben tartani, hogy mely szerepkörök nézzék át a PR-t, és
+melyikük mely fájlokat vizsgálja, használja a `dispatch_reviewers` MCP eszközt
+egy meglévő átnézési térben, vagy adjon átnézőcsomópontokat egy pipeline-hoz.
+Mindkét útvonal, az eszköz pontos szignatúrájával együtt, itt található:
+[Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Dispatch reviewer agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
-- [Review compute (cohorts and axes)](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Átnéző ügynökök indítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa/)
+- [Átnézési számítás (kohorszok és tengelyek)](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [AI review](/hu-HU/kezikonyv/fogalmak/mi-atnezes/)
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/)
+- [MI-átnézés](/hu-HU/kezikonyv/fogalmak/mi-atnezes/)
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/)

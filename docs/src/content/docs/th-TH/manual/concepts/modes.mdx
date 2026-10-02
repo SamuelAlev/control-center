@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: โหมด
+description: เหตุใดสเปซจึงเป็นตัวถือโหมด ไม่ใช่เอเจนต์; แต่ละโหมดในสี่โหมดรับประกันอะไรบ้าง; และการรับประกันนั้นเป็นเชิงโครงสร้างที่ใด แทนที่จะเป็นเพียงคำสั่งในพรอมป์ต์
 slug: th-TH/คู่มือ/แนวคิด/โหมด
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## โหมดคืออะไร
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+โหมดเป็นคุณสมบัติของ **สเปซ** จัดเก็บเป็นคอลัมน์เดียวบนแถวของสเปซ การสนทนาทุกอันภายในสเปซใช้โหมดร่วมกัน รวมถึงเธรดด้วย — เธรดสืบทอดโหมดของสเปซตัวเองเหมือนการสนทนาอื่น ๆ เอเจนต์ตัวเดียวกันจึงอยู่ในโหมดต่างกันในสเปซต่างกันพร้อมกันได้ และการสลับโหมดของสเปซจะเปลี่ยนสิ่งที่เกิดขึ้นในเทิร์นถัดไปโดยไม่ต้องแตะตัวเอเจนต์
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+มีอยู่สี่โหมดพอดี: `chat`, `review`, `plan`, `orchestrate` ตัว enum เองไม่พกนโยบายใด ๆ ทุกสิ่งที่โหมดรับประกันถูกประกาศไว้เพียงครั้งเดียวใน **โปรไฟล์ความสามารถ** ซึ่งทุกชั้นการบังคับใช้ฉายภาพออกมาจาก:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **พื้นผิวเครื่องมือ** — ว่าในโหมดนั้นมีเครื่องมือใดอยู่จริงบ้าง แสดงออกเป็นระดับการอนุมัติสูงสุด รายการที่อนุญาต รายการที่ปฏิเสธ และชุดของคลาสการกระทำที่ถูกปฏิเสธ
+2. **คำกริยาผลลัพธ์ที่จำเป็น** — สิ่งที่การรันต้องเรียก จึงจะนับว่าได้ส่งมอบอะไรสักอย่าง
+3. **คลาสการกระทำที่ถูกห้าม** — สิ่งที่กฎคุมการกระทำปฏิเสธทันที
+4. **สถานะการเขียนของ worktree** — ว่า worktree ถูกเขียนได้หรือไม่ สิ่งนี้ถูกบังคับใช้โดยการถอดเครื่องมือที่เปลี่ยนแปลงสถานะออกจากพื้นผิว ซึ่งเป็นสิ่งที่ทำให้มันคงอยู่บนทุกโฮสต์ เมื่อโฮสต์มีแซนด์บ็อกซ์ของระบบปฏิบัติการ สถานะเดียวกันนี้ยังกำหนดกฎการเขียนของระบบไฟล์ด้วย — โหมดอ่านอย่างเดียวจะเมานต์ worktree แบบอ่านอย่างเดียว — แต่นั่นเป็นสำเนาที่สองของการรับประกัน ไม่ใช่ตัวที่ทำงานจริง
+5. **บล็อกพรอมป์ต์ระบบ** — คำนำเรื่องความสามารถที่ _ถูกสร้างขึ้น_ จากรายการเครื่องมือที่ประกอบเข้าจริง บวกกับคำแนะนำที่เขียนด้วยมือ
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+ชั้นการบังคับใช้ทุกชั้นฉายภาพจากโปรไฟล์เดียวนี้ พื้นผิวเครื่องมือ ตัวคุม สถานะการเขียนของ worktree และพรอมป์ต์จึงขัดกันไม่ได้
 
-## The four modes
+## โหมดทั้งสี่
 
-### Chat — displayed as "Agent"
+### แชท — แสดงเป็น “เอเจนต์”
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+เป็นโหมดเริ่มต้นและเป็นโหมดเดียวที่ไม่มีข้อจำกัดเพิ่มเติม: พื้นผิวเครื่องมือเต็มรูปแบบจนถึงระดับการลงมือทำ, worktree ที่เขียนได้, ไม่มีคลาสการกระทำที่ถูกห้าม และไม่มีข้อกำหนดการเสร็จงาน ใช้สำหรับงานพัฒนา การแก้บั๊ก คำถามเกี่ยวกับโค้ดเบส และงานเฉพาะหน้าใด ๆ
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+สังเกตป้ายชื่อ: ในช่องเขียนข้อความ โหมดนี้แสดงเป็น **“เอเจนต์”** ไม่ใช่ “แชท”
 
-### Plan — read-only, one deliverable
+### แผน — อ่านอย่างเดียว ส่งมอบสิ่งเดียว
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+โหมดแผนทำให้ worktree เป็นแบบอ่านอย่างเดียว และถอดเครื่องมือเขียนออกจากพื้นผิวทั้งหมด ข้อจำกัดนี้จึงเป็นเชิงโครงสร้าง ไม่ใช่แค่คำสั่ง เอเจนต์อ่าน ค้นหา และค้นคว้า แล้วส่งมอบสิ่งเดียวเท่านั้น: การเรียก `submit_plan` ที่พากราฟการพึ่งพาแบบมีชนิดข้อมูลมาด้วย — เป้าหมายหนึ่งข้อ บวกโหนดที่มีคีย์ ชื่อ คำอธิบาย และคีย์ของโหนดที่แต่ละโหนดขึ้นต่อ
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+แผนแสดงเป็นแถวกะทัดรัดในการสนทนา และเปิด Plan Studio ในแท็บข้าง ๆ การอนุมัติแผนจะคอมไพล์กราฟเป็นการประสานงาน รันงานที่ถูกสร้างขึ้น และสลับสเปซที่ใช้เขียนแผนกลับไปเป็นโหมดเอเจนต์
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+หากการรันในโหมดแผนจบลงโดยไม่เคยเรียก `submit_plan` ลูปจะฉีดคำสะกิดเตือนก่อนว่าแผนยังไม่มีจนกว่าการเรียกนั้นจะสำเร็จ คำสะกิดนั้นอนุญาตอย่างชัดเจนให้ทางออกแบบซื่อสัตย์ว่า “ตรงนี้ไม่จำเป็นต้องมีแผน” เพราะโหมดแผนเป็นการตั้งค่าของสเปซ และคำถามธรรมดาที่ถามภายในโหมดนี้ไม่ควรบังคับให้เกิดแผนปลอมขึ้นมา
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/).
+:::note[ข้อกำหนดที่ไม่ครบไม่ใช่การรันที่ล้มเหลว]
+การรันที่จบลงโดยไม่มีแผนยังคงถูกบันทึกด้วยสถานะ `completed` — โปรเซสออกอย่างสะอาด ความจริงอยู่ที่สถานะมีชีวิตของการรัน (`empty`) ตระกูลข้อผิดพลาด (`silentRun`) และสรุปที่ระบุว่าอะไรไม่ได้ถูกผลิตออกมา ดู[วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+ยังมีทางออกที่สองซึ่งแยกกันอยู่: `exit_plan_mode` มันเป็นด่านอนุมัติแบบแข็ง ไม่ใช่คำกริยาผลลัพธ์ — เอเจนต์ที่เรียกมันแทน `submit_plan` ยังไม่ได้ส่งมอบอะไรเลย การเรียกครั้งแรกจะเปิดการอนุมัติ `plan_exit` แบบถาวรและคืนค่า `pending` โดยสเปซยังคงเป็นอ่านอย่างเดียว; การเรียกซ้ำจะยังคง `pending` แทนที่จะเปิดด่านที่สอง หลังจากการอนุมัติได้รับอนุญาตแล้วเท่านั้น การเรียกครั้งถัดไปจึงจะสลับสเปซไปเป็นแชท การถูกปฏิเสธทำให้เอเจนต์เปิดคำขอใหม่สำหรับแผนฉบับแก้ไขได้
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+หากคุณต้องการออกจากโหมดแผนด้วยตัวเอง ให้สลับดรอปดาวน์ของช่องเขียนข้อความ (หรือ Shift+Tab) `exit_plan_mode` ถูกตัดสินด้วยเครื่องมือ MCP `decide_approval` แถว “การอนุมัติของเอเจนต์” ในกล่องขาเข้าเป็นคนละเรื่องกัน: พรอมป์ต์ยืนยันต่อเทิร์นจากเอเจนต์ที่กำลังรันอยู่
 
-### Review — read-only, no contract
+### รีวิว — อ่านอย่างเดียว ไม่มีข้อกำหนดการเสร็จงาน
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+โหมดรีวิวใช้สำหรับรีวิว PR มันทำให้ worktree เป็นอ่านอย่างเดียว จำกัดพื้นผิวเครื่องมือให้ต่ำกว่าระดับการลงมือทำ และใช้รายการที่อนุญาตซึ่งคัดสรรมาแล้วสำหรับเครื่องมือรีวิว จัดการตั๋วงาน และการสื่อสาร สเปซที่เปิดขึ้นสำหรับ pull request จะถูกสร้างในโหมดรีวิวโดยอัตโนมัติ
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+ผลลัพธ์ของเอเจนต์คือข้อค้นพบแบบมีโครงสร้าง — **โหนดรีวิว** — และเมื่อรีวิวถูกทำให้เสร็จสมบูรณ์ ก็ได้ **คำตัดสิน** โหนดหนึ่งพาชนิด (`bug`, `suggestion`, `recommendation`, `question` หรือ `ticket`) ลำดับความสำคัญตั้งแต่ P0 (ปิดกั้นการเผยแพร่) ถึง P3 (มีก็ดี) ความมั่นใจที่ประเมินด้วยตัวเอง จุดยึดซึ่งไม่บังคับ (ไฟล์บวกช่วงบรรทัด; บันทึกระดับทั้งรีโปไม่มีจุดยึด) และสถานะวงจรชีวิตที่เลื่อนจาก `open` ไปเป็น `consensusReady` เมื่อเพื่อนรีวิวเวอร์ — ไม่ใช่ผู้เขียน — ยืนยันมัน ข้อค้นพบที่ลำดับความสำคัญหรือความมั่นใจหายไปหรืออยู่นอกช่วงจะถูกตัดทิ้งที่ขอบเขตการอ่าน แทนที่จะไปปนเปื้อนคำตัดสิน
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+คำตัดสินคือ ship, hold หรือ block และมันถูกทำให้ _รุนแรงขึ้น_ เท่านั้นโดยผลลัพธ์รายแกนที่พับเข้ามา: แกนที่มีเกตและล้มเหลวบังคับให้เป็น `block` และแกนที่มีเกตซึ่งรันไม่ได้บังคับให้เป็น `hold` อย่างน้อย การไม่มีหลักฐานไม่เคยทำให้เกตเป็นสีเขียว
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+ต่างจากโหมดแผนและโหมดประสานงาน โหมดรีวิว **ไม่มีข้อกำหนดการเสร็จงาน** ข้อค้นพบสะสมผ่าน `add_review_node` และถูกเผยแพร่ด้วย `finalize_review` และทั้งคู่อาจถูกเรียกศูนย์ครั้งได้อย่างชอบธรรม — เอเจนต์ไปป์ไลน์ที่รันในโหมดรีวิวอาจอยู่ตรงนั้นเพื่อปิดตั๋วงานแทนก็ได้
 
-### Orchestrate — read-only, proposes a team
+### ประสานงาน — อ่านอย่างเดียว เสนอทีม
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+โหมดประสานงานเปลี่ยนเป้าหมายหนึ่งข้อให้เป็นแผนของทั้งทีม เหมือนโหมดแผน มันเป็นอ่านอย่างเดียวและเขียนไฟล์ไม่ได้; นอกจากพื้นผิวสำหรับค้นคว้าแล้ว มันมีคำกริยาพิเศษเพียงหนึ่งคำคือ `propose_orchestration` ซึ่งปล่อยข้อเสนอแบบมีโครงสร้างออกมา: บทบาท ต้นไม้ตั๋วย่อย ขั้นตอนการสังเคราะห์ และงบประมาณ พรอมป์ต์ระบุชื่อเฉพาะเครื่องมือที่อยู่บนพื้นผิว โมเดลจึงไม่เสียเทิร์นไปกับการเล่าเรื่องการจ้างหรืองานตั๋วที่มันเรียกไม่ได้
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/).
+ไม่มีสิ่งใดในข้อเสนอถูกดำเนินการจนกว่าคุณจะอนุมัติ เมื่ออนุมัติ ตัวสร้างแบบกำหนดแน่นอนจะจ้างเอเจนต์ สร้างตั๋วงานและโปรเจกต์ และรันไปป์ไลน์ที่ถูกสร้างขึ้น การอนุมัติเป็นสิทธิ์ของผู้ดำเนินการเท่านั้น: ไม่มีเครื่องมือ MCP สำหรับมัน เอเจนต์จึงเสนอได้แต่ไม่มีทางอนุมัติแผนของตัวเอง ข้อเสนอซ้ำที่เอเจนต์เป็นผู้ริเริ่มถูกจำกัดอัตราด้วยคูลดาวน์สองนาที การวางแผนซ้ำติด ๆ กันจึงถูกปฏิเสธและถูกสั่งให้รวมเข้าด้วยกัน ดู[การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/)
 
-## Two rules worth knowing
+## สองกฎที่ควรรู้
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**คำกริยาผลลัพธ์ของโหมดเองไม่เคยถูกห้ามได้** `submit_plan` และ `propose_orchestration` ถูกตรึงไว้ในพื้นผิวเครื่องมือและอนุมัติล่วงหน้าผ่านทั้งตัวกรองเครื่องมือ ด่านอนุมัติ และกฎคุมการกระทำ ปุ่มความเป็นอิสระต่อสเปซจึงปิดเสียงสิ่งที่โหมดต้องส่งมอบไม่ได้ `ask_user` ของฮาร์เนสถูกตรึงไว้ด้วยเหตุผลเดียวกัน: มัน _คือ_ วิธีที่การรันเข้าถึงผู้ดำเนินการ การใส่ด่านให้มันจะทำให้การรันที่ต้องถามอะไรสักอย่างติดตาย มันอยู่ระดับอ่าน ทุกโหมดอ่านอย่างเดียวจึงเก็บมันไว้ และมันได้รับการยกเว้นจากตัวห่อการอนุมัติ — พรอมป์ต์ที่วางไว้หน้าพรอมป์ต์จะล้มเหลวแบบปิดเมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่ ซึ่งจะปฏิเสธเอเจนต์ในเรื่องการถาม
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**โหมดอ่านอย่างเดียวไม่ได้ห้ามการเข้าถึงเครือข่ายหรือข้อมูลลับ** คลาสการกระทำที่รีวิว แผน และประสานงานปฏิเสธคือคลาสที่เปลี่ยนแปลงโลก: การลบไฟล์ การเขียนนอก worktree การคอมมิต การพุช การสร้างและเผยแพร่ PR การเขียนซิงก์ของผู้ให้บริการ การติดตั้งแพ็กเกจ การสปอว์นโปรเซส การแก้ไขเวิร์กสเปซ และการควบคุมเอนโคลเจอร์ การส่งข้อมูลออกเครือข่ายและการเข้าถึงข้อมูลลับยังคงอยู่ที่ค่าเริ่มต้นโดยเจตนา — การค้นคว้าคือจุดหมายทั้งหมดของโหมดอ่านอย่างเดียว
 
-## Choosing and changing a mode
+## การเลือกและการเปลี่ยนโหมด
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+ดรอปดาวน์โหมดของช่องเขียนข้อความมี **สาม** ตัวเลือก: เอเจนต์ (chat), แผน และประสานงาน `review` **ไม่ให้ผู้ใช้เลือก** — มันถูกตั้งโดยระบบเมื่อสเปซรีวิว PR ถูกสร้างขึ้น และโดยขั้นตอนไปป์ไลน์
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+โหนดไปป์ไลน์ที่ **เปิดสเปซ** สามารถตรึงโหมดของห้องนั้นได้ด้วยคีย์ `extras['mode']` (`chat`, `review` หรือ `plan`) คีย์นี้ต้องตรงตัว: การสะกดแบบอื่นใด — รวมถึง `orchestrate` — จะถูกเพิกเฉยอย่างเงียบ ๆ และห้องจะได้ค่าเริ่มต้นของ body (`review` บน body ของ create-space) ขั้นตอนเอเจนต์เข้าร่วมห้องที่มันไม่ได้สร้างและไม่ได้กำหนดสิทธิ์ให้มันใหม่
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+การตัดสินเลือกโหมดเองนั้นเรียบง่าย ตัวสั่งงานอ่านคอลัมน์ `mode` ของสเปซ; การสั่งงานที่ไม่มีสเปซ — การรันครั้งเดียว การเรียกผ่าน CLI หรือ id ของสเปซจากเวิร์กสเปซอื่น ซึ่งไม่มีอยู่ในไฟล์ฐานข้อมูลของเวิร์กสเปซนี้อยู่แล้ว — จะตัดสินเป็น `chat` การเปลี่ยนโหมดมีผลตั้งแต่เทิร์นถัดไป
 
-## Where the guarantee actually holds
+## การรับประกันคงอยู่จริงที่ใด
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+พื้นผิวเครื่องมือของโหมดถูกสร้างและบังคับใช้โดย **ฮาร์เนสในตัว** มันเป็นทรานสปอร์ตเดียวที่ทำให้เครื่องมือมองไม่เห็นได้ แทนที่จะแค่ถูกปฏิเสธ ใส่ด่านทุกการเรียกก่อนที่มันจะรัน และสังเกตข้อกำหนดการเสร็จงานได้
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/).
+บนทรานสปอร์ต Claude Code โหมดที่ไม่ใช่แชทจะถูกส่งเป็น `--permission-mode plan` Claude เคารพค่านั้นตามธรรมเนียมปฏิบัติ; เครื่องมืออ่าน เขียน แก้ไข และเชลล์ของมันเองทำงานโดยไม่ถูกมองเห็น สำหรับทรานสปอร์ตนั้น โหมดเป็นเพียงคำแนะนำ ไม่ใช่ขอบเขตของ Control Center — ดู[โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/)
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+รายการที่อนุญาตจำกัดเครื่องมือระดับเขียนขึ้นไป ระดับอ่านของฮาร์เนสในตัวยังเข้าถึงเครื่องมือที่ไม่มีรายการใดระบุชื่อไว้; บน Claude Code เครื่องมือที่รายการที่อนุญาตละไว้จะถูกปฏิเสธ ไม่ว่าเซิร์ฟเวอร์จะมีเครื่องมือนั้นหรือไม่
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): where the mode is resolved and projected
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): which transports can enforce a mode
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/): what an approved orchestrate proposal does
-- [Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/): the practical walkthrough
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): จุดที่โหมดถูกตัดสินและฉายภาพ
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): ทรานสปอร์ตใดบ้างที่บังคับใช้โหมดได้
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/): นโยบายคลาสการกระทำที่พรีเซ็ตของโหมดป้อนเข้าไป
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/): ข้อเสนอประสานงานที่ได้รับอนุมัติทำอะไร
+- [ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/): คู่มือปฏิบัติแบบทีละขั้น

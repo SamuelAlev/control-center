@@ -1,109 +1,117 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Conectează-te la un server remote
+description: Îndreaptă aplicația desktop sau clientul web către un cc_server care rulează în altă parte și comută între servere fără repornire.
 slug: ro-RO/manual/ghiduri-practice/conectare-la-server-remote
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Fiecare client este un renderer peste un `cc_server` care deține datele. Aplicația
+desktop poate rula unul în interiorul ei; aplicația web de la
+[app.usectrl.dev](https://app.usectrl.dev) nu poate, pentru că un tab de browser
+nu poate găzdui un server. În ambele cazuri, acest ghid îndreaptă un client către
+un server care rulează în altă parte — o cutie mică, o VM în cloud, un server de
+build.
 
-## Prerequisites
+## Cerințe preliminare
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Un `cc_server` care rulează. Dacă nu ai unul, vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
+- Fie cele trei valori de asociere emise de server — **URL server** (`ws://…/rpc` sau `wss://…/rpc`), un **ID dispozitiv** și o **cheie de asociere** —, **fie** un **cod de invitație** de unică folosință de la un administrator al spațiului de lucru. Răscumpărarea unei invitații îți provisionează utilizatorul, înregistrează apartenența ta și emite acreditarea acestui client pentru tine, așa că nu ai de gestionat niciodată un ID de dispozitiv sau o cheie.
 
-### Make sure the server is reachable
+### Asigură-te că serverul este accesibil
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Un server local nu are nevoie de nimic: `ws://localhost:9030/rpc` funcționează
+atât din desktop, cât și din browser, pentru că browserele tratează loopback-ul
+ca pe o origine de încredere.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Un server de pe altă mașină este altceva. `app.usectrl.dev` este servit prin
+HTTPS, așa că browserul va deschide un socket `wss://` doar cu un certificat în
+care are deja încredere — iar `cc_server` refuză de la bun început să se lege la
+o adresă care nu este loopback fără TLS. Dă-i una dintre:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- un certificat direct, cu `--tls-cert` și `--tls-key`
+- un proxy invers care termină TLS în față, cu serverul pornit cu `--insecure` (text simplu în spatele proxy-ului, doar într-o rețea de încredere)
+- un tunel sau un VPN care furnizează certificatul — Tailscale, cloudflared sau similar. **Setări → Server → Conexiune și stare** are activarea tunelului integrat, sub **Partajează acest server**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Două setări din partea serverului sunt ușor de ratat. În spatele unui proxy, NAT
+sau tunel, setează `--public-url` la adresa pe care clienții ar trebui să o
+apeleze de fapt — valoarea implicită este legarea locală, așa că fără ea
+clienții încearcă gazda greșită. Iar dacă găzduiești propria copie a versiunii
+web, adaugă originea acesteia la `--allowed-origins`, care implicit permite doar
+`https://app.usectrl.dev`; clienții loopback și cei nativi sunt întotdeauna
+permişi.
 
-## Connect the desktop app
+## Conectează aplicația desktop
 
-On a fresh install:
+La o instalare nouă:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Pornește Control Center. Ecranul de prima rulare întreabă **Cum ar trebui să ruleze Control Center?**
+2. În loc de **Rulează în această aplicație**, completează câmpurile de conectare: URL-ul serverului, plus fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere.
+3. Dă clic pe **Conectează**. Control Center apelează serverul și ajunge în inbox-ul spațiului de lucru.
 
-On a desktop that already runs its own server:
+Pe un desktop care rulează deja propriul server:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Deschide **Setări → Server → Conexiune și stare**.
+2. Dă clic pe **Adaugă server**. Introdu URL-ul serverului (`wss://host:9030/rpc`) și fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere. Butonul-sufix al câmpului de URL descoperă instanțe `cc_server` din LAN-ul sau tailnet-ul tău.
+3. Dă clic pe **Conectează**, apoi pe **Comută** în rândul serverului nou.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Comutarea este live: aplicația se reconstruiește pe loc în jurul noii sesiuni,
+fără repornire. Dacă conectarea eșuează, rămâi pe serverul curent și vezi eroarea.
+Rândul serverului pe care te afli nu are acțiunea **Comută**; serverul local este
+primul rând, etichetat **Rulează în această aplicație**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Odată comutat, desktopul nu mai deține nicio bază de date. Fiecare ecran citește
+și scrie prin serverul remote, peste un WebSocket.
 
-## Connect the web client
+## Conectează clientul web
 
-The web build is always remote.
+Versiunea web este întotdeauna remote.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Deschide [app.usectrl.dev](https://app.usectrl.dev) sau propria copie a versiunii web.
+2. Introdu URL-ul serverului, plus fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere.
+3. Clientul apelează serverul și afișează aceeași interfață ca desktopul.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Dacă în URL se află un link profund de asociere, câmpurile sunt precompletate.
+Cheia de asociere călătorește în **fragmentul** URL-ului, pe care browserele nu îl
+trimit niciodată serverului care găzduiește pagina, așa că gazda statică nu o
+vede niciodată.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media și securitate]
+Media (avataruri, imagini din flux, capturi de ecran din PR-uri) trece prin proxy
+prin serverul conectat, așa că browserul nu accesează niciodată direct o gazdă
+din amonte. O politică Content-Security Policy pentru fiecare cerere, emisă
+dintr-un cookie nesensibil, permite doar originea serverului conectat.
 :::
 
-### What the browser does not do
+### Ce nu face browserul
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Clientul web citește și scrie pe același server ca desktopul, dar câteva
+suprafețe au nevoie de o fereastră nativă sau de dispozitivele proprii ale
+mașinii:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- fără notificări de sistem de tip toast, fără sunete de notificare și fără bara ambientală de bannere (centrul de notificări din aplicație funcționează în continuare)
+- fără descoperirea serverelor din LAN sau tailnet în dialogul **Adaugă server**
+- fără cititor de articole în aplicație — articolele din fluxul de știri se deschid într-un tab nou
+- fără rerularea unui rezumat de întâlnire și fără anularea unuia aflat în procesare
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Două se comportă diferit, în loc să lipsească. **Înregistrarea** întâlnirilor
+funcționează în browser, captând microfonul tău plus o partajare de ecran care
+include o pistă audio. **Deschide în IDE** funcționează și el, dar cere
+serverului să lanseze editorul pe ecranul _serverului_, așa că butonul se
+ascunde pe o gazdă headless fără editoare instalate.
 
-## Troubleshooting
+## Depanare
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/).
+- **Conectarea expiră**: serverul trebuie să fie accesibil din client. Verifică legarea (`--bind any`), că portul este deschis și că `--public-url` indică adresa pe care clientul poate apela de fapt. Pe internetul deschis, TLS este obligatoriu — o legare non-loopback în text simplu este refuzată la pornire, cu excepția cazului în care serverul a fost pornit cu `--insecure` în spatele unui proxy.
+- **Browserul refuză să se conecteze, dar un client nativ funcționează**: originea browserului nu se află în lista `--allowed-origins` a serverului. Valoarea implicită permite doar `https://app.usectrl.dev` (plus loopback).
+- **Cheia de asociere a fost respinsă**: rulează din nou `cc_server pair` pe server pentru a roti cheia acelui dispozitiv, apoi introdu-o pe cea nouă. Un dispozitiv revocat își găsește acreditarea dispărută și eșuează închis; revocarea închide o sesiune activă în câteva secunde.
+- **Spațiu de lucru greșit**: spațiul de lucru face parte din URL (`/workspaces/:workspaceId/…`) și călătorește cu fiecare apel, așa că schimbarea spațiului de lucru într-un client schimbă doar vizualizarea ta. Poți accesa doar spațiile de lucru din care faci parte — orice altceva este refuzat cu „Not a member of this workspace”. Vezi [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
-- [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): the phone relay path
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/): calea prin releu pentru telefon
 
-## Related concepts
+## Concepte conexe
 
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/)
-- [Remote control and mobile](/ro-RO/manual/concepte/control-remote/)
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/)
+- [Control remote și mobil](/ro-RO/manual/concepte/control-remote/)

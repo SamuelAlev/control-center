@@ -1,152 +1,156 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Cấu hình rào chắn
+description: Đặt quy tắc cho phép, hỏi trước và từ chối cho hành động của agent, kiểm thử chúng bằng công cụ thăm dò Nếu như và tinh chỉnh mức tự chủ theo từng space.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Hướng dẫn này chỉ cho bạn cách cấu hình rào chắn: những quy tắc quyết định một
+hành động của agent được chạy, hỏi phê duyệt trước, hay bị từ chối.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Rào chắn bao phủ mười ba lớp hiệu ứng mà mọi công cụ có thể thay đổi trạng thái
+đều khai báo. Chúng được thực thi phía máy chủ ngay tại thời điểm công cụ được
+gọi, chứ không bao giờ bằng một chỉ dẫn trong prompt.
 
-## Set a decision for an action class
+## Đặt quyết định cho một lớp hành động
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Vào **Cài đặt → Không gian làm việc → Quyền của agent**
+2. Chọn một phạm vi bằng điều khiển phân đoạn: **Không gian làm việc**, **Agent** (rồi chọn
+   agent), hoặc **Space** (rồi chọn space)
+3. Trên hàng của lớp hành động, chọn **Cho phép**, **Hỏi trước** hoặc **Từ chối**
+4. Để bỏ một quy tắc bạn đã đặt, nhấn nút đặt lại xuất hiện ở cuối hàng đó
+   (**Xóa về kế thừa**) — quyết định sẽ quay về phạm vi rộng hơn
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Mỗi hàng hiển thị quyết định hiệu lực dưới dạng thẻ trạng thái và một huy hiệu cho
+biết nó đến từ đâu: **Phạm vi này**, **Kế thừa** hoặc **Mặc định tích hợp**. Ma
+trận này được giải quyết ở chế độ Agent (`chat`), nên **Preset chế độ** không bao
+giờ xuất hiện ở đây — hãy dùng công cụ thăm dò Nếu như với một chế độ chỉ đọc được
+chọn để thấy lớp đó.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Việc viết một quy tắc cần vai trò `admin`. Việc đọc ma trận thì không.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Điểm kiểm tra: đặt **Push lên remote** thành **Từ chối** ở phạm vi không gian làm
+việc, rồi chạy công cụ thăm dò Nếu như bên dưới trên `git push origin main`. Kết
+quả đọc là `deny` với nguồn `workspace`.
 
-## Understand how a decision is resolved
+## Hiểu cách một quyết định được giải quyết
 
-Resolution is **specificity first, then restrictiveness**:
+Việc giải quyết tuân theo **mức cụ thể trước, rồi đến mức hạn chế**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Quy tắc **Space**, rồi **agent**, rồi **không gian làm việc**. Phạm vi đầu tiên
+   có quy tắc khớp sẽ quyết định và việc giải quyết dừng lại
+2. Nếu không quy tắc nào khớp, **preset chế độ** được áp dụng — một chế độ chỉ đọc
+   (plan, review, orchestrate) từ chối mười một trong mười ba lớp
+3. Nếu chế độ không có gì để nói, **mặc định tích hợp** được áp dụng
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Trong cùng một phạm vi, một quy tắc lệnh được giải quyết theo tiền tố khớp dài
+nhất và một xung đột có cùng mức cụ thể được giải quyết theo hướng **hạn chế nhất**
+— từ chối thắng hỏi trước thắng cho phép. Một hành động khai báo nhiều lớp sẽ giải
+quyết từng lớp độc lập rồi kết hợp chúng theo hướng hạn chế nhất.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Cho phép không thắng được từ chối]
+Một quy tắc hẹp hơn thắng nhờ mức cụ thể và khi hòa thì phân định bằng mức hạn chế —
+nên một **Cho phép** ở phạm vi không gian làm việc không ghi đè **Từ chối** ở bất kỳ đâu.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Một quyết định **Hỏi trước** đưa ra một yêu cầu phê duyệt duy nhất bao trùm mọi lớp
+đã được giải quyết thành `prompt`. **Khi không có người phê duyệt nào được kết nối
+thì nó bị từ chối**, với cả lệnh shell lẫn các lệnh gọi công cụ của harness. Điều
+này là có chủ đích: một lượt chạy không qua cổng còn tệ hơn một lượt chạy bị từ chối.
 
-### Action classes and built-in defaults
+### Các lớp hành động và mặc định tích hợp
 
-| Action class                 | Built-in default |
+| Lớp hành động                | Mặc định tích hợp |
 | ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Xóa một tệp                  | Hỏi trước        |
+| Ghi bên ngoài cây làm việc   | Cho phép         |
+| Tạo một commit               | Cho phép         |
+| Push lên remote              | Hỏi trước        |
+| Mở một pull request          | Hỏi trước        |
+| Xuất bản review hoặc merge   | Hỏi trước        |
+| Ghi vào tracker bên ngoài    | Hỏi trước        |
+| Truy cập mạng                | Cho phép         |
+| Đọc một secret               | Cho phép         |
+| Cài một gói                  | Cho phép         |
+| Chạy một tiến trình          | Cho phép         |
+| Thay đổi cấu trúc không gian làm việc | Cho phép |
+| Điều khiển một enclosure (rig) | Cho phép       |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Danh mục này là đóng. Một công cụ mới được phát hành mà không khai báo các lớp
+của nó sẽ trượt một bài kiểm thử ratchet trong CI, nên không thứ gì xuất hiện với
+một tập hiệu ứng rỗng một cách âm thầm.
 
-## Test a rule with the what-if probe
+## Kiểm thử một quy tắc bằng công cụ thăm dò Nếu như
 
-Before changing a rule, check how the current policy already resolves it.
+Trước khi thay đổi một quy tắc, hãy kiểm tra xem chính sách hiện tại đã giải quyết
+nó thế nào.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Trên cùng trang đó, cuộn tới **Nếu như?**
+2. Chọn một **Hành động** (một trong mười ba lớp)
+3. Tùy chọn điền **Lệnh** (ví dụ `git push origin main`), **Agent**,
+   **Space** và **Chế độ**
+4. Đọc kết quả: quyết định, lý do và **Nguồn:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+Công cụ thăm dò chạy đúng bộ giải quyết mà đường thực thi dùng, dựa trên các quy
+tắc đang hoạt động của bạn, nên câu trả lời là chính xác. Nếu nó khiến bạn bất
+ngờ, hãy sửa một quy tắc trong ma trận bên trên rồi thăm dò lại.
 
-## Set a space's autonomy dial
+## Đặt nút tự chủ của một space
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Nút này là theo từng agent trên từng space và nó kết hợp với các quy tắc thay vì
+thay thế chúng.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Mở space
+2. Mở **Quản lý người tham gia** từ tiêu đề của space
+3. Dưới **Tự chủ** trên hàng của agent, chọn một mức:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Mức                           | Tác dụng                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Mặc định**                  | Không có cài đặt space — hoạt động như **Hành động khi được duyệt**                                 |
+| **Chỉ đề xuất**               | Mọi công cụ có cổng đều bị từ chối dứt khoát, kèm thông báo bảo agent hãy đề xuất hành động thay vì thực hiện |
+| **Hành động khi được duyệt**  | Các hành động rủi ro chạm cổng phê duyệt đóng khi lỗi                                                |
+| **Hành động tự do**           | Phê duyệt trước mọi thứ không bị giải quyết thành từ chối cứng                                       |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Hành động tự do nuốt mọi lời nhắc]
+Dưới **Hành động tự do**, một quyết định **Hỏi trước** được chấp thuận mà không hỏi bạn.
+Chỉ một `deny` — từ một quy tắc, từ preset chế độ, hay từ một mặc định tích hợp —
+mới còn chặn được. Hãy dùng nó khi bạn đang theo dõi space, chứ không phải như một mặc định.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Nút này chỉ vươn tới harness tích hợp. Adapter Claude Code chạy các công cụ riêng
+của nó bên ngoài cổng này.
 
-## Know where guardrails do not reach
+## Biết nơi rào chắn không vươn tới
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Bảng **Nơi quy tắc được thực thi** ở cuối cùng trang đó là phiên bản trong ứng
+dụng của điều này: theo từng lớp hiệu ứng, nó cho biết mỗi trình chạy có bắt được
+nó tại cổng chính sách không, để nó cho sandbox, hay hoàn toàn không thể chặn nó.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/).
+- **Adapter Claude Code** không được đặt cổng cho các lệnh gọi công cụ của chính
+  nó. Claude Code được khởi chạy với `--dangerously-skip-permissions`, nên các
+  lệnh gọi read, write, edit và bash của nó không bao giờ đi qua cổng gác. Thứ
+  được đặt cổng cho adapter đó là bề mặt công cụ MCP mà nó gọi ngược vào và lệnh
+  shell mà Control Center khởi tạo để chạy nó.
+- **Động từ đầu ra của chính một chế độ** (`submit_plan`, `propose_orchestration`)
+  được ghim và không bao giờ có thể bị từ chối — nếu không thì một chế độ sẽ không
+  thể nào tạo ra sản phẩm bàn giao duy nhất của nó.
+- **Việc sandbox có củng cố các quy tắc này hay không phụ thuộc vào máy chạy.**
+  Ở nơi `cc_server` tìm thấy một backend, nó bọc CLI Claude Code và công cụ `bash`
+  của harness, nên một quy tắc bạn không viết vẫn có sàn của hệ điều hành bên dưới
+  nó. Trên **Windows thì không có sàn nào** và trên Linux hay WSL2 không có `bwrap`
+  và `socat` thì cũng không — ở đó, rào chắn cộng với bề mặt công cụ của chế độ là
+  toàn bộ việc thực thi, chứ không phải lớp thứ hai của nó. Hãy kiểm tra xem bạn
+  đang ở trường hợp nào bằng
+  [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Configure sandbox policies](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
+- [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Guardrails — one policy for every mutating action](/vi-VN/so-tay/khai-niem/rao-chan/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
-- [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)
+- [Rào chắn — một chính sách cho mọi hành động biến đổi](/vi-VN/so-tay/khai-niem/rao-chan/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)
+- [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/)

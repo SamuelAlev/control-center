@@ -1,64 +1,66 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Konsep
+description: Bagaimana Control Center berfungsi dan mengapa ia dibina sebegini — bacaan latar belakang di sebalik panduan.
 slug: ms-MY/manual-pengguna/konsep
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/ms-MY/manual-pengguna/panduan-cara/); when you want to look
-something up, go to the [reference](/ms-MY/manual-pengguna/rujukan/).
+Halaman-halaman ini menerangkan **bagaimana Control Center berfungsi dan mengapa**. Ia
+bertujuan untuk pemahaman, bukan untuk tindakan: tiada halaman di sini merupakan prosedur
+yang perlu diikuti. Apabila anda mahu menyelesaikan tugas tertentu, pergi ke
+[panduan cara](/ms-MY/manual-pengguna/panduan-cara/); apabila anda mahu merujuk sesuatu,
+pergi ke [rujukan](/ms-MY/manual-pengguna/rujukan/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Bacalah mengikut sebarang urutan. Jika anda baharu, model teras ialah tempat untuk bermula.
 
-## Core model
+## Model teras
 
-The four ideas everything else is built on.
+Empat idea yang menjadi asas kepada semua yang lain.
 
-- [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/) — what happens between your message and the agent's first token
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/ms-MY/manual-pengguna/konsep/konteks-alat/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — the code graph, language server, structural search and debugger
-- [Conversation history](/ms-MY/manual-pengguna/konsep/sejarah-perbualan/) — persistence, compaction and forking a transcript
+- [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/) — sempadan penyewa dan mengapa ia dikuatkuasakan oleh susun atur pangkalan data dan bukan oleh disiplin pertanyaan
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/) — apa yang membentuk ejen: identiti, peranan, kemahiran, keupayaan, penyesuai dan model
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/) — apa yang berlaku antara mesej anda dan token pertama ejen
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/) — bagaimana `chat`, `plan`, `review` dan `orchestrate` mengubah apa yang boleh dilakukan oleh ejen
+- [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/) — mengapa ejen melihat sebahagian daripada alatnya, bagaimana ia mencapai selebihnya dan apa yang memastikan cache pembekal kekal panas
+- [Kepintaran kod](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — graf kod, pelayan bahasa, carian berstruktur dan penyahpepijat
+- [Sejarah perbualan](/ms-MY/manual-pengguna/konsep/sejarah-perbualan/) — penyimpanan berterusan, pemadatan dan pencabangan transkrip
 
-## Safety and control
+## Keselamatan dan kawalan
 
-What an agent is allowed to touch and who decides.
+Apa yang dibenarkan disentuh oleh ejen dan siapa yang memutuskan.
 
-- [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) — what actually constrains an agent run today
-- [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/ms-MY/manual-pengguna/konsep/kebenaran/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/ms-MY/manual-pengguna/konsep/stesen/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) — apa yang sebenarnya membataskan larian ejen pada hari ini
+- [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) — satu enjin polisi untuk setiap tindakan yang mengubah keadaan dan bagaimana sesuatu peraturan diselesaikan
+- [Kebenaran](/ms-MY/manual-pengguna/konsep/kebenaran/) — peranan, katalog kebenaran dan jejak audit
+- [Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/) — mengapa ejen mendapat VM pakai buang dan bukan mesin anda, dan apakah sempadan sebenarnya
 
-## Directing the work
+## Mengarahkan kerja
 
-Turning intent into work that gets done.
+Menukar niat menjadi kerja yang disiapkan.
 
-- [Tickets and delegation](/ms-MY/manual-pengguna/konsep/tiket/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/ms-MY/manual-pengguna/konsep/pipeline/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/) — one goal, one approval, a generated pipeline
-- [AI review](/ms-MY/manual-pengguna/konsep/semakan-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/ms-MY/manual-pengguna/konsep/perbualan-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/ms-MY/manual-pengguna/konsep/evals-dan-kualiti/) — eval suites and the Quality tab
+- [Tiket dan perwakilan](/ms-MY/manual-pengguna/konsep/tiket/) — unit kerja neutral vendor yang dikongsi oleh seluruh armada
+- [Pipeline dan automasi](/ms-MY/manual-pengguna/konsep/pipeline/) — aliran kerja DAG, pencetus dan larian yang boleh disambung semula
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/) — satu matlamat, satu kelulusan, satu pipeline yang dijana
+- [Semakan AI](/ms-MY/manual-pengguna/konsep/semakan-ai/) — bagaimana sesuatu PR menjadi PR yang disemak: ruang semakan, konsensus rakan sebaya, paksi dan keputusan Ship/Hold/Block
+- [Perbualan PR](/ms-MY/manual-pengguna/konsep/perbualan-pr/) — menjawab sebutan GitHub atau label `ai-review` dari hos kod itu sendiri
+- [Memori dan pengetahuan](/ms-MY/manual-pengguna/konsep/memori-dan-pengetahuan/) — fakta, polisi dan apa yang dibenarkan diketahui oleh ejen
+- [Evals dan kualiti](/ms-MY/manual-pengguna/konsep/evals-dan-kualiti/) — suite eval dan tab Kualiti
 
-## People and reach
+## Orang dan jangkauan
 
-Working with other humans and reaching the fleet from elsewhere.
+Bekerja dengan manusia lain dan menjangkau armada dari tempat lain.
 
-- [Multiplayer and presence](/ms-MY/manual-pengguna/konsep/multipemain/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/ms-MY/manual-pengguna/konsep/daftar-masuk-tunggal/) — SAML and OIDC logins
-- [Chat bridges](/ms-MY/manual-pengguna/konsep/jambatan-sembang/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/ms-MY/manual-pengguna/konsep/mesyuarat/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/ms-MY/manual-pengguna/konsep/kalendar/) — Google Calendar sync and meeting alerts
+- [Multipemain dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/) — manusia dan ejen sebagai peserta yang setara dan apa yang mengawal akses
+- [Daftar masuk tunggal](/ms-MY/manual-pengguna/konsep/daftar-masuk-tunggal/) — log masuk SAML dan OIDC
+- [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/) — mengapa jambatan Slack menghubungi keluar dan apa yang memberi kebenaran kepada mesej dari sembang
+- [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/) — bagaimana telefon mencapai pelayan anda dan model keselamatan di sekelilingnya
+- [Mesyuarat dan transkripsi](/ms-MY/manual-pengguna/konsep/mesyuarat/) — rakaman pada peranti, transkripsi dan peringkasan
+- [Kalendar dan penjadualan](/ms-MY/manual-pengguna/konsep/kalendar/) — penyegerakan Google Calendar dan makluman mesyuarat
 
-## Under the hood
+## Di sebalik tabir
 
-The shape of the system itself.
+Bentuk sistem itu sendiri.
 
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/ms-MY/manual-pengguna/konsep/acara-domain/) — the in-process bus features talk over
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/) — pelapisan, kernel kongsi, port dan penyesuai
+- [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) — bagaimana klien desktop, web dan telefon berkaitan dengan satu pelayan
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/) — bas dalam proses yang digunakan oleh ciri untuk berkomunikasi

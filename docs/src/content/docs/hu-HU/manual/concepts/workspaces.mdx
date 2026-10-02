@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Munkaterületek és elszigetelés
+description: Miért jelent a munkaterület szigorú bérlői határt, hogyan teszi ezt a határt strukturálissá az adatbázisok szétválasztása, és mi az, ami szándékosan átlépi.
 slug: hu-HU/kezikonyv/fogalmak/munkateruletek
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Mi a munkaterület?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+A munkaterület a legfelső szintű elszigetelési bérlő a Control Centerben. Ügynököket, tárolókat, tereket, jegyeket, memóriát, pipeline-okat és tagokat csoportosít egy körülhatárolt kontextusba. Minden, ami egy munkaterületen belül történik, ott is marad.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Egy tipikus munkaterület egy projekthez vagy egy kódbázishoz rendelhető. Lehetnek külön munkaterületei „api-service”, „frontend-v2” és „infrastructure” néven.
 
-## Workspace-scoped data
+## Munkaterület-hatókörű adatok
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Egy munkaterület sorai az adott munkaterület saját SQLite-fájljában élnek, a `<dataDir>/<workspaceId>/workspace.db` útvonalon. Minden munkaterület könyvtárat kap, nem csupasz fájlt, mert a munkaterület többet halmoz fel egy adatbázisnál — beszélgetésenkénti worktree-k, az ügynök- és készségfájlok, csevegőbot-hitelesítő adatok —, és ha mappát kap, mindez együtt él és együtt törlődik.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Entitás                                          | Hatókör                                              |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| Ügynökök                                         | Pontosan egy munkaterülethez tartoznak               |
+| Tárolók                                          | Egy munkaterületbe regisztrálva (lásd alább)         |
+| Terek, beszélgetések és üzenetek                 | Munkaterület-hatókörű                                |
+| Jegyek, projektek, tervek, orchestrációk         | Munkaterület-hatókörű                                |
+| Memóriatények, szabályzatok, domainek, hozzáférési engedélyek | Munkaterület-hatókörű                   |
+| Pipeline-futtatások, sablonok, eseményindítók    | Munkaterület-hatókörű                                |
+| Pull requestek állapota, átnézési terek, átnézési kohorszok | Munkaterület-hatókörű                        |
+| Ügynökfuttatási naplók és munkamemória           | Munkaterület-hatókörű                                |
+| Tagok, meghívók, tárolónkénti engedélyek          | Munkaterület-hatókörű                               |
+| Kódgráf-szimbólumok és élek                      | A munkaterület fájlján belül `repoId` szerint határolva |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+E sorok többsége `workspaceId` oszlopot hordoz; az elszigetelést külön adatbázisfájlok kényszerítik ki. Lásd alább az elszigetelési invariánst.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## A tárolók munkaterület-hatókörűek; a munkaterületek közötti azonosságot az útvonal adja
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Egy tárolósor a saját munkaterületének adatbázisfájljában él — maga a fájl _a_ hatókör, ezért a táblának nincs `workspaceId` oszlopa és nincs kapcsolótáblája.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Egy tárolót a Beállítások → Munkaterület → Tárolók menüpontban adhat hozzá egy munkaterülethez. Ugyanazon checkout két munkaterületbe való regisztrálása két független sort hoz létre, két azonosítóval; a tároló azonossága a munkaterületek _között_ a fájlrendszerbeli útvonal (vagy a GitHub tulajdonos/név) alapján áll fenn, soha nem azonosító alapján.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+A regisztrálás szigorú: az útvonalnak egy git-munkafán belül kell lennie, rendelkeznie kell `origin` remote-mal, és annak a remote-nak egy támogatott kódhosztra kell mutatnia (github.com, gitlab.com vagy bitbucket.org). A kódhoszt a remote-ból olvasódik ki, és a tárolón tárolódik, így egy munkaterület mindhárom forrásból tarthat tárolókat. Bármi más elutasításra kerül. A mappaböngésző, amelyből választ, a **szerver gazdagépének** fájlrendszerét listázza, a szerver `--repo-roots` engedélyezési listájára szűkítve (amely alapértelmezés szerint a szerverfelhasználó otthoni könyvtára).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Egy tároló eltávolítása egy munkaterületből nyomban törli a sort, és kaszkádolja a kódgráf-szimbólumait, éleit, fájljait, index-ellenőrzőpontjait és a tagonkénti engedélyeit. A lemezen lévő checkout érintetlen marad.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+A kódgráf ugyanabban a fájlban él, `repoId` szerint kulcsolva, mert a különböző munkaterületeken lehet ugyanaz a tároló különböző ágakon, különböző kóddal.
 
-## The isolation invariant
+## Az elszigetelési invariáns
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+A munkaterületek közötti adatszivárgásokat hibaként kezeljük. Az elszigetelés **strukturális**, több szinten kikényszerítve:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Adatbázisréteg.** Minden munkaterületnek saját SQLite-fájlja van, amelyet a `WorkspaceDatabaseManager.of(workspaceId)` oszt ki. Egy munkaterület adatbázisa nem deklarálja a `users`, `workspaces` vagy bármely más munkaterület tábláit, így a munkaterületek közötti olvasás nem olyan hiba, amit meg lehet írni — le sem fordul. A tárolók hívásonként oldják fel a DAO-jukat ahelyett, hogy gyorsítótáraznák, és mivel minden tárolómetódus kötelező `workspaceId` paramétert vár, a munkaterület soha nem következtethető ki és nem kaphat alapértelmezett értéket.
+- **A munkaterület-azonosító egy útvonalszegmens.** Mivel az azonosítóból könyvtárnév lesz, meg kell felelnie egy biztonságos, egyszeres szegmensű mintának (alfanumerikusan kezdődik, majd alfanumerikus karakterek, pontok, aláhúzások, kötőjelek; `..` nem szerepelhet). A termékben mindenhol UUID-k az azonosítók. Bármi más kivételt dob a megtisztítás helyett — ez az elérési út bejárása elleni védelem, és hangosan hibázik, ahelyett hogy egy munkaterület adatait olyan útvonalra írná, amelyet valaki más választott.
+- **Többrétegű védelem.** A `workspaceId` oszlopok továbbra is ott vannak, és továbbra is íródnak. Egy fájlon belül redundánsak, de változatlanul hagyják a szinkronfolyam-eseményindítókat, az FTS-indexeket és a meglévő soralakokat, és önleíróvá teszik a fájlt, amikor önmagában vizsgálják meg — erre támaszkodik az exportálás és az importálás.
+- **Domainréteg.** Az entitásokat azonosító alapján módosító szolgáltatások egyetlen szűk keresztmetszetnél ellenőrzik, hogy `entity.workspaceId == workspaceId`, mielőtt továbblépnének, és eltérés esetén `WorkspaceMismatchException` kivételt dobnak — ez a hangos hiba egy rossz kontextusból érkező azonosítóra. A hangos elutasítás számít: a csendes no-op elrejti a hibát, a továbblépés pedig szivárogtat.
+- **RPC-réteg.** A repo-RPC diszpécser a szűk keresztmetszet. Minden munkaterület-hatókörű műveletnek a saját argumentumai között kell hordoznia a `workspace_id`-t — nincs munkamenetenkénti „aktuális munkaterület”, ami szivároghatna, és az ismeretlen azonosítót not-found válaszként utasítja el, _mielőtt_ bármi adatbázist nyitna, így egy rossz azonosító nem hozhat létre szellem `workspace.db`-t. A valóban globális műveletek (a hírfolyam, a flottasor) kifejezett, felülvizsgált döntésként hatókör nélkülinek nyilvánítják magukat. Az MCP-eszközök ugyanezt a szabályt követik: minden munkaterület-hatókörű adatot érintő eszközhöz kötelező a `workspace_id`.
+- **A munkaterületek közötti fan-out felsorolható.** Egy több munkaterületre vonatkozó kérdés megválaszolása több adatbázis megnyitását jelenti. Ez a fan-out egyetlen segédfüggvényre, a `CrossWorkspaceQueries`-re korlátozódik, így a határt jogszerűen átlépő dolgok teljes listája egyetlen fájl hívási helyein él, ahelyett hogy dokumentációs megjegyzések mögé szóródna. Ezek a hívási helyek: szerver szintű aggregáció, indítási egyeztetők, megőrzési és GC-seprések, biztonsági mentés, eseményrouterek — és az alábbi tagsági keresés.
+- **A csak azonosító alapján történő hozzáférés nem elegendő.** Egy entitás UUID alapján történő kikeresése nem bizonyítja, hogy az a hívó munkaterületéhez tartozik. A fájlszétválasztás elérhetetlenné teszi a rossz fájlt; a domainrétegbeli érvényesítés elkapja a jogos fájlon keresztül érkező rossz azonosítót.
 
-## Membership, not the pairing key, is what grants access
+## A hozzáférést a tagság adja, nem a párosítási kulcs
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Egy eszközhitelesítő adat birtoklása egy _eszközt_ hitelesít. Nem jogosít fel semmire egy munkaterületen belül. Minden munkaterület-hatókörű művelet feloldja a hívó tagsági szerepét, és kikényszerít egy, a művelet fajtájából levezetett minimumot — az olvasáshoz `guest`, a módosításhoz `member`, a destruktív művelethez `admin` szükséges —, a tárolótartalmat felfedő műveletek pedig ezenfelül ellenőrzik a hívó tárolónkénti engedélyét. Egy érvényes párosítási kulcs tagság nélkül `Not a member of this workspace` hibát kap.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Az elszigetelésre nézve ennek elegáns a következménye: a tagsági sorok a _munkaterület saját_ fájljában élnek, így a „ki van ebben a munkaterületben?” egy közönséges hatókörű olvasás. A fordított kérdés — „mely munkaterületekben vagyok benne?” — értelemszerűen fájlokra szóródik, ezért ez az egyik kevés engedélyezett `CrossWorkspaceQueries` fan-out, és ezt futtatja a munkaterületválasztó, mielőtt bármelyik munkaterületet kiválasztanák.
 
-See [Multiplayer](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/) for the role ladder and repo grants.
+A szereplétraihoz és a tárolónkénti engedélyekhez lásd a [többszereplős módot](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/).
 
-## The global registry
+## A globális nyilvántartás
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Nem minden munkaterület-hatókörű. Egy második adatbázis, a `<dataDir>/global.db` tartalmazza azt, ami valóban szerver szintű:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- a **munkaterület-nyilvántartás**, hogy a váltó fel tudja sorolni az összes munkaterületet anélkül, hogy egyetlen munkaterületfájlt is megnyitna — és hogy egy munkaterület neve, logója, tulajdonosa, kézi sorrendje és soft-delete jelölője az általa leírt fájlon kívül éljen;
+- az **identitás**: felhasználók, felhasználói beállítások és párosított eszközök, mert egy ember egy felhasználó minden munkaterületen, és egy párosított eszköz túléli egy munkaterület törlését;
+- a **flottasor** (workerek, feladatok, elhelyezési napló), amelynek ütemezője minden ciklusban az egész sort összeveti minden workerrel;
+- a **hírfolyam**, amely felhasználónkénti (nem munkaterületenkénti) — egy folyam hozzáadása minden munkaterületre követi Önt;
+- a **`workspace_routes`**, a hitelesítés előtti index, amely megválaszolja, hogy „melyik munkaterület birtokolja ezt a kulcsot?” azoknak a belépési pontoknak, amelyek csak egy titokkal vagy egy átlátszatlan azonosítóval (egy meghívó-hash, egy webhook-token, egy deep link) érkeznek, munkaterület nélkül. A kihagyás ott not-found; szándékosan nincs beolvasási tartalék;
+- **telepítés szintű beállítások és identitás**: a telepítés-azonosító, gazdagép szintű beállítások, SSO-kapcsolatok és kezelt műveletszabályzatok (egy telepítés szintű korlát, amely csak szigoríthatja a munkaterület korlátait).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Az indítás csak ezt a fájlt nyitja meg. A munkaterületfájlok lustán, az első érintéskor nyílnak meg, így az indítási költség lapos marad, függetlenül attól, mennyi előzményt halmoznak fel a munkaterületek, és a fájlonkénti `quick_check` árát az első használatkor fizetjük meg, nem a ready bannerhez vezető úton.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Egy munkaterületfájl csak egy egysoros `workspace_meta` táblát hordoz az önazonosításhoz (az azonosítója, az őt létrehozó telepítés, a létrehozáskor használt sémaváltozat, és hogy mikor). Minden leíró adat egy munkaterületről a nyilvántartásban van.
 
-## Creating a workspace
+## Munkaterület létrehozása
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Egy munkaterület létrehozása többet tesz, mint egy nyilvántartási sor beszúrása. Egyetlen műveletben a szerver a létrehozó felhasználót `ownerUserId` értékkel jelöli meg, rögzíti e felhasználó tulajdonosi szerepű tagságát, és közzétesz egy `WorkspaceCreated` domaineseményt. Az eseményre figyelő hallgatók ezután idempotensen, a háttérben feltöltik:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- egy **CEO-ügynököt**, valamint négy specialistát — `qa`, `architect`, `engineer`, `librarian` —, akik a CEO-nak jelentenek;
+- a **beépített pipeline-sablonokat** és azok eseményindítóit (az esemény- és kézi indítók bekapcsolva érkeznek; az ütemezettek külön engedélyezést igényelnek, kivéve a napi worktree-GC seprést);
+- a **kezdő kiértékelési csomagokat**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
+Ez _minden_ munkaterületnél megtörténik, nem csak az elsőnél. A feltöltött ügynökök adapter nélkül jönnek létre, így a **Control Center (built-in)** futtatókörnyezeten futnak az Anthropic alapértelmezett modelljével (`claude-opus-4-8`, hacsak nem rögzít másikat) addig, amíg be nem állít egy adaptert és modellt ügynökönként a Beállítások → Munkaterület → Ügynökök menüpontban. Lásd az [ügynökmodellt](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+A tulajdonosi tagság írása jelentősebb, mint amilyennek látszik: nélküle a frissen létrehozott munkaterületnek nem lennének tagjai, és minden munkaterület-hatókörű hívást elutasítanának, amelyet a létrehozó ezután tesz.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Az ügynökök nem hozhatnak létre munkaterületet]
+Nincs `create_workspace` MCP-eszköz. Az emberek a `workspace.create` (csak névre szóló szűk keresztmetszet) vagy a `workspace.upsert` (teljes rekord, frissítésekhez is) hívással hoznak létre munkaterületet. Mindkettő a létrehozó felhasználót `owner` értékkel jelöli meg, és közzéteszi a `WorkspaceCreated` eseményt.
 :::
 
-## Deleting, exporting, importing
+## Törlés, exportálás, importálás
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Egy munkaterület törlése **megjelöli a nyilvántartási sort, és leválasztja a könyvtárat**. A munkaterület eltűnik minden listából és keresésből. A nyilvántartási sor megmarad (soft-deleted), így az azonosítót továbbra is ismeri a biztonsági mentés és a karbantartás, a `workspace.delete` azonban azonnal eldobja a munkaterület könyvtárát — adatbázis, worktree-k, ügynökfájlok és a többi — a `WorkspaceDatabaseManager.dropAndClose` segítségével. Csak a munkaterület **tulajdonosa** törölheti.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Mivel egy munkaterület egyetlen fájl, a munkaterület továbbadása fájlművelet, nem táblánkénti dump:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- a `workspace.export` egyetlen `VACUUM INTO` — konzisztens, töredezettségmentesített pillanatkép, amelyet olvasási tranzakció alatt készít, miközben a szerver tovább szolgál.
+- a `workspace.import` átvesz egy ilyen fájlt, felülírva mindazt, amit a cél-munkaterület jelenleg tartalmaz. A beágyazott `workspace_meta` segítségével az import meg tudja különböztetni a „saját fájl, újra átvéve” esetet a „másik telepítésből származó fájl” esettől (utóbbi engedélyezett, de naplózott, nem láthatatlan).
+- a `server.backupNow` az egész telepítésről pillanatképet készít egy időbélyeggel ellátott könyvtárba, amely tükrözi az élő adatkönyvtárat — `manifest.json`, `global.db`, valamint munkaterületenként egy `<workspaceId>/workspace.db` —, így a visszaállítás nem más, mint visszamásolása.
+- a `server.listBackups` visszaolvassa ezt a könyvtárat, a legfrissebbel kezdve, az egyes pillanatképek méretével és munkaterületlistájával. Az a pillanatkép, amelynek hiányzik a manifestje, vagy olyan fájlokat nevez meg, amelyek nincsenek ott, akkor is jelentésre kerül, hiányosként megjelölve — elrejtésével egy üzemeltető azt hiheti, hogy van biztonsági mentése, holott nincs.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+A biztonsági mentési műveletek a **Beállítások → Szerver → Biztonsági mentés és visszaállítás** alatt találhatók: a **Biztonsági mentés most** pillanatképet készít a telepítésről, a lista megmutatja, mely pillanatképek teljesek, és a telepítés tulajdonosának megerősítés után lehetővé teszi azok törlését, valamint minden munkaterület felajánlja az exportálást és az importálást. A beépített **Workspace backup** pipeline heti ütemezéssel csak az adott munkaterület adatbázisát menti, és törli a beállított megőrzési korosztálynál régebbi saját mentéseit. Egy munkaterület visszaállítása telepítési pillanatképből a `workspace.import`, a pillanatkép `<workspaceId>/workspace.db` fájljára irányítva; egy teljes telepítés visszaállítása továbbra is a pillanatképkönyvtár visszamásolása leállított szerver mellett.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/hu-HU/kezikonyv/referencia/mentes/#what-a-backup-does-not-contain) has the full table.
+Egyik sem viszi magával a munkaterület-könyvtár többi részét. Egy munkaterület többet halmoz fel egy adatbázisnál — beillesztett képek, készség- és ügynökfájlok, csevegőhitelesítő adatok, worktree-k —, az exportálás és az importálás pedig a **fájlt** mozgatja, így minden, ami mellette van, a helyén marad. Ez a hitelesítő adatoknál szándékos, a worktree-knél eldobható; a többinél inkább tudnivaló korlát, mint szolgáltatás. A teljes táblázat a [mentési referenciában](/hu-HU/kezikonyv/referencia/mentes/#what-a-backup-does-not-contain) található.
 
-## Moving a backup between the server and your device
+## Biztonsági mentés mozgatása a szerver és az eszköz között
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/hu-HU/kezikonyv/referencia/mentes/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+A fenti műveletek mindegyike a **szerveren** lévő útvonalakban beszél, ami csak akkor teljes válasz, ha a szerver az Ön saját gépe. Három aláírt HTTP-útvonal — [`/backup/workspace`, `/backup/snapshot` és `/backup/restore`](/hu-HU/kezikonyv/referencia/mentes/#transfer-routes) — szállítja a bájtokat minden más topológia számára, ugyanazon a hitelesített sávon, amelyet a médiarelé és a képtár már használ. Az oldalon ez minden exportálás és minden pillanatkép mellett egy **Letöltés** gomb (Ön választja ki, hová kerüljön), valamint a **Fájl választása és feltöltése** a visszaállításhoz abból a fájlból, amely az éppen használt gépen található. A feltöltés az, amely akkor működik, ha a szerver nem az Ön gépe: a `workspace.import` megköveteli, hogy a fájl már a gazdagépen legyen, és ez az, ahogyan odakerül.
 
-Three properties are worth knowing:
+Három tulajdonságot érdemes ismerni:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **A letöltés friss másolatot készít, és a szerver semmit nem tart meg belőle.** A letöltés nem „hozd el az exportálás gomb által készített fájlt” — újra exportál, azt streameli, majd törli. A válasz `no-store` és `Accept-Ranges: none`, ugyanezen okból: egy folytatott tartomány két különböző exportot fűzne össze egyetlen fájlba, amely érvényesnek látszik, de nem az.
+- **A feltöltés lemezre streamelődik, soha nem pufferelődik**, mindkét végén, és az előkészített másolat minden kivezető úton törlődik — az elutasítást is beleértve. Egy munkaterület adatbázisa nem képernyőkép.
+- **Egy relén átvezetett kapcsolatnak nincs HTTP-eredete**, ezért az átvitelvezérlők ott le vannak tiltva, egy megjegyzéssel, amely megindokolja, miért. Minden, ami szerveroldali útvonalakban beszél, továbbra is működik a relén; csak a bájtsávokhoz kell közvetlen kapcsolat.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Melyik útvonal kié]
+Az oldal által *mutatott* útvonalak — a pillanatkép-könyvtár, az exportálás által írt fájl, az import által olvasott forrás — azon a gépen vannak, amelyen a `cc_server` fut. A **letöltés** által jelentett útvonal azon a gépen van, amelynél Ön ül. Ez a megkülönböztetés az oka annak, hogy mindkettő létezik: az első az, amire egy karbantartó szkriptnek vagy egy ssh-munkamenetnek van szüksége, a második pedig az, amire egy biztonsági mentést gyűjtő embernek.
 :::
 
-## Multiple workspaces
+## Több munkaterület
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Több munkaterületet futtathat egymás mellett. Mindegyik önállóan működik: az egyik munkaterületen lévő ügynökök nem küldhetnek üzenetet egy másik munkaterület ügynökeinek, nem olvashatják egy másik munkaterület memóriáját, és nem láthatják annak jegyeit. Az ügynökök közötti üzenetküldés címzettfeloldása pontos, és soha nem lép át munkaterületet.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Nincs munkaterületek közötti irányítópult. A `/workspaces/:workspaceId/observability` címen található elemzőfelület egy korlátos, globális, a legutóbbi futtatásokból álló folyamra iratkozik fel, és azonnal az aktív munkaterületre szűkíti, így ott egyszerre egy munkaterületet lát. Az egyetlen valóban több munkaterületet érintő felület, amelyhez egy ember hozzáfér, a munkaterületválasztó és a váltó.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Egy gyakorlati korlát, amit érdemes tudni: egy használatban lévő munkaterület nyitva marad — nincs LRU. 32 ilyen felett a szerver figyelmeztet, nem pedig elutasít, mert minden nyitott fájl egy háttér-izolátumot és egy lapgyorsítótárat tart. A munkaterületek közötti fan-out csak átmenetileg nyit meg fájlokat, és utána bezárja őket, ha semmi más nem tartotta őket igénybe.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Multiplayer](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): agents belong to exactly one workspace
-- [Memory and knowledge](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/): memory is workspace-scoped
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/): where the databases sit in the client/server split
-- [Back up and restore](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/hu-HU/kezikonyv/referencia/mentes/): every operation, route, manifest field and limit
-- [Add repositories](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/): registering a checkout into a workspace
+- [Többszereplős mód](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): tagság, szerepek és tárolónkénti engedélyek — az elszigetelés hozzáférési fele
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): az ügynökök pontosan egy munkaterülethez tartoznak
+- [Memória és tudás](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/): a memória munkaterület-hatókörű
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/): hol helyezkednek el az adatbázisok a kliens/szerver felosztásban
+- [Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/): pillanatkép készítése, munkaterület mozgatása, másolatok tárolása máshol
+- [Mentés, exportálás és importálás](/hu-HU/kezikonyv/referencia/mentes/): minden művelet, útvonal, manifestmező és korlát
+- [Repók hozzáadása](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/): egy checkout regisztrálása egy munkaterületbe

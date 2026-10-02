@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: ایجنٹ کی تشخیص کریں
+description: جب کوئی ایجنٹ رنز پیدا کرنا بند کر دے تو رن لاگ، اڈاپٹر پروب، سرور اسٹیٹس اور ہوسٹ تشخیص پر اوپر سے نیچے تک کام کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+یہ گائیڈ بتاتی ہے کہ کوئی ایجنٹ رنز کیوں پیدا نہیں کر رہا، یہ کیسے معلوم کریں۔
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+اوپر سے نیچے کی طرف کام کریں: پہلے ایجنٹ کے اپنے رنز، پھر اس کا بیک اینڈ، پھر سرور، پھر ہوسٹ۔
 
-## 1. Check the agent's run history
+## 1. ایجنٹ کی رن ہسٹری چیک کریں
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**ترتیبات → ورک اسپیس → ایجنٹس** → ایجنٹ منتخب کریں → **لاگز**۔
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+ہر رن ایک اسٹیٹس بیج، ایک دورانیہ (جاری رہتے ہوئے "Running…")، اس کے آغاز اور تکمیل کے اوقات، اس کا PID اور وہ اڈاپٹر جو اس نے استعمال کیا، دکھاتا ہے۔ **دیکھیں** اُس رن کا خام ایونٹ اسٹریم کھولتا ہے۔ **روکیں** چلتے ہوئے پروسیس کو ختم کرتا ہے اور رن کو "Killed by user" کے طور پر نشان زد کرتا ہے؛ ہیڈر میں **چلتے ہوئے ختم کریں** اُس ایجنٹ کے ہر جاری رن کے لیے یہی کرتا ہے۔
 
-Read it like this:
+اسے یوں پڑھیں:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **کوئی رن بالکل نہیں** — ڈسپیچ ہوا ہی نہیں۔ کمپوزر کے ذکر `@` کے ساتھ ورڈ کریکٹرز (حروف، ہندسے، انڈر اسکور) پر مشتمل ہوتے ہیں۔ ریزولوشن ایجنٹ کے نام پر ایک عین یا پری فکس مماثلت ہوتی ہے، اس لیے `@code-reviewer` کو `code` کے طور پر پارس کیا جاتا ہے اور یہ پھر بھی `code-reviewer` نام والے ایجنٹ کو جگا سکتا ہے۔ خالی جگہ والے نام کا ایک ہی ٹوکن کے طور پر ذکر نہیں کیا جا سکتا۔ پھر مرحلہ 2 پر جائیں۔
+- **ایک رن جو فوراً خرابی کے ساتھ ختم ہو گیا** — **دیکھیں** کھولیں۔ بیک اینڈ لانچ کرنے میں ناکامی یہاں پراسیس خرابی کے طور پر سامنے آتی ہے۔
+- **"Running…" پر اٹکا ہوا رن** — اسے روکیں، پھر ترتیبات ٹیب میں ایجنٹ کا **خاموشی ٹائم آؤٹ** چیک کریں۔ سیٹ نہ کی گئی ٹائم آؤٹ فی موڈ ڈیفالٹ استعمال کرتی ہے۔
+- **مکمل شدہ مگر بے کار آؤٹ پٹ والا رن** — ایسے رن کے لیے جو اپنی اعلان کردہ ڈیلیوریبل کے بغیر ختم ہو، رن لاگ کا اسٹیٹس `completed` ہی رہتا ہے؛ سچا اشارہ بیج نہیں بلکہ سمری متن ہے۔
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+لاگز ٹیب کوئی لاگت نہیں دکھاتا۔ خرچ کے لیے، **آبزرویبلٹی → بصیرتیں** میں فی ایجنٹ ٹیبل استعمال کریں۔
 
-## 2. Check the agent's backend
+## 2. ایجنٹ کا بیک اینڈ چیک کریں
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**ترتیبات → سرور → ماڈل فراہم کنندگان** (`/settings/server/providers`)۔
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+**دریافت شدہ رنرز** فہرست ہر اڈاپٹر کو اس کے پروب نتیجے کے ساتھ دکھاتی ہے — کوئی انسٹال شدہ ورژن، "چیک ہو رہا ہے…"، یا "نہیں ملا" — علاوہ حل شدہ پاتھ اور ملنے والی CLI کے لیے کیپبیلٹی چپس۔ دوبارہ پروب کرنے کے لیے صفحے کے ہیڈر میں **تازہ کریں** پر کلک کریں۔
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+پروب اُس مشین پر چلتی ہے جو `cc_server` کی میزبانی کرتی ہے، نہ کہ اُس مشین پر جو آپ دیکھ رہے ہیں۔ اگر آپ ویب کلائنٹ یا پیئر شدہ ڈیوائس پر ہیں، تو "نہیں ملا" کا مطلب ہے کہ سرور ہوسٹ پر CLI غائب ہے۔
 
-Two things to confirm:
+دو چیزیں تصدیق کرنی ہیں:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **ایجنٹ کا اڈاپٹر سیٹ ہے یا نہیں۔** خالی اڈاپٹر والا ایجنٹ **Control Center (بلٹ اِن)** پر ڈسپیچ ہوتا ہے اور رن لاگ `cc-harness` درج کرتا ہے، سو ٹرانسکرپٹ بتا دیتا ہے کہ کیا چلا۔ ماڈل کے بھی نہ ہونے پر یہ Anthropic سے اس کا ڈیفالٹ مانگتا ہے — جو `No credential for provider "anthropic"` کے ساتھ ناکام ہوتا ہے، جب تک آپ نے Anthropic اکاؤنٹ جوڑ نہ رکھا ہو۔ سیڈ کیے گئے اسپیشلسٹ بغیر اڈاپٹر آتے ہیں۔
+- **بلٹ اِن اڈاپٹر کا ماڈل ہے یا نہیں۔** اس کی ماڈل فہرست اسی صفحے پر نیچے جڑے فراہم کنندگان سے لائیو آتی ہے، اس لیے جس فراہم کنندہ کے پاس کوئی محفوظ کریڈنشل نہ ہو وہ صفر ماڈل دیتا ہے۔
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+اڈاپٹر کیٹلاگ خود مقرر ہے — نیا اڈاپٹر رجسٹر کرنے کا کوئی طریقہ نہیں۔ یہاں فی اڈاپٹر جو آپ تبدیل کر سکتے ہیں وہ اس کے لانچ آرگومنٹس اور ماحول کے ویری ایبلز ہیں۔ نوٹ کریں کہ فی اڈاپٹر ماحول کی اوور رائیڈ، اسناد حل ہوتے وقت، خاموشی سے جڑے ہوئے فراہم کنندہ اکاؤنٹ پر غالب آ جاتی ہے۔
 
-## 3. Check the server
+## 3. سرور چیک کریں
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**ترتیبات → سرور → کنکشن اور اسٹیٹس** (`/settings/server/connection`) دکھاتا ہے کہ یہ کلائنٹ کس سرور سے بات کر رہا ہے اور وہ کیا رپورٹ کرتا ہے۔
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+ہیڈلیس سرور کے لیے، `GET /healthz` بغیر کلائنٹ کے وہی معلومات ہے۔ یہ بغیر تصدیق کے اور جان بوجھ کر CORS-open ہے:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+یہ سرور کا اسٹیٹس، سیکنڈوں میں اپ ٹائم، لائیو کنکشن گنتی، بائنڈ پورٹ، بلڈ ورژن اور git SHA، ورک اسپیس اسکیما ورژن، RPC کیٹلاگ ورژن، سرور id، نام اور شناخت کا فنگر پرنٹ، کہ بائنڈ غیر محفوظ ہے یا نہیں، اور `watching` / `indexing` / `pending` گنتیوں والا ایک `codeGraph` بلاک لوٹاتا ہے۔ جب کسی کیش نے ٹریفک دیکھی ہو تو یہ ایک `caches` بلاک بھی شامل کرتا ہے؛ ایک ڈیمو سرور `demo: true` شامل کرتا ہے۔
 
-Two things worth knowing when a change "works in tests but not in the app":
+دو چیزیں جاننے کے قابل ہیں جب کوئی تبدیلی "ٹیسٹوں میں چلتی ہے مگر ایپ میں نہیں":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- ڈیسک ٹاپ سورس کے بجائے ترجیحی طور پر ایک **پہلے سے بنائی گئی** `cc_server` بائنری لانچ کرتا ہے۔ کوئی نیا RPC آپریشن یا MCP ٹول اُس وقت تک ظاہر نہیں ہوتا جب تک بائنری دوبارہ بلڈ نہ ہو، اور جب چائلڈ کا git SHA ایپ سے مختلف ہو تو بوٹ ایک وارننگ لاگ کرتا ہے۔
+- ڈیسک ٹاپ اُس سپان کیے گئے سرور کو مار دیتا ہے جو 20 سیکنڈ کے اندر اپنا تیار ہونے کا بینر پرنٹ نہ کرے، اور ایک خرابی کی اسکرین پر چلا جاتا ہے۔
 
-## 4. Check the host
+## 4. ہوسٹ چیک کریں
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**ترتیبات → سرور → تشخیص اور پرائیویسی** (`/settings/server/diagnostics`) ہوسٹ سطح کا صفحہ ہے۔ اس میں شامل ہیں:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **سینڈ باکسنگ** — ماسٹر ٹوگل، دریافت شدہ بیک اینڈ، انسٹال کی رہنمائی اور ڈیفالٹ کیپبیلٹی ٹوگلز۔ صرف دریافت شدہ بیک اینڈ سرور سے آتا ہے؛ نیچے دی گئی احتیاط دیکھیں۔ کوئی ری سیٹ کنٹرول نہیں۔
+- **سیمانٹک تلاش** — ڈیوائس پر موجود ایمبیڈنگ ماڈل کا لائف سائیکل: انسٹال شدہ، فیصد کے ساتھ ڈاؤن لوڈ ہو رہا، انسٹال نہیں، یا کوئی انسٹال خرابی۔ جب تک یہ انسٹال نہ ہو، میموری اور کوڈ تلاش صرف مطلوبہ الفاظ تک محدود رہتی ہے۔
+- **سسٹم رویہ** — ایجنٹس چلتے ہوئے کمپیوٹر کو جگائے رکھیں۔
+- **سنک انجن** — ٹکٹس، میسجنگ اور نوٹس کے لیے فی اسٹور بندش سوئچز۔ یہ مکمل اسنیپ شاٹ سبسکرپشنز پر واپسی کے ہنگامی راستے ہیں؛ کوئی تبدیلی صرف نئی سبسکرپشنز پر اثر کرتی ہے، اس لیے یہ دوبارہ لوڈ کے بعد پوری طرح لاگو ہوتی ہے۔
+- **لاگ لیول** — کسی ناکامی کو دوبارہ پیدا کرنے سے پہلے اسے بڑھائیں۔
+- **پرائیویسی** — کہ خام diff مواد ایجنٹ کے ماڈل کو بھیجا جا سکتا ہے یا نہیں اور کہ کریش رپورٹس بھیجی جاتی ہیں یا نہیں۔
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[یہ سیکشن ہوسٹ کی رپورٹ دیتا ہے اور اس کے کنٹرولز کلائنٹ سائیڈ ہیں]
+اب شناخت اور نفاذ متفق ہیں: جہاں ڈیٹیکٹر کسی نیٹو بیک اینڈ کی رپورٹ دیتا ہے، وہاں اُس ہوسٹ پر ایجنٹ رنز واقعی اُس میں لپٹے ہوتے ہیں۔ مگر اس سیکشن میں واحد زندہ چیز ڈیٹیکٹر ہی ہے۔ ماسٹر ٹوگل، بیک اینڈ پکر اور ڈیفالٹ کیپبیلٹی ٹوگلز ایسی ترجیحات ہیں جو آپ کے آلے پر محفوظ ہوتی ہیں اور سرور ان میں سے کوئی نہیں پڑھتا — سرور کا اپنا سوئچ `--sandbox` ہے (`on` بطور ڈیفالٹ، باہر نکلنے کے لیے `off`) اور جس بھی ایجنٹ کو "ورک اسپیس ڈیفالٹ استعمال کریں" پر چھوڑا گیا ہو، سرور اپنی قدامت پسند ڈیفالٹ پر واپس جاتا ہے: کوئی git push نہیں، کوئی GitHub API نہیں، کوئی ٹکٹنگ کلید نہیں، نیٹ ورک آن۔
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+تو یہاں کی وارننگ پر عمل کرنا بجا ہے، مگر عام طور پر اسی وجہ سے ایجنٹ ناکام نہیں ہو رہا ہوتا۔ یہ تصدیق کرنے کے لیے کہ سرور کس حالت میں ہے، اس کا اسٹارٹ اپ لاگ پڑھیں: یہ بیک اینڈ نوٹ کے ساتھ `agent sandbox ON`، انسٹال کی رہنمائی کے ساتھ `no OS-native agent sandbox on this host`، یا `agent sandbox DISABLED by --sandbox off` پرنٹ کرتا ہے۔ `GET /healthz` میں کوئی سینڈ باکس فیلڈ نہیں ہوتا۔
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+جہاں کوئی بیک اینڈ نہیں — Windows ہمیشہ، اور Linux یا WSL2 جب `bwrap` اور `socat` نہ ہوں — وہاں رنز سینڈ باکس شدہ **نہیں** ہوتے اور انہیں جو باندھتا ہے وہ گفتگو کا اپنا چیک آؤٹ، وہ قابلیتیں جو گیٹ کرتی ہیں کہ اُس میں کون سی اسناد بنتی ہیں، ایکشن گارڈریلز، ماحول کی صفائی اور ٹول سطح جو اس کا موڈ اجازت دیتا ہے۔
 :::
 
-## Common failures
+## عام ناکامیاں
 
-### The run never starts and the adapter shows "Not found"
+### رن شروع ہی نہیں ہوتا اور اڈاپٹر "نہیں ملا" دکھاتا ہے
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+CLI کو **سرور ہوسٹ پر** انسٹال کریں، پھر ماڈل فراہم کنندگان صفحے پر **تازہ کریں** پر کلک کریں۔ یا ایجنٹ کو بلٹ اِن اڈاپٹر پر بدل دیں، جسے کسی CLI کی ضرورت نہیں، اور اُسی صفحے پر کوئی فراہم کنندہ جوڑیں۔
 
-### The agent cannot push or open a pull request
+### ایجنٹ push یا pull request نہیں کھول سکتا
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+اس کی قابلیتیں ہی گیٹ ہیں۔ **ترتیبات → ورک اسپیس → ایجنٹس** → وہ ایجنٹ → **سینڈ باکس اجازتیں** کھولیں، سوئچ آن کریں اور **git push کی اجازت دیں** اور **GitHub API کالز کی اجازت دیں** فعال کریں۔ سوئچ کو "ورک اسپیس ڈیفالٹ استعمال کریں" پر چھوڑ دینے سے ایجنٹ کو ان میں سے کوئی نہیں ملتا۔
 
-### Semantic search returns nothing useful
+### سیمانٹک تلاش کچھ کارآمد نہیں لوٹاتی
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+**ترتیبات → سرور → تشخیص اور پرائیویسی → سیمانٹک تلاش** چیک کریں۔ جب تک ایمبیڈنگ ماڈل انسٹال نہ ہو، تلاش صرف مطلوبہ الفاظ تک محدود ہے۔ ماڈل انسٹال ہونے سے پہلے لکھی گئی قطاریں کبھی بیک فل نہیں ہوتیں، اس لیے وہ بعد میں بھی صرف مطلوبہ الفاظ تک محدود رہتی ہیں۔
 
-### The server will not boot at all
+### سرور بالکل بوٹ ہی نہیں ہوتا
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+نیٹو لائبریریاں لازمی ہیں اور کوئی کمزور موڈ نہیں۔ کوئی غائب dylib `cc_server` کو شروع ہونے سے انکار کرنے پر مجبور کرتی ہے اور خرابی میں قصوروار کا نام دیتی ہے۔ `scripts/natives/build_natives.sh` سے نیٹوز اسٹیج کریں اور سرور بائنری دوبارہ بلڈ کریں۔
 
-### An action is silently denied
+### کوئی ایکشن خاموشی سے مسترد ہو جاتا ہے
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+بغیر کسی منسلک منظور کنندہ کے `prompt` گارڈریل فیصلہ، بطور ڈیزائن مسترد ہوتا ہے۔ **ترتیبات → ورک اسپیس → ایجنٹ اجازتیں** میں ورک اسپیس کے قواعد چیک کریں۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Manage adapters and models](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
-- [Configure guardrails](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/)
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [اڈاپٹرز اور ماڈلز منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)
+- [گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/)
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)

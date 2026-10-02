@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Chatbrug
+description: Providers, commando's, inloggegevens, capaciteiten, RPC-operaties en opslag voor de chatbrug.
 slug: nl-NL/handleiding/referentie/chatbrug
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
 ## Providers
 
-| Provider | Wire value | Transport                  | Space kind |
-| -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Provider | Wire-waarde | Transport                   | Soort ruimte |
+| -------- | ----------- | --------------------------- | ------------ |
+| Slack    | `slack`     | Socket Mode (uitgaand WSS)  | `slack`      |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack is de enige provider.** `ChatProvider` is een enum met één waarde en `cc_server` registreert één plugin. Het schema, elke opzoeking en elke unieke index zijn gesleuteld op `provider`, dus id's kruisen nooit providers en er een toevoegen is een wijziging die alleen de server raakt.
 
-One provider-side app per **workspace × provider**.
+Eén app aan de providerkant per **werkruimte × provider**.
 
-## Chat commands
+## Chatcommando's
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+De commandonaam geldt per app (`cc` standaard, dus `/cc`). Een beheerder kan hem hernoemen; de brug gebruikt daarna waarmee hij het laatst is aangeroepen.
 
-| Command                               | Effect                                                        |
+| Commando                              | Effect                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (of `/cc` zonder werkwoord) | Somt op wat de bot kan                                       |
+| `/cc link <code>`                     | Wisselt een code voor eenmalig gebruik in en koppelt de chatidentiteit van de afzender |
+| `/cc ticket <title>`                  | Maakt een lokaal ticket aan, gemeld door het gekoppelde lid   |
+| `/cc ticket <title> \| <description>` | Hetzelfde, met alles na de eerste `\|` als beschrijving       |
+| Onbekend werkwoord                    | Meldt het onbekende werkwoord plus de helptekst               |
 
-Ways to reach an agent:
+Manieren om een agent te bereiken:
 
-| Gesture                    | Behavior                                                                                                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| Gebaar                        | Gedrag                                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `@bot …` in een kanaal        | Opent een Slack-thread en een bijpassende Control Center-ruimte; de agent antwoordt in de Slack-thread                     |
+| Antwoord in een overbrugde Slack-thread | Zet dezelfde Control Center-ruimte voort — geen vermelding nodig                                                  |
+| Gewoon bericht in een kanaal  | Genegeerd (niet aan de bot gericht en niet in een overbrugde Slack-thread)                                                 |
+| DM aan de bot                 | Eén Control Center-ruimte per DM-gesprek; zet een Slack-threadtitel en een status “is thinking…” terwijl de agent werkt    |
 
-## Credential fields (Slack)
+## Velden voor inloggegevens (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+Gedeclareerd door de descriptor van de provider; die genereert het verbindingsdialoogvenster en valideert de inzending.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
-| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| Veld-id              | Label                       | Verplicht | Prefix  | Waar het staat                                                 |
+| -------------------- | --------------------------- | --------- | ------- | -------------------------------------------------------------- |
+| `botToken`           | Bot-token                   | Ja        | `xoxb-` | OAuth & Permissions                                            |
+| `appToken`           | App-token                   | Ja        | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | App-configuratietoken       | Nee       | `xoxe`  | App configuration tokens op api.slack.com/apps                 |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` is het inloggegeven voor app-beheer: zonder dit werkt de verbinding, maar kan de bot niet vanuit Control Center worden aangemaakt of bewerkt. Het roteert bij elk gebruik en de geroteerde waarde wordt meteen opgeslagen.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Waarden worden getrimd, niet-gedeclareerde sleutels vallen weg en een verkeerd prefix wordt op de client en de server met dezelfde zin geweigerd. Verplichte velden moeten bij elke verbinding aanwezig zijn; een optioneel veld dat leeg blijft, behoudt wat er al was opgeslagen.
 
-## Slack app requirements
+## Vereisten voor de Slack-app
 
-Bot token scopes:
+Scopes van het bottoken:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+Gebeurtenisabonnementen van de bot:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Structurele instellingen die Control Center afdwingt wanneer het de app aanmaakt of bewerkt: Socket Mode ingeschakeld, geen request-URL, het tabblad Messages ingeschakeld en beschrijfbaar, bot `always_online`, de vereiste scopes en gebeurtenissen samengevoegd met wat de app al heeft (nooit afgetrokken) en één slash-commando met de beschrijving `File a ticket or link your Control Center account` — de markering waaraan Control Center zijn eigen commando in een geëxporteerd manifest herkent.
 
-## Connection states
+## Verbindingsstatussen
 
-| State            | Wire           | Meaning                                                         |
-| ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Status            | Wire           | Betekenis                                                        |
+| ----------------- | -------------- | ---------------------------------------------------------------- |
+| Niet verbonden    | `disconnected` | Geen inloggegevens opgeslagen voor deze werkruimte × provider     |
+| Verbinden…        | `connecting`   | Inloggegevens opgeslagen, transport kiest of kiest opnieuw verbinding |
+| Live              | `connected`    | Transport staat en ontvangt gebeurtenissen                        |
+| Verbindingsfout   | `error`        | Opgeslagen maar mislukt; de eigen fout van de provider staat ernaast |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Opnieuw verbinden gebeurt met exponentiële backoff en jitter, afgetopt op 30 seconden. Een door de provider gestarte socketrotatie maakt direct opnieuw verbinding zonder de backoff op te voeren. Een geweigerd inloggegeven (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) of een ontbrekende scope is definitief: de brug stopt met opnieuw proberen tot er nieuwe inloggegevens zijn.
 
-## Provider capabilities (Slack)
+## Capaciteiten van de provider (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+De brug is geschreven tegen het rijkste oppervlak en schaalt per capaciteit terug.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Capaciteit                | Slack  | Effect als ze ontbreekt                                                                        |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | ja     | Het hele antwoord wordt één keer geplaatst, aan het einde                                      |
+| `streamingRequiresThread` | ja     | Een antwoorddoel zonder thread-anker plaatst hele antwoorden                                   |
+| `ephemeralMessages`       | ja     | Een antwoord op een slash-commando zonder bruikbare antwoordhandle wordt weggegooid (weigeringen worden altijd in de thread geplaatst) |
+| `threadStatus`            | ja     | Geen vluchtige regel “is thinking…”                                                            |
+| `threadTitle`             | ja     | De chatthread behoudt zijn standaardtitel                                                      |
+| `slashCommands`           | ja     | Geen `/cc`-oppervlak                                                                           |
+| `taskCards`               | ja     | Alleen tekst — geen kaart boven het antwoord en geen link “View in Control Center”             |
+| `maxMessageLength`        | 39.000 | Langere antwoorden worden afgekapt, met een verwijzing naar Control Center                     |
+| `maxStreamChunkLength`    | 3.800  | Aanvullingen worden gesplitst op een alinea-, regel- of spatiegrens                            |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+Een capaciteit adverteren is die nog niet beloven: die van Slack vereist de functie Agents & AI Apps in een betaald abonnement. Een weigering op het moment van de aanroep (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) wordt onthouden voor de hele levensduur van de verbinding en verschijnt als `streamingAvailable: false`. De taakkaarten van Slack liften mee op dezelfde aanroep, dus een Slack die de weergavemodus van de kaart weigert, behoudt zijn stream en verliest alleen de kaart, één keer, voor de hele levensduur van de verbinding.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Een stream moet ook de lezer noemen voor wie hij bedoeld is. Slack vereist zowel een ontvanger als diens team om er een te openen in een **kanaal** (een DM niet) en weigert anders met `missing_recipient_user_id` / `missing_recipient_team_id` — een weigering per aanroep, dus de brug blijft het proberen en ondertussen komt de beurt binnen als één geplaatst antwoord. De ontvanger is wie het vroeg, overgenomen uit het inkomende bericht (diens team, niet dat van de app, zodat een Slack Connect-kanaal correct wordt herleid). Voor een beurt die niemand vanuit de chat is begonnen — werk dat in Control Center is gestart op een al overbrugd gesprek — is dat het lid wiens koppeling de brug heeft gemaakt; heeft die sindsdien zijn chataccount ontkoppeld, dan wordt die beurt in zijn geheel geplaatst in plaats van gestreamd.
 
-## Task cards
+## Taakkaarten
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Eén gegroepeerde kaart per agentbeurt (`task_display_mode: plan`), met een regel per stap. Elke regel is een `task_update` van `id` + `title` + `status`, plus een eenmalige `details` wanneer de gedachte klaar is. `details` en `output` met hetzelfde id worden zonder scheidingsteken aan elkaar geplakt, dus `details` worden één keer verstuurd en `output` wordt nooit gestreamd. De titel van het plan is het verzoek; het antwoord is een aparte latere aanvulling met een `markdown_text`-fragment.
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Onderdeel           | Inhoud                                                                                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Titel van het plan  | Wat er gevraagd is                                                                                                                                                            |
+| Voorbereidingsregel | `Working on it…`, dan `Cloning …`, dan `Starting the agent…` — één regel, titel vervangen                                                                                      |
+| Denkregel           | `Thinking…`, toegevoegd wanneer de agent begint te redeneren; de gedachte is de `details` van deze regel, één keer verstuurd wanneer het redeneren klaar is                   |
+| Toolregels          | Eén per tool (`Bash which swift`), uniek id zodat ze naast elkaar staan                                                                                                        |
+| Status              | Loopt terwijl die regel draait; voltooid wanneer de volgende regel begint of de beurt eindigt; fout voor mislukt, onderbroken en de beurtlimiet                               |
+| Oproep tot actie    | `View in Control Center` als afsluitende regel wanneer de beurt eindigt — afwezig terwijl het werk nog loopt en afwezig wanneer de server geen bereikbare openbare URL heeft   |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Wat een kaart nooit draagt: tooluitvoer, een argument buiten die allowlist, of wat dan ook dat uit de database is gelezen. De redeneertekst is alleen de details van de regel `Thinking…` (afgetopt op 256 tekens), niet de berichttekst. Een kaart die niets nieuws zou zeggen, wordt niet opnieuw verstuurd. Een vermelding opent de stream meteen, zodat de Slack-thread niet stil blijft; een beurt die daarna helemaal geen tekst opleverde, rondt diezelfde kaart af met een korte notitie in plaats van een tweede bericht te plaatsen. Een woordeloze beurt op een ruimte die nooit een stream heeft geopend (geen kaarten, of streamen al geweigerd) plaatst nog steeds één bericht met de voltooide kaart en de notitie.
 
-Streamed and posted cards are different payloads:
+Gestreamde en geplaatste kaarten zijn verschillende payloads:
 
-| Form     | Shape                                                | Prose                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Vorm      | Structuur                                                     | Tekst                                                    |
+| --------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| Gestreamd | `plan_update` plus `task_update`-fragmenten met als sleutel `id` | Gewone string, afgetopt op 256 tekens per fragment     |
+| Geplaatst | Een `plan`-blok dat `task_card`s omvat, met als sleutel `task_id` | Rijke tekst                                            |
 
-Failure handling:
+Afhandeling van fouten:
 
-| Situation                                    | Behavior                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| Situatie                                            | Gedrag                                                                                                                       |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| De provider weigert de kaart bij een aanvulling     | De aanvulling wordt direct opnieuw geprobeerd zonder de kaart; tekst komt nog steeds live binnen en kaarten worden weggegooid voor de hele levensduur van de verbinding |
+| De provider weigert ook de tekst                    | De stream wordt gesloten en het antwoord wordt in zijn geheel geplaatst                                                       |
+| De stream breekt af nadat een deel van het antwoord al binnen was | De stream wordt gesloten en er wordt niets opnieuw geplaatst                                                    |
 
-See [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/) for why the payload is split this way.
+Zie [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/) voor waarom de payload zo wordt opgesplitst.
 
-### Setup, before there is a turn
+### De voorbereiding, voordat er een beurt is
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+De kaart opent wanneer een vermelding wordt geaccepteerd, vóór het klonen en vóór het eerste token; de beurt die volgt neemt dezelfde kaart en stream over. De meldingen daarna komen van `SpaceProvisioningChanged` op de gebeurtenissenbus van het domein — dezelfde voortgang die de voorbereidingsbanner van de desktop van de ruimteregel leest.
 
-| Provisioning state          | Narration                                                      |
-| --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
-| `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
-| `failed`                    | `Workspace setup failed — details are in Control Center.`      |
-| `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
+| Voorbereidingsstatus         | Melding                                                        |
+| ---------------------------- | -------------------------------------------------------------- |
+| Vermelding geaccepteerd      | `Working on it…`                                               |
+| Stap `repo`                  | `Cloning <repo>…`                                              |
+| Stap `prCheckout`            | `Checking out the pull request in <repo>…`                     |
+| Stap `script`                | `Running the setup script for <repo>…`                         |
+| Stap `agent`                 | `Setting up <agent>…`                                          |
+| `provisioning`, nog geen stap | `Preparing the workspace…`                                    |
+| `ready`                      | `Starting the agent…`                                          |
+| Agent redeneert              | `Thinking…`                                                    |
+| `failed`                     | `Workspace setup failed — details are in Control Center.`      |
+| `cancelled`                  | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+Voorbereidingsmeldingen vereisen alle vier de voorwaarden:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Voorwaarde                                  |
+| ------------------------------------------- |
+| De provider geeft kaarten weer              |
+| Streamen is beschikbaar op deze verbinding  |
+| De ruimte heeft een chatverzoek onderweg    |
+| Er rapporteert daar al geen kaart een beurt |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+Het verzoek blijft onderweg tot een beurt begint of de voorbereiding mislukt. Een `ready`-gebeurtenis zonder al geopende kaart is een warme ruimte en blijft stil, en een voorbereiding waar niemand in de chat op wacht — een gesprek dat in de app is geopend, een achtergebleven gesprek dat bij het opstarten wordt hervat — levert helemaal geen kaart op.
 
-## The `/open` bounce page
+## De omleidingspagina `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+Chatproducten accepteren in een link alleen `http(s)` en niets anders, dus een oproep tot actie kan het schema van de desktopapp niet rechtstreeks noemen.
 
-| Property   | Value                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Eigenschap | Waarde                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                  |
+| Herkomst   | Afgeleid van de openbare URL van de server (`ws` → `http`, `wss` → `https`); loopback blijft behouden                                        |
+| Antwoord   | Een kleine HTML-pagina die niets cachet, naar `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` navigeert en een handmatige knop toont |
+| Validatie  | Id's moeten overeenkomen met `[A-Za-z0-9_.-]{1,128}`; al het andere is een 404                                                               |
+| Toegang    | Openbaar en inert — de pagina leest geen database en is dus geen bestaansorakel; de app die hij opent, doet de autorisatie                   |
 
-## Bot profile fields
+## Profielvelden van de bot
 
-| Field              | Limit       | Notes                                                                                             |
+| Veld               | Limiet      | Opmerkingen                                                                                       |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 tekens | Standaard `Control Center · <workspace name>`                                                     |
+| `botDisplayName`   | 1–80 tekens | Standaard `control-center`                                                                        |
+| `description`      | ≤ 140 tekens |                                                                                                  |
+| `agentDescription` | ≤ 300 tekens | Wordt boven een DM met de bot getoond                                                            |
+| `command`          | ≤ 32 tekens | Genormaliseerd: leidende slashes verwijderd, kleine letters, `[^a-z0-9_-]` verwijderd, leeg valt terug op `cc` |
+| `agentEnabled`     | —           | Of de DM- en agentervaring wordt aangeboden                                                       |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Een leeg vak betekent “laat het met rust”, niet “wis het”. De limieten zijn die van Slack, de strengste van de gemodelleerde producten.
 
-## Link codes
+## Koppelcodes
 
-| Property | Value                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Eigenschap  | Waarde                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| Lengte      | 6 tekens                                                                                   |
+| Alfabet     | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (geen `0`/`O`, `1`/`I`, `U`)                             |
+| Levensduur  | 15 minuten                                                                                 |
+| Gebruik     | Eén keer                                                                                   |
+| Opslag      | In het geheugen — een herstart van de server maakt openstaande codes ongeldig              |
+| Bereik      | Eén werkruimte en één provider; een nieuwe code aanmaken maakt de vorige van het lid ongeldig |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+Het inwisselen wordt hoofdletterongevoelig gematcht. Codes die onbekend, verlopen, van een andere werkruimte of van de verkeerde provider zijn, falen allemaal bewust op dezelfde manier.
 
-## Link methods
+## Koppelmethoden
 
-| Method | Wire    | How                                                                            |
-| ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Methode | Wire    | Hoe                                                                                          |
+| ------- | ------- | -------------------------------------------------------------------------------------------- |
+| Code    | `code`  | Het lid wisselde `/cc link <code>` in                                                        |
+| E-mail  | `email` | Het geverifieerde e-mailadres van de provider kwam overeen met een gebruiker die al lid van de werkruimte is |
 
-## RPC operations
+## RPC-operaties
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Alle zijn werkruimtegebonden. De server is stateloos, dus elke aanroep draagt zijn eigen `workspace_id` in args mee; de dispatcher weigert een werkruimtegebonden operatie die dat weglaat, voordat er een database opengaat. Inloggegevens gaan alleen _naar binnen_ — statusuitlezingen geven ze nooit terug.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
-| ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
-| `chat.providers`        | read        | `guest`                                        | —                               |
-| `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
-| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
-| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
-| `chat.setupLink`        | read        | `admin`                                        | —                               |
-| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
-| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+| Operatie                | Soort       | Min. rol                                        | Actieklassen                   |
+| ----------------------- | ----------- | ----------------------------------------------- | ------------------------------ |
+| `chat.providers`        | read        | `guest`                                         | —                              |
+| `chat.status`           | read        | `guest`                                         | —                              |
+| `chat.connect`          | mutate      | `admin`                                         | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | destructive | `admin`                                         | `secretAccess`                 |
+| `chat.listUserLinks`    | read        | `guest`                                         | —                              |
+| `chat.beginUserLink`    | mutate      | `member`                                        | —                              |
+| `chat.unlinkUser`       | mutate      | `member` voor jezelf, `admin` voor iemand anders | —                              |
+| `chat.createApp`        | mutate      | `admin`                                         | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | read        | `admin`                                         | —                              |
+| `chat.botProfile`       | read        | `admin`                                         | `networkEgress`                |
+| `chat.updateBotProfile` | mutate      | `admin`                                         | `networkEgress`                |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Leesoperaties erven de `guest`-ondergrens van hun soort; mutaties zonder expliciete ondergrens vereisen `member`.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` stelt een URL voor het aanmaken van een provider-app samen uit het botprofiel. Het declareert geen actieklasse, omdat het geen geheim leest en niets aanroept — de browser van de gebruiker zelf doet de enige aanroep.
 
-One reactive query completes the surface:
+Eén reactieve query maakt het oppervlak compleet:
 
-| Query                 | Kind  | Emits                                                    |
-| --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| Query                 | Soort | Levert                                                     |
+| --------------------- | ----- | ---------------------------------------------------------- |
+| `chat.watchUserLinks` | watch | De lijst, opnieuw gepusht telkens wanneer er een koppeling bijkomt of verdwijnt |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Hij bestaat omdat het koppelen aan de _andere_ kant gebeurt: een lid typt de code voor eenmalig gebruik in de bot, dus geen enkel antwoord van de client kan de uitkomst terugbrengen. De lijst “Gekoppelde accounts” in de instellingen en de geopende dialoog “Koppel je Slack-account” volgen hem beide, en de dialoog springt op een bevestiging op het moment dat de eigen koppeling van het lid binnenkomt.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` maakt altijd een code aan voor de eigen identiteit van de aanroeper. `chat.updateBotProfile` geeft alleen een `remaining_step` terug wanneer er nog een stap over is (meestal een herinstallatie); het ontbreken ervan betekent dat de bewerking meteen van kracht is.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` geeft één vermelding per aangeboden provider terug — de descriptor plus, als die er is, de verbindingsstatus. Alles wat de instellingen tonen, komt uit die payload, en daarom is een provider toevoegen een wijziging die alleen de server raakt.
 
-## Storage
+## Opslag
 
-| What                       | Where                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Wat                                     | Waar                                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Inloggegevens van verbindingen          | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Halfvoltooide begeleide installatie     | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| Oude Slack-bestanden                    | `<dataDir>/<workspaceId>/slack_credentials.json` en `slack_app_setup.json`, één keer gelezen en ter plaatse gemigreerd |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+Inloggegevens staan naast de database van de werkruimte, niet erin: het verwijderen van een werkruimte neemt de chattokens mee, en `workspace.export` of een back-up kopieert `workspace.db` — dus een werkruimte die je aan iemand anders geeft, bevat geen levende bottokens. Er wordt atomair weggeschreven (tijdelijk bestand plus rename) en de rechten gaan naar alleen de eigenaar.
 
-## Database tables
+## Databasetabellen
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Beide staan in de database van de werkruimte, die één samengevoegde v1-basislijn heeft — dus een uitlezing over werkruimtes heen compileert niet.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — één extern gesprek ↔ één Control Center-ruimte:
 
-| Column                                                 | Notes                                                                      |
+| Kolom                                                  | Opmerkingen                                                                |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Werkruimtebereik                                                           |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Slack-team `T…`, leeg voor providers zonder dat concept                    |
+| `external_channel_id`                                  | Slack-kanaal `C…`, groep `G…`, DM `D…`                                     |
+| `external_thread_id`                                   | Slack-threadanker, of null wanneer het hele gesprek het anker is (bot-DM's) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Uniek op `(workspace_id, provider, external_channel_id, external_thread_id)`, met een partiële index die hetzelfde afdwingt voor null-thread-id's (SQLite behandelt NULL's als verschillend).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — één extern lid ↔ één Control Center-gebruiker:
 
-| Column                                 | Notes                                           |
+| Kolom                                  | Opmerkingen                                     |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Werkruimtebereik                                |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Slack-lid `U…`                                  |
+| `user_id`                              | Control Center-gebruiker (globaal, dus geen foreign key) |
+| `method`                               | `code` of `email`                               |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Uniek op `(workspace_id, provider, external_team_id, external_user_id)` en op `(workspace_id, provider, user_id)` — attributie met één waarde in beide richtingen, terwijl één persoon bij meerdere providers gekoppeld kan zijn.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Een koppeling is identiteitsherleiding, **geen** toegangsverlening: het lidmaatschap wordt bij elk inkomend event opnieuw gecontroleerd, dus een koppeling naar een lid dat inmiddels is verwijderd, leidt tot een weigering.
 
-## Space kind and message metadata
+## Soort ruimte en berichtmetadata
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+Een overbrugde ruimte wordt aangemaakt met de `SpaceKind` van de provider (`slack`). Hij gedraagt zich als een gewone, mensgerichte ruimte — gemeld en ingedeeld zoals `topic` — en `isExternalChat` is de controle waar elk gedrag (spiegelen, badges, retentie) doorheen gaat.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Elk bericht dat de brug binnenbrengt, draagt een stempel `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+Het stempel is ook de echobewaking: de uitgaande spiegel slaat elk bericht met dat stempel over, en dat is wat voorkomt dat een inkomend chatbericht direct wordt teruggeplaatst.
 
-## Relay behavior
+## Gedrag van het doorgeefluik
 
-| Behavior                               | Detail                                                                                                         |
+| Gedrag                                 | Details                                                                                                        |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Wat naar buiten gaat                   | Alleen de **tekst** van de agent, plus de statusregel van de taakkaart. Redeneertekst en tooluitvoer blijven in Control Center |
+| Streamritme                            | Afgeknepen tot één flush per seconde terwijl een beurt loopt; de kaart en de tekst die hij toelicht, gaan mee in dezelfde aanroep |
+| Menselijke berichten getypt in Control Center | Gespiegeld naar de gekoppelde thread, met de weergavenaam van de auteur ervoor                          |
+| Lege beurten                           | Gemeld als een korte notitie (run mislukt, onderbroken, of gestopt op zijn beurtlimiet) in plaats van stilte  |
+| Deduplicatie                           | Gesleuteld op het eigen event-id van de provider; de laatste 512 worden onthouden                              |
+| Voordeur-agent                         | Een nieuw overbrugd gesprek wekt de CEO-agent van de werkruimte, anders zijn eerste agent, anders niemand      |
+| Naamgeving van ruimtes                 | `#channel · <request>` voor een Slack-kanaalthread, `Slack DM · <request>` voor een DM, titels afgetopt op 48 tekens |
+| Foutisolatie                           | Eén slecht event haalt de brug nooit neer; de verbinding blijft elk ander gesprek bedienen                     |
 
-## See also
+## Zie ook
 
-- [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/)
-- [Link your Slack account](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
-- [Customize the chat bot](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
-- [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/)
-- [Guardrails](/nl-NL/handleiding/concepten/beveiligingen/) for the action classes the ops declare
+- [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)
+- [Je Slack-account koppelen](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
+- [De chatbot aanpassen](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
+- [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/)
+- [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) voor de actieklassen die de operaties declareren

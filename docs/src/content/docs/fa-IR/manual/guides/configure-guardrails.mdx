@@ -1,152 +1,154 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: پیکربندی گاردریل‌ها
+description: قواعد اجازه، ابتدا بپرس و رد را برای کنش‌های عامل تعیین کنید، آن‌ها را با کاوشگر «اگر…؟» بیازمایید و درجهٔ خودمختاری هر فضا را تنظیم کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/پیکربندی-گاردریلها
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+این راهنما نشان می‌دهد چگونه گاردریل‌ها را پیکربندی کنید: قواعدی که تعیین
+می‌کنند کنش یک عامل اجرا می‌شود، نخست درخواست تأیید می‌کند، یا رد می‌شود.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+گاردریل‌ها سیزده کلاس اثری را پوشش می‌دهند که هر ابزار تغییردهنده اعلام می‌کند.
+آن‌ها سمت سرور، درست در نقطه‌ای که ابزار فراخوانی می‌شود اعمال می‌شوند، هرگز با
+دستوری در یک پرامپت.
 
-## Set a decision for an action class
+## تنظیم یک تصمیم برای یک کلاس کنش
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. به **تنظیمات → فضای کاری → مجوزهای عامل** بروید
+2. با کنترل بخش‌بندی‌شده یک محدوده انتخاب کنید: **فضای کاری**، **عامل** (سپس
+   عامل را انتخاب کنید)، یا **فضا** (سپس فضا را انتخاب کنید)
+3. روی ردیف کلاس کنش، **اجازه**، **ابتدا بپرس** یا **رد** را انتخاب کنید
+4. برای حذف قاعده‌ای که گذاشته‌اید، دکمهٔ بازنشانی‌ای را بزنید که در انتهای همان
+   ردیف ظاهر می‌شود (**پاک کردن تا مقدار ارثی**) — تصمیم به محدودهٔ گسترده‌تر
+   بازمی‌گردد
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+هر ردیف تصمیم مؤثر را به‌صورت یک برچسب وضعیت و یک نشان برای منشأ آن نمایش
+می‌دهد: **این محدوده**، **به ارث رسیده** یا **پیش‌فرض داخلی**. ماتریس در حالت
+عامل (`chat`) حل می‌شود، پس **پیش‌تنظیم حالت** هرگز اینجا ظاهر نمی‌شود — برای
+دیدن آن لایه، کاوشگر «اگر…؟» را با یک حالت فقط‌خواندنی انتخاب‌شده اجرا کنید.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+نوشتن یک قاعده به نقش `admin` نیاز دارد. خواندن ماتریس چنین نیازی ندارد.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+چک‌پوینت: در محدودهٔ فضای کاری، **پوش به یک ریموت** را روی **رد** بگذارید، سپس
+کاوشگر «اگر…؟» زیر را روی `git push origin main` اجرا کنید. نتیجه `deny` را با
+منبع `workspace` نشان می‌دهد.
 
-## Understand how a decision is resolved
+## درک اینکه یک تصمیم چگونه حل می‌شود
 
-Resolution is **specificity first, then restrictiveness**:
+حل به این ترتیب است: **نخست خاص‌بودن، سپس محدودکنندگی**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. قواعد **فضا**، سپس **عامل**، سپس **فضای کاری**. نخستین محدوده‌ای که قاعده‌ای
+   منطبق دارد تصمیم می‌گیرد و حل در همان‌جا می‌ایستد
+2. اگر هیچ قاعده‌ای منطبق نشود، **پیش‌تنظیم حالت** اعمال می‌شود — یک حالت
+   فقط‌خواندنی (plan، review، orchestrate) یازده کلاس از سیزده کلاس را رد می‌کند
+3. اگر حالت چیزی برای گفتن نداشته باشد، **پیش‌فرض داخلی** اعمال می‌شود
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+در یک محدودهٔ واحد، یک قاعدهٔ فرمان بر پایهٔ بلندترین پیشوند منطبق حل می‌شود و
+یک تعارض با همان اندازه خاص‌بودن، **محدودکننده‌ترین** را برمی‌گزیند — رد از
+ابتدا بپرس و ابتدا بپرس از اجازه قوی‌تر است. کنشی که چند کلاس اعلام می‌کند، هر
+یک را مستقل حل می‌کند و سپس آن‌ها را به محدودکننده‌ترین شکل ترکیب می‌کند.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[اجازه بر رد نمی‌برد]
+قاعده‌ای باریک‌تر بر پایهٔ خاص‌بودن برنده می‌شود و تساوی با محدودکنندگی شکسته
+می‌شود — پس یک **اجازه** در محدودهٔ فضای کاری، یک **رد** را در هیچ‌جا باطل نمی‌کند.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+تصمیم **ابتدا بپرس** یک پرامپت تأیید بالا می‌آورد که هر کلاسی را که به `prompt`
+رسیده است پوشش می‌دهد. **اگر تأییدکننده‌ای متصل نباشد، رد می‌شود** — هم برای
+فرمان‌های شل و هم برای فراخوانی‌های ابزار هارنس. این عمدی است: یک اجرای بدون
+دروازه بدتر از یک اجرای ردشده است.
 
-### Action classes and built-in defaults
+### کلاس‌های کنش و پیش‌فرض‌های داخلی
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| کلاس کنش                     | پیش‌فرض داخلی |
+| ---------------------------- | ------------- |
+| حذف یک فایل                  | ابتدا بپرس    |
+| نوشتن بیرون از worktree      | اجازه         |
+| ایجاد یک کامیت               | اجازه         |
+| پوش به یک ریموت              | ابتدا بپرس    |
+| باز کردن یک pull request     | ابتدا بپرس    |
+| انتشار یک بازبینی یا ادغام   | ابتدا بپرس    |
+| نوشتن در یک ردیاب خارجی      | ابتدا بپرس    |
+| دسترسی به شبکه               | اجازه         |
+| خواندن یک راز                | اجازه         |
+| نصب یک بسته                  | اجازه         |
+| اجرای یک فرایند              | اجازه         |
+| تغییر ساختار فضای کاری       | اجازه         |
+| راندن یک محفظه (ریگ)         | اجازه         |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+این طبقه‌بندی بسته است. یک ابزار تازه که بدون اعلام کلاس‌هایش عرضه شود، در CI
+در یک آزمون یک‌طرفهٔ سخت‌گیرانه شکست می‌خورد، پس هیچ ابزاری با مجموعهٔ اثرِ خالی
+و بی‌صدا از راه نمی‌رسد.
 
-## Test a rule with the what-if probe
+## آزمودن یک قاعده با کاوشگر «اگر…؟»
 
-Before changing a rule, check how the current policy already resolves it.
+پیش از تغییر یک قاعده، بررسی کنید که سیاست فعلی آن را چگونه حل می‌کند.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. در همان صفحه، تا **اگر…؟** پایین بروید
+2. یک **کنش** انتخاب کنید (یکی از سیزده کلاس)
+3. به‌صورت اختیاری **فرمان** (برای نمونه `git push origin main`)، **عامل**،
+   **فضا** و **حالت** را پر کنید
+4. نتیجه را بخوانید: تصمیم، دلیل و **منبع:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+کاوشگر همان حل‌کننده‌ای را اجرا می‌کند که مسیر اعمال استفاده می‌کند، در برابر
+قواعد زندهٔ شما، پس پاسخ دقیق است. اگر غافلگیرتان کرد، قاعده‌ای را در ماتریس
+بالا تغییر دهید و دوباره کاوش کنید.
 
-## Set a space's autonomy dial
+## تنظیم درجهٔ خودمختاری یک فضا
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+این درجه به‌ازای هر عامل در هر فضا تنظیم می‌شود و با قواعد ترکیب می‌شود، نه
+اینکه جای آن‌ها را بگیرد.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. فضا را باز کنید
+2. از سرصفحهٔ فضا، **مدیریت مشارکت‌کنندگان** را باز کنید
+3. زیر **خودمختاری** روی ردیف عامل، یک سطح انتخاب کنید:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| سطح                   | اثر                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| **پیش‌فرض**           | بدون تنظیم فضا — مانند **عمل با تأیید** رفتار می‌کند                                               |
+| **فقط پیشنهاد**       | هر ابزار دروازه‌دار یکسره رد می‌شود، با پیامی که به عامل می‌گوید به‌جایش کنش را پیشنهاد کند       |
+| **عمل با تأیید**      | کنش‌های پرخطر به دروازهٔ تأییدِ رد‌پیش‌فرض می‌خورند                                                 |
+| **عمل آزاد**          | هر چیزی را که به یک رد سخت نرسیده باشد از پیش تأیید می‌کند                                          |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[عمل آزاد هر پرامپت را می‌بلعد]
+تحت **عمل آزاد**، تصمیم **ابتدا بپرس** بدون پرسیدن از شما اعطا می‌شود. تنها یک
+`deny` — از یک قاعده، از پیش‌تنظیم حالت، یا از یک پیش‌فرض داخلی — هنوز مسدود
+می‌کند. وقتی فضا را زیر نظر دارید به آن رجوع کنید، نه به‌عنوان پیش‌فرض.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+این درجه فقط به هارنس داخلی می‌رسد. آداپتور Claude Code ابزارهای خودش را بیرون
+از این دروازه اجرا می‌کند.
 
-## Know where guardrails do not reach
+## بدانید گاردریل‌ها کجا نمی‌رسند
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+جدول **کجا قواعد اعمال می‌شوند** در پایین همان صفحه، نسخهٔ درون‌برنامه‌ای همین
+است: به‌ازای هر کلاس اثر، می‌گوید هر اجراکننده آن را در دروازهٔ سیاست می‌گیرد،
+به سندباکس واگذار می‌کند، یا اصلاً نمی‌تواند رهگیری‌اش کند.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سیاستهای-سندباکس/).
+- **آداپتور Claude Code** روی فراخوانی‌های ابزار خودش دروازه‌گذاری نمی‌شود.
+  Claude Code با `--dangerously-skip-permissions` اجرا می‌شود، پس فراخوانی‌های
+  خواندن، نوشتن، ویرایش و bash آن هرگز از نگهبان نمی‌گذرند. آنچه برای این
+  آداپتور دروازه‌گذاری می‌شود، سطح ابزار MCP است که به آن بازمی‌گردد و فرمان
+  شلی است که Control Center برای اجرای آن می‌سازد.
+- **فعل خروجی خودِ یک حالت** (`submit_plan`، `propose_orchestration`) سنجاق شده
+  است و هرگز نمی‌تواند رد شود — در غیر این صورت یک حالت ساختاراً نمی‌تواند تنها
+  تحویل‌دادنی‌اش را تولید کند.
+- **اینکه سندباکس پشتیبان این قواعد باشد به میزبان بستگی دارد.** جایی که
+  `cc_server` بک‌اندی پیدا کند، CLI مربوط به Claude Code و ابزار `bash` هارنس را
+  می‌پیچد، پس قاعده‌ای که شما ننوشته‌اید هم هنوز کف سیستم‌عاملی زیر خود دارد. روی
+  **ویندوز هیچ‌کدام نیست** و روی Linux یا WSL2 بدون `bwrap` و `socat` هم
+  هیچ‌کدام نیست — آنجا گاردریل‌ها به‌علاوهٔ سطح ابزار حالت، تمام اعمال‌اند، نه خط
+  دفاعی دوم آن. با
+  [پیکربندی سیاست‌های سندباکس(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سیاستهای-سندباکس/) بررسی کنید در کدام حالت قرار دارید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Configure sandbox policies](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سیاستهای-سندباکس/)
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
+- [پیکربندی سیاست‌های سندباکس(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سیاستهای-سندباکس/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [مدیریت آداپتورها و مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Guardrails — one policy for every mutating action](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)
+- [گاردریل‌ها — یک سیاست برای هر کنش تغییردهنده(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/)

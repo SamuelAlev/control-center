@@ -1,125 +1,129 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Logg inn teamet med SSO
+description: Koble Okta (SAML) til Control Center-serveren din og gjennomfør en pålogging fra ende til annen.
 slug: nb-NO/handbok/veiledninger/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Dette bygger du
 
-By the end of this tutorial, you will have:
+Når du er ferdig med denne veiledningen, har du:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- en SAML-tilkobling mellom Control Center-serveren din og en
+  identitetsleverandør (vi bruker Okta som eksempel),
+- én bruker som provisjoneres automatisk ved første innlogging, og
+- en medlemskapspolicy for arbeidsområder som du selv har valgt.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Du trenger en server du administrerer (**servereieren** — den som drifter
+installasjonen) og en IdP-applikasjon du kan konfigurere. Sett av 20
+minutter.
 
-## 1. Open the single sign-on settings
+## 1. Åpne innstillingene for enkel pålogging
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Logg inn i Control Center, og gå til
+**Innstillinger → Server → Enkel pålogging**. Skjermen veksler mellom
+**SAML** og **OpenID Connect**, i tillegg til et kort for
+**Brukerprovisjonering (SCIM)**. Hold deg til SAML.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Alt på denne skjermen gjelder hele serveren: én IdP autentiserer menneskene i
+alle arbeidsområdene, så bare servereieren kan redigere det.
 
-## 2. Paste the IdP metadata
+## 2. Lim inn IdP-metadataene
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+I Okta åpner du fanen **Sign On** for appen din og kopierer metadata-XML-en
+(eller laster den ned og limer inn innholdet i filen). Tilbake i Control
+Center limer du den inn i **IdP-metadata-XML** og trykker **Test tilkobling**.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+Varselet viser IdP-ens påloggingsendepunkt — bevis på at metadataene ble
+tolket, at sertifikatet ble lest, og at serveren kan bygge en
+påloggingsforespørsel mot det (testen dekker alt unntatt
+nettleserrundturen). Hvis den mislykkes, var ikke XML-en en fullstendig
+`EntityDescriptor` (SAML-fanen i Okta kaller den «Metadata URL»; åpne URL-en
+og kopier det den viser). Den samme knappen på **OpenID Connect** sjekker
+utstederens discovery-dokument i stedet. Vil du også fange opp et sertifikat
+som er i ferd med å utløpe og se om IdP-en kjenner igjen Control Center,
+bruker du [sjekkeren i steg 6](#6-sjekk-det-fra-denne-siden).
 
-## 3. Register Control Center at the IdP
+## 3. Registrer Control Center hos IdP-en
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Trykk **Kopier SP-metadata** og gi den til den som konfigurerer Okta-siden
+(eller les opp de to verdiene de spør om):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+URL-ene utledes fra origin-en brukernes nettlesere når. Hvis serveren kjører
+bak en tunnel eller en omvendt proxy, må du sørge for at origin-en er stabil
+(Innstillinger → Server → Tilkobling og status → Del denne serveren viser den
+offentlige URL-en) — eller pinn entity-ID-en eksplisitt i feltet
+**SP entity ID**.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[Bak NAT?]
+SAML-pålogging trenger **ikke** en offentlig IP eller et domene: IdP-en
+kobler aldri til serveren din — brukerens nettleser frakter rundturen, så
+localhost, LAN, VPN, Tailscale eller en tunnel fungerer alle. To ting du må
+holde styr på:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim)).
+- origin-en nettleseren bruker, må **samsvare** med ACS-URL-en / entity-ID-en
+  som er registrert hos IdP-en (pinn entity-ID-en hvis brukerne når serveren
+  under mer enn én origin),
+- **SCIM-provisjonering er unntaket** — IdP-en kaller serveren din direkte,
+  så den trenger en tunnel eller en offentlig URL
+  ([provisjoner brukere med SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Velg hva en pålogging gir
 
-Two policies decide what a first login does:
+To policyer avgjør hva en første pålogging gjør:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Legg brukere til hvert arbeidsområde ved første innlogging** — la den stå
+  på for en enkelteam-installasjon der SSO betyr tillit. Slå den av når flere
+  team eller kunder deler serveren: hver nykommer trenger da en eksplisitt
+  invitasjon til arbeidsområdet, som er det tryggere standardvalget.
+- **Provisjoner ukjente brukere ved første innlogging** — på som standard; slå
+  den av for å avvise alle hvis konto ikke allerede finnes.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Du kan også koble et attributt som bærer gruppenavn (Oktas heter vanligvis
+`groups`) og oversette grupper til roller med koblingen — for eksempel
+`{"platform-leads": "admin"}`. SSO kan aldri gi eierrollen.
 
-## 5. Enable and take a login
+## 5. Slå på og gjennomfør en pålogging
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Slå på **Bruk SAML til innlogging**, trykk **Lagre tilkobling**, og åpne
+deretter et privat nettleservindu på `https://<your-server>/saml/login`. Logg
+inn hos Okta, og du lander tilbake i nettklienten — innlogget, med kontoen
+opprettet og medlemskapet tildelt i henhold til policyen du valgte.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Det samme inngangspunktet vises på koblingsskjermen på nettet (**Logg inn med
+SAML**) i det du skriver inn serveradressen — skjemaet tilpasser seg det
+serveren tilbyr (OpenID Connect viser **Logg inn med OpenID Connect**).
+Knappen åpner innlogging i en **ny fane**; når rundturen er fullført, henter
+den ventende fanen økten automatisk. Oppsettskjermen for server i
+skrivebordsappen gjør det samme: skriv inn server-URL-en, og det vises en
+**Logg inn med SAML**-knapp som åpner nettleseren din, og appen logger inn når
+rundturen er fullført.
 
-## 6. Check it from this page
+## 6. Sjekk det fra denne siden
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Før du ruller ut SSO, eller når en pålogging mislykkes, kan du sjekke delene
+her. Sjekkeren kjører helt i nettleseren din: den leser metadataene du limer
+inn i denne fanen, og bruker de samme reglene som serveren. Oppgir du
+serveradressen din, spør den også serveren om SAML-pålogging er slått på.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Den fanger opp det **Test tilkobling** i appen ikke kan se: et
+signeringssertifikat som nærmer seg utløp, en IdP som krever signerte
+forespørsler, og med testpåloggingen hvorvidt IdP-en kjenner igjen Control
+Center i det hele tatt.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Neste steg
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/nb-NO/handbok/slik-gjor-du/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/nb-NO/handbok/konsepter/sso).
+- Gi IdP-en livssykluskontroll også:
+  [provisjoner og deprovisjoner brukere med SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim).
+- IdP-en din snakker OpenID Connect i stedet for SAML?
+  [Koble til en OpenID Connect-leverandør](/nb-NO/handbok/slik-gjor-du/sso-oidc).
+- Nysgjerrig på hva nettleserrundturen egentlig verifiserer?
+  [Hvordan enkel pålogging virker](/nb-NO/handbok/konsepter/sso).

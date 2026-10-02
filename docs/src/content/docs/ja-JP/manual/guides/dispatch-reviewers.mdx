@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: レビュアーエージェントをディスパッチ
+description: PR ビュー、MCP ツール、またはパイプラインステップから、専門のレビュアーエージェントを PR に送り込みます。
 slug: ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+このガイドでは、プルリクエストをレビューするためにレビュアーエージェントを
+ディスパッチする方法を説明します。
 
-## From the PR view
+## PR ビューから
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. PR を開き、**概要**タブに移動します
+2. ⋯ オーバーフローメニューを開き、**AIに質問**を選択します
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+これにより、シード済みの `pr_review` パイプラインが開始されます。このパイプラインは
+PR のレビュースペースを開き、ワークスペースのレビューレベルに応じたレビュアーを
+ディスパッチし — デフォルトでは 3 名（シード済みの **qa**、**architect**、
+**engineer** エージェント）— その後、リードエージェントに統合させます。この経路では
+ロールを選択できません。どのロールを実行するか、各ロールがどのファイルを見るかを
+制御するには、以下で説明する MCP ツールまたはパイプラインステップを使用してください。
 
-## Via the `dispatch_reviewers` MCP tool
+## `dispatch_reviewers` MCP ツールを使う
 
-Call it from inside an existing review space:
+既存のレビュースペース内から呼び出します:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,116 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`、`workspace_id`、`reviewers` はすべて必須です。各レビュアー指定は
+`role` に加えて、省略可能なファイル glob の `scope` と、デフォルトのブリーフを
+置き換える `prompt_override` を取ります。省略可能な `concurrency`（1〜8）は並列
+ディスパッチの同時実行数に上限を設けます。省略した場合は、ワークスペースの
+`review_concurrency` 設定が適用されます（デフォルト 3、**設定 → ワークスペース →
+全般**で設定）。
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+このツールは即座に、`dispatched` と `unmatched` のリストを返します。ディスパッチ
+された各レビュアーは参加者としてスペースに追加され、システムメッセージで通知され、
+そのブリーフとともにディスパッチされます。指摘はそのスペースに `review_node`
+メッセージとして届きます。
 
-## From a pipeline step
+## パイプラインステップから
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+**設定 → ワークスペース → パイプラインテンプレート**を開き、テンプレートを開いてから、
+次の操作を行います:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. パレットから **Reviewer (prompt)** ノードを追加します
+2. ディスパッチするエージェントを選び、上流の出力に `{{key}}` プレースホルダーを
+   使ってレビュアープロンプトを書きます（例えば `{{repo_local_path}}`、
+   `{{pr_number}}`）
+3. 出力キー（デフォルトは `reviewer_findings`）を設定して、下流のステップが指摘を
+   読み取れるようにします
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+このステップはエージェントをディスパッチし、その実行が終了するまで中断します。
+その後、エンジンはその実行の `submit_output` ペイロードを、ノードの出力キーの下で
+パイプライン状態に取り込みます。（パレットの説明には今もこのステップが
+`complete_task` 呼び出しを待つと書かれていますが、そのツールは存在しません。この
+文字列は無視してください。）
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+複数のレビュアーノードを同じ上流ステップに接続してファンアウトし、**Consolidate
+(join)** ノードでそれらの出力を統合します。
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+エディターは隠れた終端を到達可能なすべてのシンクに再接続するため、シード済みの
+Step の後に追加したノードも実行されます。同じ上流ステップに接続されたファンアウト
+ノードは並列に実行されます。
 
-## Automatic dispatch on a new PR
+## 新しい PR での自動ディスパッチ
 
-To have a review pipeline fire by itself:
+レビューパイプラインを自動で発火させるには:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. **設定 → ワークスペース → パイプラインテンプレート**でテンプレートを開きます
+2. ノードライブラリのトリガーセクションから **PR が公開**または**外部 PR が
+   オープン**をキャンバスにドラッグします（または **トリガーを追加**のゴースト
+   タイルから選択します）
+3. 新しいノードを選択し、インスペクターで**有効**をオンにしてから、テンプレート
+   を有効にします
 
-Two events matter here and they are not interchangeable:
+ここでは 2 つのイベントが重要で、これらは互いに置き換えできません:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| イベント               | 発火するタイミング                                                                                                        | ペイロードのキー                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `PullRequestPublished` | PR が **Control Center 経由で**オープンされた — コンポーズ画面、またはエージェントが `pr_lifecycle.publish` を呼び出した場合 | `pr_id`、`workspace_id`、`repo_owner`、`repo_name`            |
+| `ExternalPrDetected`   | PR ポーリングサービスが、GitHub 上で直接オープンされた PR を検出した                                                       | `repo_owner`、`repo_name`、`pr_number`、`pr_title`、`author`  |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+github.com でオープンされた PR は `PullRequestPublished` を発生させないため、その
+イベントだけに接続されたテンプレートはそれを認識しません。また、
+`PullRequestPublished` は `pr_number` を持ちません — スクリプトやプロンプトで
+`{{pr_number}}` を参照するステップには、`ExternalPrDetected` から、あるいはそれを
+供給する手動実行から入力する必要があります。
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+チェックポイント: 有効化した後、**パイプライン**を開き、次に条件に一致する PR で
+実行が表示されることを確認します。無効のままにしたテンプレートは、そのトリガーが
+何も起こさずに発火します — エンジンは無効なテンプレートを拒否し、実行を開始せずに
+戻ります。
 
-## How a role is matched to an agent
+## ロールがエージェントにマッチされる仕組み
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` は、要求された各ロールラベルに対してワークスペース内のすべての
+エージェントを、大文字と小文字を区別せずにスコアリングします:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| 一致                             | スコア |
+| -------------------------------- | ------ |
+| ロールラベルを含むスキル         | +3     |
+| ロールラベルを含むタイトル       | +2     |
+| ロールラベルを含むエージェント名 | +1     |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+スコアは累積され、合計が最も高いものが優先されます（同点の場合は最初に見つかった
+候補）。どの候補も 0 を超えるスコアにならない場合、その指定はディスパッチされずに
+ツールの `unmatched` リストとして返されます — つまり、誰もマッチしないロールは
+報告され、黙ってスキップされることはありません。
 
-## The review space
+## レビュースペース
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+PR が持つレビュースペースは厳密に **1 つ**だけで、レビュアーごとに 1 つではありません。
+これは `pr.ensureSpace` によって冪等に作成され、`ReviewSpaceAssociation` を通じて PR に
+リンクされ、PR のヘッド ref に対してプロビジョニングされます。ディスパッチされた
+すべてのレビュアーはそのスペースに参加し、その `review_node` の指摘をそこに投稿します。
+これが指摘を比較可能にし、リードエージェントがそれらをまたいでコンセンサスに到達
+できるようにします。
 
-## Monitor the dispatch
+## ディスパッチを監視する
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+ディスパッチされた各レビュアーには、それぞれ独自の `AgentRunLog` が付きます。進捗は
+次の場所で確認できます:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **レビュースペース** — 指摘がライブで流れ込みます
+- PR の**レビュー**タブ — レビューのステータスバーと判定を表示します
+- **オブザーバビリティ → ライブ**（`/workspaces/:id/observability`）— 実行ごとの
+  ステータス、ライブの経過時間、トランスクリプトドロワー、強制終了コントロールを
+  備えたエージェント名簿です。これ用のキーボードショートカットはありません —
+  サイドバーのフッターから開きます。
 
-## Related guides
+## 関連するガイド
 
-- [Use AI-powered review](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/)
-- [Review and merge a PR](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
-- [Set up pipeline triggers](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
+- [AI レビューを使う](/ja-JP/マニュアル/ハウツーガイド/ai-レビュー/)
+- [PR のレビューとマージ](/ja-JP/マニュアル/ハウツーガイド/pr-レビューとマージ/)
+- [パイプライントリガーを設定](/ja-JP/マニュアル/ハウツーガイド/パイプライントリガー/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [AI review](/ja-JP/マニュアル/コンセプト/ai-レビュー/)
-- [Pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/)
+- [AI レビュー](/ja-JP/マニュアル/コンセプト/ai-レビュー/)
+- [パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)

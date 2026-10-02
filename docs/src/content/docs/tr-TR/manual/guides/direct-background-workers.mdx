@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Arka plan worker’larını yönetme
+description: İşi kendiniz yapmayı bırakıp onu paralel olarak yapan birkaç ajanı yönlendirmeye geçmek için vibe modunu kullanın.
 slug: tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Bu kılavuz, bir konuşmayı worker olarak değil bir **yönlendirici** olarak nasıl yürüteceğinizi gösterir: oturum okur ve doğrular, düzenlemeleri ise arka plan ajanları yapar.
 
-## What changes when you type `/vibe`
+## `/vibe` yazdığınızda ne değişir
 
-Two things, and only the first is enforced by the machinery:
+İki şey değişir ve bunlardan yalnızca ilki mekanizma tarafından uygulanır:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Oturumun kendi araçları salt okunura düşer**, artı beş worker fiili. Depoyu etkileyebilmesinin tek yolu bir worker üzerindendir ve ne olduğunu öğrenebilmesinin tek yolu da bir worker'ın dokunduğu dosyaları okumasıdır.
+2. **Ona inanarak değil, okuyarak doğrulaması söylenir.** Bir worker'ın raporu, ne yaptığına dair bir iddiadır; işe yaradığının kanıtı değildir.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+Asıl yükü taşıyan ilkidir. Hâlâ grep yapabilen ve düzenleme yapabilen bir yönlendirici, baskı altında işi kendisi yapar; bu, bu desenin önlemek için var olduğu başarısızlık modudur.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Worker'lar boş başlar
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Bir worker konuşmanızı hiç görmedi ve hiçbir zaman da görmeyecek. Brifing onun tüm bağlamıdır.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+Deseni ucuz tutan şey budur — yönlendiricinin geçmişini taşıyan yirmi worker, yönlendiricinin bağlamının yirmi katına mal olurdu — ve aynı zamanda brifing yazmayı zorlaştıran tek şeydir. "Şimdi diğerini de yap" ifadesi yönlendirici için eksiksiz bir talimat gibi, yepyeni bir oturum içinse hiçbir şey ifade etmez.
 
-A good brief names files, commands and the definition of done:
+İyi bir brifing dosyaları, komutları ve tamamlanma tanımını adlandırır:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> `lib/features/auth/` içinde, `SessionStore.read(key)` çağrılarının her birini `SessionStore.get(key)` ile değiştirin. Yeni yöntem `Future<String?>` döndürürken eskisi `String?` döndürüyordu, bu yüzden çağıranların `await` kullanması gerekiyor. Bitirdiğinizde `fvm flutter analyze lib/features/auth` çalıştırın ve düzeltemediğiniz hataları bildirin.
 
-## The five verbs
+## Beş fiil
 
-| Verb         | What it does                                            |
+| Fiil         | Ne yapar                                                |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Bir worker'ı bir brifingle başlatır. **Hemen döner.**     |
+| `vibe_list`  | Herkes için kademe, durum, geçen süre ve son sonuç       |
+| `vibe_send`  | Turunu bitirmiş bir worker için bir takip turu           |
+| `vibe_wait`  | Bir worker sonuçlanana kadar bekler                      |
+| `vibe_kill`  | Birini durdurur                                          |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Başlatma tasarım gereği asenkron. Her başlatmada bloke olan bir yönlendirici, worker'ları tek tek çalıştırıyordur; bu da zaten kendi yaptığı işi daha yavaş yapmanın bir yoludur. `vibe_wait` komutunu yalnızca belirli bir yanıt olmadan gerçekten ilerleyemediğinizde kullanın.
 
-## Two tiers
+## İki kademe
 
-| Tier   | For                                                              |
+| Kademe | Şunun için                                                       |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Net bir tanımlamaya sahip mekanik iş — düzenlemeler, yeniden adlandırmalar, taslaklar, komut çalıştırma |
+| `good` | Tasarım, muhakeme ya da bir `fast` worker'ın ürettiğini inceleme  |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Yaygın bir biçim, `fast` worker'ları birbirinden bağımsız dosyalara dağıtmak ve ardından toplu olarak yaptıklarını incelemek için bir `good` worker başlatmaktır.
 
-## Verifying
+## Doğrulama
 
-This is the part that decides whether the pattern is worth anything.
+Desenin bir işe yarayıp yaramadığını belirleyen kısım burasıdır.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Ardından **adlandırdığı dosyaları okuyun**. Yönlendiricinin elinde `read`, `search`, `lsp` ve `ast_grep` var; bunları tutmanın bütün amacı bu. Raporu olduğu gibi kabul eden bir yönlendirici, diğer ajanların iyimserliğini özetleyen bir özetleyicidir.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+Bir worker turundan sonra `lsp(action: "diagnostics", file: "*")` genellikle en hızlı tek kontrolüdür.
 
-## When a worker loses the thread
+## Bir worker ipin ucunu kaçırdığında
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Onu durdurun ve yeniden brifing verin. Yeni ve düzeltilmiş bir brifing, bir tartışmadan daha ucuza gelir; `vibe_send` ise yalnızca turunu çoktan bitirmiş bir worker üzerinde çalışır.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Sınırlar
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Sekiz eşzamanlı worker.** Bu bir harcama tavanıdır, teknik bir sınır değil: her biri tam bir model oturumudur ve yirmi tanesini dağıtan bir yönlendirici, hepsinin ne yaptığını takip etmeyi bırakmıştır.
+- **Hiçbir worker moddan daha uzun yaşamaz.** Çalıştırma bittiğinde hepsi durdurulur ve transkript kaç tane olduğunu söyler. Konuşma ilerledikten sonra hâlâ dosya düzenleyen bir arka plan ajanı, bunun asla yaşayamayacağı tek arızadır.
+- **Worker'lar altta sıradan alt ajanlardır.** Aynı derinlik sınırı, aynı koruma politikası, aynı çalıştırma günlüğü alt kaydı. Vibe, onları kimin sürdüğünü değiştirir, ne yapmalarına izin verildiğini değil — bu yüzden bir worker'ın write ve exec çağrıları için yine de onay istemleri görünür.
 
-## When not to use it
+## Ne zaman kullanmamalı
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/) or an [orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Vibe modu, bağımsız brifinglere ayrılabilen işler içindir. Sonraki adım bir önceki adımın çıktısına bağlıysa, tarif ettiğiniz şey bir [pipeline](/tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma/) ya da bir [orkestrasyon](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)dur; her ikisi de bağımlılıkları düzgün biçimde ifade eder ve yönlendiriciye bunları `vibe_wait` ile taklit ettirmez.
 
-## Related
+## İlgili
 
-- [Run agents in parallel](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/) — the other ways to fan out
-- [Orchestration](/tr-TR/kilavuz/kavramlar/orkestrasyon/) — when the work has a shape
-- [Built-in agent tools](/tr-TR/kilavuz/referans/ajan-araclari/) — the verbs and their arguments
+- [Ajanları paralel çalıştırma](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/) — dağıtmanın diğer yolları
+- [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/) — işin bir biçimi olduğunda
+- [Yerleşik ajan araçları](/tr-TR/kilavuz/referans/ajan-araclari/) — fiiller ve argümanları

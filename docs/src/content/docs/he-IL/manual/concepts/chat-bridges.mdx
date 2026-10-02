@@ -1,249 +1,222 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: גשרי צ'אט
+description: למה אינטגרציית Slack מתחברת החוצה במקום להאזין, מה באמת מאשר הודעה שמגיעה מהצ'אט ואיך גשר אחד משרת כל מוצר צ'אט.
 slug: he-IL/מדריך-למשתמש/מושגים/גשרי-צאט
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+גשר צ'אט הופך מוצר צ'אט חיצוני — נכון להיום Slack — לדרך מלאה אל תוך סביבת
+עבודה של Control Center. אזכרו את הבוט וסוכן מתעורר; השיבו בשרשור ב-Slack
+והשיחה ממשיכה; הקלידו פקודת קו נטוי ונפתח כרטיס. מתחת לפני השטח, אותם מרחבים,
+תמלילים, כרטיסים ושיוך שאפליקציית שולחן העבודה משתמשת בהם. הצ'אט הוא _משטח_
+מעל סביבת העבודה, לא עותק שלה.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack הוא הספק היחיד שנשלח עם המוצר.** אין שום מימוש של Discord, Telegram,
+Teams או Matrix בשום מקום במוצר. היכולת נכתבה בלי תלות בספק בכוונה — הוספת מוצר
+שני היא ערך enum אחד, מתאם אחד ותוסף אחד — אבל כיום "צ'אט" פירושו Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+שני משטחים מכסים אותה, והם שייכים לאנשים שונים. חיבור סביבת עבודה ל-Slack
+והתאמת הבוט הם פעולות של **מנהל** תחת הגדרות → סביבת עבודה → כללי. קישור
+חשבון הצ'אט שלכם לזהות שלכם ב-Control Center הוא פעולה של **חבר** תחת הגדרות →
+סביבת עבודה → פרופיל וזהות.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+שלוש החלטות מעצבות את כל היכולת: **לאיזה כיוון רץ החיבור**, **מה מאשר הודעה
+שמגיעה מבחוץ** ו**היכן הידע הספציפי למוצר רשאי לשכון**.
 
-## Outbound by design
+## יוצא החוצה מלכתחילה
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+הגשר לעולם אינו מאזין לספק. אל Slack מגיעים דרך **Socket Mode**: השרת מבקש
+מ-Slack כתובת socket ומתחבר החוצה, ואז מקבל אזכורים, הודעות ישירות ופקודות קו
+נטוי דרך החיבור הזה.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+התוצאה היא העיקר. מחשב נייד מאחורי NAT, שרת ביתי בלי דומיין, מכונה שעוברת בין
+רשתות — כולם יכולים להריץ את הגשר בלי פורט נכנס, בלי מנהרה, בלי תעודת TLS
+ובלי כתובת ציבורית שצריך להחליף כשהיא משתנה. אין נקודת קצה של webhook לאבטח,
+כי אין נקודת קצה של webhook. כש-Control Center מרכיב את הגדרת האפליקציה הוא
+כופה Socket Mode ומסיר כל כתובת URL של בקשה, כי אפליקציה שמוגדרת לשניהם היא
+אפליקציה שעובדת רק חצי.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+המחיר הוא חיבור שצריך להחזיק בחיים, וזו עבודה של השרת: ההתחברות מחדש היא השהיה
+מעריכית עם jitter שמוגבלת ל-30 שניות, סבב החלפת socket שיזם הספק מתחבר מחדש
+בלי להחמיר את ההשהיה הזו, ו_פרטי גישה שנדחו_ הם סוף הדרך — ניסיון חוזר אינסופי
+עם אסימון שבוטל רק יזכה בהגבלת קצב, ולכן הגשר עוצר וממתין לאסימונים חדשים,
+ומדווח את השגיאה של הספק עצמו מילה במילה בהגדרות.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+סביבת עבודה בלי אפליקציית צ'אט לא עולה דבר: אין socket, אין טיימרים, אין
+תעבורה. וכל העניין מתחיל _אחרי_ באנר המוכנות של השרת, כי אפליקציית צ'אט
+שמאחרת לענות אסור שתעכב את האתחול.
 
-## Membership authorizes, not token possession
+## החברות מאשרת, לא החזקה באסימון
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+מי שהתקין את האפליקציה אינו מי ששולח את ההודעה. לכן כל אירוע נכנס מפוענח
+ל-**Principal** לפני שקורה משהו, והוא נכשל בסגירה עם הסבר:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **חשבון צ'אט שאינו מקושר** מקבל הסבר איך לקשר, בשרשור ה-Slack שבו כתב.
+- **חשבון מקושר שהמשתמש שלו אינו חבר** בסביבת העבודה הזו מתבקש לבקש הזמנה
+  ממנהל.
+- **חבר שתפקידו לקריאה בלבד** (`viewer`, `guest`) נאמר לו שהתפקיד שלו אינו
+  יכול להתחיל עבודה.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/)
-for the membership model this leans on.
+אף אחד מאלה אינו ממשיך. הודעת צ'אט לעולם אינה מיוחסת למי שלא שלח אותה — וזה מה
+ששומר על יומן הביקורת, על הגבלות הקצב לפי Principal ועל מדווחי הכרטיסים
+כאמינים. ראו
+[רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/)
+עבור מודל החברות שהדבר נשען עליו.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+קישור הוא פענוח זהות, **לא** הענקת גישה. החברות נבדקת מחדש בכל אירוע, כך שקישור
+של מי שהוסר מאז מפוענח כסירוב ולא מחזיר לו את הרשאותיו הקודמות. שני מסלולים
+יוצרים קישור: קוד חד־פעמי קצר־מועד שהחבר מקליד בצ'אט, או התאמה אוטומטית לפי
+האימייל ה_מאומת_ של הספק — ומסלול האימייל עדיין דורש שהמשתמש המותאם יהיה חבר
+מלכתחילה, כך שזר שכתובתו במקרה קיימת בשרת אינו מקושר לשום דבר.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+הקודים נשמרים בכוונה בזיכרון, עם תוקף של 15 דקות. שמירתם בדיסק הייתה יוצרת
+רשומה קבועה בדמות פרטי גישה עבור משהו שנועד להתאדות, והפעלה מחדש של השרת
+שמבטלת כל קוד פתוח היא ההתנהגות הנכונה ולא רגרסיה — החבר פשוט לוחץ שוב על
+"קישור".
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+סירוב נענה **בשרשור ה-Slack שההודעה פתחה**, כתשובה של ממש. תשובה בשרשור מצרפת
+תג להודעה שהיא עונה עליה, מגיעה לאדם היחיד שצריך אותה, ובכל זאת משאירה את
+"אינך מקושר" מחוץ לערוץ עצמו. פרסום הודעה הוא גם היכולת היחידה שיש לכל ספק,
+ולכן ההסבר לעולם אינו תלוי ביכולת שהאפליקציה אולי אינה כוללת.
 
-## Provenance and the echo problem
+## מוצא ובעיית ההד
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+גשר שמשקף לשני הכיוונים ייכנס ללולאה, אלא אם משהו מבחין בין שני הכיוונים. כל
+הודעה שהגשר מכניס נחתמת ב-`metadata['chat']` — ספק, צוות, שיחה, שרשור, הודעה
+ושולח. השיקוף היוצא מדלג על כל הודעה שנושאת את החתימה הזו.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+הכלל הבודד הזה הוא מה שהופך שיקוף דו־כיווני לבטוח: הודעה שאדם הקליד ב-Control
+Center מועברת החוצה אל השרשור המקושר (כששם הכותב מוצב לפניה), ואילו הודעה
+שהגיעה _מהצ'אט_ נעצרת במקום שבו נכנסה.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+מה שחוצה החוצה הוא צר בכוונה. ה**תשובה** של הסוכן מועברת כטקסט צ'אט רגיל.
+מחשבה קצרה יכולה להופיע בשורת ה-`Thinking…` של הכרטיס. פלט כלים הוא קיר של
+דיפים ונשאר ב-Control Center, וגם לשם מצביעה תשובה מקוצרת.
 
-## A card reports the work; the text is still the message
+## כרטיס מדווח על העבודה; הטקסט הוא עדיין ההודעה
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+במקומות שהספק מציג אותם, תור נושא **כרטיס משימה אחד**, שנערך במקומו כל עוד התור
+רץ ויושב מעל התשובה שהוא מסביר.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+הכרטיס הוא תוכנית אחת מקובצת, לא פסקה מרוסקת. Slack משרשר `details` ו-`output`
+לאותה משימה, ולכן ה-details של שורה נשלחים פעם אחת (המחשבה ב-`Thinking…`)
+ו-`output` לעולם אינו מוזרם. ההקמה היא שורה אחת שכותרתה מוחלפת (`Working on it…`,
+`Cloning …`). החשיבה מוסיפה שורת `Thinking…`. כל כלי הוא שורה משלו
+(`Read lib/main.dart`). התשובה היא טקסט רגיל מתחת לכרטיס — תצוגת התוכנית של Slack
+קוראת אותה מתוספת markdown מאוחרת, ולא מקטע שמעורבב לתוך המשימות. שום דבר אחר:
+בלי פלט כלים, ורק ארגומנט של כלי מתוך רשימת היתר קצרה, כי הארגומנטים של כלי לא
+מוכר יכולים להיות גוף קובץ שלם, ושורה היא שורה אחת.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+הכרטיס מכסה גם את ההמתנה _לפני_ התור. אזכור ראשון יוצר את השיחה, ויצירתה משכפלת
+כל מאגר שהסוכן יעבוד בו — ובמאגר אמיתי מדובר בדקות שבהן עוד לא ביקשו מהסוכן
+דבר והשרשור נראה כאילו הבוט התעלם מהבקשה. לכן הכרטיס נפתח ברגע שהאזכור מתקבל
+(`Working on it…`), ואז שורת ההקמה הזו מתעדכנת באותן מילים שאפליקציית שולחן
+העבודה מציגה — `Cloning acme/widgets…`, `Setting up Reviewer…`,
+`Starting the agent…` — ואחר כך שורת `Thinking…` ברגע שהסוכן מתחיל לחשוב, ואז שורה לכל כלי.
+כרטיס אחד, הודעה אחת, מ"שמעתי אותך" ועד לתשובה כטקסט רגיל מתחתיו. ההקמה
+מדווחת רק במקום שמישהו בצ'אט ממתין לה: שיחה שמכינים באפליקציה, או שיחה תקועה
+שמתחדשת באתחול השרת, עוברות הקמה בלי כרטיס כלל.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+הוא נושא את הדבר היחיד שהצ'אט לא יכול לתת לקורא: קישור **View in Control
+Center** לשיחה שמאחורי התשובה. מוצרי צ'אט מקבלים `http(s)` בקישור ושום דבר אחר,
+ולכן הכפתור מצביע על עמוד קטן שהשרת הזה מגיש, והוא מפנה את הדפדפן לקישור
+`control-center://` של אפליקציית שולחן העבודה. העמוד הזה אינו קורא דבר ואינו
+מפענח דבר — המזהים שבכתובת שלו מועתקים לקישור עמוק ולא לשום מקום אחר — ושרת
+בלי כתובת ציבורית נגישה פשוט מייצר כרטיס בלי כפתור, ולא כרטיס שבור.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+כרטיסים הם יכולת כמו כל יכולת אחרת. ספק בלעדיהם מתנהג בדיוק כמו קודם, טקסט
+בלבד, וספק שמסרב לאחד בזמן הקריאה שומר על הזרם שלו: התשובה תמיד גוברת על הכרטיס
+שמתאר אותה. כשההזרמה כבויה לגמרי, הכרטיס המוגמר נוסע על ההודעה היחידה שפורסמה
+במקום. כרטיס שנפתח מקבל אותו יחס — אישור ה-`/cc ticket` הוא כרטיס מוגמר שכל
+סיבת קיומו היא הקישור לכרטיס שזה עתה נוצר.
 
-## Capabilities are negotiated, then remembered
+## היכולות מנוהלות במשא ומתן, ואז נזכרות
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+מוצרי צ'אט נבדלים זה מזה במה שהם יודעים להציג, ולכן הגשר נכתב מול המשטח העשיר
+ביותר — תשובה שגדלה בזמן אמת בתוך שרשור, סטטוס חולף של "חושב…", שרשור עם
+כותרת, תשובה חולפת לפקודת קו נטוי — ומדרדר יכולת אחת בכל פעם. ספק בלי שום דבר
+מזה עדיין עובד; התשובות פשוט מגיעות כהודעה אחת.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+הצהרה על יכולת אינה הבטחה. התשובות המוזרמות של Slack דורשות תכונה של תוכנית
+בתשלום, ו-Slack מסרב רק בזמן הקריאה. סירוב שמסומן כקבוע נזכר ל**כל חיי החיבור**: הגשר
+מפסיק לשאול ומפרסם תשובות שלמות מאותו רגע, וההגדרות אומרות זאת במפורש, כי על
+"התשובות שלי הפסיקו להיות מוזרמות" אפשר לענות בלי לקרוא לוג. כרטיסי משימה
+מושלכים באותה דרך אם Slack מסרב לאחד.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+כל מגבלה שייכת לספק ולא לממסר: תקרת ההודעה, תקרת מקטעי הזרם והאם זרם צריך עוגן
+שרשור — כולם מוצהרים על ידי המתאם, ותשובה ארוכה מפוצלת בגבול של פסקה, שורה או
+מילה ולא באמצע מילה.
 
-## One bridge, one adapter per product
+## גשר אחד, מתאם אחד לכל מוצר
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+כל מה שדומה למוצר חי מאחורי יציאה. הליבה הגנרית מכירה markdown, שיחות צ'אט,
+שרשורי צ'אט וחברים; היא אינה יודעת דבר על מעטפות של Slack, על `mrkdwn` או על
+gateway intents. שלושה חלקים גורמים לזה לעבוד:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **המתאם** מנרמל מוצר אחד: את התעבורה שלו, את קריאות ה-API שלו, את מקודד
+  הטקסט שלו ואת המוזרויות של המעטפות שלו. אלה של Slack מאלפים — אזכור בערוץ
+  מגיע פעמיים (כ-`app_mention` _וגם_ כ-`message`), ורוב תת־הסוגים של הודעות
+  הם קישוט ולא בקשות חדשות. שניהם נפתרים במתאם, כך שהליבה לעולם אינה לומדת
+  ש-Slack מספק פעמיים.
+- **המתאר** הוא הצורה הציבורית של הספק: אילו פרטי גישה הוא צריך, מה הפורמטים
+  שלהם, אילו כתובות URL עוזרות למשתמש למצוא אותם, מה הוא יודע לעשות והאם אפשר
+  ליצור או לערוך את האפליקציה שלו מכאן. כרטיס ההגדרות, דיאלוג החיבור ואימות
+  הארגומנטים — כולם _נוצרים_ ממנו; הלקוח שולח בחזרה ספק ומפה שממופתחת לפי
+  מזהה שדה.
+- **התוסף** הוא ההרכבה בצד השרת: איך פרטי גישה הופכים לחיבור מאומת, איך נבנה
+  מתאם ואיך מנוהלת האפליקציה בצד הספק.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+אז הוספת מוצר היא ערך enum אחד, מתאם אחד ותוסף אחד. בלי פעולת RPC חדשה, בלי
+שינוי סכימה, בלי שינוי בלקוח — והלקוח נשאר אמין, כי שדה שמעולם לא שמע עליו
+עדיין מוצג עם התווית שהשרת סיפק.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+שני פרטים מונעים מההפשטה לדלוף כלפי מעלה. שלבי ניהול האפליקציה שלספק אין API
+עבורם (יצירת אסימון, התקנת האפליקציה, התקנה מחדש אחרי שינוי הרשאות) מוחזרים
+כ**שלבים בעלי שם עם הקישורים שלהם**, כך שמסך סיום ההקמה מציג אותם בלי לדעת איזה
+ספק זה. וכל הוראה שהגשר כותב נוקבת בשם הספק ובפקודה שהאפליקציה באמת משתמשת
+בה, כך שפקודה ששמה שונה או ספק שני נקראים נכון בלי מחרוזת חדשה.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[התקנה מחדש אחרי שינוי הרשאות]
+עריכת השם, התיאור או הסמל של הבוט נכנסת לתוקף מיד. שינוי **הרשאות** מחייב התקנה
+מחדש: Slack מחיל את ה-manifest החדש אבל משאיר את ההענקה כפי שהייתה בהתקנה.
+העריכה מחזירה שלב שנותר, עם קישור לעמוד "Reinstall to Workspace" של Slack.
 :::
 
-## Where credentials live
+## היכן שוכנים פרטי הגישה
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+אסימוני הצ'אט של סביבת עבודה יושבים ב**תיקייה שלה עצמה, לצד מסד הנתונים שלה** —
+כ-JSON רגיל בנתיב
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, לא במסד הנתונים
+ובכוונה לא במחזיק המפתחות של מערכת ההפעלה. שתי השלכות קל לאבד אחר כך: מחיקת
+סביבת עבודה מסירה את התיקייה ואסימוניה הולכים איתה, וייצוא או גיבוי של סביבת
+עבודה מעתיק את `workspace.db`, כך שסביבת עבודה שנמסרת למישהו אחר אינה נושאת
+בתוכה אסימוני בוט חיים. הקובץ יורש את גבול האמון של מערכת הקבצים של מארח השרת —
+כל מי שיש לו גישת קריאה לתיקיית הנתונים יכול לקרוא אסימון בוט, וזה אותו גבול
+שמסדי הנתונים יושבים מאחוריו.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+קובץ אחד לכל ספק, נכתב באופן אטומי ובהרשאת בעלים בלבד: אפליקציה שבוטלה נמחקת
+בהסרת קובץ אחד, וקובץ פגום עולה בספק אחד ולא בכולם. פרטי גישה נוסעים _פנימה_
+בפעולת החיבור ולעולם אינם יוצאים החוצה — קריאות סטטוס עונות במטא־נתונים של
+החיבור בלבד.
 
-## What is deliberately not offered
+## מה שלא מוצע בכוונה
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **הגדרות אפליקציה מבניות.** התעבורה, ההיקפים ומינויי האירועים נכפים ולא
+  נחשפים. אפליקציה שאפשר להביא לדממה ממסך הגדרות היא פנייה לתמיכה, לא יכולת.
+- **שיחה ופקודות קו נטוי.** המשטח של Slack הוא הודעות, תשובות בשרשור ופקודות
+  קו נטוי.
+- **מקור אמת שני.** הצ'אט אינו מקום שבו העבודה נשמרת. שרשור ה-Slack הוא מרחב,
+  התשובה היא תמליל, הכרטיס הוא כרטיס — כולם בסביבת העבודה, נגישים מכל לקוח.
 
-## See also
+## ראו גם
 
-- [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): why links and credentials are per workspace
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): what wakes when a mention arrives
-- [Tickets and delegation](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): what `/cc ticket` files
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/)
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
-- [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
-- [Customize the chat bot](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
-- [PR conversations](/he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה/): the same three decisions, made for a forge
+- [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/): ה-Principals והתפקידים שהגשר מפענח דרכם
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): למה קישורים ופרטי גישה הם לפי סביבת עבודה
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): מה מתעורר כשמגיע אזכור
+- [כרטיסים והאצלה](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/): מה `/cc ticket` פותח
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/): היכן הגשר יושב בין השרת ללקוחות
+- [חברו את Slack לסביבת העבודה](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
+- [התאמת בוט הצ'אט](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
+- [שיחות בקשות משיכה](/he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה/): אותן שלוש החלטות, עבור מארח קוד

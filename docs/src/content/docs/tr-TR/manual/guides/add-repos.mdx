@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Bir çalışma alanına depo ekleme
+description: Ajanların üzerinde çalışabilmesi için Git checkout’larını bir çalışma alanına kaydedin.
 slug: tr-TR/kilavuz/nasil-yapilir/depo-ekleme
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Bu kılavuz, bir Git checkout’unu bir çalışma alanına nasıl kaydedeceğinizi, nasıl yeniden indeksleyeceğinizi ve nasıl kaldıracağınızı gösterir.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Depolar **çalışma alanı kapsamlıdır**. Küresel bir kayıt defteri ve ayrı bir bağlama adımı yoktur: bir depo eklemek ile onu bir çalışma alanına koymak aynı eylemdir. İki çalışma alanına kaydedilen aynı checkout, iki farklı kimliğe sahip iki bağımsız satır haline gelir — çalışma alanları arasında bir deponun kimliği dosya sistemi yoludur, hiçbir zaman kimliği değil.
 
-## Before you start
+## Başlamadan önce
 
-A folder can only be registered if all three of these hold:
+Bir klasör ancak şu üç koşulun tümü sağlandığında kaydedilebilir:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Bir **git çalışma ağacının** içindedir.
+2. Bu çalışma ağacının bir **`origin` uzak deposu** vardır.
+3. `origin` uzak deposu **desteklenen bir kod barındırıcıya** işaret eder: github.com, gitlab.com veya bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Bunların dışındaki her şey, kayıt sırasında açık bir mesajla reddedilir: “Folder is not inside a git work tree.”, “No `origin` remote configured for this repository.” veya “The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).”. Yalnızca yerelde çalışan bir mod yoktur.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Kod barındırıcı uzak depodan okunur ve depoda saklanır — onu asla siz seçmezsiniz. Bir çalışma alanı üçünün de depolarını aynı anda barındırabilir ve her biriyle kendi API’si ve kendi kimlik bilgisi üzerinden konuşulur. GitLab’ın iç içe ad alanları korunur; bu nedenle `gitlab.com/group/subgroup/project`, sahibi `group/subgroup`, adı `project` olacak şekilde kaydedilir.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Klasör ayrıca `cc_server`’ı barındıran makinede, o sunucunun `--repo-roots` dizinlerinden birinin içinde bulunmalıdır. Bu izin listesi varsayılan olarak sunucu kullanıcısının ev dizinidir ve bir kökün üstüne çıkan gezinme reddedilir.
 
-## Register a checkout
+## Bir checkout kaydetme
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. **Ayarlar → Çalışma alanı → Depolar** sayfasını açın (`/workspaces/<id>/settings/workspace/repositories`).
+2. **Depo ekle**’ye tıklayın.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+İletişim kutusu, sizin dosya sisteminizde değil **sunucunun** dosya sisteminde gezinebilen bir tarayıcıdır. Akış masaüstünde, web’de ve telefonda aynıdır; çünkü yerel bir klasör seçici, klasörü yanlış makinede seçerdi.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Sunucunun yapılandırılmış kökleri içinde gezinin. Git checkout’u olan klasörler işaretlenir.
+4. İstediğiniz kadarını işaretleyin. Seçim, siz gezinirken korunur; böylece birkaç klasörden checkout toplayabilirsiniz.
+5. Hepsini tek bir toplu işlemde kaydedin.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Başarısız olan tek bir seçim, partinin geri kalanını asla düşürmez — oluşturulan kimlikleri, reddedilen her yol için de yol başına bir hatayı alırsınız. Bu çalışma alanında zaten bulunan bir yolu yeniden kaydetmek, kopya üretmek yerine mevcut depoyu döndürür.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Kaydedilen her depo, listede `owner/name` değeriyle, kod barındırıcısını adıyla belirten bir rozetle ve sunucudaki yoluyla görünür. GitHub depoları ayrıca sahibin avatarını gösterir; diğer kod barındırıcılarının tahmin edilebilir bir sahip avatarı URL’si yoktur, bu yüzden baş harflere düşerler.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Kod barındırıcı rozeti karma bir çalışma alanında önemlidir: iki depo, farklı kod barındırıcılarında `acme/web` adını taşıyor olabilir ve farklı davranırlar — bir incelemenin neler yapabileceği ve bir bağlantının nereye gittiği buna bağlıdır.
 
-## What happens next
+## Bundan sonra ne olur
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Kayıt, bu çalışma alanına kapsamlı bir `RepoAdded` olayı tetikler ve bu olay o checkout için `index_code` pipeline’ını başlatır. Kod grafiğini dolduran şey budur, böylece aramanın ve etki analizinin yanıtlayacak bir şeyi olur.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/tr-TR/kilavuz/nasil-yapilir/kod-arama/).
+Yalnızca dili için hazır bir grameri bulunan dosyalar indekslenir (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ve Ada). Bkz. [Kod grafiğiyle kod arama](/tr-TR/kilavuz/nasil-yapilir/kod-arama/).
 
-## Re-index a repo
+## Bir depoyu yeniden indeksleme
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Her satırda bir **Kodu indeksle** düğmesi bulunur. Ona tıklayarak o checkout için indeksleyiciyi yeniden çalıştırın; çalışma sırasında düğme, tamamlanan dosyaları toplam üzerinden gösteren bir ilerleme göstergesine dönüşür ve yanına bir iptal denetimi gelir. İş bittiğinde ise sembol sayısını gösteren bir onay işaretine ya da çalıştırma başarısız olduysa bir uyarıya yerleşir.
 
-## Reorder repos
+## Depoları yeniden sıralama
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Bir satırdaki tutamacı sürükleyin. Belirlediğiniz sıra, uygulamadaki her depo listesinin geri okuduğu sıradır.
 
-## Fix the GitHub link
+## GitHub bağlantısını düzeltme
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Bir satırdaki bağlantı simgesi, deponun GitHub sahibini ve depo adını düzenlemek için bir düzenleyici açar — uzak depo yeniden adlandırıldığında veya taşındığında kullanışlıdır.
 
-## Remove a repo
+## Bir depoyu kaldırma
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. **Ayarlar → Çalışma alanı → Depolar** sayfasını açın.
+2. Satırdaki çöp kutusu simgesine tıklayın.
+3. “Depo çalışma alanından kaldırılsın mı?” onayını verin.
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+İletişim kutusu ne yaptığını söyler: “_ad_ bu çalışma alanından kaldırılacak. Diskteki yerel dosyalara dokunulmaz.”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Kaldırma işlemi, depo satırını bu çalışma alanından siler ve ona bağlı kod grafiği satırlarını — semboller, kenarlar, dosyalar ve indeks kontrol noktaları — ayrıca üzerindeki her üye için verilmiş depo izinlerini, alan-depo bağlantılarını ve yalıtılmış checkout kayıtlarını zincirleme olarak temizler. Aynı checkout başka bir çalışma alanına kaydedilmişse bağımsız bir satırdır ve etkilenmez. Bu kayıtların işaret ettiği diskteki çalışma ağaçları silme işlemiyle ortadan kaldırılmaz.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Search code with the code graph](/tr-TR/kilavuz/nasil-yapilir/kod-arama/)
-- [Run agents in parallel](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-- [Your first workspace](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/)
+- [Kod grafiğiyle kod arama](/tr-TR/kilavuz/nasil-yapilir/kod-arama/)
+- [Ajanları paralel çalıştırma](/tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar/)
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [İlk çalışma alanınız](/tr-TR/kilavuz/ogreticiler/ilk-calisma-alani/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)

@@ -1,128 +1,136 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Kalender og planlegging
+description: Hvordan Control Center synkroniserer Google Calendar på serveren, hvorfor påloggingen er en device-code-tilgang, og hva det skrivebeskyttede scopet dekker.
 slug: nb-NO/handbok/konsepter/kalender
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/nb-NO/handbok/konsepter/moter/).
+Control Center kobler til Google Calendar, slik at dagen din ligger side om side
+med flåten din. Det synkroniserer hendelsene dine, viser dem i måneds-, ukes-,
+dags- og agendavisning, varsler deg før et møte starter og gjør enhver hendelse
+om til et tatt opp og oppsummert [møte](/nb-NO/handbok/konsepter/moter/).
 
-## What it changes on Google
+## Hva det endrer hos Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Nesten ingenting. Integrasjonen henter inn hendelser og viser dem. Den oppretter,
+redigerer eller sletter ingenting, og svarer ikke på invitasjoner. Hver
+device-code-tilkobling, enten innebygd eller din egen, ber om `calendar.readonly`
+pluss `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Hendelser synkroniseres til arbeidsområdets egen database **på serveren**
+(`<dataDir>/<workspaceId>/workspace.db`) og vises av alle klienter over RPC.
+Ingen klient har lagret noen Google-legitimasjon.
 
-## Per-workspace accounts
+## Kontoer per arbeidsområde
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/nb-NO/handbok/konsepter/arbeidsomrader/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Kalenderkontoer er knyttet til arbeidsområdet, som alt annet i Control Center.
+Hvert [arbeidsområde](/nb-NO/handbok/konsepter/arbeidsomrader/) kobler til sin
+egen Google-konto (eller flere), og hendelser og tokens fra ett arbeidsområde er
+aldri synlige fra et annet. Når du bytter arbeidsområde, bytter du også hvilke
+kalendere du ser.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Et arbeidsområde kan koble til **flere** Google-kontoer, for eksempel en
+jobbkonto og en privat konto, og hendelsene deres flettes sammen i de samme
+visningene.
 
-## Why sign-in is a device code
+## Hvorfor påloggingen bruker en device code
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+Den headless `cc_server` har ingen nettleser som kan ta imot en
+OAuth-omdirigering. Derfor bruker den ingen: den autoriserer med
+**device-code-tilgangen** (RFC 8628). Serveren viser en kort brukerkode og en
+Google-URL, du godkjenner på en hvilken som helst enhet som har nettleser, og
+serveren spør på nytt til du gjør det. En headless installasjon kan nettopp koble
+til en konto fordi det ikke finnes noe omdirigeringsendepunkt å hoste.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Konsekvensen du bør kjenne til før du tar med egne legitimasjoner: klienttypen må
+være Googles «TV and Limited Input devices». Google gir bare et forhåndsgodkjent
+sett med scopes til den klienttypen, og et prosjekt der Calendar ikke er tillatt
+for den, feiler med `invalid_scope` — da trenger du en loopback- eller webklient
+i stedet.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Tokens forlater aldri serveren. De skrives til serverens `secrets.json` i
+datamappen, med nøkkelen `google_google:<workspaceId>:<email>`, sammen med
+databasene og innenfor samme tillitsgrense som vertens filsystem. Serveren
+fornyer tilgangen automatisk, og når Google permanent ugyldiggjør en konto (en
+tilbakekalt eller lenge utløpt økt), publiserer den `CalendarAuthExpired` og
+viser et **koble til på nytt**-banner i stedet for å feile i stillhet.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Et bygg fra kildekoden inneholder **ingen** Google-legitimasjon i det hele tatt —
+du skaffer din egen klient-id og klienthemmelighet. Offisielle utgivelsesbygg har
+et innebygd ikke-fortrolig device-code-klient, slik at tilkoblingsflyten fungerer
+med en gang; serveren lagrer bare en markør som viser til det, aldri en kopi.
+`GOOGLE_OAUTH_CLIENT_ID` (og hemmeligheten) i miljøet har alltid forrang foran
+det innebygde paret. Det finnes bevisst ingen `--google-client-id`-flagg: ukjente
+flagg ignoreres, og en hemmelighet på kommandolinjen kan leses via `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/).
+For å kjøre ditt eget Google-prosjekt, se
+[Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/).
 
-## Sync
+## Synkronisering
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Serveren henter et rullerende vindu av hendelsene til hver tilkoblede konto —
+alle kalendere på kontoen, ikke bare den primære — **hvert andre minutt**, i
+tillegg til ved behov (oppstart, tilkobling, manuell oppdatering). Den korte
+kadensen er overkommelig fordi gjennomgangen er inkrementell: hver kalender har
+sitt eget synkroniseringstoken, slik at en uendret kalender koster ett nesten
+tomt svar i stedet for å hente et fem måneder langt vindu på nytt.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Gjentakende hendelser utvides på serversiden, slik at ingen klient trenger å
+tolke en gjentakelsesregel. Navigerer du til en måned utenfor det gjeldende
+vinduet, lastes det området ved behov. Slettede hendelser, og hendelser som er
+flyttet ut av området, ryddes bort ved neste synkronisering.
 
-## Views
+## Visninger
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Visning    | Hva den viser                                              |
+| ---------- | ---------------------------------------------------------- |
+| **Måned**  | Et fullstendig månedsrutenett (drevet av `kalender`-pakken) |
+| **Uke**    | En ukes tidsbestemte hendelser i et tidsrutenett            |
+| **Dag**    | En enkelt dags tidsbestemte hendelser i et tidsrutenett     |
+| **Agenda** | En rullbar liste over kommende hendelser                    |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Åpne kalenderen på `/calendar`; velger du en hendelse, åpnes detaljene på
+`/calendar/:eventId`. Visningen du velger, lagres i denne klientens egne
+innstillinger, og følger deg derfor ikke til en annen enhet.
 
-## Meeting alerts
+## Møtevarsler
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/nb-NO/handbok/konsepter/domenehendelser/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+En planlegger som kjører hvert minutt, ser etter hendelser som starter innenfor
+et konfigurerbart forhåndsvindu, og utløser et **«møte starter snart»**-varsel
+(en `MeetingStartingSoon`-[domenehendelse](/nb-NO/handbok/konsepter/domenehendelser/)).
+Varselet inneholder deltakelses-URL-en når det finnes en, og klikker du på det,
+åpnes hendelsesdetaljene. Varsler fjernes for duplikater mot hendelsens
+`alertedAt`, slik at det samme møtet aldri varsles to ganger, selv på tvers av
+omstart — og en hendelse hvis starttid passerte mens appen var lukket, spilles
+aldri av på nytt.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+To begrensninger er lette å snuble i. Planleggeren kjører **klientsiden på
+skrivebordet** og bare for arbeidsområdet du har åpent for øyeblikket — et
+arbeidsområde du ikke er i, gir ingen varsel. Og nettbyggingen har ingen
+pipeline for OS-varsler i det hele tatt, så den gir heller ingen.
 
-## Record and link
+## Ta opp og knytt
 
-From a calendar event you can start a [meeting recording](/nb-NO/handbok/konsepter/moter/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Fra en kalenderhendelse kan du starte et
+[møteopptak](/nb-NO/handbok/konsepter/moter/) med hendelsens tittel som
+utgangspunkt. Control Center lagrer en en-til-en-kobling mellom opptaket og
+hendelsen, slik at møtenotatene og kalenderoppføringen holder sammen uten at
+noen av funksjonene er avhengige av den andre.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Start opptak og knytt** finnes bare på skrivebordet. I nettklienten melder
+handlingen at opptak ikke er tilgjengelig — selv om møteskjermens egen
+opptaksflyt faktisk fungerer i nettleseren.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agenter kan ikke lese kalenderen din]
+Det finnes ingen MCP-verktøy for kalender. En agent kan ikke liste opp
+hendelser, lese detaljene i en hendelse eller svare på invitasjoner på dine
+vegne; `calendar.*`-flaten er RPC kun for menneskelige klienter.
 :::
 
-## See also
+## Se også
 
-- [Meetings and transcription](/nb-NO/handbok/konsepter/moter/): what happens after you start a recording
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/): why calendar accounts are per-workspace
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
-- [Record and summarize a meeting](/nb-NO/handbok/slik-gjor-du/ta-opp-mote/)
+- [Møter og transkripsjon](/nb-NO/handbok/konsepter/moter/): hva som skjer etter at du starter et opptak
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/): hvorfor kalenderkontoer er per arbeidsområde
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/): `MeetingStartingSoon` og `CalendarAuthExpired`
+- [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
+- [Ta opp og oppsummer et møte](/nb-NO/handbok/slik-gjor-du/ta-opp-mote/)

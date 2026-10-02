@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: Zkontrolujte první pull request
+description: Otevři PR na pracovní ploše, přečti diff, okomentuj ho, schval a slouč.
 slug: cs-CZ/prirucka/tutorialy/prvni-pr
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## Co budeš mít hotové
 
-By the end of this tutorial, you will have:
+Na konci tohohle tutoriálu budeš mít:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- Otevřený pull request na pracovní ploše PR v Control Center
+- Přečtený diff a řádkový komentář
+- Odeslaný verdikt kontroly
+- Sloučený PR
 
-Prerequisites: [Dispatch your first agent](/cs-CZ/prirucka/tutorialy/prvni-agent/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+Předpoklady: tutoriál [Odešlete prvního agenta](/cs-CZ/prirucka/tutorialy/prvni-agent/) máš hotový a v repozitáři registrovaném v tomhle pracovním prostoru je jeden otevřený pull request. Pro kroky kontroly vyber PR, který jsi neotevřel. Tlačítko **Kontrola** je na vlastních PR skryté. Sloučit jde i PR, jehož jsi autorem.
 
-## Step 1: Open the pull request
+## Krok 1: Otevři pull request
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. V postranním panelu klikni na **Pull requesty**
+2. Najdi svůj PR a klikni na něj
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**Kontrolní bod.** PR se otevře jako pracovní plocha se záložkami **Přehled**, **Diff**, **Správa zdrojového kódu**, **Chat** a **Akce**, zaměřená na **Přehled**: název a akce, popis, časová osa aktivity a postranní panel se stavem, recenzenty, přiřazením, kontrolami a změněnými soubory. Kliknutí na soubor tam skočí na něj v záložce Diff. Záložka **Kontrola PR** se neotevře, dokud někdo nepožádá o AI kontrolu.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[Prázdná fronta s výzvou „Připojte GitHub a načtěte pull requesty“]
+Ten stav znamená, že _server_ žádný token GitHubu nemá. Klient ho nikdy nedrží. Token nastavíš v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**, pak seznam obnov.
 :::
 
-## Step 2: Read the diff
+## Krok 2: Přečti diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+Otevři záložku **Diff**. Vlevo je sbalitelný strom souborů. Pruh nad diffem nese výběr rozsahu commitů, kterým diff zúžíš na jeden commit nebo na jejich úsek, a k tomu počet souborů a průběžný součet přidaných a smazaných řádků.
 
-The settings button in the diff toolbar controls how it renders:
+Tlačítko nastavení v liště diffu určuje, jak se vykreslí:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- Pohled **Rozdělený** nebo **Jednotný**
+- **Zalamovat řádky**, nebo dlouhé řádky posouvat
+- **Ligatury písma kódu**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/).
+Soubor označ jako prohlédnutý, ať ve velkém diffu vidíš, jak daleko jsi. Ovládání z klávesnice popisují [Klávesové zkratky](/cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky/).
 
-## Step 3: Leave an inline comment
+## Krok 3: Nech řádkový komentář
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. Najeď na řádek v diffu. V okraji se objeví malá kapsle `+`
+2. Klikni na ni a okomentuj ten řádek, nebo ji nejdřív svisle přetáhni a vyber rozsah
+3. Napiš zpětnou vazbu. Editor nabízí dvě odeslání:
+   - **Zahájit kontrolu** (nebo **Přidat ke kontrole**, když kontrola už probíhá) komentář zařadí do fronty. Vlákno ukazuje **Čekající kontrola**, dokud v kroku 4 neodešleš verdikt.
+   - **Přidat jeden komentář** ho na GitHub odešle hned. Vlákno ukáže **Odesílání…**, pak **Synchronizováno**, a když odeslání selže, nabídne **Zopakovat**.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+V tomhle tutoriálu použij **Zahájit kontrolu**, ať komentář odejde spolu s verdiktem.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[Zařazený komentář na GitHubu ještě není]
+**Zahájit kontrolu** / **Přidat ke kontrole** drží komentář lokálně, dokud neodešleš verdikt. Hned odchází jen **Přidat jeden komentář**. _Tělo_ kontroly, které napíšeš v kroku 4, je samostatný koncept.
 :::
 
-## Step 4: Submit a review
+## Krok 4: Odešli kontrolu
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. Klikni na **Kontrola** v řádku akcí na Přehledu. Stejné tlačítko je i v liště záložky Diff. Na PR, které jsi vytvořil, a na zavřeném nebo sloučeném PR je skryté.
+2. Do editoru napiš shrnutí. Ukládá se samo jako koncept, takže překryv můžeš zavřít a vrátit se.
+3. Vyber verdikt:
+   - **Vyžádat změny**
+   - **Komentář**
+   - **Schválit**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+Verdikt je to tlačítko. Po **Schválit** nebo **Vyžádat změny** se přejmenuje na **Schváleno**, respektive **Vyžádané změny**. Verdikt **Komentář** nechá popisek **Kontrola**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**Kontrolní bod.** Když jsi zvolil jedno z těch dvou, tlačítko ukazuje „Schváleno“ nebo „Vyžádané změny“.
 
-## Step 5: Merge
+## Krok 5: Slouč
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+Tlačítko **Sloučit** je k dispozici, kdykoli GitHub hlásí, že se PR dá sloučit. Vlastní schválení ho nepodmiňuje. Barva hlásí připravenost, ne oprávnění: primární, když jsou požadovaná schválení a kontroly zelené, sekundární, dokud nějaká kontrola ještě běží, a destruktivní, když vyžádaný recenzent neschválil nebo kontrola selhává.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. Klikni na **Sloučit**
+2. Vyber způsob: **Squash a sloučení**, **Vytvořit merge commit** nebo **Rebase a sloučení**
+3. U prvních dvou uprav předvyplněný název a zprávu commitu
+4. Potvrď
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+Nevyřešené problémy, „Kontroly selhávají“ a „Některé kontroly čekají“, se vypíšou ve vysouvacím panelu ještě před potvrzením.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[Sloučení je nevratné]
+Sloučení posílá commity na GitHub. Do zásobníku vrácení zpět v Control Center se nikdy nedostane a odsud ho nejde vrátit.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/) for what else listens.
+Po sloučení vystřelí doménová událost `PrMerged`. Analytika a oznámení ji spotřebují. Co dalšího ji poslouchá, je v [Doménové události](/cs-CZ/prirucka/referencni-prirucka/domenove-udalosti/).
 
-## Reviewing with AI
+## Kontrola pomocí AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center umí na otevřený PR nasadit pipeline recenzentů, ale jen když o to požádáš. Šablona `pr_review` má jen ruční spouštěč.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. V řádku akcí na Přehledu otevři rozbalovací nabídku a zvol **Zeptat se AI**. Control Center spustí běh a otevře záložku **Kontrola PR**, takže uvidíš, jak specialisté pracují.
+2. Agenti recenzenti zapisují zjištění jako uzly kontroly do prostoru daného PR. Poslední krok je složí do jedné zprávy.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/).
+Pipeline na GitHub schválně nic neposílá a skončí po složení. Zveřejnění je samostatný krok, který uděláš sám tlačítkem **Zveřejnit na GitHub** na záložce **Kontrola PR**. Viz [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/).
 
-## Recap
+## Shrnutí
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+Otevřel jsi PR na pracovní ploše, přečetl diff se zvýrazněním syntaxe, nechal řádkový komentář, odeslal verdikt a sloučil. Z aplikace jsi přitom neodešel.
 
-**Next:** [Build your first pipeline](/cs-CZ/prirucka/tutorialy/prvni-pipeline/) to automate multi-step workflows.
+**Další:** [Vytvořte první pipeline](/cs-CZ/prirucka/tutorialy/prvni-pipeline/) a zautomatizuj vícekrokové postupy.

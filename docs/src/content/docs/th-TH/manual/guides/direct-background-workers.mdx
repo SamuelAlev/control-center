@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: กำกับวอร์กเกอร์พื้นหลัง
+description: ใช้โหมด vibe เพื่อเลิกทำงานเองแล้วเริ่มกำกับเอเจนต์หลายตัวให้ทำพร้อมกัน
 slug: th-TH/คู่มือ/วิธีทำ/กำกับวอร์กเกอร์พื้นหลัง
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+คู่มือนี้แสดงวิธีดำเนินบทสนทนาในบทบาท **ผู้กำกับ** แทนที่จะเป็นผู้ลงมือทำเอง โดยเซสชันจะเป็นฝ่ายอ่านและตรวจสอบ ส่วนเอเจนต์พื้นหลังเป็นฝ่ายลงมือแก้ไข
 
-## What changes when you type `/vibe`
+## เกิดอะไรขึ้นเมื่อคุณพิมพ์ `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+มีสองอย่างเกิดขึ้น และมีเพียงอย่างแรกที่กลไกบังคับใช้จริง:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **เครื่องมือของเซสชันเองลดลงเหลือแบบอ่านอย่างเดียว** บวกกับคำสั่งของวอร์กเกอร์อีกห้าคำสั่ง ทางเดียวที่มันจะส่งผลต่อรีโปได้คือผ่านวอร์กเกอร์ และทางเดียวที่มันจะรู้ว่าเกิดอะไรขึ้นคืออ่านไฟล์ที่วอร์กเกอร์แตะ
+2. **มันถูกสั่งให้ตรวจสอบด้วยการอ่าน ไม่ใช่ด้วยการเชื่อ** รายงานของวอร์กเกอร์เป็นเพียงคำกล่าวอ้างว่ามันทำอะไร ไม่ใช่หลักฐานว่ามันได้ผล
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+อย่างแรกคือข้อที่รับน้ำหนักทั้งหมด ผู้กำกับที่ยัง grep และแก้ไขได้จะลงมือทำงานเองเมื่อเจอแรงกดดัน ซึ่งก็คือรูปแบบความล้มเหลวที่โหมดนี้ถูกสร้างขึ้นมาเพื่อป้องกัน
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## วอร์กเกอร์เริ่มต้นจากความว่างเปล่า
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+วอร์กเกอร์ไม่เคยเห็นบทสนทนาของคุณและจะไม่มีวันได้เห็น บรีฟคือบริบททั้งหมดของมัน
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+นั่นคือสิ่งที่ทำให้รูปแบบนี้มีต้นทุนต่ำ — วอร์กเกอร์ยี่สิบตัวที่ต่างถือประวัติของผู้กำกับไว้จะกินบริบทเป็นยี่สิบเท่าของผู้กำกับ — และมันก็เป็นสิ่งเดียวที่ทำให้การเขียนบรีฟเป็นเรื่องยากเช่นกัน “ทำอีกอันด้วยเลย” อ่านได้เป็นคำสั่งที่ครบถ้วนสำหรับผู้กำกับ แต่ไม่มีความหมายอะไรเลยสำหรับเซสชันที่เพิ่งเริ่ม
 
-A good brief names files, commands and the definition of done:
+บรีฟที่ดีจะระบุชื่อไฟล์ คำสั่ง และนิยามว่าถือว่าเสร็จเมื่อใด:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> ใน `lib/features/auth/` ให้แทนที่ทุกการเรียก `SessionStore.read(key)` ด้วย `SessionStore.get(key)` เมธอดใหม่คืนค่า `Future<String?>` ขณะที่เมธอดเดิมคืนค่า `String?` ผู้เรียกจึงต้องใช้ `await` เมื่อทำเสร็จแล้วให้รัน `fvm flutter analyze lib/features/auth` และรายงานข้อผิดพลาดใด ๆ ที่คุณแก้ไม่ได้
 
-## The five verbs
+## ห้าคำสั่งของวอร์กเกอร์
 
-| Verb         | What it does                                            |
+| คำสั่ง        | สิ่งที่มันทำ                                             |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | เริ่มวอร์กเกอร์หนึ่งตัวจากบรีฟ **คืนค่าทันที**            |
+| `vibe_list`  | ระดับ สถานะ เวลาที่ผ่านไป และผลลัพธ์ล่าสุดของทุกตัว        |
+| `vibe_send`  | เทิร์นติดตามผลสำหรับวอร์กเกอร์ที่ทำเสร็จแล้ว               |
+| `vibe_wait`  | บล็อกรอจนกว่าวอร์กเกอร์ตัวหนึ่งจะจบ                        |
+| `vibe_kill`  | หยุดวอร์กเกอร์หนึ่งตัว                                    |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+การปล่อยวอร์กเกอร์เป็นแบบอะซิงโครนัสโดยการออกแบบ ผู้กำกับที่บล็อกรอทุกครั้งที่ปล่อยวอร์กเกอร์คือการรันวอร์กเกอร์ทีละตัว ซึ่งเป็นวิธีที่ช้ากว่าการลงมือทำเองอยู่แล้ว ให้ใช้ `vibe_wait` เฉพาะเมื่อคุณไปต่อไม่ได้จริง ๆ หากไม่มีคำตอบที่เจาะจงเท่านั้น
 
-## Two tiers
+## สองระดับ
 
-| Tier   | For                                                              |
+| ระดับ  | เหมาะกับ                                                          |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | งานเชิงกลไกที่สเปกชัดเจน — การแก้ไข การเปลี่ยนชื่อ ฉบับร่าง การรันคำสั่ง |
+| `good` | การออกแบบ การใช้ดุลพินิจ หรือการรีวิวสิ่งที่วอร์กเกอร์ระดับ `fast` ผลิตออกมา |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+รูปแบบที่พบบ่อยคือกระจายวอร์กเกอร์ระดับ `fast` ไปตามไฟล์ที่เป็นอิสระต่อกัน แล้วปล่อยวอร์กเกอร์ระดับ `good` หนึ่งตัวเพื่อรีวิวสิ่งที่พวกมันทำร่วมกัน
 
-## Verifying
+## การตรวจสอบ
 
-This is the part that decides whether the pattern is worth anything.
+นี่คือส่วนที่ชี้ขาดว่ารูปแบบนี้มีคุณค่าจริงหรือไม่
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+จากนั้น **อ่านไฟล์ที่มันระบุไว้** ผู้กำกับมี `read`, `search`, `lsp` และ `ast_grep` ซึ่งนั่นคือเหตุผลทั้งหมดที่ยังเก็บเครื่องมือเหล่านี้ไว้ ผู้กำกับที่เชื่อรายงานตามหน้าตาเป็นเพียงตัวสรุปความมองโลกในแง่ดีของเอเจนต์ตัวอื่น
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` หลังจบวอร์กเกอร์หนึ่งรอบมักเป็นการตรวจครั้งเดียวที่เร็วที่สุด
 
-## When a worker loses the thread
+## เมื่อวอร์กเกอร์หลุดประเด็น
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+ฆ่ามันทิ้งแล้วส่งบรีฟใหม่ บรีฟใหม่ที่แก้ไขแล้วมีต้นทุนต่ำกว่าการเถียงกัน และ `vibe_send` ใช้ได้เฉพาะกับวอร์กเกอร์ที่จบเทิร์นของมันแล้วเท่านั้น
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## ขีดจำกัด
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **วอร์กเกอร์พร้อมกันแปดตัว** นี่คือเพดานด้านค่าใช้จ่าย ไม่ใช่ขีดจำกัดทางเทคนิค เพราะแต่ละตัวคือเซสชันโมเดลเต็มรูปแบบ และผู้กำกับที่กระจายออกไปยี่สิบตัวก็เลิกติดตามว่าพวกมันทำอะไรกันอยู่
+- **ไม่มีวอร์กเกอร์ตัวใดอยู่รอดเกินโหมด** เมื่อการรันจบลง ทุกตัวจะถูกหยุด และทรานสคริปต์จะบอกว่ามีกี่ตัว เอเจนต์พื้นหลังที่ยังแก้ไฟล์อยู่ทั้งที่บทสนทนาเดินหน้าไปแล้วคือความล้มเหลวเพียงอย่างเดียวที่กลไกนี้รับไม่ได้
+- **แท้จริงแล้ววอร์กเกอร์ก็คือเอเจนต์ย่อยธรรมดา ๆ** เพดานความลึกเดียวกัน นโยบายกฎคุมเดียวกัน และบันทึกรันลูกแบบเดียวกัน vibe เปลี่ยนเพียงว่าใครเป็นคนขับพวกมัน ไม่ได้เปลี่ยนว่าพวกมันได้รับอนุญาตให้ทำอะไร — พรอมต์ขออนุมัติจึงยังคงปรากฏสำหรับการเรียกเขียนและการเรียก exec ของวอร์กเกอร์
 
-## When not to use it
+## เมื่อใดไม่ควรใช้
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/) or an [orchestration](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+โหมด vibe เหมาะกับงานที่แยกออกเป็นบรีฟอิสระได้ หากขั้นถัดไปขึ้นอยู่กับเอาต์พุตของขั้นก่อนหน้า สิ่งที่คุณกำลังพูดถึงคือ[ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/) หรือ[การประสานงาน](/th-TH/คู่มือ/วิธีทำ/รันการประสานงาน/) และทั้งสองอย่างแสดงความสัมพันธ์แบบพึ่งพากันได้อย่างถูกต้อง แทนที่จะให้ผู้กำกับจำลองมันขึ้นมาด้วย `vibe_wait`
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Run agents in parallel](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/) — the other ways to fan out
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) — when the work has a shape
-- [Built-in agent tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — the verbs and their arguments
+- [รันเอเจนต์แบบขนาน](/th-TH/คู่มือ/วิธีทำ/เอเจนต์แบบขนาน/) — วิธีอื่น ๆ ในการกระจายงาน
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) — เมื่องานมีโครงสร้างที่ชัดเจน
+- [เครื่องมือเอเจนต์ในตัว](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — คำสั่งและอาร์กิวเมนต์ของมัน

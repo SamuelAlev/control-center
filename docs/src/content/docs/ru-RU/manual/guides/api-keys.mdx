@@ -1,115 +1,124 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Управлять API-ключами
+description: Где хранятся те или иные учётные данные — в вашей учётной записи на сервере, на самом сервере или во внешней CLI — и как их задать, сменить и удалить.
 slug: ru-RU/руководство/практические-руководства/api-ключи
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Это руководство показывает, где хранятся учётные данные, которые использует
+Control Center, и как их изменить.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**На машине, за которой вы печатаете, не хранится ничего.** Все учётные данные
+живут на сервере; какие именно ответят на конкретный запрос, зависит от того,
+есть ли за ним человек.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Учётные данные | Где хранятся | Кто их использует |
+| --- | --- | --- |
+| Учётные данные хоста кода и тикетов | Файл секретов сервера с правами 0600, с ключом по вашему идентификатору пользователя | Всё, что запрашиваете вы: поверхность PR, запуски ваших агентов, ваши образы |
+| Идентичность приложения сервера | Тот же файл, плюс `server_settings` для всего, что не является секретом | Работа, которую не запросил человек: вебхуки, опрос PR, синхронизация тикетов |
+| Ключи провайдеров моделей и токены OAuth | Собственное хранилище учётных данных сервера | Встроенный адаптер, для каждого рабочего пространства в установке |
+| Токены бота Slack | `<dataDir>/<workspaceId>/chat_credentials/` на сервере | Чат-мост этого рабочего пространства |
+| Учётные данные внешней CLI | То, что использует эта CLI | Claude Code, на хосте сервера |
 
-## Two GitHub credentials, and they answer different questions
+## Два вида учётных данных GitHub, и они отвечают на разные вопросы
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Ваши** — из входа в систему (поток устройства) или из вставленного токена.
+  Именно их использует каждый запрос, сделанный *от вашего имени*, поэтому
+  комментарий, опубликованный за вас, несёт ваше имя. Другой участник не может их
+  прочитать и подключает свои собственные
+- **Данные сервера** — из GitHub App, которую зарегистрировал оператор. Они
+  отвечают на всё, за чем нет вызывающего, — поэтому доступ к хосту кода не
+  пропадает, когда кто-то уходит или меняет токен
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
-and [Create the GitHub App](/ru-RU/руководство/практические-руководства/github-app/).
+Ваши задаются в карточке **Хостинг кода** в разделе **Настройки → Рабочее
+пространство → Профиль и идентичность**, а данные сервера — в карточке **Приложения
+провайдера** в разделе **Настройки → Сервер → Единый вход**. См.
+[Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/)
+и [Создать GitHub App](/ru-RU/руководство/практические-руководства/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Есть ещё экран, доступный только по URL]
+`/workspaces/<workspaceId>/api-keys` показывает те же две карточки, что и первый
+шаг первоначальной настройки. **В интерфейсе к нему нигде нет пункта навигации**;
+попасть на него можно, только введя URL. Вместо него используйте **Настройки →
+Рабочее пространство → Профиль и идентичность**.
 :::
 
-## Set model provider keys
+## Задать ключи провайдеров моделей
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Встроенный адаптер сам проходит аутентификацию у провайдеров, и эти учётные данные
+живут на сервере.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Перейдите в **Настройки → Сервер → Провайдеры моделей**
+2. Прокрутите до **Провайдеры и модели**
+3. Подключите провайдера: OAuth в браузере для OpenAI, Codex, Cursor и Kimi Code;
+   API-ключ для Anthropic и остальных
 
-See [Manage adapters and models](/ru-RU/руководство/практические-руководства/адаптеры/) for the full list and
-for adding a custom endpoint.
+Полный список и порядок добавления собственной конечной точки — в разделе
+[Управлять адаптерами и моделями](/ru-RU/руководство/практические-руководства/адаптеры/).
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Эти учётные данные **глобальны для хоста**: один ключ обслуживает каждое рабочее
+пространство в установке. Токены OAuth обновляются до истечения срока действия.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Внешние CLI адаптеров хранят свои учётные данные отдельно, в собственной
+конфигурации, на хосте сервера — Control Center ими не управляет. Проходите
+аутентификацию Claude Code так, как описано в её собственной документации, на
+машине, где запущен `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/ru-RU/руководство/практические-руководства/адаптеры/).
+Диалог **Переменные окружения** у каждого адаптера выглядит подходящим местом для
+такого ключа, но это не так: он пишет на ваше устройство, а сервер читает
+собственную копию, и ничто их не связывает. См.
+[Управлять адаптерами и моделями](/ru-RU/руководство/практические-руководства/адаптеры/).
 
-## Connect a ticketing vendor
+## Подключить вендора тикетов
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Карточка **Тикеты** в разделе **Настройки → Рабочее пространство → Основные**
+содержит обе половины одного решения: в каком вендоре живут ваши тикеты и какие
+учётные данные для этого нужны. Выбор **Локальный** скрывает строку с учётными
+данными — локальные тикеты живут в собственной базе данных этого сервера, и
+аутентифицироваться им негде.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/ru-RU/руководство/практические-руководства/интеграция-linear/).
+Ваш ключ хранится на сервере с привязкой к вашему идентификатору пользователя, как
+и ключ хоста кода. Свой ключ Linear сервер хранит отдельно (в карточке **Приложения
+провайдера**) — именно на нём работает синхронизация тикетов, когда её не запросил
+человек. Ключ, который получает агент, внедряется только тогда, когда у агента есть
+возможность **Разрешить вызовы API тикетов**. См.
+[Настроить интеграцию Linear](/ru-RU/руководство/практические-руководства/интеграция-linear/).
 
-## Rotate or revoke
+## Смена и отзыв
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/ru-RU/руководство/практические-руководства/интеграция-slack/)
+- **Учётные данные GitHub**: нажмите **Отключить**, затем войдите снова или
+  вставьте новый токен. Отзовите старый на GitHub
+- **Приложение сервера**: создайте новый закрытый ключ или секрет клиента на
+  странице приложения в GitHub, вставьте его в карточке **Приложения провайдера** и
+  нажмите **Тест**
+- **Провайдер моделей**: в его строке выйдите из системы (OAuth) или удалите ключ,
+  затем подключите его снова
+- **Slack**: заново вставьте токены в диалоге подключения. См.
+  [Настроить интеграцию Slack](/ru-RU/руководство/практические-руководства/интеграция-slack/)
 
-## Troubleshooting
+## Устранение неполадок
 
-### The PR list is empty but my token works in `curl`
+### Список PR пуст, но мой токен работает в `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Проверьте подзаголовок строки **Хостинг кода**. Если там назван другой источник
+(«через приложение этого сервера», «из окружения»), отвечает не тот набор учётных
+данных, который вы проверяете, — ваши не были сохранены.
 
-### The token is accepted but later requests fail
+### Токен принимается, но последующие запросы падают
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Токен проверяется ровно в том виде, в каком он сохранён, поэтому строка называет
+стоящую за ним учётную запись — но только учётную запись, а не области доступа.
+Токен с недостаточными областями подключается, а затем падает на отдельных
+запросах. Проверьте области доступа и срок действия:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Связанные руководства
 
-- [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
-- [Create the GitHub App](/ru-RU/руководство/практические-руководства/github-app/)
-- [Manage adapters and models](/ru-RU/руководство/практические-руководства/адаптеры/)
-- [Set up Slack integration](/ru-RU/руководство/практические-руководства/интеграция-slack/)
-- [Set up Linear integration](/ru-RU/руководство/практические-руководства/интеграция-linear/)
+- [Настроить интеграцию GitHub](/ru-RU/руководство/практические-руководства/интеграция-github/)
+- [Создать GitHub App](/ru-RU/руководство/практические-руководства/github-app/)
+- [Управлять адаптерами и моделями](/ru-RU/руководство/практические-руководства/адаптеры/)
+- [Настроить интеграцию Slack](/ru-RU/руководство/практические-руководства/интеграция-slack/)
+- [Настроить интеграцию Linear](/ru-RU/руководство/практические-руководства/интеграция-linear/)

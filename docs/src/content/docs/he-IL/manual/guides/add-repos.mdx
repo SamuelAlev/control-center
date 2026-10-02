@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: הוספת מאגרים לסביבת עבודה
+description: רשמו עותקים מקומיים של Git בסביבת עבודה כדי שסוכנים יוכלו לעבוד עליהם.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+המדריך הזה מראה כיצד לרשום עותק מקומי של Git בסביבת עבודה, לאנדקס אותו מחדש ולהסיר אותו שוב.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+המאגרים **מוגבלים לסביבת עבודה**. אין רישום גלובלי ואין שלב קישור: הוספת מאגר והכנסתו לסביבת עבודה הם אותה פעולה בדיוק. אותו עותק מקומי שנרשם בשתי סביבות עבודה הופך לשתי שורות בלתי תלויות עם שני מזהים שונים — בין סביבות עבודה הזהות של מאגר היא הנתיב שלו במערכת הקבצים, ולעולם לא המזהה שלו.
 
-## Before you start
+## לפני שמתחילים
 
-A folder can only be registered if all three of these hold:
+אפשר לרשום תיקייה רק אם שלושת התנאים האלה מתקיימים:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. היא נמצאת בתוך **עץ עבודה של git**.
+2. לעץ העבודה הזה מוגדר **remote בשם `origin`**.
+3. ה־remote ‏`origin` מצביע על **מארח קוד נתמך**: github.com, gitlab.com או bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+כל דבר אחר נדחה בזמן הרישום עם הודעה מפורשת: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." או "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". אין מצב עבודה מקומי בלבד.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+מארח הקוד נקרא מה־remote ונשמר על המאגר — אתם לעולם לא בוחרים אותו. סביבת עבודה יכולה להחזיק מאגרים מכל השלושה גם יחד, וכל אחד מהם מדברים איתו דרך ה־API שלו ועם פרטי הגישה שלו. מרחבי השמות המקוננים של GitLab נשמרים כפי שהם, כך ש־`gitlab.com/group/subgroup/project` נרשם עם הבעלים `group/subgroup` ושם `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+התיקייה חייבת גם לשבת על המכונה שמארחת את `cc_server`, בתוך אחת מספריות `--repo-roots` של אותו שרת. רשימת ההיתרים הזו מוגדרת כברירת מחדל לספריית הבית של משתמש השרת, וגלישה מעל אחד השורשים נדחית.
 
-## Register a checkout
+## רישום עותק מקומי
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. פתחו את **הגדרות → סביבת עבודה → מאגרים** (`/workspaces/<id>/settings/workspace/repositories`).
+2. לחצו על **הוספת מאגר**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+הדיאלוג הוא דפדפן לניווט במערכת הקבצים **של השרת**, ולא בשלכם. זה אותו תהליך במחשב השולחני, בדפדפן ובטלפון, כי בורר תיקיות מקורי היה בוחר תיקייה במכונה הלא נכונה.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. נווטו בין השורשים המוגדרים של השרת. תיקיות שהן עותקים מקומיים של git מסומנות.
+4. סמנו כמה מהן שתרצו. הבחירה נשמרת תוך כדי הניווט, כך שאפשר לאסוף עותקים מקומיים מכמה תיקיות.
+5. רשמו את כולם בבת אחת.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+בחירה אחת שנכשלה לא מפילה את שאר הקבוצה — תקבלו את המזהים שנוצרו, ובנוסף שגיאה לכל נתיב שנדחה. רישום חוזר של נתיב שכבר קיים בסביבת העבודה הזו מחזיר את המאגר הקיים ולא יוצר כפילות.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+כל מאגר שנרשם מופיע ברשימה עם ה־`owner/name` שלו, עם תג שמציין את מארח הקוד שלו ועם הנתיב שלו בשרת. מאגרי GitHub מציגים גם את תמונת הפרופיל של הבעלים; למארחי הקוד האחרים אין כתובת ניחושית לתמונת הפרופיל של הבעלים, ולכן הם נופלים חזרה לראשי תיבות.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+לתג מארח הקוד יש משמעות בסביבת עבודה מעורבת: שני מאגרים יכולים להיקרא `acme/web` במארחי קוד שונים, והם מתנהגים אחרת — מה סקירה יכולה לעשות, ולאן מוביל קישור.
 
-## What happens next
+## מה קורה אחר כך
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+הרישום מפעיל אירוע `RepoAdded` המוגבל לסביבת העבודה הזו, והוא בתורו מפעיל את הפייפליין `index_code` עבור אותו עותק מקומי. זה מה שמאכלס את גרף הקוד, כך שלחיפוש ולניתוח השפעה יש על מה להשיב.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/).
+רק קבצים שלשפה שלהם יש דקדוק מצורף עוברים אינדוקס (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ו-Ada). ראו [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/).
 
-## Re-index a repo
+## אינדוקס מחדש של מאגר
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+כל שורה נושאת כפתור **אינדוקס קוד**. לחצו עליו כדי להריץ מחדש את האינדוקס עבור אותו עותק מקומי; בזמן הריצה הכפתור הופך לתצוגת התקדמות שמראה כמה קבצים הושלמו מתוך הסך הכול, עם בקרת ביטול. כשהריצה מסתיימת הוא מתייצב על סימן אישור עם מספר הסמלים, או על אזהרה אם הריצה נכשלה.
 
-## Reorder repos
+## שינוי סדר המאגרים
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+גררו את הידית שעל השורה. הסדר שתקבעו הוא הסדר שכל רשימת מאגרים באפליקציה תקריא.
 
-## Fix the GitHub link
+## תיקון הקישור ל-GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+סמל הקישור שעל השורה פותח עורך עבור הבעלים ושם המאגר ב-GitHub — שימושי כששם ה־remote שונה או כשהוא הועבר לבעלות אחרת.
 
-## Remove a repo
+## הסרת מאגר
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. פתחו את **הגדרות → סביבת עבודה → מאגרים**.
+2. לחצו על סמל פח האשפה שעל השורה.
+3. אשרו את "להסיר את המאגר מסביבת העבודה?"
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+הדיאלוג אומר מה הוא עושה: "_name_ יוסר מסביבת עבודה זו. הקבצים המקומיים בדיסק לא יושפעו."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+ההסרה מסירה את שורת המאגר מסביבת העבודה הזו ומוחקת במפולת את שורות גרף הקוד שלו — סמלים, קשתות, קבצים ונקודות ביקורת של אינדוקס — ובנוסף כל הרשאה למאגר שניתנה לחבר בו, את קישורי המרחב-מאגר שלו ואת רשומות העותקים המבודדים שלו. אותו עותק מקומי שנרשם בסביבת עבודה אחרת הוא שורה בלתי תלויה ואינו מושפע. עצי עבודה על הדיסק שאליהם הצביעו הרשומות האלה לא נהרסים במחיקה.
 
-## Related guides
+## מדריכים קשורים
 
-- [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/)
-- [Run agents in parallel](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/)
-- [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
-- [Your first workspace](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/)
+- [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/)
+- [הפעלת סוכנים במקביל](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סוכנים-במקביל/)
+- [הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
+- [סביבת העבודה הראשונה שלכם](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/)

@@ -1,89 +1,90 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Toolcontext en promptcaching
+description: Waarom een agent maar een klein deel van de tools te zien krijgt in plaats van alle, hoe hij bij de rest komt en welke regels de promptcache van de provider warm houden gedurende een uitvoering.
 slug: nl-NL/handleiding/concepten/toolcontext
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+Voor elk verzoek dat de ingebouwde harness doet, geldt twee dingen: de tooldefinities zijn er de grootste vaste kostenpost, en bijna geen ervan wordt gebruikt. Deze pagina legt uit wat Control Center daaraan doet, en waarom het antwoord niet simpelweg “stuur minder tools” is.
 
-## The problem is attention, not bytes
+## Het probleem is aandacht, niet bytes
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center registreert ongeveer 126 tools. Volledig meegestuurd kosten hun definities grofweg **23.000 tokens bij elk verzoek** — een kostenpost waar geen enkele compactie iets aan kan veranderen, omdat tooldefinities in een ander deel van het verzoek meereizen dan het gesprek.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+De tokenrekening is de voor de hand liggende klacht, en met promptcaching is die ook de kleinere. De echte kosten zijn de **selectienauwkeurigheid**. Gepubliceerde evaluaties van tool-aanroepen zijn het erover eens dat modellen de juiste tool betrouwbaar kiezen tot ergens rond de 30–50 tools in de context, en daarboven geleidelijk slechter worden. De genoemde oorzaak is niet het aantal tokens maar **semantische overlap**: zodra een catalogus meerdere tools bevat waarvan de beschrijvingen op elkaar lijken, kiest het model tussen dubbelgangers in plaats van zich een capaciteit te herinneren.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Bij 126 tools zit een agent bij elke afzonderlijke beurt ruim voorbij die band — ook in de vele beurten waarin hij alleen maar een bestand hoefde te lezen.
 
-## The two-tier surface
+## Het oppervlak met twee niveaus
 
-A run is therefore shown two things:
+Een uitvoering krijgt daarom twee dingen te zien:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- een **residente** set — ongeveer twee dozijn tools, die bij elk verzoek met volledige schema's wordt meegestuurd;
+- een **naamindex** van al het overige, gegroepeerd onder kopjes als “Tickets and projects” of “Memory and knowledge”, die voor de hele catalogus een paar honderd tokens kost.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Gemeten op de huidige catalogus brengt dat het toolblok van **~23,1k tokens naar ~5,0k, ongeveer 78% kleiner**, en zet het de altijd zichtbare set binnen de band waarin de selectie betrouwbaar is.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/nl-NL/handleiding/concepten/modi) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+De residente set bestaat uit de tools die een uitvoering in *de meeste* uitvoeringen gebruikt: het bestands- en shellvocabulaire (`read`, `write`, `edit`, `search`, `bash`, …), de discovery-tools, de takenchecklist, geheugenzoekopdrachten, en welk werkwoord de huidige [modus](/nl-NL/handleiding/concepten/modi) ook moet aanroepen om zijn output te leveren. Het eigen outputwerkwoord van een modus is altijd resident — een uitvoering mag nooit hoeven zoeken naar de ene aanroep die zijn resultaat oplevert.
 
-### Deferred does not mean unavailable
+### Uitgesteld betekent niet onbeschikbaar
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Dit is het deel dat het ontwerp veilig maakt in plaats van alleen maar goedkoop. **Een uitgestelde tool is vanaf de eerste beurt aanroepbaar.** Alleen het schema wordt achtergehouden.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+De agent ziet de naam in zijn prompt. Als hij die naam rechtstreeks aanroept, laadt de harness het schema en voert hij de tool in dezelfde stap uit — geen fout, geen extra verzoek. Het model hoeft niet te weten dat de tool ooit “uitgeladen” is geweest.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Wanneer de agent de taak kent maar de naam niet, neemt `search_tools` een beschrijving in gewone taal (“wijs een ticket aan iemand toe”), rangschikt het hele oppervlak van de uitvoering en geeft het de treffers terug *met hun schema's al geladen*, zodat de eerstvolgende beurt er een kan aanroepen. Als een zoekopdracht niets vindt, zegt die dat duidelijk en stelt die een andere formulering of een bredere zoekopdracht voor — bewust, want een agent die een lege zoekopdracht leest als “deze capaciteit bestaat niet” verzint een vervanging in plaats van nog eens te kijken.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` bestaat alleen in de ingebouwde harness. Externe MCP-clients hebben in plaats daarvan `search_tool_bm25`, dat dezelfde index rangschikt maar treffers alleen beschrijft — die clients hebben elk schema al via `tools/list` ontvangen, dus er valt niets te laden.
 
-### What deferral never does
+### Wat uitstelling nooit doet
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/nl-NL/handleiding/concepten/beveiligingen) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Uitstelling wordt **na** het toolfilter van de modus toegepast, nooit in plaats daarvan. Ze verbergt een schema; ze kan geen tool tonen die de modus heeft geweigerd. Een geactiveerde tool doorloopt nog steeds de goedkeuringsprompt en de [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen) precies zoals een residente dat zou doen, en een tool kan geen naam laden die niet vanaf het begin op het oppervlak van de uitvoering stond.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Het MCP-oppervlak dat externe clients zien, blijft **onaangetast**. `tools/list` geeft nog steeds de volledige catalogus terug. Een eerdere poging om die in te korten legde agenten volledig plat: MCP-clients valideren toolnamen tegen hun eigen gecachte lijst en weigeren alles wat daar niet op staat, zonder ooit de server te vragen, dus een “verborgen maar aanroepbare” tool was simpelweg onbereikbaar. Uitstelling zit in de harness, waar het laden van een tool midden in een uitvoering iets is dat de harness daadwerkelijk kan doen.
 
-### Turning it off
+### Uitzetten
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/nl-NL/handleiding/referentie/cc-server-cli).
+`--tool-deferral=off` (of `CC_SERVER_TOOL_DEFERRAL=off`) maakt elke toegelaten tool weer resident en produceert precies de verzoeken die de server deed voordat uitstelling bestond. Zie de [`cc_server` CLI-referentie](/nl-NL/handleiding/referentie/cc-server-cli).
 
-## Prompt caching
+## Promptcaching
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+De werklast van agents is scheef verdeeld: ze sturen enorme prompts en ontvangen kleine antwoorden, beurt na beurt, met elke keer hetzelfde voorvoegsel. Providers cachen dat voorvoegsel, en een lezing uit de cache kost ongeveer een tiende van een verse. Het cachepercentage is daarom een eersteklas eigenschap van de harness in plaats van een optimalisatie — en bij Anthropic levert het ook doorvoer op, omdat gecachte tokens niet meetellen voor de invoerlimiet per minuut.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Caching werkt op een exacte overeenkomst van het voorvoegsel, wat één overkoepelende regel oplevert.
 
-### Never rewrite what was already sent
+### Nooit herschrijven wat al verzonden is
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Elke byte die verandert, maakt de cache vanaf dat punt ongeldig. Daarom doet de harness alleen maar **toevoegen**: nieuwe berichten aan het einde, en nieuw geactiveerde toolschema's *na* het gecachte toolblok in plaats van erin opgenomen. Die ordening is de reden dat activering goedkoop is — het gecachte voorvoegsel blijft identiek en de uitvoering betaalt alleen voor de schema's die ze net heeft geladen.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+De lus kort ook verouderde tooluitvoer uit oudere beurten in om context terug te winnen. Hij
+wacht tot er genoeg terug te winnen valt om het herschrijven waard te zijn, zodat een inkorting
+een zeldzame diepe herschrijving is in plaats van een voortdurende cachemiss.
 
-### Where the breakpoints go
+### Waar de markeringen komen
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Een provider staat een beperkt aantal cachemarkeringen toe, en Control Center besteedt die met opzet:
 
-| Marker                       | Covers                             | Lifetime |
+| Markering                    | Dekt                               | Levensduur |
 | ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Laatste **residente** tool   | Het toolblok                       | 1 uur    |
+| Laatste systeemblok          | Tools + systeemprompt              | 1 uur    |
+| Staart van de vorige beurt   | Geschiedenis tot het laatste verzoek | 5 min  |
+| Staart van de huidige beurt  | De volledige geschiedenis          | 5 min    |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+De laatste twee zijn een rollend paar, en de reden voor dat paar is subtiel: een cache-opzoeking zoekt een beperkt aantal blokken terug naar iets wat een eerder verzoek heeft opgeslagen. Een enkele beurt die veel tools parallel uitvoert, kan meer blokken uitzenden dan dat venster, en dan mist één staartmarkering stilletjes en betaalt het verzoek de volle prijs, zonder dat iets in het antwoord dat zegt. Door exact de plek te markeren waar het vorige verzoek stopte, wordt de treffer structureel in plaats van een race.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Het voorvoegsel van tools en systeem krijgt de lange levensduur omdat het constant is gedurende de hele uitvoering, gedeeld wordt door elke uitvoering en subagent met dezelfde vorm, en omdat de klok begint te lopen wanneer een verzoek *begint* — een beurt die enkele minuten streamt, heeft het grootste deel van een kort venster al verbruikt voordat het volgende verzoek ontstaat.
 
-### Subagents share one prefix
+### Subagenten delen één voorvoegsel
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Subagenten van hetzelfde type produceren byte-identieke promptvoorvoegsels, dus zouden ze één cache-item moeten lezen in plaats van dat elk hun eigen item schrijft. Maar een item wordt pas leesbaar zodra het verzoek dat het heeft geschreven begint te antwoorden, dus bij een fan-out die in één keer wordt gestart, betaalt elk kind de premie voor een voorvoegsel dat ze allemaal delen.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+De harness laat het eerste kind van een bepaalde vorm starten en laat de andere kinderen pas los zodra het begint te streamen. De wachttijd is begrensd: een traag eerste kind kost een cachehit, nooit de fan-out zelf. Om dezelfde reden krijgt elke subagent dezelfde residente toolset, ongeacht zijn profiel — die per profiel variëren zou het gedeelde voorvoegsel versnipperen zonder enig voordeel, aangezien het profiel al heeft bepaald wat het kind mag aanroepen.
 
-## Watching it work
+## Kijken hoe het werkt
 
-Both halves are observable rather than assumed:
+Beide helften zijn waarneembaar in plaats van aangenomen:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **Context** bij een gesprek toont de residente tools, de uitgestelde index en wat elk achtergehouden schema *zou* kosten, opgebouwd uit hetzelfde codepad dat een echte uitvoering gebruikt.
+- Elke uitvoering legt vast welke uitgestelde tools ze heeft geladen en wat de aanleiding was, zodat een zoekopdracht zonder treffer zichtbaar blijft als een gemiste ophaling in plaats van te verdwijnen in een agent die stilletjes iets aanverwants doet.
+- Observeerbaarheid rapporteert het **Cache-percentage** als het aantal cachelezingen gedeeld door alle verwerkte prompttokens, cache-schrijfacties inbegrepen — een uitvoering die haar voorvoegsel steeds opnieuw opbouwt, scoort laag, in plaats van te scoren als een uitvoering die nooit een cache nodig had.

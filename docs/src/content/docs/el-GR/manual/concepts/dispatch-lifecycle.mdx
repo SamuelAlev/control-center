@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Κύκλος ζωής αποστολής πράκτορα
+description: Τι συμβαίνει από τη στιγμή που φτάνει ένα μήνυμα μέχρι να κλείσει το αρχείο καταγραφής μιας εκτέλεσης — συναρμολόγηση της προτροπής, worktrees, ταυτότητα, τι οριοθετεί μια εκτέλεση και πώς καταγράφεται με ειλικρίνεια το αποτέλεσμά της.
 slug: el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Τι είναι μια αποστολή
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Μια αποστολή είναι μία εκτέλεση ενός πράκτορα, σε μία συνομιλία, σε έναν προσαρμογέα. Όλα όσα την αφορούν συμβαίνουν στο `cc_server`: ο πελάτης στέλνει ένα μήνυμα και μετά παρακολουθεί τα συμβάντα να έρχονται σε ροή. Δεν υπάρχει διαδρομή αποστολής σε κανέναν πελάτη.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Οι πράκτορες ξυπνούν για έξι λόγους, τους οποίους η εκτέλεση μεταφέρει ως **πλαίσιο αφύπνισης** ώστε ο πράκτορας να ξέρει _γιατί_ είναι ξύπνιος:
 
-| Wake reason      | Trigger                                                      |
+| Λόγος αφύπνισης  | Ενεργοποίηση                                                 |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | Κάποιος έστειλε μήνυμα σε έναν χώρο ή ανέφερε τον πράκτορα   |
+| `assignment`     | Ανατέθηκε ένα εισιτήριο στον πράκτορα                        |
+| `pipelineStep`   | Την απέστειλε ένα βήμα pipeline                              |
+| `childCompleted` | Ολοκληρώθηκε ένα θυγατρικό εισιτήριο                         |
+| `followUp`       | Ένας προγραμματισμένος παλμός παρακολούθησης                 |
+| `recovery`       | Η διαδρομή ανάκτησης την απέστειλε ξανά μετά από μια αποτυχία |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Το πλαίσιο αφύπνισης μεταφέρει τα αναγνωριστικά που συνοδεύουν τον λόγο — εισιτήριο, χώρος, μήνυμα, εκτέλεση pipeline — και αυτά εγχέονται στο περιβάλλον και την προτροπή του πράκτορα.
 
-## Prompt assembly
+## Συναρμολόγηση της προτροπής
 
-The prompt is built in layers, each one a labelled section:
+Η προτροπή χτίζεται σε επίπεδα, καθένα από τα οποία είναι μια ενότητα με ετικέτα:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Ταυτότητα** — το δικό του αναγνωριστικό του πράκτορα, το όνομα και το αναγνωριστικό του χώρου εργασίας, με ρητή οδηγία να περνά αυτά τα ακριβή UUID σε εργαλεία με εμβέλεια χώρου εργασίας. Ο χώρος εργασίας είναι εγγενής στον πράκτορα, οπότε είναι πάντα παρών.
+- **Κατάλογος εργαλείων και πρωτόκολλα πόρων**, έπειτα η **διάταξη του χώρου εργασίας**.
+- **Παράκαμψη της προτροπής συστήματος**, αν ο πράκτορας έχει μία, έπειτα **περσόνα** (παραμετροποιημένη κατά ρόλο) και το **ενημερωτικό της ομάδας**.
+- **Δεξιότητες** — τα ονόματα πάνω στον πράκτορα.
+- **Σύμβαση εκτέλεσης και διαδικασία** για την τρέχουσα λειτουργία.
+- **Πλαίσιο αφύπνισης** και **πλαίσιο αναφοράς**: ποιος κάλεσε τον πράκτορα και ο κατάλογος γύρω του.
+- **Μπλοκ λειτουργίας** — παραγόμενο από το προφίλ δυνατοτήτων της λειτουργίας _και την υλοποιημένη λίστα εργαλείων της_, οπότε μια προτροπή δεν μπορεί ποτέ να ονομάσει ένα εργαλείο που η εκτέλεση δεν έχει στην πραγματικότητα.
+- **Πλαίσιο μνήμης** — γεγονότα που ανακτώνται για την εργασία.
+- **Πλαίσιο συνομιλίας** — πρόσφατο ιστορικό του χώρου, με όριο τις 50.000 χαρακτήρες αυτούσιου παραθύρου ανεξάρτητα από το διαμορφωμένο μέγεθος πλαισίου του πράκτορα. Το παλαιότερο ιστορικό δεν κόβεται: ο πράκτορας το ανακτά κατά απαίτηση με το `get_messages` και παλαιότερα σημασιολογικά συναφή μηνύματα εξακολουθούν να εμφανίζονται.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Οι εντολές slash αναλύονται από το ακατέργαστο κείμενο του χρήστη]
+Η πολυεπίπεδη προτροπή ξεκινά με ένα μπλοκ πλαισίου, οπότε δεν αρχίζει με κάθετο. Οι εντολές αναλύονται αυτούσιες από το μήνυμα του χρήστη και έπειτα αφαιρούνται από την ουρά της πολυεπίπεδης προτροπής ώστε κάθε επίπεδο πλαισίου να επιβιώνει.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Οι εντολές μοιράζονται σε δύο σημεία. Οι `/todo` και `/compact` αναχαιτίζονται στο πεδίο σύνταξης και σκόπιμα δεν αποθηκεύονται ποτέ ως μηνύματα ούτε στέλνονται στον πράκτορα — η αποθήκευση του `/compact` θα μετακινούσε το σημείο συμπύκνωσης μια στροφή πίσω και θα λέρωσε τη μεταγραφή. Η `/plan` αντιμετωπίζεται και στα δύο: το πεδίο σύνταξης αλλάζει τη λειτουργία του χώρου, και αυτό είναι που κάνει την επιφάνεια εργαλείων, το προεπιλεγμένο σύνολο περιορισμών και την προτροπή να συμφωνούν για αυτή τη στροφή και για κάθε επόμενη. Οι `/goal`, `/loop` και `/skill:<name>` αντιμετωπίζονται μέσα στην ίδια την εκτέλεση και μόνο στον ενσωματωμένο μηχανισμό — οι `/goal` και `/loop` ξεκινούν αυτόνομη εργασία με προϋπολογισμό κόστους, και ένα όνομα με πρόθεμα `skill:` αναζητάται ως δεξιότητα της οποίας το σώμα του `SKILL.md` γίνεται η οδηγία της στροφής. Ο χώρος ονομάτων είναι αυτό που κρατά τα δύο λεξιλόγια χωριστά: η αντιστοίχιση ενός γυμνού ονόματος σε δεξιότητες σήμαινε ότι μια δεξιότητα με το όνομα `plan` ή `compact` σκιαζόταν μόνιμα από την ενσωματωμένη. Ένα γυμνό μη ενσωματωμένο όνομα εξακολουθεί να αντιστοιχίζεται, για μηνύματα που γράφτηκαν πριν υπάρξει ο χώρος ονομάτων. Ένα μη αναγνωρισμένο όνομα απλώς περνά ως απλό κείμενο.
 
-## Worktree provisioning
+## Παροχή worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Πριν εκτελεστεί οτιδήποτε, η συνομιλία αποκτά τη δική της ρίζα εργασίας, με ένα απομονωμένο worktree copy-on-write ανά αποθετήριο από κάτω της. Από προεπιλογή αυτό είναι κάθε αποθετήριο συνδεδεμένο με τον χώρο εργασίας· ένας χώρος PR — ή ένας χώρος που δημιουργήθηκε με ρητή επιλογή — παρέχει μόνο όσα περιλαμβάνονται στη λίστα επιτρεπόμενων, και μια συνομιλία ελέγχου PR καρφιτσώνει το ένα της αποθετήριο στο head ref του pull request, ενώ τα άλλα μένουν στον προεπιλεγμένο κλάδο τους. Το αρχικό checkout δεν μεταβάλλεται ποτέ και ολόκληρος ο κατάλογος της συνομιλίας ελευθερώνεται όταν διαγραφεί ο χώρος.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Το copy-on-write είναι η **μόνη** υλοποίηση όπου διατίθεται το `rift`, με υποστήριξη από το ενσωματωμένο native. Ένα σύστημα αρχείων που δεν μπορεί να κάνει reflink — ή ένας κατάλογος δεδομένων σε διαφορετικό τόμο από το αποθετήριο — αποτυγχάνει την παροχή αντί να καταφύγει σε εφεδρική λύση. Το `git worktree` είναι το backend στα Windows, όπου δεν υπάρχει backend copy-on-write για να χτιστεί, και δεν αποτελεί σιωπηλή υποβάθμιση σε άλλους κεντρικούς υπολογιστές. Ένα `rift` που λείπει σε μια πλατφόρμα όπου διατίθεται σημαίνει σπασμένη εγκατάσταση — ο διακομιστής αρνείται να εκκινήσει αντί να καταφύγει αθόρυβα σε εφεδρική λύση, γιατί μια σιωπηλή εφεδρική λύση κρύβει τη βλάβη πίσω από μια πιο αργή διαδρομή για πάντα.
 
-## Identity and credentials
+## Ταυτότητα και διαπιστευτήρια
 
-Two identities are resolved per run, before any process launches.
+Δύο ταυτότητες επιλύονται ανά εκτέλεση, πριν εκκινήσει οποιαδήποτε διεργασία.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Πατρότητα Git.** Οι commits που κάνει ένας πράκτορας έχουν πατρότητα _ως ο πράκτορας_ — `<Name> (agent) <agentId@agents.control-center.local>` και στα `GIT_AUTHOR_*` και στα `GIT_COMMITTER_*` — ποτέ υποδυόμενος άνθρωπο. Το τοπικό τμήμα είναι το UUID του πράκτορα, όχι το slug του ονόματός του. Ο άνθρωπος που ζήτησε πιστώνεται με ένα trailer `Co-Authored-By:`, που μεταφέρεται στο περιβάλλον και οδηγείται στην προτροπή συστήματος. Μια ρητή ταυτότητα που ορίζει ο καλών κερδίζει πάντα και τις δύο.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Ταυτότητα forge.** Το διαπιστευτήριο GitHub της εκτέλεσης είναι πάντα μόνο του μεσίτη — ένα token εγκατάστασης App με εμβέλεια αποθετηρίου, ή η εφεδρική λύση του PAT από το περιβάλλον — ποτέ το αποθηκευμένο token του ίδιου του μέλους που το ζήτησε. Το `actingUserId` οριοθετεί την εφεδρική λύση PAT ώστε ένα μέλος που δεν είναι ιδιοκτήτης του διακομιστή να μην κληρονομεί την εμβέλεια του διακομιστή· δεν επικαλύπτει το περιβάλλον του πράκτορα με προσωπικό token.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Τα διαπιστευτήρια του παρόχου μοντέλων** επιλύονται με σταθερή σειρά και η σειρά έχει σημασία:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. μια παράκαμψη περιβάλλοντος ανά προσαρμογέα,
+2. το περιβάλλον του καλούντος,
+3. η αποθήκη διαπιστευτηρίων του διακομιστή (ανανεώνοντας ένα token OAuth αν είναι κοντά στη λήξη),
+4. το περιβάλλον της διεργασίας.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Επειδή η παράκαμψη ανά προσαρμογέα έρχεται πρώτη, νικά σιωπηλά έναν λογαριασμό παρόχου που έχει συνδεθεί στην εφαρμογή. Αν μια εκτέλεση χρεώνει λάθος λογαριασμό, αυτή η παράκαμψη είναι το πρώτο σημείο που θα κοιτάξετε. Τα διαπιστευτήρια του παρόχου είναι καθολικά για τον κεντρικό υπολογιστή — κοινά σε κάθε χώρο εργασίας της εγκατάστασης.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
+Τα tokens που ελέγχονται από δυνατότητες (GitHub, εισιτήρια) προέρχονται από τον μεσίτη διαπιστευτηρίων, ο οποίος εγχέει μόνο ό,τι επιτρέπουν οι δυνατότητες της εκτέλεσης. Δείτε το [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/).
 
-## Launch
+## Εκκίνηση
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Η εκτέλεση ξεκινά με το worktree της ως κατάλογο εργασίας και — για το Claude Code — μια παραγόμενη διαμόρφωση MCP ώστε ο πράκτορας να μπορεί να φτάσει στην επιφάνεια εργαλείων του Control Center. Οι ACP και το `bash` του μηχανισμού παίρνουν απολυμασμένο περιβάλλον· το Claude Code μέσω `NoSandboxAdapter` κληρονομεί το περιβάλλον του κεντρικού υπολογιστή.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Το sandbox του λειτουργικού συστήματος τυλίγει μια εκτέλεση μόνο όπου ο κεντρικός υπολογιστής έχει backend]
+Ο `cc_server` ανιχνεύει τον κεντρικό υπολογιστή μία φορά στην εκκίνηση και, όταν υπάρχει διαθέσιμο backend, τυλίγει τις διεργασίες των πρακτόρων σε αυτό — Seatbelt στο macOS, bubblewrap σε Linux και WSL2. Και τα δύο σημεία αποστολής τυλίγονται, γιατί δεν μοιράζονται ένα: το CLI του Claude Code περνά από τη θύρα sandbox· οι προσαρμογείς ACP και το εργαλείο `bash` του ενσωματωμένου μηχανισμού περνούν από τον διαχειριστή sandbox. Είναι επίσης αυτό που εφαρμόζει τις προστατευμένες διαδρομές της εκτέλεσης: τα καταχωρισμένα checkouts των αποθετηρίων σας έχουν απαγόρευση εγγραφής μέσα στο sandbox, σε κάθε λειτουργία.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Όπου δεν υπάρχει backend, η εκτέλεση **δεν** είναι μέσα σε sandbox και τίποτα άλλο δεν αλλάζει για να το αντισταθμίσει. Αυτό σημαίνει πάντα Windows (χωρίς εγγενές wrap — το `microvm` είναι ξεχωριστή, ελεγχόμενη από ανίχνευση διαδρομή για τερματικά και σταθμούς) και Linux ή WSL2 χωρίς `bwrap` και `socat` στο `PATH`. Ο διακομιστής ονομάζει σε ποια κατάσταση βρίσκεται στη γραμμή καταγραφής εκκίνησής του και το `--sandbox off` εξαιρεί σκόπιμα.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Δύο κενά επιβιώνουν του sandbox ακόμα και όταν αυτό είναι ενεργό. Τα εργαλεία αρχείων εντός διεργασίας του μηχανισμού (ανάγνωση, εγγραφή, επεξεργασία, εφαρμογή patch, αναζήτηση, εύρεση, search_files) εκτελούνται μέσα στη διεργασία του διακομιστή, οπότε κανένα προφίλ δεν τα περιορίζει — το όριό τους είναι ο δικός τους περιορισμός διαδρομών συν οι περιορισμοί. Και το Claude Code εκκινείται με `--dangerously-skip-permissions`, οπότε οι δικές του κλήσεις αρχείων και κελύφους δεν περνούν από πύλη του Control Center· το sandbox του λειτουργικού συστήματος είναι το όριο γύρω τους.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Τα υπόλοιπα όρια ισχύουν σε κάθε κεντρικό υπολογιστή, με sandbox ή χωρίς: το ίδιο το worktree της εκτέλεσης (copy-on-write όπου διατίθεται το `rift`· `git worktree` στα Windows), διαπιστευτήρια που ελέγχονται από δυνατότητες και μεσιτεύονται ανά εκκίνηση και ανακαλούνται στον τερματισμό, οι ενοποιημένοι περιορισμοί ενεργειών (αποτυγχάνει κλειστά — μια απόφαση `prompt` χωρίς συνδεδεμένο εγκρίνοντα απορρίπτεται) και η επιφάνεια εργαλείων που επιτρέπει η λειτουργία της συνομιλίας. Οι ACP και το `bash` του μηχανισμού εξακολουθούν να απολυμαίνουν το περιβάλλον· το Claude Code μέσω `NoSandboxAdapter` κληρονομεί το περιβάλλον του κεντρικού υπολογιστή.
 :::
 
-## Streaming
+## Μετάδοση σε ροή
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Η εκτέλεση μεταδίδει σε ροή μια τυποποιημένη ακολουθία συμβάντων πίσω, την οποία ο επεξεργαστής ροής αποθηκεύει ως δέλτα μηνυμάτων, τη διπλώνει σε τμήματα μεταγραφής και τη μετατρέπει σε συμβάντα μηνυμάτων:
 
-| Event              | What it carries                                                                                                  |
+| Συμβάν             | Τι μεταφέρει                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | Έξοδος συλλογισμού, που αποδίδεται ενσωματωμένα                                                                  |
+| `text`             | Ορατή έξοδος                                                                                                     |
+| `toolCall`         | Μια κλήση εργαλείου, με το αναγνωριστικό της και δομημένα ορίσματα                                              |
+| `toolResult`       | Το αντίστοιχο αποτέλεσμα, σημασμένο όταν είχε σφάλμα ή είναι μερική ροή                                          |
+| `usage`            | Πλήθη tokens και κόστος για ένα παράθυρο μέτρησης                                                                |
+| `error`            | Ένα σφάλμα, με τον δομημένο κωδικό του προσαρμογέα όταν τον ανέφερε                                               |
+| `sandboxViolation` | Το λειτουργικό σύστημα αρνήθηκε μια κλήση συστήματος. Εκπέμπεται μόνο όπου ένα sandbox τυλίγει πραγματικά τη διεργασία — δείτε τη σημείωση παραπάνω |
+| `debug`            | Διαγνωστικά χρόνου εκτέλεσης (δείκτες εκκίνησης, αποφάσεις περιορισμών, παροτρύνσεις της σύμβασης)                |
+| `done`             | Η εκτέλεση ολοκληρώθηκε                                                                                          |
 
-## What bounds a run
+## Τι οριοθετεί μια εκτέλεση
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Σκόπιμα **δεν υπάρχει ανώτατο όριο στροφών πουθενά**. Ένας σκληρός αριθμός επαναλήψεων σκοτώνει νόμιμη μακρά εργασία (μεταναστεύσεις, καθαρισμό fan-out) και δεν πιάνει τίποτα που οι παρακάτω φρουροί πιάνουν νωρίτερα. Μια εκτέλεση τελειώνει όταν:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **το μοντέλο σταματήσει** μόνο του·
+- **ένας άνθρωπος τη σταματήσει**, ή αναλάβει τη συνομιλία (πράγμα που παγώνει τον ενσωματωμένο μηχανισμό στο επόμενο καθαρό όριο στροφής — μια εκτέλεση Claude Code, που δεν έχει ασφαλές όριο, σταματιέται αντ' αυτού)·
+- **ενεργοποιηθεί ο φύλακας σιωπής.** Καμία έξοδος για το κατώφλι και η συνεδρία τερματίζεται με αποτυχία `silentRun`. Η προεπιλογή είναι 15 λεπτά, πέφτοντας στα 10 στις λειτουργίες κυρίως ανάγνωσης (ανασκόπηση και σχέδιο)· ένας πράκτορας μπορεί να την παρακάμψει μεταξύ 1 και 240 λεπτών. Ο φύλακας οπλίζεται όταν μια θυγατρική διεργασία αναφέρει το PID της, οπότε καλύπτει το CLI του Claude Code — **όχι** τον ενσωματωμένο μηχανισμό, που δεν εκκινεί τίποτα·
+- **δαγκώσει ένα ανώτατο όριο κόστους** — αλλά μόνο για αυτόνομες εντολές.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Ο φρουρός του μοιραίου βρόχου δεν είναι τερματιστής: τρεις πανομοιότυπες κλήσεις εργαλείου στη σειρά και ο βρόχος _καθοδηγεί_ τον πράκτορα να αλλάξει προσέγγιση.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Μια κανονική στροφή δεν έχει ανώτατο όριο κόστους]
+Ο φρουρός κόστους εντός συνεδρίας είναι συνδεδεμένος μόνο για τις `/goal` και `/loop`· κάθε άλλη εκτέλεση δεν περνά καθόλου προϋπολογισμό. Για αυτές τις εντολές, ένα τμήμα χωρίς επίβλεψη μπορεί να κάψει 500 σεντς (5,00 $) από προεπιλογή, με μια ήπια καθοδήγηση στο 80% που ζητά από τον πράκτορα να ολοκληρώσει καθαρά πριν από το σκληρό σταμάτημα και έναν ανθεκτικό προϋπολογισμό στόχου 5.000 σεντς (50,00 $) μεταξύ τμημάτων. Μια ρητή `/goal --budget` δεν ξεπερνιέται ποτέ κατά ένα ολόκληρο τμήμα.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Συνδυαστικά, μια συνηθισμένη διαδραστική στροφή στον ενσωματωμένο μηχανισμό δεν έχει ανώτατο όριο στροφών, ούτε ανώτατο όριο κόστους, ούτε φύλακα σιωπής. Τελειώνει όταν σταματήσει το μοντέλο ή όταν τη σταματήσετε εσείς. Αυτό είναι σκόπιμο αντάλλαγμα — οι εναλλακτικές σκοτώνουν όλες νόμιμη μακρά εργασία — αλλά σημαίνει ότι μια διαδραστική εκτέλεση χωρίς επίβλεψη δεν οριοθετείται από τίποτα άλλο πέρα από την κρίση του ίδιου του μοντέλου.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Στα μισά της εκτέλεσης, ένα μήνυμα που στέλνεται σε έναν ενεργό πράκτορα μπαίνει σε ουρά ως **καθοδήγηση** και αδειάζεται στο επόμενο όριο στροφής, ώστε να μπορείτε να σπρώξετε μια εκτέλεση χωρίς να τη σκοτώσετε. Η καθοδήγηση, η παύση, οι υποπράκτορες και η σύμβαση ολοκλήρωσης είναι λειτουργίες του ενσωματωμένου μηχανισμού· το Claude Code δεν έχει καμία από αυτές.
 
-## How a run is recorded
+## Πώς καταγράφεται μια εκτέλεση
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Κάθε αποστολή γράφει ένα `AgentRunLog`: ώρα έναρξης και λήξης, σύνοψη, πλήθη tokens και εκτιμώμενο κόστος (συμπεριλαμβανομένου του κόστους που συγκεντρώνεται από υποπράκτορες), προσαρμογέα και μοντέλο, αναγνωριστικό διεργασίας και διαδρομή καταγραφής, τη συνομιλία και οποιοδήποτε εισιτήριο ή εκτέλεση pipeline στην οποία ανήκει, συν δύο πεδία ταξινόμησης που κουβαλούν το μεγαλύτερο μέρος της αλήθειας.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Κατάσταση** είναι χονδρική: `pending`, `running`, `completed`, `error`.
+- **Ζωτικότητα** είναι η λεπτομερέστερη ανάγνωση: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Οικογένεια σφαλμάτων** ομαδοποιεί χρήσιμα τις αποτυχίες: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[Το `completed` δεν σημαίνει «παραδόθηκε»]
+Όταν μια εκτέλεση τελειώνει χωρίς το παραδοτέο που απαιτούσε η λειτουργία της — μια εκτέλεση λειτουργίας σχεδίου που δεν κάλεσε ποτέ το `submit_plan`, μια εκτέλεση ενορχήστρωσης που δεν πρότεινε ποτέ — η κατάσταση παραμένει `completed`, γιατί η διεργασία όντως τερματίστηκε καθαρά. Το ειλικρινές σήμα ταξιδεύει στη ζωτικότητα (`empty`), στην οικογένεια σφαλμάτων (`silentRun`) και σε μια σύνοψη που λέει ακριβώς τι δεν παρήχθη. Αυτή η σύνοψη είναι προστατευμένη: η οριστικοποίηση δεν θα την αντικαταστήσει με την τελευταία φλυαρία του μοντέλου.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Αυτό είναι σκόπιμο. Η αναστροφή της κατάστασης θα μετακινούσε μηχανές καταστάσεων εισιτηρίων και pipeline που δεν έχουν καμία σχέση με το απόν τεχνούργημα. Σημαίνει επίσης ότι το «status: completed» από μόνο του δεν αρκεί ποτέ για να συμπεράνετε ότι μια εκτέλεση πέτυχε — διαβάστε τη σύνοψη.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Το κλείσιμο της εκτέλεσης δημοσιεύει το `AgentRunCompleted` και πολλά κρέμονται από αυτό: το πλαίσιο ειδοποίησης και η ανθεκτική καταχώρισή του στη ροή, ο ζωντανός προωθητής που το σπρώχνει στους συνδεδεμένους πελάτες, η συγκέντρωση κόστους pipeline, η συνέχιση ενός βήματος pipeline που περίμενε την εκτέλεση, η ολοκλήρωση του εισιτηρίου που τη στηρίζει, η αντιστοίχιση μιας ενορχήστρωσης σε τελική κατάσταση, η απόφαση συνέχειας ή σταματήματος του επόπτη στόχου, ο ρόλος του ελεγκτή και η αξιολόγηση του προϋπολογισμού μετά την εκτέλεση. Ο κατάλογος παρουσίας ακολουθεί ξεχωριστά, παρακολουθώντας τα πρόσφατα αρχεία καταγραφής εκτέλεσης αντί για το συμβάν.
 
-## Budgets, after the fact
+## Προϋπολογισμοί, εκ των υστέρων
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Η επιβολή του προϋπολογισμού είναι _αντίδραση_, όχι πύλη. Όταν μια εκτέλεση ολοκληρώνεται, ο αξιολογητής συγκρίνει τη δαπάνη του πράκτορα από την αρχή του μήνα με το ενεργό ανώτατό του όριο (μια συνδεδεμένη πολιτική προϋπολογισμού αν υπάρχει, αλλιώς το δικό του μηνιαίο ποσό του πράκτορα· μηδέν σημαίνει απεριόριστο). Η υπέρβαση του ήπιου κατωφλίου καταγράφει ένα περιστατικό προειδοποίησης· η εξάντληση του προϋπολογισμού καταγράφει ένα σκληρό περιστατικό και αναστρέφει την κατάσταση κύκλου ζωής του πράκτορα σε `paused` στο οργανόγραμμα. Η αποστολή εξακολουθεί να δέχεται εργασία από αυτόν τον πράκτορα. Ένας ενεργοποιητής pipeline `BudgetThresholdCrossed` μπορεί να ξεκινήσει εργασία παρακολούθησης από το ίδιο συμβάν.
 
-## Retry lineage
+## Καταγωγή επαναλήψεων
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Κάθε αρχείο καταγραφής εκτέλεσης μπορεί να φέρει καταγωγή επανάληψης — ένα αναγνωριστικό γονικής εκτέλεσης, έναν μετρητή προσπαθειών και μια σύνοψη συνέχειας. Το δέντρο εκτελέσεων της συνομιλίας αποδίδει τον αριθμό προσπάθειας όταν δεν είναι μηδέν. Ένα «δοκίμασε ξανά» από τη συνομιλία είναι μια νέα αποστολή με ένα νέο αρχείο καταγραφής εκτέλεσης.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): what the adapter can and cannot enforce
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): where the tool surface and the completion contract come from
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): the effect-class policy every gated call passes
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/): the isolation story in full
-- [Multiplayer](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): steering, take-over and the autonomy dial
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): what `AgentRunCompleted` sets off
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): τι μπορεί και τι δεν μπορεί να επιβάλει ο προσαρμογέας
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): από πού προέρχονται η επιφάνεια εργαλείων και η σύμβαση ολοκλήρωσης
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): η πολιτική κλάσεων επιδράσεων από την οποία περνά κάθε κλήση με πύλη
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/): ολόκληρη η ιστορία της απομόνωσης
+- [Συνεργασία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): καθοδήγηση, ανάληψη ελέγχου και ο δείκτης αυτονομίας
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): τι ξεκινά το `AgentRunCompleted`

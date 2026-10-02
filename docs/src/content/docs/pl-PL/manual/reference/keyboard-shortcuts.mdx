@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Skróty klawiszowe
+description: Pełny rejestr skrótów klawiszowych według zakresów, wraz z warunkami, w których każdy skrót jest wyzwalany.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Skróty pochodzą z jednego rejestru `const`, `KeybindingRegistry` w `lib/core/constants/keybindings.dart`. Zawiera on **48 przypisań**. Ustawienia → Ty → Skróty klawiszowe wyświetla ten rejestr jako **dokumentację referencyjną tylko do odczytu**: nie ma interfejsu do ponownego przypisywania skrótów ani pliku skrótów użytkownika.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+W dalszej części strony `Cmd` oznacza główny modyfikator polecenia — ⌘ w macOS oraz Ctrl w Windows i Linuksie. Przypisanie działa tylko wtedy, gdy jego polecenie ma zarejestrowany handler na bieżącym ekranie, a jego klauzula `when` jest spełniona; `!textInputFocus` oznacza, że klawisz jest przekazywany do pola tekstowego, które ma fokus.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Nie ma skrótu do nawigacji klawiszami cyfr. Do Skrzynki, zgłoszeń, pull requestów i pozostałych ekranów dociera się z paska bocznego albo przez ⌘K. Obserwowalność również nie ma skrótu.
 
-## Global (19)
+## Globalne (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Zakres `global`, więc działają wszędzie w powłoce aplikacji.
 
 ### System
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| Skrót                                       | Akcja                                            | Warunek                                                    |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | Paleta poleceń                                   | —                                                          |
+| `Shift + /` (`?`)                           | Ściągawka ze skrótami klawiszowymi               | Brak pisania w polu                                        |
+| `Cmd/Ctrl + Z`                              | Cofnij                                           | Brak pisania w polu (pole z fokusem zachowuje własne cofanie) |
+| `Cmd/Ctrl + Shift + Z`                      | Ponów                                            | Brak pisania w polu                                        |
+| `Cmd/Ctrl + Shift + T`                      | Przełącz motyw                                   | —                                                          |
+| `Cmd/Ctrl + ,`                              | Otwórz ustawienia (ląduje na `/settings/you/appearance`) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | Przełącz tryb skupienia                          | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | Przełącz przełącznik obszarów roboczych          | —                                                          |
+| `Cmd/Ctrl + ]`                              | Następny obszar roboczy                          | —                                                          |
+| `Cmd/Ctrl + [`                              | Poprzedni obszar roboczy                         | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Przełącz na obszar roboczy 1–9                   | —                                                          |
 
-## Pull request list (3)
+## Lista pull requestów (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Zakres `/pull-requests`. Wszystkie wymagają `route == '/pull-requests'` i braku pola tekstowego z fokusem, więc nie działają, gdy nad listą jest otwarty widok szczegółów PR-a.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Skrót   | Akcja                    |
+| ------- | ------------------------ |
+| `R`     | Odśwież                  |
+| `Enter` | Otwórz PR                |
+| `F`     | Otwórz menu filtrów      |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) jest zadeklarowany w rejestrze i pojawia się w dokumentacji skrótów, ale **ekran listy nie rejestruje dla niego handlera**, więc obecnie nie działa. `F` otwiera menu filtrów (`pr.list-open-filter`), a nie wyszukiwanie.
 
-## Pull request detail (2)
+## Szczegóły pull requesta (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Zakres `/pull-requests/`. Odświeżanie wymaga braku pola tekstowego z fokusem. Zamykanie karty nie ma zabezpieczenia przed polem tekstowym (kombinacja z modyfikatorem ⌘ nigdy nie jest zwykłym tekstem) i ma wyrażenie regularne trasy, więc nie działa na liście.
 
-| Shortcut       | Action    | Condition                          |
+| Skrót          | Akcja     | Warunek                            |
 | -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| `R`            | Odśwież   | Brak pisania w polu                |
+| `Cmd/Ctrl + W` | Zamknij kartę | W lokalizacji `/pull-requests/<…>` |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Przełączanie kart (`1`/`2`/`3`), oznaczanie pliku jako wyświetlony i zwijanie (`V`/`C`), lista plików (`T`) oraz wyszukiwanie w diffie (`Cmd/Ctrl + F`) należą do własnego handlera przeglądarki diffów — zobacz [Klawisze przeglądarki diffów poza rejestrem](#klawisze-przeglądarki-diffów-poza-rejestrem).
 
-## Inbox (1)
+## Skrzynka (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Skrót | Akcja               |
+| ----- | ------------------- |
+| `F`   | Otwórz menu filtrów |
 
-Requires `route == '/inbox'` and no focused text field.
+Wymaga `route == '/inbox'` i braku pola tekstowego z fokusem.
 
-## GitHub user and team profiles (3)
+## Profile użytkowników i zespołów GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Zakres `/users/`. Klauzula `when` to wyrażenie regularne dopasowywane do `/users/<login>` **albo** `/teams/<organization>/<slug>`, plus brak pola tekstowego z fokusem.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
-
-## Spaces (8)
-
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
-
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
-
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
-
-## Workspace picker (2)
-
-Scope `/workspaces`, live only on the picker itself.
-
-| Shortcut       | Action                  |
+| Skrót          | Akcja                   |
 | -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| `R`            | Odśwież                 |
+| `/`            | Przejdź do wyszukiwania |
+| `Cmd/Ctrl + F` | Przejdź do wyszukiwania |
 
-`Enter` requires no focused text field.
+## Przestrzenie (8)
 
-## Settings (5)
+Zakres `/spaces`. Klauzule `when` używają wyrażenia regularnego, więc działają zarówno na liście przestrzeni (`/spaces`), jak i w wybranej przestrzeni (`/spaces/<id>`).
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Skrót                  | Akcja                                  | Warunek               |
+| ---------------------- | -------------------------------------- | --------------------- |
+| `Enter`                | Wyślij wiadomość                       | —                     |
+| `Cmd/Ctrl + N`         | Nowa przestrzeń                        | W trasie `/spaces`    |
+| `J`                    | Następna przestrzeń                    | Brak pisania w polu   |
+| `K`                    | Poprzednia przestrzeń                  | Brak pisania w polu   |
+| `Cmd/Ctrl + Shift + D` | Dyktowanie „Przyciśnij i mów”          | —                     |
+| `Cmd/Ctrl + T`         | Otwórz kartę edytora                   | W trasie `/spaces`    |
+| `Cmd/Ctrl + W`         | Zamknij kartę edytora                  | W trasie `/spaces`    |
+| `Cmd/Ctrl + B`         | Przełącz panel boczny edytora          | W trasie `/spaces`    |
+
+Wysyłanie klawiszem Enter należy do pola tekstowego kompozytora; dyktowanie „Przyciśnij i mów” należy do przycisku mikrofonu w kompozytorze (ma własny handler klawiatury sprzętowej). Oba są wymienione w rejestrze na potrzeby dokumentacji ustawień.
+
+## Wybór obszaru roboczego (2)
+
+Zakres `/workspaces`, aktywny tylko w samym oknie wyboru.
+
+| Skrót          | Akcja                        |
+| -------------- | ---------------------------- |
+| `Cmd/Ctrl + N` | Nowy obszar roboczy          |
+| `Enter`        | Otwórz wybrany obszar roboczy |
+
+`Enter` wymaga braku pola tekstowego z fokusem.
+
+## Ustawienia (5)
+
+| Skrót          | Akcja                        | Ekran                                    |
+| -------------- | ---------------------------- | ---------------------------------------- |
+| `J`            | Następna strona ustawień     | Dowolna trasa `/settings`, brak pisania  |
+| `K`            | Poprzednia strona ustawień   | Dowolna trasa `/settings`, brak pisania  |
+| `Cmd/Ctrl + N` | Nowy agent                   | Ustawienia → Obszar roboczy → Agenci     |
+| `Cmd/Ctrl + N` | Dodaj repozytorium           | Ustawienia → Obszar roboczy → Repozytoria |
+| `R`            | Ponownie przeskanuj adaptery | Ustawienia → Serwer → Dostawcy modeli    |
 
 ## Newsfeed (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Zakres `/newsfeed`. Wszystkie wymagają `route == '/newsfeed'` i braku pola tekstowego z fokusem.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Skrót   | Akcja               |
+| ------- | ------------------- |
+| `J`     | Następny artykuł    |
+| `K`     | Poprzedni artykuł   |
+| `Enter` | Otwórz artykuł      |
+| `S`     | Przełącz zakładkę   |
+| `R`     | Odśwież kanały      |
 
-## Diff viewer keys outside the registry
+## Klawisze przeglądarki diffów poza rejestrem
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+Przeglądarka diffów PR-a obsługuje je samodzielnie (`PrDiffKeyboardHandler`). Wyszukiwanie, oznaczanie jako wyświetlone i zwijanie są wymienione tylko w komentarzach rejestru, na potrzeby dokumentacji ustawień — nie zarejestrowano żadnego handlera dyspozytora, więc dyspozytor pozostawia je widokowi diffu. Nie pojawiają się jako osobne wiersze w dokumentacji skrótów.
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| Skrót           | Akcja                                                     |
+| --------------- | --------------------------------------------------------- |
+| `Cmd/Ctrl + F`  | Szukaj w diffie                                            |
+| `J` / `K`       | Następny / poprzedni plik                                  |
+| `V`             | Przełącz oznaczenie „wyświetlone” dla pliku z fokusem      |
+| `C`             | Przełącz zwijanie pliku z fokusem                          |
+| `T`             | Pokaż listę plików                                         |
+| `Enter`         | Następne dopasowanie (tylko gdy wyszukiwanie w diffie jest otwarte) |
+| `Shift + Enter` | Poprzednie dopasowanie                                     |
+| `Escape`        | Zamknij wyszukiwanie w diffie albo wyczyść zaznaczenie tekstu w diffie |
+| `Cmd/Ctrl + C`  | Skopiuj zaznaczenie w diffie                               |
 
-## Browser-reserved combinations
+## Kombinacje zarezerwowane przez przeglądarkę
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+W wersji webowej przeglądarka przechwytuje niektóre skróty, zanim zobaczy je strona, więc pasujące przypisania nigdy tam nie działają. W aplikacji desktopowej działają normalnie. Zarezerwowane w połączeniu z głównym modyfikatorem polecenia: `T`, `W`, `N` oraz cyfry `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Dotyczy to przełączania obszarów roboczych przez `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (nowa przestrzeń, nowy obszar roboczy, nowy agent, dodanie repozytorium) oraz `Cmd/Ctrl + T` / `Cmd/Ctrl + W` w przestrzeniach i w szczegółach PR-a.
 
-## See also
+## Zobacz też
 
-- [Route map](/pl-PL/podrecznik/dokumentacja-referencyjna/mapa-tras/)
-- [Focus mode](/pl-PL/podrecznik/poradniki/tryb-skupienia/)
+- [Mapa tras](/pl-PL/podrecznik/dokumentacja-referencyjna/mapa-tras/)
+- [Tryb skupienia](/pl-PL/podrecznik/poradniki/tryb-skupienia/)

@@ -1,120 +1,128 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Cerca codice con il grafo del codice
+description: Indicizza un repo e usa gli strumenti del grafo del codice per trovare i simboli e vedere cosa romperebbe una modifica.
 slug: it-IT/manuale/guide/cerca-codice
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Questa guida mostra come portare un repo nel grafo del codice e poi usarlo per
+rispondere alla domanda che ti poni davvero prima di un refactoring: cosa
+dipende da questo?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Il grafo del codice è un database di simboli e archi costruito analizzando i
+checkout registrati con tree-sitter. I suoi strumenti sono **rivolti agli
+agenti**: li raggiungi chiedendo a un agente.
 
-## Before you start
+## Prima di iniziare
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Il grafo indicizza Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C,
+C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB e Ada. I file in
+qualsiasi altra lingua non vengono analizzati, quindi non compaiono in
+`search_code`, `code_symbol`, `code_callers`, `code_callees` o `code_impact`.
 
-Two more things shape what gets indexed:
+Altri due fattori determinano cosa viene indicizzato:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- In un worktree git, l'enumerazione si affida a `git ls-files --cached --others --exclude-standard`, quindi ogni `.gitignore`, i file di ignore annidati, `.git/info/exclude` e il file di esclusione globale vengono rispettati. È questo che tiene `node_modules` e i risultati delle build fuori dal grafo.
+- Il Dart generato viene scartato comunque. I file generati di solito sono versionati, quindi git da solo non li escluderebbe, e cambiano a ogni esecuzione della generazione di codice.
 
-## Get a repo indexed
+## Indicizza un repo
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/it-IT/manuale/guide/aggiungi-repo/).
+Registrare un checkout attiva `RepoAdded`, che avvia automaticamente per esso la pipeline `index_code`. Vedi [Aggiungi repo a uno spazio di lavoro](/it-IT/manuale/guide/aggiungi-repo/).
 
-To re-index by hand:
+Per reindicizzare a mano:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Apri **Impostazioni → Spazio di lavoro → Repository**.
+2. Fai clic sul pulsante **Indicizza codice** nella riga del repo.
+3. Mentre è in esecuzione, il pulsante mostra i file completati sul totale, con un comando di annullamento. Al termine si stabilizza in una spunta con il conteggio dei simboli.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Il grafo è partizionato per spazio di lavoro, repo e checkout: il checkout collegato è una partizione, e ogni worktree di spazio ha la propria (con chiave sul suo id di repo isolato).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Vale la pena conoscere due limitatori, perché spiegano un'attesa che sembra un blocco:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Il watcher dei file ammette una sola esecuzione di indicizzazione alla volta sull'host — un secondo checkout aspetta. La pipeline `index_code` è limitata separatamente a un'esecuzione per spazio di lavoro, quindi due repo nello stesso spazio di lavoro si accodano; spazi di lavoro diversi possono indicizzare in parallelo. L'indicizzatore stesso serializza due esecuzioni dello **stesso** checkout, così l'avvio di una pipeline e una scansione del watcher non possono analizzarlo due volte.
+- I worktree appartenenti a **spazi dormienti** (nessun messaggio nell'ultima settimana) non vengono né osservati né indicizzati. I checkout collegati restano osservati. Una decisione di salto viene ricontrollata dopo cinque minuti, quindi uno spazio che torna attivo viene ripreso.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Una grammatica mancante blocca il server, non la ricerca]
+Tree-sitter e le sue grammatiche sono nativi obbligatori. Se ne manca uno, `cc_server` rifiuta di avviarsi e indica la dylib mancante: il sintomo è un server che non parte, mai una ricerca degradata. Predisponili con `scripts/natives/build_natives.sh` e ricompila il binario del server.
 :::
 
-## Find a symbol
+## Trova un simbolo
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Chiedi a un agente di cercare. Lo strumento è `search_code` e richiede sia uno spazio di lavoro sia un repo:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Gli id dei repo provengono da `list_repos`. L'argomento opzionale `mode` è `keyword`, `semantic` o `hybrid` e il valore predefinito è hybrid — BM25 su nomi, firme e commenti di documentazione, fuso con la similarità vettoriale.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Ogni risultato porta l'id, il nome, il nome qualificato, il tipo, il percorso del file, la riga di inizio e quella di fine del simbolo e la sua firma, quando ne ha una. L'**id** è l'handle che passi a ogni altro strumento di questa pagina.
 
-When you know the exact name, look it up directly instead:
+Quando conosci il nome esatto, cercalo direttamente:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Traccia le chiamate
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Entrambi richiedono uno `symbol_id` da un risultato di ricerca, più un `limit` opzionale (predefinito 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` restituisce i simboli con un arco in entrata verso questo; `code_callees` restituisce quelli da cui dipende.
 
-## Check what a change would break
+## Verifica cosa romperebbe una modifica
 
-This is the tool the whole page exists for:
+Questo è lo strumento per cui esiste l'intera pagina:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Calcola il raggio delle dipendenze **inverse**: tutto ciò che dipende, direttamente o transitivamente, dal simbolo lungo gli archi `calls`, `extends` e `implements` (gli import, i mix-in e i riferimenti generici sono archiviati nel grafo ma non vengono percorsi qui). `depth` è il numero massimo di salti, tra 1 e 6, con valore predefinito 2.
 
-The result is three fields:
+Il risultato è composto da tre campi:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — il simbolo su cui hai chiesto informazioni
+- `impacted` — l'insieme raggiungibile, che include la radice a profondità 0, ciascuno con il proprio `depth` dalla radice
+- `edgeCount` — quanti archi ha attraversato la traversata, come conteggio invece che come archi stessi
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Eseguilo prima di rinominare o modificare una firma e passa all'agente l'elenco degli elementi coinvolti come suo ambito.
 
-## Results are checked against the caller's own working copy
+## I risultati vengono verificati sulla copia di lavoro del chiamante
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Per un chiamante agente, l'id dello spazio viene iniettato automaticamente e i risultati vengono verificati sulla copia di lavoro di **quello spazio**. Un simbolo il cui file non esiste più nell'albero del chiamante viene omesso e la risposta porta un conteggio `staleOmitted` più una nota che dice che l'indice è obsoleto per quei simboli.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+È per questo che tu e un agente potete ottenere risposte diverse alla stessa query, e che un agente in uno spazio può ottenere una risposta diversa da un agente in un altro. Ogni conversazione di uno spazio condivide quell'unico worktree. La verifica fallisce in modo permissivo: si preferisce una risposta obsoleta a una vuota.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/it-IT/manuale/guide/calcolo-revisione/).
+Chiedi a un agente di eseguire `code_impact` (o `review_studio.blastRadius`) quando vuoi il raggio d'impatto di una modifica. Vedi [Calcolo della revisione](/it-IT/manuale/guide/calcolo-revisione/).
 
-## Semantic search needs the embedding model
+## La ricerca semantica richiede il modello di embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+I simboli e i fatti ricevono un embedding al momento della scrittura, e solo se il modello di embedding sul dispositivo è installato. Fino ad allora, `mode: "semantic"` e la metà semantica della modalità ibrida non hanno nulla con cui confrontarsi e la ricerca è di fatto solo per parola chiave.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Installa il modello in **Impostazioni → Server → Diagnostica e privacy → Ricerca semantica** prima di indicizzare. I simboli ricevono un vettore quando il loro file viene acquisito.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Nota anche che qualsiasi ricompilazione del binario del server riprepara le dylib delle grammatiche e ne cambia gli mtime, il che invalida ogni checkpoint dell'indice e forza una nuova scansione completa di ogni checkout all'esecuzione successiva. Ricalcola gli hash, ma non ri-estrae i file invariati.
 
-## What is in the graph
+## Cosa c'è nel grafo
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Tipi di simbolo:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Tipi di arco:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/it-IT/manuale/riferimento/strumenti-mcp/).
+Le firme canoniche di questi strumenti si trovano in [Strumenti MCP](/it-IT/manuale/riferimento/strumenti-mcp/).
 
-## Related guides
+## Guide correlate
 
-- [Add repos to a workspace](/it-IT/manuale/guide/aggiungi-repo/)
-- [Review compute (cohorts and axes)](/it-IT/manuale/guide/calcolo-revisione/)
-- [Use the MCP server](/it-IT/manuale/guide/server-mcp/)
+- [Aggiungi repo a uno spazio di lavoro](/it-IT/manuale/guide/aggiungi-repo/)
+- [Calcolo della revisione (coorti e assi)](/it-IT/manuale/guide/calcolo-revisione/)
+- [Usa il server MCP](/it-IT/manuale/guide/server-mcp/)
 
-## Related concepts
+## Concetti correlati
 
-- [Workspaces and isolation](/it-IT/manuale/concetti/spazi-di-lavoro/)
+- [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/)

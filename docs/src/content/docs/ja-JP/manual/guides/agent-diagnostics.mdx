@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: エージェントの診断
+description: エージェントが実行を生み出さなくなったときに、実行ログ、アダプターのプローブ、サーバーのステータス、ホストの診断を順に確認します。
 slug: ja-JP/マニュアル/ハウツーガイド/エージェント診断
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+このガイドでは、エージェントが実行を生み出さない理由を突き止める方法を説明します。
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+上から順にたどります。まずエージェント自身の実行、次にそのバックエンド、次にサーバー、最後にホストです。
 
-## 1. Check the agent's run history
+## 1. エージェントの実行履歴を確認する
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**設定 → ワークスペース → エージェント** → エージェントを選択 → **ログ**。
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+各実行には、ステータスバッジ、所要時間（進行中は「Running…」）、開始時刻と完了時刻、PID、使用したアダプターが表示されます。**表示**を押すと、その実行の生のイベントストリームが開きます。**停止**は実行中のプロセスを強制終了し、その実行を「Killed by user」として記録します。ヘッダーの**実行中を強制終了**は、そのエージェントの進行中のすべての実行に対して同じことを行います。
 
-Read it like this:
+次のように読み解きます:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **実行がまったくない** — ディスパッチが発生していません。メッセージ入力欄でのメンションは、`@` と単語文字（英字、数字、アンダースコア）です。解決はエージェント名に対する完全一致または前方一致なので、`@code-reviewer` は `code` として解析され、`code-reviewer` という名前のエージェントを依然として起動できます。名前に空白が含まれる場合、それを 1 つのトークンとしてメンションすることはできません。その場合は手順 2 に進みます。
+- **すぐにエラーで終了した実行** — **表示**を開きます。バックエンドの起動失敗は、ここにプロセスエラーとして現れます。
+- **「Running…」のまま止まっている実行** — 停止してから、設定タブでそのエージェントの**無応答タイムアウト**を確認します。タイムアウトが未設定の場合、モードごとのデフォルトが使われます。
+- **完了したが役立つ出力がない実行** — 宣言された成果物を出さずに終了した実行では、実行ログのステータスは `completed` のままです。正直なシグナルはバッジではなく、要約テキストです。
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+ログタブにはコストが表示されません。支出については、**オブザーバビリティ → インサイト**にあるエージェントごとの表を使用します。
 
-## 2. Check the agent's backend
+## 2. エージェントのバックエンドを確認する
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**設定 → サーバー → モデルプロバイダー**（`/settings/server/providers`）。
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+**検出されたランナー**の一覧には、各アダプターとそのプローブ結果 — インストール済みのバージョン、「確認中…」、「見つかりません」のいずれか — に加えて、解決されたパスと、見つかった CLI のケイパビリティチップが表示されます。再プローブするには、ページヘッダーの**更新**をクリックします。
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+プローブは、今見ているマシンではなく、`cc_server` をホストしているマシン上で実行されます。Web クライアントやペアリング済みデバイスを使っている場合、「見つかりません」はサーバーホストにその CLI がないことを意味します。
 
-Two things to confirm:
+確認すべきことは 2 つあります:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **エージェントにアダプターが設定されているか。** アダプターが空のエージェントは **Control Center (built-in)** にディスパッチされ、実行ログには `cc-harness` が記録されるため、トランスクリプトに何が実行されたかが示されます。モデルもない場合、組み込みループは Anthropic にデフォルトを問い合わせます — Anthropic アカウントを接続していなければ、これは `No credential for provider "anthropic"` で失敗します。シードされるスペシャリストはアダプターなしで出荷されます。
+- **組み込みアダプターにモデルがあるか。** そのモデル一覧は、同じページの下方で接続されているプロバイダーからリアルタイムに取得されるため、資格情報が保存されていないプロバイダーはモデルを 1 つも提供しません。
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+アダプターのカタログ自体は固定です — 新しいアダプターを登録する方法はありません。ここでアダプターごとに変更できるのは、その起動引数と環境変数です。資格情報が解決されるとき、アダプターごとの環境変数の上書きが、接続済みのプロバイダーアカウントを黙って打ち負かす点に注意してください。
 
-## 3. Check the server
+## 3. サーバーを確認する
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**設定 → サーバー → 接続とステータス**（`/settings/server/connection`）には、このクライアントがどのサーバーと通信しているか、そしてそのサーバーが何を報告しているかが表示されます。
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+ヘッドレスサーバーの場合、`GET /healthz` はクライアントなしで同じ情報を提供します。これは設計上、認証不要で CORS もオープンです:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+返されるのは、サーバーのステータス、稼働時間（秒）、ライブ接続数、バインドされたポート、ビルドバージョンと git SHA、ワークスペーススキーマバージョン、RPC カタログバージョン、サーバー ID、名前とアイデンティティフィンガープリント、バインドが安全でないかどうか、そして `watching` / `indexing` / `pending` のカウントを持つ `codeGraph` ブロックです。キャッシュがトラフィックを受けたことがある場合は `caches` ブロックも含まれ、デモサーバーは `demo: true` を追加します。
 
-Two things worth knowing when a change "works in tests but not in the app":
+変更が「テストでは動くがアプリでは動かない」ときに知っておくべきことが 2 つあります:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- デスクトップは、ソースよりも**ビルド済み**の `cc_server` バイナリを優先して起動します。新しい RPC オペレーションや MCP ツールは、バイナリを再ビルドするまで現れず、子プロセスの git SHA がアプリのものと異なる場合、起動時に警告がログに記録されます。
+- デスクトップは、20 秒以内に準備完了のバナーを出力しなかった起動済みサーバーを強制終了し、エラー画面に移行します。
 
-## 4. Check the host
+## 4. ホストを確認する
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**設定 → サーバー → 診断とプライバシー**（`/settings/server/diagnostics`）はホストレベルのページです。ここには次のものがあります:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **サンドボックス化** — マスタートグル、検出されたバックエンド、インストールのヒント、デフォルトのケイパビリティトグルです。サーバーから取得するのは検出されたバックエンドだけです。後述の注意を参照してください。リセット用のコントロールはありません。
+- **セマンティック検索** — オンデバイスの埋め込みモデルのライフサイクル（インストール済み、パーセント付きでダウンロード中、未インストール、インストールエラー）です。インストールされるまで、メモリとコード検索はキーワードのみのままです。
+- **システムの動作** — エージェントの実行中にコンピューターをスリープさせないようにします。
+- **同期エンジン** — チケット、メッセージング、ノートのストアごとのキルスイッチです。これは完全スナップショット購読へ戻すための緊急脱出ハッチです。変更は新しい購読にのみ影響するため、完全に有効になるのはリロード後です。
+- **ログレベル** — 障害を再現する前に引き上げます。
+- **プライバシー** — 生の diff 内容をエージェントのモデルへ転送してよいかどうか、およびクラッシュレポートを送信するかどうかです。
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[このセクションが報告するのはホストであり、そのコントロールはクライアント側です]
+検出と強制は今や一致しています。検出器がネイティブバックエンドを報告する場所では、そのホスト上のエージェント実行は実際にそれでラップされます。しかし、このセクションで実際に生きているのは検出器だけです。マスタートグル、バックエンドの選択、デフォルトのケイパビリティトグルはお使いのデバイスに保存された設定であり、サーバーはそのどれも読みません — サーバー自身のスイッチは `--sandbox` で（既定は `on`、オプトアウトするには `off`）、「ワークスペースのデフォルトを使用」のままにされたエージェントに対しては、サーバーは自身の保守的なデフォルトへフォールバックします: git push なし、GitHub API なし、チケットキーなし、ネットワークはオンです。
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+したがって、ここに警告が出たら対処する価値はありますが、それがエージェントの失敗の原因であることは通常ありません。サーバーがどの状態にあるかを確認するには、その起動ログを読みます。ログには、バックエンドの注記を伴う `agent sandbox ON`、インストールのヒントを伴う `no OS-native agent sandbox on this host`、または `agent sandbox DISABLED by --sandbox off` が出力されます。`GET /healthz` にサンドボックスのフィールドはありません。
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+バックエンドが存在しない場合 — 常に Windows、および `bwrap` と `socat` のない Linux や WSL2 — 実行はサンドボックス化され**ません**。それを制約するのは、会話自身のチェックアウト、それにどの資格情報が発行されるかをゲートするケイパビリティ、アクションガードレール、環境のサニタイズ、そしてそのモードが許可するツールサーフェスです。
 :::
 
-## Common failures
+## よくある失敗
 
-### The run never starts and the adapter shows "Not found"
+### 実行が始まらず、アダプターが「見つかりません」と表示する
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+CLI を**サーバーホストに**インストールし、モデルプロバイダーページで**更新**をクリックします。または、CLI を必要としない組み込みアダプターにエージェントを切り替え、同じページでプロバイダーを接続します。
 
-### The agent cannot push or open a pull request
+### エージェントがプッシュもプルリクエストの作成もできない
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+ゲートとなるのはエージェントのケイパビリティです。**設定 → ワークスペース → エージェント** → そのエージェント → **サンドボックスの権限**を開き、スイッチをオンにして、**git push を許可**と **GitHub API の呼び出しを許可**を有効にします。スイッチを「ワークスペースのデフォルトを使用」のままにすると、エージェントにはこれらのどれも与えられません。
 
-### Semantic search returns nothing useful
+### セマンティック検索が役立つ結果を返さない
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+**設定 → サーバー → 診断とプライバシー → セマンティック検索**を確認します。埋め込みモデルがインストールされるまで、検索はキーワードのみです。モデルのインストール前に書き込まれた行はバックフィルされないため、その後もキーワードのみのままです。
 
-### The server will not boot at all
+### サーバーがまったく起動しない
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+ネイティブライブラリは必須で、劣化モードはありません。dylib が見つからないと、`cc_server` は起動を拒否し、エラーの中で問題のファイルを名指しします。`scripts/natives/build_natives.sh` でネイティブをステージし、サーバーバイナリを再ビルドします。
 
-### An action is silently denied
+### アクションが黙って拒否される
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+承認者が接続されていない `prompt` のガードレール判定は、設計上拒否されます。**設定 → ワークスペース → エージェントの権限**でワークスペースのルールを確認します。
 
-## Related guides
+## 関連するガイド
 
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
-- [Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/)
-- [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
+- [ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/)
+- [ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)

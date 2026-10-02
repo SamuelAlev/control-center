@@ -1,241 +1,236 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: إنشاء قالب خط أنابيب
+description: اكتب قالب سير عمل DAG في محرّر خط الأنابيب، بإضافة العقد ووصلها وإعلان المدخلات وجعله قابلًا للتشغيل.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إنشاء-خط-أنابيب
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+تُكتَب قوالب خطوط الأنابيب في إعدادات مساحة العمل. عنصر **خطوط الأنابيب**
+في الشريط الجانبي لمساحة العمل هو _طابور التشغيلات_ لا قائمة القوالب، ولا إجراء
+فيه لإنشاء قالب.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
+لما يعنيه كل نوع خطوة ومفتاح جسم وحقل إعداد، انظر
+[أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
 
-## Create a template
+## إنشاء قالب
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. انتقل إلى **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. انقر **قالب جديد**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+لا حوار للمعرّف. يفتح المحرّر فورًا على هيكل مبذور
+باسم **خط أنابيب جديد**، وبمعرّف يُخصَّص تلقائيًا (`pipeline_1` ثم
+`pipeline_2`، …). انقر العنوان في الترويسة لإعادة تسميته.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+اللوحة ليست فارغة: عقدة دخول **Trigger**، وعقدة وكيل موجّه بعنوان
+**Step**، وحارس `terminal` يختم التشغيل. الحارس غير مرسوم. يعيد المحرّر توصيل
+ذلك الطرف المخفي إلى كل عقدة بلا مخرج يمكن بلوغها، فالعمل الذي توصله بعد
+**Step** يبقى يعمل.
 
-## Add nodes
+## إضافة العقد
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+يبقى الشريط الجانبي **مكتبة العقد** على يسار المحرّر. صفِّها بمربع
+**البحث في العقد** واسحب عنصرًا إلى اللوحة. تستقر العقدة حيث تفلتها، بلا اتصال
+وارد.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| عقدة اللوحة | نوع الخطوة | ما تفعله |
+| --- | --- | --- |
+| **سكربت Bash** | listen | يشغّل سكربت صدفة مع استبدال `{{state}}`، بلا إرسال وكيل |
+| **فتح محادثة** | listen | يفتح المساحة الظاهرة الوحيدة للتشغيل وسحبها، وتنضم عقد الوكيل إلى هذه الغرفة |
+| **استنساخ فرع طلب السحب** | listen | يكتشف فرع رأس طلب السحب عبر `gh pr view` ويستنسخه في دليل التشغيل |
+| **نشر تعليق على طلب السحب** | listen | ينشر النتائج المجمَّعة على طلب السحب كتعليق مراجعة على GitHub |
+| **مراجع (موجّه)** | listen | يرسل وكيل مراجعة متخصصًا، ويُعلَّق حتى يسلّم الوكيل نتيجته |
+| **تجميع (دمج)** | join | ينتظر عدة فروع سابقة، ثم يطلب من وكيل تجميع مخرجاتها |
+| **موجّه مخصّص** | listen | عقدة عامة يحركها موجّه، وتمر عبر جسم `promptAgent` |
+| **النشر في مساحة** | listen | يرسل رسالة إلى مساحة مراسلة |
+| **شرط / تفريع (router)** | router | يفرّع المسار حسب قيمة في الحالة |
+| **إن وُجد ملف (router)** | router | يوجّه `"true"` حين يوجد مسار تحت النسخة، وإلا `"false"` |
+| **وجود أي ملف (router بـ OR)** | router | يوجّه `"true"` حين يوجد أي مسار من القائمة |
+| **كل الشروط (router بـ AND)** | router | يوجّه `"true"` فقط حين يوجد كل مسار في القائمة |
+| **إرسال الفريق** | listen | يرسل فريقًا كاملًا ويُعلَّق حتى ينتهي |
+| **بوابة الموافقة** | listen | يتوقف انتظارًا لقرار موافقة |
+| **لكل عنصر (map)** | forEach | يصيغ موجّهًا لكل عنصر، ثم يرسل الوكيل مرة واحدة بهذه الموجّهات مضمومة |
+| **استدعاء خط أنابيب فرعي** | listen | يشغّل قالبًا آخر كخطوة متداخلة |
+| **تنظيف أشجار العمل** | listen | يزيل أشجار العمل المعزولة القديمة، بشكل حتمي وبلا إرسال وكيل |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+تجمعها المكتبة تحت **التدفق والمنطق** و**مراجعة PR** و**الوكلاء**
+و**المراسلة** و**الكود**. لا توجد مجموعة Demo.
 
-## Wire nodes together
+## توصيل العقد
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+لكل عقدة عمل **مقبض إخراج** دائري على حافتها اليمنى. اسحب من ذلك
+المقبض إلى عقدة أخرى لوصلها. مشغّلات البدء كذلك: لكل واحد مقبضه، فسلك يخرج من
+**جدولة** لا يخرج معه من **تشغيل يدوي**. انقر **إضافة خطوة** (`+`) بعد العقدة
+مباشرة لتدرج نوعًا بعدها. مرّر المؤشر فوق منتصف حافة قائمة وانقر × لفصل الاتصال.
 
-Connections are also edited from the node that _receives_ them:
+تُحرَّر الاتصالات أيضًا من العقدة التي _تستقبلها_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. حدّد العقدة التالية. تفتح لوحة إعداداتها على اليمين.
+2. انزل إلى **المشغّلات من** وانقر شريحة كل عقدة سابقة ينبغي لهذه العقدة
+   أن تستمع إليها. النقر على شريحة محددة يزيل الاتصال.
+3. إن كانت عقدة سابقة من نوع router، يظهر قسم **مفاتيح التوجيه** تحت
+   الشرائح، وفيه حقل **مفتاح التوجيه من &lt;عقدة&gt;** لكل حافة router. أدخل
+   المفتاح الذي تُطلقه تلك الحافة: `true` أو `false` لعقد وجود الملف،
+   أو اسم الحالة لوضع **تفريع**.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+كل عقدة مشغّل نقطة دخول. قد تستمع العقدة إلى عدة خطوات تسبقها
+وتغذّي عدة خطوات تليها، ويجب أن يبقى المخطط غير حلقي. لا شيء في المحرّر يمنع
+توصيل حلقة، فتحقق من عملك.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+حارس `terminal` مستبعد من اللوحة، فلا يمكن تحديده.
+يعيد المحرّر توصيله إلى كل عقدة بلا مخرج يمكن بلوغها كلما تغيّر المخطط، فالعمل
+الذي توصله بعد عقدة **Step** المبذورة يبقى يعمل. المخطط الفارغ (مشغّل
+بلا خطوات عمل تليه) يدرج المشغّل نفسه حتى يكتمل التشغيل فورًا.
 
-## Configure a node
+## تهيئة عقدة
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+حدّد عقدة لتفتح لوحة إعداداتها. الحقول التي تظهر تعتمد على
+جسم العقدة.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+لكل عقدة **التسمية** و**مفاتيح الإدخال (مفصولة بفواصل)** (مفاتيح الحالة التي تُقرأ
+وقت التنفيذ)، وتحت **متقدم**: **المخفِّض** و**المهلة (مللي ثانية)**
+و**محاولات الإعادة** و**المتابعة إذا فشلت هذه الخطوة** و**مخطط الإخراج (JSON)**. تستطيع عقد
+listen وjoin تبديل **النوع** بينهما.
 
-### Open conversation
+### فتح محادثة
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+تضيف منتقي **المستودعات المطلوب استنساخها** (مستودعات مساحة العمل التي تُسحَب، والفراغ يعني
+لا شيء)، و**اسم المساحة**، وخانة **فتح محادثة فيها**. حين تُفعَّل تلك
+الخانة، يسمّي حقل **اسم المحادثة** المجرى الذي تُفتح به الغرفة. عقد الوكيل تنضم إلى هذه الغرفة، ولا تفتح غرفة خاصة بها.
 
-### Prompt agent
+### وكيل الموجّه
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+تضيف **الوكيل** (الوكيل الذي يُرسَل)، و**قالب الموجّه** (استخدم `{{key}}`
+للإشارة إلى المدخلات أو مخرجات الخطوات السابقة)، و**مفتاح الإخراج**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**المهلة (مللي ثانية)** تُقاس بال_مللي ثانية_ لا بالثواني. `900000` يساوي 15 دقيقة.
+إدخال `900` يمنح الخطوة 0.9 ثانية.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+وضع المحادثة الذي تعمل تحته عقدة وكيل الموجّه ليس له حقل في المحرّر على
+عقدة الوكيل. يُحمَل في `extras['mode']` (`chat` أو `plan` أو `review`) على عقدة
+**فتح محادثة** التي أنشأت الغرفة (الافتراضي `review`). ضبطه
+على خطوة وكيل يُتجاهل. يُطابَق المفتاح حرفيًا، وأي كتابة أخرى
+تُتجاهل بصمت.
 
-### Bash script
+### سكربت Bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+تضيف **سكربت Bash**. لا حقول لدليل العمل ولا للبيئة، فكلاهما غير قابل للضبط:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- تشترك كل خطوة bash في التشغيل في دليل العمل `<cc_root>/pipelines/<runId>/`.
+- يُحقَن `GITHUB_TOKEN` من مخزن بيانات الاعتماد، فتعمل `gh` و
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` بلا إعداد.
+- يُطلَق السكربت بوصفه الملف التنفيذي الحرفي `bash`، فيجب أن يكون `bash` على
+  `PATH` لمضيف الخادم. هذا اعتبار يخص Windows.
 
-### Router
+### التوجيه
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+تقيّم عقدة `router` شرطًا وتعيد مفتاح توجيه. يُطلق المحرّك
+الحافة التالية التي يطابق مفتاح توجيهها فقط، ويعلّم سائر الفروع
+متخطاة.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+تحديد عقدة `router` يستبدل حقل **مفتاح الإخراج** بمحرّر الشرط.
+اختر أحد أوضاعه الأربعة:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **وجود ملف/ملفات — أي منها**: يوجّه `"true"` حين يوجد أي مسار من القائمة.
+- **وجود الملفات — كلها**: يوجّه `"true"` فقط حين يوجد كل مسار في القائمة.
+- **مقارنة**: تقارن قيمة في الحالة بقيمة ثابتة.
+- **تفريع**: يوجّه حسب قيمة مفتاح حالة، مع **الحالة الافتراضية**.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+ثم اضبط مفاتيح التوجيه المطابقة على الحواف الخارجة (انظر
+[توصيل العقد](#توصيل-العقد)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
+يدعم الجسم مجموعات `and` و`or` و`not` المنطقية، لكن هذا النموذج لا يتيح
+كتابتها. تحتاج إلى شجرة محمولات مكتوبة يدويًا تحت
+`extras.predicate`. المفردات الكاملة للمحمولات والمعاملات في
+[أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/).
 
-### Join
+### الدمج
 
-No configuration of its own: it waits for all of its upstream steps.
+لا إعداد خاصًا بها: تنتظر اكتمال كل خطواتها السابقة.
 
-### Approval gate
+### بوابة الموافقة
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+ترسل البوابة وكيل الاعتماد إلى محادثة مخفية ومعه موجّه البوابة
+وتُعلَّق. يطلب المعتمِد قرارك في المحادثة ويسلّمه
+عبر `submit_output` بالشكل `{ "decision": "approved" | "rejected", "reason": "..." }`.
+يستقر القرار تحت مفتاح الإخراج (الافتراضي `approval_decision`)، فيستطيع
+تفريع لاحق أن يتفرّع عليه.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+اضبط **الوكيل** على المعتمِد و**قالب الموجّه** على سؤال البوابة. تُحسم البوابة
+عبر `submit_output` بالشكل `{ "decision": "approved" | "rejected",
+"reason": "..." }`. عقد **مراجع (موجّه)** تسلّم بالطريقة نفسها.
 
-### Team dispatch
+### إرسال الفريق
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+تضيف **معرّف الفريق** و**وضع الإرسال**. يعرض المنتقي وضعين فقط:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel`: مهمة لكل عضو، وتُعلَّق حتى يكتمل الجميع.
+- `manager`: يُرسَل القائد، وهو الذي يفوّض.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+أي قيمة مخزّنة أخرى تتصرف كـ `allParallel`. اضبط **المخفِّض** على `append` لـ
+جمع نتيجة كل عضو في قائمة تحت مفتاح الإخراج.
 
-### For each and Call sub-pipeline
+### لكل عنصر واستدعاء خط أنابيب فرعي
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+يمر **لكل عنصر** على مفتاح الحالة `items` افتراضيًا (`extras.iterableKey` /
+`extras.itemKey` على العقدة). يصيغ موجّهه مرة لكل عنصر (`{{item}}`
+افتراضيًا) ويرسل الوكيل **مرة واحدة** بهذه الموجّهات مضمومة.
+المجموعة الفارغة تكتمل فورًا بقائمة فارغة. ليس هذا إرسالًا
+متوازيًا لكل عنصر.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+يُعلَّق **استدعاء خط أنابيب فرعي** حتى يبلغ التشغيل الفرعي حالة نهائية، ثم
+يدمج الحالة النهائية للفرع تحت مفتاح الإخراج (الافتراضي `subflow_result`).
+وجّهه إلى الفرع بـ `extras.templateId`. لا يستطيع القالب استدعاء نفسه. التشغيل
+الفرعي الفاشل أو الملغى يُفشل خطوة الأب، فتُطبَّق عندئذ سياسة إعادة المحاولة والمتابعة عند الفشل الخاصة بتلك الخطوة.
 
-## Declare inputs and allow manual runs
+## إعلان المدخلات والسماح بالتشغيل اليدوي
 
-Both live behind **Manual run** in the editor header.
+كلاهما خلف **تشغيل يدوي** في ترويسة المحرّر.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. انقر **تشغيل يدوي**.
+2. فعّل **السماح بالتشغيل اليدوي**. يُحفَظ هذا المفتاح فورًا، فهو ينشئ
+   (أو يحذف) صف المشغّل `manual` الذي يجعل القالب يظهر في
+   صفحة التشغيل.
+3. اضبط **الحد الأقصى للتشغيلات المتوازية** إن أردت سقفًا (اتركه فارغًا لغير المحدود).
+   البدايات الزائدة تنتظر في حالة `queued` حتى يتحرر مكان.
+4. انقر **إضافة مدخل** لكل حقل ينبغي أن يجمعه التشغيل اليدوي:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| الحقل | الوصف |
+| --- | --- |
+| **المفتاح** | مفتاح الحالة الذي تُخزَّن تحته القيمة، ويُشار إليه بـ `{{key}}` |
+| **التسمية** | تسمية العرض (الافتراضي هو المفتاح) |
+| **النوع** | نص، نص متعدد الأسطر، رقم، مفتاح تبديل، قائمة اختيار، مستودع |
+| **الخيارات (مفصولة بفواصل)** | خيارات مفصولة بفواصل، لقائمة الاختيار فقط |
+| **القيمة الافتراضية** | قيمة مملوءة مسبقًا |
+| **النص النائب** | نص التلميح داخل الحقل الفارغ |
+| **نص المساعدة** | نص مساعد تحت الحقل |
+| **مطلوب** | هل يمنع نموذج التشغيل الإرسال حين تكون القيمة فارغة |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+مدخل **مستودع** يعرض منتقيًا لمستودعات مساحة العمل، ويملأ
+`repo_id` و`repo_local_path` و`repo_full_name`، وإن كان للمستودع بعيد على GitHub
+يملأ أيضًا `repo_owner` و`repo_name` في حمولة التشغيل.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. انقر **حفظ** في الحوار. تُدمَج تعديلات المدخلات في المسودة، وتُحفَظ
+   حين تحفظ القالب.
 
-## Save and enable
+## الحفظ والتفعيل
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/).
+1. انقر **حفظ** في ترويسة المحرّر. تعرض الترويسة «تغييرات غير محفوظة»
+   إلى أن تفعل ذلك.
+2. ارجع إلى **الإعدادات ← مساحة العمل ← قوالب خطوط الأنابيب** وتأكد أن
+   مفتاح صف القالب مفعّل. يرفض المحرّك بدء قالب
+   معطّل، والقالب المعطّل لا يظهر في صفحة التشغيل.
+3. لبدء التشغيل تلقائيًا، اسحب مشغّلًا من مكتبة العقد إلى
+   اللوحة. انظر
+   [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/).
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a pipeline manually](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/)
-- [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
-- [Monitor pipeline runs](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
-- [Pipeline steps reference](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/)
+- [تشغيل خط أنابيب يدويًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خط-أنابيب/)
+- [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
+- [مراقبة تشغيلات خطوط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراقبة-خطوط-الأنابيب/)
+- [أنواع خطوات خط الأنابيب](/ar-SA/دليل-المستخدم/مرجع/خطوات-خط-الأنابيب/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Pipelines](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/)

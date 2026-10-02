@@ -1,213 +1,218 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: Möten och transkription
+description: Hur Control Center spelar in ett samtal, transkriberar och diariserar det på servern – och var det enda steget som lämnar värden finns.
 slug: sv-SE/handbok/koncept/moten
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center kan spela in ett samtal och ge dig en prydlig sammanställning – en
+sammanfattning, åtgärdspunkter och beslut – med taligenkänning och
+talarseparation som körs på din egen hårdvara. Tänk Granola, men självhostat och
+kopplat till samma arbetsyta som dina agenter lever i.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[Inspelning kräver en röstmodell och en omstart av servern]
+Inspelning och diktering startar först när en talmodell (ASR) finns på disk
+**och** servern har startats om. En vanlig uppstart tvingar fram en installation
+av den valda modellen (Parakeet TDT 0.6B v3 som standard) i bakgrunden, men
+servern löser sökvägarna till röstmodellerna exakt en gång i början av
+uppstarten – flera minuter innan nedladdningen kan bli klar. När modellen
+rapporteras som installerad startar du om `cc_server`. Vill du välja en annan
+variant använder du Inställningar → Server → Röst- och mötesmodeller – det
+kräver också en omstart.
 :::
 
-## What a meeting is
+## Vad ett möte är
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/sv-SE/handbok/koncept/kalender/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+Ett **möte** är en inspelad och transkriberad session. Det är _inte_ samma sak
+som en [kalenderhändelse](/sv-SE/handbok/koncept/kalender/): en händelse är ett
+planerat åtagande som synkas från Google, medan ett möte är något du faktiskt har
+spelat in. De två kan länkas, eftersom du kan starta en inspelning från en
+händelse, men de förblir separata poster.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+Varje möte är knutet till en arbetsyta, precis som allt annat i Control Center.
+Möten som spelats in i en arbetsyta dyker aldrig upp i en annan.
 
-## Where the work happens
+## Var arbetet utförs
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+”På enheten” är rätt instinkt men fel ord. Klienten fångar ljudet och strömmar
+PCM16-ramar i 16 kHz till **maskinen som kör `cc_server`**. Värdmaskinen sköter
+allt övrigt: den skriver WAV-filerna per kanal under
+`<dataDir>/meetings/<meetingId>/`, transkriberar i ett worker-isolat, filtrerar
+bort eko och diariserar i efterhand. På en fristående skrivbordsdator är värden
+samma maskin. Riktad mot en fjärrserver är den inte det – så ”inget lämnar min
+laptop” stämmer bara när servern är din laptop.
 
-There is one further exception and it is the important one.
+Det finns ett undantag till, och det är det viktiga.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[Sammanfattningen lämnar värden]
+Transkriptet och dina anteckningar skickas till den modellleverantör som
+sammanfattningsagenten är konfigurerad mot. För alla molnleverantörer innebär det
+att hela transkriptet går till leverantörens API. Om ett transkript inte får
+lämna värden pekar du sammanfattningsagenten mot en lokal slutpunkt (Ollama,
+LM Studio eller en annan lokal server).
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+Allt före sammanfattningen – ljudfångst, transkribering, ekodämpning,
+diarisering och matchning av röstavtryck – körs på servern utan några
+nätverksanrop.
 
-## Which models ship
+## Vilka modeller som följer med
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+Modellerna för **embedding, diarisering och tal (ASR)** installeras med tvång
+vid första uppstarten (hoppas över i en demo), så talarseparation och inspelning
+finns utan att du behöver besöka inställningarna. ASR är fortfarande **valbar** –
+den är flera hundra megabyte, och fyra varianter följer med i väljaren.
+Taligenkänningen kräver ändå en omstart efter den första nedladdningen, eftersom
+transkriberaren löser sin modell innan hämtningen hinner bli klar.
 
-The four picker entries, differing in size, language coverage and accuracy:
+De fyra posterna i väljaren, som skiljer sig i storlek, språktäckning och
+träffsäkerhet:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — flerspråkig, den rekommenderade standarden (~600 MB)
+- Parakeet TDT 0.6B v2 — engelska (~480 MB)
+- Whisper large-v3-turbo — flerspråkig (~626 MB)
+- Whisper base.en — endast engelska, den lilla historiska standarden (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+Modellerna är de enda artefakter som servern hämtar vid körning; alla inbyggda
+bibliotek följer med i paketet.
 
-## How capture works
+## Hur ljudfångsten fungerar
 
-A meeting records **two audio channels at once**:
+Ett möte spelar in **två ljudkanaler samtidigt**:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **Du (”jag”)**: din mikrofon.
+- **De andra (”dem”)**: mötets ljudutgång, fångad av en drivrutinsfri loopback —
+  Core Audio-tappar för processer och enheter på macOS, WASAPI-loopback på
+  Windows, en PipeWire-/PulseAudio-monitor på Linux.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+Eftersom de två kanalerna fångas separat är transkriptet tillskrivet talare från
+början: dina ord märks med `me`, och alla andra i samtalet märks med `them`.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+Din egen röst läcker från systemutgången tillbaka in i mikrofonen och skulle
+annars transkriberas två gånger. Två filter stoppar det. På signalnivå **körs
+AEC3 vid varje inspelning i fjärrläge och är obligatoriskt** – om det inbyggda
+AEC-biblioteket inte kan läsas in vägrar inspelningen att starta i stället för
+att tyst strömma en mikrofon förorenad av eko. (I närvaroläge finns ingen
+referens från andra änden att dämpa mot, så AEC är en identitetsgenomgång där.)
+Ovanpå det körs ett textbaserat ekofilter på värdsidan på alla plattformar.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+All mikrofonbehandling på operativsystemnivå är medvetet avstängd. Om du
+aktiverar plattformens egen ekodämpning eller automatiska förstärkning på macOS
+växlar mikrofonen till Voice Processing I/O, vilket i den här versionen dödade
+både mikrofonen _och_ tappen för systemljudet.
 
-## Transcription and diarization
+## Transkribering och diarisering
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+Medan du spelar in avkodas ljudet i **rullande fönster** – som klipps vid en
+kort avslutande tystnad eller vid en maximal fönsterlängd – utanför
+gränssnittstråden. Varje fönster blir ett talarmärkt transkriptsegment med
+millisekundsoffset.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+Fönster som aldrig nådde över en RMS-tröskel hoppas över **utan att avkodas
+alls**, eftersom en talmodell återger tystnad som hallucinerade icke-taltoken och
+avkodningen slösar CPU. Den praktiska konsekvensen: en genomgående mycket tyst
+talare ger inget transkript. Om någon kommer tillbaka tom kontrollerar du
+ingångsnivån innan du skyller på modellen.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+När du stoppar körs **diariseringen** offline över inspelningen och delar upp
+fjärrkanalen i enskilda talare (`Person 1`, `Person 2`, …) som du kan byta namn
+på. Antalet talare härleds från en klustringströskel, inte från ett antal du
+anger – så det är en tröskelartefakt, och en tyst eller överlappande talare kan
+slås samman med en granne. Transkriptet visas som rader i formen
+`[mm:ss] SPEAKER: text`.
 
-## Voice profiles
+## Röstprofiler
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+Att byta namn på en talare gör mer än att märka ett transkript. Control Center
+kan spara talarens röstavtryck som en **röstprofil** och känner då igen personen
+automatiskt i framtida möten. När du namnger en diariserad talare får du frågan
+om du vill spara röstavtrycket; gör du det vävs det in i en löpande centroid för
+namnet och matchas mot nya talare med cosinuslikhet, så samma person dyker upp
+med sitt namn nästa gång utan att du märker om den.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+Röstprofiler är knutna till arbetsytan och korsar aldrig gränsen. Hantera dem
+under **Inställningar → Arbetsyta → Möten**. Om du byter namn på en talare som
+tidigare sparats avregistreras det gamla namnet och du erbjuds registrera det
+nya; om du tar bort en profil försvinner det sparade röstavtrycket, men namn som
+redan tillämpats på tidigare möten ligger kvar.
 
-## The summary pipeline
+## Sammanfattningspipelinen
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/sv-SE/handbok/koncept/domanhandelser/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+När en inspelning stoppas publicerar servern en `MeetingRecordingStopped`
+[domänhändelse](/sv-SE/handbok/koncept/domanhandelser/). Den inbyggda
+pipelinemallen **`meeting_summary`** utlöses av händelsen. Inspelaren väntar inte
+på den; mötet går helt enkelt igenom sin statuslivscykel:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+Sammanfattningsagenten tar emot titeln, dina grova anteckningar från inspelningen
+och transkriptet och returnerar **strukturerad JSON**. Vilka avsnitt den skriver
+formas av arbetsytans **aktiva mall för mötesanteckningar** (Inställningar →
+Arbetsyta → Möten); den aktiva mallen gäller nya och omkörda sammanfattningar.
+Pipelinens persistenssteg skriver sedan den JSON:en till separata rader:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` och `summary` → mötets anteckningar
+- varje åtgärdspunkt → en rad av typen `MeetingActionItem` (innehåll, ägare, valfri ärendelänk)
+- varje beslut → en rad av typen `MeetingDecision`
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+Åtgärdspunkter och beslut tolkas **aldrig** ut ur fritt markdown, bara ur
+agentens strukturerade arrayer. Om en körning inte ger någon strukturerad utdata
+hoppas persistensstegen över och det råa transkriptet behålls som reserv, så du
+förlorar aldrig posten. Inget i pipelinen markerar mötet som `done` – det gör en
+enda avstämningsprocess utifrån körningens avslutande händelse, så ett systersteg
+som misslyckas kan inte lämna ett halvskrivet möte som redan ser färdigt ut.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/sv-SE/handbok/how-to-guider/mcp-server/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[Agenter kan inte läsa dina möten]
+Det finns inga MCP-verktyg för möten eller kalendern. En agent som är ansluten
+via [MCP](/sv-SE/handbok/how-to-guider/mcp-server/) kan inte lista möten, läsa
+ett transkript eller se åtgärdspunkter och beslut – dessa data når mänskliga
+klienter bara via RPC. Beslut når däremot agenter indirekt, som minnesfakta i
+domänen `decisions`.
 :::
 
-## Where meetings show up
+## Var möten visas
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| Yta                    | Vad den visar                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `/meetings`            | Listan över möten, med antal åtgärdspunkter och beslut                                  |
+| `/meetings/record`     | Live-HUD:en för inspelning: dina anteckningar på ena sidan, det strömmande transkriptet på den andra |
+| `/meetings/:meetingId` | En mötesdetalj: flikarna Anteckningar, Utskrift, Åtgärdspunkter och Beslut               |
+| Inställningar → Arbetsyta → Möten | Anteckningsmallar och sparade röstprofiler för den här arbetsytan           |
 
-## Platform support
+## Plattformsstöd
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+Ljudfångsten är drivrutinsfri på alla tre skrivbordsplattformar (Core Audio-tappar
+på macOS, WASAPI på Windows, PipeWire på Linux).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Även webbklienten spelar in**, vilket resten av den här sidans
+skrivbordsinriktning kan dölja: webbläsaren tar din mikrofon via `getUserMedia`
+och mötesljudet via `getDisplayMedia` (skärmdelning), samplingreducerar till
+16 kHz PCM16 och strömmar till samma värd. Tre förbehåll gäller där:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- Den delade ytan **måste** innehålla ett ljudspår. Safaris, Firefox och macOS
+  delning av helskärm ger inget, och inspelningen vägrar starta.
+- Det finns ingen inbyggd AEC3. Webbläsarens egen ekodämpning begärs på
+  mikrofonen; det textbaserade ekofiltret på värdsidan körs fortfarande. HUD:en
+  visar en ingångsnivåmätare som drivs av mikrofonens PCM.
+- Kör om sammanfattning och avbryt bearbetning finns bara på skrivbordet.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+Kalenderns åtgärd **Starta inspelning och länka** finns bara på skrivbordet och
+säger det rakt ut på webben, även om mötesskärmens eget inspelningsflöde fungerar
+där.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[Att ta bort ett möte lämnar ljudet kvar]
+Att ta bort ett möte tar bara bort dess databasrader. Den bevarade ljudkatalogen
+per kanal `<dataDir>/meetings/<meetingId>/` städas aldrig – det finns ingen
+bevarandepolicy, storleksgräns eller GC-svepning för den. Att återvinna det
+utrymmet är ett manuellt jobb på servervärden.
 :::
 
-## See also
+## Se även
 
-- [Calendar and scheduling](/sv-SE/handbok/koncept/kalender/): record a meeting straight from a calendar event
-- [Pipelines and automation](/sv-SE/handbok/koncept/pipelines/): the engine behind `meeting_summary`
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/): link a meeting's action items to tickets
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/sv-SE/handbok/how-to-guider/spela-in-mote/)
+- [Kalender och schemaläggning](/sv-SE/handbok/koncept/kalender/): spela in ett möte direkt från en kalenderhändelse
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/): motorn bakom `meeting_summary`
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/): länka ett mötes åtgärdspunkter till ärenden
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): `MeetingRecordingStopped` och `MeetingStartingSoon`
+- [Spela in och sammanfatta ett möte](/sv-SE/handbok/how-to-guider/spela-in-mote/)

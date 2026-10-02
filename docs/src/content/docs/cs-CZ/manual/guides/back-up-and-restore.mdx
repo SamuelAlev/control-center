@@ -1,162 +1,167 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Záloha a obnovení
+description: Pořiď snímek instalace, přesuň pracovní prostor mezi stroji, obnov jeden pracovní prostor nebo všechny a drž kopie jinde.
 slug: cs-CZ/prirucka/navody/zaloha-a-obnoveni
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/cs-CZ/prirucka/referencni-prirucka/zaloha/).
+Zálohy se v praxi používají na pět věcí: pořídit snímek, stáhnout ho, přesunout
+pracovní prostor, vrátit jeden zpátky a držet kopie mimo stroj. Přesný tvar
+každého artefaktu a každé operace je v
+[referenci zálohy](/cs-CZ/prirucka/referencni-prirucka/zaloha/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Všechno odsud je v **Nastavení → Server → Záloha a obnovení**.
 
-## Prerequisites
+## Předpoklady
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- **Plný klient**, tedy desktopová nebo webová aplikace. Spárovaný telefon z toho schválně nespustí nic.
+- Pořídit, vypsat, stáhnout nebo smazat **snímek instalace** smí **vlastník** instalace.
+- U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export, **vlastník** pro import nebo smazání.
+- Stahování a nahrávání chce **přímé** spojení se serverem. Zprostředkované relé vozí rámce RPC, ne přenos souborů, a ovládací prvky přenosu se samy vypnou a ukážou poznámku, když jsi na něm.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Snímky instalace jsou ruční]
+**Zálohovat teď** pořád vytvoří snímek celé instalace jen na vyžádání. Vestavěná
+pipeline **Workspace backup** místo toho umí jednou týdně vzít zálohu databáze
+pracovního prostoru a smazat zálohy toho prostoru starší než 30 dní. Nekopíruje
+`global.db`, ostatní pracovní prostory ani soubory vedle databáze. Kopie mimo
+stroj si drž zvlášť.
 :::
 
-## What a backup covers
+## Co záloha pokrývá
 
-Both artifacts are **databases only**:
+Oba artefakty jsou **jen databáze**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- **Snímek instalace** je adresář s časovým razítkem: `manifest.json`, `global.db` a jeden `<workspaceId>/workspace.db` na pracovní prostor.
+- **Export pracovního prostoru** je ten jeden soubor `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/cs-CZ/prirucka/referencni-prirucka/zaloha/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Ani jeden nenese zbytek datového adresáře: `secrets.json` (klíče párování,
+přihlašovací údaje poskytovatelů, SSO), `blobs/` pracovního prostoru (obrázky
+vložené do zpráv), `skills/`, `agents/`, `chat_credentials/`, nahraný zvuk
+schůzek ani obrazy stanic. Část se dá zahodit a část ne. Celá tabulka je v
+[referenci](/cs-CZ/prirucka/referencni-prirucka/zaloha/#co-záloha-neobsahuje)
+a právě tohle má pokrýt [sekce mimo stroj](#kopíruj-zálohy-mimo-stroj).
 
-## Take a snapshot of the whole install
+## Pořiď snímek celé instalace
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Otevři **Nastavení → Server → Záloha a obnovení**.
+2. Pod **Snímky instalace** stiskni **Zálohovat teď**.
+3. Toast pojmenuje adresář, který se zapsal, na hostiteli serveru. Nový snímek se objeví nahoře v seznamu.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Server běží po celou dobu. Každý soubor se zapisuje přes `VACUUM INTO`, což je
+konzistentní vůči živé databázi, takže okno údržby není a agenty zastavovat
+nemusíš.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Každý řádek seznamu ukazuje časové razítko, velikost na disku, kolik pracovních
+prostorů se zachytilo a jestli je snímek **Úplný**, nebo **Neúplný**. Neúplný
+znamená, že manifest chybí nebo jmenuje soubory, které tam nejsou: záloha
+přerušená pádem nebo plným diskem. V seznamu zůstávají schválně. Snímek, který
+nevidíš, pokládáš za snímek, který máš. Neúplný snímek celou instalaci
+neobnoví, ale soubory pracovních prostorů, které v něm jsou, se pořád dají
+převzít po jednom.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Řádek taky může hlásit **_n_ pracovních prostorů nezachyceno**. To je pracovní
+prostor zaregistrovaný, ale ještě nezapsaný (soubor zatím není), nebo takový,
+jehož kopie selhala. Podívej se do logu serveru.
 
-## Schedule workspace backups and retention
+## Naplánuj zálohy pracovního prostoru a uchování
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Otevři **Nastavení → Pracovní prostor → Šablony pipeline** daného pracovního
+prostoru a najdi **Workspace backup**. Zapnutý plán běží každou neděli v 03:00
+UTC: **Back up workspace** a po něm **Delete backups older than** (výchozí 30
+dní). Druhý uzel běží až po úspěšné záloze. Počet dní uchování na uzlu změníš,
+nebo plán vypneš. Když je server v naplánovaný čas offline, plán po návratu
+dožene jeden běh a neopakuje každý zmeškaný týden.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Zálohy pracovního prostoru leží na serveru v
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Uzel
+uchování maže jen staré zálohy tohoto pracovního prostoru. Snímky instalace
+ani zálohy jiných prostorů nemaže. Jsou to jen databáze. Pro uchování mimo
+stroj je zkopíruj zvlášť.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Tyhle zálohy jsou oddělené od seznamu **Snímky instalace**. Obnovíš je přes
+**Data pracovního prostoru → Importovat** s cestou k `workspace.db` na serveru.
+Import nahradí aktuální databázi toho pracovního prostoru, takže ho nejdřív
+exportuj, když budeš chtít obnovení vrátit.
 
-## Delete an install snapshot
+## Smaž snímek instalace
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Pod **Snímky instalace** rozbal snímek, i neúplný, a v nebezpečné části použij
+**Smazat snímek**. Potvrď jeho jméno. Celý adresář snímku se ze serveru trvale
+smaže. Nejdřív ho stáhni, když kopii potřebuješ. Pipeline zálohy pracovního
+prostoru tyhle snímky nemaže.
 
-## Collect a copy on your own machine
+## Stáhni kopii na vlastní stroj
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Cesty na stránce jsou na stroji, kde běží `cc_server`. Když to není stroj, u
+kterého sedíš, použij tlačítka **Stáhnout**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Vedle každého **pracovního prostoru** pod **Data pracovního prostoru** → **Stáhnout**, jeden soubor `.db`.
+- Vedle každého **snímku** pod **Snímky instalace** → **Stáhnout**, celý snímek jako `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Na desktopu vybereš, kam soubor spadne, a toast ho pojmenuje. Na webu jde do
+stahování prohlížeče. V obou případech se průběh hlásí v bajtech, protože
+právě tyhle dva přenosy sahají do gigabajtů.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Obě tlačítka v okamžiku stisku vytvoří čerstvou kopii, přenesou ji proudem a
+kopii na serveru potom smažou. Stažení není „vyzvedni soubor, který dřív
+udělalo tlačítko exportu“.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Rozbalení archivu snímku zopakuje jeho rozložení přesně, a proto je obnovení
+zase jen kopie zpátky.
 
-## Move a workspace to another install
+## Přesuň pracovní prostor na jinou instalaci
 
-One workspace is one database file, so handing it over is a file operation.
+Jeden pracovní prostor je jeden soubor databáze, takže předání je operace se
+souborem.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Na **zdrojovém** serveru v **Nastavení → Server → Záloha a obnovení → Data pracovního prostoru** rozbal pracovní prostor a stiskni **Stáhnout**.
+2. Na **cílovém** serveru založ (nebo vyber) pracovní prostor, který ho přijme.
+3. Ten pracovní prostor rozbal a pod **Obnovit z tohoto zařízení** stiskni **Vybrat soubor a nahrát**. Vyber stažený `.db`.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Když jsou oba servery ten stroj, u kterého sedíš, **Uložit na server** a
+**Importovat** → **Vybrat soubor** udělá totéž bez cesty tam a zpět. Cesty v
+dialogu importu se řeší na hostiteli serveru.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Import nahradí všechno]
+Import přepíše všechno, co cílový pracovní prostor právě drží, a nejde vrátit.
+Cíl nejdřív exportuj, když v něm je něco, co bys chtěl zpátky.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Dvě věci se povolí a zapíšou do logu, místo aby se odmítly: import souboru,
+jehož zaznamenané id pracovního prostoru se liší od cíle (tak pracovní prostor
+zduplikuješ nebo ho obnovíš pod novým id), a import souboru z **jiné
+instalace**. V tom druhém případě spárovaná zařízení a id uživatelů v souboru
+patří instalaci, odkud přišel, a na téhle se nevyřeší. Vlastní data pracovního
+prostoru jsou v pořádku, ale po převzetí znovu zkontroluj členství.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Tokeny chatbota leží vedle databáze, ne v ní, takže pracovní prostor, který
+někomu předáš, nenese živé přihlašovací údaje. Přijímající instalace si
+připojí svoje.
 
-## Restore one workspace from a snapshot
+## Obnov jeden pracovní prostor ze snímku
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Pod **Snímky instalace** rozbal snímek, který chceš.
+2. Najdi řádek pracovního prostoru a stiskni **Obnovit**.
+3. Potvrď. Všechno, co ten pracovní prostor udělal od pořízení snímku, je pryč.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Je to stejná operace jako import, namířená na kopii souboru toho pracovního
+prostoru ve snímku. Schválně, aby neexistoval druhý mechanismus, který by se
+stejným souborem zacházel jinak.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Řádek může říct **Na tomto serveru už není** a **Obnovit** je vypnuté: snímek
+drží pracovní prostor, který tahle instalace už nemá. Vrať ho ručně. Založ
+pracovní prostor a pod **Data pracovního prostoru** do něj importuj z
+`<snapshot path>/<old workspace id>/workspace.db`. Rozbalený snímek ukazuje
+vlastní **Cesta na serveru** v poli ke kopírování a titulek řádku je staré id
+pracovního prostoru, takže máš obě poloviny té cesty před sebou.
 
-## Restore a whole install
+## Obnov celou instalaci
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Tlačítko na to není a být nemá: nahrazuje to databáze, které má běžící server
+otevřené.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Zastav `cc_server`.** Když desktopovou aplikaci pouštíš s vestavěným serverem, aplikaci ukonči.
+2. Zkopíruj obsah snímku přes datový adresář. Rozložení snímku zrcadlí živé, takže je to obyčejná kopie:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +176,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Smaž soubory `-wal` a `-shm` ležící vedle databází, které jsi nahradil. Patří ke starým souborům a zastaralý soubor vedle obnovené databáze je riziko poškození.
+4. Server znovu spusť.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Snímek `secrets.json` neobsahuje, takže instalace obnovená na **čerstvý**
+hostitel si drží data, ale ne přihlašovací údaje: spárovaná zařízení, tokeny
+poskytovatelů a nastavení SSO se musí znovu navázat, nebo obnovit odtud, kde
+ten soubor držíš. Obnova na stejný hostitel, kde se `secrets.json` neztratil,
+nechá všechno na místě.
 
-## Copy backups off the machine
+## Kopíruj zálohy mimo stroj
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Snímek na stejném disku jako databáze, kterou zkopíroval, tě chrání před
+špatným importem, ne před diskem. Control Center nikam kopii sám neposílá,
+takže tahle část je na tobě.
 
-### Sync the snapshots
+### Synchronizuj snímky
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Snímky jsou po zapsání neměnné a pojmenované časovým razítkem, takže je zvládne
+kterýkoli synchronizační nástroj. Vynech `transfer/`, což je mezisklad
+probíhajícího stahování a nahrávání:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +212,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` zrcadlí místní prořezávání na vzdálenou stranu. Vynech ho, když má
+vzdálená strana držet snímky déle než hostitel.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Živé databáze nikdy nesynchronizuj přímo]
+Nemiř rsync, `aws s3 sync` ani zálohovacího agenta na úrovni souborů na
+`global.db` nebo `<workspaceId>/workspace.db`, dokud server běží. Živá databáze
+SQLite má postranní soubor `-wal` a kopie soubor po souboru zachytí oba v jiný
+okamžik. Výsledek je soubor, který se často otevře a tiše mu chybí nedávné
+zápisy, nebo se neotevře vůbec. Kopíruj **snímek**, který se zapsal pod čtecí
+transakcí, nebo ho pořiď přes `VACUUM INTO`, jak je níž.
 :::
 
-### Include what a snapshot leaves out
+### Přidej to, co snímek vynechá
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Aby šla znovu postavit instalace, a ne jen její data, zkopíruj i tohle. Jsou to
+obyčejné soubory a kopírovat je za běhu serveru je bezpečné:
 
 ```bash
 rsync -a \
@@ -234,20 +242,22 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` má práva `0600` a drží každý klíč párování, přihlašovací údaj
+poskytovatele a nastavení SSO na instalaci. Kam dopadne, musí být chráněné
+aspoň jako hostitel serveru: šifrované v klidu a ne bucket, do kterého vidí
+někdo jiný.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Přeskoč `spaces/` (worktree copy-on-write, znovu se založí z repozitářů),
+`pr_clones/` (cache), `models/` (stáhnou se znovu), `media_cache/` a `rigs/`
+(stav stroje, a velké). Nahraný zvuk schůzek pod `meetings/` se vyplatí
+zahrnout, když schůzky držíš.
 
-### Schedule a whole-install snapshot outside the app
+### Naplánuj snímek celé instalace mimo aplikaci
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Vestavěná pipeline zálohuje jen jeden pracovní prostor. Pro bezobslužný snímek
+**celé instalace** není podpříkaz CLI a RPC snímku chce spárovaný plný klient,
+který je vlastník instalace. Časovač na hostiteli může proti živým databázím
+použít `VACUUM INTO`:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +276,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Spusť ho jako stejný uživatel, který vlastní datový adresář, z cronu nebo
+časovače systemd, a `DEST` potom synchronizuj mimo hostitele. `VACUUM INTO`
+potřebuje SQLite 3.27 nebo novější.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Piš ho **mimo** `<dataDir>/backups/`. Ručně udělaný adresář tam nemá
+`manifest.json`, takže by ho aplikace vypsala jako neúplný snímek a seznam by
+přestal být poctivý záznam toho, co vyrobil sám server.
 
-### Prune old whole-install snapshots
+### Promaž staré snímky celé instalace
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Jednotlivé snímky instalace smažeš v aplikaci. Pro politiku uchování na
+hostiteli drž adresář záloh pracovního prostoru odděleně od snímků instalace:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +295,51 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Nejdřív zkontroluj výstup běhu s `-print`, než přidáš `-exec`. Nech víc než
+jeden: selhání, proti kterému se chráníš, je často „poslední záloha má ten
+problém taky“.
 
-## Check that a backup is good
+## Ověř, že záloha je v pořádku
 
-A backup nobody has restored is a hypothesis.
+Záloha, kterou nikdo neobnovil, je hypotéza.
 
-Cheap check — the file opens and its pages are intact:
+Levná kontrola: soubor se otevře a jeho stránky jsou celé:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Skutečná kontrola: převezmi ji. Na neprodukční instalaci založ zkušební
+pracovní prostor, importuj do něj soubor pracovního prostoru a podívej se,
+jestli tam jsou prostory, tickety a zprávy, které čekáš. Tím projdeš stejnou
+cestou jako skutečné obnovení, včetně přestavění FTS, a je to jediná kontrola,
+která řekne, že záloha jde obnovit, a ne jen přečíst.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Udělej to jednou, když zálohy nastavuješ, a znovu pokaždé, když změníš, kde se
+ukládají.
 
-## Troubleshooting
+## Řešení problémů
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Příznak | Příčina a oprava |
+| --- | --- |
+| Ovládací prvky stahování a nahrávání jsou vypnuté a je u nich poznámka o relé | Jsi připojený přes zprostředkované relé, které nepřenáší soubory. Připoj se přímo |
+| „Server odmítl“ | Role. Pořízení nebo výpis snímku instalace potřebuje operátora instalace. Stažení pracovního prostoru potřebuje admina, obnovení vlastníka a zip celého snímku operátora instalace |
+| „Tento server nemá povrch záloh“ | Hostitel nemá připojený port záloh. Je to demo server. Operace chybí, neodmítají se |
+| „Soubor je větší, než server přijímá“ | Nahrávání je omezené na 8 GiB. Dej soubor na hostitele serveru a použij **Importovat** → **Vybrat soubor** |
+| Import odmítnut: není to databáze pracovního prostoru Control Center | Soubor nemá řádek `workspace_meta`. Není to export pracovního prostoru, nebo je useknutý. Nic se nenahradilo |
+| Snímek je uvedený jako **Neúplný** | Manifest chybí, nebo jmenuje chybějící soubory. Pořiď nový a mezitím z něj převezmi jednotlivé soubory pracovních prostorů |
+| Snímek hlásí, že se pracovní prostory nezachytily | Ty pracovní prostory se ještě nikdy nezapsaly, nebo jejich kopie selhala. Podívej se do logu serveru |
+| Obnovená instalace nemá přihlašovací údaje forge ani SSO | `secrets.json` ve snímku není. Obnov ho odtud, kde ho držíš, nebo poskytovatele znovu připoj |
+| Obnovenému pracovnímu prostoru chybí vložené obrázky | Bloby leží vedle databáze, ne v ní. Zkopíruj taky `<workspaceId>/blobs/` |
 
-## Related guides
+## Související návody
 
-- [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): where the data directory comes from
-- [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/): direct versus relayed connections
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/): the credential the transfer routes sign with
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): odkud se bere datový adresář
+- [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/): přímé spojení a spojení přes relé
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): přihlašovací údaj, kterým se podepisují trasy přenosu
 
-## Related concepts and reference
+## Související koncepty a reference
 
-- [Backup, export and import](/cs-CZ/prirucka/referencni-prirucka/zaloha/): every operation, route, field and limit
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): why one workspace is one file
-- [`cc_server` CLI](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/): the data directory layout
+- [Záloha, export a import](/cs-CZ/prirucka/referencni-prirucka/zaloha/): každá operace, trasa, pole a limit
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): proč je jeden pracovní prostor jeden soubor
+- [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/): rozložení datového adresáře

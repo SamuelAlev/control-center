@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Laděte kontext nástrojů agenta
+description: Podívej se, co běh opravdu posílá, změň, které nástroje se načtou předem, a rozliš, jestli špatná volba nástroje byla minutí vyhledání, nebo problém promptu.
 slug: cs-CZ/prirucka/navody/ladeni-kontextu-nastroju
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/cs-CZ/prirucka/koncepty/kontext-nastroju).
+Tenhle návod je o praktické práci s dvouúrovňovou plochou nástrojů: co běh posílá, jak to změnit a jak diagnostikovat agenta, který sáhl po špatném nástroji. Proč to funguje právě tak, čti v [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
 
-## Look at what a run actually sends
+## Podívej se, co běh opravdu posílá
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Otevři konverzaci a klepni na ukazatel využití kontextu v záhlaví konverzace. Sestaví přesně tu plochu, kterou by poslalo příští odeslání, a nic přitom nespustí. **Zobrazit více** (nebo příkaz `/context`) otevře celý průzkumník kontextu, kde si prohlédneš každý nástroj.
 
-Two segments matter here:
+Tady záleží na dvou segmentech:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Definice nástrojů** a **MCP a dynamické nástroje** — rezidentní sada, s reálnou cenou každého nástroje v tokenech.
+- **Nástroje načtené na vyžádání** — odložený index. Každá položka se účtuje jen za jméno, protože požadavek nese jen to; když ji otevřeš, pořád uvidíš celý popis a schéma, takže víš, kolik by *stála*, kdyby ji běh načetl.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli).
+Když je odložený segment prázdný, má tenhle server odložení vypnuté. Zkontroluj `--tool-deferral` v [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
 
-## Change which tools load up front
+## Změň, které nástroje se načtou předem
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Rezidentní sada je politika, ne konfigurace — žije v `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) a platí pro každý běh:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/cs-CZ/prirucka/koncepty/rezimy) uses on nearly every turn.
+- `residentBuiltins` — slovník souborů a shellu.
+- `residentDiscovery` — `search_tools` a `list_my_tools`. Neodstraňuj je; přes ně se agent dostane ke všemu ostatnímu.
+- `residentMcpTools` — hrstka nástrojů Control Center, u kterých se schéma vyplatí na každém požadavku.
+- Blok daného režimu, pro nástroje, které ten [režim](/cs-CZ/prirucka/koncepty/rezimy/) použije skoro na každém tahu.
 
-Two rules when editing it:
+Při úpravě platí dvě pravidla:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Přidej nástroj jen tehdy, když ho používá většina běhů.** Každé jméno stojí své schéma na každém požadavku každého běhu, a to natrvalo. Nástroj, který je důležitý, když přijde na řadu, ale celkově vzácný, patří do odložené poloviny — agent ho pořád najde.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Používej skutečné jméno nástroje.** Rezidentní jméno, které neodpovídá žádnému nástroji, je inertní: žádná chyba, žádné varování, nástroj se prostě odloží. `test/tooling/resident_tool_names_test.dart` to chytí a zároveň drží každý režim pod 40 rezidentními nástroji. O to tu jde — za tím pásmem se výběr nástrojů měřitelně zhoršuje.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+Povinná a připnutá slovesa režimu se doplní sama, takže vlastní výstupní sloveso režimu vypisovat nemusíš.
 
-## Diagnose a bad tool choice
+## Diagnostikuj špatnou volbu nástroje
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Když agent použil špatný nástroj, nebo tvrdil, že něco neumí, zjisti, která ze tří věcí se stala.
 
-### 1. Did it look?
+### 1. Podíval se?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Každý běh si zapíše odložené nástroje, které načetl, a co to spustilo — přímé volání jménem, nebo dotaz `search_tools`. Otevři proud událostí běhu (**Nastavení → Pracovní prostor → Agenti** → agenta → **Protokoly** → **Zobrazit**) a hledej `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Nic v záznamu a agent řekl, že schopnost chybí** — nepodíval se. To je problém promptu, ne vyhledání: odložený index má v systémovém promptu spolu s pokynem, aby schopnost neprohlásil za chybějící, dokud hledání nevrátí prázdný výsledek.
+- **Hledání v záznamu je, ale nic se nenačetlo** — skutečné minutí vyhledání. Pokračuj krokem 2.
+- **Nástroje se načetly, použitý je špatný** — ty, které našel, jsou si příliš podobné. Pokračuj krokem 3.
 
-### 2. Fix a retrieval miss
+### 2. Oprav minutí vyhledání
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` hledá ve jménech, popisech a jménech argumentů. Minutí skoro vždy znamená, že popis neobsahuje slova, která agent použil.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Doplň je. Popisy jsou index vyhledání, takže je **prodlužuj místo zkracování** — piš slovník, který by operátor opravdu napsal („přiřaď“, „předej“, „dej“), ne jen vnitřní podstatné jméno. Když popis zkrátíš kvůli tokenům, ztratíš zásah hledání i přesnost výběru a vedle schématu neušetříš skoro nic.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Když správný nástroj existuje, ale řadí se nízko, přesně na to je argument `limit`; vlastní popis nástroje říká agentovi, aby rozšířil hledání, které je blízko, ale mine.
 
-### 3. Fix look-alike tools
+### 3. Oprav nástroje, které vypadají stejně
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Když mají dva nástroje popisy, které by stejně přečetl i někdo, kdo rozdíl předem nezná, model hádá. Slouč je do jednoho nástroje s rozlišujícím argumentem.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` a `ticket_pr_link` jdou podle tohohle vzoru: každý řeší navázání i zrušení vazby přes rozlišující argument. Volba *uvnitř* jednoho volání, s plným kontextem požadavku, je spolehlivější než volba mezi dvěma podobnými popisy.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Nástroje nech oddělené, když potřebují jinou bránu schválení, jiný audit nebo jiné vykreslení — to jsou důvody, proč by sloučení něco reálného stálo.
 
-## Check the prompt cache is working
+## Zkontroluj, že cache promptů funguje
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Míra zásahů cache se v **Observabilita → Přehledy** ukazuje jako **Míra cache**. Zdravá dlouhá konverzace drží vysokou míru; když je trvale nízká, něco na každém tahu přepisuje prefix.
 
-Common causes, in order of likelihood:
+Obvyklé příčiny, od nejpravděpodobnější:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Cokoliv nedeterministického na začátku promptu.** Časové razítko, id požadavku, nebo množina procházená v proměnlivém pořadí to udělá.
+- **Změna modelu nebo úsilí uprostřed konverzace.** Obě změní prefix. Subagenti se tu zvlášť snadno pokazí: pouštět potomky na nižším úsilí kvůli úspoře může stát víc na ztraceném sdílení cache, než to ušetří.
+- **Častá komprimace.** Komprimace historii přepisuje schválně, takže její cena je reálná; oprava je komprimovat zřídka a do hloubky, ne často a mělce.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Vypnutí odložení přes `--tool-deferral=off` je platné A/B, když chceš izolovat, jestli změna chování přišla z dvouúrovňové plochy. Vyrobí přesně požadavek z doby před odložením, takže když chování přetrvá i po vypnutí, plocha není příčina.

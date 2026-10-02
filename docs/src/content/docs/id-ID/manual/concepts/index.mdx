@@ -1,64 +1,66 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Konsep
+description: Cara kerja Control Center dan mengapa dibangun seperti ini — bacaan latar belakang di balik panduan.
 slug: id-ID/panduan-pengguna/konsep
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/id-ID/panduan-pengguna/panduan-praktis/); when you want to look
-something up, go to the [reference](/id-ID/panduan-pengguna/referensi/).
+Halaman-halaman ini menjelaskan **cara kerja Control Center dan alasannya**. Halaman ini
+untuk memahami, bukan untuk melakukan: tidak ada halaman di sini yang berupa prosedur
+yang harus diikuti. Jika Anda ingin menyelesaikan tugas tertentu, buka
+[panduan praktis](/id-ID/panduan-pengguna/panduan-praktis/); jika Anda ingin mencari
+sesuatu, buka [referensi](/id-ID/panduan-pengguna/referensi/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Bacalah dalam urutan apa pun. Jika Anda baru, model inti adalah tempat untuk memulai.
 
-## Core model
+## Model inti
 
-The four ideas everything else is built on.
+Empat gagasan yang menjadi dasar segala hal lainnya.
 
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/) — what happens between your message and the agent's first token
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/id-ID/panduan-pengguna/konsep/konteks-alat/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/id-ID/panduan-pengguna/konsep/kecerdasan-kode/) — the code graph, language server, structural search and debugger
-- [Conversation history](/id-ID/panduan-pengguna/konsep/riwayat-percakapan/) — persistence, compaction and forking a transcript
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/) — batas tenant dan mengapa hal itu ditegakkan oleh tata letak basis data, bukan oleh disiplin kueri
+- [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/) — dari apa agen tersusun: identitas, peran, skill, kemampuan, adapter, dan model
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/) — apa yang terjadi antara pesan Anda dan token pertama agen
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/) — bagaimana `chat`, `plan`, `review`, dan `orchestrate` mengubah apa yang boleh dilakukan agen
+- [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat/) — mengapa agen hanya melihat sebagian alatnya, bagaimana ia menjangkau sisanya, dan apa yang menjaga cache penyedia tetap hangat
+- [Kecerdasan kode](/id-ID/panduan-pengguna/konsep/kecerdasan-kode/) — graf kode, language server, pencarian struktural, dan debugger
+- [Riwayat percakapan](/id-ID/panduan-pengguna/konsep/riwayat-percakapan/) — persistensi, pemadatan, dan pencabangan transkrip
 
-## Safety and control
+## Keamanan dan kontrol
 
-What an agent is allowed to touch and who decides.
+Apa yang boleh disentuh oleh agen dan siapa yang memutuskan.
 
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) — what actually constrains an agent run today
-- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/id-ID/panduan-pengguna/konsep/otorisasi/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/id-ID/panduan-pengguna/konsep/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) — apa yang sebenarnya membatasi eksekusi agen saat ini
+- [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — satu mesin kebijakan untuk setiap tindakan yang mengubah data dan bagaimana sebuah aturan diselesaikan
+- [Otorisasi](/id-ID/panduan-pengguna/konsep/otorisasi/) — peran, katalog izin, dan jejak audit
+- [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/) — mengapa agen mendapatkan VM sekali pakai alih-alih mesin Anda, dan apa sebenarnya batasnya
 
-## Directing the work
+## Mengarahkan pekerjaan
 
-Turning intent into work that gets done.
+Mengubah niat menjadi pekerjaan yang benar-benar selesai.
 
-- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/) — one goal, one approval, a generated pipeline
-- [AI review](/id-ID/panduan-pengguna/konsep/tinjauan-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/id-ID/panduan-pengguna/konsep/percakapan-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/) — eval suites and the Quality tab
+- [Tiket dan delegasi](/id-ID/panduan-pengguna/konsep/tiket/) — unit kerja yang netral vendor yang digunakan bersama oleh seluruh fleet
+- [Pipeline dan otomatisasi](/id-ID/panduan-pengguna/konsep/pipeline/) — alur kerja DAG, pemicu, dan eksekusi yang dapat dilanjutkan
+- [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/) — satu tujuan, satu persetujuan, pipeline yang dihasilkan
+- [Tinjauan AI](/id-ID/panduan-pengguna/konsep/tinjauan-ai/) — bagaimana sebuah PR menjadi PR yang telah ditinjau: space tinjauan, konsensus sejawat, sumbu, dan vonis Ship/Hold/Block
+- [Percakapan PR](/id-ID/panduan-pengguna/konsep/percakapan-pr/) — menjawab sebutan GitHub atau label `ai-review` langsung dari host kode
+- [Memori dan pengetahuan](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/) — fakta, kebijakan, dan apa yang boleh diketahui agen
+- [Evaluasi dan kualitas](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/) — suite eval dan tab Kualitas
 
-## People and reach
+## Orang dan jangkauan
 
-Working with other humans and reaching the fleet from elsewhere.
+Bekerja dengan manusia lain dan menjangkau fleet dari tempat lain.
 
-- [Multiplayer and presence](/id-ID/panduan-pengguna/konsep/multiplayer/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/id-ID/panduan-pengguna/konsep/masuk-tunggal/) — SAML and OIDC logins
-- [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/id-ID/panduan-pengguna/konsep/rapat/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/id-ID/panduan-pengguna/konsep/kalender/) — Google Calendar sync and meeting alerts
+- [Multiplayer dan kehadiran](/id-ID/panduan-pengguna/konsep/multiplayer/) — manusia dan agen sebagai peserta yang setara dan apa yang membatasi akses
+- [Masuk tunggal](/id-ID/panduan-pengguna/konsep/masuk-tunggal/) — login SAML dan OIDC
+- [Jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/) — mengapa jembatan Slack menghubungi keluar dan apa yang mengotorisasi pesan dari chat
+- [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) — bagaimana ponsel menjangkau server Anda dan model keamanan di sekitarnya
+- [Rapat dan transkripsi](/id-ID/panduan-pengguna/konsep/rapat/) — perekaman di perangkat, transkripsi, dan peringkasan
+- [Kalender dan penjadwalan](/id-ID/panduan-pengguna/konsep/kalender/) — sinkronisasi Google Calendar dan peringatan rapat
 
-## Under the hood
+## Di balik layar
 
-The shape of the system itself.
+Bentuk dari sistem itu sendiri.
 
-- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/) — the in-process bus features talk over
+- [Arsitektur](/id-ID/panduan-pengguna/konsep/arsitektur/) — pelapisan, kernel bersama, port dan adapter
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) — bagaimana klien desktop, web, dan ponsel berhubungan dengan satu server
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/) — bus dalam proses yang digunakan fitur-fitur untuk berkomunikasi

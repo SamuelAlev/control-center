@@ -1,95 +1,96 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Połącz swoje konto Slack
+description: Potwierdź, że tożsamość w Slacku należy do Ciebie, aby agenci działali na Twoich wiadomościach, a Twoja praca była przypisywana Tobie.
 slug: pl-PL/podrecznik/poradniki/laczenie-konta-czatu
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Ten poradnik pokazuje, jak połączyć tożsamość czatu z użytkownikiem Control Center i jak ją odłączyć.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Każdy członek robi to raz na dostawcę czatu. Jest to odrębne od połączenia aplikacji: połączenie aplikacji czyni bota osiągalnym dla całego obszaru roboczego, a połączenie konta czyni rozpoznawalnym w nim _Ciebie_.
 
-## Why linking is required
+## Dlaczego połączenie jest wymagane
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Most odmawia działania w imieniu konta czatu, którego nie potrafi rozwiązać do członka obszaru roboczego. To celowe — bez połączenia każda wiadomość ze Slacka musiałaby być przypisywana temu, kto zainstalował aplikację, a dziennik audytu, limity szybkości na Principal i autorzy zgłoszeń wskazywałyby niewłaściwą osobę.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Niepołączony członek, który wspomni bota, otrzymuje w tym wątku Slacka odpowiedź wyjaśniającą, jak połączyć konto. Żadna praca nie zostaje zlecona.
 
-## Link with a code
+## Połącz za pomocą kodu
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość** i przewiń do karty **Połączone konta czatu**
+2. W bloku Slack kliknij **Połącz moje konto Slack**
+3. Skopiuj wyświetlane polecenie, na przykład:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. W Slacku wyślij to polecenie do bota — wiadomość prywatna jest najłatwiejszym miejscem
+5. Bot potwierdza, wskazując użytkownika Control Center, z którym jesteś teraz połączony, a pozostawione przez Ciebie okno dialogowe aktualizuje się w tym samym momencie — nie musisz go zamykać ani niczego sprawdzać
 
-The code:
+Kod:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Jest jednorazowy i wygasa **15 minut** po wygenerowaniu
+- Jest zawsze generowany dla _Ciebie_, nigdy dla współpracownika
+- Zastępuje każdy kod, który już posiadasz, więc ponowne naciśnięcie przycisku unieważnia poprzedni
+- Przechowywany wyłącznie w pamięci, więc restart serwera unieważnia oczekujące kody — naciśnij przycisk ponownie
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Kod nieznany, wygasły lub wygenerowany dla innego obszaru roboczego kończy się nieodróżnialnie tak samo: „ten kod jest nieprawidłowy (lub wygasł)”.
 
-## Automatic linking by email
+## Automatyczne łączenie po adresie e-mail
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Jeśli Twój profil Slacka zawiera zweryfikowany adres e-mail zgodny z użytkownikiem Control Center, który **jest już członkiem tego obszaru roboczego**, most połączy Cię przy pierwszej rozmowie z nim. Kod nie jest potrzebny.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Liczą się obie połowy: dopasowanie adresu e-mail dowodzi tożsamości, ale dostęp daje wyłącznie członkostwo, więc obcy, którego adres przypadkiem istnieje na serwerze, nie zostaje z niczym połączony. Lista pokazuje, jak powstało każde połączenie („dopasowano po e-mailu” albo „połączono kodem”).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Automatyczne łączenie wymaga zakresu `users:read.email`. Bez niego Slack nie ujawni adresu i jedyną drogą pozostaje ścieżka z kodem.
 
-## See who is linked
+## Zobacz, kto jest połączony
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Lista należy do administracji obszaru roboczego, więc znajduje się po drugiej
+stronie powierzchni: **Ustawienia → Obszar roboczy → Ogólne → Mostki czatu → Połączone konta**.
+Wymienia każdego połączonego członka obszaru roboczego wraz z kontem Slack, do
+którego jest przypisany, oraz sposobem, w jaki powstało połączenie.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Twój własny stan widać na stronie profilu: wiersz **Połącz moje konto Slack** po
+połączeniu brzmi „Połączono z _twoj-slack-id_”, a gdy konto nie jest połączone,
+informuje, że należy je połączyć.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Lista to subskrypcja na żywo, bo zmiana zachodzi po drugiej stronie — kod
+wpisujesz w Slacku, więc żadne żądanie z aplikacji nie może przynieść odpowiedzi
+z powrotem.
 
-## Unlink
+## Odłącz
 
-Click **Unlink** on a row in the workspace roster.
+Kliknij **Odłącz** w wierszu na liście obszaru roboczego.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Każdy może odłączyć własne konto
+- Tylko administrator może odłączyć konto innego członka
+- Odłączenie unieważnia też każdy oczekujący kod połączenia tego członka
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Po odłączeniu to konto Slacka nie może już kierować agentami, dopóki nie zostanie ponownie połączone. Istniejące przestrzenie, transkrypcje i zgłoszenia zachowują pierwotne przypisanie — odłączenie nie wycofuje wcześniejszej pracy.
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-### The bot says I am not a member of this workspace
+### Bot informuje, że nie jestem członkiem tego obszaru roboczego
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/pl-PL/podrecznik/koncepcje/wieloosobowosc/).
+Twoje konto Slacka jest połączone z użytkownikiem Control Center, ale ten użytkownik nie ma członkostwa w tym obszarze roboczym. Poproś administratora o zaproszenie; zobacz [Wieloosobowość — tożsamość, członkostwo i obecność](/pl-PL/podrecznik/koncepcje/wieloosobowosc/).
 
-### The bot says my role is read-only
+### Bot informuje, że moja rola jest tylko do odczytu
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Role `viewer` i `guest` nie mogą rozpoczynać pracy. Administrator musi podnieść Twoją rolę do `member` lub wyższej.
 
-### The slash command is not recognized
+### Polecenie slash nie jest rozpoznawane
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Sprawdź, czy polecenie slash istnieje w Slacku i czy wysyłasz polecenie, które pokazało Ci okno ustawień — administrator mógł zmienić jego nazwę, a wtedy okno pokazuje nazwę bieżącą.
 
-## Related guides
+## Powiązane poradniki
 
-- [Set up Slack integration](/pl-PL/podrecznik/poradniki/integracja-slack/)
-- [Customize the chat bot](/pl-PL/podrecznik/poradniki/dostosowanie-bota-czatu/)
-- [Chat bridge](/pl-PL/podrecznik/dokumentacja-referencyjna/most-czatu/)
+- [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/)
+- [Dostosuj bota czatu](/pl-PL/podrecznik/poradniki/dostosowanie-bota-czatu/)
+- [Most czatu](/pl-PL/podrecznik/dokumentacja-referencyjna/most-czatu/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Chat bridges](/pl-PL/podrecznik/koncepcje/mosty-czatu/)
-- [Multiplayer — identity, membership and presence](/pl-PL/podrecznik/koncepcje/wieloosobowosc/)
+- [Mosty czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/)
+- [Wieloosobowość — tożsamość, członkostwo i obecność](/pl-PL/podrecznik/koncepcje/wieloosobowosc/)

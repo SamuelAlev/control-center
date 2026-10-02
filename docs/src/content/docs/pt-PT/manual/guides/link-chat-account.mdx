@@ -1,95 +1,96 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Associar a sua conta do Slack
+description: Comprove que uma identidade do Slack é sua para que os agentes atuem sobre as suas mensagens e o seu trabalho lhe seja atribuído.
 slug: pt-PT/manual/guias/associar-conta-de-chat
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Este guia mostra-lhe como associar a sua identidade de chat ao seu utilizador do Control Center e como desvincular uma conta.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Cada membro faz isto uma vez por fornecedor de chat. É algo separado de ligar a aplicação: a ligação torna o bot alcançável para todo o espaço de trabalho; a associação torna _você_ reconhecível dentro dele.
 
-## Why linking is required
+## Porque é que a associação é obrigatória
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+A ponte recusa agir em nome de uma conta de chat que não consiga resolver num membro do espaço de trabalho. É deliberado — sem uma associação, todas as mensagens do Slack teriam de ser atribuídas a quem instalou a aplicação, e o registo de auditoria, os limites de pedidos por principal e quem reporta os tickets nomeariam todos a pessoa errada.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Um membro sem associação que mencione o bot recebe uma resposta nessa thread do Slack a explicar como associar. Nada é despachado.
 
-## Link with a code
+## Associar com um código
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Vá a **Definições → Espaço de trabalho → Perfil e identidade** e desloque-se até ao cartão **Contas de chat vinculadas**
+2. No bloco do Slack, clique em **Vincular minha conta do Slack**
+3. Copie o comando que ele mostra, por exemplo:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. No Slack, envie esse comando ao bot — uma mensagem direta é o sítio mais fácil
+5. O bot confirma o utilizador do Control Center ao qual está agora associado e a caixa de diálogo que deixou aberta atualiza-se para o dizer no mesmo momento — não precisa de a fechar para ir confirmar
 
-The code:
+O código:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- É de uso único e expira **15 minutos** depois de ser emitido
+- É sempre emitido para _você_, nunca para um colega de equipa
+- Substitui qualquer código que já tenha, por isso voltar a premir o botão invalida o anterior
+- Fica apenas na memória, por isso reiniciar o servidor invalida os códigos pendentes — volte a premir o botão
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Um código desconhecido, expirado ou emitido para outro espaço de trabalho falha da mesma forma indistinguível: «that code is not valid (or has expired)».
 
-## Automatic linking by email
+## Associação automática por email
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Se o seu perfil do Slack tiver um email verificado que corresponda a um utilizador do Control Center que **já seja membro deste espaço de trabalho**, a ponte associa-o na primeira vez que falar com ela. Não é preciso nenhum código.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+As duas metades são importantes: a correspondência de email prova a identidade, mas só a pertença concede acesso, por isso um desconhecido cujo email exista por acaso no servidor não fica associado a nada. A lista mostra como cada associação foi feita («associado por e-mail» ou «vinculado com um código»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+A associação automática precisa do âmbito `users:read.email`. Sem ele, o Slack não divulga o endereço e o fluxo por código é o único caminho.
 
-## See who is linked
+## Ver quem está associado
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+A lista é administração do espaço de trabalho, por isso vive na outra metade da
+superfície: **Definições → Espaço de trabalho → Geral → Pontes de chat → Contas
+vinculadas**. Lista todos os membros com associação no espaço de trabalho, com a
+conta do Slack à qual cada um corresponde e como a associação foi feita.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+O seu próprio estado está na sua página de perfil: a linha **Vincular minha
+conta do Slack** mostra «Vinculado a _your-slack-id_» assim que estiver associado
+e diz-lhe para associar quando não estiver.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+A lista é uma subscrição em direto, porque a alteração acontece do outro lado —
+o código é escrito no Slack, por isso nenhum pedido da aplicação pode trazer a
+resposta de volta.
 
-## Unlink
+## Desvincular
 
-Click **Unlink** on a row in the workspace roster.
+Clique em **Desvincular** numa linha da lista do espaço de trabalho.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Qualquer pessoa pode desvincular-se a si própria
+- Só um administrador pode desvincular outro membro
+- Desvincular também revoga qualquer código de associação pendente desse membro
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Depois de desvincular, essa conta do Slack deixa de poder comandar agentes até voltar a associar-se. Os espaços, as transcrições e os tickets existentes mantêm a atribuição original — desvincular não é uma retratação do trabalho passado.
 
-## Troubleshooting
+## Resolução de problemas
 
-### The bot says I am not a member of this workspace
+### O bot diz que não sou membro deste espaço de trabalho
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/pt-PT/manual/conceitos/multijogador/).
+A sua conta do Slack está associada a um utilizador do Control Center, mas esse utilizador não tem pertença neste espaço de trabalho. Peça a um administrador para o convidar; consulte [Multijogador — identidade, pertença e presença](/pt-PT/manual/conceitos/multijogador/).
 
-### The bot says my role is read-only
+### O bot diz que o meu papel é só de leitura
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Os papéis `viewer` e `guest` não podem iniciar trabalho. Um administrador tem de elevar o seu papel para `member` ou superior.
 
-### The slash command is not recognized
+### O comando slash não é reconhecido
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Verifique se o comando slash existe no Slack e se está a enviar o comando que a caixa de diálogo das definições lhe mostrou — um administrador pode tê-lo renomeado e, nesse caso, a caixa de diálogo mostra o nome atual.
 
-## Related guides
+## Guias relacionados
 
-- [Set up Slack integration](/pt-PT/manual/guias/integracao-slack/)
-- [Customize the chat bot](/pt-PT/manual/guias/personalizar-bot-de-chat/)
-- [Chat bridge](/pt-PT/manual/referencia/ponte-de-chat/)
+- [Configurar a integração com o Slack](/pt-PT/manual/guias/integracao-slack/)
+- [Personalizar o bot de chat](/pt-PT/manual/guias/personalizar-bot-de-chat/)
+- [Ponte de chat](/pt-PT/manual/referencia/ponte-de-chat/)
 
-## Related concepts
+## Conceitos relacionados
 
-- [Chat bridges](/pt-PT/manual/conceitos/pontes-de-chat/)
-- [Multiplayer — identity, membership and presence](/pt-PT/manual/conceitos/multijogador/)
+- [Pontes de chat](/pt-PT/manual/conceitos/pontes-de-chat/)
+- [Multijogador — identidade, pertença e presença](/pt-PT/manual/conceitos/multijogador/)

@@ -1,102 +1,103 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: בנו את הפייפליין הראשון
+description: צרו תבנית פייפליין, הגדירו את השלב שלה, התירו הרצות ידניות והתחילו אחת.
 slug: he-IL/מדריך-למשתמש/מדריכים/הפייפליין-הראשון
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## מה תבנו
 
-By the end of this tutorial, you will have:
+בסוף המדריך הזה יהיו לכם:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- תבנית פייפליין שמורה ששולחת סוכן עם הנחיה
+- הרצות ידניות מופעלות בה, כך שאפשר להפעיל אותה ביד
+- הרצה אחת שהושלמה, עם הקלט והפלט של השלב גלויים
 
-Prerequisites: [Dispatch your first agent](/he-IL/מדריך-למשתמש/מדריכים/הסוכן-הראשון/) completed, so you have an agent with an adapter and a model.
+דרישות מוקדמות: [שילחו את הסוכן הראשון](/he-IL/מדריך-למשתמש/מדריכים/הסוכן-הראשון/) הושלם, כך שיש לכם סוכן עם מתאם ומודל.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/); for the full step vocabulary, [Pipeline step kinds](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
+פייפליין הוא DAG של שלבים. התבניות מגדירות את הגרף; ההרצות הן ביצועים. למודל שמאחוריו קראו את [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/); לרשימה המלאה של סוגי השלבים, [סוגי שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
 
-## Step 1: Create a template
+## שלב 1: צרו תבנית
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. עברו אל **הגדרות → סביבת עבודה → תבניות פייפליין**
+2. לחצו על **תבנית חדשה**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+העורך נפתח על שלד שנזרע מראש בשם **פייפליין חדש** (מזהה `pipeline_N`).
+לחצו על הכותרת בראש העורך ושנו את השם — במדריך הזה
+`code_quality_check` הוא שם טוב. אין תיבת דו־שיח למזהה ואין שדה
+תיאור.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+הקנבס אינו ריק. תבנית חדשה מגיעה מחווטת מראש כ־
+**Trigger → Step → terminal**, כש־"Step" הוא צומת של סוכן־הנחיה וה־terminal
+הוא זקיף בלתי נראה שהעורך מחווט מחדש אל כל כיור שאפשר להגיע אליו.
 
-You configure the Step that is already there.
+אתם מגדירים את ה־Step שכבר נמצא שם.
 
-## Step 2: Configure the step
+## שלב 2: הגדירו את השלב
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. לחצו על צומת **Step** בקנבס
+2. בפאנל **הגדרות צומת** מימין, הגדירו:
+   - **סוכן**: הסוכן שלכם מהמדריך הקודם
+   - **תבנית הנחיה**: "עברו על הקוד בענף הנוכחי וחפשו בעיות איכות. פרטו את מה שמצאתם."
+3. השאירו את **Triggers from** כמו שהוא — הצומת כבר מחווט כך שיופעל אחרי Trigger
 
-## Step 3: Save
+## שלב 3: שמרו
 
-Press **Save** in the editor header.
+לחצו על **שמור** בראש העורך.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**נקודת ביקורת.** הכיתוב "שינויים שלא נשמרו" נעלם.
 
-## Step 4: Allow manual runs
+## שלב 4: התירו הרצות ידניות
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. לחצו על האריח המקווקו **הוספת טריגר** בקנבס (או גררו **הרצה ידנית**
+   מהמקטע טריגרים בספריית הצמתים) ובחרו **הרצה ידנית**.
+2. בחרו את הצומת הזה. בפאנל מימין הפעילו את **מופעל** —
+   "הצגה בדף ההרצה והתחלה ידנית."
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+זה לא אופציונלי, וקל לפספס אותו. תבנית חדשה נוצרת **בלי שורת טריגר כלל**, כך שעד שתפעילו את זה דף ההרצה לא יציג אותה ולא יהיה מה להפעיל. המתג כותב את הטריגר מיד; הוא לא ממתין לשמירה נוספת.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+אותו מתג עומד מאחורי **הרצה ידנית** בראש העורך, שם הוא יושב לצד הקלטים המוצהרים של התבנית.
 
-## Step 5: Run it
+## שלב 5: הריצו אותה
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. לחצו על **פייפליינים** בסרגל הצד
+2. לחצו על **הרצת פייפליין** בכותרת
+3. בחרו את `code_quality_check` במסילה השמאלית
+4. לחצו על **הרצת פייפליין** בטופס — התבנית שלכם אינה מצהירה על קלטים, כך שאין מה למלא
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**נקודת ביקורת.** התראה קופצת מאשרת שההרצה החלה, ו-Control Center פותחת את פרטי ההרצה.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+המנוע יוצר את רשומת ההרצה, משלים את הטריגר, מתזמן את השלב, שולח את הסוכן ומשלים את ההרצה כשהענף הנכנס של ה־terminal מסתיים.
 
-## Step 6: Inspect the result
+## שלב 6: בדקו את התוצאה
 
-Click the step in the run to open its detail panel:
+לחצו על השלב בהרצה כדי לפתוח את לוח הפרטים שלו:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- חותמות הזמן **התחיל** ו**הסתיים** ו**משך**
+- **קלט**: המצב שמועבר לשלב
+- **פלט**: מה שהשלב הפיק — כאן, תשובת הסוכן
+- **פעילות הסוכן**, עם קישור לשיחה שהשלב הוביל
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**נקודת ביקורת.** השלב מוצג כהושלם, ובפלט שלו נמצאת סקירת הסוכן.
 
-## Adding more steps
+## הוספת שלבים נוספים
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+צמתים מוסיפים בגרירת רשומה מספריית הצמתים משמאל אל הקנבס, או בלחיצה על
+**הוספת שלב** (`+`) מיד אחרי צומת. גררו מיציאת הפלט של צומת אל צומת אחר כדי
+לחבר ביניהם, או בחרו את הצומת החדש וסמנו את השלב שמעליו תחת
+**Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+צומת ה־terminal אינו מצויר ואינו ניתן לבחירה. העורך מחווט אותו מחדש אל כל
+כיור שאפשר להגיע אליו, כך שצומת שתוסיפו אחרי ה־Step שנזרע עדיין ירוץ.
 
-## Recap
+## סיכום
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+יצרתם תבנית, הגדרתם את צומת סוכן ההנחיה שאיתו היא נזרעה, שמרתם אותה, הפכתם אותה לניתנת להפעלה ידנית, התחלתם הרצה וקראתם את הקלט והפלט של השלב.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+פייפליינים גדלים הרבה מעבר לזה — נתבים מותנים, ענפים מקבילים, צומתי חיבור, פיזור for-each, שערים אנושיים — אבל הצורה לעולם אינה משתנה: שלבים ב-DAG, שמעבירים מצב.
 
-**Next:** [Bridge Slack to your workspace](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/), the last tutorial in this sequence.
+**הבא:** [חברו את Slack לסביבת העבודה](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/), המדריך האחרון ברצף הזה.
 
-- [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/) to start pipelines from events or a schedule
-- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) for the model underneath
-- [Pipeline step kinds](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/) for every step type
+- [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/) כדי להתחיל פייפליינים מאירועים או מלוח זמנים
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) למודל שמתחת
+- [סוגי שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/) לכל סוג שלב

@@ -1,29 +1,32 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Cópia de segurança, exportação e importação
+description: A estrutura do instantâneo, o manifesto, todas as operações de cópia de segurança e rotas de transferência, e exatamente que ficheiros uma cópia de segurança contém e não contém.
 slug: pt-PT/manual/referencia/copia-de-seguranca
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/); for why persistence is
-split this way, see [Workspaces and isolation](/pt-PT/manual/conceitos/espacos-de-trabalho/).
+Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
+artefacto. Para tirar efetivamente uma cópia de segurança, consulte
+[Fazer cópia de segurança e restaurar](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/); para
+perceber porque é que a persistência está dividida desta forma, consulte
+[Espaços de trabalho e isolamento](/pt-PT/manual/conceitos/espacos-de-trabalho/).
 
-## Artifacts
+## Artefactos
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Existem três artefactos de cópia de base de dados, com âmbitos e políticas de eliminação
+diferentes.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
-| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| Artefacto                                  | Escrito por                 | Forma                                        | Abrange                                |
+| ------------------------------------------ | --------------------------- | -------------------------------------------- | -------------------------------------- |
+| **Instantâneo da instalação**              | `server.backupNow`          | Um **diretório** com data e hora             | Todas as bases de dados da instalação  |
+| **Cópia de segurança do espaço de trabalho** | Pipeline `Workspace backup` | Diretório com data e hora com um `.db`      | A base de dados de um espaço de trabalho |
+| **Exportação do espaço de trabalho**       | `workspace.export`          | Um único ficheiro `.db`                      | A base de dados de um espaço de trabalho |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Todos são escritos com o `VACUUM INTO` do SQLite, que é seguro contra uma base de dados WAL
+em funcionamento: abre uma transação de leitura, produz uma cópia desfragmentada e
+transacionalmente consistente e nunca exige parar o servidor.
 
-## Snapshot layout
+## Estrutura do instantâneo
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +35,123 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+A estrutura espelha exatamente o diretório de dados em funcionamento, e é isso que faz com
+que restaurar uma instalação seja uma cópia de volta e não uma tradução. O nome do diretório
+é a data e hora UTC com `:` e `.` substituídos por `-`, pelo que é seguro para sistemas de
+ficheiros no Windows e ordena-se cronologicamente como uma cadeia simples.
 
-Scheduled workspace backups live separately at
+As cópias de segurança agendadas de espaços de trabalho ficam à parte, em
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Não incluem um manifesto nem o `global.db` e não são instantâneos da instalação.
+O passo de retenção do pipeline semanal remove apenas cópias de segurança do seu próprio
+espaço de trabalho mais antigas do que a idade configurada (30 dias por predefinição); os
+instantâneos da instalação criados manualmente nunca são rodados por esse passo. O
+`server.listBackups` lista apenas instantâneos da instalação, incluindo os incompletos.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
-| -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| Campo                       | Tipo            | Significado                                                        |
+| --------------------------- | --------------- | ------------------------------------------------------------------ |
+| `version`                   | int             | Versão do formato do manifesto. Atualmente `1`                     |
+| `created_at`                | ISO-8601 UTC    | Quando o instantâneo foi tirado                                    |
+| `global.file`               | string          | Sempre `global.db`                                                 |
+| `global.schema_version`     | int             | Versão do esquema do `GlobalDatabase` no momento da captura        |
+| `global.bytes`              | int             | Tamanho do `global.db` escrito                                     |
+| `workspace_schema_version`  | int             | Versão do esquema do `WorkspaceDatabase` partilhada por todos os ficheiros de espaço de trabalho |
+| `workspaces[]`              | array           | Uma entrada por espaço de trabalho capturado                       |
+| `workspaces[].workspace_id` | string          | O espaço de trabalho que este ficheiro contém                      |
+| `workspaces[].file`         | string          | Caminho relativo à raiz do instantâneo, `<workspaceId>/workspace.db` |
+| `workspaces[].bytes`        | int             | Tamanho desse ficheiro                                             |
+| `skipped_workspaces[]`      | array de string | Espaços de trabalho que a cópia de segurança **não** conseguiu capturar |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Um espaço de trabalho é ignorado quando está registado mas nunca foi escrito (pelo que ainda
+não existe ficheiro) ou quando o seu `VACUUM INTO` falhou. De qualquer forma, o instantâneo
+conclui-se na mesma e o manifesto indica o que está em falta.
 
-### Completeness
+### Completude
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+O `server.listBackups` reporta um indicador `complete` por instantâneo. É falso quando o
+manifesto está ausente ou não é analisável, quando o `global.db` está em falta ou quando o
+manifesto refere um ficheiro de espaço de trabalho que não existe no disco.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Um instantâneo incompleto continua a ser listado, porque um instantâneo que um operador não
+vê é um instantâneo que ele acredita ter. Quando o manifesto não é legível, a listagem
+recorre à própria estrutura e reporta os ficheiros `<workspaceId>/workspace.db` que
+encontrar — esses continuam a poder ser adotados individualmente através do
+`workspace.import`, ainda que o instantâneo no seu todo não consiga restaurar uma instalação.
 
-## What a backup does not contain
+## O que uma cópia de segurança não contém
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Ambos os artefactos são **apenas bases de dados**. Um diretório de espaço de trabalho contém
+mais do que a sua base de dados, e nada do resto viaja:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Caminho                             | Num instantâneo? | Numa exportação de espaço de trabalho? |
+| ----------------------------------- | ---------------- | -------------------------------------- |
+| `global.db`                         | Sim              | Não                                    |
+| `<workspaceId>/workspace.db`        | Sim              | Sim (*é* o ficheiro)                   |
+| `<workspaceId>/blobs/`              | Não              | Não                                    |
+| `<workspaceId>/skills/`             | Não              | Não                                    |
+| `<workspaceId>/agents/`             | Não              | Não                                    |
+| `<workspaceId>/chat_credentials/`   | Não              | Não                                    |
+| `<workspaceId>/spaces/<spaceId>/`   | Não              | Não                                    |
+| `<workspaceId>/pr_clones/`          | Não              | Não                                    |
+| `secrets.json`                      | Não              | Não                                    |
+| `models/`                           | Não              | Não                                    |
+| `meetings/<meetingId>/`             | Não              | Não                                    |
+| `rigs/`                             | Não              | Não                                    |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/pt-PT/manual/referencia/ponte-de-chat/).
+Parte disso é descartável — `spaces/` contém worktrees copy-on-write que são reprovisionadas
+a partir dos repos, `pr_clones/` é uma cache, `models/` volta a ser descarregado e `rigs/` é
+estado da máquina. Outra parte não é: `blobs/` contém imagens coladas para as quais apontam
+linhas da base de dados, `skills/` e `agents/` contêm os ficheiros com que um agente é
+executado e `secrets.json` contém todas as chaves de emparelhamento, credenciais de
+fornecedor e definições de SSO da instalação. Consulte
+[Fazer cópia de segurança e restaurar](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/#copy-backups-off-the-machine)
+para cobrir o resto.
+:::note[Os tokens de chat ficam deliberadamente para trás]
+O facto de `chat_credentials/` estar ao lado da base de dados e não dentro dela é a razão
+pela qual um espaço de trabalho entregue a outra pessoa não transporta tokens de bots
+ativos. Consulte a
+[referência de ponte de chat](/pt-PT/manual/referencia/ponte-de-chat/).
 :::
 
-## Operations
+## Operações
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+Os RPC de cópia de segurança da instalação e a exportação/importação de espaços de trabalho
+são exclusivos de `fullClient`: um telefone emparelhado não os consegue acionar. Todos eles
+estão totalmente ausentes — não recusados, estruturalmente em falta — num servidor sem porta
+de cópia de segurança ligada, como o servidor de demonstração.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Op                    | Tipo    | Âmbito             | Papel mínimo                      | Argumentos    | Devolve                       |
+| --------------------- | ------- | ------------------ | --------------------------------- | ------------- | ----------------------------- |
+| `server.backupNow`    | mutação | Instalação         | **proprietário** da instalação    | nenhum        | `{ok, path}`                  |
+| `server.listBackups`  | leitura | Instalação         | **proprietário** da instalação    | nenhum        | `{backups: [...]}`            |
+| `server.deleteBackup` | mutação | Instalação         | **proprietário** da instalação    | `name`        | `{ok}`                        |
+| `workspace.export`    | leitura | Espaço de trabalho | `admin`                           | nenhum        | `{ok, path}`                  |
+| `workspace.import`    | mutação | Espaço de trabalho | `owner`                           | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`    | mutação | Instalação*        | `owner`                           | `id`          | linha do registo marcada como eliminada |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* O `workspace.delete` não tem âmbito porque a linha que marca vive no registo global; o seu
+handler verifica a pertença do chamador ao espaço de trabalho indicado e exige `owner`.
 
-`path` in every response is a path on the **server host**.
+O `path` em todas as respostas é um caminho no **anfitrião do servidor**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Um instantâneo da instalação inteira exige o proprietário nas duas vias]
+O `server.backupNow`, o `server.listBackups` e o `server.deleteBackup` exigem o
+**proprietário** da instalação (`ServerAuthority.serverOwner`), o mesmo portão que o
+`GET /backup/snapshot`. Um instantâneo captura a base de dados de todos os espaços de
+trabalho, pelo que ser admin de um espaço de trabalho não chega para gerir os restantes. A
+eliminação aceita apenas o nome do diretório com data e hora listado, não um caminho
+arbitrário do servidor, e remove o instantâneo inteiro (incluindo instantâneos incompletos).
+A exportação/importação por espaço de trabalho mantém-se no admin/proprietário do espaço de
+trabalho, não no proprietário da instalação.
 :::
 
-### `server.listBackups` response
+### Resposta do `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Os mais recentes primeiro, ordenados pelo nome do diretório (que é a data e hora, pelo que a
+ordem se mantém mesmo para um instantâneo cujo manifesto não pôde ser lido).
 
 ```json
 {
@@ -169,99 +175,105 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+O `created_at` é omitido quando o manifesto não pôde ser lido. O `bytes` de nível superior é
+o tamanho real em disco do diretório inteiro, não a soma do próprio manifesto — a pergunta
+que um operador a limpar instantâneos faz é quanto custa o diretório, não o que a cópia de
+segurança pretendia escrever.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Cada `workspaces[].path` é exatamente o que o `workspace.import` recebe como `source_path`.
+Isso é deliberado: «restaurar este espaço de trabalho a partir deste instantâneo» *é* a
+operação de importação, pelo que as duas não podem divergir para tratamentos diferentes do
+mesmo ficheiro.
 
-### `workspace.import` validation
+### Validação do `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Antes de se substituir seja o que for, o ficheiro candidato é aberto apenas para leitura com
+uma ligação SQLite em bruto de curta duração e a sua linha `workspace_meta` é lida.
 
-| Condition                                        | Result                                                          |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Condição                                              | Resultado                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------- |
+| Não é uma base de dados SQLite legível, ou não tem `workspace_meta` | Recusado. Nada é tocado                          |
+| Id de espaço de trabalho registado ≠ o de destino     | **Permitido**, registado. É assim que um espaço de trabalho é duplicado ou restaurado com um id novo |
+| Id de instalação registado ≠ esta instalação          | **Permitido**, registado. Os seus dispositivos emparelhados e ids de utilizador pertencem a essa instalação e não serão resolvidos aqui |
+| Id de espaço de trabalho inválido, ou o ficheiro não existe | Recusado                                                  |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Após a aceitação, a base de dados do espaço de trabalho de destino é fechada e removida do
+gestor antes de o ficheiro ser copiado por cima dela (uma ligação do Drift aberta mantém o
+ficheiro e o seu `-wal`), e depois reaberta para que o `beforeOpen` volte a instalar os
+disparadores de FTS e de sincronização, e os índices FTS são reconstruídos — as tabelas de
+conteúdo de um ficheiro importado ficam preenchidas, mas o seu índice pode estar
+desatualizado.
 
-## Transfer routes
+## Rotas de transferência
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Todas as operações acima falam em caminhos do lado do servidor, o que só é uma resposta
+completa quando o servidor é a sua própria máquina. Estas três transportam os bytes, na mesma
+via assinada por PSK que o proxy de multimédia e o armazenamento de blobs utilizam. O
+chamador assina uma cadeia de destino com a chave pré-partilhada do dispositivo e passa a
+assinatura como `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
-| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| Rota                    | Método | Query           | Alvo assinado                    | Exige                          |
+| ----------------------- | ------ | --------------- | -------------------------------- | ------------------------------ |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Admin** do espaço de trabalho |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Proprietário** da instalação  |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Proprietário** do espaço de trabalho |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+O `w` é um id de espaço de trabalho, o `n` um nome de diretório de instantâneo, o `d` o id do
+dispositivo que chama e o `s` a assinatura. O `n` é resolvido em relação à listagem de cópias
+de segurança e não concatenado à raiz das cópias, pelo que a rota não pode ser apontada a um
+diretório que a listagem não teria mostrado.
 
-| Status | Cause                                                                              |
+| Estado | Causa                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | Falta um parâmetro de query obrigatório, ou o corpo de um envio está vazio           |
+| `403`  | Dispositivo desconhecido ou revogado, assinatura inválida, ou o chamador não tem o papel |
+| `404`  | Não há porta de cópia de segurança neste anfitrião, ou o instantâneo/o ficheiro de espaço de trabalho indicado não existe |
+| `405`  | `/backup/restore` chamado com algo que não `POST`                                   |
+| `413`  | O corpo do envio excede 8 GiB, pelo content-length declarado ou pelos bytes realmente lidos |
+| `500`  | A exportação ou o arquivo falhou do lado do servidor                                |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Ambos os descarregamentos respondem com `Cache-Control: no-store` e `Accept-Ranges: none`.
+Cada pedido cria uma cópia **nova** e elimina-a assim que é transmitida em fluxo, pelo que
+uma resposta em cache ou retomada juntaria bytes de duas exportações diferentes num ficheiro
+que parece válido e não é.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+O `/backup/snapshot` devolve `<name>.zip`, com entradas relativas à raiz do instantâneo, pelo
+que descompactar reproduz `manifest.json` + `global.db` + `<workspaceId>/workspace.db`. As
+entradas são escritas por ordem de ordenação, pelo que dois arquivos do mesmo instantâneo são
+o mesmo arquivo.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+O `/backup/restore` transmite o corpo diretamente para um ficheiro de preparação em vez de o
+colocar em memória intermédia, limita-o antes e durante a leitura e elimina o ficheiro
+preparado em **todos** os caminhos de saída, incluindo uma recusa.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Uma ligação através de relay não tem origem HTTP]
+O relay intermediário transporta frames RPC, não transferências de ficheiros. Tudo o que fala
+em caminhos do lado do servidor continua a funcionar através dele; as três rotas de
+transferência precisam de uma ligação direta, e a interface desativa-as com uma nota em vez
+de falhar a meio do descarregamento.
 :::
 
-## Paths and limits
+## Caminhos e limites
 
-| Thing                          | Value                                                        |
-| ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Item                                        | Valor                                                        |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Instantâneos                                | `<dataDir>/backups/<timestamp>/`                             |
+| Cópias de segurança agendadas de espaços de trabalho | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Exportações de espaços de trabalho          | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Preparação de transferências                | `<dataDir>/backups/transfer/` — uma bancada de trabalho, limpa pela rota que a escreve |
+| Nome do arquivo do instantâneo              | `<snapshot directory name>.zip`                              |
+| Limite de envio                             | 8 GiB por `POST /backup/restore`                             |
+| Retenção                                    | Instantâneos da instalação: eliminação manual. Cópias de segurança de espaços de trabalho: pipeline semanal, predefinição de 30 dias |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Os diretórios `exports/`, `transfer/` e `workspace-backups/` não são instantâneos da
+instalação e estão excluídos do `server.listBackups`. Só o último diretório tem retenção
+agendada; eliminar um instantâneo da instalação exige a ação explícita do proprietário da
+instalação.
 
-## See also
+## Ver também
 
-- [Back up and restore](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/) — the recipes these operations belong to
-- [Workspaces and isolation](/pt-PT/manual/conceitos/espacos-de-trabalho/) — why one workspace is one file
-- [`cc_server` CLI](/pt-PT/manual/referencia/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/pt-PT/manual/referencia/mapa-de-rotas/) — where the UI lives
-- [Architecture](/pt-PT/manual/conceitos/arquitetura/) — the client/server split the paths follow
+- [Fazer cópia de segurança e restaurar](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/) — as receitas a que estas operações pertencem
+- [Espaços de trabalho e isolamento](/pt-PT/manual/conceitos/espacos-de-trabalho/) — porque é que um espaço de trabalho é um ficheiro
+- [CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli/) — o diretório de dados onde estes caminhos se inserem
+- [Mapa de rotas](/pt-PT/manual/referencia/mapa-de-rotas/) — onde vive a interface
+- [Arquitetura](/pt-PT/manual/conceitos/arquitetura/) — a divisão cliente/servidor que os caminhos seguem

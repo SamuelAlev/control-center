@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: إعادة هيكلة الشفرة بنيويًا
+description: اطلب من وكيل أن يجد الشفرة ويعيد كتابتها بحسب الشكل لا بحسب النص، وراجع التغيير قبل أن يُثبَّت.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إعادة-هيكلة-بنيوية
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+يبيّن هذا الدليل كيف تجعل وكيلًا يجري تغييرًا ميكانيكيًا واسعًا — سكربتًا لتحويل الشفرة، أو ترحيل API بالجملة، أو نمطًا تريد محوه — بالبحث البنيوي وإعادة الكتابة، مع تجهيز التغيير للمراجعة قبل أن يُكتَب شيء.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` يطابق الشفرة بحسب **الشكل**. `ast_edit` يعيد كتابتها. `resolve` يثبّتها أو يتجاهلها.
 
-## Before you start
+## قبل أن تبدأ
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+تغطي الأدوات البنيوية اللغات التي يحلّلها مخطط الشفرة: Dart و JavaScript و TypeScript و TSX و PHP و Python و Rust و Zig و C و C++ و Go و Java و Ruby و C# و Swift و Kotlin و R و Assembly و MATLAB و Ada. وتحتاج إلى قواعد tree-sitter النحوية مُجهَّزة، وهي كذلك دائمًا في البناء المشحون — فقاعدة نحوية ناقصة توقف الخادم بدل تدهور البحث.
 
-## Find the shape first
+## جد الشكل أولًا
 
-Never rewrite something you have not looked at. Ask the agent to search:
+لا تُعِد كتابة ما لم تنظر إليه. اطلب من الوكيل أن يبحث:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> جد كل موضع نستدعي فيه `dispose()` على قيمة تقبل `null`، بعد أن فحصنا للتو أنها ليست `null`.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+الخرج `file:line` بالإضافة إلى المصدر المطابَق لكل موضع.
 
-### What the pattern syntax buys you
+### ما تكسبه من صياغة النمط
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| العنصر | ما يطابقه |
+| --- | --- |
+| `$NAME` | أي عقدة واحدة، تُلتقَط |
+| `$$$NAME` | أي تتابع من العقد الشقيقة — وسائط أو عبارات |
+| `$_` | أي شيء، يُلتقَط بلا اسم |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+المهم: **لا بد لتكرار `$NAME` أن يلتقط النص نفسه**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+يجد حارسًا يستدعي `dispose` على ما اختبره. وهو **لا** يجد `if (a != null) b.dispose()` — وهذا غالبًا الخلل الذي كنت تبحث عنه. ولا بحث نصي يستطيع التعبير عن ذلك.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[لا يطابق داخل نص أو تعليق]
+يُحلَّل النمط بقواعد الملف النحوية نفسها، فـ `dispose(x)` المكتوب في تعليق توثيقي أو في نص حرفي ليس استدعاءً ولا يُطابَق. وهذا بالضبط سبب اللجوء إليه بدل `grep`.
 :::
 
-### When the pattern finds nothing
+### حين لا يجد النمط شيئًا
 
-Two things to try, in order:
+جرّب شيئين، بهذا الترتيب:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **صغّره.** `foo($X)` قبل `if (a) { foo($X); }`. النمط الذي لا يكون شفرة صالحة وحده كثيرًا ما لا يكون التركيب الذي قصدته.
+2. **سمِّ اللغة.** لا يُستنتَج `language:` إلا حين يسمّي `path` ملفًا واحدًا.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+النمط الذي لا يقبله أي سياق تحليل يُبلَّغ بتعذّر تحليله — تقول الأداة ذلك بدل أن تبلّغ «لا تطابقات» عن شيء لم يُقرأ قط كما يبدو.
 
-## Rewrite, and look before it lands
+## أعد الكتابة، وانظر قبل أن يُثبَّت
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+النتيجة **اقتراح**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+لا شيء على القرص بعد. اقرأ القائمة، وتحقق من موضعين مما أبلغ عنه البحث، ثم:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+أو
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[التثبيت كله أو لا شيء]
+يُقارَن كل ملف بالمحتوى الملتقَط عند تجهيز التغيير. إن تغيّر أي ملف منها — عدّله الوكيل بيده، أو جرى منسّق، أو أعادت جولة التشخيص كتابته — يُرفَض التغيير **كله** ويُسقَط. إعادة الكتابة البنيوية إذا طُبّقت جزئيًا تترك شجرة لا تُصرَّف على أي من الشكلين.
 
-Re-run the tool against the current files; do not retry the stale id.
+أعد تشغيل الأداة على الملفات الحالية. لا تُعِد المحاولة بالمعرّف البالي.
 :::
 
-## Check your work with the compiler
+## تحقق من عملك بالمُصرِّف
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+المغزى من إنجاز هذا بنيويًا أنه واسع. والتغيير الواسع هو حيث تكسر إعادة كتابة تبدو سليمة أحد الأنواع. اطلب التشخيصات بعد استدعاء `resolve`:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+يشغّل `file: "*"` فاحص المشروع نفسه (`dart analyze` و`tsc --noEmit` و`cargo check` و`go build`) بدل استعلام على ملف واحد — وهذا شكل السؤال الصحيح بعد تغيير مسّ أربعين ملفًا.
 
-## Worked example: migrating a call
+## مثال عملي: ترحيل استدعاء
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+لنقل إن `log(msg, level)` يصير `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+انظر إلى المطابقات. إن كان بعضها دالة `log` *أخرى* بوسيطين، ضيّق النمط بحصر `path` في الدليل الذي يحتوي الاستدعاء المقصود، بدل محاولة التعبير عن الفرق داخل النمط.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+ثم `resolve`، ثم `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## متى تستخدم أداة أخرى
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| الحالة | الأداة الأنسب |
+| --- | --- |
+| إعادة تسمية رمز | `lsp_rename` — يتبع المراجع لا الأشكال |
+| إيجاد نص أو تعليق أو اسم ملف | `search` (المحتوى) / `search_files` (الأسماء) |
+| «ما الذي ينكسر إن غيّرت هذا؟» | [مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) |
+| لغة لا تغطيها القواعد النحوية | `search` مع `edit` |
 
-## Related
+## انظر أيضًا
 
-- [Code intelligence](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — the full argument list
-- [Search code with the code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) — the symbol and impact side
+- [ذكاء الشفرة](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/): لماذا المطابقة البنيوية ليست تعبيرًا نمطيًا بخطوات إضافية
+- [أدوات الوكيل المضمّنة](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/): القائمة الكاملة للوسائط
+- [البحث في الشفرة عبر مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/): جانب الرموز والتأثير

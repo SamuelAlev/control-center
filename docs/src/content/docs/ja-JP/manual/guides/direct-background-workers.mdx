@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: バックグラウンドワーカーを指示
+description: vibe モードを使って、自分で作業するのをやめ、並行して作業する複数のエージェントを指示する方法を説明します。
 slug: ja-JP/マニュアル/ハウツーガイド/バックグラウンドワーカーの指示
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+このガイドでは、ワーカーとしてではなく**ディレクター**として会話を進める方法を説明します。セッションが読み取りと検証を行い、編集はバックグラウンドのエージェントが行います。
 
-## What changes when you type `/vibe`
+## `/vibe` と入力すると何が変わるか
 
-Two things, and only the first is enforced by the machinery:
+変わるのは 2 つあり、機構が強制するのは 1 つ目だけです。
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **セッション自身のツールが読み取り専用に落ち**、さらに 5 つのワーカー動詞が使えるようになります。セッションがリポジトリに影響を与えられる唯一の経路はワーカー経由であり、何が起きたかを知る唯一の手段は、ワーカーが触れたファイルを読むことです。
+2. **信じるのではなく、読んで検証するよう指示されます。** ワーカーの報告は、それが何をしたかという主張であり、うまくいった証拠ではありません。
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+支えになっているのは 1 つ目のほうです。まだ grep や編集ができるディレクターは、負荷がかかると自分で作業をやってしまいます。それが、この仕組みが防ごうとしている失敗の形です。
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## ワーカーはまっさらな状態で始まる
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+ワーカーはあなたの会話を見たことがなく、これからも見ることはありません。ブリーフがそのコンテキストのすべてです。
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+これがこのパターンを安く保つ理由であり — 20 体のワーカーがそれぞれディレクターの履歴を保持すれば、ディレクターのコンテキストの 20 倍のコストになる — 同時に、ブリーフを書くのを難しくしている唯一の点でもあります。「ではもう一方もやっておいて」は、ディレクターには完全な指示として読めますが、まっさらなセッションには何の意味も持ちません。
 
-A good brief names files, commands and the definition of done:
+よいブリーフは、ファイル、コマンド、完了の定義を名指しします:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> `lib/features/auth/` 内の `SessionStore.read(key)` の呼び出しをすべて `SessionStore.get(key)` に置き換えてください。新しいメソッドは、古いメソッドが `String?` を返していたところで `Future<String?>` を返すため、呼び出し側には `await` が必要です。完了したら `fvm flutter analyze lib/features/auth` を実行し、修正できなかったエラーを報告してください。
 
-## The five verbs
+## 5 つの動詞
 
-| Verb         | What it does                                            |
-| ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| 動詞         | 動作                                                       |
+| ------------ | ---------------------------------------------------------- |
+| `vibe_spawn` | ブリーフを指定してワーカーを開始します。**すぐに戻ります。** |
+| `vibe_list`  | 全員のティア、ステータス、経過時間、最後の結果             |
+| `vibe_send`  | ターンを終えたワーカーへの追加のターン                     |
+| `vibe_wait`  | いずれかのワーカーが決着するまでブロックします             |
+| `vibe_kill`  | 1 つを停止します                                           |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+スポーンは設計上非同期です。スポーンごとにブロックするディレクターは、ワーカーを 1 体ずつ実行していることになり、自分でやっていたことをより遅くやっているだけです。`vibe_wait` は、特定の回答なしには本当に先へ進めない場合にのみ使ってください。
 
-## Two tiers
+## 2 つのティア
 
-| Tier   | For                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| ティア | 用途                                                                                   |
+| ------ | -------------------------------------------------------------------------------------- |
+| `fast` | 明確な仕様がある機械的な作業 — 編集、名前変更、下書き、コマンドの実行                  |
+| `good` | 設計、判断、または `fast` ワーカーが生み出したもののレビュー                            |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+よくある形は、`fast` ワーカーを独立したファイル群にファンアウトし、その後に `good` ワーカーを 1 体スポーンして、彼らが全体として何をしたかをレビューさせるというものです。
 
-## Verifying
+## 検証
 
-This is the part that decides whether the pattern is worth anything.
+ここが、このパターンに価値があるかどうかを決める部分です。
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+次に、**ワーカーが名指ししたファイルを実際に読みます**。ディレクターには `read`、`search`、`lsp`、`ast_grep` があります。それらを残しておく理由は、まさにそこにあります。報告を鵜呑みにするディレクターは、他のエージェントの楽観を要約するだけの存在です。
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+ワーカーを一巡させた後に `lsp(action: "diagnostics", file: "*")` を実行するのが、通常は最も速い単一のチェックです。
 
-## When a worker loses the thread
+## ワーカーが本筋を見失ったとき
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+停止して、ブリーフを書き直します。新しく修正されたブリーフのほうが、議論よりも安く済みます。また、`vibe_send` が機能するのは、すでにターンを終えたワーカーに対してだけです。
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## 制限
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **同時実行ワーカーは 8 体です。** これは支出の上限であり、技術的な制限ではありません。各ワーカーは完全なモデルセッションであり、20 体をファンアウトしたディレクターは、それらすべてが何をしているかを追えなくなっています。
+- **モードを超えて生き残るワーカーはありません。** 実行が終わると、そのすべてが停止され、トランスクリプトに何体だったかが記録されます。会話が次に進んだ後もファイルを編集し続けるバックグラウンドエージェントは、この仕組みが絶対に起こしてはならない唯一の失敗です。
+- **ワーカーの中身は普通のサブエージェントです。** 深さの上限も、ガードレールポリシーも、実行ログの子も同じです。vibe が変えるのは誰が彼らを駆動するかであり、彼らに許されていることではありません — そのため、ワーカーの書き込みと exec の呼び出しには、引き続き承認プロンプトが表示されます。
 
-## When not to use it
+## 使わないほうがよい場合
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/) or an [orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+vibe モードは、独立したブリーフに分解できる作業に向いています。次のステップが前のステップの出力に依存するなら、それは[パイプライン](/ja-JP/マニュアル/ハウツーガイド/パイプライン作成/)または[オーケストレーション](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)を説明しています。どちらも依存関係を適切に表現し、ディレクターに `vibe_wait` でそれを模擬させることはありません。
 
-## Related
+## 関連項目
 
-- [Run agents in parallel](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/) — the other ways to fan out
-- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/) — when the work has a shape
-- [Built-in agent tools](/ja-JP/マニュアル/リファレンス/エージェントツール/) — the verbs and their arguments
+- [エージェントを並列実行](/ja-JP/マニュアル/ハウツーガイド/並列エージェント/) — ファンアウトする他の方法
+- [オーケストレーション](/ja-JP/マニュアル/コンセプト/オーケストレーション/) — 作業に形がある場合
+- [内蔵エージェントツール](/ja-JP/マニュアル/リファレンス/エージェントツール/) — 動詞とその引数

@@ -1,95 +1,113 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: קישור חשבון ה-Slack שלכם
+description: הוכיחו שזהות ב-Slack שייכת לכם, כדי שסוכנים יפעלו לפי ההודעות שלכם והעבודה שלכם תשויך אליכם.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+המדריך הזה מראה לכם איך לקשר את זהות הצ'אט שלכם למשתמש ה-Control Center שלכם ואיך
+לבטל קישור כזה.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+כל חבר עושה זאת פעם אחת לכל ספק צ'אט. זה נפרד מחיבור האפליקציה: החיבור הופך את
+הבוט לנגיש לכל סביבת העבודה, ואילו הקישור הופך _אתכם_ למוכרים בתוכה.
 
-## Why linking is required
+## מדוע נדרש קישור
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+הגשר מסרב לפעול עבור חשבון צ'אט שאינו מפוענח לחבר בסביבת העבודה. זה מכוון — בלי
+קישור, כל הודעה מ-Slack הייתה צריכה להיות מיוחסת למי שהתקין את האפליקציה, ויומן
+הביקורת, הגבלות הקצב לפי Principal ומדווחי הכרטיסים היו כולם מציינים את האדם
+הלא נכון.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+חבר שאינו מקושר ואזכר את הבוט מקבל תשובה בשרשור ה-Slack ההוא שמסבירה איך לקשר.
+שום דבר אינו משוגר.
 
-## Link with a code
+## קישור באמצעות קוד
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. עברו אל **הגדרות → סביבת עבודה → פרופיל וזהות** וגללו אל הכרטיס **חשבונות צ'אט
+   מקושרים**
+2. במקטע Slack, לחצו על **קישור חשבון ה-Slack שלי**
+3. העתיקו את הפקודה שהוא מציג, לדוגמה:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. ב-Slack, שלחו את הפקודה הזו לבוט — הודעה ישירה היא המקום הנוח ביותר
+5. הבוט מאשר את משתמש ה-Control Center שאליו קישרתם עכשיו, והדיאלוג שהשארתם פתוח
+   מתעדכן בהתאם באותו רגע — אין צורך לסגור אותו כדי לראות
 
-The code:
+הקוד:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- חד־פעמי, ופג תוקפו **15 דקות** לאחר הנפקתו
+- מונפק תמיד עבור _החשבון שלכם_, ולעולם לא עבור חבר צוות
+- מחליף כל קוד שכבר יש לכם, כך שלחיצה נוספת על הכפתור מבטלת את הקוד הקודם
+- נשמר בזיכרון בלבד, כך שהפעלה מחדש של השרת מבטלת קודים פתוחים — לחצו שוב על
+  הכפתור
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+קוד שאינו מוכר, שפג תוקפו או שהונפק עבור סביבת עבודה אחרת נכשל באותה דרך בלתי
+ניתנת להבחנה: "הקוד הזה אינו תקף (או שפג תוקפו)".
 
-## Automatic linking by email
+## קישור אוטומטי לפי אימייל
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+אם בפרופיל ה-Slack שלכם רשום אימייל מאומת שמתאים למשתמש Control Center שהוא **כבר
+חבר בסביבת העבודה הזו**, הגשר יקשר אתכם בפעם הראשונה שתפנו אליו. אין צורך בקוד.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+שני החצאים חשובים: התאמת האימייל מוכיחה זהות, אבל רק החברות מעניקה גישה, ולכן זר
+שהאימייל שלו במקרה קיים בשרת אינו מקושר לשום דבר. הרשימה מציגה כיצד נוצר כל קישור
+("הותאם לפי אימייל" או "קושר באמצעות קוד").
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+קישור אוטומטי מחייב את ההיקף `users:read.email`. בלעדיו Slack לא יחשוף את הכתובת,
+ומסלול הקוד הוא היחיד שנותר.
 
-## See who is linked
+## ראו מי מקושר
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+רשימת החשבונות המקושרים היא עניין של ניהול סביבת העבודה, ולכן היא נמצאת בחציו
+האחר של המשטח: **הגדרות → סביבת עבודה → כללי → גשרי צ'אט → חשבונות מקושרים**. היא
+מפרטת כל חבר מקושר בסביבת העבודה, עם חשבון ה-Slack שאליו הוא ממופה וכיצד נוצר
+הקישור.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+המצב שלכם נמצא בעמוד הפרופיל שלכם: השורה **קישור חשבון ה-Slack שלי** מציגה "מקושר
+אל _your-slack-id_" לאחר שקישרתם, ומבקשת מכם לקשר כשלא.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+הרשימה היא מינוי חי, כי השינוי קורה בצד השני — אתם מקלידים את הקוד ב-Slack, ולכן
+שום בקשה מהאפליקציה אינה יכולה להביא את התשובה בחזרה.
 
-## Unlink
+## ביטול קישור
 
-Click **Unlink** on a row in the workspace roster.
+לחצו על **ביטול קישור** בשורה ברשימה של סביבת העבודה.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- כל אחד יכול לבטל את הקישור של עצמו
+- רק מנהל יכול לבטל את הקישור של חבר אחר
+- ביטול הקישור גם מבטל כל קוד קישור פתוח של אותו חבר
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+לאחר ביטול הקישור, חשבון ה-Slack הזה לא יוכל עוד להניע סוכנים עד שיקושר מחדש.
+מרחבים, תמלילים וכרטיסים קיימים שומרים על הייחוס המקורי שלהם — ביטול קישור אינו
+שלילה של עבודה קודמת.
 
-## Troubleshooting
+## פתרון תקלות
 
-### The bot says I am not a member of this workspace
+### הבוט אומר שאיני חבר בסביבת העבודה הזו
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/).
+חשבון ה-Slack שלכם מקושר למשתמש Control Center, אבל למשתמש הזה אין חברות בסביבת
+העבודה הזו. בקשו ממנהל להזמין אתכם; ראו [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/).
 
-### The bot says my role is read-only
+### הבוט אומר שהתפקיד שלי לקריאה בלבד
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+תפקידים `viewer` ו-`guest` אינם יכולים להתחיל עבודה. מנהל צריך להעלות את התפקיד
+שלכם ל-`member` ומעלה.
 
-### The slash command is not recognized
+### פקודת הקו הנטוי אינה מזוהה
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+ודאו שפקודת הקו הנטוי קיימת ב-Slack ושהיא זו שדיאלוג ההגדרות הציג לכם — ייתכן
+שמנהל שינה את שמה, ואז הדיאלוג מציג את השם הנוכחי.
 
-## Related guides
+## מדריכים קשורים
 
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
-- [Customize the chat bot](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
-- [Chat bridge](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [התאמת בוט הצ'אט](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
+- [גשר צ'אט](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
-- [Multiplayer — identity, membership and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/)
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
+- [רב־משתמשים — זהות, חברות ונוכחות](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/)

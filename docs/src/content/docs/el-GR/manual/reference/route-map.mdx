@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Χάρτης διαδρομών
+description: Κάθε διαδρομή που καταχωρίζει το Control Center, με την οθόνη και τις παραμέτρους query της.
 slug: el-GR/εγχειρίδιο/αναφορά/χάρτης-διαδρομών
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Κέλυφος εφαρμογής
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+Το κέλυφος της εφαρμογής (`ControlCenterLayout`) περιβάλλει κάθε διαδρομή εντός χώρου εργασίας μέσω ενός `ShellRoute`. **Κάθε προορισμός εντός του κελύφους φέρει πρόθεμα χώρου εργασίας — `/workspaces/:workspaceId/…` — και το αναγνωριστικό χώρου εργασίας στο URL είναι η μοναδική πηγή αλήθειας για τον ενεργό χώρο εργασίας.** Μόνο οι επιφάνειες πριν από το πλαίσιο δεν έχουν πρόθεμα: το `/splash`, το `/onboarding`, το `/signed-out` και ο σκέτος επιλογέας `/workspaces`, όλα σε πλήρη οθόνη και έξω από το κέλυφος.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+Η πύλη είναι πλήρης όταν τουλάχιστον ένα forge είναι συνδεδεμένο **για τον συνδεδεμένο χρήστη** και υπάρχει τουλάχιστον ένας χώρος εργασίας.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+Ένα διαπιστευτήριο που λείπει και μια ρύθμιση που λείπει είναι διαφορετικές οθόνες, και ο διακριτής είναι το `users.onboarding_finished_at` που διαβάζεται από το δικό του `identity.me` του καλούντος — ποτέ το «υπάρχουν χώροι εργασίας», που είναι λάθος τη στιγμή που κάποιος προσκαλείται σε έναν χώρο εργασίας που δεν δημιούργησε ποτέ. Χωρίς συνδεδεμένο forge, ένας λογαριασμός που έχει περάσει την εισαγωγή πηγαίνει στο `/signed-out` για εκ νέου ταυτοποίηση· ένας που δεν έχει περάσει πηγαίνει στο `/onboarding`. Όσο η σημαία είναι ακόμη άγνωστη, ο φύλακας κρατά την αρχική οθόνη αντί να μαντέψει, επειδή δεν ανακατευθύνει ποτέ πίσω έξω από την εισαγωγή.
 
-## Unprefixed routes
+## Διαδρομές χωρίς πρόθεμα
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| Διαδρομή                   | Οθόνη                                                                                                                                                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/splash`                  | Αρχική οθόνη εκκίνησης που επιλύει την πύλη εισαγωγής                                                                                                                                                                                     |
+| `/onboarding`              | Σύνδεση forge, δημιουργία ή ένταξη σε χώρο εργασίας, sandbox, προεπιλεγμένος προσαρμογέας και μετά φωνή. Το βήμα του χώρου εργασίας παραλείπεται όταν ο λογαριασμός ανήκει ήδη σε έναν |
+| `/signed-out`              | Εκ νέου ταυτοποίηση: η ίδια κάρτα συνδέσεων forge που αποδίδουν οι Ρυθμίσεις, χωρίς γραμμή βημάτων και χωρίς κουμπί συνέχειας — ο δρομολογητής φεύγει μόνος του μόλις αναφερθεί ένα forge |
+| `/workspaces`              | Λίστα και επιλογέας χώρων εργασίας                                                                                                                                                                                                        |
+| `/workspaces/:workspaceId` | Ανακατευθύνει στο `/workspaces/:workspaceId/inbox`                                                                                                                                                                                        |
 
-## Workspace routes
+## Διαδρομές χώρου εργασίας
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Οι παρακάτω διαδρομές παραλείπουν το πρόθεμα `/workspaces/:workspaceId`.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| Διαδρομή                                | Παράμετροι query                          | Οθόνη                                                                                                                                                                                                                                        |
+| --------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/inbox`                                | —                                         | Ενοποιημένα εισερχόμενα: PR ταξινομημένα κατά κύκλο ζωής ανασκόπησης, συν εργασία εκτός PR που μπλοκάρει τον χειριστή. Η διαδρομή προσγείωσης μετά τον φύλακα· ένα σκέτο `/workspaces/:workspaceId` ανακατευθύνεται εδώ |
+| `/spaces`                               | —                                         | Επιφάνεια χώρου, χωρίς επιλεγμένο χώρο                                                                                                                                                                                                       |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | Ένας χώρος· το `m` κάνει απευθείας σύνδεσμο προς ένα μήνυμα και καταναλώνεται μία φορά στο άνοιγμα                                                                                                                                             |
+| `/tickets`                              | —                                         | Πίνακας εισιτηρίων                                                                                                                                                                                                                           |
+| `/tickets/:ticketId`                    | —                                         | Κύρια προβολή και λεπτομέρειες εισιτηρίου                                                                                                                                                                                                    |
+| `/projects/:projectId`                  | —                                         | Επισκόπηση έργου                                                                                                                                                                                                                             |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | Λίστα PR· το `repo` επιλέγει αυτό το αποθετήριο στην αριστερή λωρίδα                                                                                                                                                                          |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | Σύνταξη νέου pull request· το `space` ονομάζει τον χώρο του οποίου το απομονωμένο worktree παρέχει τον κλάδο                                                                                                                                |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | Λεπτομέρειες PR με προβολή diff· το `comment` είναι το αριθμητικό αναγνωριστικό REST ενός σχολίου                                                                                                                                            |
+| `/pipelines`                            | —                                         | Λίστα εκτελέσεων pipeline                                                                                                                                                                                                                    |
+| `/pipelines/run`                        | `?templateId=<id>`                        | Εκκινητής χειροκίνητης εκτέλεσης                                                                                                                                                                                                             |
+| `/pipelines/:runId`                     | —                                         | Λεπτομέρειες εκτέλεσης pipeline (χρονογραμμή βημάτων)                                                                                                                                                                                        |
+| `/plans`                                | —                                         | Κέντρο του Plan Studio: ενεργά σχέδια, έγγραφα σχεδίων, playbooks                                                                                                                                                                            |
+| `/plans/:kind/:id`                      | —                                         | Plan Studio για ένα σχέδιο· το `kind` είναι `orchestration` ή `document`                                                                                                                                                                     |
+| `/meetings`                             | —                                         | Λίστα συσκέψεων                                                                                                                                                                                                                              |
+| `/meetings/record`                      | —                                         | Οθόνη ζωντανής καταγραφής σύσκεψης                                                                                                                                                                                                           |
+| `/meetings/:meetingId`                  | —                                         | Λεπτομέρειες σύσκεψης: σημειώσεις, μεταγραφή, στοιχεία ενέργειας, αποφάσεις                                                                                                                                                                   |
+| `/calendar`                             | —                                         | Ημερολόγιο: προβολές μήνα, εβδομάδας και ατζέντας                                                                                                                                                                                             |
+| `/calendar/:eventId`                    | —                                         | Λεπτομέρειες συμβάντος ημερολογίου (παράλληλη διαδρομή· μοιράζεται το κλειδί σελίδας του ημερολογίου)                                                                                                                                        |
+| `/newsfeed`                             | —                                         | Λίστα ροής ειδήσεων                                                                                                                                                                                                                          |
+| `/newsfeed/article/:articleId`          | —                                         | Αναγνώστης άρθρων                                                                                                                                                                                                                            |
+| `/observability`                        | —                                         | Κέντρο παρατηρησιμότητας: καρτέλες Χρήση, Στοιχεία, Ζωντανά και Ποιότητα πάνω από τη ροή αρχείου καταγραφής εκτελέσεων του χώρου εργασίας. Προεπιλέγεται η καρτέλα Χρήση   |
+| `/users/:login`                         | —                                         | Προφίλ χρήστη GitHub                                                                                                                                                                                                                         |
+| `/teams/:organization/:slug`            | —                                         | Προφίλ ομάδας οργανισμού GitHub                                                                                                                                                                                                              |
+| `/api-keys`                             | —                                         | Διαχείριση κλειδιών API. **Κανένα σημείο εισόδου στην πλοήγηση** — προσβάσιμο μόνο μέσω URL                                                                                                                                                   |
+| `/settings/…`                           | —                                         | Οθόνες ρυθμίσεων (παρακάτω)                                                                                                                                                                                                                  |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+Οι συνομιλίες και τα νήματα **δεν έχουν δική τους διαδρομή** — ένα νήμα είναι μια συνομιλία μέσα στο `/spaces/:spaceId`, που ανοίγει ως καρτέλα επεξεργαστή αντί να διευθυνσιοδοτείται μέσω URL.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+Δεν υπάρχει **διαδρομή `/dashboard`** και καμία οθόνη πίνακα ελέγχου. Η επιφάνεια αναλυτικών στοιχείων είναι το `/observability`, προσβάσιμο από το υποσέλιδο της πλαϊνής στήλης.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+Δεν υπάρχει **στοιχείο «Σχέδια» στην πλαϊνή στήλη**. Το Plan Studio ανοίγει ως καρτέλα επεξεργαστή από τη γραμμή του σχεδίου στη συνομιλία που το παρήγαγε· τα `/plans` και `/plans/:kind/:id` είναι απευθείας σύνδεσμοι.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+Τα `/observability` και `/pull-requests/compose` δεν έχουν καταχώριση στα μητρώα τίτλων διαδρομών ή ψωμιού, οπότε και τα δύο εμφανίζουν το σκέτο όνομα της εφαρμογής στον τίτλο του παραθύρου και κανένα ψωμί διαδρομής.
 
-## Settings routes
+## Διαδρομές ρυθμίσεων
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+Το `/settings` ανακατευθύνει στο `/settings/you/appearance`. Το κουμπί ρυθμίσεων στην πλαϊνή στήλη και το `Cmd/Ctrl + ,` οδηγούν και τα δύο στο `/settings/you/appearance`.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+Οι διαδρομές ρυθμίσεων χωρίζονται σε χώρους ονομάτων κατά **πεδίο** — `you/`, `workspace/`, `server/` — επειδή το τμήμα δηλώνει ποιον επηρεάζει μια αλλαγή. Δύο διαδρομές προϋπάρχουν αυτής της διάκρισης και δεν έχουν πεδίο στο URL: `/settings/memory` και `/settings/pipelines`.
 
-### You
+### Εσείς
 
-| Path                          | Screen                                                                     |
+| Διαδρομή                      | Οθόνη                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | Θέμα, γλώσσα, τυπογραφία, θέμα επεξεργαστή (η αρχική σελίδα των ρυθμίσεων) |
+| `/settings/you/notifications` | Διακόπτες ανά γεγονός, Quiet hours                                          |
+| `/settings/you/keybindings`   | Αναφορά συντομεύσεων πληκτρολογίου (μόνο για ανάγνωση)                     |
+| `/settings/you/audio`         | Μικρόφωνο, υπαγόρευση, ανίχνευση συσκέψεων και έξοδος ηχοτοπίου           |
+| `/settings/you/devices`       | Συζευγμένα τηλέφωνα και απομακρυσμένος έλεγχος                             |
+| `/settings/you/newsfeed`      | Διαχείριση ροών: πηγές, ανανέωση, κατάσταση ανάγνωσης                      |
 
-### Workspace
+### Χώρος εργασίας
 
-| Path                               | Screen                                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| Διαδρομή                           | Οθόνη                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/settings/workspace/profile`      | Προφίλ και ταυτότητα σε αυτόν τον χώρο εργασίας: όνομα, συντάκτης git, φιλοξενία κώδικα, ημερολόγιο  |
+| `/settings/workspace/general`      | Όνομα, λογότυπο, εξαιρέσεις διαδρομών μυστικών, διασπορά ανασκόπησης, ονοματοδοσία κλάδων, υγεία συγχρονισμού, γέφυρες συνομιλίας, ζώνη κινδύνου |
+| `/settings/workspace/meetings`     | Πρότυπα σημειώσεων σύσκεψης και αποθηκευμένα προφίλ φωνής                                             |
+| `/settings/workspace/members`      | Κατάλογος μελών, προσκλήσεις, ίχνος ελέγχου. Το ίχνος ελέγχου σελιδοποιείται με προαιρετικό `?cursor=` |
+| `/settings/workspace/repositories` | Αποθετήρια καταχωρισμένα σε αυτόν τον χώρο εργασίας                                                   |
+| `/settings/workspace/agents`       | Καταχωρισμένες ταυτότητες πρακτόρων                                                                   |
+| `/settings/workspace/skills`       | Διαμόρφωση δεξιοτήτων                                                                                 |
+| `/settings/memory`                 | Μνήμη χώρου εργασίας: γεγονότα, πολιτικές, γράφος γνώσης                                             |
+| `/settings/workspace/permissions`  | Δικαιώματα πρακτόρων: μήτρα περιορισμών και δοκιμή υποθετικού σεναρίου                                |
+| `/settings/pipelines`              | Πρότυπα pipeline                                                                                      |
+| `/settings/pipelines/:templateId`  | Επεξεργαστής προτύπου pipeline (καμβάς μεταφοράς και απόθεσης)                                        |
 
-### Server
+### Διακομιστής
 
-| Path                           | Screen                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| Διαδρομή                       | Οθόνη                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `/settings/server/connection`  | Σύνδεση και κατάσταση                                                                                  |
+| `/settings/server/sso`         | Ενιαία σύνδεση (SAML, OIDC, παροχή SCIM)                                                              |
+| `/settings/server/providers`   | Πάροχοι μοντέλων και προσαρμογείς                                                                      |
+| `/settings/server/mcp`         | Ενσωματωμένοι και εξωτερικοί διακομιστές MCP                                                           |
+| `/settings/server/voice`       | Μοντέλα φωνής και συσκέψεων (ASR, διαχωρισμός ομιλητών)                                                |
+| `/settings/server/rigs`        | Σταθμοί: τι μπορεί να εκκινήσει αυτός ο ξενιστής, βασικές εικόνες, προσαρμοσμένες εικόνες, εκτελούμενες μηχανές |
+| `/settings/server/sandbox`     | Παραχωρήσεις εκτέλεσης sandbox: προγράμματα που μπορούν να εκτελέσουν οι πράκτορες από το αντίγραφο εργασίας των αποθετηρίων σας |
+| `/settings/server/diagnostics` | Διαγνωστικά και απόρρητο: απομόνωση, ενσωμάτωση, μηχανισμός συγχρονισμού, καταγραφή, αναφορά σφαλμάτων   |
+| `/settings/server/backup`      | Αντίγραφα ασφαλείας και επαναφορά: στιγμιότυπα εγκατάστασης, εξαγωγή ανά χώρο εργασίας, εισαγωγή και διαγραφή |
+| `/settings/server/about`       | Πληροφορίες και ενημερώσεις                                                                            |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+Το `kSettingsNav` στο `lib/features/settings/settings_nav.dart` είναι η μοναδική πηγή αλήθειας για αυτή τη λίστα. Το `settings_nav_test.dart` καθηλώνει μοναδικά αναγνωριστικά, μοναδικές διαδρομές, πεπλατυσμένη σειρά J/K και τα τρία πεδία. Δεν διατρέχει κάθε καταχωρισμένο `GoRoute`.
 
-## Route configuration
+## Διαμόρφωση διαδρομών
 
-| Concern             | File                                                    |
+| Θέμα                | Αρχείο                                                  |
 | ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Δρομολογητής        | `lib/router/app_router.dart`                            |
+| Κατασκευαστές διαδρομών | `lib/router/routes.dart`                            |
+| Φύλακες ταυτοποίησης | `lib/router/guards.dart`                               |
+| Πύλη εισαγωγής      | `lib/features/auth/providers/onboarding_providers.dart` |
+| Πλοήγηση ρυθμίσεων  | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## Δείτε επίσης
 
-- [Workspaces](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)
-- [Keyboard shortcuts](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/)
+- [Χώροι εργασίας](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/)
+- [Συντομεύσεις πληκτρολογίου](/el-GR/εγχειρίδιο/αναφορά/συντομεύσεις-πληκτρολογίου/)

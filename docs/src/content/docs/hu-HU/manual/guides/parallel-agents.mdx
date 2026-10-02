@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Ügynökök párhuzamos futtatása
+description: Indítson egyszerre több ügynököt, és akadályozza meg, hogy a munkájuk ütközzön.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/parhuzamos-ugynokok
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Ez az útmutató bemutatja, hogyan futtathat egyszerre több ügynököt anélkül, hogy felülírnák egymás munkáját.
 
-## The unit of isolation is the space, not the agent
+## Az elszigetelés egysége a tér, nem az ügynök
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Amikor egy térben munka indul, a Control Center regisztrált repónként egy copy-on-write checkoutot hoz létre a tér saját gyökere alatt, a munkaterület ágsablonjából származtatott ágon. A tér minden ügynöke ezután saját overlay-munkakönyvtárat kap — az overlayek azonban **megosztják** a tér `repos/` könyvtárát.
 
-So:
+Tehát:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Két ügynök **különböző térben** különböző checkoutokban, különböző ágakon dolgozik. Ez valódi elszigetelés.
+- Két ügynök ugyanabban a **térben** ugyanabban a checkoutban, ugyanazon az ágon dolgozik. Az overlayek útvonalai eltérnek, így az indítási útvonalzár (amely csak akkor sorosítja a futtatásokat, amikor azonos munkakönyvtárat kérnek) sem sorosítja őket. Egyszerre írhatják ugyanazokat a fájlokat.
 
-The rule that follows: **one space per parallel task.**
+Ebből az a szabály következik: **egy párhuzamos feladathoz egy tér.**
 
-## Run tasks in parallel — separate spaces
+## Feladatok párhuzamos futtatása — külön terek
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Nyisson egy teret az A ügynökkel, és küldjön neki egy feladatot.
+2. Nyisson egy második teret a B ügynökkel, és küldjön neki egy másik feladatot.
+3. Mindkettő azonnal elindul, mindegyik a saját terének checkoutjában, a saját ágán.
 
-This is the recipe to use whenever the agents will be editing files.
+Ezt a receptet használja, amikor az ügynökök fájlokat fognak szerkeszteni.
 
-## Work together in one space — several mentions
+## Közös munka egy térben — több említés
 
-In a single space, @-mention more than one agent:
+Egyetlen térben említsen meg egynél több ügynököt @-jelöléssel:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Mindkét ügynök párhuzamosan indul, és ugyanabba a térbe streamel, feladó szerint megjelölve. Mivel megosztják a tér checkoutját, ezt együttműködésre használja — az egyik ír, a másik olvas, vagy két ügynök ugyanarról a fáról gondolkodik —, nem két független szerkesztésre.
 
-## Fan out from a pipeline
+## Szétágazás pipeline-ból
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+A beépített `pr_review` sablon a szétágazás szállított példája: több átnéző csomópont fut egyidejűleg egyetlen triggerből, és egy **Consolidate (join)** csomópont egyetlen jelentésbe vonja össze a megállapításaikat. Futtassa a pipeline-ok képernyőjéről, és minden átnéző párhuzamosan indul el.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+A pipeline-szerkesztő elrejti a terminális őrszemet, és úgy köti át, hogy minden élő nyelőre várjon, amikor hozzáad vagy összeköt egy lépést, így a saját maga által rajzolt ágak is lefutnak.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Egy jegy hozzárendelése semmit nem indít el]
+Ha egy jegyet egy ügynökhöz rendel, az a tulajdonjogot rögzíti. Nincs jegykiosztó — a `TicketAssigned` auditjelzés, és nem indul belőle munka. Az egyetlen kivétel a _csapathoz_ rendelt jegy, amely felébreszti a csapat vezetőjét.
 :::
 
-## Watch them run
+## Nézze, ahogy futnak
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+A **Megfigyelhetőség → Élő** (oldalsáv lábléce → Megfigyelhetőség, majd az Élő lap) a munkaterület ügynöknévsorát mutatja, másodpercenként frissülve: állapot (fut / tétlen / parkolva / megszakítva), hogy éppen mit tesz az egyes ügynök, a legutóbbi futtatásához tartozó tokenek és költség, valamint egy leállításvezérlő egy futó folyamathoz. Egy sor kijelölése dokkolja az élő átiratfiókot.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+A **Beállítások → Munkaterület → Ügynökök** ugyanezt a névsort mutatja egy másik, figyelemközpontú állapotszókészlettel, amely az egyes ügynökök futtatási előzményeiből származik — fut, blokkolva, sikertelen, tétlen, még nem futott —, úgy rendezve, hogy minden figyelmet igénylő elem a tetejére kerüljön. Minden ügynök **Naplók** lapja a saját futtatási előzményeit tartalmazza.
 
-Both surfaces are scoped to the active workspace.
+Mindkét felület az aktív munkaterületre korlátozódik.
 
-## Handle conflicts
+## Konfliktusok kezelése
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+A tereken át nézve minden tér a saját ágán van, így az ütközés közönséges Git merge-konfliktusként jelenik meg, amikor egyesíti a második pull requestet. Ugyanúgy oldja fel, ahogy bármely más merge-konfliktust feloldaná.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Egy térben belül nincs ághatár és nincs zár: az ügynökök élőben ugyanazokat a fájlokat írják, és a vesztes egyszerűen felülíródik. Ha azon kapja magát, hogy két ügynök szerkesszen egy térben, ossza inkább két térre a munkát.
 
-To reduce collisions either way:
+Az ütközések csökkentésére mindkét esetben:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/).
-- Review and merge each agent's pull request promptly.
+- Adjon minden ügynöknek külön hatókört — más fájlokat, más modulokat.
+- A kódgráf segítségével ellenőrizze, mit érint egy módosítás, mielőtt elindítja. Lásd: [Kód keresése a kódgráffal](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/).
+- Nézze át és egyesítse haladéktalanul minden ügynök pull requestjét.
 
-## Resource considerations
+## Erőforrás-megfontolások
 
-Each running agent costs:
+Minden futó ügynök a következőkkel jár:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Egy tér checkoutja — elhanyagolható lemezterületen, amíg a copy-on-write elérhető; Windowson egy `git worktree`. Az a fájlrendszer, amely nem tud reflinket, a létrehozást hiúsítja meg a másolás helyett.
+- Egy folyamat a szerver hosztján
+- Modelltokenek, amelyek ügynökönként halmozódnak
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/) for the two commands that do have one.
+A költségek a **Megfigyelhetőség → Betekintések** alatt jelennek meg. Vegye figyelembe, hogy egy szokásos interaktív körnek nincs költési korlátja; arról a két parancsról, amelyeknek van, a [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/) oldalon olvashat.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
-- [Build an agent team](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese/)
-- [Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
-- [Add repos to a workspace](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [Ügynökcsapat felépítése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese/)
+- [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
+- [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
-- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/)

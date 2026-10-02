@@ -1,153 +1,171 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Installeren
+description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center werkt op twee manieren: als **webapp** op
+[app.usectrl.dev](https://app.usectrl.dev), zonder iets te downloaden, of als **desktopapp**
+die je installeert. Het is dezelfde toepassing met dezelfde functies. Het enige
+verschil is waar de server draait — en de webapp kan er geen voor je draaien.
 
-## Use it in your browser
+## Gebruik het in je browser
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) is deze toepassing, gecompileerd voor de
+browser. Niets te installeren, niets bij te werken. Open het en maak verbinding.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Wat een browsertabblad niet kan, is _zelf_ de server zijn. Elke client — desktop, web,
+telefoon — is een dunne renderer boven op een headless `cc_server` die de database bezit
+en het werk doet, dus de webapp praat altijd met een server die jij draait. Twee manieren
+om er een te krijgen:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Een server op je eigen machine.** Start `cc_server` lokaal en richt de webapp op
+`ws://localhost:9030`. Browsers beschouwen `localhost` als vertrouwd, dus dit heeft geen
+certificaat en geen tunnel nodig. Het is de snelste manier om de webapp uit te proberen,
+en je gegevens verlaten je machine nooit.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Een server op een andere machine.** Omdat `app.usectrl.dev` via HTTPS wordt
+aangeboden, moet een niet-lokale server bereikbaar zijn via `wss://` met een certificaat
+dat de browser al vertrouwt. `cc_server` weigert een niet-loopbackadres te binden zonder
+TLS, dus kies een van deze:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- geef hem rechtstreeks een certificaat, met `--tls-cert` en `--tls-key`
+- zet hem achter een reverse proxy die TLS afhandelt en start hem met `--insecure`
+- stel hem beschikbaar via een tunnel of VPN die het certificaat levert — Tailscale,
+  cloudflared of iets vergelijkbaars. **Instellingen → Server → Verbinding en status**
+  heeft de ingebouwde tunneloptie onder **Deze server delen**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Wanneer de server achter een proxy, NAT of tunnel staat, stel je `--public-url` in op het
+adres dat clients daadwerkelijk moeten aanspreken. De standaardwaarde is de lokale bind,
+dus zonder deze instelling proberen clients de verkeerde host.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Je eigen kopie van de webclient hosten?]
+`cc_server` accepteert alleen browser-origins die in de `--allowed-origins`-lijst staan,
+die standaard `https://app.usectrl.dev` bevat. Voeg je eigen origin daar toe als je de
+webbuild zelf host. Loopback- en native clients zijn altijd toegestaan, ongeacht die
+lijst.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Een paar dingen blijven alleen op de desktop, omdat ze een native venster of de
+audioapparaten van de machine zelf nodig hebben: de zwevende focusmodus-pil,
+toastmeldingen van het OS (het meldingencentrum in de app werkt overal), ‘opnemen en
+koppelen’ vanuit een agenda-afspraak, en het opnieuw uitvoeren van een
+vergadersamenvatting. Al het andere — ruimtes, agenten, pull-requestreviews, pipelines,
+tickets, geheugen en het opnemen van vergaderingen zelf — gedraagt zich hetzelfde.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/nl-NL/handleiding/gidsen/externe-server-verbinden/). To host the server,
-follow [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/).
+Volg [Verbinden met een externe server](/nl-NL/handleiding/gidsen/externe-server-verbinden/) om de webapp met een
+server te verbinden. Volg [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/) om zelf
+een server te hosten.
 
-## Desktop system requirements
+## Systeemvereisten voor de desktop
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Vereiste     | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| OS-versie    | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ of een andere distro met glibc 2.35+ en GTK 3 |
+| Architectuur | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Vereist                                               | Vereist     | Vereist                                                    |
+| Schijfruimte | ~200 MB voor de app, plus de datadirectory van de server | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Voor Intel-Macs is er geen voorgebouwde download. [Bouw vanaf de broncode](#bouwen-vanaf-de-broncode) in plaats daarvan.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+De datadirectory van de server groeit harder dan de app. Bij de eerste start
+force-installeert `cc_server` de modellen op het apparaat — tekstembeddings (~90 MB),
+sprekerdiarisatie (~35 MB) en het geselecteerde spraakmodel (standaard Parakeet TDT v3,
+~600 MB; Whisper-varianten 198–626 MB) — plus een ingebouwde code-server-build, en elk
+agentgesprek krijgt een copy-on-write-worktree van de repo's waaraan het werkt (op
+Windows een gewone `git worktree`). Spraak is niet optioneel: zonder het ASR-model worden
+vergader- en dicteerbewerkingen niet aangeboden. De eerste download van het spraakmodel
+vraagt nog één herstart voordat opnemen gaat werken.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+De desktop laat zijn server naar de application-supportdirectory per gebruiker van het OS
+wijzen. Een `cc_server` die je handmatig start zonder `--data-dir` gebruikt standaard
+`<application data>/control-center` — `~/Library/Application Support/control-center` op
+macOS, `%APPDATA%\control-center` op Windows, `$XDG_DATA_HOME/control-center` (of
+`~/.local/share/control-center`) op Linux.
 
-## Download
+## Downloaden
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Elk artefact hieronder komt uit [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Download `Control-Center-<version>-arm64.dmg`, open het en sleep Control Center naar
+Programma's. De build is ondertekend met een Developer ID en door Apple genotariseerd,
+dus hij opent gewoon.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: een installatieprogramma per gebruiker.
+- `Control-Center-<version>-windows-x64.zip`: een draagbare zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows gebruikt `git worktree` voor de checkouts van ruimtes (geen copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+De AppImage bevat update-informatie, dus [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) of appimaged kan hem ter plaatse naar de nieuwste release tillen en downloadt alleen wat is gewijzigd.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Beide zijn gebouwd op Ubuntu 22.04 en draaien daarop of op alles wat nieuwer is (Debian 12, Fedora 36 en later): ze linken naar glibc 2.35 en de libstdc++ van GCC 12 en halen GTK 3 uit het systeem. De paar bibliotheken die een standaarddesktop mist, reizen erin mee, dus er hoeft niets anders te worden geïnstalleerd. Geluid — het afspelen van vergaderingen, het klanklandschap, rig-audio en meldingsgeluiden — gaat via de libmpv van het systeem (`libmpv1` op Ubuntu 22.04, `libmpv2` op nieuwere Ubuntu en Debian, `mpv-libs` op Fedora); zonder die bibliotheek start de app met die bedieningselementen verborgen.
 
-### Standalone server
+### Losstaande server
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/).
+Elke release bevat ook de headless server apart — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — naast de images `cc-server`, `cc-webapp` en `cc-remote` op GHCR. Zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Het Linux-archief is gebouwd op Ubuntu 22.04 en de meegeleverde native bibliotheken linken naar glibc 2.35 en de libstdc++ van GCC 12, dus het vereist een host die minstens zo nieuw is (Ubuntu 22.04, Debian 12, Fedora 36 of later). Draai op een oudere distributie in plaats daarvan de `cc-server`-image — een container brengt zijn eigen userland mee, dus alleen de kernel hoeft van jou te zijn.
 
-## Agent backend
+## Agentbackend
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center dispatcht agenten via **adapters**. Er zijn er twee, de lijst ligt vast en ze worden automatisch gedetecteerd — je kunt er geen derde registreren.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+De adapter **Control Center (built-in)** heeft geen externe CLI nodig: de agentloop draait in de server en praat via HTTP met modelaanbieders, dus hij is altijd beschikbaar. Verbind een provider onder **Instellingen → Server → Modelaanbieders**. OpenAI, Codex, Cursor en Kimi Code bieden inloggen via de browser; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai en Moonshot vragen om een API-sleutel. Codex en Cursor zijn providers op deze runner, geen aparte CLI's. z.ai staat met opzet twee keer in de lijst: **z.ai** is het open platform met betalen naar gebruik, afgerekend op het saldo van je account, terwijl **z.ai GLM Coding Plan** het abonnement is. Het is dezelfde accountsleutel, maar z.ai bedient het abonnement vanaf een andere host — plak je een key van het Coding Plan in de gewone z.ai-tegel, dan komt elk verzoek terug met `429 … "Insufficient balance or no resource package"`, omdat het abonnement geen saldo heeft om te besteden. Een Claude Pro/Max-abonnement is geen Anthropic API-login; bereik dat abonnement via de Claude Code-adapter. Wat je op die pagina _wel_ kunt toevoegen is een **aangepaste provider** — elk OpenAI- of Anthropic-compatibel endpoint (Ollama, LM Studio, vLLM, een private deployment) onder **Aangepaste providers → Provider toevoegen**.
 
-The other adapter wraps an external CLI:
+De andere adapter omhult een externe CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Detectie doorzoekt de `PATH` van de machine die `cc_server` draait — dezelfde machine wanneer de desktop zijn eigen server draait, anders de externe host. Installeer de Claude Code-CLI daar, niet op de client. Met de knop **Vernieuwen** op die pagina wordt de detectie opnieuw uitgevoerd.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/nl-NL/handleiding/gidsen/adapters/).
+Modellenlijsten worden live geleverd door elke verbonden provider; [models.dev](https://models.dev) levert alleen prijs- en contextvenster-metadata. Zie [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/).
 
-## GitHub authentication
+## GitHub-authenticatie
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Een GitHub-inloggegeven is **van jou en staat op de server**, gekoppeld aan je gebruikers-id — niet in de sleutelhanger van het besturingssysteem van de client. Elk apparaat waarmee je inlogt gebruikt hetzelfde gegeven, en geen ander lid kan het lezen.
 
-If the server has a GitHub App registered ([Create the GitHub App](/nl-NL/handleiding/gidsen/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Als er een GitHub App op de server is geregistreerd ([De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)), biedt **Instellingen → Werkruimte → Profiel en identiteit → Codehosting** de optie **Inloggen met GitHub** (een device flow die de server uitvoert). Plak anders een persoonlijk toegangstoken:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Klassiek: `repo` en `read:org`
+- Fijnmazig: **Contents** en **Pull requests** (lezen en schrijven), **Checks** en **Actions** (lezen)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Maak er een aan op [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). De server controleert de token op de accountnaam op het moment dat hij wordt opgeslagen, zodat de rij ‘ingelogd als …’ kan tonen; een mislukte controle slaat de token alsnog op, en een typefout of ontbrekende scope blijkt later uit een mislukt verzoek.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/nl-NL/handleiding/gidsen/codehost-verbinden/).
+De eerste stap van de onboarding is deze verbinding. Daarna vervang of wis je hem op dezelfde kaart. GitLab en Bitbucket gebruiken dezelfde kaart; zie [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
 
-## Choose where the server runs
+## Kies waar de server draait
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/nl-NL/handleiding/concepten/deployment/) explains what that split means for the desktop, web and phone.
+Control Center is een dunne client boven op een headless `cc_server`-proces dat de database bezit en al het werk doet; [Deployment en clients](/nl-NL/handleiding/concepten/deployment/) legt uit wat die splitsing betekent voor desktop, web en telefoon.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Bij de eerste start vraagt de desktop **“Hoe moet Control Center draaien?”**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/nl-NL/handleiding/snelstart/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **In deze app uitvoeren**: de desktop start en bewaakt een `cc_server` op deze machine en praat er via loopback mee. Niets anders in te stellen. Dit is de opzet die de [snelstart](/nl-NL/handleiding/snelstart/) veronderstelt.
+- **Verbinden met een externe instantie**: richt de desktop op een `cc_server` die elders draait, met zijn WebSocket-URL, een apparaat-id en ofwel een koppelingssleutel ofwel een eenmalige uitnodigingscode. Die server bezit de gegevens; deze desktop toont ze alleen.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/nl-NL/handleiding/gidsen/externe-server-verbinden/).
+Voeg later servers toe of wissel ertussen onder **Instellingen → Server → Verbinding en status**. Wisselen maakt ter plaatse opnieuw verbinding — geen herstart. Een browser kan geen server draaien, dus de webclient is altijd extern; zie [Verbinden met een externe server](/nl-NL/handleiding/gidsen/externe-server-verbinden/).
 
-To host a server yourself, follow [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Volg [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/) om zelf een server te hosten. Die gids behandelt het bouwen van de binary, het aanmaken van een koppelingssleutel vóór de eerste start en de flags `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Controleer je installatie
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Instellingen → Server → Modelaanbieders** toont beide adapters. ‘Control Center (built-in)’ verschijnt als gevonden met versie `built-in`; Claude Code verschijnt als gevonden als zijn CLI in de `PATH` van de serverhost staat. Druk op **Vernieuwen** als hij ontbreekt.
+2. **Instellingen → Werkruimte → Repository's** toont de repo's van deze werkruimte, en **Repository toevoegen** bladert door de mappen van de serverhost.
+3. **Instellingen → Werkruimte → Agenten** toont de vijf agenten die je eerste werkruimte heeft geseed. Elke agent heeft een ingestelde **Adapter** en een ingesteld **Model** nodig voordat hij kan draaien.
+4. **Instellingen → Server → Diagnose en privacy** rapporteert de sandboxbackends die deze host biedt, de status van het embeddingmodel en de logging.
 
-## Build from source
+## Bouwen vanaf de broncode
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Native bibliotheken zijn verplicht en er is geen degraded mode: een ontbrekende bibliotheek is een harde opstartfout, geen langzamer pad. Zet ze als eerste klaar. Elk Flutter- en Dart-commando loopt via `fvm`, omdat de SDK-versie door de repo is vastgezet.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +177,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Op macOS vereist veilige opslag (inloggen bij GitHub, Linear en Google) dat de app door een Apple-team is ondertekend — een gratis Apple ID volstaat, en het is een eenmalige instelling die wordt beschreven onder [ondertekening voor lokale ontwikkeling](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Zonder die ondertekening start de app nog steeds; alleen veilige opslag is dan niet beschikbaar. Windows en Linux hebben geen ondertekening nodig.
 
-To build the headless server binary, stage the natives the same way first, then:
+Zet de natives op dezelfde manier klaar voordat je de headless serverbinary bouwt, en dan:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+De buildhook neemt alles wat al in `build/natives/` staat op in de bundle, dus bouwen vóór het klaarzetten levert een bundle zonder natives op en een server die weigert te starten.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Gebruik voor de webclient `scripts/build_web.sh` (`--target remote` voor de telefoon-PWA). Dat is wat CI draait: een gewone `flutter build web` slaat de build-identity-stempel, de regeneratie van de Web Worker, het deploy-manifest en de asset-budgetcontrole over.

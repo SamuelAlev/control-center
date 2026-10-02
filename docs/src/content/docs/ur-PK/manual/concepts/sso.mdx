@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: سنگل سائن اَن
+description: SAML اور OIDC لاگ اِن کیسے کام کرتے ہیں، یہ کس چیز کی تصدیق کرتے ہیں اور اکاؤنٹس محفوظ کیسے رہتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/سنگل-سائن-ان
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+سنگل سائن اَن کسی بیرونی شناختی فراہم کنندہ (IdP) کو یہ فیصلہ کرنے دیتا ہے کہ
+آپ کے Control Center سرور پر کون سائن اِن کر سکتا ہے۔ دو پروٹوکول معاون ہیں —
+SAML 2.0 اور OpenID Connect — اور دونوں ایک ہی جگہ پہنچتے ہیں: ایک تازہ جاری
+کردہ ڈیوائس اسناد، جو آگے کی ہر سطح پر دعوت یا QR پیئرنگ سے الگ پہچانی نہیں
+جا سکتی۔
 
-## The shape of a login
+## سائن اِن کی صورت
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+SAML لاگ اِن **براؤزر کے ذریعے** ہوتے ہیں۔ IdP آپ کے سرور سے کبھی کنیکشن نہیں
+کھولتا؛ سب کچھ صارف کا براؤزر اُٹھائے چلتا ہے:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,78 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+چونکہ براؤزر ہی قاصد ہے، اس لیے لاگ اِن کے لیے **NAT کے پیچھے والا سرور بھی
+ٹھیک کام کرتا ہے**: localhost، LAN، Tailscale، VPN یا کوئی ٹنل — سب کام دے
+جاتے ہیں؛ صرف صارف کے براؤزر کو ACS URL تک پہنچنا ضروری ہے۔ فون ریموٹ کنٹرول
+کا استعمال کردہ WebSocket ریلے یہ HTTP راؤنڈ ٹرپ نہیں اُٹھا سکتا، اسی لیے SSO
+انٹری پوائنٹس ہمیشہ سرور کے HTTP اوریجن کو نشانہ بناتے ہیں۔
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect یہی صورت اختیار کرتا ہے، مگر ایک authorization-code + PKCE
+راؤنڈ ٹرپ کے ساتھ؛ کلیمز TLS کے اوپر جاری کنندہ کے ٹوکن اینڈ پوائنٹ سے پڑھے
+جاتے ہیں، اس لیے براؤزر شناخت کا کوئی ڈیٹا سرے سے فراہم ہی نہیں کرتا۔
 
-## The adapters
+## اڈاپٹرز
 
-Control Center splits the responsibility deliberately:
+Control Center ذمہ داری جان بوجھ کر تقسیم کرتا ہے:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| جزو | کہاں | کیا سنبھالتا ہے |
+| --- | --- | --- |
+| `cc_saml` native | `packages/cc_natives/native/saml/` | XML-DSig کی تصدیق، کینونیکلائزیشن، SAML پروفائل کی توثیق — ایک اسٹیٹ لیس C ABI کے پیچھے پن شدہ خالص-Rust `saml` کریٹ کے سپرد |
+| `SamlService` / `OidcService` | `cc_server_core` | لاگ اِن اسٹیٹ (زیر التواء درخواست ٹریکرز، ری پلے ڈی ڈوپ)، توثیق کی پالیسی کے نوبس، مشترکہ پروویژنگ کال |
+| `SsoProvisioner` | `cc_server_core` | صارف کو ڈھونڈنا-یا-بنانا، فراہم کنندہ کا سبجیکٹ پن کرنا، آٹو-ممبر پالیسی کے تحت رکنیتیں دینا |
+| `ScimService` | `cc_server_core` | SCIM 2.0 کی پش سطح (پروویژن/ڈی پروویژن لائف سائیکل) |
+| `SsoSettingsService` | `cc_server_core` | محفوظ شدہ کنیکشن قطاریں، لائیو ری اپلائی، SCIM ٹوکن |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+جان بوجھ کر **خالص-Dart پر کوئی SAML کرپٹو فال بیک نہیں ہے**: ہاتھ سے بنائی گئی
+XML-DSig/کینونیکلائزیشن ہی وہ جگہ ہے جہاں سگنیچر ریپنگ کی کمزوریاں رہتی ہیں،
+اس لیے `cc_saml` لائبریری کی عدم موجودگی SAML سائن اِن اور سرور بوٹ، دونوں سے
+انکار کر دیتی ہے۔ نیٹو ڈیزائن ہی سے اسٹیٹ لیس ہے — درخواستوں کے پار کی اسٹیٹ
+Dart سروسز میں رہتی ہے، یک بار استعمال اور قلیل مدت۔
 
-## What a login verifies
+## سائن اِن کس چیز کی تصدیق کرتا ہے
 
-Inside the verified native and the service, in order:
+تصدیق شدہ نیٹو اور سروس کے اندر، ترتیب سے:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. ایسرشن کا **دستخط** (ہمیشہ لازمی؛ ریسپانس لفافے کا دستخط کنفیگریشن کے
+   مطابق اختیاری ہے) — سگنیچر ریپنگ کے خلاف ساختی طور پر مزاحم، کیونکہ
+   توثیق شدہ پے لوڈ تصدیق شدہ عنصر سے بندھا ہوتا ہے،
+2. **جاری کنندہ** کنفیگر شدہ IdP سے مماثل ہو،
+3. **مخاطب** اسی سروس پرووائیڈر کا نام لے،
+4. **منزل** ہمارا ACS URL ہو،
+5. `InResponseTo` ہماری جاری کردہ کسی زیر التواء AuthnRequest سے مماثل ہو
+   (غیر طلب شدہ، IdP سے شروع ہونے والے ریسپانسز بطور ڈیفالٹ بند ہیں)،
+6. **مدتِ کار** کی کھڑکیاں کلاک اسکیو (ڈیفالٹ 90s) کے اندر رہیں، اور
+7. **ایسرشن ID** پہلے کبھی نہ دیکھا گیا ہو (ری پلے کیش)۔
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+ناکامیاں ٹائپ شدہ کوڈز کی صورت میں واپس آتی ہیں — دستخط، میعاد ختم، مخاطب،
+منزل، جاری کنندہ، درخواست کی مماثلت — اور اینڈ پوائنٹس جنرک غلطیاں واپس کرتے
+ہیں، تاکہ کوئی حملہ آور یہ نہ جان سکے کہ جعل سازی کیوں ناکام ہوئی۔
 
-## Accounts and subject pinning
+## اکاؤنٹس اور سبجیکٹ پننگ
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+پہلا SSO لاگ اِن فراہم کنندہ کے ناقابلِ تغیر سبجیکٹ (`issuer` کے ساتھ
+SAML NameID / OIDC `sub`، یا SCIM externalId) کو اکاؤنٹ پر پن کر دیتا ہے۔ اُس
+کے بعد لاگ اِن کی شناخت سبجیکٹ سے ہوتی ہے، ای میل سے نہیں۔ اگر کوئی اور بعد
+میں وہی ای میل اسی یا کسی دوسرے IdP سے پیش کرے، تو پن شدہ اکاؤنٹ اُسے مسترد
+کر دیتا ہے۔ یہی چیز روکتی ہے کہ کسی فراہم کنندہ پر ری سائیکل شدہ ای میل اکاؤنٹ
+ٹیک اوور بن جائے۔
 
-## Provisioning and deprovisioning
+## پروویژنگ اور ڈی پروویژنگ
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT پروویژنگ لاگ اِن کے وقت ہوتی ہے (`SsoProvisioner`)۔ SCIM ایک الگ پش سطح ہے
+(`ScimService`) جو صارف کی قطار پر وہی سبجیکٹ پن کرتی ہے؛ یہ ورک اسپیس کی
+رکنیتیں نہیں دیتی۔ ڈی پروویژننگ — SCIM `active: false` یا `DELETE` — انکار کر
+دیتی ہے اگر اکاؤنٹ کسی ورک اسپیس کا مالک ہو (پہلے منتقلی کریں)۔ ورنہ یہ پہلے
+ہر ڈیوائس اسناد منسوخ کرتی ہے (ڈیوائس واچ کے ذریعے سیشنز سیکنڈوں میں گر جاتے
+ہیں)، ہر ورک اسپیس کی رکنیت ہٹاتی ہے اور اکاؤنٹ کو غیر فعال نشان زد کر دیتی
+ہے۔ صارف کی قطار برقرار رہتی ہے: انتساب دائمی ہے۔ دوبارہ فعال کرنا سائن اِن
+بحال کرتا ہے مگر رکنیتیں کبھی دوبارہ نہیں دیتا۔
 
-## What stays out
+## باہر کیا رہتا ہے
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **گروپ→کردار میپنگ لاگ اِن کے وقت ہوتی ہے**، SAML اٹریبیوٹس / OIDC کلیمز سے
+  — پش شدہ SCIM گروپس محفوظ نہیں کیے جاتے۔
+- **مالک کا کردار SSO سے ناقابلِ رسائی ہے** — نہ بطور ڈیفالٹ کردار اور نہ
+  گروپ میپنگ کے ذریعے۔
+- WebSocket ریلے کبھی SSO چینل نہیں ہوتا؛ وہ فونز جو سرور تک صرف ریلے کے ذریعے
+  پہنچتے ہیں، اُس کے خلاف براؤزر راؤنڈ ٹرپ مکمل نہیں کر سکتے۔

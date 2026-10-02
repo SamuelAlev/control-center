@@ -1,164 +1,151 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: 整理你的收件箱
+description: 操作統一收件箱 —— 清空正在阻塞你的事項、檢閱等待你處理的項目，並追蹤你自己的 PR。
 slug: zh-HK/手冊/操作指南/整理收件箱
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+本指南說明如何操作收件箱：這個單一介面會彙集一切阻塞你、或明確要求你處理的
+事項 —— 待處理的代理核准、失敗的工單同步，以及每一個以審查者或作者身分涉及
+你的 pull request。
 
-## Open the inbox
+## 開啟收件箱
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. 在側邊欄按一下 **收件箱**。它的徽章會顯示待處理的代理核准、失敗的同步，
+   以及等待你檢閱的開啟中 PR 數量。
+2. 或按 <kbd>⌘K</kbd>，執行 **收件箱** 導覽指令。
+3. 或直接深層連結至 `/workspaces/<workspace-id>/inbox`。
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+側邊欄的項目一律顯示即時數量，因此你不必開啟頁面，也能看到待整理的工作不斷
+累積。
 
-## Read severity at a glance
+## 一眼看出嚴重程度
 
-Scan top to bottom; the inbox is already ordered by urgency:
+由上而下掃視；收件箱本身已按迫切程度排序：
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. 置頂的 **需要你的注意** 關注列位於各 PR 區段之上。每張卡片都帶有一個嚴重
+   程度標籤。已登記的來源（卡在確認提示的代理、供應商鏡像已過期的工單同步）
+   會發出 **已封鎖**。
+2. 在關注列內，最迫切的嚴重程度會排在前面；同級時，等待最久的項目優先。
+3. 關注列之下，PR 會歸入固定的審查生命週期區段 —— **需要你檢閱**、
+   **退回給你**、**已核准**、**草稿**、**等待檢閱者**、
+   **合併中與最近合併**、**等待作者**。上方各區段代表需要 _你_ 處理的事項；
+   其餘區段則顯示 _你的_ PR 處於甚麼狀態。**需要你檢閱** 也包含在支援團隊
+   審查要求的託管平台上、仍要求你所屬團隊檢閱的 PR（在 GitHub 上，只要任何
+   隊友完成檢閱，就會移除該團隊）。
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+只有當某個項目阻塞了某件事，或明確要求你處理時，它才會進入收件箱。關注列為空、
+區段清單也為空時，只有在這個「空」值得信賴的情況下，才會顯示
+**全部處理完畢**。
 
-## One inbox across every forge
+## 一個收件箱，涵蓋每個託管平台
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+如果工作區在多個程式碼託管平台上都有程式庫，收件箱會把它們合併成單一資料流 ——
+一個 GitHub pull request 和一個 Bitbucket pull request 會並排在同一個區段，按時間
+排序，而不是按供應商分組。它們的分別就在於列上的 `repo #number` 中繼資料。
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+「你的」是**按託管平台**解析的，因為你在每個平台上都是不同的帳戶。只有當某個
+pull request 符合該程式庫實際所在託管平台上你的身分時，才會算作你的，或算作
+要求你檢閱。
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+故障或未連接的託管平台不會貢獻任何內容，也不會影響收件箱其餘部分 —— 一個中斷的
+連線永遠不會令整份清單變空。當所有託管平台登入都仍未解析（**無法確認你的 GitHub
+帳戶** —— 文案仍會寫明 GitHub）、當 githubstatus.com 報告事故，或當涵蓋已連結
+程式庫的 GitHub App 安裝被暫停時，空狀態會說明這項注意事項，而不是顯示
+**全部處理完畢**。
 
-## Clear the attention strip
+## 清空關注列
 
-Each strip card has one next action:
+關注列上每張卡片都只有一個下一步動作：
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/zh-HK/手冊/操作指南/與代理聊天/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. 如果卡片是待處理的代理確認，按一下 **檢閱** —— 你會進入該代理的空間，
+   並帶著它的待處理確認。在那裡核准或拒絕（參見
+   [與代理聊天](/zh-HK/手冊/操作指南/與代理聊天/)）。
+2. 如果卡片顯示某個供應商的 **同步失敗**，按一下 **開啟** —— 你會進入
+   **設定 → 工作區 → 一般**，其中的 **同步健康狀況** 卡片會顯示每個連線的
+   最後同步時間、連續失敗次數與最新結果。收件箱只會顯示每個供應商最新的
+   一次失敗，因此同步一旦恢復，卡片就會消失。
+3. 一旦底層狀態解決（代理得到答覆、同步恢復），卡片就會自行消失 —— 沒有
+   需要手動關閉的東西。
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[這些是逐回合的確認，而非管治核准]
+「代理核准」卡片是執行中的代理在自己的對話中停下來，為某個動作請求權限。
+這與代理用核准 MCP 工具建立的管治 `Approval` 記錄不同 —— 後者在應用程式
+任何地方都沒有供人操作的畫面，也永遠不會出現在這裡。
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[同步健康狀況是唯讀的]
+這張卡片只會報告工單同步連線；除了 **立即同步** 按鈕之外，它無法建立、編輯或
+重新連接連線，也沒有其他畫面可以做到。若未設定任何連線，它只會顯示
+「尚無同步連線」，這正是全新工作區會看到的情況。
 :::
 
-## Filter to what is blocking
+## 篩選出正在阻塞的事項
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. 在沒有文字欄位取得焦點時按 <kbd>f</kbd>，即可開啟篩選選單；或按一下
+   工具列的篩選按鈕。
+2. 任意組合狀態、作者、檢閱者、內容、程式庫擁有者／名稱、日期範圍，或
+   可快速審查等條件。選單中各選項的計數會顯示每個選項符合多少個收件箱
+   項目。
+3. 已啟用的篩選條件會以標籤形式顯示在清單上方的橫列中；按一下標籤的 ✕
+   即可移除該條件。
+4. 使用左側導覽列在各區段之間跳轉 —— 每個項目都會顯示即時數量，而反白會
+   跟隨你的捲動位置。按一下區段標題，即可收合你不需要整理的區段（例如在
+   清空檢閱時收合 **草稿**）。
+5. 按一下欄標題（標題、變更或更新時間）即可排序所有區段；再按一次目前
+   作用中的欄，即會反轉方向。顯示選項按鈕可控制草稿可見度、最近合併的
+   時間範圍、列屬性、排序與分組（只有按作者分組會改變收件箱的版面）。
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+這裡的篩選條件與 PR 佇列各自獨立 —— 收窄收件箱永遠不會改變佇列的篩選條件，
+反之亦然。
 
-## Act on a PR item
+## 對 PR 項目採取行動
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/zh-HK/手冊/操作指南/審查並合併-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/zh-HK/手冊/操作指南/派發審查代理/) and
-   [the dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/).
+1. 按一下任何一列，即可開啟 PR 詳情頁。
+2. 如果 PR 位於 **需要你檢閱**，請審查它並提交你的決定 —— 參見
+   [審查並合併 PR](/zh-HK/手冊/操作指南/審查並合併-pr/)。
+3. 如果 PR 位於 **退回給你**（已要求變更或 CI 失敗），請從你的檢出推送修正，
+   或把後續工作交給代理。
+4. 如果 PR 位於 **已核准**，請從詳情頁合併它。
+5. 如果你寧願把審查派發出去，而不是自己動手，請參見
+   [派發審查代理](/zh-HK/手冊/操作指南/派發審查代理/) 與
+   [派發生命週期](/zh-HK/手冊/概念/派發生命週期/)。
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+一旦底層狀態改變（你的審查送達、PR 完成合併），分類器就會自動把該 PR 重新
+歸入它的新區段。
 
-## Undo a mistaken action
+## 復原誤操作
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. 按 <kbd>⌘Z</kbd> 復原上一個動作，按 <kbd>⌘⇧Z</kbd> 重做。
+2. 如果文字欄位取得焦點，⌘Z 會改為編輯該欄位的文字 —— 請先按到欄位以外，
+   才能復原應用程式層級的動作。
 
-## Look up shortcuts in place
+## 就地查閱快捷鍵
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/zh-HK/手冊/參考/鍵盤快捷鍵/).
+在沒有文字欄位取得焦點時按 <kbd>?</kbd>，即可開啟鍵盤快捷鍵速查表。它會列出
+目前路由上所有生效的按鍵綁定，包括收件箱的 <kbd>f</kbd> 篩選快捷鍵。完整的
+對照表請參見[鍵盤快捷鍵參考](/zh-HK/手冊/參考/鍵盤快捷鍵/)。
 
-## Drive it from the command palette
+## 從命令面板操作
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. 在任何地方按 <kbd>⌘K</kbd>，即可開啟命令面板。
+2. 輸入 **收件箱** 即可跳至該頁，或輸入 PR 標題 —— 命令面板會列出相符的
+   pull request，並開啟你選擇的那一個。
+3. 當收件箱開啟時，執行 **複製此頁面的連結** 即可複製該 URL 以便分享。
+   這個指令複製的是目前的路由，因此只有當你身處此頁面時，它才是收件箱的 URL。
 
-## Refresh on demand
+## 按需要重新整理
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+收件箱會即時更新，但如果你懷疑資料過時，請按一下工具列的重新整理控制項 ——
+它會強制伺服器立即掃描每個已連接的託管平台，並重新擷取合併／已檢閱的疊加
+資料。圖示會一直旋轉，直到所有擷取都完成。
 
-## Related guides
+## 相關指南
 
-- [Review and merge a PR](/zh-HK/手冊/操作指南/審查並合併-pr/)
-- [Chat with an agent](/zh-HK/手冊/操作指南/與代理聊天/)
-- [Dispatch reviewers](/zh-HK/手冊/操作指南/派發審查代理/)
+- [審查並合併 PR](/zh-HK/手冊/操作指南/審查並合併-pr/)
+- [與代理聊天](/zh-HK/手冊/操作指南/與代理聊天/)
+- [派發審查代理](/zh-HK/手冊/操作指南/派發審查代理/)
 
-## Related concepts
+## 相關概念
 
-- [Dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/)
+- [派發生命週期](/zh-HK/手冊/概念/派發生命週期/)

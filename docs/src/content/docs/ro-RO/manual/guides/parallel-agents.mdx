@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Rulează agenți în paralel
+description: Trimite mai mulți agenți deodată și împiedică ciocnirea muncii lor.
 slug: ro-RO/manual/ghiduri-practice/agenti-in-paralel
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Acest ghid îți arată cum să rulezi mai mulți agenți în același timp fără ca ei să se suprascrie reciproc.
 
-## The unit of isolation is the space, not the agent
+## Unitatea de izolare este spațiul, nu agentul
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Când începe munca într-un spațiu, Control Center provisionează un checkout copy-on-write pentru fiecare repo înregistrat, sub rădăcina proprie a acelui spațiu, pe o ramură derivată din șablonul de ramuri al spațiului de lucru. Fiecare agent din spațiu primește apoi propriul director de lucru overlay — dar overlay-urile **împart** directorul `repos/` al acelui spațiu.
 
-So:
+Așadar:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Doi agenți din **spații diferite** lucrează în checkout-uri diferite, pe ramuri diferite. Aceasta este izolare reală.
+- Doi agenți din **același spațiu** lucrează în același checkout, pe aceeași ramură. Căile lor overlay diferă, așa că nici lacătul de cale al trimiterii (care serializează rulările doar când acestea cer exact același director de lucru) nu îi serializează. Ei pot scrie aceleași fișiere în același timp.
 
-The rule that follows: **one space per parallel task.**
+Regula care decurge de aici: **un spațiu per sarcină paralelă.**
 
-## Run tasks in parallel — separate spaces
+## Rulează sarcini în paralel — spații separate
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Deschide un spațiu cu agentul A și trimite-i o sarcină.
+2. Deschide un al doilea spațiu cu agentul B și trimite-i o altă sarcină.
+3. Ambele sunt trimise imediat, fiecare în propriul checkout de spațiu, pe propria ramură.
 
-This is the recipe to use whenever the agents will be editing files.
+Aceasta este rețeta de folosit ori de câte ori agenții vor edita fișiere.
 
-## Work together in one space — several mentions
+## Lucrează împreună într-un singur spațiu — mai multe mențiuni
 
-In a single space, @-mention more than one agent:
+Într-un singur spațiu, menționează cu @ mai mult de un agent:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Ambii agenți sunt trimiși în paralel și transmit în flux către același spațiu, etichetați după expeditor. Pentru că împart checkout-ul spațiului, folosește asta pentru colaborare — unul scrie, altul citește, sau doi agenți raționează despre același arbore — nu pentru două editări independente.
 
-## Fan out from a pipeline
+## Fan-out dintr-un pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Șablonul încorporat `pr_review` este exemplul livrat de fan-out: mai multe noduri de revizuire rulează simultan pornind de la un singur trigger, iar un nod **Consolidate (join)** îmbină constatările lor într-un singur raport. Rulează-l din ecranul de pipeline-uri și fiecare revizor este trimis în paralel.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Editorul de pipeline-uri ascunde sentinela terminală și o recablează ca să aștepte fiecare nod de destinație activ atunci când adaugi sau conectezi un pas, așa că ramurile pe care le desenezi singur chiar rulează.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Atribuirea unui tichet nu trimite nimic]
+Atribuirea unui tichet unui agent consemnează proprietatea. Nu există un dispecer de tichete — `TicketAssigned` este un semnal de audit și nicio muncă nu pornește de la el. Singura excepție este un tichet atribuit unei _echipe_, care trezește liderul acelei echipe.
 :::
 
-## Watch them run
+## Urmărește-i cum rulează
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observabilitate → Live** (subsolul barei laterale → Observabilitate, apoi fila Live) arată lista de agenți a acestui spațiu de lucru, actualizată în fiecare secundă: starea (în rulare / inactiv / parcat / întrerupt), ce face fiecare, tokenii și costul pentru ultima lui rulare și un control de oprire pentru un proces aflat în rulare. Selectarea unui rând ancorează un sertar de transcriere live.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Setări → Spațiu de lucru → Agenți** arată aceeași listă cu un vocabular de stări diferit, orientat spre atenție, derivat din istoricul de rulări al fiecărui agent — în rulare, blocat, eșuat, inactiv, niciodată rulat — sortat astfel încât orice lucru care cere atenție să urce în vârf. Fila **Jurnale** a fiecărui agent ține propriul istoric de rulări.
 
-Both surfaces are scoped to the active workspace.
+Ambele suprafețe sunt limitate la spațiul de lucru activ.
 
-## Handle conflicts
+## Gestionează conflictele
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Între spații, fiecare spațiu este pe propria ramură, așa că o coliziune apare ca un conflict de îmbinare Git obișnuit atunci când îmbini al doilea pull request. Rezolvă-l așa cum ai rezolva orice conflict de îmbinare.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+În interiorul unui singur spațiu nu există graniță de ramură și nici lacăt: agenții scriu aceleași fișiere în timp real, iar cel care pierde este pur și simplu suprascris. Dacă ajungi să vrei ca doi agenți să editeze într-un singur spațiu, împarte munca în două spații.
 
-To reduce collisions either way:
+Pentru a reduce coliziunile, în oricare dintre variante:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/ro-RO/manual/ghiduri-practice/cautare-cod/).
-- Review and merge each agent's pull request promptly.
+- Dă fiecărui agent un domeniu de lucru distinct — fișiere diferite, module diferite.
+- Folosește graful de cod pentru a verifica ce atinge o modificare înainte de a trimite. Vezi [Caută cod cu graful de cod](/ro-RO/manual/ghiduri-practice/cautare-cod/).
+- Revizuiește și îmbină fără întârziere pull request-ul fiecărui agent.
 
-## Resource considerations
+## Considerații privind resursele
 
-Each running agent costs:
+Fiecare agent aflat în rulare costă:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Un checkout de spațiu — neglijabil pe disc cât timp copy-on-write este disponibil; pe Windows un `git worktree`. Un sistem de fișiere care nu poate face reflink face ca provisionarea să eșueze, în loc să copieze.
+- Un proces pe gazda serverului
+- Tokeni de model, care se acumulează per agent
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/) for the two commands that do have one.
+Costurile ajung în **Observabilitate → Insights**. Reține că un tur interactiv normal nu are plafon de cost; vezi [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/) pentru cele două comenzi care au unul.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and configure an agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
-- [Build an agent team](/ro-RO/manual/ghiduri-practice/construieste-echipa/)
-- [Manage costs](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
-- [Add repos to a workspace](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
+- [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/)
+- [Construiește o echipă de agenți](/ro-RO/manual/ghiduri-practice/construieste-echipa/)
+- [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
+- [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)
 
-## Related concepts
+## Concepte conexe
 
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
-- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/)
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/)

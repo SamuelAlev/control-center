@@ -1,54 +1,51 @@
 ---
 title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+description: Control Center est le poste de pilotage du développement logiciel multiagents.
 slug: fr-CA/manuel
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center vous donne la mainmise sur une flotte d’agents de codage IA. Lancez des agents, regardez-les travailler en temps réel, examinez leurs PR et gérez vos dépôts, espaces de travail et intégrations — depuis une application de bureau native, un navigateur ou votre téléphone.
 
 <div className="docs-start not-content">
-  <LinkButton href="/fr-CA/manuel/demarrage-express/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/fr-CA/manuel/installer/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/fr-CA/manuel/demarrage-express/" icon="right-arrow">Démarrage express</LinkButton>
+  <LinkButton href="/fr-CA/manuel/installer/" variant="minimal" icon="download">Installer Control Center</LinkButton>
 </div>
 
-## What you can do
+## Ce que vous pouvez faire
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/fr-CA/manuel/concepts/pipelines/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/fr-CA/manuel/guides/utiliser-rigs/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Envoyez des messages aux agents** : les espaces sont le moyen principal de piloter la flotte. Mentionnez un agent avec @, et il est lancé dans son propre arbre de travail en copie sur écriture; plusieurs agents peuvent donc coder et réviser en parallèle sans toucher à votre checkout
+- **Orchestrez les grandes demandes** : donnez un objectif à l’orchestrateur, approuvez une fois le plan d’équipe qu’il propose, et un [pipeline](/fr-CA/manuel/concepts/pipelines/) généré l’exécute
+- **Examinez et fusionnez les PR** grâce à une visionneuse de différences intégrée, à des commentaires en ligne et à une révision assistée par IA
+- **Confiez des machines jetables aux agents** : un [rig](/fr-CA/manuel/guides/utiliser-rigs/) est une VM jetable — un navigateur, un bureau, un téléphone ou un terminal en enceinte — que l’agent pilote pendant que vous le regardez en direct et pouvez reprendre la main; les serveurs de développement qui s’y trouvent sont redirigés vers `localhost`, le navigateur de l’agent et `https://myapp.test`
+- **Automatisez des flux de travail** avec des pipelines en DAG déclenchés par des événements ou des planifications
+- **Gérez les connaissances** avec une mémoire, des faits et des politiques propres à l’espace de travail
+- **Suivez le travail** avec des tickets neutres à l’égard du fournisseur, des projets et la délégation
+- **Enregistrez vos réunions** avec la capture, la transcription et la diarisation sur l’appareil, puis leur résumé en notes, en tâches et en décisions
+- **Suivez votre journée** avec la synchronisation Google Calendar, les RSVP, les alertes de réunion et l’action « Enregistrer et lier »
+- **Suivez la flotte depuis votre téléphone** : associez un appareil à votre serveur, puis lisez les messages, répondez et triez les tickets. Le téléphone emprunte le meilleur chemin qu’il peut atteindre — boucle locale, réseau local, tailnet ou TLS — et se rabat sur un relais scellé de bout en bout qui transmet des trames qu’il ne peut pas lire
+- **Pilotez les agents depuis Slack** : reliez un espace de travail à une application de clavardage et mentionnez le robot, répondez dans un fil Slack ou créez un ticket au moyen d’une commande slash — par une connexion sortante, de sorte qu’aucun point de terminaison public n’est nécessaire
+- **Intégrez** GitHub, Linear, Slack, Google Calendar et plus de 100 outils MCP
 
-## You do not have to install it
+## Vous n’êtes pas obligé de l’installer
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+La même application s’exécute dans votre navigateur à l’adresse
+[app.usectrl.dev](https://app.usectrl.dev), avec les mêmes fonctionnalités.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Chaque client — bureau, Web et téléphone — est un moteur de rendu léger au-dessus d’un serveur sans interface qui détient vos données et fait le travail. Le client de bureau peut lancer ce serveur pour vous; un onglet de navigateur ne le peut pas, c’est pourquoi l’application Web se connecte à un serveur que vous exécutez. Ce serveur peut se trouver sur votre propre machine (`ws://localhost:9030`, aucun certificat requis) ou sur un hôte distant joignable par TLS, un VPN ou un tunnel.
 
-See [Install](/fr-CA/manuel/installer/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/fr-CA/manuel/concepts/deploiement/) for how the three clients relate.
+Voir [Installer](/fr-CA/manuel/installer/#use-it-in-your-browser) pour la voie du navigateur et
+[Déploiement et clients](/fr-CA/manuel/concepts/deploiement/) pour comprendre le lien entre les trois clients.
 
-## Next steps
+## Prochaines étapes
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/fr-CA/manuel/installer/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/fr-CA/manuel/demarrage-express/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/fr-CA/manuel/tutoriels/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/fr-CA/manuel/guides/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/fr-CA/manuel/concepts/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/fr-CA/manuel/reference/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Installer" href="/fr-CA/manuel/installer/" description="Téléchargements, exigences système et emplacement d’exécution du serveur." />
+  <LinkCard title="Démarrage express" href="/fr-CA/manuel/demarrage-express/" description="Le chemin complet le plus court vers un agent qui travaille sur votre dépôt." />
+  <LinkCard title="Tutoriels" href="/fr-CA/manuel/tutoriels/" description="Des leçons plus longues, en ordre, à commencer par votre premier espace de travail." />
+  <LinkCard title="Guides pratiques" href="/fr-CA/manuel/guides/" description="Des recettes pour une tâche à la fois : ajouter des dépôts, configurer des garde-fous ou associer votre téléphone." />
+  <LinkCard title="Concepts" href="/fr-CA/manuel/concepts/" description="Pourquoi le produit fonctionne comme il le fait, à commencer par le déploiement et les clients." />
+  <LinkCard title="Référence" href="/fr-CA/manuel/reference/" description="Des tableaux complets pour les routes, les outils MCP, les raccourcis clavier et les événements de domaine." />
 </div>

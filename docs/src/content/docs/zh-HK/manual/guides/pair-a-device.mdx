@@ -1,96 +1,85 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: 配對裝置
+description: 將手機（或第二個瀏覽器或桌面應用程式）與你的 Control Center 伺服器配對，即可遙距跟進機群。
 slug: zh-HK/手冊/操作指南/配對裝置
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/zh-HK/手冊/概念/遙控/) for how the link
-works and its security model.
+本指南說明如何將手機與 Control Center 配對，讓你隨時隨地閱讀訊息與工單並回覆。同一
+個流程也可用來配對第二個瀏覽器或桌面應用程式。連線的運作方式及其保安模型，請參閱
+[遙控與流動裝置](/zh-HK/手冊/概念/遙控/)。
 
-## Prerequisites
+## 先決條件
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- 一部已連接到你伺服器的桌面或網頁用戶端，以及一個已設定好的工作區。配對操作需要完整用戶端，因此已配對的手機永遠無法配對——或撤銷——另一部裝置。
+- 從你正在配對的裝置可以觸達伺服器。在同一網絡上，這自然可行；距離較遠時，則由中介轉發的中繼承載流量。如果面板顯示**無法連線**而不是二維碼或憑證，請先公開一條路徑——**設定 → 伺服器 → 連接與狀態**下的通道選項（**分享此伺服器**），或伺服器的 `--public-url`（參見[執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)）。
+- 手機方面：無需安裝任何東西。二維碼會開啟 **Remote** 網頁應用程式（預設為 [remote.usectrl.dev](https://remote.usectrl.dev/)）。
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**自託管。** Remote 與中繼中介都是本儲存庫的開源項目：手機應用程式
+（`apps/cc_remote`，一個 Flutter 網頁 PWA，你可以經其 `wrangler.jsonc` 部署到
+Cloudflare Pages、部署到 `docker/cc_remote` nginx 映像，或部署到任何支援 HTTPS 的
+靜態主機——服務工作程式與 IndexedDB 都受安全上下文限制），以及中繼
+（`apps/cc_signaling_server`，單一無狀態的 Dart 二進位檔，不保存任何應用程式資料，
+也從不會看到配對密鑰——它只轉發端到端密封的訊框）。建置與執行步驟請參閱它們的
+README。
 
-## Step 1: Open the pairing panel
+## 步驟 1：開啟配對面板
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+開啟 **設定 → 你 → 你的裝置**。**你的裝置**區段會列出在此伺服器上與你的帳戶配對的
+用戶端。（伺服器擁有者會看到伺服器上的每一部裝置；其他人只會看到自己的裝置。）
 
-## Step 2: Pair a new client
+## 步驟 2：配對新用戶端
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+在頁首按一下 **配對新用戶端**，給它一個標籤（例如「我的手機」），選擇類型——
+**網頁瀏覽器**、**桌面應用程式**或**手機**——然後按一下 **配對**。
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- 若是**手機**，會出現二維碼。用手機的相機掃描它，或複製連結並在任何瀏覽器中開啟。它會讓 Remote 應用程式指向你的伺服器，並帶有憑證。
+- 若是**瀏覽器**或**桌面應用程式**，請改為把顯示的連結（或裝置 id 與配對密鑰）複製到新的用戶端。一鍵連結只在你從網頁用戶端配對時提供，因為桌面二進位檔沒有可據以建立連結的 Web 來源。
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+手機二維碼與 `cc_server pair --client-url` 在 CLI 上印出的連結是**不同的負載，且不可
+互換**：CLI 連結會填入網頁用戶端的連接表單，而此二維碼則為 Remote PWA 帶上伺服器
+完整的連線描述符與身分指紋。
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+在手機一方，開啟配對連結並不會靜默地完成配對。Remote 會顯示伺服器所宣告的名稱，並
+在儲存任何內容之前請你確認，因此偽造的連結無法把應用程式騎劫到別人的伺服器上。
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[掃描二維碼會立即授予存取權]
+沒有先待批准再放行的步驟：簽發出來的裝置從建立那一刻起就是作用中的，而連線關卡只
+檢查憑證是否作用中且未過期。請把二維碼與配對密鑰當作密碼看待，並撤銷任何你原本
+無意交出的裝置。
 :::
 
-## Manage paired devices
+## 管理已配對的裝置
 
-From **Settings → You → Your devices** you can:
+在 **設定 → 你 → 你的裝置**中，你可以：
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **重新命名**裝置
+- **撤銷**你不再信任的裝置。撤銷會銷毀其憑證，並在數秒內中斷其現行工作階段，因此在重新連線時會失敗即關閉
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+對於遺失或已更換的手機，撤銷是正確做法。從裝置的角度來看，它是即時且不可逆的。
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+由此面板簽發的憑證有時限：簽發後 30 天到期，此後連線關卡會判定它們失敗即關閉。在
+命令列以 `cc_server pair` 簽發的憑證則**完全不會到期**——當它所屬的機器退役時，請
+手動撤銷它。
 
-## Switch workspaces from the phone
+## 從手機切換工作區
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+已配對的手機可以獨立於桌面切換工作區。手機每次呼叫都會帶上工作區，而伺服器每次都
+會檢查你在該工作區的成員身分與角色——因此手機只能觸達你是成員的工作區，而在手機上
+切換永遠不會改變桌面顯示的內容。
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+手機工作階段還額外受限於一小份以讀取為主的工具允許清單：它可以列出及讀取工單、
+代理、空間、訊息與資訊動態文章，也可以更新或指派工單、在空間中傳送訊息，以及把
+文章標為已讀或已儲存。這份清單以外的任何操作，都會在觸達伺服器的調度器之前被拒絕。
 
-## Related guides
+## 相關指南
 
-- [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/): make the server reachable in the first place
-- [Connect to a remote server](/zh-HK/手冊/操作指南/連接遠端伺服器/): point a full client at it
-- [Use spaces](/zh-HK/手冊/操作指南/空間/): what you'll mostly do from the phone
-- [Create and manage tickets](/zh-HK/手冊/操作指南/管理工單/): triage from the road
+- [執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)：先讓伺服器可被觸達
+- [連接遠端伺服器](/zh-HK/手冊/操作指南/連接遠端伺服器/)：讓完整用戶端指向它
+- [使用空間](/zh-HK/手冊/操作指南/空間/)：你大部分時間會在手機上做的事
+- [建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)：在途中分流
 
-## Related concepts
+## 相關概念
 
-- [Remote control and mobile](/zh-HK/手冊/概念/遙控/)
-- [Deployment and clients](/zh-HK/手冊/概念/部署/)
+- [遙控與流動裝置](/zh-HK/手冊/概念/遙控/)
+- [部署與用戶端](/zh-HK/手冊/概念/部署/)

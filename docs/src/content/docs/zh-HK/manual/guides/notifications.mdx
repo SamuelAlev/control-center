@@ -1,149 +1,125 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: 設定通知
+description: 開啟或關閉各類通知、設定 Quiet hours 與通知音效，並了解哪些通知會在哪裡送達你。
 slug: zh-HK/手冊/操作指南/通知
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+本指南說明如何設定通知，以及每一項設定實際控制什麼。
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+通知會在兩個介面上出現。**通知中心**——標題列中的鐘形圖示——讀取伺服器上按工作區各自持久保存的通知串流。**作業系統彈出通知**則是另一條只限桌面、由伺服器推送的即時訊框餵送的途徑。
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[網頁版不會顯示作業系統通知]
+彈出通知的管線只由桌面版啟動程序建立。在
+`app.usectrl.dev` 上沒有作業系統彈出通知、沒有通知音效，也沒有環境橫幅——鐘形圖示及其歷史紀錄仍可運作，因為它們讀取伺服器上的通知串流。
+手機用戶端則完全沒有通知介面。
 :::
 
-## Turn categories on or off
+## 開啟或關閉通知類別
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. 前往 **設定 → 你 → 通知**
+2. 讓 **啟用通知** 保持開啟
+3. 開啟你想要的通知類別。總共有十六個：
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| 類別                      | 觸發時機                                                    |
+| ------------------------- | ----------------------------------------------------------- |
+| 代理已完成                | 一個代理完成了一次執行                                      |
+| PR 已發布                 | 一個代理發布了 PR                                           |
+| PR 已合併                 | 一個 PR 被合併                                              |
+| 新訊息                    | 你沒有正在查看的空間有訊息送達                              |
+| 在 pull request 中被提及  | GitHub 的通知輪詢發現你在某個 PR 上被提及                   |
+| 已請求審查                | 有人在非草稿 PR 上實際請求你審查                            |
+| 審查已過時                | 你已審查過的 pull request 上有新的提交                      |
+| 可合併                    | 你撰寫的 pull request 變成可合併，或不再可合併              |
+| 審查決定                  | 審查者核准、請求變更，或有核准被撤銷                        |
+| 檢查                      | 你撰寫的 pull request 上 CI 失敗，或已恢復                  |
+| 審查討論串                | 有人在你所在的討論串中回覆，或將它解決                      |
+| 工單已指派                | 有工單被指派                                                |
+| 工單狀態已變更            | 有工單變更了狀態                                            |
+| 會議即將開始              | 日曆會議進入你的提前提醒時段                                |
+| 日曆已中斷連線            | 已連接日曆的 OAuth 權杖已過期                               |
+| 機箱更新                  | 機箱被接管、收回，或發生失敗                                |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+此清單以外的任何事都無法通知或篩選——沒有「其他所有事」這個類別。
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+這些偏好設定會跟隨你的使用者身分跨裝置套用，因此手機與手提電腦保持一致。音量是刻意的例外，按裝置各自儲存。
 
-## Set quiet hours
+## 設定 Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. 在同一頁開啟 **Quiet hours**
+2. 以 `HH:MM` 輸入開始與結束時間（預設時段為 22:00–08:00）
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+在 Quiet hours 期間，非緊急通知會被丟棄——不會排入佇列待稍後重播。
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+兩個類別屬於**緊急**，一律送達，並繞過 Quiet hours *與* 專注模式：**會議即將開始** 與 **PR 已發布**。只在事後才看到的會議提醒毫無價值，這就是原因。
 
-## Choose a sound
+## 選擇音效
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. 捲動到 **通知音效**
+2. 從十一個內建音效中挑選一個，或選擇 **無**
+3. 按測試按鈕試聽，並用滑桿設定音量
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+應用程式會自行播放音效；作業系統通知則以靜音方式送達，因此你永遠不會聽到兩次。
 
-## Set the meeting lead time
+## 設定會議的提前提醒時間
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. 捲動到 **提醒提前時間**
+2. 選擇 **5**、**10**、**15** 或 **30** 分鐘
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+這就是 **會議即將開始** 通知會在日曆活動前多久觸發。預設為 5 分鐘。
 
-## Know when a notification is suppressed
+## 了解通知何時會被抑制
 
-A notification is dropped, silently, when any of these is true:
+只要下列任一情況成立，通知就會被無聲丟棄：
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- 通知已全域關閉，或其類別已關閉
+- 你已經在它要帶你前往的路由上——而就訊息而言，你已經在那個空間裡
+- 專注模式已啟用，且該類別並非緊急
+- Quiet hours 已啟用，且該類別並非緊急
 
-Those checks apply to OS toasts. The durable bell still records the event.
+這些檢查適用於作業系統彈出通知。持久的鐘形圖示仍會記錄該事件。
 
-Two more suppressions live further upstream, in what the server sends at all:
+還有兩項抑制發生在更上游，即伺服器到底會傳送什麼：
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- 來自另一位**真人**的未提及訊息永遠不會成為通知
+- 代理對代理的空間在側邊欄中已設為靜音，因此永遠不會觸發真人的未讀標記
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+在一個空間內沒有安靜的角落：每個對話都同等通知，討論串也不例外。已讀狀態以空間為範圍，因此未讀數會彙總整個空間的所有對話，而不是按對話分別追蹤。
 
-## Read and clear the notification centre
+## 讀取與清除通知中心
 
-1. Click the bell in the title bar
+1. 點擊標題列中的鐘形圖示
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+彈出視窗會顯示近期活動，並將每一項深層連結到它所屬的內容。開啟它**不會**把所有項目標為已讀——請使用彈出視窗標頭中的 **全部標示為已讀**，或標記單一列。已讀狀態會跟隨你的使用者身分跨裝置同步。
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[全部清除是浮水印，而非刪除]
+**全部清除**會蓋上每位使用者各自的浮水印，把較舊的一切隱藏起來；資料列仍然保留。另外，每個工作區只保留最近 **200** 列通知串流資料列，並在新的資料列送達時修剪；而鐘形圖示訂閱最新的 **50** 列，彈出視窗最多列出其中 **15** 列。超過這個範圍的歷史紀錄，無論已讀狀態如何都已消失。
 :::
 
-## Troubleshooting
+## 疑難排解
 
-### No OS notifications on macOS
+### macOS 上沒有作業系統通知
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+應用程式啟動時會以原生方式請求授權。若你拒絕了，請在**系統設定 → 通知**中重新啟用 Control Center；應用程式內沒有可重新觸發的提示。
 
-### Nothing arrives on the web build
+### 網頁版收不到任何通知
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+這是預期行為——網頁版沒有作業系統通知管線。請使用鐘形圖示。
 
-### The bell badge shows zero but there is clearly new activity
+### 鐘形圖示的徽章顯示為零，但明明有新活動
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+在連線後已讀標記串流解析完成之前，項目會以已讀狀態呈現，以免徽章先閃現再清空。標記載入後便會穩定下來。
 
-### An agent's run finished but nothing pinged me
+### 代理的一次執行已完成，但沒有收到任何提示
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+請檢查你是否已經在事發的空間中——使用中的路由會抑制它自己的作業系統彈出通知。
 
-## Related guides
+## 相關指南
 
-- [Use focus mode and soundscapes](/zh-HK/手冊/操作指南/專注模式/)
-- [Triage your inbox](/zh-HK/手冊/操作指南/整理收件箱/)
-- [Curate your newsfeed](/zh-HK/手冊/操作指南/資訊動態/)
+- [使用專注模式與聲景](/zh-HK/手冊/操作指南/專注模式/)
+- [整理你的收件箱](/zh-HK/手冊/操作指南/整理收件箱/)
+- [整理你的資訊動態](/zh-HK/手冊/操作指南/資訊動態/)
 
-## Related concepts
+## 相關概念
 
-- [Domain events](/zh-HK/手冊/概念/領域事件/)
+- [領域事件](/zh-HK/手冊/概念/領域事件/)

@@ -2,6 +2,7 @@
 title: Domain events
 description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
 slug: en-GB/manual/concepts/domain-events
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
 ## What a domain event is
@@ -85,11 +86,11 @@ Events span the whole product surface. At a high level:
 - **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
 - **Rigs** — take-over, reap and unexpected close
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
+Memory, orchestration, plan documents, artefacts, approvals, ticket-sync intake,
 calendar refresh, worktree merges, user creation, invites and device revocation
 are not domain events; see the reference.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
+For the complete catalogue — all 53 concrete event classes, their payloads and
 the 24 subscribers that consume them — see the
 [Domain events reference](/en-GB/manual/reference/domain-events/). That page is the
 inventory; this one is the model.
@@ -148,6 +149,6 @@ into the notification feed and raise no toast.
 - [Pipelines and automation](/en-GB/manual/concepts/pipelines/): what a trigger starts
 - [Tickets and delegation](/en-GB/manual/concepts/tickets/): assignment to an agent vs a team
 - [Architecture](/en-GB/manual/concepts/architecture/): how events fit the dependency rule
-- [Domain events reference](/en-GB/manual/reference/domain-events/): the complete catalog and its subscribers
+- [Domain events reference](/en-GB/manual/reference/domain-events/): the complete catalogue and its subscribers
 - [Set up pipeline triggers](/en-GB/manual/guides/pipeline-triggers/)
 - [Configure notifications](/en-GB/manual/guides/notifications/)

@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Połącz Slack z obszarem roboczym
+description: Utwórz aplikację Slack, połącz ją i swoje konto, a następnie spraw, aby agent odpowiadał w wątku Slacka.
 slug: pl-PL/podrecznik/samouczki/pierwszy-most-czatu
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Co zbudujesz
 
-By the end of this tutorial, you will have:
+Po ukończeniu tego samouczka będziesz mieć:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- Aplikację Slack utworzoną dla swojego obszaru roboczego, z właściwymi uprawnieniami i zdarzeniami już ustawionymi
+- Działające połączenie między Slackiem a Control Center
+- Własne konto Slack połączone z Twoim użytkownikiem Control Center
+- Agenta odpowiadającego Ci w wątku Slacka oraz zgłoszenie utworzone z polecenia z ukośnikiem
 
-Prerequisites:
+Wymagania wstępne:
 
-- [Your first workspace](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/) and [Dispatch your first agent](/pl-PL/podrecznik/samouczki/pierwszy-agent/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- Ukończone [Twój pierwszy obszar roboczy](/pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy/) i [Wyślij pierwszego agenta](/pl-PL/podrecznik/samouczki/pierwszy-agent/) — obszar roboczy bez agentów może odebrać wiadomość ze Slacka, ale nie ma komu na nią odpowiedzieć
+- **Agent CEO** obszaru roboczego ma ustawiony adapter i model w **Ustawienia → Obszar roboczy → Agenci**. Most budzi agenta CEO, a nie agenta skonfigurowanego w poprzednim samouczku, a agent bez adaptera działa na wbudowanej pętli z domyślnym modelem Anthropic.
+- Rolę `owner` lub `admin` w obszarze roboczym Control Center (połączenie aplikacji czatu reprezentuje cały obszar roboczy)
+- Uprawnienie do tworzenia i instalowania aplikacji w Twoim obszarze roboczym Slack
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Nic tutaj nie wymaga publicznego adresu, tunelu ani portu przychodzącego. Control Center łączy się ze Slackiem _na zewnątrz_ przez Socket Mode, więc działa to z laptopa za NAT.
 
-## Step 1: Get a Slack app configuration token
+## Krok 1: Zdobądź token konfiguracji aplikacji Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+To jedyny sekret, który musisz zdobyć ręcznie. Pozwala Control Center utworzyć aplikację za Ciebie, a później ją edytować.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Otwórz [api.slack.com/apps](https://api.slack.com/apps)
+2. Przewiń do sekcji tokenów konfiguracji aplikacji na dole strony
+3. Wygeneruj parę tokenów dla swojego obszaru roboczego Slack
+4. Skopiuj token **odświeżania** — zaczyna się od `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Krok 2: Pozwól Control Center utworzyć aplikację
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Ogólne** i znajdź kartę **Mostki czatu**
+2. W bloku **Slack** kliknij **Utwórz aplikację za mnie**
+3. Wklej token konfiguracji aplikacji
+4. Przejrzyj, jak będzie wyglądać bot:
+   - **Nazwa aplikacji**: jak Slack wyświetla aplikację, np. `Control Center · Acme`
+   - **Nazwa bota**: to, co ludzie wpisują po `@`, np. `control-center`
+   - **Krótki opis** i **Co bot mówi, że potrafi**
+   - **Polecenie z ukośnikiem**: domyślnie `cc`, więc polecenie to `/cc`
+   - **Wiadomości prywatne**: pozostaw włączone, aby członkowie mogli wysyłać botowi wiadomości prywatne
+5. Kliknij **Utwórz aplikację**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center składa całą definicję aplikacji — włączony Socket Mode, potrzebne zakresy bota i subskrypcje zdarzeń, polecenie z ukośnikiem, kartę Messages — i tworzy ją w Slacku.
 
-## Step 3: Finish the two steps only Slack can do
+## Krok 3: Wykonaj dwa kroki, które potrafi tylko Slack
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack nie ma API do generowania tokenu na poziomie aplikacji ani do instalowania aplikacji, więc okno podaje jedno i drugie jako linki:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Wygeneruj token na poziomie aplikacji** — otwiera **Basic Information → App-Level Tokens**. Utwórz token z zakresem `connections:write` i skopiuj go. Zaczyna się od `xapp-`
+2. **Zainstaluj aplikację** — otwiera **Install App**. Zainstaluj ją w swoim obszarze roboczym, a następnie skopiuj **Bot User OAuth Token**. Zaczyna się od `xoxb-`
 
-Keep both values around for the next step.
+Zachowaj obie wartości na następny krok.
 
-## Step 4: Connect
+## Krok 4: Połącz
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Z powrotem w oknie kliknij **Wklej dane uwierzytelniające**
+2. Wpisz **Token bota** (`xoxb-…`) i **Token na poziomie aplikacji** (`xapp-…`)
+3. Pozostaw **Token konfiguracji aplikacji** pusty — ten z kroku 1 został już zapisany (Slack go zrotował, a Control Center zapisał nowy)
+4. Kliknij **Połącz**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center weryfikuje token bota w Slacku, zanim cokolwiek zapisze, a następnie otwiera socket. Wiersz pokazuje teraz nazwę bota i nazwę Twojego obszaru roboczego Slack, ze znacznikiem **Na żywo**.
 
-## Step 5: Link your own Slack account
+## Krok 5: Połącz własne konto Slack
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Połączenie czyni bota osiągalnym, połączenie konta czyni rozpoznawalnym _Ciebie_. Dopóki Twoja tożsamość w Slacku nie jest połączona, bot nie będzie działał na Twoich wiadomościach — nigdy nie przypisuje wiadomości osobie, która zainstalowała aplikację.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Łączenie konta jest osobiste, dlatego znajduje się na innej stronie niż połączenie dla całego obszaru roboczego.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość** i znajdź kartę **Połączone konta czatu**
+2. Kliknij **Połącz moje konto Slack**
+3. Skopiuj wyświetlane polecenie, na przykład `/cc link K7M2QP`
+4. W Slacku wyślij to polecenie botowi w wiadomości prywatnej
+5. Bot odpowiada „Linked — you are …”
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Kod jest jednorazowy i wygasa po 15 minutach. Jeśli Twój adres e-mail w Slacku pasuje do użytkownika Control Center, który jest już członkiem tego obszaru roboczego, most połączy Cię automatycznie przy pierwszej rozmowie z nim i możesz pominąć ten krok.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Jeśli wspomnisz bota, zanim to zrobisz, odmówi i wyjaśni dlaczego. Te trzy odmowy różnią się od siebie, więc przeczytaj, którą dostałeś:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Niepołączony nadawca**: bot mówi Ci, jak połączyć konto. Wróć do tego kroku.
+- **Połączony, ale niebędący członkiem tego obszaru roboczego**: poproś administratora o zaproszenie.
+- **Członek z rolą tylko do odczytu** (viewer lub guest): bot nie rozpocznie pracy w Twoim imieniu.
 
-## Step 6: Put an agent on something
+## Krok 6: Przydziel agentowi zadanie
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. W Slacku zaproś bota do kanału: `/invite @control-center`
+2. Wspomnij go z prawdziwą prośbą:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center podsumuj otwarte PR-y w repozytorium api
 
-The bridge:
+Most:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Tworzy przestrzeń Control Center dla tego wątku Slacka, nazwaną od kanału Slack i Twojej prośby
+2. Budzi agenta pierwszego kontaktu obszaru roboczego (agenta CEO, jeśli istnieje, w przeciwnym razie pierwszego agenta)
+3. Strumieniuje odpowiedź agenta z powrotem do wątku Slacka w miarę jej powstawania
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Odpowiedz w tym samym wątku Slacka, aby kontynuować — dalsze wzmianki nie są potrzebne, bo wątek Slacka jest już połączony mostem. Możesz też wysłać botowi wiadomość prywatną zamiast używać kanału; każda rozmowa prywatna prowadzi własną przestrzeń Control Center, z tytułem i wierszem statusu „is thinking…”, gdy agent pracuje.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Strumieniowanie wymaga API strumieniowania Slacka, którego nie ma każdy plan. Jeśli Twoja aplikacja go nie otrzyma, most przestaje próbować w ramach całego połączenia i zamiast tego publikuje każdą odpowiedź jako jedną wiadomość, a na karcie **Mostki czatu** widnieje „Strumieniowanie na żywo jest wyłączone dla tej aplikacji Slack — odpowiedzi przychodzą jako jedna wiadomość.” Wszystko inne działa tak samo.
 
-## Step 7: File a ticket without leaving Slack
+## Krok 7: Zgłoś zgłoszenie bez wychodzenia ze Slacka
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Bot odpowiada kluczem zgłoszenia, które utworzył. Zgłoszenie to zwykłe lokalne zgłoszenie Control Center, zgłoszone przez Ciebie, gotowe do przypisania agentowi. `/cc help` wymienia wszystko, co potrafi to polecenie.
 
-## Recap
+## Podsumowanie
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Utworzyłeś aplikację Slack z poziomu Control Center, połączyłeś ją przez wychodzący socket, połączyłeś swoją tożsamość w Slacku z użytkownikiem Control Center i kierowałeś agentem z wątku Slacka. Wszystko, co wydarzyło się w Slacku, istnieje także w Control Center: wątek Slacka to przestrzeń, odpowiedź to transkrypcja, a zgłoszenie to zgłoszenie.
 
-**Next:** [Set up Slack integration](/pl-PL/podrecznik/poradniki/integracja-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/pl-PL/podrecznik/koncepcje/mosty-czatu/).
+**Dalej:** [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/) opisuje ścieżkę ręczną, rotację tokenów i rozwiązywanie problemów. Model, który za tym stoi, opisuje [Mosty czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/).

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: 구조적으로 코드 리팩터
+description: 에이전트가 텍스트가 아니라 형태로 코드를 찾아 재작성하게 하고, 변경이 반영되기 전에 검토합니다.
 slug: ko-KR/매뉴얼/사용-가이드/구조적-리팩터
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+이 가이드에서는 구조적 검색과 재작성으로 에이전트가 광범위한 기계적 변경 — 코드모드, 대규모 API 마이그레이션, 없애고 싶은 패턴 — 을 수행하도록 하는 방법을 보여 줍니다. 변경은 아무것도 기록되기 전에 검토할 수 있도록 스테이징됩니다.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep`은 코드를 **형태**로 매칭합니다. `ast_edit`은 그것을 재작성합니다. `resolve`는 커밋하거나 버립니다.
 
-## Before you start
+## 시작하기 전에
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+구조적 도구는 코드 그래프가 파싱하는 언어를 다룹니다: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada. 이 도구들은 tree-sitter 문법이 스테이징되어 있어야 하는데, 배포 빌드에서는 항상 그렇습니다. 문법이 하나라도 빠지면 검색 품질이 떨어지는 것이 아니라 서버가 멈춥니다.
 
-## Find the shape first
+## 먼저 형태를 찾으십시오
 
-Never rewrite something you have not looked at. Ask the agent to search:
+보지 않은 것을 재작성하지 마십시오. 에이전트에게 검색을 요청하십시오:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> 방금 null 검사한 nullable에서 `dispose()`를 호출하는 모든 곳을 찾아 주십시오.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+출력은 각 지점의 `file:line`과 매칭된 소스입니다.
 
-### What the pattern syntax buys you
+### 패턴 문법으로 얻는 것
 
-| Token      | Matches                                    |
+| 토큰       | 매칭 대상                                   |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | 캡처되는 임의의 단일 노드                     |
+| `$$$NAME`  | 임의의 연속 형제 노드 — 인수, 문장             |
+| `$_`       | 무엇이든, 이름 없이 캡처됨                    |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+중요한 것은 하나입니다: **반복된 `$NAME`은 같은 텍스트를 캡처해야 합니다**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+이 패턴은 자신이 검사한 대상을 dispose하는 가드를 찾아냅니다. `if (a != null) b.dispose()`는 찾지 **못합니다** — 그런데 보통 여러분이 찾고 있던 버그가 바로 이것입니다. 텍스트 검색으로는 이를 표현할 수 없습니다.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[문자열이나 주석 안에서는 매칭할 수 없습니다]
+패턴은 파일과 동일한 문법으로 파싱되므로, 문서 주석이나 문자열 리터럴에 적힌 `dispose(x)`는 호출이 아니며 매칭되지 않습니다. `grep` 대신 이 도구를 선택하는 이유가 바로 여기에 있습니다.
 :::
 
-### When the pattern finds nothing
+### 패턴이 아무것도 찾지 못할 때
 
-Two things to try, in order:
+순서대로 시도할 두 가지가 있습니다:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **더 작게 만드십시오.** `if (a) { foo($X); }`보다 `foo($X)`를 먼저 시도합니다. 그 자체로는 유효한 코드가 아닌 패턴은 의도한 구문이 아닌 경우가 많습니다.
+2. **언어를 지정하십시오.** `language:`는 `path`가 단일 파일을 가리킬 때만 추론됩니다.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+어떤 파싱 컨텍스트도 받아들이지 않는 패턴은 파싱할 수 없음으로 보고됩니다 — 겉모습대로 읽힌 적이 없는 대상에 대해 "일치 항목 없음"이라고 보고하는 대신, 도구가 그렇게 알려 줍니다.
 
-## Rewrite, and look before it lands
+## 재작성하고, 반영되기 전에 확인하십시오
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+결과는 **제안**입니다:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+아직 디스크에는 아무것도 없습니다. 목록을 읽고, 검색이 보고한 지점 몇 곳을 확인한 다음:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+또는
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[커밋은 전부 아니면 전무입니다]
+모든 파일은 변경이 스테이징될 때 캡처한 내용과 대조됩니다. 그중 하나라도 달라졌다면 — 에이전트가 손으로 편집했거나, 포매터가 실행되었거나, 진단 패스가 다시 작성했다면 — 변경 **전체**가 거부되고 버려집니다. 일부만 적용된 구조적 재작성은 예전 형태로도, 새 형태로도 컴파일되지 않는 트리를 남깁니다.
 
-Re-run the tool against the current files; do not retry the stale id.
+현재 파일을 대상으로 도구를 다시 실행하십시오. 오래된 id로 재시도하지 마십시오.
 :::
 
-## Check your work with the compiler
+## 컴파일러로 작업을 확인하십시오
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+이 작업을 구조적으로 하는 이유는 그것이 광범위하기 때문입니다. 광범위한 변경은 그럴듯해 보이는 재작성이 타입을 깨뜨리는 바로 그 지점입니다. resolve 후에 진단을 요청하십시오:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"`는 파일별 조회가 아니라 프로젝트 자체의 검사기(`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`)를 실행합니다 — 파일 마흔 개를 건드린 변경 뒤에 던질 올바른 형태의 질문입니다.
 
-## Worked example: migrating a call
+## 예제: 호출 마이그레이션
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+`log(msg, level)`이 `log(level: level, message: msg)`로 바뀐다고 해 보겠습니다.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+매칭된 지점을 보십시오. 그중 일부가 *다른* 두 인수 `log`라면, 패턴 안에서 그 차이를 표현하려 하지 말고 `path`를 의도한 대상이 있는 디렉터리로 좁히십시오.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+그다음 `resolve`, 그다음 `lsp(action: "diagnostics", file: "*")`를 실행합니다.
 
-## When to use something else
+## 다른 도구를 써야 할 때
 
-| Situation                                 | Better tool                          |
+| 상황                                       | 더 나은 도구                          |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ko-KR/매뉴얼/사용-가이드/코드-검색/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| 심볼 이름 바꾸기                             | `lsp_rename` — 형태가 아니라 참조를 따라갑니다 |
+| 문자열, 주석 또는 파일 이름 찾기               | `search`(내용) / `search_files`(이름) |
+| "이걸 바꾸면 무엇이 깨지나?"                  | [코드 그래프](/ko-KR/매뉴얼/사용-가이드/코드-검색/) |
+| 문법이 지원하지 않는 언어                     | `search`와 `edit`                     |
 
-## Related
+## 관련 항목
 
-- [Code intelligence](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — the full argument list
-- [Search code with the code graph](/ko-KR/매뉴얼/사용-가이드/코드-검색/) — the symbol and impact side
+- [코드 인텔리전스](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — 구조적 매칭이 단계만 몇 개 더 많은 정규식이 아닌 이유
+- [내장 에이전트 도구](/ko-KR/매뉴얼/레퍼런스/에이전트-도구/) — 전체 인수 목록
+- [코드 그래프로 코드 검색](/ko-KR/매뉴얼/사용-가이드/코드-검색/) — 심볼과 영향 측면

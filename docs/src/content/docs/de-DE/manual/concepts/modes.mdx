@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Modi
+description: Warum ein Bereich und nicht ein Agent einen Modus trägt, was jeder der vier Modi zusichert und wo diese Zusicherung strukturell gilt, statt nur im Prompt zu stehen.
 slug: de-DE/handbuch/konzepte/modi
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Was ein Modus ist
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+Ein Modus ist eine Eigenschaft eines **Bereichs**, gespeichert als eine Spalte der Bereichszeile. Jedes Gespräch in einem Bereich teilt ihn, Threads eingeschlossen: Ein Thread erbt den Modus seines Bereichs wie jedes andere Gespräch. Derselbe Agent kann deshalb in verschiedenen Bereichen gleichzeitig in verschiedenen Modi sein. Wechselst du den Modus eines Bereichs, ändert das den nächsten Zug, ohne den Agenten anzufassen.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Es gibt genau vier: `chat`, `review`, `plan`, `orchestrate`. Das Enum selbst trägt keine Richtlinie. Was ein Modus zusichert, steht einmal in einem **Fähigkeitsprofil**, und jede Durchsetzungsschicht projiziert daraus:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Werkzeugfläche** — welche Werkzeuge in diesem Modus überhaupt existieren, ausgedrückt als maximale Freigabestufe, eine Zulassungsliste, eine Sperrliste und eine Menge abgelehnter Effektklassen.
+2. **Erforderliches Ausgabe-Verb** — was der Lauf aufrufen muss, um überhaupt etwas geliefert zu haben.
+3. **Abgelehnte Effektklassen** — was die Schutzregeln für Aktionen rundweg verweigern.
+4. **Worktree-Lage** — ob in den Worktree geschrieben werden darf. Durchgesetzt wird das, indem die verändernden Werkzeuge aus der Fläche genommen werden. Genau das gilt auf jedem Host. Hat der Host eine OS-Sandbox, schneidet dieselbe Lage zusätzlich die Schreibregeln des Dateisystems: Ein Nur-Lese-Modus hängt den Worktree schreibgeschützt ein. Das ist eine zweite Ausfertigung der Zusicherung. Die Arbeit leistet das Entfernen der Werkzeuge.
+5. **System-Prompt-Block** — ein _erzeugter_ Fähigkeitsvorspann aus der tatsächlich materialisierten Werkzeugliste, dazu von Hand geschriebene Hinweise.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Jede Durchsetzungsschicht projiziert aus diesem einen Profil. Werkzeugfläche, Schutzregeln, Worktree-Lage und Prompt können deshalb nicht voneinander abweichen.
 
-## The four modes
+## Die vier Modi
 
-### Chat — displayed as "Agent"
+### Chat – angezeigt als „Agent“
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Der Vorgabemodus und der einzige ohne zusätzliche Einschränkungen: die volle Werkzeugfläche bis zur Ausführungsstufe, ein beschreibbarer Worktree, keine abgelehnten Effektklassen und kein Abschlussvertrag. Nimm ihn für Implementierung, Fehlerbehebungen, Fragen an die Codebasis und jede einmalige Aufgabe.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Zur Bezeichnung: Im Composer erscheint der Modus als **„Agent“**, nicht als „Chat“.
 
-### Plan — read-only, one deliverable
+### Plan – schreibgeschützt, ein Lieferergebnis
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+Der Plan-Modus macht den Worktree schreibgeschützt und nimmt die Schreibwerkzeuge vollständig aus der Fläche. Die Einschränkung ist damit strukturell und nicht bloß eine Anweisung. Der Agent liest, sucht und recherchiert und liefert genau eines: einen `submit_plan`-Aufruf, der einen typisierten Abhängigkeitsgraphen trägt, ein Ziel plus Knoten mit Schlüsseln, Titeln, Beschreibungen und den Knotenschlüsseln, von denen jeder abhängt.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+Der Plan erscheint als kompakte Zeile im Gespräch und öffnet Plan Studio in einem Tab daneben. Die Freigabe kompiliert den Graphen zu einer Orchestrierung, führt die erzeugte Arbeit aus und schaltet den Bereich, in dem der Plan entstand, zurück auf den Agent-Modus.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Endet ein Lauf im Plan-Modus, ohne je `submit_plan` aufzurufen, schiebt die Schleife zuerst einen Hinweis ein: Der Plan existiert erst, wenn dieser Aufruf gelingt. Der Hinweis erlaubt ausdrücklich den ehrlichen Ausstieg „hier ist kein Plan nötig“, denn der Plan-Modus ist eine Einstellung des Bereichs, und eine schlichte Frage darin soll keinen Scheinplan erzwingen.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/).
+:::note[Ein unerfüllter Vertrag ist kein fehlgeschlagener Lauf]
+Ein Lauf, der ohne seinen Plan endet, wird trotzdem mit dem Status `completed` aufgezeichnet. Der Prozess ist sauber beendet. Was wirklich gilt, steht in der Lebendigkeit des Laufs (`empty`), der Fehlerfamilie (`silentRun`) und einer Zusammenfassung, die benennt, was nicht entstanden ist. Siehe [Lebenszyklus der Agenten-Ausführung](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Es gibt einen zweiten, getrennten Ausgang: `exit_plan_mode`. Es ist ein hartes Freigabetor und kein Ausgabe-Verb. Ein Agent, der es statt `submit_plan` aufruft, hat nichts geliefert. Der erste Aufruf öffnet eine dauerhafte `plan_exit`-Freigabe, gibt `pending` zurück, und der Bereich bleibt schreibgeschützt. Weitere Aufrufe bleiben `pending` und öffnen kein zweites Tor. Erst nach erteilter Freigabe schaltet ein folgender Aufruf den Bereich auf Chat. Eine Ablehnung lässt den Agenten eine neue Anfrage für einen überarbeiteten Plan öffnen.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Den Plan-Modus verlässt du selbst über das Dropdown im Composer (oder Umschalt+Tab). Über `exit_plan_mode` wird mit dem MCP-Tool `decide_approval` entschieden. Zeilen „Agentenfreigabe“ im Posteingang sind etwas anderes: Bestätigungsfragen pro Zug von einem laufenden Agenten.
 
-### Review — read-only, no contract
+### Review – schreibgeschützt, kein Vertrag
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Der Review-Modus dient der PR-Prüfung. Er macht den Worktree schreibgeschützt, begrenzt die Werkzeugfläche auf unterhalb der Ausführungsstufe und setzt eine kuratierte Zulassungsliste aus Review-, Ticket- und Kommunikationswerkzeugen. Ein Bereich, der für einen Pull Request geöffnet wird, entsteht automatisch im Review-Modus.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Die Ausgabe des Agenten sind strukturierte Befunde, **Review-Knoten**, und, sobald ein Review abgeschlossen wird, ein **Verdikt**. Ein Knoten trägt eine Art (`bug`, `suggestion`, `recommendation`, `question` oder `ticket`), eine Priorität von P0 (blockiert die Veröffentlichung) bis P3 (wünschenswert), eine selbst eingeschätzte Konfidenz, einen optionalen Anker (Datei plus Zeilenbereich; Notizen über das ganze Repository haben keinen) und einen Lebenszyklusstatus, der von `open` zu `consensusReady` wechselt, sobald eine andere Person, nie der Autor, ihn bestätigt. Fehlt die Priorität oder die Konfidenz, oder liegt sie außerhalb des zulässigen Wertebereichs, wird der Befund an der Lesegrenze verworfen, bevor er das Verdikt verfälscht.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Das Verdikt ist Ship, Hold oder Block. Die Ergebnisse je Achse, die darin aufgehen, machen es nur _strenger_: Eine Achse mit Gate, die fehlschlägt, erzwingt `block`, und eine Achse mit Gate, die nicht laufen konnte, erzwingt mindestens `hold`. Fehlende Belege setzen ein Gate nie auf Grün.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+Anders als Plan und Orchestrate trägt Review **keinen Abschlussvertrag**. Befunde sammeln sich über `add_review_node` und werden mit `finalize_review` veröffentlicht. Beide dürfen legitim kein einziges Mal aufgerufen werden: Ein Pipeline-Agent im Review-Modus kann dort sein, um stattdessen ein Ticket abzuschließen.
 
-### Orchestrate — read-only, proposes a team
+### Orchestrate – schreibgeschützt, schlägt ein Team vor
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Der Orchestrate-Modus macht aus einem Ziel einen Plan für das ganze Team. Wie der Plan-Modus ist er schreibgeschützt und kann keine Dateien schreiben. Über der Recherchefläche hat er ein einziges privilegiertes Verb, `propose_orchestration`, das einen strukturierten Vorschlag ausgibt: Rollen, einen Baum aus Untertickets, einen Syntheseschritt und ein Budget. Der Prompt nennt nur die Werkzeuge auf der Fläche. Das Modell verbringt deshalb keine Züge damit, Einstellungen oder Ticketarbeit zu erzählen, die es nicht aufrufen kann.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/de-DE/handbuch/konzepte/orchestrierung/).
+Nichts im Vorschlag läuft, bis du ihn freigibst. Bei der Freigabe stellt ein deterministischer Schritt die Agenten ein, legt die Tickets und ein Projekt an und startet eine erzeugte Pipeline. Freigeben bleibt Menschen vorbehalten. Dafür gibt es kein MCP-Tool, ein Agent kann also vorschlagen und seinen eigenen Plan nie freigeben. Erneute Vorschläge eines Agenten unterliegen einer Abklingzeit von zwei Minuten. Aufeinanderfolgende Neuplanungen werden abgelehnt, mit der Aufforderung, sie zu bündeln. Siehe [Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/).
 
-## Two rules worth knowing
+## Zwei Regeln, die du kennen solltest
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Das eigene Ausgabe-Verb eines Modus lässt sich nie verweigern.** `submit_plan` und `propose_orchestration` sind in der Werkzeugfläche fest verankert und im Voraus freigegeben, am Werkzeugfilter, am Freigabetor und an den Schutzregeln für Aktionen vorbei. Der Autonomie-Regler des Bereichs kann das Lieferergebnis eines Modus also nicht zum Schweigen bringen. `ask_user` des Harness ist aus demselben Grund verankert. Genau so erreicht ein Lauf dich, und ein Tor davor würde einen Lauf verklemmen, der etwas fragen muss. Es liegt auf der Lesestufe, jeder Nur-Lese-Modus behält es also, und es ist vom Freigabe-Wrapper ausgenommen. Eine Rückfrage vor der Rückfrage wird abgelehnt, wenn niemand zum Freigeben verbunden ist, und nähme dem Agenten genau das Fragen.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**Nur-Lese-Modi sperren weder den Netzwerkzugriff noch Geheimnisse.** Die Effektklassen, die Review, Plan und Orchestrate ablehnen, sind die, die die Welt verändern: Dateien löschen, Schreiben außerhalb des Worktrees, Commits, Pushes, Pull Requests anlegen und veröffentlichen, Schreibzugriffe der Anbieter-Synchronisierung, Paketinstallationen, Prozesse starten, Änderungen am Arbeitsbereich und Kapselsteuerung. Netzwerkausgang und Zugriff auf Geheimnisse bleiben absichtlich bei ihren Vorgaben. Recherche ist der ganze Sinn eines Nur-Lese-Modus.
 
-## Choosing and changing a mode
+## Einen Modus wählen und wechseln
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Das Modus-Dropdown im Composer bietet **drei** Optionen: Agent (chat), Plan und Orchestrate. `review` ist **nicht wählbar**. Das System setzt es, wenn ein PR-Review-Bereich entsteht, und Pipeline-Schritte tun dasselbe.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Ein Pipeline-Knoten, der **einen Bereich öffnet**, kann den Modus dieses Bereichs mit dem Schlüssel `extras['mode']` festlegen (`chat`, `review` oder `plan`). Der Schlüssel muss exakt passen. Jede andere Schreibweise, auch `orchestrate`, wird stillschweigend ignoriert, und der Bereich erhält die Vorgabe des Bodys (`review` im Body, der den Bereich anlegt). Ein Agenten-Schritt tritt einem Bereich bei, den er nicht angelegt hat, und setzt dessen Berechtigungen nicht neu.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Die Auflösung selbst ist einfach. Der Dispatcher liest die Spalte `mode` des Bereichs. Eine Ausführung ohne Bereich löst zu `chat` auf: ein One-Shot, ein CLI-Aufruf oder eine Bereichs-ID aus einem anderen Arbeitsbereich, die in der Datenbankdatei dieses Arbeitsbereichs schlicht nicht vorkommt. Ein Moduswechsel gilt ab dem nächsten Zug.
 
-## Where the guarantee actually holds
+## Wo die Zusicherung wirklich gilt
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Die Werkzeugfläche eines Modus baut und erzwingt der **eingebaute Harness**. Nur dieser Transport kann ein Werkzeug unsichtbar machen, statt es bloß zu verweigern, jeden Aufruf vor der Ausführung durch ein Tor schicken und einen Abschlussvertrag beobachten.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/de-DE/handbuch/konzepte/agentenmodell/).
+Auf dem Transport Claude Code wird ein Modus außer Chat als `--permission-mode plan` übergeben. Claude hält sich daran per Konvention. Seine eigenen Werkzeuge zum Lesen, Schreiben, Bearbeiten und für die Shell laufen ungesehen. Für diesen Transport ist der Modus eine Vorgabe und keine Grenze von Control Center. Siehe [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Die Zulassungslisten beschränken Werkzeuge ab der Schreibstufe. Die Lesestufe des eingebauten Harness erreicht weiterhin Werkzeuge, die keine Liste nennt. Auf Claude Code wird ein Werkzeug, das die Zulassungsliste auslässt, verweigert, ob der Server es hat oder nicht.
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Agent dispatch lifecycle](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/): where the mode is resolved and projected
-- [The agent model](/de-DE/handbuch/konzepte/agentenmodell/): which transports can enforce a mode
-- [Guardrails](/de-DE/handbuch/konzepte/schutzregeln/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/de-DE/handbuch/konzepte/orchestrierung/): what an approved orchestrate proposal does
-- [Use plan mode](/de-DE/handbuch/anleitungen/planmodus/): the practical walkthrough
+- [Lebenszyklus der Agenten-Ausführung](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/): wo der Modus aufgelöst und projiziert wird
+- [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/): welche Transporte einen Modus durchsetzen können
+- [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): die Effektklassen-Richtlinie, in die die Voreinstellung eines Modus mündet
+- [Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/): was ein freigegebener Orchestrate-Vorschlag bewirkt
+- [Planmodus nutzen](/de-DE/handbuch/anleitungen/planmodus/): die praktische Anleitung

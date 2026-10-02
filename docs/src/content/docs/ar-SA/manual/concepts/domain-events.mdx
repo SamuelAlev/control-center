@@ -1,153 +1,145 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: أحداث النطاق
+description: لماذا تتحدث الميزات عبر ناقل أحداث داخل العملية بدل أن يستورد بعضها بعضًا، وما الذي يكون الناقل مصدر الحقيقة له وما لا يكونه، وأي الأحداث تستطيع دفع الأتمتة فعلًا.
 slug: ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## ما هو حدث النطاق
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+أحداث النطاق آلية فك الارتباط التي تتيح للميزات أن تتواصل من غير اعتماد
+مباشر. بدل أن تستدعي الميزة أ الميزة ب، تنشر الميزة أ حدثًا وتشترك الميزة ب
+فيه.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` ناقل بث داخل العملية، بنمط النشر والاشتراك. يستدعي الناشرون
+`publish(event)`، ويستهلك المشتركون مجرى `on<T>()` مُنمَّطًا. كل حدث ينفّذ
+`DomainEvent` ويحمل `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**الناقل يعمل داخل `cc_server`.** كل ناشر وكل مشترك حي يعيش هناك. لا يرى أي
+عميل هذا الناقل. ما يراه العميل مجموعة منتقاة يعيد الخادم بثّها كإطارات
+JSON-RPC من النمط `notifications/*`.
 
-## Why a bus at all
+## لماذا الناقل أصلًا
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+لولا الأحداث لكان كل رد فعل عابر للميزات استيرادًا. لاضطر مسار الإشعارات إلى
+استيراد ميزة الوكلاء وميزة طلبات السحب والتذاكر والاجتماعات لمجرد أن يعرف متى
+يرفع إشعارًا منبثقًا — ولتعيّن على كل ميزة من تلك أن تعرف أن الإشعارات موجودة.
+ولاستوردت التذاكر خطوط الأنابيب حتى تستطيع تذكرة مكتملة أن تدفع تشغيلًا إلى
+الأمام. لانعقد عندئذٍ مخطط الاعتماد، ولكفّت النواة المشتركة عن أن تكون مشتركة.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+نشر الحدث يكسر ذلك. يشترك مسار الإشعارات في 21 صنفًا، ولا يستورد أي ميزة من
+الميزات التي ترفعها. يشترك موزّع مشغّلات خط الأنابيب في الناقل كله، ولا يعرف
+شيئًا عن طلبات السحب أو التذاكر أو الاجتماعات. يجمع الرصد نتائج التشغيل من غير
+أن يدخل في الإرسال.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+الكلفة هي الكلفة المألوفة: لا يستطيع الناشر أن يعرف إن كان أحد يستمع، والمستمع
+الذي لا يُبنى أبدًا يبقى خاملًا في صمت. `TicketRemoteSyncHandler` هو المثال
+القائم: مُعلَن، وتغطيه الاختبارات، ولا يُربَط في الإنتاج.
 
-## What the bus is not
+## ما لا يكونه الناقل
 
-It is worth being precise about one thing the bus does _not_ own.
+يجدر التدقيق في أمر واحد _لا_ يملكه الناقل.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**سجل التدقيق ليس إسقاطًا لمجرى الأحداث.** كل عملية RPC مغيّرة تُدقَّق
+افتراضيًا: قيمة `RepoOp.audited` الافتراضية هي true، ولا تخرج عملية عن التدقيق إلا
+بإعلان `audited: false`، وهو فعل متعمّد ظاهر على العملية نفسها. يُلحِق الموزّع
+صف «من فعل ماذا، ومن أين» مباشرة بعد الاستدعاء الناجح. لا يوجد
+`DomainEventAuditBridge`. يكتب `ActivityLogPersister` صفوف `activity_log` من
+أحداث `ActivityLogged`، وهذه تغذية منفصلة عن تدقيق RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+ناقل الأحداث _هو_ وسيلة نقل الإشعارات والأتمتة. ليس نظام القيد المرجعي.
 
-## What the bus does drive
+## ما الذي يدفعه الناقل
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **الإشعارات.** يحوّل الخادم 21 صنفًا إلى إطارات `notifications/*` على السلك،
+  ويسجّلها في تغذية دائمة لكل مساحة عمل، ويبثّها إلى الجلسات المتصلة. الإطار
+  الذي يسمّي `workspace_id` فيه مساحة عمل ليس مستخدم الجلسة عضوًا فيها يُسقَط
+  على الخادم، ثم يصفّي العميل الباقي إلى مساحة العمل التي ينظر إليها.
+- **الأتمتة المدفوعة بالأحداث.** تشترك مشغّلات خط الأنابيب في الناقل وتبدأ
+  تلقائيًا خطوط الأنابيب المطابقة (انظر أدناه).
+- **ردود دورة الحياة.** إنشاء مساحة عمل يبذر وكيل CEO والمتخصصين، وقوالب خطوط
+  الأنابيب المضمّنة، وحزم التقييم الابتدائية. اكتمال تشغيل وكيل يستأنف خطوة
+  معلّقة في خط الأنابيب، ويغلق مهمة، ويغذّي مشرف الهدف، ويستطيع إيقاظ مدقق
+  مسمّى، ويستطيع إعادة إطلاق قائد الفريق. طلب سحب مُدمَج أو مساحة محذوفة يطلق
+  جمع مهملات أشجار العمل.
+- **المزامنة عبر المزوّدين.** تُدفع تغييرات التذاكر المحلية إلى المزوّدين
+  المُعدّين عبر منسّق يستمع إلى خمسة أحداث للتذاكر.
 
-## Event categories
+## فئات الأحداث
 
-Events span the whole product surface. At a high level:
+تغطي الأحداث سطح المنتج كله. على مستوى عالٍ:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **مساحات العمل والوكلاء والمستودعات** — إنشاء مساحة العمل، اكتمال التشغيل، تسجيل المستودع، تحديثات المهارة
+- **طلبات السحب** — النشر، تغيّرات الحالة، الدمج، طلبات المراجعة، الإشارات، مراقبة طلب السحب المؤلَّف، طلبات السحب المكتشفة خارجيًا
+- **المراسلة** — الرسائل، المساحات، تقدّم تجهيز المساحة
+- **التذاكر** — الإنشاء، الإسناد، إعادة الإسناد، التفاصيل، الحالة، والنتائج النهائية الثلاث
+- **المهام** — إطارات دورة حياة متسلسلة لتشغيل مُرسَل واحد، حتى يستطيع العملاء ترتيبها وإزالة تكرارها
+- **خطوط الأنابيب** — أحداث التشغيل النهائية فقط (مكتمل، ملغى، فاشل)
+- **الرصد** — بنود سجل النشاط وعتبات الميزانية
+- **الهوية والعضوية** — إضافة عضو، إزالته، تغيّر الدور
+- **التقويم والاجتماعات** — انتهاء صلاحية المصادقة، بدء الاجتماعات، انتهاء التسجيلات
+- **المنصات** — التولّي، الاسترداد، الإغلاق غير المتوقع
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+الذاكرة، التنسيق، مستندات الخطط، المخرَجات، الموافقات، استقبال مزامنة التذاكر،
+تحديث التقويم، دمج أشجار العمل، إنشاء المستخدم، الدعوات، وإلغاء الجهاز. هذه
+ليست أحداث نطاق؛ انظر المرجع.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/). That page is the
-inventory; this one is the model.
+للفهرس الكامل — أصناف الأحداث الملموسة كلها وعددها 53، وحمولاتها، و24 مشتركًا
+يستهلكونها — انظر
+[مرجع أحداث النطاق](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/). تلك الصفحة هي
+الجرد، وهذه هي النموذج.
 
-## Live access control rides two different mechanisms
+## التحكم الحي في الوصول يسلك آليتين مختلفتين
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+تبدو أحداث العضوية وأحداث الجهاز متناظرة، وهي ليست كذلك، وهذا يهم إن كنت تقدّر
+سرعة سريان سحب الوصول.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**إلغاء الجهاز يُنهي جلساته.** يراقب الخادم جدول الأجهزة المقترنة، ويُسقط خلال
+ثوانٍ أي جلسة حيّة خرج جهازها من المجموعة النشطة.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**إزالة عضو لا تغلق المقبس.** يُستهلك `WorkspaceMemberRemoved`: يُسقط
+`LocalRpcServer` و`RemoteRelayHost` اشتراكات مساحات العمل المرتبطة بذلك
+المستخدم، ويُبطل `RemoteEventForwarder` ذاكرة عضويته المؤقتة حتى لا تُدفع
+إطارات لاحقة تخص تلك المساحة. ما يرفض استدعاء RPC التالي يبقى بوابة الدور، وهي
+تعيد حل العضوية عند **كل** استدعاء — فيُرفض طلبهم التالي بـ«لست عضوًا في مساحة
+العمل هذه». الأثر فوري على أي شيء يحاولون فعله، غير أنه لا يتحقق بقطع الاتصال
+عنهم.
 
-## Pipeline triggers
+## مشغّلات خط الأنابيب
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+تشترك مشغّلات خط الأنابيب في أحداث النطاق وتبدأ تلقائيًا خطوط الأنابيب
+المطابقة. يستمع `PipelineTriggerDispatcher` إلى الناقل كله، ثم:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. يخرج مبكرًا ما لم يكن نوع الحدث مما يعرف تحويله إلى حمولة
+2. يبحث عن المشغّلات المفعّلة المطابقة لنوع الحدث ذاك، في مساحات العمل كلها
+3. يقصر كل مشغّل على مساحة عمله ويطبّق مرشح مطابقة حمولته
+4. يبدأ تشغيلًا لكل مشغّل يجتاز التصفية
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
-`ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
-`PrMerged`, `MessageReceived`, `TicketAssigned`,
-`TicketCompleted`, `TicketFailed`, `TicketCancelled`,
-`BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+القيد المهم هو الخطوة 1. يحمل الناقل 53 نوعًا، ويبدأ منتقي «إضافة مشغّل»
+تشغيلًا لأربعة عشر نوعًا (فروع حمولة `EventPayloadMapper`):
+`ExternalPrDetected`، `PullRequestPublished`، `PullRequestStatusChanged`،
+`PrMerged`، `MessageReceived`، `TicketAssigned`،
+`TicketCompleted`، `TicketFailed`، `TicketCancelled`،
+`BudgetThresholdCrossed`، `RepoAdded`، `MeetingRecordingStopped`، `SkillUpdated`
+و`SpaceDeleted`. لا شيء سواها يستطيع بدء خط أنابيب.
 
-## How a client sees any of this
+## كيف يرى العميل أيًا من هذا
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/ar-SA/دليل-المستخدم/مفاهيم/بنية/).
+يحوّل `RemoteEventForwarder` أحداث صنف الإشعارات إلى إطارات على السلك ويدفعها
+عبر RPC إلى الجلسات المتصلة، حيث يحوّلها مُعيِّن الإطارات إلى إشعارات داخل
+التطبيق. فيرى العميل الخفيف إسقاطًا لمجرى أحداث الخادم من غير أن يملك أي تنفيذ،
+وهذا مغزى
+[فصل العميل الخفيف](/ar-SA/دليل-المستخدم/مفاهيم/بنية/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+ليس كل إطار مدفوع إشعارًا. مجرى دورة حياة المهمة وإعادة إسناد التذكرة يُمرَّران
+مباشرة لقيادة الواجهة، لكنهما لا يُسجَّلان في تغذية الإشعارات ولا يرفعان
+إشعارًا منبثقًا.
 
-## See also
+## انظر أيضًا
 
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): what a trigger starts
-- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): assignment to an agent vs a team
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): how events fit the dependency rule
-- [Domain events reference](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
-- [Configure notifications](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إشعارات/)
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/): ما الذي يبدأه المشغّل
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/): الإسناد إلى وكيل مقابل الإسناد إلى فريق
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): كيف تنسجم الأحداث مع قاعدة الاعتماد
+- [مرجع أحداث النطاق](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/): الفهرس الكامل ومشتركوه
+- [إعداد مشغّلات خط الأنابيب](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مشغلات-خط-الأنابيب/)
+- [تهيئة الإشعارات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إشعارات/)

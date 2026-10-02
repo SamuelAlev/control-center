@@ -1,249 +1,279 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Punți de chat
+description: De ce integrarea Slack inițiază conexiunea spre exterior în loc să asculte, ce anume autorizează un mesaj care sosește din chat și cum o singură punte deservește orice produs de chat.
 slug: ro-RO/manual/concepte/punti-de-chat
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+O punte de chat transformă un produs de chat extern — astăzi Slack — într-o
+cale de primă clasă către un spațiu de lucru Control Center. Menționează botul
+și un agent se trezește; răspunde în firul din Slack și conversația continuă;
+tastează o comandă slash și se înregistrează un tichet. Dedesubt se află
+aceleași spații, transcripturi, tichete și aceeași atribuire pe care le
+folosește aplicația de desktop. Chatul este o _suprafață_ a spațiului de lucru,
+nu o copie a acestuia.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack este singurul provider livrat.** Nu există nicio implementare pentru
+Discord, Telegram, Teams sau Matrix nicăieri în produs. Funcționalitatea este
+scrisă intenționat fără să țină cont de provider — adăugarea unui al doilea
+produs înseamnă o valoare de enum, un adaptor și un plugin —, dar astăzi
+„chat” înseamnă Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Două suprafețe acoperă subiectul și ele aparțin unor persoane diferite.
+Conectarea unui spațiu de lucru la Slack și personalizarea botului sunt acțiuni
+de **admin**, în Setări → Spațiu de lucru → General. Legarea propriului cont de
+chat de identitatea ta Control Center este o acțiune de **membru**, în Setări →
+Spațiu de lucru → Profil și identitate.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Trei decizii modelează întreaga funcționalitate: **în ce direcție rulează
+conexiunea**, **ce autorizează un mesaj care sosește din exterior** și **unde
+are voie să trăiască cunoașterea specifică produsului**.
 
-## Outbound by design
+## Spre exterior prin proiectare
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Puntea nu ascultă niciodată după provider. Slack este accesat prin **Socket
+Mode**: serverul cere de la Slack un URL de socket și inițiază conexiunea spre
+exterior, apoi primește mențiuni, DM-uri și comenzi slash pe acea conexiune.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Consecința este chiar ideea. Un laptop în spatele unui NAT, un server de acasă
+fără domeniu, o mașină care se mută între rețele — toate pot rula puntea fără
+port de intrare, fără tunel, fără certificat TLS și fără URL public de rotit
+când se schimbă. Nu există niciun endpoint de webhook de securizat, pentru că
+nu există niciun endpoint de webhook. Când Control Center compune definiția
+aplicației, impune Socket Mode și elimină orice URL de cerere, pentru că o
+aplicație configurată pentru amândouă ar fi o aplicație care funcționează pe
+jumătate.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Costul este o conexiune de menținut în viață, ceea ce ține de server:
+reconectarea folosește backoff exponențial cu jitter, plafonat la 30 de
+secunde, o rotire de socket inițiată de provider se reconectează fără să
+escaladeze acel backoff, iar o _credențială respinsă_ este definitivă —
+reîncercarea la nesfârșit a unui token revocat ar aduce doar o limită de rată,
+așa că puntea se oprește și așteaptă tokenuri noi, raportând în setări eroarea
+proprie a providerului, cuvânt cu cuvânt.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Un spațiu de lucru fără aplicație de chat nu costă absolut nimic: niciun
+socket, niciun timer, niciun trafic. Și întregul mecanism pornește _după_
+bannerul de disponibilitate al serverului, pentru că o aplicație de chat care
+răspunde greu nu trebuie să întârzie niciodată pornirea.
 
-## Membership authorizes, not token possession
+## Apartenența autorizează, nu deținerea tokenului
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Persoana care a instalat aplicația nu este persoana care trimite mesajul. Așa
+că fiecare eveniment de intrare se rezolvă într-un **Principal** înainte să se
+întâmple ceva și eșuează în siguranță, cu o explicație:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Un cont de chat nelegat** primește instrucțiuni de legare, în firul Slack
+  în care a scris.
+- **Un cont legat al cărui utilizator nu este membru** al acestui spațiu de
+  lucru este îndrumat să ceară o invitație de la un admin.
+- **Un membru al cărui rol este doar-citire** (`viewer`, `guest`) este informat
+  că rolul său nu poate începe munca.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/ro-RO/manual/concepte/multiplayer/)
-for the membership model this leans on.
+Niciunul dintre aceste cazuri nu merge mai departe. Un mesaj de chat nu este
+niciodată atribuit cuiva care nu l-a trimis — exact asta ține corecte jurnalul
+de audit, limitele de rată pe principal și raportorii tichetelor. Vezi
+[Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/)
+pentru modelul de apartenență pe care se sprijină.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Legarea este o rezolvare de identitate, **nu** o acordare de acces.
+Apartenența este reverificată la fiecare eveniment, așa că o legătură
+aparținând cuiva care a fost între timp eliminat se rezolvă într-un refuz, nu
+în privilegiile sale vechi. Două căi stabilesc o legătură: un cod de unică
+folosință, cu durată scurtă de viață, pe care membrul îl tastează în chat, sau
+o potrivire automată pe emailul _verificat_ al providerului — iar calea prin
+email cere totuși ca utilizatorul potrivit să fie deja membru, așa că un
+străin a cărui adresă există din întâmplare pe server nu se leagă de nimic.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Codurile sunt ținute intenționat în memorie, cu o durată de viață de 15
+minute. Persistarea unuia ar crea un rând durabil, cu forma unei credențiale,
+pentru ceva menit să se evapore, iar repornirea serverului care invalidează
+toate codurile în curs este comportamentul corect, nu o regresie — membrul
+apasă din nou pe „leagă”.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Un refuz primește răspuns **în firul Slack deschis de mesaj**, ca răspuns
+propriu-zis. Un răspuns în fir aplică un ecuson pe mesajul căruia îi răspunde,
+ajunge la singura persoană care are nevoie de el și ține în continuare „nu ești
+legat” în afara canalului propriu-zis. Trimiterea unui mesaj este, de asemenea,
+singura capabilitate pe care o are orice provider, așa că explicația nu depinde
+niciodată de o funcție pe care aplicația s-ar putea să nu o aibă.
 
-## Provenance and the echo problem
+## Proveniență și problema ecoului
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+O punte care oglindește în ambele sensuri va intra în buclă dacă ceva nu
+distinge cele două direcții. Fiecare mesaj pe care puntea îl aduce este marcat
+cu `metadata['chat']` — provider, echipă, conversație, fir, mesaj și expeditor.
+Oglinda spre exterior sare peste orice mesaj care poartă acel marcaj.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Această singură regulă face oglindirea bidirecțională sigură: un mesaj scris de
+un om în Control Center este transmis mai departe în firul legat (cu numele
+autorului ca prefix), în timp ce un mesaj care a venit _din_ chat se oprește
+acolo unde a intrat.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Ce trece spre exterior este intenționat limitat. **Răspunsul** agentului este
+transmis ca text obișnuit de chat. Un gând scurt poate apărea pe rândul
+`Thinking…` al cardului. Ieșirea instrumentelor este un zid de diff-uri și
+rămâne în Control Center, tot acolo unde duce și un răspuns trunchiat.
 
-## A card reports the work; the text is still the message
+## Un card raportează munca; textul rămâne mesajul
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Acolo unde providerul le afișează, o tură poartă **un singur card de
+sarcină**, editat pe loc cât timp rulează tura și așezat deasupra răspunsului
+pe care îl explică.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Cardul este un plan grupat, nu un paragraf strivit. Slack concatenează
+`details` și `output` pe aceeași sarcină, așa că detaliile unui rând sunt
+trimise o singură dată (gândul de pe `Thinking…`), iar `output` nu este
+niciodată transmis în flux. Configurarea inițială este un rând al cărui titlu
+este înlocuit (`Working on it…`, `Cloning …`). Raționamentul adaugă un rând
+`Thinking…`. Fiecare instrument are propriul rând (`Read lib/main.dart`).
+Răspunsul este text obișnuit sub card — vizualizarea de tip plan a Slack îl
+citește dintr-o adăugare markdown ulterioară, nu dintr-un fragment amestecat în
+sarcini. Nimic altceva: nicio ieșire de instrument și doar un argument de
+instrument dintr-o listă scurtă de valori permise, pentru că argumentele unui
+instrument necunoscut pot fi un întreg corp de fișier, iar un rând este o
+singură linie.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Cardul acoperă și așteptarea _dinaintea_ turei. O primă mențiune creează
+conversația, iar crearea ei clonează fiecare repo în care va lucra agentul —
+ceea ce, pe un depozit real, înseamnă minute în care agentul nu a fost încă
+întrebat nimic și firul arată ca și cum botul ar fi ignorat cererea. Așa că
+cardul se deschide în momentul în care mențiunea este acceptată
+(`Working on it…`), apoi acel rând de configurare se actualizează cu exact
+aceleași cuvinte pe care le arată aplicația de desktop —
+`Cloning acme/widgets…`, `Setting up Reviewer…`, `Starting the agent…` —,
+după care un rând `Thinking…` de îndată ce agentul începe să raționeze, apoi
+un rând pentru fiecare instrument. Un
+card, un mesaj, de la „te-am auzit” până la răspuns, ca text obișnuit
+dedesubt. Configurarea inițială este raportată doar acolo unde cineva din chat
+o așteaptă: o conversație pregătită în aplicație sau una rămasă în pană,
+reluată la pornirea serverului, se pregătește fără niciun card.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+El poartă singurul lucru pe care chatul nu i-l poate da cititorului: un link
+**View in Control Center** către conversația din spatele răspunsului. Produsele
+de chat acceptă `http(s)` într-un link și nimic altceva, așa că butonul indică
+o pagină mică servită de acest server, care redirecționează browserul către
+linkul `control-center://` al aplicației de desktop. Pagina aceea nu citește
+nimic și nu rezolvă nimic — id-urile din URL-ul ei sunt ecouate într-un link
+profund și nicăieri altundeva —, iar un server fără un URL public accesibil
+produce pur și simplu un card fără buton, în loc de unul stricat.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Cardurile sunt o capabilitate ca oricare alta. Un provider fără ele se
+comportă exact ca înainte, doar text, iar un provider care refuză unul în
+momentul apelului își păstrează fluxul: răspunsul are mereu prioritate față de
+cardul care îl descrie. Când streamingul este complet oprit, cardul finalizat
+călătorește în schimb pe singurul mesaj postat. Un tichet înregistrat primește
+același tratament — confirmarea pentru `/cc ticket` este un card încheiat al
+cărui motiv de a exista este linkul către tichetul tocmai creat.
 
-## Capabilities are negotiated, then remembered
+## Capabilitățile sunt negociate, apoi reținute
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Produsele de chat diferă în ce pot afișa, așa că puntea este scrisă pentru cea
+mai bogată suprafață — un răspuns care crește în direct în interiorul unui fir,
+un status temporar „is thinking…”, un fir cu titlu, un răspuns efemer la o
+comandă slash — și degradează o capabilitate pe rând. Un provider care nu are
+niciuna funcționează totuși; răspunsurile sosesc pur și simplu ca un singur
+mesaj.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+A anunța o capabilitate nu înseamnă a o promite. Răspunsurile în streaming ale
+Slack necesită o funcție de plan plătit, iar Slack refuză doar în momentul
+apelului. Un refuz marcat ca permanent este reținut pentru **întreaga viață a
+conexiunii**: puntea nu mai cere și postează de atunci răspunsuri întregi, iar
+setările spun asta fără ocolișuri, pentru că întrebarea „răspunsurile mele nu
+mai sunt transmise în streaming” ar trebui să aibă răspuns fără să citești un
+jurnal. Cardurile de sarcină sunt eliminate la fel dacă Slack refuză unul.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Fiecare limită aparține providerului, nu releului: plafonul de mesaje,
+plafonul de fragmente din flux și dacă un flux are nevoie de un punct de
+ancorare în fir sunt toate declarate de adaptor, iar un răspuns lung este
+împărțit la granița dintre paragrafe, linii sau cuvinte, nu la mijlocul unui
+cuvânt.
 
-## One bridge, one adapter per product
+## O punte, un adaptor per produs
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Tot ce ține de un anumit produs stă în spatele unui port. Nucleul generic știe
+despre markdown, conversații de chat, fire de chat și membri; nu știe nimic
+despre plicurile Slack, `mrkdwn` sau intențiile de gateway. Trei piese fac asta
+posibil:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Adaptorul** normalizează un singur produs: transportul, apelurile API,
+  codecul de text și particularitățile plicurilor sale. Cele ale Slack sunt
+  instructive — o mențiune pe canal sosește de două ori (ca `app_mention` _și_
+  ca `message`), iar majoritatea subtipurilor de mesaj sunt decor, nu cereri
+  noi. Ambele sunt rezolvate în adaptor, așa că nucleul nu află niciodată că
+  Slack livrează de două ori.
+- **Descriptorul** este forma publică a providerului: ce credențiale are
+  nevoie, care sunt formatele lor, ce URL-uri ajută un utilizator să le
+  găsească, ce poate face și dacă aplicația sa poate fi creată sau editată de
+  aici. Cardul de setări, dialogul de conectare și validarea argumentelor sunt
+  toate _generate_ din el — clientul trimite înapoi un provider plus o hartă
+  indexată după id-ul câmpului.
+- **Pluginul** este compoziția de pe partea de server: cum devin credențialele
+  o conexiune verificată, cum este construit un adaptor și cum este gestionată
+  aplicația din partea providerului.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Așa că adăugarea unui produs înseamnă o valoare de enum, un adaptor și un
+plugin. Nicio operație RPC nouă, nicio schimbare de schemă, nicio schimbare în
+client — iar clientul rămâne corect, pentru că un câmp de care nu a auzit
+niciodată se afișează totuși cu eticheta furnizată de server.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Două detalii împiedică abstractizarea să se scurgă în sus. Pașii de
+administrare a aplicației pentru care un provider nu are API (generează un
+token, instalează aplicația, reinstalează după o schimbare de permisiuni) sunt
+returnați ca **pași cu nume, cu linkurile lor**, așa că ecranul de finalizare a
+configurării îi afișează fără să știe despre ce provider este vorba. Iar
+fiecare instrucțiune pe care o scrie puntea numește providerul și comanda pe
+care o folosește efectiv aplicația, așa că o comandă redenumită sau un al
+doilea provider se citesc corect fără niciun text nou.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Reinstalare după o schimbare de permisiuni]
+Editarea numelui, descrierii sau iconiței botului are efect imediat. O
+schimbare de **permisiuni** necesită o reinstalare: Slack aplică noul manifest
+dar păstrează autorizarea la ce era instalat. Editarea returnează un pas rămas
+cu un link către pagina „Reinstall to Workspace” a Slack.
 :::
 
-## Where credentials live
+## Unde trăiesc credențialele
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Tokenurile de chat ale unui spațiu de lucru stau în **directorul propriu** al
+acelui spațiu de lucru, **lângă baza de date** — ca JSON simplu la
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, nu în baza de date
+și, în mod deliberat, nu în keychainul sistemului de operare. Două consecințe
+se pierd ușor mai târziu: ștergerea unui spațiu de lucru dezasociază
+directorul, iar tokenurile pleacă odată cu el, iar exportarea sau salvarea
+unei copii de siguranță a unui spațiu de lucru copiază `workspace.db`, așa că
+un spațiu de lucru dat altcuiva nu duce în el tokenuri de bot active. Fișierul
+moștenește granița de încredere a sistemului de fișiere al gazdei serverului —
+orice are acces de citire la directorul de date poate citi un token de bot,
+care este aceeași graniță în spatele căreia stau bazele de date.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Un fișier per provider, scris atomic și accesibil doar proprietarului: o
+aplicație revocată se șterge prin dezasocierea unui singur fișier, iar un
+fișier corupt costă un provider, nu toți. Credențialele intră _înăuntru_ prin
+operația de conectare și nu ies niciodată înapoi — citirile de stare răspund
+doar cu metadate de conexiune.
 
-## What is deliberately not offered
+## Ce nu este oferit în mod deliberat
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Setări structurale ale aplicației.** Transportul, scope-urile și
+  abonamentele la evenimente sunt impuse, nu expuse. O aplicație care poate fi
+  configurată până la tăcere dintr-un ecran de setări este un tichet de
+  asistență, nu o funcție.
+- **Conversație plus comenzi slash.** Suprafața Slack este alcătuită din
+  mesaje, răspunsuri în fir și comenzi slash.
+- **O a doua sursă de adevăr.** Chatul nu este un loc unde se stochează munca.
+  Firul Slack este un spațiu, răspunsul este un transcript, tichetul este un
+  tichet — toate în spațiul de lucru, accesibile din orice client.
 
-## See also
+## Vezi și
 
-- [Multiplayer — identity, membership and presence](/ro-RO/manual/concepte/multiplayer/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): why links and credentials are per workspace
-- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/): what wakes when a mention arrives
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/): what `/cc ticket` files
-- [Architecture](/ro-RO/manual/concepte/arhitectura/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/ro-RO/manual/tutoriale/prima-punte-de-chat/)
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
-- [Link your Slack account](/ro-RO/manual/ghiduri-practice/leaga-cont-de-chat/)
-- [Customize the chat bot](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
-- [PR conversations](/ro-RO/manual/concepte/conversatii-pr/): the same three decisions, made for a forge
+- [Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/): principalii și rolurile prin care se rezolvă puntea
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): de ce legăturile și credențialele sunt per spațiu de lucru
+- [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): ce se trezește când sosește o mențiune
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/): ce înregistrează `/cc ticket`
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/): unde se află puntea între server și clienți
+- [Conectează Slack la spațiul tău de lucru](/ro-RO/manual/tutoriale/prima-punte-de-chat/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Leagă contul tău Slack](/ro-RO/manual/ghiduri-practice/leaga-cont-de-chat/)
+- [Personalizează botul de chat](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
+- [Conversații PR](/ro-RO/manual/concepte/conversatii-pr/): aceleași trei decizii, luate pentru un host de cod

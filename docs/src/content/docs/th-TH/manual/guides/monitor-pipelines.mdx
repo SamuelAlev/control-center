@@ -1,150 +1,149 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: ติดตามรันไปป์ไลน์
+description: ไล่คิวรัน อ่านแผนภาพน้ำตกเวลาและแผงขั้นตอนของรัน และกู้รันที่ล้มเหลวหรือขั้นตอนที่ค้างให้เดินหน้าต่อ
 slug: th-TH/คู่มือ/วิธีทำ/ติดตามไปป์ไลน์
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/).
+หน้านี้ครอบคลุมทุกอย่างหลังจากรันเริ่มขึ้นแล้ว: การหามันให้เจอ การอ่านว่าขั้นตอน
+แต่ละตัวทำอะไรไป และการทำให้รันที่ล้มเหลวเดินหน้าต่อได้อีกครั้ง หากต้องการเริ่มรัน ดู
+[รันไปป์ไลน์ด้วยตนเอง](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
 
-## Find a run
+## หารันให้เจอ
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. คลิก **ไปป์ไลน์** ในแถบข้างของเวิร์กสเปซ หน้าจอนี้คือคิวรันของเวิร์กสเปซ —
+   ทุกรัน เรียงจากใหม่ไปเก่า
+2. ใช้แถบด้านซ้ายในการกรอง มีตัวกรองสามตัวพอดี แต่ละตัวมีตัวเลขนับแบบสด:
+   **ทั้งหมด**, **กำลังรัน**, **ล้มเหลว**
+3. เดินดูตารางด้วย <kbd>↑</kbd>/<kbd>↓</kbd> (หรือ <kbd>j</kbd>/<kbd>k</kbd>)
+   แล้วกด <kbd>Enter</kbd> เพื่อเปิดรันที่โฟกัสอยู่ การคลิกแถวก็ทำแบบเดียวกัน
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+แต่ละแถวแสดงสัญลักษณ์ว่ารันเริ่มขึ้นอย่างไร (สัญลักษณ์เล่นสำหรับการรันด้วยตนเอง
+สัญลักษณ์ไฟล์สำหรับการเฝ้าดูกราฟโค้ด และสัญลักษณ์ทริกเกอร์อัตโนมัติในกรณีอื่น)
+ทูลทิปจะบอกชื่อทริกเกอร์ — **ด้วยตนเอง**, **เผยแพร่ PR**, **ไฟล์เปลี่ยน** และอื่น ๆ —
+และสำหรับรันจากการเฝ้าดู จะบอกว่าไฟล์ใดเปลี่ยนไปบ้าง จากนั้นจึงเป็นชื่อไปป์ไลน์
+ป้ายสถานะ ระยะเวลาทำงานจริง (หรือตำแหน่งในคิวสำหรับรันที่อยู่ในสถานะ `queued`)
+และการลองครั้งนี้เริ่มไปนานเท่าใด ระยะเวลาทำงานจริงไม่รวมช่วงว่างจากการหยุดแล้ว
+เริ่มใหม่ จึงไม่ใช่ช่วงเวลาตามนาฬิกาจริง
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+ไม่มีตัวกรองสำหรับรันที่เสร็จแล้ว ถูกระงับ หรือถูกยกเลิก ไม่มีตัวกรองรายเทมเพลต
+ไม่มีช่วงเวลา และไม่มีมุมมองประวัติรันรายเทมเพลต การเทียบรันของเทมเพลตเดียวกัน
+ทำได้โดยกวาดสายตาหาชื่อของมันในคิว
 
-## Read the run detail
+## อ่านรายละเอียดของรัน
 
-A run's page has three stacked parts.
+หน้ารันหนึ่ง ๆ มีสามส่วนซ้อนกัน
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**แถบเมตา** บอกเวลาเริ่ม ระยะเวลาทำงานจริง ความคืบหน้าของขั้นตอน
+(“3 จาก 7 ขั้นตอน”) สรุปความล้มเหลวที่ระบุขั้นตอนที่พังและสาเหตุ และการกระทำ
+**ลองใหม่** กับ **ลบ**
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**แผนภาพน้ำตกเวลา** ให้แท่งหนึ่งแท่งต่อหนึ่งขั้นตอน พร้อมระยะเวลา และสำหรับ
+ขั้นตอนเอเจนต์ จะมีต้นทุนเป็นเซนต์ ขั้นตอนที่ถูกลองใหม่จะแสดงส่วนต่อท้าย `×N`
+ต่อจากระยะเวลา ส่วนต่อท้ายนี้เป็นที่เดียวที่จำนวนครั้งที่ลองปรากฏออกมา
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**แคนวาสกราฟ** วาดเทมเพลตพร้อมสถานะสดของแต่ละโหนด การเลือกโหนดจะเปิด
+แผงขั้นตอนของมัน
 
-### Run and step statuses
+### สถานะของรันและขั้นตอน
 
-| Status        | Meaning                                           |
+| สถานะ        | ความหมาย                                           |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **รอดำเนินการ**   | สร้างแล้ว ยังไม่เริ่ม                          |
+| **อยู่ในคิว**    | รับเข้าแล้วแต่ถูกกักไว้: เพดานรันขนานสูงสุดของเทมเพลตนี้เต็มแล้ว; ยังไม่มีแถวขั้นตอน |
+| **กำลังรัน**   | กำลังทำงาน                                         |
+| **ระงับ** | รออะไรบางอย่างจากภายนอก — ปกติ ไม่ได้ค้าง |
+| **เสร็จแล้ว** | จบลงอย่างสำเร็จ                             |
+| **ล้มเหลว** | จบลงด้วยข้อผิดพลาด                               |
+| **ยกเลิกแล้ว** | ถูกหยุดโดยผู้ใช้หรือโดยระบบ                |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+ขั้นตอนมีสถานะเหล่านั้นยกเว้น **อยู่ในคิว** และเพิ่ม **ข้ามแล้ว** สำหรับสาขาที่
+เราเตอร์ไม่ได้เลือกไป (รวมถึงโหนดสืบทอดที่ไปไม่ถึงแล้วในตอนนี้)
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**ระงับ** คือสถานะที่ขั้นตอนเอเจนต์ใช้เวลาส่วนใหญ่: เอเจนต์ที่ถูกสั่งงานหรือ
+เกตการอนุมัติจะกักขั้นตอนไว้จนกว่างานของมันจะเสร็จลง กลไกกันพลาดสองข้อของเอนจิน
+ทำให้ทั้งรันล้มเหลวแทนที่จะรันต่อ: ขั้นตอนที่ถูกระงับนานกว่า 24 ชั่วโมง
+(`extras.awaitApproval` — บอดี `orchestration.awaitApproval` — ได้รับยกเว้น;
+`human.gate` ไม่ได้รับ) และขั้นตอนที่ไม่เป็น idempotent ซึ่งกำลังทำงานอยู่
+ตอนเซิร์ฟเวอร์หยุด
 
-## Inspect a step
+## ตรวจดูขั้นตอน
 
-Select a node on the canvas. The step panel shows, in order:
+เลือกโหนดบนแคนวาส แผงขั้นตอนจะแสดงตามลำดับ:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- กล่องข้อความ **ข้อผิดพลาด** เมื่อขั้นตอนล้มเหลว หรือกล่องข้อความ **ข้ามแล้ว**
+  พร้อมเหตุผลเมื่อขั้นตอนถูกข้าม
+- **เริ่มแล้ว**, **จบแล้ว** และระยะเวลา
+- **สาขา** — ดัชนีสาขา สำหรับสาขาที่รันขนานกัน
+- **ดูการสนทนา** — กระโดดไปยังการสนทนาที่ขั้นตอนรันอยู่ การสนทนาของไปป์ไลน์
+  ถูกซ่อนจากแถบข้าง นี่จึงเป็นทางเข้าเดียว
+- **อินพุต** และ **เอาต์พุต** เป็น JSON ที่พับเก็บได้
+- **กิจกรรมของเอเจนต์** — การ์ดหนึ่งใบต่อการรันเอเจนต์หนึ่งครั้งที่ขั้นตอน
+  สั่งงาน พร้อมสถานะ สรุป ระยะเวลา และต้นทุน
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+สำหรับขั้นตอนเอเจนต์ **เอาต์พุต** คือเพย์โหลดแบบมีโครงสร้างที่เอเจนต์ส่งมาด้วย
+`submit_output` ไม่ใช่ข้อความบรรยายของมัน ร่องรอยการให้เหตุผลอยู่ใน
+**กิจกรรมของเอเจนต์** และในการสนทนาที่อยู่หลัง **ดูการสนทนา**
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+สำหรับขั้นตอน bash **เอาต์พุต** คือ stdout ที่ถูกตัดช่องว่างหัวท้าย ซึ่งสคริปต์
+เขียนไว้ตอนออกด้วยรหัส 0 การออกด้วยรหัสที่ไม่ใช่ศูนย์ทำให้ขั้นตอนล้มเหลว โดยใช้
+ส่วนท้ายของ stderr เป็นข้อความข้อผิดพลาด
 
-## Recover a failed run
+## กู้รันที่ล้มเหลว
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. อ่านสรุปความล้มเหลวบนแถบเมตา มันจะระบุขั้นตอนที่ล้มเหลว กล่องข้อความ
+   **ข้อผิดพลาด** ในแผงขั้นตอนมีข้อความนั้น
+2. ตรวจ **อินพุต** ของขั้นตอน — คีย์สถานะที่หายไปหรือพิมพ์ผิดคือสาเหตุที่พบบ่อย
+   ที่สุด ขั้นตอนพรอมป์ต์เอเจนต์จะล้มเหลวทันทีและระบุชื่อตัวยึดตำแหน่งที่ยังแก้
+   ไม่ได้ ส่วนขั้นตอน bash จะแทนที่ด้วยสตริงว่างแล้วรันต่อไป ซึ่งมักปรากฏให้เห็น
+   ในอีกหนึ่งขั้นตอนถัดมา
+3. สำหรับขั้นตอนเอเจนต์ ให้เปิด **ดูการสนทนา** แล้วอ่านว่าเอเจนต์ทำอะไรไปจริง ๆ
+4. กด **ลองใหม่** บนแถบเมตา ขั้นตอนที่เสร็จแล้วและที่ถูกข้ามจะเก็บเอาต์พุตไว้
+   ส่วนที่เหลือจะถูกลบและรันใหม่ และรันจะกลับไปเป็นกำลังรัน นาฬิกาจับระยะเวลา
+   จะเริ่มนับใหม่สำหรับการลองครั้งนี้
 
-Common causes worth checking first:
+สาเหตุที่พบบ่อยซึ่งควรตรวจก่อน:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **หมดเวลา** — ขั้นตอนเกิน **หมดเวลา (ms)** ของมัน อย่าลืมว่าช่องนี้เป็น
+  มิลลิวินาที
+- **สคริปต์ผิดพลาด** — คำสั่ง bash ออกด้วยรหัสที่ไม่ใช่ศูนย์ หรือ `bash` ไม่ได้
+  อยู่บน `PATH` ของโฮสต์เซิร์ฟเวอร์
+- **การตรวจสอบสคีมา** — เพย์โหลด `submit_output` ของเอเจนต์ไม่เป็นไปตามสคีมา
+  เอาต์พุตของขั้นตอน
+- **ตัวยึดตำแหน่งที่แก้ไม่ได้** — `{{key}}` ที่ขั้นตอนพรอมป์ต์เอเจนต์อ้างถึง
+  ไม่เคยถูกเขียนขึ้นในต้นทาง ข้อผิดพลาดจะระบุทุกคีย์ที่แก้ไม่ได้
+- **บอดีที่ไม่ได้ลงทะเบียน** — ขั้นตอนที่คีย์บอดีไม่ได้ลงทะเบียนจะเตือนตอนโหลด
+  เทมเพลต แล้วก็ไม่ทำงานเลย
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[ลองใหม่ใช้ได้เฉพาะกับรันที่ล้มเหลวหรือถูกยกเลิก]
+ปุ่ม **ลองใหม่** จะแสดงเฉพาะเมื่อรันอยู่ในสถานะ `failed` หรือ `cancelled`
+สำหรับสถานะอื่น เอนจินจะคืนค่ากลับทันที
 :::
 
-## Stop a step that is stuck
+## หยุดขั้นตอนที่ค้างอยู่
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+เลือกขั้นตอนที่กำลังรัน แล้วกดปุ่ม **ฆ่าที่กำลังรัน** ในส่วนหัวของแผงขั้นตอน
+การทำเช่นนี้จะฆ่ากระบวนการของขั้นตอน ทำเครื่องหมายว่าขั้นตอนล้มเหลว และทำให้
+ทั้งรันล้มเหลวตามไปด้วย — ทุกสาขาพี่น้องที่ยังเปิดอยู่จะถูกปิดไปพร้อมกัน
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+ไม่มีตัวควบคุมสำหรับยกเลิกรันบนหน้าจอนี้ `pipeline.cancel` มีอยู่เป็นปฏิบัติการ
+RPC และเอนจินรองรับมัน แต่ไม่มีส่วนใดใน UI ของไปป์ไลน์เรียกใช้มัน
+**ฆ่าที่กำลังรัน** บนขั้นตอน หรือ **ลบ** บนรัน คือท่าหยุดเดียวเท่านั้นที่มีให้ใช้
 
-## Track cost
+## ติดตามต้นทุน
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+ต้นทุนรายงานแยกตามขั้นตอน ในคอลัมน์ขวาของแผนภาพน้ำตกเวลา และบนการ์ดแต่ละใบ
+ใต้ **กิจกรรมของเอเจนต์** ไม่มีผลรวมระดับรันบนหน้ารายละเอียด และไม่มีคอลัมน์
+ต้นทุนในคิวรัน ดังนั้นการเทียบต้นทุนของสองรันจึงต้องบวกต้นทุนของขั้นตอนทั้งหมด
+เข้าด้วยกัน
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Run a pipeline manually](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
-- [Create a pipeline template](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)
-- [Manage costs](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
-- [Pipeline steps reference](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
+- [รันไปป์ไลน์ด้วยตนเอง](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
+- [สร้างเทมเพลตไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)
+- [จัดการต้นทุน](/th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน/)
+- [ขั้นตอนไปป์ไลน์](/th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Pipelines](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)
+- [ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)

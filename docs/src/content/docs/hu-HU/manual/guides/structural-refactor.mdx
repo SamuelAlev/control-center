@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Kód strukturális refaktorálása
+description: Kérjen meg egy ügynököt, hogy szöveg helyett alak szerint találja meg és írja át a kódot, és nézze át a változást, mielőtt az bekerül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/strukturalis-refaktoralas
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Ez az útmutató megmutatja, hogyan vegyen rá egy ügynököt egy széles körű, mechanikus változtatásra — egy codemod, egy tömeges API-migráció vagy egy minta, amelyet el akar tüntetni — strukturális kereséssel és átírással, úgy, hogy a változás a kiírás előtt átnézésre előkészítve várjon.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+Az `ast_grep` **alak** szerint illeszti a kódot. Az `ast_edit` átírja. A `resolve` véglegesíti vagy elveti.
 
-## Before you start
+## Mielőtt elkezdi
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+A strukturális eszközök azokat a nyelveket fedik le, amelyeket a kódgráf feldolgoz: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB és Ada. Szükségük van az előkészített tree-sitter nyelvtanokra, amelyek egy kiszállított buildben mindig rendelkezésre állnak — egy hiányzó nyelvtan leállítja a szervert, nem pedig lerontja a keresést.
 
-## Find the shape first
+## Először keresse meg az alakot
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Soha ne írjon át olyasmit, amit nem nézett meg. Kérje meg az ügynököt a keresésre:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Keresse meg az összes helyet, ahol egy nullable értéken `dispose()`-t hívunk, amelyet épp most ellenőriztünk nullára.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+A kimenet `file:line`, valamint minden helyhez az illeszkedő forrás.
 
-### What the pattern syntax buys you
+### Mit nyújt a mintaszintaxis
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| Token      | Illeszkedés                                  |
+| ---------- | -------------------------------------------- |
+| `$NAME`    | Bármely egyetlen csomópont, elkapva          |
+| `$$$NAME`  | Testvérek bármely sorozata — argumentumok, utasítások |
+| `$_`       | Bármi, név nélkül elkapva                    |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Amelyik igazán számít: **egy ismételt `$NAME`-nek ugyanazt a szöveget kell elkapnia**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+olyan őrfeltételre illeszkedik, amely azt szabadítja fel, amit vizsgált. **Nem** illeszkedik viszont az `if (a != null) b.dispose()` esetre — ami általában pont az a hiba, amelyet keresett. Ezt egyetlen szöveges keresés sem tudja kifejezni.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Nem illeszkedik sztring vagy megjegyzés belsejére]
+A mintát ugyanaz a nyelvtan dolgozza fel, mint a fájlt, így a dokumentációs megjegyzésbe vagy sztringliterálba írt `dispose(x)` nem hívás, és nem illeszkedik rá. Pontosan ez az oka, hogy ezt érdemes a `grep` helyett választani.
 :::
 
-### When the pattern finds nothing
+### Amikor a minta nem talál semmit
 
-Two things to try, in order:
+Két dolgot érdemes kipróbálni, ebben a sorrendben:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Kisebbítse.** `foo($X)` az `if (a) { foo($X); }` előtt. Egy minta, amely önmagában nem érvényes kód, gyakran nem az a szerkezet, amelyet valójában keresett.
+2. **Nevezze meg a nyelvet.** A `language:` csak akkor következtethető ki, ha a `path` egyetlen fájlra mutat.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Az olyan mintát, amelyet egyetlen feldolgozási környezet sem fogad el, feldolgozhatatlanként jelentenek — az eszköz ezt mondja ahelyett, hogy „nincs találat”-ot jelentene valamire, amit soha nem úgy olvastak, ahogy kinéz.
 
-## Rewrite, and look before it lands
+## Írjon át, és nézze meg, mielőtt bekerül
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Az eredmény egy **javaslat**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Még semmi sincs a lemezen. Olvassa el a listát, ellenőrizzen néhány helyet, amelyet a keresés jelentett, majd:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+vagy
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[A véglegesítés mindent-vagy-semmit]
+Minden fájlt ahhoz a tartalomhoz hasonlítanak, amelyet a változás előkészítésekor rögzítettek. Ha bármelyik megváltozott — az ügynök kézzel szerkesztette, egy formázó lefutott, egy diagnosztikai menet átírta —, a **teljes** változást visszautasítja és elveti. Egy részben alkalmazott strukturális átírás olyan fát hagy maga után, amely sem a régi, sem az új alak szerint nem fordul le.
 
-Re-run the tool against the current files; do not retry the stale id.
+Futtassa újra az eszközt a jelenlegi fájlokon; ne próbálkozzon újra az elavult azonosítóval.
 :::
 
-## Check your work with the compiler
+## Ellenőrizze a munkáját a fordítóval
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Azért érdemes strukturálisan eljárni, mert a változás széles hatókörű. Pont a széles körű változások azok, ahol egy hihetőnek tűnő átírás eltöri a típust. A véglegesítés után kérjen diagnosztikát:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+A `file: "*"` a projekt saját ellenőrzőjét futtatja (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) fájlonkénti lekérdezés helyett — ez a helyes kérdésforma egy negyven fájlt érintő változás után.
 
-## Worked example: migrating a call
+## Kidolgozott példa: hívás migrálása
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Tegyük fel, hogy a `log(msg, level)` helyébe a `log(level: level, message: msg)` lép.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Nézze meg a találatokat. Ha közülük néhány egy *másik* kétargumentumos `log`, szűkítse a mintát úgy, hogy a `path` értékét arra a könyvtárra korlátozza, amelyik a keresett példányt tartalmazza, ahelyett hogy a különbséget magában a mintában próbálná kifejezni.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Ezután `resolve`, majd `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Mikor használjon mást
 
-| Situation                                 | Better tool                          |
+| Helyzet                                   | Jobb eszköz                          |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Szimbólum átnevezése                      | `lsp_rename` — a hivatkozásokat követi, nem az alakokat |
+| Sztring, megjegyzés vagy fájlnév megkeresése | `search` (tartalom) / `search_files` (nevek) |
+| „Mi törik el, ha ezt megváltoztatom?”     | A [kódgráf](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/) |
+| Olyan nyelv, amelyet a nyelvtanok nem fednek le | `search` plusz `edit`          |
 
-## Related
+## Kapcsolódó
 
-- [Code intelligence](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — the full argument list
-- [Search code with the code graph](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/) — the symbol and impact side
+- [Kódintelligencia](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — miért nem egy plusz lépésekkel felcicomázott regex a strukturális illesztés
+- [Beépített ügynökeszközök](/hu-HU/kezikonyv/referencia/ugynokeszkozok/) — a teljes argumentumlista
+- [Kód keresése a kódgráffal](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodkereses/) — a szimbólumok és a hatás oldala

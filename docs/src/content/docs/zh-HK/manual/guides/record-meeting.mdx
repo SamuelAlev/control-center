@@ -1,118 +1,107 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: 錄製並摘要會議
+description: 錄下通話，取得轉寫內容，並整理成筆記、待辦事項和決策。
 slug: zh-HK/手冊/操作指南/錄製會議
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/zh-HK/手冊/概念/會議/) for how it works.
+本指南說明如何錄製會議，並取得 AI 產生的成稿。
+運作方式請參閱[會議與轉錄](/zh-HK/手冊/概念/會議/)。
 
-## Before you start
+## 開始之前
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **等待語音模型，然後重啟伺服器。** 正常啟動會在背景強制安裝所選的 ASR
+  模型（Parakeet TDT 0.6B v3，多語言預設項，約 600 MB）。伺服器**只在啟動時
+  解析一次**模型，因此在你重啟之前，首次執行仍然沒有任何錄製操作。磁碟上沒有
+  模型時，錄製會失敗並顯示 `Could not start recording on the host: …`。若要改用
+  其他模型版本，請前往**設定 → 伺服器 → 語音與會議模型**——這同樣需要重啟。
+- 首次錄製時，當作業系統詢問，請授予**麥克風**權限。
+- 在 **macOS 14.4+** 上，系統音訊是透過 Core Audio 程序 tap 擷取的——毋須安裝驅動程式，但作業系統會第二次詢問一項 _音訊擷取_ 權限。那不是螢幕錄製，也絕不會亮起螢幕錄製指示燈。拒絕該權限會令啟動失敗並顯示 `System-audio capture permission denied.`。在 macOS 14.4 以下沒有系統音訊擷取。
+- 在 **Linux** 上，`parecord`（pulseaudio-utils）或 `pw-record`（pipewire）必須位於 `PATH` 中——擷取會針對 PipeWire/PulseAudio 監聽來源啟動其中一個。兩者皆缺時，啟動會失敗並顯示 `No system-audio capture tool found`。
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[你的會議音訊會流向哪裡]
+擷取、轉寫、回音消除與說話人分離全都在裝置上執行，不涉及任何雲端呼叫——但
+「裝置」指的是 **cc_server 主機**；當你遠端執行伺服器時，那就是另一部機器。而
+最終的成稿是一次普通的代理執行：`meeting_summary` 管線會把完整轉寫和你隨手記的
+筆記，傳送給該代理所使用的任何模型供應商。如果轉寫絕不能離開這部機器，請把該
+代理指向本機供應商。
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+錄製畫面會在錄製期間說明這一點，因此在還有轉寫可以送出之前，這個決定就已經擺
+在你眼前。
 :::
 
-## Start a recording
+## 開始錄製
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. 在側邊欄中開啟**會議**。
+2. 點擊**錄製會議**。即時錄製 HUD 會在 `/meetings/record` 開啟。
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+錄製會立即開始，擷取你的麥克風加上系統輸出音訊——也就是其他參與者。沒有模式提示，也沒有音訊來源選擇器：面對面單麥克風模式存在於 API 中，但目前並無對應介面。
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+在瀏覽器中，同一流程也可運作，只有一點不同：「系統音訊」來自螢幕分享，而該分享必須包含音訊軌。分享一個瀏覽器分頁（或你的整個畫面），並在選擇器中啟用「分享分頁音訊」／「分享系統音訊」。Safari 與 Firefox，以及 macOS 上的全螢幕分享，往往無法提供音訊軌。
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD 會顯示音量表、已用時間，以及在一側不斷累積的即時轉寫。
 
-## During the meeting
+## 會議進行期間
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- 在筆記窗格中**隨手記下筆記**。它們會在你輸入時儲存，並在之後交給摘要代理，所以凡是轉寫可能漏掉的內容都記下來。
+- 在**作用中的範本**一列中**選擇筆記範本**。它決定本次會議摘要的形態，並會隨錄製一併擷取，因此之後重新執行時會重現你在這裡選擇的範本。
+- 用暫停控制項**暫停與繼續**。暫停期間轉寫會停止，計時器也會凍結。
+- 轉寫會以帶說話人標記的方式即時串流進來：你說的話標記為**你**，通話中的每個人標記為**其他人**——直到說話人分離把「其他人」拆分成 `Person 1`、`Person 2`……，而你可以為它們重新命名。
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[聲音很輕的說話人可能不會被轉寫]
+轉寫會跳過任何從未升過靜音門檻的音訊視窗，完全不加以解碼。這可避免安靜的聲道
+把 CPU 浪費在幻覺出來的非語音 token 上，但同時也意味着聲音微弱或距離較遠的
+說話人可能完全不會產生轉寫。請在錄製初期檢查音量表，而不是等到最後。
 :::
 
-## Stop and summarize
+## 停止並摘要
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. 點擊**停止並摘要**。
+2. Control Center 會直接帶你前往該會議的詳情檢視，狀態標記為**處理中**：說話人分離會把遠端聲道拆分成一個個說話人，`meeting_summary` 管線則產生成稿。
+3. 該管線完成後，會議就會轉為**已完成**。你不必一直待着等它——詳情檢視會自行更新。
 
-## Review the writeup
+## 檢視成稿
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+會議詳情（`/meetings/:meetingId`）有四個分頁：
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| 分頁         | 內容                                                            |
+| ------------ | --------------------------------------------------------------- |
+| **筆記**     | AI 摘要與增強筆記，由你隨手記的筆記 + 轉寫內容建構而成          |
+| **轉寫**     | 完整、帶說話人標記且附時間戳的轉寫                              |
+| **待辦事項** | 擷取出來的待辦事項，每項帶有可選的負責人                        |
+| **決策**     | 通話期間記錄下來的決策                                          |
 
-From here you can:
+在這裡你可以：
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/zh-HK/手冊/操作指南/委派工單/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **重新命名說話人**：把 `Person 1` 改成真實姓名；該變更會套用到整份轉寫。
+- 完成待辦事項時**把它們勾選掉**。
+- 從某項待辦事項**建立工單**：這會開立一張以該待辦事項為標題、尚未指派的新工單，並把它連回該列。請在工單本身把它指派給代理（參見[將工作委派給代理](/zh-HK/手冊/操作指南/委派工單/)）。
+- 以**重新執行摘要**取得全新的一輪結果（例如在重新命名說話人之後）。它會沿用錄製該會議時所擷取的範本。請在**設定 → 工作區 → 會議**選擇作用中的範本。
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+編輯筆記、標題、待辦事項和決策在所有地方都能運作。
+**重新執行摘要**與取消處理中的會議**僅限桌面端**——在瀏覽器中，這兩個按鈕都不會有任何作用。
 
-## Record straight from a calendar event
+## 直接從日曆活動開始錄製
 
-If you've [connected a calendar](/zh-HK/手冊/操作指南/連接日曆/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+如果你已[連接日曆](/zh-HK/手冊/操作指南/連接日曆/)，就可以略過手動開始。
+這是**僅限桌面端**；網頁用戶端會拒絕這樣做。
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. 從**日曆**開啟該活動。
+2. 點擊**開始錄製並關聯**。
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+錄製會以該活動的標題作為起始標題，並連結回該活動，因此筆記與日曆項目會保持連繫。
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[刪除會議不會刪除它的音訊]
+刪除會議會移除它的資料列，但 `<dataDir>/meetings/<meetingId>/` 之下已錄製的 WAV
+檔案仍留在磁碟上——沒有保留政策、大小上限，也沒有清理掃描。如果這些音訊重要，
+請自行移除該目錄。
 :::
 
-## Related guides
+## 相關指南
 
-- [Connect a Google Calendar](/zh-HK/手冊/操作指南/連接日曆/)
-- [Delegate work to agents](/zh-HK/手冊/操作指南/委派工單/)
+- [連接 Google Calendar](/zh-HK/手冊/操作指南/連接日曆/)
+- [將工作委派給代理](/zh-HK/手冊/操作指南/委派工單/)
 
-## Related concepts
+## 相關概念
 
-- [Meetings and transcription](/zh-HK/手冊/概念/會議/)
+- [會議與轉錄](/zh-HK/手冊/概念/會議/)

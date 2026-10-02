@@ -1,135 +1,141 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Bruk planmodus
+description: Bytt et område til planmodus, få en typet plan og godkjenn den til arbeid som kjører.
 slug: nb-NO/handbok/slik-gjor-du/planmodus
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Denne veiledningen viser deg hvordan du får en strukturert plan ut av en agent før
+den skriver noe kode.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+I planmodus undersøker agenten i skrivebeskyttet modus, og den eneste leveransen
+er en **typet plan**: en avhengighetsgraf av steg du godkjenner, som Control Center
+deretter kompilerer til virkelig arbeid. Bruk den når du vil se omfanget av en
+endring, få stegene brutt ned, eller få risikoer og avhengigheter navngitt før noe
+røres.
 
-## Switch a space into plan mode
+## Bytt et område til planmodus
 
-Any of these flips the space's mode and the change is persisted:
+Hvilken som helst av disse bytter modusen til området, og endringen lagres:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Velg **Plan** i modusnedtrekksmenyen helt til venstre på verktøylinjen i
+  skrivefeltet
+- Trykk **Shift+Tab**
+- Send `/plan`. En bar `/plan` armer bare modusen; `/plan <request>` armer den og
+  sender resten som meldingen din
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` reiser aldri som tekst – den setter den lagrede modusen, som er autoriteten
+verktøyflaten, forhåndsvalget av tillatelsesregler og prompten alle leser. Modusen
+holder derfor for denne turen og hver tur etter den, til du bytter den tilbake.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Modusen lagres på området, så den samme agenten kan være i planmodus her og i
+agentmodus et annet sted.
 
-## What the agent produces
+## Hva agenten produserer
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Den undersøker i skrivebeskyttet modus – minne, kodeindeksen, filer
+2. Den kaller `submit_plan` **én gang**, med en `goal` pluss `nodes`, der hver
+   bærer en stabil `key`, en `title`, en `description` og node-nøklene den
+   `dependsOn` (det er dette som lar uavhengig arbeid kjøre parallelt)
+3. Den stopper
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Verktøyet validerer grafen – dupliserte nøkler, hengende avhengigheter, sykluser –
+og returnerer regelbrudd som agenten må rette, i stedet for å godta en ødelagt plan.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Planen vises **i samtalen** som en kompakt rad som viser målet, statusen og antall
+steg. **Plan Studio** – avhengighetsgrafen, nodeinspektøren og kostnadsestimatet –
+åpnes som en fane ved siden av samtalen: trykk **Åpne** på raden, eller bare vent,
+for en plan som lander innen 30 sekunder mens du ser på samtalen, åpner fanen sin
+selv.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Den skrivebeskyttede garantien er strukturell, men bare på det innebygde harnesset]
+Control Centers eget harness bygger agentens verktøyregister fra spesifikasjonen for
+planmodusens flate, så det finnes rett og slett ingen skrive-, redigerings- eller
+kommandoverktøy å kalle – begrensningen er ikke en promptinstruks modellen kan
+snakke seg ut av.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code-adapteren får ingen slik filtrering: modusen når den som en forespørsel
+dens egen kjører kanskje eller kanskje ikke etterlever, og Control Center ser bare
+`mcp__*`-kallene dens. Håndhevingsmerket ved siden av modusnedtrekksmenyen vises
+nettopp når det er tilfellet.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Agenten kan stille deg avklarende spørsmål]
+Når forespørselen er tvetydig, kan en planagent ta en pause og stille deg opptil tre
+blokkerende spørsmål med verktøyet `ask_user`. Det viser et skjema i samtalen –
+alternativer eller fritekst – og kjøringen blokkerer til du svarer. Verktøyet er på
+lesenivå, så det overlever planmodusens skrivebeskyttede flate, og det er unntatt
+fra godkjenningsinnpakningen (en prompt foran en prompt ville feile lukket uten en
+tilkoblet godkjenner, og dermed nekte agenten selve handlingen å spørre).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Det trenger et område å vises i, så en engangsutsending uten samtale får det ikke.
+Å legge inn omfanget, målrepoet og akseptansekriteriene allerede i den første
+meldingen er fortsatt raskere enn en tur-retur.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Prosa er ingen leveranse her. En kjøring som avsluttes uten å kalle `submit_plan`,
+legger inn en synlig linje «Ended without submitting a plan (no `submit_plan`
+call).» i samtalen og markerer kjøringen som en som har gått glipp av leveransen
+sin. Statusen til kjøringen forblir bevisst _completed_ – det holder
+tilstandsmaskinene for pipeline og saker urørt – så les linjen, ikke statusmerket.
 
-## Approve the plan
+## Godkjenn planen
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Fra planens rad i samtalen trykker du **Godkjenn og kjør**. Fra godkjenningslinjen
+i Plan Studio trykker du **Godkjenn plan** (eller **Avvis** ved siden av;
+godkjenning er deaktivert så lenge grafen har en valideringsfeil).
 
-Then:
+Deretter:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center kompilerer planen til en orkestrering og materialiserer den –
+   sakene og kjøringen. Ingen modell er involvert i dette steget; det er
+   deterministisk
+2. Planen kjøres som agenten som skrev den. Om noen andre skal trekkes inn, er opp
+   til den agenten ved kjøretid – den kan `delegate_task` et steg til en bedre egnet
+   kollega, innenfor arbeidsområdets grense for delegeringsdybde
+3. Målet til planen blir **målet til samtalen**, og arbeidet kjører **i den samme
+   samtalen**: hvert steg legger inn hva agenten ble bedt om og strømmer turen
+   tilbake, så du følger det (og kan stoppe en tur) der du allerede er
+4. Målraden i samtalens **Generelt**-sidepanel (under Gjøremål) viser kjøringens
+   framdrift som `settled/total` og har stoppknappen; Plan Studio viser tilstanden
+   per node på grafen og avbryter der også
 
-## Keep working without approving
+## Fortsett å jobbe uten å godkjenne
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Hvis du heller vil bli i denne samtalen enn å godkjenne planen, kan agenten kalle
+`exit_plan_mode`. Det er den eneste godkjente utveien: den åpner en varig
+godkjenningsforespørsel knyttet til samtalen og returnerer `pending` – området
+forblir i planmodus, og agenten må ikke handle. Når forespørselen er godkjent,
+bytter agentens neste `exit_plan_mode`-kall området fra plan- til agentmodus og
+låser opp de muterende verktøyene. En avvisning lar den åpne en ny forespørsel mot
+en revidert plan.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+For å forlate planmodus bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab),
+eller godkjenner den innsendte planen. `exit_plan_mode` åpner en varig godkjenning
+som avgjøres med MCP-verktøyet `decide_approval`. Overlegget for tillatelsesregler
+for blokkerte verktøykall er en annen kø i minnet og bærer ikke
+plan-utgangsforespørsler.
 
-## Plan mode in a pipeline step
+## Planmodus i et pipeline-steg
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+En `messaging.createSpace`-pipeline-node leser samtalemodusen fra
+**extras**-oppføringen `mode` i nodekonfigurasjonen – `extras['mode']: 'plan'`.
+Nøkkelen krever eksakt samsvar: enhver annen stavemåte, inkludert `conversationMode`
+eller `dispatchMode`, ignoreres i stillhet, og rommet faller tilbake til kroppens
+standard, som er **gjennomgang**, ikke chat. Et `promptAgent`-steg blir med i et rom
+det ikke opprettet, og gir det ikke nye tillatelser. **Dispatch-modus**-velgeren i
+nodekonfigurasjonseditoren (`allParallel` / `manager`) gjelder noder for
+teamutsending. Angi samtalemodus med `extras['mode']` på en mal som åpner området,
+eller på konfigurasjonen til den noden via API-et.
 
-## Related guides
+## Relaterte guider
 
-- [Chat with an agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
-- [Use spaces](/nb-NO/handbok/slik-gjor-du/omrader/)
-- [Work in Plan Studio](/nb-NO/handbok/slik-gjor-du/plan-studio/)
-- [Run an orchestration](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
+- [Chat med en agent](/nb-NO/handbok/slik-gjor-du/chat-med-agent/)
+- [Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/)
+- [Jobb i Plan Studio](/nb-NO/handbok/slik-gjor-du/plan-studio/)
+- [Kjør en orkestrering](/nb-NO/handbok/slik-gjor-du/kjor-orkestrering/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Modes](/nb-NO/handbok/konsepter/moduser/)
-- [Orchestration](/nb-NO/handbok/konsepter/orkestrering/)
+- [Moduser](/nb-NO/handbok/konsepter/moduser/)
+- [Orkestrering](/nb-NO/handbok/konsepter/orkestrering/)

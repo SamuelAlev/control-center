@@ -1,98 +1,99 @@
 ---
-title: Review your first pull request
-description: Open a PR in the workbench, read the diff, comment, approve and merge.
+title: סקרו את בקשת המשיכה הראשונה
+description: פתחו בקשת משיכה בסביבת העבודה, קראו את ה-diff, הגיבו, אשרו ומזגו.
 slug: he-IL/מדריך-למשתמש/מדריכים/בקשת-המשיכה-הראשונה
+sourceHash: e4f8486d3af51377b6108546027ca0aad5fc93b7
 ---
 
-## What you will build
+## מה תבנו
 
-By the end of this tutorial, you will have:
+בסוף המדריך הזה יהיו לכם:
 
-- Opened a pull request in Control Center's PR workbench
-- Read its diff and left an inline comment
-- Submitted a review verdict
-- Merged the PR
+- בקשת משיכה פתוחה בסביבת העבודה של בקשות המשיכה ב-Control Center
+- ה-diff שלה שקראתם, עם הערה מוטבעת שהשארתם
+- הכרעת סקירה ששלחתם
+- בקשת משיכה ממוזגת
 
-Prerequisites: [Dispatch your first agent](/he-IL/מדריך-למשתמש/מדריכים/הסוכן-הראשון/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
+דרישות מוקדמות: [שילחו את הסוכן הראשון](/he-IL/מדריך-למשתמש/מדריכים/הסוכן-הראשון/) הושלם, ובקשת משיכה פתוחה אחת במאגר הרשום בסביבת העבודה הזו. עבור שלבי הסקירה, בחרו בקשת משיכה שלא פתחתם בעצמכם — כפתור **סקירה** מוסתר בבקשות המשיכה שלכם. המיזוג עדיין עובד בבקשת משיכה שאתם יצרתם.
 
-## Step 1: Open the pull request
+## שלב 1: פתחו את בקשת המשיכה
 
-1. Click **Pull requests** in the sidebar
-2. Find your PR and click it
+1. לחצו על **בקשות משיכה** בסרגל הצד
+2. מצאו את בקשת המשיכה שלכם ולחצו עליה
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
+**נקודת ביקורת.** בקשת המשיכה נפתחת כסביבת עבודה מרובת לשוניות — סקירה כללית, הבדלים, בקרת מקור, צ'אט ופעולות — כשהיא ממוקדת ב**סקירה כללית**: הכותרת והפעולות, התיאור וציר הזמן של הפעילות, וסרגל צד עם סטטוס, סוקרים, אחראים, בדיקות וקבצים ששונו. לחיצה על קובץ שם קופצת אליו בלשונית ההבדלים. לשונית **סקירת PR** אינה נפתחת עד שמישהו מבקש סקירת AI.
 
-:::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → Workspace → Profile & identity → Code hosting**, then refresh the list.
+:::note[תור ריק עם הנחיה "חברו את GitHub"]
+המצב הזה אומר שה_שרת_ אינו מחזיק באסימון גישה של GitHub — הלקוח שלכם לעולם אינו מחזיק אחד. הגדירו אחד תחת **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד**, ואז רעננו את הרשימה.
 :::
 
-## Step 2: Read the diff
+## שלב 2: קראו את ה-diff
 
-Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+פתחו את לשונית **הבדלים**. עץ קבצים מתקפל יושב משמאל, והרצועה שמעל ה-diff נושאת בורר טווח קומיטים — לצמצום ה-diff לקומיט אחד או לטווח שלהם — ובנוסף מספר הקבצים והתוספות והמחיקות המצטברות.
 
-The settings button in the diff toolbar controls how it renders:
+כפתור ההגדרות בסרגל הכלים של ה-diff שולט באופן התצוגה שלו:
 
-- **Split** or **unified** view
-- **Wrap lines** or scroll long lines
-- **Code font ligatures**
+- תצוגה **מפוצלת** או **מאוחדת**
+- **גלישת שורות** או גלילה של שורות ארוכות
+- **ליגטורות בגופן הקוד**
 
-Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/).
+סמנו קובץ כנקרא כדי לעקוב אחר ההתקדמות שלכם ב-diff גדול. ניווט מקלדת נמצא ב[קיצורי מקלדת](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/).
 
-## Step 3: Leave an inline comment
+## שלב 3: השאירו הערה מוטבעת
 
-1. Hover a line in the diff — a small `+` pill appears in the gutter
-2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback. The composer offers two submits:
-   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
-   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
+1. רחפו מעל שורה ב-diff — גלולה קטנה של `+` מופיעה בשוליים
+2. לחצו עליה כדי להגיב על השורה הזו, או גררו אותה אנכית תחילה כדי לבחור טווח
+3. הקלידו את המשוב שלכם. תיבת הכתיבה מציעה שתי דרכי שליחה:
+   - **התחלת סקירה** (או **הוספה לסקירה** אם סקירה כבר בעיצומה) מכניסה את ההערה לתור. השרשור מציג **ממתין לסקירה** עד שתשלחו הכרעה בשלב 4.
+   - **הוספת תגובה בודדת** מפרסמת אותה ב-GitHub מיד. השרשור מציג **מפרסם…**, ואחר כך **מסונכרן**, ומציע ניסיון חוזר אם הפרסום נכשל.
 
-For this tutorial, use **Start a review** so the comment goes out with the verdict.
+במדריך הזה השתמשו ב**התחלת סקירה** כדי שההערה תצא יחד עם ההכרעה.
 
-:::caution[A queued comment is not on GitHub yet]
-**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
+:::caution[הערה שנכנסה לתור אינה ב-GitHub עדיין]
+**התחלת סקירה** / **הוספה לסקירה** מחזיקות את ההערה מקומית עד שתשלחו הכרעה. רק **הוספת תגובה בודדת** מפרסמת מיד. ה_גוף_ של הסקירה שתכתבו בשלב 4 הוא טיוטה נפרדת.
 :::
 
-## Step 4: Submit a review
+## שלב 4: שלחו סקירה
 
-1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
-2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
-3. Choose a verdict:
-   - **Request changes**
-   - **Comment**
-   - **Approve**
+1. לחצו על **סקירה** בשורת הפעולות של **סקירה כללית** — אותו כפתור נמצא גם בסרגל הכלים של לשונית ההבדלים. הוא מוסתר בבקשות משיכה שאתם כתבתם, ובבקשת משיכה סגורה או ממוזגת.
+2. כתבו סיכום בתיבת הכתיבה. הוא נשמר אוטומטית כטיוטה, כך שתוכלו לסגור את החלון הצף ולחזור אליו.
+3. בחרו הכרעה:
+   - **בקש שינויים**
+   - **תגובה**
+   - **אישור**
 
-The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
+ההכרעה היא הכפתור עצמו. אחרי **אישור** או **בקש שינויים**, הכפתור מתויג מחדש כ**אושר** או **ביקש שינויים**. הכרעת **תגובה** משאירה אותו מתויג כ**סקירה**.
 
-**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
+**נקודת ביקורת.** הכפתור מציג "אושר" או "ביקש שינויים" אם בחרתם באחת משתי אלה.
 
-## Step 5: Merge
+## שלב 5: מזגו
 
-The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+כפתור **מזג** מופיע בכל פעם ש-GitHub מדווח שבקשת המשיכה ניתנת למיזוג — הוא אינו מותנה באישור שלכם. הצבע שלו מעיד על מוכנות ולא על הרשאה: ראשי כשהאישורים והבדיקות הנדרשים ירוקים, משני כשבדיקה עדיין רצה, הרסני כשסוקר מבוקש טרם אישר או כשבדיקה נכשלת.
 
-1. Click **Merge**
-2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
-3. For the first two, edit the prefilled commit title and message
-4. Confirm
+1. לחצו על **מזג**
+2. בחרו שיטה: **Squash ומיזוג**, **יצירת קומיט מיזוג** או **Rebase ומיזוג**
+3. בשתי השיטות הראשונות, ערכו את כותרת הקומיט וההודעה שמולאו מראש
+4. אשרו
 
-Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+כל בעיה שלא נפתרה — "בדיקות נכשלות", "חלק מהסקירות עדיין ממתינות" — מופיעה בחלונית הנפתחת לפני האישור.
 
-:::caution[Merging is irreversible]
-Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::caution[המיזוג אינו הפיך]
+המיזוג דוחף קומיטים ל-GitHub. הוא לעולם אינו נכנס למחסנית הביטול של Control Center ואינו ניתן לביטול מכאן.
 :::
 
-After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/) for what else listens.
+אחרי המיזוג נורה אירוע תחום `PrMerged`; אנליטיקה והתראות צורכים אותו. ראו [אירועי תחום](/he-IL/מדריך-למשתמש/עזר/אירועי-תחום/) כדי לגלות מי עוד מאזין.
 
-## Reviewing with AI
+## סקירה עם AI
 
-Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+Control Center יכול להציב פייפליין סוקרים על בקשת משיכה פתוחה, אבל רק כשאתם מבקשים: לתבנית `pr_review` יש טריגר ידני ותו לא.
 
-1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
-2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
+1. פתחו את תפריט הפעולות הנוספות בשורת הפעולות של **סקירה כללית** ובחרו ב**שאל את ה־AI**. Control Center מתחיל את ההרצה ופותח את לשונית **סקירת PR**, כדי שתוכלו לצפות במומחים בעבודה.
+2. סוכני סקירה רושמים את ממצאיהם כצמתי סקירה במרחב של בקשת המשיכה; שלב אחרון מאחד אותם לדוח אחד.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/).
+הפייפליין במכוון אינו מפרסם ל-GitHub — הוא מסתיים אחרי האיחוד. הפרסום הוא שלב נפרד שאתם עושים בעצמכם, עם כפתור **פרסם ב־GitHub** בלשונית **סקירת PR**. ראו [שימוש בסקירה מבוססת AI](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירת-ai/).
 
-## Recap
+## סיכום
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
+פתחתם בקשת משיכה בסביבת העבודה, קראתם את ה-diff עם הדגשת תחביר, השארתם הערה מוטבעת, שלחתם הכרעה ומיזגתם — בלי לצאת מהאפליקציה.
 
-**Next:** [Build your first pipeline](/he-IL/מדריך-למשתמש/מדריכים/הפייפליין-הראשון/) to automate multi-step workflows.
+**הבא:** [בנו את הפייפליין הראשון](/he-IL/מדריך-למשתמש/מדריכים/הפייפליין-הראשון/) כדי להפוך תהליכים רב־שלביים לאוטומטיים.

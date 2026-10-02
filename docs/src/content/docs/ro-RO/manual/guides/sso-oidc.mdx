@@ -1,95 +1,105 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Conectează un provider OpenID Connect
+description: Leagă orice emitent OIDC — Pocket ID, Keycloak, Auth0, Zitadel — de autentificarea în Control Center.
 slug: ro-RO/manual/ghiduri-practice/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Folosește acest ghid când furnizorul tău de identitate vorbește **OpenID
+Connect**, nu SAML. Orice emitent certificat OIDC funcționează — Pocket ID,
+Keycloak, Auth0, Zitadel, Google Workspace și altele asemenea urmează
+aceiași pași; diferă doar locul în care furnizorul tău afișează valorile.
 
-## Prerequisites
+## Cerințe preliminare
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- un furnizor OIDC la care poți crea un client — notează **client id**-ul
+  și **URL issuer** (baza sub care se află documentul
+  `.well-known/openid-configuration`), plus **client secret**-ul când
+  clientul este de tip confidențial (clienții publici PKCE nu au niciunul),
+- un server Control Center pe care îl administrezi (**proprietarul
+  serverului**).
 
-## Steps
+## Pași
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Deschide **Setări → Server → Autentificare unică** și comută pe
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Completează **URL issuer**, **Client ID** și **Client secret
+   (opțional)** atunci când furnizorul a emis unul. Control Center
+   descoperă endpoint-urile din documentul de discovery standard al
+   emitentului — nicio configurare per furnizor.
+3. La furnizor, înregistrează redirectul
+   `https://<your-server>/oidc/callback` pe acel client.
+4. Dacă grupurile tale se află sub altă revendicare decât `groups`, setează
+   numele din **Claim grupuri**; mapează grupurile la roluri dacă vrei
+   (SSO nu poate acorda niciodată rolul de proprietar).
+5. Alege politica de apartenență (adăugare automată în fiecare spațiu de
+   lucru sau invitare obligatorie per spațiu de lucru), activează
+   **Folosește OpenID Connect pentru autentificare** și apasă **Salvează
+   conexiunea**.
+6. Apasă **Testează conexiunea** — serverul preia documentul de discovery
+   al emitentului și îi confirmă endpoint-urile, așa că un toast verde
+   înseamnă că totul, mai puțin ciclul dus-întors din browser,
+   funcționează. Ca să verifici și înregistrarea clientului, folosește
+   [verificatorul de mai jos](#verifică-ți-configurația-din-această-pagină).
+7. Fă o autentificare: ecranul de conectare web afișează **Autentifică-te
+   cu OpenID Connect** sau deschide direct `https://<your-server>/oidc/login`.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Revendicările (email, nume, grupuri) sunt citite de serverul tău de la
+endpoint-ul de token al emitentului prin TLS — browserul nu le furnizează
+niciodată, așa că nu este implicată nicio verificare locală a semnăturii
+JWT. Clientului trebuie să i se permită să ceară scopul
+`openid profile email`, exact ceea ce cere Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Deoarece acel canal TLS este singurul lucru care autentifică revendicările,
+URL-ul issuer trebuie să fie **https** — un emitent în text simplu i-ar
+permite oricărui atacator de pe traseu să falsifice identități în masă.
+`http` este acceptat doar pentru emitenți pe loopback (`localhost`,
+`127.0.0.1`, `::1`), pentru dezvoltare locală.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Client public sau client confidențial?]
+Forma implicită — și recomandată — este un **client public** care folosește
+fluxul de cod de autorizare cu **PKCE** (RFC 7636): verificatorul de cod de
+unică folosință pe care îl deține serverul înlocuiește secretul, iar
+schimbul de tokenuri este legat de cererea de autorizare care l-a pornit.
+Nu există niciun secret care să se scurgă, iar un cod de autorizare furat
+este inutil fără verificator. Unii furnizori numesc acest tip de client
+„SPA” sau „native” atunci când îl creezi.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Dacă furnizorul tău a emis în schimb un client **confidențial**, fie
+marchează clientul ca public la furnizor (PKCE rămâne activat în ambele
+cazuri), fie lipește client secret-ul în câmpul **Client secret
+(opțional)** al conexiunii. Secretul este stocat în fișierul de secrete
+0600 al serverului (niciodată în baza de date), trimis la endpoint-ul de
+token ca `client_secret_post` și nu este returnat niciodată prin RPC;
+lăsarea câmpului gol la salvare păstrează secretul stocat. Când o
+autentificare eșuează la schimbul de tokenuri, jurnalul serverului
+numește eroarea proprie a furnizorului (`invalid_client` înseamnă aproape
+întotdeauna că secretul lipsește sau este greșit).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ro-RO/manual/ghiduri-practice/sso-scim).
+:::note[Accesibilitate]
+Autentificarea în sine este mediată de browser: emitentul doar
+redirecționează browserul utilizatorului înapoi la `/oidc/callback`, iar
+serverul tău face un apel HTTPS de ieșire către endpoint-ul de token — nu
+este nevoie de nicio conexiune de intrare de la emitent, așa că un server
+aflat în spatele NAT funcționează atâta timp cât browserele utilizatorilor
+îl pot atinge (LAN, VPN, Tailscale sau un tunel). **Provisionarea SCIM
+este excepția**: IdP-ul apelează direct serverul tău, ceea ce necesită un
+tunel sau un URL public — vezi [Provisionă utilizatori cu
+SCIM](/ro-RO/manual/ghiduri-practice/sso-scim).
 :::
 
-## Check your configuration from this page
+## Verifică-ți configurația din această pagină
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Verificatorul de mai jos rulează în browserul tău. Preia direct documentul
+de discovery al emitentului tău, așa că acest site nu îl vede niciodată, și
+aplică regulile serverului: un emitent https care corespunde documentului,
+endpoint-uri pe propria origine a emitentului, PKCE S256 și metoda de
+autentificare la token de care are nevoie tipul clientului tău. Cu un
+client ID și o adresă de server, poate deschide o autentificare de test
+care arată dacă clientul și URI-ul lui de redirect sunt înregistrate. Nu
+cere niciodată client secret-ul.
 
 <SsoCheck kind="oidc" />

@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: Événements de domaine
+description: Catalogue complet des 53 événements de domaine, de leurs charges utiles et des abonnés côté serveur qui les consomment.
 slug: fr-FR/manuel/reference/evenements-de-domaine
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## Bus d’événements
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+Le `DomainEventBus` est un bus de publication/abonnement en diffusion, interne au processus. Les éditeurs appellent `publish(event)` ; les abonnés consomment un flux typé `on<T>()`. Chaque événement implémente `DomainEvent` et porte un `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**Le bus s’exécute à l’intérieur de `cc_server`.** Chaque éditeur et chaque abonné actif y résident. Aucun client ne voit ce bus — le serveur réémet un sous-ensemble sélectionné sous forme de trames JSON-RPC `notifications/*`, filtrées par abonné selon l’appartenance à l’espace de travail.
 
-| Measure                                                     | Count                                       |
-| ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| Mesure                                                      | Nombre                                      |
+| ----------------------------------------------------------- | ------------------------------------------- |
+| Classes d’événements concrètes                              | 53                                          |
+| Fichiers sources (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)       |
+| Classes de base abstraites jamais publiées directement      | 1 (`TaskLifecycleEvent`, une hiérarchie scellée) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Chaque événement du catalogue ci-dessous vit dans ce seul répertoire ; aucun événement de domaine n’est déclaré ailleurs.
 
-## Workspace, agent and repo events
+## Événements d’espace de travail, d’agent et de dépôt
 
-| Event               | Payload                                                | Fired when                                              |
+| Événement           | Charge utile                                           | Déclenché quand                                         |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | L’espace de travail est créé                            |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Un agent termine une exécution (succès ou échec)        |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Un dépôt est enregistré ; déclenche l’indexation du code en arrière-plan |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Un skill est installé ou mis à jour, avec son verdict d’analyse de chaîne d’approvisionnement |
 
-## PR and review events
+## Événements de PR et de revue
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+Le premier bloc est le cycle de vie propre de la PR. Le second est la **veille des PR rédigées** : des signaux concernant une PR que *vous* avez ouverte, chacun portant `forUserId` afin que la boucle d’interrogation les achemine vers la personne concernée plutôt que de les diffuser à tout le monde.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| Événement                  | Charge utile                                                             | Déclenché quand                                                                                                                     |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Un agent ouvre une PR                                                                                                               |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR fusionnée/fermée/ouverte/rouverte/approuvée                                                                                      |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | La PR est fusionnée — un signal étroit limité à la fusion, conservé pour l’analytique et les notifications                          |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub demande une revue de la part de l’utilisateur du serveur (interrogation des notifications, `review_requested`)               |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | L’utilisateur du serveur est mentionné sur une PR (interrogation des notifications, `mention`)                                      |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | Une PR suivie de l’extérieur (hors agent) a été fusionnée, détectée par l’interrogation des notifications GitHub ; correspond à la catégorie de notification `prMerged` |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | PR hors agent trouvée par interrogation — réservée aux pipelines (alimente `external_pr_welcome`), ne lève aucune notification      |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | Le SHA de tête de la PR a changé — l’auteur a poussé                                                    |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | Une revue IA terminée ne décrit plus la PR qu’elle a examinée. Ne se déclenche que si une revue existe pour le commit remplacé, ce qui en fait un signal plutôt qu’une alerte à chaque push |
 
-### The authored-PR watch
+### La veille des PR rédigées
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+Les six portent `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` et un `forUserId` facultatif.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| Événement                 | Charge utile supplémentaire                                                         | Déclenché quand                                                              |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | Une PR que vous avez rédigée est devenue fusionnable, ou a cessé de l’être    |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | Un relecteur a approuvé, demandé des modifications, ou une approbation a été rejetée |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | La CI est passée au rouge, ou s’est rétablie                                  |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Quelqu’un vous a mentionné dans un commentaire de PR ou de revue        |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Quelqu’un a répondu dans un fil de revue auquel vous participez               |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Quelqu’un a résolu un fil de revue auquel vous participez                     |
 
-## Messaging events
+## Événements de messagerie
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| Événement                  | Charge utile                                                                                                                | Déclenché quand                                                                                                                                                                             |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | Un nouveau message arrive                                                                                                                                                  |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | L’espace est créé                                                                                                                                                                           |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | L’espace est supprimé                                                                                                                                                                       |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | L’espace de travail associé entre en provisionnement, atteint une étape (clonage d’un dépôt, extraction d’une PR, configuration d’un agent) ou bascule à prêt/échec — la passerelle de chat le relate sur sa carte de tâche |
 
-## Ticketing events
+## Événements de billetterie
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| Événement              | Charge utile                                                                                                                 | Déclenché quand                          |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Le ticket est créé                       |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigné à un principal ou à une équipe |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | Le travail se termine (terminal)         |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | L’agent échoue (terminal)                |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | Le ticket est annulé (terminal)          |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Tout changement de statut                |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Le ticket est réassigné                  |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Le titre, la description ou la priorité changent |
 
-## Task lifecycle events
+## Événements de cycle de vie des tâches
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+Le flux unifié du cycle de vie des tâches — une exécution d’agent lancée, identifiée par l’id de son journal d’exécution. Chaque événement porte `taskId`, un `seq` monotone propre à la tâche, `workspaceId?`, `agentId?` et une `phase` ; les lignes ci-dessous ne listent que les champs supplémentaires.
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| Événement                   | Charge utile                  | Déclenché quand                                                                                  |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | Tâche remise à un backend pour exécution                                                         |
+| `TaskRunning`               | —                             | La tâche a commencé à produire de la sortie                                                      |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Tâche parquée — une autre tâche détient le verrou de chemin sur disque dont elle a besoin         |
+| `TaskProgress`              | `note?`                       | Point de contrôle de progression en cours d’exécution                                            |
+| `TaskMessage`               | `messageType`, `content`      | Message diffusé en flux (text/thinking/tool_use/tool_result/error) ; rapporté sous la phase `progress` |
+| `TaskCompleted`             | `summary?`                    | La tâche s’est terminée avec succès                                                              |
+| `TaskFailed`                | `errorMessage`                | La tâche s’est terminée par une erreur                                                           |
+| `TaskCancelled`             | —                             | Tâche annulée avant son achèvement                                                               |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+L’énumération `TaskPhase` possède aussi un membre `queued`, mais rien ne publie d’événement pour celui-ci — il n’existe pas de classe `TaskQueued`. La première trame observable d’une tâche est `TaskDispatched`.
 
-## Pipeline events
+## Événements de pipeline
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| Événement              | Charge utile                                   | Déclenché quand                                                             |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | L’exécution se termine                                                      |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Exécution annulée (par l’utilisateur ou le système) — un arrêt délibéré, pas une erreur |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | L’exécution échoue                                           |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+Seules les transitions terminales sont publiées. Il n’existe ni `PipelineRunStarted` ni événement par étape : la progression d’une étape parvient aux clients par les lignes de l’exécution elle-même et par le flux de cycle de vie des tâches de l’agent qu’elle a lancé, et non par le bus.
 
-## Observability events
+## Événements d’observabilité
 
-| Event                    | Payload                                                                                                  | Fired when                |
+| Événement                | Charge utile                                                                                              | Déclenché quand           |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Entrée de piste d’audit créée |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Les dépenses dépassent le seuil |
 
-## Identity and membership events
+## Événements d’identité et d’appartenance
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| Événement                    | Charge utile                    | Déclenché quand                                                                                           |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | Un utilisateur rejoint un espace de travail (utilisation d’une invitation ou ajout par un administrateur) |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | Un membre est retiré — les sessions actives de cet utilisateur limitées à l’espace de travail doivent revérifier l’accès immédiatement |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | Le rôle d’un membre change                                                                                |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+L’appartenance constitue toute la surface d’identité sur le bus. La création d’utilisateurs et la révocation d’appareils ont lieu, mais elles ne sont pas publiées comme événements de domaine — la révocation est appliquée directement sur les sessions actives plutôt que routée par le bus.
 
-## Calendar and meeting events
+## Événements de calendrier et de réunion
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| Événement                 | Charge utile                                                                           | Déclenché quand                                                                                             |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | Le jeton de rafraîchissement OAuth d’un compte connecté est définitivement invalide (publié une fois par épisode de déconnexion) |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | Un événement de calendrier commence dans la fenêtre d’avance configurée                                     |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | Un enregistrement de réunion se termine et déclenche le pipeline intégré `meeting_summary`                   |
 
-## Rig events
+## Événements de rig
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| Événement           | Charge utile                                  | Déclenché quand                                                                                                                  |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | Un rig a disparu, avec sa raison de fermeture ; les consommateurs n’agissent que sur `backendFailure` — toute autre raison est demandée ou accompagnée d’un `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | Un humain a pris le contrôle exclusif d’un rig ou l’a rendu (`controller` vaut null à la restitution — l’événement n’enregistre pas qui a rendu la main) |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | Le système a récupéré une machine : inactivité, TTL ou éviction sous pression mémoire (rapportée comme `idleTimeout`), avec l’agent aux commandes |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+L’**ouverture** d’un rig n’est pas un événement. Le démarrage s’achève et la ligne du rig bascule à prêt ; rien n’est publié, il n’y a donc pas de `RigOpened` auquel s’abonner.
 
-## Subdomains with no events at all
+## Sous-domaines sans aucun événement
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+Plusieurs sous-systèmes qui semblent pilotés par événements vus de l’extérieur ne le sont pas. Ils sont listés ici parce que leur absence est une décision de conception qu’il vaut la peine de connaître avant de chercher un point d’accroche :
 
-| Subdomain           | How state moves instead                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| Sous-domaine                        | Comment l’état progresse à la place                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Mémoire                             | `record_memory_fact` et ses semblables écrivent et renvoient ; le rappel lit. Rien ne publie sur un fait ou un conflit |
+| Orchestration                       | La proposition, son approbation et l’exécution de pipeline générée sont des lignes et des appels RPC    |
+| Documents de plan                   | `submit_plan` écrit une révision ; l’approbation matérialise une orchestration. Ni l’un ni l’autre n’est annoncé |
+| Artefacts                           | `publish_artifact` / `revise_artifact` écrivent des révisions directement                               |
+| Approbations                        | L’escalade est gérée à l’intérieur du service de flux de travail des approbations                       |
+| Synchronisation des tickets         | Le coordinateur de fournisseurs s’abonne aux événements de tickets ci-dessus ; les webhooks entrants sont appliqués directement |
+| Rafraîchissement du calendrier      | Une synchronisation insère ou met à jour des événements et le client relit ; il n’existe aucune diffusion de rafraîchissement |
+| Fusions d’arbres de travail         | Consignées dans `worktree_merge_log` et lues depuis là                                                  |
 
-## Subscribers
+## Abonnés
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+Chaque abonné ci-dessous est construit à l’intérieur de `runCcServer` (ou d’un service qu’il construit). Il n’existe aucun abonné côté client.
 
-| Subscriber                          | Events it consumes                                                                                   |
+| Abonné                              | Événements qu’il consomme                                                                            |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| Amorçage de la suite d’évaluation de démarrage (en ligne) | `WorkspaceCreated`                                                                |
+| Provisionnement de l’espace de chat (en ligne) | `SpaceCreated`                                                                            |
+| `PipelineTriggerDispatcher`         | Chaque `DomainEvent` ; chaque déclencheur activé filtre sur son propre type                          |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (uniquement les exécutions `meeting_summary`) |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injecte un avis en langage clair dans la voie de pilotage de l’agent aux commandes |
+| `StaleReviewWatcher`                | `PrHeadChanged` — publie `ReviewBecameStale` uniquement lorsqu’une revue terminée existe pour le commit remplacé |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted` — réponses sortantes de conversation de PR                                       |
+| `NotificationFeedRecorder`          | Les vingt et un événements de classe notification ci-dessous                                         |
+| `RemoteEventForwarder`              | Ces vingt et un, plus `TicketReassigned` et chaque `TaskLifecycleEvent`. Les trois événements d’appartenance ne font qu’invalider son cache d’appartenance par espace de travail ; ils ne sont pas transmis sous forme de trames |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — abandonne les abonnements d’espace de travail rattachés à cet utilisateur ; la socket reste ouverte |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned` est un signal d’audit et de notification, ainsi qu’un déclencheur de pipeline. L’assignation à un agent enregistre la propriété et ne démarre aucune exécution — il n’existe aucun répartiteur de tickets. L’assignation à une équipe (`assignedTeamId` défini) fait exception : `TeamRoutingService` lance le chef d’équipe.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler` est déclaré mais jamais construit dans le code de production, il ne s’abonne donc à rien aujourd’hui. Le `NotificationEventMapper` côté client n’est construit que dans son propre test — c’est le vestige du chemin interne au processus d’avant la séparation client/serveur. Les notifications éphémères en direct proviennent des trames ci-dessous.
 
-## Notification mapping
+## Mappage des notifications
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+Côté serveur, `NotificationFeedRecorder` et `RemoteEventForwarder` transforment ces événements en trames `notifications/*` (`notification_wire.dart`). Côté client, `RpcNotificationMapper` → `mapNotificationFrame` transforme une trame en `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+Il existe exactement **seize** catégories de notification. Plusieurs événements correspondent à plus d’une méthode de trame, car la trame porte la transition (échec ou rétablissement) tandis que la catégorie porte la question (« que fait la CI ? »).
 
-| Category               | Source event              | Wire method                                                            |
+| Catégorie              | Événement source          | Méthode de trame                                                       |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,14 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+La trame de prise de contrôle d’un rig n’est pas renvoyée à celui qui a pris le volant, une restitution n’est pas filtrée (l’événement n’enregistre pas qui a rendu la main), et seule une fermeture `backendFailure` produit une trame `rig_closed` — les autres raisons sont soit demandées, soit déjà couvertes par la trame de récupération.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+Les cinq catégories de PR rédigées portent `forUserId`, si bien qu’elles atteignent l’auteur plutôt que tout le monde dans l’espace de travail.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder` transmet en outre `TicketReassigned` sous la forme `notifications/ticket_reassigned` et chaque `TaskLifecycleEvent` sous la forme `notifications/task_<phase>`. Ni l’un ni l’autre ne correspond à une catégorie de notification — ils pilotent l’interface en direct, et non le centre de notifications. Les événements d’appartenance ne sont pas transmis sous forme de trames : ils invalident le cache du redirecteur, et les hôtes de session abandonnent les abonnements d’espace de travail du membre retiré.
 
-## See also
+## Voir aussi
 
-- [Domain events](/fr-FR/manuel/concepts/evenements-de-domaine/)
-- [Pipeline triggers](/fr-FR/manuel/guides/declencheurs-de-pipeline/)
+- [Événements de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/)
+- [Déclencheurs de pipeline](/fr-FR/manuel/guides/declencheurs-de-pipeline/)
 - [Notifications](/fr-FR/manuel/guides/notifications/)

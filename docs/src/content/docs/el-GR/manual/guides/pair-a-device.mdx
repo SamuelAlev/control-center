@@ -1,96 +1,107 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Σύζευξη συσκευής
+description: Συζεύξτε το τηλέφωνό σας (ή ένα δεύτερο πρόγραμμα περιήγησης ή υπολογιστή) με τον διακομιστή Control Center, ώστε να παρακολουθείτε τον στόλο από απόσταση.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) for how the link
-works and its security model.
+Αυτός ο οδηγός δείχνει πώς να συζεύξετε ένα τηλέφωνο με το Control Center, ώστε
+να διαβάζετε μηνύματα και εισιτήρια και να απαντάτε από οπουδήποτε. Η ίδια ροή
+συζεύγνυει και ένα δεύτερο πρόγραμμα περιήγησης ή εφαρμογή υπολογιστή. Δείτε
+[Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) για το πώς λειτουργεί ο σύνδεσμος
+και το μοντέλο ασφάλειάς του.
 
-## Prerequisites
+## Προαπαιτούμενα
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Ένας πελάτης υπολογιστή ή web συνδεδεμένος με τον διακομιστή σας και ένας χώρος εργασίας έτοιμος. Οι λειτουργίες σύζευξης απαιτούν πλήρη πελάτη, οπότε ένα συζευγμένο τηλέφωνο δεν μπορεί ποτέ να συζεύξει — ή να ανακαλέσει — άλλη συσκευή.
+- Ο διακομιστής προσβάσιμος από τη συσκευή που συζεύγετε. Στο ίδιο δίκτυο λειτουργεί χωρίς άλλο· από πιο μακριά, τη διακίνηση αναλαμβάνει ο διαμεσολαβητής αναμετάδοσης. Αν το πλαίσιο απαντά **Μη προσβάσιμο** αντί για κωδικό QR ή διαπιστευτήρια, δημοσιεύστε πρώτα μια διαδρομή — τη συμμετοχή στη σήραγγα στις **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση** (**Κοινή χρήση αυτού του διακομιστή**), ή το `--public-url` του διακομιστή (δείτε [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)).
+- Για τηλέφωνο: τίποτα να εγκαταστήσετε. Ο κωδικός QR ανοίγει την εφαρμογή web **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) εξ ορισμού).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Αυτοφιλοξενία.** Το Remote και ο διαμεσολαβητής αναμετάδοσης είναι ανοιχτού
+κώδικα σε αυτό το αποθετήριο: η εφαρμογή τηλεφώνου (`apps/cc_remote`, μια PWA web
+σε Flutter που μπορείτε να την αναπτύξετε στο Cloudflare Pages μέσω του
+`wrangler.jsonc` της, στην εικόνα nginx `docker/cc_remote` ή σε οποιονδήποτε
+στατικό κεντρικό υπολογιστή με HTTPS — τα service workers και το IndexedDB
+ενεργοποιούνται μόνο σε ασφαλές πλαίσιο) και ο αναμεταδότης
+(`apps/cc_signaling_server`, ένα μοναδικό δυαδικό Dart χωρίς κατάσταση που δεν
+κρατά δεδομένα εφαρμογής και δεν βλέπει ποτέ το μυστικό σύζευξης — προωθεί μόνο
+πλαίσια σφραγισμένα από άκρο σε άκρο). Δείτε τα README τους για τα βήματα
+δημιουργίας και εκτέλεσης.
 
-## Step 1: Open the pairing panel
+## Βήμα 1: Ανοίξτε το πλαίσιο σύζευξης
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Ανοίξτε **Ρυθμίσεις → Εσείς → Οι συσκευές σας**. Η ενότητα **Οι συσκευές σας**
+παραθέτει τους πελάτες που είναι συζευγμένοι με τον λογαριασμό σας σε αυτόν τον
+διακομιστή. (Ο κάτοχος του διακομιστή βλέπει κάθε συσκευή του διακομιστή· όλοι οι
+υπόλοιποι βλέπουν μόνο τις δικές τους.)
 
-## Step 2: Pair a new client
+## Βήμα 2: Συζεύξτε έναν νέο πελάτη
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Κάντε κλικ στο **Σύζευξη νέου πελάτη** στην κεφαλίδα της σελίδας, δώστε του μια
+ετικέτα (π.χ. «Το τηλέφωνό μου»), επιλέξτε τον τύπο — **Πρόγραμμα περιήγησης**,
+**Εφαρμογή υπολογιστή** ή **Τηλέφωνο** — και κάντε κλικ στο **Σύζευξη**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Για **τηλέφωνο**, εμφανίζεται ένας κωδικός QR. Σαρώστε τον με την κάμερα του τηλεφώνου ή αντιγράψτε τον σύνδεσμο και ανοίξτε τον σε οποιοδήποτε πρόγραμμα περιήγησης. Κατευθύνει την εφαρμογή Remote στον διακομιστή σας και μεταφέρει το διαπιστευτήριο.
+- Για **πρόγραμμα περιήγησης** ή **υπολογιστή**, αντιγράψτε τον σύνδεσμο που εμφανίζεται (ή το αναγνωριστικό συσκευής και το κλειδί σύζευξης) στον νέο πελάτη. Ο σύνδεσμος με ένα κλικ προσφέρεται μόνο όταν συζεύγετε από τον πελάτη web, αφού ένα δυαδικό υπολογιστή δεν έχει προέλευση web για να τον δημιουργήσει.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Ο κωδικός QR του τηλεφώνου και ο σύνδεσμος που εκτυπώνει το
+`cc_server pair --client-url` στο CLI είναι **διαφορετικά ωφέλιμα φορτία και δεν
+είναι εναλλάξιμα**: ο σύνδεσμος του CLI συμπληρώνει τη φόρμα σύνδεσης του πελάτη
+web, ενώ αυτός ο κωδικός QR μεταφέρει το πλήρες περιγραφικό στοιχείο σύνδεσης του
+διακομιστή και το αποτύπωμα ταυτότητάς του για την PWA Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Στην πλευρά του τηλεφώνου, το άνοιγμα ενός συνδέσμου σύζευξης δεν συζεύγνυει
+σιωπηλά. Το Remote εμφανίζει το δηλωμένο όνομα του διακομιστή και σας ζητά να
+επιβεβαιώσετε προτού αποθηκεύσει οτιδήποτε, ώστε ένας πλαστός σύνδεσμος να μην
+μπορεί να οδηγήσει κρυφά την εφαρμογή στον διακομιστή κάποιου άλλου.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Ένας σαρωμένος κωδικός QR παρέχει πρόσβαση αμέσως]
+Δεν υπάρχει βήμα εκκρεμότητας και μετέπειτα έγκρισης: μια συσκευή που εκδόθηκε
+είναι ενεργή από τη στιγμή της δημιουργίας της και η πύλη σύνδεσης ελέγχει μόνο
+ότι το διαπιστευτήριο είναι ενεργό και δεν έχει λήξει. Αντιμετωπίστε τον κωδικό
+QR και το κλειδί σύζευξης σαν κωδικό πρόσβασης και ανακαλέστε ό,τι δεν σκοπεύατε
+να παραχωρήσετε.
 :::
 
-## Manage paired devices
+## Διαχείριση συζευγμένων συσκευών
 
-From **Settings → You → Your devices** you can:
+Από τις **Ρυθμίσεις → Εσείς → Οι συσκευές σας** μπορείτε να:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Μετονομήσετε** μια συσκευή
+- **Ανακαλέσετε** μια συσκευή που δεν εμπιστεύεστε πια. Η ανάκληση καταστρέφει το διαπιστευτήριό της και ρίχνει τη ζωντανή συνεδρία της μέσα σε δευτερόλεπτα, οπότε αποτυγχάνει κλειστά στην επανασύνδεση
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Η ανάκληση είναι η σωστή κίνηση για ένα τηλέφωνο που χάθηκε ή αντικαταστάθηκε.
+Είναι άμεση και μη αναστρέψιμη από την πλευρά της συσκευής.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Τα διαπιστευτήρια που εκδίδονται από αυτό το πλαίσιο έχουν χρονικό περιορισμό:
+λήγουν 30 ημέρες μετά την έκδοσή τους και η πύλη σύνδεσης τα απορρίπτει κλειστά
+μετά από αυτό. Ένα διαπιστευτήριο που εκδόθηκε με `cc_server pair` στη γραμμή
+εντολών **δεν έχει καμία λήξη** — ανακαλέστε το χειροκίνητα όταν αποσυρθεί το
+μηχάνημα για το οποίο προοριζόταν.
 
-## Switch workspaces from the phone
+## Εναλλαγή χώρων εργασίας από το τηλέφωνο
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Ένα συζευγμένο τηλέφωνο μπορεί να εναλλάσσει χώρους εργασίας ανεξάρτητα από τον
+υπολογιστή. Το τηλέφωνο στέλνει τον χώρο εργασίας με κάθε κλήση και ο διακομιστής
+ελέγχει τη συμμετοχή και τον ρόλο σας σε αυτόν τον χώρο εργασίας σε κάθε μία —
+έτσι το τηλέφωνο φτάνει μόνο σε χώρους εργασίας των οποίων είστε μέλος και η
+εναλλαγή εκεί δεν αλλάζει ποτέ αυτό που εμφανίζει ο υπολογιστής.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Μια συνεδρία τηλεφώνου περιορίζεται επιπλέον σε μια μικρή λίστα επιτρεπόμενων
+εργαλείων με έμφαση στην ανάγνωση: μπορεί να παραθέτει και να διαβάζει εισιτήρια,
+πράκτορες, χώρους, μηνύματα και άρθρα ροής και μπορεί να ενημερώνει ή να αναθέτει
+ένα εισιτήριο, να στέλνει μήνυμα σε έναν χώρο και να σημειώνει ένα άρθρο ως
+αναγνωσμένο ή αποθηκευμένο. Ό,τι βρίσκεται έξω από αυτό το σύνολο απορρίπτεται
+προτού φτάσει στον αποστολέα του διακομιστή.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): make the server reachable in the first place
-- [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/): point a full client at it
-- [Use spaces](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/): what you'll mostly do from the phone
-- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/): triage from the road
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): κάντε τον διακομιστή προσβάσιμο εξαρχής
+- [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/): στρέψτε έναν πλήρη πελάτη σε αυτόν
+- [Χρήση χώρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χώροι/): τι θα κάνετε κυρίως από το τηλέφωνο
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/): ταξινόμηση εν κινήσει
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/)

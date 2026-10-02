@@ -1,95 +1,96 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Je Slack-account koppelen
+description: Bewijs dat een Slack-identiteit van jou is, zodat agenten op je berichten handelen en je werk aan jou wordt toegeschreven.
 slug: nl-NL/handleiding/gidsen/chataccount-koppelen
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Deze gids laat zien hoe je je chatidentiteit aan je Control Center-gebruiker koppelt en hoe je een koppeling weer ongedaan maakt.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Elk lid doet dit één keer per chatprovider. Het staat los van het verbinden van de app: de verbinding maakt de bot bereikbaar voor de hele werkruimte, de koppeling maakt _jou_ herkenbaar daarbinnen.
 
-## Why linking is required
+## Waarom koppelen verplicht is
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+De brug weigert te handelen voor een chataccount dat hij niet aan een lid van de werkruimte kan herleiden. Dat is bewust — zonder koppeling zou elk bericht uit Slack moeten worden toegeschreven aan wie de app ook maar heeft geïnstalleerd, en zouden het auditlogboek, de snelheidslimieten per principal en de melders van tickets allemaal de verkeerde persoon noemen.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Een niet-gekoppeld lid dat de bot vermeldt, krijgt in die Slack-thread een antwoord met uitleg over hoe je koppelt. Er wordt niets gestart.
 
-## Link with a code
+## Koppelen met een code
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Ga naar **Instellingen → Werkruimte → Profiel en identiteit** en scrol naar de kaart **Gekoppelde
+   chataccounts**
+2. Klik in het Slack-blok op **Mijn Slack-account koppelen**
+3. Kopieer het commando dat het toont, bijvoorbeeld:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Stuur dat commando in Slack naar de bot — een DM is de gemakkelijkste plek
+5. De bot bevestigt met de Control Center-gebruiker waaraan je nu gekoppeld bent, en de dialoog die je open liet staan, wordt op hetzelfde moment bijgewerkt — je hoeft hem niet te sluiten en te gaan kijken
 
-The code:
+De code:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Is eenmalig en verloopt **15 minuten** nadat hij is aangemaakt
+- Wordt altijd voor _jou_ aangemaakt, nooit voor een teamgenoot
+- Vervangt elke code die je al hebt, dus als je nogmaals op de knop drukt, wordt de vorige ongeldig
+- Bestaat alleen in het geheugen, dus een herstart van de server maakt openstaande codes ongeldig — druk nogmaals op de knop
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Een code die onbekend is, verlopen is of voor een andere werkruimte is aangemaakt, faalt op dezelfde niet te onderscheiden manier: "die code is niet geldig (of is verlopen)".
 
-## Automatic linking by email
+## Automatisch koppelen via e-mail
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Als je Slack-profiel een geverifieerd e-mailadres bevat dat overeenkomt met een Control Center-gebruiker die **al lid is van deze werkruimte**, koppelt de brug je zodra je voor het eerst met de bot praat. Je hebt geen code nodig.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Beide helften doen ertoe: de e-mailmatch bewijst de identiteit, maar alleen lidmaatschap geeft toegang, dus een vreemde wiens e-mailadres toevallig op de server bestaat, koppelt aan niets. De koppelingenlijst toont hoe elke koppeling tot stand kwam ("gematcht via e-mail" of "gekoppeld met een code").
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Automatisch koppelen vereist de scope `users:read.email`. Zonder die scope geeft Slack het adres niet vrij en is koppelen via een code de enige route.
 
-## See who is linked
+## Bekijk wie er gekoppeld is
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+De koppelingenlijst valt onder werkruimtebeheer en staat dus aan de andere helft van het
+oppervlak: **Instellingen → Werkruimte → Algemeen → Chatbruggen → Gekoppelde accounts**. Hij
+somt elk gekoppeld lid van de werkruimte op, met het Slack-account waaraan het is gekoppeld
+en hoe de koppeling tot stand kwam.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Je eigen status staat op je profielpagina: de rij **Mijn Slack-account koppelen** toont
+"Gekoppeld aan _your-slack-id_" zodra je gekoppeld bent, en vraagt je te koppelen zolang dat
+niet het geval is.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+De koppelingenlijst is een live-abonnement, want de wijziging gebeurt aan de andere kant —
+jij typt de code in Slack, dus geen enkel verzoek vanuit de app kan het antwoord terugbrengen.
 
-## Unlink
+## Ontkoppelen
 
-Click **Unlink** on a row in the workspace roster.
+Klik op **Ontkoppelen** in een rij in de koppelingenlijst van de werkruimte.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Iedereen kan zichzelf ontkoppelen
+- Alleen een beheerder kan een ander lid ontkoppelen
+- Ontkoppelen trekt ook elke openstaande koppelingscode voor dat lid in
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Na het ontkoppelen kan dat Slack-account geen agenten meer aansturen tot het weer koppelt. Bestaande ruimtes, transcripten en tickets behouden hun oorspronkelijke attributie — ontkoppelen is geen intrekking van eerder werk.
 
-## Troubleshooting
+## Problemen oplossen
 
-### The bot says I am not a member of this workspace
+### De bot zegt dat ik geen lid ben van deze werkruimte
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/).
+Je Slack-account is gekoppeld aan een Control Center-gebruiker, maar die gebruiker is geen lid van deze werkruimte. Vraag een beheerder je uit te nodigen; zie [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/).
 
-### The bot says my role is read-only
+### De bot zegt dat mijn rol alleen-lezen is
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Rollen `viewer` en `guest` kunnen geen werk starten. Een beheerder moet je rol verhogen naar `member` of hoger.
 
-### The slash command is not recognized
+### Het slash-commando wordt niet herkend
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Controleer of het slash-commando in Slack bestaat en of je het commando verstuurt dat het dialoogvenster in de instellingen je toonde — een beheerder heeft het misschien hernoemd, en dan toont het dialoogvenster de huidige naam.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/)
-- [Customize the chat bot](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
-- [Chat bridge](/nl-NL/handleiding/referentie/chatbrug/)
+- [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)
+- [De chatbot aanpassen](/nl-NL/handleiding/gidsen/chatbot-aanpassen/)
+- [Chatbrug](/nl-NL/handleiding/referentie/chatbrug/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/)
-- [Multiplayer — identity, membership and presence](/nl-NL/handleiding/concepten/multiplayer/)
+- [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/)
+- [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/)

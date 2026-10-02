@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Innebygde agentverktøy
+description: Verktøyflaten den innebygde harnessen gir en agent — språkserver, strukturelt søk, feilsøker, kerneler og worker-kontroll — med hver operasjon og argumentene dens.
 slug: nb-NO/handbok/referanse/agentverktoy
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/nb-NO/handbok/referanse/mcp-verktoy/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Dette er de **serverbundne** verktøyene den innebygde agentkjøretiden registrerer direkte — språkserver, strukturelt søk, feilsøker, kerneler, spørsmål og worker-kontroll — i motsetning til [MCP-verktøyene](/nb-NO/handbok/referanse/mcp-verktoy/) den broer inn, og de generiske fil-, søke- og skallverktøyene fra harness-kjøretiden. De ligger ikke i MCP-registeret: en ekstern MCP-klient ser dem ikke, fordi hvert av dem er bundet til en levende ressurs på serversiden — en språkserverprosess, en feilsøkingsadapter, en tolk — som tilhører én kjøring.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Hvert verktøy her registreres bare når ressursen bak det er koblet opp for kjøringen — en supervisor for språkserveren eller feilsøkeren, en tree-sitter-parser, en kernelfabrikk, en spørsmålsport, en vibe-oversikt. Å oppdage en språkserver eller feilsøkingsadapter for *denne utsjekkingen* er en egen, senere sjekk (`status` / `adapters`): de verktøyene blir liggende på flaten, slik at agenten kan spørre hvorfor ingenting er brukbart, i stedet for å gjette.
 
-## Approval tiers
+## Godkjenningsnivåer
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Hvert verktøy erklærer et nivå, og nivået avgjør **hvilke flater som ser det** — ikke bare om det spør først. Planmodus og skrivebeskyttede underagenter er begrenset til `read`, så et verktøy på `write`- eller `exec`-nivå er helt fraværende fra skjemaet deres.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Nivå    | Betydning                              | Verktøy her                                        |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Ingen bivirkninger                     | `lsp`, `ast_grep`, `ask_user`, de fem `vibe_*`     |
+| `write` | Endrer filer                           | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Starter eller styrer en prosess        | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — spørringer mot språkserveren
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Registreres når kjøringen har en supervisor for språkserveren og en arbeidskatalog. Om en server faktisk kan svare, oppdages ved kallstid, som et **snitt**: en rotmarkør må finnes *og* serverbinærfila må kunne løses opp. Ett av dem alene betyr at ingen server starter — `status` sier det — i stedet for en stille gjetning.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Posisjoner adresseres med `line` pluss en `symbol`-delstreng, aldri med kolonne. En modell som blir bedt om en kolonne, gjetter, og en feil gjetning løses opp til et annet symbol på samme linje — et svar som ser riktig ut og handler om noe annet. Å utelate `symbol` på en navigasjonshandling er en feil, ikke en gjetning på første kolonne.
 
-| Action            | Arguments                        | Returns                                    |
+| Handling          | Argumenter                       | Returnerer                                 |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (eller `"*"`)             | Feil og advarsler; `"*"` kjører prosjektkontrollen i stedet |
+| `definition`      | `file`, `line`, `symbol`         | Hvor symbolet er deklarert                 |
+| `type_definition` | `file`, `line`, `symbol`         | Hvor typen er deklarert                    |
+| `implementation`  | `file`, `line`, `symbol`         | Konkrete implementasjoner                  |
+| `references`      | `file`, `line`, `symbol`         | Hver bruk, begrenset til 50                |
+| `hover`           | `file`, `line`, `symbol`         | Signatur og dokumentasjonskommentar        |
+| `symbols`         | `query` eller `file`             | Arbeidsområdesøk med `query` (begrenset til 100); dokumentsymboler med `file` (begrenset til 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Hurtigfikser serveren tilbyr               |
+| `status`          | —                                | Hvilke servere som kjører, og for hvilke røtter |
+| `reload`          | —                                | Starter serveren på nytt for denne roten   |
 
-### Diagnostics on write
+### Diagnostikk ved skriving
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Gevinsten er ikke verktøyet. `write`, `edit` og `apply_patch` er **pakket inn**: etter skrivingen synkroniseres og lagres filen gjennom språkserveren, og bare **nyinnført** diagnostikk flettes inn i verktøyresultatet. En agent får vite at den ødela bygget i det øyeblikket den ødela det, uten å måtte huske å spørre.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Diagnostikk som allerede er rapportert, undertrykkes av en journal per kjøring, nøklet på alvorlighetsgrad, kode og melding — posisjon bevisst utelatt, så en diagnostisk melding som bare har flyttet seg fire linjer ned, ikke rapporteres på nytt som ny.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — omdøping i hele prosjektet
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Et eget verktøy på `write`-nivå, av nøyaktig én grunn: nivået avgjør synlighet. Å legge omdøping inn i `lsp` ville enten gi en skrivebeskyttet utforsker evnen til å skrive om repoet, eller legge hver `hover` bak en godkjenningsforespørsel.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argument   | Betydning                                     |
+| ---------- | --------------------------------------------- |
+| `file`     | Hvor symbolet er                              |
+| `line`     | 1-indeksert linje                             |
+| `symbol`   | Delstreng som identifiserer det på den linjen |
+| `new_name` | Hva det skal hete                             |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — strukturelt søk
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Finner kode etter **form** i stedet for etter tekst. `$NAME` matcher hvilken som helst node, `$$$NAME` matcher en rekke av søsken, og `$_` er et jokertegn som ikke binder noe.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Egenskapen som gjør det til en matcher og ikke et regex med ekstra trinn: en metavariabel som gjentas i ett mønster, må fange den samme teksten.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+matcher en vakt som frigjør det den testet, og matcher **ikke** en som frigjør noe annet.
 
-| Argument      | Meaning                                                     |
+| Argument      | Betydning                                                   |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Et kodefragment med metavariabler                           |
+| `path`        | Fil eller mappe å søke i; standard er hele arbeidsområdet   |
+| `language`    | En id for en medfølgende grammatikk (`dart`, `python`, `rust`, `c`, …). Utledes når `path` peker på en fil |
+| `max_results` | Standard 50                                                 |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Mønsteret parses av samme grammatikk som filen]
+Så `dispose(x)` matcher kallet uansett hvordan det er delt opp med mellomrom, pakket inn eller kommentert — og matcher aldri de samme tegnene inne i en strengliteral eller en kommentar.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Et fragment parses i et stillas, ikke bart]
+`dispose(x)` parset på Dart sitt toppnivå er en gyldig *funksjonssignatur*. Mønsterkompilatoren prøver en stige av kontekster (setning, uttrykk, klassemedlem, deklarasjon) og bruker den første som godtar fragmentet. Et mønster som ingen kontekst godtar, rapporteres som uparsbart i stedet for å bli søkt etter og stille ikke funnet.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — strukturell omskriving, mellomlagret
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Samme matching, pluss en `rewrite`-mal med metavariablene satt inn igjen. **Ingenting skrives.** Endringen mellomlagres, og resultatet navngir en `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
-| ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| Argument   | Betydning                                            |
+| ---------- | ---------------------------------------------------- |
+| `pattern`  | Hva som skal matches                                 |
+| `rewrite`  | Hva som skal stå der i stedet, med `$NAME` byttet ut |
+| `path`     | Omfang; standard er hele arbeidsområdet              |
+| `language` | Språk-id                                             |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — send inn eller forkast en mellomlagret endring
 
-| Argument  | Meaning                          |
-| --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| Argument  | Betydning                   |
+| --------- | --------------------------- |
+| `edit_id` | Fra `(proposed)`-resultatet |
+| `action`  | `accept` eller `discard`    |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Hver fil sammenlignes med innholdet som ble fanget opp ved mellomlagringen, og **ethvert** avvik nekter hele endringen. En delvis anvendt strukturell omskriving etterlater et tre som ikke kompilerer i noen av formene.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — styr en feilsøker
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Registreres når kjøringen har en supervisor for feilsøkingsøkter, en arbeidskatalog og en samtale-id. Om en adapter faktisk kan starte, oppdages ved kallstid, etter samme snittsregel som språkserveren (rotmarkør *og* binærfil). `exec`-nivå; ikke parallelltrygt (en økt er tilstand på tvers av kall, så en `continue` som løper forbi en `stack`, ville lese en ramme som allerede har flyttet seg).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Én økt per samtale, med en hard TTL (30 minutter). En andre `launch` nektes i stedet for å stille erstatte den første.
 
-| Op            | Arguments                     | Notes                                          |
+| Operasjon     | Argumenter                    | Merknader                                      |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Hvilke adaptere som er brukbare her, og hvorfor ikke |
+| `status`      | —                             | Om en økt kjører, og hvor den stoppet          |
+| `breakpoints` | `file`, `lines[]`             | Tom `lines` tømmer filen. Kan settes **før** oppstart |
+| `launch`      | `program`, `args[]`           | Starter programmet stoppet ved bruddpunktene dine |
+| `attach`      | `port`                        | Kobler til en feilsøkt prosess som allerede kjører |
+| `continue`    | `thread_id?`                  | Kjører til neste stopp                         |
+| `pause`       | `thread_id?`                  | Stopper den der den er                         |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Flytter ett steg                    |
+| `threads`     | —                             | Tråd-id-er og navn                             |
+| `stack`       | `thread_id?`                  | Rammer, begrenset til 30                       |
+| `scopes`      | `frame_id`                    | Omfang på en ramme, hvert med en `reference`   |
+| `variables`   | `reference`                   | Barn, begrenset til 50, verdier begrenset til 400 tegn |
+| `evaluate`    | `expression`, `frame_id?`     | Evalueres i rammens eget omfang                |
+| `output`      | —                             | Den feilsøkte prosessens stdout/stderr, avgrenset |
+| `terminate`   | —                             | Avslutter økten og dreper adapteren            |
 
-### Adapters
+### Adaptere
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
+| Id        | Kommando                     | Rotmarkører                                      |
+| --------- | ---------------------------- | ------------------------------------------------ |
+| `dart`    | `dart debug_adapter`         | `pubspec.yaml`                                   |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   |
+| `delve`   | `dlv dap`                    | `go.mod`                                         |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` foretrekker en prosjektlokal `.venv/bin` eller `venv/bin` framfor `$PATH`: en python fra `$PATH` er et annet miljø, og å koble til fra det gale miljøet feiler på en måte som leses som ødelagt kode.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — vedvarende tolker
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+En Python- eller JavaScript-celle der variabler, importer og innlastet data overlever mellom kall. `exec`-nivå; ikke parallelltrygt.
 
-| Argument      | Meaning                                          |
-| ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| Argument      | Betydning                                 |
+| ------------- | ----------------------------------------- |
+| `code`        | Cellen                                    |
+| `description` | Påkrevd. 5–10 ord til transkriptetiketten |
+| `language`    | `python` (standard) eller `javascript`    |
+| `reset`       | Forkast tolken og start en ren en først   |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Det siste uttrykket ekkoes slik en notatbok gjør.
+- `display()` virker, et pandas-dataframe tegnes som en tabell, og en matplotlib-figur kommer tilbake som et **bilde transkriptet viser**.
+- IPython-idiomene folk skriver av refleks — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — skrives om til ren kode. `%pip` tømmer i tillegg `sys.modules`, så neste `import` ser det som nettopp ble installert.
 
-### Calling your own tools from inside a cell
+### Kalle dine egne verktøy fra innsiden av en celle
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Broen **går inn i harnessets verktøyregister på nytt**, så tillatelsesregler, godkjenning og hver innpakning gjelder nøyaktig som for et kall fra modellen. Den rir på kernelens eget rør i stedet for en loopback-socket: ingen port, ingen hemmelighet, ingen regel for utgående trafikk.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Cellens tidsavbrudd er et *inaktivitets*budsjett (standard 5 minutter) og **settes på pause** mens et brokall pågår, så en celle som sprer seg ut til underagenter, ikke drepes midt i utsendelsen.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Hvor kernelen kjører]
+I samtalens isolerte miljø når den har ett, ellers på vertsmaskinen. Den starter ikke et isolert miljø for å komme dit — den samme regelen som hindrer at en stasjonsfane starter av seg selv.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — still mennesket et spørsmål
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+`read`-nivå. Den **eneste** måten en kjøring spør operatøren om noe som helst. Den tegner et nummerert kort i samtalen og blokkerer til noen svarer, hopper over, eller spørsmålet får tidsavbrudd. Skriv aldri spørsmålet som en chatmelding — det avslutter turen.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argument          | Betydning                                                 |
+| ----------------- | --------------------------------------------------------- |
+| `question`        | Hva som skal spørres om                                   |
+| `context`         | Valgfritt: hvorfor du spør, og hva som avhenger av svaret |
+| `options[]`       | Valg, hvert `{label, description?}`                       |
+| `allow_free_text` | Om et skrevet svar godtas                                 |
+| `multi_select`    | Om flere valg kan velges                                  |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Et hopp over er suksess: gå videre på en uttalt antakelse og ikke spør igjen. Et tidsavbrudd er en feil med samme instruks. Tillatelsesforespørsler («kan jeg gjøre dette?») er en egen port og tegnes som det samme kortet i samtalen.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Registreres bare når både en spørsmålsport og et målområde finnes. Uten et menneske tilkoblet **feiler** kallet i stedet for å blokkere for alltid — den samme fail-closed-holdningen som en tillatelsesregel med `prompt` inntar når ingen godkjenner er tilkoblet.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — styring av bakgrunnsworkere
 
-Registered only while [vibe mode](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Registreres bare mens [vibe-modus](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/) er på. Alle fem er på `read`-nivå: porten hører hjemme på workerens verktøy, der redigeringen faktisk skjer.
 
-| Tool         | Arguments                                | Notes                                       |
-| ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| Verktøy      | Argumenter                      | Merknader                                     |
+| ------------ | ------------------------------- | --------------------------------------------- |
+| `vibe_spawn` | `brief`, `label`, `tier?`       | Returnerer umiddelbart; workeren kjører videre |
+| `vibe_send`  | `worker_id`, `message`          | Legger til i oppdragsbeskrivelsen og kjører på nytt |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?` | Blokkerer til den er ferdig                   |
+| `vibe_kill`  | `worker_id`                     | Stopper den                                   |
+| `vibe_list`  | —                               | Nivå, status, medgått tid og siste resultat   |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` er `fast` (mekanisk arbeid med en klar spesifikasjon) eller `good` (design, skjønn eller gjennomgang av utdataene til en `fast`-worker).

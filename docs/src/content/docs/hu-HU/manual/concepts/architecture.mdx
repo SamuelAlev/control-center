@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: "Architektúra"
+description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Áttekintés
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+A Control Center a funkcióközpontú Clean Architecture-t követi, portok és adapterek mintával. A kódbázis üzleti domainek (funkciók) köré szerveződik, a szigorú függőségi szabályokat pedig egy automatizált architektúrateszt kényszeríti ki.
 
-## A thin client over a headless server
+## Vékony kliens egy headless szerver fölött
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+A Control Center **vékonykliens-architektúra**. Egyetlen kliens sem nyitja meg az adatbázist — az adatok egy headless **`cc_server`** folyamat birtokában vannak (egy kis `global.db`, valamint munkaterületenként egy SQLite-fájl, amelyek lustán nyílnak meg), és WebSocket RPC-n keresztül szolgálja ki azokat. Az asztali alkalmazás, a webes build és a telefonos társalkalmazás egyaránt ezen az egyetlen RPC-kapcsolaton keresztül jelenít meg mindent.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Az asztali alkalmazás az első indításnál eldönti, hogyan éri el a szerverét: **helyi** módon (a gépen elindít egy `cc_server` folyamatot, és loopbacken keresztül beszél vele — ez az alapértelmezett) vagy **távoli** módon (egy máshol futó `cc_server`-hez csatlakozik biztonságos WebSocketen keresztül). A webes kliens mindig távoli. Az indítási feloldó (`bootstrap/server_backend.dart`) még a Riverpod létezése előtt kiválasztja az utat, majd a csatlakozott klienssel felülírja az `rpcClientProvider`-t — így minden funkció a szerveren keresztül olvas és ír, nem pedig egy helyi adatbázisból.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Maga az RPC-réteg **állapotmentes**: a munkamenet hitelesített, de nincs egy munkaterülethez kötve. Minden munkaterület-hatókörű hívás a saját `workspace_id` azonosítóját hordozza az argumentumaiban, és a diszpécser visszautasítja az ilyen hívást, ha az hiányzik. Ez teszi lehetővé, hogy egy szerveren két kliens különböző aktív munkaterületet tartson anélkül, hogy lenne egy szerveren tárolt „aktuális munkaterület”, amiben egyet kellene érteniük — és azt is jelenti, hogy az elszigetelés hívásonként érvényesül, nem kapcsolatonként.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) for the full client matrix and what runs where.
+Ez egyetlen, feloldott lockfile-lal rendelkező **Dart-munkaterület** huszonegy taggal — tizenöt csomag plusz hat alkalmazás —, amelynek gyökere az asztali és webes alkalmazás (`control_center`). A hat alkalmazás: a headless szerver bináris (`cc_server`), a headless flottavégrehajtó (`cc_worker`), a telefonos PWA (`cc_remote`), a WebSocket relay broker (`cc_signaling_server`), a Widgetbook-galéria (`cc_gallery`) és a nyilvános demóhoszt (`cc_demo_server`). A tizenöt csomag: `cc_ui` (dizájnrendszer), `cc_domain` (pure-Dart megosztott kernel: entitások, értékobjektumok, portok, események és minden funkció domainrétege), `cc_harness` (a beépített ügynökkernel: pure-Dart ügynökciklus — üzenetek, szolgáltatói port, eszközök, tömörítés, irányítás, hookok, alügynökök — `dart:io` nélkül, és semmilyen más `cc_*` függőség nélkül), `cc_harness_runtime` (a beépített harness futásidejű adaptere: VM-only streamingszolgáltatók, OAuth/PKCE hitelesítőadat-brókerelés, hitelesítőadat-tárak és az általános eszközkészlet — külső CLI telepítése nélkül futtat ügynököket), `cc_rpc` (kliensoldali transzportok), `cc_host` (szerverkernel), `cc_data` (távoli tárolók), `cc_persistence` (szerveroldali adatbázis), `cc_server_core` (alkalmazás-szerver összeállítása + identitás/jelenlét/flotta/kiértékelések futásideje), `cc_infra` (VM-only adapterek), `cc_mcp` (MCP-eszközök), `cc_mcp_client` (kliens külső MCP-szerverekhez, amelyek eszközeit a helyi regiszterbe hidalja át), `cc_markdown` (tárolón belüli markdown-motor), `cc_natives` (FFI-levélmodul) és `system_audio_capture`. A teljes kliensmátrixot és azt, hogy mi hol fut, lásd: [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/).
 
-## Dependency rule
+## Függőségi szabály
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Domainréteg**: pure Dart entitások, értékobjektumok, tárolófelületek, portok és domain-szolgáltatások. Nulla infrastruktúra-import (nincs dio, drift vagy hálózati modell).
+- **Megjelenítési réteg**: képernyők, widgetek, notifierek. Nincs közvetlen drift/DAO/adatréteg-hozzáférés; minden a Riverpod-szolgáltatókon → tárolókon keresztül megy.
+- **Infrastruktúraréteg**: a domainportok és tárolófelületek konkrét implementációi. A domaintől függ, sosem fordítva.
 
-## Feature structure
+## Funkciók felépítése
 
-The full feature shape is:
+A teljes funkciófelépítés:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Nagyon kevés funkció a `lib/features/` alatt hordozza ténylegesen mind a négyet, és a hiányok inkább tanulságosak, mint véletlenek. A megosztott kernel minden funkció `domain/` könyvtárát a `cc_domain`-be olvasztotta, a vékony kliens pedig nem tartalmaz tárolóimplementációkat, ezért a `lib/` alatti funkciók többsége csak `presentation/` és `providers/`, semmi más. Az ügyfélben megmaradó `data/` vagy `domain/` könyvtár valami valóban kliensoldalit jelez.
 
-Two named exceptions are worth knowing:
+Két nevesített kivételt érdemes ismerni:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** csak szolgáltatókból áll. A beállításai és az állapotkezelő felülete a `settings/` alatt található, maga az eszközfelület pedig egy csomag (`cc_mcp`), nem funkciómappa.
+- **`orchestration`** és **`plan_studio`** csak `presentation/` és `providers/` könyvtárat tartalmaz.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) for the model.
+A **`guardrails`** funkció a domainrétegét a `cc_domain/features/guardrails/` alá teszi a gyökér alkalmazás helyett, mert a szerver kényszeríti ki: egy szabály egy `ActionClass`-t (vagy egy shell `commandPrefix`-et) képez le egy döntésre — `allow`, `prompt` vagy `deny` — egy hatókörön belül, a szabályok munkaterületenként tárolódnak, és minden szabályozott ügynökművelet a szabályláncon keresztül oldódik fel, mielőtt lefutna. A feloldás a `space > agent > workspace > mode preset > built-in default` sorrendet járja be, és **az első egyező szabállyal rendelkező hatókör dönt**; a legszigorúbb csak egy hatókörön belül döntetlen eldöntésére szolgál, valamint az egy művelet által deklarált több hatásfajta kombinálásakor. A kezelői felület a Beállítások → Munkaterület → Ügynökjogosultságok, a `/workspaces/<id>/settings/workspace/permissions` útvonalon. A modellről lásd: [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/).
 
-## Shared kernel
+## Megosztott kernel
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+A `packages/cc_domain/lib/core/domain/` azokat az entitásokat és tárolókat tartalmazza, amelyeket 3+ funkció oszt meg. Pure Dart, nulla infrastruktúra-függőséggel, épp ez teszi lehetővé, hogy a Flutter-kliens és a Flutter nélküli szerver bináris ugyanazokat a definíciókat importálja:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Alapentitások: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Identitás és többszereplős mód: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Memóriaentitások: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Megosztott értékobjektumok: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Megosztott portok: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Domain-szolgáltatások: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + eseménytípusok (munkaterület/ügynök, PR/átnézés, üzenetküldés, jegykezelés, pipeline, orchestráció, memória, naptár/megbeszélések, identitás és tagság, megfigyelhetőség)
 
-## Identity & multiplayer
+## Identitás és többszereplős mód
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+A Control Center többfelhasználós: az emberek és az ügynökök egyenrangú szereplők, amelyeket egy `Principal` fog össze. Egy munkaterülettag egy `User`, amely egy `Workspace`-hez van kötve egy `WorkspaceRole`-lal (`owner`/`admin`/`member`/`viewer`/`guest`). **A tagság a hozzáférési határ** — nem egy párosítási kulcs —, a tárolónkénti jogosultságok pedig megakadályozzák, hogy a munkaterület-tagság a kódhoszt fölé helyezze magát. A friss szerveren létrehozott első felhasználó birtokolja a telepítést; a többiek meghívóval vagy OIDC-vel csatlakoznak. Egy munkaterület létrehozása ezt a felhasználót `owner`-ként rögzíti.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+A valós idejű együttműködés **autoritatív szerver + mezőnkénti last-writer-wins (LWW)**, nem CRDT. A jelenlét (ki van itt, hol van, kurzorok, gépelés, egy ügynök élő állapota és futási költsége) külön, **soha nem perzisztált efemer sáv**; a tartós állapot optimalista módosítás + szerveroldali rebase + LWW gerincen halad. Az emberek és az ügynökök egy közös névsoron osztoznak. Egyetlen emberi kezelő esetén a jelenléti sáv tétlen, és nem jelenik meg a névsorhoz tartozó felület — a többszereplős mód semmibe sem kerül az egyedül dolgozó felhasználónak.
 
-## Ports and adapters
+## Portok és adapterek
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+A portok absztrakt felületek a domainrétegben. Az adapterek konkrét implementációk az infrastruktúrában. Mivel a headless szerver birtokolja az adatokat, és Flutter nélkül kell buildelődnie, szinte minden adapter VM-only, és a `packages/cc_infra/lib/src/` alatt található, témák szerint szervezve:
 
-| Port                   | Adapter location                                                                                            |
+| Port                   | Az adapter helye                                                                                            |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (kliensoldali: a szervereseményeket helyben jeleníti meg)                          |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). A Jira, a ClickUp és a GitHub Issues jegyszinkronizáló adapterek a `cc_infra/lib/src/tickets/sync/` alatt; a helyi jegyek a munkaterület adatbázisában élnek, `TicketProviderPort` nélkül. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (pure-Dart domain-szolgáltatás — nincs szüksége infrastruktúrára) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Az alkalmazás összeállítási gyökere (`di/providers.dart`) a kliensoldali portokat Riverpod-szolgáltatókon keresztül köti implementációkhoz; a szerver a `cc_server_core`-ban állítja össze az adaptereit.
 
-## State management
+## Állapotkezelés
 
-**Riverpod** for all client state:
+**Riverpod** minden kliensállapothoz:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` és `AsyncNotifier<T>` a módosítható állapothoz
+- `FutureProvider<T>` aszinkron adatokhoz
+- A listák és az élő sorok RPC-előfizetéseken keresztül `AsyncValue<List<T>>` formában érkeznek — a szerver belül a Drift `.watch()` metódusát használja; egyetlen kliens sem nyitja meg a Driftet
+- Az MCP-eszközök a függőségeiket típusos konstruktorparaméterként kapják, sosem `Ref`-ként
 
-## Database
+## Adatbázis
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), két adatbázisra bontva, mindkettő a `cc_persistence`-ben:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — valóban szerver szintű táblák rövid listája: a munkaterület-nyilvántartás, a felhasználók/beállítások/párosított eszközök, az SSO-kapcsolatok, a telepítés szintű szerverbeállítások, a kezelt műveletszabályzatok (egy telepítés szintű korlát, amely csak szigoríthatja a munkaterület korlátait), a felhasználónkénti hírfolyam, a flottasor (workerek/jobok/elhelyezési napló), a hitelesítés előtti `workspace_routes` index és a telepítési metaadatok. Az indítás csak ezt a fájlt nyitja meg, így az indulási költség lapos marad, akármennyi előzményt halmoznak fel a munkaterületek. Egy tábla ide való hozzáadása elszigetelési döntés, amelyet egy racsnis teszt miatt meg kell indokolni.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — munkaterületenként egy _könyvtár_, amely egy SQLite-fájlt és minden mást tartalmaz, ami csak ahhoz a munkaterülethez tartozik, így egy beszélgetés worktree-jei és ügynökfájljai az adatbázis mellett helyezkednek el, és vele együtt törlődnek. Szinte minden itt él: ügynökök, terek, jegyek, memória, pipeline-ok, megbeszélések, a kódgráf, átnézések, repók. A fájlok az első érintéskor lustán nyílnak meg a `WorkspaceDatabaseManager.of(workspaceId)`-n keresztül, és ilyenkor saját maguk fizetik meg a `quick_check`, az FTS/trigger telepítés és a `vector_init` költségét.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Mindkét fél egy összelapított v1 bázisvonalról indult — az `onCreate` építi fel a jelenlegi sémát —, a migrációs lépések csak akkor kerülnek mögé, ha egy telepített adatbázist tovább kell vinni.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Mivel egy munkaterület egy fájl, a munkaterület exportálása egyetlen `VACUUM INTO` utasítás (`workspace.export`), nem táblánkénti dump; a `workspace.import` átvesz egy ilyen fájlt, és a beágyazott `workspace_meta` segítségével különbözteti meg a saját, újra átvett fájlját egy másik telepítésből származótól.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Mindkét adatbázis a `cc_persistence` tulajdona, és csak a `cc_server` nyitja meg; egyetlen kliens sem nyit adatbázist — minden kliens RPC-n keresztül olvas/ír. A táblák a `packages/cc_persistence/lib/database/tables/` alatt vannak definiálva, a DAO-k a `.../daos/` alatt; a domainentitások pure Dartok, különválnak a Drift táblaosztályaitól, a leképezés az adatrétegekben történik. Az FTS5 végzi a teljes szöveges keresést, a `sqlite_vector` a beágyazásokat, mindkettő csak szerveroldalon; mindkét adatbázis `PRAGMA foreign_keys=ON` beállítással fut WAL naplózási módban.
 
-## Routing
+## Útválasztás
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, egyetlen ténnyel, amely az egészet meghatározza: **minden alkalmazáson belüli cél útvonal munkaterület-előtagot kap**, `/workspaces/:workspaceId/…` formában. Az URL-ben szereplő munkaterület-azonosító az aktív munkaterület egyetlen igazságforrása — az `activeWorkspaceIdProvider` az útvonalból vezetődik le, nem fordítva —, ezért a munkaterület-hatókörű adatok beolvasásának egy előtagolt útvonalon kívül nincs honnan megkapnia az azonosítóját.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- Útvonalépítő _függvények_ a `router/routes.dart`-ban, mindegyik az első argumentumként kapja a munkaterület-azonosítót, nem sztringkonstansként
+- Négy, kontextus előtti útvonal előtag nélküli: `/splash`, `/onboarding`, `/signed-out` és `/workspaces` (a választó)
+- A `ShellRoute` az alkalmazás héját csomagolja; ez a négy felület teljes képernyőn jelenik meg azon kívül
+- Hitelesítési őr: a befejezetlen beállítás a `/onboarding`-ra megy; a befejezett beállítás, amelynek a kódhoszt-hitelesítő adata eltűnt, a `/signed-out`-ra. A „befejezett” legalább egy, a bejelentkezett felhasználóhoz csatlakoztatott kódhosztot és legalább egy létező munkaterületet jelent — nem kifejezetten a GitHubot, és a `gh` CLI nem hitelesítési mód
+- Bevezetési kapu a `features/auth/providers/`-ben
 
-## Networking (server-side)
+## Hálózat (szerveroldal)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+A teljes külső HTTP a szerverben él. A kliensek soha nem kapcsolódnak közvetlenül a GitHubhoz, a Linearhoz vagy a Google-hoz — szerveres RPC-műveleteket hívnak, és még a távoli média is a szerver `/proxy/media` végpontján keresztül érkezik, nem a felsőbb szintű eredet helyéről.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- **dio** kliensek a `packages/cc_infra/lib/src/` alatt: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` és `GoogleCalendarApiClient`
+- Hitelesítési token befecskendezése interceptorekon keresztül, beleértve egy fiókonkénti Google OAuth interceptort a `cc_server_core`-ban, amely 401 esetén megújítja a tokeneket
+- Minden hiba a `packages/cc_infra/lib/src/network/error_mapper.dart`-on keresztül képeződik le → a `cc_domain`-ben definiált típusos `AppException` leszármazottakra
 
-## Security
+## Biztonság
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+A szerver birtokolja az igazán fontos hitelesítő adatokat: az ügynökindításokhoz szükséges GitHub- és jegykezelési tokenek, az LLM-szolgáltatói kulcsok és az OAuth-tokenek mind a szerver adatkönyvtára vagy annak környezete alatt élnek. Amit a kliens kulcstárolója még őriz, az a saját eszközhitelesítő adata és egy távoli szerver párosítási kulcsa.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Titkok a `flutter_secure_storage`-ban (macOS kulcstároló, Windows hitelesítőadat-kezelő, Linux libsecret) — a kliens eszközhitelesítő adata és a távoli párosítási kulcsok, nem a szolgáltatói tokenek
+- `shared_preferences` csak nem érzékeny beállításokhoz (téma, betűtípus, elrendezés)
+- A régebbi telepítésekből visszamaradt szolgáltatói titkokat a `features/auth/providers/credential_migration.dart` egyszer átadja a szervernek, majd törli a kliens kulcstárolójából
 
-## Architecture enforcement
+## Az architektúra kikényszerítése
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Az architektúra-megkötéseket a `test/core/architecture_constraints_test.dart` ellenőrzi, amely elbukik, ha a függőségi szabályok sérülnek.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): how isolation is enforced
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): the dispatch flow
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): cross-feature communication
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/): the thin-client server model and the client matrix
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): hogyan érvényesül az elszigetelés
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): az indítási folyamat
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): funkciók közötti kommunikáció
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/): a vékonykliens-szervermodell és a kliensmátrix

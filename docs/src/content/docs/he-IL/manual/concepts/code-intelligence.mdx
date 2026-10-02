@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: אינטליגנציית קוד
+description: למה סוכן צריך את המהדר, את המתאים המבני ואת המנפה — ומה כל אחד מהם עונה שהאחרים לא יכולים.
 slug: he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center נותן לסוכן ארבע דרכים להבין קוד מעבר לקריאה שלו. הן עונות על שאלות שונות לחלוטין, והסיבה שיש ארבע ולא אחת היא שאף מנגנון בודד לא עונה על כולן.
 
-| Mechanism            | Answers                                          | Costs                                  |
+| מנגנון            | עונה על                                          | עלות                                  |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| **גרף הקוד**       | מה נמצא כאן, ומה תלוי בו              | מעבר אינדוקס; שאילתות זולות          |
+| **שרת שפה**  | האם זה באמת מתקמפל, ומהו הטיפוס הזה | תהליך שרת לכל פרויקט           |
+| **חיפוש מבני**| היכן מופיעה **הצורה** הזו                      | ניתוח לכל קובץ                       |
+| **מנפה**         | מה היה נכון ברגע הזה, במסגרת הזו       | תהליך עצור                      |
 
-## The gap the language server closes
+## הפער ששרת השפה סוגר
 
-The [code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) נבנה מ-tree-sitter: סמלים, קצוות קריאה, רדיוס השפעה. הוא מהיר, הוא זול, והוא לא יודע דבר על **טיפוסים**. הוא לא יכול לומר לך אם הקריאה שזה עתה כתבת מתקמפלת, אם השדה הזה קיים באובייקט, או אם שינוי השם שלך פספס ייצוא מחדש.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+בלי שרת שפה, הסוכן מגלה זאת בשלב הבדיקות — או שלעולם לא. הוא כותב משהו סביר, ממשיך הלאה, והכשל צף שלושה תורים אחר כך, כשהוא כבר משויך לשינוי אחר.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+אז הרווח הוא לא באמת כלי ה-`lsp`. הוא בכך ש-`write`, `edit` ו-`apply_patch` עטופים: אחרי כל כתיבה עובר הקובץ דרך שרת השפה, והודעות אבחון **שהופיעו זה עתה** מקופלות אל תוך תוצאת הכלי. הסוכן לומד שהוא שבר את הבנייה ברגע ששבר אותה, בין אם חשב לשאול ובין אם לא.
 
-### Only new diagnostics
+### רק אבחונים חדשים
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+לחזור על מה שכבר נאמר לסוכן גרוע משתיקה: זה ממלא את התוצאה ברעש שהסוכן לומד לגלול על פניו, ובתוכו הולכת לאיבוד גם השגיאה החדשה היחידה. יומן נפרד לכל ריצה עוקב אחר מה שכבר דווח, לפי חומרה, קוד והודעה — **לא** לפי מיקום, כך שאבחון שפשוט ירד ארבע שורות למטה אינו מדווח מחדש כחדש.
 
-### Lazy, and honest about being absent
+### עצלן, וישר בנוגע להיעדרותו
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+אף שרת לא עולה עם האתחול. אחד עולה בבקשה הראשונה שזקוקה לו — כמעט תמיד העריכה הראשונה בקובץ שהוא תובע — והפעלות סרק מפונות. מארח שלעולם אינו נוגע ב-Dart לעולם לא מפעיל מנתח.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+הזיהוי הוא **חיתוך**: סמן שורש חייב להתקיים ב-checkout *וגם* קובץ ההרצה חייב להיפתר. סמן לבדו אומר "הפרויקט הזה הוא Python" ושום דבר על כך שהשרת מותקן; קובץ הרצה שנפתר לבדו אומר שלמארח יש שרשרת כלים ושום דבר על ה-checkout הזה. רק שניהם יחד משמעם ששאילתה יכולה להצליח, וכלי שמוצע ותמיד נכשל גרוע מכלי שנעדר.
 
-## Why structural search, when grep exists
+## למה חיפוש מבני, כשיש grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` מתאים תווים. זה הכלי הנכון לשם והכלי הלא נכון לצורה.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+תבנית מבנית מנותחת לפי **אותו דקדוק של הקובץ**, כך ש-`dispose($X)` מוצא את הקריאה בכל ריווח, שבירה או פיצול שורות, ולעולם אינו מתאים את אותם התווים בתוך מחרוזת ליטרלית או הערה.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+התכונה שהופכת אותו ליותר מביטוי רגולרי עם כמה שלבים נוספים היא שמטא-משתנה שחוזר בתבנית אחת חייב ללכוד את אותו טקסט:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+מתאים לשומר שמשחרר את מה שבדק, ואינו מתאים לכזה שמשחרר משהו אחר. זהו סוג באג שאי אפשר לבטא טקסטואלית כלל.
 
-### It runs on the tree-sitter already linked
+### הוא רץ על ה-tree-sitter שכבר מקושר
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+אין מנוע שני. `cc_natives` כבר טוען את tree-sitter ואת הדקדוקים שלו עבור גרף הקוד, עם מטמון שאילתות מהודרות וטבלת שפות. המתאים הוא Dart טהור מעל עצים שממילא עברו ניתוח. מנוע מבני שני משמעו מנתח שני, סט דקדוקים שני שיש לבנות ולהכין בכל פלטפורמה, ושתי תשובות לשאלה "מהו ביטוי קריאה".
 
-### A fragment needs somewhere to live
+### לקטע קוד צריך להיות מקום לגור בו
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+דקדוק מגדיר רק מהו *קובץ* שלם. כשמנתחים אותו לבדו ברמה העליונה של Dart, `dispose(x)` הוא **חתימת פונקציה** תקפה לחלוטין — הכרזה בשם `dispose` שמקבלת פרמטר `x` — בלי שום שגיאה שתסגיר אותו. מתאים שנבנה על הניתוח הזה מחפש הכרזות, לא מוצא קריאות, ומדווח "אין התאמות" עבור תבנית שמעולם לא נקראה כפי שהיא נראית.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+לכן תבנית נבחנת בסולם של פיגומים — הצהרה, ביטוי, איבר מחלקה, רמה עליונה — והראשון שמקבל אותה מנצח. קטע שאף הקשר לא מקבל מדווח כלא ניתן לניתוח, במקום לחפש אותו ולא למצוא אותו בשקט.
 
-## Why a rewrite stages instead of writing
+## למה שכתוב עובר הכנה במקום להיכתב
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+שכתוב מבני הוא העריכה הרחבה ביותר שסוכן יכול לבצע: תבנית אחת, ארבעים קבצים, ואף אחד לא קורא את התוצאה שורה אחר שורה — לא המודל, ולא האדם שביקש אותה. לכתוב אותה ולדווח "סיימתי" משמעו שההסתכלות הישרה הראשונה בשינוי תהיה `git diff` בדיעבד.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+לכן `ast_edit` מדווח מה הוא *היה* עושה — המניין, הקבצים, האתרים המתאימים — והשינוי נוחת רק כש-`resolve` מחיל אותו. זה גם מה שמאפשר להציג הבדל ואת אישור/דחייה בפני אדם לפני שמשהו מגיע לדיסק.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+ההחלה היא הכול או כלום, וכל קובץ נבדק מול התוכן שנלכד בזמן ההכנה. בין ההכנה להחלה, ייתכן שהסוכן ערך אחד מהקבצים האלה ביד, שמעבר אבחון כתב אותו מחדש, או שכלי עיצוב נגע בו — החלה בכל זאת תשליך את העבודה הזו, וההבדל ייראה מכוון. כל אי-התאמה דוחה את השינוי כולו, כי שכתוב מבני שהוחל חלקית משאיר עץ שאינו מתקמפל לפי אף אחת מהצורות.
 
-## What a debugger answers that a print statement cannot
+## מה מנפה עונה שאין הצהרת הדפסה יכולה
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+לולאת הצהרות ההדפסה היא: מוסיפים הדפסה, מריצים את הכול מחדש, קוראים את הפלט, מוחקים את ההדפסה. היא עולה הרצת בדיקות מלאה לכל שאלה, והיא עונה רק על השאלה שחשבת לשאול *לפני* ההרצה.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+מסגרת עצורה עונה בבת אחת על כל שאלה על אותו רגע — כל משתנה מקומי, כל קורא, וביטוי שמחושב בתחום של המסגרת עצמה. עבור תהליך תקוע או כשל שמשחזר פעם בעשר ריצות, זה ההבדל בין אחר צהריים לדקה.
 
-### Bounded like an enclosure, and for the same reason
+### חסום כמו מתחם, ומאותה סיבה
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+מתאם ניפוי מחזיק ב**תהליך עצור** שאוחז בכל מה שהתהליך הזה אוחז — פורט, מנעול, חיבור למסד נתונים. סשן שאיש אינו מפעיל הוא דליפה שמאריכה ימים מעבר לתור שהתחיל אותה. לכן יש TTL קשוח, בדיוק סשן אחד לכל שיחה, ו-`launch` שני נדחה במקום להחליף את הראשון בשקט: סוכן שמתחיל שני בלי לסיים את הראשון כמעט בוודאות איבד את הקשר לראשון.
 
-### One transport, two protocols
+### תובלה אחת, שני פרוטוקולים
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol חולק עם Language Server Protocol את המסגור של `Content-Length` ושום דבר מעליו — מפתחות התאמה שונים, צורת כשל שונה, וסוג הודעה שלישי (אירועים) שאין לו מקבילה ב-LSP. המסגור חי במקום אחד; הפרוטוקולים יושבים עליו בנפרד.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+כתיבת המסגור פעמיים פירושה שתי תשובות לשאלות "הודעה משתרעת על שני מקטעים", "מקטע מכיל שלוש הודעות" ו"השרת כתב באנר ל-stdout לפני המסגרת הראשונה שלו", ורק אחת מהן תקבל את התיקון.
 
-## Related
+## נושאים קשורים
 
-- [Search code with the code graph](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) — the symbol and impact side
-- [Debug a failing test](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניפוי-בדיקה-שנכשלה/) — the debugger, end to end
-- [Refactor structurally](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/רפקטורינג-מבני/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — every operation and argument
+- [חיפוש קוד עם גרף הקוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיפוש-קוד/) — צד הסמלים וההשפעה
+- [ניפוי בדיקה שנכשלה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניפוי-בדיקה-שנכשלה/) — המנפה מקצה לקצה
+- [רפקטורינג מבני של קוד](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/רפקטורינג-מבני/) — `ast_grep` ו-`ast_edit`
+- [כלי סוכן מובנים](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — כל פעולה וארגומנט

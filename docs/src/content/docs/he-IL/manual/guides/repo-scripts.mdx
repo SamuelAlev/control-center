@@ -1,37 +1,38 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: סקריפטים למאגר
+description: סקריפטי הקמה וארכוב ברמת המאגר שרצים כנגד עץ העבודה של מרחב.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקריפטים-למאגר
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+סקריפטים של מאגר הם סקריפטים של מעטפת שתגדירו לכל מאגר בנפרד (הגדרות →
+מאגרים → סמל הטרמינל בשורה של המאגר) ושהשרת של Control Center מריץ כנגד **עץ
+העבודה של מרחב** של אותו מאגר — ה-checkout המבודד תחת
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` שבו הסוכנים עובדים.
 
-There are two kinds:
+יש שני סוגים:
 
-| Script | When it runs | Use it for |
+| סקריפט | מתי הוא רץ | למה הוא משמש |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **הקמה** | מיד לאחר שמוקצה עץ עבודה למרחב | התקנת תלויות, יצירת קבצים, העתקת `.env` |
+| **ארכוב** | ממש לפני שעץ עבודה נהרס או נאסף באשפה | ניקוי משאבים מחוץ לעץ העבודה (רשתות Docker, מנהרות, מצב חיצוני) |
 
-## Where scripts run
+## היכן הסקריפטים רצים
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+שני הסקריפטים רצים דרך `bash -lc` (מעטפת התחברות, כך שכלים שהותקנו עם
+Homebrew/nvm נמצאים ב-`PATH`), כש**עץ העבודה הוא תיקיית העבודה**, ועם משתני
+הסביבה האלה:
 
-| Variable | Value |
+| משתנה | ערך |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | עץ העבודה (ה-cwd של הסקריפט) |
+| `CC_ROOT_PATH` | המאגר המקורי הרשום — ה-checkout שלכם |
+| `CC_SPACE_ID` | המרחב שעץ העבודה שייך אליו |
+| `CC_SPACE_NAME` | שם התצוגה של המרחב |
+| `CC_REPO_NAME` | שם התצוגה של המאגר |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+לדוגמה, סקריפט הקמה שמתקין תלויות ומביא את ה-`.env` שנמצא ב-gitignore של
+המאגר:
 
 ```bash
 pnpm install
@@ -39,28 +40,28 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## התנהגות בעת כשל
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- **סקריפט הקמה** שיוצא עם קוד שונה מאפס (או חורג מהזמן הקצוב של 5 דקות)
+  מכשיל את ההקצאה של המרחב: המרחב מציג את מצב הכשל עם ניסיון חוזר, וזנב הפלט
+  של ההרצה נרשם. ניסיון חוזר מקצה עץ עבודה נקי ומריץ את הסקריפט שוב — כתבו
+  סקריפטי הקמה כך שהרצה חוזרת אחרי התקנה חלקית תעבוד (מנהלי חבילות כבר
+  מתנהגים כך).
+- **סקריפט ארכוב** פועל במאמץ מיטבי: כשל (או פקיעת הזמן הקצוב של 2 דקות)
+  נרשם, אבל **לעולם אינו חוסם מחיקה**. הארכוב רץ בנתיבי איסוף אשפה שאין בהם
+  מי שיענה לבקשה (מרחב שנמחק, בקשת משיכה שמוזגה, ניקוי מתוזמן).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+ההקמה רצה רק על עץ עבודה **חדש**: שליחה חוזרת של סוכנים למרחב חם עושה שימוש
+חוזר ב-checkout הקיים ואינה משלמת שוב על ההתקנה.
 
-## Run history
+## היסטוריית הרצות
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+כל הרצה נרשמת עם הסטטוס, משך הזמן, קוד היציאה וזנב פלט באורך מוגבל, והכול
+גלוי באותו דיאלוג הגדרות תחת “הרצות אחרונות” (המנוי `repos.watchScriptRuns`
+משדר אותה בזמן אמת).
 
-## Permissions
+## הרשאות
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+הסקריפטים הם מעטפת ש**השרת** מריץ, ולכן כתיבתם שמורה למנהלי סביבת עבודה
+בלבד ומאובטחת על ידי מחלקת הפעולה `processSpawn` — אותה רשת מעקות בטיחות
+שחוסמת כל פעולה אחרת שמפעילה תהליך.

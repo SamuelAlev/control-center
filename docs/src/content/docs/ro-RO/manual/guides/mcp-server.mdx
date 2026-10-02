@@ -1,45 +1,48 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Folosește serverul MCP
+description: Îndreaptă un client MCP extern către serverul de instrumente al Control Center, setează un token bearer și află ce expune suprafața.
 slug: ro-RO/manual/ghiduri-practice/server-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Acest ghid îți arată cum să conectezi un client MCP extern — Claude Code, un
+editor, MCP Inspector — la serverul propriu de instrumente al Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+Control Center înregistrează **110** instrumente și le servește prin Model Context
+Protocol, la versiunea de protocol `2024-11-05`. Lipsesc familii întregi de
+instrumente la care te-ai putea aștepta: nu există instrumente pentru întâlniri sau
+calendar și nici instrumente pentru proiecte.
 
-## Find the endpoint
+## Găsește endpointul
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Suprafața MCP folosește același listener principal `cc_server`. Nu există un port
+MCP separat.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| Endpoint | Metodă   | Scop                                                          |
+| -------- | -------- | ------------------------------------------------------------- |
+| `/mcp`   | `POST`   | Transport HTTP streamable — aceasta este ce vorbește un client |
+| `/mcp`   | `DELETE` | Încheie o sesiune                                             |
+| `/sse`   | `GET`    | Flux de notificări trimise de server                          |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Așadar, o instalare locală implicită se află la `http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Mergi la **Setări → Server → Servere MCP**
+2. Citește cardul **Server MCP** — arată dacă rulează sau este oprit și portul pe
+   care ascultă
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+Suprafața este activă implicit la o instalare nouă, așa că un client loopback
+funcționează fără nicio vizită prin setări. **Pornește la lansarea aplicației**
+controlează dacă revine după o repornire; **Pornește** / **Oprește** sunt comenzi de
+sesiune care nu schimbă această preferință.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+Serverul se leagă la loopback implicit, așa că endpointul este accesibil doar de pe
+mașina pe care rulează `cc_server`, în afară de cazul în care l-ai pornit cu
+`--bind any`.
 
-## Connect a client
+## Conectează un client
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Îndreaptă clientul către endpointul HTTP streamable. Forma exactă a configurației
+este problema clientului tău; URL-ul este același în ambele cazuri.
 
 ```json
 {
@@ -54,41 +57,44 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+Claude Code nu va prelua acest lucru dintr-un `.mcp.json` de proiect — ține
+serverele MCP din sfera proiectului în spatele unui prompt de aprobare la care un
+`claude -p` neinteractiv nu răspunde niciodată. Transmite configurația în mod
+explicit:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` face ca Claude să folosească doar acel fișier, astfel încât
+același server să nu fie descoperit și din proiect și înregistrat de două ori.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Punct de verificare: cere clientului să își listeze instrumentele. Ar trebui să vezi
+intrări `mcp__*` care acoperă tichete, spații, memorie, graful de cod și revizuirea.
 
-## Serve MCP beyond the host
+## Servește MCP dincolo de gazdă
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. În **Setări → Server → Servere MCP**, pe rândul **Token de autentificare**,
+   apasă **Setează** și lipește un token
+2. Trimite-l ca `Authorization: Bearer <token>` la fiecare cerere `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+O suprafață fără token refuză cu 403 orice apelant care nu vine prin loopback.
+Aceasta eșuează închis prin proiectare: tokenul este exact ceea ce face posibil, în
+primul rând, serviciul în afara gazdei.
 
-Token changes apply to the live surface immediately — no restart.
+Modificările de token se aplică imediat suprafeței active — fără repornire.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` preia tokenul din șirul de interogare]
+Fluxul de notificări este verificat după token ca orice altă rută, dar un
+`EventSource` din browser nu poate trimite un antet `Authorization` — așa că `/sse`
+acceptă tokenul și sub forma `?token=<token>`. Fără token, răspunde cu 401.
 :::
 
-## Scope every call to a workspace
+## Limitează fiecare apel la un spațiu de lucru
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Fiecare instrument care atinge date din sfera unui spațiu de lucru necesită
+`workspace_id`, iar un apel fără el este refuzat, în loc să fie rezolvat față de un
+spațiu de lucru „curent”:
 
 ```json
 {
@@ -98,56 +104,59 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Id-ul este cel din browser sau din URL-ul aplicației: `/workspaces/<workspace_id>/…`.
+Singurele excepții sunt instrumentele care acoperă în mod real mai multe spații de
+lucru, cum ar fi `list_workspaces` și instrumentele pentru fluxul de știri — fluxul
+de știri este per utilizator, iar un agent nu are un utilizator al lui, așa că acele
+instrumente operează pe fluxurile proprietarului serverului.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+Instrumentele limitate la un repo verifică în plus dacă repo-ul este legat de acel
+spațiu de lucru.
 
-## Know what the surface will refuse
+## Află ce va refuza suprafața
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Filtrarea după mod.** Un apel este rezolvat pe server față de modul spațiului
+  agentului apelant. Un agent aflat într-un mod doar în citire nu poate ajunge la un
+  instrument de scriere omitând `space_id` — modul este căutat, în schimb, din
+  rularea lui activă.
+- **Guardrail-urile de acțiune.** Instrumentele care modifică starea își declară
+  clasele de efect și trec prin aceeași politică pe care o folosește restul
+  produsului. Vezi
+  [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/).
+- **Confirmarea.** Unele instrumente distructive construiesc o sarcină de confirmare
+  care trebuie aprobată înainte ca apelul să continue.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+Catalogul complet este anunțat în `tools/list` fără filtrare la descoperire — un
+client MCP extern refuză să apeleze un instrument care nu se află în lista lui din
+cache, așa că a ascunde instrumentele le strică, în loc să le facă mai ordonate.
 
-## Troubleshooting
+## Depanare
 
-### The client sees no tools
+### Clientul nu vede niciun instrument
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Verifică dacă pe cardul **Server MCP** scrie că rulează
+- Verifică dacă portul corespunde portului tău `cc_server`
+- În Claude Code, verifică dacă ai transmis `--mcp-config` și `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### Eroare 403 de pe o mașină care nu este serverul
 
-No bearer token is configured. Set one and send it.
+Nu este configurat niciun token bearer. Setează unul și trimite-l.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Un apel de instrument eșuează cu „Missing or invalid argument: workspace_id”
 
-Add `workspace_id`. There is no implicit workspace.
+Adaugă `workspace_id`. Nu există niciun spațiu de lucru implicit.
 
-### A tool call is refused as unknown
+### Un apel de instrument este refuzat ca necunoscut
 
-[MCP tools](/ro-RO/manual/referinta/instrumente-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+[Instrumente MCP](/ro-RO/manual/referinta/instrumente-mcp/) listează catalogul.
+Apelează numele exact așa cum apare acolo.
 
-## Related guides
+## Ghiduri conexe
 
-- [MCP tools](/ro-RO/manual/referinta/instrumente-mcp/)
-- [Configure guardrails](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/)
-- [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
+- [Instrumente MCP](/ro-RO/manual/referinta/instrumente-mcp/)
+- [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/)
+- [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/)
 
-## Related concepts
+## Concepte conexe
 
-- [Architecture](/ro-RO/manual/concepte/arhitectura/)
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/)

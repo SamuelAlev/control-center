@@ -1,64 +1,66 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Koncepcje
+description: Jak działa Control Center i dlaczego został zbudowany właśnie tak — lektura wprowadzająca, która stoi za poradnikami.
 slug: pl-PL/podrecznik/koncepcje
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/pl-PL/podrecznik/poradniki/); when you want to look
-something up, go to the [reference](/pl-PL/podrecznik/dokumentacja-referencyjna/).
+Te strony wyjaśniają, **jak działa Control Center i dlaczego**. Służą zrozumieniu,
+a nie działaniu: żadna z nich nie jest procedurą do wykonania. Gdy chcesz zrealizować
+konkretne zadanie, sięgnij po [poradniki](/pl-PL/podrecznik/poradniki/); gdy chcesz coś
+sprawdzić, zajrzyj do [dokumentacji referencyjnej](/pl-PL/podrecznik/dokumentacja-referencyjna/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Możesz je czytać w dowolnej kolejności. Jeśli dopiero zaczynasz, zacznij od modelu
+podstawowego.
 
-## Core model
+## Model podstawowy
 
-The four ideas everything else is built on.
+Cztery idee, na których opiera się wszystko inne.
 
-- [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/pl-PL/podrecznik/koncepcje/model-agentow/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/) — what happens between your message and the agent's first token
-- [Modes](/pl-PL/podrecznik/koncepcje/tryby/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/pl-PL/podrecznik/koncepcje/inteligencja-kodu/) — the code graph, language server, structural search and debugger
-- [Conversation history](/pl-PL/podrecznik/koncepcje/historia-rozmow/) — persistence, compaction and forking a transcript
+- [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/) — granica dzierżawcy i dlaczego wymusza ją układ bazy danych, a nie dyscyplina zapytań
+- [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/) — z czego składa się agent: tożsamość, rola, umiejętności, możliwości, adapter i model
+- [Cykl życia wysyłania agentów](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/) — co dzieje się między Twoją wiadomością a pierwszym tokenem agenta
+- [Tryby](/pl-PL/podrecznik/koncepcje/tryby/) — jak `chat`, `plan`, `review` i `orchestrate` zmieniają to, co agent może robić
+- [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/) — dlaczego agent widzi tylko podzbiór swoich narzędzi, jak dociera do pozostałych i co sprawia, że cache dostawcy pozostaje ciepły
+- [Inteligencja kodu](/pl-PL/podrecznik/koncepcje/inteligencja-kodu/) — graf kodu, serwer języka, wyszukiwanie strukturalne i debugger
+- [Historia rozmów](/pl-PL/podrecznik/koncepcje/historia-rozmow/) — utrwalanie, kompaktowanie i rozgałęzianie transkryptu
 
-## Safety and control
+## Bezpieczeństwo i kontrola
 
-What an agent is allowed to touch and who decides.
+Czego agentowi wolno dotknąć i kto o tym decyduje.
 
-- [Sandbox and security](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/) — what actually constrains an agent run today
-- [Guardrails](/pl-PL/podrecznik/koncepcje/guardraile/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/pl-PL/podrecznik/koncepcje/autoryzacja/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/pl-PL/podrecznik/koncepcje/rigi/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/) — co faktycznie ogranicza uruchomienie agenta dzisiaj
+- [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/) — jeden silnik polityk dla każdej akcji zmieniającej stan i sposób rozstrzygania reguły
+- [Autoryzacja](/pl-PL/podrecznik/koncepcje/autoryzacja/) — role, katalog uprawnień i dziennik audytu
+- [Rigi i izolacje](/pl-PL/podrecznik/koncepcje/rigi/) — dlaczego agenci dostają jednorazowe maszyny wirtualne zamiast Twojego komputera i gdzie naprawdę przebiega granica
 
-## Directing the work
+## Kierowanie pracą
 
-Turning intent into work that gets done.
+Zamienianie intencji w pracę, która zostaje wykonana.
 
-- [Tickets and delegation](/pl-PL/podrecznik/koncepcje/zgloszenia/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/pl-PL/podrecznik/koncepcje/potoki/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/pl-PL/podrecznik/koncepcje/orkiestracja/) — one goal, one approval, a generated pipeline
-- [AI review](/pl-PL/podrecznik/koncepcje/recenzja-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/pl-PL/podrecznik/koncepcje/rozmowy-w-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc/) — eval suites and the Quality tab
+- [Zgłoszenia i delegowanie](/pl-PL/podrecznik/koncepcje/zgloszenia/) — niezależna od dostawcy jednostka pracy wspólna dla całej floty
+- [Potoki i automatyzacja](/pl-PL/podrecznik/koncepcje/potoki/) — przepływy DAG, wyzwalacze i wznawialne uruchomienia
+- [Orkiestracja](/pl-PL/podrecznik/koncepcje/orkiestracja/) — jeden cel, jedna akceptacja, wygenerowany potok
+- [Recenzja AI](/pl-PL/podrecznik/koncepcje/recenzja-ai/) — jak PR staje się zrecenzowany: przestrzenie recenzji, konsensus recenzentów, osie i werdykt Ship/Hold/Block
+- [Rozmowy w PR](/pl-PL/podrecznik/koncepcje/rozmowy-w-pr/) — odpowiadanie na wzmiankę w GitHubie lub etykietę `ai-review` bezpośrednio z hosta kodu
+- [Pamięć i wiedza](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/) — fakty, polityki i to, co agentowi wolno wiedzieć
+- [Ewaluacje i jakość](/pl-PL/podrecznik/koncepcje/ewaluacje-i-jakosc/) — zestawy ewaluacji i zakładka Jakość
 
-## People and reach
+## Ludzie i zasięg
 
-Working with other humans and reaching the fleet from elsewhere.
+Praca z innymi ludźmi i docieranie do floty z zewnątrz.
 
-- [Multiplayer and presence](/pl-PL/podrecznik/koncepcje/wieloosobowosc/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/pl-PL/podrecznik/koncepcje/logowanie-jednokrotne/) — SAML and OIDC logins
-- [Chat bridges](/pl-PL/podrecznik/koncepcje/mosty-czatu/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/pl-PL/podrecznik/koncepcje/spotkania/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/pl-PL/podrecznik/koncepcje/kalendarz/) — Google Calendar sync and meeting alerts
+- [Wieloosobowość i obecność](/pl-PL/podrecznik/koncepcje/wieloosobowosc/) — ludzie i agenci jako równorzędni uczestnicy oraz co warunkuje dostęp
+- [Logowanie jednokrotne](/pl-PL/podrecznik/koncepcje/logowanie-jednokrotne/) — logowanie przez SAML i OIDC
+- [Mosty czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/) — dlaczego most Slack łączy się wychodząco i co autoryzuje wiadomość z czatu
+- [Zdalne sterowanie i mobile](/pl-PL/podrecznik/koncepcje/zdalne-sterowanie/) — jak telefon dociera do Twojego serwera i model bezpieczeństwa wokół tego
+- [Spotkania i transkrypcja](/pl-PL/podrecznik/koncepcje/spotkania/) — nagrywanie na urządzeniu, transkrypcja i podsumowywanie
+- [Kalendarz i planowanie](/pl-PL/podrecznik/koncepcje/kalendarz/) — synchronizacja z Google Calendar i alerty o spotkaniach
 
-## Under the hood
+## Pod maską
 
-The shape of the system itself.
+Kształt samego systemu.
 
-- [Architecture](/pl-PL/podrecznik/koncepcje/architektura/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/pl-PL/podrecznik/koncepcje/wdrazanie/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/) — the in-process bus features talk over
+- [Architektura](/pl-PL/podrecznik/koncepcje/architektura/) — warstwy, wspólne jądro, porty i adaptery
+- [Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/) — jak klienci desktopowy, webowy i mobilny współdziałają z jednym serwerem
+- [Zdarzenia domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/) — szyna zdarzeń działająca w obrębie procesu, po której komunikują się funkcje

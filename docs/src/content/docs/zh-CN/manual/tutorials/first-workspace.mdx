@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: 你的第一个工作区
+description: 创建一个工作区，把仓库注册进去，并亲眼看到隔离边界。
 slug: zh-CN/手册/教程/第一个工作区
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## 你将构建什么
 
-By the end of this tutorial, you will have:
+读完本教程，你将拥有：
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- 一个以你的项目命名的工作区
+- 一个注册到其中的 Git 仓库
+- 五个预置的智能体，其中一个已经被配置到足以运行
+- 第二个空工作区，用来证明隔离边界确实存在
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+引导流程已经为你创建过一个工作区。本教程会特意从头新建一个，好让你看清这个过程的每一部分。
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+开始之前，请挑一个同时满足以下三个条件的 Git 检出——注册这一步会拒绝其他任何情况：
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- 它位于某个 git 工作树内
+- 它有一个 `origin` 远程
+- 该远程指向 github.com、gitlab.com 或 bitbucket.org
 
-## Step 1: Create a workspace
+## 第 1 步：创建工作区
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. 点击标题栏中的工作区标签
+2. 选择 **添加工作区…**
+3. 输入一个能标识该项目的名称，例如“api-service”或“frontend-v2”
+4. 可选地挑一个标志
+5. 点击 **添加工作区**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center 会切换到新工作区，并落在它的收件箱（`/workspaces/<id>/inbox`）。
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+在这背后，服务器会发布一个 `WorkspaceCreated` 事件，并为该工作区预置：
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- 一位 **CEO 智能体**，其人设是协调与委派
+- 四位专家——`qa`、`architect`、`engineer` 和 `librarian`——各自拥有自己的指令和技能
+- 内置流水线模板及其触发行
 
-Every workspace you create gets all of this, not just the first one.
+你创建的每个工作区都会得到这一整套内容，而不只是第一个。
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+确认一下：打开 **设置 → 工作区 → 智能体**。名册中有五个智能体，每个都带一个空心状态环。
 
-## Step 2: Register a repository
+## 第 2 步：注册仓库
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. 前往 **设置 → 工作区 → 仓库**
+2. 点击 **添加仓库**
+3. 浏览到你的检出。该对话框遍历的是运行 `cc_server` 那台机器上的文件夹——而不是你的客户端——并且始终停留在该服务器对外暴露的根目录之内（默认是该用户的主目录）。git 检出会得到专属的文件夹图标和复选框；普通文件夹两者都没有，因此只有检出可以被选中。
+4. 勾选一个或多个检出，然后批量注册。选择结果在你浏览过程中会一直保留，因此你可以一次挑好几个，而一次误选绝不会把其余的丢掉。
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center 会读取每个检出的 `origin` 远程，解析出所有者和仓库，并在**这个工作区内部**创建仓库记录。没有单独的关联步骤：注册本身就是划定作用域的动作。
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+之后在另一个工作区注册同一个检出，会创建第二条独立的仓库记录，并拥有自己的 id。跨工作区时，检出由其文件系统路径标识，而不是由 id 标识。
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+确认一下：该仓库会出现在列表中，并带有它的 `owner/repo` 和当前分支。
 
-## Step 3: Make one agent runnable
+## 第 3 步：让一个智能体可以运行
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+这个工作区刚预置的五个智能体既没有适配器，也没有模型。派发会让它们运行在 **Control Center (built-in)** 上；在没有设置模型时，会向 Anthropic 索取其默认模型——因此只有在你已连接 Anthropic 账号时它们才能工作，而且如果你连接了，跑的会是一个你没有挑选的模型。首次运行时的引导流程会把它的选择一次性写入第一个工作区中的每个智能体；你之后创建的工作区则从五个都未设置的状态开始。现在就设置一个。
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. 打开 **设置 → 工作区 → 智能体**
+2. 在名册中选择 `engineer`
+3. 在 **设置** 选项卡上，把 **适配器** 设为 `Control Center (built-in)`，并从你在 设置 → 服务器 → 模型提供商 下已连接的提供商中挑选一个 **模型**
+4. 点击 **保存更改**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+确认一下：重新打开该智能体，这两个字段会保持你所做的选择。
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/) covers the rest of the form.
+每个智能体各自携带自己的适配器和模型，因此对你打算使用的任何其他智能体，都要重复这一步。[创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/) 介绍了表单的其余部分。
 
-## Step 4: See the isolation boundary
+## 第 4 步：看清隔离边界
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+像第 1 步那样，从标题栏的工作区标签再创建一个工作区。然后看看它：
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **设置 → 工作区 → 仓库** 是空的。你一分钟前注册的仓库不在那里。
+- **设置 → 工作区 → 智能体** 中有五个智能体，但它们是不同的记录——你在第 3 步设置的适配器不见了。
+- 空间列表、工单和记忆全都是空的。
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+什么都没有泄露，因为根本无从泄露：每个工作区的记录都存放在该工作区自己的数据库文件中。跨工作区的读取不是一条会被过滤的查询，而是一条无处可跑的查询。删除一个工作区，就是解除对一个文件的链接。
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+用标题栏的工作区标签切回去，或者打开 **管理工作区**，把它们并排查看。
 
-For the full model, read [Workspaces and isolation](/zh-CN/手册/概念/工作区/).
+要了解完整模型，请阅读[工作区与隔离](/zh-CN/手册/概念/工作区/)。
 
-## Recap
+## 回顾
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+你创建了一个工作区，看着它预置了一位 CEO 和四位专家，把仓库注册了进去，为其中一个智能体设置了适配器和模型，并确认第二个工作区不共享其中任何一项。
 
-**Next:** [Dispatch your first agent](/zh-CN/手册/教程/第一个智能体/) to put the workspace to work.
+**下一步：**[派发你的第一个智能体](/zh-CN/手册/教程/第一个智能体/)，让这个工作区开始干活。

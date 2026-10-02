@@ -1,123 +1,133 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Autorisasjon — hvem får gjøre hva, og hvordan du beviser det
+description: Tillatelseskatalogen bak rollene i Control Center, det manipulasjonssikre revisjonssporet hver autorisasjonsbeslutning havner i, og de installasjonsomfattende kontrollene en operatør kan feste.
 slug: nb-NO/handbok/konsepter/autorisasjon
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/).
+Control Center svarer på to autorisasjonsspørsmål, og de er genuint
+forskjellige. **«Får denne personen kalle denne operasjonen?»** handler om
+mennesker, roller og repoer. **«Får denne agenten forårsake denne effekten?»**
+handler om handlinger, argumenter og skadeomfang — det spørsmålet dekkes av
+[Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/).
 
-This page is the first question, plus the record both of them leave behind.
+Denne siden handler om det første spørsmålet, i tillegg til nedtegnelsen begge
+etterlater seg.
 
-## One decision point
+## Ett beslutningspunkt
 
-Every human-side authorization decision resolves through a single function:
+Hver autorisasjonsbeslutning på menneskesiden løses gjennom én enkelt funksjon:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+En **tillatelse** er `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Katalogen er **utledet**, ikke
+håndskrevet: den beregnes fra selve operasjonsflaten (navneprefikset til
+operasjonen gir domenet, rolleminimumet den allerede håndhever, gir nivået),
+slik at alle ~550 operasjoner har en tillatelse uten at noen har skrevet den
+inn.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Det er denne utledningen som er verdt å verne om. Den gjør at en NY operasjon
+er sperret som standard — feilmodusen til en håndannotert modell er at noen
+glemmer det, og det de glemmer, er nettopp sperren. En låsetest fester
+domenesettet som blir resultatet, slik at det å legge til en operasjon under et
+nytt prefiks blir et navnevalg et menneske tar, og ikke en tilfeldighet.
 
-The four tiers map exactly onto the built-in roles:
+De fire nivåene svarer nøyaktig til de innebygde rollene:
 
-| Tier | Role floor | Example |
+| Nivå | Rolleminimum | Eksempel |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
+| `read` | gjest | `tickets:read` |
+| `write` | medlem | `tickets:write` |
 | `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `own` | eier | `workspace:own` |
 
-## Roles
+## Roller
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Fem innebygde roller — **eier, admin, medlem, leser, gjest** — er forhåndsvalg
+over denne katalogen. Eierskap er ett enkelt sete per arbeidsområde og
+overføres eksplisitt med **Overfør eierskap** (en eier som slutter, er ellers
+umulig å fjerne: deprovisjonering via SCIM avviser enhver eier av et
+arbeidsområde — overfør først).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Egendefinerte roller er subtraktive.** En egendefinert rolle angir et
+basisforhåndsvalg (`admin`, `member`, `viewer` eller `guest` — aldri `owner`)
+og et sett med tillatelser som FJERNES fra det — «admin, men kan ikke
+administrere medlemmer». Den kan aldri gi mer enn basisen sin, og det er
+nettopp derfor de er trygge å innføre i en eksisterende installasjon: enhver
+eksisterende sjekk forblir en gyldig øvre grense. Medlemmer har dem som
+`custom:<id>`, og en klient som er for gammel til å forstå den verdien, faller
+tilbake på gjest i stedet for å gjette.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Under rollene ligger **tilganger per repo** (`none` / `read` / `review` /
+`write`): medlemskap i et arbeidsområde gir aldri i stillhet større rettigheter
+enn kodeverten. Enhver flate som eksponerer kode, sjekker dem — også de som når
+koden på omveier, som en terminal eller en editorsesjon åpnet på et områdes
+worktree.
 
-## Server authority
+## Serverautoritet
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Noen operasjoner handler ikke om et arbeidsområde i det hele tatt:
+installasjonsomfattende innstillinger, SSO-konfigurasjon, påloggingsinformasjon
+for leverandører, modellhåndtering, sikkerhetskopier av hele installasjonen.
+Disse erklærer **serverautoritet** og avvises for alle unntatt installasjonens
+operatør (den registrerte servereieren). Det finnes med vilje én
+operatøridentitet og én definisjon av den.
 
-## The audit trail
+## Revisjonssporet
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Hver autorisasjonsbeslutning — **tillatelse så vel som avvisning** — legges
+til i et hash-kjedet revisjonsspor per arbeidsområde.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+En logg som bare inneholder avvisninger, svarer på «hva blokkerte vi?», men ikke
+på «hva gjorde denne agenten egentlig, og hvem autoriserte det?» — og det er
+spørsmålet en hendelsesgjennomgang starter med. Derfor registrerer hver
+oppføring hele tilskrivningskjeden: den handlende identiteten, mennesket den
+handlet på vegne av, delegeringen den kom gjennom, handlingen og argumentene
+(som en digest), beslutningen og **regelen som avgjorde**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Oppføringene er kjedet sammen: hashen til hver oppføring dekker den forrige, så
+å redigere, slette eller omorganisere en rad bryter alle hasher etter den.
+**Verifiser kjede** utleder hele kjeden på nytt og navngir det første leddet
+som ikke holder. En revisjonslogg du ikke kan kontrollere, er bare en logg; en
+du kan utlede på nytt, er bevis.
 
-Two consequences worth knowing:
+To konsekvenser det er verdt å kjenne til:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Revisjonstabellen er **unntatt fra aldersbasert opprydding**. En hash-kjede
+  kan ikke trimmes fra midten. Oppbevaring skjer ved å eksportere og deretter
+  trunkere, og trunkeringen etterlater et sjekkpunkt som bærer den fjernede
+  delens avsluttende hash, slik at det som blir igjen, fortsatt lar seg
+  verifisere helt tilbake til begynnelsen.
+- Det ligger **ved siden av** aktivitetstidslinjen, ikke oppå den. Tidslinjen
+  viser hva folk gjorde; dette viser hva som ble autorisert og avvist. En
+  felles korrelasjons-id leser ett kall på tvers av begge.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Det eksporteres som nylinjeseparert JSON og kan strømmes til et SIEM (Splunk,
+Elastic, Sentinel — et HTTP-endepunkt med et bearer-token). Strømming skjer
+etter beste evne, og det er med vilje: at et SIEM er nede, må aldri blokkere et
+verktøykall fra en agent, og den varige, verifiserbare kopien ligger uansett på
+disk.
 
-## Sessions
+## Økter
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+En installasjon kan angi en **maksimal øktalder** og et **tidsavbrudd ved
+inaktivitet**. Begge håndheves i enhetslegitimasjonskontrollen som hver
+autentiserte kanal passerer — en øktbegrensning en klient bare kan ignorere, er
+et spørreskjema, ikke et forsvar mot en angriper. En installasjon kan også
+kreve SSO, noe som slår av manuell paring for nye enheter (med et
+utestengingsvern: det nekter så lenge ingen fungerende SSO-tilkobling finnes).
 
-## What this is not
+## Hva dette ikke er
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Ikke ACL-er per objekt.** Det finnes med vilje ingen tillatelse per sak
+  eller per melding. Separasjon på reponivå er det team faktisk etterspør, og
+  den finnes; deling per objekt er en kombinatorisk flate uten dokumentert
+  etterspørsel her.
+- **Ikke en policy-motor du konfigurerer i et DSL.** Vokabularet er lukket med
+  vilje, slik at hele policyen kan gjengis, forklares og listes opp.
+- **Håndheves ikke andre steder enn på serveren.** Kontroller på klientsiden
+  finnes bare for å unngå å tilby en kontroll som vil bli avvist. Den
+  autoritative beslutningen er alltid serverens.

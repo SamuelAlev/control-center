@@ -1,68 +1,71 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: پائپ لائن دستی طور پر چلائیں
+description: لانچر سے پائپ لائن رن شروع کریں، اس کے ان پٹس بھریں اور رن کی تفصیل پر پہنچیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/).
+یہ گائیڈ ہاتھ سے رن شروع کرنے کا احاطہ کرتی ہے۔ کسی رن کی نگرانی، قدم کے آؤٹ پٹ
+پڑھنے اور ناکامی سے بحالی کے لیے
+[پائپ لائن رنز کی نگرانی کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
+دیکھیں۔
 
-## Start a run
+## رن شروع کریں
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. ورک اسپیس سائیڈ بار میں **پائپ لائنز** پر کلک کریں۔
+2. ہیڈر میں **پائپ لائن چلائیں** دبائیں۔ آپ لانچر
+   (`/workspaces/<workspace-id>/pipelines/run`) پر پہنچ جاتے ہیں۔
+3. بائیں ریل سے ایک ٹیمپلیٹ منتخب کریں۔ ہر کارڈ ٹیمپلیٹ کا نام، اُس کی تفصیل
+   اور یہ دکھاتا ہے کہ وہ ان پٹس لیتا ہے یا نہیں۔
+4. دائیں طرف ان پٹ فارم بھریں۔ لازمی فیلڈز قدر آنے تک بٹن روکے رکھتی ہیں؛ جس
+   ٹیمپلیٹ میں کوئی ان پٹ نہ ہو، وہ یہی بتاتا ہے۔
+5. **پائپ لائن چلائیں** دبائیں۔
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+آپ رن کے تفصیلی صفحے پر پہنچ جاتے ہیں، جہاں ٹائمنگ واٹرفال اور گراف کینوس لائیو
+ہوتے ہیں۔
 
-## If the rail is empty
+## اگر ریل خالی ہو
 
-The launcher shows a template only when **both** are true:
+لانچر کوئی ٹیمپلیٹ صرف اُس وقت دکھاتا ہے جب **دونوں** باتیں درست ہوں:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- ٹیمپلیٹ کا سوئچ **ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** میں آن ہو۔
+- ٹیمپلیٹ ایڈیٹر کے **دستی رن** ڈائیلاگ میں **دستی رن کی اجازت دیں** آن ہو —
+  یہی سوئچ وہ `manual` ٹریگر بناتا ہے جسے لانچر پڑھتا ہے۔
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+تیرہ بلٹ اِن ٹیمپلیٹس میں سے آٹھ غیر فعال آتے ہیں: `external_pr_welcome`،
+`cross_review`، `ticket_to_pr`، `pr_triage`، `pre_merge_gate`، `release_notes`،
+`dep_audit` اور `pr_digest`۔ انجن غیر فعال ٹیمپلیٹ شروع کرنے سے انکار کرتا ہے،
+اس لیے یہاں اسے ڈھونڈنے سے پہلے اس کا سوئچ آن کریں۔
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+ٹیمپلیٹس کی فہرست میں فی ٹیمپلیٹ کوئی **چلائیں** ایکشن نہیں اور ایڈیٹر کے اندر
+بھی کوئی رن بٹن نہیں — لانچر ہی واحد دستی داخلہ نقطہ ہے۔
 
-## Fill in a repository input
+## ریپوزٹری ان پٹ بھریں
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+**ریپوزٹری** قسم کا ان پٹ ورک اسپیس کے رجسٹرڈ ریپوز پر ایک پکر بناتا ہے۔ کسی
+ایک کو چننے سے `repo_id`، `repo_local_path`، `repo_full_name` اور — جب ریپو کا
+GitHub ریموٹ ہو — `repo_owner` اور `repo_name` رن پے لوڈ میں بھر جاتے ہیں، تاکہ
+نیچے کے قدم جو چاہیں پڑھ سکیں۔
 
-## Watch it run
+## اسے چلتے دیکھیں
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+رن کے تفصیلی صفحے کے تین حصے ہیں: ایک میٹا اسٹرپ (شروع کا وقت، فعال دورانیہ،
+قدم کی پیش رفت، ناکامی کا بینر، **دوبارہ کوشش** اور **حذف کریں**)، ایک سکیڑے
+جا سکنے والا ٹائمنگ واٹرفال جس میں فی قدم دورانیہ اور لاگت شامل ہے، اور گراف
+کینوس۔ کسی نوڈ کو منتخب کرنے سے اُس قدم کی تفصیل کا پینل کھل جاتا ہے۔
 
-[Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[پائپ لائن رنز کی نگرانی کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
+اِن سب کا احاطہ کرتا ہے، بشمول یہ کہ معطل قدم کو کیسے پڑھا جائے اور جب کوئی
+ناکام ہو تو کیا کرنا ہے۔
 
-Every run you start from the app is a real one.
+ایپ سے آپ جو بھی رن شروع کرتے ہیں وہ حقیقی ہوتا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create a pipeline template](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
-- [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
-- [Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
+- [پائپ لائن ٹیمپلیٹ بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
+- [پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
+- [پائپ لائن رنز کی نگرانی کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
+- [پائپ لائنز](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)

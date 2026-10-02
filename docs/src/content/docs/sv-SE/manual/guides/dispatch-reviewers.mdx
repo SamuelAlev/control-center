@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Starta granskningsagenter
+description: Skicka ut specialiserade granskningsagenter mot en PR från PR-vyn, ett MCP-verktyg eller ett pipelinesteg.
 slug: sv-SE/handbok/how-to-guider/starta-granskningsagenter
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Den här guiden visar hur du dispatchar granskningsagenter för att granska pull
+requests.
 
-## From the PR view
+## Från PR-vyn
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Öppna PR:en och gå till fliken **Översikt**
+2. Öppna överflödesmenyn ⋯ och välj **Fråga AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Detta startar den medföljande `pr_review`-pipelinen, som öppnar PR:ens
+granskningsyta och dispatchar granskarna för arbetsytans granskningsnivå – tre
+som standard (de medföljande agenterna **qa**, **architect** och **engineer**) –
+och låter sedan huvudagenten sammanställa. Du väljer inte rollerna på den här
+vägen. Vill du styra vilka roller som körs och vilka filer var och en tittar på
+använder du MCP-verktyget eller ett pipelinesteg nedan.
 
-## Via the `dispatch_reviewers` MCP tool
+## Via MCP-verktyget `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Anropa det inifrån en befintlig granskningsyta:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,115 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` och `reviewers` är alla obligatoriska. Varje
+granskningsspec tar en `role` plus en valfri fil-glob-`scope` och en
+`prompt_override` som ersätter standardinstruktionen. En valfri `concurrency`
+(1–8) begränsar parallella dispatcher; utelämnas den gäller arbetsytans
+inställning `review_concurrency` (standard 3, ställs in under
+**Inställningar → Arbetsyta → Allmänt**).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Verktyget svarar omedelbart med listorna `dispatched` och `unmatched`. Varje
+dispatchad granskare läggs till i ytan som deltagare, aviseras med ett
+systemmeddelande och dispatchas med sin instruktion. Fynden hamnar som
+`review_node`-meddelanden i ytan.
 
-## From a pipeline step
+## Från ett pipelinesteg
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Öppna **Inställningar → Arbetsyta → Pipelinemallar**, öppna en mall och gör
+sedan så här:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
-   `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+1. Lägg till en **Reviewer (prompt)**-nod från paletten
+2. Välj agenten som ska dispatchas och skriv granskningsprompten, med `{{key}}`
+   som platshållare för utdata från uppströmssteg (till exempel
+   `{{repo_local_path}}`, `{{pr_number}}`)
+3. Ange utdatanyckeln (standard `reviewer_findings`) så att nedströmssteg kan
+   läsa fynden
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Steget dispatchar agenten och pausar till dess att körningen är klar. Motorn
+skördar sedan körningens `submit_output`-nyttolast in i pipelinens tillstånd
+under nodens utdatanyckel. (Palettbeskrivningen säger fortfarande att steget
+väntar på ett `complete_task`-anrop – det verktyget finns inte; ignorera
+texten.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Grena ut genom att koppla flera granskningsnoder till samma uppströmssteg och
+sammanställ sedan deras utdata med en **Consolidate (join)**-nod.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Redigeraren kopplar om den dolda terminalen till varje nåbar sänka, så en nod du
+lägger till efter den medföljande Step-noden körs ändå. Utgrenade noder som är
+kopplade till samma uppströmssteg körs parallellt.
 
-## Automatic dispatch on a new PR
+## Automatisk dispatch vid en ny PR
 
-To have a review pipeline fire by itself:
+För att en granskningspipeline ska starta av sig själv:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Öppna mallen under **Inställningar → Arbetsyta → Pipelinemallar**
+2. Dra **PR publicerad** eller **Extern PR öppnad** från avsnittet Triggrar i
+   nodbiblioteket till duken (eller välj den från spökplattan **Lägg till en
+   trigger**)
+3. Markera den nya noden och slå på **Aktiverad** i dess inspektör och aktivera
+   sedan mallen
 
-Two events matter here and they are not interchangeable:
+Två händelser spelar roll här och de är inte utbytbara:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Händelse               | Utlöses när                                                                                                    | Nyttolastnycklar                                                   |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | En PR öppnas **via Control Center** – komponeringsytan, eller en agent som anropar `pr_lifecycle.publish`       | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | PR-avsökningstjänsten hittar en PR som öppnats direkt på GitHub                                                 | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+En PR som öppnas på github.com utlöser aldrig `PullRequestPublished`, så en mall
+som bara är kopplad till den händelsen ser den inte. Notera också att
+`PullRequestPublished` inte innehåller någon `pr_number` – ett steg vars skript
+eller prompt refererar till `{{pr_number}}` måste matas av `ExternalPrDetected`,
+eller av en manuell körning som anger den.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Kontrollpunkt: öppna **Pipelines** efter att du aktiverat och bekräfta att en
+körning dyker upp för nästa matchande PR. En mall som lämnas inaktiverad låter
+sin trigger utlösas utan resultat – motorn avvisar en inaktiverad mall och
+återvänder utan att starta någon körning.
 
-## How a role is matched to an agent
+## Hur en roll matchas mot en agent
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` poängsätter varje agent i arbetsytan mot varje efterfrågad
+rolletikett, utan hänsyn till skiftläge:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Matchning                                  | Poäng |
+| ------------------------------------------ | ----- |
+| En skill som innehåller rolletiketten      | +3    |
+| En titel som innehåller rolletiketten      | +2    |
+| Ett agentnamn som innehåller rolletiketten | +1    |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Poängen ackumuleras och högsta summan vinner (vid lika, den första kandidaten
+som hittas). Om ingen kandidat får poäng över noll kommer specen tillbaka i
+verktygets `unmatched`-lista i stället för att dispatchas – en roll som ingen
+matchar rapporteras alltså, hoppas aldrig över tyst.
 
-## The review space
+## Granskningsytan
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+En PR har exakt **en** granskningsyta, inte en per granskare. Den skapas
+idempotent av `pr.ensureSpace`, länkas till PR:en via en
+`ReviewSpaceAssociation` och provisioneras mot PR:ens head-ref. Varje
+dispatchad granskare går med i ytan och postar sina `review_node`-fynd där,
+vilket är det som gör fynden jämförbara och låter huvudagenten nå konsensus
+mellan dem.
 
-## Monitor the dispatch
+## Övervaka dispatchen
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Varje dispatchad granskare får sin egen `AgentRunLog`. Följ förloppet i:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **granskningsytan**, där fynden strömmar in i realtid
+- PR:ens flik **Granskning**, som visar granskningsstatusraden och utfallet
+- **Observability → Live** (`/workspaces/:id/observability`), agentlistan med
+  status per körning, förfluten tid i realtid, en transkriptlåda och en
+  avslutningskontroll. Det finns ingen tangentbordsgenväg för den – nå den från
+  sidofoten.
 
-## Related guides
+## Relaterade guider
 
-- [Use AI-powered review](/sv-SE/handbok/how-to-guider/ai-granskning/)
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
+- [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
 
-## Related concepts
+## Relaterade koncept
 
-- [AI review](/sv-SE/handbok/koncept/ai-granskning/)
+- [AI-granskning](/sv-SE/handbok/koncept/ai-granskning/)
 - [Pipelines](/sv-SE/handbok/koncept/pipelines/)

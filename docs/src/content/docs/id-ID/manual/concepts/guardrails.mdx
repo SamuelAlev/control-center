@@ -1,248 +1,273 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Pagar pengaman — satu kebijakan untuk setiap tindakan yang mengubah keadaan
+description: Mengapa Control Center mengalirkan setiap efek samping agen melalui satu mesin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil, dan apa yang sebenarnya diubah oleh dial otonomi.
 slug: id-ID/panduan-pengguna/konsep/pagar-pengaman
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agen di Control Center dapat menghapus file, mem-push branch, memublikasikan
+pull request, dan memanggil API eksternal. Setiap tindakan itu adalah _jenis_
+risiko yang berbeda, dan selama ini hanya salah satunya — perintah shell — yang
+punya kebijakan. Pagar pengaman hadir untuk menjawab satu pertanyaan secara
+seragam, untuk setiap tindakan yang mengubah keadaan yang dapat dilakukan
+agen, apa pun runtime atau alat yang mengusulkannya: **apakah ini diizinkan,
+perlu persetujuan, atau ditolak?**
 
-## One engine, every chokepoint
+## Satu mesin, setiap titik penyempitan
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Hanya ada satu mesin kebijakan. Mesin itu dikonsultasikan di setiap titik tempat
+sebuah tindakan dapat meninggalkan sistem: registri alat milik harness bawaan,
+gerbang dispatcher MCP di sisi server, dan mutasi repo-op. Aturan yang ditulis
+sekali karena itu berlaku untuk runtime bawaan maupun CLI agen eksternal —
+tidak ada jalur kedua yang lebih sunyi untuk mengelilinginya. Kebijakan
+perintah lama yang hanya menangani bash masih berfungsi: sebuah aturan dapat
+mencocokkan prefiks perintah sebagai ganti kelas aksi, dan kedua bentuk itu
+hidup berdampingan di penyimpanan yang sama.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Mesin ini bukan pengganti sandbox OS, dan sandbox bukan penggantinya. Keduanya
+menjawab pertanyaan yang berbeda: pagar pengaman memutuskan apakah panggilan
+yang dapat dilihat Control Center boleh terjadi sama sekali, sedangkan sandbox
+membatasi ke mana proses yang dihasilkan boleh menjangkau. `cc_server`
+menerapkan sandbox di tempat host menyediakan backend — tetapi [Windows tidak
+menyediakannya dan Linux memerlukan `bwrap` dan
+`socat`](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/). Di host seperti
+itu, pagar pengaman adalah lapisan penegakan terluar, bukan kebijakan yang
+berdiri di atas dasar, dan itu perlu diketahui saat Anda memutuskan seberapa
+permisif ingin bersikap.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: taksonomi yang sengaja ditutup
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Setiap alat yang mengubah keadaan mendeklarasikan **ActionClasses** mana yang
+diikutinya, dari himpunan tertutup berisi tiga belas kelas efek. Lima di
+antaranya meminta persetujuan secara bawaan; sisanya mengizinkan, dan aturanlah
+yang mengubahnya.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Kelas                      | Default bawaan | Cakupannya                                                       |
+| -------------------------- | -------------- | ---------------------------------------------------------------- |
+| `fileDelete`               | **prompt**     | Menghapus file (penulisan berjenis hapus, `rm`)                  |
+| `gitPush`                  | **prompt**     | Push ke remote git                                               |
+| `prCreate`                 | **prompt**     | Membuat pull request                                             |
+| `prPublish`                | **prompt**     | Memublikasikan tinjauan, menggabungkan PR                        |
+| `vendorSyncWrite`          | **prompt**     | Menulis ke pelacak tiket eksternal (Linear, Jira, sinkronisasi GitHub) |
+| `fileWriteOutsideWorktree` | allow          | Menulis file di luar pohon kerja yang terisolasi                 |
+| `gitCommit`                | allow          | Membuat commit git                                               |
+| `networkEgress`            | allow          | Lalu lintas keluar jaringan (pengambilan web, HTTP sembarang)    |
+| `secretAccess`             | allow          | Membaca secret atau kredensial                                   |
+| `packageInstall`           | allow          | Menginstal paket (npm, pip, pub, brew)                           |
+| `processSpawn`             | allow          | Menjalankan proses (shell dan apa pun yang memanggil shell)      |
+| `workspaceMutation`        | allow          | Mengubah struktur ruang kerja (repo, space, agen)                |
+| `enclosureControl`         | allow          | Mengendalikan enclosure (rig): menyalakan VM, mengirimkan masukan kepadanya |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Delapan kelas yang bawaannya allow dipilih dengan asumsi dasar sandbox berlaku
+di bawahnya. Asumsi itu benar di tempat host menyediakan backend, dan tidak
+berlaku di Windows atau di mesin Linux yang tidak memiliki `bwrap` dan `socat` —
+jadi jika Anda ingin `fileWriteOutsideWorktree` atau `packageInstall` dibatasi
+di sana, aturan itulah yang harus Anda tulis sendiri.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Himpunan ini ditutup dengan sengaja. Alat pengubah baru yang tidak
+mendeklarasikan kelas apa pun gagal dalam uji ratchet, sehingga taksonomi hanya
+dapat bertambah melalui keputusan yang eksplisit dan beralasan — “taksonomi
+yang melebar adalah kematian fitur ini.” Tiga belas kelas cukup untuk menyatakan
+kebijakan yang benar-benar ditulis orang (jangan pernah push tanpa bertanya,
+jangan pernah menghapus di luar pohon kerja, selalu izinkan pembacaan) dan
+cukup sedikit agar UI pengaturan tetap dapat dipahami.
 
-## Rules and scope resolution
+## Aturan dan penyelesaian cakupan
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Sebuah aturan memetakan `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Cakupan bersarang dari yang paling spesifik ke yang paling umum:
 
-**space > agent > workspace > mode preset > built-in default**
+**space > agen > ruang kerja > preset mode > default bawaan**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Penyelesaian mengutamakan **spesifisitas**: cakupan pertama yang memiliki
+aturan yang cocoklah yang memutuskan, dan penyelesaian berhenti di situ. Paling
+ketat hanya menjadi penentu seri — di antara dua aturan yang sama-sama spesifik
+dalam satu cakupan, dan saat menggabungkan beberapa kelas yang dideklarasikan
+satu tindakan. Dalam satu cakupan, aturan perintah dicocokkan pada prefiks
+perintah terpanjang. Allow tidak pernah mengalahkan deny di mana pun.
 
-Two decisions carry hard guarantees:
+Dua keputusan membawa jaminan keras:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Prompt fail-closed.** Sebuah `prompt` tanpa pemberi persetujuan yang
+  terhubung diselesaikan menjadi _ditolak_. Pertanyaan yang tidak dijawab tidak
+  pernah berarti ya.
+- **Kombinasi paling ketat.** Tindakan yang mencakup beberapa kelas
+  digabungkan secara paling ketat; ketika beberapa kelas meminta persetujuan,
+  satu konfirmasi mencantumkan semuanya.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Tidak ada status yang menempel per giliran, dan itu memang disengaja. Setiap
+panggilan alat menyelesaikan ulang kebijakan dari nol, sehingga permintaan
+persetujuan berulang untuk tindakan yang sama dibatasi oleh “ingat keputusan
+ini” milik operator sendiri, bukan oleh apa pun yang terikat pada satu giliran.
 
-## Argument-level rules
+## Aturan tingkat argumen
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Sebuah aturan dapat membatasi ARGUMEN suatu tindakan, bukan hanya verbanya.
+“Boleh push” dan “boleh push ke `feature/*`” adalah klaim yang berbeda, dan
+hanya klaim kedua yang merupakan kontrol — gerbang kemampuan yang hanya
+mengizinkan verbanya adalah bentuk di balik sebagian besar insiden agen yang
+dipublikasikan.
 
-A constraint may name:
+Sebuah batasan dapat menyebutkan:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **path** — pola glob (`repos/**`, `!**/.env`)
+- **ref** — ref git, dengan negasi `!` (`['**', '!main']` terbaca sebagai “branch
+  apa pun kecuali main”)
+- **host** — tujuan jaringan, dengan wildcard subdomain (`*.internal`)
+- **perintah** — prefiks perintah, dicocokkan pada batas kata
+- **plafon** — `maxCount` / `maxCents`, sehingga “hapus hingga 50 file” dapat
+  dinyatakan
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Tiga properti muncul dari menjaga tata bahasa tetap tertutup dan tanpa
+perulangan, dan ketiganya adalah intinya: setiap aturan tampil sebagai kalimat
+yang dapat Anda baca kembali, setiap penolakan dapat menyebut batasan yang
+cocok, dan seluruh kebijakan dapat dienumerasi — Anda dapat melihat apa yang
+boleh dilakukan agen *sebelum* agen itu berjalan.
 
-Three rules that matter:
+Tiga aturan yang penting:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **Aturan yang dibatasi lebih spesifik** daripada aturan tanpa batasan pada
+  cakupan yang sama, sehingga “tolak push ke `main`” mengalahkan “izinkan
+  push” tanpa perlu ada yang memikirkan urutan.
+- Aturan **restriktif** (deny / prompt) berlaku ketika permintaan menyentuh
+  *nilai apa pun* yang disebutnya; aturan **permisif** (allow) hanya berlaku
+  ketika permintaan *seluruhnya* berada di dalamnya. Membaca keduanya dengan
+  cara yang sama akan membuat agen dapat menyamarkan path terlarang dengan
+  menyelipkan path yang tidak berbahaya di sampingnya.
+- Aturan yang menyebut faset yang tidak disinggung permintaan tidak diterapkan
+  dan juga tidak dilewati: aturan itu **naik menjadi permintaan persetujuan**.
+  Melewatinya secara diam-diam akan membuat setiap aturan branch terlindungi
+  menjadi tidak berguna terhadap alat yang tidak melaporkan ref-nya; menolak
+  secara diam-diam akan menolak setiap push yang tidak dapat dideskripsikan
+  ekstraktor. Dengan tidak ada pemberi persetujuan yang terhubung, aturan
+  fail-closed yang ada mengubah eskalasi itu menjadi penolakan.
 
-## What a command rule can and cannot catch
+## Apa yang dapat dan tidak dapat ditangkap aturan perintah
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Aturan `commandPrefix` dicocokkan pada batas kata: `git push` mencakup
+`git push origin main` dan bukan `git pushx`. Aturan ini **tidak** menormalkan
+shell. `git  push` (dua spasi), `cd sub && git push`, dan
+`GIT_DIR=… git push` adalah string yang berbeda-beda dan tidak satu pun
+cocok dengan aturan tentang `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Itu batas yang nyata dan dinyatakan terang-terangan, bukan ditutup-tutupi:
+aturan perintah adalah kemudahan bagi operator untuk membentuk perilaku agen
+biasa, **bukan** batas terhadap agen yang bermusuhan. Batasnya adalah kelas efek
+(yang dideklarasikan sebuah alat dan tidak dapat disebutnya dengan nama lain),
+jaring perintah mode di bawah penyimpanan kebijakan, dan sandbox OS di bawah
+keduanya. Aturan perintah yang diselesaikan menjadi `allow` tidak pernah
+melonggarkan keduanya — jaring mode berjalan setelahnya dan `deny`-nya bersifat
+final.
 
-## Standing approvals
+## Persetujuan yang diingat
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Menjawab prompt dengan “ingat ini” menulis aturan kebijakan yang sungguhan:
+bercakupan (space / agen / ruang kerja), **dibatasi argumennya** (menyetujui
+push ke `feature/login` memberikan `feature/**`, bukan `main`) dan **mencabut
+dirinya sendiri** pada TTL eksplisit. Berkata ya untuk beberapa jam ke depan
+tidak sama dengan diam-diam menulis ulang kebijakan permanen Anda, dan aturan
+yang ditulisnya masuk ke penyimpanan yang sama dengan asal-usul `remembered`
+dan masa kedaluwarsa, sehingga dapat dicabut lebih awal.
 
-## Enforcement levels
+## Tingkat penegakan
 
-Each rule carries one:
+Setiap aturan membawa satu tingkat:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — izinkan, tetapi catat bahwa aturan cocok. Inilah jalur
+  adopsi: terapkan aturan ketat dalam mode advisory, baca jejak audit selama
+  sepekan untuk melihat persis apa yang *akan* diblokirnya, lalu naikkan
+  statusnya. Tanpa tingkat ini, kebijakan ketat tidak akan pernah dinyalakan.
+- **soft** — tolak, dapat ditimpa oleh pemegang izin penimpaan, dengan
+  pembenaran yang dicatat. Penimpaan itu sendiri adalah peristiwa yang diaudit.
+- **hard** (default) — tolak. Tidak ada yang dapat menimpanya.
 
-## The managed tier
+## Tingkat terkelola
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Operator instalasi dapat memakukan kebijakan yang tidak dapat dilonggarkan
+admin ruang kerja mana pun. Aturan terkelola berada di sisi server dan
+digabungkan secara **paling ketat** dengan rantai milik masing-masing ruang
+kerja — aturan itu bukan cakupan di kepala rantai tersebut, karena `allow`
+terkelola di kepala rantai akan membuat instalasi menimpa deny sebuah ruang
+kerja, kebalikan dari tujuan sebuah pengunci. Karena itu, aturan terkelola
+hanya dapat memperketat.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Menyetel `CC_SERVER_MANAGED_POLICY` ke sebuah file JSON mengalahkan aturan yang
+tersimpan sepenuhnya; itulah yang memungkinkan operator memakukan postur yang
+tidak dapat dibalik oleh UI admin mana pun — jawaban untuk “bisakah saya
+mencegah pengembang saya menonaktifkan kontrol keamanan?”.
 
-## The autonomy dial is a profile, not a parallel system
+## Dial otonomi adalah profil, bukan sistem paralel
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Dial otonomi per space adalah profil bernama di atas penyimpanan kebijakan yang
+sama, bukan mekanisme kedua. Ketiga pengaturannya disimpan dan dikirim sebagai
+`proposeOnly`, `actWithApproval` dan `actFreely` (bentuk bertanda hubung
+hanyalah prosa UI, dan `autonomy.setForSpace` menolak nilai lain apa pun). Jika
+dibiarkan tidak disetel, perilakunya sama dengan `actWithApproval`.
 
-What each one does to a resolved decision:
+Apa yang dilakukan masing-masing terhadap keputusan yang sudah diselesaikan:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** menolak setiap alat yang melewati gerbang secara langsung.
+  Agen tetap dapat bernalar dan membalas; hanya saja ia tidak dapat bertindak
+  dan pesannya menjelaskan alasannya.
+- **`actWithApproval`** (dan tidak disetel) adalah gerbang persetujuan
+  fail-closed yang dijelaskan di atas.
+- **`actFreely`** menyetujui di muka apa pun yang tidak diselesaikan menjadi
+  `deny` keras.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Poin terakhir itu pantas dinyatakan terus terang, bukan dilembutkan: di bawah
+`actFreely` sebuah keputusan `prompt` **tidak** dieskalasi ke pemberi
+persetujuan — keputusan itu diizinkan dan tidak ada yang ditanya. Hanya aturan
+`deny` eksplisit yang bertahan melewati dial ini. Jadi `actFreely` adalah
+pemberian otonomi yang disengaja, bukan pengaturan demi kenyamanan, dan aturan
+fail-closed justru melindungi kasus yang paling penting (`actWithApproval`,
+default).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Delegasi antaragen dijaga di titik penyempitan `delegate_task` oleh keempat
+penjaga: batas kedalaman (default 3), deteksi siklus, **batas atas otonomi**
+(delegat tidak akan pernah dapat bertindak dengan otonomi melebihi pemberi
+delegasinya — hak istimewa tidak dapat dicuci dengan menyerahkan pekerjaan
+kepada agen yang lebih bebas) dan **batas anggaran** (delegasi membebankan sisa
+anggaran pemberi delegasi dan tidak dapat mencetak anggaran baru). Masing-masing
+ditolak secara terang-terangan, dengan alasan dari penjaga dikembalikan kepada
+agen kata per kata.
 
-## The adapter honesty matrix
+## Matriks kejujuran adapter
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Tidak setiap runtime memungkinkan Control Center mencegat setiap tindakan. CLI
+agen eksternal menjalankan sebagian alat secara native, in-process, di tempat
+yang tidak dapat dijangkau gerbang mana pun. Alih-alih berpura-pura sebaliknya,
+setiap adapter membawa **matriks kejujuran**: per adapter, apakah Control Center
+memfilter permukaan alat, mencegat panggilan alat, mengamati kontrak
+penyelesaian, dapat melihat alat native milik runner, dan apakah alat
+in-process tercakup profil sandbox.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Ada dua entri yang perlu dibaca sebelum Anda memercayai sebuah konfigurasi.
+Harness bawaan menyatakan bahwa alat file in-process-nya **tidak** di-sandbox —
+permukaan alat dan mesin kebijakan ini adalah satu-satunya batas sistem file
+yang dimilikinya. Claude Code menyatakan bahwa panggilan alatnya sendiri
+**tidak** dapat dicegat, karena ia dijalankan dengan
+`--dangerously-skip-permissions`; Control Center hanya melihat panggilan
+`mcp__*`-nya, sedangkan alat baca, tulis, edit, dan shell miliknya berjalan
+tanpa terlihat.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Layar pengaturan menampilkan matriks ini, karena satu-satunya kegagalan yang
+tidak dapat dimaafkan bagi sistem pagar pengaman adalah mengklaim cakupan yang
+tidak ada.
 
-## Probing policy before it bites
+## Menguji kebijakan sebelum menggigit
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Pagar pengaman berada di **Pengaturan → Ruang kerja → Izin agen**
+(`/workspaces/<id>/settings/workspace/permissions`). Layar ini memuat matriks
+kebijakan tempat aturan ditulis, templat kebijakan, uji “Bagaimana jika?”, jejak
+audit otorisasi, dan matriks kejujuran adapter.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Uji tersebut menerima kelas aksi (atau perintah) dan sebuah cakupan, lalu
+menunjukkan aturan mana yang memutuskan dan mengapa. Karena penyelesaiannya
+murni dan deterministik — aksi yang sama, cakupan yang sama, keputusan yang
+sama — jawaban dari uji itu adalah jawaban yang akan diterima agen.
 
-## Related concepts
+## Konsep terkait
 
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/id-ID/panduan-pengguna/konsep/multiplayer/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/): writing and testing rules in practice
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/): apa yang sebenarnya membatasi jalannya agen dan sejauh mana dasar OS di bawah mesin ini menjangkau
+- [Multiplayer — identitas, keanggotaan dan kehadiran](/id-ID/panduan-pengguna/konsep/multiplayer/): space, prinsipal dan di mana dial otonomi berada
+- [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/): menulis dan menguji aturan dalam praktik

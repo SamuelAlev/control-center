@@ -1,34 +1,37 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Налаштувати інтеграцію Linear
+description: Збережіть ключ API Linear на сервері, щоб агенти могли звертатися до Linear, і виберіть Linear як провайдера тікетів для нових тікетів.
 slug: uk-UA/керівництво/практичні-посібники/інтеграція-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/uk-UA/керівництво/практичні-посібники/керувати-тікетами/).
+Вставте ключ API Linear на сервері для свого користувача — так само, як
+підключаєте forge. Тікети, проєкти, зв’язки, учасники, делегування й
+призначення працюють із власною базою даних Control Center, без потреби в
+зовнішній службі — див. [Створювати й керувати тікетами](/uk-UA/керівництво/практичні-посібники/керувати-тікетами/).
 
-## Store your Linear key
+## Зберегти ключ Linear
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Ключ ticketing API** міститься в **Налаштування → Робочий простір → Загальні**,
+на картці **Тікетинг**. Він зберігає ключ на сервері для ідентифікатора вашого
+користувача. Власний ключ сервера для роботи без нагляду надходить із
+`LINEAR_API_KEY` або з картки **Застосунки провайдера** і підставляється як
+`TICKETING_API_KEY`, лише коли той агент має можливість
+**Дозволити виклики ticketing API**.
 
-## Stamp new tickets as Linear
+## Позначати нові тікети як Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Провайдер тікетів** (перший крок початкового налаштування, а також
+`/workspaces/<workspaceId>/api-keys`) пропонує `local` і `linear`. Якщо вибрати
+`linear`, на тікетах, які ви створюєте відтоді, проставляється
+`provider: linear`.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create and manage tickets](/uk-UA/керівництво/практичні-посібники/керувати-тікетами/)
-- [Set up GitHub integration](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
-- [Manage API keys](/uk-UA/керівництво/практичні-посібники/api-ключі/)
+- [Створювати й керувати тікетами](/uk-UA/керівництво/практичні-посібники/керувати-тікетами/)
+- [Налаштувати інтеграцію GitHub](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
+- [Керувати API-ключами](/uk-UA/керівництво/практичні-посібники/api-ключі/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Tickets and delegation](/uk-UA/керівництво/поняття/тікети/)
+- [Тікети та делегування](/uk-UA/керівництво/поняття/тікети/)

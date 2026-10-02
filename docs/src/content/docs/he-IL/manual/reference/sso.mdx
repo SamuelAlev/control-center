@@ -1,104 +1,104 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: עזר להגדרת SSO
+description: כל אפשרות הגדרה, נקודת קצה, פעולה וקוד שגיאה של כניסה מאוחדת.
 slug: he-IL/מדריך-למשתמש/עזר/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+כל מה שניתן להגדיר בכניסה מאוחדת, במקום אחד. הערכים יושבים בשורות של
+`sso_connections` ב־`global.db` (ברמת השרת במכוון), ונערכים דרך **הגדרות →
+שרת → כניסה מאוחדת** או דרך פעולות ה־RPC של `sso.*`. השורה השמורה היא מקור
+האמת היחיד — אין נתיב סביבה של `CC_SAML_*` / `CC_OIDC_*` (חיבור שיכול להגיע
+משני מקומות הוא חיבור שמסך ההגדרות יכול לחלוק עליו).
 
-## Connection fields
+## שדות החיבור
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
+| שדה                    | חל על      | ברירת מחדל     | משמעות                                                                                                                                               |
 | ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| `enabled`              | שניהם      | כבוי            | כניסות רשאיות להשתמש בחיבור הזה                                                                                                                       |
+| `idpMetadataXml`       | SAML       | —               | ה־XML מסוג `EntityDescriptor` של ה־IdP (נדרש כדי להפעיל)                                                                                             |
+| `spEntityId`           | SAML       | `<origin>/saml` | מזהה הישות שלנו, ננעל כשהמקור משתנה                                                                                                                  |
+| `emailAttribute`       | SAML       | `email`         | המאפיין שנושא את האימייל; NameID בצורת אימייל הוא חלופת ברירת המחדל                                                                                   |
+| `displayNameAttribute` | SAML       | `displayName`   | מאפיין שם התצוגה                                                                                                                                      |
+| `groupsAttribute`      | SAML       | `groups`        | מאפיין שמות הקבוצות                                                                                                                                   |
+| `clockSkewSeconds`     | SAML       | 90              | סובלנות סטיית שעון באימות תוקף                                                                                                                        |
+| `allowIdpInitiated`    | SAML       | כבוי            | קבלת תגובות לא מבוקשות (ללא `InResponseTo`)                                                                                                           |
+| `wantResponseSigned`   | SAML       | כבוי            | דרישת חתימה על שורש התגובה (חתימות הצהרה נדרשות תמיד)                                                                                                  |
+| `issuer`               | OIDC       | —               | כתובת הבסיס של ה־Issuer (נדרשת כדי להפעיל)                                                                                                            |
+| `clientId`             | OIDC       | —               | מזהה לקוח ציבורי (נדרש כדי להפעיל)                                                                                                                    |
+| `clientSecret`         | OIDC       | —               | ללקוחות חסויים בלבד; נשמר בקובץ הסודות בהרשאות 0600, ולעולם לא במסד הנתונים — לכתיבה בלבד דרך RPC (`sso.getConfig` מדווח על `clientSecretPresent`)       |
+| `groupsClaim`          | OIDC       | `groups`        | ה־Claim שנושא את שמות הקבוצות                                                                                                                          |
+| `defaultRole`          | שניהם      | `member`        | התפקיד כשאף קבוצה אינה ממופה — לעולם לא `owner`                                                                                                        |
+| `groupRoleMap`         | שניהם      | `{}`            | קבוצה → תפקיד; מיפויים ל־owner נדחים בשמירה                                                                                                            |
+| `autoMember`           | שניהם      | פועל            | הוספה אוטומטית של משתמשים לכל סביבת עבודה בכניסה הראשונה                                                                                              |
+| `allowJit`             | שניהם      | פועל            | הקצאת משתמשים לא מוכרים בכניסה                                                                                                                        |
 
-## Process configuration
+## הגדרת התהליך
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+חיבורי SSO אינם נזרעים מהסביבה. דגל תהליך אחד שנותר נוגע ל**העברה
+לדפדפן**, ולא לשורת החיבור:
 
-| Variable / flag                          | Meaning                                                                                                              |
+| משתנה / דגל                              | משמעות                                                                                                               |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | המקור שאליו קריאות ה־callback של SSO מפנות את הדפדפן (פרטי הגישה עוברים בקטע ה־URL). כשזה לא מוגדר, ההעברה נשארת באותו מקור. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+כתובת ה־Issuer עצמה חייבת להיות `https` (`http` מתקבל רק עבור Issuer של
+לולאה מקומית: `localhost`, `127.0.0.1` ו־`::1`).
 
-## HTTP endpoints
+## נקודות קצה ב־HTTP
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| נקודת קצה                                        | אימות                | מטרה                                                                                                                                                                                                           |
+| ------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /saml/login?relay=…`                        | ללא (הפניה מחדש)    | התחלת כניסה ביוזמת ה־SP; `relay=desktop` מעביר לאפליקציה, `relay=web-popup` שולח postMessage ללשונית החיבור הממתינה (שמצהירה על ה־`client_origin` שלה, שמכובד רק כשרשימת המקורות המורשים נותנת בו אמון) |
+| `POST /saml/acs`                                 | ללא (POST מה־IdP)   | צרכן ההצהרות — מאמת, מקצה ומנפיק                                                                                                                                                                             |
+| `GET /saml/metadata`                             | ללא                 | ה־`EntityDescriptor` של ה־SP שלנו                                                                                                                                                                              |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | ללא                 | סבב ה־OIDC; `relay=desktop` מעביר לאפליקציה, `relay=web-popup` ללשונית החיבור הממתינה (אותה מוסכמת `client_origin`)                                                                                          |
+| `GET /auth/providers`                            | ללא, CORS `*`       | בדיקת מסך החיבור: חיבורי ה־SSO המוצעים (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                                |
+| `/scim/v2/Users…`                                | Bearer (אסימון SCIM) | Users: יצירה/שליפה/רשימה+סינון/PUT/PATCH/DELETE                                                                                                                                                              |
+| `/scim/v2/Groups`                                | Bearer              | לקריאה בלבד; דחיפת קבוצות מחזירה 501 במכוון                                                                                                                                                                     |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | מסמך יכולות                                                                                                                                                                                                    |
 
-## RPC ops
+## פעולות RPC
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+כל פעולות `sso.*` הן בהיקף השרת ומוגבלות ל**בעל השרת** (המפעיל של ההתקנה,
+`ServerAuthority.serverOwner`). בעלות על סביבת עבודה אינה מספיקה; צימוד לבדו
+לעולם אינו מקנה אותן.
 
-| Op                        | Purpose                                                                                                                                                       |
+| פעולה                    | מטרה                                                                                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | החיבור השמור עבור סוג                                                                                                                                         |
+| `sso.saveConfig`          | אימות, שמירה והחלה בזמן אמת                                                                                                                                   |
+| `sso.status`              | דגלי הפעלה/הגדרה, נוכחות אסימון SCIM, המקור הקנוני                                                                                                             |
+| `sso.testConnection`      | בדיקת חיבור בלי סבב הדפדפן (SAML: פענוח מטא־נתונים ובניית AuthnRequest; OIDC: גילוי ה־Issuer), עם ערכים אופציונליים שלא נשמרו מהמסך                            |
+| `sso.spMetadata`          | הפקת ה־`EntityDescriptor` של ה־SP עבור מקור                                                                                                                   |
+| `sso.setPairingEnabled`   | התרה/איסור של צימוד ידני (קודי הזמנה, מפתחות צימוד); סירוב לכבות אותו כשאין חיבור SSO עובד מגן מפני נעילה                                                 |
+| `sso.sessionPolicy`       | קריאת הגיל המרבי של פרטי הגישה במכשיר ופסק הזמן ללא פעילות (בדקות; `0` = לא מוגדר)                                                                            |
+| `sso.setSessionPolicy`    | קביעת הגבולות האלה; נאכפים בבדיקת המכשיר, ואינם מדווחים ללקוחות                                                                                                |
+| `sso.scimRegenerateToken` | יצירה והחזרה של אסימון ה־Bearer של SCIM (פעם אחת)                                                                                                             |
 
-## Validation error codes
+## קודי שגיאה באימות
 
-`cc_saml_verify_response` failures carry a stable code:
+כשלים של `cc_saml_verify_response` נושאים קוד יציב:
 
-| Code                   | Meaning                                                                          |
+| קוד                    | משמעות                                                                           |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | חתימה חסרה, לא מהימנה או שעבר שינוי, או אלגוריתם/טרנספורמציה אסורים              |
+| `expired`              | מחוץ ל־`NotBefore`/`NotOnOrAfter` (מעבר לסטייה)                                   |
+| `audience`             | הגבלת קהל היעד אינה מפרטת אותנו                                                   |
+| `destination`          | יעד התגובה אינו ה־ACS שלנו                                                        |
+| `request_match`        | ה־`InResponseTo` אינו תואם בקשה ממתינה, או תגובה לא מבוקשת כשזו אסורה             |
+| `issuer`               | ה־Issuer אינו ה־IdP המוגדר                                                        |
+| `recipient`            | הנמען באישור הנושא אינו ה־ACS שלנו                                                |
+| `malformed`            | כשל ברמת ה־XML/הסכימה                                                             |
+| `status`               | הסטטוס שדיווח ה־IdP אינו Success                                                  |
+| `invalid` / `internal` | כל דבר אחר / כשל בתפר                                                             |
 
-## Database surfaces
+## משטחי מסד הנתונים
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — שורה אחת לכל סוג, חוצה סביבות עבודה
+  במכוון.
+- `users.sso_subject` + `users.sso_issuer` — נעיצת הנושא של הספק,
+  ייחודית לכל `(issuer, subject)` באמצעות אינדקס חלקי.
+- `users.deactivated_at` — חותמת ההשבתה של SCIM.
+- אסימון ה־Bearer של SCIM וסוד הלקוח של OIDC נמצאים בקובץ הסודות
+  בהרשאות 0600, ולעולם לא במסד הנתונים.

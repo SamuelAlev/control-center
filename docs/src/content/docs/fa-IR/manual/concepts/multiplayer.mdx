@@ -1,216 +1,220 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: چندنفره — هویت، عضویت و حضور
+description: چگونه Control Center انسان‌ها و عامل‌ها را مشارکت‌کنندگانی هم‌تراز می‌بیند، چه چیزی واقعاً دروازهٔ دسترسی به یک فضای کاری است و چرا آگاهی زنده و رکوردهای مشترک روی دو خط متفاوت حرکت می‌کنند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/چندنفره
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center برای یک اپراتور تنها کار می‌کند، اما مدلی که زیر آن نشسته از
+همان آغاز چندکنشگری است. انسان‌ها و عامل‌ها در همان فضاها پیام می‌فرستند،
+همان تیکت‌ها را ویرایش می‌کنند و در همان فهرست ظاهر می‌شوند. ایمن و
+قابل‌فهم‌کردن این وضعیت به سه تصمیم فروکاسته می‌شود: **چه کسی کنشگر شمرده
+می‌شود**، **چه چیزی دروازهٔ دسترسی است** و **کدام حالت به‌صورت ماندگار
+مشترک می‌شود و کدام فقط به‌صورت زنده پخش می‌شود**.
 
-## Principals: users and agents are co-equal actors
+## Principal: کاربران و عامل‌ها کنشگرهایی هم‌ارزند
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+هر چیزی که «چه کسی این کار را کرد» را ثبت می‌کند — پیام‌ها، تیکت‌ها،
+بازبینی‌ها، برنامه‌ها، گزارش اجراها، ورودی‌های حسابرسی — از راه یک
+**Principal** حل‌وفصل می‌شود؛ اجتماع مهروموم‌شده‌ای از `UserPrincipal` و
+`AgentPrincipal` با یک قالب سیمی فشرده (`user:<id>` / `agent:<id>`). اسناد
+هرگز N انسان (یا N عامل) را در یک حساب نگهبان واحد فرو نمی‌ریزد، پس بازبینی‌ای
+که یک عامل گذاشته و بازبینی‌ای که یک انسان گذاشته، هرجا که ظاهر شوند از هم
+قابل تشخیص‌اند.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+چون Principal واحد هویت است، واحد مهار هم هست:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **محدودیت نرخ به‌ازای هر Principal است، نه هر نشست.** نگهبان سیلِ
+  فراخوانی‌های ابزار از راه دور بر پایهٔ کاربر بودجه‌بندی می‌کند، نه بر پایهٔ
+  اتصال: همهٔ دستگاه‌های یک عضو از یک پنجرهٔ لغزان مشترک برداشت می‌کنند
+  (۱۲۰ فراخوانی در دقیقه که حداکثر ۳۰ تای آن‌ها می‌تواند تغییردهنده باشد)، پس
+  باز کردن سه دستگاه سهم هیچ‌کس را سه‌برابر نمی‌کند و یک عضو پرسروصدا
+  نمی‌تواند بقیه را گرسنه بگذارد.
+- **واگرد به‌ازای هر Principal است.** ژورنال کنش هر کلاینت فقط تغییراتی را
+  ثبت می‌کند که Principal _خودش_ انجام داده است. می‌توانید ویرایش تیکت
+  خودتان را با ⌘Z واگرد کنید؛ نمی‌توانید ویرایش یک هم‌تیمی را واگرد کنید —
+  تا وقتی آن را می‌بینید، خط ماندگار پیشاپیش حلش کرده است (پایین‌تر را
+  ببینید).
 
-## Membership is the access boundary — not the pairing key
+## عضویت مرز دسترسی است — نه کلید جفت‌سازی
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+دو اعتبارنامهٔ جدا به دو پرسش جدا پاسخ می‌دهند. **کلید جفت‌سازی** (به
+[کنترل از راه دور و موبایل(/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/)
+نگاه کنید) یک _دستگاه_ را در برابر سرور احراز هویت می‌کند. **عضویت** به کاربر
+آن دستگاه اجازه می‌دهد درون یک _فضای کاری_ عمل کند. دستگاهی که جفت شده ولی
+کاربرش در یک فضای کاری عضویت ندارد، نه می‌تواند آن را بخواند و نه می‌تواند در
+آن تغییری بدهد.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+عضویت یک سطر برای هر (فضای کاری، کاربر) است که در **فایل پایگاه‌دادهٔ خودِ
+همان فضای کاری** ذخیره می‌شود — پس «چه کسی در این فضای کاری است؟» یک خواندن
+معمولی و محدوده‌مند است، در حالی که پرسش وارونه، «من در چه فضاهای کاری‌ای
+هستم؟»، ناگزیر از چند فایل فراتر می‌رود و یکی از معدود پخش‌های مجاز میان
+فضاهای کاری است. همین چیزی است که انتخابگر فضای کاری پیش از انتخاب هر فضای
+کاری اجرا می‌کند.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+هر سطر نقشی از یک نردبان پنج‌سطحی و مرتب‌برحسب‌رتبه حمل می‌کند:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| نقش    | اختیارات                                                                                                              |
+| ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `owner`  | کنترل کامل، از جمله حذف فضای کاری؛ دقیقاً یکی در هر فضای کاری                                                        |
+| `admin`  | مدیریت اعضا، دعوت‌نامه‌ها، تنظیمات و عملیات مخرب                                                                      |
+| `member` | خواندن و نوشتن روزمره: پیام‌ها، تیکت‌ها، اجراهای عامل                                                                  |
+| `viewer` | فقط‌خواندنی در سراسر فضای کاری؛ گلوب‌های استثنای راز، مسیرهای منطبق را در سطوح حامل کد پنهان می‌کنند                    |
+| `guest`  | همان کفِ فقط‌خواندنیِ بیننده، در پایین‌ترین رتبهٔ نردبان                                                               |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+هر تصمیم دسترسی به «آیا نقش فراخوان دست‌کم X است؟» فروکاسته می‌شود. این کف از
+نوع عملیات استخراج می‌شود، مگر آنکه عملیات کفی را صریحاً اعلام کند: خواندن به
+`guest` نیاز دارد، یک تغییر به `member` و یک عملیات مخرب به `admin`. ACLهای
+به‌ازای هر شیء، فراتر از اعطاهای به‌ازای هر مخزن که پایین‌تر می‌آید، به‌عمد
+خارج از محدوده‌اند.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**دعوت‌نامه‌ها** راه اعطای عضویت‌اند، از تنظیمات → فضای کاری → اعضا. یک ادمین
+کدی یک‌بارمصرف (به‌صورت پیوند یا QR) صادر می‌کند که به‌طور پیش‌فرض پس از هفت
+روز منقضی می‌شود؛ سرور تنها هش SHA-256 کد را ذخیره می‌کند و خود کد دقیقاً
+یک‌بار نشان داده می‌شود. بازخرید آن، کاربر را در لحظه (JIT) تأمین می‌کند،
+عضویت را با نقش همان دعوت ثبت می‌کند (هرگز `owner` — مالکیت صریحاً منتقل
+می‌شود و هرگز با دعوت اعطا نمی‌شود) و سپس کار را به جفت‌سازی دستگاه می‌سپارد.
+اعتبارنامه‌های دستگاهی که پس از جفت‌سازی صادر می‌شوند خودشان به ۳۰ روز محدود
+شده‌اند، پس یک جفت‌سازی کلید دائمی نیست.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**اعطاهای مخزن** زیر عضویت می‌نشینند. چون سرور چک‌اوت‌های کامل را نگه
+می‌دارد، عضویت فضای کاری به‌تنهایی هرگز نباید از میزبان کد پیشی بگیرد: هر
+سطح حامل کد — فایل‌ها، diffها، بازبینی PR، جست‌وجوی کد — اعطای عضو روی _همان
+مخزن_ را بررسی می‌کند. اعطاها به‌ازای (فضای کاری، کاربر، مخزن) تعریف می‌شوند
+و رتبه‌بندی‌شان `none` → `read` → `review` → `write` است؛ `write` یعنی هدایت
+اجراهای عاملی که در مخزن می‌نویسند. نبودن سطر یعنی `none`؛ مالک‌ها و ادمین‌ها
+به‌طور ضمنی روی هر مخزن پیوندشده `write` دارند و اصلاً سطری حمل نمی‌کنند.
 
-## Two lanes of collaboration state
+## دو خط حالت همکاری
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center حالت مشترک را به دو خط تقسیم می‌کند که قواعد ماندگاری‌شان
+وارونهٔ یکدیگر است، چون این دو نوع حالت به شکل‌های وارونه شکست می‌خورند.
 
-### The ephemeral presence lane
+### خط گذرای حضور
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+حضور — چه کسی آنلاین است، کجاست، چه چیزی تایپ می‌کند، یک عامل همین حالا چه
+می‌کند — لحظه‌ای که کهنه شود بی‌ارزش است. اگر ماندگار می‌شد، هر اتصال دوباره
+باید «پایگاه‌داده می‌گوید سام دارد این تیکت را ویرایش می‌کند» را با واقعیت
+آشتی می‌داد. پس حضور **هرگز در پایگاه‌داده نوشته نمی‌شود**. آن در یک **هاب
+حضور** درون‌حافظه‌ای روی سرور زندگی می‌کند: کلاینت‌ها با `presence.update`
+منتشر می‌کنند، همتاها با `presence.watch` مشترک می‌شوند و ورودی‌ها پس از سه
+ضربان ازدست‌رفته به‌طور خودکار منقضی می‌شوند (ضربان‌ها هر ۱۰ ثانیه اجرا
+می‌شوند؛ هاب هر ۵ ثانیه پاک‌سازی می‌کند). چیزی برای آشتی دادن نیست — فقط باید
+بگذاریم از اعتبار بیفتد.
 
-Two properties keep the lane trustworthy:
+دو ویژگی این خط را قابل‌اعتماد نگه می‌دارد:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **هویت از نشست می‌آید، نه از آرگومان‌های کلاینت.** سرور دستگاه
+  احراز‌هویت‌شدهٔ هر اتصال را به یک شناسهٔ کاربر نگاشت می‌کند؛ کلاینت هرگز
+  نمی‌تواند چیزی جز حضور خودش را به‌روز کند، پس هیچ‌کس نمی‌تواند وضعیت یا
+  موقعیت مشارکت‌کنندهٔ دیگری را جعل کند. یک به‌روزرسانی صریح `offline` (قطع
+  اتصال یا کلید حالت نامرئی) ورودی را بی‌درنگ حذف می‌کند.
+- **فهرست از هاب سرور می‌گذرد.** همتاها هرگز حضور را مستقیم رد‌وبدل نمی‌کنند،
+  پس هر مشارکت‌کننده فارغ از توپولوژی همان فهرست را می‌بیند. عامل‌ها کلاینتی
+  ندارند، پس سرور ورودی‌هایشان را از حالت زندهٔ اجرا _مصنوعی می‌سازد_ — در حال
+  فکر، در حال اجرا، مسدود روی دروازهٔ تأیید، انجام‌شده — و یک اجرای نماینده
+  تعیین می‌کند که حالت و موقعیت یک عامل چیست، تا اجراهای همزمان فهرست را
+  به نوسان نیندازند.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+پخش به تفکیک مصرف‌کننده پله‌ای است: رومیزی و وب روی یک پلهٔ کامل سوار می‌شوند
+(حداکثر یک انتشار فهرست در هر ۱۰۰ میلی‌ثانیه) و تلفن روی یک پلهٔ خلاصه (هر
+۵۰۰ میلی‌ثانیه)، تا به‌روزرسانی‌هایی با آهنگ حرکت نشانگر PWA را ذوب نکنند.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+**موقعیت** یک مشارکت‌کننده — اینکه همین حالا کجاست، تا سطح یک آرتیفکت مشخص —
+یک اجتماع مهروموم‌شده است: `Space`، `File` (مخزن + مسیر + شمارهٔ خط اختیاری)،
+`Pr`، `Ticket`، `PlanNode`. هر موقعیتی جایی برای پریدن به آن ندارد: مسیری برای
+نمایشگر فایل وجود ندارد، پس موقعیت `File` به‌جای مقصد، به‌صورت یک برچسب رندر
+می‌شود. این خط همچنین **ادعاهای نرم** را حمل می‌کند («سام دارد این تیکت را
+ویرایش می‌کند»، «یک عامل این worktree را گرفته است»): _دیدپذیری_ تعارض، نه
+قفل. انواع ناشناختهٔ موقعیت به null تفسیر می‌شوند، پس یک کلاینت قدیمی
+به‌سادگی چیزی را که نمی‌فهمد رندر نمی‌کند.
 
-### The durable shared lane
+### خط ماندگار مشترک
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+رکوردهایی که باید زنده بمانند — تیکت‌ها، سند یادداشت‌های مشترک فضا، پیام‌ها —
+راه وارونه را می‌روند: مرجع، مرتب و ماندگارشده. ویرایش‌های همزمان با **برندهٔ
+آخرین نویسنده در ترتیب دریافت سرور** حل می‌شوند، هرگز با ساعت کلاینت. این
+حل‌وفصل به‌عمد ریزدانه است: ویرایش‌های تیکت _به‌ازای هر ستون_ هستند، پس دو نفر
+که فیلدهای متفاوت یک تیکت را ویرایش می‌کنند هر دو می‌نشینند و هیچ‌کدام نوشتهٔ
+دیگری را از بین نمی‌برد (گذارهای گردش‌کار به‌جای آن قفل خوش‌بینانه را نگه
+می‌دارند)؛ سند یادداشت‌های فضا یک ستون است، پس کل سند LWW است و ادعاهای نرم
+روی خط حضور، ویرایش همزمان را به‌جای قفل‌شده، دیدنی می‌کنند. این به‌عمد یک
+CRDT نیست — بار اثبات بر دوش CRDT است و LWW با ترتیب دریافت، به‌همراه
+ادعاهای دیدنی، الگوهای واقعی همکاری را پوشش می‌دهد.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+«آخرین نویسنده» یعنی **ترتیب دریافت در سرور**، هرگز ساعت کلاینت — لپ‌تاپی با
+ساعت کج نمی‌تواند ویرایشی را که باخته ببرد. پشت خط ماندگار، **خوراک
+همگام‌سازی** نشسته است: تریگرهای SQLite هر تغییر را _درون همان تراکنش
+نویسنده_ به یک گزارش تغییر به‌ازای هر فضای کاری می‌افزایند و در همان تراکنشِ
+تغییر، یک شمارهٔ ترتیب یکنوا به‌ازای فضای کاری تخصیص می‌دهند. یک سرویس سرور
+آن گزارش را دنبال می‌کند و به ترتیب شماره، به قاب‌های دلتای نسخه‌دار بدلش
+می‌کند. کلاینت‌ها از عکس‌های کامل به دلتاها فرگشت می‌یابند؛ یک شکاف در
+شماره‌ها، آن مخزن را به‌جای اعمال نادرست قاب‌ها، به حالت عکس کامل برمی‌گرداند.
 
-## Follow, steer, take over, hand back
+## دنبال‌کردن، هدایت، تصاحب، بازگرداندن
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+خط حضور فقط یک فهرست نیست — فعل‌های همکاری را به حرکت درمی‌آورد:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **حالت دنبال‌کردن.** روی یک مشارکت‌کننده کلیک کنید و کلاینت شما سوار موقعیت
+  او می‌شود و همان‌جا که او می‌رود پیش می‌رود. دنبال‌کردن «تا وقتی خودت کاری
+  کنی» است: همان لحظه که خودتان پیمایش کنید، دنبال‌کردن جدا می‌شود. بنری
+  قابل‌بستن اعلام می‌کند وقتی مشارکت‌کنندهٔ دیگری فضایی را که شما در آن هستید
+  در حال ارائه (نورافکنی) است.
+- **هدایت.** پیامی که به یک عامل در حال اجرا فرستاده می‌شود، به‌عنوان هدایت در
+  صف می‌نشیند؛ عامل پیش از ازسرگیری نوبت بعدی‌اش آن را دوباره می‌خواند، پس
+  می‌توانید در میانهٔ راه به یک اجرا تلنگر بزنید، بی‌آنکه بکشیدش.
+- **تصاحب.** در دست گرفتن کنترل یک گفتگو، هر اجرای فعال را در نخستین مرز نوبت
+  پاکش متوقف می‌کند (یک اجرای Claude Code که مرز ایمن ندارد، متوقف می‌شود) و
+  پشت یک عکس لحظه‌ای git به‌ازای هر نوبت قرار می‌دهد، پس تصاحب برگشت‌پذیر
+  است. یک نشانگر ماندگار، اعزام‌های تازه به آن فضا را مسدود می‌کند و از
+  راه‌اندازی دوبارهٔ سرور جان سالم به در می‌برد — سرور هرگز به‌طور خودکار به
+  میانهٔ ویرایش نیمه‌تمام یک انسان بازنمی‌گردد. یک ویرایشگر زنده به‌ازای هر
+  worktree یک ادعای نرم است: تصاحب دوم دیده و رد می‌شود، نه اینکه بی‌صدا ادغام
+  شود.
+- **بازگرداندن.** پس دادن کنترل، خلاصه‌ای ساختاریافته از diff همان worktree را
+  در فضا منتشر می‌کند، آن را به‌عنوان هدایت برای اجراهای متوقف‌شده در صف
+  می‌گذارد، آن‌ها را از سر می‌گیرد و نشانگر را پاک می‌کند.
 
-## The autonomy dial
+## درجهٔ خودمختاری
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+هدایت و تصاحب، مداخله‌های پس از واقعه‌اند. **درجهٔ خودمختاری** تنظیم همیشگی
+است: به‌ازای هر فضا، به‌ازای هر عامل، از سرصفحهٔ فضا تنظیم می‌شود و تعیین
+می‌کند وقتی یک عامل به یک کنش دروازه‌دار می‌رسد چه اتفاقی بیفتد.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
+| سطح               | مقدار سیمی        | اثر روی یک فراخوانی ابزار دروازه‌دار                                                                          |
 | ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| فقط پیشنهاد       | `proposeOnly`     | یکسره رد می‌شود، همراه با دلیلی که به عامل گفته می‌شود بازگو کند — می‌تواند کنش را توصیف کند اما انجامش ندهد |
+| عمل با تأیید      | `actWithApproval` | دروازهٔ تأیید بسته‌در-نبود-پاسخ: یک تأیید به اپراتور متصل نشان داده می‌شود و نبود تأییدکننده یعنی رد            |
+| عمل آزاد          | `actFreely`       | پیش‌تأییدشده، مگر جایی که یک قاعدهٔ `deny` سختِ گاردریل اعمال شود — قاعدهٔ deny همیشه برنده است                |
+| (تنظیم‌نشده)       | `null`            | همانند عمل با تأیید: پیش‌فرض سرور                                                                             |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+دو چیز در هر دو جهت بیرون از این درجه می‌مانند. فعل خروجیِ خودِ یک حالت سنجاق
+شده است و هرگز نمی‌تواند رد شود، هر چه درجه بگوید — زمانی حالت orchestrate
+به‌طور ساختاری نمی‌توانست تنها تحویل‌دادنی‌اش را منتشر کند، چون یک
+پیش‌تنظیم کلاس اثری را که آن فعل اعلام می‌کند رد می‌کرد. و یک `deny` سخت از
+گاردریل‌های کنش با `actFreely` قابل بازنویسی نیست.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/).
+:::note[این درجه فقط هارنس داخلی را دروازه‌بندی می‌کند]
+حلقهٔ هارنس در فراخوان تأیید خود به آن مراجعه می‌کند. عاملی که روی آداپتور
+Claude Code اجرا می‌شود، فراخوانی‌های ابزارش را درون فرایند خودش انجام می‌دهد،
+جایی که Control Center چیزی برای دروازه‌بندی ندارد — به
+[مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) نگاه کنید.
 :::
 
-## Solo zero-regression
+## تکنفره، بدون هیچ افت
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+همهٔ این‌ها افزودنی‌اند. گردش‌کار یک اپراتور تنها تغییری نکرده است: با یک انسان
+و بدون عامل، هاب حضور چیزی برای پخش ندارد، پس این خط عکس اولیهٔ خود را منتشر
+می‌کند و سپس با ترافیک صفر بیکار می‌ماند؛ ماشین‌آلات LWW و همگام‌سازی همان
+مسیر تک‌نویسندهٔ همیشگی است؛ و کلید جفت‌سازی همان اعتبارنامهٔ دستگاهی می‌ماند
+که همیشه بوده است. عضویت از پیش مرز دسترسی است — با یک انسان، یک سطر مالک
+وجود دارد و هیچ عنصر واسطی برای فهرست اعضا پدیدار نمی‌شود.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): the boundary membership enforces
-- [Remote control and mobile](/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/): the pairing key and device credential side of identity
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): the agent half of the principal union
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): the runs that steering and take-over pause and resume
-- [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): the effect-class policy the autonomy dial composes with
-- [Domain events](/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): the bus that live updates ride
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/): مرزی که عضویت اعمال می‌کند
+- [کنترل از راه دور و موبایل(/fa-IR/راهنمای-کاربر/مفهومها/کنترل-از-راه-دور/): سوی کلید جفت‌سازی و اعتبارنامهٔ دستگاه در هویت
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): نیمهٔ عاملِ اجتماع Principal
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/): اجراهایی که هدایت و تصاحب متوقف و از سر می‌گیرند
+- [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/): سیاست کلاس اثر که درجهٔ خودمختاری با آن ترکیب می‌شود
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مفهومها/رویدادهای-دامنه/): گذرگاهی که به‌روزرسانی‌های زنده سوارش می‌شوند

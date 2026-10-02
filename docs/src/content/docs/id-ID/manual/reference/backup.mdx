@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: Cadangan, ekspor, dan impor
+description: Tata letak snapshot, manifest, setiap operasi cadangan dan rute transfer, serta persisnya file yang dimuat dan tidak dimuat oleh cadangan.
 slug: id-ID/panduan-pengguna/referensi/cadangan
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/); for why persistence is
-split this way, see [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
+Semua yang bisa disalin, diserahkan, atau diadopsi Control Center, beserta bentuk persis
+setiap artefaknya. Untuk benar-benar membuat cadangan, lihat
+[Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/); untuk alasan persistensi
+dipisah seperti ini, lihat [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
 
-## Artifacts
+## Artefak
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+Ada tiga artefak salinan basis data, dengan cakupan dan kebijakan penghapusan yang berbeda.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| Artefak                 | Ditulis oleh                 | Bentuk                                | Cakupan                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **Snapshot instalasi**  | `server.backupNow`           | **Direktori** bertanda waktu          | Setiap basis data di instalasi |
+| **Cadangan ruang kerja**| Pipeline `Workspace backup`  | Direktori bertanda waktu dengan satu `.db` | Basis data satu ruang kerja |
+| **Ekspor ruang kerja**  | `workspace.export`           | Satu **file** `.db`                   | Basis data satu ruang kerja    |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+Semuanya ditulis dengan `VACUUM INTO` SQLite, yang aman terhadap basis data WAL yang
+aktif: perintah ini mengambil transaksi baca, menghasilkan salinan yang didefragmentasi
+dan konsisten secara transaksional, serta tidak pernah memerlukan penghentian server.
 
-## Snapshot layout
+## Tata letak snapshot
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,124 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+Tata letaknya mencerminkan direktori data aktif dengan persis, itulah yang membuat
+pemulihan sebuah instalasi sekadar menyalin kembali, bukan menerjemahkan. Nama
+direktorinya adalah stempel waktu UTC dengan `:` dan `.` diganti `-`, jadi aman untuk
+sistem berkas di Windows dan terurut secara kronologis sebagai string biasa.
 
-Scheduled workspace backups live separately at
+Cadangan ruang kerja terjadwal berada terpisah di
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+Cadangan itu tidak menyertakan manifest atau `global.db` dan bukan snapshot instalasi.
+Langkah retensi pipeline mingguan hanya menghapus cadangan ruang kerjanya sendiri
+yang lebih tua dari usia yang dikonfigurasi (bawaannya 30 hari); snapshot instalasi
+yang dibuat secara manual tidak pernah dipangkas oleh langkah itu. `server.listBackups`
+hanya mendaftarkan snapshot instalasi, termasuk yang tidak lengkap.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| Kolom                      | Tipe            | Arti                                                                |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | Versi format manifest. Saat ini `1`                                 |
+| `created_at`               | ISO-8601 UTC    | Kapan snapshot diambil                                              |
+| `global.file`              | string          | Selalu `global.db`                                                  |
+| `global.schema_version`    | int             | Versi skema `GlobalDatabase` pada saat perekaman                    |
+| `global.bytes`             | int             | Ukuran `global.db` yang ditulis                                     |
+| `workspace_schema_version` | int             | Versi skema `WorkspaceDatabase` yang sama untuk setiap file ruang kerja |
+| `workspaces[]`             | array           | Satu entri per ruang kerja yang terekam                             |
+| `workspaces[].workspace_id`| string          | Ruang kerja yang dimuat file ini                                    |
+| `workspaces[].file`        | string          | Path relatif terhadap akar snapshot, `<workspaceId>/workspace.db`  |
+| `workspaces[].bytes`       | int             | Ukuran file itu                                                     |
+| `skipped_workspaces[]`     | array of string | Ruang kerja yang **tidak** bisa direkam oleh cadangan               |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+Sebuah ruang kerja dilewati ketika ruang kerja itu terdaftar tetapi belum pernah
+ditulisi (jadi filenya belum ada), atau ketika `VACUUM INTO`-nya gagal. Dengan cara apa
+pun, snapshot tetap selesai dan manifest menyebutkan apa yang hilang.
 
-### Completeness
+### Kelengkapan
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` melaporkan flag `complete` per snapshot. Flag itu bernilai false
+ketika manifest tidak ada atau tidak bisa diurai, ketika `global.db` hilang, atau ketika
+manifest menyebut file ruang kerja yang tidak ada di disk.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+Snapshot yang tidak lengkap tetap didaftarkan, karena snapshot yang tidak bisa dilihat
+operator adalah snapshot yang mereka yakini mereka miliki. Ketika manifest tidak bisa
+dibaca, daftar itu beralih ke tata letak itu sendiri dan melaporkan file
+`<workspaceId>/workspace.db` apa pun yang ditemukannya — file-file itu tetap bisa
+diadopsi satu per satu melalui `workspace.import` meskipun snapshot secara keseluruhan
+tidak bisa memulihkan instalasi.
 
-## What a backup does not contain
+## Apa yang tidak dimuat cadangan
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+Kedua artefak itu **hanya basis data**. Direktori ruang kerja memuat lebih dari sekadar
+basis datanya, dan tidak ada bagian lain yang ikut berpindah:
 
-| Path                                | In a snapshot? | In a workspace export? |
-| ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| Path                                | Ada di snapshot? | Ada di ekspor ruang kerja? |
+| ----------------------------------- | ---------------- | -------------------------- |
+| `global.db`                         | Ya               | Tidak                      |
+| `<workspaceId>/workspace.db`        | Ya               | Ya (*itulah* filenya)      |
+| `<workspaceId>/blobs/`              | Tidak            | Tidak                      |
+| `<workspaceId>/skills/`             | Tidak            | Tidak                      |
+| `<workspaceId>/agents/`             | Tidak            | Tidak                      |
+| `<workspaceId>/chat_credentials/`   | Tidak            | Tidak                      |
+| `<workspaceId>/spaces/<spaceId>/`   | Tidak            | Tidak                      |
+| `<workspaceId>/pr_clones/`          | Tidak            | Tidak                      |
+| `secrets.json`                      | Tidak            | Tidak                      |
+| `models/`                           | Tidak            | Tidak                      |
+| `meetings/<meetingId>/`             | Tidak            | Tidak                      |
+| `rigs/`                             | Tidak            | Tidak                      |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/id-ID/panduan-pengguna/referensi/jembatan-chat/).
+Sebagian dari itu bisa dibuang — `spaces/` menyimpan worktree copy-on-write yang
+disediakan ulang dari repo, `pr_clones/` adalah cache, `models/` diunduh ulang, `rigs/`
+adalah status mesin. Sebagiannya lagi tidak: `blobs/` menyimpan gambar yang ditempelkan
+dan dirujuk baris-baris di basis data, `skills/` dan `agents/` menyimpan file yang dipakai
+agen untuk berjalan, dan `secrets.json` menyimpan setiap kunci pemasangan, kredensial
+penyedia, dan pengaturan SSO di instalasi. Lihat
+[Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/#copy-backups-off-the-machine)
+untuk menutupi sisanya.
+:::note[Token chat sengaja ditinggalkan]
+`chat_credentials/` berada di samping basis data alih-alih di dalamnya, itulah sebabnya
+ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang aktif. Lihat
+[referensi jembatan chat](/id-ID/panduan-pengguna/referensi/jembatan-chat/).
 :::
 
-## Operations
+## Operasi
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+RPC cadangan instalasi dan ekspor/impor ruang kerja hanya untuk `fullClient`: ponsel yang
+dipasangkan tidak bisa memicunya. Semuanya sama sekali tidak ada — bukan ditolak,
+melainkan tidak ada secara struktural — pada server yang tidak memiliki port cadangan,
+seperti server demo.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
-| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| Operasi              | Jenis  | Cakupan    | Peran minimum     | Argumen       | Hasil                         |
+| -------------------- | ------ | ---------- | ----------------- | ------------- | ----------------------------- |
+| `server.backupNow`   | mutasi | Instalasi  | **pemilik** instalasi | tidak ada | `{ok, path}`                  |
+| `server.listBackups` | baca   | Instalasi  | **pemilik** instalasi | tidak ada | `{backups: [...]}`            |
+| `server.deleteBackup` | mutasi | Instalasi | **pemilik** instalasi | `name` | `{ok}` |
+| `workspace.export`   | baca   | Ruang kerja | `admin`          | tidak ada     | `{ok, path}`                  |
+| `workspace.import`   | mutasi | Ruang kerja | `owner`         | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | mutasi | Instalasi* | `owner`          | `id`          | baris pendaftaran ditandai terhapus |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` tidak bercakupan karena baris yang ditandainya berada di pendaftaran
+global; handler-nya memeriksa keanggotaan pemanggil pada ruang kerja yang disebut
+dan mewajibkan `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` di setiap respons adalah path di **host server**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[Snapshot seluruh instalasi dibatasi pemilik di kedua jalur]
+`server.backupNow`, `server.listBackups`, dan `server.deleteBackup` mewajibkan
+**pemilik** instalasi (`ServerAuthority.serverOwner`), gerbang yang sama dengan
+`GET /backup/snapshot`. Snapshot merekam basis data setiap ruang kerja, jadi
+menjadi admin di satu ruang kerja tidak cukup untuk mengelola ruang kerja lainnya.
+Penghapusan hanya menerima nama direktori stempel waktu yang terdaftar, bukan path
+server sembarang, dan menghapus seluruh snapshot (termasuk snapshot yang tidak
+lengkap). Ekspor/impor per ruang kerja tetap berada di tangan admin/pemilik ruang
+kerja, bukan pemilik instalasi.
 :::
 
-### `server.listBackups` response
+### Respons `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+Terbaru lebih dulu, diurutkan berdasarkan nama direktori (yang merupakan stempel waktu,
+jadi urutannya tetap berlaku bahkan untuk snapshot yang manifest-nya tidak bisa dibaca).
 
 ```json
 {
@@ -169,99 +174,104 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` dihilangkan ketika manifest tidak bisa dibaca. `bytes` di tingkat teratas
+adalah ukuran nyata di disk dari seluruh direktori, bukan jumlah dari manifest itu
+sendiri — pertanyaan yang diajukan operator yang memangkas snapshot adalah berapa biaya
+direktori itu, bukan berapa yang dimaksudkan untuk ditulis oleh cadangan.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+Setiap `workspaces[].path` persisnya adalah nilai yang diterima `workspace.import`
+sebagai `source_path`. Itu memang sengaja: "memulihkan ruang kerja ini dari snapshot ini"
+*adalah* operasi impor, jadi keduanya tidak bisa menyimpang menjadi perlakuan yang
+berbeda terhadap file yang sama.
 
-### `workspace.import` validation
+### Validasi `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Sebelum apa pun diganti, file kandidat dibuka dalam mode hanya baca dengan koneksi SQLite
+mentah yang berumur pendek dan baris `workspace_meta`-nya dibaca.
 
-| Condition                                        | Result                                                          |
+| Kondisi                                          | Hasil                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| Bukan basis data SQLite yang bisa dibaca, atau tidak ada `workspace_meta` | Ditolak. Tidak ada yang disentuh                 |
+| Id ruang kerja yang tercatat ≠ target            | **Diizinkan**, dicatat di log. Beginilah ruang kerja diduplikasi atau dipulihkan dengan id baru |
+| Id instalasi yang tercatat ≠ instalasi ini       | **Diizinkan**, dicatat di log. Perangkat yang dipasangkan dan id pengguna milik instalasi itu tidak akan dikenali di sini |
+| Id ruang kerja tidak valid, atau file tidak ada  | Ditolak                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+Saat diterima, basis data ruang kerja tujuan ditutup dan dilepas dari pengelola sebelum
+file disalin menimpanya (koneksi drift yang terbuka memegang file itu beserta `-wal`-nya),
+lalu dibuka kembali sehingga `beforeOpen` memasang ulang pemicu FTS dan sinkronisasi, dan
+indeks FTS dibangun ulang — tabel konten file yang diimpor terisi, tetapi indeksnya
+mungkin sudah usang.
 
-## Transfer routes
+## Rute transfer
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+Setiap operasi di atas berbicara dalam path sisi server, yang merupakan jawaban lengkap
+hanya ketika server itu mesin Anda sendiri. Ketiga rute ini yang membawa byte-nya, di
+jalur bertanda tangan PSK yang sama dengan yang dipakai proksi media dan penyimpanan blob.
+Pemanggil menandatangani string target dengan kunci pra-bersama perangkatnya dan
+meneruskan tanda tangannya sebagai `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| Rute                    | Metode | Kueri           | Target bertanda tangan         | Memerlukan             |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** ruang kerja |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **pemilik** instalasi |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **pemilik** ruang kerja |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` adalah id ruang kerja, `n` nama direktori snapshot, `d` id perangkat pemanggil, `s`
+tanda tangannya. `n` diselesaikan terhadap daftar cadangan alih-alih digabungkan ke akar
+cadangan, sehingga rute itu tidak bisa diarahkan ke direktori yang tidak akan ditampilkan
+oleh daftar.
 
-| Status | Cause                                                                              |
+| Status | Penyebab                                                                            |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | Parameter kueri yang diwajibkan hilang, atau isi unggahan kosong                    |
+| `403`  | Perangkat tidak dikenal atau dicabut, tanda tangan buruk, atau pemanggil tidak memiliki peran itu |
+| `404`  | Tidak ada port cadangan di host ini, atau snapshot/file ruang kerja yang disebut tidak ada |
+| `405`  | `/backup/restore` dipanggil dengan apa pun selain `POST`                            |
+| `413`  | Isi unggahan melebihi 8 GiB, baik menurut content-length yang dideklarasikan maupun menurut byte yang benar-benar dibaca |
+| `500`  | Ekspor atau arsip gagal di sisi server                                              |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+Kedua unduhan merespons `Cache-Control: no-store` dengan `Accept-Ranges: none`. Setiap
+permintaan membuat salinan **baru** dan menghapusnya setelah dialirkan, jadi respons yang
+di-cache atau dilanjutkan akan menyambung byte dari dua ekspor berbeda menjadi satu file
+yang tampak valid padahal tidak.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` mengembalikan `<name>.zip`, dengan entri relatif terhadap akar snapshot
+sehingga penguraiannya mereproduksi `manifest.json` + `global.db` +
+`<workspaceId>/workspace.db`. Entri ditulis dalam urutan terurut, jadi dua arsip dari
+snapshot yang sama adalah arsip yang sama.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` mengalirkan isinya langsung ke file staging alih-alih menampungnya di
+buffer, membatasinya sebelum dan selama pembacaan, dan menghapus file yang di-staging pada
+**setiap** jalur keluar termasuk saat penolakan.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[Koneksi yang direlai tidak memiliki origin HTTP]
+Relay yang diperantarai membawa frame RPC, bukan transfer file. Semua yang berbicara
+dalam path sisi server tetap berfungsi melaluinya; ketiga rute transfer memerlukan
+koneksi langsung, dan UI menonaktifkannya dengan catatan alih-alih gagal di tengah
+unduhan.
 :::
 
-## Paths and limits
+## Path dan batas
 
-| Thing                          | Value                                                        |
+| Hal                            | Nilai                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Snapshot                       | `<dataDir>/backups/<timestamp>/`                             |
+| Cadangan ruang kerja terjadwal | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| Ekspor ruang kerja             | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Staging transfer               | `<dataDir>/backups/transfer/` — sebuah meja kerja, dibersihkan oleh rute yang menulisinya |
+| Nama arsip snapshot            | `<snapshot directory name>.zip`                              |
+| Batas unggahan                 | 8 GiB per `POST /backup/restore`                             |
+| Retensi                        | Snapshot instalasi: penghapusan manual. Cadangan ruang kerja: pipeline mingguan, bawaan 30 hari |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+Direktori `exports/`, `transfer/`, dan `workspace-backups/` bukan snapshot instalasi dan
+dikecualikan dari `server.listBackups`. Hanya direktori terakhir yang memiliki retensi
+terjadwal; menghapus snapshot instalasi memerlukan tindakan eksplisit dari pemilik
+instalasi.
 
-## See also
+## Lihat juga
 
-- [Back up and restore](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/) — the recipes these operations belong to
-- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/) — why one workspace is one file
-- [`cc_server` CLI](/id-ID/panduan-pengguna/referensi/cli-cc-server/) — the data directory these paths sit in
-- [Route map](/id-ID/panduan-pengguna/referensi/peta-rute/) — where the UI lives
-- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/) — the client/server split the paths follow
+- [Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/) — resep tempat operasi-operasi ini berada
+- [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/) — mengapa satu ruang kerja adalah satu file
+- [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/) — direktori data tempat path-path ini berada
+- [Peta rute](/id-ID/panduan-pengguna/referensi/peta-rute/) — tempat UI berada
+- [Arsitektur](/id-ID/panduan-pengguna/konsep/arsitektur/) — pemisahan klien/server yang diikuti path-path ini

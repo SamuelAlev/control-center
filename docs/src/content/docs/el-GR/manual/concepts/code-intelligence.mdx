@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Νοημοσύνη κώδικα
+description: Γιατί ένας πράκτορας χρειάζεται τον μεταγλωττιστή, έναν δομικό αντιστοιχιστή και έναν αποσφαλματωτή — και τι απαντά ο καθένας που δεν μπορούν οι άλλοι.
 slug: el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Το Control Center δίνει σε έναν πράκτορα τέσσερις τρόπους να κατανοεί τον κώδικα πέρα από την απλή ανάγνωσή του. Απαντούν σε πραγματικά διαφορετικά ερωτήματα, και ο λόγος που είναι τέσσερις και όχι ένας είναι ότι κανένας μεμονωμένος μηχανισμός δεν απαντά σε όλα.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Μηχανισμός           | Απαντά σε                                            | Κόστος                                    |
+| -------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| **Γράφημα κώδικα**   | Τι υπάρχει εδώ και τι εξαρτάται από αυτό             | Ένα πέρασμα ευρετηρίασης· φθηνό στην αναζήτηση |
+| **Διακομιστής γλώσσας** | Μεταγλωττίζεται αυτό όντως, και τι τύπος είναι αυτό | Μια διεργασία διακομιστή ανά έργο         |
+| **Δομική αναζήτηση** | Πού εμφανίζεται αυτό το ΣΧΗΜΑ                        | Μια ανάλυση ανά αρχείο                    |
+| **Αποσφαλματωτής**   | Τι ίσχυε αυτή τη στιγμή, σε αυτό το frame            | Μια σταματημένη διεργασία                 |
 
-## The gap the language server closes
+## Το κενό που καλύπτει ο διακομιστής γλώσσας
 
-The [code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+Το [γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) χτίζεται από το tree-sitter: σύμβολα, ακμές κλήσεων, μια ακτίνα επίπτωσης. Είναι γρήγορο, είναι φθηνό και δεν γνωρίζει τίποτα για τους **τύπους**. Δεν μπορεί να σου πει αν η κλήση που μόλις έγραψες μεταγλωττίζεται, αν αυτό το πεδίο υπάρχει στο αντικείμενο ή αν η μετονομασία σου έχασε μια επανεξαγωγή.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Χωρίς διακομιστή γλώσσας, ένας πράκτορας το ανακαλύπτει τη στιγμή του τεστ — ή ποτέ. Γράφει κάτι εύλογο, προχωρά, και η αποτυχία εμφανίζεται τρεις γύρους αργότερα, κολλημένη σε μια διαφορετική αλλαγή.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Έτσι, το όφελος δεν είναι στην πραγματικότητα το εργαλείο `lsp`. Είναι ότι τα `write`, `edit` και `apply_patch` είναι τυλιγμένα: μετά από κάθε εγγραφή, το αρχείο περνά από τον διακομιστή γλώσσας και τα **νεοεισαχθέντα** διαγνωστικά ενσωματώνονται στο αποτέλεσμα του εργαλείου. Ο πράκτορας μαθαίνει ότι έσπασε το build τη στιγμή που το έσπασε, είτε σκέφτηκε να ρωτήσει είτε όχι.
 
-### Only new diagnostics
+### Μόνο τα νέα διαγνωστικά
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Το να επαναλαμβάνεις όσα έχουν ήδη ειπωθεί στον πράκτορα είναι χειρότερο από το να μη πεις τίποτα: γεμίζει το αποτέλεσμα με θόρυβο που ο πράκτορας μαθαίνει να προσπερνά, και το ένα νέο σφάλμα χάνεται μαζί του. Ένα μητρώο ανά εκτέλεση καταγράφει ό,τι έχει αναφερθεί, με κλειδί τη σοβαρότητα, τον κωδικό και το μήνυμα — **όχι** τη θέση, ώστε ένα διαγνωστικό που απλώς κατέβηκε τέσσερις γραμμές να μην αναφέρεται ξανά ως νέο.
 
-### Lazy, and honest about being absent
+### Οκνηρό, και ειλικρινές για την απουσία του
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Κανένας διακομιστής δεν ξεκινά κατά την εκκίνηση. Ένας ξεκινά στο πρώτο αίτημα που τον χρειάζεται, το οποίο είναι σχεδόν πάντα η πρώτη επεξεργασία σε ένα αρχείο που διεκδικεί, και οι αδρανείς σαρώνονται και τερματίζονται. Ένας κεντρικός υπολογιστής που δεν αγγίζει ποτέ τη Dart δεν ξεκινά ποτέ αναλυτή.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Η ανίχνευση είναι μια **τομή**: ένας δείκτης ρίζας πρέπει να υπάρχει στο checkout *και* το εκτελέσιμο να επιλύεται. Ένας δείκτης μόνος του λέει «αυτό το έργο είναι Python» και τίποτα για το αν ο διακομιστής είναι εγκατεστημένος· ένα εκτελέσιμο που επιλύεται μόνο του λέει ότι ο κεντρικός υπολογιστής διαθέτει εργαλειοθήκη και τίποτα για αυτό το checkout. Μόνο τα δύο μαζί σημαίνουν ότι ένα ερώτημα μπορεί να πετύχει, και ένα εργαλείο που προσφέρεται και πάντα αποτυγχάνει είναι χειρότερο από ένα που λείπει.
 
-## Why structural search, when grep exists
+## Γιατί δομική αναζήτηση, όταν υπάρχει το grep
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+Το `grep` αντιστοιχίζει χαρακτήρες. Είναι το σωστό εργαλείο για ένα όνομα και το λάθος για ένα σχήμα.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Ένα δομικό μοτίβο αναλύεται από τη **γραμματική του ίδιου του αρχείου**, οπότε το `dispose($X)` βρίσκει την κλήση όπως κι αν είναι αραιωμένη με κενά, τυλιγμένη ή σπασμένη σε γραμμές, και δεν αντιστοιχίζει ποτέ τους ίδιους χαρακτήρες μέσα σε ένα string literal ή ένα σχόλιο.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Η ιδιότητα που το κάνει κάτι περισσότερο από μια regex με επιπλέον βήματα είναι ότι μια μεταβλητή μοτίβου (metavariable) που επαναλαμβάνεται σε ένα μοτίβο πρέπει να συλλαμβάνει το ίδιο κείμενο:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+αντιστοιχίζει έναν φρουρό (guard) που κάνει dispose σε αυτό που έλεγξε, και δεν αντιστοιχίζει έναν που κάνει dispose σε κάτι άλλο. Αυτή είναι μια κατηγορία σφαλμάτων που δεν μπορείς να εκφράσεις καθόλου κειμενικά.
 
-### It runs on the tree-sitter already linked
+### Τρέχει στο tree-sitter που είναι ήδη συνδεδεμένο
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Δεν υπάρχει δεύτερη μηχανή. Το `cc_natives` φορτώνει ήδη το tree-sitter και τις γραμματικές του για το γράφημα κώδικα, με προσωρινή μνήμη μεταγλωττισμένων ερωτημάτων και πίνακα γλωσσών. Ο αντιστοιχιστής είναι καθαρή Dart πάνω σε δέντρα που αναλύονταν ούτως ή άλλως. Μια δεύτερη δομική μηχανή θα σήμαινε έναν δεύτερο αναλυτή, ένα δεύτερο σύνολο γραμματικών προς κατασκευή και διάθεση σε κάθε πλατφόρμα, και δύο απαντήσεις στο «τι είναι έκφραση κλήσης».
 
-### A fragment needs somewhere to live
+### Ένα απόσπασμα χρειάζεται κάπου να ζήσει
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Μια γραμματική ορίζει μόνο τι είναι ένα ολόκληρο *αρχείο*. Αναλυμένο σκέτο στο ανώτατο επίπεδο της Dart, το `dispose(x)` είναι μια απολύτως έγκυρη **υπογραφή συνάρτησης** — μια δήλωση με όνομα `dispose` που δέχεται παράμετρο `x` — χωρίς πουθενά κάποιο σφάλμα να το προδίδει. Ένας αντιστοιχιστής χτισμένος σε αυτή την ανάλυση ψάχνει δηλώσεις, δεν βρίσκει κλήσεις και αναφέρει «καμία αντιστοίχιση» για ένα μοτίβο που ποτέ δεν διαβαζόταν όπως φαίνεται.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Έτσι, ένα μοτίβο δοκιμάζεται σε μια κλίμακα πλαισίων — δήλωση, έκφραση, μέλος κλάσης, ανώτατο επίπεδο — και κερδίζει το πρώτο που το αποδέχεται. Ένα απόσπασμα που κανένα πλαίσιο δεν αποδέχεται αναφέρεται ως μη αναλύσιμο, αντί να αναζητηθεί και να μη βρεθεί σιωπηλά.
 
-## Why a rewrite stages instead of writing
+## Γιατί μια αναδιατύπωση προετοιμάζεται σε στάδιο αντί να γράφεται απευθείας
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Μια δομική αναδιατύπωση είναι η ευρύτερη επεξεργασία που μπορεί να κάνει ένας πράκτορας: ένα μοτίβο, σαράντα αρχεία, και κανείς δεν διαβάζει το αποτέλεσμα γραμμή προς γραμμή — ούτε το μοντέλο ούτε το άτομο που το ζήτησε. Το να την εφαρμόσεις και να αναφέρεις «έτοιμο» σημαίνει ότι η πρώτη ειλικρινής ματιά στην αλλαγή είναι ένα `git diff` εκ των υστέρων.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Έτσι, το `ast_edit` αναφέρει τι *θα* έκανε — τον αριθμό, τα αρχεία, τα σημεία που αντιστοιχίστηκαν — και η αλλαγή εφαρμόζεται μόνο όταν την υποβάλει το `resolve`. Αυτό είναι επίσης που επιτρέπει σε ένα diff και μια Αποδοχή/Απόρριψη να μπουν μπροστά από έναν άνθρωπο πριν φτάσει οτιδήποτε στον δίσκο.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Η υποβολή είναι όλα ή τίποτα και κάθε αρχείο ελέγχεται απέναντι στο περιεχόμενο που καταγράφηκε τη στιγμή της προετοιμασίας. Μεταξύ προετοιμασίας και υποβολής, ο πράκτορας μπορεί να έχει επεξεργαστεί χειροκίνητα ένα από αυτά τα αρχεία, ένα πέρασμα διαγνωστικών μπορεί να το έχει ξαναγράψει ή ένας formatter μπορεί να το έχει πειράξει — το να υποβάλεις ούτως ή άλλως θα ακύρωνε αυτή την εργασία και το diff θα φαινόταν σκόπιμο. Οποιαδήποτε ασυμφωνία απορρίπτει ολόκληρη την αλλαγή, γιατί μια μερικώς εφαρμοσμένη δομική αναδιατύπωση αφήνει ένα δέντρο που δεν μεταγλωττίζεται σε καμία από τις δύο μορφές.
 
-## What a debugger answers that a print statement cannot
+## Τι απαντά ένας αποσφαλματωτής που δεν μπορεί μια εντολή εκτύπωσης
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Ο κύκλος της εντολής εκτύπωσης είναι: πρόσθεσε μια εκτύπωση, τρέξε ξανά το όλο πράγμα, διάβασε την έξοδο, διέγραψε την εκτύπωση. Κοστίζει μια πλήρη εκτέλεση τεστ ανά ερώτημα και απαντά μόνο στο ερώτημα που σκέφτηκες να θέσεις *πριν* την εκτέλεση.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Ένα σταματημένο frame απαντά ταυτόχρονα σε κάθε ερώτημα για εκείνη τη στιγμή — κάθε τοπική μεταβλητή, κάθε καλούντα και μια έκφραση που αξιολογείται στο δικό του πεδίο. Για μια «κολλημένη» διεργασία ή μια αποτυχία που αναπαράγεται μία φορά στις δέκα εκτελέσεις, αυτή είναι η διαφορά ανάμεσα σε ένα απόγευμα και ένα λεπτό.
 
-### Bounded like an enclosure, and for the same reason
+### Περιορισμένο όπως ένα περίβλημα, και για τον ίδιο λόγο
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Ένας προσαρμογέας αποσφαλμάτωσης κατέχει μια **σταματημένη διεργασία** που κρατά ό,τι κρατά αυτή η διεργασία — μια θύρα, ένα κλείδωμα, μια σύνδεση βάσης δεδομένων. Μια συνεδρία που δεν την οδηγεί κανείς είναι μια διαρροή που επιβιώνει πέρα από τον γύρο που τη ξεκίνησε. Έτσι, υπάρχει ένα αυστηρό TTL, ακριβώς μία συνεδρία ανά συνομιλία, και ένα δεύτερο `launch` απορρίπτεται αντί να αντικαθιστά σιωπηλά το πρώτο: ένας πράκτορας που ξεκινά ένα δεύτερο χωρίς να τερματίσει το πρώτο έχει σχεδόν σίγουρα χάσει την επαφή με το πρώτο.
 
-### One transport, two protocols
+### Ένα μεταφορικό στρώμα, δύο πρωτόκολλα
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Το Debug Adapter Protocol μοιράζεται την πλαισίωση `Content-Length` του Language Server Protocol και τίποτα πάνω από αυτή — διαφορετικά κλειδιά συσχέτισης, διαφορετική μορφή αποτυχίας και έναν τρίτο τύπο μηνύματος (τα events) χωρίς αντίστοιχο στο LSP. Η πλαισίωση ζει σε ένα σημείο· τα πρωτόκολλα κάθονται πάνω της ξεχωριστά.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Το να γράψεις την πλαισίωση δύο φορές θα σήμαινε δύο απαντήσεις στο «ένα μήνυμα απλώνεται σε δύο τμήματα», «ένα τμήμα περιέχει τρία μηνύματα» και «ο διακομιστής έγραψε ένα banner στο stdout πριν το πρώτο του frame», και μόνο μία από αυτές θα έπαιρνε τη διόρθωση.
 
-## Related
+## Σχετικά
 
-- [Search code with the code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) — the symbol and impact side
-- [Debug a failing test](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποσφαλμάτωση-αποτυχημένου-τεστ/) — the debugger, end to end
-- [Refactor structurally](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δομική-αναδιάρθρωση/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — every operation and argument
+- [Αναζήτηση κώδικα με το γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/) — η πλευρά των συμβόλων και της επίπτωσης
+- [Αποσφαλμάτωση αποτυχημένου τεστ](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποσφαλμάτωση-αποτυχημένου-τεστ/) — ο αποσφαλματωτής, από άκρη σε άκρη
+- [Δομική αναδιάρθρωση κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δομική-αναδιάρθρωση/) — `ast_grep` και `ast_edit`
+- [Ενσωματωμένα εργαλεία πράκτορα](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα/) — κάθε λειτουργία και όρισμα

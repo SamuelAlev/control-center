@@ -1,172 +1,116 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: الدردشة مع وكيل
+description: أنشئ مساحة مع وكيل، وأرسل إليه العمل، ووجّهه في منتصف التشغيل، وأوقفه.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/دردشة-مع-وكيل
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+يبيّن هذا الدليل كيف تعمل مع وكيل داخل مساحة.
 
-## Create a space
+## إنشاء مساحة
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. انتقل إلى **المساحات** في الشريط الجانبي.
+2. انقر زر **+** بجانب عنوان المساحات.
+3. اكتب **الاسم** — وهو مطلوب. الاسم الفارغ يُرفَض، ويبقى الحوار مفتوحًا.
+4. أضف وكلاء من مساحة العمل إن شئت.
+5. إن وُجد في مساحة العمل أي مستودع، يظهر منتقي المستودعات. يبدأ وكل المستودعات محددة؛ ضيّق التحديد (بما في ذلك إلغاء تحديد مستودع واحد) إلى المستودعات التي تجهّز هذه المساحة أشجار عمل لها.
+6. أكّد.
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+يفتح Control Center المساحة، ويبدأ في الخلفية تجهيز شجرة عمل بالنسخ عند الكتابة لكل مستودع محدد.
 
-## Send the first message
+## إرسال الرسالة الأولى
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+اكتب رسالتك في حقل الكتابة واضغط Enter. يُرسَل الوكيل ويبدأ بث جوابه.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+إن كانت المساحة ما تزال قيد التجهيز، تُعلَّق رسالتك بدل أن تضيع — يحتفظ بها حقل الكتابة ويرسلها تلقائيًا ما إن تجهز أشجار العمل.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+أثناء عمل الوكيل ترى جولته تتدفق: مقاطع الاستدلال، واستدعاءات الأدوات (قراءة الملفات وكتابتها وأوامر الصدفة)، ونص الجواب، كلها داخل رسالة جولة واحدة.
 
-## Steer a running agent
+## توجيه وكيل يعمل
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+ما دام الوكيل يعمل، النص الحواري العادي **لا** يضع جولة جديدة في الطابور. يصير بطاقة توجيه في الانتظار، في الشريط فوق حقل الكتابة، ويُحقَن في التشغيل الحي عند حد الجولة التالي. لا إشعار منبثق — البطاقة هي الإشارة.
 
-Three things change that behaviour:
+ثلاثة أمور تغيّر هذا السلوك:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- الرسالة التي فيها **إشارة @** تُرسَل دائمًا رسالةً، ولا تصير توجيهًا أبدًا
+- الرسالة التي تبدأ بـ **أمر الشرطة المائلة** تُعالَج دائمًا على أنها ذلك الأمر
+- الرسالة التي معها **مرفق** تُرسَل دائمًا رسالةً — طابور التوجيه نص فقط
+- إن كانت كل التشغيلات الحيّة قد انتهت، يمر النص ويُرسَل رسالة عادية
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[التوجيه يحتاج الإطار المضمّن]
+لا يحقن التوجيه في منتصف التشغيل إلا إطار Control Center المضمّن. على محوّل Claude Code يبقى النص بطاقة توجيه في الانتظار؛ وحين ينتهي التشغيل يتحوّل ما بقي في الانتظار إلى رسالة عادية.
 :::
 
-## Approve a blocked action
+## الموافقة على إجراء محظور
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+حين يبلغ الوكيل إجراءً تغلقه الضوابط — أمرًا مدمّرًا، أو أداة ذات امتياز — **يحظر الخادم التشغيل** وينشر طلب موافقة إلى كل عميل متصل. إن كانت تلك المحادثة مفتوحة، يظهر الطلب **في الدردشة**، فوق حقل الكتابة، ببطاقة الخيارات المرقّمة نفسها المستخدَمة مع `ask_user` (**رفض**، **موافقة**، واختياريًا **الموافقة لمدة 8 ساعات**). لا تخطّي: الوكيل المحظور ينتظر قرارًا.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+إن كنت في موضع آخر من التطبيق، تظل لوحة في المقدمة داخل الواجهة تسرد ما ينتظر، فتستطيع رفع الحظر عن الوكيل من غير البحث عن المساحة. تخفي الطبقة العلوية الطلب لحظة ظهور محادثة تلك المساحة على الشاشة، فلا تجيب عن المطالبة نفسها مرتين.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+لا مهلة: الوكيل المحظور ينتظر حتى يقرّر أحد. ويظهر الطلب نفسه في شريط «يحتاج إلى انتباهك» في الوارد، وعلى تطبيق الهاتف.
 
-## Answer an agent's question
+## الإجابة عن سؤال الوكيل
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+الوكيل الذي يحتاج إلى تفضيل، أو إلى متطلب ناقص، أو إلى مفترق حقيقي **يجب** أن يستدعي `ask_user`. كتابة السؤال رسالة في الدردشة تُنهي الجولة، وعليك أن تعيد المطالبة. ترسم الأداة بطاقة مرقّمة في المحادثة — خيارات، أو نصًا حرًا اختياريًا، أو الاثنين — وينتظر التشغيل جوابك.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+انقر خيارًا واحدًا لإرساله (يصير الرقم اللاحق سهمًا عند مرور المؤشر). الاختيار المتعدد والأجوبة المكتوبة يستعملان **متابعة** (`⌘↵` / `Ctrl↵`). **تخطي** يطلب من الوكيل أن يختار افتراضيًا معقولًا وألا يسأل مرة أخرى.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+هي آلية منفصلة عن بطاقة الموافقة أعلاه: الموافقة «أأفعل هذا؟»، والسؤال «أي هذه قصدت؟». السؤال متاح على الإطار المضمّن في كل وضع، بما فيها أوضاع القراءة فقط (لا يغيّر شيئًا)، وهو عمدًا غير ملفوف بمطالبة موافقة — فحوار أمام حوار يفشل مغلقًا إذا لم يكن هناك معتمِد متصل. والتشغيل الذي لا محادثة يُرسَم فيها لا يحصل على الأداة أصلًا.
 
-## Stop an agent
+## إيقاف وكيل
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+ما دامت التشغيلات حيّة، يصير زر الإرسال في حقل الكتابة زر **إيقاف**. أفرغ حقل الكتابة واضغطه — يوقف ذلك كل وكيل يعمل في تلك المحادثة.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+لا عنصر إيقاف في ترويسة المساحة، ولا اختصار لوحة مفاتيح له. لإيقاف تشغيل واحد حين تكون عدة تشغيلات حيّة، افتح لسان **نشاط الوكيل** لذلك التشغيل — تحمل ترويسته **إيقاف الوكيل مؤقتًا** و**استئناف الوكيل** و**إيقاف التشغيل** (والإيقاف يطلب منك التأكيد). **قابلية الملاحظة ← مباشر** يسرد كل وكيل يعمل في مساحة العمل، وبالتحكم نفسه.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+يُعلَّم التشغيل المتوقف بـ«متوقف». أرسل رسالة جديدة ليُرسَل من جديد.
 
-## Use slash commands
+## استخدام أوامر الشرطة المائلة
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+اكتب `/` في حقل الكتابة لتظهر قائمة الأوامر. هذه التي تغيّر سلوك المحادثة:
 
-| Command        | What it does                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| الأمر | ما يفعله |
+| --- | --- |
+| `/plan` | ينقل المساحة إلى وضع التخطيط. `/plan` وحده يضبط الوضع؛ و`/plan <request>` يضبطه ويرسل الباقي على أنه رسالتك |
+| `/goal <text>` | يسجّل هدف العمل الجاري لهذه المحادثة |
+| `/loop <text>` | يكرّر العمل على مهمة حتى تكتمل |
+| `/compact` | يطوي السجل الأقدم في ملخص مثبَّت ويتابع على السياق المضغوط |
+| `/todo …` | يعرض قائمة المهام المحفوظة لهذه المحادثة ويحرّرها |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+تظهر المهارات في القائمة نفسها تحت نطاق `skill:` الخاص بها، فلا تتصادم مع الأوامر أعلاه — وتبقى مهارة اسمها `plan` أو `compact` في المتناول:
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| الأمر | ما يشغّله |
+| --- | --- |
+| `/skill:<name>` | مهارة مثبّتة في مساحة العمل، أو مرفقة بالوكيل |
+| `/skill:<repo>:<name>` | مهارة يشحنها أحد المستودعات المُخرَجة في هذه المساحة |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+تحمل مهارات المستودع شارة المستودع الذي جاءت منه، لأن الاسم وحده لا يقول اصطلاحات أي خدمة ترمّزها، وقد يشحن مستودعان كل منهما مهارة `testing`. لست مضطرًا إلى كتابة البادئة لتجد المهارة: كتابة اسمها المجرّد تطابق المدخلات ذات النطاق أيضًا.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+لا يحمل الوكيل إلا مهارات المستودع الذي يعمل فيه الآن — انظر [مهارات على نطاق المستودع](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/#مهارات-على-نطاق-المستودع). حقل الكتابة ليس محصورًا كذلك: تستطيع استدعاء مهارة أي مستودع بتسميتها.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` و`/todo` يعترضهما العميل ولا يُحفظان رسائل — فسطر `/compact` في نص المحادثة كان سيؤخّر حد الضغط التالي جولة. `/plan` يقلب وضع المساحة المخزَّن بدل أن يسافر نصًا. فليس أي من الثلاثة «رسالة ترسلها إلى الوكيل»؛ لا تتوقع أن تراها في السجل.
 
-## Ask for a plan first
+## اطلب خطة أولًا
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/).
+قبل تغيير معقّد، انقل المساحة إلى وضع التخطيط بـ `/plan`، أو بقائمة الوضع في شريط أدوات حقل الكتابة، أو بـ Shift+Tab. يبحث الوكيل عندها للقراءة فقط، ويسلّم خطة مُنمَّطة توافق عليها قبل أن يبدأ أي عمل. انظر [استخدام وضع الخطة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/).
 
-## Reach an agent without a dedicated space
+## الوصول إلى وكيل من غير مساحة مخصّصة له
 
-You do not need a space per agent. In any space:
+لست بحاجة إلى مساحة لكل وكيل. في أي مساحة:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/الإشارة-إلى-الوكلاء/) for how names are
-matched.
+يُضاف الوكيل المشار إليه إلى المساحة ويُرسَل مع سياقها. انظر [الإشارة إلى الوكلاء بـ @](/ar-SA/دليل-المستخدم/أدلة-إرشادية/الإشارة-إلى-الوكلاء/) لكيفية مطابقة الأسماء.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Use spaces](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
-- [@-mention agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/الإشارة-إلى-الوكلاء/)
-- [Use plan mode](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/)
-- [Set up Slack integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/) to do the same from Slack
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
+- [الإشارة إلى الوكلاء بـ @](/ar-SA/دليل-المستخدم/أدلة-إرشادية/الإشارة-إلى-الوكلاء/)
+- [استخدام وضع الخطة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/)
+- [إعداد تكامل Slack](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-slack/) لتعمل الشيء نفسه من Slack
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/)

@@ -1,135 +1,148 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Gunakan modus pelan
+description: Tukar ruang kepada modus pelan, dapatkan pelan bertaip dan luluskannya menjadi kerja yang berjalan.
 slug: ms-MY/manual-pengguna/panduan-cara/modus-pelan
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Panduan ini menunjukkan cara mendapatkan pelan berstruktur daripada ejen sebelum ia
+menulis sebarang kod.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+Dalam modus pelan, ejen menyelidik secara baca sahaja dan satu-satunya serahannya
+ialah **pelan bertaip**: graf kebergantungan langkah yang anda luluskan, yang
+kemudiannya disusun oleh Control Center menjadi kerja sebenar. Gunakannya apabila
+anda ingin melihat skop sesuatu perubahan, melihat langkahnya terurai, atau
+mendapatkan risiko dan kebergantungan dinamakan sebelum apa-apa disentuh.
 
-## Switch a space into plan mode
+## Tukar ruang kepada modus pelan
 
-Any of these flips the space's mode and the change is persisted:
+Mana-mana satu daripada ini menukar modus ruang itu dan perubahannya disimpan:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Pilih **Rancang** daripada menu lungsur modus di hujung paling kiri bar alat
+  penggubah mesej
+- Tekan **Shift+Tab**
+- Hantar `/plan`. `/plan` kosong hanya mempersiapkan modus itu; `/plan <request>`
+  mempersiapkannya dan menghantar selebihnya sebagai mesej anda
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` tidak pernah bergerak sebagai teks — ia menetapkan modus tersimpan, yang
+menjadi autoriti yang dibaca oleh permukaan alat, praset guardrail dan prompt. Jadi
+modus itu kekal untuk giliran ini dan setiap giliran selepasnya, sehingga anda
+menukarnya kembali.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+Modus disimpan pada ruang, jadi ejen yang sama boleh berada dalam modus pelan di
+sini dan dalam modus ejen di tempat lain.
 
-## What the agent produces
+## Apa yang dihasilkan ejen
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Ia menyelidik secara baca sahaja — memori, indeks kod, fail
+2. Ia memanggil `submit_plan` **satu kali**, dengan `goal` serta `nodes`, setiap
+   satunya membawa `key` yang stabil, `title`, `description` dan kunci nod yang
+   menjadi `dependsOn`-nya (inilah yang membolehkan kerja bebas berjalan secara
+   selari)
+3. Ia berhenti
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Alat itu mengesahkan graf tersebut — kunci pendua, kebergantungan yang tergantung,
+kitaran — dan memulangkan pelanggaran untuk dibetulkan oleh ejen dan bukannya
+menerima pelan yang rosak.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+Pelan itu muncul **dalam perbualan** sebagai baris padat yang menunjukkan matlamat,
+statusnya dan bilangan langkah. **Plan Studio** — graf kebergantungan, pemeriksa
+setiap nod dan anggaran kos — terbuka sebagai tab di sisi perbualan: tekan **Buka**
+pada baris itu, atau biarkan sahaja, kerana pelan yang tiba dalam masa 30 saat
+semasa anda memerhati perbualan akan membuka tabnya sendiri.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[Jaminan baca sahaja bersifat struktur, tetapi hanya pada harness terbina]
+Harness Control Center sendiri membina registri alat ejen daripada spesifikasi
+permukaan modus pelan, jadi memang tiada alat tulis, sunting atau perintah untuk
+dipanggil — sekatan itu bukan arahan prompt yang boleh diloloskan oleh model dengan
+dalih apa pun.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Penyesuai Claude Code tidak mendapat penapisan sedemikian: modus sampai kepadanya
+sebagai permintaan yang mungkin dipatuhi atau tidak oleh pelarinya sendiri, dan
+Control Center hanya pernah melihat panggilan `mcp__*`-nya. Lencana penguatkuasaan
+di sebelah menu lungsur modus muncul tepat apabila itulah keadaannya.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Ejen boleh mengajukan soalan penjelasan kepada anda]
+Apabila permintaan itu kabur, ejen modus pelan boleh berhenti sejenak dan
+mengajukan sehingga tiga soalan yang menyekat dengan alat `ask_user`. Ia merender
+borang dalam perbualan — pilihan, atau teks bebas — dan larian itu menyekat
+sehingga anda menjawab. Alat itu peringkat baca, jadi ia kekal dalam permukaan baca
+sahaja modus pelan, dan ia dikecualikan daripada pembalut kelulusan (gesaan di
+hadapan gesaan akan gagal secara tertutup tanpa pelulus yang bersambung, sehingga
+menafikan ejen daripada perbuatan bertanya).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Ia memerlukan ruang untuk dirender, jadi penghantaran sekali sahaja tanpa perbualan
+tidak mendapatnya. Meletakkan skop, repo sasaran dan kriteria penerimaan di awal
+mesej pertama anda masih lebih pantas daripada satu pusingan bolak-balik.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+Prosa bukanlah serahan di sini. Larian yang tamat tanpa memanggil `submit_plan`
+menyiarkan baris "Ended without submitting a plan (no `submit_plan` call)." yang
+kelihatan dalam perbualan dan menandakan larian itu sebagai terlepas serahannya.
+Status larian itu sengaja kekal _completed_ — itu mengekalkan mesin keadaan pipeline
+dan tiket tanpa disentuh — jadi bacalah baris itu, bukan lencana status.
 
-## Approve the plan
+## Luluskan pelan
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+Daripada baris pelan dalam perbualan, tekan **Luluskan dan jalankan**. Daripada bar
+kelulusan Plan Studio, tekan **Luluskan rancangan** (atau **Tolak** di sebelahnya;
+kelulusan dilumpuhkan selagi graf mempunyai ralat pengesahan).
 
-Then:
+Kemudian:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center menyusun pelan itu menjadi satu orkestrasi dan
+   mematerialisasikannya — tiket dan lariannya. Tiada model terlibat dalam langkah
+   ini; ia deterministik
+2. Pelan itu dilaksanakan sebagai ejen yang menulisnya. Sama ada untuk melibatkan
+   orang lain ialah keputusan ejen itu pada masa larian — ia boleh `delegate_task`
+   sesuatu langkah kepada rakan sepasukan yang lebih sesuai, dalam had kedalaman
+   delegasi ruang kerja
+3. Matlamat pelan itu menjadi **matlamat perbualan** dan kerja itu berjalan **dalam
+   perbualan yang sama**: setiap langkah menyiarkan apa yang diminta daripada ejen
+   dan menstrim balik gilirannya, jadi anda mengikutinya (dan boleh menghentikan
+   sesuatu giliran) di tempat anda sudah berada
+4. Baris matlamat dalam panel sisi **Umum** perbualan (di bawah Tugasan) membawa
+   kemajuan larian sebagai `settled/total` dan butang hentinya; Plan Studio
+   menunjukkan keadaan setiap nod pada graf dan juga membatalkan di sana
 
-## Keep working without approving
+## Terus bekerja tanpa meluluskan
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Jika anda lebih suka kekal dalam perbualan ini daripada meluluskan pelan itu, ejen
+boleh memanggil `exit_plan_mode`. Itulah satu-satunya jalan keluar yang dibenarkan:
+ia membuka permintaan kelulusan berkekalan yang berpaut pada perbualan dan
+memulangkan `pending` — ruang itu kekal dalam modus pelan dan ejen tidak boleh
+bertindak. Setelah permintaan itu diluluskan, panggilan `exit_plan_mode` seterusnya
+oleh ejen menukar ruang itu daripada modus pelan kepada modus ejen dan membuka alat
+mutasinya. Penolakan membolehkannya membuka permintaan baharu terhadap pelan yang
+disemak semula.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Untuk keluar daripada modus pelan, tukar menu lungsur komposer (atau Shift+Tab),
+atau luluskan pelan yang diserahkan. `exit_plan_mode` membuka kelulusan berkekalan
+yang diputuskan dengan alat MCP `decide_approval`. Overlay guardrail untuk panggilan
+alat yang disekat ialah baris gilir dalam memori yang berbeza dan tidak membawa
+permintaan keluar modus pelan.
 
-## Plan mode in a pipeline step
+## Modus pelan dalam langkah pipeline
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Nod pipeline `messaging.createSpace` membaca modus perbualan daripada **extra**
+`mode` pada konfigurasi nod — `extras['mode']: 'plan'`. Kunci itu padanan tepat:
+sebarang ejaan lain, termasuk `conversationMode` atau `dispatchMode`, diabaikan
+secara senyap dan bilik itu kembali kepada nilai lalai badan berkenaan, iaitu modus
+**semakan**, bukan sembang. Langkah `promptAgent` menyertai bilik yang tidak
+diciptakannya dan tidak menetapkan semula kebenarannya. Pemilih **Modus
+penghantaran** dalam editor konfigurasi nod (`allParallel` / `manager`) adalah untuk
+nod penghantaran pasukan. Tetapkan modus perbualan dengan `extras['mode']` pada
+templat yang membuka ruang itu, atau pada konfigurasi nod tersebut melalui API.
 
-## Related guides
+## Panduan berkaitan
 
-- [Chat with an agent](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
-- [Use spaces](/ms-MY/manual-pengguna/panduan-cara/ruang/)
-- [Work in Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/)
-- [Run an orchestration](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
+- [Sembang dengan ejen](/ms-MY/manual-pengguna/panduan-cara/sembang-dengan-ejen/)
+- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/)
+- [Bekerja dalam Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/)
+- [Jalankan orkestrasi](/ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/)
-- [Orchestration](/ms-MY/manual-pengguna/konsep/orkestrasi/)
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/)
+- [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/)

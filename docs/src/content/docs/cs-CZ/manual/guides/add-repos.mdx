@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Přidejte repozitáře do pracovního prostoru
+description: Zaregistruj Git checkouty do pracovního prostoru, aby na nich mohli pracovat agenti.
 slug: cs-CZ/prirucka/navody/pridani-repozitaru
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Tenhle návod ukáže, jak zaregistrovat Git checkout do pracovního prostoru, znovu ho indexovat a zase odebrat.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repozitáře jsou **vázané na pracovní prostor**. Globální registr není a není ani samostatný krok propojení: přidat repozitář a vložit ho do pracovního prostoru je jeden úkon. Stejný checkout zaregistrovaný ve dvou pracovních prostorech dá dva samostatné řádky se dvěma různými id. Napříč pracovními prostory je identitou repozitáře cesta na souborovém systému, nikdy jeho id.
 
-## Before you start
+## Než začneš
 
-A folder can only be registered if all three of these hold:
+Složku zaregistruješ jen tehdy, když platí všechny tři podmínky:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Leží uvnitř **git work tree**.
+2. Ten work tree má remote **`origin`**.
+3. Remote `origin` míří na **podporovanou forge**: github.com, gitlab.com nebo bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Všechno ostatní se při registraci odmítne s výslovnou zprávou: „Folder is not inside a git work tree.“, „No `origin` remote configured for this repository.“ nebo „The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).“. Režim jen pro místní složku není.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forge se přečte z remote a uloží se k repozitáři sama. Pracovní prostor může držet repozitáře ze všech tří najednou a s každou se mluví přes její API a její přihlašovací údaj. Vnořené jmenné prostory GitLabu se zachovají, takže `gitlab.com/group/subgroup/project` se zaregistruje jako vlastník `group/subgroup` a název `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Složka musí navíc ležet na stroji, kde běží `cc_server`, v některém z adresářů `--repo-roots` toho serveru. Seznam povolených je ve výchozím stavu domovský adresář uživatele serveru a procházení nad kořen se odmítne.
 
-## Register a checkout
+## Zaregistruj checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Otevři **Nastavení → Pracovní prostor → Repozitáře** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Klikni na **Přidat repozitář**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Dialog je prohlížeč souborového systému **serveru**. Stejný postup je na počítači, na webu i v telefonu, protože nativní výběr složky by sáhl na špatný stroj.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Pohybuj se v nakonfigurovaných kořenech serveru. Složky, které jsou git checkouty, mají příznak.
+4. Zaškrtni jich, kolik chceš. Výběr se drží i při přechodu mezi složkami, takže checkouty posbíráš z několika míst.
+5. Zaregistruj je najednou.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Když jeden výběr selže, zbytek dávky zůstane. Dostaneš id, která vznikla, a u každé odmítnuté cesty zvlášť chybu. Opakovaná registrace cesty, která v tomhle pracovním prostoru už je, vrátí existující repozitář.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Každý zaregistrovaný repozitář se v seznamu ukáže se svým `owner/name`, odznakem forge a cestou na serveru. Repozitáře na GitHubu navíc ukážou avatar vlastníka. U ostatních forge se URL avataru vlastníka nedá odhadnout, takže se ukážou iniciály.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+V namíchaném pracovním prostoru na odznaku forge záleží: dva repozitáře se můžou jmenovat `acme/web` na různých forge a chovají se jinak, v tom, co umí revize a kam vede odkaz.
 
-## What happens next
+## Co se stane dál
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Registrace vyvolá událost `RepoAdded` vázanou na tento pracovní prostor a ta spustí pipeline `index_code` pro daný checkout. Tím se naplní graf kódu, takže vyhledávání a analýza dopadu mají z čeho odpovídat.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/cs-CZ/prirucka/navody/hledani-kodu/).
+Indexují se jen soubory jazyka, který má dodanou gramatiku (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB a Ada). Viz [Hledejte kód v grafu kódu](/cs-CZ/prirucka/navody/hledani-kodu/).
 
-## Re-index a repo
+## Znovu indexuj repozitář
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Každý řádek má tlačítko **Indexovat kód**. Kliknutím znovu spustíš indexer pro ten checkout. Po dobu běhu se z tlačítka stane údaj o průběhu, hotové soubory z celkového počtu, a vedle něj zrušení. Po dokončení se změní na ikonu zaškrtnutí s počtem symbolů, nebo na varování, když běh selhal.
 
-## Reorder repos
+## Změň pořadí repozitářů
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Přetáhni úchyt na řádku. Pořadí, které nastavíš, je pořadí každého seznamu repozitářů v aplikaci.
 
-## Fix the GitHub link
+## Oprav odkaz na GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Ikona odkazu na řádku otevře editor vlastníka a názvu repozitáře na GitHubu. Hodí se, když se remote přejmenoval nebo převedl.
 
-## Remove a repo
+## Odeber repozitář
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Otevři **Nastavení → Pracovní prostor → Repozitáře**.
+2. Klikni na ikonu koše na řádku.
+3. Potvrď „Odebrat repozitář z pracovního prostoru?“
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Dialog říká, co udělá: „_name_ bude odebrán z tohoto pracovního prostoru. Místní soubory na disku zůstanou nedotčené.“
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Odebrání smaže řádek repozitáře z tohoto pracovního prostoru a kaskádově i řádky jeho grafu kódu: symboly, hrany, soubory a checkpointy indexu. Smaže se i každé přidělení na ten repozitář pro jednotlivé členy, vazby prostoru na repozitář a záznamy izolovaných checkoutů. Stejný checkout zaregistrovaný v jiném pracovním prostoru je samostatný řádek a smazání se ho netýká. Worktree na disku, na které ty záznamy ukazovaly, mazání nestrhne.
 
-## Related guides
+## Související návody
 
-- [Search code with the code graph](/cs-CZ/prirucka/navody/hledani-kodu/)
-- [Run agents in parallel](/cs-CZ/prirucka/navody/paralelni-agenti/)
-- [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/)
-- [Your first workspace](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/)
+- [Hledejte kód v grafu kódu](/cs-CZ/prirucka/navody/hledani-kodu/)
+- [Spouštějte agenty paralelně](/cs-CZ/prirucka/navody/paralelni-agenti/)
+- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
+- [Váš první pracovní prostor](/cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor/)
 
-## Related concepts
+## Související koncepty
 
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/)

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Refaktorera kod strukturellt
+description: Låt en agent hitta och skriva om kod efter form i stället för efter text, och granska ändringen innan den landar.
 slug: sv-SE/handbok/how-to-guider/strukturell-refaktorering
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Den här guiden visar hur du får en agent att göra en bred mekanisk ändring – en codemod, en massmigrering av ett API, ett mönster du vill bli av med – med strukturell sökning och omskrivning, där ändringen förbereds för granskning innan något skrivs.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` matchar kod efter **form**. `ast_edit` skriver om den. `resolve` verkställer eller kastar.
 
-## Before you start
+## Innan du börjar
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Strukturella verktyg täcker de språk som kodgrafen parsar: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB och Ada. De behöver tree-sitter-grammatikerna på plats, vilket de alltid är i en levererad build – en saknad grammatik stoppar servern i stället för att försämra sökningen.
 
-## Find the shape first
+## Hitta formen först
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Skriv aldrig om något du inte har tittat på. Be agenten att söka:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Hitta varje ställe där vi anropar `dispose()` på en nullable som vi just har null-kontrollerat.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Utdata är `file:line` plus den matchade källkoden för varje ställe.
 
-### What the pattern syntax buys you
+### Vad mönstersyntaxen ger dig
 
-| Token      | Matches                                    |
+| Token      | Matchar                                    |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | Vilken enskild nod som helst, fångad       |
+| `$$$NAME`  | Vilken följd av syskon som helst – argument, satser |
+| `$_`       | Vad som helst, fångat utan namn            |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Det som spelar roll: **ett upprepat `$NAME` måste fånga samma text**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+hittar ett skyddsvillkor som gör sig av med det det testade. Det hittar **inte** `if (a != null) b.dispose()` – vilket oftast är buggen du letade efter. Ingen textsökning kan uttrycka det.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Den kan inte matcha inuti en sträng eller en kommentar]
+Mönstret parsas av samma grammatik som filen, så `dispose(x)` skrivet i en dokkommentar eller en strängliteral är inte ett anrop och matchas inte. Det är hela anledningen att ta till det här i stället för `grep`.
 :::
 
-### When the pattern finds nothing
+### När mönstret inte hittar något
 
-Two things to try, in order:
+Två saker att prova, i tur och ordning:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Gör det mindre.** `foo($X)` före `if (a) { foo($X); }`. Ett mönster som inte är giltig kod i sig är ofta inte den konstruktion du menade.
+2. **Ange språket.** `language:` härleds bara när `path` anger en enda fil.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Ett mönster som ingen parsningskontext accepterar rapporteras som oparsbart – verktyget säger det i stället för att rapportera ”inga träffar” för något som aldrig lästes så som det ser ut.
 
-## Rewrite, and look before it lands
+## Skriv om, och titta innan det landar
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Resultatet är ett **förslag**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Inget har skrivits till disk än. Läs listan, kontrollera ett par av ställena som sökningen rapporterade och kör sedan:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+eller
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Verkställandet är allt eller inget]
+Varje fil jämförs med innehållet som fångades när ändringen förbereddes. Om någon av dem har ändrats – agenten redigerade den för hand, en formaterare kördes, en diagnostikkörning skrev om den – avvisas och kastas **hela** ändringen. En strukturell omskrivning som bara delvis tillämpats lämnar ett träd som varken kompilerar med den gamla eller den nya formen.
 
-Re-run the tool against the current files; do not retry the stale id.
+Kör om verktyget mot de aktuella filerna; försök inte igen med det inaktuella id:t.
 :::
 
-## Check your work with the compiler
+## Kontrollera ditt arbete med kompilatorn
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Poängen med att göra det här strukturellt är att det är brett. Breda ändringar är precis där en omskrivning som ser rimlig ut bryter en typ. Be om diagnostik efter att du har verkställt:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` kör projektets egen kontroll (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) i stället för en fråga per fil – rätt form av fråga efter en ändring som rörde fyrtio filer.
 
-## Worked example: migrating a call
+## Exempel: migrera ett anrop
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Säg att `log(msg, level)` blir `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Titta på träffarna. Om några av dem är en *annan* tvåarguments-`log`, snäva in mönstret genom att begränsa `path` till katalogen som äger den du menar, i stället för att försöka uttrycka skillnaden i mönstret.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Kör sedan `resolve` och därefter `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## När du bör använda något annat
 
-| Situation                                 | Better tool                          |
+| Situation                                 | Bättre verktyg                          |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/sv-SE/handbok/how-to-guider/sok-kod/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Byta namn på en symbol                    | `lsp_rename` – följer referenser, inte former |
+| Hitta en sträng, en kommentar eller ett filnamn | `search` (innehåll) / `search_files` (namn) |
+| ”Vad går sönder om jag ändrar det här?”   | [Kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/) |
+| Ett språk som grammatikerna inte täcker   | `search` plus `edit`                 |
 
-## Related
+## Relaterat
 
-- [Code intelligence](/sv-SE/handbok/koncept/kodintelligens/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/sv-SE/handbok/referens/agentverktyg/) — the full argument list
-- [Search code with the code graph](/sv-SE/handbok/how-to-guider/sok-kod/) — the symbol and impact side
+- [Kodintelligens](/sv-SE/handbok/koncept/kodintelligens/) – varför strukturell matchning inte är ett regex med extra steg
+- [Inbyggda agentverktyg](/sv-SE/handbok/referens/agentverktyg/) – hela argumentlistan
+- [Sök kod med kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/) – symbol- och påverkanssidan

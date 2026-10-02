@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: ذكاء الشفرة
+description: لماذا يحتاج الوكيل إلى المُصرِّف والمُطابِق البنيوي والمصحّح، وما الذي يجيب عنه كل منها ويعجز عنه الباقي.
 slug: ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+تمنح Control Center الوكيل أربع طرق يفهم بها الشفرة، تتجاوز قراءتها. الأسئلة مختلفة فعلًا، ولا آلية واحدة تجيب عنها كلها.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| الآلية | ما تجيب عنه | الكلفة |
+| --- | --- | --- |
+| **مخطط الشفرة** | ما الموجود هنا، وما الذي يعتمد عليه | مرور فهرسة، والاستعلام رخيص |
+| **خادم اللغة** | هل يُصرَّف هذا فعلًا، وما نوعه | عملية خادم لكل مشروع |
+| **البحث البنيوي** | أين يظهر هذا «الشكل» | تحليل لكل ملف |
+| **المصحّح** | ما الذي كان صحيحًا في هذه اللحظة، وفي هذا الإطار | عملية متوقفة |
 
-## The gap the language server closes
+## الفجوة التي يسدّها خادم اللغة
 
-The [code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+يُبنى [مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) من tree-sitter: رموز، وحواف استدعاء، ونصف قطر تأثير. هو سريع ورخيص، ولا يعرف شيئًا عن **الأنواع**. لا يخبرك إن كان الاستدعاء الذي كتبته للتو يُصرَّف، ولا إن كان الحقل موجودًا على الكائن، ولا إن كانت إعادة التسمية قد أفلتت إعادة تصدير.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+من غير خادم لغة يعرف الوكيل الأمر وقت الاختبار، أو لا يعرفه أبدًا. يكتب ما يبدو سليمًا، ويمضي، ويظهر الفشل بعد ثلاث جولات ملصقًا بتغيير آخر.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+المكسب في التغليف، لا في أداة `lsp` نفسها. `write` و`edit` و`apply_patch` مغلَّفة: بعد كل كتابة يمر الملف بخادم اللغة، وتُدمج التشخيصات **المُستحدَثة** في نتيجة الأداة. يعلم الوكيل أنه كسر البناء لحظة كسره، سواء خطر له أن يسأل أو لم يخطر.
 
-### Only new diagnostics
+### التشخيصات الجديدة فقط
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+تكرار ما عرفه الوكيل أسوأ من الصمت: يملأ النتيجة بضجيج يتعلم أن يمرّ عليه مرور الكرام، ويضيع معه الخطأ الجديد الوحيد. يتتبع دفتر لكل تشغيل ما أُبلغ عنه، ومفتاحه الشدّة ورمز التشخيص والرسالة، **لا** الموضع، فالتشخيص الذي نزل أربعة أسطر فحسب لا يُبلَّغ عنه ثانية على أنه جديد.
 
-### Lazy, and honest about being absent
+### كسول، وصادق في غيابه
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+لا يبدأ أي خادم عند الإقلاع. يبدأ خادم عند أول طلب يحتاج إليه، وهو في الغالب أول تعديل لملف يتولاه، ثم تُوقَف الخوادم الخاملة. المضيف الذي لا يمس Dart لا يشغّل محلّلًا.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+الاكتشاف **تقاطع**: لا بد أن توجد علامة جذر في نسخة العمل *و* أن يُحَل مسار الثنائي. العلامة وحدها تقول «هذا المشروع Python» ولا تقول شيئًا عن تثبيت الخادم، والثنائي القابل للحل وحده يقول إن المضيف يملك سلسلة أدوات ولا يقول شيئًا عن نسخة العمل هذه. لا ينجح الاستعلام إلا باجتماعهما، والأداة التي تُعرَض وتفشل دائمًا أسوأ من الأداة الغائبة.
 
-## Why structural search, when grep exists
+## لماذا البحث البنيوي ما دام `grep` موجودًا
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` يطابق المحارف. هو الأداة الصحيحة للاسم، والخاطئة للشكل.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+يُحلَّل النمط البنيوي **بقواعد الملف النحوية نفسها**، فيجد `dispose($X)` الاستدعاء مهما كان تباعده أو التفافه أو كسر أسطره، ولا يطابق المحارف نفسها داخل نص حرفي أو تعليق.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+ما يجعله أكثر من تعبير نمطي بخطوات إضافية أن المتغيّر الوصفي، إذا تكرّر في نمط واحد، لا بد أن يلتقط النص نفسه:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+يطابق حارسًا يستدعي `dispose` على ما اختبره، ولا يطابق حارسًا يستدعيه على شيء غيره. هذا صنف أخطاء لا يُصاغ بالنص أصلًا.
 
-### It runs on the tree-sitter already linked
+### يعمل على tree-sitter المربوط أصلًا
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+ليس هناك محرّك ثانٍ. `cc_natives` يحمّل tree-sitter وقواعده النحوية لمخطط الشفرة أصلًا، ومعها ذاكرة مؤقتة للاستعلامات المُصرَّفة وجدول للغات. المُطابِق Dart خالص فوق أشجار كانت تُحلَّل أصلًا. محرّك بنيوي ثانٍ يعني محلّلًا نحويًا ثانيًا، ومجموعة قواعد ثانية تُبنى وتُجهَّز على كل منصة، وجوابين عن «ما تعبير الاستدعاء».
 
-### A fragment needs somewhere to live
+### الشذرة تحتاج موضعًا تعيش فيه
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+القواعد النحوية لا تعرّف إلا ما يكونه *الملف* كاملًا. إذا حُلّل `dispose(x)` عاريًا في المستوى الأعلى من Dart، فهو **توقيع دالة** سليم تمامًا: تصريح اسمه `dispose` يأخذ معاملًا `x`، بلا أي خطأ يفضح ذلك. مُطابِق مبني على هذا التحليل يبحث عن التصريحات، فلا يجد استدعاءات، ويبلّغ «لا تطابقات» عن نمط لم يُقرأ قط كما يبدو.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+فيُجرَّب النمط على سلّم من الأغلفة النحوية: عبارة، ثم تعبير، ثم عضو صنف، ثم المستوى الأعلى، وأول غلاف يقبله هو الفائز. الشذرة التي لا يقبلها أي غلاف تُبلَّغ بتعذّر تحليلها، بدل أن يُبحث عنها ثم لا تُوجَد في صمت.
 
-## Why a rewrite stages instead of writing
+## لماذا تُجهَّز إعادة الكتابة بدل أن تُكتَب
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+إعادة الكتابة البنيوية أوسع تعديل يجريه وكيل: نمط واحد، وأربعون ملفًا، ولا أحد يقرأ النتيجة سطرًا سطرًا، لا النموذج ولا من طلبها. كتابتها ثم الإبلاغ بأنها «تمت» يعني أن أول نظرة صادقة إلى التغيير تكون `git diff` بعد ذلك.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+لذلك يبلّغ `ast_edit` بما *كان* سيفعله: العدد، والملفات، ومواضع التطابق. ولا يستقر التغيير إلا حين يثبّته `resolve`. وهذا ما يضع فرقًا وقرار **قبول** أو **تجاهل** أمام الإنسان قبل أن يصل أي شيء إلى القرص.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+التثبيت على قاعدة الكل أو لا شيء، ويُفحَص كل ملف مقابل المحتوى الملتقَط عند التجهيز. بين التجهيز والتثبيت قد يعدّل الوكيل أحد هذه الملفات بيده، أو تعيد جولة التشخيص كتابته، أو يلمسه منسّق. لو ثُبّت على حاله لأُسقط ذلك العمل وبدا الفرق مقصودًا. أي اختلاف يرفض التغيير كله، لأن إعادة الكتابة البنيوية إذا طُبّقت جزئيًا تركت شجرة لا تُصرَّف على أي من الشكلين.
 
-## What a debugger answers that a print statement cannot
+## ما يجيب عنه المصحّح ولا تجيب عنه عبارة الطباعة
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+حلقة عبارة الطباعة هي: أضف طباعة، أعد تشغيل الأمر كله، اقرأ الخرج، احذف الطباعة. تكلف تشغيل اختبار كامل لكل سؤال، ولا تجيب إلا عن السؤال الذي خطر لك *قبل* التشغيل.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+الإطار المتوقف يجيب دفعة واحدة عن أسئلة تلك اللحظة كلها: كل متغير محلي، وكل مستدعٍ، وتعبير يُقيَّم في نطاق الإطار نفسه. لعملية عالقة، أو لفشل يتكرر مرة في كل عشرة تشغيلات، فهذا هو الفرق بين عصر كامل ودقيقة.
 
-### Bounded like an enclosure, and for the same reason
+### محدود كالحاوية المعزولة، وللسبب نفسه
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+يملك محوّل التصحيح **عملية متوقفة** تحتفظ بما تحتفظ به تلك العملية: منفذ، وقفل، واتصال بقاعدة بيانات. الجلسة التي لا يقودها أحد تسرّب يبقى بعد الجولة التي أطلقته. لذلك توجد مهلة TTL صارمة، وجلسة واحدة بالضبط لكل محادثة، ويُرفَض `launch` ثانٍ بدل استبدال الأول في صمت: الوكيل الذي يبدأ ثانية من غير إنهاء الأولى قد فقد أثر الأولى على الأرجح.
 
-### One transport, two protocols
+### نقل واحد، وبروتوكولان
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+يشترك Debug Adapter Protocol مع Language Server Protocol في تأطير `Content-Length`، ولا يشاركه في شيء فوق ذلك: مفاتيح ارتباط مختلفة، وشكل فشل مختلف، ونوع رسالة ثالث (الأحداث) بلا مقابل في LSP. التأطير في موضع واحد، والبروتوكولان يرتكزان عليه منفصلين.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+كتابة التأطير مرتين تعني جوابين عن «رسالة تمتد على قطعتين»، و«قطعة تحمل ثلاث رسائل»، و«الخادم كتب لافتة إلى stdout قبل إطاره الأول»، ولا ينال الإصلاح إلا أحد الجوابين.
 
-## Related
+## انظر أيضًا
 
-- [Search code with the code graph](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/) — the symbol and impact side
-- [Debug a failing test](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تصحيح-اختبار-فاشل/) — the debugger, end to end
-- [Refactor structurally](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إعادة-هيكلة-بنيوية/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/) — every operation and argument
+- [البحث في الشفرة عبر مخطط الشفرة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/بحث-في-الشفرة/): جانب الرموز والتأثير
+- [تصحيح اختبار فاشل مع وكيل](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تصحيح-اختبار-فاشل/): المصحّح من البداية إلى النهاية
+- [إعادة هيكلة الشفرة بنيويًا](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إعادة-هيكلة-بنيوية/): `ast_grep` و`ast_edit`
+- [أدوات الوكيل المضمّنة](/ar-SA/دليل-المستخدم/مرجع/أدوات-الوكيل/): كل عملية ووسائطها

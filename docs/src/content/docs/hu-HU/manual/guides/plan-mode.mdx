@@ -1,135 +1,153 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Tervmód használata
+description: Váltsa a teret tervmódba, kérjen típusos tervet, majd hagyja jóvá, hogy futó munkává váljon.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Ez az útmutató bemutatja, hogyan kérhet strukturált tervet egy ügynöktől, még
+azelőtt, hogy bármilyen kódot írna.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+Tervmódban az ügynök csak olvasható módon kutat, és egyetlen leszállítandója egy
+**típusos terv**: a jóváhagyott lépések függőségi gráfja, amelyet a Control
+Center ezután valódi munkává fordít. Akkor érdemes használni, ha látni szeretné
+egy változtatás hatókörét, szeretné a lépéseket lebontva megkapni, vagy szeretné,
+hogy a kockázatok és a függőségek még bármi érintése előtt nevet kapjanak.
 
-## Switch a space into plan mode
+## Tér átváltása tervmódba
 
-Any of these flips the space's mode and the change is persisted:
+Az alábbiak bármelyike átváltja a tér módját, és a változás megmarad:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Válassza a **Terv** lehetőséget az üzenetszerkesztő eszköztárának bal szélén
+  lévő módválasztóból
+- Nyomja meg a **Shift+Tab** billentyűkombinációt
+- Küldje el a `/plan` parancsot. Az önmagában álló `/plan` csak élesíti a módot; a
+  `/plan <request>` élesíti, és a többit az üzeneteként küldi el
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+A `/plan` soha nem szövegként utazik — beállítja a tárolt módot, amely az a
+mérvadó forrás, amelyet az eszközfelület, a módkészlet és a prompt egyaránt
+olvas. A mód tehát erre a körre és minden utána következőre érvényben marad,
+amíg vissza nem váltja.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+A mód a téren van tárolva, így ugyanaz az ügynök itt tervmódban, máshol pedig
+ügynökmódban lehet.
 
-## What the agent produces
+## Mit állít elő az ügynök
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Csak olvasható módon kutat — memória, kódindex, fájlok
+2. Meghívja a `submit_plan`-t **egyszer**, egy `goal`-lal és `nodes`-szal, amelyek
+   mindegyike egy stabil `key`-t, egy `title`-t, egy `description`-t, valamint
+   azokat a csomópontkulcsokat hordozza, amelyektől függ (`dependsOn`) (ez teszi
+   lehetővé, hogy a független munka párhuzamosan fusson)
+3. Leáll
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+Az eszköz érvényesíti a gráfot — ismétlődő kulcsok, lógó függőségek, ciklusok —,
+és inkább visszaadja a szabálysértéseket az ügynöknek javításra, mintsem hogy
+elfogadjon egy hibás tervet.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+A terv **a beszélgetésben** jelenik meg egy tömör sorban, amely a célt, annak
+állapotát és a lépések számát mutatja. A **Plan Studio** — a függőségi gráf, a
+csomópontonkénti vizsgáló és a költségbecslés — a beszélgetés melletti lapon
+nyílik meg: nyomja meg a soron a **Megnyitás** gombot, vagy egyszerűen várjon,
+mert az a terv, amely 30 másodpercen belül megérkezik, miközben Ön éppen a
+beszélgetést nézi, magától megnyitja a lapját.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[A csak olvasható garancia strukturális, de csak a beépített harnessen]
+A Control Center saját harnesse a tervmód felületi specifikációjából építi fel az
+ügynök eszközregiszterét, így egyszerűen nincs mit hívni: nincs író, szerkesztő
+vagy parancsfuttató eszköz — a korlátozás nem olyan promptutasítás, amelyből a
+modell ki tudná beszélni magát.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+A Claude Code adapter nem kap ilyen szűrést: hozzá a mód kérésként jut el,
+amelyet a saját futtatója vagy betart, vagy nem, a Control Center pedig csak a
+`mcp__*` hívásait látja. A módválasztó melletti kikényszerítési jelvény pontosan
+ebben az esetben jelenik meg.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[Az ügynök tisztázó kérdéseket tehet fel Önnek]
+Ha a kérés kétértelmű, egy tervmódban dolgozó ügynök megállhat, és az `ask_user`
+eszközzel legfeljebb három blokkoló kérdést tehet fel Önnek. Ez űrlapot jelenít
+meg a beszélgetésben — választási lehetőségeket vagy szabad szöveget —, és a
+futtatás addig blokkolódik, amíg Ön nem válaszol. Az eszköz olvasási szintű, így
+túléli a tervmód csak olvasható felületét, és mentesül a jóváhagyási burkoló alól
+(egy prompt egy másik prompt előtt zárt állapotban hibázna, ha nincs
+csatlakoztatva jóváhagyó, ami megvonná az ügynöktől a kérés aktusát).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Szüksége van egy térre, amelybe megjelenhet, ezért egy beszélgetés nélküli
+egyszeri indítás nem kapja meg. A hatókör, a célrepo és az elfogadási kritériumok
+már az első üzenetben való előzetes megadása továbbra is gyorsabb egy oda-vissza
+körnél.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+A prózai szöveg itt nem leszállítandó. Az a futtatás, amely a `submit_plan`
+meghívása nélkül ér véget, látható „Ended without submitting a plan (no
+`submit_plan` call).” sort tesz közzé a beszélgetésben, és a futtatást úgy jelöli
+meg, hogy elmaradt a leszállítandója. A futtatás állapota szándékosan _completed_
+marad — ez érintetlenül hagyja a pipeline-ok és a jegyek állapotgépeit —, ezért a
+sort olvassa, ne az állapotjelvényt.
 
-## Approve the plan
+## A terv jóváhagyása
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+A beszélgetésben a terv soráról nyomja meg a **Jóváhagyás és futtatás** gombot. A
+Plan Studio jóváhagyási sávjában nyomja meg a **Terv jóváhagyása** gombot (vagy a
+mellette lévő **Elutasítás** gombot; a jóváhagyás le van tiltva, amíg a gráfban
+érvényesítési hiba van).
 
-Then:
+Ezután:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. A Control Center a tervet orchestrációvá fordítja, és materializálja — a
+   jegyeket és a futtatást. Ebben a lépésben egyetlen modell sem vesz részt;
+   determinisztikus
+2. A terv az azt megíró ügynökként fut le. Hogy bevon-e bárki mást, arról ez az
+   ügynök dönt futásidőben — a `delegate_task`-kel egy lépést átadhat egy
+   alkalmasabb csapattársnak, a munkaterület delegálási mélységkorlátján belül
+3. A terv célja **a beszélgetés céljává** válik, és a munka **ugyanabban a
+   beszélgetésben** fut: minden lépés közzéteszi, mire kérték az ügynököt, és
+   visszaközvetíti a körét, így ott követheti (és állíthatja le a kört), ahol
+   éppen van
+4. A beszélgetés **Általános** oldalpaneljében (a **Teendők** alatt) a célsor
+   hordozza a futtatás előrehaladását `settled/total` formában és a leállítás
+   gombját; a Plan Studio a gráfon csomópontonként mutatja az állapotot, és ott is
+   lehet megszakítani
 
-## Keep working without approving
+## Munka folytatása jóváhagyás nélkül
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Ha inkább ebben a beszélgetésben maradna a terv jóváhagyása helyett, az ügynök
+meghívhatja az `exit_plan_mode`-ot. Ez az egyetlen engedélyezett kivezető út:
+megnyit egy, a beszélgetéshez kapcsolt tartós jóváhagyási kérést, és `pending`
+értékkel tér vissza — a tér tervmódban marad, és az ügynöknek nem szabad
+cselekednie. Amint a kérést jóváhagyják, az ügynök következő `exit_plan_mode`
+hívása tervmódból ügynökmódba váltja a teret, és feloldja a módosító eszközeit.
+Elutasítás esetén új kérést nyithat egy módosított tervhez.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+A tervmódból való kilépéshez váltson az üzenetszerkesztő legördülő menüjében
+(vagy nyomjon Shift+Tab-ot), vagy hagyja jóvá a benyújtott tervet. Az
+`exit_plan_mode` egy tartós jóváhagyást nyit meg, amelyről a `decide_approval`
+MCP-eszköz dönt. A blokkolt eszközhívásokhoz tartozó műveletőr-overlay egy másik,
+memóriabeli sor, és nem hordoz tervkilépési kéréseket.
 
-## Plan mode in a pipeline step
+## Tervmód egy pipeline-lépésben
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+A `messaging.createSpace` pipeline-csomópont a beszélgetés módját a
+csomópontkonfiguráció `mode` **extra** bejegyzéséből olvassa — `extras['mode']:
+'plan'`. A kulcs pontos egyezést vár: minden más írásmódot, a `conversationMode`-ot
+vagy a `dispatchMode`-ot is beleértve, csendben figyelmen kívül hagy, és a szoba a
+törzs alapértelmezettjére esik vissza, ami **Átnézés** mód, nem csevegés. Egy
+`promptAgent` lépés olyan szobába lép be, amelyet nem ő hozott létre, és nem
+állítja be újra annak jogosultságait. A csomópontkonfiguráció-szerkesztő
+**Kiosztási mód** választója (`allParallel` / `manager`) csapatkiosztó
+csomópontokhoz való. A beszélgetés módját az `extras['mode']` beállítással adhatja
+meg egy tért nyitó sablonon, vagy az adott csomópont konfigurációján az API-n
+keresztül.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [Use spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
-- [Work in Plan Studio](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/)
-- [Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
+- [Munka a Plan Studióban](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/)
+- [Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/)

@@ -2,9 +2,10 @@
 title: Explore data in a persistent kernel
 description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
 slug: en-GB/manual/guides/explore-data-in-a-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+This guide shows you how to have an agent load something expensive once and then ask several questions of it, rather than paying the load on every question.
 
 The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
 
@@ -44,7 +45,7 @@ Figures are captured after the cell and returned as images, which the transcript
 Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
 
 :::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+The runner is a plain `python3 -u` speaking a line protocol over stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
 :::
 
 ## The idioms you would type anyway
@@ -53,7 +54,7 @@ These are rewritten into plain code rather than erroring:
 
 | You type    | What happens                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Runs pip, then **clears the module cache** so that the next `import` sees it |
 | `%cd path`  | `os.chdir`                                          |
 | `!command`  | A captured subprocess                               |
 | `%%bash`    | The rest of the cell as a shell script              |
@@ -72,7 +73,7 @@ for path in paths.splitlines()[:100]:
 
 `tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
 
-:::caution[The bridge does not go around your guardrails]
+:::caution[The bridge does not go round your guardrails]
 A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
 :::
 

@@ -1,102 +1,104 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: اولین پایپ‌لاین را بسازید
+description: یک قالب پایپ‌لاین بسازید، گامش را پیکربندی کنید، اجراهای دستی را مجاز کنید و یکی را شروع کنید.
 slug: fa-IR/راهنمای-کاربر/آموزشها/اولین-پایپلاین
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## آنچه خواهید ساخت
 
-By the end of this tutorial, you will have:
+در پایان این آموزش، این‌ها را در اختیار خواهید داشت:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- یک قالب پایپ‌لاین ذخیره‌شده که عاملی را با یک پرامپت اعزام می‌کند
+- اجراهای دستی روشن روی آن، تا بتوان آن را دستی شروع کرد
+- یک اجرای کامل‌شده، با ورودی و خروجی گام در دیدرس
 
-Prerequisites: [Dispatch your first agent](/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) completed, so you have an agent with an adapter and a model.
+پیش‌نیازها: [اولین عامل را اعزام کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) را کامل کرده باشید تا عاملی با یک آداپتور و یک مدل داشته باشید.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/); for the full step vocabulary, [Pipeline step kinds](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/).
+یک پایپ‌لاین یک DAG از گام‌هاست. قالب‌ها گراف را تعریف می‌کنند؛ یک اجرا همان اجراشدن آن قالب است. برای مدل پشت آن، [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) را بخوانید؛ برای واژگان کامل گام‌ها، [انواع گام پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/).
 
-## Step 1: Create a template
+## گام 1: ایجاد یک قالب
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. به **تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** بروید
+2. روی **قالب جدید** کلیک کنید
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+ویرایشگر روی یک اسکلت اولیه به نام **پایپ‌لاین جدید** باز می‌شود (شناسه `pipeline_N`).
+روی عنوان در سرصفحه کلیک کنید و نامش را عوض کنید — برای این آموزش،
+`code_quality_check` نام خوبی است. هیچ دیالوگ شناسه‌ای و هیچ فیلد
+توضیحی وجود ندارد.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+بوم خالی نیست. یک قالب جدید از پیش به شکل **Trigger → Step → پایانه**
+سیم‌کشی شده است، که در آن «Step» یک گرهٔ عامل پرامپت است و پایانه یک
+دیده‌بان نامرئی است که ویرایشگر آن را به هر مقصد قابل‌دسترس دوباره سیم‌کشی می‌کند.
 
-You configure the Step that is already there.
+همان گرهٔ Step که از قبل آنجاست را پیکربندی می‌کنید.
 
-## Step 2: Configure the step
+## گام 2: پیکربندی گام
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. روی گرهٔ **Step** روی بوم کلیک کنید
+2. در پنل **پیکربندی گره** در سمت راست، این‌ها را تنظیم کنید:
+   - **عامل**: همان عامل آموزش قبلی
+   - **قالب پرامپت**: «کد روی شاخهٔ فعلی را از نظر مشکلات کیفیت بازبینی کن. هر چه پیدا می‌کنی را فهرست کن.»
+3. **تریگرها از** را دست نزنید — گره از قبل طوری سیم‌کشی شده که بعد از Trigger فعال شود
 
-## Step 3: Save
+## گام 3: ذخیره
 
-Press **Save** in the editor header.
+در سرصفحهٔ ویرایشگر **ذخیره** را فشار دهید.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**نقطهٔ بررسی.** عنوان «تغییرات ذخیره‌نشده» پاک می‌شود.
 
-## Step 4: Allow manual runs
+## گام 4: اجازه دادن به اجراهای دستی
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. روی کاشی خط‌چین **افزودن تریگر** روی بوم کلیک کنید (یا **اجرای دستی** را
+   از بخش **تریگرها** در کتابخانهٔ گره بکشید) و **اجرای دستی** را انتخاب کنید.
+2. آن گره را انتخاب کنید. در بازرس سمت راست، **فعال** را روشن کنید —
+   «در صفحهٔ اجرا نشان بده و دستی شروع کن.»
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+این کار اختیاری نیست و به‌سادگی از قلم می‌افتد. یک قالب جدید **بدون هیچ ردیف تریگری** ساخته می‌شود، پس تا وقتی این را روشن نکنید صفحهٔ اجرا آن را فهرست نمی‌کند و چیزی برای شروع وجود ندارد. این کلید تریگر را بی‌درنگ می‌نویسد؛ منتظر ذخیرهٔ دیگری نمی‌ماند.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+همین کلید پشت **اجرای دستی** در سرصفحهٔ ویرایشگر قرار دارد، جایی که کنار ورودی‌های اعلام‌شدهٔ قالب می‌نشیند.
 
-## Step 5: Run it
+## گام 5: اجرای آن
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. در نوار کناری روی **پایپ‌لاین‌ها** کلیک کنید
+2. در سرصفحه روی **اجرای پایپ‌لاین** کلیک کنید
+3. در نوار کناری سمت چپ `code_quality_check` را انتخاب کنید
+4. روی فرم روی **اجرای پایپ‌لاین** کلیک کنید — قالب شما ورودی‌ای اعلام نمی‌کند، پس چیزی برای پر کردن نیست
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**نقطهٔ بررسی.** یک توست تأیید می‌کند که اجرا شروع شده است و Control Center جزئیات اجرا را باز می‌کند.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+موتور رکورد اجرا را می‌سازد، تریگر را کامل می‌کند، گام را زمان‌بندی می‌کند، عامل را اعزام می‌کند و اجرا را وقتی شاخهٔ ورودی پایانه تمام شود کامل می‌کند.
 
-## Step 6: Inspect the result
+## گام 6: بررسی نتیجه
 
-Click the step in the run to open its detail panel:
+روی گام در اجرا کلیک کنید تا پنل جزئیاتش باز شود:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- زمان‌های **شروع‌شده** و **تمام‌شده** و **مدت**
+- **ورودی**: حالتی که به گام داده شده است
+- **خروجی**: آنچه تولید کرد — اینجا، پاسخ عامل
+- **فعالیت عامل**، با پیوندی به گفتگویی که گام هدایتش کرده است
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**نقطهٔ بررسی.** وضعیت گام کامل‌شده خوانده می‌شود و خروجی‌اش بازبینی عامل را در خود دارد.
 
-## Adding more steps
+## افزودن گام‌های بیشتر
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+گره‌ها با کشیدن یک مورد از کتابخانهٔ گره در سمت چپ روی بوم اضافه می‌شوند، یا
+با فشردن **افزودن گام** (`+`) درست بعد از یک گره. برای وصل کردن آن‌ها، از
+درگاه خروجی یک گره روی گرهٔ دیگری بکشید، یا گرهٔ جدید را انتخاب کنید و
+زیر **تریگرها از** گام بالادستش را تیک بزنید.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+گرهٔ پایانه رسم نمی‌شود و نمی‌توان انتخابش کرد. ویرایشگر آن
+را به هر مقصد قابل‌دسترس دوباره سیم‌کشی می‌کند، پس گره‌ای که بعد از
+Step اولیه اضافه کنید هم اجرا می‌شود.
 
-## Recap
+## خلاصه
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+یک قالب ساختید، گرهٔ عامل پرامپتی را که با آن ساخته شده بود پیکربندی کردید، ذخیره‌اش کردید، قابل‌اجرای دستی‌اش کردید، یک اجرا شروع کردید و ورودی و خروجی گام را خواندید.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+پایپ‌لاین‌ها بسیار بزرگ‌تر از این می‌شوند — مسیریاب‌های شرطی، شاخه‌های موازی، گره‌های join، انشعاب for-each، دروازه‌های انسانی — اما شکل هرگز تغییر نمی‌کند: گام‌هایی در یک DAG که حالت را می‌گذرانند.
 
-**Next:** [Bridge Slack to your workspace](/fa-IR/راهنمای-کاربر/آموزشها/اولین-پل-گفتگو/), the last tutorial in this sequence.
+**بعدی:** [Slack را به فضای کاری‌تان متصل کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-پل-گفتگو/)، آخرین آموزش در این مجموعه.
 
-- [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/) to start pipelines from events or a schedule
-- [Pipelines and automation](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) for the model underneath
-- [Pipeline step kinds](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/) for every step type
+- [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/) برای شروع پایپ‌لاین‌ها از رویدادها یا یک زمان‌بندی
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/) برای مدل زیرین
+- [انواع گام پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/) برای هر نوع گام

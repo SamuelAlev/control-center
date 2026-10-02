@@ -2,6 +2,7 @@
 title: Built-in agent tools
 description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
 slug: en-GB/manual/reference/agent-tools
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
 These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/en-GB/manual/reference/mcp-tools/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
@@ -210,4 +211,4 @@ Registered only while [vibe mode](/en-GB/manual/guides/direct-background-workers
 | `vibe_kill`  | `worker_id`                              | Stops it                                    |
 | `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgement, or reviewing a `fast` worker's output).

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: コスト管理
+description: エージェントの支出を把握し、自律実行に上限を設け、トークン使用量を削減します。
 slug: ja-JP/マニュアル/ハウツーガイド/コスト管理
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+このガイドでは、エージェントの実行にいくらかかっているかを確認する方法と、自律実行に上限を設ける方法を説明します。
 
-## How costs are recorded
+## コストはどのように記録されるか
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+エージェントの実行はすべて実行ログを書き込み、そこには入力トークン、出力トークン、推論トークン、キャッシュ読み取りとキャッシュ書き込みのトークン、セント単位の推定コスト、そして生成したサブエージェントのコストが記録されます。
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+料金は models.dev カタログから取得します。このカタログはモデル一覧に料金とコンテキストウィンドウを補うためにのみ使われ、モデル ID の供給元にはなりません。カタログが料金を特定できないモデルは **$0** として記録され、ゼロコストの実行は**使用量とコスト**のサマリーから除外されます。したがって、ローカルの Ollama モデルは支出がまったく表示されませんが、トークン数は引き続き記録されます。定額プラン（kimi-code、Claude サブスクリプション）も、提供されるモデルにカタログの料金がない場合に限り同じ扱いになります。料金がある場合は、その料金で実行が推定されます。フォールバックチェーンの場合、実行は要求したモデルではなく、実際に提供したモデルに対して料金が計算されます。
 
-## See what you are spending
+## 何に支出しているかを確認する
 
-### Observability → Insights
+### オブザーバビリティ → インサイト
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+サイドバーのフッター → **オブザーバビリティ**から開きます。最初に**使用量**タブが開き（生涯のトークン合計）、メインのコスト画面には 2 つ目のタブである**インサイト**に切り替えます:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- 期間の選択: 過去24時間、過去7日間、過去30日間、または全期間
+- エージェント、モデル、ステータス、ロールによるファセットフィルター。閉じられるチップとして表示されます
+- KPI ストリップ: 合計実行数、合計コスト、エラー率、キャッシュ率、トークン/秒、平均レイテンシ、最初のトークンまでの時間。それぞれに前期間比の変化が付きます（「全期間」では非表示）
+- アクティビティとコストのチャート、および**ロール別コスト**の内訳。支出をメインエージェント、そのサブエージェント、アドバイザーに分けて表示します
+- コストで並べ替えたエージェント別テーブル。上位 10 件を表示し、全件表示に切り替えられます。行をタップすると、ほかのすべての画面がそのエージェントで絞り込まれます
+- 詳細な実行ログ。選択した実行のトランスクリプトドロワーをドッキング表示します
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[「全期間」は全期間ではない]
+実行フィードは、すべてのワークスペースにまたがる直近 2000 件の実行ログを購読し、その後アクティブなワークスペースで絞り込みます。マルチワークスペースのサーバーが混み合っていると、静かなワークスペースの古い履歴はこのウィンドウから外れてしまいます。
 :::
 
-### Settings → Server → Model providers
+### 設定 → サーバー → モデルプロバイダー
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+このページの**使用量とコスト**カードには、過去 7 日間に観測された支出が 1 つのドル金額として表示され、プロバイダー別の内訳と、プロバイダーが公開している場合は次回の割り当てウィンドウがリセットされるまでの時間も示されます。
 
-### A single agent's runs
+### 1 体のエージェントの実行
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**設定 → ワークスペース → エージェント** → エージェントを選択 → **ログ**には、その実行がステータス、所要時間、開始時刻と完了時刻、PID、アダプターとともに一覧表示されます。このタブにはコストは表示され**ません** — コストはオブザーバビリティ → インサイトのエージェント別テーブルで確認してください。
 
-## Cap an autonomous run
+## 自律実行に上限を設ける
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+スペースのコンポーザーで入力する 2 つのスラッシュコマンドだけが、支出上限を持つ実行です:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- `/goal` または `/loop` 実行の各セグメントは、料金計算された支出が **500 セント（$5.00）**に達すると停止します。その 80% の時点で、ループはまずモデルをまとめに入らせ、きれいに引き継げるように仕向けるため、タスクの途中で途切れることはありません。
+- 永続ゴール全体には、`--budget <dollars>` を渡さない限り **5000 セント（$50.00）**の上限が適用されます。スーパーバイザーはゴールの_残り_予算を各セグメントに引き継ぐため、明示的な予算がセグメント 1 つ分まるごと超過することはありません。
+- `--days N` は実時間の期限を、`--max N` は実行回数の上限を追加します。どちらもオプトインで、指定しなければゴールはコストによってのみ制限されます。
+- 上限に達したゴールは `budgetExhausted` で停止し、予算を引き上げることによってのみ再開できます。
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+上限は料金に基づくため、カタログが料金を特定できないモデルは上限に達することがありません。そのような実行は代わりに、ドゥームループの反復ガード、3 回連続の失敗後にスーパーバイザーが諦めること、そしてあなたによって制限されます。
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+スペース内のメッセージ、@メンション、パイプラインのステップには支出上限がありません。実行は、モデルが停止したとき、あなたが停止したとき、またはドゥームループガードが方向づけたときに終わります。
 
-## Cut token use
+## トークン使用量を削減する
 
-### Compact a long conversation
+### 長い会話を圧縮する
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+スペースのコンポーザーで `/compact` と入力します。このコマンドはクライアント側でインターセプトされ、トランスクリプトに残ることはありません。サーバーが古い履歴をアンカー付きの要約に畳み込み、会話は圧縮されたコンテキストで続行されます。
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+エージェントがターン実行中の場合と、畳み込むほど古い履歴がない場合、圧縮は拒否されます。組み込みハーネスも、履歴がモデルのコンテキストウィンドウに近づくと自ら圧縮します。
 
-### Choose the effort level deliberately
+### 推論の程度を意図的に選ぶ
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+エージェントの**推論の程度**（設定 → ワークスペース → エージェント）では、選択したモデルが公開しているレベルを選べます。レベルが高いほど、より多くの推論トークンを消費します。最上位のレベルは、それを必要とする作業のために取っておいてください。
 
-### Choose the model per agent
+### エージェントごとにモデルを選ぶ
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+モデルはエージェント単位のフィールドなので、整形やトリアージのエージェントは安価なモデルで実行し、アーキテクチャのエージェントは高価なモデルで実行できます。オブザーバビリティ → インサイトのエージェント別テーブルをモデルで絞り込むと、どの組み合わせが実際にコストをかけているかがわかります。
 
-### Look for runs with outsized token counts
+### トークン数が突出した実行を探す
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+インサイトの実行ログ（絞り込んだ最新 50 件の実行）を開き、異常なものについてはトランスクリプトドロワーを開きます。よくある原因は、長すぎるシステムプロンプトやペルソナ、圧縮すべきだったコンテキスト、いくつかの小さなタスクに分けるべきだったタスクです。
 
-## What happens if a budget is set out of band
+## 予算が通常の経路を外れて設定された場合
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+念のため、`monthlyBudgetCents` または予算ポリシーがエージェントの行に直接書き込まれた場合の動作を説明します:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- 予算はディスパッチの前ではなく、実行が完了した**後**に評価されます。実行完了時のリスナーが、エージェントの月初来の支出を上限と比較します。
+- ソフトしきい値（既定では 80%）を超えると警告インシデントが記録され、パイプライントリガーをぶら下げられる `BudgetThresholdCrossed` イベントが発行されます。
+- 予算を使い切るとハードインシデントが記録され、同じイベントが発行され、エージェントのライフサイクルステータスが `paused` に切り替わります。
+- ディスパッチ前のブロックは存在しますが、復旧をスケジュールする際にオーファン実行のリーパーと立ち往生したチケットのレコンサイラーだけが参照します — 通常のディスパッチがそこに到達することはなく、ディスパッチ経路のどこも一時停止ステータスを確認しません。唯一の可視シグナルは、組織図のライフサイクルバッジです。
 
-## Related guides
+## 関連ガイド
 
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
-- [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
-- [Run agent diagnostics](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
-- [Agent configuration reference](/ja-JP/マニュアル/リファレンス/エージェント設定/)
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)
+- [アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)
+- [エージェントの診断](/ja-JP/マニュアル/ハウツーガイド/エージェント診断/)
+- [エージェント設定](/ja-JP/マニュアル/リファレンス/エージェント設定/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)

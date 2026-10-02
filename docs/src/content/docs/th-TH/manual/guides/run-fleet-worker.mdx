@@ -1,166 +1,165 @@
 ---
-title: Run a fleet worker
-description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
+title: รันวอร์กเกอร์ของฟลีต
+description: สร้าง จับคู่ และรันตัวประมวลผลแบบไม่มีส่วนติดต่อ cc_worker เพื่อให้มันลงทะเบียนกับ cc_server และปรากฏในแผงฟลีต
 slug: th-TH/คู่มือ/วิธีทำ/รันวอร์กเกอร์ของฟลีต
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
-Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
-a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares
-the host's capabilities, heartbeats, pulls leased jobs, executes them and
-streams process events back. It holds no durable state: a supervisor restarts it
-and it re-registers.
+รัน `cc_worker` บนเครื่องสำรองเพื่อเพิ่มความจุในการประมวลผลให้ฟลีตของคุณ มันเป็น
+ไบนารี Dart ล้วน — ไม่มีเอนจิน Flutter — ที่จับคู่กับ `cc_server` ประกาศ
+ความสามารถของโฮสต์ ส่งฮาร์ตบีต ดึงงานที่เช่าไปรัน ประมวลผลงานเหล่านั้น และ
+สตรีมเหตุการณ์ของโปรเซสกลับมา มันไม่มีสถานะถาวร: ตัวควบคุมดูแลจะเริ่มมันใหม่
+แล้วมันจะลงทะเบียนอีกครั้ง
 
-You need a running `cc_server` first — see [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/).
+คุณต้องมี `cc_server` ที่รันอยู่ก่อน — ดู[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
 
-A paired worker registers, heartbeats and waits for leased jobs. Submit work
-with `fleet.submitJob`. Agent dispatch on this server does not route through
-the fleet; the success signal for this guide is the worker appearing in the
-fleet panel with a fresh heartbeat. The in-process worker registered at boot
-has an empty runner map, so a job placed on it returns `No local runner for
-job kind …`.
+วอร์กเกอร์ที่จับคู่แล้วจะลงทะเบียน ส่งฮาร์ตบีต และรอรับงานที่เช่า ส่งงานด้วย
+`fleet.submitJob` การสั่งงานเอเจนต์บนเซิร์ฟเวอร์นี้ไม่ผ่านฟลีต สัญญาณความสำเร็จ
+ของคู่มือนี้คือวอร์กเกอร์ที่ปรากฏในแผงฟลีตพร้อมฮาร์ตบีตใหม่ วอร์กเกอร์ในโปรเซส
+ที่ลงทะเบียนตอนบูตมีแมปตัวรันว่างเปล่า งานที่ถูกวางบนมันจึงคืนค่า
+`No local runner for job kind …`
 
-## Prerequisites
+## ก่อนเริ่ม
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
-- This repository checked out on the worker machine.
-- A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- [Dart SDK](https://dart.dev/get-dart) รีโปนี้ปักหมุดเวอร์ชัน SDK ด้วย [fvm](https://fvm.app) จึงต้องเติม `fvm` นำหน้าคำสั่ง
+- รีโปนี้ที่เช็กเอาต์ไว้บนเครื่องวอร์กเกอร์
+- `cc_server` ที่เข้าถึงได้ (ลูปแบ็กสำหรับการพัฒนา หรือ LAN/ระยะไกลสำหรับโปรดักชัน)
+- `git` บน `PATH` — วอร์กเกอร์จัดเตรียมรีโปและรันการตรวจสอบด้วย `git`
 
-## Step 1: Build the binary
+## ขั้นตอนที่ 1: บิลด์ไบนารี
 
 ```bash
 cd apps/cc_worker
 fvm dart build cli
 ```
 
-This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+คำสั่งนี้สร้างบันเดิลที่ครบในตัวเองที่ `./build/cli/<os_arch>/bundle/bin/cc_worker`
 
-## Step 2: Mint the worker's credential
+## ขั้นตอนที่ 2: สร้างข้อมูลรับรองของวอร์กเกอร์
 
-A `cc_server` only accepts a worker that presents a paired-device id and
-pre-shared key — including a loopback server. Mint them on the **server**
-machine (`pair` can run while the server is up; the new device is picked up
-without a restart):
+`cc_server` ยอมรับเฉพาะวอร์กเกอร์ที่แสดง id ของอุปกรณ์ที่จับคู่ไว้กับคีย์ที่แชร์
+ล่วงหน้า — รวมถึงเซิร์ฟเวอร์ลูปแบ็กด้วย ให้สร้างสิ่งเหล่านี้บนเครื่อง
+**เซิร์ฟเวอร์** (`pair` รันได้ขณะเซิร์ฟเวอร์ทำงานอยู่ อุปกรณ์ใหม่จะถูกนำมาใช้
+โดยไม่ต้องรีสตาร์ต):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
-It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
+มันพิมพ์ `Device id` และ `Pairing key` ออกมา — สิ่งเหล่านี้คือค่าที่ `--device-id`
+และ `--psk` / `--psk-file` / `CC_WORKER_PSK` รับไป
 
-## Step 3: Start the worker
+## ขั้นตอนที่ 3: เริ่มวอร์กเกอร์
 
-Against a paired server:
+กับเซิร์ฟเวอร์ที่จับคู่แล้ว:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
   --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback server (still paired — `cc_server` always runs the PSK
-handshake):
+กับเซิร์ฟเวอร์ลูปแบ็ก (ยังต้องจับคู่ — `cc_server` รันแฮนด์เชก PSK เสมอ):
 
 ```bash
 fvm dart run cc_worker --server ws://localhost:9030 \
   --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag                 | Description                                                                                      | Default     |
-| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
-| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
-| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+| แฟล็ก                | คำอธิบาย                                                                                        | ค่าเริ่มต้น |
+| -------------------- | ----------------------------------------------------------------------------------------------- | ----------- |
+| `--server <url>`     | URL ของ cc_server (`ws://`/`wss://`; `http(s)` และพาธ `/rpc` ที่หายไปจะถูกปรับให้) **จำเป็น**    | —           |
+| `--name <name>`      | ชื่อวอร์กเกอร์ที่ผู้ปฏิบัติงานเห็น                                                                | ชื่อโฮสต์    |
+| `--device-id <id>`   | id ของอุปกรณ์ที่จับคู่แบบถาวร ใช้เป็น id ของวอร์กเกอร์ด้วย                                        | `cc-worker` |
+| `--psk-file <path>`  | ไฟล์ที่บรรทัดแรกที่ไม่ว่างคือคีย์จับคู่ แนะนำให้ใช้แทน `--psk`                                     | —           |
+| `--psk <key>`        | คีย์จับคู่บนบรรทัดคำสั่ง มองเห็นได้ใน `ps` และประวัติเชลล์ — ไบนารีจะเตือน                         | —           |
+| `--max-jobs <n>`     | เพดานสูงสุดของงานที่โปรเซสนี้ประมวลผลพร้อมกัน (จำนวนเต็มบวก)                                      | `4`         |
 
-Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
-Omitting every source skips the worker's auth handshake; a real `cc_server`
-then denies the session (`auth_denied`) rather than accepting an unauthenticated
-worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
-binary uses `package:args` and does not ignore typos.
+ลำดับการหาคีย์คือ `--psk-file` → `CC_WORKER_PSK` → `--psk` การละทุกแหล่งจะข้าม
+แฮนด์เชกการยืนยันตัวตนของวอร์กเกอร์ แล้ว `cc_server` จริงจะปฏิเสธเซสชัน
+(`auth_denied`) แทนที่จะยอมรับวอร์กเกอร์ที่ไม่ได้ยืนยันตัวตน แฟล็กที่ไม่รู้จัก
+ถือเป็นข้อผิดพลาดการใช้งาน (`exit 64`) — ต่างจาก `cc_server` ไบนารีนี้ใช้
+`package:args` และไม่เพิกเฉยต่อการพิมพ์ผิด
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
-(default: a `cc_worker_cache` directory under the system temp dir).
+`CC_WORKER_CACHE` เขียนทับไดเรกทอรีแคชการจัดเตรียม worktree
+(ค่าเริ่มต้น: ไดเรกทอรี `cc_worker_cache` ใต้ไดเรกทอรีชั่วคราวของระบบ)
 
-The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
-polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`; put it under systemd
-or launchd so it restarts and re-registers after a crash or reboot.
+วอร์กเกอร์ลงทะเบียนด้วย `fleet.registerWorker` จากนั้นส่งฮาร์ตบีตทุก 20 วินาที
+และโพลล์หาการเช่าทุก 2 วินาที มันรันจนกว่าจะได้รับ `SIGINT`/`SIGTERM` ให้วางไว้
+ใต้ systemd หรือ launchd เพื่อให้มันรีสตาร์ตและลงทะเบียนใหม่หลังแครชหรือรีบูต
 
-:::caution[There is no protocol compatibility window]
-A worker whose fleet protocol version differs from the server's is registered as
-**incompatible** and is never offered a lease and `cc_worker` itself aborts with
+:::caution[ไม่มีช่วงเวลาที่โปรโตคอลเข้ากันได้]
+วอร์กเกอร์ที่มีเวอร์ชันโปรโตคอลฟลีตต่างจากของเซิร์ฟเวอร์จะถูกลงทะเบียนว่า
+**เข้ากันไม่ได้** และจะไม่ถูกเสนอการเช่าเลย และตัว `cc_worker` เองจะยกเลิกด้วย
 `Incompatible fleet protocol: worker speaks v… server speaks v… Upgrade cc_worker
-to match the server release`. Build the worker from the same release as the server.
+to match the server release` ให้บิลด์วอร์กเกอร์จากรีลีสเดียวกับเซิร์ฟเวอร์
 :::
 
-## Step 4: Verify it in the fleet panel
+## ขั้นตอนที่ 4: ตรวจสอบในแผงฟลีต
 
-Open **Observability** in the desktop or web app, switch to the **Live** tab and
-scroll to the bottom. **Workers** lists every registered worker with its
-platform, cores, capability keys and last heartbeat; **Jobs** lists the jobs
-distributed across them.
+เปิด **การสังเกตการณ์** ในแอปเดสก์ท็อปหรือเว็บ สลับไปแท็บ **สด** แล้วเลื่อนลงไป
+ล่างสุด **เวิร์กเกอร์** แสดงรายการวอร์กเกอร์ที่ลงทะเบียนทุกตัวพร้อมแพลตฟอร์ม
+จำนวนคอร์ คีย์ความสามารถ และฮาร์ตบีตครั้งล่าสุด **งาน** แสดงรายการงานที่กระจาย
+อยู่ตามวอร์กเกอร์เหล่านั้น
 
-Your worker appearing there with a recent heartbeat is the confirmation that
-pairing and registration worked.
+การที่วอร์กเกอร์ของคุณปรากฏที่นั่นพร้อมฮาร์ตบีตล่าสุดคือหลักยืนยันว่าการจับคู่
+และการลงทะเบียนสำเร็จ
 
-From a worker's tile you can **drain** it (finish current jobs, take no new
-leases), **resume** a draining worker, **revoke** its credential, or **remove**
-the row.
+จากไทล์ของวอร์กเกอร์ คุณสามารถ **ระบาย** มัน (ทำงานปัจจุบันให้จบ ไม่รับการเช่า
+ใหม่) **ทำต่อ** วอร์กเกอร์ที่กำลังระบาย **เพิกถอน** ข้อมูลรับรองของมัน หรือ
+**นำออก** แถวนั้น
 
-Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+แถวของวอร์กเกอร์และงานอยู่ใน `global.db` ของเซิร์ฟเวอร์ — ตัววอร์กเกอร์เขียน
+อะไรลงดิสก์นอกเหนือจากแคชการจัดเตรียม
 
-## What the worker advertises
+## สิ่งที่วอร์กเกอร์ประกาศ
 
-On registration the worker auto-detects its capabilities and the scheduler
-matches jobs against them. You do not configure these by hand:
+ตอนลงทะเบียน วอร์กเกอร์จะตรวจจับความสามารถของตัวเองโดยอัตโนมัติ และตัวจัดตาราง
+จะจับคู่งานกับความสามารถเหล่านั้น คุณไม่ได้กำหนดค่าเหล่านี้ด้วยมือ:
 
-- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes, with fallbacks to `uname -m` / `PROCESSOR_ARCHITECTURE`
-- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
-- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
-- **`sandbox`** — `native-macos` on macOS, `native-linux` on Linux. This is a placement hint, not a promise: the worker advertises the backend its platform _has_, but it does not wrap the jobs it runs in one. Unlike `cc_server`, `cc_worker` spawns a leased job directly
-- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+- **ระบบปฏิบัติการและสถาปัตยกรรม** (`macos`/`linux`/`windows`, `arm64`/`x64`) — ตรวจสอบแบบแม่นยำ พร้อมตัวสำรองเป็น `uname -m` / `PROCESSOR_ARCHITECTURE`
+- **จำนวนคอร์และ RAM** — จำนวนคอร์แบบแม่นยำ; RAM จะลดลงเหลือ `0` เมื่อตรวจสอบไม่ได้
+- **`flutter`** — ตั้งค่าเมื่อเข้าถึง Flutter SDK ได้ (`flutter` เปล่า ๆ แล้วจึง `fvm flutter`); งานเรนเดอร์โกลเดนต้องใช้ค่านี้
+- **`sandbox`** — `native-macos` บน macOS, `native-linux` บน Linux นี่เป็นเพียงคำใบ้สำหรับการวางงาน ไม่ใช่คำสัญญา: วอร์กเกอร์ประกาศแบ็กเอนด์ที่แพลตฟอร์มของมัน _มี_ แต่ไม่ได้ห่องานที่มันรันไว้ในแบ็กเอนด์นั้น ต่างจาก `cc_server` ตัว `cc_worker` สปอว์นงานที่เช่าขึ้นมาตรง ๆ
+- **`always-on` และ `parallel`** — `cc_worker` เฉพาะทางจะประกาศทั้งสองอย่างเสมอ จึงมีสิทธิ์รับชุด eval และความจุแบบขนานที่ใช้แล้วทิ้งอื่น ๆ
 
-Detection is best-effort: anything it cannot probe degrades to a safe default
-rather than failing startup.
+การตรวจจับเป็นแบบพยายามเต็มที่: สิ่งใดที่ตรวจสอบไม่ได้จะลดลงเป็นค่าเริ่มต้น
+ที่ปลอดภัย แทนที่จะทำให้การเริ่มระบบล้มเหลว
 
-## What the worker would execute
+## สิ่งที่วอร์กเกอร์จะประมวลผล
 
-The lease protocol carries six job kinds:
+โปรโตคอลการเช่าพกชนิดงานหกชนิด:
 
-| Kind           | What it is                                     |
-| -------------- | ---------------------------------------------- |
-| `agentRun`     | A single agent run (dispatch)                  |
-| `pipelineStep` | A pipeline step execution                      |
-| `codeIndex`    | A repo code-index build                        |
-| `goldenRender` | A UI visual golden render (requires `flutter`) |
-| `benchmark`    | A performance benchmark run                    |
-| `evalBatch`    | An eval batch (prefers `parallel` capacity)    |
+| ชนิด           | สิ่งที่มันเป็น                                        |
+| -------------- | ----------------------------------------------------- |
+| `agentRun`     | การรันเอเจนต์หนึ่งครั้ง (การสั่งงาน)                   |
+| `pipelineStep` | การประมวลผลขั้นตอนไปป์ไลน์หนึ่งขั้น                    |
+| `codeIndex`    | การบิลด์ดัชนีโค้ดของรีโป                               |
+| `goldenRender` | การเรนเดอร์โกลเดนเชิงภาพของ UI (ต้องมี `flutter`)      |
+| `benchmark`    | การรันเบนช์มาร์กประสิทธิภาพ                            |
+| `evalBatch`    | ชุด eval (ชอบความจุแบบ `parallel`)                     |
 
-Execution is a real subprocess-streaming implementation, not a full embedded
-agent runtime. When a lease carries `repoRemote`, the worker does
-`git clone --depth 1` into a remote-and-SHA-keyed cache directory, then
-`git fetch` and `git checkout`. For `agentRun` it runs the command in the lease
-env's `CC_JOB_COMMAND` in the work directory, streaming stdout and stderr back as
-events; with no `CC_JOB_COMMAND` it echoes the prompt so the transport is still
-exercised end to end. The other kinds run small real commands
-(`git rev-parse HEAD`, `git --version`) as honest probes. Job-scoped credentials
-in the lease env are injected into every subprocess and never written to a log.
+การประมวลผลเป็นการนำไปใช้จริงที่สตรีมโปรเซสย่อย ไม่ใช่รันไทม์ของเอเจนต์แบบฝังตัว
+เต็มรูปแบบ เมื่อการเช่าพา `repoRemote` มา วอร์กเกอร์จะ `git clone --depth 1`
+ลงไดเรกทอรีแคชที่ใช้ remote และ SHA เป็นคีย์ จากนั้น `git fetch` และ
+`git checkout` สำหรับ `agentRun` มันจะรันคำสั่งใน `CC_JOB_COMMAND` ของ env
+การเช่าในไดเรกทอรีทำงาน สตรีม stdout และ stderr กลับมาเป็นเหตุการณ์; เมื่อไม่มี
+`CC_JOB_COMMAND` มันจะสะท้อนพรอมต์กลับ เพื่อให้เส้นทางขนส่งถูกใช้งานตั้งแต่
+ต้นจนจบ ชนิดอื่นรันคำสั่งจริงขนาดเล็ก (`git rev-parse HEAD`, `git --version`)
+เป็นการตรวจสอบอย่างซื่อตรง ข้อมูลรับรองที่จำกัดขอบเขตตามงานใน env การเช่า
+จะถูกฉีดเข้าไปในโปรเซสย่อยทุกตัวและไม่ถูกเขียนลงล็อกเลย
 
-Events are batched and flushed every 250ms or every 32 events; each job ends with
-a done event and a completion report. The model is heartbeats plus short-TTL
-leases: if a worker loses contact its lease expires and the server reaps the job
-for retry. There is no durable state on the worker and no consensus or
-work-stealing between workers.
+เหตุการณ์จะถูกจัดกลุ่มและฟลัชทุก 250ms หรือทุก 32 เหตุการณ์; งานแต่ละงานจบด้วย
+เหตุการณ์ done และรายงานการเสร็จสิ้น โมเดลคือฮาร์ตบีตบวกการเช่าที่มี TTL สั้น:
+หากวอร์กเกอร์ขาดการติดต่อ การเช่าของมันจะหมดอายุ และเซิร์ฟเวอร์จะเก็บงานนั้น
+กลับไปลองใหม่ ไม่มีสถานะถาวรบนวอร์กเกอร์ และไม่มีความเห็นพ้องหรือการขโมยงาน
+ระหว่างวอร์กเกอร์
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
-- [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
-- [Pair a device](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
+- [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
+- [เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
+- [จับคู่อุปกรณ์](/th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)

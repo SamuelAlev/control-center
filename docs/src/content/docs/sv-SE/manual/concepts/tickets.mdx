@@ -1,155 +1,162 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: Ärenden och delegering
+description: Varför ett ärende spårar arbete utan att starta det, hur delegering skyddas och vad leverantörsspeglingen äger och inte äger.
 slug: sv-SE/handbok/koncept/arenden
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+Ett ärende är den arbetsenhet som Control Center spårar. Det är medvetet en _dum_
+artefakt: en titel, en brödtext, en status, en ägare och en plats i ett träd. Det
+är inte det som agenterna kör mot — agentarbete lever i samtal och den
+strukturerade utdatan från en körning ligger i körningsloggen.
 
-## Assignment records ownership; it dispatches nothing
+## Tilldelning registrerar ägande; den startar ingenting
 
-This is the single most important thing to get right about tickets.
+Detta är det enskilt viktigaste att få rätt när det gäller ärenden.
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/sv-SE/handbok/koncept/domanhandelser/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+Att sätta `assignedAgentId` skriver ett fält och publicerar en `TicketAssigned`
+[domänhändelse](/sv-SE/handbok/koncept/domanhandelser/). Den händelsen är en
+revisions- och aviseringssignal samt en pipelinetrigger. **Tilldelning till en
+agent startar ingen körning.** Det finns ingen ärendedispatcher som bevakar
+`assignedAgentId` och väcker den agenten.
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+Undantaget är ett team: när `assignedTeamId` är satt skickar `TeamRoutingService`
+ut teamledaren med driftsprotokollet och personallistan.
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+Om du vill att en specifik agent ska arbeta på ett ärende ber du den om det i ett
+samtal, eller så skickar ett pipelinesteg ut den, eller så delegerar en annan
+agent till den. Att tilldela ett ärende till en agent och vänta är det enda som
+aldrig kommer att ge något arbete.
 
-## Mirror and overlay
+## Spegling och överlägg
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+Ett ärende kan vara helt lokalt eller backas av ett externt
+ärendehanteringssystem, och det bär båda på en och samma rad.
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**Speglingen** — leverantör, extern nyckel, URL, titel, beskrivning, prioritet,
+etiketter, rå och normaliserad status, tidsstämplar — är en cache när ärendet är
+fjärrlagrat. Fjärrsystemet är sanningens källa där, och en uppdatering skriver om
+speglingen i sin helhet.
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**Överlägget** — tilldelning, delegering, ytlänk, förälder, projekt, länkade
+PR:er — finns bara i Control Center. Ärendehanteringssystemet vet ingenting om
+det, och en uppdatering rör det aldrig.
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+Den uppdelningen är det som gör synkning säkert över huvud taget: en hämtning
+från leverantören kan vara destruktiv mot speglingen utan att någonsin förlora
+den orkestreringsmetadata som ligger ovanpå.
 
-## The lifecycle graph binds agents, not you
+## Livscykelgrafen binder agenter, inte dig
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+Statusarna löper `backlog → open → inProgress → inReview → done`, med `blocked`
+som en sidoloop och `failed` / `cancelled` som de övriga terminala tillstånden.
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+Övergångsgrafen upprätthålls **bara på agent- och automatiseringsvägen** —
+MCP-verktyg och avstämmare. En otillåten övergång där loggas och ignoreras, så en
+förvirrad agent kan inte gå ett ärende baklänges ut ur ett terminalt tillstånd.
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+Varje användarstyrd ändring i gränssnittet skickar `force: true` och kringgår
+grafen helt. En människa kan flytta ett ärende till vilken status som helst som
+väljaren listar — inklusive att återöppna ett terminalt sådant. Väljaren erbjuder
+inte `failed`; agenter sätter det via `fail_ticket`. Grafen är ett skyddsräcke
+för automatisering, inte en regel för hur arbete får fortskrida.
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` äger varje mutation genom en enda flaskhals som läser in
+raden, säkerställer att den tillhör anroparens arbetsyta och skriver med en
+förväntad `version`, så att två samtidiga redigeringar inte kan skriva över
+varandra i tysthet.
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/sv-SE/handbok/referens/arendelivscykel/).
+Den fullständiga statustabellen, övergångarna, fältlistan och relationstyperna
+finns i [Ärendelivscykel](/sv-SE/handbok/referens/arendelivscykel/).
 
-## Provenance: how a ticket came to exist
+## Proveniens: hur ett ärende uppstod
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+Varje ärende har en `originKind`. Enumen har fem värden — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — men bara två
+skrivs i dag: `manual` (standardvärdet i `createTicket`, även för delegerade
+barn) och `externalSync` (synkmotorn, vid en hämtning från leverantören).
+`TicketWorkflowService.createTicket` tar inget ursprungsargument, så
+`pipelineStep`, `agentDelegation` och `recovery` hamnar aldrig på en rad.
 
-## Guarded delegation
+## Skyddad delegering
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+Delegering är där en agent skapar arbete åt en annan agent, och det är platsen
+där privilegier skulle kunna läcka, så spärrarna ligger på serversidan vid en
+flaskhals i stället för i promptinstruktioner.
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` går genom `TicketWorkflowService.delegateGuarded`, som beräknar
+barnets djup och rot från förälderkedjan och sedan kör alla fyra
+`DelegationGuards`-kontrollerna: ett hopp som skulle överskrida ett **djupstak
+på 3**, ett hopp tillbaka till en agent som redan finns i kedjan
+(**cykeldetektering**), ett **autonomitak** (delegatens effektiva nivå i ytan får
+inte överskrida delegerarens) och en **budgetram** (delegering debiterar
+delegerarens återstående hårdstoppsbudget och kan inte skapa mer).
+Produktionskopplingen tillhandahåller båda resolverportarna. Autonomi och budget
+hoppas över när `from_agent_id` utelämnas (obegränsad / policyfri budget passerar
+också). En vägran kastas som en `DelegationRefusedException` vars meddelande når
+den delegerande agenten ordagrant — en högljudd nekning, aldrig en tyst
+icke-åtgärd.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` är den äldre, **oskyddade** syskonfunktionen: den anropar
+`createTicket` direkt och hoppar över alla spärrar. Föredra `delegate_task`.
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+Blanda inte ihop delegeringens djupstak (3, för `delegate_task`-kedjor) med den
+inbyggda harnessens nästningsgräns för subagenter (2). Det är olika gränser för
+olika mekanismer.
 
-## Hierarchy, links and projects
+## Hierarki, länkar och projekt
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+Relationer mellan förälder och underärende ligger i `tickets.parent_ticket_id`,
+som ägs av `setParent` / `clearParent`. De är **inte** rader i `ticket_links`, så
+allt som läser ett ärendes relationer måste slå samman båda källorna.
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` håller de riktade kanterna mellan i övrigt orelaterade ärenden:
 
-| Link type     | Meaning                                 |
+| Länktyp       | Betydelse                               |
 | ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| `blocks`      | Källan blockerar målet                  |
+| `relatesTo`   | De två ärendena är relaterade (symmetriskt) |
+| `duplicateOf` | Källan är en dubblett av målet          |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+Ett **projekt** är en gruppering av ärenden inom en arbetsyta mot ett gemensamt
+mål. Projekt finns bara i Control Center och synkas aldrig till en extern
+leverantör.
 
-## Collaborators
+## Medarbetare
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+Rader av typen `TicketCollaborator` är hur mer än en principal knyts till ett
+ärende, i en roll av `assignee`, `collaborator` eller `reviewer`. Människor och
+agenter är likställda rader — en `principalId` plus en `collaboratorType` — utan
+något sentinelvärde för "användaren" och utan någon främmande nyckel till någon
+av tabellerna.
 
-## External sync
+## Extern synkning
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+Control Centers ärende är primärt. Att ta bort ett ärende är **endast lokalt**,
+så ett leverantörsstött ärende du tar bort tas inte bort i
+ärendehanteringssystemet och kan dyka upp igen vid nästa synkning. Medarbetare och
+barnärenden kaskaderar.
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+Adaptrarnas inloggningsuppgifter hämtas från serverns lager för
+inloggningsuppgifter (en Linear-nyckel eller GitHub-token som klistras in i
+Inställningar plockas upp vid nästa förfrågan; miljön såddar bara de lagren).
 
-## Tickets and pipelines
+## Ärenden och pipelines
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+Ingen pipelinenod skapar, slutför eller avbryter ärenden — paletten har inget
+sådant steg och motorn anropar inte `TicketWorkflowService`. En pipelinetrigger
+kan ändå utlösas av `TicketAssigned`, `TicketCompleted`, `TicketFailed` eller
+`TicketCancelled` (de fyra är de ärendehändelser som `EventPayloadMapper`
+faktiskt mappar). Det finns ingen `pipelineRunId`-kolumn på ärendet;
+pipelinekopplingen ligger i agentens körningslogg.
 
-## See also
+## Se även
 
-- [Pipelines and automation](/sv-SE/handbok/koncept/pipelines/): ticket events can trigger a pipeline
-- [Orchestration](/sv-SE/handbok/koncept/orkestrering/): where a DAG of sub-tickets comes from
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): who a ticket is assigned to
-- [Domain events](/sv-SE/handbok/koncept/domanhandelser/): the ticket lifecycle events
-- [Ticket lifecycle](/sv-SE/handbok/referens/arendelivscykel/): statuses, fields, transitions, relations
-- [Create and manage tickets](/sv-SE/handbok/how-to-guider/hantera-arenden/)
-- [Delegate work to agents](/sv-SE/handbok/how-to-guider/delegera-arenden/)
-- [Organize work with projects](/sv-SE/handbok/how-to-guider/projekt/)
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/): ärendehändelser kan utlösa en pipeline
+- [Orkestrering](/sv-SE/handbok/koncept/orkestrering/): varifrån en DAG av underärenden kommer
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vem ett ärende tilldelas
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): ärendelivscykelns händelser
+- [Ärendelivscykel](/sv-SE/handbok/referens/arendelivscykel/): statusar, fält, övergångar, relationer
+- [Skapa och hantera ärenden](/sv-SE/handbok/how-to-guider/hantera-arenden/)
+- [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)
+- [Organisera arbete med projekt](/sv-SE/handbok/how-to-guider/projekt/)

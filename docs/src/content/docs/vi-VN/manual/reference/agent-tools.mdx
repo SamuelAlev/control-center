@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Công cụ agent tích hợp
+description: Bề mặt công cụ mà harness tích hợp trao cho một agent — máy chủ ngôn ngữ, tìm kiếm cấu trúc, trình gỡ lỗi, kernel và điều khiển worker — cùng mọi thao tác và tham số của chúng.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-agent
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Đây là những công cụ **gắn với máy chủ** mà runtime agent tích hợp đăng ký trực tiếp — máy chủ ngôn ngữ, tìm kiếm cấu trúc, trình gỡ lỗi, kernel, câu hỏi và điều khiển worker — khác với các [công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/) mà nó bắc vào và những công cụ tệp, tìm kiếm và shell chung từ runtime của harness. Chúng không nằm trên sổ đăng ký MCP: một máy khách MCP bên ngoài sẽ không thấy chúng, bởi mỗi công cụ đều gắn với một tài nguyên phía máy chủ đang sống — một tiến trình máy chủ ngôn ngữ, một bộ điều hợp gỡ lỗi, một trình thông dịch — thuộc về đúng một lượt chạy.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Mọi công cụ ở đây chỉ được đăng ký khi tài nguyên chống lưng của nó được nối cho lượt chạy — một bộ giám sát máy chủ ngôn ngữ hoặc gỡ lỗi, một bộ phân tích cú pháp tree-sitter, một nhà máy kernel, một cổng câu hỏi, một danh sách vibe. Việc phát hiện một máy chủ ngôn ngữ hay bộ điều hợp gỡ lỗi cho *bản checkout này* là một phép kiểm tra riêng, diễn ra sau đó (`status` / `adapters`): những công cụ ấy vẫn nằm trên bề mặt để agent có thể hỏi vì sao không có gì dùng được, thay vì đoán mò.
 
-## Approval tiers
+## Cấp phê duyệt
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Mỗi công cụ khai báo một cấp, và cấp đó quyết định **những bề mặt nào nhìn thấy nó** — chứ không chỉ là liệu nó có hỏi phê duyệt hay không. Chế độ Kế hoạch và các subagent chỉ đọc đều bị khống chế ở cấp `read`, nên một công cụ thuộc cấp `write` hay `exec` hoàn toàn không có mặt trong lược đồ của chúng.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Cấp     | Ý nghĩa                                | Công cụ ở đây                                      |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Không có tác dụng phụ                  | `lsp`, `ast_grep`, `ask_user`, năm công cụ `vibe_*` |
+| `write` | Thay đổi tệp                           | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Khởi động hoặc điều khiển một tiến trình | `debug`, `eval`                                  |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — truy vấn máy chủ ngôn ngữ
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Được đăng ký khi lượt chạy có một bộ giám sát máy chủ ngôn ngữ và một thư mục làm việc. Việc một máy chủ có thực sự trả lời được hay không được phát hiện ở thời điểm gọi, dưới dạng một phép **giao**: một dấu hiệu gốc phải tồn tại *và* tệp nhị phân của máy chủ phải phân giải được. Chỉ riêng một trong hai thì không máy chủ nào khởi động — `status` sẽ nói rõ điều đó — thay vì đoán mò trong im lặng.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Vị trí được xác định bằng `line` cộng với một chuỗi con `symbol`, không bao giờ bằng cột. Một mô hình bị yêu cầu cho một cột sẽ đoán, và một lần đoán sai sẽ phân giải thành một ký hiệu khác trên cùng dòng — một câu trả lời trông có vẻ đúng nhưng lại nói về thứ khác. Bỏ qua `symbol` trong một hành động điều hướng là một lỗi, chứ không phải một lần đoán lấy cột đầu tiên.
 
-| Action            | Arguments                        | Returns                                    |
-| ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| Hành động        | Tham số                          | Trả về                                     |
+| ---------------- | -------------------------------- | ------------------------------------------ |
+| `diagnostics`     | `file` (hoặc `"*"`)              | Lỗi và cảnh báo; `"*"` chạy trình kiểm tra của dự án thay vào đó |
+| `definition`      | `file`, `line`, `symbol`         | Nơi ký hiệu được khai báo                  |
+| `type_definition` | `file`, `line`, `symbol`         | Nơi kiểu của nó được khai báo              |
+| `implementation`  | `file`, `line`, `symbol`         | Các hiện thực cụ thể                       |
+| `references`      | `file`, `line`, `symbol`         | Mọi lần sử dụng, giới hạn ở 50             |
+| `hover`           | `file`, `line`, `symbol`         | Chữ ký và chú thích tài liệu               |
+| `symbols`         | `query` hoặc `file`              | Tìm kiếm trong không gian làm việc với `query` (giới hạn ở 100); ký hiệu trong tài liệu với `file` (giới hạn ở 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Các bản sửa nhanh mà máy chủ đưa ra        |
+| `status`          | —                                | Những máy chủ nào đang chạy, và cho những gốc nào |
+| `reload`          | —                                | Khởi động lại máy chủ cho gốc này          |
 
-### Diagnostics on write
+### Chẩn đoán khi ghi
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Lợi ích thật sự không nằm ở công cụ. `write`, `edit` và `apply_patch` được **bọc lại**: sau khi ghi, tệp được đồng bộ và lưu qua máy chủ ngôn ngữ, và chỉ những chẩn đoán **mới xuất hiện** mới được gộp vào kết quả công cụ. Agent biết mình vừa làm hỏng bản dựng ngay tại lúc nó làm hỏng, mà không cần phải nhớ để hỏi.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Những chẩn đoán đã được báo trước đó sẽ bị chặn lại bởi một sổ cái theo từng lượt chạy, khóa theo mức độ nghiêm trọng, mã và thông điệp — vị trí được cố ý loại trừ, nên một chẩn đoán chỉ dịch xuống bốn dòng sẽ không bị báo lại như thể là mới.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — đổi tên toàn dự án
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Một công cụ riêng, thuộc cấp `write`, vì đúng một lý do: cấp quyết định khả năng hiển thị. Gộp việc đổi tên vào `lsp` sẽ hoặc trao cho một kẻ khám phá chỉ đọc khả năng viết lại kho mã, hoặc đặt mọi lệnh `hover` sau một lời nhắc phê duyệt.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Tham số    | Ý nghĩa                                    |
+| ---------- | ------------------------------------------ |
+| `file`     | Nơi ký hiệu nằm                            |
+| `line`     | Dòng tính từ 1                             |
+| `symbol`   | Chuỗi con nhận diện nó trên dòng đó        |
+| `new_name` | Tên muốn đặt                               |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — tìm kiếm cấu trúc
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Tìm mã theo **hình dạng** thay vì theo văn bản. `$NAME` khớp với bất kỳ nút nào, `$$$NAME` khớp với một dãy nút cùng cấp, và `$_` là ký tự đại diện không bắt giữ gì.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Tính chất khiến nó là một bộ so khớp chứ không chỉ là một regex thêm vài bước: một biến meta lặp lại trong cùng một mẫu phải bắt được cùng một đoạn văn bản.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+sẽ khớp với một điều kiện bảo vệ giải phóng đúng thứ nó vừa kiểm tra, và **không** khớp với một điều kiện giải phóng một thứ khác.
 
-| Argument      | Meaning                                                     |
+| Tham số       | Ý nghĩa                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Một mảnh mã có các biến meta                                |
+| `path`        | Tệp hoặc thư mục cần tìm; mặc định là toàn bộ không gian làm việc |
+| `language`    | Id ngữ pháp đi kèm (`dart`, `python`, `rust`, `c`, …). Được suy ra khi `path` nêu tên một tệp |
+| `max_results` | Mặc định 50                                                 |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Mẫu được phân tích cú pháp bằng cùng ngữ pháp với tệp]
+Nhờ vậy `dispose(x)` khớp với lời gọi bất kể nó được đặt cách, xuống dòng hay chú thích thế nào — và không bao giờ khớp chỉ vì trùng ký tự bên trong một hằng chuỗi hay một chú thích.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Một mảnh mã được phân tích trong một khung bao, chứ không trần trụi]
+`dispose(x)` khi được phân tích ở cấp cao nhất của Dart là một *chữ ký hàm* hoàn toàn hợp lệ. Trình biên dịch mẫu thử lần lượt qua một thang các ngữ cảnh (câu lệnh, biểu thức, thành viên lớp, khai báo) và dùng ngữ cảnh đầu tiên chấp nhận mảnh mã đó. Một mẫu không có ngữ cảnh nào chấp nhận sẽ được báo là không thể phân tích cú pháp, thay vì bị đem đi tìm rồi âm thầm không thấy gì.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — viết lại theo cấu trúc, có tạm giữ
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Cùng cách so khớp, cộng thêm một mẫu `rewrite` với các biến meta được thay ngược trở lại. **Không có gì được ghi.** Thay đổi được tạm giữ và kết quả nêu tên một `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Tham số    | Ý nghĩa                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Thứ cần khớp                                        |
+| `rewrite`  | Thứ cần đặt vào đó, với `$NAME` được thay thế       |
+| `path`     | Phạm vi; mặc định là toàn bộ không gian làm việc    |
+| `language` | Id ngôn ngữ                                         |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — xác nhận hoặc hủy bỏ một thay đổi đã tạm giữ
 
-| Argument  | Meaning                          |
+| Tham số   | Ý nghĩa                          |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Từ kết quả `(proposed)`          |
+| `action`  | `accept` hoặc `discard`          |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Mỗi tệp đều được đối chiếu với nội dung đã ghi nhận tại thời điểm tạm giữ, và **mọi** sai lệch đều khiến toàn bộ thay đổi bị từ chối. Một thao tác viết lại theo cấu trúc được áp dụng dở dang sẽ để lại một cây mã không biên dịch được theo hình dạng nào cả.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — điều khiển trình gỡ lỗi
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Được đăng ký khi lượt chạy có một bộ giám sát phiên gỡ lỗi, một thư mục làm việc và một id hội thoại. Việc một bộ điều hợp có thực sự khởi động được hay không được phát hiện ở thời điểm gọi, theo cùng quy tắc giao như với máy chủ ngôn ngữ (dấu hiệu gốc *và* tệp nhị phân). Cấp `exec`; không an toàn khi chạy song song (một phiên là trạng thái xuyên suốt các lần gọi, nên `continue` vượt mặt `stack` sẽ đọc một khung đã di chuyển).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Mỗi cuộc hội thoại chỉ có một phiên, với TTL cứng (30 phút). Lệnh `launch` thứ hai sẽ bị từ chối thay vì âm thầm thay thế lệnh đầu tiên.
 
-| Op            | Arguments                     | Notes                                          |
+| Thao tác      | Tham số                       | Ghi chú                                        |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Những bộ điều hợp nào dùng được ở đây, và vì sao không |
+| `status`      | —                             | Liệu một phiên có đang chạy không, và nó dừng ở đâu |
+| `breakpoints` | `file`, `lines[]`             | `lines` rỗng sẽ xóa tệp. Có thể đặt **trước** khi khởi chạy |
+| `launch`      | `program`, `args[]`           | Khởi động chương trình và dừng lại tại các điểm dừng của bạn |
+| `attach`      | `port`                        | Kết nối tới một chương trình được gỡ lỗi đang chạy sẵn |
+| `continue`    | `thread_id?`                  | Chạy cho đến lần dừng kế tiếp                  |
+| `pause`       | `thread_id?`                  | Dừng nó ngay tại chỗ                            |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Di chuyển một bước                   |
+| `threads`     | —                             | Id và tên luồng                                |
+| `stack`       | `thread_id?`                  | Các khung, giới hạn ở 30                       |
+| `scopes`      | `frame_id`                    | Các phạm vi trên một khung, mỗi phạm vi có một `reference` |
+| `variables`   | `reference`                   | Các đối tượng con, giới hạn ở 50, giá trị giới hạn ở 400 ký tự |
+| `evaluate`    | `expression`, `frame_id?`     | Được tính trong chính phạm vi của khung        |
+| `output`      | —                             | stdout/stderr của chương trình được gỡ lỗi, có giới hạn |
+| `terminate`   | —                             | Kết thúc phiên và giết bộ điều hợp             |
 
-### Adapters
+### Bộ điều hợp
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Lệnh                       | Dấu hiệu gốc                                    |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` ưu tiên `.venv/bin` hoặc `venv/bin` cục bộ trong dự án hơn `$PATH`: một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — trình thông dịch bền vững
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Một ô Python hoặc JavaScript mà biến, import và dữ liệu đã nạp vẫn còn nguyên giữa các lần gọi. Cấp `exec`; không an toàn khi chạy song song.
 
-| Argument      | Meaning                                          |
+| Tham số       | Ý nghĩa                                          |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | Ô                                                |
+| `description` | Bắt buộc. 5–10 từ cho nhãn trong bản ghi hội thoại |
+| `language`    | `python` (mặc định) hoặc `javascript`            |
+| `reset`       | Vứt bỏ trình thông dịch hiện tại và khởi động một cái sạch trước tiên |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Biểu thức cuối cùng được hiển thị theo cách một notebook vẫn làm.
+- `display()` hoạt động, một frame của pandas được kết xuất thành bảng, và một hình matplotlib quay về dưới dạng **ảnh mà bản ghi hội thoại hiển thị**.
+- Những cú pháp IPython mà người ta theo phản xạ vẫn gõ — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — được viết lại thành mã thuần. `%pip` còn xóa `sys.modules`, nên lần `import` kế tiếp nhìn thấy thứ vừa được cài.
 
-### Calling your own tools from inside a cell
+### Gọi công cụ của chính bạn từ bên trong một ô
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Cầu nối **đi vào lại sổ đăng ký công cụ của harness**, nên rào chắn, việc phê duyệt và mọi lớp bọc đều áp dụng y hệt như với một lệnh gọi do mô hình phát ra. Nó đi trên chính đường ống của kernel thay vì một socket loopback: không cổng, không secret, không quy tắc lưu lượng ra.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Thời gian chờ của ô là một ngân sách *không hoạt động* (mặc định 5 phút) và ngân sách đó bị **tạm ngưng** trong khi một lệnh gọi qua cầu còn đang chờ xử lý, nên một ô tỏa ra tới các subagent không bị giết giữa lúc tỏa ra.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Kernel chạy ở đâu]
+Trong enclosure của cuộc hội thoại nếu cuộc hội thoại có một cái, còn không thì trên host. Nó không khởi động một enclosure để làm được điều đó — cùng quy tắc khiến một tab rig không tự khởi động.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — hỏi con người một câu hỏi
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Cấp `read`. Cách **duy nhất** để một lượt chạy hỏi người vận hành bất cứ điều gì. Nó hiển thị một thẻ đánh số trong cuộc hội thoại và chặn cho đến khi có người trả lời, bỏ qua, hoặc câu hỏi hết thời gian chờ. Đừng bao giờ viết câu hỏi dưới dạng tin nhắn chat — làm vậy sẽ kết thúc lượt.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Tham số            | Ý nghĩa                                    |
+| ------------------ | ------------------------------------------ |
+| `question`         | Cần hỏi điều gì                            |
+| `context`          | Tùy chọn: vì sao bạn đang hỏi và câu trả lời ảnh hưởng tới điều gì |
+| `options[]`        | Các lựa chọn, mỗi mục là `{label, description?}` |
+| `allow_free_text`  | Liệu câu trả lời tự nhập có được chấp nhận |
+| `multi_select`     | Liệu có được chọn nhiều lựa chọn           |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Bỏ qua là thành công: hãy tiếp tục dựa trên một giả định đã nêu rõ và đừng hỏi lại. Hết thời gian chờ là một lỗi với cùng chỉ dẫn đó. Lời nhắc cấp quyền (“tôi có được làm việc này không?”) là một cổng riêng và hiển thị thành cùng loại thẻ trong cuộc hội thoại.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Chỉ được đăng ký khi tồn tại cả một cổng câu hỏi lẫn một space đích. Khi không có người nào được gắn vào, lời gọi **thất bại** thay vì chặn mãi mãi — cùng tư thế đóng khi lỗi mà một `prompt` của rào chắn áp dụng khi không có người phê duyệt nào được kết nối.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — điều khiển worker nền
 
-Registered only while [vibe mode](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Chỉ được đăng ký khi [chế độ vibe](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/) đang bật. Cả năm đều thuộc cấp `read`: cổng gác thuộc về công cụ của worker, nơi việc chỉnh sửa thực sự diễn ra.
 
-| Tool         | Arguments                                | Notes                                       |
+| Công cụ      | Tham số                                  | Ghi chú                                     |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Trả về ngay lập tức; worker vẫn tiếp tục chạy |
+| `vibe_send`  | `worker_id`, `message`                   | Nối thêm vào bản giao việc và chạy lại      |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Chặn cho đến khi nó kết thúc                |
+| `vibe_kill`  | `worker_id`                              | Dừng nó                                     |
+| `vibe_list`  | —                                        | Hạng, trạng thái, thời gian đã chạy và kết quả cuối |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` là `fast` (công việc cơ học với đặc tả rõ ràng) hoặc `good` (thiết kế, phán đoán, hoặc đánh giá đầu ra của một worker `fast`).

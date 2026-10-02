@@ -1,96 +1,103 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Bir cihaz eşleştirme
+description: Telefonunuzu (ya da ikinci bir tarayıcıyı veya masaüstünü) Control Center sunucunuzla eşleştirin; böylece filoyu uzaktan izleyebilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/) for how the link
-works and its security model.
+Bu kılavuz, bir telefonu Control Center ile nasıl eşleştireceğinizi gösterir;
+böylece mesajları ve biletleri her yerden okuyup yanıtlayabilirsiniz. Aynı akış
+ikinci bir tarayıcıyı ya da masaüstü uygulamasını da eşleştirir. Bağlantının
+nasıl çalıştığı ve güvenlik modeli için
+[Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/) sayfasına
+bakın.
 
-## Prerequisites
+## Önkoşullar
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Sunucunuza bağlı bir masaüstü ya da web istemcisi ve kurulmuş bir çalışma alanı. Eşleme işlemleri tam bir istemci gerektirir; bu yüzden eşlenmiş bir telefon asla başka bir cihazı eşleyemez — ya da iptal edemez.
+- Eşleştirdiğiniz cihazdan erişilebilen bir sunucu. Aynı ağda bu kendiliğinden çalışır; daha uzaktan ise trafiği aracılı aktarma taşır. Panel bir QR kodu ya da kimlik bilgisi yerine **Erişilemiyor** yanıtı veriyorsa önce bir yol yayımlayın — **Ayarlar → Sunucu → Bağlantı ve durum** altındaki tünel katılımı (**Bu sunucuyu paylaş**) ya da sunucunun `--public-url` bayrağı (bkz. [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)).
+- Telefon için: kurulacak hiçbir şey yok. QR kodu **Remote** web uygulamasını açar (varsayılan olarak [remote.usectrl.dev](https://remote.usectrl.dev/)).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Kendi kendine barındırma.** Remote ve aktarma aracısı bu depoda açık
+kaynaktır: telefon uygulaması (`apps/cc_remote` — `wrangler.jsonc` dosyası
+üzerinden Cloudflare Pages’e, `docker/cc_remote` nginx imajına ya da HTTPS
+destekli herhangi bir statik barındırıcıya dağıtabileceğiniz bir Flutter web
+PWA’sı; service worker’lar ve IndexedDB yalnızca güvenli bağlamda çalışır) ve
+aktarıcı (`apps/cc_signaling_server` — uygulama verisi tutmayan ve eşleme sırrını
+asla görmeyen, yalnızca uçtan uca mühürlenmiş çerçeveleri ileten tek bir
+durumsuz Dart ikilisi). Derleme ve çalıştırma adımları için README’lerine bakın.
 
-## Step 1: Open the pairing panel
+## 1. Adım: Eşleme panelini açma
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+**Ayarlar → Siz → Cihazlarınız** yolunu açın. **Cihazlarınız** bölümü, bu
+sunucuda hesabınıza eşlenmiş istemcileri listeler. (Sunucu sahibi sunucudaki her
+cihazı görür; diğer herkes yalnızca kendi cihazlarını görür.)
 
-## Step 2: Pair a new client
+## 2. Adım: Yeni bir istemci eşleme
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Sayfa başlığındaki **Yeni istemci eşle** düğmesine tıklayın, ona bir ad verin
+(ör. “Telefonum”), türünü seçin — **Web tarayıcısı**, **Masaüstü uygulaması** ya
+da **Telefon** — ve **Eşle** düğmesine tıklayın.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- **Telefon** için bir QR kodu görünür. Telefonun kamerasıyla tarayın ya da bağlantıyı kopyalayıp herhangi bir tarayıcıda açın. Bu kod, Remote uygulamasını sunucunuza yönlendirir ve kimlik bilgisini taşır.
+- **Tarayıcı** ya da **masaüstü** için bunun yerine gösterilen bağlantıyı (ya da cihaz kimliğini ve eşleme anahtarını) yeni istemciye kopyalayın. Tek dokunuşlu bağlantı yalnızca web istemcisinden eşleme yaparken sunulur; çünkü bir masaüstü ikilisinin bunu oluşturacak bir web kaynağı yoktur.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Telefon QR’ı ile CLI’da `cc_server pair --client-url` komutunun yazdırdığı
+bağlantı **farklı yüklerdir ve birbirlerinin yerine kullanılamaz**: CLI
+bağlantısı web istemcisinin bağlantı formunu doldurur; bu QR ise Remote PWA’sı
+için sunucunun tam bağlantı tanımlayıcısını ve kimlik parmak izini taşır.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Telefon tarafında, bir eşleme bağlantısını açmak sessizce eşleme yapmaz. Remote,
+sunucunun duyurduğu adı gösterir ve herhangi bir şeyi saklamadan önce sizden onay
+ister; böylece sahte bir bağlantı uygulamayı başkasının sunucusuna yönlendiremez.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Taranan bir QR kodu erişimi anında verir]
+Önce bekleme, sonra onaylama diye bir adım yoktur: üretilen bir cihaz,
+oluşturulduğu andan itibaren etkindir ve bağlantı kapısı yalnızca kimlik
+bilgisinin etkin ve süresi dolmamış olduğunu denetler. QR kodunu ve eşleme
+anahtarını bir parola gibi değerlendirin ve vermek istemediğiniz her şeyi iptal
+edin.
 :::
 
-## Manage paired devices
+## Eşlenmiş cihazları yönetme
 
-From **Settings → You → Your devices** you can:
+**Ayarlar → Siz → Cihazlarınız** yolundan şunları yapabilirsiniz:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- Bir cihazı **Yeniden adlandır**
+- Artık güvenmediğiniz bir cihazı **İptal et**. İptal etmek, cihazın kimlik bilgisini yok eder ve açık oturumunu saniyeler içinde düşürür; böylece yeniden bağlanma girişimini güvenli biçimde reddeder
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+İptal etmek, kaybolan ya da değiştirilen bir telefon için doğru hamledir. Cihazın
+bakış açısından bu anındadır ve geri alınamaz.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Bu panelden üretilen kimlik bilgileri süreyle sınırlıdır: verildikten 30 gün
+sonra süresi dolar ve bağlantı kapısı bundan sonra onları güvenli biçimde
+reddeder. Komut satırında `cc_server pair` ile üretilen bir kimlik bilgisinin ise
+**hiçbir son kullanma tarihi yoktur** — hedeflendiği makine devre dışı
+bırakıldığında onu elle iptal edin.
 
-## Switch workspaces from the phone
+## Telefondan çalışma alanları arasında geçiş yapma
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Eşlenmiş bir telefon, masaüstünden bağımsız olarak çalışma alanları arasında
+geçiş yapabilir. Telefon her çağrıda çalışma alanını gönderir ve sunucu her
+birinde o çalışma alanındaki üyeliğinizi ve rolünüzü denetler — böylece telefon
+yalnızca üyesi olduğunuz çalışma alanlarına erişir ve oradaki geçiş, masaüstünün
+gösterdiğini asla değiştirmez.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Bir telefon oturumu ayrıca, ağırlıklı olarak okuma amaçlı araçlardan oluşan
+küçük bir izin listesiyle sınırlıdır: biletleri, ajanları, alanları, mesajları ve
+haber akışı makalelerini listeleyip okuyabilir; bir bileti güncelleyebilir ya da
+atayabilir, bir alanda mesaj gönderebilir ve bir makaleyi okundu ya da kayıtlı
+olarak işaretleyebilir. Bu kümenin dışındaki her şey, sunucunun dağıtıcısına
+ulaşmadan önce reddedilir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): make the server reachable in the first place
-- [Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/): point a full client at it
-- [Use spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/): what you'll mostly do from the phone
-- [Create and manage tickets](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/): triage from the road
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): sunucuyu her şeyden önce erişilebilir hale getirin
+- [Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/): tam bir istemciyi ona yönlendirin
+- [Alanları kullanma](/tr-TR/kilavuz/nasil-yapilir/alanlar/): telefondan çoğunlukla yapacaklarınız
+- [Bilet oluşturma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/): yoldan triyaj yapın
 
-## Related concepts
+## İlgili kavramlar
 
-- [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/)
+- [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/)

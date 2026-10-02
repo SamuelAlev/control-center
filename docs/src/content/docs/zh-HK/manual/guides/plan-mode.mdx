@@ -1,135 +1,117 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: 使用計劃模式
+description: 把空間切換為計劃模式，取得一份具型別的計劃，並批准它成為實際執行的工作。
 slug: zh-HK/手冊/操作指南/計劃模式
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+本指南說明如何在代理撰寫任何程式碼之前，先從它身上取得一份結構化計劃。
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+在計劃模式中，代理只以唯讀方式研究，而它唯一的交付項目是一份**具型別的計劃**：一個
+由你批准的步驟相依圖，Control Center 接着會把它編譯成實際工作。當你想看清一項變更的
+範圍、想把步驟拆解開來，或在任何東西被觸碰之前先弄清楚風險與相依關係時，就可以用它。
 
-## Switch a space into plan mode
+## 把空間切換為計劃模式
 
-Any of these flips the space's mode and the change is persisted:
+以下任何一項都會切換空間的模式，而變更會持久保存：
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- 在輸入框工具列最左邊的模式下拉選單中選擇**計劃**
+- 按 **Shift+Tab**
+- 送出 `/plan`。單獨一個 `/plan` 只會啟用該模式；`/plan <request>` 會啟用該模式，
+  並把其餘內容當作你的訊息送出
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` 永遠不會以文字形式傳送——它會設定所儲存的模式，而工具介面、守衛預設集與提示詞
+全都以這個模式為準。因此該模式會在這一回合以及之後每一個回合持續生效，直到你改回為止。
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+模式儲存在空間上，因此同一個代理可以在這裏處於計劃模式，而在別處處於代理模式。
 
-## What the agent produces
+## 代理會產出甚麼
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. 它以唯讀方式研究——記憶、程式碼索引、檔案
+2. 它會呼叫 `submit_plan` **一次**，帶上一個 `goal` 以及 `nodes`，其中每個節點各有穩定
+   的 `key`、`title`、`description`，以及它所 `dependsOn` 的節點鍵（正因如此，獨立的
+   工作才能並行執行）
+3. 它停下來
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+該工具會驗證這張圖——重複的鍵、懸空的相依關係、循環——並把違規項目傳回讓代理修正，
+而不是接受一份壞掉的計劃。
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+計劃會**在對話中**以一個精簡的列出現，顯示目標、它的狀態與步驟數目。**Plan Studio**
+——相依圖、逐節點檢視器與成本估算——會在對話旁邊以分頁開啟：按該列上的**開啟**，或
+單純等待，因為當你正在看這則對話時，30 秒內送達的計劃會自行開啟它的分頁。
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[唯讀保證是結構性的，但只適用於內建框架]
+Control Center 自己的框架會根據計劃模式的介面規格建立代理的工具註冊表，因此根本沒有
+寫入、編輯或指令工具可以呼叫——這項限制不是模型可以自我說服擺脫的提示詞指示。
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+Claude Code 配接器沒有這種過濾：模式會以請求的形式送到它那裏，由它自己的運行器決定
+是否遵從，而 Control Center 永遠只看得到它的 `mcp__*` 呼叫。模式下拉選單旁的強制
+執行徽章，正是在這種情況下出現。
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[代理可以向你提出釐清問題]
+當請求含糊不清時，計劃代理可以暫停，並透過 `ask_user` 工具向你提出最多三條阻塞式問題。
+它會在對話中渲染一份表單——選項或自由文字——而執行會一直阻塞，直到你回答為止。該工具
+屬於讀取層級，因此在計劃模式的唯讀介面中仍會保留，而且它不受批准包裝器約束（在沒有
+連接批准人的情況下，提示前面的提示會以失效關閉方式失敗，那就等同拒絕代理提出詢問這個
+動作）。
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+它需要一個空間才能渲染，因此沒有對話的一次性派發不會得到它。在第一則訊息中先交代範圍、
+目標程式庫與驗收準則，仍然比來回一趟更快。
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+純文字敘述在這裏不是交付項目。一次沒有呼叫 `submit_plan` 就結束的執行，會在對話中貼出
+一行可見的「在未提交計劃的情況下結束（沒有 `submit_plan` 呼叫）。」，並把該次執行標記
+為未達成交付項目。該次執行的狀態刻意維持為 _completed_——這樣管線與工單的狀態機就不會
+受到影響——因此請看那一行，而不是狀態徽章。
 
-## Approve the plan
+## 批准計劃
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+在對話中計劃所屬的列上，按**批准並執行**。在 Plan Studio 的批准列上，按**批准計劃**
+（或旁邊的**拒絕**；當圖仍有驗證錯誤時，批准會停用）。
 
-Then:
+接着：
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center 會把計劃編譯成一次編排並將它具體化——工單與執行。這一步不涉及任何
+   模型；它是確定性的
+2. 計劃會以撰寫它的那個代理身分執行。是否要帶其他人進來，由該代理在執行時決定——它
+   可以把某個步驟 `delegate_task` 給更合適的隊友，但受工作區的委派深度上限限制
+3. 計劃的目標會成為**該對話的目標**，而工作會在**同一個對話中**執行：每個步驟都會貼出
+   代理被要求做的事，並把它的回合串流回來，因此你可以在自己原來的位置跟進（也能停止
+   某個回合）
+4. 對話的**通用**側邊面板中（在**待辦**之下）的目標列，會以 `settled/total` 顯示該次
+   執行的進度，並帶有它的停止按鈕；Plan Studio 會在圖上顯示每個節點的狀態，也可以在那
+   裏取消
 
-## Keep working without approving
+## 不批准也能繼續工作
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+如果你寧願留在這則對話而不批准計劃，代理可以呼叫 `exit_plan_mode`。那是唯一獲認可的
+退出方式：它會開啟一項連結到該對話的持久批准請求並傳回 `pending`——空間會維持在計劃
+模式，代理不得行動。請求一旦獲批准，代理下一次呼叫 `exit_plan_mode` 便會把空間由計劃
+模式切換為代理模式，並解除其會變更狀態的工具。若遭拒絕，它可以就修訂後的計劃開啟新的
+請求。
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+如要離開計劃模式，請切換輸入框的下拉選單（或按 Shift+Tab），或批准已提交的計劃。
+`exit_plan_mode` 開啟的持久批准，是透過 `decide_approval` MCP 工具決定的。用於被封鎖
+工具呼叫的護欄覆蓋層是另一條記憶體內佇列，不會承載計劃退出請求。
 
-## Plan mode in a pipeline step
+## 管線步驟中的計劃模式
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+`messaging.createSpace` 管線節點會從節點設定的 `mode` **extra** 讀取對話模式——
+`extras['mode']: 'plan'`。這個鍵採完全比對：任何其他拼法，包括 `conversationMode` 或
+`dispatchMode`，都會被靜默忽略，該房間則回退到請求主體的預設值，也就是**審查**模式，
+而不是聊天。`promptAgent` 步驟會加入並非由它建立的房間，而且不會重新授予權限。節點
+設定編輯器中的**派發模式**選單（`allParallel` / `manager`）是供團隊派發節點使用。如要
+設定對話模式，請在會開啟空間的範本上、或經由 API 在該節點的設定上使用 `extras['mode']`。
 
-## Related guides
+## 相關指南
 
-- [Chat with an agent](/zh-HK/手冊/操作指南/與代理聊天/)
-- [Use spaces](/zh-HK/手冊/操作指南/空間/)
-- [Work in Plan Studio](/zh-HK/手冊/操作指南/plan-studio/)
-- [Run an orchestration](/zh-HK/手冊/操作指南/執行編排/)
+- [與代理聊天](/zh-HK/手冊/操作指南/與代理聊天/)
+- [使用空間](/zh-HK/手冊/操作指南/空間/)
+- [在 Plan Studio 工作](/zh-HK/手冊/操作指南/plan-studio/)
+- [執行編排](/zh-HK/手冊/操作指南/執行編排/)
 
-## Related concepts
+## 相關概念
 
-- [Modes](/zh-HK/手冊/概念/模式/)
-- [Orchestration](/zh-HK/手冊/概念/編排/)
+- [模式](/zh-HK/手冊/概念/模式/)
+- [編排](/zh-HK/手冊/概念/編排/)

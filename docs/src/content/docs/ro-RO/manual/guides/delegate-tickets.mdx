@@ -1,131 +1,139 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Deleagă munca agenților
+description: Predă un tichet unui agent într-o conversație și lasă agenții să-și delege sub-sarcini unii altora, sub protecțiile de adâncime și de ciclu.
 slug: ro-RO/manual/ghiduri-practice/deleaga-tichete
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Acest ghid acoperă cum să-ți scoți munca de pe masă și să o pui pe seama unui
+agent și ce se întâmplă când agenții își transmit munca între ei.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Atribuirea unui tichet unui agent nu trimite nimic]
+Nu există niciun dispecer de tichete pentru un agent asignat. Atribuirea
+consemnează proprietatea și nimic mai mult — nu se creează niciun spațiu, nu se
+schimbă nicio stare, nu pornește niciun agent. Excepția este un tichet atribuit
+unei **echipe**, care trezește liderul acelei echipe. Munca unui agent pentru un
+asignat numit trăiește în conversații, deci de acolo o pornești.
 :::
 
-## Hand a ticket to an agent
+## Predă un tichet unui agent
 
-1. [Create the ticket](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Creează tichetul](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/) cu un titlu și o
+   descriere suficient de precise pentru a lucra pe baza lor.
+2. Setează-i **Asignat** la agent, ca proprietatea să fie consemnată.
+3. Deschide (sau creează) un spațiu și menționează acel agent cu @.
+4. Referențiază tichetul printr-o mențiune `#` în mesajul tău — composerul
+   completează automat tichetele din spațiul de lucru — și spune ce vrei să se
+   facă.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agentul preia munca din conversație. Progresul lui se transmite în flux în acel
+spațiu.
 
-## What the agent receives
+## Ce primește agentul
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Mesajul tău, inclusiv referința de tichet pe care ai etichetat-o.
+- Spațiul în care să lucreze și să raporteze.
+- Un worktree izolat din repo-urile legate ale spațiului de lucru.
+- **Modul** spațiului, care este cel ce guvernează suprafața de instrumente a
+  rulării.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ro-RO/manual/concepte/moduri/).
+Modul este o proprietate a spațiului, nu a tichetului — un tichet nu are
+mod. Un agent poate fi astfel în `chat` într-un spațiu și în `plan` în altul.
+Alege-l din meniul derulant de moduri al composerului (**Agent**, **Plan** sau
+**Orchestrează**); `review` este setat de spațiile de revizuire a PR-urilor și
+nu este selectabil. Vezi [Moduri](/ro-RO/manual/concepte/moduri/).
 
-## Require a structured result
+## Cere un rezultat structurat
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Un contract de ieșire este declarat pe trimitere, nu pe tichet:
+`expected_output_schema` plus `output_contract_mode` (strict implicit). Agentul
+îl satisface apelând `submit_output`, care validează încărcătura utilă față de
+schemă și respinge una neconformă.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Atât rezultatul acceptat, cât și eventualele respingeri ajung în **jurnalul de
+rulare al agentului**. Starea tichetului în sine nu este atinsă de asta — un
+contract eșuat nu face tichetul să eșueze.
 
-## Monitor progress
+## Monitorizează progresul
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Spațiul** — activitatea live a agentului, vederea principală.
+- **Tichetul** — starea lui, așa cum o setează cine îl mută.
+- **Observabilitate → Live** (`/workspaces/<workspace-id>/observability`) —
+  lista de prezență a agenților live.
+- **Observabilitate → Insights** — jurnalul de rulare, cu cost și durată.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Nu există niciun ecran de tablou de bord; un URL de spațiu de lucru simplu
+redirecționează către inbox.
 
-## Let agents delegate to each other
+## Lasă agenții să-și delege unul altuia
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Un agent care dă peste o sub-problemă deleagă cu instrumentul MCP
+`delegate_task`. Acesta creează un tichet copil atribuit altui agent și — când
+trimiți `parent_ticket_id` — consemnează lanțul, ca protecțiile să îl poată
+vedea.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Două protecții structurale rulează întotdeauna la punctul de trecere al
+tichetelor, niciodată prin instrucțiuni din prompt:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Plafon de adâncime** — un lanț mai adânc de 3 salturi este refuzat.
+- **Detectarea ciclurilor** — un salt înapoi la un agent aflat deja în lanț este
+  refuzat.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Când trimiți `from_agent_id`, rulează încă două protecții (producția furnizează
+întotdeauna porturile de rezolvare):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Plafon de autonomie** — nivelul efectiv al delegatului în spațiu nu trebuie
+  să îl depășească pe cel al delegatorului.
+- **Anvelopă bugetară** — delegarea facturează bugetul rămas de oprire forțată
+  al delegatorului și nu poate emite mai mult. Nicio politică, sau o politică
+  nelimitată, trece.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Un refuz este zgomotos: instrumentul returnează motivul protecției cuvânt cu
+cuvânt, așa că agentul care deleagă vede exact de ce. Câmpul
+`delegatedByAgentId` consemnează cine a delegat, formând un arbore de delegare.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` sare peste fiecare protecție]
+Instrumentul mai vechi `delegate_ticket` este încă înregistrat și apelează
+`createTicket` direct — fără plafon de adâncime, fără verificare de ciclu,
+fără plafon de autonomie, fără anvelopă bugetară. Preferă `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Acest plafon de adâncime a delegării de 3 este o limită diferită de plafonul de
+imbricare a subagenților al harness-ului integrat, de 2 — unul limitează
+tichetele între agenți, celălalt limitează subagenții din cadrul unei singure
+rulări.
 
-## Put several agents on one ticket
+## Pune mai mulți agenți pe un singur tichet
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Adaugă-i ca **colaboratori** pe tichet (roluri: asignat, colaborator,
+recenzent). Aceasta este o listă — o consemnare a cine este implicat — și nu
+acordă nimic prin ea însăși.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ro-RO/manual/ghiduri-practice/spatii/).
+Pentru a-i pune efectiv pe agenți în aceeași conversație, adaugă-i ca
+participanți din antetul spațiului. Ei se pot apoi menționa reciproc cu @ acolo.
+Vezi [Spații](/ro-RO/manual/ghiduri-practice/spatii/).
 
-## Automated ticket creation
+## Creare automatizată de tichete
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Niciun nod din paleta de pipeline nu creează tichete, așa că un pipeline nu
+poate distribui munca sub formă de tichete atribuite.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/).
+Calea care există este orchestrarea: aprobarea unei propuneri creează un proiect
+și o echipă, compilează DAG-ul de sub-tichete al propunerii într-un **șablon de
+pipeline** (un pas `promptAgent` per sub-tichet, nu câte un rând `Ticket`) și
+pornește acea rulare. Vezi
+[Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
-- [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
-- [Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
-- [Organize work with projects](/ro-RO/manual/ghiduri-practice/proiecte/)
-- [Ticket lifecycle reference](/ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor/)
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
+- [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
+- [Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
+- [Organizează munca cu proiecte](/ro-RO/manual/ghiduri-practice/proiecte/)
+- [Ciclul de viață al tichetelor](/ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor/)
 
-## Related concepts
+## Concepte conexe
 
-- [Tickets](/ro-RO/manual/concepte/tichete/)
-- [Dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
-- [Modes](/ro-RO/manual/concepte/moduri/)
+- [Tichete](/ro-RO/manual/concepte/tichete/)
+- [Ciclul de viață al trimiterii](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/)
+- [Moduri](/ro-RO/manual/concepte/moduri/)

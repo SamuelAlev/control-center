@@ -1,137 +1,154 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Przekieruj porty z terminala
+description: Osiągnij serwer deweloperski uruchomiony w Terminalu (VM) lub w powłoce hosta — ze swojej maszyny, z Przeglądarki (VM), z Androida, w swojej sieci albo pod domeną deweloperską z HTTPS.
 slug: pl-PL/podrecznik/poradniki/porty-vm
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Serwer uruchomiony w terminalu rozmowy jest publikowany tylko dla **tej
+przestrzeni**. Panel portów wykrywa nasłuchy, które aplikacja tam uruchomiła,
+mapuje je i podaje adres dla każdego miejsca, z którego możesz chcieć do nich
+dotrzeć. Dwie przestrzenie mogą jednocześnie nasłuchiwać na `5173`; ich mapy
+nigdy się nie mieszają.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Nic tutaj nie otwiera maszyny na świat: każda ścieżka powstaje na żądanie po
+stronie serwera i ginie razem z terminalem albo rigiem.
 
-## See what is listening
+## Zobacz, co nasłuchuje
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Otwórz **Terminal (VM)** rozmowy albo powłokę hosta (w przestrzeni lub na
+   stronie PR-a).
+2. Uruchom swój serwer — `pnpm dev`, `python -m http.server 8000`, cokolwiek.
+3. W ciągu kilku sekund **ikona wtyczki** w prawym górnym rogu terminala
+   dostanie kropkę. Kliknij ją.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panel wylicza każdy nasłuchujący port wraz z procesem, który go zajmuje, w
+postaci `3000 → 3000`: po lewej port, na którym proces się związał, po prawej
+port, na którym odpowiada lokalnie (ta sama liczba, ilekroć był wolny na Twojej
+maszynie). Każdy wiersz mówi też, czy docierają do niego desktopowy `localhost`,
+Przeglądarka (VM) i Android.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Wykrywanie jest zamknięte w izolacji: Terminal (VM) jest odpytywany wewnątrz
+swojego systemu gościa; powłoka hosta jest odpytywana z drzewa procesów PTY tej
+sesji. Inne przestrzenie ani inne procesy na Twoim Macu nie trafiają na listę.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Nowe porty w **tym** terminalu są przekierowywane automatycznie. Wyłącz
+**Automatyczne przekierowywanie portów** w tym samym panelu, jeśli chcesz mieć
+tylko te dodane ręcznie.
 
-## Reach it from this computer
+## Osiągnij go z tego komputera
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Użyj **Kopiuj lokalny adres URL** w danym wierszu — `http://localhost:3000`.
+Przekierowanie nasłuchuje tylko na interfejsie loopback, więc nic innego w
+Twojej sieci go nie widzi.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Jeśli dwie przestrzenie udostępniają port gościa `5173`, a Twoja maszyna zajmuje
+już `127.0.0.1:5173`, druga przestrzeń zachowuje port gościa `5173` i dostaje
+efemeryczny port lokalny. Kopiuj lokalny adres URL używa liczby z prawej strony.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+W powłoce hosta proces jest już na Twojej maszynie. Zmapowanie tego samego portu
+lokalnego nic nie zmienia; wybranie **innego** portu lokalnego wiąże proxy
+loopback z tym, który wybrałeś.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (albo związanie się z `0.0.0.0`) **nie** sprawia, że zamknięta
+Przeglądarka (VM) może dotrzeć do serwera na Macu. System gościa ma własny
+loopback; serwer wkłada tunel do tego systemu gościa, gdy karta Przeglądarki
+jest w **tej samej przestrzeni**.
 
-## Reach it from the Browser (VM)
+## Osiągnij go z Przeglądarki (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Otwórz zamkniętą przeglądarkę w **tej samej rozmowie**. Wpisz
+`localhost:<left-hand port>` — liczbę, na której związał się proces.
+Przemapowanie (`5173 → 3000`) odpowiada też pod liczbą z prawej strony w tej
+przeglądarce, więc Kopiuj lokalny adres URL działa tam tak samo. `browser_use`
+agenta może przejść pod oba. Serwer z przestrzeni A nigdy nie pojawia się jako
+`localhost:5173` w przeglądarce przestrzeni B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Używaj `localhost`, a nie adresu IP w sieci LAN i nie `--host`. System gościa ma
+własny loopback; tunel nasłuchuje tam zarówno po IPv4, jak i po IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Strony otwierające wiele połączeń naraz (dziesiątki zasobów, gniazdo odświeżania
+na żywo) dzielą ten sam tunel. Przeglądarka (VM) multipleksuje je na jedno
+trwałe wywołanie exec, dzięki czemu seria żądań nie oznacza uruchamiania
+osobnego procesu na każde połączenie i nie kończy się przekroczeniem czasu jako
+biała strona.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+W obrębie jednej przestrzeni przekierowanie Terminala (VM) wygrywa z powłoką
+hosta na tym samym numerze. Między przestrzeniami nie ma pierwszeństwa — to
+osobne mapy.
 
-## Reach it from Android
+## Osiągnij go z Androida
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Otwórz kartę **Android** tej przestrzeni. `localhost:<port>` emulatora jest
+wtedy odwracane na opublikowany port tej przestrzeni (`adb reverse`). Jeden
+emulator jest globalny dla urządzenia: podłączenie przestrzeni B przekierowuje
+`:5173` na B i porzuca przekierowanie A. Zamknij kartę, a odwrócenia zasadzone
+przez ten rig zostaną usunięte.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Symulator iOS to już Mac — bez odwracania. Fizyczny iPhone nadal potrzebuje
+udostępnienia w sieci LAN.
 
-## Share it on your network
+## Udostępnij go w swojej sieci
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Udostępnij w sieci lokalnej** publikuje port pod
+`<server-ip>:<random port>` — przydatne, gdy chcesz otworzyć stronę na
+telefonie albo gdy serwer działa na innej maszynie.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Port w sieci LAN jest zawsze przydzielany przez system operacyjny, nigdy nie
+  jest numerem gościa, więc ekspozycja to świadomy, widoczny adres, a nie taki,
+  który da się zgadnąć.
+- Pozostaje prywatny (tylko loopback), dopóki go nie włączysz, a
+  **⋯ → Tylko lokalnie** zdejmuje go z powrotem z sieci.
 
-## Give it a name — with HTTPS
+## Nadaj mu nazwę — z HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Ustaw domenę przeglądarki (.test)** przypisuje portowi domenę
+deweloperską, na przykład `myapp.test`. W Przeglądarce (VM)
+`https://myapp.test` ładuje wtedy Twój serwer z ważną kłódką — przydatne dla
+wszystkiego, co zachowuje się inaczej w nazwanym originie albo bezpiecznym
+kontekście (pliki cookie, service workery, wywołania zwrotne OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Domeny muszą kończyć się na `.test` lub `.localhost` — to dwa TLD
+  zarezerwowane dla rozwoju, więc nazwa deweloperska nigdy nie przesłoni
+  prawdziwej witryny.
+- **Nazwy** domen są na serwerze unikalne; **numery** portów nie. Dwie
+  przestrzenie mogą obie używać `5173`, ale nie mogą obie rościć sobie prawa do
+  `myapp.test`.
+- Certyfikat pochodzi z lokalnego urzędu certyfikacji utworzonego na Twoim
+  serwerze przy pierwszym użyciu. Jego klucze mieszkają w katalogu danych
+  serwera i nigdy nie trafiają do żadnego systemu gościa; zamknięta przeglądarka
+  ufa dokładnie temu jednemu kluczowi, więc TLS do prawdziwego internetu nadal
+  waliduje się normalnie.
+- Domena rozwiązuje się **tylko wewnątrz Przeglądarki (VM)**. Twoja własna
+  przeglądarka na hoście używa zamiast tego `localhost:<port>`.
+- Zwykłe `http://myapp.test` też działa.
 
-## Forward a port by hand
+## Przekieruj port ręcznie
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Dodaj port** na dole panelu mapuje port, zanim (albo niezależnie od tego,
+czy) cokolwiek na nim nasłuchuje. Ręczne przekierowanie zachowuje swój adres,
+gdy serwer się restartuje — wiersz pokazuje *nie nasłuchuje*, dopóki nie wróci —
+podczas gdy automatyczne przekierowania znikają razem ze swoim portem. W powłoce
+hosta możesz też ustawić inny port lokalny.
 
-## How it stays contained
+## Jak zachowuje izolację
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/pl-PL/podrecznik/koncepcje/rigi/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#ports-and-dev-domains).
+Porty są kluczowane po obszarze roboczym i przestrzeni. Własna mapa portów
+hypervisora jest ustalana przy starcie maszyny, więc Terminal (VM) jedzie dwoma
+wąskimi kanałami kontrolowanymi przez serwer: jednym wcześniej utworzonym pasem
+ruchu przychodzącego do systemu gościa, który odmawia połączenia z każdym
+portem, na którym system gościa faktycznie nie nasłuchuje, oraz tunelami
+odwrotnymi, które serwer trzyma otwarte dla Przeglądarki (VM) i Androida.
+Powłoka hosta nigdy nie skanuje całej maszyny. Żaden nasłuch nie powstaje w
+systemie gościa bez udziału serwera, a wszystko jest demontowane razem z
+terminalem albo rigiem. Projekt opisano w
+[Rigach i izolacjach](/pl-PL/podrecznik/koncepcje/rigi/#ports-without-holes);
+dokładne zarezerwowane porty i zasady domen znajdziesz w
+[dokumentacji referencyjnej rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#ports-and-dev-domains).
 
-## Related
+## Powiązane
 
-- [Give an agent a machine to test on](/pl-PL/podrecznik/poradniki/uzywanie-rigow/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/) — reserved ports, dev TLDs,
-  defaults
+- [Daj agentowi maszynę do testów](/pl-PL/podrecznik/poradniki/uzywanie-rigow/) —
+  otwieranie, obserwowanie i przejmowanie rigów
+- [Dokumentacja referencyjna rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/) —
+  zarezerwowane porty, TLD deweloperskie, wartości domyślne

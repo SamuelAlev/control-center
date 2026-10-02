@@ -1,149 +1,148 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: 알림 구성
+description: 카테고리를 켜거나 끄고, Quiet hours와 소리를 설정하며, 어떤 알림이 어디로 도달하는지 확인합니다.
 slug: ko-KR/매뉴얼/사용-가이드/알림
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+이 가이드에서는 알림을 구성하는 방법과 각 설정이 실제로 무엇을 제어하는지 설명합니다.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+알림은 두 가지 표면으로 도착합니다. **알림 센터** — 제목 표시줄의 종 — 는 서버에
+있는 워크스페이스별 영속 피드를 읽습니다. **OS 토스트**는 별개의 데스크톱 전용
+경로로, 서버에서 푸시되는 라이브 프레임으로 공급됩니다.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[웹 빌드에서는 OS 알림이 표시되지 않습니다]
+토스트 파이프라인은 데스크톱 부트스트랩에서만 구성됩니다. `app.usectrl.dev`에는 OS
+토스트도, 알림 소리도, 주변 배너도 없습니다 — 종과 그 기록은 서버 피드를 읽기
+때문에 여전히 작동합니다. 휴대폰 클라이언트에는 알림 표면이 전혀 없습니다.
 :::
 
-## Turn categories on or off
+## 카테고리 켜기 또는 끄기
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. **설정 → 나 → 알림**으로 이동합니다
+2. **알림 활성화**를 켠 상태로 둡니다
+3. 원하는 카테고리를 전환합니다. 카테고리는 정확히 열여섯 개입니다:
 
-| Category                  | Fires when                                                                 |
+| 카테고리                  | 발생 조건                                                                  |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| 에이전트 완료             | 에이전트가 실행을 완료함                                                   |
+| PR 게시됨                 | 에이전트가 PR을 게시함                                                     |
+| PR 병합됨                 | PR이 병합됨                                                                |
+| 새 메시지                 | 보고 있지 않은 스페이스에 메시지가 도착함                                  |
+| 풀 리퀘스트에서 멘션됨    | GitHub 알림 폴링에서 PR에 멘션된 것을 확인함                               |
+| 리뷰 요청됨               | 초안이 아닌 PR에서 리뷰가 실제로 요청됨                                    |
+| 리뷰 오래됨               | 이미 리뷰한 풀 리퀘스트에 새 커밋이 쌓임                                   |
+| 병합 가능                 | 내가 작성한 풀 리퀘스트가 병합 가능해지거나, 더 이상 병합할 수 없게 됨     |
+| 리뷰 결정                 | 리뷰어가 승인하거나, 변경을 요청하거나, 승인이 취소됨                      |
+| 검사                      | 내가 작성한 풀 리퀘스트에서 CI가 실패하거나 복구됨                         |
+| 리뷰 스레드               | 내가 참여한 스레드에 누군가 답글을 달거나 스레드를 해결함                  |
+| 티켓 할당됨               | 티켓이 할당됨                                                              |
+| 티켓 상태 변경됨          | 티켓의 상태가 변경됨                                                       |
+| 회의가 곧 시작됩니다      | 캘린더 회의가 사전 알림 시간 안에 들어옴                                   |
+| 캘린더 연결 해제됨        | 연결된 캘린더의 OAuth 토큰이 만료됨                                        |
+| 인클로저 업데이트         | 인클로저가 인수되거나, 회수되거나, 실패함                                  |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+이 목록에 없는 항목은 알림도 필터링도 할 수 없습니다 — "그 밖의 모든 것"이라는
+카테고리는 존재하지 않습니다.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+이러한 환경설정은 사용자를 따라 기기를 넘어 유지되므로 휴대폰과 노트북이 같은
+상태를 유지합니다. 볼륨만은 의도적인 예외로 기기별로 유지됩니다.
 
-## Set quiet hours
+## Quiet hours 설정
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. 같은 페이지에서 **Quiet hours**를 켭니다
+2. 시작 시각과 종료 시각을 `HH:MM` 형식으로 입력합니다(기본 시간대는 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Quiet hours 동안에는 긴급하지 않은 알림이 버려집니다 — 나중을 위해 대기열에
+쌓였다가 다시 재생되지 않습니다.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+두 카테고리는 **긴급**이라서 항상 전달되며, Quiet hours와 포커스 모드를 _모두_
+우회합니다: **회의가 곧 시작됩니다**와 **PR 게시됨**입니다. 회의 알림은 나중에야
+보게 된다면 쓸모가 없기 때문입니다.
 
-## Choose a sound
+## 소리 선택
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. **알림 소리**까지 스크롤합니다
+2. 함께 제공되는 11가지 소리 중 하나를 고르거나 **없음**을 선택합니다
+3. 테스트 버튼을 눌러 소리를 듣고 슬라이더로 볼륨을 설정합니다
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+소리는 앱이 직접 재생합니다. OS 알림은 무음으로 전달되므로 같은 소리를 두 번
+듣는 일은 없습니다.
 
-## Set the meeting lead time
+## 회의 사전 알림 시간 설정
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. **사전 알림 시간**까지 스크롤합니다
+2. **5**, **10**, **15**, **30**분 중에서 선택합니다
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+이 값은 캘린더 일정보다 얼마나 앞서 **회의가 곧 시작됩니다** 알림이 발생하는지를
+나타냅니다. 기본값은 5분입니다.
 
-## Know when a notification is suppressed
+## 알림이 억제되는 경우
 
-A notification is dropped, silently, when any of these is true:
+다음 중 하나라도 해당하면 알림은 소리 없이 버려집니다:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- 알림이 전체적으로 꺼져 있거나, 해당 카테고리가 꺼져 있음
+- 해당 알림이 이동시키려는 경로에 이미 있음 — 메시지의 경우 이미 그 스페이스에
+  있음
+- 포커스 모드가 활성 상태이고 해당 카테고리가 긴급하지 않음
+- Quiet hours가 활성 상태이고 해당 카테고리가 긴급하지 않음
 
-Those checks apply to OS toasts. The durable bell still records the event.
+이 검사는 OS 토스트에 적용됩니다. 영속적인 종에는 여전히 이벤트가 기록됩니다.
 
-Two more suppressions live further upstream, in what the server sends at all:
+더 상류, 곧 서버가 애초에 전송하는 내용에도 두 가지 억제가 더 있습니다:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- 다른 **사람**이 보낸, 멘션이 없는 메시지는 알림이 되지 않음
+- 에이전트 간 스페이스는 사이드바에서 음소거되므로 사람의 읽지 않음 배지를
+  올리지 않음
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+스페이스 안에는 알림이 오지 않는 구석이 없습니다. 스레드를 포함해 모든 대화가
+똑같이 알림을 보냅니다. 읽음 상태는 스페이스 단위이므로, 읽지 않음은 대화별로
+추적되지 않고 스페이스의 모든 대화에 걸쳐 집계됩니다.
 
-## Read and clear the notification centre
+## 알림 센터 확인 및 지우기
 
-1. Click the bell in the title bar
+1. 제목 표시줄의 종을 클릭합니다
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+팝오버에는 최근 활동이 표시되며, 각 항목은 해당 내용으로 딥링크됩니다. 팝오버를
+열어도 모든 항목이 읽음으로 표시되지는 **않습니다** — 헤더의 **모두 읽음으로
+표시**를 사용하거나 행 하나만 읽음으로 표시합니다. 읽음 상태는 사용자를 따라
+기기를 넘어 유지됩니다.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[모두 지우기는 삭제가 아니라 워터마크입니다]
+**모두 지우기**는 사용자별 워터마크를 찍어 그보다 오래된 모든 항목을 숨깁니다.
+행은 그대로 남습니다. 이와 별개로 각 워크스페이스는 가장 최근 **200**개의 피드
+행만 보관하며 새 행이 도착할 때마다 오래된 행이 정리됩니다. 한편 종은 최신
+**50**개를 구독하고 팝오버는 그중 최대 **15**개를 나열합니다. 그보다 오래된
+기록은 읽음 상태와 무관하게 사라집니다.
 :::
 
-## Troubleshooting
+## 문제 해결
 
-### No OS notifications on macOS
+### macOS에서 OS 알림이 오지 않음
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+권한은 앱을 시작할 때 네이티브로 요청됩니다. 거부했다면 시스템 설정 → 알림에서
+Control Center를 다시 활성화합니다. 앱 안에서 다시 요청하는 프롬프트는 없습니다.
 
-### Nothing arrives on the web build
+### 웹 빌드에서는 아무것도 오지 않음
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+정상입니다 — 웹 빌드에는 OS 알림 파이프라인이 없습니다. 종을 사용합니다.
 
-### The bell badge shows zero but there is clearly new activity
+### 종 배지가 0인데 분명히 새 활동이 있음
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+연결한 뒤 읽음 표시 스트림이 해결될 때까지는, 배지가 잠깐 나타났다가 비는 것을
+피하기 위해 항목이 읽음으로 렌더링됩니다. 표시가 로드되면 안정됩니다.
 
-### An agent's run finished but nothing pinged me
+### 에이전트 실행이 끝났는데 알림이 오지 않음
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+해당 실행이 일어난 스페이스에 이미 있지 않았는지 확인합니다 — 활성 경로는 자신의
+OS 토스트를 억제합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Use focus mode and soundscapes](/ko-KR/매뉴얼/사용-가이드/포커스-모드/)
-- [Triage your inbox](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)
-- [Curate your newsfeed](/ko-KR/매뉴얼/사용-가이드/뉴스피드/)
+- [포커스 모드와 사운드스케이프 사용](/ko-KR/매뉴얼/사용-가이드/포커스-모드/)
+- [받은편지함 분류](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)
+- [뉴스피드 큐레이션](/ko-KR/매뉴얼/사용-가이드/뉴스피드/)
 
-## Related concepts
+## 관련 개념
 
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/)
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/)

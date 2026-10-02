@@ -1,137 +1,138 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Chuyển tiếp cổng từ terminal
+description: Truy cập một máy chủ phát triển khởi chạy trong Terminal (VM) hoặc shell host — từ máy của bạn, từ Browser (VM), từ Android, trên mạng của bạn, hoặc dưới một tên miền dev với HTTPS.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Một máy chủ bạn khởi chạy trong terminal của một cuộc hội thoại chỉ được công bố cho **space đó**. Bảng cổng nhận ra những cổng đang lắng nghe mà ứng dụng này đã khởi chạy ở đó, ánh xạ chúng, và cho bạn một địa chỉ cho mọi nơi bạn có thể muốn truy cập tới. Hai space có thể cùng lắng nghe trên `5173`; các ánh xạ của chúng không bao giờ trộn lẫn.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Không có gì ở đây mở toang cỗ máy: mọi đường đi đều do máy chủ tạo ra, theo yêu cầu, và biến mất cùng terminal hoặc rig.
 
-## See what is listening
+## Xem những gì đang lắng nghe
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Mở **Terminal (VM)** hoặc shell host của cuộc hội thoại (trong một space hoặc trên trang PR).
+2. Khởi chạy máy chủ của bạn — `pnpm dev`, `python -m http.server 8000`, bất cứ thứ gì.
+3. Trong vài giây, **biểu tượng phích cắm** ở góc trên bên phải của terminal
+   sẽ có thêm một chấm. Hãy nhấp vào đó.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Bảng này liệt kê mọi cổng đang lắng nghe cùng tiến trình sở hữu nó, dưới dạng
+`3000 → 3000`: bên trái là cổng mà tiến trình đã bind, bên phải là cổng nó trả lời
+cục bộ (cùng con số khi cổng đó còn trống trên máy của bạn). Mỗi dòng cũng cho biết
+`localhost` trên máy tính, Browser (VM) và Android có thể truy cập được nó hay không.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Việc dò tìm được giới hạn: một Terminal (VM) được thăm dò từ bên trong hệ thống
+khách đó; một shell host được thăm dò từ cây tiến trình PTY của phiên đó. Những
+space khác, và những tiến trình khác trên máy Mac của bạn, không được liệt kê.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Các cổng mới trong terminal **này** được chuyển tiếp tự động. Hãy tắt
+**Tự chuyển tiếp cổng** trong cùng bảng đó nếu bạn chỉ muốn những cổng do chính
+bạn thêm vào.
 
-## Reach it from this computer
+## Truy cập nó từ máy tính này
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Dùng **Sao chép URL cục bộ** trên dòng đó — `http://localhost:3000`. Bản chuyển tiếp
+chỉ lắng nghe trên loopback, nên không gì khác trên mạng của bạn nhìn thấy được nó.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Nếu hai space cùng để lộ cổng guest `5173` và máy của bạn đã giữ
+`127.0.0.1:5173`, thì space thứ hai vẫn giữ cổng guest `5173` và nhận một cổng cục
+bộ tạm thời. Sao chép URL dùng con số bên phải.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Trên một shell host, tiến trình vốn đã nằm trên máy của bạn. Ánh xạ cùng một cổng
+cục bộ không thay đổi gì; chọn một cổng cục bộ **khác** sẽ bind một proxy loopback
+vào cổng bạn đã chọn.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (hay bind vào `0.0.0.0`) **không** khiến một Browser (VM) khép kín
+truy cập được một máy chủ trên máy Mac. Hệ thống khách có loopback riêng; máy chủ
+cắm một tunnel vào hệ thống khách đó khi tab Browser nằm trong **cùng space**.
 
-## Reach it from the Browser (VM)
+## Truy cập nó từ Browser (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Mở trình duyệt khép kín trong **cùng cuộc hội thoại**. Gõ
+`localhost:<left-hand port>` — con số mà tiến trình đã bind. Một ánh xạ lại
+(`5173 → 3000`) cũng trả lời ở con số bên phải trong trình duyệt đó, nên
+Sao chép URL cũng hoạt động ở đó. `browser_use` của một agent có thể điều hướng tới
+cả hai. Một máy chủ trong Space A không bao giờ xuất hiện dưới dạng `localhost:5173`
+trong trình duyệt của Space B.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Dùng `localhost`, không phải một IP LAN và cũng không phải `--host`. Hệ thống khách
+có loopback riêng; tunnel lắng nghe ở đó trên cả IPv4 lẫn IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Những trang mở nhiều kết nối cùng lúc (hàng chục tài nguyên, một socket tải lại
+trực tiếp) chia sẻ chính tunnel đó. Browser (VM) ghép kênh chúng lên một exec
+thường trú duy nhất, nên một loạt yêu cầu tải không phải là một tiến trình được
+sinh ra cho mỗi kết nối và không bị quá thời gian chờ thành một trang trắng.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Trong cùng một space, một bản chuyển tiếp từ Terminal (VM) thắng một shell host trên
+cùng con số. Giữa các space thì không có thứ tự ưu tiên — chúng là những ánh xạ riêng
+biệt.
 
-## Reach it from Android
+## Truy cập nó từ Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Mở tab **Android** của space đó. `localhost:<port>` của trình giả lập sau đó được
+đảo ngược về cổng đã công bố của space này (`adb reverse`). Một trình giả lập là
+toàn cục theo thiết bị: gắn Space B sẽ nhắm lại `:5173` về B và bỏ của A. Đóng tab
+và những đảo ngược mà rig này cắm vào sẽ bị gỡ bỏ.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Trình mô phỏng iOS vốn đã là máy Mac — không cần đảo ngược. Một chiếc iPhone thật
+vẫn cần một chia sẻ qua mạng LAN.
 
-## Share it on your network
+## Chia sẻ nó trên mạng của bạn
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Chia sẻ trên mạng cục bộ** công bố cổng tại
+`<server-ip>:<random port>` — hữu ích để mở trang trên điện thoại của bạn, hoặc
+khi máy chủ chạy trên một máy khác.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Cổng LAN luôn do hệ điều hành cấp, không bao giờ là con số của guest, nên việc
+  để lộ là một địa chỉ có chủ đích, hiển nhiên thay vì một địa chỉ có thể đoán ra.
+- Nó vẫn riêng tư (chỉ loopback) cho tới khi bạn bật, và **⋯ → Chỉ cục bộ**
+  sẽ gỡ nó ra khỏi mạng.
 
-## Give it a name — with HTTPS
+## Đặt tên cho nó — với HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Đặt tên miền Browser (.test)** gán cho cổng một tên miền dev như
+`myapp.test`. Bên trong Browser (VM), `https://myapp.test` sau đó tải máy chủ của
+bạn với một ổ khóa hợp lệ — hữu ích cho bất cứ thứ gì hành xử khác đi trên một
+origin có tên hoặc trong một ngữ cảnh bảo mật (cookie, service worker, callback
+OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Tên miền phải kết thúc bằng `.test` hoặc `.localhost` — hai TLD dành riêng cho
+  phát triển, nên một tên dev không bao giờ có thể che khuất một trang thật.
+- **Tên** miền là duy nhất trên máy chủ; **số** cổng thì không. Hai
+  space có thể cùng dùng `5173`, nhưng chúng không thể cùng đòi `myapp.test`.
+- Chứng chỉ đến từ một CA cục bộ được tạo trên máy chủ của bạn trong lần đầu
+  nó được cần tới. Khóa của nó nằm dưới thư mục dữ liệu của máy chủ và không bao
+  giờ lọt vào bất kỳ hệ thống khách nào; trình duyệt khép kín chỉ tin đúng một
+  khóa đó, nên TLS tới internet thật vẫn xác thực bình thường.
+- Tên miền chỉ phân giải **bên trong Browser (VM)**. Trình duyệt của chính bạn
+  trên host thì dùng `localhost:<port>` thay vào đó.
+- `http://myapp.test` trần cũng hoạt động.
 
-## Forward a port by hand
+## Chuyển tiếp một cổng bằng tay
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+**Thêm cổng** ở cuối bảng sẽ ánh xạ một cổng trước khi (hoặc dù) có bất cứ thứ gì
+đang lắng nghe trên nó. Một bản chuyển tiếp thủ công giữ nguyên địa chỉ của nó
+trong khi máy chủ của bạn khởi động lại — dòng đó hiển thị *không lắng nghe* cho
+tới khi nó trở lại — còn các bản chuyển tiếp tự động biến mất khi cổng của chúng
+biến mất. Trên một shell host, bạn cũng có thể đặt một cổng cục bộ khác.
 
-## How it stays contained
+## Cách nó vẫn được giới hạn
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/vi-VN/so-tay/khai-niem/rigs/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/vi-VN/so-tay/tham-chieu/rigs/#ports-and-dev-domains).
+Các cổng được lập chỉ mục theo không gian làm việc và space. Bản đồ cổng của chính
+hypervisor là cố định khi một cỗ máy khởi động, nên một Terminal (VM) đi qua hai
+kênh hẹp do máy chủ kiểm soát: một làn vào được tạo sẵn dẫn tới hệ thống khách,
+vốn từ chối kết nối tới bất kỳ cổng nào mà hệ thống khách không thực sự đang lắng
+nghe, và những tunnel ngược mà máy chủ giữ mở cho Browser (VM) và Android. Một
+shell host không bao giờ quét toàn bộ cỗ máy. Không cổng lắng nghe nào từng được
+tạo bên trong một hệ thống khách mà máy chủ không đặt ở đó, và mọi thứ đều bị tháo
+dỡ cùng terminal hoặc rig. Thiết kế được giải thích trong
+[Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/#ports-without-holes);
+còn các cổng dành riêng chính xác và quy tắc tên miền nằm trong
+[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#ports-and-dev-domains).
 
-## Related
+## Liên quan
 
-- [Give an agent a machine to test on](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/vi-VN/so-tay/tham-chieu/rigs/) — reserved ports, dev TLDs,
-  defaults
+- [Cho agent một máy để kiểm thử](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/) — mở,
+  theo dõi và tiếp quản rig
+- [Tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/) — cổng dành riêng, TLD dev,
+  giá trị mặc định

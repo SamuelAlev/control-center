@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: اولین فضای کاری شما
+description: یک فضای کاری بسازید، مخزنی در آن ثبت کنید و مرز ایزوله‌سازی را خودتان ببینید.
 slug: fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## آنچه خواهید ساخت
 
-By the end of this tutorial, you will have:
+در پایان این آموزش، این‌ها را در اختیار خواهید داشت:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- یک فضای کاری به نام پروژه‌تان
+- یک مخزن Git ثبت‌شده در آن
+- پنج عامل بذرکاری‌شده که یکی از آن‌ها را به‌قدر کافی برای اجرا پیکربندی کرده‌اید
+- یک فضای کاری دوم و خالی که مرز ایزوله‌سازی را اثبات می‌کند
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+راه‌اندازی اولیه از قبل یک فضای کاری برایتان ساخته است. این آموزش آگاهانه یک فضای کاری تازه می‌سازد تا هر بخش از فرایند را ببینید.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+پیش از شروع، یک checkout گیت انتخاب کنید که هر سه شرط زیر را داشته باشد — گام ثبت هر چیز دیگری را نمی‌پذیرد:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- درون یک work tree گیت قرار داشته باشد
+- یک ریموت `origin` داشته باشد
+- آن ریموت به github.com، gitlab.com یا bitbucket.org اشاره کند
 
-## Step 1: Create a workspace
+## گام 1: یک فضای کاری بسازید
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. روی چیپ فضای کاری در نوار عنوان کلیک کنید
+2. **افزودن فضای کاری…** را انتخاب کنید
+3. نامی وارد کنید که پروژه را مشخص کند، مثل «api-service» یا «frontend-v2»
+4. به‌صورت اختیاری یک لوگو انتخاب کنید
+5. روی **افزودن فضای کاری** کلیک کنید
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center به فضای کاری جدید سوئیچ می‌کند و به صندوق ورودی آن (`/workspaces/<id>/inbox`) می‌رسد.
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+در پس‌زمینه، سرور یک رویداد `WorkspaceCreated` منتشر می‌کند و فضای کاری را با این‌ها بذرکاری می‌کند:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- یک **عامل CEO** که پرسونایش هماهنگی و تفویض است
+- چهار متخصص — `qa`، `architect`، `engineer` و `librarian` — که هرکدام دستورالعمل‌ها و مهارت‌های خودش را دارد
+- قالب‌های پایپ‌لاین داخلی و سطرهای تریگرشان
 
-Every workspace you create gets all of this, not just the first one.
+هر فضای کاری که می‌سازید همهٔ این‌ها را می‌گیرد، نه فقط اولی.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+**نقطهٔ بررسی.** **تنظیمات → فضای کاری → عامل‌ها** را باز کنید. پنج عامل در فهرست هستند، هرکدام با یک حلقهٔ وضعیت توخالی.
 
-## Step 2: Register a repository
+## گام 2: یک مخزن ثبت کنید
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. به **تنظیمات → فضای کاری → مخزن‌ها** بروید
+2. روی **افزودن مخزن** کلیک کنید
+3. به checkout خود بروید. این پنجرهٔ گفتگو پوشه‌ها را روی ماشینی می‌پیماید که `cc_server` را اجرا می‌کند — نه کلاینت شما — و درون ریشه‌هایی می‌ماند که آن سرور افشا می‌کند (به‌طور پیش‌فرض پوشهٔ خانگی کاربرش). یک checkout گیت یک آیکون پوشهٔ متمایز و یک چک‌باکس می‌گیرد؛ یک پوشهٔ معمولی هیچ‌کدام را نمی‌گیرد، پس فقط checkoutها را می‌توان انتخاب کرد.
+4. یک یا چند checkout را تیک بزنید و دسته را ثبت کنید. انتخاب‌ها هنگام پیمایش باقی می‌مانند، پس می‌توانید چند مورد را در یک گذر جمع کنید و یک انتخاب اشتباه هرگز بقیه را از دست نمی‌دهد.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center ریموت `origin` هر checkout را می‌خواند، مالک و مخزن را تعیین می‌کند و سطر مخزن را **درون همین فضای کاری** می‌سازد. گام دومی برای پیوند دادن آن وجود ندارد: ثبت همان چیزی است که دامنه‌اش را تعیین می‌کند.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+ثبت همان checkout در فضای کاری دیگر بعداً یک سطر مخزن دوم و مستقل با شناسهٔ خودش می‌سازد. در میان فضاهای کاری، یک checkout با مسیر فایل‌سیستمش شناسایی می‌شود، هرگز با شناسه.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+**نقطهٔ بررسی.** مخزن با `owner/repo` و شاخهٔ فعلی‌اش در فهرست ظاهر می‌شود.
 
-## Step 3: Make one agent runnable
+## گام 3: یک عامل را قابل‌اجرا کنید
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+پنج عاملی که این فضای کاری همین حالا بذرکاری کرد، نه آداپتور دارند و نه مدل. اعزام آن‌ها را روی **Control Center (built-in)** اجرا می‌کند و چون مدلی تنظیم نشده، مدل پیش‌فرض خود را از Anthropic می‌پرسد — پس فقط در صورتی کار می‌کنند که حساب Anthropic را وصل کرده باشید، و در آن حالت روی مدلی اجرا می‌شوند که خودتان انتخابش نکرده‌اید. راه‌اندازی اولیهٔ اجرای نخست، انتخاب خود را یک بار روی هر عامل در اولین فضای کاری مهر می‌کند؛ فضای کاری‌ای که بعد از آن می‌سازید با هر پنج عامل تنظیم‌نشده آغاز می‌شود. همین حالا یکی را تنظیم کنید.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. **تنظیمات → فضای کاری → عامل‌ها** را باز کنید
+2. `engineer` را در فهرست انتخاب کنید
+3. در زبانهٔ **تنظیمات**، **آداپتور** را روی `Control Center (built-in)` بگذارید و یک **مدل** از ارائه‌دهنده‌ای انتخاب کنید که زیر تنظیمات → سرور → ارائه‌دهندگان مدل وصل کرده‌اید
+4. **ذخیرهٔ تغییرات** را فشار دهید
 
-Confirm it: reopen the agent and the two fields hold your choices.
+**نقطهٔ بررسی.** عامل را دوباره باز کنید؛ آن دو فیلد انتخاب‌های شما را نگه می‌دارند.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/) covers the rest of the form.
+هر عامل آداپتور و مدل خودش را دارد، پس این کار را برای هر عامل دیگری که قصد استفاده از آن را دارید تکرار کنید. [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/) بقیهٔ فرم را پوشش می‌دهد.
 
-## Step 4: See the isolation boundary
+## گام 4: مرز ایزوله‌سازی را ببینید
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+از چیپ نوار عنوان یک فضای کاری دوم بسازید، دقیقاً همان‌طور که در گام 1. سپس به آن نگاه کنید:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **تنظیمات → فضای کاری → مخزن‌ها** خالی است. مخزنی که یک دقیقه پیش ثبت کردید آنجا نیست.
+- **تنظیمات → فضای کاری → عامل‌ها** پنج عامل دارد، اما آن‌ها سطرهای متفاوتی‌اند — آداپتوری که در گام 3 تنظیم کردید از میان رفته است.
+- فهرست فضاها، تیکت‌ها و حافظه همه خالی‌اند.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+هیچ‌چیز درز نکرده است، چون چیزی برای درز کردن از آن وجود ندارد: سطرهای هر فضای کاری در فایل پایگاه‌دادهٔ خودِ آن فضای کاری زندگی می‌کنند. خواندن میان‌فضاهای یک پرس‌وجو نیست که فیلتر شود؛ پرس‌وجویی است که هیچ‌جا برای اجرا ندارد. حذف یک فضای کاری یعنی جدا کردن پیوند یک فایل.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+با چیپ نوار عنوان برگردید، یا **مدیریت فضاهای کاری** را باز کنید تا آن‌ها را کنار هم ببینید.
 
-For the full model, read [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/).
+برای مدل کامل، [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/) را بخوانید.
 
-## Recap
+## خلاصه
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+یک فضای کاری ساختید، تماشا کردید که یک CEO و چهار متخصص بذرکاری می‌کند، مخزنی در آن ثبت کردید، به یک عامل آداپتور و مدل دادید و تأیید کردید که فضای کاری دوم هیچ‌کدام از این‌ها را به اشتراک نمی‌گذارد.
 
-**Next:** [Dispatch your first agent](/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) to put the workspace to work.
+**بعدی:** [اولین عامل را اعزام کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل/) تا فضای کاری را به کار بگیرید.

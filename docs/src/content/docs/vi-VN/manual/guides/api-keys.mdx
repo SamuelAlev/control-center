@@ -1,115 +1,122 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Quản lý khóa API
+description: Mỗi thông tin xác thực nằm ở đâu — tài khoản người dùng của bạn trên máy chủ, chính máy chủ, hay một CLI bên ngoài — và cách đặt, xoay vòng và gỡ bỏ nó.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Hướng dẫn này cho bạn biết mỗi thông tin xác thực mà Control Center dùng được
+lưu ở đâu và cách thay đổi nó.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Không có gì được lưu trên máy bạn đang gõ.** Mọi thông tin xác thực đều nằm
+trên máy chủ; việc thông tin nào đáp ứng một yêu cầu cụ thể phụ thuộc vào có
+con người đứng sau yêu cầu đó hay không.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| Thông tin xác thực                  | Nơi lưu                                                   | Ai dùng                                                          |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Thông tin xác thực forge / phiếu của bạn | Tệp secret 0600 của máy chủ, khóa theo id người dùng của bạn | Mọi thứ bạn yêu cầu: bề mặt PR, các lượt chạy agent, hình ảnh của bạn |
+| Danh tính ứng dụng của máy chủ      | Cùng tệp đó, cộng thêm `server_settings` cho các phần không phải secret | Công việc không do con người yêu cầu: webhook, polling PR, đồng bộ phiếu |
+| Khóa nhà cung cấp mô hình và token OAuth | Kho thông tin xác thực riêng của máy chủ                | Adapter tích hợp sẵn, cho mọi không gian làm việc trên bản cài đặt |
+| Token bot Slack                     | `<dataDir>/<workspaceId>/chat_credentials/` trên máy chủ | Cầu chat cho không gian làm việc đó                              |
+| Thông tin xác thực của CLI bên ngoài | Bất cứ thứ gì CLI đó dùng                                 | Claude Code, trên máy chạy máy chủ                               |
 
-## Two GitHub credentials, and they answer different questions
+## Hai thông tin xác thực GitHub, và chúng trả lời những câu hỏi khác nhau
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Của bạn**, từ việc đăng nhập (luồng thiết bị) hoặc dán một token. Đó là thứ
+  mà mọi yêu cầu được thực hiện *thay mặt bạn* dùng, nên một bình luận đăng cho
+  bạn sẽ mang tên bạn. Thành viên khác không thể đọc nó, và họ tự kết nối thông
+  tin xác thực của riêng mình
+- **Của máy chủ**, từ GitHub App mà người vận hành đã đăng ký. Nó đáp ứng mọi
+  thứ không có người gọi — nhờ đó quyền truy cập forge không biến mất khi một
+  người rời đi hoặc xoay vòng token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-and [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
+Cái của bạn được đặt trong thẻ **Lưu trữ mã** tại **Cài đặt → Không gian làm
+việc → Hồ sơ & danh tính**; còn của máy chủ trong **Ứng dụng nhà cung cấp** tại
+**Cài đặt → Máy chủ → Đăng nhập một lần**. Xem
+[Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+và [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Còn có một màn hình chỉ truy cập được bằng URL]
+`/workspaces/<workspaceId>/api-keys` hiển thị cùng hai thẻ như bước đầu tiên của
+quá trình thiết lập ban đầu. Nó **không có mục điều hướng nào ở bất kỳ đâu
+trong giao diện**; chỉ có thể truy cập bằng cách gõ URL. Thay vào đó, hãy dùng
+Cài đặt → Không gian làm việc → Hồ sơ & danh tính.
 :::
 
-## Set model provider keys
+## Đặt khóa nhà cung cấp mô hình
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Adapter tích hợp sẵn tự xác thực với các nhà cung cấp và những thông tin xác
+thực đó nằm trên máy chủ.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Vào **Cài đặt → Máy chủ → Nhà cung cấp mô hình**
+2. Cuộn tới **Nhà cung cấp & mô hình**
+3. Kết nối nhà cung cấp — OAuth qua trình duyệt cho OpenAI, Codex, Cursor và Kimi
+   Code; khóa API cho Anthropic và các nhà cung cấp còn lại
 
-See [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/) for the full list and
-for adding a custom endpoint.
+Xem [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/) để
+có danh sách đầy đủ và cách thêm một endpoint tùy chỉnh.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Những thông tin xác thực này là **toàn cục theo máy chủ**: một khóa phục vụ mọi
+không gian làm việc trên bản cài đặt. Token OAuth được làm mới trước khi hết hạn.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Các CLI adapter bên ngoài giữ thông tin xác thực riêng, trong cấu hình riêng của
+chúng, trên máy chạy máy chủ — Control Center không quản lý chúng. Hãy xác thực
+Claude Code theo cách tài liệu của chính nó hướng dẫn, trên máy mà `cc_server`
+chạy.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/).
+Hộp thoại **Biến môi trường** của từng adapter trông như một chỗ để đặt khóa cho
+một trong số chúng, nhưng không phải vậy: nó ghi vào thiết bị của bạn, trong khi
+máy chủ đọc bản sao của riêng nó và không có gì nối hai bên lại. Xem
+[Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/).
 
-## Connect a ticketing vendor
+## Kết nối một nhà cung cấp phiếu
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Thẻ **Phiếu** tại **Cài đặt → Không gian làm việc → Chung** chứa cả hai nửa của
+một quyết định: phiếu của bạn nằm ở nhà cung cấp nào, và thông tin xác thực cho
+nó. Chọn **Cục bộ** sẽ ẩn dòng thông tin xác thực — phiếu cục bộ nằm trong cơ sở
+dữ liệu riêng của máy chủ này và không có gì để xác thực.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
+Khóa của bạn được lưu trên máy chủ gắn với id người dùng của bạn, giống như khóa
+forge. Máy chủ giữ khóa Linear riêng của nó một cách tách biệt (**Ứng dụng nhà
+cung cấp**), và đó là thứ mà việc đồng bộ phiếu dùng khi không có con người yêu
+cầu. Một khóa mà agent nhận được chỉ được chèn vào khi agent có khả năng **Cho
+phép gọi API phiếu**. Xem
+[Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/).
 
-## Rotate or revoke
+## Xoay vòng hoặc thu hồi
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- **Thông tin xác thực GitHub của bạn**: nhấn **Ngắt kết nối**, rồi đăng nhập
+  lại hoặc dán token mới. Hãy thu hồi token cũ trên GitHub
+- **Ứng dụng của máy chủ**: tạo một khóa riêng tư hoặc client secret mới trên
+  trang GitHub của ứng dụng, dán vào **Ứng dụng nhà cung cấp** và nhấn **Kiểm thử**
+- **Một nhà cung cấp mô hình**: trên dòng của nó, đăng xuất (OAuth) hoặc gỡ khóa,
+  rồi kết nối lại
+- **Slack**: dán lại các token trong hộp thoại kết nối. Xem
+  [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The PR list is empty but my token works in `curl`
+### Danh sách PR trống nhưng token của tôi vẫn hoạt động trong `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Kiểm tra phụ đề của dòng **Lưu trữ mã**. Nếu nó nêu một nguồn khác ("qua ứng
+dụng của máy chủ này", "từ môi trường"), thì thông tin xác thực bạn đang kiểm
+tra không phải là cái đang đáp ứng — cái của bạn đã không được lưu.
 
-### The token is accepted but later requests fail
+### Token được chấp nhận nhưng các yêu cầu sau đó thất bại
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Token được kiểm tra ngay khi được lưu, nên dòng đó nêu tên tài khoản đứng sau nó
+— nhưng chỉ tài khoản, không phải các scope. Một token có quá ít scope sẽ kết
+nối được rồi sau đó thất bại ở từng yêu cầu riêng lẻ. Hãy kiểm tra các scope và
+thời điểm hết hạn:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-- [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
-- [Manage adapters and models](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
-- [Set up Linear integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/)
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+- [Quản lý adapter và mô hình](/vi-VN/so-tay/huong-dan-thuc-hanh/adapter/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Thiết lập tích hợp Linear](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/)

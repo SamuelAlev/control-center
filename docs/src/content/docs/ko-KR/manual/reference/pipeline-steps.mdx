@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: 파이프라인 단계
+description: 파이프라인 단계 종류, 단계 본문 키, 그 구성과 단계 결과를 다루는 레퍼런스입니다.
 slug: ko-KR/매뉴얼/레퍼런스/파이프라인-단계
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+파이프라인 단계에는 서로 독립적인 두 축이 있습니다:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **종류**(`StepKind`) — 엔진이 트리거를 기준으로 단계를 어떻게 _스케줄링_ 하는지.
+- **본문 키**(`BuiltInBodyKeys`) — 등록된 본문 클로저 중 어느 것이 단계의 작업을 _실행_ 하는지.
 
-## Step kinds
+## 단계 종류
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+`packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`에 정의되어 있습니다.
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| 종류       | 스케줄링 의미                                                                                                                                                                                                                            |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | 필수 진입점으로, 템플릿당 정확히 하나이며 항상 첫 노드입니다. 자체적으로는 아무 작업도 하지 않습니다. 실행을 시작하는 것(수동 / 이벤트 / 스케줄)은 별도로 `PipelineTrigger` 행으로 추적됩니다. 본문은 아무 일도 하지 않는 `pipeline.trigger`입니다. |
+| `listen`   | 모든 소스 단계(`StepTrigger.sourceStepIds`에 있는)가 완료되면 발화합니다.                                                                                                                                                               |
+| `join`     | `waitForStepIds`의 모든 단계가 종료 상태에 도달하면 발화합니다.                                                                                                                                                                          |
+| `router`   | 조건 분기로, 본문이 `StepResult.route(key)`를 반환하면 `routeKey`가 일치하는 하위 엣지만 발화합니다. 선택되지 않은 분기는 건너뛴 것으로 표시됩니다.                                                                                      |
+| `forEach`  | `listen`처럼 스케줄링됩니다(모든 `sourceStepIds`가 완료되면 발화). 실제로 반복하는 것은 등록된 `flow.forEach` 본문이며, 엔진이 항목마다 자식 단계를 하나씩 생성하지는 않습니다.                                                         |
+| `terminal` | 본문이 없는 스케줄러 센티널입니다. 파이프라인 실행은 terminal 단계가 끝나면 완료됩니다.                                                                                                                                                  |
 
-## Step bodies
+## 단계 본문
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+`BuiltInBodyKeys`의 상수로 키가 지정된 등록된 본문 클로저입니다(`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). 모두 25개이며 아래에 전부 나열합니다. 별도 언급이 없으면 구성은 단계의 `PipelineNodeConfig`(아래 참조)에서 읽습니다. "상태 키"는 실행 시점에 파이프라인 상태 / 트리거 페이로드에서 읽습니다.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+`bodyKey`가 등록되지 않은 단계는 템플릿 로드 시 경고를 내고 그 뒤로는 절대 실행되지 않습니다. 실행이 실패하지는 않습니다. `trigger`와 `terminal` 단계는 이 경고에서 제외됩니다. 트리거는 여전히 아무 일도 하지 않는 `pipeline.trigger` 본문을 실행하고, `terminal` 단계는 본문이 없습니다.
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+필수 `trigger` 노드의 아무 일도 하지 않는 본문으로, 즉시 완료되어 엔진이 하위 리스너로 팬아웃합니다. 구성이 없습니다.
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+에이전트가 필요 없는 셸 단계입니다(`bash -c`). 스크립트의 `{{key}}` 플레이스홀더는 상태 + 트리거 페이로드에서 셸 이스케이프된 값으로 치환됩니다.
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| 구성 필드   | 설명                                          |
+| ----------- | --------------------------------------------- |
+| `script`    | 실행할 셸 명령(필수)                          |
+| `outputKey` | 종료 코드 0일 때 공백이 제거된 stdout을 받는 상태 키 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+cwd `<cc_root>/pipelines/<pipelineRunId>/`(한 실행의 모든 bash 단계가 공유)와 환경의 `GITHUB_TOKEN`으로 실행됩니다. 또한 `<stepId>_runDir`을 상태에 기록합니다. 0이 아닌 종료 코드는 stderr 마지막 부분과 함께 단계를 실패시킵니다.
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+범용 프롬프트 및 디스패치 노드입니다. 프롬프트를 렌더링하고, 에이전트를 대화로 디스패치한 뒤 실행이 끝날 때까지 일시 중단합니다. 에이전트의 `submit_output` 페이로드는 `outputKey` 아래 상태로 수집됩니다.
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| 구성 필드                  | 설명                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| `agentId`                  | 디스패치할 워크스페이스 범위 에이전트 UUID(필수)             |
+| `prompt`                   | 지시 텍스트이며 `{{key}}` 치환을 지원합니다(필수)            |
+| `outputKey`                | 수집된 출력을 담을 상태 키                                   |
+| `outputSchema`             | 출력이 충족해야 하는 JSON Schema                             |
+| `label`                    | 캔버스에 표시되는 사람이 읽는 레이블                         |
+| `extras.spaceId`           | 작업할 기존 대화(기본값: 숨겨진 대화)                        |
+| `extras.conversationTitle` | 그 스페이스 안의 이름 있는 스트림(선택)                      |
+| `extras.mode`              | 방을 *여는* 노드(`messaging.createSpace`)에서 읽으며 여기서는 읽지 않습니다. 기본값 `review`. |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+라우터 본문으로, `config.extras`를 읽고 조건을 평가한 뒤 `StepResult.route(key)`를 반환합니다. 조건은 JavaScript 표현식이 **아닙니다**. 우선순위 순으로 세 가지 작성 형태를 지원합니다:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **프레디킷 트리**(`extras.predicate`) — `"true"` / `"false"`로 라우팅하는 불리언 트리입니다. 각 노드는 `type`이 있는 맵입니다:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — 나열된 경로 중 하나라도 디스크에 존재하면 true입니다. `negate`는 이를 뒤집고, `recursive`는 하위 디렉터리도 검색합니다(`.git`, `node_modules`, `build`, `.dart_tool`은 건너뜀). 상대 경로는 `state[baseKey]`(기본값 `repo_local_path`)를 기준으로 해석하며, 그렇지 않으면 실행별 워크스페이스 디렉터리를 기준으로 합니다.
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — 연산자는 `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`이며, 파일 시스템이 아니라 파이프라인 상태를 읽습니다.
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — 불리언 그룹입니다.
+  - `{"type": "not", "of": <predicate>}` — 부정입니다.
+- **스위치**(`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; 상태 값이 대소문자를 구분하지 않고 처음으로 포함하는 케이스로 라우팅하고, 없으면 `default`로 갑니다.
+- **비교**(레거시 최상위 `extras.left` / `extras.op` / `extras.right`) — `comparison` 프레디킷과 동등하며, 트리 이전에 작성된 템플릿을 위해 유지됩니다.
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+노드에서 나가는 엣지는 반환된 키와 일치해야 하는 `routeKey`를 가집니다.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+GitHub PR 클라이언트를 통해 통합된 발견 사항을 PR 리뷰 댓글로 게시합니다.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| 상태 키                 | 설명                                        |
+| ----------------------- | ------------------------------------------- |
+| `repo_full_name`        | `owner/repo`(필수)                          |
+| `pr_number`             | PR 번호 — int 또는 숫자 문자열(필수)        |
+| `consolidated_findings` | 댓글 본문(필수)                             |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+상태에 `comment_review_id`와 `commented_at`을 담아 `StepResult.terminal`을 반환합니다.
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+`MessagingPort`를 통해 메시징 스페이스에 메시지를 게시합니다.
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| 상태 키    | 설명                                             |
+| ---------- | ------------------------------------------------ |
+| `space_id` | 대상 스페이스(필수)                              |
+| `content`  | 메시지 본문이며 상태에서 그대로 읽습니다(필수)   |
 
-Writes `posted_space_id` and `posted_at` to state.
+`posted_space_id`와 `posted_at`을 상태에 기록합니다.
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+단일 에이전트 대신 팀 전체를 디스패치한 뒤, 멤버들의 실행이 끝날 때까지 일시 중단합니다.
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| 구성 필드                                | 설명                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `teamId`                                 | 디스패치할 워크스페이스 범위 팀(필수, `agentId`와 상호 배타적)                                       |
+| `prompt`                                 | 목표 텍스트이며 `{{key}}` 치환을 지원합니다(필수)                                                   |
+| `dispatchMode`                           | `allParallel`(기본값, 멤버마다 작업 하나) 또는 `manager`(조정을 위해 리더만 디스패치)                |
+| `outputKey`                              | 수집된 멤버 출력을 담을 상태 키                                                                     |
+| `outputSchema`, `label`, `extras.spaceId` | `conversation.promptAgent`와 같습니다                                                              |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+승인 게이트입니다. 승인자 에이전트를 게이트 프롬프트와 `{decision, reason}` 출력 계약과 함께 대화(리뷰 모드)로 디스패치한 뒤, 승인자가 `submit_output`으로 제출할 때까지 일시 중단합니다.
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| 구성 필드                  | 설명                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `agentId`                  | 승인자 에이전트(필수)                                                          |
+| `prompt`                   | 게이트 프롬프트(선택, 없으면 기본값 사용)                                      |
+| `outputKey`                | 수집된 `{decision, reason}` 페이로드를 담을 상태 키                            |
+| `outputSchema`             | 기본값은 승인 스키마입니다(`decision`: `approved` / `rejected`, `reason`)      |
+| `label`, `extras.spaceId` | `conversation.promptAgent`와 같습니다                                          |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+게이트는 오직 `submit_output`을 통해서만 해소됩니다. `BuiltInBodyKeys.humanGate`, 노드 유형 라이브러리, 그리고 내장 템플릿 하나의 프롬프트 텍스트는 모두 `approve_step`과 `reject_step` MCP 도구를 언급하지만, **두 도구 모두** 어떤 패키지나 레지스트리에도 존재하지 않습니다.
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+오래된 격리 워크트리를 제거하며, 트리거 페이로드에서 모드를 고릅니다. 실행의 `dryRun` 플래그를 따릅니다.
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| 상태 키                       | 설명                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| `ticket_id`                   | 해당 티켓의 워크트리를 해제                                                          |
+| `repo_full_name` + `pr_number` | 임시 PR 편집기 워크트리를 해제                                                      |
+| `space_id`                    | 해당 대화의 워크트리와 폴더를 정리                                                   |
+| (위 어느 것도 아님)           | 워크스페이스를 정리합니다: 사라진 디렉터리, 죽은 스페이스, 고아 대화 폴더            |
 
-`outputKey` (optional) receives a summary string.
+`outputKey`(선택)는 요약 문자열을 받습니다.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+상태 컬렉션에 대한 맵 / 팬아웃입니다. 항목마다 프롬프트를 한 번씩 렌더링한 뒤, 그 프롬프트들을 (`---` 구분자로) 이어 붙여 에이전트를 **한 번** 디스패치하고 그 실행이 끝날 때까지 일시 중단합니다. 빈 컬렉션은 빈 목록과 함께 즉시 완료됩니다. 항목마다 병렬 디스패치를 하나씩 하는 것이 아닙니다.
 
-| Config field         | Description                                                     |
+| 구성 필드            | 설명                                                             |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | 항목마다 디스패치할 에이전트(필수)                              |
+| `prompt`             | 항목별 프롬프트이며 `{{key}}` 치환을 지원합니다(필수)           |
+| `extras.iterableKey` | 컬렉션을 담은 상태 키(필수)                                     |
+| `extras.itemKey`     | 프롬프트에서 현재 항목이 바인딩되는 키(기본값 `item`)           |
+| `outputKey`          | 수집된 출력을 담을 상태 키(목록이 아니라 디스패치 하나)         |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+다른 파이프라인 템플릿을 중첩 하위 단계로 실행합니다(하위 파이프라인은 `parentPipelineRunId`가 설정된 자식 실행으로 실행됩니다). 단계는 자식이 종료 상태에 도달할 때까지 일시 중단한 뒤, 자식의 최종 상태가 `outputKey` 아래로 병합됩니다.
 
-| Config field        | Description                                                     |
+| 구성 필드           | 설명                                                            |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | 실행할 자식 템플릿(필수, 파이프라인은 자기 자신을 호출할 수 없음) |
+| `inputKeys`         | 자식의 트리거 페이로드로 복사되는 상태 키                       |
+| `outputKey`         | 자식의 병합된 최종 상태를 담을 상태 키                          |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+백그라운드 tree-sitter 인덱싱입니다. 저장소를 순회하며 심볼/엣지를 워커 아이솔레이트에서 추출하고 워크스페이스 코드 그래프에 넣습니다. 진행 상황을 단계 실행 행으로 스트리밍하며, dry-run을 지원합니다. Tree-sitter와 그 문법은 필수 네이티브입니다. dylib이 없으면 서버가 아예 부팅되지 않았고, 실행 중 문법 확인에 실패하면 건너뛰지 않고 단계를 실패시킵니다.
 
-| State key         | Description                           |
+| 상태 키           | 설명                                  |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | 인덱싱할 저장소(필수)                 |
+| `repo_local_path` | 체크아웃의 로컬 경로(필수)            |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+오프라인 화자 분리입니다. 회의의 보관된 오디오를 읽고 화자(`Person 1`, `Person 2`, …)로 클러스터링한 뒤, 전사 세그먼트 레이블을 다시 붙이고 `transcript` 상태를 다시 씁니다. 병렬 `meeting.updateTranscript` 단계를 위해 `diarization_spans`도 내보냅니다. 보관된 오디오가 없거나 모델이 설치되어 있지 않으면 전사를 그대로 통과시킵니다.
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| 상태 키      | 설명                          |
+| ------------ | ----------------------------- |
+| `meeting_id` | 화자 분리할 회의(필수)        |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+결정적인 회의 요약 저장 본문입니다. 각각 상태에서 `meeting_id`와 에이전트 단계의 구조화된 `meeting_outcome` 페이로드(`{summary, enhancedNotes, actionItems[], decisions[]}`)를 읽고 자기 부분을 자체 테이블에 기록합니다. 즉 노트, 실행 항목, 결정 사항입니다. 저하된 실행에서 이전에 저장된 행은 절대 지워지지 않습니다.
 
-### Other built-in bodies
+### 기타 내장 본문
 
-| Body key                           | Description                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| 본문 키                            | 설명                                                                                                                                                                                                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meeting.identifySpeakers`         | 회의 간 화자 인식입니다. 분리된 화자를 저장된 음성 프로필과 대조하고 신뢰도 높은 일치를 자동 적용합니다. 프로필/임베딩이 없으면 아무 일도 하지 않습니다.                                                                                                    |
+| `meeting.updateTranscript`         | `diarization_spans`의 `Person N` 레이블을 적용하고 창별 조각을 화자별 턴으로 병합한 뒤, 정리된 전사를 영속화합니다. 화자 분리가 아무것도 생성하지 않았으면 아무 일도 하지 않습니다.                                                                          |
+| `meeting.assemblePlayback`         | 보관된 채널별 WAV에서 회의의 믹스된 재생 트랙을 구성합니다. 보관된 오디오가 없으면 아무 일도 하지 않습니다.                                                                                                                                                 |
+| `orchestration.markPhase`          | 작업 DAG의 끝에서 출력이 없는 하위 티켓에 실패 센티널을 기록하고 오케스트레이션을 `synthesizing`으로 전환합니다.                                                                                                                                             |
+| `orchestration.persistDeliverable` | 합성 출력을 상위 티켓에 기록하고, 티켓을 완료한 뒤, 산출물을 게시하고 오케스트레이션을 `completed`로 표시합니다.                                                                                                                                             |
+| `orchestration.awaitApproval`      | 부분 승인 게이트입니다. 단계의 노드 키가 오케스트레이션의 승인 집합에 들어 있으면 즉시 완료하고, 그렇지 않으면 나중 승인이 재개할 때까지 일시 중단합니다. `extras.awaitApproval`을 설정하는 유일한 본문이며, 이 때문에 24시간 일시 중단 단계 타임아웃에서 제외됩니다. |
+| `messaging.createSpace`            | 템플릿의 나머지가 작업하는 대화를 열고, 단계의 `outputKey` 아래에 게시합니다(내장은 `pipeline_space_id` 사용). `repoIds` 목록이 비어 있으면 아무것도 체크아웃하지 않으며, `extras['allRepos']`는 모든 워크스페이스 저장소를 체크아웃합니다. `extras['createConversation']`(기본값 꺼짐)은 이름 있는 스트림도 엽니다. 에이전트 단계는 방에 참여할 뿐 방을 열지 않으므로, 이 노드가 없는 팬아웃은 디스패치 시 실패합니다. 그리고 이 노드를 한 번 연결해 두면 팬아웃 전체가 각자 하나씩 프로비저닝하는 대신 하나의 체크아웃을 공유합니다. |
+| `prReview.finalize`                | PR 리뷰 템플릿의 마지막 단계입니다. 누적된 리뷰 노드를 합의 버킷으로 분류하고 PR별 판정을 계산합니다.                                                                                                                                                        |
+| `skills.analyze`                   | 워크스페이스에 설치된 스킬에 대해 스킬 공급망 검사를 실행하고 각 판정을 기록합니다.                                                                                                                                                                          |
 
-## Step results
+## 단계 결과
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+단계 본문은 `StepResult`를 반환합니다(`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). 모든 팩터리는 파이프라인 상태로 병합되는 선택적 `mutatedState` 맵을 받으며, `failed`는 예외입니다.
 
-| Factory                     | Signature                                                       | Description                                                               |
+| 팩터리                      | 시그니처                                                        | 설명                                                                      |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | 정상 완료이며 하위 리스너가 평가됩니다                                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | 라우터 완료이며 `routeKey`가 일치하는 하위 분기를 선택합니다               |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | 특정 도메인 이벤트 유형이 발화할 때까지 일시 중단합니다                    |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | 나열된 모든 작업이 종료 상태에 도달할 때까지 일시 중단합니다               |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | 파이프라인 실행이 끝났습니다 — 더 이상 단계가 없습니다                     |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | 단계가 오류 메시지와 함께 실패했습니다                                     |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+실패하는 노드 본문의 재시도 동작입니다(`PipelineNodeConfig.retryPolicy`, null이면 재시도 비활성화).
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| 필드             | 유형     | 설명                                                                             |
+| ---------------- | -------- | -------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | 첫 시도를 포함한 총 시도 횟수(3 = 시도 1회 + 재시도 2회), 1 이상이어야 합니다   |
+| `backoff`        | `String` | `linear` 또는 `exponential`(기본값)                                              |
+| `initialDelayMs` | `int`    | 첫 재시도 전 지연(밀리초), 이후 지연은 `backoff`에 따라 증가합니다              |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+단계 정의 안에 담기는 노드별 구성입니다(`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). 내장 노드와 사용자 지정 노드 모두 이 형태를 공유하며, 각 본문은 자기가 관심 있는 필드만 읽습니다.
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| 필드             | 유형                    | 설명                                                                                                                                                                                                   |
+| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`         | `String?`               | `{{key}}` 치환이 있는 프롬프트 템플릿                                                                                                                                                                  |
+| `script`         | `String?`               | `{{key}}` 치환이 있는 Bash 스크립트 본문                                                                                                                                                               |
+| `agentId`        | `String?`               | 디스패치할 워크스페이스 범위 에이전트 UUID                                                                                                                                                             |
+| `inputKeys`      | `List<String>`          | 이 노드가 입력으로 사용하는 상태 키                                                                                                                                                                    |
+| `repoIds`        | `List<String>`          | `messaging.createSpace` 노드가 체크아웃하는 저장소(`<repoId>` 또는 `<repoId>@<branch>`). 비어 있으면 없음, `extras['allRepos']`는 모든 워크스페이스 저장소입니다. 에이전트 단계에서는 무시됩니다. |
+| `outputKey`      | `String?`               | 이 노드의 출력이 기록되는 상태 키                                                                                                                                                                      |
+| `label`          | `String?`               | 캔버스에 표시되는 사람이 읽는 레이블(기본값은 단계 ID)                                                                                                                                                 |
+| `outputSchema`   | `Map<String, dynamic>?` | 출력 값이 충족해야 하는 JSON Schema(부분집합)                                                                                                                                                          |
+| `reducer`        | `String?`               | 병렬 분기가 같은 `outputKey`에 쓸 때의 병합 전략: `append`, `mergeLists`, `mergeMaps`, `sum` 또는 `override`(기본값)                                                                                   |
+| `retryPolicy`    | `StepRetryPolicy?`      | 본문 실패 시 재시도 정책, null = 단일 시도                                                                                                                                                            |
+| `continueOnFail` | `bool`                  | true이면 종료 실패가 실행을 실패시키지 않으며, 오류는 `state['_stepErrors'][stepId]` 아래에 보관됩니다                                                                                                 |
+| `timeoutMs`      | `int?`                  | 노드 본문의 실제 시간 기준 타임아웃(밀리초), null = 타임아웃 없음                                                                                                                                      |
+| `teamId`         | `String?`               | 디스패치할 팀(`team.dispatch` 노드), `agentId`와 상호 배타적                                                                                                                                            |
+| `dispatchMode`   | `String?`               | 팀 실행 모드: `allParallel` 또는 `manager`                                                                                                                                                             |
+| `extras`         | `Map<String, dynamic>`  | 본문별 자유 형식 구성(예: `iterableKey`, `templateId`, 조건 트리)                                                                                                                                      |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+파생 접근자: `spaceId`(`extras['spaceId']` — 작업할 기존 대화), `createsConversation`(`extras['createConversation']`), `conversationTitle`(`extras['conversationTitle']`), `modeName`(`extras['mode']` — `chat` / `review` / `plan`, 스페이스를 여는 노드에서 읽음), `runWhen`(`extras['runWhen']` — 충족되지 않으면 노드를 건너뜀).
 
-## See also
+## 함께 보기
 
-- [Pipelines](/ko-KR/매뉴얼/개념/파이프라인/)
-- [Create a pipeline](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/)
-- [Pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
-- [Run a pipeline](/ko-KR/매뉴얼/사용-가이드/파이프라인-실행/)
+- [파이프라인](/ko-KR/매뉴얼/개념/파이프라인/)
+- [파이프라인 만들기](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/)
+- [파이프라인 트리거](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
+- [파이프라인 실행](/ko-KR/매뉴얼/사용-가이드/파이프라인-실행/)

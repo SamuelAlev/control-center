@@ -1,239 +1,119 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: النشر والعملاء
+description: كيف تفصل بنية العميل الخفيف في Control Center خادمًا بلا واجهة عن عملاء الحاسوب والويب والجوال.
 slug: ar-SA/دليل-المستخدم/مفاهيم/نشر
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center ليس برنامجًا واحدًا، بل **بنية عميل خفيف**: خادم بلا واجهة يملك بياناتك، وعملاء يرسمون واجهة فوق اتصال RPC واحد به. فهم هذا الفصل يفسّر لماذا يعمل بعض الأشياء حيث تعمل، وما يبلغه كل عميل وما لا يبلغه.
 
-## The server owns the data
+## الخادم يملك البيانات
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+عملية اسمها **`cc_server`** تحتفظ بقواعد البيانات: ملف `global.db` صغير لحالة الخادم كله، وملف SQLite واحد لكل [مساحة عمل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/)، يُفتح عند الحاجة. وتشغّل العمل المستمر: محرّكات خطوط الأنابيب، والمُوفِّقات، وسطح أدوات MCP، ومستمع التنسيق. كل ما ينبغي أن يبقى بعد إغلاق النافذة، أو أن يراه عميلان بالصورة نفسها، يعيش هناك.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+لا يفتح أي عميل ملف قاعدة بنفسه. كل عميل يحمل **`RemoteRpcClient`** واحدًا، ويُصدر عبره عمليات المستودع والاشتراكات. يصادق الخادم الاتصال بمفتاح اقتران مشترك مسبقًا لجهاز مقترن، ثم لا يعنيه الاتصال بعد ذلك. **الجلسة غير مربوطة بمساحة عمل.** الموزّع بلا حالة: كل استدعاء خاص بمساحة عمل يحمل `workspace_id` في وسائطه، ويُرفض الاستدعاء الذي يسقطه.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+هذا مقصود، وهو ما يتيح لعميلين على خادم واحد أن يعملا في مساحتي عمل مختلفتين، من غير أن يحتفظ الخادم بـ«مساحة عمل حالية» يختلفان عليها. يُفرض العزل على كل استدعاء، في أربع خطوات:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. تصرّح العملية إن كانت خاصة بمساحة عمل. إن كانت كذلك ولم يصل `workspace_id`، يُرفض الاستدعاء.
+2. يجب أن يكون المعرّف المذكور لمساحة عمل **مسجّلة**، ويُتحقق من ذلك قبل أن تُفتح أي قاعدة. وإلا أنشأ معرّف مجهول ملف `workspace.db` شبحًا فارغًا مع كل طلب. إن غاب، فالنتيجة غير موجود.
+3. يجب أن يبلغ `WorkspaceRole` لدى المستدعي حد العملية الأدنى، ويُشتق من نوعها: القراءة تحتاج ضيفًا، والتعديل يحتاج عضوًا، والعمل المدمّر يحتاج مسؤولًا.
+4. العملية التي تكشف محتوى مستودع تشترط أيضًا منحة لذلك المستودع بالمستوى الذي تصرّح به، `none` / `read` / `review` / `write`، حتى لا تعطي عضوية مساحة العمل في صمت صلاحيات أوسع من مضيف الشفرة.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+الجملة التي تهم: **حيازة مفتاح الاقتران ليست حد الوصول، والعضوية هي الحد.**
 
-## Why split it this way
+## لماذا هذا الفصل
 
-Three pressures pushed toward a server:
+ثلاثة ضغوط دفعت إلى خادم:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **مصدر واحد للحقيقة.** حاسوب وهاتف، أو محمول وحاسوب مكتبي، ينبغي أن يريا حالة الأسطول نفسها. لو ملك كل واحد قاعدته لتباعدت الصور. الخادم الواحد يعني أن كل عميل يقرأ البيانات الحية نفسها.
+2. **الويب لا يكتفي بنفسه.** المتصفح لا يطلق عملية فرعية ولا يفتح ملفًا محليًا، فنسخة الويب لا تملك القاعدة ولا تشغّل وكيلًا. لا بد أن تكلم خادمًا يفعل ذلك. عوض بناء مسار بيانات ثانٍ للويب وحده، أُدخل الحاسوب في المسار نفسه.
+3. **التشغيل بلا واجهة.** خادم تشغّله على جهاز صغير، تبلغه من هاتف في القطار أو من متصفح في أي مكان، أنفع من واجهة رسومية لا بد أن تبقى مفتوحة.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+المقابل أن الخادم صار اعتمادًا: إن لم يكن شغالًا فلا شيء يعمل. جواب الحاسوب الافتراضي أن **يشغّل خادمًا بنفسه**.
 
-## The clients
+## العملاء
 
-Five clients reach the server, each with a different shape and trust profile.
+خمسة عملاء تبلغ الخادم، ولكل منها شكل ودرجة ثقة.
 
-### Desktop app
+### تطبيق الحاسوب
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+تطبيق Flutter للحاسوب (macOS وWindows وLinux) هو العميل الكامل. عند أول تشغيل يسأل «كيف ينبغي أن يعمل Control Center؟»، ثم يحفظ الاختيار:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **محلي**: يشغّل `cc_server` ويشرف عليه على هذا الجهاز. هذا هو الافتراضي، إعداد مكتفٍ بنفسه لمستخدم واحد. يطلق الحاسوب الخادم، فيملك القاعدة تحت جذر دعم التطبيق ويكلمه عبر loopback.
+- **بعيد**: يتصل بـ `cc_server` في مكان آخر عبر WebSocket آمن. البيانات تعيش على ذلك الخادم، وهذا الحاسوب عارض فقط.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+في الحالتين يحل عميل RPC الناتج محل موفّر بيانات التطبيق، فتقرأ الواجهة كلها وتكتب عبر الخادم: كل شاشة وكل ميزة. الحاسوب لا يمس ملف القاعدة مباشرة.
 
-### Web client
+### عميل الويب
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+نسخة الويب هي تطبيق Flutter نفسه، مُترجَمًا ليعمل في المتصفح، ومستضافة على [app.usectrl.dev](https://app.usectrl.dev)، فلا شيء يُثبَّت. المتصفح لا يطلق عملية فرعية، فعميل الويب بعيد **دائمًا**: يتصل بـ `cc_server` عبر `wss://` ويرسم واجهة الحاسوب كاملة. متى اتصل أظهر الشاشات نفسها على الأسطول نفسه، فالشفرة واحدة وRPC واحد. الفجوات قليلة، وهي ما يحتاج قدرة أصيلة لا يملكها المتصفح. طبقة جودة التقاط الاجتماع، أدناه، هي الأهم، وإشعارات نظام التشغيل تليها.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+لهذا يختلف قول «بلا تنزيل» عن قول «بلا خادم». عميل الويب يلغي التثبيت، ولا يلغي الخادم. قد يتصل بـ `cc_server` على الحاسوب المحمول نفسه، على `ws://localhost:9030`، بلا شهادة، لأن المتصفحات تعد loopback موثوقًا. أو بخادم على جهاز آخر، ولا بد أن يُبلغ عبر `wss://` بشهادة يثق بها المتصفح. يرفض `cc_server` ربط عنوان غير loopback من غير TLS، فالخادم البعيد يعني شهادته هو، أو بروكسي ينهي TLS، أو نفقًا أو VPN يوفّر الشهادة.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+الحزمة نفسها تُستضاف بمعزل عن الخادم الذي تكلمه. `cc_server` المستقل يقدّم نقطة RPC وسطح MCP وبروكسياته، **لا** حزمة ويب. مسار الملفات الثابتة موجود في الخادم، لكن الثنائي المستقل بلا جذر ويب مُعد، فلا شيء يُقدَّم عند `/`. صورة الحاوية المنشورة `cc-webapp` هي التي تستضيف الحزمة، و`scripts/build_web.sh` هو الذي يبنيها. لا يقبل الخادم من أصول المتصفح إلا ما في قائمة `--allowed-origins`، وافتراضها `https://app.usectrl.dev`. استضافة الحزمة بنفسك تعني إضافة أصلها.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+الوسائط (الصور الرمزية، وصور الموجز، ولقطات طلبات السحب) تمر بنقطة البروكسي في الخادم بدل أن تطلب المضيفين المصدر مباشرة، فلا يجلب المتصفح أصلًا اعتباطيًا. يختم العميل المنشور سياسة Content-Security Policy لكل طلب، من كوكي غير حسّاس، فلا يُسمح إلا بأصل الخادم المتصل.
 
-### Phone companion (cc_remote)
+### رفيق الهاتف (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+تطبيق **Remote** عميل منفصل وأخف، تطبيق ويب تقدّمي بـ Flutter على [remote.usectrl.dev](https://remote.usectrl.dev/). هو عمدًا **ليس** التطبيق الكامل. يقترن عبر مرحّل WebSocket بوساطة، مغلق من طرف إلى طرف، ويتكلم شريحة من سطح الأدوات تميل إلى القراءة: قراءة التذاكر والرسائل وموجز الأخبار، وإرسال رد أو تحديث تذكرة.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) for the full
-security model.
+الهاتف **فاعل بصلاحيات أدنى** من وكيل محلي. سياسة أدوات ترفض افتراضيًا، ومفتاح اقتران يختم كل إطار، وقدرة جلسة تُخرج العمليات المميّزة (الاقتران مثلًا) من عميل الرفيق، وفحوص الدور ومنحة المستودع على كل استدعاء مما سبق، وتحديد المعدّل: هذا كله يمنع اقترانًا مقبولًا، أو مسرّبًا، من أن يصير تحكمًا عن بُعد كاملًا. انظر [التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) لنموذج الأمان كاملًا.
 
-### MCP clients
+### عملاء MCP
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/) and the
-[MCP tools reference](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/).
+الأدوات الخارجية، من محررات ووكلاء آخرين وواجهات سطر أوامر، التي تتكلم Model Context Protocol، تتصل بسطح MCP في الخادم وتستهلك سجل الأدوات المُنمَّط. هذا مسار التكامل البرمجي، لا واجهة رسومية. انظر [استخدام خادم MCP](/ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp/) و[مرجع أدوات MCP](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/).
 
-### Fleet executors (cc_worker)
+### منفّذو الأسطول (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** ثنائي Dart خالص بلا واجهة، يقترن بـ `cc_server`، ويصرّح بقدرات مضيفه، ويسحب مهامًا مؤجَّرة لينفّذها. يبث أحداث العملية عائدة عبر RPC نفسه، ولا يحتفظ **بحالة دائمة**: لا قاعدة، ولا مصادقة، ولا موافقات، ولا ميزانيات. تلك لا تغادر `cc_server`. العامل ذراع لا دماغ ثانٍ. خادم واحد صاحب القرار، وN أذرع لا تفكّر، بلا إجماع وبلا حركة من عامل إلى عامل.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+التنفيذ المؤجَّر ما زال سباكة للإيجار. `agentRun` هو النوع الوحيد الذي يشغّل أمرًا حقيقيًا (`CC_JOB_COMMAND`، أو مطالبة تُعاد بالصدى إن لم يُقدَّم أمر). `pipelineStep` و`codeIndex` و`goldenRender` و`benchmark` و`evalBatch` تسبر حاليًا بـ `git --version` / `rev-parse HEAD`، حتى يُمارَس مسار البث من غير ادّعاء أن تلك المهام قد جرت.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+ما يعلنه: نظام التشغيل، ومعمارية المعالج، وعدد الأنوية، وحجم الذاكرة، وهل يمكن بلوغ Flutter SDK، وأي خلفيات للبيئة المعزولة يملكها المضيف (لا شيء على Windows). العامل المخصّص يعلن دائمًا `alwaysOn` و`acceptsParallel`، وهما ما يعتمد عليه مجدول التثبيت ← التفضيل ← الفيض في التوزيع. لا سبر لـ GPU ولا لـ ML.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+الحاسوب المنفرد لا يلاحظ شيئًا من هذا، فالإرسال العادي لا يمر بالأسطول أصلًا. _يوجد_ عامل ضمني داخل العملية، مسجّل لمضيف الخادم، لكنه مفصل تسجيل بلا منفّذات مربوطة به. المهمة التي تُوضع فعلًا على العامل المحلي تفشل بدل أن تُنفَّذ. اليوم لا ينفّذ المهام المؤجَّرة إلا `cc_worker` حقيقي.
 
-## What runs where
+## ما يعمل في كل موضع
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| الجانب | الخادم (`cc_server`) | منفّذ الأسطول (`cc_worker`) | عميل الحاسوب | عميل الويب / الهاتف |
+| --- | --- | --- | --- | --- |
+| قواعد البيانات (Drift/SQLite) | يملكها | — | — | — |
+| المصادقة والموافقات والميزانيات والهوية | يملكها | — | — | — |
+| خطوط الأنابيب والمُوفِّقات ومستمع التنسيق | يشغّلها | — | — | — |
+| سطح أدوات MCP | يقدّمه | — | — | — |
+| تنفيذ الوكيل | يشغّله (أو يؤجّره) | ينفّذ المهام المؤجَّرة | — | — |
+| رسم الواجهة | — | — | كاملة | كاملة (الويب) / تميل إلى القراءة (الهاتف) |
+| التقاط الاجتماع (الميكروفون + صوت الاجتماع) | — | — | التقاط أصيل | الويب فقط، عبر صوت مشاركة الشاشة |
+| OAuth التقويم (Google) | يخزّن الرموز | — | — | — |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/)
-for what bounds a run in each case.
+الطبقتان لا تعزلان بالأسلوب نفسه. يغلّف `cc_server` التشغيلات التي ينفّذها بنفسه ببيئة نظام التشغيل المعزولة حيث توجد خلفية: Seatbelt على macOS، وbubblewrap على Linux وWSL2. وعلى Windows، أو من غير `bwrap` و`socat`، يعود إلى الحدود الأخرى. **`cc_worker` لا يعزل أصلًا.** يعلن قدرة `sandbox` حتى يضع الخادم المهام حسب المنصة، لكن العامل لا يطبّق عزلة: المهمة المؤجَّرة تُطلَق مباشرة، ويحدّها بيئة الإيجار وشجرة العمل التي أُعطيت إياها. تأجير العمل يخرج التنفيذ من البيئة المعزولة، حتى على مضيف يملكها. انظر [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) لما يحدّ التشغيل في كل حالة.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+التقاط الاجتماع يجري على العميل لأنه يحتاج ميكروفونًا وصوت الاجتماع. خادم في خزانة لا يسجّل مكالمتك. ثم يلخّص خط أنابيب الخادم التسجيل، وتُحفظ الملاحظات حيث يقرأها كل عميل.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+عميل الويب يسجّل أيضًا، وقد يخفي شكل الجدول ذلك: يلتقط الميكروفون مع مسار صوت لمشاركة الشاشة في المتصفح، ويبث PCM بتردد 16 kHz إلى الخادم. وهو _يشترط_ مسار الصوت ذاك، فيفشل صراحة حيث لا يوفّره المتصفح. ما يخص الحاسوب فعلًا هو طبقة الجودة حول الالتقاط: إلغاء الصدى على مستوى الإشارة عبر المعالج الأصيل، ومقياس مستوى الدخل، وتحذير الميكروفون الصامت، وإعادة تشغيل الملخص، وإلغاء المعالجة، وإجراء التقويم «تسجيل وربط».
 
-## Pairing and trust
+## الاقتران والثقة
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+كل عميل يثبت هويته بـ**مفتاح اقتران مشترك مسبقًا** يُجهَّز مرة واحدة:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- الحاسوب في الوضع المحلي يولّد مفتاحًا جديدًا عند كل إقلاع، ويسلّمه إلى الخادم الذي أطلقه عبر متغيرات البيئة، فلا يُحفظ سر على الحاسوب.
+- العملاء البعيدون (الحاسوب البعيد، والويب، والهاتف) يستخدمون مفتاحًا يصكّه أمر `pair` في الخادم، ويُحفظ في سلسلة مفاتيح النظام (أو محليًا على الهاتف).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+الإبطال **فوري** لا مؤجّل. يراقب الخادم جدول الأجهزة المقترنة، ويُسقط خلال ثوانٍ أي جلسة مفتوحة خرج جهازها من المجموعة النشطة، على مسار WebSocket المباشر ومسار المرحّل سواء. لا تنتظر إعادة اتصال الجهاز حتى تقطعه.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+المفتاح لا يمر في عنوان يستطيع مضيف ثابت أن يراه. حين يصل عبر رابط، على الهاتف أو في المتصفح، يركب **جزء الرابط**، وهو ما بعد `#`، والمتصفح لا يرسل ذلك إلى الخادم الذي يستضيف الصفحة. هذا هو الثابت الذي يُحفظ، وينطبق على الاثنين. ولعميل الويب مدخلان آخران: نموذج الاتصال، حيث تلصق خادمًا ومفتاحًا مباشرة، ورمز دعوة يصرفه مقابل بيانات اعتماد مصكوكة لذلك المتصفح وحده.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/): the phone pairing and security model
+- [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/): لماذا يحمل كل استدعاء RPC معرّف مساحة العمل الخاص به، وكيف يجعل تقسيم القاعدة العزل بنيويًا
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/): كيف تنتظم قاعدة الشفرة حول الخادم وعملائه
+- [التحكم عن بُعد والجوال](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/): اقتران الهاتف ونموذج الأمان
 
-## Related guides
+## أدلة ذات صلة
 
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): start `cc_server` and pair a client
-- [Connect to a remote server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/): point the desktop or web client at a server elsewhere
-- [Pair a device](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-عامل-أسطول/): add a `cc_worker` that pulls leased jobs
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): ابدأ `cc_server` واقرن عميلًا
+- [الاتصال بخادم بعيد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اتصال-بخادم-بعيد/): وجّه عميل الحاسوب أو الويب إلى خادم في مكان آخر
+- [اقتران جهاز](/ar-SA/دليل-المستخدم/أدلة-إرشادية/اقتران-جهاز/): أضف هاتفًا، أو متصفحًا ثانيًا، أو حاسوبًا آخر
+- [تشغيل عامل أسطول](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-عامل-أسطول/): أضف `cc_worker` يسحب مهامًا مؤجَّرة

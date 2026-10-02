@@ -1,131 +1,130 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: واگذاری کار به عامل‌ها
+description: تیکتی را در یک گفتگو به یک عامل بسپارید و بگذارید عامل‌ها زیرکارها را زیر گاردهای عمق و چرخه به یکدیگر واگذار کنند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/واگذاری-تیکتها
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+این راهنما به این می‌پردازد که چگونه کار را از دوش خود بردارید و به یک عامل
+بسپارید و وقتی عامل‌ها کار را میان خودشان دست‌به‌دست می‌کنند چه اتفاقی می‌افتد.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[تخصیص یک تیکت به یک عامل، اعزام نیست]
+برای یک تخصیص‌یافتهٔ عامل، هیچ اعزام‌کنندهٔ تیکتی وجود ندارد. تخصیص فقط مالکیت را
+ثبت می‌کند و بس — هیچ فضایی ساخته نمی‌شود، هیچ وضعیتی تغییر نمی‌کند، هیچ عاملی
+شروع به کار نمی‌کند. استثنا تیکتی است که به یک **تیم** تخصیص یافته باشد؛ چنین
+تیکتی رهبر آن تیم را بیدار می‌کند. کار عامل برای یک تخصیص‌یافتهٔ نامدار در
+گفتگوها زندگی می‌کند، پس شروع آن از همان‌جاست.
 :::
 
-## Hand a ticket to an agent
+## سپردن یک تیکت به یک عامل
 
-1. [Create the ticket](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [تیکت را بسازید(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/) با عنوانی و
+   شرحی که به‌قدر کافی دقیق باشند تا بتوان بر اساس‌شان کار کرد.
+2. **تخصیص‌یافته**ی آن را روی عامل بگذارید تا مالکیت ثبت شود.
+3. فضایی را باز کنید (یا بسازید) و آن عامل را با @ منشن کنید.
+4. در پیام‌تان با یک منشن `#` به تیکت ارجاع دهید — نویسندهٔ پیام تیکت‌های فضای
+   کاری را خودکار کامل می‌کند — و بگویید چه می‌خواهید انجام شود.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+عامل کار را از گفتگو برمی‌دارد. پیشرفتش به‌صورت زنده در همان فضا جریان می‌یابد.
 
-## What the agent receives
+## آنچه عامل دریافت می‌کند
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- پیام شما، همراه با ارجاع تیکتی که برچسب زدید.
+- فضایی برای کار و گزارش دادن.
+- یک worktree ایزوله از مخزن‌های پیوندشدهٔ فضای کاری.
+- **حالت** فضا، که همان چیزی است که سطح ابزار اجرا را تعیین می‌کند.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/).
+حالت ویژگی فضا است، نه تیکت — تیکت حالتی ندارد. بنابراین یک عامل می‌تواند در یک
+فضا در `chat` باشد و در فضایی دیگر در `plan`. آن را از فهرست بازشوی حالتِ
+نویسندهٔ پیام انتخاب کنید (**عامل**، **برنامه** یا **ارکستر**)؛ `review` را
+فضاهای بازبینی PR تعیین می‌کنند و انتخاب‌پذیر نیست.
+[حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) را ببینید.
 
-## Require a structured result
+## درخواست یک نتیجهٔ ساختاریافته
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+قرارداد خروجی روی اعزام اعلام می‌شود، نه روی تیکت: `expected_output_schema`
+به‌علاوهٔ `output_contract_mode` (به‌طور پیش‌فرض strict). عامل آن را با فراخوانی
+`submit_output` برآورده می‌کند؛ این فراخوانی بار داده را با اسکیما اعتبارسنجی
+می‌کند و داده‌ای را که مطابق نباشد رد می‌کند.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+هم خروجی پذیرفته‌شده و هم هر ردشدنی روی **گزارش اجرای عامل** می‌نشیند. وضعیت خود
+تیکت از این کار دست‌نخورده می‌ماند — قرارداد برآورده‌نشده، تیکت را ناموفق نمی‌کند.
 
-## Monitor progress
+## پایش پیشرفت
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **فضا** — فعالیت زندهٔ عامل، نمای اصلی.
+- **تیکت** — وضعیتش، همان‌طور که هر کس آن را جابه‌جا می‌کند تعیین می‌کند.
+- **مشاهده‌پذیری → زنده** (`/workspaces/<workspace-id>/observability`) — فهرست
+  زندهٔ عامل‌ها.
+- **مشاهده‌پذیری → بینش‌ها** — گزارش اجرا، همراه با هزینه و مدت.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+هیچ صفحهٔ داشبوردی وجود ندارد؛ یک URL خالی فضای کاری به صندوق ورودی هدایت می‌شود.
 
-## Let agents delegate to each other
+## بگذارید عامل‌ها به یکدیگر واگذار کنند
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+عاملی که به یک زیرمسئله می‌خورد، با ابزار MCP به نام `delegate_task` واگذاری
+می‌کند. این ابزار یک تیکت فرزند می‌سازد که به عاملی دیگر تخصیص یافته و — وقتی
+`parent_ticket_id` را می‌فرستید — زنجیره را ثبت می‌کند تا گاردها بتوانند آن را
+ببینند.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+دو گارد ساختاری همیشه و در گلوگاه تیکتینگ اجرا می‌شوند، هرگز به فرمان پرامپت:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **سقف عمق** — زنجیره‌ای عمیق‌تر از ۳ جهش رد می‌شود.
+- **تشخیص چرخه** — جهشی بازگشتی به عاملی که از قبل در زنجیره است رد می‌شود.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+وقتی `from_agent_id` را می‌فرستید، دو گارد دیگر اجرا می‌شوند (محیط تولید همیشه
+پورت‌های حل‌کننده را تأمین می‌کند):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **سقف خودمختاری** — سطح مؤثر واگذارشده در فضا نباید از سطح واگذارکننده بیشتر
+  باشد.
+- **پاکت بودجه** — واگذاری از بودجهٔ توقف سختِ باقی‌ماندهٔ واگذارکننده برداشت
+  می‌کند و نمی‌تواند بیشتر خلق کند. نبودِ سیاست، یا سیاستی نامحدود، می‌گذرد.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+یک رد پرصداست: ابزار دلیل گارد را عیناً برمی‌گرداند، پس عامل واگذارکننده دقیقاً
+می‌بیند چرا. فیلد `delegatedByAgentId` ثبت می‌کند چه کسی واگذار کرده است و یک
+درخت واگذاری می‌سازد.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` هر گاردی را دور می‌زند]
+ابزار قدیمی‌تر `delegate_ticket` هنوز ثبت‌شده است و مستقیم `createTicket` را صدا
+می‌زند — بدون سقف عمق، بدون بررسی چرخه، بدون سقف خودمختاری، بدون پاکت بودجه.
+`delegate_task` را ترجیح دهید.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+این سقف عمق واگذاری ۳ محدودیتی متفاوت از سقف تودرتویی زیرعاملِ هارنس داخلی (۲) است
+— یکی تیکت‌ها را میان عامل‌ها مقید می‌کند و دیگری زیرعامل‌ها را درون یک اجرای
+واحد.
 
-## Put several agents on one ticket
+## گذاشتن چند عامل روی یک تیکت
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+آن‌ها را به‌عنوان **همکاران** روی تیکت اضافه کنید (نقش‌ها: assignee، collaborator،
+reviewer). این تنها یک فهرست است — ثبت اینکه چه کسی درگیر است — و به‌خودی‌خود
+چیزی نمی‌بخشد.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/).
+برای آنکه واقعاً عامل‌ها را در یک گفتگوی واحد بگذارید، آن‌ها را از سرصفحهٔ فضا
+به‌عنوان مشارکت‌کننده اضافه کنید. پس از آن می‌توانند آن‌جا یکدیگر را با @ منشن
+کنند. [فضاها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها/) را ببینید.
 
-## Automated ticket creation
+## ایجاد خودکار تیکت
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+هیچ گره‌ای در پالت پایپ‌لاین تیکت نمی‌سازد، بنابراین یک پایپ‌لاین نمی‌تواند کار را
+به‌صورت تیکت‌های تخصیص‌یافته پخش کند.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/).
+مسیری که وجود دارد ارکستراسیون است: تأیید یک پیشنهاد، یک پروژه و یک تیم می‌سازد،
+DAG زیرتیکت‌های پیشنهاد را به یک **قالب پایپ‌لاین** کامپایل می‌کند (یک گام
+`promptAgent` به‌ازای هر زیرتیکت، نه یک ردیف `Ticket` برای هرکدام) و آن اجرا را
+شروع می‌کند. [اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/)
+را ببینید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and manage tickets](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
-- [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
-- [Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/)
-- [Organize work with projects](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/)
-- [Ticket lifecycle reference](/fa-IR/راهنمای-کاربر/مرجع/چرخه-عمر-تیکت/)
+- [ایجاد و مدیریت تیکت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-تیکتها/)
+- [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+- [اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/)
+- [سازمان‌دهی کار با پروژه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پروژه-ها/)
+- [مرجع چرخهٔ عمر تیکت(/fa-IR/راهنمای-کاربر/مرجع/چرخه-عمر-تیکت/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Tickets](/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
-- [Dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [تیکت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/تیکتها/)
+- [چرخهٔ عمر اعزام(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)

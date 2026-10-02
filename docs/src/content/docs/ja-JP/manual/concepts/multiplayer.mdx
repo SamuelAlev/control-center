@@ -1,216 +1,101 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス
+description: Control Center が人間とエージェントを対等な参加者としてどうモデル化するか、ワークスペースへのアクセスを実際に制限しているものは何か、そしてライブの気配と共有レコードがなぜ 2 つの異なるレーンを流れるのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/マルチプレイヤー
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center は単独のオペレーターでも機能しますが、その土台にあるモデルは最初からマルチアクターです。人間とエージェントは同じスペースでメッセージをやり取りし、同じチケットを編集し、同じ名簿に表示されます。これを安全かつ理解可能にする鍵は、3 つの判断に集約されます。**誰がアクターと見なされるか**、**何がアクセスを制限するか**、そして**どの状態を永続的に共有し、どの状態をライブでブロードキャストするだけにするか**です。
 
-## Principals: users and agents are co-equal actors
+## プリンシパル — ユーザーとエージェントは対等なアクター
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+「誰がこれをしたのか」を記録するものすべて — メッセージ、チケット、レビュー、プラン、実行ログ、監査エントリ — は、**プリンシパル**を通じて解決されます。これは `UserPrincipal` と `AgentPrincipal` の sealed なユニオンで、コンパクトなワイヤ形式（`user:<id>` / `agent:<id>`）を持ちます。帰属は、N 人の人間（または N 体のエージェント）を 1 つのセンチネルアカウントにまとめてしまうことはありません。そのため、エージェントが残したレビューと人間が残したレビューは、それが現れるあらゆる場所で区別できます。
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+プリンシパルはアイデンティティの単位であるため、封じ込めの単位でもあります。
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **レート制限はセッション単位ではなくプリンシパル単位です。** リモートのツール呼び出しに対するフラッドガードは、接続単位ではなくユーザー単位で予算を配分します。つまり、あるメンバーのすべてのデバイスが 1 つの共有スライディングウィンドウから消費します（1 分あたり 120 呼び出し、うち変更を伴ってよいのは最大 30 件）。そのため、3 台のデバイスを開いても誰かの許容量が 3 倍になることはなく、1 人の騒がしいメンバーが他のメンバーを飢えさせることもありません。
+- **元に戻せるのはプリンシパル単位です。** 各クライアントのアクションジャーナルは、_その_プリンシパルが行った変更だけを記録します。自分のチケット編集は ⌘Z で元に戻せますが、チームメイトの編集は元に戻せません — あなたがそれを見るころには、永続レーンがすでに解決済みだからです（後述）。
 
-## Membership is the access boundary — not the pairing key
+## アクセス境界はメンバーシップであり、ペアリングキーではない
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+2 つの別々の資格情報が、2 つの別々の問いに答えます。**ペアリングキー**（[リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/)を参照）は、_デバイス_をサーバーに対して認証します。**メンバーシップ**は、そのデバイスのユーザーが_ワークスペース_内で行動することを認可します。ユーザーがワークスペースのメンバーシップを持たないペアリング済みデバイスは、そのワークスペースを読み取ることも変更することもできません。
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+メンバーシップは (ワークスペース, ユーザー) ごとに 1 行で、**そのワークスペース自身のデータベースファイル**に保存されます。したがって「このワークスペースには誰がいるか？」は通常のスコープ付き読み取りであり、逆の問いである「自分はどのワークスペースに属しているか？」は必然的に複数のファイルにまたがり、数少ない公認のクロスワークスペースファンアウトの 1 つです。ワークスペースピッカーが、どのワークスペースもまだ選択されていない段階で実行するのはこれです。
 
-Each row carries a role from a five-level, rank-ordered ladder:
+各行は、5 段階のランク順のはしごから 1 つのロールを持ちます。
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| ロール   | できること                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| `owner`  | 完全な制御（ワークスペースの削除を含む）。ワークスペースごとにちょうど 1 つ                                 |
+| `admin`  | メンバー、招待、設定、破壊的操作の管理                                                                        |
+| `member` | 日常的な読み書き: メッセージ、チケット、エージェント実行                                                      |
+| `viewer` | ワークスペース全体で読み取り専用。シークレット除外 glob が、コードを露出させるサーフェス上の一致するパスを隠す |
+| `guest`  | 閲覧者と同じ読み取り専用の下限で、はしごの最下位                                                              |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+すべてのアクセス判断は「呼び出し元のロールが少なくとも X 以上か」に帰着します。下限は、操作が明示的に宣言していない限り、その操作の種類から導出されます。読み取りには `guest`、変更には `member`、破壊的操作には `admin` が必要です。以下で述べるリポジトリ単位の許可を超えるオブジェクト単位の ACL は、意図的に対象外です。
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**招待**は、メンバーシップを付与する手段で、設定 → ワークスペース → メンバーから行います。管理者は使い捨てコード（リンクまたは QR として）を発行します。これは既定で 7 日後に失効します。サーバーが保存するのはそのコードの SHA-256 ハッシュだけで、コード自体は 1 回だけ表示されます。コードを引き換えると、ユーザーが JIT でプロビジョニングされ、招待のロールでメンバーシップが記録され（決して `owner` にはなりません — 所有権は明示的に譲渡されるもので、招待で付与されることはありません）、デバイスのペアリングへと引き継がれます。ペアリング後に発行されるデバイス資格情報自体も 30 日に期限が区切られているため、ペアリングは恒久的なキーではありません。
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**リポジトリ単位の許可（grant）**はメンバーシップの下に位置します。サーバーが完全なチェックアウトを保持しているため、ワークスペースのメンバーシップだけでコードホストより強い権限を得ることは決してあってはなりません。コードを露出させるすべてのサーフェス — ファイル、差分、PR レビュー、コード検索 — は、_そのリポジトリ_に対するメンバーの許可をチェックします。許可は (ワークスペース, ユーザー, リポジトリ) 単位で、`none` → `read` → `review` → `write` とランク付けされます。ここで `write` は、リポジトリに書き込むエージェント実行を駆動することを意味します。行が存在しない場合は `none` を意味し、オーナーと管理者はリンクされたすべてのリポジトリに対して暗黙に `write` を保持し、行を一切持ちません。
 
-## Two lanes of collaboration state
+## コラボレーション状態の 2 つのレーン
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center は、共有状態を相反する耐久性ルールを持つ 2 つのレーンに分割します。2 種類の状態が、正反対の仕方で破綻するからです。
 
-### The ephemeral presence lane
+### 一時的なプレゼンスレーン
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+プレゼンス — 誰がオンラインか、どこにいるか、何を入力しているか、エージェントが今何をしているか — は、古くなった瞬間に価値を失います。もし永続化されていたら、再接続のたびに「データベースには Sam がこのチケットを編集中とある」という状態を現実と突き合わせて調整しなければならなくなります。そこでプレゼンスは**決してデータベースに書き込まれません**。それはサーバー上のインメモリの**プレゼンスハブ**に存在します。クライアントは `presence.update` で発行し、ピアは `presence.watch` で購読し、エントリはハートビートを 3 回逃すと自動的に失効します（ハートビートは 10 秒ごと、ハブのスイープは 5 秒ごと）。調整すべきものは何もなく、ただ失効させるだけです。
 
-Two properties keep the lane trustworthy:
+2 つの性質が、このレーンの信頼性を保ちます。
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **アイデンティティはセッションから来るもので、クライアントの引数から来ることはありません。** サーバーは、接続の認証済みデバイスをユーザー ID にマッピングします。クライアントは自分のプレゼンスしか更新できないため、誰も他の参加者のステータスやローカスをなりすませません。明示的な `offline` 更新（切断、または非表示トグル）は、そのエントリを即座に削除します。
+- **名簿はサーバーハブ方式です。** ピア同士がプレゼンスを直接やり取りすることはないため、トポロジーに関係なくすべての参加者が同じ名簿を見ます。エージェントにはクライアントがないため、サーバーがライブの実行状態からエントリを_合成_します — 思考中、実行中、承認ゲートでブロック中、完了 — そしてエージェントの状態とローカスは 1 つの代表的な実行が決めるので、並行する実行によって名簿がばたつくことはありません。
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+ファンアウトはコンシューマーごとに階層化されています。デスクトップと Web は完全な階層（名簿の送出は最大 100 ms に 1 回）に乗り、スマートフォンは要約階層（500 ms に 1 回）に乗ります。これにより、カーソル頻度の更新が PWA を溶かすことはありません。
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+参加者の**ローカス** — 現在どこにいるか、どの成果物に至るまで — は sealed なユニオンです: `Space`、`File`（リポジトリ + パス + 任意の行）、`Pr`、`Ticket`、`PlanNode`。すべてのローカスにジャンプ先があるわけではありません。ファイルビューアーのルートが存在しないため、`File` ローカスは移動先ではなくラベルとして描画されます。このレーンは**ソフトクレーム**（「Sam がこのチケットを編集中」「あるエージェントがこのワークツリーを保持している」）も運びます。これは競合の_可視性_であり、ロックではありません。未知のローカス種別は null にパースされるため、古いクライアントは理解できないものを単に描画しません。
 
-### The durable shared lane
+### 永続的な共有レーン
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+生き残らなければならないレコード — チケット、共有スペースの Notes ドキュメント、メッセージ — は逆の道をたどります。権威的で、順序付けられ、永続化されます。並行する編集は、クライアントの時計によってではなく、**サーバーの受信順での最終書き込み優先**によって解決されます。この解決は意図的に細粒度です。チケットの編集は_列単位_であるため、同じチケットの異なるフィールドを編集している 2 人はどちらも反映され、互いを上書きしません（ワークフローの遷移は従来どおり楽観的ロックを保ちます）。スペースの Notes ドキュメントは 1 列なので、ドキュメント全体が LWW であり、プレゼンスレーン上のソフトクレームが、並行編集をロックするのではなく可視化します。これは意図的に CRDT ではありません — 証明責任は CRDT 側にあり、受信順 LWW と可視化されたクレームで実際のコラボレーションパターンはカバーできるからです。
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+「最後の書き込み」とは**サーバーの受信順**を意味し、クライアントの時計を意味することは決してありません — 時計がずれたラップトップが、負けたはずの編集に勝つことはできません。永続レーンの背後には**同期フィード**があります。SQLite トリガーが、すべての変更を_書き込みトランザクションの内部で_ワークスペース単位の変更ログに追記し、変更そのものと同じトランザクションで単調増加するワークスペース単位のシーケンス番号を割り当てます。サーバーサービスがそのログをシーケンス順に、バージョン付きのデルタフレームへと追いかけます。クライアントは完全なスナップショットからデルタへと進化します。シーケンスに欠落があれば、フレームを誤って適用するのではなく、そのストアをスナップショットモードに戻します。
 
-## Follow, steer, take over, hand back
+## フォロー、ステア、引き継ぎ、返却
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+プレゼンスレーンは単なる名簿ではありません — コラボレーションの動詞を駆動します。
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **フォローモード。** 参加者をクリックすると、クライアントはその参加者のローカスに追随し、相手がナビゲートするのに合わせてナビゲートします。フォローは「あなたが行動するまで」続きます。あなたが自分の意思でナビゲートした瞬間、フォローは外れます。他の参加者が自分がいるスペースをスポットライト（発表）しているときは、閉じられるバナーで知らせます。
+- **ステア。** 実行中のエージェントへのメッセージは軌道修正としてキューに入り、エージェントは次のターンを再開する前にそれを読み直します。そのため、実行を止めることなく飛行中にそっと方向を修正できます。
+- **引き継ぎ。** 会話の制御を引き継ぐと、すべてのアクティブな実行が次にきれいなターン境界で一時停止します（安全な境界を持たない Claude Code の実行は停止されます）。その際、ターンごとの git スナップショットが取られるため、引き継ぎは元に戻せます。永続的なマーカーがスペースへの新しいディスパッチをブロックし、サーバーの再起動をまたいで存続します — サーバーが人間の未完成の編集へ自動的に再開することは決してありません。ワークツリーごとにライブの編集者は 1 人というのはソフトクレームです。2 度目の引き継ぎは可視化され、黙ってマージされるのではなく拒否されます。
+- **返却。** 制御を返すと、ワークツリーの構造化された差分サマリーがスペースに投稿され、一時停止中の実行に対する軌道修正としてキューに入り、それらが再開され、マーカーがクリアされます。
 
-## The autonomy dial
+## 自律度ダイヤル
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+ステアと引き継ぎは事後的な介入です。**自律度ダイヤル**は常設の設定です。スペースごと、エージェントごとに、スペースヘッダーから設定し、エージェントがゲートされたアクションに到達したときに何が起こるかを決めます。
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| レベル           | ワイヤ値          | ゲートされたツール呼び出しへの影響                                                                        |
+| ---------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| 提案のみ         | `proposeOnly`     | 無条件に拒否され、エージェントはその理由を伝えるよう指示されます — アクションを説明することはできても、実行はできません |
+| 承認後に実行     | `actWithApproval` | フェイルクローズドの承認ゲート。接続中のオペレーターに 1 件の確認が提示され、承認者がいなければ拒否となります |
+| 自由に実行       | `actFreely`       | 事前承認済み。ただしハードな `deny` ガードレールルールが適用される場合を除きます — deny ルールが常に優先されます |
+| （未設定）       | `null`            | 承認後に実行と同じ。サーバーのデフォルトです                                                              |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+2 つのことが、どちらの方向でもダイヤルの外にあります。モード自身の出力動詞は固定されており、ダイヤルが何を言おうと決して拒否されません — かつて orchestrate モードは、プリセットがその動詞の宣言する効果クラスを拒否したため、唯一の成果物を構造的に出力できませんでした。そして、アクションガードレールからのハードな `deny` は `actFreely` で上書きできません。
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/).
+:::note[ダイヤルがゲートするのは内蔵ハーネスだけです]
+これはハーネスループの承認コールバックから参照されます。Claude Code アダプター上で実行されているエージェントは、自身のプロセス内で独自にツールを呼び出すため、Control Center にはゲートできるものがありません — [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)を参照してください。
 :::
 
-## Solo zero-regression
+## 単独利用でも回帰なし
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+これらはすべて追加的なものです。単独のオペレーターのワークフローは変わりません。人間が 1 人でエージェントがいなければ、プレゼンスハブにはブロードキャストするものが何もないため、レーンは初期スナップショットを送出した後、トラフィックゼロで待機します。LWW と同期の仕組みは、これまでどおり同じ単一ライターの経路です。そしてペアリングキーは、これまでどおりのデバイス資格情報のままです。メンバーシップはすでにアクセス境界です — 人間が 1 人なら、オーナーの行が 1 つあるだけで、名簿の UI はありません。
 
-## Related concepts
+## 関連する概念
 
-- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/): the boundary membership enforces
-- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/): the pairing key and device credential side of identity
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): the agent half of the principal union
-- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): the runs that steering and take-over pause and resume
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): the effect-class policy the autonomy dial composes with
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/): the bus that live updates ride
+- [ワークスペースと分離](/ja-JP/マニュアル/コンセプト/ワークスペース/): メンバーシップが強制する境界
+- [リモートコントロールとモバイル](/ja-JP/マニュアル/コンセプト/リモートコントロール/): アイデンティティのうち、ペアリングキーとデバイス資格情報の側面
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): プリンシパルユニオンのうち、エージェント側の半分
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/): ステアと引き継ぎが一時停止させ、再開する実行
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): 自律度ダイヤルが組み合わさる効果クラスポリシー
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/): ライブ更新が乗るバス

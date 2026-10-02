@@ -1,156 +1,158 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: "Slash-parancsok"
+description: "Minden parancs, amelyet beírhat az üzenetszerkesztőbe: mit tesz, és hol fut."
 slug: hu-HU/kezikonyv/referencia/slash-parancsok
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+A tér üzenetszerkesztőjébe beírt parancsok. Aszerint, hogy hol fejtik ki hatásukat, három csoportba esnek, és a különbség számít: egy **helyi** parancs soha nem utazik üzenetként, így sem az átiratban nem jelenik meg, sem ügynökhöz nem jut el.
 
-| Where it runs | What that means                                                                    |
-| ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| Hol fut    | Mit jelent                                                                    |
+| ---------- | ----------------------------------------------------------------------------- |
+| **Helyi**  | A kliensben (vagy egy kliens által kezdeményezett szerverműveletben) dolgozódik fel. A parancs soha nem utazik üzenetként, így egyetlen ügynök sem látja. |
+| **Oldalsó** | Egy szerveroldali modellhívás a beszélgetésről. A beszélgetés nem változik.  |
+| **Kiosztás** | Módot vagy direktívát állít be ahhoz a futtatáshoz, amelyet az üzenet elindít. |
 
 ---
 
-## Directing a run
+## Egy futtatás irányítása
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**Helyi → kiosztás.** Bekapcsolja a beszélgetés tervmódját: egy teljesen csak olvasható worktree-t és `read`-re korlátozott eszközfelületet. Az ügynök leszállítandója egy terv, nem egy szerkesztés. Az önmagában álló `/plan` csak átváltja a módot, és soha nem utazik üzenetként; prompttal a sor többi része indítja el a futtatást.
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Kiosztás.** Elindít egy autonóm célkitűzést, amelyet a célfelügyelő szegmensek között oszt ki újra, és indít újra.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Ha a `/goal` után szöveget ír, először a **célkitűzési interjú** nyílik meg — egy rövid menet, amely addig nem fogad el piszkozatot, amíg mind az öt elem meg nem van: olyan sikerességi kritériumok, amelyeket egy értékelő mérlegelés nélkül el tud dönteni; egy pontos ellenőrző parancs; a próbálkozások felső korlátja; a hatókör határai; és a leállási feltételek. Minden lépés felkínálja a *Kihagyás és futtatás ahogy írva van* lehetőséget: az interjú alapértelmezés, nem kapu.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+A `/goal pause`, a `/goal resume` és a `/goal drop` nem slash-parancs. A szüneteltetés, a folytatás és a leállítás a beszélgetés céljainak oldalsávbeli listáján található. Magán a célkitűzésen az indítási kapcsolók: `--budget <dollars>`, `--max <N>` (futtatási keret) és `--days <N>` (határidő). Az a cél, amely elérte a költségkeretét, csak a keret emelésével folytatható, ugyanattól az oldalsávbeli vezérlőtől.
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[Miért szakítja meg egyáltalán]
+Egy autonóm cél az egyetlen hely, ahol a homályos feladatkiírás valóban drága. A futtatás órákig dolgozik egy olyan célkitűzésen, amelynek a „kész” fogalmát senki sem definiálta, majd a saját feltételei szerint sikert jelent. Öt kérdés olcsóbb, mint egy egész éjszakás futtatás, amely akkor fejeződött be, amikor éppen úgy érezte, hogy befejezte.
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Kiosztás.** Iteratívan dolgozik, amíg be nem fejeződik. Elfogad egy korlátot: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+Egy token, amely *úgy néz ki*, mint egy korlát (számmal vagy előjellel kezdődik), és nem sikerül értelmezni, kemény hiba. A prózai szöveg egyszerűen prózai szöveg, így a `/loop keep going until the tests pass` egy korlátlan ciklus beágyazott prompttal, nem pedig félreértelmezés.
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/).
+**Kiosztás.** **Irányítóvá** alakítja a munkamenetet: a saját eszközei `read`-re és öt worker-igére szűkülnek, a szerkesztést pedig háttér-workerek végzik. Lásd: [Háttér-workerek irányítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/).
 
-Workers never outlive the mode — exiting kills every one of them.
+A workerek soha nem élik túl a módot — a kilépés mindegyiket leállítja.
 
 ---
 
-## Managing context
+## A kontextus kezelése
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**Helyi → szerver.** Régebbi előzményeket horgonyzott összefoglalóba hajt össze, és a tömörített kontextuson folytatja. Nincs modellnek szánt argumentuma: a parancs soha nem utazik üzenetként, és a tömörítési kör nem vesz át fókuszjelzést.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Helyi → szerver.** Súlyos tartalmat dob el **összefoglalás nélkül**: nincs modellhívás, minden szó megmarad, és csak az a tömeg tűnik el, amelyet senki sem fog újra elolvasni.
 
-| Target        | Drops                             |
+| Célpont       | Mit dob el                        |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | Eseménytelen régebbi eszközerzedmények (alapértelmezett) |
+| `images`      | Régi képernyőképek, a szövegüket megtartva |
+| `all`         | Mindkettő                         |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+Ez a menekülőút arra az esetre, ha „dagadt a kontextusom, de nem akarok összefoglalót”.
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**Helyi.** A beszélgetés ügynökének kontextusböngészőjét nyitja meg egy saját
+lapon: a kontextusablaka minden szegmensét és részét — rendszerprompt, készségek,
+kontextusfájlok, eszközsémák, előzmények és képek —, azzal együtt, hogy mennyibe
+kerül mindegyik, és a mögötte lévő szó szerinti tartalommal.
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+A lap a (tér, ügynök) párra van kulcsolva, így a kétszeri futtatás egy lapot
+helyez újra fókuszba, nem pedig ugyanannak a bontásnak a másolatait halmozza.
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+Egy **több ügynökkel rendelkező** térben az önmagában álló `/context` azt az
+ablakot nyitja meg, amelyet a fejléc kontextusmérője olvas — azt az ügynököt,
+amelyik legutóbb itt dolgozott, azaz amelyiknek az üzenete a nyomvonal alján van
+—, a lap pedig `Kontextus · <name>` címkét kap, így megmondja, kié. Nevezzen meg
+másikat a váltáshoz: `/context qa` (a `@` elhagyható). A beírt név pontosan
+oldódik fel, soha nem homályosan: két ügynök két különböző ablakot tart, így egy
+majdnem találat, amely a másikat nyitná meg, hihetően kinéző válasz lenne egy
+olyan kérdésre, amelyet nem tett fel.
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+Ugyanaz a böngésző áll a tér fejlécében lévő kontextusmérő chip mögött, amely
+ugyanazt az ügynököt követi — a parancs és a chip soha nem mondhat ellent
+egymásnak abban, hogy mit jelent itt „a kontextus”.
 
 ---
 
-## Asking about the conversation
+## Kérdezés a beszélgetésről
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+Ezek egy modellhívást költenek, és **soha nem változtatják meg a beszélgetést**. Az ügynök következő valódi köre pontosan azt látja, amit egyébként is látott volna — ez a kérdezés teljes értéke.
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**Oldalsó.** Átadási dokumentumot ír annak, aki hidegen veszi át a munkát: mi a feladat, mit tanultunk meg, mi maradt.
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**Oldalsó.** Megválaszol egy kérdést az eddigi munkáról anélkül, hogy a kérdést vagy a választ beírná az átiratba.
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[Két parancs, egy implementáció]
+Mindkettő ugyanaz az alakzat — veszi a beszélgetést úgy, ahogy van, tesz fel róla egy kérdést, és egyik oldalt sem tárolja el. Egyszer van megvalósítva, így nem sodródhatnak szét „az eddigi kontextus” két különböző fogalmává.
 :::
 
 ---
 
-## Navigating and exporting
+## Navigálás és exportálás
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/hu-HU/kezikonyv/gyakorlati-utmutatok/beszelgetes-elagaztatasa/).
+**Helyi.** Megnyitja az elágazások navigátorát: hol ágazott el a beszélgetés, melyik úton van éppen, és hogyan térhet vissza egy otthagyott útra. Lásd: [Beszélgetés elágaztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beszelgetes-elagaztatasa/).
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**Helyi.** A beszélgetést egy önálló HTML-fájlba írja — összecsukható eszközkártyák, stíluslap, szkript és képhoszt nélkül. Asztali gépen a `Documents/ControlCenter/exports/` könyvtárba kerül, weben pedig letöltésként érkezik.
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**Helyi.** Az átiratot markdownként a vágólapra másolja, az eszközhívásokkal összecsukható blokkokban. A gondolatmenet szándékosan kimarad: egy hibajelentésbe illesztett átiratot ember olvas.
 
 ---
 
-## Everything else
+## Minden más
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**Helyi.** Megtekinti és szerkeszti a beszélgetés tartósított tennivalólistáját. Az önmagában álló `/todo` megnyitja a szerkesztőt. Alparancsok: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**Kiosztás.** Alkalmaz egy telepített készséget. A készségek a saját `skill:` előtagjuk alatt élnek, így nem osztoznak névtéren a beépítettekkel — enélkül egy `plan` nevű készség véglegesen elérhetetlen lenne.
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Kiosztás.** Bármely markdown-fájl a repóban a `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` vagy `.opencode/commands` alatt. Egy beágyazott `foo/bar.md` `foo:bar` alakban is elérhető.
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+Sablonozás: `$1`, `$@`, `$@[start:length]` és `$ARGUMENTS`. A frontmatter beállíthatja a `description`-t (üzenetszerkesztői automatikus kiegészítés). Az `allowed-tools` és a `model` beolvasódik a fájlból, de egy felhasználói parancs meghívása jelenleg csak az argumentumokat helyettesíti be a törzsbe — nem változtatják meg a futtatás modelljét vagy eszközfelületét.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+A felhasználó által írt parancs nyer az azonos nevű készséggel szemben — ez egy gyorsparancs, amelyet egy ember szándékosan hívott meg, argumentumokkal.
 
 ---
 
-## Magic keywords
+## Mágikus kulcsszavak
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+Nem parancsok. Egy önmagában álló kisbetűs szó a prompt bármely helyén egy rejtett utasítást csatol az adott körhöz.
 
-| Word          | Effect                                                             |
+| Szó           | Hatás                                                             |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | Maximális érvelési erőfeszítés a körhöz                            |
+| `orchestrate` | Független munka párhuzamos delegálása, és minden fázis ellenőrzése  |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+Az illesztő szándékosan szigorú a határokat illetően. Az `orchestrate,` illeszkedik; az `orchestrated`, az `orchestrate.ts`, a `foo::orchestrate` és az `orchestrate()` nem, a kerített kódblokkok, a soron belüli szakaszok és az XML-szekciók pedig előbb ki vannak maszkolva. Enélkül egy beillesztett stack trace megváltoztatná az ügynök viselkedését.
 
 ---

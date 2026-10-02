@@ -1,216 +1,233 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: Đa người dùng — danh tính, tư cách thành viên và hiện diện
+description: Cách Control Center mô hình hóa con người và agent như những người tham gia bình đẳng, điều gì thực sự kiểm soát quyền truy cập vào một không gian làm việc, và vì sao nhận biết trực tiếp cùng các bản ghi chia sẻ lại đi trên hai làn khác nhau.
 slug: vi-VN/so-tay/khai-niem/da-nguoi-dung
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center vẫn dùng được cho một người vận hành duy nhất, nhưng mô hình bên
+dưới nó vốn đã là đa tác nhân ngay từ đầu. Con người và agent nhắn tin trong
+cùng những không gian, sửa cùng những phiếu và xuất hiện trên cùng một danh
+sách. Để điều đó vừa an toàn vừa dễ hiểu, tất cả quy về ba quyết định: **ai
+được tính là một tác nhân**, **điều gì kiểm soát quyền truy cập** và **trạng
+thái nào được chia sẻ bền vững so với chỉ được phát trực tiếp**.
 
-## Principals: users and agents are co-equal actors
+## Chủ thể: người dùng và agent là những tác nhân ngang hàng
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+Mọi thứ ghi lại "ai đã làm điều này" — tin nhắn, phiếu, đánh giá, kế hoạch,
+nhật ký chạy, mục kiểm toán — đều phân giải qua một **chủ thể**, một union kín
+của `UserPrincipal` và `AgentPrincipal` với dạng truyền gọn
+(`user:<id>` / `agent:<id>`). Việc quy kết không bao giờ gộp N con người (hay N
+agent) thành một tài khoản đại diện duy nhất, nên một đánh giá do agent để lại
+và một đánh giá do con người để lại luôn phân biệt được ở mọi nơi chúng xuất
+hiện.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+Vì chủ thể là đơn vị của danh tính, nó cũng là đơn vị của việc giới hạn:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **Giới hạn tốc độ tính theo chủ thể, không theo phiên.** Cơ chế chống dồn dập
+  cho các lời gọi công cụ từ xa đặt hạn mức theo người dùng, chứ không theo kết
+  nối: mọi thiết bị của một thành viên cùng rút từ một cửa sổ trượt chung (120
+  lời gọi mỗi phút, trong đó tối đa 30 lời gọi được phép thay đổi dữ liệu), nên
+  mở ba thiết bị không làm hạn mức của ai tăng gấp ba và một thành viên ồn ào
+  cũng không thể bỏ đói những người khác.
+- **Hoàn tác tính theo chủ thể.** Nhật ký hành động của mỗi máy khách chỉ ghi
+  những thay đổi do chính chủ thể *của nó* thực hiện. Bạn có thể ⌘Z bản sửa
+  phiếu của mình; bạn không thể hoàn tác thay đổi của đồng đội — khi bạn nhìn
+  thấy nó thì làn bền vững đã phân giải xong rồi (xem bên dưới).
 
-## Membership is the access boundary — not the pairing key
+## Tư cách thành viên là ranh giới truy cập — không phải khóa ghép nối
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+Hai thông tin xác thực riêng biệt trả lời hai câu hỏi riêng biệt. **Khóa ghép
+nối** (xem [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/))
+xác thực một _thiết bị_ với máy chủ. **Tư cách thành viên** cấp quyền cho người
+dùng của thiết bị đó hành động bên trong một _không gian làm việc_. Một thiết bị
+đã ghép nối mà người dùng của nó không có tư cách thành viên trong một không
+gian làm việc thì không thể đọc cũng không thể thay đổi không gian đó.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+Tư cách thành viên là một hàng cho mỗi cặp (không gian làm việc, người dùng),
+được lưu trong **tệp cơ sở dữ liệu của chính không gian làm việc đó** — nên "ai
+đang ở trong không gian làm việc này?" là một phép đọc có phạm vi thông thường,
+còn câu hỏi ngược lại, "tôi đang ở trong những không gian làm việc nào?", bắt
+buộc phải trải qua nhiều tệp và là một trong số ít truy vấn mở rộng xuyên không
+gian làm việc được phép. Đây cũng chính là thứ mà bộ chọn không gian làm việc
+chạy trước khi bất kỳ không gian làm việc nào được chọn.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+Mỗi hàng mang một vai trò từ một thang năm bậc có thứ tự:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| Vai trò  | Được phép                                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| `owner`  | Toàn quyền kiểm soát, kể cả xóa không gian làm việc; đúng một người cho mỗi không gian làm việc      |
+| `admin`  | Quản lý thành viên, lời mời, cài đặt, các thao tác phá hủy                                            |
+| `member` | Đọc-ghi hằng ngày: tin nhắn, phiếu, các lần chạy agent                                                |
+| `viewer` | Chỉ đọc trong toàn không gian làm việc; các glob loại trừ bí mật ẩn những đường dẫn khớp trên bề mặt chứa mã |
+| `guest`  | Cùng mức sàn chỉ đọc như người xem, ở bậc thấp nhất của thang                                          |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+Mọi quyết định truy cập đều quy về câu hỏi "vai trò của người gọi có ít nhất là
+X không". Mức sàn được suy ra từ loại thao tác, trừ khi thao tác đó khai báo
+tường minh: một phép đọc cần `guest`, một thay đổi cần `member`, một thao tác
+phá hủy cần `admin`. Các ACL theo từng đối tượng nằm ngoài phạm vi cấp quyền
+theo kho mã bên dưới được cố ý để ngoài phạm vi.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**Lời mời** là cách cấp tư cách thành viên, từ Cài đặt → Không gian làm việc →
+Thành viên. Một quản trị viên tạo ra mã dùng một lần (dưới dạng liên kết hoặc mã
+QR) mặc định hết hạn sau bảy ngày; máy chủ chỉ lưu hash SHA-256 của mã, còn bản
+thân mã chỉ được hiển thị đúng một lần. Đổi mã sẽ cấp phát người dùng theo kiểu
+JIT, ghi tư cách thành viên theo vai trò của lời mời (không bao giờ là `owner` —
+quyền sở hữu được chuyển giao tường minh, không bao giờ được cấp qua lời mời) và
+chuyển tiếp sang ghép nối thiết bị. Thông tin xác thực thiết bị được tạo sau khi
+ghép nối cũng có thời hạn 30 ngày, nên một lần ghép nối không phải là một khóa
+vĩnh viễn.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**Cấp quyền theo kho mã** nằm bên dưới tư cách thành viên. Vì máy chủ giữ toàn
+bộ bản checkout, chỉ riêng tư cách thành viên không gian làm việc không bao giờ
+được phép vượt quyền trên máy chủ mã: mọi bề mặt chứa mã — tệp, diff, đánh giá
+PR, tìm kiếm mã — đều kiểm tra cấp quyền của thành viên trên *chính kho mã đó*.
+Cấp quyền được ghi theo bộ (không gian làm việc, người dùng, kho mã) và xếp hạng
+`none` → `read` → `review` → `write`, trong đó `write` nghĩa là được điều khiển
+các lần chạy agent ghi vào kho mã. Không có hàng nào nghĩa là `none`; chủ sở hữu
+và quản trị viên mặc nhiên giữ `write` trên mọi kho mã đã liên kết và không có
+hàng nào cả.
 
-## Two lanes of collaboration state
+## Hai làn trạng thái cộng tác
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center tách trạng thái chia sẻ thành hai làn với những quy tắc bền vững
+trái ngược nhau, vì hai loại trạng thái này hỏng theo hai cách trái ngược.
 
-### The ephemeral presence lane
+### Làn hiện diện tạm thời
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+Hiện diện — ai đang trực tuyến, họ đang ở đâu, họ đang gõ gì, agent đang làm gì
+ngay lúc này — trở nên vô giá trị ngay khi cũ đi. Nếu nó được lưu lại, mỗi lần
+kết nối lại sẽ phải dung giải "cơ sở dữ liệu nói rằng Sam đang sửa phiếu này"
+với thực tế. Vì vậy hiện diện **không bao giờ được ghi vào cơ sở dữ liệu**. Nó
+nằm trong một **hub hiện diện** trong bộ nhớ trên máy chủ: máy khách công bố
+bằng `presence.update`, các máy ngang hàng đăng ký bằng `presence.watch`, và các
+mục tự động hết hạn sau ba nhịp tim bị lỡ (nhịp tim chạy mỗi 10 giây; hub quét
+dọn mỗi 5 giây). Không có gì phải dung giải — chỉ cần để nó tự hết hạn.
 
-Two properties keep the lane trustworthy:
+Hai tính chất giữ cho làn này đáng tin:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **Danh tính đến từ phiên, không bao giờ từ đối số của máy khách.** Máy chủ ánh
+  xạ thiết bị đã xác thực của kết nối sang một id người dùng; một máy khách chỉ
+  có thể cập nhật hiện diện của chính nó, nên không ai có thể mạo danh trạng thái
+  hay vị trí của người tham gia khác. Một cập nhật `offline` tường minh (ngắt kết
+  nối hoặc nút bật chế độ ẩn) sẽ xóa mục đó ngay lập tức.
+- **Danh sách được tập trung ở máy chủ.** Các máy ngang hàng không bao giờ trao
+  đổi hiện diện trực tiếp với nhau, nên mọi người tham gia đều thấy cùng một
+  danh sách bất kể cấu trúc kết nối. Agent không có máy khách, nên máy chủ *tổng
+  hợp* các mục của chúng từ trạng thái chạy trực tiếp — đang nghĩ, đang chạy, bị
+  chặn ở cổng phê duyệt, đã xong — với một lần chạy đại diện duy nhất quyết định
+  trạng thái và vị trí của agent, để những lần chạy đồng thời không làm danh sách
+  nhấp nháy.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+Việc phát tỏa được chia tầng theo từng loại máy khách: máy tính để bàn và web
+dùng tầng đầy đủ (tối đa một lần phát danh sách mỗi 100 ms), điện thoại dùng
+tầng tóm tắt (mỗi 500 ms), nên những cập nhật theo nhịp con trỏ không thể làm
+nóng chảy PWA.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+**Vị trí** của một người tham gia — họ đang ở đâu, chi tiết đến tận hiện vật —
+là một union kín: `Space`, `File` (kho mã + đường dẫn + số dòng tùy chọn), `Pr`,
+`Ticket`, `PlanNode`. Không phải vị trí nào cũng có nơi để nhảy tới: không có
+tuyến trình xem tệp, nên một vị trí `File` chỉ hiển thị dưới dạng nhãn chứ không
+phải đích đến. Làn này còn mang những **đánh dấu mềm** ("Sam đang sửa phiếu
+này", "một agent đang giữ cây làm việc này"): *tính hữu hình* của xung đột, chứ
+không phải khóa. Những loại vị trí không nhận biết được sẽ phân giải thành null,
+nên một máy khách cũ đơn giản là không hiển thị thứ nó không hiểu.
 
-### The durable shared lane
+### Làn chia sẻ bền vững
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+Những bản ghi phải tồn tại lâu dài — phiếu, tài liệu Ghi chú dùng chung của
+không gian, tin nhắn — đi theo con đường ngược lại: có thẩm quyền, có thứ tự và
+được lưu bền vững. Các chỉnh sửa đồng thời được phân giải theo **người ghi sau
+thắng theo thứ tự máy chủ nhận được**, không bao giờ theo đồng hồ máy khách.
+Việc phân giải được cố ý làm ở mức chi tiết: các chỉnh sửa phiếu là *theo từng
+cột*, nên hai người sửa những trường khác nhau của cùng một phiếu đều được ghi
+lại và không ai ghi đè người kia (các chuyển trạng thái quy trình vẫn dùng khóa
+lạc quan); còn tài liệu Ghi chú của không gian chỉ có một cột, nên toàn bộ tài
+liệu theo cơ chế người ghi sau thắng, với những đánh dấu mềm trên làn hiện diện
+giúp việc chỉnh sửa đồng thời trở nên hữu hình thay vì bị khóa. Nó cố ý không
+phải là CRDT — nghĩa vụ chứng minh thuộc về CRDT, còn cơ chế người ghi sau thắng
+theo thứ tự nhận được cùng những đánh dấu hữu hình đã bao quát các mẫu cộng tác
+thực tế.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"Người ghi sau" nghĩa là **thứ tự máy chủ nhận được**, không bao giờ là đồng hồ
+máy khách — một máy tính có đồng hồ lệch không thể thắng một chỉnh sửa mà nó đã
+thua. Phía sau làn bền vững là **luồng đồng bộ**: các trigger SQLite gắn mọi
+thay đổi vào một nhật ký thay đổi theo từng không gian làm việc *ngay bên trong
+giao dịch ghi*, cấp một số thứ tự đơn điệu theo không gian làm việc trong cùng
+giao dịch với chính thay đổi đó. Một dịch vụ máy chủ theo dõi nhật ký đó để tạo
+ra những khung delta có phiên bản, theo đúng thứ tự. Máy khách tiến hóa từ ảnh
+chụp toàn bộ sang delta; một khoảng trống trong chuỗi số thứ tự sẽ đưa kho đó trở
+về chế độ ảnh chụp toàn bộ thay vì áp dụng sai các khung.
 
-## Follow, steer, take over, hand back
+## Theo dõi, điều hướng, tiếp quản, giao lại
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+Làn hiện diện không chỉ là một danh sách — nó còn điều khiển các động từ cộng
+tác:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **Chế độ theo dõi.** Nhấp vào một người tham gia và máy khách của bạn sẽ bám
+  theo vị trí của họ, di chuyển khi họ di chuyển. Theo dõi là "cho đến khi bạn
+  hành động": ngay khi bạn tự mình di chuyển, chế độ theo dõi sẽ tách ra. Một
+  biểu ngữ có thể đóng sẽ thông báo khi một người tham gia khác đang trình bày
+  một không gian mà bạn có mặt.
+- **Điều hướng.** Một tin nhắn gửi cho agent đang chạy được xếp hàng chờ dưới
+  dạng điều hướng; agent đọc lại nó trước khi tiếp tục lượt kế tiếp, nên bạn có
+  thể thúc nhẹ một lần chạy đang diễn ra mà không cần dừng nó.
+- **Tiếp quản.** Việc nắm quyền kiểm soát một cuộc hội thoại sẽ tạm dừng mọi lần
+  chạy đang hoạt động tại ranh giới lượt sạch kế tiếp (một lần chạy Claude Code,
+  vốn không có ranh giới an toàn, sẽ bị dừng) phía sau một ảnh chụp nhanh git
+  theo từng lượt, nên việc tiếp quản có thể đảo ngược. Một dấu hiệu bền vững
+  chặn các lần điều phối mới vào không gian này và tồn tại qua cả lần khởi động
+  lại máy chủ — máy chủ không bao giờ tự động chạy tiếp vào giữa một chỉnh sửa dở
+  dang của con người. Chỉ một người chỉnh sửa trực tiếp cho mỗi cây làm việc là
+  một đánh dấu mềm: lần tiếp quản thứ hai sẽ hữu hình và bị từ chối, chứ không
+  được âm thầm gộp lại.
+- **Giao lại.** Việc trả lại quyền kiểm soát sẽ đăng một bản tóm tắt diff có cấu
+  trúc của cây làm việc lên không gian, xếp nó vào hàng chờ điều hướng cho các
+  lần chạy đang tạm dừng, tiếp tục các lần chạy đó và xóa dấu hiệu.
 
-## The autonomy dial
+## Núm tự chủ
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+Điều hướng và tiếp quản là những can thiệp sau khi sự việc đã xảy ra. **Núm tự
+chủ** là thiết lập thường trực: theo từng không gian, theo từng agent, được đặt
+từ phần đầu của không gian, nó quyết định điều gì xảy ra khi một agent chạm tới
+một hành động có cổng.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| Mức                | Giá trị truyền    | Tác động lên một lời gọi công cụ có cổng                                                                     |
+| ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| Chỉ đề xuất        | `proposeOnly`     | Bị từ chối thẳng, kèm một lý do mà agent được yêu cầu chuyển đạt lại — nó có thể mô tả hành động nhưng không thể thực hiện |
+| Hành động khi được duyệt | `actWithApproval` | Cổng phê duyệt đóng khi thiếu người duyệt: một xác nhận được đưa tới người vận hành đang kết nối, và không có người phê duyệt nghĩa là bị từ chối |
+| Hành động tự do    | `actFreely`       | Được phê duyệt trước, trừ khi có quy tắc rào chắn `deny` cứng áp dụng — quy tắc từ chối luôn thắng           |
+| (chưa đặt)         | `null`            | Giống như hành động khi được duyệt: giá trị mặc định của máy chủ                                             |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+Hai thứ nằm ngoài núm này theo cả hai hướng. Động từ đầu ra của một chế độ là cố
+định và không bao giờ bị từ chối, bất kể núm nói gì — chế độ orchestrate từng
+không thể phát ra sản phẩm bàn giao duy nhất của nó vì một preset đã từ chối lớp
+hiệu ứng mà động từ đó khai báo. Và một lệnh `deny` cứng từ rào chắn hành động
+thì `actFreely` không thể ghi đè.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
+:::note[Núm này chỉ kiểm soát harness tích hợp]
+Nó được vòng lặp harness tham vấn qua callback phê duyệt. Một agent chạy trên
+adapter Claude Code tự thực hiện các lời gọi công cụ bên trong tiến trình của
+chính nó, nơi Control Center không có gì để kiểm soát — xem
+[Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/).
 :::
 
-## Solo zero-regression
+## Người dùng đơn lẻ, không hồi quy
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+Tất cả những điều này chỉ là phần bổ sung. Quy trình làm việc của một người vận
+hành đơn lẻ không thay đổi: với một con người và không có agent nào, hub hiện
+diện không có gì để phát, nên làn này phát ảnh chụp ban đầu rồi nằm im với lưu
+lượng bằng không; bộ máy người-ghi-sau-thắng và đồng bộ vẫn là cùng một con
+đường ghi-đơn như trước giờ; và khóa ghép nối vẫn là thông tin xác thực thiết bị
+như nó vốn là. Tư cách thành viên vốn đã là ranh giới truy cập — với một con
+người, chỉ có một hàng chủ sở hữu duy nhất và không có phần giao diện danh sách
+nào.
 
-## Related concepts
+## Các khái niệm liên quan
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): the boundary membership enforces
-- [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/): the pairing key and device credential side of identity
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): the agent half of the principal union
-- [Agent dispatch lifecycle](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): the runs that steering and take-over pause and resume
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/): the effect-class policy the autonomy dial composes with
-- [Domain events](/vi-VN/so-tay/khai-niem/su-kien-mien/): the bus that live updates ride
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): ranh giới mà tư cách thành viên thực thi
+- [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/): khía cạnh khóa ghép nối và thông tin xác thực thiết bị của danh tính
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): nửa agent trong union chủ thể
+- [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): những lần chạy mà điều hướng và tiếp quản tạm dừng rồi tiếp tục
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): chính sách lớp hiệu ứng mà núm tự chủ kết hợp cùng
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): bus mà những cập nhật trực tiếp đi trên đó

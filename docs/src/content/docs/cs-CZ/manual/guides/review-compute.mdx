@@ -1,132 +1,139 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Výpočet kontroly (kohorty, osy a deterministické diffy)
+description: Co průchod výpočtu kontroly vyrobí na serveru — kohorty, diffy API kontraktu a vizuální diffy, brány po osách — a jak se to složí do záložky Kontrola.
 slug: cs-CZ/prirucka/navody/vypocet-kontroly
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Záložka **Kontrola** u PR je živý průběh pipeline kontroly, dokud běží,
+a potom artefakt, který zveřejnila, i s akcemi na něm. Jedna záložka ve dvou
+stavech, protože jde o totéž ve dvou časech. Není výchozí: PR nemá kontrolu,
+dokud o ni někdo nepožádá, a otevře ji **Zeptat se AI**.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
+V pozadí té záložky `cc_server` sestavuje kohorty souborů, pouští
+deterministické osy a podává je přes RPC operace `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+`setContractDecision`, `approveVisual`, `compute` a jejich dvojčata `watch*`).
+Uložené rozložení, které pořád nese jméno `pr.reviewStudio`, otevře tutéž
+záložku Kontrola.
 
-On the Review tab:
+Na záložce Kontrola:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Agent skládající průvodce zveřejní obyčejný artefakt konverzace nástrojem
+  `publish_artifact`, takže ho záložka vykreslí stejným prohlížečem artefaktů,
+  jaký otevře bublina chatu. Žádná kopie systému artefaktů ve tvaru kontroly
+  neexistuje.
+- Zjištění sedí v postranní liště vedle něj a verdikt na úzkém pruhu nad
+  artefaktem, ne v hlavičce nástěnky.
+- Když se head PR posune za kontrolu, objeví se pruh, že je zastaralá.
 
-See [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/) for the flow and
-[Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/) for acting on it.
+Průběh je v
+[Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/) a jednání podle
+výsledku v
+[Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/).
 
-## Cohorts
+## Kohorty
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Kohorty seskupí změněné soubory PR do košů odvozených z obsahu: soubory, které
+k sobě patří významem, seřazené podle dopadu, takže nejrizikovější skupina se
+čte první. Přepočítají se při každé změně head SHA a nahradí se vcelku. Klíč
+každé kohorty je stabilní napříč pushi, takže souhrn a postup kontroly přežijí
+rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Když repozitář nemá index kódu, kohorty spadnou na seskupení podle cest.
+Indexovat jde v **Nastavení → Pracovní prostor → Repozitáře**. Každý řádek
+repozitáře má akci **Indexovat kód**, která spustí pipeline `index_code`
+a průběh hlásí přímo na řádku.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
+Graf kódu parsuje jen jazyky, ke kterým se dodává gramatika (Dart, JS/TS, PHP,
 Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+MATLAB, Ada). Repozitář v jiném jazyce sémantické kohorty nevyrobí, ať ho
+indexuješ sebedřív.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Agent může ke kohortě zapsat souhrn v markdownu nástrojem `set_cohort_summary`
+a přiložit strukturovaný diagram průchodu nástrojem `add_review_diagram`:
+typovaný objekt sekvence, relace entit nebo stavového automatu, nikdy text
+mermaid. Každá hrana se ověří proti skutečnému grafu kódu. Hranu, kterou graf
+nepotvrdí, se označí jako neověřená a nenakreslí se jako fakt.
 
-## The API-contract axis
+## Osa API kontraktu
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Smluvní osa počítá diff jen z **explicitních** souborů specifikace. Shoduje se
+se šesti výchozími jmény — `openapi.yaml`, `openapi.yml`, `openapi.json`,
+`swagger.yaml`, `swagger.yml`, `swagger.json` — a s každým změněným souborem,
+jehož jméno obsahuje `openapi` nebo `swagger` a končí na `.yaml`, `.yml` nebo
+`.json`. Kontrakt odvozený z kódu handleru je mimo rozsah a schémata GraphQL
+se nediffují.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Každá změna se zařadí: přidaný, odebraný nebo upravený endpoint, parametr,
+schéma a odpověď. Nese závažnost **breaking** (odebraný endpoint nebo
+parametr, zpřísněný typ, nový povinný parametr), non-breaking (aditivní)
+nebo informační. Zamítnutá změna bránu kontraktu neprojde, stejně jako
+breaking změna ponechaná bez rozhodnutí. Schválená breaking změna jen varuje.
+Když breaking změna není, brána projde. Diff označený jako **odvozený
+(poradní)** bránu nikdy nedrží.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Schválení nebo zamítnutí změny je `review_studio.setContractDecision`.
 
-## The visual axis
+## Vizuální osa
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Když PR mění komponenty UI v repozitáři Flutter s aplikací Widgetbook, průchod
+výpočtu vykreslí změněné komponenty před změnou a po ní headless zlatým
+průchodem `flutter test` ve worktree daného PR na base a na head a potom
+porovná pixely.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Na hostiteli serveru musí být Flutter SDK]
+Server v čistém Dartu nedokáže vykreslit widgety Flutter uvnitř procesu,
+a proto spustí `flutter test` jako externí proces. SDK musí být nainstalované
+na stroji, kde běží `cc_server`, ne na klientovi. Bez něj osa ohlásí
+**unavailable** s důvodem „no Flutter SDK on host“. Úspěch, který si
+nevydobyla, nikdy neohlásí.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Snímky ve stavu **changed** nebo **removed** drží vizuální bránu, dokud je
+neschválíš. Stavy **unchanged**, **added** a **approved** ji uvolní.
+Nedostupnost má jeden ze čtyř důvodů: „no Flutter SDK on host“, „no Widgetbook
+app in repo“, „no golden-testable use-cases“ nebo „golden harness error“.
 
-Approving an intended change is `review_studio.approveVisual`.
+Schválení zamýšlené změny je `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Osy a verdikt
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Osa              | Pohání                             |
+| ---------------- | ---------------------------------- |
+| Správnost        | Recenzenti (tokeny)                |
+| Zabezpečení      | Recenzenti (tokeny)                |
+| Mezera v testech | Recenzenti (tokeny)                |
+| Vizuální         | Deterministicky (golden harness)   |
+| API kontrakt     | Deterministicky (diff specifikace) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Tři tokenové osy se zapíšou, když vedoucí agent zavolá `finalize_review`. Dvě
+deterministické osy zapíše průchod výpočtu.
 
-Each axis reports one of:
+Každá osa ohlásí jeden z těchto stavů:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Stav            | Význam                                              |
+| --------------- | --------------------------------------------------- |
+| **Pass**        | Proběhla a nenašla nic blokujícího                  |
+| **Warn**        | Proběhla, má neblokující výhrady                    |
+| **Fail**        | Proběhla a našla blokující problém                  |
+| **Partial**     | Proběhla, ale nedokončila se; výsledky jsou neúplné |
+| **Unavailable** | Nespustila se vůbec                                 |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Osu s bránou projde jen **pass** a **warn**. **Partial** a **unavailable** se
+od **fail** schválně liší a ani jeden bránu neprojde.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Osy se složí do **Ship**, **Hold** nebo **Block** a verdikt umějí jen
+_zpřísnit_. Nikdy se nezmírní. Osa s bránou ve stavu **fail** vynutí **Block**.
+Osa ve stavu **partial** nebo **unavailable** vynutí aspoň **Hold**. Blokující
+osa, která se nespustila, verdikt _podrží_: chybějící důkaz se v zelenou bránu
+nepromění.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Verdikt na záložce **Kontrola** je ten, který zapsal `finalize_review`.
 
-## Related guides
+## Související návody
 
-- [Use AI-powered review](/cs-CZ/prirucka/navody/ai-kontrola/)
-- [Dispatch reviewer agents](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
-- [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Search code with the code graph](/cs-CZ/prirucka/navody/hledani-kodu/)
+- [Používejte AI kontrolu](/cs-CZ/prirucka/navody/ai-kontrola/)
+- [Odešlete review agenty](/cs-CZ/prirucka/navody/odeslani-review-agentu/)
+- [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
+- [Hledejte kód v grafu kódu](/cs-CZ/prirucka/navody/hledani-kodu/)

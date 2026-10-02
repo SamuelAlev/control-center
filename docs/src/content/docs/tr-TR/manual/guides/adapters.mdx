@@ -1,172 +1,186 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Adaptörleri ve modelleri yönetme
+description: Model sağlayıcılarını bağlayın, bir ajanın üzerinde çalıştığı modeli seçin ve sunucu ana makinesinde hangi ajan runner CLI'lerinin bulunduğunu kontrol edin.
 slug: tr-TR/kilavuz/nasil-yapilir/adaptorler
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Bu kılavuz, model sağlayıcılarını nasıl bağlayacağınızı ve bir ajanın neyin
+üzerinde çalışacağını nasıl seçeceğinizi gösterir.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Buradaki her şey tek bir sayfada yaşar: **Ayarlar → Sunucu → Model
+sağlayıcıları**. Yan alt kenar çubuğundaki girdi "Model sağlayıcıları", sayfa
+başlığı ise "Adaptörler" olarak geçer.
 
-## What an adapter is
+## Adaptör nedir
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Adaptör, bir ajan turunu yürüten _runner_'dır. İki tanedir ve liste sabittir —
+üçüncüsünü ekleyemezsiniz.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Adaptör                   | CLI      | Aktarım                                                          |
+| ------------------------- | -------- | ---------------------------------------------------------------- |
+| Control Center (built-in) | yok      | Süreç içi ajan döngüsü, sağlayıcılarla HTTP üzerinden konuşur     |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`                          |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI ve geri kalanı, yerleşik adaptör üzerinde
+**sağlayıcı**dır, ayrı CLI'ler değildir. Ekleyebileceğiniz şey ise _başka_ bir
+sağlayıcıdır — OpenAI ya da Anthropic uyumlu herhangi bir uç nokta. Sıradaki
+bölüm de budur.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Algılama, makinenizi değil sunucuyu yoklar]
+**Algılanan runner'lar** kartı, `cc_server`'ın _sunucu ana makinesinin_
+`PATH`'inde ne bulduğunu listeler. İnce ya da web istemcide bu, baktığınız
+makineden farklı bir makinedir. CLI'yi `cc_server`'ı çalıştıran makineye kurun.
 :::
 
-## Connect a model provider
+## Model sağlayıcısı bağlama
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Yerleşik adaptörün çalışabilmesi için en az bir bağlı sağlayıcı gerekir.
+Katalogda on dört tane bulunur.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. **Ayarlar → Sunucu → Model sağlayıcıları** bölümüne gidin
+2. **Sağlayıcılar ve modeller** bölümüne kaydırın
+3. Sağlayıcınızı bulun ve bağlayın:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Sağlayıcı                                                                                                | Nasıl bağlanılır                                                                                                             |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Anthropic                                                                                                | API anahtarı. Claude Pro/Max aboneliği bir Anthropic API oturumu değildir — o plan için Claude Code adaptörünü kullanın      |
+| OpenAI, Codex, Cursor                                                                                    | Tarayıcıdan OAuth oturumu ya da bir API anahtarı. Codex, Codex Responses arka ucu üzerinden ChatGPT Plus/Pro'dur, bir CLI başlatması değildir |
+| Kimi Code                                                                                                | Yalnızca tarayıcıdan OAuth — bir cihaz kodu akışı. Sabit ücretli bir plandır, dolayısıyla token başına fiyatı yoktur          |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API anahtarı                                                                                                                 |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Kontrol noktası: satırın rozeti bağlı durumuna geçer ve satırı genişlettiğinizde
+o sağlayıcının sunduğu modeller listelenir; her biri milyon token başına fiyatı
+ve bağlam penceresiyle birlikte.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth token'ları sunucunun kendi kimlik bilgisi deposuna düşer ve süreleri
+dolmadan önce yenilenir. Sağlayıcı kimlik bilgileri **ana makine genelindedir** —
+tek bir çalışma alanına kapsanmak yerine kurulumdaki her çalışma alanı tarafından
+paylaşılır.
 
-### Add a custom provider
+### Özel sağlayıcı ekleme
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Bunu Ollama, LM Studio, vLLM veya özel bir dağıtım için kullanın.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. **Sağlayıcılar ve modeller** içinde, **Özel sağlayıcılar** altında
+   **Sağlayıcı ekle**'ye basın
+2. Bir **Ad** girin, **API türünü** seçin (OpenAI uyumlu ya da Anthropic uyumlu)
+   ve **Temel URL**'yi verin (örneğin `http://localhost:11434/v1`)
+3. Uç nokta gerektiriyorsa bir **API anahtarı** ekleyin, ardından
+   **Sağlayıcı ekle**'ye basın
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Özel bir sağlayıcı aynı listede görünür ve yerleşik kardeşlerinde olmayan bir
+silme düğmesine sahiptir.
 
-## Pick a model for an agent
+## Bir ajan için model seçme
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. **Ayarlar → Çalışma alanı → Ajanlar** bölümüne gidin ve ajanı seçin
+2. **Ayarlar** sekmesinde **adaptörü** seçin
+3. Yanındaki açılır listeden **modeli** seçin
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Yerleşik adaptör için açılır liste, bağlı her sağlayıcının kendi kataloğundan
+canlı olarak derlenir. Kayıtlı kimlik bilgisi olmayan bir sağlayıcı sıfır model
+katkısı yapar; bu yüzden boş bir açılır liste neredeyse her zaman "henüz hiçbir
+şey bağlı değil" anlamına gelir, "kullanılabilir bir şey yok" değil.
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev bir zenginleştirmedir, asla bir kimlik kaynağı değildir]
+Paketle gelen [models.dev](https://models.dev) kataloğu, canlı listede zaten
+bulunan bir model için fiyat ve bağlam penceresi sağlar. Asla bir model kimliği
+eklemez. Beklediğiniz bir model eksikse, sağlayıcının uç noktası onu
+döndürmüyordur.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Yerleşik adaptördeki model kimlikleri `provider/model` biçiminde nitelenir ve
+`|` ile ayrılmış bir yedek zinciri taşıyabilir. Bir yedeğe düşüldüğünde maliyet,
+istediğiniz model üzerinden değil turu gerçekte sunan model üzerinden
+fiyatlandırılır.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Adaptörü olmayan bir ajan yerleşik döngüde çalışır]
+Her çalışma alanı, bir CEO ile `qa`, `architect`, `engineer` ve `librarian`'dan
+oluşan beş ajanı adaptörsüz ve modelsiz olarak başlatır. Gönderim, bu sayfadaki
+ve gönderim yolunun hiçbir zaman okumadığı bir istemci tercihi olan **Varsayılan
+runner'lar** ayarına değil, **Control Center (built-in)** seçeneğine geri düşer.
+Çalıştırma günlüğü bu çalıştırmalar için `cc-harness` kaydeder; böylece
+transkript gerçekte neyin çalıştığını adlandırır.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Model de yoksa, yerleşik döngü Anthropic'ten varsayılan modelini ister. Tamamen
+ayarsız bırakılan bir ajan, bu nedenle bir Anthropic hesabı bağladıysanız
+çalışır; aksi halde `No credential for provider "anthropic"` hatasıyla başarısız
+olur.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+İlk kurulumun adaptör adımını tamamlamak, kendisinde hâlâ adaptör ya da model
+eksik olan **her** ajanı — o anda var olan her çalışma alanındaki CEO ve uzmanlar
+dahil — seçtiğiniz ikiliyle geriye dönük olarak yamalar. Daha sonra oluşturulan
+çalışma alanları yine de beş ajanı da ayarsız olarak başlatır. Kullanmayı
+düşündüğünüz her ajan için adaptörü ve modeli açıkça ayarlayın.
 :::
 
-## Install a runner CLI
+## Bir runner CLI'si kurma
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Yerleşik adaptör kurulum gerektirmez. Claude Code için, CLI'sini o aracın kendi
+paket yöneticisiyle **sunucu ana makinesine** kurun, örneğin:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Ardından sayfanın üst kısmındaki **Yenile**'ye basın. Algılanan her satır,
+çözümlenen sürümü ve yolu, ayrıca JSON modunu ve model seçimini destekleyip
+desteklemediğine dair çipleri gösterir.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Harici bir CLI, kimlik bilgilerini kendi yapılandırmasında, sunucu ana
+makinesinde tutar. Control Center bunları yönetmez.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Adaptör argümanları ve ortam değişkenleri bu cihazda kalır]
+Her adaptör satırı bir **Ek argümanlar** alanı ve bir **Ortam değişkenleri**
+iletişim kutusu sunar. Bu değerler cihazınızda saklanır. Sunucu, başlatma
+argv'sini ve env'sini kendi ayar deposundan okur. Sağlayıcı anahtarlarını bu iki
+alana değil, sunucuya (OAuth ya da Model sağlayıcıları sayfasındaki anahtar
+alanı) koyun.
 :::
 
-## Restrict which providers a workspace may use
+## Bir çalışma alanının hangi sağlayıcıları kullanabileceğini kısıtlama
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Sağlayıcı yönetişimi çalışma alanı başına geçerlidir ve son eşleşen kazanır
+kuralıyla değerlendirilir.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. **Sağlayıcılar ve modeller** içinde, bir sağlayıcı satırındaki **İzin ver**
+   anahtarını kapatın
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Bu, etkin çalışma alanında o sağlayıcı için bir `deny` ifadesi yazar ve modelleri
+o çalışma alanının kataloğundan düşer. Anahtarı yeniden açmak ifadeyi kaldırır.
 
-## Troubleshooting
+## Sorun giderme
 
-### A runner shows as not found
+### Bir runner bulunamadı olarak görünüyor
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- CLI'nin yalnızca sizinkinde değil, **sunucu ana makinesinin** `PATH`'inde
+  olduğunu kontrol edin
+- Arayüzle başlatılan bir masaüstü uygulaması, sunucusunu asgari bir `PATH` ile
+  başlatır; yalnızca kabuk yolunda kurulu bir CLI onun için görünmez olabilir
+- Kurduktan sonra **Yenile**'ye basın
 
-### The model dropdown is empty
+### Model açılır listesi boş
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Adaptör yerleşik olandır ve hiçbir sağlayıcı bağlı değildir — **Sağlayıcılar
+  ve modeller** içinden birini bağlayın
+- Ya da sağlayıcı bağlıdır ama bu çalışma alanının yönetişim anahtarı tarafından
+  reddedilmiştir
 
-### A model runs but the price shows as unknown
+### Bir model çalışıyor ama fiyatı bilinmiyor olarak görünüyor
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Canlı model listesi kimliği taşır; fiyat ve bağlam models.dev'den gelir. Yepyeni
+bir modelin ya da özel bir sağlayıcıdan gelen bir modelin henüz bir katalog
+girdisi yoktur.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Manage API keys](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
-- [Diagnose an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
-- [Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [API anahtarlarını yönetme](/tr-TR/kilavuz/nasil-yapilir/api-anahtarlari/)
+- [Bir ajanı tanılamak](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
+- [Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)

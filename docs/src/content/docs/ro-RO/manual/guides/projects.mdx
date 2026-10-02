@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: Organizează munca cu proiecte
+description: Grupează tichete în proiecte din bara laterală, urmărește progresul și arhivează un proiect când este gata.
 slug: ro-RO/manual/ghiduri-practice/proiecte
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+Un proiect este o grupare de tichete limitată la spațiul de lucru, în jurul unui
+obiectiv comun. Proiectele există doar în Control Center — nu se
+sincronizează niciodată cu un furnizor extern precum Linear.
 
-## Create a project
+## Creează un proiect
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. Extinde grupul **Tichete** din bara laterală a spațiului de lucru. El
+   listează **Toate tichetele**, un rând pentru fiecare proiect nearhivat, apoi
+   **Proiect nou**.
+2. Dă clic pe **Proiect nou**.
+3. Completează **Nume proiect**, o **Descriere** opțională și alege o
+   **Culoare**.
+4. Apasă **Creează proiect**.
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+Ajungi în prezentarea generală a noului proiect, iar proiectul apare ca un rând
+în bara laterală, sub **Tichete**.
 
-## Add tickets to a project
+## Adaugă tichete într-un proiect
 
-Project is a single-ticket field, set in either of two places:
+Proiectul este un câmp al unui singur tichet, setat într-unul din două locuri:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- Deschide tichetul și setează **Proiect** în panoul său de proprietăți.
+- Dă clic dreapta pe tichet în listă și folosește submeniul **Proiect**.
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+Selectorul din panoul de proprietăți oferă și **Proiect nou**, așa că poți
+încadra un tichet într-un proiect pe care îl creezi pe loc. **Fără proiect**
+golește câmpul.
 
-A ticket belongs to at most one project.
+Un tichet aparține cel mult unui proiect.
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[Proiectul nu este o acțiune în bloc]
+Bara flotantă care apare când selectezi mai multe tichete acoperă starea,
+prioritatea, asignatul, etichetele și ștergerea. Nu are un cip pentru proiect,
+așa că încadrarea mai multor tichete se face pe rând.
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+Poți porni și din proiect: **Tichet nou** în prezentarea generală a proiectului
+creează un tichet și îl încadrează acolo.
 
-## Read project progress
+## Citește progresul unui proiect
 
-Open a project from its sidebar row, or go to
+Deschide un proiect din rândul lui din bara laterală sau mergi la
 `/workspaces/<workspace-id>/projects/<project-id>`.
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+Prezentarea generală afișează glifa și numele proiectului, o insignă de stare,
+descrierea și o bară de progres cu câte sunt gata din total. Dedesubt,
+tichetele proiectului sunt grupate după stare.
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+Nu agregă nimic altceva — nu există o defalcare pe asignat și nicio repartizare
+pe priorități. Pentru acestea, filtrează în schimb lista principală de tichete.
 
-## Change project status
+## Schimbă starea unui proiect
 
-Projects have three states:
+Proiectele au trei stări:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| Stare         | Semnificație               |
+| ------------- | -------------------------- |
+| **Activ**     | Munca este în curs         |
+| **Finalizat** | Toată munca este terminată |
+| **Arhivat**   | Referință istorică         |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+Folosește meniul **⋯** din antetul proiectului. El oferă **Editează proiectul**,
+**Marchează finalizat** / **Marchează activ**, **Arhivează** / **Restaurează**
+și **Șterge proiectul**.
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+Arhivarea ascunde proiectul din lista din bara laterală și din selectoarele de
+tichete. Este reversibilă — **Restaurează** readuce proiectul în stare activă —
+dar proiectul este accesibil doar prin URL cât timp este arhivat.
 
-## Projects created for you
+## Proiecte create pentru tine
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/).
+Aprobarea unei orchestrări creează un proiect și încadrează tichetul părinte
+sub el, alături de tot ce ai încadrat manual. Elementele de lucru generate sunt
+pași de pipeline, nu rânduri de tichet, așa că nu apar pe tabla proiectului.
+Aceasta este singura cale automatizată: niciun nod de pipeline nu creează
+tichete, așa că un pipeline nu poate popula un proiect. Vezi
+[Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/).
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[Proiectele sunt o suprafață pentru operator]
+Creează, listează, actualizează și șterge proiecte în aplicație. Agenții nu au
+instrumente pentru proiecte.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
-- [Delegate work to agents](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
-- [Run an orchestration](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Rulează o orchestrare](/ro-RO/manual/ghiduri-practice/ruleaza-orchestrare/)
 
-## Related concepts
+## Concepte conexe
 
-- [Tickets](/ro-RO/manual/concepte/tichete/)
+- [Tichete](/ro-RO/manual/concepte/tichete/)

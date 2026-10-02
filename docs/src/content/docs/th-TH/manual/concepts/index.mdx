@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: แนวคิด
+description: Control Center ทำงานอย่างไรและเหตุใดจึงถูกสร้างขึ้นแบบนี้ — เนื้อหาพื้นหลังที่อยู่เบื้องหลังคู่มือวิธีทำ
 slug: th-TH/คู่มือ/แนวคิด
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/th-TH/คู่มือ/วิธีทำ/); when you want to look
-something up, go to the [reference](/th-TH/คู่มือ/อ้างอิง/).
+หน้าเหล่านี้อธิบาย **ว่า Control Center ทำงานอย่างไรและทำไมจึงเป็นเช่นนั้น** หน้าเหล่านี้
+มีไว้เพื่อทำความเข้าใจ ไม่ใช่เพื่อลงมือทำ เพราะไม่มีหน้าใดเลยที่เป็นขั้นตอนให้ปฏิบัติตาม
+เมื่อคุณต้องการทำงานใดงานหนึ่งให้สำเร็จ ให้ไปที่[คู่มือวิธีทำ](/th-TH/คู่มือ/วิธีทำ/)
+และเมื่อต้องการค้นดูข้อมูลอ้างอิง ให้ไปที่[อ้างอิง](/th-TH/คู่มือ/อ้างอิง/)
 
-Read them in any order. If you are new, the core model is the place to start.
+อ่านตามลำดับใดก็ได้ หากคุณเพิ่งเริ่มต้น โมเดลหลักคือจุดที่ควรเริ่ม
 
-## Core model
+## โมเดลหลัก
 
-The four ideas everything else is built on.
+สี่แนวคิดที่ทุกอย่างอื่นสร้างขึ้นบนนั้น
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/) — what happens between your message and the agent's first token
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — the code graph, language server, structural search and debugger
-- [Conversation history](/th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา/) — persistence, compaction and forking a transcript
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) — ขอบเขตของผู้เช่า และเหตุใดจึงบังคับใช้ผ่านโครงสร้างฐานข้อมูลแทนที่จะอาศัยวินัยในการเขียนคิวรี
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/) — เอเจนต์ประกอบขึ้นจากอะไร: ตัวตน บทบาท สกิล ความสามารถ อะแดปเตอร์ และโมเดล
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/) — เกิดอะไรขึ้นระหว่างข้อความของคุณกับโทเค็นแรกของเอเจนต์
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/) — `chat`, `plan`, `review` และ `orchestrate` เปลี่ยนสิ่งที่เอเจนต์ทำได้อย่างไร
+- [บริบทเครื่องมือและการแคชพรอมต์](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ/) — เหตุใดเอเจนต์จึงเห็นเครื่องมือเพียงบางส่วน เข้าถึงเครื่องมือที่เหลือได้อย่างไร และอะไรทำให้แคชของผู้ให้บริการอุ่นอยู่
+- [ความฉลาดของโค้ด](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — กราฟโค้ด เซิร์ฟเวอร์ภาษา การค้นหาเชิงโครงสร้าง และดีบักเกอร์
+- [ประวัติการสนทนา](/th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา/) — การเก็บถาวร การบีบอัด และการแยกสายของบันทึกการสนทนา
 
-## Safety and control
+## ความปลอดภัยและการควบคุม
 
-What an agent is allowed to touch and who decides.
+สิ่งที่เอเจนต์ได้รับอนุญาตให้แตะต้อง และใครเป็นผู้ตัดสิน
 
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) — what actually constrains an agent run today
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/th-TH/คู่มือ/แนวคิด/การอนุญาต/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/th-TH/คู่มือ/แนวคิด/ริก/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) — สิ่งที่จำกัดการรันของเอเจนต์จริง ๆ ในปัจจุบัน
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/) — เอนจินนโยบายเดียวสำหรับทุกการกระทำที่เปลี่ยนแปลงข้อมูล และวิธีตัดสินกฎหนึ่งข้อ
+- [การอนุญาต](/th-TH/คู่มือ/แนวคิด/การอนุญาต/) — บทบาท แคตตาล็อกสิทธิ์ และร่องรอยการตรวจสอบ
+- [ริกและเอนโคลเจอร์](/th-TH/คู่มือ/แนวคิด/ริก/) — เหตุใดเอเจนต์จึงได้ VM แบบใช้แล้วทิ้งแทนเครื่องของคุณ และขอบเขตที่แท้จริงคืออะไร
 
-## Directing the work
+## กำกับงาน
 
-Turning intent into work that gets done.
+การเปลี่ยนเจตนาให้เป็นงานที่ลงมือทำจนสำเร็จ
 
-- [Tickets and delegation](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) — one goal, one approval, a generated pipeline
-- [AI review](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/th-TH/คู่มือ/แนวคิด/การสนทนาบน-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/th-TH/คู่มือ/แนวคิด/การประเมินและคุณภาพ/) — eval suites and the Quality tab
+- [ตั๋วงานและการมอบหมาย](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/) — หน่วยของงานที่ไม่ผูกกับผู้ขายรายใด ซึ่งทั้งฟลีตใช้ร่วมกัน
+- [ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) — เวิร์กโฟลว์แบบ DAG ตัวกระตุ้น และการรันที่กลับมาทำต่อได้
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) — เป้าหมายเดียว การอนุมัติครั้งเดียว ไปป์ไลน์ที่สร้างขึ้น
+- [รีวิวด้วย AI](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/) — PR กลายเป็น PR ที่ผ่านการรีวิวได้อย่างไร: สเปซรีวิว ความเห็นพ้องของเพื่อนร่วมงาน แกน และคำตัดสิน Ship/Hold/Block
+- [การสนทนาบน PR](/th-TH/คู่มือ/แนวคิด/การสนทนาบน-pr/) — การตอบกลับเมื่อมีคนกล่าวถึงบน GitHub หรือป้าย `ai-review` จาก forge เอง
+- [หน่วยความจำและความรู้](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/) — ข้อเท็จจริง นโยบาย และสิ่งที่เอเจนต์ได้รับอนุญาตให้รู้
+- [การประเมินและคุณภาพ](/th-TH/คู่มือ/แนวคิด/การประเมินและคุณภาพ/) — ชุดการประเมินและแท็บคุณภาพ
 
-## People and reach
+## คนและการเข้าถึง
 
-Working with other humans and reaching the fleet from elsewhere.
+การทำงานร่วมกับมนุษย์คนอื่น และการเข้าถึงฟลีตจากที่อื่น
 
-- [Multiplayer and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว/) — SAML and OIDC logins
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/th-TH/คู่มือ/แนวคิด/การประชุม/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/) — Google Calendar sync and meeting alerts
+- [การทำงานร่วมกันแบบหลายคนและสถานะออนไลน์](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/) — มนุษย์และเอเจนต์ในฐานะผู้เข้าร่วมที่เท่าเทียมกัน และอะไรที่ควบคุมการเข้าถึง
+- [การลงชื่อเข้าใช้ครั้งเดียว](/th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว/) — การเข้าสู่ระบบด้วย SAML และ OIDC
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) — เหตุใดสะพาน Slack จึงเชื่อมต่อออก และอะไรอนุญาตข้อความจากแชท
+- [ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/) — โทรศัพท์เข้าถึงเซิร์ฟเวอร์ของคุณได้อย่างไร และโมเดลความปลอดภัยที่ล้อมรอบอยู่
+- [การประชุมและการถอดเสียง](/th-TH/คู่มือ/แนวคิด/การประชุม/) — การบันทึก การถอดความ และการสรุปบนอุปกรณ์
+- [ปฏิทินและการจัดตาราง](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/) — การซิงก์ Google Calendar และการแจ้งเตือนการประชุม
 
-## Under the hood
+## เบื้องหลังระบบ
 
-The shape of the system itself.
+รูปร่างของระบบเอง
 
-- [Architecture](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/) — the in-process bus features talk over
+- [สถาปัตยกรรม](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/) — การแบ่งชั้น เคอร์เนลที่ใช้ร่วมกัน พอร์ตและอะแดปเตอร์
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) — ไคลเอนต์เดสก์ท็อป เว็บ และโทรศัพท์เกี่ยวข้องกับเซิร์ฟเวอร์เดียวอย่างไร
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/) — บัสภายในโปรเซสที่ฟีเจอร์ต่าง ๆ ใช้สื่อสารกัน

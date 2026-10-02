@@ -1,156 +1,167 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Terek használata
+description: Hozzon létre tereket, állítsa be a módjukat, kezelje a résztvevőket és az autonómiát, valamint nyisson beszélgetéseket és szálakat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/terek
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Ez az útmutató bemutatja, hogyan használhatja a tereket. A **tér** a Control
+Center üzenetküldő felülete: munkaterület-hatókörű szoba egy vagy több
+résztvevővel (Ön és/vagy ügynökök), amely minden olyan repóhoz, amelyre
+létrehozták, egy copy-on-write worktree-t birtokol.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Az egyéni és a sokügynökös szobák egyaránt egyszerűen terek, amelyeket csupán a
+résztvevőik száma különböztet meg. Az egyetlen kivétel az, amikor az ügynökök
+egymás közötti beszélgetéshez nyitnak teret — lásd lentebb az
+[Ügynök–ügynök terek](#ügynökügynök-terek) szakaszt.
 
-## Create a space
+## Tér létrehozása
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Nyissa meg az oldalsávban a **Terek** pontot
+2. Kattintson a Terek címsor melletti **+** gombra
+3. Adjon neki **nevet** — ez kötelező. Az üres nevet elutasítja a rendszer; a
+   párbeszédablak nyitva marad
+4. Ha szeretne, adjon hozzá ügynököket a munkaterületről
+5. Ha a munkaterületen van bármilyen repó, jelölje ki, hogy melyekhez
+   provisionáljon ez a tér worktree-ket. Alapértelmezés szerint mindegyik ki van
+   jelölve; ha minden repó kijelölését megszünteti, a tér semmit nem
+   checkoutolva jön létre
+6. Erősítse meg
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+A terek munkaterület-hatókörűek: csak az aktuális munkaterület ügynökeit látja,
+és egy tér soha nem jelenít meg adatot egy másik munkaterületről.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills).
+A térben minden repó a `repos/<name>/` alá van checkoutolva. Egy repó, amely
+saját ügynökkészségeket szállít, azokat ahhoz az ügynökhöz adja hozzá, amely
+éppen benne dolgozik — egyszerre csak egy repó készletét, és ahogy az ügynök
+továbbmegy, úgy cserélődik. A beviteli mezőből a `/skill:<repo>:<name>` hívással
+bármelyiküket elérheti. Lásd a
+[Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills)
+szakaszt.
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+A felület a `/workspaces/<id>/spaces`, egyetlen tér pedig a
+`/workspaces/<id>/spaces/<spaceId>` címen érhető el.
 
-## Set the space's mode
+## A tér módjának beállítása
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Egy új tér az alapértelmezett módban indul. Ezt a beviteli mező eszköztárának
+bal szélén lévő **módválasztóval** változtathatja meg — nem a létrehozási
+párbeszédablakból (amelyben nincs mód mező), és nem a tér fejlécéből.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Mód              | Hatás                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| **Ügynök**       | Teljes hozzáférés. Az alapértelmezett; belsőleg `chat`, a legördülő listában „Ügynök" felirattal        |
+| **Terv**         | Csak olvasás és kutatás; a leszállított eredmény egy típusos terv                                       |
+| **Orchestrálás** | Olvasás és kutatás, plusz egyetlen `propose_orchestration` ige; a terv csak az Ön jóváhagyása után fut le |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+A Shift+Tab a legördülő lista megnyitása nélkül vált a terv- és az ügynökmód
+között.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Létezik egy negyedik mód is, az **Átnézés**, de a legördülő lista nem kínálja
+fel — automatikusan a PR-átnézési terekre alkalmazódik.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+A mód a téren van tárolva, így ugyanaz az ügynök az egyik térben tervmódban, a
+másikban ügynökmódban lehet. Egy tér minden beszélgetése a tér módját használja.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Figyeljen a kikényszerítési jelvényre]
+Egy jelvény jelenik meg a módválasztó mellett, amikor a tér ügynökei olyan
+adapteren futnak, amely nem tudja kikényszeríteni a kiválasztott módot. Csak a
+beépített Control Center harness szűri az eszközfelületet, és kapuzza le az
+összes hívást; a Claude Code és az ACP adapterek kérésként kapják meg a módot,
+amelyet a futtatójuk betarthat, de nem köteles rá. A jelvény hiánya nem azt
+jelenti, hogy „igazoltan biztonságos", hanem hogy „nincs állítás".
 :::
 
-See [Modes](/hu-HU/kezikonyv/fogalmak/modok/) for the full model.
+A teljes modellért lásd a [Módok](/hu-HU/kezikonyv/fogalmak/modok/) oldalt.
 
-## Manage participants and per-agent autonomy
+## Résztvevők és ügynökönkénti autonómia kezelése
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Kattintson a tér fejlécében a személyek ikonra a **Résztvevők kezelése**
+megnyitásához. A térben már meglévő ügynökök mindegyikénél a következőket
+teheti:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Eltávolíthatja a térből
+- Beállíthatja az **Autonómia** értékét erre a térre: **Alapértelmezett**,
+  **Csak javaslat**, **Cselekvés jóváhagyással** vagy **Szabad cselekvés**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Az autonómiatárcsa a (tér, ügynök) párokhoz tartozik, így egy ügynököt, amelyben
+az egyik szobában megbízik, egy másikban javaslattételre lehet szorítani.
 
-## React to a message
+## Reakció egy üzenetre
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Vigye az egérmutatót egy üzenet fölé, és kattintson a mosoly ikonra a
+reakciópaletta megnyitásához. Ez hat rögzített elem készlete: 👍 👎 🎉 ❤️ 👀 ✅.
+Nincs szabad emojiválasztó — egy elem megérintésével Ön be- vagy kikapcsolja
+azt, és az összesített címkék az üzenet alatt jelennek meg.
 
-## Open a conversation
+## Beszélgetés megnyitása
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Egy tér egyszerre több beszélgetésnek ad otthont, amelyek egyenrangúak — nincs
+közöttük elsődleges. Egy tér mindig legalább egy élő beszélgetést megtart: az
+utolsó aktívat nem archiválhatja, és ha olyan teret nyit meg, amelyben még nincs
+egy sem, az létrehoz egy cím nélküli, állandó beszélgetést.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+A beszélgetések szerkesztőfülekként jelennek meg, és ha egynél több van, az
+oldalsávban a tér alatti beágyazott sorokként is. Az **Új beszélgetés** a
+szerkesztő új fül menüjében található, és címbekérő nélkül hoz létre egy cím
+nélküli beszélgetést — a címet adó modell az első üzenet alapján nevezi el.
+Használjon egyet párhuzamos munkához ugyanazzal az ügynökkel és worktree-vel.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Minden beszélgetés megtartja a saját üzenetelőzményét és ügynökmunkameneteit,
+miközben a tér worktree-it és a tér módját közösen használják. Egy fül bezárása
+elrejti azt; a **Beszélgetés archiválása** (az oldalsáv sorában vagy a csevegőfül
+helyi menüjében) csak azt az egy beszélgetést archiválja.
 
-## Start a thread
+## Szál indítása
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Vigye az egérmutatót bármelyik üzenet fölé, és válassza a **Szál indítása**
+lehetőséget. Ezzel egy, ahhoz az üzenethez horgonyzott beszélgetés nyílik meg: a
+horgony egyetlen sorral elindítja az új beszélgetés ügynökkontextusát, a szülő
+előzményeit pedig **nem** másolja át.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Miután egy szálban válaszok születtek, az üzenet, amelyhez kapcsolódik, egy sort
+növeszt alatta — azoknak az arcát, akik hozzászóltak, a válaszok számát és az
+utolsó válasz beérkezésének idejét. Ez a sor a visszavezető út: rákattintva
+megnyílik (vagy fókuszba kerül) a szál füle. Ez az egyetlen nyom, amelyet a szál
+abban a folyamban hagy, ahonnan leágazott, és épp ezért van egyáltalán ott.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+A szál füle a `Thread: <name>` címet viseli, és elágazás-jelet hordoz, így két
+fül ugyanazon a téren soha nem téveszthető össze egymással.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+A szálak soha nem ágyazódnak egymásba — ha olyan üzenethez horgonyoz, amely már
+egy szálban ül, azt elutasítja a rendszer. A beszélgetés fejléce visszamutat a
+horgonyüzenetre. A horgonyüzenet törlése törli a szálat, a szülőbeszélgetés
+archiválása pedig nem akadályozza a meglévő szálait.
 
-## Read state
+## Olvasottsági állapot
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Az olvasottsági jelölések a térre, nem a beszélgetésre értendők: a térben
+bármelyik beszélgetés megnyitása olvasottá teszi a szobát. Az olvasatlan
+továbbra is a tér összes beszélgetésén át összesítve jelenik meg, a szálakkal
+együtt. Amikor a beszélgetések a tér alatt vannak felsorolva, az olvasatlan pont
+azon a beszélgetésen ül, amelyben láthatatlan munka van, nem pedig a szülősoron.
 
-## Agent-to-agent spaces
+## Ügynök–ügynök terek
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Azokat a tereket, amelyeket az ügynökök egymás közötti beszélgetéshez nyitnak, az
+oldalsáv az **Ügynökök** alatt külön szakaszolja, alapértelmezés szerint
+összecsukva és halványan megjelenítve. Soha nem növelik az olvasatlan-jelvényét
+— az ügynökök csevegése eleve csendes, nem egy olyan beállítástól, amelyet meg
+kell keresnie.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Egy tér fajtája öt érték egyike lehet: `topic` (az alapértelmezett mindarra, amit
+Ön hoz létre), `agentPeer`, `system` (pipeline által kezelt), `pr` (akkor jön
+létre, amikor egy PR-felületnek worktree-horgonyra van szüksége, és az oldalsáv
+elrejti, amíg nincs üzenete) és `slack` (amelyet a csevegőhíd hoz létre egy
+Slack-szálhoz vagy bot-DM-hez, és hétköznapi emberi beszélgetésként kezel).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [@-mention agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/)
-- [Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Ügynökök @-említése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/)
+- [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/): how a Slack thread becomes a space
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/): hogyan lesz egy Slack-szálból tér

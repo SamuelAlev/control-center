@@ -1,164 +1,180 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Triage kotak masuk
+description: Kerjakan kotak masuk terpadu — bereskan apa yang memblokir Anda, tinjau apa yang menunggu Anda, dan pantau PR Anda sendiri.
 slug: id-ID/panduan-pengguna/panduan-praktis/triage-kotak-masuk
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Panduan ini menunjukkan cara mengerjakan kotak masuk: satu permukaan yang
+mengumpulkan semua hal yang memblokir Anda atau secara eksplisit meminta Anda —
+persetujuan agen yang tertunda, sinkronisasi tiket yang gagal, dan setiap pull
+request yang melibatkan Anda sebagai peninjau atau penulis.
 
-## Open the inbox
+## Buka kotak masuk
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Klik **Kotak masuk** di bilah sisi. Lencananya menghitung persetujuan agen
+   yang tertunda, sinkronisasi yang gagal, dan PR terbuka yang menunggu tinjauan
+   Anda.
+2. Atau tekan <kbd>⌘K</kbd> dan jalankan perintah navigasi **Kotak masuk**.
+3. Atau buka langsung melalui tautan dalam ke `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Entri di bilah sisi selalu menampilkan jumlah terkini, sehingga Anda dapat
+melihat pekerjaan triage menumpuk tanpa membuka halamannya.
 
-## Read severity at a glance
+## Baca tingkat keparahan sekilas
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Pindai dari atas ke bawah; kotak masuk sudah diurutkan berdasarkan tingkat
+urgensi:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. Strip **Perlu perhatian Anda** yang disematkan berada di atas bagian-bagian
+   PR. Setiap kartu membawa chip tingkat keparahan. Sumber terdaftar (agen yang
+   tersangkut pada permintaan konfirmasi, sinkronisasi tiket yang cerminan
+   vendornya basi) memancarkan **Terblokir**.
+2. Di dalam strip, tingkat keparahan yang paling mendesak tampil lebih dulu;
+   jika seri, item yang paling lama menunggu didahulukan.
+3. Di bawah strip, PR dikelompokkan ke dalam bagian siklus hidup tinjauan yang
+   tetap — **Perlu tinjauan Anda**, **Dikembalikan ke Anda**, **Disetujui**,
+   **Draf**, **Menunggu peninjau**, **Sedang digabung dan baru saja digabung**,
+   **Menunggu penulis**. Bagian teratas adalah yang membutuhkan _Anda_;
+   sisanya menunjukkan posisi PR _Anda_. **Perlu tinjauan Anda** mencakup PR
+   yang masih meminta tim tempat Anda bernaung di forge yang mendukungnya
+   (GitHub menghapus tim itu setelah salah satu rekan tim meninjau).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Sebuah item hanya masuk ke kotak masuk jika ia memblokir sesuatu atau secara
+eksplisit meminta Anda. Strip kosong plus daftar bagian yang kosong hanya
+menampilkan **Semua sudah tertangani** bila kekosongan itu dapat dipercaya.
 
-## One inbox across every forge
+## Satu kotak masuk di semua forge
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Jika ruang kerja memuat repo di lebih dari satu host kode, kotak masuk
+menggabungkannya menjadi satu aliran — pull request GitHub dan pull request
+Bitbucket berada di bagian yang sama, diurutkan berdasarkan waktu alih-alih
+dikelompokkan menurut vendor. Meta `repo #number` pada baris itulah yang
+membedakannya.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+"Milik Anda" diselesaikan **per forge**, karena Anda adalah akun yang berbeda di
+masing-masing forge. Sebuah pull request hanya dianggap milik Anda, atau
+meminta tinjauan Anda, jika cocok dengan identitas Anda pada forge tempat repo
+itu benar-benar berada.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Forge yang sedang down atau tidak terhubung tidak menyumbang apa pun dan
+membiarkan sisa kotak masuk tetap utuh — satu koneksi yang rusak tidak pernah
+mengosongkan seluruh daftar. Status kosong menyebutkan peringatan alih-alih
+**Semua sudah tertangani** ketika setiap login forge masih belum terselesaikan
+(**Tidak bisa mengonfirmasi akun GitHub Anda** — teksnya tetap menyebut GitHub),
+ketika githubstatus.com melaporkan insiden, atau ketika instalasi GitHub App
+yang mencakup repo tertaut ditangguhkan.
 
-## Clear the attention strip
+## Bersihkan strip perhatian
 
-Each strip card has one next action:
+Setiap kartu di strip memiliki satu tindakan lanjutan:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Jika sebuah kartu adalah konfirmasi agen yang tertunda, klik **Tinjau** —
+   Anda akan dibawa ke space agen tersebut dengan konfirmasi yang tertunda.
+   Setujui atau tolak di sana
+   (lihat [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)).
+2. Jika sebuah kartu menyatakan **Sinkronisasi gagal** untuk suatu vendor, klik
+   **Terbuka** — Anda akan dibawa ke **Pengaturan → Ruang kerja → Umum**, yang
+   kartu **Kesehatan sinkronisasi**-nya menampilkan sinkronisasi terakhir setiap
+   koneksi, rentetan kegagalan berturut-turut, dan hasil terbarunya. Hanya
+   kegagalan terbaru per vendor yang muncul di kotak masuk, sehingga
+   sinkronisasi yang pulih akan membersihkan kartunya.
+3. Kartu hilang dengan sendirinya begitu status yang mendasarinya terselesaikan
+   (agen sudah dijawab, sinkronisasi pulih) — tidak ada yang perlu ditutup
+   secara manual.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Ini konfirmasi per giliran, bukan persetujuan tata kelola]
+Kartu "persetujuan agen" adalah agen yang sedang berjalan yang berhenti sejenak
+untuk meminta izin atas satu tindakan, di percakapannya sendiri. Ini berbeda
+dari catatan `Approval` tata kelola yang dibuat agen dengan alat MCP persetujuan
+— catatan itu tidak punya layar manusia di mana pun dalam aplikasi dan tidak
+pernah muncul di sini.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Kesehatan sinkronisasi bersifat hanya-baca]
+Kartu ini melaporkan koneksi sinkronisasi tiket; selain tombol **Sinkronkan
+sekarang**, kartu ini tidak dapat membuat, mengedit, atau menyambungkan ulang
+sebuah koneksi, dan tidak ada layar lain yang bisa melakukannya juga. Tanpa
+koneksi yang dikonfigurasi, kartu ini hanya menampilkan "Belum ada koneksi
+sinkronisasi", seperti yang ditampilkan ruang kerja baru.
 :::
 
-## Filter to what is blocking
+## Saring hingga yang memblokir
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Tekan <kbd>f</kbd> (saat tidak ada kolom teks yang difokuskan) untuk membuka
+   menu filter, atau klik tombol filter di bilah alat.
+2. Pilih kombinasi apa pun dari status, penulis, reviewer, konten, pemilik/nama
+   repo, rentang tanggal, atau cepat ditinjau. Jumlah faset di menu menunjukkan
+   berapa banyak item kotak masuk yang cocok dengan setiap opsi.
+3. Filter aktif muncul sebagai chip di bilah di atas daftar; klik ✕ pada chip
+   untuk menghapus kriteria itu.
+4. Gunakan rel kiri untuk melompat antarbagian — setiap entri menampilkan
+   jumlah terkini dan sorotannya mengikuti posisi gulir Anda. Klik tajuk bagian
+   untuk menciutkan bagian yang tidak Anda triage (misalnya **Draf** saat
+   membereskan tinjauan).
+5. Klik tajuk kolom (judul, perubahan, atau diperbarui) untuk mengurutkan setiap
+   bagian; klik lagi kolom yang aktif untuk membalik arahnya. Tombol opsi
+   tampilan mengatur visibilitas draf, jendela baru saja digabung, properti
+   baris, pengurutan, dan pengelompokan (hanya pengelompokan menurut penulis
+   yang mengubah tata letak kotak masuk).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Filter di sini independen dari antrean PR — mempersempit kotak masuk tidak
+pernah mengubah filter antrean, dan sebaliknya.
 
-## Act on a PR item
+## Bertindak atas item PR
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/) and
-   [the dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/).
+1. Klik baris mana pun untuk membuka halaman detail PR.
+2. Jika PR berada di **Perlu tinjauan Anda**, tinjau PR itu dan kirimkan
+   keputusan Anda — lihat
+   [Meninjau dan menggabungkan PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/).
+3. Jika PR berada di **Dikembalikan ke Anda** (perubahan diminta atau CI gagal),
+   push perbaikan dari checkout Anda atau serahkan tindak lanjutnya kepada agen.
+4. Jika PR berada di **Disetujui**, gabungkan dari halaman detailnya.
+5. Jika Anda lebih memilih mendelegasikan tinjauan daripada melakukannya
+   sendiri, lihat
+   [Kirim agen peninjau](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/) dan
+   [siklus hidup pengiriman](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Setelah status yang mendasarinya berubah (tinjauan Anda masuk, PR digabungkan),
+pengklasifikasi memindahkan PR ke bagian barunya secara otomatis.
 
-## Undo a mistaken action
+## Urungkan tindakan yang keliru
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Tekan <kbd>⌘Z</kbd> untuk mengurungkan tindakan terakhir, <kbd>⌘⇧Z</kbd>
+   untuk mengulanginya.
+2. Jika kolom teks sedang difokuskan, ⌘Z mengedit teks kolom itu — klik di luar
+   kolom terlebih dahulu untuk mengurungkan tindakan tingkat aplikasi.
 
-## Look up shortcuts in place
+## Cari pintasan di tempat
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/id-ID/panduan-pengguna/referensi/pintasan-keyboard/).
+Tekan <kbd>?</kbd> (saat tidak ada kolom teks yang difokuskan) untuk membuka
+lembar contekan keyboard. Lembar itu mencantumkan setiap pengikatan yang aktif
+di rute saat ini, termasuk pintasan filter <kbd>f</kbd> milik kotak masuk. Peta
+lengkapnya ada di
+[referensi pintasan keyboard](/id-ID/panduan-pengguna/referensi/pintasan-keyboard/).
 
-## Drive it from the command palette
+## Kendalikan dari palet perintah
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Tekan <kbd>⌘K</kbd> di mana saja untuk membuka palet perintah.
+2. Ketik **Kotak masuk** untuk melompat ke halaman itu, atau ketik judul PR —
+   palet mencantumkan pull request yang cocok dan membuka yang Anda pilih.
+3. Saat kotak masuk terbuka, jalankan **Salin tautan halaman ini** untuk
+   menyalin URL tersebut untuk dibagikan. Perintah ini menyalin rute saat ini,
+   jadi URL-nya adalah URL kotak masuk hanya ketika Anda berada di halaman ini.
 
-## Refresh on demand
+## Segarkan sesuai permintaan
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Kotak masuk diperbarui secara langsung, tetapi jika Anda menduga datanya basi,
+klik kontrol segarkan di bilah alat — tindakan ini memaksa penyapuan sisi server
+secara langsung atas setiap forge yang terhubung dan mengambil ulang overlay
+yang digabungkan/ditinjau. Ikonnya berputar hingga setiap pengambilan selesai.
 
-## Related guides
+## Panduan terkait
 
-- [Review and merge a PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
-- [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
-- [Dispatch reviewers](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/)
+- [Meninjau dan menggabungkan PR](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/)
+- [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
+- [Kirim agen peninjau](/id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau/)
 
-## Related concepts
+## Konsep terkait
 
-- [Dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
+- [Siklus hidup pengiriman](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)

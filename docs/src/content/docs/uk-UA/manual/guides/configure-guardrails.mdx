@@ -1,152 +1,161 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Налаштувати обмеження
+description: Задайте правила дозволу, запиту та заборони для дій агента, перевіряйте їх зондом «що якщо» й налаштовуйте автономність для кожного простору.
 slug: uk-UA/керівництво/практичні-посібники/налаштувати-обмеження
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Цей посібник показує, як налаштувати обмеження: правила, що вирішують, чи дія
+агента виконається, чи спершу попросить затвердження, чи буде відхилена.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+Обмеження охоплюють тринадцять класів ефектів, які оголошує кожен інструмент,
+що змінює стан. Вони застосовуються на сервері в момент виклику інструмента, а
+не інструкцією в промпті.
 
-## Set a decision for an action class
+## Задати рішення для класу дій
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Перейдіть у **Налаштування → Робочий простір → Дозволи агента**
+2. Виберіть область сегментованим перемикачем: **Робочий простір**, **Агент**
+   (тоді виберіть агента) або **Простір** (тоді виберіть простір)
+3. У рядку класу дій виберіть **Дозволити**, **Спочатку запитати** або
+   **Заборонити**
+4. Щоб прибрати задане правило, натисніть кнопку скидання, що з’являється в
+   кінці цього рядка (**Скинути до успадкованого**) — рішення повернеться до
+   ширшої області
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Кожен рядок показує чинне рішення як статусну позначку та бейдж із зазначенням,
+звідки воно походить: **Ця область**, **Успадковано** або **Вбудований
+стандарт**. Матриця розв’язується в режимі Agent (`chat`), тож **Пресет
+режиму** тут ніколи не з’являється — скористайтеся зондом «що якщо» з вибраним
+режимом лише для читання, щоб побачити цей рівень.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Щоб записати правило, потрібна роль `admin`. Щоб читати матрицю — ні.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Контрольна точка: задайте **Надіслати на віддалений репозиторій** як
+**Заборонити** в області робочого простору, тоді запустіть наведений нижче
+зонд «що якщо» для `git push origin main`. Результат покаже `deny` з джерелом
+`workspace`.
 
-## Understand how a decision is resolved
+## Зрозуміти, як розв’язується рішення
 
-Resolution is **specificity first, then restrictiveness**:
+Розв’язання відбувається **спершу за конкретністю, потім за суворістю**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Спершу правила **простору**, потім **агента**, потім **робочого простору**.
+   Вирішує перша область із відповідним правилом, і на ній розв’язання
+   зупиняється
+2. Якщо жодне правило не збігається, застосовується **пресет режиму** — режим
+   лише для читання (plan, review, orchestrate) відхиляє одинадцять із
+   тринадцяти класів
+3. Якщо режим нічого не каже, застосовується **вбудований стандарт**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+У межах однієї області правило команди розв’язується за найдовшим відповідним
+префіксом, а однаково конкретний конфлікт розв’язується **найсуворіше** —
+заборона перемагає запит, а запит перемагає дозвіл. Дія, що оголошує кілька
+класів, розв’язує кожен із них незалежно, а тоді поєднує їх найсуворіше.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Дозвіл не перемагає заборону]
+Вужче правило перемагає за конкретністю, а нічию розв’язує суворість — тож
+**Дозволити** в області робочого простору ніде не перевизначає **Заборонити**.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Рішення **Спочатку запитати** показує один запит на затвердження, що охоплює
+кожен клас, який розв’язався як `prompt`. **Без під’єднаного затверджувача його
+відхиляють** — і для shell-команд, і для викликів інструментів harness. Це
+навмисно: запуск без шлюзу гірший за відхилений.
 
-### Action classes and built-in defaults
+### Класи дій і вбудовані стандарти
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Клас дій                                  | Вбудований стандарт |
+| ----------------------------------------- | ------------------- |
+| Видалити файл                             | Спочатку запитати   |
+| Запис поза робочим деревом                | Дозволити           |
+| Створити коміт                            | Дозволити           |
+| Надіслати на віддалений репозиторій       | Спочатку запитати   |
+| Відкрити pull request                     | Спочатку запитати   |
+| Опублікувати рецензію або злити           | Спочатку запитати   |
+| Запис у зовнішній трекер                  | Спочатку запитати   |
+| Доступ до мережі                          | Дозволити           |
+| Читати секрет                             | Дозволити           |
+| Установити пакет                          | Дозволити           |
+| Запустити процес                          | Дозволити           |
+| Змінити структуру робочого простору       | Дозволити           |
+| Керувати ізольованим середовищем (rig)    | Дозволити           |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+Таксономія закрита. Новий інструмент, що виходить без оголошення своїх класів,
+не проходить тест храповика в CI, тож ніщо не приходить із тихо порожнім
+набором ефектів.
 
-## Test a rule with the what-if probe
+## Перевірити правило зондом «що якщо»
 
-Before changing a rule, check how the current policy already resolves it.
+Перш ніж змінювати правило, перевірте, як поточна політика вже його розв’язує.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. На тій самій сторінці прокрутіть до **Що якщо?**
+2. Виберіть **Дію** (один із тринадцяти класів)
+3. За потреби заповніть **Команду** (наприклад, `git push origin main`),
+   **Агента**, **Простір** і **Режим**
+4. Прочитайте результат: рішення, причину та **Джерело:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+Зонд запускає той самий розв’язувач, який використовує шлях примусу, проти
+ваших поточних правил, тож відповідь точна. Якщо вона вас здивує, змініть
+правило в матриці вище й перевірте знову.
 
-## Set a space's autonomy dial
+## Налаштувати регулятор автономності простору
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+Регулятор діє для кожного агента в кожному просторі й поєднується з правилами,
+а не замінює їх.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Відкрийте простір
+2. Відкрийте **Керувати учасниками** із заголовка простору
+3. У розділі **Автономність** у рядку агента виберіть рівень:
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| Рівень                    | Ефект                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Типовий**               | Немає налаштування простору — поводиться як **Діяти з підтвердженням**                                     |
+| **Лише пропонувати**      | Кожен інструмент під шлюзом відхиляється напряму, з повідомленням, що каже агенту натомість запропонувати дію |
+| **Діяти з підтвердженням** | Ризиковані дії потрапляють на шлюз затвердження з відмовою за замовчуванням                                |
+| **Діяти вільно**          | Заздалегідь затверджує все, що не розв’язалося як тверда заборона                                           |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Діяти вільно ковтає кожен запит]
+За **Діяти вільно** рішення **Спочатку запитати** надається, не питаючи вас.
+Блокує лише `deny` — з правила, з пресету режиму чи з вбудованого стандарту.
+Вдавайтеся до цього, коли ви стежите за простором, а не як типовий режим.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+Регулятор сягає лише вбудованого harness. Адаптер Claude Code виконує власні
+інструменти поза цим шлюзом.
 
-## Know where guardrails do not reach
+## Знати, куди обмеження не сягають
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+Таблиця **Де застосовуються правила** внизу тієї самої сторінки — це версія
+цього в застосунку: для кожного класу ефектів вона каже, чи кожен раннер ловить
+його на шлюзі політики, чи лишає його пісочниці, чи взагалі не може його
+перехопити.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/).
+- **Адаптер Claude Code** не проходить через шлюз для власних викликів
+  інструментів. Claude Code запускається з `--dangerously-skip-permissions`,
+  тож його виклики читання, запису, редагування та bash ніколи не проходять
+  крізь охоронець. Під шлюзом для цього адаптера — поверхня інструментів MCP, у
+  яку він викликає назад, і shell-команда, яку Control Center породжує для
+  його запуску.
+- **Власне вихідне дієслово режиму** (`submit_plan`, `propose_orchestration`)
+  закріплене й ніколи не може бути заборонене — інакше режим структурно не міг
+  би створити свій єдиний результат.
+- **Чи пісочниця підстраховує ці правила, залежить від хоста.** Там, де
+  `cc_server` знаходить бекенд, він обгортає CLI Claude Code і інструмент
+  `bash` harness, тож під правилом, яке ви не писали, усе одно є базовий рівень
+  ОС. У **Windows його немає**, і на Linux чи WSL2 без `bwrap` і `socat` його
+  теж немає — там обмеження разом із поверхнею інструментів режиму становлять
+  весь примус, а не його другу лінію. Перевірте, який у вас випадок, у
+  [Налаштувати політики пісочниці](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/).
 
-## Related guides
+## Пов’язані посібники
 
-- [Configure sandbox policies](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/)
-- [Manage adapters and models](/uk-UA/керівництво/практичні-посібники/адаптери/)
+- [Налаштувати політики пісочниці](/uk-UA/керівництво/практичні-посібники/політики-пісочниці/)
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/)
+- [Керувати адаптерами та моделями](/uk-UA/керівництво/практичні-посібники/адаптери/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Guardrails — one policy for every mutating action](/uk-UA/керівництво/поняття/обмеження/)
-- [Modes](/uk-UA/керівництво/поняття/режими/)
-- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)
+- [Обмеження — одна політика для кожної дії, що змінює стан](/uk-UA/керівництво/поняття/обмеження/)
+- [Режими](/uk-UA/керівництво/поняття/режими/)
+- [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/)

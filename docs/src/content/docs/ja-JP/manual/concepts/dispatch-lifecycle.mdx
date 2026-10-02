@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: エージェントのディスパッチライフサイクル
+description: メッセージが届いてから実行ログが閉じるまでの間に何が起こるのか — プロンプトの組み立て、ワークツリー、アイデンティティ、実行を制限するもの、そしてその結果がどのように正直に記録されるか。
 slug: ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## ディスパッチとは
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+ディスパッチとは、1 つのエージェントが、1 つの会話で、1 つのアダプター上で行う 1 回の実行です。それに関するすべては `cc_server` 上で起こります。クライアントはメッセージを送り、その後、返ってくるイベントのストリームを眺めるだけです。どのクライアントにもディスパッチの経路はありません。
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+エージェントが起こされる理由は 6 つあり、実行はそれを**ウェイクコンテキスト**として運ぶため、エージェントは自分が_なぜ_起きているのかを把握できます:
 
-| Wake reason      | Trigger                                                      |
+| ウェイク理由      | トリガー                                                      |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | 誰かがスペースでメッセージを送った、またはエージェントにメンションした |
+| `assignment`     | チケットがエージェントに割り当てられた                           |
+| `pipelineStep`   | パイプラインステップがそれをディスパッチした                     |
+| `childCompleted` | 子チケットが完了した                                          |
+| `followUp`       | スケジュールされたフォローアップのハートビート                   |
+| `recovery`       | 復旧パスが失敗後に再ディスパッチした                            |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+ウェイクコンテキストは、理由に付随する ID — チケット、スペース、メッセージ、パイプライン実行 — を運び、それらはエージェントの環境とプロンプトに注入されます。
 
-## Prompt assembly
+## プロンプトの組み立て
 
-The prompt is built in layers, each one a labelled section:
+プロンプトはレイヤーごとに、それぞれラベル付きのセクションとして構築されます:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **アイデンティティ** — エージェント自身の ID、名前、ワークスペース ID と、それらの正確な UUID をワークスペーススコープのツールに渡すよう明示的に指示する文です。ワークスペースはエージェントに内在するため、常に存在します。
+- **ツールカタログとリソースプロトコル**、続いて**ワークスペースレイアウト**。
+- **システムプロンプトの上書き**（エージェントに設定がある場合）、続いて**ペルソナ**（ロールでパラメーター化されます）と**チームブリーフ**。
+- **スキル** — エージェントに付与された名前です。
+- 現在のモードの**実行コントラクトと手順**。
+- **ウェイクコンテキスト**と**メンションコンテキスト**: 誰がエージェントを呼び出したか、そしてその周囲のメンバー構成。
+- **モードブロック** — そのモードの機能プロファイル_と実体化されたツールリスト_から生成されるため、プロンプトが実行に実際には存在しないツールを名指しすることは決してありません。
+- **メモリコンテキスト** — タスクのために取得されたファクト。
+- **会話コンテキスト** — 最近のスペース履歴で、エージェントに設定されたコンテキストサイズにかかわらず、逐語のウィンドウは 50,000 文字に上限が設けられます。古い履歴は切り捨てられません。エージェントは `get_messages` でオンデマンドに取得し、意味的に関連する古いメッセージも依然として浮かび上がります。
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[スラッシュコマンドは生のユーザーテキストから解析されます]
+階層化されたプロンプトはコンテキストブロックで始まるため、スラッシュで始まることはありません。コマンドはユーザーのメッセージからそのまま解析され、その後、階層化されたプロンプトの末尾から切り出されるため、すべてのコンテキストレイヤーが維持されます。
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+コマンドは 2 か所に分かれています。`/todo` と `/compact` はコンポーザーで横取りされ、意図的にメッセージとして永続化されることも、エージェントに送られることもありません — `/compact` を永続化すると、コンパクションの区切りが 1 ターン分後ろにずれ、トランスクリプトが汚れるからです。`/plan` は両方で扱われます。コンポーザーがスペースのモードを切り替え、それによってツール面、ガードプリセット、プロンプトが、このターンとそれ以降のすべてのターンで一致します。`/goal`、`/loop`、`/skill:<name>` は実行の内部で、しかも内蔵ハーネス上でのみ扱われます — `/goal` と `/loop` はコスト予算を伴う自律作業を開始し、`skill:` を前置した名前はスキルとして検索され、その `SKILL.md` の本文がそのターンの指示になります。名前空間が 2 つの語彙を切り離しています。スキルに対して素の名前を解決する方式では、`plan` や `compact` という名前のスキルが組み込みコマンドに恒久的に隠されてしまっていました。組み込み以外の素の名前は、名前空間が存在する前に書かれたメッセージのために、今でも解決されます。認識されない名前は、そのままプレーンテキストとして素通りします。
 
-## Worktree provisioning
+## ワークツリーのプロビジョニング
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+何かが動き出す前に、会話は独自の作業ルートを手に入れ、その下にリポジトリごとの分離されたコピーオンライトのワークツリーが置かれます。既定ではそれが、ワークスペースにリンクされたすべてのリポジトリです。PR スペース — または明示的な選択で作成されたスペース — は、許可リストに載っているものだけをプロビジョニングし、PR レビューの会話は、その 1 つのリポジトリをプルリクエストの head ref に固定し、他はデフォルトブランチのままにします。ソースのチェックアウトが変更されることはなく、スペースが削除されると会話ディレクトリ全体が回収されます。
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+`rift` が同梱されているすべての場所では、同梱のネイティブに支えられたコピーオンライトが**唯一の**実装です。reflink できないファイルシステム — またはリポジトリとは別のボリュームにあるデータディレクトリ — は、フォールバックせずにプロビジョニングを失敗させます。`git worktree` は、コピーオンライトのバックエンドをビルドできない Windows でのバックエンドであり、他のホストで暗黙に格下げされるものではありません。`rift` を同梱するプラットフォームで `rift` が見つからないのは壊れたインストールです — 黙ってフォールバックするよりも、サーバーは起動を拒否します。黙ったフォールバックは、その壊れをより遅い経路の背後に永久に隠してしまうからです。
 
-## Identity and credentials
+## アイデンティティと資格情報
 
-Two identities are resolved per run, before any process launches.
+アイデンティティは、どのプロセスが起動されるよりも前に、実行ごとに 2 つ解決されます。
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git の著者情報。** エージェントが作成するコミットは、_エージェントとして_作成されます — `GIT_AUTHOR_*` と `GIT_COMMITTER_*` の両方で `<Name> (agent) <agentId@agents.control-center.local>` となり、人間になりすますことはありません。ローカル部はエージェントの UUID であり、その名前スラグではありません。依頼した人間は `Co-Authored-By:` トレーラーでクレジットされ、それは環境で運ばれ、システムプロンプトでも指示されます。呼び出し側が明示的に設定したアイデンティティは、常にその両方に優先します。
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**forge のアイデンティティ。** 実行の GitHub 資格情報は、常にブローカーのものだけです — リポジトリスコープの App インストールトークン、またはその環境 PAT フォールバック — 依頼したメンバー自身が保存したトークンになることはありません。`actingUserId` は PAT フォールバックを制限するため、サーバー所有者ではないメンバーがサーバーの到達範囲を継承することはありません。ただし、エージェントの環境に個人トークンを重ねることはしません。
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**モデルプロバイダーの資格情報**は決まった順序で解決され、その順序が重要です:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. アダプター単位の環境オーバーライド
+2. 呼び出し側の環境
+3. サーバーの資格情報ストア（OAuth トークンが失効間近であれば更新します）
+4. プロセス環境
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+アダプター単位のオーバーライドが最初に来るため、アプリで接続したプロバイダーアカウントを黙って打ち負かします。ある実行が誤ったアカウントに課金されている場合は、まずそのオーバーライドを確認してください。プロバイダーの資格情報はホスト全体にわたり、インストール上のすべてのワークスペースで共有されます。
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/).
+機能でゲートされたトークン（GitHub、チケット管理）は資格情報ブローカーから提供され、ブローカーはその実行の機能が許すものだけを注入します。[エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)を参照してください。
 
-## Launch
+## 起動
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+実行は、ワークツリーを作業ディレクトリとして起動され、Claude Code の場合は、エージェントが Control Center のツール面に到達できるよう生成された MCP 設定も渡されます。ACP とハーネスの `bash` にはサニタイズされた環境が渡されます。`NoSandboxAdapter` 経由の Claude Code はホストの環境を継承します。
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[OS サンドボックスが実行をラップするのは、ホストにバックエンドがある場合だけです]
+`cc_server` は起動時に一度ホストをプローブし、バックエンドが利用できる場合はエージェントのプロセスをそれでラップします — macOS では Seatbelt、Linux と WSL2 では bubblewrap です。2 つのディスパッチ継ぎ目は、1 つを共有していないため、どちらもラップされます。Claude Code CLI はサンドボックスポートを経由し、ACP アダプターと内蔵ハーネスの `bash` ツールはサンドボックスマネージャーを経由します。また、これが実行の保護パスを適用するものでもあります。登録済みのリポジトリのチェックアウトは、どのモードでもサンドボックス内では書き込みが拒否されます。
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+バックエンドがない場合、その実行はサンドボックス化**されず**、それを補うために他の何かが変わることもありません。つまり常に Windows（ネイティブのラップはありません — `microvm` はターミナルとリグ向けの、別個のプローブでゲートされたパスです）と、`PATH` 上に `bwrap` と `socat` がない Linux または WSL2 が該当します。サーバーは起動ログの行でどちらの状態かを示し、`--sandbox off` で意図的にオプトアウトできます。
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+サンドボックスが有効な場合でも、2 つの隙間が残ります。ハーネスのインプロセスのファイルツール（read, write, edit, apply patch, search, find, search_files）はサーバープロセス内で動作するため、どのプロファイルもそれらを制約しません — それらの限界は、ツール自身のパス閉じ込めとガードレールです。また、Claude Code は `--dangerously-skip-permissions` 付きで起動されるため、そのファイル呼び出しとシェル呼び出しは Control Center によってゲートされません。OS サンドボックスがそれらの周囲の境界です。
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+残りの制約は、サンドボックスの有無にかかわらず、どのホストでも成り立ちます。実行自身のワークツリー（`rift` が同梱される場所ではコピーオンライト、Windows では `git worktree`）、起動ごとにブローカー経由で発行され、終了時に取り消される機能でゲートされた資格情報、統一されたアクションガードレール（フェイルクローズド — 承認者がつながっていない `prompt` 判定は拒否されます）、そして会話のモードが許すツール面です。ACP とハーネスの `bash` は依然として環境をサニタイズし、`NoSandboxAdapter` 経由の Claude Code はホストの環境を継承します。
 :::
 
-## Streaming
+## ストリーミング
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+実行は型付きのイベント列を返し、ストリームプロセッサーがそれをメッセージ差分として永続化し、トランスクリプトセグメントに畳み込み、メッセージングイベントに変換します:
 
-| Event              | What it carries                                                                                                  |
+| イベント              | 内容                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | 推論の出力。インラインで描画されます                                                                                |
+| `text`             | 可視の出力                                                                                                   |
+| `toolCall`         | ツール呼び出し。その ID と構造化された引数を含みます                                                          |
+| `toolResult`       | 対応する結果。エラーになった場合や部分ストリームである場合にフラグが立ちます                                              |
+| `usage`            | 計測ウィンドウのトークン数とコスト                                                                   |
+| `error`            | エラー。アダプターが報告した場合はその構造化コードを含みます                                                |
+| `sandboxViolation` | OS がシステムコールを拒否しました。サンドボックスが実際にプロセスをラップしている場合にのみ発行されます — 上のノートを参照してください |
+| `debug`            | ランタイム診断（起動マーカー、ガードの判定、コントラクトの催促）                                           |
+| `done`             | 実行が終了しました                                                                                                 |
 
-## What bounds a run
+## 実行を制限するもの
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+意図的に、**どこにもターン上限は設けていません**。ハードなイテレーション回数は、正当な長期作業（マイグレーション、ファンアウトのクリーンアップ）を打ち切り、下記のガードがより早く捕まえるものを何も捕まえません。実行が終わるのは次の場合です:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **モデルが自ら停止した**とき。
+- **人間が停止した**とき、または会話を引き継いだとき（内蔵ハーネスは次のきれいなターン境界で一時停止します — 安全な境界を持たない Claude Code の実行は、代わりに停止されます）。
+- **無音ウォッチドッグが発火した**とき。しきい値のあいだ出力がなければ、セッションは `silentRun` 失敗で終了されます。既定値は 15 分で、読み取り中心のモード（レビューとプラン）では 10 分に下がります。エージェントは 1 分から 240 分のあいだでこれを上書きできます。ウォッチドッグは子プロセスが PID を報告した時点で武装されるため、Claude Code CLI を対象にします — 何も起動しない内蔵ハーネスは**対象外**です。
+- **コスト上限が作動した**とき — ただし自律コマンドに限られます。
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+ドゥームループガードは終了装置ではありません。同一のツール呼び出しが 3 回続くと、ループはエージェントを_軌道修正_してアプローチを変えさせます。
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[通常のターンにはコスト上限がありません]
+セッション内コストガードが配線されているのは `/goal` と `/loop` だけです。他のすべての実行は予算をまったく渡しません。これらのコマンドでは、1 つの無人セグメントが既定で 500 セント（$5.00）を消費する可能性があり、80% の時点でソフトな軌道修正が入って、ハードストップの前にエージェントにきれいに締めくくるよう促します。セグメントを通じた永続的なゴール予算は 5000 セント（$50.00）です。明示的な `/goal --budget` がセグメント 1 つ分まるごと超過されることはありません。
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+まとめると、内蔵ハーネス上の通常の対話的なターンには、ターン上限も、コスト上限も、無音ウォッチドッグもありません。モデルが停止するか、あなたが停止したときに終わります。これは意図的なトレードオフです — 代替案はどれも正当な長期作業を殺してしまうからです — ただし、それは無人で走る対話的な実行が、モデル自身の判断以外に何にも制限されないということを意味します。
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+実行の途中で、実行中のエージェントに送られたメッセージは**軌道修正**としてキューに入れられ、次のターン境界で排出されるため、実行を殺さずにそっと方向づけできます。軌道修正、一時停止、サブエージェント、完了コントラクトは内蔵ハーネスの機能です。Claude Code にはそのいずれもありません。
 
-## How a run is recorded
+## 実行がどのように記録されるか
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+すべてのディスパッチは `AgentRunLog` を書き込みます。開始時刻と終了時刻、サマリー、トークン数と推定コスト（サブエージェントから積み上げられたコストを含む）、アダプターとモデル、プロセス ID とログパス、その実行が属する会話とチケットやパイプライン実行、そして真実の大半を担う 2 つの分類フィールドです。
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **ステータス**は粗い粒度です: `pending`、`running`、`completed`、`error`。
+- **ライブネス**はより細かい読み取りです: `alive`、`productive`、`completed`、`blocked`、`empty`、`looping`、`failed`、`stalled`、`dead`。
+- **エラー分類**は失敗を役立つ形でまとめます: `transientUpstream`、`sandboxInfrastructure`、`budgetExceeded`、`processLost`、`silentRun`、`unknown`。
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` は「成果物を出した」という意味ではありません]
+実行が、そのモードに求められた成果物を出さずに終わったとき — プランモードの実行で `submit_plan` を一度も呼ばなかったもの、何も提案しなかったオーケストレーション実行 — ステータスは `completed` のままです。プロセスがきれいに終了したからです。正直なシグナルは、ライブネス（`empty`）、エラー分類（`silentRun`）、そして何が作られなかったかを正確に述べるサマリーに乗っています。そのサマリーは保護されています。ファイナライズがモデルの最後のおしゃべりでそれを上書きすることはありません。
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+これは意図的です。ステータスを反転させると、欠けている成果物とは何の関係もないチケットやパイプラインのステートマシンが動いてしまいます。また、「status: completed」だけでは実行が成功したと結論づけるには決して十分ではないということでもあります — サマリーを読んでください。
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+実行を閉じると `AgentRunCompleted` が発行され、多くのものがこれに連なります。通知フレームとその永続フィードエントリ、接続中のクライアントにそれをプッシュするライブフォワーダー、パイプラインのコスト集計、実行を待っていたパイプラインステップの再開、元になったチケットの完了、オーケストレーションの終端状態へのマッピング、ゴールスーパーバイザーの継続か停止かの判断、チェッカーのロール、実行後の予算評価です。プレゼンスの名簿は別途、イベントではなく最近の実行ログを監視することで更新されます。
 
-## Budgets, after the fact
+## 予算の事後適用
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+予算の強制は_リアクション_であり、ゲートではありません。実行が完了すると、評価器がエージェントの月初からの支出を実効的な上限（リンクされた予算ポリシーがあればそれ、なければエージェント自身の月額。ゼロは無制限を意味します）と比較します。ソフトしきい値を超えると警告インシデントが記録され、予算を使い切るとハードインシデントが記録され、組織図上でエージェントのライフサイクルステータスが `paused` に切り替わります。それでもディスパッチはそのエージェントからの作業を受け付けます。`BudgetThresholdCrossed` パイプライントリガーは、同じイベントからフォローアップ作業を開始できます。
 
-## Retry lineage
+## リトライの系譜
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+すべての実行ログはリトライの系譜を運ぶことができます — 親実行 ID、試行カウンター、継続サマリーです。会話の実行ツリーは、試行番号がゼロでないときにそれを表示します。チャットからの「再試行」は、新しい実行ログを伴う新しいディスパッチです。
 
-## Related concepts
+## 関連項目
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): what the adapter can and cannot enforce
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/): where the tool surface and the completion contract come from
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): the effect-class policy every gated call passes
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): the isolation story in full
-- [Multiplayer](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): steering, take-over and the autonomy dial
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/): what `AgentRunCompleted` sets off
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): アダプターが強制できることとできないこと
+- [モード](/ja-JP/マニュアル/コンセプト/モード/): ツール面と完了コントラクトがどこから来るか
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): ゲートされたすべての呼び出しが通る効果クラスのポリシー
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): 分離の話のすべて
+- [マルチプレイヤー](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): 軌道修正、引き継ぎ、自律度ダイヤル
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/): `AgentRunCompleted` が引き起こすもの

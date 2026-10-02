@@ -1,104 +1,106 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: SSO 구성 레퍼런스
+description: 싱글 사인온의 모든 설정 항목, 엔드포인트, 작업, 오류 코드.
 slug: ko-KR/매뉴얼/레퍼런스/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+싱글 사인온에 대해 구성할 수 있는 모든 것을 한곳에 모았습니다. 값은
+`global.db`의 `sso_connections` 행에 저장되고(설계상 서버 전체 범위),
+**설정 → 서버 → 싱글 사인온** 또는 `sso.*` RPC 작업으로 편집합니다.
+저장된 행이 유일한 진실 공급원입니다 — `CC_SAML_*` / `CC_OIDC_*` 환경
+변수 경로는 없습니다(두 곳에서 도착할 수 있는 연결은 설정 화면과
+불일치할 수 있는 연결입니다).
 
-## Connection fields
+## 연결 필드
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
+| 필드                   | 적용 대상  | 기본값          | 의미                                                                                                                                                 |
 | ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| `enabled`              | 둘 다      | 꺼짐            | 이 연결로 로그인할 수 있습니다                                                                                                                       |
+| `idpMetadataXml`       | SAML       | —               | IdP의 `EntityDescriptor` XML(활성화하려면 필수)                                                                                                       |
+| `spEntityId`           | SAML       | `<origin>/saml` | 우리 엔터티 ID로, 오리진이 달라질 때 고정됩니다                                                                                                       |
+| `emailAttribute`       | SAML       | `email`         | 이메일을 담는 특성이며, 이메일 형식의 NameID를 대체로 사용합니다                                                                                      |
+| `displayNameAttribute` | SAML       | `displayName`   | 표시 이름 특성                                                                                                                                        |
+| `groupsAttribute`      | SAML       | `groups`        | 그룹 이름 특성                                                                                                                                        |
+| `clockSkewSeconds`     | SAML       | 90              | 수명 검증 시 허용하는 오차                                                                                                                            |
+| `allowIdpInitiated`    | SAML       | 꺼짐            | 요청하지 않은 응답(`InResponseTo` 없음)을 수락합니다                                                                                                  |
+| `wantResponseSigned`   | SAML       | 꺼짐            | Response 루트 서명을 요구합니다(어설션 서명은 항상 필요합니다)                                                                                        |
+| `issuer`               | OIDC       | —               | 발급자 기본 URL(활성화하려면 필수)                                                                                                                    |
+| `clientId`             | OIDC       | —               | 공개 클라이언트 id(활성화하려면 필수)                                                                                                                 |
+| `clientSecret`         | OIDC       | —               | 기밀 클라이언트 전용이며, 0600 시크릿 파일에 저장되고 데이터베이스에는 절대 저장되지 않습니다 — RPC로는 쓰기 전용입니다(`sso.getConfig`는 `clientSecretPresent`를 보고합니다) |
+| `groupsClaim`          | OIDC       | `groups`        | 그룹 이름을 담는 클레임                                                                                                                               |
+| `defaultRole`          | 둘 다      | `member`        | 일치하는 그룹이 없을 때의 역할 — 절대 `owner`가 아닙니다                                                                                              |
+| `groupRoleMap`         | 둘 다      | `{}`            | 그룹 → 역할. 소유자 매핑은 저장 시 거부됩니다                                                                                                         |
+| `autoMember`           | 둘 다      | 켜짐            | 첫 로그인 시 모든 워크스페이스에 사용자를 자동 추가합니다                                                                                             |
+| `allowJit`             | 둘 다      | 켜짐            | 로그인 시 알 수 없는 사용자를 프로비저닝합니다                                                                                                        |
 
-## Process configuration
+## 프로세스 구성
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+SSO 연결은 환경에서 시드되지 않습니다. 남은 프로세스 플래그 하나는
+연결 행이 아니라 **브라우저 핸드오프**에 관한 것입니다:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| 변수 / 플래그                            | 의미                                                                                                                  |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | SSO 콜백이 브라우저를 되돌려 보내는 오리진입니다(자격 증명은 URL 프래그먼트에 실립니다). 설정하지 않으면 핸드오프는 같은 오리진으로 유지됩니다. |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+발급자 URL 자체는 `https`여야 합니다(루프백 발급자 `localhost`,
+`127.0.0.1`, `::1`에 한해 `http`도 허용됩니다).
 
-## HTTP endpoints
+## HTTP 엔드포인트
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| 엔드포인트                                       | 인증                | 용도                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | 없음(리디렉션)      | SP 시작 로그인을 시작합니다. `relay=desktop`은 앱으로 핸드오프하고, `relay=web-popup`은 대기 중인 연결 탭에 postMessage합니다(이 탭은 자신의 `client_origin`을 선언하며, 오리진 허용 목록이 신뢰할 때만 반영됩니다) |
+| `POST /saml/acs`                                 | 없음(IdP POST)      | 어설션 소비자입니다 — 검증하고, 프로비저닝하고, 발급합니다                                                                                                                                                      |
+| `GET /saml/metadata`                             | 없음                | 우리 SP `EntityDescriptor`                                                                                                                                                                                      |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | 없음                | OIDC 왕복입니다. `relay=desktop`은 앱으로, `relay=web-popup`은 대기 중인 연결 탭으로 핸드오프합니다(같은 `client_origin` 규칙)                                                                                  |
+| `GET /auth/providers`                            | 없음, CORS `*`      | 연결 화면 프로브입니다: 제공되는 SSO 연결(`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                               |
+| `/scim/v2/Users…`                                | Bearer(SCIM 토큰)   | Users 생성/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                     |
+| `/scim/v2/Groups`                                | Bearer              | 읽기 전용이며, 그룹 푸시는 설계상 501로 응답합니다                                                                                                                                                              |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | 기능 문서                                                                                                                                                                                                       |
 
-## RPC ops
+## RPC 작업
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+모든 `sso.*` 작업은 서버 범위이며 **서버 소유자**(설치의 운영자,
+`ServerAuthority.serverOwner`)로 제한됩니다. 워크스페이스를 소유하는
+것만으로는 충분하지 않으며, 페어링만으로는 결코 권한이 부여되지
+않습니다.
 
-| Op                        | Purpose                                                                                                                                                       |
+| 작업                      | 용도                                                                                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | 종류별로 저장된 연결                                                                                                                                          |
+| `sso.saveConfig`          | 검증하고, 저장하고, 실시간으로 적용합니다                                                                                                                     |
+| `sso.status`              | 활성화/구성됨 플래그, SCIM 토큰 존재 여부, 정규 오리진                                                                                                        |
+| `sso.testConnection`      | 브라우저 왕복 없이 연결을 테스트합니다(SAML: 메타데이터 파싱 + AuthnRequest 생성, OIDC: 발급자 디스커버리). 화면에만 있고 아직 저장하지 않은 값을 선택적으로 사용할 수 있습니다 |
+| `sso.spMetadata`          | 특정 오리진의 SP `EntityDescriptor`를 출력합니다                                                                                                              |
+| `sso.setPairingEnabled`   | 수동 페어링(초대 코드, 페어링 키)을 허용/금지합니다. 동작하는 SSO 연결이 없을 때 비활성화를 거부하여 잠금을 방지합니다                                        |
+| `sso.sessionPolicy`       | 설치의 기기 자격 증명 최대 수명과 유휴 타임아웃을 읽습니다(분 단위, `0` = 미설정)                                                                              |
+| `sso.setSessionPolicy`    | 해당 한도를 설정합니다. 기기 검사 시점에 적용되며 클라이언트에 알려지지 않습니다                                                                              |
+| `sso.scimRegenerateToken` | SCIM bearer 토큰을 생성해 반환합니다(한 번만)                                                                                                                 |
 
-## Validation error codes
+## 검증 오류 코드
 
-`cc_saml_verify_response` failures carry a stable code:
+`cc_saml_verify_response` 실패는 안정적인 코드를 함께 반환합니다:
 
-| Code                   | Meaning                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| 코드                   | 의미                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `signature`            | 서명 누락/신뢰할 수 없음/변조, 또는 허용되지 않는 알고리즘/변환                  |
+| `expired`              | `NotBefore`/`NotOnOrAfter` 범위 밖(오차 초과)                                   |
+| `audience`             | 대상 제한이 우리를 지칭하지 않음                                                |
+| `destination`          | 응답 목적지가 우리 ACS가 아님                                                   |
+| `request_match`        | `InResponseTo`가 대기 중인 요청과 일치하지 않거나, 허용되지 않은 상태에서 요청하지 않은 응답임 |
+| `issuer`               | 발급자가 구성된 IdP가 아님                                                      |
+| `recipient`            | 주체 확인 수신자가 우리 ACS가 아님                                              |
+| `malformed`            | XML/스키마 수준 실패                                                            |
+| `status`               | IdP가 보고한 상태가 Success가 아님                                              |
+| `invalid` / `internal` | 그 외 전부 / 경계 실패                                                          |
 
-## Database surfaces
+## 데이터베이스 표면
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — 종류별로 행이 하나, 설계상
+  워크스페이스 간 공유입니다.
+- `users.sso_subject` + `users.sso_issuer` — 제공자 주체 고정으로, 부분
+  인덱스를 통해 `(issuer, subject)`마다 고유합니다.
+- `users.deactivated_at` — SCIM 비활성화 스탬프.
+- SCIM bearer 토큰과 OIDC 클라이언트 시크릿은 0600 시크릿 파일에
+  저장되며, 데이터베이스에는 절대 저장되지 않습니다.

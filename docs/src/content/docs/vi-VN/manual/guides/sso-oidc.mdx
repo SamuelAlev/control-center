@@ -1,95 +1,95 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Kết nối nhà cung cấp OpenID Connect
+description: Kết nối bất kỳ issuer OIDC nào — Pocket ID, Keycloak, Auth0, Zitadel — với đăng nhập của Control Center.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Hãy dùng hướng dẫn này khi nhà cung cấp danh tính của bạn nói **OpenID
+Connect** thay vì SAML. Bất kỳ issuer đạt chứng nhận OIDC nào đều dùng được —
+Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace và nhiều nhà cung cấp
+tương tự khác đều theo cùng các bước; chỉ khác ở nơi nhà cung cấp của bạn hiển
+thị các giá trị đó.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- một nhà cung cấp OIDC nơi bạn có thể tạo client — hãy ghi lại **client ID**
+  và **URL issuer** của nó (địa chỉ gốc mà tài liệu
+  `.well-known/openid-configuration` nằm bên dưới), cùng **client secret** khi
+  client thuộc loại confidential (client PKCE công khai thì không có),
+- một máy chủ Control Center mà bạn quản trị (**chủ sở hữu máy chủ**).
 
-## Steps
+## Các bước
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Mở **Cài đặt → Máy chủ → Đăng nhập một lần** và chuyển sang
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Điền **URL issuer**, **Client ID** và **Client secret (tùy chọn)** khi nhà
+   cung cấp có cấp một secret. Control Center tự khám phá các endpoint từ tài
+   liệu discovery chuẩn của issuer — không cần cấu hình riêng cho từng nhà
+   cung cấp.
+3. Tại nhà cung cấp, đăng ký redirect
+   `https://<your-server>/oidc/callback` cho client đó.
+4. Nếu nhóm của bạn nằm dưới một claim khác `groups`, hãy đặt tên
+   **Claim nhóm**; ánh xạ nhóm sang vai trò nếu bạn muốn (SSO không bao giờ có
+   thể cấp vai trò chủ sở hữu).
+5. Chọn chính sách thành viên (tự động thêm vào mọi không gian làm việc, hoặc
+   yêu cầu lời mời cho từng không gian làm việc), bật **Dùng OpenID Connect để
+   đăng nhập** và nhấn **Lưu kết nối**.
+6. Nhấn **Kiểm tra kết nối** — máy chủ tải tài liệu discovery của issuer và xác
+   nhận các endpoint của nó, nên một thông báo nổi màu xanh nghĩa là mọi thứ,
+   trừ vòng khứ hồi qua trình duyệt, đều hoạt động. Để kiểm tra cả đăng ký
+   client, hãy dùng [công cụ kiểm tra bên dưới](#kiểm-tra-cấu-hình-của-bạn-ngay-trên-trang-này).
+7. Hãy đăng nhập thử: màn hình kết nối trên web hiển thị **Đăng nhập bằng
+   OpenID Connect**, hoặc mở trực tiếp `https://<your-server>/oidc/login`.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Các claim (email, tên, nhóm) được máy chủ của bạn đọc từ token endpoint của
+issuer qua TLS — trình duyệt không bao giờ cung cấp chúng, nên không có việc xác
+minh chữ ký JWT cục bộ nào. Client phải được phép yêu cầu scope
+`openid profile email`, đúng những gì Control Center yêu cầu.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Vì kênh TLS đó là thứ duy nhất xác thực các claim, URL issuer phải là **https** —
+một issuer dùng văn bản thuần sẽ cho phép bất kỳ kẻ tấn công trên đường truyền
+nào giả mạo danh tính hàng loạt. `http` chỉ được chấp nhận cho issuer loopback
+(`localhost`, `127.0.0.1`, `::1`) và chỉ dành cho phát triển cục bộ.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Client công khai hay client confidential?]
+Dạng mặc định — và được khuyến nghị — là **client công khai** dùng luồng
+authorization code với **PKCE** (RFC 7636): code verifier dùng một lần mà máy
+chủ giữ sẽ thay thế secret và việc trao đổi token được gắn với yêu cầu ủy quyền
+đã khởi tạo nó. Không có secret nào để rò rỉ và một authorization code bị đánh
+cắp là vô dụng nếu thiếu verifier. Một số nhà cung cấp gọi loại client này là
+"SPA" hoặc "native" khi bạn tạo nó.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Nếu nhà cung cấp của bạn cấp một client **confidential** thay vào đó, hãy hoặc
+đánh dấu client là công khai tại nhà cung cấp (kiểu nào cũng vẫn bật PKCE), hoặc
+dán client secret vào trường **Client secret (tùy chọn)** của kết nối. Secret
+được lưu trong tệp secrets 0600 của máy chủ (không bao giờ trong cơ sở dữ liệu),
+được gửi tới token endpoint dưới dạng `client_secret_post` và không bao giờ được
+trả về qua RPC; để trống trường này khi lưu sẽ giữ nguyên secret đã lưu. Khi một
+lần đăng nhập thất bại ở bước trao đổi token, log máy chủ ghi rõ lỗi của chính
+nhà cung cấp (`invalid_client` gần như luôn nghĩa là secret bị thiếu hoặc sai).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim).
+:::note[Khả năng truy cập]
+Bản thân việc đăng nhập diễn ra qua trình duyệt: issuer chỉ chuyển hướng trình
+duyệt của người dùng trở lại `/oidc/callback` và máy chủ của bạn thực hiện một
+lệnh gọi HTTPS ra ngoài tới token endpoint — không cần kết nối vào từ phía
+issuer, nên một máy chủ sau NAT vẫn hoạt động miễn là trình duyệt của người dùng
+truy cập được nó (LAN, VPN, Tailscale hoặc một tunnel). **Cấp phát SCIM là ngoại
+lệ**: IdP gọi trực tiếp máy chủ của bạn, việc này cần một tunnel hoặc một URL
+công khai — xem [cấp phát người dùng bằng SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim).
 :::
 
-## Check your configuration from this page
+## Kiểm tra cấu hình của bạn ngay trên trang này
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Công cụ kiểm tra bên dưới chạy trong trình duyệt của bạn. Nó tải trực tiếp tài
+liệu discovery của issuer, nên trang web này không bao giờ thấy tài liệu đó, rồi
+áp dụng các quy tắc của máy chủ: một issuer https khớp với tài liệu, các endpoint
+nằm trên origin của chính issuer, PKCE S256 và phương thức xác thực token mà loại
+client của bạn cần. Với một client ID và địa chỉ máy chủ, nó có thể mở một lần
+đăng nhập thử để cho biết client cùng redirect URI của nó đã được đăng ký hay
+chưa. Nó không bao giờ hỏi client secret.
 
 <SsoCheck kind="oidc" />

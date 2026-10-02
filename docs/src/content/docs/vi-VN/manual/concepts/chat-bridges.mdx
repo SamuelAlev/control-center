@@ -1,249 +1,271 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Cầu chat
+description: Vì sao tích hợp Slack chủ động gọi ra thay vì lắng nghe, điều gì thực sự ủy quyền cho một tin nhắn đến từ chat, và cách một cầu nối phục vụ mọi sản phẩm chat.
 slug: vi-VN/so-tay/khai-niem/cau-chat
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Một cầu chat biến một sản phẩm chat bên ngoài — hiện nay là Slack — thành một
+con đường hạng nhất để bước vào không gian làm việc của Control Center. Nhắc
+tới bot là một agent thức dậy; trả lời trong luồng Slack là cuộc hội thoại tiếp
+diễn; gõ một lệnh slash là một phiếu được tạo. Bên dưới, tất cả vẫn là những
+space, bản ghi hội thoại, phiếu và quy kết mà ứng dụng desktop dùng. Chat là một
+_bề mặt_ trên không gian làm việc, chứ không phải một bản sao của nó.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack là nhà cung cấp duy nhất được phát hành.** Không hề có bản triển khai
+Discord, Telegram, Teams hay Matrix ở bất kỳ đâu trong sản phẩm. Tính năng này
+được viết theo kiểu không phụ thuộc nhà cung cấp một cách có chủ đích — thêm một
+sản phẩm thứ hai chỉ tốn một giá trị enum, một adapter và một plugin — nhưng
+hiện tại "chat" nghĩa là Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Hai bề mặt bao trùm tính năng này và chúng thuộc về những người khác nhau. Kết
+nối một không gian làm việc với Slack và tùy chỉnh bot là hành động của **quản
+trị viên** trong Cài đặt → Không gian làm việc → Chung. Liên kết tài khoản chat
+của bạn với danh tính Control Center của bạn là hành động của **thành viên**
+trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Ba quyết định định hình toàn bộ tính năng: **kết nối chạy theo hướng nào**,
+**điều gì ủy quyền cho một tin nhắn đến từ bên ngoài** và **kiến thức đặc thù
+theo sản phẩm được phép nằm ở đâu**.
 
-## Outbound by design
+## Gọi ra theo thiết kế
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Cầu nối không bao giờ lắng nghe nhà cung cấp. Slack được truy cập qua **Socket
+Mode**: máy chủ hỏi Slack một URL socket rồi gọi ra, sau đó nhận các lượt nhắc,
+DM và lệnh slash qua kết nối đó.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Hệ quả chính là mục đích. Một laptop sau NAT, một máy chủ tại nhà không có tên
+miền, một cỗ máy di chuyển giữa các mạng — tất cả đều chạy được cầu nối mà
+không cần cổng vào, không tunnel, không chứng chỉ TLS và không URL công khai
+phải xoay vòng mỗi khi nó thay đổi. Không có endpoint webhook nào để bảo vệ vì
+đơn giản là không có endpoint webhook nào. Khi Control Center soạn định nghĩa
+ứng dụng, nó khẳng định Socket Mode và loại bỏ mọi request URL, bởi một ứng
+dụng được cấu hình cho cả hai sẽ là một ứng dụng chỉ hoạt động nửa vời.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Cái giá phải trả là một kết nối cần được duy trì, và đó là việc của máy chủ:
+việc kết nối lại dùng backoff lũy thừa kèm jitter, giới hạn ở 30 giây; một lần
+nhà cung cấp khởi tạo xoay socket sẽ kết nối lại mà không làm tăng backoff đó;
+còn một _thông tin xác thực bị từ chối_ là dấu chấm hết — thử lại mãi một token
+đã bị thu hồi thì chỉ chuốc lấy giới hạn tần suất, nên cầu nối dừng lại, chờ
+token mới, đồng thời báo nguyên văn lỗi của chính nhà cung cấp trong phần cài
+đặt.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Một không gian làm việc không có ứng dụng chat chẳng tốn gì cả: không socket,
+không timer, không lưu lượng. Và toàn bộ tiến trình chỉ khởi động _sau_ thông
+báo sẵn sàng của máy chủ, bởi một ứng dụng chat phản hồi chậm không bao giờ được
+phép làm chậm quá trình khởi động.
 
-## Membership authorizes, not token possession
+## Tư cách thành viên ủy quyền, không phải việc nắm giữ token
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Người cài đặt ứng dụng không phải người gửi tin nhắn. Vì vậy mọi sự kiện đi vào
+đều được phân giải thành một **Principal** trước khi bất cứ điều gì xảy ra, và
+nó từ chối theo mặc định kèm một lời giải thích:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Một tài khoản chat chưa liên kết** được hướng dẫn cách liên kết, ngay trong
+  luồng Slack mà nó đã viết.
+- **Một tài khoản đã liên kết nhưng người dùng không phải thành viên** của không
+  gian làm việc này được yêu cầu xin quản trị viên một lời mời.
+- **Một thành viên có vai trò chỉ đọc** (`viewer`, `guest`) được thông báo rằng
+  vai trò của họ không thể bắt đầu công việc.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/)
-for the membership model this leans on.
+Không trường hợp nào trong số đó được tiếp tục. Một tin nhắn chat không bao giờ
+bị quy cho người không gửi nó — chính điều đó giữ cho dấu vết kiểm toán, các
+giới hạn tần suất theo từng principal và người báo cáo phiếu luôn trung thực.
+Xem [Đa người dùng — danh tính, tư cách thành viên và hiện
+diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/) để biết mô hình tư cách thành viên
+mà phần này dựa vào.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Việc liên kết là phân giải danh tính, **không phải** một sự cấp quyền truy cập.
+Tư cách thành viên được kiểm tra lại ở mọi sự kiện, nên một liên kết thuộc về
+người đã bị gỡ sẽ dẫn tới sự từ chối chứ không phải những đặc quyền cũ của họ.
+Có hai đường để thiết lập liên kết: một mã dùng một lần, tồn tại trong thời gian
+ngắn mà thành viên gõ trong chat, hoặc khớp tự động theo email _đã xác minh_ của
+nhà cung cấp — và đường email vẫn đòi hỏi người dùng khớp phải đã là thành viên,
+nên một người lạ có địa chỉ tình cờ tồn tại trên máy chủ sẽ chẳng liên kết được
+với gì.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Các mã này được cố ý giữ trong bộ nhớ, với thời gian sống 15 phút. Việc lưu bền
+một mã sẽ tạo ra một dòng mang hình dạng thông tin xác thực lâu dài cho một thứ
+vốn được sinh ra để biến mất, và việc máy chủ khởi động lại làm vô hiệu mọi mã
+còn hiệu lực là hành vi đúng đắn chứ không phải một lỗi thoái bộ — thành viên chỉ
+cần bấm "liên kết" lần nữa.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Một lời từ chối được trả lời **ngay trong luồng Slack mà tin nhắn đã mở**, dưới
+dạng một phản hồi thật. Một phản hồi trong luồng gắn nhãn cho tin nhắn mà nó trả
+lời, đến đúng người cần đến nó và vẫn giữ câu "bạn chưa được liên kết" khỏi
+chính kênh. Đăng một tin nhắn cũng là năng lực duy nhất mà mọi nhà cung cấp đều
+có, nên lời giải thích không bao giờ phụ thuộc vào một tính năng mà ứng dụng có
+thể không có.
 
-## Provenance and the echo problem
+## Nguồn gốc và vấn đề tiếng vọng
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Một cầu nối phản chiếu cả hai chiều sẽ lặp vô tận trừ khi có thứ gì đó phân biệt
+hai hướng. Mọi tin nhắn mà cầu nối đưa vào đều được đóng dấu bằng
+`metadata['chat']` — nhà cung cấp, team, cuộc hội thoại, luồng, tin nhắn và
+người gửi. Bản phản chiếu hướng ra bỏ qua mọi tin nhắn mang dấu đó.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Chính quy tắc duy nhất đó khiến việc phản chiếu hai chiều trở nên an toàn: một
+tin nhắn do con người gõ trong Control Center được chuyển ra luồng đã liên kết
+(có tiền tố là tên tác giả), còn một tin nhắn đến _từ_ chat thì dừng lại ngay tại
+nơi nó đi vào.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Những gì đi ra ngoài được giới hạn hẹp một cách có chủ đích. **Câu trả lời** của
+agent được chuyển đi như văn bản chat thông thường. Một suy nghĩ ngắn có thể xuất
+hiện trên dòng `Thinking…` của thẻ. Đầu ra công cụ là một bức tường diff và ở
+lại Control Center, nơi cũng là đích mà một câu trả lời bị cắt ngắn trỏ tới.
 
-## A card reports the work; the text is still the message
+## Thẻ báo cáo công việc; văn bản vẫn là tin nhắn
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Ở nơi nhà cung cấp hiển thị được chúng, một lượt mang **một thẻ công việc**,
+được sửa tại chỗ trong suốt thời gian lượt đó chạy và nằm phía trên câu trả lời
+mà nó giải thích.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Thẻ là một kế hoạch được nhóm lại, chứ không phải một đoạn văn trộn lẫn. Slack
+nối `details` và `output` trên cùng một task, nên phần chi tiết của một dòng chỉ
+được gửi một lần (suy nghĩ trên `Thinking…`) và `output` không bao giờ được
+truyền theo luồng. Phần thiết lập là một dòng có tiêu đề được thay thế (`Working
+on it…`, `Cloning …`). Việc suy luận thêm một dòng `Thinking…`. Mỗi công cụ có
+một dòng riêng (`Read lib/main.dart`). Câu trả lời là văn bản thông thường nằm
+dưới thẻ — chế độ xem kế hoạch của Slack đọc nó từ một lần nối markdown sau đó,
+chứ không phải từ một khối bị trộn vào các task. Không có gì khác: không có đầu
+ra công cụ và chỉ có một đối số công cụ từ một danh sách cho phép ngắn, vì đối
+số của một công cụ chưa biết có thể là cả thân một tệp, mà một dòng chỉ là một
+dòng.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Thẻ cũng bao trùm khoảng chờ _trước_ lượt. Lượt nhắc đầu tiên tạo ra cuộc hội
+thoại, và việc tạo nó sẽ clone mọi repo mà agent sẽ làm việc trong đó — với một
+kho mã thật thì đó là mấy phút mà agent vẫn chưa được yêu cầu gì, còn luồng chat
+trông như bot đã phớt lờ yêu cầu. Vì vậy thẻ mở ra ngay khi lượt nhắc được chấp
+nhận (`Working on it…`), rồi dòng thiết lập đó cập nhật bằng đúng những từ mà
+desktop hiển thị — `Cloning acme/widgets…`, `Setting up Reviewer…`, `Starting the
+agent…` — sau đó là một dòng `Thinking…` ngay khi agent bắt đầu suy luận, rồi mỗi
+công cụ một dòng. Một thẻ, một tin nhắn, từ "tôi đã nghe thấy bạn" cho tới câu
+trả lời dưới dạng văn bản thông thường bên dưới. Phần thiết lập chỉ được báo ở
+nơi có ai đó trong chat đang chờ nó: một cuộc hội thoại đang được chuẩn bị trong
+ứng dụng, hay một cuộc hội thoại bị bỏ dở được tiếp tục lúc máy chủ khởi động,
+thì được cấp phát mà không có thẻ nào cả.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Nó mang theo thứ duy nhất mà chat không thể cho người đọc: một liên kết **View in
+Control Center** trỏ tới cuộc hội thoại đằng sau phản hồi. Các sản phẩm chat chỉ
+chấp nhận `http(s)` trong một liên kết và không gì khác, nên nút này trỏ tới một
+trang nhỏ do máy chủ phục vụ, trang đó đưa trình duyệt tới liên kết
+`control-center://` của ứng dụng desktop. Trang đó không đọc gì và không phân
+giải gì — các id trong URL của nó chỉ được đưa nguyên vào một deep link, không
+đâu khác — còn một máy chủ không có URL công khai truy cập được thì chỉ tạo ra
+một thẻ không có nút, chứ không phải một nút hỏng.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Thẻ là một năng lực như mọi năng lực khác. Một nhà cung cấp không có thẻ vẫn hoạt
+động y như trước, chỉ có văn bản; và một nhà cung cấp từ chối thẻ vào lúc gọi vẫn
+giữ được luồng của mình: câu trả lời luôn quan trọng hơn thẻ mô tả nó. Khi tính
+năng truyền theo luồng bị tắt hoàn toàn, thẻ đã hoàn tất sẽ đi kèm tin nhắn được
+đăng duy nhất thay vào đó. Một phiếu được tạo cũng được đối xử như vậy — xác nhận
+`/cc ticket` là một thẻ đã hoàn tất, mà lý do tồn tại của nó là liên kết tới
+phiếu vừa được tạo.
 
-## Capabilities are negotiated, then remembered
+## Các năng lực được thương lượng, rồi được ghi nhớ
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Các sản phẩm chat khác nhau ở những gì chúng hiển thị được, nên cầu nối được
+viết dựa trên bề mặt giàu tính năng nhất — một phản hồi lớn dần theo thời gian
+thực bên trong luồng, một trạng thái tạm thời "is thinking…", một luồng có tiêu
+đề, một câu trả lời chỉ hiện một lần cho lệnh slash — rồi hạ cấp từng năng lực
+một. Một nhà cung cấp không có năng lực nào trong số đó vẫn hoạt động; các phản
+hồi chỉ đơn giản đến dưới dạng một tin nhắn.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Quảng cáo một năng lực không phải là cam kết nó. Phản hồi theo luồng của Slack
+cần một tính năng của gói trả phí, và Slack chỉ từ chối vào lúc gọi. Một lời từ
+chối bị đánh dấu là vĩnh viễn sẽ được ghi nhớ cho **toàn bộ vòng đời của kết
+nối**: cầu nối ngừng hỏi và đăng nguyên phản hồi từ đó về sau, còn phần cài đặt
+nói rõ điều đó, bởi câu "các phản hồi của tôi thôi không được truyền theo luồng
+nữa" phải trả lời được mà không cần đọc log. Thẻ công việc cũng bị gỡ theo cách
+tương tự nếu Slack từ chối một thẻ.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Mọi giới hạn đều thuộc về nhà cung cấp chứ không thuộc về bộ chuyển tiếp: trần
+kích thước tin nhắn, trần kích thước khối truyền và việc một luồng có cần điểm
+neo luồng hay không đều do adapter khai báo, và một phản hồi dài được cắt tại
+ranh giới đoạn, dòng hoặc từ chứ không cắt giữa từ.
 
-## One bridge, one adapter per product
+## Một cầu nối, một adapter cho mỗi sản phẩm
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Mọi thứ mang hình dạng sản phẩm đều nằm sau một cổng. Phần lõi chung biết về
+markdown, các cuộc hội thoại chat, các luồng chat và thành viên; nó không biết
+gì về envelope của Slack, `mrkdwn` hay gateway intent. Ba mảnh ghép làm nên điều
+đó:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Adapter** chuẩn hóa một sản phẩm: transport, các lệnh gọi API, codec văn bản
+  và những nét dị biệt trong envelope của nó. Trường hợp của Slack rất đáng học
+  — một lượt nhắc trong kênh đến hai lần (dưới dạng `app_mention` _và_
+  `message`) và phần lớn các kiểu con của tin nhắn chỉ là chi tiết trang trí chứ
+  không phải yêu cầu mới. Cả hai đều được xử lý trong adapter, nên lõi không bao
+  giờ biết rằng Slack gửi trùng hai lần.
+- **Descriptor** là hình dạng công khai của nhà cung cấp: nó cần những thông tin
+  xác thực nào, định dạng của chúng ra sao, những URL nào giúp người dùng tìm
+  thấy chúng, nó làm được gì và ứng dụng của nó có thể được tạo hay chỉnh sửa từ
+  đây hay không. Thẻ cài đặt, hộp thoại kết nối và việc kiểm tra đối số đều được
+  _sinh ra_ từ nó — client gửi trả về một nhà cung cấp cùng một map có khóa là id
+  trường.
+- **Plugin** là phần tổ hợp phía máy chủ: thông tin xác thực biến thành một kết
+  nối đã xác minh như thế nào, một adapter được dựng ra sao và ứng dụng phía nhà
+  cung cấp được quản lý thế nào.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Vậy nên thêm một sản phẩm chỉ là một giá trị enum, một adapter và một plugin.
+Không có thao tác RPC mới, không thay đổi schema, không thay đổi client — và
+client vẫn trung thực, bởi một trường nó chưa từng nghe tới vẫn hiển thị với
+nhãn mà máy chủ cung cấp.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Hai chi tiết giữ cho lớp trừu tượng không rò rỉ lên trên. Những bước quản lý ứng
+dụng mà nhà cung cấp không có API cho chúng (tạo token, cài ứng dụng, cài đặt
+lại sau khi thay đổi quyền) được trả về dưới dạng **các bước có tên kèm liên kết
+riêng**, để màn hình hoàn tất thiết lập hiển thị chúng mà không cần biết đó là
+nhà cung cấp nào. Và mọi hướng dẫn mà cầu nối viết ra đều nêu tên nhà cung cấp
+cùng lệnh mà ứng dụng thực sự dùng, nên một lệnh được đổi tên hay một nhà cung
+cấp thứ hai vẫn đọc đúng mà không cần chuỗi mới.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Cài đặt lại sau khi thay đổi quyền]
+Việc sửa tên, mô tả hay biểu tượng của bot có hiệu lực ngay lập tức. Một thay
+đổi về **quyền** thì cần cài đặt lại: Slack áp dụng manifest mới nhưng giữ
+nguyên phần cấp quyền ở mức đã được cài đặt. Thao tác sửa trả về một bước còn
+lại kèm liên kết tới trang "Reinstall to Workspace" của Slack.
 :::
 
-## Where credentials live
+## Thông tin xác thực nằm ở đâu
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Token chat của một không gian làm việc nằm trong **thư mục riêng của chính không
+gian làm việc đó, bên cạnh cơ sở dữ liệu** — dưới dạng JSON thuần tại
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, không nằm trong cơ sở
+dữ liệu và cố ý không nằm trong keychain của hệ điều hành. Hai hệ quả dễ bị bỏ
+quên về sau: xóa một không gian làm việc là gỡ liên kết thư mục đó, và token đi
+theo nó; còn xuất hay sao lưu một không gian làm việc thì sao chép `workspace.db`,
+nên một không gian làm việc được chuyển cho người khác không mang theo token bot
+còn sống bên trong. Tệp này thừa hưởng ranh giới tin cậy của hệ thống tệp trên
+máy chủ — bất cứ thứ gì có quyền đọc thư mục dữ liệu đều đọc được token bot, đúng
+ranh giới mà các cơ sở dữ liệu nằm sau.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Mỗi nhà cung cấp một tệp, được ghi theo kiểu nguyên tử và chỉ chủ sở hữu truy cập
+được: một ứng dụng bị thu hồi sẽ bị xóa bằng cách gỡ liên kết một tệp, và một tệp
+hỏng chỉ khiến mất một nhà cung cấp thay vì tất cả. Thông tin xác thực chỉ đi
+_vào_ qua thao tác kết nối và không bao giờ đi ra — các lần đọc trạng thái chỉ
+trả lời bằng metadata của kết nối.
 
-## What is deliberately not offered
+## Những gì cố ý không được cung cấp
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Cài đặt cấu trúc của ứng dụng.** Transport, scope và đăng ký sự kiện được
+  khẳng định chứ không phơi ra. Một ứng dụng có thể bị cấu hình đến mức im lặng
+  từ màn hình cài đặt là một phiếu hỗ trợ, chứ không phải một tính năng.
+- **Hội thoại cộng với lệnh slash.** Bề mặt Slack gồm tin nhắn, phản hồi trong
+  luồng và lệnh slash.
+- **Một nguồn sự thật thứ hai.** Chat không phải nơi lưu trữ công việc. Luồng
+  Slack là một space, phản hồi là một bản ghi, phiếu là phiếu — tất cả đều nằm
+  trong không gian làm việc, và mọi client đều truy cập được.
 
-## See also
+## Xem thêm
 
-- [Multiplayer — identity, membership and presence](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): why links and credentials are per workspace
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): what wakes when a mention arrives
-- [Tickets and delegation](/vi-VN/so-tay/khai-niem/phieu/): what `/cc ticket` files
-- [Architecture](/vi-VN/so-tay/khai-niem/kien-truc/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/)
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
-- [Link your Slack account](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
-- [Customize the chat bot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
-- [PR conversations](/vi-VN/so-tay/khai-niem/hoi-thoai-pr/): the same three decisions, made for a forge
+- [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): những Principal và vai trò mà cầu nối phân giải qua
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): vì sao liên kết và thông tin xác thực thuộc về từng không gian làm việc
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): điều gì thức dậy khi một lượt nhắc đến
+- [Phiếu và ủy thác](/vi-VN/so-tay/khai-niem/phieu/): `/cc ticket` tạo ra thứ gì
+- [Kiến trúc](/vi-VN/so-tay/khai-niem/kien-truc/): cầu nối nằm ở đâu giữa máy chủ và các client
+- [Nối Slack với không gian làm việc của bạn](/vi-VN/so-tay/huong-dan/cau-chat-dau-tien/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Liên kết tài khoản Slack của bạn](/vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat/)
+- [Tùy chỉnh chatbot](/vi-VN/so-tay/huong-dan-thuc-hanh/tuy-chinh-chatbot/)
+- [Hội thoại PR](/vi-VN/so-tay/khai-niem/hoi-thoai-pr/): ba quyết định tương tự, được đưa ra cho một máy chủ mã

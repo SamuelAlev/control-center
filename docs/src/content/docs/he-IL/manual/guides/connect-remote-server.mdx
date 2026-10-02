@@ -1,109 +1,109 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: התחברות לשרת מרוחק
+description: כוונו את אפליקציית שולחן העבודה או את לקוח הווב אל cc_server שרץ במקום אחר, ועברו בין שרתים בלי להפעיל מחדש.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/התחברות-לשרת-מרוחק
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+כל לקוח הוא מציג מעל `cc_server` שמחזיק בנתונים. שולחן העבודה יכול להריץ אחד
+בתוך עצמו; אפליקציית הווב ב-[app.usectrl.dev](https://app.usectrl.dev) לא
+יכולה, כי לשונית דפדפן אינה יכולה לארח שרת. כך או אחרת, המדריך הזה מכוון לקוח
+אל שרת שרץ במקום אחר — קופסה קטנה, מכונה וירטואלית בענן, שרת בנייה.
 
-## Prerequisites
+## דרישות מקדימות
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- `cc_server` שרץ. אם אין לכם אחד, ראו [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/).
+- או שלושת ערכי הצימוד שהשרת הנפיק — **כתובת השרת** (`ws://…/rpc` או `wss://…/rpc`), **מזהה מכשיר** ו**מפתח צימוד** — **או** **קוד הזמנה** חד־פעמי ממנהל סביבת עבודה. מימוש הזמנה מקצה את המשתמש שלכם, רושם את החברות שלכם ומנפיק לכם את האישור של הלקוח הזה, כך שלעולם אינכם מטפלים במזהה מכשיר או במפתח.
 
-### Make sure the server is reachable
+### ודאו שהשרת נגיש
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+שרת מקומי אינו צריך דבר: `ws://localhost:9030/rpc` עובד גם משולחן העבודה וגם
+מהדפדפן, כי דפדפנים מתייחסים ללולאה המקומית כמקור מהימן.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+שרת על מכונה אחרת הוא סיפור אחר. `app.usectrl.dev` מוגש דרך HTTPS, ולכן
+הדפדפן יפתח רק חיבור `wss://` עם תעודה שהוא כבר סומך עליה — ו-`cc_server`
+מסרב מלכתחילה לאגד כתובת שאינה לולאה מקומית בלי TLS. תנו לו אחד מאלה:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- תעודה ישירות, עם `--tls-cert` ו-`--tls-key`
+- פרוקסי שמסיים TLS מלפנים, כשהשרת מופעל עם `--insecure` (טקסט גלוי מאחורי הפרוקסי, ברשת מהימנת בלבד)
+- מנהרה או VPN שמספקים את התעודה — Tailscale, cloudflared או דומה. ב**הגדרות ← שרת ← חיבור וסטטוס** נמצאת ההצטרפות המובנית למנהרה תחת **שתף שרת זה**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+שתי הגדרות בצד השרת קל לפספס. מאחורי פרוקסי, NAT או מנהרה, הגדירו את
+`--public-url` לכתובת שלקוחות באמת אמורים לחייג אליה — ברירת המחדל שלה היא
+האגדה המקומית, ולכן בלעדיה לקוחות מנסים את המארח הלא נכון. ואם אתם מארחים
+עותק משלכם של בניית הווב, הוסיפו את המקור שלו ל-`--allowed-origins`,
+שכברירת מחדל מכיל רק את `https://app.usectrl.dev`; לקוחות לולאה מקומית
+ולקוחות נייטיביים תמיד מותרים.
 
-## Connect the desktop app
+## חיבור אפליקציית שולחן העבודה
 
-On a fresh install:
+בהתקנה חדשה:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. הפעילו את Control Center. מסך ההפעלה הראשונה שואל **כיצד להריץ את Control Center?**
+2. במקום **הרץ באפליקציה זו**, מלאו את שדות ההתחברות: כתובת השרת, ובנוסף קוד הזמנה או מזהה מכשיר ומפתח צימוד.
+3. לחצו על **התחבר**. Control Center מחייג אל השרת ונוחת בדואר הנכנס של סביבת העבודה.
 
-On a desktop that already runs its own server:
+בשולחן עבודה שכבר מריץ שרת משל עצמו:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. פתחו את **הגדרות ← שרת ← חיבור וסטטוס**.
+2. לחצו על **הוסף שרת**. הזינו את כתובת השרת (`wss://host:9030/rpc`) ובנוסף קוד הזמנה או מזהה מכשיר ומפתח צימוד. כפתור הסיומת של שדה הכתובת מגלה מופעי `cc_server` ב-LAN או ב-tailnet שלכם.
+3. לחצו על **התחבר**, ואז על **החלף** בשורה של השרת החדש.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+ההחלפה היא חיה: האפליקציה נבנית מחדש סביב הסשן החדש במקום, בלי הפעלה מחדש.
+אם ההתחברות נכשלת, אתם נשארים על השרת הנוכחי ורואים את השגיאה. בשורה של
+השרת שאתם נמצאים עליו אין פעולת **החלף**; השרת המקומי הוא השורה הראשונה,
+שכותרתה **הרץ באפליקציה זו**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+מרגע ההחלפה, לשולחן העבודה אין מסד נתונים משלו. כל מסך קורא וכותב דרך השרת
+המרוחק מעל WebSocket.
 
-## Connect the web client
+## חיבור לקוח הווב
 
-The web build is always remote.
+בניית הווב היא תמיד מרוחקת.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. פתחו את [app.usectrl.dev](https://app.usectrl.dev), או עותק משלכם של בניית הווב.
+2. הזינו את כתובת השרת ובנוסף קוד הזמנה או מזהה מכשיר ומפתח צימוד.
+3. הלקוח מחייג אל השרת ומרנדר את אותו ממשק ששולחן העבודה מרנדר.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+אם כתובת ה-URL מכילה קישור עמוק לצימוד, השדות ממולאים מראש. מפתח הצימוד נמצא
+ב**קטע** ה-URL, שאותו דפדפנים לעולם אינם שולחים לשרת שמארח את הדף, ולכן
+המארח הסטטי לעולם אינו רואה אותו.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[מדיה ואבטחה]
+מדיה (תמונות פרופיל, תמונות פיד, צילומי מסך של בקשות משיכה) מנותבת דרך השרת
+המחובר, ולכן הדפדפן לעולם אינו מביא מארח במעלה הזרם ישירות. מדיניות
+Content-Security Policy לכל בקשה, שמופקת מעוגייה לא רגישה, מתירה רק את המקור
+של השרת המחובר.
 :::
 
-### What the browser does not do
+### מה הדפדפן אינו עושה
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+לקוח הווב קורא וכותב לאותו שרת כמו שולחן העבודה, אבל כמה משטחים זקוקים לחלון
+נייטיבי או להתקנים של המכונה עצמה:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- אין התראות קופצות של מערכת ההפעלה, אין צלילי התראות ואין רצועת באנרים סביבתית (מרכז ההתראות שבתוך האפליקציה עדיין עובד)
+- אין גילוי שרתים ב-LAN או ב-tailnet בתיבת הדו-שיח **הוסף שרת**
+- אין קורא מאמרים בתוך האפליקציה — מאמרים בעדכוני החדשות נפתחים בכרטיסייה חדשה
+- אין הרצה חוזרת של סיכום פגישה ואין ביטול של סיכום שמעובד
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+שניים מתנהגים אחרת במקום להיות חסרים. **הקלטה** של פגישה עובדת בדפדפן,
+כשהיא קולטת את המיקרופון שלכם בתוספת שיתוף מסך שכולל רצועת אודיו. **פתח
+ב-IDE** עובד גם הוא, אבל מבקש מהשרת להפעיל את העורך על התצוגה של _השרת עצמו_,
+ולכן הכפתור מסתתר מול מארח ללא ממשק שבו לא מותקנים עורכים.
 
-## Troubleshooting
+## פתרון תקלות
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/).
+- **החיבור פג**: השרת חייב להיות נגיש מהלקוח. בדקו את האגדה (`--bind any`), שהפורט פתוח ושה-`--public-url` מציין את הכתובת שאליה הלקוח באמת יכול לחייג. מעל האינטרנט הפתוח, TLS הוא חובה — אגדה בטקסט גלוי שאינה לולאה מקומית נדחית בעלייה, אלא אם השרת הופעל עם `--insecure` מאחורי פרוקסי.
+- **הדפדפן מסרב להתחבר אבל לקוח נייטיבי עובד**: המקור של הדפדפן אינו ברשימת ה-`--allowed-origins` של השרת. ברירת המחדל מתירה רק את `https://app.usectrl.dev` (בתוספת לולאה מקומית).
+- **מפתח הצימוד נדחה**: הריצו שוב `cc_server pair` בשרת כדי לסובב את המפתח של אותו מכשיר, ואז הזינו את החדש. מכשיר שבוטל מגלה שהאישור שלו נעלם ונכשל באופן סגור; ביטול מפיל סשן חי בתוך שניות.
+- **סביבת עבודה שגויה**: סביבת העבודה היא חלק מה-URL (`/workspaces/:workspaceId/…`) והיא נסחרת עם כל קריאה, ולכן החלפת סביבות עבודה בלקוח אחד משנה רק את התצוגה שלכם. אתם יכולים להגיע רק לסביבות עבודה שאתם חברים בהן — כל דבר אחר נדחה עם "Not a member of this workspace". ראו [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)
-- [Pair a device](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/): the phone relay path
+- [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)
+- [שיוך מכשיר](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שיוך-מכשיר/): נתיב הממסר של הטלפון
 
-## Related concepts
+## מושגים קשורים
 
-- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/)
-- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)
+- [פריסה ולקוחות](/he-IL/מדריך-למשתמש/מושגים/פריסה/)
+- [שליטה מרחוק ונייד](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/)

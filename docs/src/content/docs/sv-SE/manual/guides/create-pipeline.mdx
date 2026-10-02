@@ -1,241 +1,251 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Skapa en pipelinemall
+description: Författa en DAG-arbetsflödesmall i pipelineredigeraren — lägg till noder, koppla ihop dem, deklarera indata och gör den körbar.
 slug: sv-SE/handbok/how-to-guider/skapa-pipeline
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Pipelinemallar skapas i arbetsytans inställningar. Posten **Pipelines** i
+arbetsytans sidofält är _körningskön_, inte mallistan — den har ingen åtgärd för
+att skapa en mall.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/sv-SE/handbok/referens/pipeline-steg/).
+Vad varje stegtyp, body-nyckel och konfigurationsfält betyder står i
+[Pipeline-stegtyper](/sv-SE/handbok/referens/pipeline-steg/).
 
-## Create a template
+## Skapa en mall
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Gå till **Inställningar → Arbetsyta → Pipelinemallar**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Tryck på **Ny mall**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Det finns ingen id-dialog. Redigeraren öppnas direkt med ett förberett skelett
+som heter **Ny pipeline**, med ett automatiskt tilldelat id (`pipeline_1`,
+sedan `pipeline_2`, …). Klicka på titeln i sidhuvudet för att byta namn på den.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Duken är inte tom: en ingångsnod **Trigger**, en prompt-agentnod med etiketten
+**Step** och en slutmarkör som avslutar körningen. Slutmarkören ritas inte.
+Redigeraren kopplar om den dolda terminalen till varje nåbar sänka, så arbete
+du hänger på efter **Step** körs ändå.
 
-## Add nodes
+## Lägg till noder
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Sidofältet **Nodbibliotek** ligger permanent till vänster i redigeraren. Filtrera
+det med rutan **Sök noder** och dra en post till duken — noden landar där du
+släpper den, utan någon inkommande anslutning.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Palettnod                      | Stegtyp | Vad den gör                                                                                    |
+| ------------------------------ | ------- | ---------------------------------------------------------------------------------------------- |
+| **Bash script**                | listen  | Kör ett shell-skript med `{{state}}`-ersättning; ingen agent skickas ut                        |
+| **Open conversation**          | listen  | Öppnar körningens enda synliga yta och dess utcheckning; agentnoder ansluter till rummet       |
+| **Clone PR branch**            | listen  | Hittar PR:ens head-gren via `gh pr view` och klonar den till körningskatalogen                 |
+| **Post PR comment**            | listen  | Publicerar sammanställda fynd på PR:en som en GitHub-granskningskommentar                      |
+| **Reviewer (prompt)**          | listen  | Skickar ut en specialiserad granskningsagent; pausar tills agenten lämnar in sitt resultat     |
+| **Consolidate (join)**         | join    | Väntar på flera uppströms grenar och ber sedan en agent sammanställa deras utdata              |
+| **Custom prompt**              | listen  | Generisk promptstyrd nod som dirigeras via bodyn `promptAgent`                                 |
+| **Post to space**              | listen  | Skickar ett meddelande till en meddelandeyta                                                   |
+| **Condition / switch (router)** | router | Grenar flödet utifrån ett tillståndsvärde                                                      |
+| **If file exists (router)**    | router  | Ruttar `"true"` när en sökväg finns under klonen, annars `"false"`                             |
+| **Any file exists (OR router)** | router | Ruttar `"true"` när någon av de angivna sökvägarna finns                                       |
+| **All conditions (AND router)** | router | Ruttar `"true"` endast när alla angivna sökvägar finns                                         |
+| **Team dispatch**              | listen  | Skickar ut ett helt team och pausar tills det är klart                                         |
+| **Approval gate**              | listen  | Pausar för ett godkännandebeslut                                                               |
+| **For each (map)**             | forEach | Renderar en prompt per post och skickar sedan ut agenten en gång med dessa prompter sammanslagna |
+| **Call sub-pipeline**          | listen  | Kör en annan mall som ett nästlat steg                                                         |
+| **Clean up worktrees**         | listen  | Tar bort föråldrade isolerade worktrees; deterministisk, ingen agent skickas ut                |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Biblioteket grupperar dem under **Flöde och logik**, **PR-granskning**,
+**Agenter**, **Meddelanden** och **Kod**. Det finns ingen grupp som heter Demo.
 
-## Wire nodes together
+## Koppla ihop noder
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Varje arbetsnod har en rund **utport** på sin högra kant. Dra från den porten
+till en annan nod för att koppla ihop dem. Starttriggrar fungerar likadant: var
+och en har sin egen port, så en kabel från **Schema** utgår inte också från
+**Manuell körning**. Tryck på **Lägg till steg** (`+`) strax efter en nod för
+att infoga en typ efter den. Håll muspekaren över mittpunkten på en befintlig
+kant och tryck på × för att koppla från.
 
-Connections are also edited from the node that _receives_ them:
+Anslutningar redigeras också från noden som _tar emot_ dem:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Markera den nedströms noden. Dess konfigurationspanel öppnas till höger.
+2. Rulla till **Triggrar från** och tryck på chipet för varje uppströmsnod som
+   den här ska lyssna på. Att trycka på ett valt chip tar bort anslutningen.
+3. Om en uppströmsnod är en router visas ett block **Ruttnycklar** under chipen
+   med ett fält **Ruttnyckel från &lt;nod&gt;** per routerkant. Ange nyckeln som
+   den kanten utlöses av — `true` eller `false` för filen-finns-routerna, eller
+   namnet på fallet för en växel.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Varje triggernod är en ingångspunkt. En nod kan lyssna på flera uppströmsnoder
+(fan-in) och mata flera nedströmsnoder (fan-out), och grafen måste förbli
+acyklisk — inget i redigeraren hindrar dig från att koppla ihop en cykel, så
+kontrollera ditt arbete.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Slutmarkören filtreras bort från duken och kan därför inte markeras. Redigeraren
+kopplar om den till varje nåbar sänka varje gång grafen ändras, så arbete du
+hänger på efter den förberedda **Step** körs ändå. En tom graf (en trigger utan
+efterföljande arbetssteg) listar triggern själv, så att en körning slutförs
+direkt.
 
-## Configure a node
+## Konfigurera en nod
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Markera en nod för att öppna dess konfigurationspanel. Vilka fält som visas
+beror på nodens body.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Varje nod har **Etikett**, **Indatanycklar (kommaseparerade)** (tillståndsnycklar
+som läses vid körningstillfället) och, under **Avancerat**, **Reducerare**,
+**Timeout (ms)**, **Antal omförsök**, **Fortsätt om det här steget misslyckas**
+och **Utdataschema (JSON)**. Noder av typen listen och join kan också växla sin
+**Typ** mellan de två.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Lägger till en väljare för **Arkiv att klona** (vilka arkiv i arbetsytan som ska
+checkas ut; tomt betyder inga), ett **Ytnamn** och en kryssruta **Öppna ett
+samtal i den**. När kryssrutan är på namnger fältet **Samtalsnamn** den ström som
+rummet öppnas med. Agentnoder ansluter till det här rummet — de öppnar inget
+eget.
 
-### Prompt agent
+### Prompt-agent
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Lägger till **Agent** (vilken agent som ska skickas ut), **Promptmall** (använd
+`{{key}}` för att referera till indata eller utdata från uppströmsnoder) och
+**Utdatanyckel**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Timeout (ms)** anges i _millisekunder_, inte sekunder — `900000` är 15 minuter.
+Om du anger `900` får steget 0,9 sekunder.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Det samtalsläge som en prompt-agentnod körs i har inget fält i redigeraren på
+agentnoden. Det följer med `extras['mode']` (`chat`, `plan` eller `review`) på
+noden **Open conversation** som skapade rummet (standard `review`). Om du anger
+det på ett agentsteg ignoreras det. Nyckeln matchas exakt: varje annan stavning
+ignoreras tyst.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Lägger till **Bash-skript**. Det finns inga fält för arbetskatalog eller miljö,
+eftersom inget av dem går att konfigurera:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Varje bash-steg i en körning delar cwd `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` injiceras från lagret för autentiseringsuppgifter, så `gh` och
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` fungerar utan konfiguration.
+- Skriptet startas som den bokstavliga körbara filen `bash`, så `bash` måste
+  finnas i `PATH` på servervärden. Det är något att tänka på i Windows.
 
 ### Router
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+En router utvärderar ett villkor och returnerar en ruttnyckel; motorn utlöser
+bara den nedströms kant vars ruttnyckel matchar och markerar de andra grenarna
+som överhoppade.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+När du markerar en router ersätts fältet **Utdatanyckel** av villkorsredigeraren.
+Välj ett av dess fyra lägen:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Fil(er) finns – någon** — ruttar `"true"` när någon av de angivna
+  sökvägarna finns.
+- **Filer finns – alla** — ruttar `"true"` endast när alla angivna sökvägar
+  finns.
+- **Jämförelse** — jämför ett tillståndsvärde mot en literal.
+- **Växel** — ruttar utifrån värdet på en tillståndsnyckel, med ett standardfall.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Ställ sedan in matchande ruttnycklar på de utgående kanterna (se
+[Koppla ihop noder](#koppla-ihop-noder)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/sv-SE/handbok/referens/pipeline-steg/).
+Booleska grupper av typen `and` / `or` / `not` stöds av bodyn men kan inte
+skapas i det här formuläret — de kräver ett handskrivet predikatträd under
+`extras.predicate`. Hela ordförrådet för predikat och operatorer finns i
+[Pipeline-stegtyper](/sv-SE/handbok/referens/pipeline-steg/).
 
 ### Join
 
-No configuration of its own: it waits for all of its upstream steps.
+Ingen egen konfiguration: den väntar på alla sina uppströmssteg.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Grinden skickar ut godkännaragenten i ett dolt samtal med grindens prompt och
+pausar. Godkännaren hämtar in ditt beslut i samtalet och lämnar in det med
+`submit_output` som `{ "decision": "approved" | "rejected", "reason": "..." }`.
+Beslutet hamnar under utdatanyckeln (standard `approval_decision`), så en
+växelrouter nedströms kan förgrena utifrån det.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Ställ in **Agent** på godkännaren och **Promptmall** på grindens fråga. Grinden
+löses upp genom `submit_output` som `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Noder av typen **Reviewer (prompt)** lämnar in på samma sätt.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Lägger till **Team-ID** och **Utskicksläge**. Väljaren erbjuder exakt två lägen:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — en uppgift per medlem, pausar tills alla är klara.
+- `manager` — skickar ut ledaren, som delegerar.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Varje annat sparat värde beter sig som `allParallel`. Ställ in **Reducerare** på
+`append` för att samla varje medlems resultat i en lista under utdatanyckeln.
 
 ### For each and Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** mappar som standard över tillståndsnyckeln `items`
+(`extras.iterableKey` / `extras.itemKey` på noden). Den renderar sin prompt en
+gång per post (`{{item}}` som standard) och skickar ut agenten **en gång** med
+dessa prompter sammanslagna. En tom samling slutförs direkt med en tom lista. Det
+är inte en parallell utskickning per post.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** pausar tills barnkörningen når ett terminaltillstånd och
+slår sedan samman barnets sluttillstånd under utdatanyckeln (standard
+`subflow_result`). Peka ut ett barn med `extras.templateId`. En mall kan inte
+anropa sig själv; en misslyckad eller avbruten barnkörning får föräldrasteget att
+misslyckas, vilket sedan matar stegets policy för omförsök och fortsätt vid
+misslyckande.
 
-## Declare inputs and allow manual runs
+## Deklarera indata och tillåt manuella körningar
 
-Both live behind **Manual run** in the editor header.
+Båda ligger bakom **Manuell körning** i redigerarens sidhuvud.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Tryck på **Manuell körning**.
+2. Slå på **Tillåt manuell körning**. Den här växeln sparas direkt — den skapar
+   (eller tar bort) triggerraden `manual` som gör att mallen visas på
+   körningssidan.
+3. Ange **Max parallella körningar** om du vill ha ett tak (lämna tomt för
+   obegränsat). Extra starter väntar i tillståndet `queued` tills en plats blir
+   ledig.
+4. Tryck på **Lägg till indata** för varje formulärfält som en manuell körning
+   ska samla in:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Fält                          | Beskrivning                                                   |
+| ----------------------------- | ------------------------------------------------------------- |
+| **Nyckel**                    | Tillståndsnyckel som värdet lagras under; referera till den som `{{key}}` |
+| **Etikett**                   | Visningsetikett (standard är nyckeln)                         |
+| **Typ**                       | Text, Flerradig text, Nummer, Växel, Välj, Arkiv              |
+| **Alternativ (kommaseparerade)** | Kommaseparerade val, endast för Välj                       |
+| **Standardvärde**             | Förifyllt värde                                               |
+| **Platshållare**              | Hjälptext inuti det tomma fältet                              |
+| **Hjälptext**                 | Hjälptext under fältet                                        |
+| **Obligatorisk**              | Om körningsformuläret blockeras av ett tomt värde             |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+En indata av typen **Arkiv** visar en väljare över arbetsytans arkiv och fyller i
+`repo_id`, `repo_local_path`, `repo_full_name` och — när arkivet har en
+GitHub-remote — `repo_owner` och `repo_name` i körningens nyttolast.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Tryck på **Spara** i dialogen. Ändringar av indata förs in i utkastet; de
+   sparas när du sparar mallen.
 
-## Save and enable
+## Spara och aktivera
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/).
+1. Tryck på **Spara** i redigerarens sidhuvud. Fram till dess visar sidhuvudet
+   "Osparade ändringar".
+2. Gå tillbaka till **Inställningar → Arbetsyta → Pipelinemallar** och
+   kontrollera att radens växel för mallen är på. Motorn vägrar starta en
+   inaktiverad mall, och en inaktiverad mall visas aldrig på körningssidan.
+3. Om du vill starta den automatiskt drar du en trigger från nodbiblioteket till
+   duken — se
+   [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/).
 
-## Related guides
+## Relaterade guider
 
-- [Run a pipeline manually](/sv-SE/handbok/how-to-guider/kor-pipeline/)
-- [Set up pipeline triggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
-- [Monitor pipeline runs](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
-- [Pipeline steps reference](/sv-SE/handbok/referens/pipeline-steg/)
+- [Kör en pipeline manuellt](/sv-SE/handbok/how-to-guider/kor-pipeline/)
+- [Ställ in pipelinetriggers](/sv-SE/handbok/how-to-guider/pipelinetriggers/)
+- [Övervaka pipelinekörningar](/sv-SE/handbok/how-to-guider/overvaka-pipelines/)
+- [Pipeline-stegtyper](/sv-SE/handbok/referens/pipeline-steg/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Pipelines](/sv-SE/handbok/koncept/pipelines/)
+- [Pipelines och automatisering](/sv-SE/handbok/koncept/pipelines/)

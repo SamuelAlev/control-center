@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Herramientas de agente integradas
+description: La superficie de herramientas que el arnés integrado le da a un agente —servidor de lenguaje, búsqueda estructural, depurador, kernels y control de workers— con cada operación y sus argumentos.
 slug: es-MX/manual/referencia/herramientas-de-agente
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/es-MX/manual/referencia/herramientas-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Estas son las herramientas **vinculadas al servidor** que el runtime del agente integrado registra directamente —servidor de lenguaje, búsqueda estructural, depurador, kernels, preguntas y control de workers—, a diferencia de las [herramientas MCP](/es-MX/manual/referencia/herramientas-mcp/) que puentea y de las herramientas genéricas de archivo, búsqueda y shell del runtime del arnés. No están en el registro MCP: un cliente MCP externo no las verá, porque cada una está vinculada a un recurso vivo del lado del servidor —un proceso de servidor de lenguaje, un adaptador de depuración, un intérprete— que pertenece a una sola ejecución.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Todas las herramientas de esta página se registran solo cuando su recurso de respaldo está conectado para la ejecución —un supervisor de servidor de lenguaje o de depuración, un analizador de tree-sitter, una fábrica de kernels, un puerto de preguntas, un listado de workers de vibe. La detección de un servidor de lenguaje o de un adaptador de depuración para *este checkout* es una comprobación aparte y posterior (`status` / `adapters`): esas herramientas siguen en la superficie para que el agente pueda preguntar por qué no hay nada utilizable, en lugar de adivinar.
 
-## Approval tiers
+## Niveles de aprobación
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Cada herramienta declara un nivel, y el nivel decide **qué superficies la ven**, y no solo si pide aprobación. El modo plan y los subagentes de solo lectura están limitados a `read`, así que una herramienta de nivel `write` o `exec` está ausente por completo de su esquema.
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| Nivel   | Significado                          | Herramientas aquí                                  |
+| ------- | ------------------------------------ | -------------------------------------------------- |
+| `read`  | Sin efectos secundarios              | `lsp`, `ast_grep`, `ask_user`, las cinco `vibe_*`   |
+| `write` | Modifica archivos                    | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Inicia o controla un proceso         | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — consultas al servidor de lenguaje
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Se registra cuando la ejecución tiene un supervisor de servidor de lenguaje y un directorio de trabajo. Que un servidor pueda responder de verdad se detecta en el momento de la llamada, como una **intersección**: debe existir un marcador de raíz *y* el binario del servidor debe poder resolverse. Cualquiera de los dos por sí solo significa que no arranca ningún servidor —`status` lo dice—, en lugar de una suposición silenciosa.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Las posiciones se direccionan con `line` más una subcadena `symbol`, nunca por columna. Un modelo al que se le pide una columna adivina, y una suposición equivocada se resuelve en otro símbolo de la misma línea: una respuesta que parece correcta y que trata de otra cosa. Omitir `symbol` en una acción de navegación es un error, no una suposición de la primera columna.
 
-| Action            | Arguments                        | Returns                                    |
+| Acción            | Argumentos                       | Devuelve                                   |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (o `"*"`)                 | Errores y advertencias; `"*"` ejecuta en su lugar el comprobador del proyecto |
+| `definition`      | `file`, `line`, `symbol`         | Dónde se declara el símbolo                |
+| `type_definition` | `file`, `line`, `symbol`         | Dónde se declara su tipo                   |
+| `implementation`  | `file`, `line`, `symbol`         | Implementaciones concretas                 |
+| `references`      | `file`, `line`, `symbol`         | Todos los usos, limitados a 50             |
+| `hover`           | `file`, `line`, `symbol`         | Firma y comentario de documentación        |
+| `symbols`         | `query` o `file`                 | Búsqueda en el espacio de trabajo con `query` (limitada a 100); símbolos del documento con `file` (limitados a 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Correcciones rápidas que ofrece el servidor |
+| `status`          | —                                | Qué servidores están en ejecución y para qué raíces |
+| `reload`          | —                                | Reinicia el servidor de esta raíz          |
 
-### Diagnostics on write
+### Diagnósticos al escribir
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+El beneficio no es la herramienta. `write`, `edit` y `apply_patch` están **envueltas**: después de la escritura, el archivo se sincroniza y se guarda a través del servidor de lenguaje, y solo los diagnósticos **recién introducidos** se incorporan al resultado de la herramienta. Un agente se entera de que rompió la compilación en el mismo momento en que la rompe, sin tener que acordarse de preguntar.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Los diagnósticos ya reportados se suprimen mediante un registro por ejecución con la clave puesta en la severidad, el código y el mensaje —la posición se excluye a propósito—, de modo que un diagnóstico que solo bajó cuatro líneas no se vuelve a reportar como nuevo.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — renombrado en todo el proyecto
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Una herramienta aparte, de nivel `write`, por una única razón: el nivel decide la visibilidad. Integrar el renombrado en `lsp` o bien le daría a un explorador de solo lectura la capacidad de reescribir el repo, o bien pondría cada `hover` detrás de una solicitud de aprobación.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argumento  | Significado                                |
+| ---------- | ------------------------------------------ |
+| `file`     | Dónde está el símbolo                      |
+| `line`     | Línea indexada desde 1                     |
+| `symbol`   | Subcadena que lo identifica en esa línea   |
+| `new_name` | Cómo llamarlo                              |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — búsqueda estructural
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Encuentra código por su **forma** en lugar de por su texto. `$NAME` coincide con cualquier nodo, `$$$NAME` coincide con una serie de hermanos y `$_` es un comodín que no captura nada.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+La propiedad que lo convierte en un buscador y no en una regex con pasos extra: una metavariable repetida en un patrón debe capturar el mismo texto.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+coincide con una guarda que libera lo que comprobó y **no** coincide con una que libera otra cosa.
 
-| Argument      | Meaning                                                     |
+| Argumento     | Significado                                                 |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Un fragmento de código con metavariables                    |
+| `path`        | Archivo o directorio donde buscar; de forma predeterminada, todo el espacio de trabajo |
+| `language`    | Un id de gramática incluida (`dart`, `python`, `rust`, `c`, …). Se infiere cuando `path` nombra un archivo |
+| `max_results` | 50 de forma predeterminada                                  |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[El patrón se analiza con la misma gramática que el archivo]
+Así que `dispose(x)` coincide con la llamada sin importar cómo esté espaciada, envuelta o comentada, y nunca coincide con los mismos caracteres dentro de un literal de cadena o un comentario.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Un fragmento se analiza dentro de un andamiaje, no en crudo]
+`dispose(x)` analizado en el nivel superior de Dart es una *firma de función* válida. El compilador de patrones prueba una escalera de contextos (sentencia, expresión, miembro de clase, declaración) y usa el primero que acepta el fragmento. Un patrón que ningún contexto acepta se reporta como no analizable en lugar de buscarse y no encontrarse en silencio.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — reescritura estructural, preparada
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+El mismo emparejamiento, más una plantilla `rewrite` con las metavariables sustituidas de vuelta. **No se escribe nada.** El cambio se prepara y el resultado nombra un `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Argumento  | Significado                                         |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Qué buscar                                          |
+| `rewrite`  | Qué poner en su lugar, con `$NAME` sustituido       |
+| `path`     | Alcance; de forma predeterminada, todo el espacio de trabajo |
+| `language` | Id del lenguaje                                     |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — confirmar o descartar un cambio preparado
 
-| Argument  | Meaning                          |
+| Argumento | Significado                      |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Del resultado `(proposed)`       |
+| `action`  | `accept` o `discard`             |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Cada archivo se compara con el contenido capturado en el momento de la preparación, y **cualquier** discrepancia rechaza todo el cambio. Una reescritura estructural aplicada a medias deja un árbol que no compila ni con la forma antigua ni con la nueva.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — controlar un depurador
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Se registra cuando la ejecución tiene un supervisor de sesión de depuración, un directorio de trabajo y un id de conversación. Que un adaptador pueda arrancar de verdad se detecta en el momento de la llamada, con la misma regla de intersección que el servidor de lenguaje (marcador de raíz *y* binario). Nivel `exec`; no es seguro en paralelo (una sesión es estado entre llamadas, así que un `continue` que adelantara a `stack` leería un frame que ya se ha movido).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Una sesión por conversación, con un TTL estricto (30 minutos). Un segundo `launch` se rechaza en lugar de reemplazar en silencio al primero.
 
-| Op            | Arguments                     | Notes                                          |
+| Op            | Argumentos                    | Notas                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Qué adaptadores se pueden usar aquí y por qué no |
+| `status`      | —                             | Si hay una sesión en ejecución y dónde se detuvo |
+| `breakpoints` | `file`, `lines[]`             | Un `lines` vacío limpia el archivo. Se pueden establecer **antes** de lanzar |
+| `launch`      | `program`, `args[]`           | Inicia el programa detenido en tus puntos de interrupción |
+| `attach`      | `port`                        | Se conecta a un proceso ya en ejecución bajo depuración |
+| `continue`    | `thread_id?`                  | Se ejecuta hasta la siguiente parada            |
+| `pause`       | `thread_id?`                  | Lo detiene donde está                          |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Avanza un paso                        |
+| `threads`     | —                             | Ids y nombres de los hilos                     |
+| `stack`       | `thread_id?`                  | Frames, limitados a 30                         |
+| `scopes`      | `frame_id`                    | Ámbitos de un frame, cada uno con una `reference` |
+| `variables`   | `reference`                   | Hijos, limitados a 50, valores limitados a 400 caracteres |
+| `evaluate`    | `expression`, `frame_id?`     | Se evalúa en el propio ámbito del frame        |
+| `output`      | —                             | La stdout/stderr del proceso depurado, acotada |
+| `terminate`   | —                             | Termina la sesión y mata al adaptador           |
 
-### Adapters
+### Adaptadores
 
-| Id        | Command                    | Root markers                                    |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
-| `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
-| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
-| `delve`   | `dlv dap`                  | `go.mod`                                        |
+| Id        | Comando                       | Marcadores de raíz                              |
+| --------- | ----------------------------- | ----------------------------------------------- |
+| `dart`    | `dart debug_adapter`          | `pubspec.yaml`                                  |
+| `debugpy` | `python3 -m debugpy.adapter`  | `pyproject.toml`, `setup.py`, `requirements.txt` |
+| `lldb`    | `lldb-dap`                    | `Cargo.toml`, `CMakeLists.txt`                  |
+| `delve`   | `dlv dap`                     | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` prefiere un `.venv/bin` o un `venv/bin` locales del proyecto antes que `$PATH`: un python de `$PATH` es un entorno distinto, y conectarse desde el equivocado falla de una forma que parece código roto.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — intérpretes persistentes
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Una celda de Python o JavaScript cuyas variables, imports y datos cargados sobreviven entre llamadas. Nivel `exec`; no es seguro en paralelo.
 
-| Argument      | Meaning                                          |
+| Argumento     | Significado                                      |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | La celda                                         |
+| `description` | Obligatorio. De 5 a 10 palabras para la etiqueta de la transcripción |
+| `language`    | `python` (predeterminado) o `javascript`         |
+| `reset`       | Descarta el intérprete y empieza limpio primero  |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- La última expresión se muestra tal como lo hace un notebook.
+- `display()` funciona, un dataframe de pandas se representa como una tabla y una figura de matplotlib vuelve como una **imagen que la transcripción muestra**.
+- Los modismos de IPython que la gente escribe por reflejo —`%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit`— se reescriben a código normal. `%pip` además vacía `sys.modules`, así que el siguiente `import` ve lo que se acaba de instalar.
 
-### Calling your own tools from inside a cell
+### Llamar a tus propias herramientas desde dentro de una celda
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+El puente **vuelve a entrar en el registro de herramientas del arnés**, así que las barandillas, la aprobación y todos los envoltorios se aplican exactamente igual que a una llamada emitida por el modelo. Viaja por la propia tubería del kernel en lugar de por un socket de bucle local: sin puerto, sin secreto, sin regla de salida.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+El tiempo de espera de la celda es un presupuesto de *inactividad* (5 minutos de forma predeterminada) y se **suspende** mientras hay una llamada puenteada pendiente, así que una celda que se reparte entre subagentes no se mata a mitad del reparto.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Dónde se ejecuta el kernel]
+En el recinto de la conversación cuando lo tiene, y en el host en caso contrario. No arranca un recinto para llegar hasta allí —la misma regla que impide que una pestaña de rig se inicie automáticamente.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — preguntarle algo a la persona
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Nivel `read`. La **única** forma en que una ejecución le pregunta algo al operador. Representa una tarjeta numerada en la conversación y se bloquea hasta que alguien responde, la omite o la pregunta agota su tiempo de espera. Nunca escribas la pregunta como un mensaje de chat: eso termina el turno.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argumento         | Significado                                |
+| ----------------- | ------------------------------------------ |
+| `question`        | Qué preguntar                              |
+| `context`         | Opcional: por qué preguntas y de qué depende la respuesta |
+| `options[]`       | Opciones, cada una `{label, description?}` |
+| `allow_free_text` | Si se acepta una respuesta escrita         |
+| `multi_select`    | Si se pueden elegir varias opciones        |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Omitirla es un éxito: continúa sobre una suposición declarada y no vuelvas a preguntar. Un tiempo de espera agotado es un error con la misma instrucción. Las solicitudes de permiso («¿puedo hacer esto?») son una puerta aparte y se representan como la misma tarjeta en la conversación.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Se registra solo cuando existen tanto un puerto de preguntas como un espacio de destino. Sin una persona conectada, la llamada **falla** en lugar de bloquearse para siempre: la misma postura fail-closed que adopta un `prompt` de barandilla cuando no hay ningún aprobador conectado.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — dirigir workers en segundo plano
 
-Registered only while [vibe mode](/es-MX/manual/guias/dirigir-workers-en-segundo-plano/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Se registran solo mientras el [modo vibe](/es-MX/manual/guias/dirigir-workers-en-segundo-plano/) está activado. Las cinco son de nivel `read`: la puerta corresponde a las herramientas del worker, que es donde ocurre de verdad la edición.
 
-| Tool         | Arguments                                | Notes                                       |
+| Herramienta  | Argumentos                               | Notas                                       |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Devuelve el control de inmediato; el worker sigue ejecutándose |
+| `vibe_send`  | `worker_id`, `message`                   | Añade al encargo y vuelve a ejecutar        |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Se bloquea hasta que finaliza               |
+| `vibe_kill`  | `worker_id`                              | Lo detiene                                  |
+| `vibe_list`  | —                                        | Nivel, estado, tiempo transcurrido y último resultado |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` es `fast` (trabajo mecánico con una especificación clara) o `good` (diseño, criterio o revisar la salida de un worker `fast`).

@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Slack کو اپنے ورک اسپیس سے جوڑیں
+description: Slack ایپ بنائیں، اسے منسلک کریں، اپنا اکاؤنٹ لنک کریں اور ایک ایجنٹ سے Slack تھریڈ میں جواب دلوائیں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اِس ٹیوٹوریل کے اختتام تک آپ کے پاس یہ سب ہوگا:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- آپ کے ورک اسپیس کے لیے بنائی گئی ایک Slack ایپ، جس کی درست اجازتیں اور ایونٹس پہلے سے سیٹ ہوں گے
+- Slack اور Control Center کے درمیان ایک لائیو کنکشن
+- آپ کا اپنا Slack اکاؤنٹ جو آپ کے Control Center صارف سے لنک ہوگا
+- ایک ایجنٹ جو Slack تھریڈ میں آپ کو جواب دے گا، اور ایک سلیش کمانڈ سے درج کیا گیا ٹکٹ
 
-Prerequisites:
+پیشگی شرائط:
 
-- [Your first workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/) and [Dispatch your first agent](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [آپ کا پہلا ورک اسپیس](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/) اور [اپنا پہلا ایجنٹ بھیجیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ/) مکمل ہوں — بغیر ایجنٹ والا ورک اسپیس Slack پیغام وصول تو کر سکتا ہے مگر جواب دینے والا کوئی نہیں ہوتا
+- ورک اسپیس کے **CEO ایجنٹ** کے پاس **ترتیبات → ورک اسپیس → ایجنٹس** پر اڈاپٹر اور ماڈل سیٹ ہوں۔ برج CEO کو جگاتا ہے، اُس ایجنٹ کو نہیں جو آپ نے پچھلے ٹیوٹوریل میں کنفیگر کیا، اور بغیر اڈاپٹر والا ایجنٹ بلٹ اِن لوپ پر Anthropic کے ڈیفالٹ ماڈل کے ساتھ چلتا ہے۔
+- Control Center ورک اسپیس میں `owner` یا `admin` کردار (چیٹ ایپ منسلک کرنا پورے ورک اسپیس کی طرف سے بات کرتا ہے)
+- اپنے Slack ورک اسپیس میں ایپس بنانے اور انسٹال کرنے کی اجازت
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+یہاں کسی چیز کو عوامی ایڈریس، ٹنل یا اِن باؤنڈ پورٹ کی ضرورت نہیں۔ Control Center Socket Mode کے ذریعے Slack کو _باہر_ کال کرتا ہے، چنانچہ یہ NAT کے پیچھے موجود لیپ ٹاپ سے بھی کام کرتا ہے۔
 
-## Step 1: Get a Slack app configuration token
+## مرحلہ 1: Slack ایپ کنفیگریشن ٹوکن حاصل کریں
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+یہ واحد سیکرٹ ہے جو آپ کو خود ہاتھ سے لانا ہوگا۔ یہ Control Center کو اجازت دیتا ہے کہ وہ آپ کے لیے ایپ بنائے اور بعد میں اُس میں ترمیم کرے۔
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. [api.slack.com/apps](https://api.slack.com/apps) کھولیں
+2. صفحے کے نیچے ایپ کنفیگریشن ٹوکنز والے حصے تک اسکرول کریں
+3. اپنے Slack ورک اسپیس کے لیے ٹوکن کا جوڑا بنائیں
+4. **ریفریش** ٹوکن کاپی کریں — یہ `xoxe-` سے شروع ہوتا ہے
 
-## Step 2: Let Control Center create the app
+## مرحلہ 2: Control Center کو ایپ بنانے دیں
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تلاش کریں
+2. **Slack** بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
+3. ایپ کنفیگریشن ٹوکن پیسٹ کریں
+4. جائزہ لیں کہ بوٹ کیسا دکھے گا:
+   - **ایپ کا نام**: Slack ایپ کو کس نام سے فہرست کرتا ہے، مثلاً `Control Center · Acme`
+   - **بوٹ نام**: لوگ `@` کے بعد کیا ٹائپ کرتے ہیں، مثلاً `control-center`
+   - **مختصر تفصیل** اور **بوٹ کیا کہتا ہے کہ وہ کر سکتا ہے**
+   - **سلیش کمانڈ**: بطور ڈیفالٹ `cc`، چنانچہ کمانڈ `/cc` ہے
+   - **براہِ راست پیغامات**: آن رہنے دیں تاکہ اراکین بوٹ کو DM بھیج سکیں
+5. **ایپ بنائیں** پر کلک کریں
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center پوری ایپ ڈیفینیشن خود ترتیب دیتا ہے — Socket Mode آن، بوٹ کو درکار اسکوپس اور ایونٹ سبسکرپشنز، سلیش کمانڈ، Messages ٹیب — اور اسے Slack میں بنا دیتا ہے۔
 
-## Step 3: Finish the two steps only Slack can do
+## مرحلہ 3: وہ دو مراحل مکمل کریں جو صرف Slack کر سکتا ہے
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack کے پاس ایپ لیول ٹوکن بنانے یا ایپ انسٹال کرنے کے لیے کوئی API نہیں، چنانچہ ڈائیلاگ دونوں کام آپ کو لنک کی صورت میں دیتا ہے:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **ایپ لیول ٹوکن بنائیں** — **Basic Information → App-Level Tokens** کھولتا ہے۔ `connections:write` اسکوپ کے ساتھ ٹوکن بنائیں اور اسے کاپی کریں۔ یہ `xapp-` سے شروع ہوتا ہے
+2. **ایپ انسٹال کریں** — **Install App** کھولتا ہے۔ اپنے ورک اسپیس میں انسٹال کریں، پھر **بوٹ یوزر OAuth ٹوکن** کاپی کریں۔ یہ `xoxb-` سے شروع ہوتا ہے
 
-Keep both values around for the next step.
+دونوں اقدار اگلے مرحلے کے لیے سنبھال کر رکھیں۔
 
-## Step 4: Connect
+## مرحلہ 4: منسلک کریں
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. واپس ڈائیلاگ میں **کریڈینشلز پیسٹ کریں** پر کلک کریں
+2. **بوٹ ٹوکن** (`xoxb-…`) اور **ایپ لیول ٹوکن** (`xapp-…`) درج کریں
+3. **ایپ کنفیگریشن ٹوکن** خالی چھوڑ دیں — مرحلہ 1 والا پہلے ہی محفوظ ہو چکا ہے (Slack نے اسے روٹیٹ کر دیا اور Control Center نے نیا محفوظ کر لیا)
+4. **منسلک کریں** پر کلک کریں
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center کچھ بھی محفوظ کرنے سے پہلے Slack سے بوٹ ٹوکن کی تصدیق کرتا ہے، پھر ساکٹ کھولتا ہے۔ اب وہ قطار بوٹ کا نام اور آپ کے Slack ورک اسپیس کا نام **لائیو** ٹیگ کے ساتھ دکھاتی ہے۔
 
-## Step 5: Link your own Slack account
+## مرحلہ 5: اپنا Slack اکاؤنٹ لنک کریں
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+کنکشن بوٹ کو قابلِ رسائی بناتا ہے؛ لنک کرنا _آپ_ کو پہچانا جانے والا بناتا ہے۔ جب تک آپ کی Slack شناخت لنک نہ ہو، بوٹ آپ کے پیغامات پر عمل نہیں کرے گا — وہ کسی پیغام کو ایپ انسٹال کرنے والے سے کبھی منسوب نہیں کرتا۔
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+لنک کرنا ذاتی معاملہ ہے، چنانچہ یہ پورے ورک اسپیس والے کنکشن سے الگ صفحے پر رہتا ہے۔
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت** پر جائیں اور **لنک شدہ چیٹ اکاؤنٹس** کارڈ تلاش کریں
+2. **میرا Slack اکاؤنٹ لنک کریں** پر کلک کریں
+3. یہ جو کمانڈ دکھاتا ہے اُسے کاپی کریں، مثلاً `/cc link K7M2QP`
+4. Slack میں وہ کمانڈ ایک DM میں بوٹ کو بھیجیں
+5. بوٹ جواب دیتا ہے "Linked — you are …"
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+یہ کوڈ ایک بار استعمال ہوتا ہے اور 15 منٹ میں ختم ہو جاتا ہے۔ اگر آپ کا Slack ای میل کسی ایسے Control Center صارف سے میل کھاتا ہے جو پہلے ہی اِس ورک اسپیس کا رکن ہے، تو برج پہلی بار بات کرنے پر آپ کو خودکار طور پر لنک کر دیتا ہے اور آپ یہ مرحلہ چھوڑ سکتے ہیں۔
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+اگر آپ یہ کام مکمل ہونے سے پہلے بوٹ کا ذکر کریں تو وہ انکار کرتا ہے اور وجہ بتاتا ہے۔ یہ تینوں انکار الگ الگ ہیں، چنانچہ دیکھیں کہ آپ کو کون سا ملا:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **غیر لنک شدہ بھیجنے والا**: بوٹ آپ کو لنک کرنے کا طریقہ بتاتا ہے۔ اِس مرحلے پر واپس آ جائیں۔
+- **لنک شدہ، مگر اِس ورک اسپیس کا رکن نہیں**: کسی ایڈمن سے کہیں کہ آپ کو دعوت دے۔
+- **صرف پڑھنے والے کردار کا رکن** (viewer یا guest): بوٹ آپ کی طرف سے کام شروع نہیں کرے گا۔
 
-## Step 6: Put an agent on something
+## مرحلہ 6: ایک ایجنٹ کو کسی کام پر لگائیں
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Slack میں بوٹ کو کسی چینل میں مدعو کریں: `/invite @control-center`
+2. کسی حقیقی درخواست کے ساتھ اُس کا ذکر کریں:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center api ریپو کے کھلے PRs کا خلاصہ کریں
 
-The bridge:
+برج:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. اُس Slack تھریڈ کے لیے ایک Control Center اسپیس بناتا ہے، جس کا نام Slack چینل اور آپ کی درخواست سے لیا جاتا ہے
+2. ورک اسپیس کے فرنٹ ڈور ایجنٹ کو جگاتا ہے (جب CEO ایجنٹ موجود ہو تو اُسے، ورنہ پہلے ایجنٹ کو)
+3. ایجنٹ کا جواب لکھے جانے کے ساتھ ساتھ واپس Slack تھریڈ میں اسٹریم کرتا ہے
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+جاری رکھنے کے لیے اُسی Slack تھریڈ میں جواب دیں — مزید ذکر کی ضرورت نہیں، کیونکہ Slack تھریڈ اب برج شدہ ہے۔ یا چینل استعمال کرنے کے بجائے بوٹ کو DM بھیجیں؛ ہر DM گفتگو اپنا الگ Control Center اسپیس چلاتی ہے، جس کا ایک عنوان ہوتا ہے اور ایجنٹ کے کام کرنے کے دوران ایک “سوچ رہا ہے…” اسٹیٹس لائن۔
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+اسٹریمنگ کے لیے Slack کا اسٹریمنگ API درکار ہے، جو ہر پلان میں نہیں ہوتا۔ اگر آپ کی ایپ کو یہ مسترد کر دیا جائے تو برج پوری کنکشن کے لیے کوشش کرنا چھوڑ دیتا ہے اور اس کے بجائے ہر جواب ایک ہی پیغام میں بھیجتا ہے، اور **چیٹ برجز** کارڈ یہ دکھاتا ہے “اِس Slack ایپ کے لیے لائیو اسٹریمنگ آف ہے — جوابات ایک پیغام میں آتے ہیں۔” باقی سب کچھ ویسے ہی کام کرتا ہے۔
 
-## Step 7: File a ticket without leaving Slack
+## مرحلہ 7: Slack چھوڑے بغیر ٹکٹ درج کریں
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+بوٹ اُس ٹکٹ کی کلید کے ساتھ جواب دیتا ہے جو اُس نے درج کیا۔ یہ ٹکٹ ایک عام مقامی Control Center ٹکٹ ہے، جس کی اطلاع آپ نے دی اور جو کسی ایجنٹ کو تفویض کرنے کے لیے تیار ہے۔ `/cc help` وہ سب کچھ فہرست کرتا ہے جو یہ کمانڈ کر سکتی ہے۔
 
-## Recap
+## خلاصہ
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+آپ نے Control Center سے ایک Slack ایپ بنائی، اُسے ایک آؤٹ باؤنڈ ساکٹ پر منسلک کیا، اپنی Slack شناخت کو اپنے Control Center صارف سے لنک کیا اور ایک Slack تھریڈ سے ایجنٹ کو کام پر لگایا۔ Slack میں ہونے والا ہر واقعہ Control Center میں بھی موجود ہے: Slack تھریڈ ایک اسپیس ہے، جواب ایک ٹرانسکرپٹ ہے، ٹکٹ ایک ٹکٹ ہے۔
 
-**Next:** [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/).
+**اگلا:** [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/) دستی طریقہ، ٹوکنز کی روٹیشن اور خرابیوں کا ازالہ بتاتا ہے۔ اس کے پیچھے والے ماڈل کے لیے [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/) پڑھیں۔

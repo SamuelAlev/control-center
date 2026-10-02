@@ -1,95 +1,96 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Připojte poskytovatele OpenID Connect
+description: Napoj libovolného vydavatele OIDC — Pocket ID, Keycloak, Auth0, Zitadel — k přihlášení do Control Center.
 slug: cs-CZ/prirucka/navody/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Použij tenhle návod, když poskytovatel identity mluví **OpenID Connect**,
+ne SAML. Funguje každý certifikovaný vydavatel OIDC — Pocket ID, Keycloak,
+Auth0, Zitadel, Google Workspace i další. Kroky jsou stejné; liší se jen
+místo, kde poskytovatel ty hodnoty ukazuje.
 
-## Prerequisites
+## Předpoklady
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- poskytovatel OIDC, u kterého umíš založit klienta — poznamenej si jeho
+  **client id** a **URL vydavatele** (základ, pod kterým leží dokument
+  `.well-known/openid-configuration`), a k tomu **client secret**, když je
+  klient důvěrný (veřejný klient s PKCE ho nemá),
+- server Control Center, který spravuješ (**vlastník serveru**).
 
-## Steps
+## Postup
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Otevři **Nastavení → Server → Jednotné přihlášení** a přepni na
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Vyplň **URL vydavatele**, **Client ID** a **Client secret (volitelné)**,
+   když ho poskytovatel vydal. Control Center si endpointy zjistí ze
+   standardního discovery dokumentu vydavatele — žádné nastavení zvlášť
+   pro každého poskytovatele.
+3. U poskytovatele na tom klientovi zaregistruj přesměrování
+   `https://<your-server>/oidc/callback`.
+4. Když skupiny chodí v jiném claimu než `groups`, nastav název
+   **Claim skupin**. Skupiny namapuj na role, když chceš (SSO nikdy
+   neudělí roli vlastníka).
+5. Zvol politiku členství (automaticky přidat do každého pracovního
+   prostoru, nebo vyžadovat pozvánku do každého zvlášť), zapni
+   **Použít OpenID Connect k přihlášení** a stiskni **Uložit připojení**.
+6. Stiskni **Otestovat připojení** — server stáhne discovery dokument
+   vydavatele a ověří jeho endpointy, takže zelený toast znamená, že
+   funguje všechno kromě cesty prohlížeče tam a zpět. Registraci klienta
+   ověříš taky [kontrolou níž](#zkontroluj-konfiguraci-z-téhle-stránky).
+7. Vyzkoušej přihlášení: obrazovka připojení na webu ukáže **Přihlásit se
+   přes OpenID Connect**, nebo otevři přímo
+   `https://<your-server>/oidc/login`.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claimy (e-mail, jméno, skupiny) čte tvůj server z token endpointu
+vydavatele přes TLS. Prohlížeč je nikdy nedodává, takže se místně
+neověřuje podpis JWT. Klient má mít povolený scope
+`openid profile email`, přesně ten, o který Control Center žádá.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Protože claimy ověřuje jen tenhle kanál TLS, URL vydavatele musí být
+**https**. Vydavatel na prostém textu by útočníkovi na cestě dovolil
+podvrhnout identity hromadně. `http` se bere jen u vydavatelů na loopback
+(`localhost`, `127.0.0.1`, `::1`), a to pro místní vývoj.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Veřejný klient, nebo důvěrný?]
+Výchozí a doporučená podoba je **veřejný klient** s tokem authorization
+code a **PKCE** (RFC 7636): jednorázový code verifier, který drží server,
+nahrazuje secret a výměna tokenu je vázaná na autorizační požadavek,
+který ji spustil. Není tu secret, který by mohl uniknout, a ukradený
+autorizační kód je bez code verifieru k ničemu. Někteří poskytovatelé
+tomu při zakládání říkají typ klienta „SPA“ nebo „native“.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Když poskytovatel místo toho vydal **důvěrného** klienta, buď ho u
+poskytovatele označ jako veřejného (PKCE zůstane zapnuté tak jako tak),
+nebo vlož client secret do pole **Client secret (volitelné)** u
+připojení. Secret se ukládá do souboru secrets serveru s oprávněním 0600
+(nikdy do databáze), na token endpoint jde jako `client_secret_post` a
+přes RPC se nevrací. Když pole při uložení necháš prázdné, uložený secret
+zůstane. Když přihlášení spadne při výměně tokenu, log serveru uvede
+chybu, kterou vrátil sám poskytovatel (`invalid_client` skoro vždy
+znamená, že secret chybí nebo nesedí).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/cs-CZ/prirucka/navody/sso-scim).
+:::note[Dosažitelnost]
+Samotné přihlášení zprostředkovává prohlížeč: vydavatel jen přesměruje
+prohlížeč uživatele zpět na `/oidc/callback` a tvůj server udělá odchozí
+volání HTTPS na token endpoint. Příchozí spojení od vydavatele není
+potřeba, takže server za NAT stačí, pokud na něj prohlížeče uživatelů
+dosáhnou (LAN, VPN, Tailscale nebo tunel). **Výjimkou je provisioning
+přes SCIM**: IdP volá tvůj server přímo, a to chce tunel nebo veřejnou
+URL. Viz [provisioning uživatelů přes SCIM](/cs-CZ/prirucka/navody/sso-scim/).
 :::
 
-## Check your configuration from this page
+## Zkontroluj konfiguraci z téhle stránky
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Kontrola níž běží v prohlížeči. Discovery dokument tvého vydavatele
+stáhne přímo, takže ho tenhle web neuvidí, a uplatní pravidla serveru:
+vydavatel na https, který se shoduje s dokumentem, endpointy na vlastním
+originu vydavatele, PKCE S256 a metoda ověření na token endpointu, kterou
+typ klienta potřebuje. S client ID a adresou serveru umí otevřít zkušební
+přihlášení, které ukáže, jestli jsou klient a jeho redirect URI
+zaregistrované. Na client secret se nikdy neptá.
 
 <SsoCheck kind="oidc" />

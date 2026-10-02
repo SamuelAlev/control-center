@@ -1,199 +1,221 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Μνήμη και γνώση
+description: Πώς το Control Center αποθηκεύει τη γνώση των πρακτόρων, τι φτάνει πραγματικά στην προτροπή ενός πράκτορα και γιατί οι αναγνώσεις μνήμης αποτυγχάνουν ανοιχτά.
 slug: el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Σε τι χρησιμεύει η μνήμη
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Χωρίς μνήμη, κάθε συνομιλία με πράκτορα ξεκινά από το μηδέν: η ίδια σύμβαση
+πρέπει να εξηγηθεί ξανά, η ίδια απόφαση να συζητηθεί ξανά, το ίδιο αδιέξοδο να
+εξερευνηθεί ξανά. Η μνήμη είναι η αποθήκη με πεδίο τον χώρο εργασίας που
+επιβιώνει μεταξύ των εκτελέσεων και υπάρχει ώστε η γνώση που παράγει ένας
+πράκτορας να μπορεί να βρεθεί αργότερα από κάποιον άλλον.
 
-It has three layers and they answer different questions:
+Έχει τρία επίπεδα και απαντούν σε διαφορετικά ερωτήματα:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Γεγονότα** — τι ισχύει (μια σύμβαση, ένα αποτέλεσμα, μια απόφαση).
+2. **Πολιτικές** — τι πρέπει να κάνουν οι πράκτορες γι' αυτό (ένας κανονιστικός κανόνας).
+3. **Μνήμη εργασίας** — τι είχε στη μέση ένας πράκτορας.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Η διάκριση έχει σημασία γιατί φτάνουν στον πράκτορα από διαφορετικές διαδρομές.
+Τα γεγονότα αναζητούνται. Οι πολιτικές ωθούνται. Η μνήμη εργασίας είναι
+ιδιωτική.
 
-## Facts
+## Γεγονότα
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+Ένα `MemoryFact` είναι μια μονάδα γνώσης με πεδίο έναν χώρο εργασίας και έναν
+τομέα.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Χαρακτηριστικό                             | Τι είναι                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `domain`                                   | Ο τομέας γνώσης ("conventions", "decisions", "codebase")                  |
+| `topic`                                    | Μια σύντομη ετικέτα θέματος                                               |
+| `content`                                  | Το κείμενο της γνώσης                                                     |
+| `confidence`                               | 0.0–1.0, αρχικοποιείται από την προέλευση και αυξάνεται με εκ νέου αναφορά |
+| `memoryType`                               | Το είδος του γεγονότος — καθορίζει την καμπύλη χρονικής απομείωσής του    |
+| `veracity`                                 | Πώς έγινε γνωστό — τροφοδοτεί τη βεβαιότητα και καθορίζει το μέγεθος κάθε αύξησης από εκ νέου αναφορά |
+| `sourceObservationIds`                     | Ποιες παρατηρήσεις οδήγησαν σε αυτό                                       |
+| `supersededBy`                             | Το νεότερο γεγονός που το αντικατέστησε, αν υπάρχει                       |
+| `validUntil`, `recallCount`, `mentionCount` | Σήματα λήξης και χρήσης που χρησιμοποιούνται στην ανάκληση               |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Οι δύο τελευταίες γραμμές είναι αυτές που οι περισσότεροι προσπερνούν και είναι
+αυτές που αποφασίζουν _ποιο_ γεγονός θα αναδυθεί. Το `memoryType` φέρει
+παραμέτρους χρονικής απομείωσης Weibull ανά τύπο, οπότε μια χρονικά
+περιορισμένη δέσμευση ξεθωριάζει γρήγορα, ενώ ένα σταθερό γεγονός προφίλ όχι.
+Το `veracity` καταγράφει την προέλευση — δηλώθηκε από άνθρωπο (βάρος 1.0),
+συνήχθη από πράκτορα (0.7), παρήχθη από εργαλείο (0.5), εισήχθη (0.6) — και
+αυτό το βάρος αρχικοποιεί τη βεβαιότητα εκκίνησης του γεγονότος.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Τα γεγονότα δεν επεξεργάζονται ποτέ επί τόπου όταν αντικρούονται. Η εγγραφή ενός
+γεγονότος εκτελεί ανίχνευση συγκρούσεων σε γεγονότα ίδιου τομέα και ίδιου
+θέματος και υποκαθιστά το χαμένο, καταγράφοντας μια γραμμή σύγκρουσης. Το ίχνος
+ελέγχου είναι το νόημα: μπορείτε πάντα να δείτε τι πιστευόταν πριν και τι το
+αντικατέστησε.
 
-## Policies
+## Πολιτικές
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+Ένα `MemoryPolicy` είναι ένας κανονιστικός κανόνας που παράγεται από γεγονότα,
+με πεδίο έναν χώρο εργασίας και έναν τομέα, με σημαία ενεργότητας και προαιρετικό
+`requiredRole`.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Κάθε **ενεργή** πολιτική του χώρου εργασίας εισάγεται σε **κάθε** αποστολή, χωρίς
+φιλτράρισμα — κανένα φιλτράρισμα ανά τομέα, ρόλο, εργασία ή χώρο. Αξίζει να το
+ξέρετε πριν γράψετε την εικοστή σας πολιτική, γιατί οι πολιτικές ανταγωνίζονται
+για το ίδιο παράθυρο πλαισίου με την εργασία. Είναι επίσης ο λόγος που το
+`requiredRole` σε μια πολιτική είναι συμβουλευτικό: περιγράφει σε ποιον
+απευθύνεται ο κανόνας, δεν εμποδίζει τον κανόνα να φτάσει σε όλους τους άλλους.
 
-## Domains
+## Τομείς
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+Ένας `MemoryDomain` ομαδοποιεί γεγονότα και πολιτικές μέσα σε έναν χώρο
+εργασίας. Οι τομείς δίνουν στη γνώση οργανωτική δομή και είναι η μονάδα με την
+οποία συντάσσονται οι παραχωρήσεις πρόσβασης — αλλά δείτε την προειδοποίηση
+παρακάτω πριν αντιμετωπίσετε έναν τομέα ως όριο εμπιστευτικότητας.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Ένας τομέας είναι είτε σε επίπεδο χώρου εργασίας (`architecture`) είτε με πεδίο
+ένα αποθετήριο (`repo:<slug>/architecture`). Το ίδιο όνομα και στα δύο πεδία
+σημαίνει δύο ανεξάρτητες αποθήκες: ένα γεγονός που ισχύει για μια βάση κώδικα δεν
+αντικαθιστά αυτό που ισχύει σε επίπεδο χώρου εργασίας. Το `search_memory` και το
+προοίμιο της αποστολής κατατάσσουν πρώτη τη μνήμη που αφορά το αποθετήριο όταν ο
+πράκτορας εργάζεται σε αυτό το αποθετήριο· δεν φιλτράρουν τα υπόλοιπα. Περάστε
+`repo` στα `propose_fact` / `propose_policy` / `search_memory` για να γράψετε σε
+αυτό το πεδίο ή να το ενισχύσετε.
 
-## Access control is fail-open for reads
+## Ο έλεγχος πρόσβασης αποτυγχάνει ανοιχτά στις αναγνώσεις
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+Ένα `MemoryAccessGrant` αντιστοιχίζει έναν ρόλο πράκτορα και έναν τομέα σε ένα από
+τρία επίπεδα άδειας:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Δικαίωμα | Σημασία                                                                                                          |
+| -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `none`   | Καμία πρόσβαση                                                                                                   |
+| `read`   | Μπορεί να αναζητά και να ανακτά γεγονότα                                                                         |
+| `write`  | Απαιτείται από το `propose_policy`. Οι εγγραφές γεγονότων (`propose_fact`, `supersede_fact`) δεν ελέγχονται από παραχωρήσεις |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Η απουσία παραχώρησης σημαίνει ανάγνωση, όχι άρνηση]
+Όταν δεν υπάρχει γραμμή παραχώρησης για ένα ζεύγος `(role, domain)`, το
+πραγματικό δικαίωμα είναι **`read`**. Οι αναγνώσεις αποτυγχάνουν ανοιχτά εκ
+σχεδιασμού. Η μόνη εγγραφή που πετάει σφάλμα είναι το `propose_policy` χωρίς
+δικαίωμα `write` (`InsufficientMemoryPermission`). Η τοποθέτηση ευαίσθητου
+περιεχομένου σε έναν τομέα μνήμης δεν περιορίζει το ποιος μπορεί να το διαβάσει,
+εκτός αν έχετε γράψει ρητά παραχώρηση `none` για κάθε ρόλο που δεν θα έπρεπε να το
+βλέπει.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Δεν υπάρχει επίσης πουθενά σήμερα στο προϊόν περιβάλλον χρήστη για παραχωρήσεις.
+Η οθόνη μνήμης έχει καρτέλες Γεγονότα, Πολιτικές και Γράφος γνώσης και τίποτε
+άλλο· οι παραχωρήσεις είναι προσβάσιμες μόνο μέσω των λειτουργιών RPC
+`memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Η ασυμμετρία — χαλαρή στις αναγνώσεις, αυστηρή στις εγγραφές πολιτικών — είναι
+σκόπιμη ανταλλαγή. Η μνήμη είναι πιο χρήσιμη όταν κυκλοφορεί, και μια άρνηση
+ανάγνωσης παράγει έναν πράκτορα που σιωπηλά γνωρίζει λιγότερα αντί για έναν που
+αναφέρει πρόβλημα. Μια άρνηση εγγραφής πολιτικής, αντιθέτως, είναι ηχηρή και
+διορθώσιμη, οπότε εκεί βρίσκεται η επιβολή. Ένας νεοδημιουργημένος τομέας
+αρχικοποιεί `write` για κάθε ρόλο· το σφίξιμό του εκ των υστέρων είναι αλλαγή μόνο
+μέσω RPC, γιατί δεν υπάρχει περιβάλλον χρήστη για παραχωρήσεις.
 
-## Working memory
+## Μνήμη εργασίας
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Κάθε πράκτορας έχει ένα `AgentWorkingMemory`: ένα πρόχειρο ελεύθερου κειμένου με
+κλειδί τον χώρο εργασίας και τον πράκτορα. Επιβιώνει μεταξύ των εκτελέσεων, είναι
+ιδιωτικό για αυτόν τον πράκτορα και εισάγεται στην προτροπή του σε κάθε αποστολή.
+Εκεί ζει το «είχα μείνει στη μέση της αναδιάρθρωσης του auth» — η κατάσταση που
+αξίζει να μεταφερθεί στην επόμενη εκτέλεση αλλά όχι να αναχθεί σε διαρκές γεγονός.
 
-## What actually reaches an agent's prompt
+## Τι φτάνει πραγματικά στην προτροπή ενός πράκτορα
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Κατά την αποστολή, το προοίμιο μνήμης συγκροτείται από ακριβώς τρία πράγματα:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Κάθε ενεργή πολιτική του χώρου εργασίας**, ως γραμμές `- [domain] rule`.
+- **Η δική του μνήμη εργασίας του πράκτορα**, αυτολεξεί.
+- **Μια σύντομη λίστα γεγονότων με αντιστοίχιση λέξεων-κλειδιών** για αυτή την
+  εργασία — το πολύ πέντε, μέσα σε προϋπολογισμό ~1.200 χαρακτήρων και μόνο όταν
+  η περιγραφή της εργασίας έχει μήκος τουλάχιστον 20 χαρακτήρες. Οι πιο σύντομες
+  εργασίες δεν παίρνουν καθόλου γεγονότα.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Η σύντομη λίστα είναι μόνο FTS/λέξεων-κλειδιών και είναι περιορισμένη σκόπιμα. Η
+ενσωμάτωση ενός ερωτήματος είναι αργή και η διαδρομή αποστολής είναι το μόνο
+σημείο όπου η καθυστέρηση είναι άμεσα ορατή, οπότε η αργή σημασιολογική διαδρομή
+μένει σκόπιμα έξω από αυτήν. Το προοίμιο κλείνει λέγοντας στον πράκτορα να
+επαληθεύει τα κρίσιμα στοιχεία με το `search_memory`, όπου ζει το πλήρες μοντέλο
+ανάκλησης.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Σε αυτή τη διαδρομή δεν συμβουλεύονται καθόλου παραχωρήσεις πρόσβασης. Ό,τι βρει
+η σύντομη λίστα είναι αυτό που βλέπει ο πράκτορας.
 
-## Recall: one query, four voices
+## Ανάκληση: ένα ερώτημα, τέσσερις φωνές
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Το εργαλείο `search_memory` που βλέπει ο πράκτορας έχει τρεις λειτουργίες και
+είναι πραγματικά διαφορετικές αναζητήσεις:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — μόνο FTS5.
+- **`semantic`** — αποτελέσματα BM25 και διανυσματικά, συγχωνευμένα με αμοιβαία
+  συγχώνευση κατάταξης.
+- **`hybrid`** (η προεπιλογή) — πολυφωνική ανάκληση: τέσσερις φωνές κατάταξης
+  συγχωνεύονται και μετά διαφοροποιούνται.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Οι τέσσερις φωνές είναι λεξιλογική (FTS), σημασιολογική (διανυσματικό KNN),
+χρονική (πρόσφατα ενεργά γεγονότα) και γράφου — ένας περίπατος δύο βημάτων πάνω
+σε επεισοδιακές ακμές από τους ισχυρότερους λεξιλογικούς και σημασιολογικούς
+σπόρους. Η φωνή του γράφου είναι ο λόγος που υπάρχουν καθόλου οι επεισοδιακές
+ακμές: αναδεικνύει το γεγονός που είναι _συνδεδεμένο με_ την απάντησή σας χωρίς
+να ταιριάζει με καμία λέξη σας. Οι φωνές σταθμίζονται από μια ταξινομημένη
+πρόθεση του ερωτήματος (η σημασιολογική έχει το μεγαλύτερο βάρος από προεπιλογή,
+μετά ο γράφος και η λεξιλογική, μετά η χρονική), η βαθμολογία κάθε υποψηφίου
+κλιμακώνεται με τη χρονική απομείωση Weibull, και το σύνολο αποτελεσμάτων
+διαφοροποιείται με MMR ώστε πέντε επαναδιατυπώσεις ενός γεγονότος να μην
+εκτοπίζουν τέσσερα διαφορετικά.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Η σημασιολογική ανάκληση είναι σιωπηλή μέχρι να εγκατασταθεί το μοντέλο]
+Η διανυσματική φωνή συνεισφέρει μόνο αφού κατέβει το μοντέλο ενσωματώσεων στη
+συσκευή. Μέχρι τότε, η υβριδική ανάκληση τρέχει με τρεις φωνές και δεν υπάρχει
+αναδρομική συμπλήρωση — τα γεγονότα που γράφτηκαν πριν εγκατασταθεί το μοντέλο δεν
+αποκτούν ποτέ διανύσματα. Η διανυσματική διαδρομή υποβαθμίζεται περαιτέρω, σε
+σάρωση εντός Dart πάνω στα συσκευασμένα διανύσματα, αν αποτύχει να φορτωθεί η ίδια
+η επέκταση διανυσμάτων της SQLite· η ανάκληση απαντά ακόμα, απλώς πιο αργά.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Η αναζήτηση μνήμης στην επιφάνεια εργασίας και στον ιστό είναι ξεχωριστή,
+απλούστερη διαδρομή: η λειτουργία RPC `memory_fact.search` είναι **μόνο FTS5**,
+γιατί ένας λεπτός πελάτης δεν μπορεί να στέλνει ενσωμάτωση ερωτήματος και η
+υβριδική διαδρομή παραμένει εσωτερική στον κεντρικό υπολογιστή. Έτσι, η κατάταξη
+που βλέπετε στον περιηγητή μνήμης δεν είναι η κατάταξη που παίρνει ένας πράκτορας
+από το `search_memory`. Αυτό είναι αναμενόμενο, όχι σφάλμα, αλλά σημαίνει ότι το
+«έψαξα και δεν το βρήκα» στο περιβάλλον χρήστη δεν αποτελεί απόδειξη ότι ο
+πράκτορας δεν θα το βρει.
 
-## Where memory lives and who writes it
+## Πού ζει η μνήμη και ποιος τη γράφει
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Ο περιηγητής μνήμης βρίσκεται στις **Ρυθμίσεις → Χώρος εργασίας → Μνήμη**
+(`/workspaces/<id>/settings/memory`), με καρτέλες Γεγονότα, Πολιτικές και Γράφο
+γνώσης.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Υπάρχει εκεί μια ασυμμετρία που εκπλήσσει: **μπορείτε να επεξεργαστείτε και να
+διαγράψετε μνήμη, αλλά δεν μπορείτε να τη δημιουργήσετε.** Ούτε η καρτέλα
+Γεγονότα ούτε η καρτέλα Πολιτικές έχει δυνατότητα προσθήκης. Η συγγραφή γίνεται
+από την πλευρά του πράκτορα, μέσω των `propose_fact` και `propose_policy` (τα
+`supersede_fact` / `supersede_policy` για αντικατάσταση). Το `remember` γράφει ένα
+στοιχείο θερμού επιπέδου περιορισμένο στη συνεδρία, το οποίο το
+`consolidate_memory` μπορεί αργότερα να αναγάγει σε γεγονός· τα
+`record_observation` και `update_my_notes` γράφουν το ιδιωτικό πρόχειρο που
+εισάγεται κατά την αποστολή. Ο περιηγητής είναι επιφάνεια ανασκόπησης και
+διόρθωσης, όχι συγγραφής — οπότε αν θέλετε ένα γεγονός στη μνήμη, ο τρόπος να το
+βάλετε εκεί είναι να το πείτε σε έναν πράκτορα.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Δύο λειτουργίες συντήρησης καλούνται επίσης από τον πράκτορα και όχι από
+χρονοδιάγραμμα: το `consolidate_memory` συγχωνεύει και κλαδεύει συσσωρευμένα
+γεγονότα και το `harmonize_memory` εναρμονίζει πεποιθήσεις που απέκλιναν μεταξύ
+πρακτόρων. Το `list_memory_conflicts` δείχνει τι έχει ήδη καταγράψει η ανίχνευση
+συγκρούσεων. Τίποτα δεν τα εκτελεί για εσάς με χρονοδιακόπτη. Οι αποφάσεις
+συσκέψεων συγκομίζονται στον τομέα `decisions` όταν ένα βήμα διατήρησης σύσκεψης
+τις καταγράψει· αυτό δεν είναι χρονοδιακόπτης σε ολοκληρωμένες εκτελέσεις
+πρακτόρων.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): roles are what grants are written against
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-μνήμης/): working with memory in practice
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/): οι ρόλοι είναι αυτό με το οποίο συντάσσονται οι παραχωρήσεις
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): η μνήμη έχει πεδίο τον χώρο εργασίας και ζει στο δικό του αρχείο βάσης δεδομένων
+- [Διαχείριση μνήμης χώρου εργασίας](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-μνήμης/): εργασία με τη μνήμη στην πράξη

@@ -2,6 +2,7 @@
 title: Diagnose an agent
 description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
 slug: en-GB/manual/guides/agent-diagnostics
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
 This guide shows you how to find out why an agent is not producing runs.
@@ -48,7 +49,7 @@ For a headless server, `GET /healthz` is the same information without a client. 
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalogue version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
 
 Two things worth knowing when a change "works in tests but not in the app":
 
@@ -61,7 +62,7 @@ Two things worth knowing when a change "works in tests but not in the app":
 
 - **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
 - **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
+- **System behaviour** — keep the computer awake while agents run.
 - **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
 - **Log level** — raise it before reproducing a failure.
 - **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
@@ -71,14 +72,14 @@ Detection and enforcement now agree: where the detector reports a native backend
 
 So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitisation and the tool surface its mode allows.
 :::
 
 ## Common failures
 
 ### The run never starts and the adapter shows "Not found"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI, and connect a provider on the same page.
 
 ### The agent cannot push or open a pull request
 

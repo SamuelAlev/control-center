@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Introduktion
+description: Control Center är cockpit för programvaruutveckling med flera agenter.
 slug: sv-SE/handbok
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center ger dig kommandot över en flotta av AI-kodningsagenter. Starta agenter, se dem arbeta i realtid, granska deras PR:er och hantera repos, arbetsytor och integrationer — från en inbyggd skrivbordsapp, en webbläsare eller din telefon.
 
 <div className="docs-start not-content">
-  <LinkButton href="/sv-SE/handbok/snabbstart/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/sv-SE/handbok/installera/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/sv-SE/handbok/snabbstart/" icon="right-arrow">Snabbstart</LinkButton>
+  <LinkButton href="/sv-SE/handbok/installera/" variant="minimal" icon="download">Installera Control Center</LinkButton>
 </div>
 
-## What you can do
+## Vad du kan göra
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/sv-SE/handbok/koncept/pipelines/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/sv-SE/handbok/how-to-guider/anvand-stationer/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Skicka meddelanden till agenter**: ytor är det främsta sättet att styra flottan. @-nämn en agent så dispatcheras den till sin egen copy-on-write-worktree, så att flera kan koda och granska parallellt utan att röra din arbetskopia
+- **Orkestrera de stora uppgifterna**: ge orkestratorn ett mål, godkänn planen för hela teamet som den föreslår en gång, och en genererad [pipeline](/sv-SE/handbok/koncept/pipelines/) kör den
+- **Granska och slå ihop PR:er** med en inbyggd diff-visare, kommentarer i raden och AI-driven granskning
+- **Ge agenter engångsmaskiner**: en [station](/sv-SE/handbok/how-to-guider/anvand-stationer/) är en engångs-VM — en webbläsare, ett skrivbord, en telefon eller en sluten terminal — som agenten styr medan du tittar live och kan ta över; dev-servrar inuti vidarebefordras till `localhost`, agentens webbläsare och `https://myapp.test`
+- **Automatisera arbetsflöden** med DAG-baserade pipelines som utlöses av händelser eller scheman
+- **Hantera kunskap** med minne, fakta och policyer per arbetsyta
+- **Följ arbetet** med leverantörsneutrala ärenden, projekt och delegering
+- **Spela in möten** med inspelning på enheten, transkribering och diarisering, som sedan sammanfattas till anteckningar, åtgärdspunkter och beslut
+- **Se din dag** med synk mot Google Calendar, RSVP, mötesaviseringar och spela in och länka
+- **Följ flottan från telefonen**: parkoppla en enhet med din server och läs meddelanden, svara och triagea ärenden. Telefonen tar den bästa vägen den når — loopback, LAN, tailnet eller TLS — och faller tillbaka på en änd-till-änd-förseglad relay som vidarebefordrar ramar den inte kan läsa
+- **Styr agenter från Slack**: brygga en arbetsyta till en chattapp och nämn boten, svara i en Slack-tråd eller registrera ett ärende med ett slash-kommando — över en utgående anslutning, så ingen publik ändpunkt behövs
+- **Integrera** med GitHub, Linear, Slack, Google Calendar och över 100 MCP-verktyg
 
-## You do not have to install it
+## Du behöver inte installera det
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Samma program körs i din webbläsare på
+[app.usectrl.dev](https://app.usectrl.dev), med samma funktioner.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Varje klient — skrivbord, webb och telefon — är en tunn renderare ovanpå en
+headless-server som äger dina data och gör arbetet. Skrivbordsappen kan starta den
+servern åt dig; en webbläsarflikt kan inte, så webbappen ansluter till en som du kör.
+Den servern kan ligga på din egen maskin (`ws://localhost:9030`, inget certifikat
+behövs) eller på en fjärrvärd som nås över TLS, ett VPN eller en tunnel.
 
-See [Install](/sv-SE/handbok/installera/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/sv-SE/handbok/koncept/driftsattning/) for how the three clients relate.
+Se [Installera](/sv-SE/handbok/installera/#use-it-in-your-browser) för vägen via webbläsaren och
+[Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) för hur de tre klienterna hänger ihop.
 
-## Next steps
+## Nästa steg
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/sv-SE/handbok/installera/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/sv-SE/handbok/snabbstart/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/sv-SE/handbok/guider/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/sv-SE/handbok/how-to-guider/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/sv-SE/handbok/koncept/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/sv-SE/handbok/referens/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Installera" href="/sv-SE/handbok/installera/" description="Nedladdningar, systemkrav och var servern körs." />
+  <LinkCard title="Snabbstart" href="/sv-SE/handbok/snabbstart/" description="Den kortaste kompletta vägen till en agent som arbetar i ditt repo." />
+  <LinkCard title="Guider" href="/sv-SE/handbok/guider/" description="Längre lektioner, i ordning, med start i din första arbetsyta." />
+  <LinkCard title="How-to-guider" href="/sv-SE/handbok/how-to-guider/" description="Recept för en uppgift i taget: lägg till repos, konfigurera räcken eller parkoppla din telefon." />
+  <LinkCard title="Koncept" href="/sv-SE/handbok/koncept/" description="Varför produkten fungerar som den gör, med start i driftsättning och klienter." />
+  <LinkCard title="Referens" href="/sv-SE/handbok/referens/" description="Kompletta tabeller för rutter, MCP-verktyg, tangentbordsgenvägar och domänhändelser." />
 </div>

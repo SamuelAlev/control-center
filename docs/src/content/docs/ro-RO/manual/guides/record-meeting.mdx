@@ -1,118 +1,128 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Înregistrează și rezumă o întâlnire
+description: Înregistrează un apel, obține o transcriere și transformă-o în note, elemente de acțiune și decizii.
 slug: ro-RO/manual/ghiduri-practice/inregistreaza-intalnire
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/ro-RO/manual/concepte/intalniri/) for how it works.
+Acest ghid îți arată cum să înregistrezi o întâlnire și să obții o sinteză
+generată de IA. Vezi
+[Întâlniri și transcriere](/ro-RO/manual/concepte/intalniri/) pentru a afla cum
+funcționează.
 
-## Before you start
+## Înainte de a începe
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Așteaptă modelul vocal, apoi repornește serverul.** O pornire normală
+  instalează forțat în fundal modelul ASR selectat (Parakeet TDT 0.6B v3,
+  implicitul multilingv, aproximativ 600 MB). Serverul rezolvă modelul
+  **o singură dată la pornire**, așa că prima rulare tot nu are operațiuni de
+  înregistrare până nu repornești. Fără un model pe disc, înregistrarea eșuează
+  cu `Could not start recording on the host: …`. Ca să alegi o altă variantă,
+  mergi la **Setări → Server → Modele vocale și de întâlniri** — și aceasta
+  necesită o repornire.
+- Acordă permisiunea de **microfon** când sistemul de operare o cere la prima
+  înregistrare.
+- Pe **macOS 14.4+**, audio-ul de sistem este captat cu capturi de proces Core Audio — niciun driver de instalat, dar sistemul de operare cere a doua oară o permisiune de _captură audio_. Aceasta nu este Screen Recording și nu aprinde niciodată indicatorul de înregistrare a ecranului. Refuzarea ei face ca pornirea să eșueze cu `System-audio capture permission denied.` Sub macOS 14.4 nu există captură de audio de sistem.
+- Pe **Linux**, `parecord` (pulseaudio-utils) sau `pw-record` (pipewire) trebuie să fie în `PATH` — captura pornește unul dintre ele către o sursă monitor PipeWire/PulseAudio. Fără niciunul, pornirea eșuează cu `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Unde ajunge audio-ul întâlnirii tale]
+Captarea, transcrierea, anularea de ecou și diarizarea vorbitorilor rulează toate
+pe dispozitiv, fără niciun apel către cloud — dar „dispozitiv” înseamnă **gazda
+cc_server**, care este o altă mașină atunci când rulezi serverul remote. Iar
+sinteza finală este o rulare obișnuită de agent: pipeline-ul `meeting_summary`
+trimite transcrierea completă și notele tale brute către orice furnizor de modele
+folosește acel agent. Îndreaptă acel agent către un furnizor local dacă
+transcrierea nu trebuie să părăsească mașina.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Ecranul de înregistrare afișează acest lucru în timp ce înregistrezi, așa că
+decizia este în fața ta înainte să existe o transcriere de trimis.
 :::
 
-## Start a recording
+## Pornește o înregistrare
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Deschide **Întâlniri** în bara laterală.
+2. Apasă **Înregistrează întâlnirea**. HUD-ul de înregistrare live se deschide la `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Înregistrarea pornește imediat și captează microfonul tău plus audio-ul de ieșire
+al sistemului — ceilalți participanți. Nu există niciun prompt de mod și niciun
+selector de sursă audio: modul în persoană cu un singur microfon există în API,
+dar astăzi nu are interfață.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+În browser funcționează același flux, cu o singură diferență: „audio-ul de
+sistem” este o partajare de ecran care trebuie să includă o pistă audio.
+Partajează un tab de browser (sau tot ecranul) și activează „Share tab audio” /
+„Share system audio” în selector. Safari și Firefox, precum și partajarea pe
+ecran complet pe macOS, adesea nu pot furniza una.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD-ul afișează un indicator de nivel, timpul scurs și o transcriere live care se
+construiește într-o parte.
 
-## During the meeting
+## În timpul întâlnirii
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Ia note brute** în panoul de note. Sunt salvate în timp ce tastezi și transmise mai târziu agentului de rezumare, așa că notează orice ar putea scăpa transcrierii.
+- **Alege șablonul de note** în rândul **Șablon activ**. El modelează rezumatul acestei întâlniri și este capturat împreună cu înregistrarea, așa că o reluare ulterioară reproduce șablonul pe care l-ai ales aici.
+- **Pauzează și reia** cu controlul de pauză. Transcrierea se oprește în timpul pauzei, iar cronometrul îngheață.
+- Transcrierea sosește în flux cu etichete de vorbitor: cuvintele tale ca **Tu**, toți ceilalți din apel ca **Alții** — până când diarizarea împarte Alții în `Person 1`, `Person 2`, … pe care le poți redenumi.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Un vorbitor foarte tăcut poate să nu fie transcris]
+Transcrierea omite orice fereastră audio care nu a trecut niciodată de un prag de
+tăcere, fără să o decodeze deloc. Asta împiedică un canal tăcut să consume CPU cu
+tokenuri non-vorbire halucinate, dar înseamnă și că un vorbitor slab sau
+îndepărtat poate să nu producă nicio transcriere. Verifică indicatorul de nivel
+devreme, nu la final.
 :::
 
-## Stop and summarize
+## Oprește și rezumă
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Apasă **Oprește și rezumă**.
+2. Control Center te duce direct la vizualizarea detaliată a întâlnirii, marcată **Se procesează**: diarizarea împarte canalul remote în vorbitori individuali, iar pipeline-ul `meeting_summary` generează sinteza.
+3. Întâlnirea trece în **Gata** după ce acel pipeline se termină. Nu trebuie să aștepți — vizualizarea detaliată se actualizează singură.
 
-## Review the writeup
+## Examinează sinteza
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Detaliile întâlnirii (`/meetings/:meetingId`) au patru tab-uri:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Tab                   | Ce găsești                                                                       |
+| --------------------- | -------------------------------------------------------------------------------- |
+| **Note**              | Rezumatul IA și notele îmbunătățite, construite din notele tale brute + transcrierea |
+| **Transcriere**       | Transcrierea completă, cu etichete de vorbitor și marcaje de timp                |
+| **Elemente de acțiune** | Sarcini extrase, fiecare cu un proprietar opțional                              |
+| **Decizii**           | Deciziile capturate în timpul apelului                                           |
 
-From here you can:
+De aici poți:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Redenumește vorbitorii**: schimbă `Person 1` într-un nume real; se aplică în toată transcrierea.
+- **Bifează elementele de acțiune** pe măsură ce le finalizezi.
+- **Creează tichet** dintr-un element de acțiune: astfel se înregistrează un tichet nou, nealocat, cu titlul preluat din elementul de acțiune, și este legat înapoi de rând. Alocă-l unui agent chiar din tichet (vezi [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)).
+- **Reia rezumatul** pentru o nouă trecere (de exemplu după redenumirea vorbitorilor). Reutilizează șablonul capturat când a fost înregistrată întâlnirea. Alege șablonul activ la **Setări → Spațiu de lucru → Întâlniri**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Editarea notelor, a titlului, a elementelor de acțiune și a deciziilor
+funcționează oriunde. **Reia rezumatul** și anularea unei întâlniri în procesare
+sunt **doar pe desktop** — în browser ambele butoane nu fac nimic.
 
-## Record straight from a calendar event
+## Înregistrează direct dintr-un eveniment de calendar
 
-If you've [connected a calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Dacă ai [conectat un calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/), poți sări
+peste pornirea manuală. Aceasta este **doar pe desktop**; clientul web o refuză.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Deschide evenimentul din **Calendar**.
+2. Apasă **Pornește înregistrarea și leagă**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Înregistrarea este inițializată cu titlul evenimentului și legată înapoi de
+acesta, așa că notele și intrarea din calendar rămân conectate.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Ștergerea unei întâlniri nu șterge audio-ul ei]
+Ștergerea unei întâlniri elimină rândurile ei, dar fișierele WAV înregistrate din
+`<dataDir>/meetings/<meetingId>/` rămân pe disc — nu există politică de
+retenție, plafon de dimensiune sau baleiere de curățare. Elimină singur acel
+director dacă audio-ul contează.
 :::
 
-## Related guides
+## Ghiduri conexe
 
-- [Connect a Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
-- [Delegate work to agents](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
 
-## Related concepts
+## Concepte conexe
 
-- [Meetings and transcription](/ro-RO/manual/concepte/intalniri/)
+- [Întâlniri și transcriere](/ro-RO/manual/concepte/intalniri/)

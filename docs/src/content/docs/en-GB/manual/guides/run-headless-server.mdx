@@ -3,6 +3,7 @@ title: Run a headless server
 description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
 dateModified: 2026-09-10
 slug: en-GB/manual/guides/run-headless-server
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
 Run `cc_server` on a machine that stays on, then connect to it from your desktop,
@@ -73,13 +74,13 @@ Things worth knowing before you expose any of this beyond loopback:
 
 - **The two client images are static nginx hosts** — nothing to configure at
   runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
+  pairing key. The signalling relay likewise needs only its port
   (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
   secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
   direct `wss://` path when one is reachable, and only falls back to the relay
   when none is. Skip it if your clients always reach the server directly.
 
-The rest of this guide builds the server from source; the flags and behavior it
+The rest of this guide builds the server from source; the flags and behaviour it
 covers are the same ones the image's environment variables feed.
 
 ## Prerequisites

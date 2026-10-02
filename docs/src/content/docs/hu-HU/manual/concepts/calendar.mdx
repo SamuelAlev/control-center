@@ -1,128 +1,144 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Naptár és ütemezés
+description: Hogyan szinkronizálja a Control Center a Google Calendar szolgáltatást a szerveren, miért eszközkódos engedélyezés a bejelentkezés, és mit fed le az írásvédett hatókör.
 slug: hu-HU/kezikonyv/fogalmak/naptar
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/hu-HU/kezikonyv/fogalmak/megbeszelesek/).
+A Control Center csatlakozik a Google Calendar szolgáltatáshoz, hogy a napod a
+flottád mellett legyen. Szinkronizálja az eseményeidet, havi, heti, napi és
+napirend nézetben jeleníti meg őket, figyelmeztet a megbeszélés kezdete előtt,
+és bármely eseményt rögzített, összefoglalt
+[megbeszéléssé](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) alakít.
 
-## What it changes on Google
+## Mit változtat a Google oldalán
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Szinte semmit. Az integráció behúzza az eseményeket, és megjeleníti őket. Nem
+hoz létre, szerkeszt, töröl és nem válaszol meghívókra. Minden eszközkódos
+csatlakoztatás — akár beépített, akár saját — a `calendar.readonly` és az
+`openid email` hatókört kéri.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Az események a munkaterület saját adatbázisába szinkronizálódnak **a szerveren**
+(`<dataDir>/<workspaceId>/workspace.db`), és minden kliens RPC-n keresztül
+jeleníti meg őket. Egyetlen kliens sem tárol Google-hitelesítő adatot.
 
-## Per-workspace accounts
+## Munkaterületenkénti fiókok
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/hu-HU/kezikonyv/fogalmak/munkateruletek/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+A naptárfiókok munkaterület-hatókörűek, mint a Control Centerben minden más.
+Minden [munkaterület](/hu-HU/kezikonyv/fogalmak/munkateruletek/) a saját
+Google-fiókját csatlakoztatja (vagy akár többet), és az egyik munkaterület
+eseményei és tokenjei soha nem láthatók egy másikból. A munkaterületek
+váltásával az is vált, hogy mely naptárakat látod.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Egy munkaterület **több** Google-fiókot is csatlakoztathat, például egy
+munkahelyi és egy személyes fiókot, és ezek eseményei ugyanazokban a nézetekben
+egyesülnek.
 
-## Why sign-in is a device code
+## Miért eszközkód a bejelentkezés
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+A headless `cc_server` mögött nincs böngésző, amely elkapná az
+OAuth-átirányítást. Ezért nem is használ ilyet: **eszközkód-engedélyezéssel**
+(RFC 8628) hitelesít. A szerver megjelenít egy rövid felhasználói kódot és egy
+Google URL-t, te bármely böngészővel rendelkező eszközön jóváhagyod, a szerver
+pedig addig kérdez, amíg meg nem teszed. Egy headless telepítés éppen azért tud
+fiókot csatlakoztatni, mert nincs átirányítási végpont, amit hosztolni kellene.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Egy következményt érdemes tudni, mielőtt saját hitelesítő adatokat hozol: a
+kliens típusa a Google „TV and Limited Input devices” kliensének kell lennie. A
+Google ehhez a kliens típushoz csak egy engedélyezett hatókörkészletet ad meg,
+és az a projekt, amelyben a Naptár nincs számára engedélyezve, `invalid_scope`
+hibával bukik el — helyette loopback- vagy webes klienst kellene használnod.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+A tokenek soha nem hagyják el a szervert. A szerver `secrets.json` fájljába
+íródnak az adatkönyvtárában, `google_google:<workspaceId>:<email>` kulccsal, az
+adatbázisok mellett, ugyanazon a hoszt-fájlrendszer bizalmi határon belül. A
+szerver automatikusan frissíti a hozzáférést, és amikor a Google véglegesen
+érvénytelenít egy fiókot (visszavont vagy rég lejárt munkamenet), közzéteszi a
+`CalendarAuthExpired` eseményt, és egy **Újracsatlakozás** sávot jelenít meg
+ahelyett, hogy csendben elbukna.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+A forrásból készült build **semmilyen** Google-hitelesítő adatot nem tartalmaz —
+a saját kliens-azonosítódat és titkodat adod meg. A hivatalos kiadási buildek
+beégetnek egy nem bizalmas eszközkódos klienst, hogy a csatlakozási folyamat
+azonnal működjön; a szerver csak egy rá hivatkozó jelölőt tárol, másolatot soha.
+A környezetben megadott `GOOGLE_OAUTH_CLIENT_ID` (és a hozzá tartozó titok)
+mindig elsőbbséget élvez a beégetett párral szemben. Szándékosan nincs
+`--google-client-id` kapcsoló: az ismeretlen kapcsolókat a rendszer figyelmen
+kívül hagyja, a parancssorban szereplő titok pedig a `ps` segítségével
+kiolvasható.
 
-For running your own Google project, see
-[Connect a Google Calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
+A saját Google-projekt futtatásáról lásd:
+[Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/).
 
-## Sync
+## Szinkronizálás
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+A szerver minden csatlakoztatott fiók eseményeinek egy gördülő ablakát húzza
+be — a fiók minden naptárát, nem csak az elsődlegest —, **kétpercenként**, igény
+szerint pedig ezen felül (indítás, csatlakoztatás, kézi frissítés). A rövid
+ütem megfizethető, mert a bejárás inkrementális: minden naptár a saját
+szinkrontokenjét hordozza, így egy változatlan naptár egy majdnem üres válaszba
+kerül, nem pedig egy öthónapos ablak újralekérésébe.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Az ismétlődő eseményeket a szerver oldalán fejtjük ki, így egyetlen kliens sem
+dolgoz fel ismétlődési szabályt. Ha az aktuális ablakon kívüli hónapra
+navigálsz, az a tartomány lustán töltődik be. A törölt vagy az ablakon kívülre
+mozgatott eseményeket a következő szinkronizálás eltakarítja.
 
-## Views
+## Nézetek
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Nézet       | Mit mutat                                              |
+| ----------- | ------------------------------------------------------ |
+| **Hónap**   | Egy teljes hónap rácsban (a `kalender` csomag meghajtásával) |
+| **Hét**     | Egy hét időzített eseményei időrácsban                 |
+| **Nap**     | Egyetlen nap időzített eseményei időrácsban            |
+| **Napirend** | A közelgő események görgethető listája                |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+A naptárat a `/calendar` útvonalon nyitod meg; egy esemény kiválasztásával a
+részletei a `/calendar/:eventId` útvonalon nyílnak meg. A választott nézet az
+adott kliens saját beállításaiban tárolódik, így nem követ téged egy másik
+eszközre.
 
-## Meeting alerts
+## Megbeszélés-figyelmeztetések
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Egy percenként futó ütemező azokat az eseményeket keresi, amelyek egy
+konfigurálható előzetes ablakon belül kezdődnek, és egy **„Hamarosan kezdődő
+megbeszélés”** értesítést vált ki (egy `MeetingStartingSoon`
+[domaineseményt](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)). Az értesítés
+tartalmazza a csatlakozási URL-t, ha van ilyen, és rákattintva megnyílik az
+esemény részletei. A figyelmeztetéseket az esemény `alertedAt` mezője alapján
+deduplikáljuk, így ugyanaz a megbeszélés soha nem figyelmeztet kétszer, még
+újraindításokon át sem, és egy olyan esemény, amelynek kezdete az alkalmazás
+zárva tartása alatt múlt el, soha nem játszódik le újra.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Két korlátba könnyű belebonyolódni. Az ütemező **kliensoldalon, az asztali
+alkalmazásban** fut, és csak ahhoz a munkaterülethez, amelyet éppen megnyitva
+tartasz — egy olyan munkaterület, amelyben nem vagy benne, nem vált ki
+figyelmeztetést. A webes buildnek pedig egyáltalán nincs
+operációsrendszer-értesítési csatornája, így az sem vált ki egyet sem.
 
-## Record and link
+## Rögzítés és összekapcsolás
 
-From a calendar event you can start a [meeting recording](/hu-HU/kezikonyv/fogalmak/megbeszelesek/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Egy naptáreseményből
+[megbeszélés-rögzítést](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) indíthatsz,
+amelyet az esemény címével előtöltünk. A Control Center egy-az-egyhez
+kapcsolatot tárol a felvétel és az esemény között, így a megbeszélés jegyzetei
+és a naptárbejegyzés összekapcsolva maradnak anélkül, hogy bármelyik funkció a
+másiktól függene.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+A **Felvétel indítása és összekapcsolás** csak asztali gépen érhető el. A webes
+kliensen a művelet azt jelzi, hogy a felvétel nem érhető el — pedig a
+megbeszélések képernyő saját rögzítési folyamata működik a böngészőben.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Az ügynökök nem olvassák a naptáradat]
+Nincsenek naptárhoz tartozó MCP-eszközök. Egy ügynök nem tud eseményeket
+listázni, egy esemény részleteit elolvasni vagy a nevedben visszajelezni; a
+`calendar.*` felület kizárólag emberi kliensek számára elérhető RPC.
 :::
 
-## See also
+## Lásd még
 
-- [Meetings and transcription](/hu-HU/kezikonyv/fogalmak/megbeszelesek/): what happens after you start a recording
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/): why calendar accounts are per-workspace
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
-- [Record and summarize a meeting](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/)
+- [Megbeszélések és átírás](/hu-HU/kezikonyv/fogalmak/megbeszelesek/): mi történik, miután elindítasz egy felvételt
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/): miért munkaterületenkéntiek a naptárfiókok
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): `MeetingStartingSoon` és `CalendarAuthExpired`
+- [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
+- [Megbeszélés rögzítése és összefoglalása](/hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese/)

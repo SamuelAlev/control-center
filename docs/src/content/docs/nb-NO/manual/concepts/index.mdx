@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Konsepter
+description: Hvordan Control Center fungerer og hvorfor det er bygget slik — bakgrunnsstoffet bak veiledningene.
 slug: nb-NO/handbok/konsepter
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/nb-NO/handbok/slik-gjor-du/); when you want to look
-something up, go to the [reference](/nb-NO/handbok/referanse/).
+Disse sidene forklarer **hvordan Control Center fungerer og hvorfor**. De er ment for
+forståelse, ikke for utførelse: ingen av sidene her er en prosedyre du skal følge. Når du
+vil utføre en bestemt oppgave, går du til [slik gjør du-veiledningene](/nb-NO/handbok/slik-gjor-du/);
+når du vil slå opp noe, går du til [referansen](/nb-NO/handbok/referanse/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Les dem i valgfri rekkefølge. Er du ny, er kjernemodellen stedet å begynne.
 
-## Core model
+## Kjernemodell
 
-The four ideas everything else is built on.
+De fire ideene alt annet bygger på.
 
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/nb-NO/handbok/konsepter/livssyklus-agentutsending/) — what happens between your message and the agent's first token
-- [Modes](/nb-NO/handbok/konsepter/moduser/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/nb-NO/handbok/konsepter/verktoykontekst/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/nb-NO/handbok/konsepter/kodeintelligens/) — the code graph, language server, structural search and debugger
-- [Conversation history](/nb-NO/handbok/konsepter/samtalehistorikk/) — persistence, compaction and forking a transcript
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/) — leietakergrensen, og hvorfor den håndheves av databaselayouten i stedet for av disiplin i spørringene
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/) — hva en agent består av: identitet, rolle, skills, evner, adapter og modell
+- [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/) — hva som skjer mellom meldingen din og agentens første token
+- [Moduser](/nb-NO/handbok/konsepter/moduser/) — hvordan `chat`, `plan`, `review` og `orchestrate` endrer hva en agent kan gjøre
+- [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/) — hvorfor en agent bare ser et delsett av verktøyene sine, hvordan den når resten, og hva som holder cachen hos leverandøren varm
+- [Kodeintelligens](/nb-NO/handbok/konsepter/kodeintelligens/) — kodegrafen, språkserveren, strukturelt søk og feilsøkeren
+- [Samtalehistorikk](/nb-NO/handbok/konsepter/samtalehistorikk/) — lagring, komprimering og forgrening av et transkript
 
-## Safety and control
+## Sikkerhet og kontroll
 
-What an agent is allowed to touch and who decides.
+Hva en agent har lov til å røre, og hvem som bestemmer.
 
-- [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) — what actually constrains an agent run today
-- [Guardrails](/nb-NO/handbok/konsepter/tillatelsesregler/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/nb-NO/handbok/konsepter/autorisasjon/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/nb-NO/handbok/konsepter/stasjoner/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) — hva som faktisk begrenser en agentkjøring i dag
+- [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/) — én policymotor for alle muterende handlinger, og hvordan en regel løses
+- [Autorisasjon](/nb-NO/handbok/konsepter/autorisasjon/) — roller, tillatelseskatalogen og revisjonssporet
+- [Stasjoner og isolerte miljøer](/nb-NO/handbok/konsepter/stasjoner/) — hvorfor agenter får engangs-VM-er i stedet for maskinen din, og hva grensen faktisk består i
 
-## Directing the work
+## Styre arbeidet
 
-Turning intent into work that gets done.
+Å gjøre en intensjon om til arbeid som blir utført.
 
-- [Tickets and delegation](/nb-NO/handbok/konsepter/saker/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/nb-NO/handbok/konsepter/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/nb-NO/handbok/konsepter/orkestrering/) — one goal, one approval, a generated pipeline
-- [AI review](/nb-NO/handbok/konsepter/ai-gjennomgang/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/nb-NO/handbok/konsepter/pr-samtaler/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/nb-NO/handbok/konsepter/minne-og-kunnskap/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/nb-NO/handbok/konsepter/evals-og-kvalitet/) — eval suites and the Quality tab
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/) — den leverandørnøytrale arbeidsenheten hele flåten deler
+- [Pipelines og automatisering](/nb-NO/handbok/konsepter/pipelines/) — DAG-arbeidsflyter, utløsere og kjøringer som kan gjenopptas
+- [Orkestrering](/nb-NO/handbok/konsepter/orkestrering/) — ett mål, én godkjenning, én generert pipeline
+- [AI-gjennomgang](/nb-NO/handbok/konsepter/ai-gjennomgang/) — hvordan en PR blir gjennomgått: gjennomgangsområder, konsensus mellom reviewer-agenter, akser og vedtaket Ship/Hold/Block
+- [PR-samtaler](/nb-NO/handbok/konsepter/pr-samtaler/) — å svare på en @-omtale på GitHub eller etiketten `ai-review` fra selve kodeverten
+- [Minne og kunnskap](/nb-NO/handbok/konsepter/minne-og-kunnskap/) — fakta, policyer og hva en agent har lov til å vite
+- [Evals og kvalitet](/nb-NO/handbok/konsepter/evals-og-kvalitet/) — eval-sett og fanen Kvalitet
 
-## People and reach
+## Folk og rekkevidde
 
-Working with other humans and reaching the fleet from elsewhere.
+Å jobbe med andre mennesker og nå flåten fra andre steder.
 
-- [Multiplayer and presence](/nb-NO/handbok/konsepter/flerbruker/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/nb-NO/handbok/konsepter/sso/) — SAML and OIDC logins
-- [Chat bridges](/nb-NO/handbok/konsepter/chatbroer/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/nb-NO/handbok/konsepter/moter/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/nb-NO/handbok/konsepter/kalender/) — Google Calendar sync and meeting alerts
+- [Flerbruker og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/) — mennesker og agenter som likeverdige deltakere, og hva som styrer tilgangen
+- [Enkel pålogging](/nb-NO/handbok/konsepter/sso/) — pålogging med SAML og OIDC
+- [Chatbroer](/nb-NO/handbok/konsepter/chatbroer/) — hvorfor Slack-broen ringer ut, og hva som autoriserer en melding fra chat
+- [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/) — hvordan en telefon når serveren din, og sikkerhetsmodellen rundt det
+- [Møter og transkripsjon](/nb-NO/handbok/konsepter/moter/) — opptak på enheten, transkripsjon og oppsummering
+- [Kalender og planlegging](/nb-NO/handbok/konsepter/kalender/) — synkronisering med Google Calendar og møtevarsler
 
-## Under the hood
+## Under panseret
 
-The shape of the system itself.
+Formen på selve systemet.
 
-- [Architecture](/nb-NO/handbok/konsepter/arkitektur/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/nb-NO/handbok/konsepter/drift/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/) — the in-process bus features talk over
+- [Arkitektur](/nb-NO/handbok/konsepter/arkitektur/) — lagdeling, den delte kjernen, porter og adaptere
+- [Drift og klienter](/nb-NO/handbok/konsepter/drift/) — hvordan skrivebords-, web- og telefonklientene forholder seg til én server
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/) — den prosessinterne bussen funksjonene snakker over

@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Jalankan server headless
+description: Jalankan biner headless cc_server atau image Docker-nya, pasangkan klien ke sana, dan konfigurasikan dengan seluruh permukaan flag CLI dan variabel lingkungannya.
 dateModified: 2026-09-10
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Jalankan `cc_server` di mesin yang tetap menyala, lalu hubungkan ke sana dari
+desktop, peramban, atau ponsel Anda. Server ini adalah biner native Dart murni —
+tanpa mesin Flutter — sehingga berjalan headless di macOS, Linux, atau Windows.
+Server ini memiliki basis data, menjalankan agen, dan melakukan setiap panggilan
+API eksternal; klien hanya merender.
 
-## Run in Docker (prebuilt images)
+## Jalankan di Docker (image siap pakai)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Setiap rilis menerbitkan stack yang dihosting sendiri berisi empat image GHCR —
+backend, dua klien tipis statis, dan relay pairing opsional — plus image
+`cc-server-demo` terpisah untuk host demo publik. Instalasi yang dihosting
+sendiri tidak memerlukan checkout sumber. Pin tag versi
+(`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) atau pakai `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
+| Image                                             | Apa itu                                      | Memublikasikan   |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | Backend: basis data, agen, MCP, webhook      | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Klien web (nginx statis)                     | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA pendamping ponsel (nginx statis)         | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Relay pairing WebRTC (opsional)              | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+Seluruh stack sebagai file compose:
 
 ```yaml
 services:
@@ -51,91 +53,93 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Hal-hal yang perlu diketahui sebelum Anda mengekspos semua ini di luar loopback:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Image `cc-server` hadir dengan `CC_SERVER_INSECURE=1`** (image ini harus
+  mengikat `0.0.0.0` untuk menerima lalu lintas dari port yang dipublikasikan),
+  yang hanya aman di balik reverse proxy terminasi TLS — Caddy, Traefik, nginx,
+  atau Cloudflare Tunnel — di jaringan tepercaya. Untuk menerminasi TLS di dalam
+  proses sebagai gantinya, pasang sertifikat dan setel `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (lalu hapus setelan `CC_SERVER_INSECURE`). Semuanya dapat
+  ditimpa dengan `docker run -e …` atau blok `environment:` di compose.
+- **`/data` adalah satu-satunya state.** Basis data SQLite, rahasia perangkat
+  yang dipasangkan, model yang diunduh, dan audio rapat semuanya berada di
+  volume — cadangkan volumenya dan kontainer menjadi dapat dibuang.
+- **Pasangkan klien dari dalam image** sebelum koneksi pertama, padanan
+  kontainer dari [langkah 3](#langkah-3-pasangkan-klien-sebelum-mulai-pertama-kali):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Kedua image klien adalah host nginx statis** — tidak ada yang perlu
+  dikonfigurasi saat runtime; formulir koneksi setiap klien menerima URL server,
+  id perangkat, dan kunci pairing Anda. Relay pensinyalan juga hanya memerlukan
+  portnya (`SIGNALING_HOST` / `SIGNALING_PORT` dapat ditimpa); relay ini tanpa
+  status, tidak menyimpan rahasia, dan merupakan **cadangan** — ponsel memakai
+  loopback, LAN, tailnet, atau jalur `wss://` langsung bila salah satunya dapat
+  dijangkau, dan hanya beralih ke relay bila tidak ada. Lewati relay ini jika
+  klien Anda selalu menjangkau server secara langsung.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Sisa panduan ini membangun server dari sumber; flag dan perilaku yang
+dibahasnya sama dengan yang diumpankan oleh variabel lingkungan image tersebut.
 
-## Prerequisites
+## Prasyarat
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). Repo ini mematok SDK-nya dengan [fvm](https://fvm.app), jadi awali setiap perintah dengan `fvm`.
+- Repositori ini sudah di-checkout.
+- Toolchain native yang dibutuhkan skrip staging — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git`, dan kompilator C++. Setiap skrip build menyebutkan apa yang tidak dapat ditemukannya dan cara memasangnya.
+- Host yang dapat dijangkau: loopback untuk penggunaan lokal, atau alamat LAN/publik dengan TLS untuk klien jarak jauh.
 
-## Step 1: Stage the native libraries
+## Langkah 1: Siapkan pustaka native
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Pustaka native ini **wajib** — tidak ada mode terdegradasi. Bangun pustaka
+tersebut dari akar repo sebelum hal lainnya:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Perintah ini membangun `rift`, `fff`, tree-sitter beserta tata bahasanya, `aec`,
+`lame`, `ccpty`, `cc_watcher`, `cc_inference`, dan native SAML ke dalam
+`build/natives/`. Hook build `cc_server` memancarkan ulang apa pun yang
+di-stage di sana ke dalam bundle, jadi melewati langkah ini entah menggagalkan
+build secara langsung atau — dengan jalan keluar di bawah — menghasilkan biner
+yang preflight boot-nya menolak untuk mulai dan menyebutkan pustaka yang hilang.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Jalan keluar khusus kompilasi]
+Membuat file `.cc_natives_allow_missing` kosong di akar repo menurunkan
+kegagalan build karena pustaka native yang hilang menjadi peringatan. Ini untuk
+memeriksa sintaksis dari clone baru; server yang dibangun dengan cara itu tidak
+dapat boot. Ini harus berupa **file** — runner hook build tidak meneruskan
+lingkungan pemanggil, jadi variabel lingkungan akan diabaikan.
 :::
 
-## Step 2: Build the binary
+## Langkah 2: Bangun biner
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
+Bundle menyertakan `libsqlite3` dan pustaka native yang sudah di-stage bersama
+biner — tidak perlu SQLite sistem maupun mesin Flutter. Executable-nya berada di
 `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Langkah 3: Pasangkan klien sebelum mulai pertama kali
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Direktori data yang baru tidak memiliki perangkat yang dipasangkan dan tidak
+memiliki kunci pre-shared, sehingga permintaan kunci pairing dari klien belum
+dapat dipenuhi. Buat satu dengan subcommand `pair`. Perintah ini menulis
+`global.db` dan `secrets.json` secara langsung; server yang sudah menyajikan
+direktori data itu akan mengenali perangkat baru tanpa perlu dimulai ulang:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Perintah ini mencetak tiga nilai untuk ditempelkan ke formulir koneksi klien:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +148,48 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Flag yang berguna: `--device` (bawaan `web-client`; id ini juga menentukan
+tingkat perangkat — `desktop`, `ios`, `android`, selain itu dianggap klien web),
+`--label` (bawaannya nama platform plus hostname mesin ini), `--host` (host yang
+dicetak di URL, karena loopback tidak dapat dijangkau dari mesin lain) dan
+`--client-url`. Menjalankan ulang `pair` memutar kunci perangkat itu dan memutus
+sesi aktifnya. Pemasangan tidak pernah membuat ruang kerja: onboarding klien
+yang terhubung yang menamai dan membuat ruang kerja pertama.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Dengan `--client-url`, perintah ini juga mencetak QR yang dapat dipindai dari
+terminal dan membuka klien web yang sudah terisi:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
+:::caution[QR ini bukan QR ponsel]
+`--client-url` membuat tautan untuk **klien web** — URL server, id perangkat,
+dan kunci di fragmen URL. Aplikasi ponsel **Remote** mengharapkan payload yang
+berbeda (deskriptor koneksi lengkap server plus masa kedaluwarsa), yang dibuat
+dari **Pengaturan → Anda → Perangkat Anda** di klien yang sedang berjalan.
+Keduanya tidak dapat saling ditukar. Lihat
+[Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+Kredensial yang dibuat oleh `cc_server pair` **tidak memiliki masa
+kedaluwarsa**; kredensial yang dibuat di aplikasi selalu kedaluwarsa setelah 30
+hari. Cabut perangkat yang dibuat melalui CLI dari
+**Pengaturan → Anda → Perangkat Anda** setelah selesai menggunakannya.
 
-## Step 4: Start the server
+## Langkah 4: Jalankan server
 
-On loopback — the default and all you need for a client on the same machine:
+Di loopback — bawaan dan semua yang Anda perlukan untuk klien di mesin yang
+sama:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Untuk menjangkaunya dari mesin lain, ikat semua antarmuka. Pengikatan
+non-loopback tanpa TLS **ditolak saat startup** (`Refusing to bind non-loopback
+address … without TLS`), jadi sediakan sertifikat:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +197,42 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Atau terminasi TLS di reverse proxy pada jaringan privat tepercaya dan pilih ikut
+serta dalam pengikatan plaintext di baliknya:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` diabaikan bila `--tls-cert` dan `--tls-key` keduanya disetel — TLS
+selalu menang. Server mengiklankan status plaintext sebagai `insecure: true` di
+`GET /healthz` dan klien menandai koneksi semacam itu sebagai tidak aman.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Server berjalan sampai `SIGINT`/`SIGTERM`, lalu mati dengan bersih.
 
-## Step 5: Connect a client
+## Langkah 5: Hubungkan klien
 
-Point a client at the server URL and pairing key from step 3:
+Arahkan klien ke URL server dan kunci pairing dari langkah 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
+- **Aplikasi desktop**: di layar pertama kali dijalankan (**Bagaimana Control Center harus dijalankan?**), isi kolom koneksi alih-alih **Jalankan di aplikasi ini**, atau tambahkan server nanti di **Pengaturan → Server → Koneksi & status**. Lihat [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/).
+- **Klien web**: buka [app.usectrl.dev](https://app.usectrl.dev) (atau salinan build web Anda sendiri) dan masukkan URL server, id perangkat, dan kunci pairing.
+- **Ponsel**: pasangkan aplikasi **Remote** dari klien yang sedang berjalan — lihat [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server tidak menyajikan bundle web]
+`cc_server` mandiri tidak pernah memasang web root, sehingga `GET /` mengembalikan
+404. Klien web dihosting secara terpisah — gunakan `app.usectrl.dev`, atau
+hosting sendiri build web di host HTTPS statis mana pun (image `cc-webapp` di
+atas persis untuk itu). Origin peramban selain loopback harus ada di
+`--allowed-origins`, jika tidak upgrade WebSocket ke `/rpc` akan ditolak; daftar
+bawaannya adalah `https://app.usectrl.dev` dan `localhost` / `127.0.0.1` selalu
+diizinkan.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Langkah 6: Hubungkan Google Calendar (opsional)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Untuk menyinkronkan kalender ruang kerja tanpa GUI terpasang, gunakan alur kode
+perangkat:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +240,69 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/).
+Perintah ini mencetak kode dan URL untuk disetujui di perangkat lain, menyimpan
+token penyegaran di sisi server, lalu keluar. Build dari sumber tidak
+menyertakan klien Google, jadi variabel lingkungan id dan secret wajib diisi —
+tidak ada flag `--google-client-id`. Lihat
+[Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/).
 
-## Configuration
+## Konfigurasi
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/id-ID/panduan-pengguna/referensi/cli-cc-server/).
+Flag yang digunakan di atas adalah yang dibutuhkan penyiapan pertama. Permukaan
+lengkapnya — 23 pasangan flag dan variabel lingkungan, empat subcommand, dan tata
+letak direktori data — ada di
+[referensi CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Flag yang tidak dikenal diabaikan secara diam-diam]
+Parser argumen dibuat sendiri dan melewati apa pun yang tidak dikenali, sehingga
+salah ketik (`--tls-key-file`, `--bindany`) tidak menghasilkan galat — server
+tetap mulai dengan nilai bawaan. Periksa baris log startup bila suatu flag
+tampak tidak berpengaruh.
 :::
 
-The four you are most likely to need:
+Empat yang paling mungkin Anda butuhkan:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Flag           | Bawaan                               | Arti                                                                                             |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | direktori data aplikasi per pengguna OS | Basis data, rahasia, model, dan media yang di-cache                                           |
+| `--port`       | `9030`                               | Port TCP (`0` = sementara)                                                                       |
+| `--bind`       | `loopback`                           | `loopback`, atau `any` untuk semua antarmuka (perlu TLS atau `--insecure`)                       |
+| `--public-url` | diturunkan dari pengikatan           | URL RPC yang diiklankan ke klien yang dipasangkan. **Setel ini secara eksplisit di balik proxy, NAT, atau tunnel** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Direktori data bawaannya adalah `~/Library/Application Support/control-center`
+di macOS, `%APPDATA%\control-center` di Windows, dan
+`$XDG_DATA_HOME/control-center` (atau `~/.local/share/control-center`) di tempat
+lain. `.cc_server` yang relatif terhadap cwd hanya digunakan bila tidak ada
+direktori home atau data aplikasi yang dapat ditentukan.
 
-## What the server serves
+## Apa yang disajikan server
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` adalah seluruh permukaan produk, bukan sebagiannya: jalur data dan
+langganan repo-RPC, endpoint alat MCP di `POST /mcp` dan `GET /sse` pada port
+yang sama, webhook masuk, proksi media dan font, callback single sign-on,
+protokol sewa fleet, pengambilan RSS sisi server dengan jadwal 30 menit, dan
+pencarian vektor (ekstensi `sqlite_vector` didaftarkan sebagai auto-extension
+global proses, dan hanya terdegradasi ke pencarian teks lengkap di tempat
+ekstensi itu tidak tersedia).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Dispatcher bersifat **stateless**: tidak ada pengikatan ruang kerja per sesi.
+Setiap panggilan berlingkup ruang kerja membawa `workspace_id`-nya sendiri dan
+akses ditentukan oleh keanggotaan dan peran ruang kerja pemanggil — bukan karena
+memegang kunci pairing.
 
-Two things to know before you expose the port beyond loopback:
+Dua hal yang perlu diketahui sebelum Anda mengekspos port di luar loopback:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP gagal secara tertutup di luar host.** Permukaan MCP tanpa token hanya menjawab loopback. Mengikat `any` tidak melebarkannya — permintaan dari luar host ditolak dengan "MCP requires a bearer token to answer non-loopback clients" sampai Anda mengonfigurasi token (`mcp.setToken`, atau **Pengaturan → Server → Server MCP**).
+- **`GET /healthz` tidak diautentikasi secara sengaja**, memakai CORS wildcard dan memublikasikan id, nama, sidik jari identitas, dan versi build server. Klien memerlukan sidik jari itu untuk mematok server, jadi ini disengaja — tetapi artinya setiap `cc_server` yang dapat dijangkau mengungkapkan sebanyak itu kepada siapa pun yang bertanya.
 
-## Related guides
+## Panduan terkait
 
-- [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/)
-- [Pair a device](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/)
-- [Run a fleet worker](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pekerja-fleet/)
-- [Connect a Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
+- [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/)
+- [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/)
+- [Jalankan pekerja fleet](/id-ID/panduan-pengguna/panduan-praktis/jalankan-pekerja-fleet/)
+- [Hubungkan Google Calendar](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/)
 
-## Related concepts
+## Konsep terkait
 
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/)
-- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/)
+- [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)

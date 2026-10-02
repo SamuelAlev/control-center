@@ -1,54 +1,55 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: 简介
+description: Control Center 是多智能体软件开发的驾驶舱。
 slug: zh-CN/手册
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center 让你指挥一整个 AI 编码智能体机群。派发智能体、实时观看它们工作、审查它们的 PR，并管理仓库、工作区和集成——无论是在原生桌面应用、浏览器还是手机上。
 
 <div className="docs-start not-content">
-  <LinkButton href="/zh-CN/手册/快速开始/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/zh-CN/手册/安装/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/zh-CN/手册/快速开始/" icon="right-arrow">快速开始</LinkButton>
+  <LinkButton href="/zh-CN/手册/安装/" variant="minimal" icon="download">安装 Control Center</LinkButton>
 </div>
 
-## What you can do
+## 你可以做什么
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/zh-CN/手册/概念/流水线/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/zh-CN/手册/操作指南/使用机台/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **给智能体发消息**：空间是驱动机群的主要方式。用 @ 提及一个智能体，它就会派发进自己的写时复制工作树，因此多个智能体可以并行写代码和做审查，而不会碰你的检出
+- **编排宏大需求**：给编排器一个目标，只需批准一次它提出的全团队计划，随后一条生成的[流水线](/zh-CN/手册/概念/流水线/)就会执行它
+- **审查和合并 PR**：内置 diff 查看器、行内评论和 AI 驱动的审查
+- **交给智能体一台可丢弃的机器**：一台[机台](/zh-CN/手册/操作指南/使用机台/)就是一台用完即弃的虚拟机——可能是一个浏览器、一个桌面、一部手机，或一个隔离终端——智能体操控着它，而你可以实时观看并随时接管；其中的开发服务器会转发到 `localhost`、智能体的浏览器以及 `https://myapp.test`
+- **自动化工作流**：使用由事件或日程触发的、基于 DAG 的流水线
+- **管理知识**：具备工作区范围的记忆、事实和策略
+- **跟踪工作**：与厂商无关的工单、项目和委派
+- **录制会议**：在本机完成采集、转写和说话人分离，再总结为笔记、待办事项和决策
+- **一览你的一天**：Google Calendar 同步、RSVP、会议提醒和录制并链接
+- **用手机跟踪机群**：把设备与你的服务器配对，即可阅读消息、回复并分拣工单。手机会在它能到达的路径中选出最好的一条——环回、LAN、tailnet 或 TLS——并在必要时退回到一条端到端密封的中继，该中继只转发它读不懂的帧
+- **从 Slack 指挥智能体**：把工作区桥接到聊天应用，然后提及机器人、在 Slack 线程中回复，或用斜杠命令提交工单——全程走一条出站连接，因此无需公网端点
+- **集成**：对接 GitHub、Linear、Slack、Google Calendar 以及 100 多种 MCP 工具
 
-## You do not have to install it
+## 你不必安装它
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+同一个应用也在浏览器中运行，地址是
+[app.usectrl.dev](https://app.usectrl.dev)，功能完全一致。
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+每个客户端——桌面、Web 和手机——都只是运行在无界面服务器之上的瘦渲染器，服务器
+拥有你的数据并实际干活。桌面可以为你启动这台服务器；浏览器标签页做不到，
+所以 Web 应用连接的是你自己运行的那一台。这台服务器可以就在你自己的机器上
+（`ws://localhost:9030`，无需证书），也可以位于一台可通过 TLS、VPN 或隧道访问的
+远程主机上。
 
-See [Install](/zh-CN/手册/安装/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/zh-CN/手册/概念/部署/) for how the three clients relate.
+浏览器这条路线的说明见[安装](/zh-CN/手册/安装/#use-it-in-your-browser)，
+三个客户端之间的关系见[部署与客户端](/zh-CN/手册/概念/部署/)。
 
-## Next steps
+## 下一步
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/zh-CN/手册/安装/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/zh-CN/手册/快速开始/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/zh-CN/手册/教程/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/zh-CN/手册/操作指南/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/zh-CN/手册/概念/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/zh-CN/手册/参考/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="安装" href="/zh-CN/手册/安装/" description="下载、系统要求，以及服务器运行在哪里。" />
+  <LinkCard title="快速开始" href="/zh-CN/手册/快速开始/" description="让智能体开始处理你仓库的最短完整路径。" />
+  <LinkCard title="教程" href="/zh-CN/手册/教程/" description="按顺序编排的长篇课程，从你的第一个工作区开始。" />
+  <LinkCard title="操作指南" href="/zh-CN/手册/操作指南/" description="一次一个任务的实用配方：添加仓库、配置护栏或配对手机。" />
+  <LinkCard title="概念" href="/zh-CN/手册/概念/" description="解释产品为何如此运作，从部署与客户端讲起。" />
+  <LinkCard title="参考" href="/zh-CN/手册/参考/" description="路由、MCP 工具、键盘快捷键和领域事件的完整表格。" />
 </div>

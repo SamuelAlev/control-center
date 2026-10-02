@@ -1,153 +1,240 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Pasang
+description: Gunakan Control Center dalam penyemak imbas atau pasang apl desktop, sediakan bahagian belakang ejen dan pilih tempat pelayanannya berjalan.
 slug: ms-MY/manual-pengguna/pasang
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center berjalan dalam dua cara: sebagai **apl web** di
+[app.usectrl.dev](https://app.usectrl.dev), tanpa apa-apa untuk dimuat turun, atau sebagai
+**apl desktop** yang anda pasang. Kedua-duanya ialah aplikasi yang sama dengan ciri yang
+sama. Satu-satunya perbezaan ialah tempat pelayan berjalan — dan apl web tidak boleh
+menjalankan satu untuk anda.
 
-## Use it in your browser
+## Gunakan dalam penyemak imbas anda
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) ialah aplikasi ini yang dikompil untuk penyemak
+imbas. Tiada apa untuk dipasang, tiada apa untuk dikemas kini. Bukanya dan sambung.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Apa yang tab penyemak imbas tidak boleh lakukan ialah _menjadi_ pelayan itu. Setiap klien
+— desktop, web, telefon — ialah pemapar nipis di atas `cc_server` tanpa kepala yang
+memiliki pangkalan data dan melakukan kerja, jadi apl web sentiasa bercakap dengan pelayan
+yang anda jalankan. Dua cara untuk memberikannya satu:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Pelayan pada mesin anda sendiri.** Mulakan `cc_server` secara setempat dan halakan apl
+web ke `ws://localhost:9030`. Penyemak imbas menganggap `localhost` sebagai boleh
+dipercayai, jadi ini tidak memerlukan sijil dan tiada terowong. Inilah cara terpantas untuk
+mencuba apl web dan data anda tidak pernah meninggalkan mesin anda.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Pelayan pada mesin lain.** Oleh sebab `app.usectrl.dev` dilayan melalui HTTPS, pelayan
+bukan setempat perlu boleh dicapai melalui `wss://` dengan sijil yang sudah dipercayai oleh
+penyemak imbas. `cc_server` menolak untuk mengikat alamat bukan loopback tanpa TLS, jadi
+pilih salah satu:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- berikan sijil kepadanya secara terus, dengan `--tls-cert` dan `--tls-key`
+- letakkannya di belakang proksi songsang yang menamatkan TLS dan mulakannya dengan
+  `--insecure`
+- dedahkannya melalui terowong atau VPN yang membekalkan sijil — Tailscale, cloudflared,
+  atau yang serupa. **Tetapan → Pelayan → Sambungan & status** mempunyai pilihan masuk
+  terowong terbina di bawah **Kongsi pelayan ini**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Setiap kali pelayan berada di belakang proksi, NAT atau terowong, tetapkan `--public-url`
+kepada alamat yang sepatutnya didail oleh klien. Ia lalai kepada ikatan setempat, jadi
+tanpanya klien akan mencuba hos yang salah.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Menghos salinan klien web anda sendiri?]
+`cc_server` hanya menerima asal penyemak imbas dalam senarai `--allowed-origins`-nya, yang
+lalai kepada `https://app.usectrl.dev`. Tambah asal anda sendiri di situ jika anda menghos
+sendiri binaan web. Klien loopback dan natif sentiasa dibenarkan tanpa mengira senarai itu.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Beberapa perkara kekal khusus desktop, kerana ia memerlukan tetingkap natif atau peranti
+audio mesin itu sendiri: pil modus fokus terapung, pemberitahuan pop timbul OS (pusat
+pemberitahuan dalam apl berfungsi di mana-mana), "Mula rakaman & pautkan" daripada acara
+kalendar, dan menjalankan semula ringkasan mesyuarat. Semua yang lain — ruang, ejen,
+semakan pull request, pipeline, tiket, memori dan rakaman mesyuarat itu sendiri —
+berkelakuan sama.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/). To host the server,
-follow [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
+Untuk menyambungkan apl web ke pelayan, ikut
+[Sambung ke pelayan jauh](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/). Untuk menghos pelayan,
+ikut [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
 
-## Desktop system requirements
+## Keperluan sistem desktop
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Keperluan    | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Versi OS     | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ atau distro lain dengan glibc 2.35+ dan GTK 3 |
+| Seni bina    | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Diperlukan                                            | Diperlukan  | Diperlukan                                                 |
+| Ruang cakera | ~200 MB untuk apl, serta direktori data pelayan       | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Mac Intel tiada muat turun prabina. [Bina daripada sumber](#bina-daripada-sumber) sebaliknya.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Direktori data pelayan membesar melebihi apl itu. Pada permulaan pertamanya `cc_server`
+memasang secara paksa model pada peranti — pembenaman teks (~90 MB), diarisasi penutur
+(~35 MB) dan model pertuturan yang dipilih (Parakeet TDT v3 secara lalai, ~600 MB; varian
+Whisper 198–626 MB) — serta binaan code-server terbenam, dan setiap perbualan ejen mendapat
+worktree copy-on-write bagi repo yang dikerjakannya (`git worktree` biasa pada Windows).
+Pertuturan bukan pilihan: tanpa model ASR, operasi mesyuarat dan imlak tidak dilayan. Muat
+turun pertama model pertuturan masih memerlukan satu permulaan semula sebelum rakaman
+menyala.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Desktop menghalakan pelayannya ke direktori sokongan aplikasi setiap pengguna OS. `cc_server`
+yang dimulakan secara manual tanpa `--data-dir` lalai kepada `<application data>/control-center`
+— `~/Library/Application Support/control-center` pada macOS, `%APPDATA%\control-center` pada
+Windows, `$XDG_DATA_HOME/control-center` (atau `~/.local/share/control-center`) pada Linux.
 
-## Download
+## Muat turun
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Setiap artifak di bawah datang daripada [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Muat turun `Control-Center-<version>-arm64.dmg`, bukanya dan seret Control Center ke
+Applications. Binaan ini ditandatangani dengan Developer ID dan dinotari oleh Apple, jadi
+ia terbuka seperti biasa.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: pemasang setiap pengguna.
+- `Control-Center-<version>-windows-x64.zip`: zip mudah alih.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows menggunakan `git worktree` untuk checkout ruang (tiada copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage membawa maklumat kemas kini, jadi [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate)
+atau appimaged boleh membawanya ke keluaran terkini di tempatnya, memuat turun hanya apa
+yang berubah.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Kedua-duanya dibina pada Ubuntu 22.04 dan berjalan padanya atau apa-apa yang lebih baharu
+(Debian 12, Fedora 36 dan seterusnya): ia memaut glibc 2.35 dan libstdc++ GCC 12 serta
+mengambil GTK 3 daripada sistem. Beberapa pustaka yang mungkin tiada pada desktop standard
+dibawa di dalamnya, jadi tiada apa lagi yang perlu dipasang. Bunyi — main balik mesyuarat,
+landskap bunyi, audio rig dan loceng pemberitahuan — dimainkan melalui libmpv sistem
+(`libmpv1` pada Ubuntu 22.04, `libmpv2` pada Ubuntu dan Debian yang lebih baharu,
+`mpv-libs` pada Fedora); tanpanya apl bermula dengan kawalan itu tersembunyi.
 
-### Standalone server
+### Pelayan berdiri sendiri
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
+Setiap keluaran juga membawa pelayan tanpa kepala secara berasingan —
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
+`cc_server-<version>-windows-x64.zip` — bersama imej `cc-server`, `cc-webapp` dan
+`cc-remote` pada GHCR. Lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Arkib Linux dibina pada Ubuntu 22.04 dan pustaka natif yang dibundelkannya memaut glibc
+2.35 dan libstdc++ GCC 12, jadi ia memerlukan hos yang sekurang-kurangnya sebaharu itu
+(Ubuntu 22.04, Debian 12, Fedora 36 atau lebih baharu). Pada distribusi yang lebih lama,
+jalankan imej `cc-server` pula — kontena membawa userland sendiri, jadi hanya kernel perlu
+menjadi milik anda.
 
-## Agent backend
+## Bahagian belakang ejen
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center menghantar ejen melalui **penyesuai**. Terdapat dua daripadanya, senarainya
+tetap, dan ia dikesan secara automatik — tiada cara untuk mendaftarkan satu lagi.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Penyesuai **Control Center (built-in)** tidak memerlukan CLI luaran: gelung ejen berjalan
+di dalam pelayan dan bercakap dengan penyedia model melalui HTTP, jadi ia sentiasa tersedia.
+Sambungkan penyedia di bawah **Tetapan → Pelayan → Penyedia model**. OpenAI, Codex, Cursor
+dan Kimi Code menawarkan log masuk penyemak imbas; Anthropic, OpenRouter, Groq, Google
+Gemini, DeepSeek, Mistral, xAI, z.ai dan Moonshot memerlukan kunci API. Codex dan Cursor
+ialah penyedia pada pelari ini, bukan CLI yang berasingan. z.ai disenaraikan dua kali dengan
+sengaja: **z.ai** ialah platform terbuka bayar-mengikut-penggunaan, dibilkan terhadap baki
+akaun anda, manakala **z.ai GLM Coding Plan** ialah langganan. Ia kunci akaun yang sama,
+tetapi z.ai melayani pelan itu daripada hos yang berbeza — tampal kunci pelan pengekodan ke
+dalam jubin z.ai biasa dan setiap permintaan kembali `429 … "Insufficient balance or no resource package"`,
+kerana pelan itu tiada baki untuk dibelanjakan. Langganan Claude Pro/Max bukan log masuk API
+Anthropic; capai pelan itu melalui penyesuai Claude Code sebaliknya. Apa yang _boleh_ anda
+tambah pada halaman itu ialah **penyedia tersuai** — mana-mana titik akhir serasi OpenAI atau
+Anthropic (Ollama, LM Studio, vLLM, penerapan persendirian) di bawah **Penyedia tersuai →
+Tambah penyedia**.
 
-The other adapter wraps an external CLI:
+Penyesuai yang satu lagi membalut CLI luaran:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Pengesanan menyiasat `PATH` mesin yang menjalankan `cc_server` — mesin yang sama apabila
+desktop menjalankan pelayannya sendiri, hos jauh jika tidak. Pasang CLI Claude Code di situ,
+bukan pada klien. Butang **Muat semula** pada halaman itu menjalankan semula siasatan itu.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
+Senarai model dilayani secara langsung oleh setiap penyedia yang disambungkan;
+[models.dev](https://models.dev) hanya membekalkan metadata harga dan tetingkap konteks.
+Lihat [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
 
-## GitHub authentication
+## Pengesahan GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Kelayakan GitHub ialah **milik anda dan tinggal pada pelayan**, dikunci oleh id pengguna
+anda — bukan dalam rantai kunci OS klien. Setiap peranti yang anda daftar masuk menggunakan
+yang sama, dan tiada ahli lain boleh membacanya.
 
-If the server has a GitHub App registered ([Create the GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Jika pelayan mempunyai GitHub App yang didaftarkan
+([Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/)),
+**Tetapan → Ruang kerja → Profil & identiti → Hos kod** menawarkan **Log masuk dengan
+GitHub** (aliran peranti yang dijalankan oleh pelayan). Jika tidak, tampal token akses
+peribadi:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Klasik: `repo` dan `read:org`
+- Berbutir halus: **Contents** dan **Pull requests** (baca dan tulis), **Checks** dan
+  **Actions** (baca)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Cipta satu di
+[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+Pelayan menyiasat token itu untuk nama akaun semasa ia disimpan, jadi baris itu boleh
+menyatakan "didaftar masuk sebagai …"; siasatan yang gagal masih menyimpan token itu, dan
+salah taip atau skop yang hilang akan muncul sebagai permintaan yang gagal kemudian.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
+Langkah pertama onboarding ialah sambungan ini. Selepas itu kad yang sama ialah tempat anda
+menggantikan atau mengosongkannya. GitLab dan Bitbucket menggunakan kad yang sama; lihat
+[Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
 
-## Choose where the server runs
+## Pilih tempat pelayan berjalan
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/) explains what that split means for the desktop, web and phone.
+Control Center ialah klien nipis di atas proses `cc_server` tanpa kepala yang memiliki
+pangkalan data dan melakukan semua kerja;
+[Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) menerangkan apa maksud
+pemisahan itu bagi desktop, web dan telefon.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Pada pelancaran pertama desktop bertanya **"Bagaimana Control Center patut berjalan?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ms-MY/manual-pengguna/mula-pantas/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Jalankan dalam apl ini**: desktop melahirkan dan mengawasi `cc_server` pada mesin ini dan
+  bercakap dengannya melalui loopback. Tiada apa lagi untuk dikonfigurasikan. Inilah
+  persediaan yang diandaikan oleh [mula pantas](/ms-MY/manual-pengguna/mula-pantas/).
+- **Sambung ke tika jauh**: halakan desktop ke `cc_server` yang berjalan di tempat lain
+  dengan URL WebSocket-nya, id peranti, dan sama ada kunci pasangan atau kod jemputan sekali
+  guna. Pelayan itu memiliki data; desktop ini hanya memaparkannya.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/).
+Tambah atau tukar pelayan kemudian di bawah **Tetapan → Pelayan → Sambungan & status**.
+Menukar menyambung semula di tempatnya — tiada permulaan semula. Penyemak imbas tidak boleh
+menjalankan pelayan, jadi klien web sentiasa jauh; lihat
+[Sambung ke pelayan jauh](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/).
 
-To host a server yourself, follow [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Untuk menghos pelayan sendiri, ikut
+[Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
+Ia merangkumi pembinaan binari, penjanaan kunci pasangan sebelum permulaan pertama, dan
+bendera `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Sahkan persediaan anda
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Tetapan → Pelayan → Penyedia model** menyenaraikan kedua-dua penyesuai. "Control Center
+   (built-in)" dipaparkan sebagai ditemui dengan versi `built-in`; Claude Code dipaparkan
+   sebagai ditemui jika CLI-nya ada pada `PATH` hos pelayan. Tekan **Muat semula** jika ia
+   hilang.
+2. **Tetapan → Ruang kerja → Repositori** menyenaraikan repo ruang kerja ini, dan **Tambah
+   repositori** menyemak imbas folder hos pelayan.
+3. **Tetapan → Ruang kerja → Ejen** menyenaraikan lima ejen yang disemai oleh ruang kerja
+   pertama anda. Setiap satu memerlukan **Penyesuai** dan **Model** yang ditetapkan sebelum
+   ia boleh berjalan.
+4. **Tetapan → Pelayan → Diagnostik & privasi** melaporkan bahagian belakang kotak pasir
+   yang ditawarkan hos ini, keadaan model pembenaman, dan pengelogan.
 
-## Build from source
+## Bina daripada sumber
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Pustaka natif diperlukan dan tiada modus terdegradasi: yang hilang ialah kegagalan but
+keras, bukan laluan yang lebih perlahan. Sediakannya sebelum apa-apa lagi. Setiap perintah
+Flutter dan Dart melalui `fvm`, kerana versi SDK dipaku oleh repo.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +246,25 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Pada macOS, storan selamat (log masuk GitHub, Linear dan Google) memerlukan apl
+ditandatangani oleh pasukan Apple — ID Apple percuma sudah memadai, dan ia persediaan
+sekali sahaja yang diterangkan di bawah
+[local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos).
+Tanpanya apl tetap dilancarkan; hanya storan selamat tidak tersedia. Windows dan Linux tidak
+memerlukan tandatangan.
 
-To build the headless server binary, stage the natives the same way first, then:
+Untuk membina binari pelayan tanpa kepala, sediakan natif dengan cara yang sama dahulu,
+kemudian:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Cangkuk binaan menyalin apa sahaja yang sudah ada dalam `build/natives/` ke dalam bundel,
+jadi membina sebelum menyediakan natif menghasilkan bundel tanpa natif dan pelayan yang
+enggan bermula.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Untuk klien web gunakan `scripts/build_web.sh` (`--target remote` untuk PWA telefon). Inilah
+yang dijalankan oleh CI: `flutter build web` biasa melangkau setem identiti binaan, penjanaan
+semula Web Worker, manifes penerapan, dan semakan bajet aset.

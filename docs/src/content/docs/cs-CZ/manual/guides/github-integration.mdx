@@ -1,166 +1,168 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Nastavte integraci GitHub
+description: Přihlas se na GitHub, aby fungovala plocha PR, registrace repozitářů a běhy agentů.
 slug: cs-CZ/prirucka/navody/integrace-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Tenhle návod bere ty části nastavení, které patří ke GitHubu. GitHub je jeden
+ze tří podporovaných hostitelů kódu. Jak připojit GitLab nebo Bitbucket a jak
+je pracovní prostor míchá, je v
+[Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
-## Prerequisites
+## Než začneš
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Účet na GitHubu s přístupem k repozitářům, na kterých chceš pracovat
+- Buď GitHub App zaregistrovaná pro tvůj server (viz
+  [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)), abys se mohl
+  **přihlásit**, **nebo** osobní přístupový token s `repo` a `read:org` k vložení
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Přihlašovací údaje leží na serveru, u tebe]
+Na stroji, na kterém píšeš, se neukládá nic. Tvůj přihlašovací údaj drží
+`cc_server`, klíčovaný tvým id uživatele, a použije ho každé zařízení, ze
+kterého se přihlásíš: plocha, web i telefon. Jiný člen téhož serveru ho
+nepřečte a přihlásí se sám.
 :::
 
-## Sign in with GitHub
+## Přihlas se přes GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**Device flow**: GitHub ti ukáže krátký kód, ty ho schválíš na github.com
+a server dostane přihlašovací údaj. Žádná callback URL, žádný port, nic
+k vystavení. Je k dispozici, kdykoli má server client id, což oficiální build
+už obsahuje.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Jdi do **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
+   (nebo na první krok onboardingu)
+2. Na řádku **GitHub** klikni na **Přihlásit se přes GitHub**
+3. Dialog ukáže osmiznakový kód a v prohlížeči otevře
+   [github.com/login/device](https://github.com/login/device).
+   Kód už máš ve schránce
+4. Vlož ho, schval aplikaci a vrať se. Řádek se sám přepne na
+   „Přihlášeno jako _tvoje-uživatelské-jméno_.“
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Dialog můžeš zavřít, než to v prohlížeči dokončíš. Server se dál ptá, dokud
+kód nevyprší (asi 15 minut), takže přihlášení stejně dorazí.
 
-## Or paste a token
+## Nebo vlož token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Záloha pro případ, kdy server nemá aplikaci, kdy aplikace není nainstalovaná
+na účtu, který potřebuješ, nebo kdy prostě chceš použít PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Jdi do **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
+2. Na řádku **GitHub** klikni na **Přidat token**
+3. Vlož token s `repo` a `read:org` (classic) a ulož ho. Token **fine-grained**
+   potřebuje u repozitáře **Contents** a **Pull requests** (read and write)
+   a k tomu **Checks** a **Actions** (read).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Token se při uložení ověří, takže řádek umí pojmenovat účet, ke kterému patří.
+Odeber ho kliknutím na **Odpojit**.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Kontrolní bod: řádek **GitHub** ukazuje „Přihlášeno jako _tvoje-uživatelské-jméno_.“.
+Když odpovídající přihlašovací údaj není tvůj, přípona pojmenuje zdroj:
+„přes aplikaci tohoto serveru“ nebo „z prostředí“.
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Pořadí je dané]
+Požadavek tvým jménem použije **tvůj** přihlašovací údaj a nic jiného. Prostředí
+je přihlašovací údaj serveru, ne tvůj, takže tě nikdy nezastoupí. Práce, o kterou
+nikdo nepožádal (webhooky, dotazování na PR, synchronizace ticketů), použije
+identitu aplikace serveru, pak přihlašovací údaj vlastníka serveru a nakonec
+prostředí.
 :::
 
-## What the integration gives you
+## Co ti integrace dá
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Funkce                  | Jak                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| Seznam a detail PR      | GitHub REST API, ze serveru, na identitě aplikace nebo na tvém přihlašovacím údaji                      |
+| Běhy kontrol            | GitHub Checks API                                                                                        |
+| Publikování revize      | Krok vázaný na uživatele, který odešle tvoji revizi do PR                                                |
+| Registrace repozitáře   | Checkout se přijme, když remote `origin` míří na github.com, nebo na gitlab.com / bitbucket.org          |
+| Přístup agenta ke GitHubu | Broker přihlašovacích údajů vloží token jako `GH_TOKEN` / `GITHUB_TOKEN`, podle schopností agenta     |
+| Upozornění              | Dotazování na doručenou poštu oznámení GitHubu na serveru vyvolá „Zmíněn v pull requestu“ a „Vyžádána kontrola“ |
+| Profily uživatelů       | Karty profilu při najetí a filtrování PR podle autora                                                    |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Některé cesty použijí GraphQL API místo REST tam, kde je to levnější: aktivita
+větví pro výběr při sestavování PR a živý stav revize, podle kterého se pozná,
+jestli oznámení „Vyžádána kontrola“ pořád čeká.
 
-## Watch for GitHub outages
+## Sleduj výpadky GitHubu
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+V záhlaví se objeví stavový čip, když některý poskytovatel hlásí problémy.
+Týká se GitHubu, Claude, OpenAI a Kimi. **Dokud je všechno v pořádku, je
+schovaný.** Jeho přítomnost znamená potíž.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Klikni na čip a otevře se panel **Stav služeb** se stavem každého poskytovatele
+a tlačítkem **Obnovit**. Stavy se samy obnoví každé dvě minuty.
 
-## Know how agents act on GitHub
+## Jak agenti na GitHubu jednají
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/cs-CZ/prirucka/navody/politiky-sandboxu/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Agent dostane token ke GitHubu jen tehdy, když má **Povolit volání GitHub API**
+  nebo **Povolit git push**. Viz
+  [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/)
+- Commity, které agent udělá, jsou autorované **jako agent**: zobrazované jméno
+  plus ` (agent)`, na syntetické adrese klíčované id agenta, nikdy jako člověk.
+  Člověk, který o to požádal, je uvedený v trailerech `Co-Authored-By`
+- Když je nakonfigurovaná GitHub App, broker při každém spuštění vystaví úzce
+  vymezené instalační tokeny vázané na repozitář, platné zhruba hodinu, místo
+  aby předal široký token. Instalace se určí podle **vlastníka** repozitáře
+  daného běhu, takže jedna aplikace nainstalovaná na několika účtech se správně
+  omezí na účet, kterého se běh dotkne. Bez aplikace agenti dostanou token
+  z prostředí
+- Běh, o který požádal přihlášený člen, jedná pod GitHub identitou **toho
+  člena**. Jeho přihlašovací údaj se sloučí až za prostředím brokeru, takže
+  commit nebo komentář, který za něj agent udělá, se připíše jemu
 
-## Troubleshooting
+## Řešení potíží
 
-### The PR list is empty and says GitHub is not connected
+### Seznam PR je prázdný a hlásí, že GitHub není připojený
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Na tomhle serveru nemáš přihlašovací údaj ke GitHubu. Přihlas se nebo vlož token
+v **Hostování kódu**. Repozitáře na jiných forge to nezasáhne. Nic nepřispívá
+jen GitHub.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Řádek nabízí „Přidat token“, ale ne „Přihlásit se přes GitHub“
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/cs-CZ/prirucka/navody/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Server nemá client id. U buildu ze zdrojového kódu je to běžný stav, protože
+přihlašovací údaje se zapékají jen do oficiálních buildů. Viz
+[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/): zabere to asi dvě
+minuty a udělat to musí jen vlastník serveru, a to jednou.
 
-### The sign-in dialog says the provider returned no device code
+### Dialog přihlášení hlásí, že poskytovatel nevrátil device code
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App existuje, ale zaškrtnutí **Device flow** je vypnuté. Zapni ho
+v nastavení aplikace (General → Device flow) a zkus to znovu.
 
-### The row says "via this server's app" when I expected my own account
+### Řádek hlásí „přes aplikaci tohoto serveru“, a já čekám vlastní účet
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Nepřihlásil ses. To, co vidíš, je identita aplikace serveru, která odpovídá.
+Na tom řádku klikni na **Přihlásit se přes GitHub**.
 
-### A fine-grained PAT shows no merge button or check status
+### Fine-grained PAT neukáže tlačítko sloučení ani stav kontrol
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Token potřebuje **Contents** a **Pull requests** (read and write) a k tomu
+**Checks** a **Actions** (read). Po změně ho znovu vlož v Hostování kódu.
 
-### Adding a repo is rejected
+### Přidání repozitáře se odmítne
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+Registrace vyžaduje všechny tři podmínky: cesta leží uvnitř git work tree, má
+remote `origin` a ten remote míří na podporovanou forge (github.com,
+gitlab.com nebo bitbucket.org). Viz
+[Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
 
-### Everything stops working for a while after heavy use
+### Po velké zátěži na chvíli přestane fungovat všechno
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+To je jistič limitu požadavků. GitHub oznamuje primární limit kódem `403`
+s hlavičkou `x-ratelimit-remaining: 0` a časem obnovení. Jakmile takovou
+odpověď uvidí, klient další požadavky odmítne lokálně, bez volání po síti,
+dokud okno nevyprší, aby opakované pokusy limit ještě neprohloubily. Přechodné
+chyby se zkusí znovu nejvýš třikrát, s exponenciální prodlevou, a drží se
+`retry-after`.
 
-## Related guides
+## Související návody
 
-- [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/)
-- [Connect a code host](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
-- [Manage API keys](/cs-CZ/prirucka/navody/api-klice/)
-- [Add repos to a workspace](/cs-CZ/prirucka/navody/pridani-repozitaru/)
-- [Review and merge a PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)
+- [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/)
+- [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
+- [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/)
+- [Zkontrolujte a sloučte PR](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)

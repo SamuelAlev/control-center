@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Sediakan integrasi Slack
+description: Sambungkan apl Slack ke ruang kerja Control Center supaya ahli boleh menggerakkan ejen dari Slack.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Panduan ini menunjukkan cara menyambungkan Slack ke ruang kerja Control Center, sama ada dengan membenarkan Control Center mencipta apl itu atau dengan membinanya sendiri.
 
-For a guided first run, see [Bridge Slack to your workspace](/ms-MY/manual-pengguna/tutorial/jambatan-sembang-pertama/).
+Untuk permulaan pertama yang berpandukan, lihat [Jambatkan Slack ke ruang kerja anda](/ms-MY/manual-pengguna/tutorial/jambatan-sembang-pertama/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack ialah satu-satunya penyedia sembang]
+Jambatan ini buta penyedia secara binaan — UI yang dipacu penerang di atas satu
+penyesuai bagi setiap penyedia — tetapi Slack ialah satu-satunya penyesuai yang
+wujud. Tiada pelaksanaan Discord, Telegram, Teams atau Matrix.
 :::
 
-## Prerequisites
+## Prasyarat
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Peranan `owner` atau `admin` dalam ruang kerja Control Center — menyambungkan apl sembang ialah perubahan tetapan ruang kerja
+- Kebenaran untuk mencipta dan memasang apl dalam ruang kerja Slack
+- Tiada apa-apa yang boleh dicapai secara awam: sambungan ini keluar (Socket Mode), jadi pelayan tidak memerlukan port masuk, terowong atau domain
 
-## Three ways to get the app
+## Tiga cara untuk mendapatkan apl
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Laluan              | Anda sediakan                         | Control Center lakukan                                                                                                    |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Berpandukan**     | Token konfigurasi apl (`xoxe-…`)      | Mencipta apl dengan skop, peristiwa, Socket Mode dan perintah slash yang betul; menyerahkan kepada anda dua langkah yang tiada API pada Slack |
+| **Cipta dalam Slack** | Tiada apa-apa                       | Membuka Slack dengan konfigurasi yang sama telah diisi; anda pilih ruang kerja dan sahkan                                  |
+| **Secara manual**   | Token apl yang sudah siap             | Mengesahkannya dan menyambung                                                                                             |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Laluan berpandukan ialah satu-satunya laluan yang juga membolehkan apl itu _diurus_ dari Control Center, dan itulah yang membolehkan [Sesuaikan bot sembang](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/). Apl **Cipta dalam Slack** boleh dinaikkan taraf menjadi apl terurus kemudian dengan menampal token konfigurasi dalam dialog sambungan.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Tiada butang "pasang apl Slack Control Center" secara sengaja. Memasang apl Slack teragih memerlukan rahsia klien yang dikongsi (Slack tiada PKCE) dan Socket Mode mengagihkan peristiwa sesuatu apl secara rawak merentas sambungannya — jadi satu apl yang dikongsi akan menghantar mesej ruang kerja anda kepada pelayan orang lain. Oleh itu setiap ruang kerja memiliki aplnya sendiri dan tiga laluan ini adalah tentang betapa sedikit kerja yang diperlukan daripada anda.
 
-## Option A: let Control Center create the app
+## Pilihan A: biarkan Control Center mencipta apl
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Jana pasangan token konfigurasi apl di [api.slack.com/apps](https://api.slack.com/apps) dan salin token **muat semula** (`xoxe-…`)
+2. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+3. Pada blok Slack, klik **Cipta apl untuk saya**
+4. Tampal token itu, laraskan nama apl, nama bot, perihalan dan perintah slash, kemudian klik **Cipta apl**
+5. Ikut dua langkah yang tinggal yang ditunjukkan oleh dialog, setiap satu sebagai pautan ke Slack:
+   - **Basic Information → App-Level Tokens**: jana token dengan skop `connections:write` (`xapp-…`)
+   - **Install App**: pasang ke ruang kerja dan salin **Bot User OAuth Token** (`xoxb-…`)
+6. Klik **Tampal kelayakan** dan teruskan dengan [Sambung](#sambung)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Token konfigurasi diputarkan pada setiap penggunaan. Control Center menyimpan nilai yang diputarkan itu semasa ia berjalan, jadi anda tidak perlu menampalnya lagi.
 
-## Option B: create it in Slack, pre-filled
+## Pilihan B: cipta dalam Slack, telah diisi
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Apl yang sama, tanpa token konfigurasi — Slack menyerahkan skrin ciptaannya sendiri dengan keseluruhan manifes sudah diisi.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+2. Pada blok Slack, klik **Cipta apl untuk saya**
+3. Laraskan nama apl, nama bot, perihalan dan perintah slash — semuanya ikut bersama pautan itu
+4. Klik **Cipta dalam Slack**. Penyemak imbas anda membuka halaman penciptaan apl Slack dengan konfigurasi telah diisi
+5. Pilih ruang kerja Slack dan sahkan. Skop, peristiwa, Socket Mode dan perintah slash sudah betul
+6. Kembali dalam Control Center, ikut dua langkah yang tinggal yang ditunjukkan oleh dialog:
+   - **Basic Information → App-Level Tokens**: jana token dengan skop `connections:write` (`xapp-…`)
+   - **Install App**: pasang ke ruang kerja dan salin **Bot User OAuth Token** (`xoxb-…`)
+7. Klik **Tampal kelayakan** dan teruskan dengan [Sambung](#sambung)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack tidak melaporkan apl mana yang diciptanya, jadi Control Center tidak mengetahui id apl itu dan pautan dalam langkah 6 menuju ke senarai apl anda dan bukan terus ke apl tersebut. **Sesuaikan bot** memerlukan token konfigurasi.
 
-## Option C: build the app yourself
+## Pilihan C: bina apl sendiri
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Cipta apl di [api.slack.com/apps](https://api.slack.com/apps), kemudian sediakannya seperti berikut.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: dayakannya dan biarkan setiap URL permintaan kosong. Slack menolak manifes yang meminta kedua-dua Socket Mode dan penghantaran webhook.
 
-**Bot token scopes** (OAuth & Permissions):
+**Skop token bot** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Langganan peristiwa** (peristiwa bot):
 
 ```text
 app_home_opened
@@ -91,134 +92,136 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` dan `message.groups` itulah yang membolehkan _balasan_ dalam utas Slack yang sudah dijambatkan berfungsi. Tanpanya, hanya sebutan pertama sahaja yang tiba.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Perintah slash**: `/cc` (apa-apa nama pun boleh — jambatan menggunakan apa-apa perintah yang terakhir digunakan untuk memanggilnya).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: dayakan tab Messages dan biarkan ia boleh ditulis, supaya ahli boleh menghantar DM kepada bot.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Token**: jana token peringkat apl dengan `connections:write`, kemudian pasang apl dan salin token OAuth pengguna bot.
 
-## Connect
+## Sambung
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+2. Pada blok Slack, klik **Sambung Slack**
+3. Isikan medan-medan berikut:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
+| Medan                                          | Nilai    | Tempatnya dalam Slack                                      |
 | ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| **Token OAuth pengguna bot**                   | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **Token peringkat apl**                        | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **Token muat semula konfigurasi apl** (pilihan) | `xoxe-…` | Pasangan token konfigurasi apl di api.slack.com/apps       |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Awalan setiap nilai disemak pada kedua-dua pihak sebelum apa-apa dihantar, jadi
+nilai yang ditampal ke dalam kotak yang salah ditolak dengan ayat yang sama
+sama ada.
 
-4. Click **Connect**
+4. Klik **Sambung**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center mengesahkan token bot dengan `auth.test` Slack _sebelum_ menyimpan apa-apa, jadi salah taip dilaporkan kepada anda dan bukan menjadi soket yang diam-diam tidak pernah berfungsi. Token peringkat apl hanya dapat dibuktikan dengan membuka soket, jadi token yang buruk muncul seketika kemudian sebagai ralat sambungan pada baris yang sama.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Tanpa token konfigurasi apl yang pilihan, sambungan itu berfungsi dengan baik — anda hanya tidak boleh menyunting bot dari Control Center.
 
-## What connecting does
+## Apa yang berlaku apabila menyambung
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Menyimpan kelayakan dalam direktori ruang kerja itu sendiri, di sebelah pangkalan datanya, boleh dibaca oleh pemilik sahaja. Ia tidak pernah kembali kepada klien
+- Membuka satu sambungan Socket Mode untuk ruang kerja ini dan mula menerima sebutan, balasan utas Slack, DM dan perintah slash
+- Menyediakan semula setiap utas Slack yang telah dijambatkan sebelum ini, jadi sambungan semula meneruskan perbualan sedia ada dan bukan meninggalkannya tergantung
+- Tiada kos untuk ruang kerja yang tiada apl sembang: tiada soket, tiada pemasa, tiada trafik
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Di mana token berada dan mengapa bukan dalam rantai kunci]
+Kelayakan bot ialah satu fail JSON biasa bagi setiap penyedia di
+`<dataDir>/<workspaceId>/chat_credentials/`, ditulis secara atomik dan
+diketatkan kepada pemilik sahaja. Itu memang disengajakan, bukan kecuaian:
+memadam ruang kerja akan menyahpaut direktori itu supaya tokennya turut hilang
+dan `workspace.export` serta sandaran menyalin `workspace.db` — bukan direktori
+itu — jadi ruang kerja yang anda serahkan kepada orang lain tidak pernah
+membawa token bot yang masih aktif di dalamnya. Akibatnya, memulihkan ruang
+kerja di tempat lain bermakna menyambung semula Slack di sana.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Akses kepada jambatan ini ialah **keahlian** ruang kerja, bukan pemilikan token.
+Akaun Slack perlu dipautkan kepada pengguna Control Center yang merupakan ahli
+dengan peranan menulis. Sambung, putuskan, persediaan berpandukan, pautan
+persediaan dan penyesuaian bot semuanya dikawal oleh pentadbir.
 :::
 
-## Verify
+## Sahkan
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Baris Slack menunjukkan teg status: **Langsung**, **Menyambung…**, **Ralat sambungan** (dengan ralat Slack sendiri di sebelahnya), atau **Tidak disambungkan**. Untuk menyemak dari hujung ke hujung:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Dalam Slack, jemput bot ke saluran: `/invite @your-bot-name`
+2. Sebut bot itu dengan sesuatu permintaan
+3. Balasan utas Slack muncul dan ruang yang sepadan muncul dalam Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/).
+Setiap ahli yang ingin menggunakan jambatan ini kemudian memautkan akaunnya sendiri — lihat [Pautkan akaun Slack anda](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/).
 
-## What a reply looks like in Slack
+## Rupa balasan dalam Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Di atas perkataan yang distrim terletak satu kad berkumpulan dengan satu baris bagi setiap langkah. Persediaan ialah satu baris yang tajuknya berubah daripada `Working on it…` kepada `Cloning …` kepada `Starting the agent…`. Penaakulan menambah baris `Thinking…`; apabila langkah itu selesai, satu pemikiran pendek boleh muncul padanya. Setiap alat mempunyai barisnya sendiri (`Read lib/main.dart`). Jawapan tiba sebagai teks biasa di bawah kad. Kad menjadi lengkap apabila giliran selesai dan menjadi ralat apabila larian gagal, terganggu, atau mencapai had gilirannya.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Kad bermula sebaik sahaja bot menerima sebutan itu — `Working on it…` — jadi utas Slack tidak senyap semasa ruang kerja masih dibina. Sebutan pertama anda dalam saluran Slack mencipta perbualan itu, yang mengklon repositori tempat ejen bekerja, jadi baris persediaan itu kemudian berbunyi `Cloning acme/widgets…`, kemudian `Setting up Reviewer…`, kemudian `Starting the agent…`, kemudian baris `Thinking…` sebaik sahaja ejen benar-benar menaakul. Pada repositori besar, persediaan pertama itu mengambil masa; kad itulah cara anda tahu ia sedang berfungsi dan bukan mengabaikan anda. Sebutan kemudian dalam utas Slack yang sama tetap dibuka dengan `Working on it…`, kemudian melangkau langkah klon kerana ruang kerja sudah wujud.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Penaakulan sebagai dinding teks dan output alat tidak pernah meninggalkan Control Center — pemikiran pada baris `Thinking…` ialah satu baris pendek, bukan transkrip. **View in Control Center** pada kad membuka perbualan penuh dalam apl desktop — pautan itu menuju ke pelayan Control Center anda sendiri, yang menyerahkan penyemak imbas kepada apl tersebut.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Jika tiada apa-apa berlaku apabila anda mengkliknya, pelayan yang menghantar mesej itu tidak dapat dicapai dari mesin yang anda klik (contohnya pelayan loopback sahaja yang diklik dari telefon), atau Control Center tidak berjalan di situ. Pelayan yang tiada alamat boleh dicapai menghantar kad tanpa butang dan bukannya butang yang menuju ke tempat kosong.
 
-## Rotate a token
+## Putarkan token
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Tampal semula nilai baharu dalam dialog sambungan dan klik **Sambung**. Menyambung menggantikan apa-apa sambungan yang sedang berjalan untuk ruang kerja ini, jadi soket didail semula dengan kelayakan baharu.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Dua token yang diperlukan mesti ada pada setiap sambungan. Token konfigurasi apl yang pilihan mengekalkan nilai tersimpannya apabila anda membiarkan kotak itu kosong, jadi memutarkan token bot tidak pernah menghilangkan keupayaan anda untuk menyunting apl.
 
-## Disconnect
+## Putuskan
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Klik **Putuskan** pada baris Slack (pentadbir sahaja). Soket ditutup dan kelayakan dilupakan.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Pautan ruang dan pengguna sengaja dikekalkan: menyambung semula apl yang sama memulihkan setiap utas Slack yang dijambatkan. Ia baris berskop ruang kerja, jadi memadam ruang kerja tetap membuangnya.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### The row says "Connection error"
+### Baris itu menyatakan "Ralat sambungan"
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Baca ralat yang dipaparkan di sebelah teg itu. Kelayakan yang ditolak (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) bersifat muktamad — jambatan berhenti mencuba semula dan menunggu token baharu, kerana mencuba semula token yang telah dibatalkan selama-lamanya hanya mengenakan had kadar kepada anda. Tampal semula token itu dalam dialog sambungan.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Ralat `missing_scope` bermakna apl dipasang dengan lebih sedikit skop daripada yang diperlukan oleh jambatan. Tambah skop yang hilang, pasang semula apl dalam Slack, kemudian sambung semula.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Apa-apa yang bersifat sementara (soket terputus, gangguan kecil Slack) akan bersambung semula dengan sendirinya menggunakan backoff eksponen yang dihadkan pada 30 saat dan putaran soket rutin Slack tidak meningkatkan backoff itu.
 
-### The bot does not answer a mention
+### Bot tidak menjawab sebutan
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Adakah bot berada dalam saluran itu?** Slack hanya menghantar mesej saluran kepada apl yang menjadi ahli. Jalankan `/invite @your-bot-name`
+- **Adakah anda telah dipautkan?** Ahli yang belum dipautkan menerima balasan dalam utas Slack itu yang menerangkan cara memautkan. Lihat [Pautkan akaun Slack anda](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
+- **Adakah anda ahli ruang kerja dengan peranan menulis?** `viewer` atau `guest` diberitahu bahawa peranannya baca sahaja. Jambatan tidak pernah memulakan kerja bagi pihak seseorang yang tidak dapat diatributkannya
+- **Adakah ruang kerja itu mempunyai ejen?** Tanpa ejen, mesej itu disimpan tetapi tiada sesiapa untuk menjawabnya
 
-### It answers in a channel but ignores plain messages
+### Ia menjawab dalam saluran tetapi mengabaikan mesej biasa
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Itu memang disengajakan. Di luar DM, jambatan hanya bertindak ke atas mesej yang menyebut bot, atau balasan dalam utas Slack yang sudah dimilikinya. Selebihnya ialah perbualan orang lain.
 
-### Replies arrive as one big message instead of streaming
+### Balasan tiba sebagai satu mesej besar dan bukannya distrim
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Baris itu menyatakan "Penstriman langsung dimatikan untuk apl Slack ini — balasan tiba sebagai satu mesej." Balasan strim Slack memerlukan ciri Agents & AI Apps pada pelan berbayar; apabila Slack menolaknya, jambatan berhenti memintanya sepanjang hayat sambungan itu dan menyiarkan balasan penuh sebaliknya. Tiada apa yang hilang — transkrip penuh sentiasa ada dalam Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Penstriman juga memerlukan penambat utas Slack, jadi balasan yang tiada utas Slack untuk berkembang di dalamnya disiarkan sepenuhnya. Kad tugasan tetap tiba sama ada: pada balasan penuh ia menaiki mesej yang sama, sudah lengkap.
 
-### The reply has no card above it
+### Balasan tiada kad di atasnya
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Kad tugasan Slack ialah sebahagian daripada permukaan Agents & AI Apps baharu yang sama seperti penstriman dan Slack hanya menolaknya pada masa panggilan. Apabila ia berbuat demikian, Control Center mengekalkan balasan dan menggugurkan kad itu sepanjang hayat sambungan tersebut — jawapan tanpa baris status lebih baik daripada baris status tanpa jawapan.
 
-### "Control Center needs an app configuration token to edit the bot"
+### "Control Center memerlukan token konfigurasi apl untuk menyunting bot"
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Baris **Sesuaikan bot** dilumpuhkan kerana sambungan itu tiada token konfigurasi apl. Ini dijangka bagi apl yang dibuat secara manual atau melalui **Cipta dalam Slack** — Slack tidak pernah memberitahu Control Center apl mana itu. Jana pasangan token di api.slack.com/apps dan sambung semula dengan token muat semula diisi.
 
-### A long answer is cut off
+### Jawapan panjang dipotong
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack mengehadkan satu mesej pada 40,000 aksara, jadi jambatan memotong pada 39,000 dan menambah penunjuk ke Control Center — balasan yang dipendekkan lebih baik daripada balasan yang ditolak terus oleh Slack. Teks penuh sentiasa ada dalam transkrip ruang.
 
-## Related guides
+## Panduan berkaitan
 
-- [Link your Slack account](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
-- [Customize the chat bot](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
-- [Chat bridge](/ms-MY/manual-pengguna/rujukan/jambatan-sembang/)
+- [Pautkan akaun Slack anda](/ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang/)
+- [Sesuaikan bot sembang](/ms-MY/manual-pengguna/panduan-cara/sesuaikan-bot-sembang/)
+- [Jambatan sembang](/ms-MY/manual-pengguna/rujukan/jambatan-sembang/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Chat bridges](/ms-MY/manual-pengguna/konsep/jambatan-sembang/)
+- [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/)

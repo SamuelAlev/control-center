@@ -2,6 +2,7 @@
 title: Run a fleet worker
 description: Build, pair and run the cc_worker headless executor so it registers with a cc_server and appears in the fleet panel.
 slug: en-GB/manual/guides/run-fleet-worker
+sourceHash: 1f16518b8e5edc9969f8d92e6f51ddd11eeaddc4
 ---
 
 Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is
@@ -24,7 +25,7 @@ job kind …`.
 - The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix commands with `fvm`.
 - This repository checked out on the worker machine.
 - A reachable `cc_server` (loopback for dev, LAN or remote for production).
-- `git` on the `PATH` — the worker materializes repos and runs `git` probes.
+- `git` on the `PATH` — the worker materialises repos and runs `git` probes.
 
 ## Step 1: Build the binary
 
@@ -81,7 +82,7 @@ then denies the session (`auth_denied`) rather than accepting an unauthenticated
 worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
 binary uses `package:args` and does not ignore typos.
 
-`CC_WORKER_CACHE` overrides the worktree materialization cache directory
+`CC_WORKER_CACHE` overrides the worktree materialisation cache directory
 (default: a `cc_worker_cache` directory under the system temp dir).
 
 The worker registers with `fleet.registerWorker`, then heartbeats every 20s and
@@ -110,7 +111,7 @@ leases), **resume** a draining worker, **revoke** its credential, or **remove**
 the row.
 
 Worker and job rows live in the server's `global.db` — the worker itself writes
-nothing to disk beyond the materialization cache.
+nothing to disk beyond the materialisation cache.
 
 ## What the worker advertises
 

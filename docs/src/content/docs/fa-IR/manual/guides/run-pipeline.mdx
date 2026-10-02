@@ -1,68 +1,69 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: اجرای دستی یک پایپ‌لاین
+description: یک اجرای پایپ‌لاین را از راه‌انداز شروع کنید، ورودی‌هایش را پر کنید و به جزئیات اجرا برسید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/).
+این راهنما به شروع دستی یک اجرا می‌پردازد. برای تماشای یک اجرا، خواندن خروجی
+گام‌ها و بازیابی از یک شکست،
+[نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
+را ببینید.
 
-## Start a run
+## شروع یک اجرا
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. در نوار کناری فضای کاری روی **پایپ‌لاین‌ها** کلیک کنید.
+2. در سرآمد روی **اجرای پایپ‌لاین** بزنید. به راه‌انداز می‌رسید
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. از نوار کناری سمت چپ یک قالب انتخاب کنید. هر کارت نام قالب، توضیحش و اینکه
+   ورودی می‌گیرد یا نه را نشان می‌دهد.
+4. فرم ورودی سمت راست را پر کنید. فیلدهای الزامی تا زمانی که مقداری نگیرند
+   دکمه را مسدود می‌کنند؛ قالبی که ورودی ندارد همین را می‌گوید.
+5. روی **اجرای پایپ‌لاین** بزنید.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+به صفحهٔ جزئیات اجرا می‌رسید، با آبشار زمان‌بندی و بوم گراف زنده.
 
-## If the rail is empty
+## اگر نوار کناری خالی است
 
-The launcher shows a template only when **both** are true:
+راه‌انداز یک قالب را تنها وقتی نشان می‌دهد که **هر دو** شرط زیر برقرار باشند:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- کلید قالب در **تنظیمات → فضای کاری → قالب‌های پایپ‌لاین** روشن باشد.
+- **اجازهٔ اجرای دستی** در پنجرهٔ **اجرای دستی** ویرایشگر قالب روشن باشد — همین
+  کلید است که تریگر `manual`ی را می‌سازد که راه‌انداز می‌خواند.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+هشت مورد از سیزده قالب داخلی غیرفعال عرضه می‌شوند: `external_pr_welcome`،
+`cross_review`، `ticket_to_pr`، `pr_triage`، `pre_merge_gate`، `release_notes`،
+`dep_audit` و `pr_digest`. موتور از شروع یک قالب غیرفعال سر باز می‌زند، پس
+پیش از آن‌که اینجا دنبالش بگردید کلیدش را روشن کنید.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+در فهرست قالب‌ها هیچ کنش **اجرا**یی به‌ازای هر قالب وجود ندارد و درون ویرایشگر
+هم دکمهٔ اجرا نیست — راه‌انداز تنها نقطهٔ ورود دستی است.
 
-## Fill in a repository input
+## پر کردن یک ورودی مخزن
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+ورودی از نوع **مخزن** یک انتخاب‌گر روی مخزن‌های ثبت‌شدهٔ فضای کاری می‌سازد.
+انتخاب یکی از آن‌ها `repo_id`، `repo_local_path`، `repo_full_name` و — وقتی
+مخزن ریموت GitHub دارد — `repo_owner` و `repo_name` را در بار دادهٔ اجرا پر
+می‌کند، تا گام‌های پایین‌دستی هرکدام را که لازم دارند بخوانند.
 
-## Watch it run
+## تماشای اجرا
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+صفحهٔ جزئیات اجرا سه بخش دارد: یک نوار فراداده (زمان شروع، مدت فعال، پیشرفت
+گام‌ها، بنر شکست، **تلاش مجدد** و **حذف**)، یک آبشار زمان‌بندی جمع‌شونده با مدت و
+هزینهٔ هر گام، و بوم گراف. انتخاب یک گره پنل جزئیات آن گام را باز می‌کند.
 
-[Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
+همهٔ این‌ها را پوشش می‌دهد، از جمله چگونه خواندن یک گام معلق و اینکه وقتی گامی
+شکست می‌خورد چه کنید.
 
-Every run you start from the app is a real one.
+هر اجرایی که از برنامه شروع می‌کنید یک اجرای واقعی است.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create a pipeline template](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/)
-- [Set up pipeline triggers](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
-- [Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
+- [ایجاد قالب پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/)
+- [راه‌اندازی تریگرهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریگرهای-پایپلاین/)
+- [نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Pipelines](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)
+- [پایپ‌لاین‌ها(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)

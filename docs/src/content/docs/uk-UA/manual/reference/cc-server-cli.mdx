@@ -1,193 +1,202 @@
 ---
-title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+title: CLI cc_server
+description: Кожен прапорець, змінна середовища, підкоманда та шлях каталогу даних headless-сервера.
 slug: uk-UA/керівництво/довідка/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+Кожен параметр процесу задається або прапорцем CLI, або змінною середовища; пріоритет
+має прапорець, далі змінна середовища, далі типове значення. Виняток — облікові дані
+сторонніх сервісів: див. нижче.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Невідомі прапорці ігноруються мовчки]
+Синтаксичний аналізатор аргументів написано вручну, і він пропускає все, що не розпізнає,
+тож одрук (`--tls-key-file`, `--bindany`) не дає помилки — сервер просто запускається зі
+значенням за замовчуванням. Перевіряйте рядки журналу запуску, коли прапорець, здається,
+не діє.
 :::
 
-## Core
+## Основні
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| Прапорець       | Змінна                 | Типово                                           | Значення                                                                                                       |
 | --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | каталог даних застосунку для користувача в ОС (див. нижче) | Бази даних, секрети, моделі та кешовані медіа                                                        |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | Порт TCP (`0` = тимчасовий)                                                                                    |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback` або `any`/`all`/`0.0.0.0` для всіх інтерфейсів (потребує TLS чи `--insecure`)                        |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | домашній каталог користувача сервера             | Розділені комами базові каталоги, які клієнт може переглядати під час реєстрації репозиторію. Перегляд вище кореня відхиляється |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning` або `error`. Рядки запуску й готовності виводяться завжди                            |
+| `--server-name` | `CC_SERVER_NAME`       | ім’я хоста машини                                | Назва, яку показують у засобах вибору, виявленні та поверхнях спарювання                                        |
 
-## Reachability and TLS
+## Досяжність і TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
+| Прапорець           | Змінна                      | Типово                        | Значення                                                                                                                                                     |
 | ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | не задано                     | Ланцюг сертифікатів PEM. Разом із ключем обслуговує `wss://` у тому самому процесі                                                                            |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | не задано                     | Закритий ключ PEM, що відповідає сертифікату                                                                                                                  |
+| `--insecure`        | `CC_SERVER_INSECURE`        | вимкнено                      | Дозволяє прив’язку не до loopback без шифрування. Лише за зворотним проксі, що завершує TLS, у довіреній мережі; ігнорується, коли TLS налаштовано             |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | похідний від прив’язки        | URL RPC, який цей сервер повідомляє прив’язаним клієнтам. **Задайте його явно за проксі, NAT або тунелем** — типове значення лише вгадує локальну прив’язку       |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Розділені комами джерела браузера, яким дозволено звертатися до `/rpc` з інших джерел. Loopback і нативні клієнти дозволені завжди                            |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | не задано                     | Джерело розміщеного вебклієнта, до якого повертаються зворотні виклики єдиного входу                                                                          |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | Брокер-ретранслятор, до якого долучається цей сервер, щоб телефон міг дістатися його без прямого шляху                                                        |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | Оголошення в LAN: `auto` (лише коли прив’язка не до loopback), `on`, `off`. Виявлення оголошує лише існування — для долучення все одно потрібне спарювання        |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Керований провайдер тунелю: `off`, `cloudflared`, `ngrok`, `tailscale`. Публічне виставлення вмикають явно                                                    |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | визначається з `PATH`         | Явний шлях до бінарника тунелю                                                                                                                                |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | не задано                     | Очікуваний SHA-256 цього бінарника, який перевіряють перед кожним запуском                                                                                    |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | порожньо                      | Розділені комами додаткові аргументи для виклику тунелю                                                                                                       |
 
-## Indexing and third-party credentials
+## Індексування та облікові дані сторонніх сервісів
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
+| Прапорець                | Змінна                          | Типово                                | Значення                                                                                                                    |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Чи загортають запуски агентів у рідну для ОС хоста пісочницю, коли вона доступна. Це радше відмова, ніж увімкнення — див. нижче |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Аварійний вимикач на місці для фонового індексування графа коду. `off` запускається чисто, без перезбірки                     |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Скільки секунд утримувати перший прохід індексування після банера готовності (обмежено 0–300)                                 |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Чи надсилають запуски harness невеликий резидентний набір інструментів плюс індекс назв, завантажуючи решту при першому використанні. Див. нижче |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Скільки секунд запуск стоїть припаркований, чекаючи, поки людина виправить облікові дані, які не можуть його обслужити (обмежено 0–3600). Див. нижче |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+Порожнє значення облікових даних читається як не задане, тож вбудований запасний
+варіант усе одно діє. Збірка з вихідного коду взагалі не містить вбудованих
+облікових даних.
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar і засіб вибору GIF від Klipy працюють **лише через змінні
+середовища** — прапорців `--google-client-id` / `--klipy-app-key` немає (невідомі
+прапорці ігноруються). Задайте `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`
+і `KLIPY_APP_KEY` у середовищі (або в `.env` поряд із сервером). Порожнє значення
+вимикає цю функцію, а не зриває запуск.
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+Сервер зондує хост один раз під час запуску й загортає виконання команд агента в
+рідну для ОС пісочницю, коли доступний бекенд: `sandbox-exec` (Seatbelt) на macOS,
+`bwrap` разом із `socat` у Linux і WSL2. Там, де його немає — у Windows або на
+Linux-хості без цих інструментів, — запуски переходять на санітизацію середовища,
+політику команд та обмеження дій, а журнал запуску повідомляє, який стан застосовано.
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` — це аварійний вимикач на місці для випадку, якого зондування не
+бачить: хоста, де сама поведінка профілю пісочниці збоїть. Він не потребує перезбірки,
+а сервер пише попередження протягом усього часу роботи процесу, тож цей стан ніколи
+не лишається непоміченим.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/uk-UA/керівництво/поняття/контекст-інструментів).
+Запуски вбудованого harness надсилають невеликий резидентний набір визначень
+інструментів плюс індекс назв решти, які завантажують свої схеми при першому
+використанні. Це скорочує блок інструментів приблизно на 78% і вкладає постійно
+видимий набір у смугу, де моделі надійно обирають інструменти. Відкладені інструменти
+й далі можна викликати за назвою, а `search_tools` знаходить їх за наміром. Див.
+[Контекст інструментів і кеш промптів](/uk-UA/керівництво/поняття/контекст-інструментів).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` знову робить резидентним кожен допущений інструмент,
+відтворюючи запити, які сервер робив до появи відкладення. Це аварійний вимикач для
+моделі, яка погано поводиться з дворівневою поверхнею, — прапорець, а не перезбірка.
+Він впливає лише на вбудований harness; поверхня MCP `tools/list`, яку бачать зовнішні
+клієнти, завжди містить повний каталог.
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+Запуск, у якого облікові дані провайдера відсутні або вичерпані, **припарковують**, а
+не провалюють: оператор отримує запит виправити їх, і запуск відновлюється, якщо він це
+зробить. Типовий граничний термін — 900 секунд (15 хвилин), обмежений діапазоном 0–3600.
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+Цей термін навмисно значно довший за термін запиту на схвалення: схвалення — це
+рішення, яке людина ухвалює за секунди, а виправлення облікових даних означає відкрити
+термінал, увійти й повернутися. Саме стеля не дає запуску без нагляду — кроку конвеєра,
+тригера cron, вебхука — чекати на когось, хто спить. Коли термін спливає, запуск падає
+з тим самим повідомленням, з яким упав би й так.
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` — це аварійний вимикач: нічого ніколи не паркують, і погані
+облікові дані завершують хід точно так, як це було до появи цієї брами.
 
-## Subcommands
+## Підкоманди
 
-| Command                                       | What it does                                                                                        |
+| Команда                                       | Що робить                                                                                           |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| `cc_server`                                   | Запускає сервер до `SIGINT`/`SIGTERM`                                                               |
+| `cc_server pair`                              | Створює пристрій і друкує його ідентифікатор і ключ спарювання. Безпечно щодо каталогу даних, який сервер уже обслуговує — запущений сервер підхоплює пристрій без перезапуску |
+| `cc_server calendar connect --workspace <id>` | Підключає обліковий запис Google до робочого простору через потік із кодом пристрою, а тоді завершується |
+| `cc_server update`                            | Перевіряє наявність, завантажує й перевіряє новіший автономний випуск                                |
+| `cc_server --version`                         | Друкує версію збірки та git SHA — той самий ідентифікатор, який оголошують `/healthz` і рукостискання RPC |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| Прапорець      | Типово                                                    | Значення                                                                                                                                                             |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | Ідентифікатор пристрою. Платформа виводиться з нього, тож `--device desktop` створює рядок десктопа, а `--device ios`/`android` — рядок телефона; будь-що інше вважається вебклієнтом |
+| `--label`      | назва платформи плюс ім’я хоста цієї машини                | Показувана назва у списку пристроїв                                                                                                                                  |
+| `--host`       | `localhost` або `<this-host>`, коли прив’язка до всіх інтерфейсів | Хост, який вбудовують у надрукований URL. Задайте його як IP-адресу в LAN або хост тунелю, до якого клієнт справді звертатиметься                                     |
+| `--client-url` | не задано                                                 | Джерело розміщеного **веб**клієнта. Додає глибоке посилання для сканування та QR-код у терміналі                                                                      |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` також приймає основні прапорці `--data-dir`, `--port` і `--bind`: вони вибирають
+каталог даних для запису та формують надрукований URL сервера (`ws` на loopback, `wss`
+при `--bind any`). Повторний запуск `pair` для того самого `--device` оновлює його ключ
+і розриває активні сесії цього пристрою. Створені тут облікові дані **не мають терміну
+дії**, на відміну від 30 днів, які задає спарювання в застосунку.
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/).
+:::caution[QR-код `--client-url` — не телефонний QR]
+`pair --client-url` заповнює форму підключення **веб**клієнта (URL сервера,
+ідентифікатор пристрою та ключ у фрагменті URL). Телефон спарюється з іншим
+навантаженням, яке створюють у панелі спарювання в застосунку, — повний дескриптор
+з’єднання із сервером плюс термін дії. Ці два не взаємозамінні — див.
+[Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/).
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` замінює інсталяцію; його відхиляють, поки сервер усе ще відповідає на
+налаштованому порту, якщо ви не передасте `--force`. `--allow-downgrade` дозволяє
+старіший випуск.
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+Для інсталяцій, якими вона не володіє, команда відмовляється одразу — з поясненням,
+а не помилкою:
 
-| Environment                   | Detected by                                 | What it says                                                |
+| Середовище                    | Виявляється за                              | Що вона каже                                                |
 | ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| Вбудований сервер настільного застосунку | `CC_EMBEDDED=1` або `CC_BOOTSTRAP_DEVICE_ID` | Натомість оновіть застосунок — інсталятор замінює все дерево |
+| Checkout джерел для `dart run` | шлях скрипту закінчується на `.dart`        | Оновіть його через git                                      |
+| Docker                        | маркери контейнера                          | Завантажте новіший образ                                    |
 
-## Process lifecycle
+## Життєвий цикл процесу
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` працює до `SIGINT` / `SIGTERM`. Цим керує ще одна змінна середовища, і її
+задає настільний застосунок, а не ви:
 
-| Variable                 | Effect                                                                                                                                     |
+| Змінна                   | Вплив                                                                                                                                      |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| `CC_EXIT_WITH_PARENT=1`  | Сервер завершується, коли завершується його батьківський процес; це визначають за тим, що батько закриває кінець запису власного каналу stdin. Настільний застосунок задає її, щоб застосунок, який упав, ніколи не залишив осиротілого сервера, що тримає каталог даних |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+Задавайте її самостійно, лише якщо ви наглядаєте за `cc_server` як за дочірнім
+процесом і хочете такої самої гарантії.
 
-## Data directory layout
+## Структура каталогу даних
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+Типовий каталог даних — `~/Library/Application Support/control-center` на macOS,
+`%APPDATA%\control-center` у Windows і `$XDG_DATA_HOME/control-center` (інакше
+`~/.local/share/control-center`) на решті платформ. Відносний до робочого каталогу
+`.cc_server` використовується лише тоді, коли не вдається визначити ні домашній
+каталог, ні каталог даних застосунку.
 
-| Path                              | Contents                                                                        |
+| Шлях                              | Вміст                                                                           |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | Реєстр робочих просторів, користувачі, прив’язані пристрої, стрічка новин і черга флоту |
+| `<workspaceId>/workspace.db`      | Одна база даних на робочий простір — агенти, простори, тікети, пам’ять, граф коду |
+| `<workspaceId>/chat_credentials/` | Токени чат-ботів у звичайному JSON, тож вони живуть разом із робочим простором   |
+| `secrets.json`                    | Ключі спарювання, ідентичність застосунку провайдера, токени користувачів і Google, SSO (`0600`) |
+| `backups/<timestamp>/`            | Один знімок інсталяції — `manifest.json`, `global.db` і копія кожного робочого простору |
+| `backups/exports/`                | Експорти окремих робочих просторів, `<workspaceId>-<timestamp>.db`               |
+| `backups/transfer/`               | Проміжне сховище для завантажень і вивантажень резервних копій; його прибирає маршрут, що його записує |
+| `models/`                         | Моделі ембедингів, діаризації та розпізнавання мовлення на пристрої              |
+| `meetings/<meetingId>/`           | Збережене аудіо зустрічей                                                       |
+| `rigs/images/`                    | Імпортовані дискові образи rig (поверхня десктопа QEMU)                          |
+| `rigs/smolvm/<rigId>/`            | Стан виконання microVM для кожного rig (секрет брокера, `0600`)                   |
+| `rigs/smolvm-packs/`              | Попередньо розпаковані пакети машин — кеш, який робить повторні завантаження rig швидкими |
+| `rigs/tls/`                       | Центр сертифікації dev-домену для HTTPS rig (ключі `0600`)                       |
+| `rigs/run/<rigId>/`               | Оверлеї QEMU, seed-образи та ключі для кожної ВМ (`0600`)                        |
 
-## See also
+## Див. також
 
-- [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/) — the setup recipe these flags belong to
-- [Run a fleet worker](/uk-UA/керівництво/практичні-посібники/запустити-воркер-флоту/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/) — copying this directory somewhere safe
-- [Backup, export and import](/uk-UA/керівництво/довідка/резервне-копіювання/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/) — pointing a client at one
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/) — why the server owns everything
+- [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/) — рецепт налаштування, до якого належать ці прапорці
+- [Запустити воркер флоту](/uk-UA/керівництво/практичні-посібники/запустити-воркер-флоту/) — окремий бінарник `cc_worker`, який реєструється на цьому сервері
+- [Резервне копіювання та відновлення](/uk-UA/керівництво/практичні-посібники/резервне-копіювання-та-відновлення/) — копіювання цього каталогу в безпечне місце
+- [Резервне копіювання, експорт і імпорт](/uk-UA/керівництво/довідка/резервне-копіювання/) — структура знімка та кожна операція резервного копіювання
+- [Під’єднатися до віддаленого сервера](/uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера/) — як спрямувати на нього клієнт
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/) — чому сервер володіє всім

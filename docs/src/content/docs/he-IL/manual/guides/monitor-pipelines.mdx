@@ -1,150 +1,144 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: מעקב אחר הרצות פייפליין
+description: עבדו עם תור ההרצות, קראו את מפל הזמנים ולוח השלבים של הרצה, והתאוששו משלב שנכשל או שנתקע.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/).
+זהו הדף לכל מה שקורה אחרי שהרצה התחילה: למצוא אותה, לקרוא מה עשה כל שלב
+ולהחזיר לפעולה הרצה שנכשלה. כדי להתחיל הרצה, ראו
+[הפעלת פייפליין ידנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/).
 
-## Find a run
+## מציאת הרצה
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. לחצו על **פייפליינים** בסרגל הצד של סביבת העבודה. המסך הזה הוא תור
+   ההרצות של סביבת העבודה — כל הרצה, מהחדשה לישנה.
+2. השתמשו במסילה השמאלית כדי לסנן. יש בדיוק שלושה מסננים, לכל אחד מונה
+   חי: **הכול**, **פועל**, **נכשל**.
+3. עברו על הטבלה עם <kbd>↑</kbd>/<kbd>↓</kbd> (או <kbd>j</kbd>/<kbd>k</kbd>)
+   ולחצו על <kbd>Enter</kbd> כדי לפתוח את ההרצה שבמיקוד. לחיצה על שורה עושה
+   את אותו הדבר.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+כל שורה מציגה גליף של אופן התחלת ההרצה (סמל הפעלה עבור הרצה ידנית; גליף
+קובץ עבור מעקב גרף קוד; אחרת הטריגר האוטומטי). חלונית הרמז מציינת את
+הטריגר — **ידני**, **PR פורסם**, **שינוי קובץ** וכן הלאה — ולמעקב, גם אילו
+קבצים השתנו. אחר כך שם הפייפליין, תג סטטוס, משך הפעילות (או מיקום בתור
+עבור הרצה ב-`queued`) ומתי החל הניסיון הזה. משך הפעילות אינו כולל פערי
+עצירה והפעלה מחדש סרק, ולכן הוא אינו משך הזמן לפי שעון הקיר.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+אין מסנן להרצות שהושלמו, שהושהו או שבוטלו, אין מסנן לפי תבנית, אין חלון זמן
+ואין תצוגת היסטוריית הרצות לפי תבנית. כדי להשוות הרצות של תבנית אחת, יש
+לסרוק את התור לפי שמה.
 
-## Read the run detail
+## קריאת פרטי ההרצה
 
-A run's page has three stacked parts.
+לדף של הרצה יש שלושה חלקים זה מעל זה.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**רצועת המטא** נושאת את זמן ההתחלה, משך הפעילות, התקדמות השלבים
+("3 מתוך 7 שלבים"), תקציר כשל שמציין את השלב שנשבר ולמה, ואת הפעולות
+**נסה שוב** ו**מחיקה**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**מפל הזמנים** מציג פס אחד לכל שלב, עם משכו ו— בשלבי סוכן — עלותו בסנטים.
+שלב שנוסה שוב מציג סיומת `×N` אחרי משכו; הסיומת הזו היא המקום היחיד שבו
+נחשף מספר הניסיונות.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**קנבס הגרף** משרטט את התבנית עם הסטטוס החי של כל צומת. בחירת צומת פותחת
+את לוח השלב שלו.
 
-### Run and step statuses
+### סטטוסים של הרצות ושלבים
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| סטטוס        | משמעות                                           |
+| ------------ | ------------------------------------------------ |
+| **ממתין**    | נוצר, טרם התחיל                                  |
+| **בתור**     | התקבל אך מוחזק: תקרת המקביליות המרבית של התבנית הזו מלאה; אין עדיין שורות שלבים |
+| **פועל**     | מתבצע                                            |
+| **מושהה**    | ממתין למשהו חיצוני — תקין, לא תקוע                |
+| **הושלם**    | הסתיים בהצלחה                                    |
+| **נכשל**     | הסתיים בשגיאה                                    |
+| **בוטל**     | נעצר על ידי משתמש או על ידי המערכת               |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+לשלבים יש אותם סטטוסים בלי **בתור**, ובנוסף **דולג**, עבור ענף ש-router לא
+לקח (וצאצאיו שכבר אינם ניתנים להגעה).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**מושהה** הוא המצב שבו שלב סוכן מבלה את רוב חייו: סוכן שנשלח או שער אישור
+מחזיקים את השלב עד שעבודתו מגיעה. שני מנגנוני רשת ביטחון של המנוע מכשילים
+את ההרצה כולה במקום לחדש אותה: שלב שמושהה יותר מ-24 שעות
+(`extras.awaitApproval` — גוף `orchestration.awaitApproval` — פטור;
+`human.gate` אינו פטור) ושלב שאינו אידמפוטנטי שהיה באמצע ריצה כשהשרת נעצר.
 
-## Inspect a step
+## בחינת שלב
 
-Select a node on the canvas. The step panel shows, in order:
+בחרו צומת בקנבס. לוח השלב מציג, לפי הסדר:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- תיבת **שגיאה** כשהשלב נכשל, או תיבת **דולג** עם הסיבה כשדולג.
+- **התחיל**, **הסתיים** ומשך.
+- **ענף** — אינדקס הענף, עבור ענפים מקבילים.
+- **הצגת השיחה** — קופץ לשיחה שהשלב רץ בה. שיחות של פייפליין מוסתרות מסרגל
+  הצד, ולכן זו הדרך היחידה להיכנס אליהן.
+- **קלט** ו**פלט**, כ-JSON שאפשר לכווץ.
+- **פעילות הסוכן** — אריח אחד לכל הרצת סוכן שהשלב שלח, עם הסטטוס, התקציר,
+  המשך והעלות שלה.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+בשלב סוכן, **פלט** הוא המטען המובנה שהסוכן שלח עם `submit_output`, ולא
+הפרוזה שלו. עקבות החשיבה נמצאים ב**פעילות הסוכן** ובשיחה שמאחורי
+**הצגת השיחה**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+בשלב bash, **פלט** הוא ה-stdout החתוך שהסקריפט כתב ביציאה עם קוד 0. יציאה
+עם קוד שאינו אפס מכשילה את השלב, כשזנב ה-stderr הוא הודעת השגיאה.
 
-## Recover a failed run
+## התאוששות מהרצה שנכשלה
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. קראו את תקציר הכשל ברצועת המטא; הוא מציין את השלב שנכשל. תיבת **שגיאה**
+   בלוח השלב מכילה את ההודעה.
+2. בדקו את **קלט** השלב — מפתח מצב חסר או שגוי בכתיבו הוא הסיבה הנפוצה
+   ביותר. שלב prompt-agent נכשל מיד ומציין את מחזיקי המקום שלא נפתרו; שלב
+   bash מצייר אותם כמחרוזות ריקות ורץ בכל זאת, מה שבדרך כלל מתגלה שלב אחד
+   אחר כך.
+3. בשלב סוכן, פתחו את **הצגת השיחה** וקראו מה הסוכן באמת עשה.
+4. לחצו על **נסה שוב** ברצועת המטא. שלבים שהושלמו ושלבים שדולגו שומרים על
+   הפלטים שלהם; כל השאר נמחק ומורץ מחדש, וההרצה חוזרת לסטטוס פועל. שעון
+   המשך מתאפס לניסיון הזה.
 
-Common causes worth checking first:
+סיבות נפוצות שכדאי לבדוק קודם:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **פסק זמן** — השלב חרג מ**זמן קצוב (ms)** שלו. זכרו שהשדה הוא במילישניות.
+- **שגיאת סקריפט** — פקודת ה-bash יצאה עם קוד שאינו אפס, או ש-`bash` אינו
+  ב-`PATH` של מארח השרת.
+- **אימות סכימה** — המטען של `submit_output` מהסוכן לא עמד בסכימת הפלט של
+  השלב.
+- **מחזיק מקום שלא נפתר** — `{{key}}` שאליו התייחס שלב prompt-agent מעולם לא
+  נכתב במעלה הזרם. השגיאה מציינת כל מפתח שלא נפתר.
+- **גוף לא רשום** — שלב שמפתח הגוף שלו אינו רשום מפיק אזהרה בעת טעינת
+  התבנית ואז פשוט לעולם אינו מבוצע.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[נסה שוב פועל רק על הרצה שנכשלה או שבוטלה]
+הכפתור **נסה שוב** מוצג רק כשההרצה במצב `failed` או `cancelled`. עבור כל
+סטטוס אחר המנוע חוזר מיד.
 :::
 
-## Stop a step that is stuck
+## עצירת שלב שנתקע
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+בחרו את השלב הפועל ולחצו על הכפתור **עצור הרצות פעילות** בכותרת של לוח
+השלב. פעולה זו הורגת את התהליך של השלב, מסמנת את השלב כנכשל ולכן מכשילה
+את ההרצה כולה — כל ענף אחים פתוח נסגר יחד איתה.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+אין במסך הזה פקד לביטול הרצה. `pipeline.cancel` קיים כפעולת RPC והמנוע
+מיישם אותה, אבל שום דבר בממשק הפייפליינים לא קורא לה; **עצור הרצות פעילות**
+על שלב, או **מחיקה** על ההרצה, הם מחוות העצירה היחידות הזמינות.
 
-## Track cost
+## מעקב אחר עלויות
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+העלות מדווחת לכל שלב, בעמודה הימנית של מפל הזמנים ובכל אריח תחת **פעילות
+הסוכן**. אין סה״כ להרצה בדף הפרטים ואין עמודת עלות בתור ההרצות, כך
+שהשוואת העלות של שתי הרצות מחייבת חיבור של השלבים שלהן.
 
-## Related guides
+## מדריכים קשורים
 
-- [Run a pipeline manually](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
-- [Create a pipeline template](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
-- [Manage costs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/)
-- [Pipeline steps reference](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/)
+- [הפעלת פייפליין ידנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
+- [יצירת תבנית פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין/)
+- [ניהול עלויות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-עלויות/)
+- [שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Pipelines](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)

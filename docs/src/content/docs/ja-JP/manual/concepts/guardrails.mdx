@@ -1,248 +1,131 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: ガードレール — すべての変更操作に対するひとつのポリシー
+description: Control Center がエージェントのあらゆる副作用を単一の許可／先に確認／拒否エンジンに通す理由、ActionClass の分類が意図的に小さいまま保たれる仕組み、そして自律度ダイヤルが実際に変えるもの。
 slug: ja-JP/マニュアル/コンセプト/ガードレール
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center のエージェントは、ファイルの削除、ブランチのプッシュ、プルリクエストの公開、外部 API の呼び出しを行えます。それぞれは異なる_種類_のリスクであり、長い間、そのうちのひとつ — シェルコマンド — にしかポリシーがありませんでした。ガードレールは、エージェントが実行できるあらゆる変更操作について、どのランタイムやツールがそれを提案するかに関係なく、ひとつの問いに一律に答えるために存在します。**これは許可されるのか、承認が必要なのか、それとも拒否されるのか。**
 
-## One engine, every chokepoint
+## エンジンはひとつ、すべての関門で
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+ポリシーエンジンはただひとつだけです。アクションがシステムの外に出うるあらゆる箇所、つまり内蔵ハーネスのツールレジストリ、サーバー側 MCP ディスパッチャーのゲート、リポジトリ操作の変更で参照されます。そのため、一度書いたルールは内蔵ランタイムにも外部エージェント CLI にも同じように適用されます — それを迂回する、より静かな第二の経路はありません。以前からある bash 専用のコマンドポリシーも引き続き機能します。ルールはアクションクラスではなくコマンドプレフィックスにマッチでき、2 つの形式は同じストアに共存します。
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+ただし、このエンジンは OS サンドボックスの代わりにはならず、サンドボックスもこのエンジンの代わりにはなりません。両者は異なる問いに答えます。ガードレールは、Control Center が見ることのできる呼び出しをそもそも実行してよいかを決め、サンドボックスは、その結果として生じるプロセスがどこまで到達できるかを制限します。`cc_server` は、ホストがバックエンドを提供する場所ではサンドボックスを適用します — しかし [Windows にはそれがなく、Linux には `bwrap` と `socat` が必要です](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)。そうしたホストでは、ガードレールは床の上に載るポリシーではなく、もっとも外側の強制レイヤーになります。どれだけ寛容にするかを決めるときには、これを知っておく価値があります。
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: 意図的に閉じた分類
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+すべての変更ツールは、13 個の効果クラスからなる閉じた集合の中から、自分が属する **ActionClass** を宣言します。そのうち 5 つは初期状態で確認を求め、残りは許可されます。それを変えるのがルールです。
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| クラス                     | 組み込みのデフォルト | 対象                                                             |
+| -------------------------- | -------------------- | ---------------------------------------------------------------- |
+| `fileDelete`               | **先に確認**         | ファイルの削除（削除の形をした書き込み、`rm`）                   |
+| `gitPush`                  | **先に確認**         | git リモートへのプッシュ                                         |
+| `prCreate`                 | **先に確認**         | プルリクエストの作成                                             |
+| `prPublish`                | **先に確認**         | レビューの公開、PR のマージ                                      |
+| `vendorSyncWrite`          | **先に確認**         | 外部チケットベンダーへの書き込み（Linear、Jira、GitHub 同期）    |
+| `fileWriteOutsideWorktree` | 許可                 | 分離されたワークツリー外へのファイル書き込み                     |
+| `gitCommit`                | 許可                 | git コミットの作成                                               |
+| `networkEgress`            | 許可                 | ネットワーク外向き通信（Web フェッチ、任意の HTTP）              |
+| `secretAccess`             | 許可                 | シークレットまたは資格情報の読み取り                             |
+| `packageInstall`           | 許可                 | パッケージのインストール（npm、pip、pub、brew）                  |
+| `processSpawn`             | 許可                 | プロセスの起動（シェルと、シェル経由で実行されるものすべて）     |
+| `workspaceMutation`        | 許可                 | ワークスペース構造の変更（リポジトリ、スペース、エージェント）   |
+| `enclosureControl`         | 許可                 | エンクロージャー（リグ）の操作: VM の起動、入力の送信            |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+デフォルトで許可される 8 つのクラスは、その下にサンドボックスの床が適用されるという前提で選ばれました。ホストがバックエンドを提供する場所ではそうなりますが、Windows や、`bwrap` と `socat` を欠く Linux マシンではそうなりません — そこでも `fileWriteOutsideWorktree` や `packageInstall` をゲートで制御したいなら、それは自分で書く必要のあるルールです。
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+この集合は意図的に閉じています。クラスを宣言しない新しい変更ツールはラチェットテストに失敗するため、分類は明示的で論証された決定によってしか増えません — 「分類の肥大化はこの機能の死である」。13 個のクラスは、人が実際に書くポリシー（確認なしでは決してプッシュしない、ワークツリーの外では決して削除しない、読み取りは常に許可する）を表現するのに十分であり、設定 UI が理解可能なままでいられる程度に少ない数です。
 
-## Rules and scope resolution
+## ルールとスコープの解決
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+ルールは `(scope, ActionClass | command prefix) → allow | prompt | deny` を対応付けます。スコープはもっとも具体的なものからそうでないものへと入れ子になります。
 
-**space > agent > workspace > mode preset > built-in default**
+**スペース > エージェント > ワークスペース > モードプリセット > 組み込みのデフォルト**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+解決は**具体性が優先**です。一致するルールを持つ最初のスコープが決定し、そこで解決は止まります。もっとも制限的であることは、あくまでタイブレークです — 同じスコープ内の同じ具体性を持つ 2 つのルールの間と、単一のアクションが宣言する複数のクラスを組み合わせるときに使われます。スコープ内では、コマンドルールはもっとも長いコマンドプレフィックスにマッチします。許可が拒否に勝つことはどこでもありません。
 
-Two decisions carry hard guarantees:
+2 つの決定には強い保証があります。
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **フェイルクローズドの確認要求。** 承認者が接続されていない `prompt` は_拒否_に解決されます。答えのない問いが「はい」になることはありません。
+- **もっとも制限的な組み合わせ。** 複数のクラスにまたがるアクションは、それらをもっとも制限的な形で組み合わせます。複数のクラスが確認を求めるときは、1 回の確認がそれらすべてを列挙します。
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+ターン単位のラッチは意図的にありません。すべてのツール呼び出しがポリシーをゼロから再解決するため、同じアクションに対する確認要求の繰り返しは、ターンに紐づく何かではなく、オペレーター自身の「この決定を記憶する」によって制限されます。
 
-## Argument-level rules
+## 引数レベルのルール
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+ルールは、アクションの動詞だけでなく、その引数も制約できます。「プッシュしてよい」と「`feature/*` へプッシュしてよい」は別の主張であり、制御になるのは 2 つめだけです — 動詞だけを許可する能力ゲートこそ、公開されているエージェントインシデントの大半に見られる形です。
 
-A constraint may name:
+制約は次のものを指定できます。
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **paths** — glob パターン（`repos/**`、`!**/.env`）
+- **refs** — git の参照。`!` による否定が使えます（`['**', '!main']` は「main 以外のすべてのブランチ」と読めます）
+- **hosts** — ネットワークの宛先。サブドメインのワイルドカードが使えます（`*.internal`）
+- **commands** — コマンドプレフィックス。単語境界でマッチします
+- **ceilings** — `maxCount` / `maxCents`。「最大 50 ファイルを削除する」を表現できます
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+文法を閉じたまま、ループのないままに保つことから 3 つの性質が導かれ、その 3 つすべてが狙いそのものです。すべてのルールは読み返せる文として表現され、すべての拒否はマッチした制約を名指しでき、ポリシー全体は列挙できます — エージェントが何をしてよいかを*実行する前に*確認できるのです。
 
-Three rules that matter:
+重要な 3 つのルール:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **制約付きのルールは、同じスコープでは制約のないルールより具体的**であるため、「`main` へのプッシュを拒否」は、誰も順序を考えなくても「プッシュを許可」に勝ちます。
+- **制限的な**ルール（拒否／先に確認）は、リクエストが指定された値の*いずれか*に触れたときに適用されます。**許可的な**ルール（許可）は、リクエストがその範囲内に*完全に*収まるときにだけ適用されます。両方を同じように読むと、エージェントは無害なパスを禁止されたパスの隣に混ぜ込むことで、禁止パスを洗浄できてしまいます。
+- リクエストが何も語っていない側面を指定したルールは、適用もスキップもされません。**承認へのエスカレーション**が行われます。黙ってスキップすると、ref を報告しないツールに対して保護ブランチのルールがすべて無効になります。黙って拒否すると、抽出器が記述できないプッシュをすべて拒否することになります。承認者が接続されていなければ、既存のフェイルクローズドのルールがこのエスカレーションを拒否に変えます。
 
-## What a command rule can and cannot catch
+## コマンドルールが捕捉できることとできないこと
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+`commandPrefix` ルールは単語境界でマッチします。`git push` は `git push origin main` をカバーし、`git pushx` はカバーしません。これはシェルを**正規化しません**。`git  push`（スペース 2 つ）、`cd sub && git push`、`GIT_DIR=… git push` はすべて異なる文字列であり、`git push` に関するルールにマッチするものはありません。
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+これは現実の限界であり、覆い隠すのではなく明言されています。コマンドルールは、通常のエージェントの振る舞いを形作るためのオペレーター向けの便宜であり、敵対的なエージェントに対する境界では**ありません**。境界となるのは、効果クラス（ツールが宣言し、書き換えられないもの）、ポリシーストアの下にあるモードのコマンドネット、そしてその両方の下にある OS サンドボックスです。`allow` に解決されるコマンドルールが、そのどちらかを緩めることは決してありません — モードのネットは後から実行され、その `deny` は最終です。
 
-## Standing approvals
+## 常設の承認
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+「これを記憶する」で確認に答えると、実際のポリシールールが書き込まれます。スコープを持ち（スペース／エージェント／ワークスペース）、**引数で制約され**（`feature/login` へのプッシュを承認すると、`main` ではなく `feature/**` が許可されます）、明示的な TTL で**自動失効**します。次の数時間だけ「はい」と言うことは、恒久的なポリシーを静かに書き換えることとは違います。書き込まれたルールは同じストアに入り、プロベナンスは `remembered`、有効期限付きなので、早めに取り消せます。
 
-## Enforcement levels
+## 強制レベル
 
-Each rule carries one:
+各ルールは次のいずれかを持ちます。
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — 許可しますが、ルールがマッチしたことを記録します。これは導入の道筋です。厳格なルールを advisory モードで展開し、1 週間監査証跡を読んで、それが*実際に*何をブロックしていたかを正確に確認してから昇格させます。この段階がなければ、厳格なポリシーは決して有効にされません。
+- **soft** — 拒否しますが、上書き権限を持つ人が記録された正当性とともに上書きできます。上書き自体も監査対象のイベントです。
+- **hard**（デフォルト）— 拒否します。何もそれを上書きできません。
 
-## The managed tier
+## マネージド層
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+インストールのオペレーターは、どのワークスペース管理者も緩められないポリシーを固定できます。マネージドルールはサーバー側にあり、各ワークスペース自身のチェーンと**もっとも制限的**な形でマージされます — チェーンの先頭に置かれるスコープではありません。チェーン先頭のマネージドな `allow` があると、インストールがワークスペースの拒否を上書きできてしまい、これはクランプの目的の正反対だからです。したがって、マネージドルールは決して厳しくすることしかできません。
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+`CC_SERVER_MANAGED_POLICY` を JSON ファイルに設定すると、保存されたルールを完全に上回ります。これにより、オペレーターは管理 UI ではひっくり返せない姿勢を固定できます — 「開発者が安全制御を無効化するのを止められるか？」への答えです。
 
-## The autonomy dial is a profile, not a parallel system
+## 自律度ダイヤルは並行システムではなくプロファイル
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+スペースごとの自律度ダイヤルは、この同じポリシーストア上の名前付きプロファイルであり、2 つめのメカニズムではありません。その 3 つの設定は `proposeOnly`、`actWithApproval`、`actFreely` として保存・送信されます（ハイフン付きの形式は UI の文章にすぎず、`autonomy.setForSpace` はそれ以外をすべて拒否します）。未設定のままにすると `actWithApproval` として動作します。
 
-What each one does to a resolved decision:
+解決済みの決定に対して、それぞれが行うことは次のとおりです。
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** はゲート対象のすべてのツールを真っ向から拒否します。エージェントは推論して返答することは依然としてできますが、行動することはできず、そのメッセージに理由が示されます。
+- **`actWithApproval`**（および未設定）は、前述のフェイルクローズドの承認ゲートです。
+- **`actFreely`** は、ハードな `deny` に解決されなかったものを事前承認します。
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+最後のものは、和らげるのではなく率直に述べておく価値があります。`actFreely` の下では、`prompt` の決定は承認者に**エスカレーションされません** — 許可され、誰にも確認されません。ダイヤルを生き残るのは明示的な `deny` ルールだけです。したがって `actFreely` は便宜的な設定ではなく、意図的な自律性の付与であり、フェイルクローズドのルールはそれが重要になるまさにそのケース（デフォルトである `actWithApproval`）を守ります。
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+エージェント間の委任は、`delegate_task` の関門で 4 つのガードすべてによって守られます。深さの上限（デフォルト 3）、循環の検出、**自律性の上限**（委任されたエージェントは、委任した側より大きい自律性で行動することは決してできません — より自由なエージェントに作業を渡すことで権限を洗浄することはできません）、そして**予算のエンベロープ**（委任は委任者の残り予算に計上され、それ以上を生み出すことはできません）。いずれも声高に拒否され、ガードの理由はそのままエージェントに返されます。
 
-## The adapter honesty matrix
+## アダプターの正直さのマトリクス
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+すべてのランタイムが、Control Center にあらゆるアクションをインターセプトさせるわけではありません。外部エージェント CLI は、いくつかのツールをネイティブに、インプロセスで実行し、そこにはゲートが置けません。そうでないふりをする代わりに、各アダプターは**正直さのマトリクス**を持ちます。アダプターごとに、Control Center がツールサーフェスをフィルタリングするか、ツール呼び出しをインターセプトするか、完了コントラクトを監視するか、ランナーのネイティブツールを見られるか、インプロセスのツールがサンドボックスプロファイルでカバーされるかを示します。
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+2 つの項目は、設定を信頼する前に読む価値があります。内蔵ハーネスは、そのインプロセスのファイルツールが**サンドボックス化されていない**と宣言しています — ツールサーフェスとこのポリシーエンジンが、それが持つ唯一のファイルシステム境界です。Claude Code は、`--dangerously-skip-permissions` で起動されるため、自身のツール呼び出しが**インターセプトできない**と宣言しています。Control Center が見るのは `mcp__*` の呼び出しだけで、それ自身の読み取り、書き込み、編集、シェルの各ツールは見えないまま実行されます。
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+設定画面はこのマトリクスを表示します。ガードレールシステムにとって唯一許しがたい失敗は、存在しないカバレッジを主張することだからです。
 
-## Probing policy before it bites
+## 噛まれる前にポリシーを調べる
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+ガードレールは **設定 → ワークスペース → エージェントの権限**（`/workspaces/<id>/settings/workspace/permissions`）にあります。この画面には、ルールを書くポリシーマトリクス、ポリシーテンプレート、「もしも？」プローブ、認可監査証跡、アダプターの正直さのマトリクスがあります。
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+プローブは、アクションクラス（またはコマンド）とスコープを受け取り、どのルールが決定したかとその理由を表示します。解決は純粋で決定的であるため — 同じアクション、同じスコープ、同じ決定 — プローブの答えは、エージェントが得る答えそのものです。
 
-## Related concepts
+## 関連項目
 
-- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/): writing and testing rules in practice
+- [サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/): エージェントの実行を実際に制約するものと、このエンジンの下にある OS の床がどこまで届くか
+- [マルチプレイヤー — アイデンティティ、メンバーシップ、プレゼンス](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/): スペース、プリンシパル、そして自律度ダイヤルのある場所
+- [ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/): ルールを実際に書いてテストする

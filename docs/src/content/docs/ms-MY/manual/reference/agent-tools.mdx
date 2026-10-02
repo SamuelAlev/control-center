@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Alat ejen terbina
+description: Permukaan alat yang diberikan oleh harness terbina kepada ejen — pelayan bahasa, carian struktur, nyahpepijat, kernel dan kawalan pekerja — dengan setiap operasi dan argumennya.
 slug: ms-MY/manual-pengguna/rujukan/alat-ejen
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/ms-MY/manual-pengguna/rujukan/alat-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Ini ialah alat **terikat pelayan** yang didaftarkan secara langsung oleh masa jalan ejen terbina — pelayan bahasa, carian struktur, nyahpepijat, kernel, soalan dan kawalan pekerja — berbanding [alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/) yang dijambatkannya masuk serta alat fail, carian dan shell generik daripada masa jalan harness. Alat-alat ini tiada dalam daftar MCP: klien MCP luaran tidak akan melihatnya, kerana setiap satunya terikat pada sumber sisi pelayan yang hidup — proses pelayan bahasa, penyesuai nyahpepijat, penterjemah — yang dimiliki oleh satu larian.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Setiap alat di sini didaftarkan hanya apabila sumber sokongannya disambungkan untuk larian itu — penyelia pelayan bahasa atau nyahpepijat, penghurai tree-sitter, kilang kernel, port soalan, senarai pekerja vibe. Pengesanan pelayan bahasa atau penyesuai nyahpepijat bagi *checkout ini* ialah pemeriksaan berasingan yang kemudian (`status` / `adapters`): alat itu kekal di permukaan supaya ejen boleh bertanya mengapa tiada apa yang boleh digunakan, dan bukannya meneka.
 
-## Approval tiers
+## Tahap kelulusan
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Setiap alat menyatakan satu tahap, dan tahap itu menentukan **permukaan mana yang melihatnya** — bukan sekadar sama ada ia menggesa. Modus pelan dan subejen baca sahaja dihadkan pada `read`, jadi alat bertahap `write` atau `exec` langsung tidak ada dalam skema mereka.
 
-| Tier    | Meaning                                | Tools here                                         |
+| Tahap   | Maksud                                 | Alat di sini                                       |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| `read`  | Tiada kesan sampingan                  | `lsp`, `ast_grep`, `ask_user`, kelima-lima `vibe_*` |
+| `write` | Mengubah fail                          | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Memulakan atau mengawal satu proses    | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — pertanyaan pelayan bahasa
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Didaftarkan apabila larian itu mempunyai penyelia pelayan bahasa dan direktori kerja. Sama ada pelayan benar-benar boleh menjawab dikesan pada masa panggilan, sebagai satu **persilangan**: penanda akar mesti wujud *dan* binari pelayan mesti dapat diselesaikan. Salah satu sahaja bermakna tiada pelayan dimulakan — `status` menyatakannya — dan bukannya tekaan senyap.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Kedudukan dialamatkan melalui `line` serta subrentetan `symbol`, tidak sekali-kali melalui lajur. Model yang diminta memberikan lajur akan meneka, dan tekaan yang salah akan menyelesaikan kepada simbol yang berbeza pada baris yang sama — jawapan yang kelihatan betul tetapi mengenai perkara lain. Meninggalkan `symbol` pada tindakan navigasi ialah satu ralat, bukan tekaan lajur pertama.
 
-| Action            | Arguments                        | Returns                                    |
-| ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| Tindakan          | Argumen                         | Memulangkan                                |
+| ----------------- | ------------------------------- | ------------------------------------------ |
+| `diagnostics`     | `file` (atau `"*"`)             | Ralat dan amaran; `"*"` menjalankan pemeriksa projek dan bukannya |
+| `definition`      | `file`, `line`, `symbol`        | Di mana simbol itu diisytiharkan           |
+| `type_definition` | `file`, `line`, `symbol`        | Di mana jenisnya diisytiharkan             |
+| `implementation`  | `file`, `line`, `symbol`        | Implementasi konkrit                       |
+| `references`      | `file`, `line`, `symbol`        | Setiap penggunaan, dihadkan pada 50        |
+| `hover`           | `file`, `line`, `symbol`        | Tandatangan dan komen doc                  |
+| `symbols`         | `query` atau `file`             | Carian ruang kerja dengan `query` (dihadkan pada 100); simbol dokumen dengan `file` (dihadkan pada 200) |
+| `code_actions`    | `file`, `line`, `symbol`        | Pembetulan pantas yang ditawarkan pelayan  |
+| `status`          | —                               | Pelayan mana yang sedang berjalan, dan untuk akar yang mana |
+| `reload`          | —                               | Memulakan semula pelayan untuk akar ini    |
 
-### Diagnostics on write
+### Diagnostik semasa menulis
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Yang berbaloi bukan alat itu. `write`, `edit` dan `apply_patch` **dibalut**: selepas penulisan, fail itu disegerakkan dan disimpan melalui pelayan bahasa, dan hanya diagnostik yang **baru diperkenalkan** dilipat masuk ke dalam hasil alat. Ejen tahu ia telah memecahkan binaan pada saat ia memecahkannya, tanpa perlu terfikir untuk bertanya.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Diagnostik yang telah dilaporkan disekat oleh lejar setiap larian yang berkunci pada keterukan, kod dan mesej — kedudukan sengaja dikecualikan, jadi diagnostik yang hanya berpindah turun empat baris tidak dilaporkan semula sebagai baharu.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — penamaan semula seluruh projek
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Alat berasingan bertahap `write` atas satu sebab yang tepat: tahap itu menentukan keterlihatan. Memasukkan penamaan semula ke dalam `lsp` sama ada akan memberikan penjelajah baca sahaja keupayaan menulis semula repo, atau meletakkan setiap `hover` di sebalik gesaan kelulusan.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Argumen    | Maksud                                     |
+| ---------- | ------------------------------------------ |
+| `file`     | Di mana simbol itu berada                  |
+| `line`     | Baris berindeks 1                          |
+| `symbol`   | Subrentetan yang mengenal pastinya pada baris itu |
+| `new_name` | Apa hendak dinamakannya                    |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — carian struktur
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Mencari kod mengikut **bentuk** dan bukan mengikut teks. `$NAME` memadankan mana-mana nod, `$$$NAME` memadankan satu jujukan bersaudara, dan `$_` ialah kad bebas yang tidak mengikat apa-apa.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Sifat yang menjadikannya pemadan dan bukan satu regex dengan beberapa langkah tambahan: metapembolehubah yang berulang dalam satu corak mesti menangkap teks yang sama.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+memadankan satu pengawal yang melupuskan apa yang diujinya, dan **tidak** memadankan pengawal yang melupuskan benda lain.
 
-| Argument      | Meaning                                                     |
+| Argumen       | Maksud                                                      |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Serpihan kod dengan metapembolehubah                       |
+| `path`        | Fail atau direktori untuk dicari; lalainya seluruh ruang kerja |
+| `language`    | Id tatabahasa yang disertakan (`dart`, `python`, `rust`, `c`, …). Diinferensikan apabila `path` menamakan satu fail |
+| `max_results` | Lalai 50                                                    |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Corak itu dihuraikan oleh tatabahasa yang sama seperti fail itu]
+Jadi `dispose(x)` memadankan panggilan itu tidak kira bagaimana ia dijarakkan, dibalut atau dikomen — dan tidak pernah memadankan aksara yang sama di dalam literal rentetan atau komen.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Serpihan dihuraikan dalam perancah, bukan secara mentah]
+`dispose(x)` yang dihuraikan pada aras atas Dart ialah *tandatangan fungsi* yang sah. Pengkompil corak mencuba satu tangga konteks (pernyataan, ungkapan, ahli kelas, pengisytiharan) dan menggunakan yang pertama yang menerima serpihan itu. Corak yang tidak diterima oleh mana-mana konteks dilaporkan sebagai tidak boleh dihuraikan dan bukan dicari lalu secara senyap tidak ditemui.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — penulisan semula struktur, diperingkatkan
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Padanan yang sama, ditambah templat `rewrite` dengan metapembolehubah disubstitusikan semula. **Tiada apa-apa ditulis.** Perubahan itu diperingkatkan dan hasilnya menamakan satu `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Argumen    | Maksud                                              |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Apa yang hendak dipadankan                          |
+| `rewrite`  | Apa yang hendak diletakkan di situ, dengan `$NAME` disubstitusikan |
+| `path`     | Skop; lalainya seluruh ruang kerja                  |
+| `language` | Id bahasa                                           |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — komit atau buang perubahan yang diperingkatkan
 
-| Argument  | Meaning                          |
+| Argumen   | Maksud                           |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Daripada hasil `(proposed)`      |
+| `action`  | `accept` atau `discard`          |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Setiap fail dibandingkan dengan kandungan yang ditangkap pada masa ia diperingkatkan, dan **sebarang** ketakpadanan menolak keseluruhan perubahan itu. Penulisan semula struktur yang hanya sebahagian diterapkan meninggalkan pokok yang tidak dapat dikompil di bawah bentuk lama mahupun bentuk baharu.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — memandu penyahpepijat
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Didaftarkan apabila larian itu mempunyai penyelia sesi nyahpepijat, direktori kerja dan id perbualan. Sama ada penyesuai benar-benar boleh bermula dikesan pada masa panggilan, melalui peraturan persilangan yang sama seperti pelayan bahasa (penanda akar *dan* binari). Tahap `exec`; tidak selamat selari (sesi ialah keadaan merentasi panggilan, jadi `continue` yang memintas `stack` akan membaca bingkai yang sudahpun bergerak).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua ditolak dan bukan secara senyap menggantikan yang pertama.
 
-| Op            | Arguments                     | Notes                                          |
+| Op            | Argumen                       | Nota                                           |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Penyesuai mana yang boleh digunakan di sini, dan mengapa tidak |
+| `status`      | —                             | Sama ada sesi sedang berjalan, dan di mana ia berhenti |
+| `breakpoints` | `file`, `lines[]`             | `lines` kosong mengosongkan fail itu. Boleh ditetapkan **sebelum** melancarkan |
+| `launch`      | `program`, `args[]`           | Memulakan program dalam keadaan berhenti pada titik henti anda |
+| `attach`      | `port`                        | Menyambung kepada proses yang dinyahpepijat yang sudah berjalan |
+| `continue`    | `thread_id?`                  | Berjalan sehingga hentian seterusnya           |
+| `pause`       | `thread_id?`                  | Menghentikannya di tempat ia berada            |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Bergerak satu langkah                |
+| `threads`     | —                             | Id dan nama bebenang                           |
+| `stack`       | `thread_id?`                  | Bingkai, dihadkan pada 30                      |
+| `scopes`      | `frame_id`                    | Skop pada satu bingkai, masing-masing dengan satu `reference` |
+| `variables`   | `reference`                   | Anak, dihadkan pada 50, nilai dihadkan pada 400 aksara |
+| `evaluate`    | `expression`, `frame_id?`     | Dinilai dalam skop bingkai itu sendiri         |
+| `output`      | —                             | stdout/stderr proses yang dinyahpepijat, terbatas |
+| `terminate`   | —                             | Menamatkan sesi dan membunuh penyesuai         |
 
-### Adapters
+### Penyesuai
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Perintah                   | Penanda akar                                    |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` mengutamakan `.venv/bin` atau `venv/bin` dalam projek berbanding `$PATH`: python `$PATH` ialah persekitaran yang berbeza, dan melampirkan daripada yang salah akan gagal dengan cara yang terbaca sebagai kod rosak.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — penterjemah berterusan
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Sel Python atau JavaScript yang pemboleh ubah, import dan data yang dimuatkannya terus kekal antara panggilan. Tahap `exec`; tidak selamat selari.
 
-| Argument      | Meaning                                          |
+| Argumen       | Maksud                                           |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | Sel itu                                          |
+| `description` | Wajib. 5–10 patah perkataan untuk label transkrip |
+| `language`    | `python` (lalai) atau `javascript`               |
+| `reset`       | Buang penterjemah itu dan mulakan yang bersih dahulu |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Ungkapan terakhir digaungkan seperti cara notebook melakukannya.
+- `display()` berfungsi, bingkai pandas dijadikan jadual, dan rajah matplotlib kembali sebagai **imej yang dipaparkan oleh transkrip**.
+- Idiom IPython yang orang taip secara refleks — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — ditulis semula menjadi kod biasa. `%pip` juga mengosongkan `sys.modules`, jadi `import` seterusnya melihat apa yang baru dipasang.
 
-### Calling your own tools from inside a cell
+### Memanggil alat anda sendiri dari dalam sel
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Jambatan itu **masuk semula ke dalam daftar alat harness**, jadi guardrail, kelulusan dan setiap pembalut terpakai tepat seperti pada panggilan yang dikeluarkan oleh model. Ia menunggang paip kernel sendiri dan bukan soket gelung balik: tiada port, tiada rahsia, tiada peraturan keluar.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Timeout sel itu ialah belanjawan *ketakaktifan* (lalai 5 minit) dan ia **digantung** selagi panggilan berjambatan belum selesai, jadi sel yang menyebar ke subejen tidak dibunuh di pertengahan penyebaran.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Di mana kernel berjalan]
+Dalam persekitaran terasing perbualan apabila perbualan itu memilikinya, dan pada hos jika sebaliknya. Ia tidak memulakan persekitaran terasing untuk sampai ke sana — peraturan yang sama yang menghalang tab stesen daripada bermula secara automatik.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — bertanya soalan kepada manusia
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Tahap `read`. **Satu-satunya** cara satu larian bertanya apa-apa kepada pengendali. Ia memaparkan kad bernombor dalam perbualan dan menyekat sehingga seseorang menjawab, melangkau, atau soalan itu tamat masa. Jangan sekali-kali menulis soalan itu sebagai mesej sembang — itu menamatkan pusingan.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Argumen           | Maksud                                     |
+| ----------------- | ------------------------------------------ |
+| `question`        | Apa yang hendak ditanya                    |
+| `context`         | Pilihan: mengapa anda bertanya dan apa yang bergantung pada jawapannya |
+| `options[]`       | Pilihan, setiap satu `{label, description?}` |
+| `allow_free_text` | Sama ada jawapan yang ditaip diterima      |
+| `multi_select`    | Sama ada beberapa pilihan boleh dipilih    |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Melangkau ialah kejayaan: teruskan berdasarkan andaian yang dinyatakan dan jangan bertanya lagi. Tamat masa ialah ralat dengan arahan yang sama. Gesaan kebenaran ("bolehkah saya buat ini?") ialah pintu berasingan dan dipaparkan sebagai kad yang sama dalam perbualan.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Didaftarkan hanya apabila kedua-dua port soalan dan ruang sasaran wujud. Tanpa manusia yang bersambung, panggilan itu **gagal** dan bukannya menyekat selama-lamanya — pendirian gagal tertutup yang sama yang diambil oleh `prompt` sesuatu guardrail apabila tiada pelulus bersambung.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — mengarahkan pekerja latar belakang
 
-Registered only while [vibe mode](/ms-MY/manual-pengguna/panduan-cara/arahkan-pekerja-latar-belakang/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Didaftarkan hanya semasa [modus vibe](/ms-MY/manual-pengguna/panduan-cara/arahkan-pekerja-latar-belakang/) dihidupkan. Kelima-limanya bertahap `read`: pintu itu terletak pada alat pekerja, di tempat suntingan benar-benar berlaku.
 
-| Tool         | Arguments                                | Notes                                       |
+| Alat         | Argumen                                  | Nota                                        |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Kembali serta-merta; pekerja itu terus berjalan |
+| `vibe_send`  | `worker_id`, `message`                   | Menambahkan pada taklimat dan menjalankan semula |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Menyekat sehingga ia selesai                |
+| `vibe_kill`  | `worker_id`                              | Menghentikannya                             |
+| `vibe_list`  | —                                        | Tahap, status, masa berlalu dan hasil terakhir |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` ialah `fast` (kerja mekanikal dengan spesifikasi yang jelas) atau `good` (reka bentuk, pertimbangan, atau menyemak output pekerja `fast`).

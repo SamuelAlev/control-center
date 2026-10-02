@@ -1,71 +1,72 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Slack انضمام سیٹ کریں
+description: ایک Slack ایپ کو Control Center ورک اسپیس سے جوڑیں تاکہ اراکین Slack سے ایجنٹس چلا سکیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+یہ گائیڈ بتاتی ہے کہ Slack کو کسی Control Center ورک اسپیس سے کیسے جوڑا جائے — یا تو Control Center کو ایپ بنانے دیں، یا خود اُسے بنائیں۔
 
-For a guided first run, see [Bridge Slack to your workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/).
+پہلی بار رہنمائی کے ساتھ چلانے کے لیے دیکھیں [Slack کو اپنے ورک اسپیس سے جوڑیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/)۔
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack ہی واحد چیٹ فراہم کنندہ ہے]
+برج بناوٹ ہی سے فراہم کنندہ سے بے نیاز ہے — ہر فراہم کنندہ کے ایک اڈاپٹر کے اوپر
+ایک ڈسکرپٹر سے چلنے والا UI — مگر Slack واحد اڈاپٹر ہے جو موجود ہے۔ Discord،
+Telegram، Teams یا Matrix کا کوئی نفاذ نہیں ہے۔
 :::
 
-## Prerequisites
+## پیشگی شرائط
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Control Center ورک اسپیس میں `owner` یا `admin` کردار — چیٹ ایپ جوڑنا ورک اسپیس کی ترتیبات میں تبدیلی ہے
+- Slack ورک اسپیس میں ایپس بنانے اور انسٹال کرنے کی اجازت
+- عوامی طور پر قابلِ رسائی کچھ بھی نہیں: کنکشن آؤٹ باؤنڈ (Socket Mode) ہے، اس لیے سرور کو نہ کوئی اِن باؤنڈ پورٹ چاہیے، نہ ٹنل، نہ ڈومین
 
-## Three ways to get the app
+## ایپ حاصل کرنے کے تین طریقے
 
-| Path                | You provide                           | Control Center does                                                                                                        |
+| راستہ                | آپ کیا فراہم کرتے ہیں                           | Control Center کیا کرتا ہے                                                                                                        |
 | ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| **رہنمائی شدہ**          | ایپ کنفیگریشن ٹوکن (`xoxe-…`) | ایپ کو درست اسکوپس، ایونٹس، Socket Mode اور سلیش کمانڈ کے ساتھ بناتا ہے؛ اور وہ دو مراحل آپ کے حوالے کرتا ہے جن کے لیے Slack کے پاس کوئی API نہیں |
+| **Slack میں بنائیں** | کچھ نہیں                               | Slack کو وہی کنفیگریشن پہلے سے بھری ہوئی کے ساتھ کھولتا ہے؛ آپ ورک اسپیس چنتے اور تصدیق کرتے ہیں                                       |
+| **ہاتھ سے**         | تیار ایپ کے ٹوکنز             | اُن کی تصدیق کرتا ہے اور منسلک ہو جاتا ہے                                                                                                 |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+رہنمائی والا راستہ ہی واحد ہے جو ایپ کو Control Center سے _قابلِ انتظام_ بھی رکھتا ہے، اور یہی چیز [چیٹ بوٹ حسب ضرورت بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/) کو ممکن بناتی ہے۔ **Slack میں بنائیں** سے بنی ایپ کو بعد میں کنیکٹ ڈائیالگ میں کنفیگریشن ٹوکن پیسٹ کر کے قابلِ انتظام بنایا جا سکتا ہے۔
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+جان بوجھ کر کوئی "Control Center کی Slack ایپ انسٹال کریں" بٹن موجود نہیں۔ تقسیم شدہ Slack ایپ انسٹال کرنے کے لیے مشترکہ کلائنٹ سیکرٹ درکار ہوتا ہے (Slack میں PKCE نہیں ہے) اور Socket Mode کسی ایپ کے ایونٹس تصادفی طور پر اُس کے تمام کنکشنز میں تقسیم کر دیتا ہے — چنانچہ ایک مشترکہ ایپ آپ کے ورک اسپیس کے پیغامات دوسروں کے سرورز تک پہنچا دیتی۔ اس لیے ہر ورک اسپیس اپنی ایپ کی مالک ہے اور یہ تینوں راستے اِسی بات کے بارے میں ہیں کہ اِس کی قیمت آپ کو کتنا کم کام پڑتی ہے۔
 
-## Option A: let Control Center create the app
+## آپشن A: Control Center کو ایپ بنانے دیں
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. [api.slack.com/apps](https://api.slack.com/apps) پر ایپ کنفیگریشن ٹوکن کا جوڑا بنائیں اور **ریفریش** ٹوکن کاپی کریں (`xoxe-…`)
+2. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+3. Slack بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
+4. ٹوکن پیسٹ کریں، ایپ کا نام، بوٹ کا نام، تفصیلات اور سلیش کمانڈ ایڈجسٹ کریں، پھر **ایپ بنائیں** پر کلک کریں
+5. ڈائیالگ میں دکھائے گئے باقی دو مراحل پر عمل کریں، جن میں سے ہر ایک Slack میں جانے والا لنک ہے:
+   - **Basic Information → App-Level Tokens**: `connections:write` اسکوپ کے ساتھ ٹوکن بنائیں (`xapp-…`)
+   - **Install App**: ورک اسپیس میں انسٹال کریں اور **Bot User OAuth Token** کاپی کریں (`xoxb-…`)
+6. **کریڈینشلز پیسٹ کریں** پر کلک کریں اور [منسلک کرنا](#منسلک-کرنا) کے ساتھ آگے بڑھیں
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+کنفیگریشن ٹوکن ہر استعمال پر بدل جاتا ہے۔ Control Center بدلی ہوئی قدر اُسی وقت محفوظ کر لیتا ہے، اس لیے آپ کو اُسے دوبارہ کبھی پیسٹ نہیں کرنا پڑتا۔
 
-## Option B: create it in Slack, pre-filled
+## آپشن B: Slack میں بنائیں، پہلے سے بھری ہوئی
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+وہی ایپ، بغیر کنفیگریشن ٹوکن — Slack اپنی بنانے کی اسکرین آپ کے حوالے کرتا ہے جس میں پورا مینیفیسٹ پہلے سے بھرا ہوتا ہے۔
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+2. Slack بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
+3. ایپ کا نام، بوٹ کا نام، تفصیلات اور سلیش کمانڈ ایڈجسٹ کریں — یہ لنک کے ساتھ ساتھ جاتے ہیں
+4. **Slack میں بنائیں** پر کلک کریں۔ آپ کا براؤزر Slack کا ایپ بنانے والا صفحہ کنفیگریشن پہلے سے بھری ہوئی کے ساتھ کھولتا ہے
+5. Slack ورک اسپیس چنیں اور تصدیق کریں۔ اسکوپس، ایونٹس، Socket Mode اور سلیش کمانڈ پہلے ہی درست ہیں
+6. Control Center میں واپس آ کر ڈائیالگ کے دکھائے گئے باقی دو مراحل پر عمل کریں:
+   - **Basic Information → App-Level Tokens**: `connections:write` اسکوپ کے ساتھ ٹوکن بنائیں (`xapp-…`)
+   - **Install App**: ورک اسپیس میں انسٹال کریں اور **Bot User OAuth Token** کاپی کریں (`xoxb-…`)
+7. **کریڈینشلز پیسٹ کریں** پر کلک کریں اور [منسلک کرنا](#منسلک-کرنا) کے ساتھ آگے بڑھیں
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack یہ نہیں بتاتا کہ اُس نے کون سی ایپ بنائی، اس لیے Control Center کو ایپ کی id معلوم نہیں ہوتی اور مرحلہ 6 کے لنک اُس ایپ کی بجائے آپ کی ایپوں کی فہرست پر لے جاتے ہیں۔ **بوٹ حسبِ ضرورت** کے لیے کنفیگریشن ٹوکن درکار ہے۔
 
-## Option C: build the app yourself
+## آپشن C: ایپ خود بنائیں
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+[api.slack.com/apps](https://api.slack.com/apps) پر ایپ بنائیں، پھر اُسے اِس طرح سیٹ اپ کریں۔
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: اُسے فعال کریں اور ہر request URL خالی چھوڑ دیں۔ Slack ایسا مینیفیسٹ مسترد کر دیتا ہے جو Socket Mode اور webhook ڈیلیوری دونوں مانگے۔
 
 **Bot token scopes** (OAuth & Permissions):
 
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Event subscriptions** (بوٹ ایونٹس):
 
 ```text
 app_home_opened
@@ -91,134 +92,135 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` اور `message.groups` ہی وہ چیز ہیں جو پہلے سے برج شدہ Slack تھریڈ کے اندر _جواب_ کو کام کرنے دیتی ہیں۔ اِن کے بغیر صرف پہلا ذکر ہی پہنچتا ہے۔
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**سلیش کمانڈ**: `/cc` (کوئی بھی نام چل جاتا ہے — برج وہی کمانڈ استعمال کرتا ہے جس کے ساتھ اُسے آخری بار چلایا گیا تھا)۔
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: Messages ٹیب فعال کریں اور اُسے قابلِ تحریر رہنے دیں، تاکہ اراکین بوٹ کو براہِ راست پیغام بھیج سکیں۔
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**ٹوکنز**: `connections:write` کے ساتھ ایپ لیول ٹوکن بنائیں، پھر ایپ انسٹال کریں اور بوٹ یوزر OAuth ٹوکن کاپی کریں۔
 
-## Connect
+## منسلک کرنا
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+2. Slack بلاک پر **Slack منسلک کریں** پر کلک کریں
+3. فیلڈز بھریں:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
+| فیلڈ                                          | قدر    | Slack میں یہ کہاں ہے                                    |
 | ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| **بوٹ یوزر OAuth ٹوکن**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **ایپ لیول ٹوکن**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **ایپ کنفیگریشن ریفریش ٹوکن** (اختیاری) | `xoxe-…` | api.slack.com/apps پر ایپ کنفیگریشن ٹوکن کا جوڑا     |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+ہر قدر کا سابقہ کچھ بھیجنے سے پہلے دونوں طرف جانچا جاتا ہے، اس لیے غلط خانے میں
+پیسٹ کی گئی قدر دونوں صورتوں میں ایک ہی جملے کے ساتھ مسترد ہوتی ہے۔
 
-4. Click **Connect**
+4. **منسلک ہوں** پر کلک کریں
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center بوٹ ٹوکن کی تصدیق Slack کے `auth.test` سے _کچھ بھی محفوظ کرنے سے پہلے_ کرتا ہے، اس لیے کوئی ٹائپو اُس سوکٹ میں بدلنے کے بجائے جو خاموشی سے کبھی کام نہ کرے، آپ کو رپورٹ کر دیا جاتا ہے۔ ایپ لیول ٹوکن کا ثبوت صرف سوکٹ کھول کر دیا جا سکتا ہے، اس لیے خراب ٹوکن ایک لمحے بعد اُسی قطار پر کنکشن کی خرابی کے طور پر ظاہر ہوتا ہے۔
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+اختیاری ایپ کنفیگریشن ٹوکن کے بغیر کنکشن بالکل ٹھیک چلتا ہے — آپ بس Control Center سے بوٹ میں ترمیم نہیں کر سکتے۔
 
-## What connecting does
+## منسلک ہونے سے کیا ہوتا ہے
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- اسناد کو ورک اسپیس کی اپنی ڈائریکٹری میں، اُس کے ڈیٹا بیس کے پہلو میں محفوظ کرتا ہے، اور صرف مالک اُنہیں پڑھ سکتا ہے۔ وہ کبھی کسی کلائنٹ تک واپس نہیں جاتیں
+- اِس ورک اسپیس کے لیے ایک Socket Mode کنکشن کھولتا ہے اور ذکر، Slack تھریڈ جوابات، براہِ راست پیغامات اور سلیش کمانڈز وصول کرنا شروع کر دیتا ہے
+- اُن تمام Slack تھریڈز کو دوبارہ فعال کرتا ہے جو پہلے برج کیے گئے تھے، تاکہ دوبارہ منسلک ہونے پر موجودہ گفتگوئیں بے سہارا ہونے کے بجائے جاری رہیں
+- اُن ورک اسپیسز کے لیے کچھ بھی خرچ نہیں کرتا جن کے پاس کوئی چیٹ ایپ نہیں: نہ سوکٹ، نہ ٹائمر، نہ ٹریفک
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[ٹوکنز کہاں رہتے ہیں اور وہ کی چین میں کیوں نہیں]
+بوٹ کی اسناد ہر فراہم کنندہ کے لیے ایک سادہ JSON فائل میں
+`<dataDir>/<workspaceId>/chat_credentials/` پر رکھی جاتی ہیں، جو جوہری طور پر
+لکھی جاتی ہے اور صرف مالک تک محدود کر دی جاتی ہے۔ یہ دانستہ ہے، کسی غفلت کا
+نتیجہ نہیں: ورک اسپیس حذف کرنے سے وہ ڈائریکٹری اَن لنک ہو جاتی ہے اور اُس کے
+ٹوکن اُس کے ساتھ چلے جاتے ہیں، اور `workspace.export` اور بیک اپ `workspace.db`
+نقل کرتے ہیں — ڈائریکٹری نہیں — اس لیے کسی اور کو دیا گیا ورک اسپیس اپنے اندر
+زندہ بوٹ ٹوکن کبھی نہیں رکھتا۔ اِس کا لازمہ یہ ہے کہ ورک اسپیس کہیں اور بحال
+کرنے کا مطلب وہاں Slack دوبارہ منسلک کرنا ہے۔
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+برج تک رسائی ورک اسپیس کی **رکنیت** ہے، ٹوکن کی ملکیت کبھی نہیں۔ کسی Slack
+اکاؤنٹ کا ایسے Control Center صارف سے لنک ہونا ضروری ہے جو لکھنے کے کردار والا
+رکن ہو۔ منسلک کرنا، منقطع کرنا، رہنمائی والا سیٹ اپ، سیٹ اپ لنک اور بوٹ کی
+حسبِ ضرورت تبدیلی، سب صرف ایڈمن کے لیے ہیں۔
 :::
 
-## Verify
+## جانچ
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Slack کی قطار ایک اسٹیٹس ٹیگ دکھاتی ہے: **لائیو**، **منسلک ہو رہا ہے…**، **کنکشن خرابی** (ساتھ ہی Slack کی اپنی خرابی)، یا **منسلک نہیں**۔ سرتاسر جانچنے کے لیے:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Slack میں بوٹ کو کسی چینل میں مدعو کریں: `/invite @your-bot-name`
+2. اُس کا ذکر کرتے ہوئے کوئی درخواست دیں
+3. Slack تھریڈ میں ایک جواب ظاہر ہوتا ہے اور Control Center میں ایک مطابق اسپیس بن جاتی ہے
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/).
+پھر ہر وہ رکن جو برج استعمال کرنا چاہے، اپنا اکاؤنٹ لنک کرتا ہے — دیکھیں [اپنا Slack اکاؤنٹ لنک کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)۔
 
-## What a reply looks like in Slack
+## Slack میں جواب کیسی شکل میں آتا ہے
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+اسٹریم ہوتے الفاظ کے اوپر ایک گروہ بند کارڈ ہوتا ہے جس میں ہر مرحلے کے لیے ایک قطار ہوتی ہے۔ سیٹ اپ ایک قطار ہے جس کا عنوان `Working on it…` سے `Cloning …` اور پھر `Starting the agent…` ہوتا ہوا آگے بڑھتا ہے۔ استدلال ایک `Thinking…` قطار شامل کرتا ہے؛ وہ مرحلہ مکمل ہونے پر اُس پر ایک مختصر سوچ ظاہر ہو سکتی ہے۔ ہر ٹول کی اپنی قطار ہوتی ہے (`Read lib/main.dart`)۔ جواب کارڈ کے نیچے عام متن کے طور پر آتا ہے۔ باری ختم ہونے پر کارڈ مکمل ہو جاتا ہے اور رن ناکام ہونے، رُکنے یا اپنی باری کی حد کو چھو جانے پر خراب شدہ ہو جاتا ہے۔
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+کارڈ اُسی لمحے شروع ہو جاتا ہے جب بوٹ ذکر قبول کرتا ہے — `Working on it…` — تاکہ ورک اسپیس ابھی بن ہی رہی ہو تب بھی Slack تھریڈ خاموش نہ رہے۔ Slack چینل میں آپ کا پہلا ذکر گفتگو بناتا ہے، جو اُن ریپوز کو کلون کرتا ہے جن میں ایجنٹ کام کرتا ہے، چنانچہ وہ سیٹ اپ قطار پھر `Cloning acme/widgets…`، پھر `Setting up Reviewer…`، پھر `Starting the agent…` پڑھتی ہے، اور ایجنٹ کے واقعی استدلال شروع کرنے پر ایک `Thinking…` قطار۔ کسی بڑی ریپوزٹری پر وہ پہلا سیٹ اپ کچھ وقت لیتا ہے؛ کارڈ ہی وہ چیز ہے جس سے آپ جان سکتے ہیں کہ یہ کام کر رہا ہے، آپ کو نظر انداز نہیں کر رہا۔ اُسی Slack تھریڈ میں بعد کے ذکر پھر بھی `Working on it…` کے ساتھ کھلتے ہیں، پھر کلون کے مراحل چھوڑ دیتے ہیں کیونکہ ورک اسپیس وہاں پہلے سے موجود ہوتی ہے۔
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+متن اور ٹول آؤٹ پٹ کی دیوار کی صورت میں استدلال کبھی Control Center سے باہر نہیں جاتا — `Thinking…` قطار پر سوچ ایک مختصر سطر ہوتی ہے، ٹرانسکرپٹ نہیں۔ کارڈ پر **View in Control Center** پوری گفتگو ڈیسک ٹاپ ایپ میں کھولتا ہے — لنک آپ کے اپنے Control Center سرور کی طرف جاتا ہے، جو براؤزر کو ایپ کے حوالے کر دیتا ہے۔
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+اگر اُس پر کلک کرنے سے کچھ نہ ہو تو جس مشین سے آپ نے کلک کیا، اُس سے وہ سرور قابلِ رسائی نہیں جس نے پیغام بھیجا (مثلاً صرف loopback پر سننے والا سرور جس پر فون سے کلک کیا گیا ہو)، یا وہاں Control Center چل ہی نہیں رہا۔ جس سرور کا کوئی قابلِ رسائی پتہ نہ ہو، وہ ایسا بٹن والا کارڈ نہیں بھیجتا جو کہیں نہ پہنچے، بلکہ بغیر بٹن کا کارڈ بھیجتا ہے۔
 
-## Rotate a token
+## ٹوکن روٹیٹ کریں
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+کنیکٹ ڈائیالگ میں نئی قدر دوبارہ پیسٹ کریں اور **منسلک ہوں** پر کلک کریں۔ منسلک ہونا اُس کنکشن کی جگہ لے لیتا ہے جو اِس ورک اسپیس کے لیے چل رہا تھا، اس لیے سوکٹ نئی اسناد کے ساتھ دوبارہ ڈائل ہوتا ہے۔
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+دو لازمی ٹوکنز ہر بار منسلک ہوتے وقت موجود ہونے چاہئیں۔ اختیاری ایپ کنفیگریشن ٹوکن، خانہ خالی چھوڑنے پر اپنی محفوظ قدر برقرار رکھتا ہے، اس لیے بوٹ ٹوکن روٹیٹ کرنے سے ایپ میں ترمیم کی صلاحیت کبھی ختم نہیں ہوتی۔
 
-## Disconnect
+## منقطع کریں
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Slack کی قطار پر **منقطع کریں** پر کلک کریں (صرف ایڈمن)۔ سوکٹ بند ہو جاتا ہے اور اسناد بھلا دی جاتی ہیں۔
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+اسپیس اور صارف کے لنک جان بوجھ کر باقی رہتے ہیں: وہی ایپ دوبارہ منسلک کرنے سے ہر برج شدہ Slack تھریڈ بحال ہو جاتا ہے۔ وہ ورک اسپیس کے دائرے کی قطاریں ہیں، اس لیے ورک اسپیس حذف کرنے پر بہر حال ہٹ جاتے ہیں۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### The row says "Connection error"
+### قطار کہتی ہے "کنکشن خرابی"
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+ٹیگ کے ساتھ دکھائی گئی خرابی پڑھیں۔ مسترد شدہ سند (`invalid_auth`، `not_authed`، `token_revoked`، `account_inactive`) حتمی ہوتی ہے — برج دوبارہ کوشش کرنا چھوڑ دیتا ہے اور نئے ٹوکنز کا انتظار کرتا ہے، کیونکہ منسوخ شدہ ٹوکن کو ہمیشہ دوبارہ آزمانا صرف آپ کو rate limit کی سزا دیتا ہے۔ کنیکٹ ڈائیالگ میں ٹوکنز دوبارہ پیسٹ کریں۔
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+`missing_scope` خرابی کا مطلب ہے کہ ایپ اُن اسکوپس سے کم کے ساتھ انسٹال ہے جو برج کو درکار ہیں۔ گمشدہ اسکوپ شامل کریں، ایپ Slack میں دوبارہ انسٹال کریں، پھر دوبارہ منسلک کریں۔
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+کوئی بھی عارضی چیز (گرا ہوا سوکٹ، Slack کی کوئی ہچکی) خود ہی 30 سیکنڈ کی حد والے exponential backoff کے ساتھ دوبارہ منسلک ہو جاتی ہے اور Slack کی معمول کی سوکٹ روٹیشن اُس backoff کو بڑھاتی نہیں۔
 
-### The bot does not answer a mention
+### بوٹ کسی ذکر کا جواب نہیں دیتا
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **کیا بوٹ چینل میں ہے؟** Slack چینل کے پیغامات صرف اُن ایپس تک پہنچاتا ہے جو اُس کے اراکین ہوں۔ `/invite @your-bot-name` چلائیں
+- **کیا آپ لنک شدہ ہیں؟** غیر لنک شدہ رکن کو اُسی Slack تھریڈ میں جواب ملتا ہے جس میں لنک کرنے کا طریقہ بتایا جاتا ہے۔ دیکھیں [اپنا Slack اکاؤنٹ لنک کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
+- **کیا آپ لکھنے کے کردار والے رکن ہیں؟** `viewer` یا `guest` کو بتایا جاتا ہے کہ اُس کا کردار صرف پڑھنے کا ہے۔ برج کبھی کسی ایسے شخص کی طرف سے کام شروع نہیں کرتا جسے وہ منسوب نہ کر سکے
+- **کیا ورک اسپیس میں کوئی ایجنٹ ہے؟** ایجنٹس کے بغیر پیغام محفوظ تو ہو جاتا ہے مگر اُس کا جواب دینے والا کوئی نہیں ہوتا
 
-### It answers in a channel but ignores plain messages
+### چینل میں جواب دیتا ہے مگر سادہ پیغامات نظر انداز کر دیتا ہے
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+یہ جان بوجھ کر ہے۔ براہِ راست پیغام کے علاوہ، برج صرف ایسے پیغام پر عمل کرتا ہے جس میں بوٹ کا ذکر ہو، یا ایسے جواب پر جو اُس Slack تھریڈ کے اندر ہو جس کا وہ پہلے سے مالک ہے۔ باقی سب دوسروں کی گفتگو ہے۔
 
-### Replies arrive as one big message instead of streaming
+### جوابات اسٹریم ہونے کے بجائے ایک بڑے پیغام کے طور پر آتے ہیں
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+قطار کہتی ہے "اس Slack ایپ کے لیے لائیو اسٹریمنگ آف ہے — جوابات ایک پیغام میں آتے ہیں۔" Slack کے اسٹریمنگ جوابات کو کسی پیڈ پلان پر Agents & AI Apps فیچر درکار ہوتا ہے؛ جب Slack انکار کر دے تو برج اُس کنکشن کی پوری عمر کے لیے پوچھنا چھوڑ دیتا ہے اور اُس کے بجائے مکمل جواب بھیجتا ہے۔ کچھ ضائع نہیں ہوتا — مکمل ٹرانسکرپٹ ہمیشہ Control Center میں ہوتا ہے۔
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+اسٹریمنگ کو Slack تھریڈ اینکر بھی درکار ہوتا ہے، اس لیے ایسا جواب جس کے پاس بڑھنے کے لیے کوئی Slack تھریڈ نہ ہو، مکمل بھیج دیا جاتا ہے۔ ٹاسک کارڈ دونوں صورتوں میں پہنچتا ہے: مکمل جواب پر وہ اُسی پیغام کے ساتھ سوار ہوتا ہے، پہلے سے مکمل۔
 
-### The reply has no card above it
+### جواب کے اوپر کوئی کارڈ نہیں ہوتا
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Slack کے ٹاسک کارڈز اُسی نئی Agents & AI Apps سطح کا حصہ ہیں جس کا حصہ اسٹریمنگ بھی ہے اور Slack صرف کال کے وقت انکار کرتا ہے۔ جب وہ انکار کرے تو Control Center جواب رکھ لیتا ہے اور اُس کنکشن کی پوری عمر کے لیے کارڈ گرا دیتا ہے — بغیر اسٹیٹس لائن کا جواب ایسی اسٹیٹس لائن سے بہتر ہے جس کے ساتھ کوئی جواب نہ ہو۔
 
-### "Control Center needs an app configuration token to edit the bot"
+### "بوٹ ترمیم کے لیے Control Center کو ایپ کنفیگریشن ٹوکن چاہیے"
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+**بوٹ حسبِ ضرورت** قطار غیر فعال ہے کیونکہ کنکشن کے پاس ایپ کنفیگریشن ٹوکن نہیں۔ یہ ایسی ایپ کے لیے متوقع ہے جو ہاتھ سے یا **Slack میں بنائیں** کے ذریعے بنائی گئی ہو — Slack نے Control Center کو کبھی نہیں بتایا کہ وہ کون سی ایپ ہے۔ api.slack.com/apps پر ٹوکن کا جوڑا بنائیں اور ریفریش ٹوکن بھر کر دوبارہ منسلک ہوں۔
 
-### A long answer is cut off
+### لمبا جواب کاٹ دیا جاتا ہے
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack ایک پیغام کی حد 40,000 حروف پر رکھتا ہے، اس لیے برج 39,000 پر کاٹ دیتا ہے اور Control Center کا اشارہ ساتھ لگا دیتا ہے — مختصر کیا گیا جواب اُس جواب سے بہتر ہے جسے Slack بالکل رد کر دے۔ مکمل متن ہمیشہ اسپیس کے ٹرانسکرپٹ میں ہوتا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Link your Slack account](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
-- [Customize the chat bot](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
-- [Chat bridge](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
+- [اپنا Slack اکاؤنٹ لنک کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
+- [چیٹ بوٹ حسب ضرورت بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
+- [چیٹ برج](/ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Chat bridges](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)
+- [چیٹ برجز](/ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز/)

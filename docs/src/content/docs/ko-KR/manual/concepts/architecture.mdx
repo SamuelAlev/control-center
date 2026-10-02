@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: 아키텍처
+description: 씬 클라이언트 서버 모델, 피처 우선 클린 아키텍처, 포트와 어댑터로 구성된 Control Center의 구조를 설명합니다.
 dateModified: 2026-09-19
 slug: ko-KR/매뉴얼/개념/아키텍처
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## 개요
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center는 포트와 어댑터 패턴을 적용한 피처 우선 클린 아키텍처를 따릅니다. 코드베이스는 비즈니스 도메인(피처)을 중심으로 구성되어 있으며, 엄격한 의존성 규칙을 자동화된 아키텍처 테스트로 강제합니다.
 
-## A thin client over a headless server
+## 헤드리스 서버 위의 씬 클라이언트
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center는 **씬 클라이언트 아키텍처**입니다. 어떤 클라이언트도 데이터베이스를 직접 열지 않습니다. 헤드리스 **`cc_server`** 프로세스가 데이터(작은 `global.db`와 워크스페이스마다 하나씩 있는 SQLite 파일, 지연해서 엽니다)를 소유하고, 이를 WebSocket RPC로 제공합니다. 데스크톱 앱, 웹 빌드, 폰 컴패니언은 모두 이 하나의 RPC 연결 위에서 동작하는 렌더러입니다.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+데스크톱 앱은 첫 실행 시 서버에 어떻게 접근할지 선택합니다. **로컬**(이 머신에서 `cc_server`를 실행하고 루프백으로 통신하며, 기본값입니다) 또는 **원격**(다른 곳의 `cc_server`에 보안 WebSocket으로 접속합니다)입니다. 웹 클라이언트는 항상 원격입니다. 부트 리졸버(`bootstrap/server_backend.dart`)가 Riverpod이 존재하기 전에 경로를 정하고, 연결된 클라이언트로 `rpcClientProvider`를 재정의합니다. 따라서 모든 피처는 로컬 데이터베이스가 아니라 서버를 통해 읽고 씁니다.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+RPC 계층 자체는 **무상태**입니다. 세션은 인증되지만 워크스페이스에 묶이지 않습니다. 워크스페이스 범위 호출은 각자 인자에 `workspace_id`를 담고 있으며, 디스패처는 이것이 없는 호출을 거부합니다. 덕분에 하나의 서버에 연결된 두 클라이언트가 서로 다른 활성 워크스페이스를 유지할 수 있고, 서버가 들고 있는 "현재 워크스페이스"를 두고 다툴 일이 없습니다. 또한 격리는 연결 단위가 아니라 호출 단위로 강제됩니다.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/ko-KR/매뉴얼/개념/배포/) for the full client matrix and what runs where.
+이것은 하나의 lockfile로 해석되는 **Dart 워크스페이스**이며, 멤버는 스물한 개입니다. 패키지 열다섯 개와 앱 여섯 개로 이루어지고, 데스크톱+웹 앱(`control_center`)이 워크스페이스 루트입니다. 앱 여섯 개는 헤드리스 서버 바이너리(`cc_server`), 헤드리스 플릿 실행기(`cc_worker`), 폰 PWA(`cc_remote`), WebSocket 릴레이 브로커(`cc_signaling_server`), Widgetbook 갤러리(`cc_gallery`), 공개 데모 호스트(`cc_demo_server`)입니다. 패키지 열다섯 개는 `cc_ui`(디자인 시스템), `cc_domain`(순수 Dart 공유 커널: 엔티티, 값 객체, 포트, 이벤트, 모든 피처의 도메인 계층), `cc_harness`(내장 에이전트 커널: 메시지, 프로바이더 포트, 도구, 컴팩션, 스티어링, 훅, 서브에이전트를 다루는 순수 Dart 에이전트 루프이며 `dart:io`도 다른 `cc_*` 의존성도 없습니다), `cc_harness_runtime`(내장 하네스 런타임 어댑터: VM 전용 스트리밍 프로바이더, OAuth/PKCE 자격 증명 브로커링, 자격 증명 저장소, 범용 도구 세트로, 외부 CLI를 설치하지 않고도 에이전트를 실행합니다), `cc_rpc`(클라이언트 전송), `cc_host`(서버 커널), `cc_data`(원격 리포지토리), `cc_persistence`(서버 측 DB), `cc_server_core`(앱-서버 구성 + 신원/프레즌스/플릿/평가 런타임), `cc_infra`(VM 전용 어댑터), `cc_mcp`(MCP 도구), `cc_mcp_client`(외부 MCP 서버용 클라이언트로, 그 도구들을 로컬 레지스트리로 연결합니다), `cc_markdown`(리포지토리 내 markdown 엔진), `cc_natives`(FFI 리프), `system_audio_capture`입니다. 전체 클라이언트 매트릭스와 각 요소가 어디서 실행되는지는 [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/)를 참고하세요.
 
-## Dependency rule
+## 의존성 규칙
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **도메인 계층**: 순수 Dart 엔티티, 값 객체, 리포지토리 인터페이스, 포트, 도메인 서비스. 인프라 의존성이 전혀 없습니다(dio, drift, 네트워크 모델 없음).
+- **프레젠테이션 계층**: 화면, 위젯, 노티파이어. drift/DAO/데이터 계층에 직접 접근하지 않으며, 모든 것이 Riverpod 프로바이더 → 리포지토리를 거칩니다.
+- **인프라 계층**: 도메인 포트와 리포지토리 인터페이스의 구체적인 구현. 도메인에 의존하며, 그 반대는 없습니다.
 
-## Feature structure
+## 피처 구조
 
-The full feature shape is:
+전체 피처 형태는 다음과 같습니다:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+`lib/features/` 아래에서 이 네 가지를 모두 갖춘 피처는 거의 없으며, 그 빈틈은 우연이 아니라 의미 있는 신호입니다. 공유 커널이 모든 피처의 `domain/`을 `cc_domain`으로 흡수했고 씬 클라이언트는 리포지토리 구현을 갖지 않으므로, `lib/` 아래 대부분의 피처는 `presentation/`과 `providers/`만 있고 그 외에는 없습니다. 클라이언트에 남아 있는 `data/` 또는 `domain/` 디렉터리는 정말로 클라이언트 측인 무언가를 나타냅니다.
 
-Two named exceptions are worth knowing:
+이름이 붙은 예외 두 가지는 알아 둘 만합니다:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`**는 프로바이더만 있습니다. 설정과 상태 UI는 `settings/` 아래에 있고, 도구 표면 자체는 피처 폴더가 아니라 패키지(`cc_mcp`)입니다.
+- **`orchestration`**과 **`plan_studio`**는 `presentation/`과 `providers/`만 갖습니다.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/ko-KR/매뉴얼/개념/가드레일/) for the model.
+**`guardrails`** 피처는 도메인 계층을 루트 앱이 아니라 `cc_domain/features/guardrails/`에 둡니다. 서버가 이를 강제하기 때문입니다. 규칙은 특정 범위에서 `ActionClass`(또는 셸 `commandPrefix`)를 `allow`, `prompt`, `deny` 중 하나의 결정에 매핑하고, 규칙은 워크스페이스별로 저장되며, 통제 대상인 모든 에이전트 동작은 실행 전에 정책 체인을 거쳐 해석됩니다. 해석은 `space > agent > workspace > mode preset > built-in default` 순으로 진행되며 **일치하는 규칙이 있는 첫 번째 범위가 결정합니다**. 가장 제한적인 규칙은 하나의 범위 안에서, 그리고 한 동작이 선언하는 여러 클래스를 결합할 때만 동점을 깨는 기준입니다. 운영자가 사용하는 표면은 설정 → 워크스페이스 → 에이전트 권한이며, 경로는 `/workspaces/<id>/settings/workspace/permissions`입니다. 모델에 대한 설명은 [가드레일](/ko-KR/매뉴얼/개념/가드레일/)을 참고하세요.
 
-## Shared kernel
+## 공유 커널
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/`에는 3개 이상의 피처가 공유하는 엔티티와 리포지토리가 있습니다. 인프라 의존성이 전혀 없는 순수 Dart이며, 덕분에 Flutter 클라이언트와 Flutter가 없는 서버 바이너리 모두 같은 정의를 가져올 수 있습니다:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- 핵심 엔티티: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- 신원과 멀티플레이어: `User`, `Principal`(sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- 메모리 엔티티: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- 공유 값 객체: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- 공유 포트: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- 도메인 서비스: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + 이벤트 유형(워크스페이스/에이전트, PR/리뷰, 메시징, 티켓팅, 파이프라인, 오케스트레이션, 메모리, 캘린더/회의, 신원과 멤버십, 관측성)
 
-## Identity & multiplayer
+## 신원과 멀티플레이어
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center는 멀티유저 시스템입니다. 사람과 에이전트는 `Principal`로 통합되는 동등한 행위자입니다. 워크스페이스 구성원은 `WorkspaceRole`(`owner`/`admin`/`member`/`viewer`/`guest`)로 `Workspace`에 묶인 `User`입니다. **멤버십이 접근 경계**이며 — 페어링 키가 아닙니다 — 리포지토리별 권한 부여는 워크스페이스 멤버십이 코드 호스트보다 더 큰 권한을 갖지 않게 합니다. 새 서버에서 처음 생성되는 사용자가 설치를 소유하며, 다른 사용자는 초대나 OIDC로 합류합니다. 워크스페이스를 만들면 그 사용자가 `owner`로 기록됩니다.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+실시간 협업은 CRDT가 아니라 **권위 서버 + 필드별 마지막 작성자 우선(LWW)** 방식입니다. 프레즌스(누가 있는지, 어디에 있는지, 커서, 입력 중 상태, 에이전트의 실시간 상태와 실행 비용)는 **절대 저장되지 않는 별도의 임시 레인**입니다. 지속 상태는 낙관적 변경 + 서버 리베이스 + LWW 백본을 탑니다. 사람과 에이전트는 하나의 로스터를 공유합니다. 사람 운영자가 한 명뿐이면 프레즌스 레인은 유휴 상태가 되고 로스터 UI는 나타나지 않습니다. 멀티플레이어는 혼자 쓰는 사용자에게 아무 비용도 들지 않습니다.
 
-## Ports and adapters
+## 포트와 어댑터
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+포트는 도메인 계층의 추상 인터페이스입니다. 어댑터는 인프라의 구체적인 구현입니다. 헤드리스 서버가 데이터를 소유하고 Flutter 없이 빌드되어야 하므로, 거의 모든 어댑터는 VM 전용이며 관심사별로 정리되어 `packages/cc_infra/lib/src/`에 있습니다:
 
-| Port                   | Adapter location                                                                                            |
+| 포트 | 어댑터 위치 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
 | `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
 | `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
 | `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
+| `NotificationPort`     | `lib/core/notifications/` (클라이언트 측: 서버 이벤트를 로컬에서 렌더링합니다)                                      |
 | `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp, GitHub Issues는 `cc_infra/lib/src/tickets/sync/`에 있는 티켓 동기화 어댑터이고, 로컬 티켓은 `TicketProviderPort` 없이 워크스페이스 데이터베이스에 있습니다. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (순수 Dart 도메인 서비스 — 인프라가 필요하지 않습니다) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+앱 컴포지션 루트(`di/providers.dart`)는 Riverpod 프로바이더를 통해 클라이언트 측 포트를 구현에 바인딩하고, 서버는 `cc_server_core`에서 어댑터를 구성합니다.
 
-## State management
+## 상태 관리
 
-**Riverpod** for all client state:
+모든 클라이언트 상태에는 **Riverpod**를 사용합니다:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- 변경 가능한 상태에는 `Notifier<T>`와 `AsyncNotifier<T>`
+- 비동기 데이터에는 `FutureProvider<T>`
+- 목록과 라이브 행은 `AsyncValue<List<T>>` 형태로 RPC 구독을 통해 도착합니다. 서버는 내부적으로 Drift `.watch()`를 사용하며, 어떤 클라이언트도 Drift를 열지 않습니다
+- MCP 도구는 의존성을 타입이 지정된 생성자 매개변수로 받으며, `Ref`는 절대 받지 않습니다
 
-## Database
+## 데이터베이스
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift**(SQLite)는 두 개의 데이터베이스로 나뉘며, 둘 다 `cc_persistence`에 있습니다:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — 정말로 서버 전체에 걸친 테이블의 짧은 목록: 워크스페이스 레지스트리, 사용자/환경설정/페어링된 기기, SSO 연결, 설치 전체 서버 설정, 관리형 동작 정책(워크스페이스 가드레일을 조일 수만 있는 설치 전체 제한), 사용자별 뉴스피드, 플릿 큐(워커/작업/배치 로그), 인증 전 `workspace_routes` 인덱스, 설치 메타데이터. 부팅 시에는 이 파일만 열리므로 워크스페이스가 아무리 많은 기록을 쌓아도 시작 비용이 일정하게 유지됩니다. 여기에 테이블을 추가하는 것은 격리 결정이며, 래칫 테스트가 그 근거를 대라고 요구합니다.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — 워크스페이스마다 _디렉터리_ 하나로, SQLite 파일 하나와 그 워크스페이스에만 속하는 나머지 모든 것을 담습니다. 따라서 대화의 worktree와 에이전트 파일이 데이터베이스 옆에 자리하고 데이터베이스와 함께 삭제됩니다. 거의 모든 것이 여기에 있습니다: 에이전트, 스페이스, 티켓, 메모리, 파이프라인, 회의, 코드 그래프, 리뷰, 리포지토리. 파일은 처음 접근할 때 `WorkspaceDatabaseManager.of(workspaceId)`를 통해 지연해서 열리며, 그때 자체적으로 `quick_check`, FTS/트리거 설치, `vector_init` 비용을 치릅니다.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+두 데이터베이스 모두 스쿼시된 v1 베이스라인에서 시작했습니다(`onCreate`가 현재 스키마를 만듭니다). 마이그레이션 단계는 배포된 데이터베이스를 앞으로 이어 가야 할 때만 덧붙입니다.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+워크스페이스 하나가 파일 하나이므로, 워크스페이스 내보내기는 테이블별 덤프가 아니라 단일 `VACUUM INTO` 문(`workspace.export`)입니다. `workspace.import`는 이런 파일을 받아들이고, 내장된 `workspace_meta`를 사용해 자체 파일을 다시 받아들인 것인지 다른 설치에서 온 것인지 구분합니다.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+두 데이터베이스는 모두 `cc_persistence`가 소유하고 `cc_server`만 엽니다. 어떤 클라이언트도 DB를 열지 않으며, 모든 클라이언트는 RPC로 읽고 씁니다. 테이블은 `packages/cc_persistence/lib/database/tables/`에, DAO는 `.../daos/`에 정의되어 있습니다. 도메인 엔티티는 순수 Dart로 Drift 테이블 클래스와 분리되어 있고, 매핑은 데이터 계층에 있습니다. FTS5가 전문 검색을, `sqlite_vector`가 임베딩을 처리하며 둘 다 서버 전용입니다. 두 데이터베이스 모두 WAL 저널 모드에서 `PRAGMA foreign_keys=ON`을 실행합니다.
 
-## Routing
+## 라우팅
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**를 사용하며, 나머지 모든 것을 지배하는 사실이 하나 있습니다. **앱 내 모든 목적지는 `/workspaces/:workspaceId/…` 형태로 워크스페이스 접두사가 붙습니다**. URL의 워크스페이스 id가 활성 워크스페이스에 대한 단일 진실 공급원입니다(`activeWorkspaceIdProvider`는 라우트에서부터 구동되며 그 반대가 아닙니다). 그래서 접두사가 붙은 라우트 밖에서 워크스페이스 범위 데이터를 읽으면 id를 얻을 곳이 없습니다.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- `router/routes.dart`의 라우트 빌더 _함수_ 로, 각각 문자열 상수가 아니라 워크스페이스 id를 첫 번째 인수로 받습니다
+- 컨텍스트 이전 라우트 네 개에는 접두사가 없습니다: `/splash`, `/onboarding`, `/signed-out`, `/workspaces`(선택기)
+- `ShellRoute`가 앱 셸을 감쌉니다. 그 네 화면은 셸 밖에서 전체 화면으로 렌더링됩니다
+- 인증 가드: 설정이 완료되지 않았으면 `/onboarding`으로, 설정이 완료되었지만 코드 호스트 자격 증명이 사라졌으면 `/signed-out`으로 보냅니다. 완료란 로그인한 사용자에게 코드 호스트가 하나 이상 연결되어 있고 워크스페이스가 하나 이상 존재한다는 뜻이며, GitHub일 필요는 없고 `gh` CLI는 인증 방법이 아닙니다
+- 온보딩 게이트는 `features/auth/providers/`에 있습니다
 
-## Networking (server-side)
+## 네트워킹(서버 측)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+모든 외부 HTTP는 서버에 있습니다. 클라이언트는 GitHub, Linear, Google에 직접 접속하지 않습니다. 서버 RPC 연산을 호출하며, 원격 미디어조차 업스트림 오리진이 아니라 서버의 `/proxy/media` 엔드포인트를 통해 가져옵니다.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- `packages/cc_infra/lib/src/`의 **dio** 클라이언트: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, `GoogleCalendarApiClient`
+- 인터셉터를 통한 인증 토큰 주입. 401 응답 시 토큰을 갱신하는 `cc_server_core`의 계정별 Google OAuth 인터셉터도 포함됩니다
+- 모든 오류는 `packages/cc_infra/lib/src/network/error_mapper.dart`를 거쳐 `cc_domain`에 정의된 타입이 지정된 `AppException` 하위 클래스로 매핑됩니다
 
-## Security
+## 보안
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+중요한 자격 증명은 서버가 보관합니다. 에이전트 실행에 쓰이는 GitHub 및 티켓팅 토큰, LLM 제공업체 키, OAuth 토큰은 모두 서버 데이터 디렉터리나 그 환경에 있습니다. 클라이언트 키체인에 남아 있는 것은 자체 기기 자격 증명과 원격 서버용 페어링 키뿐입니다.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- 시크릿은 `flutter_secure_storage`(macOS 키체인, Windows 자격 증명 관리자, Linux libsecret)에 있습니다 — 제공업체 토큰이 아니라 클라이언트의 기기 자격 증명과 원격 페어링 키입니다
+- `shared_preferences`는 민감하지 않은 환경설정(테마, 글꼴, 레이아웃)에만 사용합니다
+- 이전 설치에서 남은 제공업체 시크릿은 `features/auth/providers/credential_migration.dart`가 서버에 한 번 넘기고, 그다음 클라이언트 키체인에서 삭제됩니다
 
-## Architecture enforcement
+## 아키텍처 강제
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+아키텍처 제약은 `test/core/architecture_constraints_test.dart`로 검증되며, 의존성 규칙을 위반하면 실패합니다.
 
-## Related concepts
+## 관련 개념
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/): how isolation is enforced
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/): the dispatch flow
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/): cross-feature communication
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/): the thin-client server model and the client matrix
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/): 격리가 어떻게 강제되는지
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/): 디스패치 흐름
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/): 피처 간 통신
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/): 씬 클라이언트 서버 모델과 클라이언트 매트릭스

@@ -1,180 +1,179 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: کار در Plan Studio
+description: بازبینی، ویرایش، برآورد، دیف و تأیید یک برنامه در ویرایشگر Plan Studio و اجرای کتابچه‌های پارامتری.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) and
-[Use plan mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/).
+این راهنما نشان می‌دهد چگونه در Plan Studio با برنامه‌ها کار کنید. برای آگاهی از
+اینکه ارکستراسیون‌ها و اسناد برنامه چه هستند، به
+[ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/) و
+[استفاده از حالت برنامه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/) نگاه کنید.
 
-## Open a plan
+## باز کردن یک برنامه
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+هر برنامه به همان گفتگویی تعلق دارد که تولیدش کرده است، پس معمولاً از همان‌جا به آن
+می‌رسید: سطر برنامه در گفتگو یک کنش **باز کردن** دارد و Plan Studio به‌صورت یک زبانهٔ
+ویرایشگر کنار گفتگو باز می‌شود.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[در نوار کناری موردی به نام «برنامه‌ها» وجود ندارد]
+این عمدی است، نه از قلم افتادگی. هاب در `/workspaces/<workspace-id>/plans` فقط یک
+پیوند عمیق مسیرپذیر است، پس اگر فهرستی همیشگی می‌خواهید آن را نشانک کنید.
 :::
 
-The hub lists three sections:
+هاب سه بخش را فهرست می‌کند:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **برنامه‌های فعال** — ارکستراسیون‌ها، نخست پیشنهادشده‌ها، همراه با وضعیت،
+  شمار گام و شمارهٔ بازبینی.
+- **اسناد برنامه** — برنامه‌هایی که یک عامل واحد با `submit_plan` در
+  [حالت برنامه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/) ارسال کرده است، تا زمانی که پیشنهادشده یا تأییدشده‌اند.
+- **کتابچه‌ها** — قالب‌های برنامهٔ ذخیره‌شده و پارامتری.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+روی یک کارت کلیک کنید تا در Plan Studio باز شود. مسیر
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>` است، که در آن `kind` یکی از
+`orchestration` یا `document` است، پس می‌توانید به یک برنامهٔ واحد هم پیوند عمیق
+بدهید.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+اگر یک **ارکستراسیون** باز کرده باشید، بوم ویرایش‌پذیر، خط زمانی نسخه‌ها و نوار
+تأیید را می‌گیرید. اگر یک **سند برنامه** باز کرده باشید، همان گراف فقط‌خواندنی رندر
+می‌شود — اسناد برنامه را عامل نوشته است؛ آن‌ها را بازبینی، برآورد و تأیید یا رد
+می‌کنید و یک سند تأییدشده وضعیت زندهٔ اجرای هر گره را از ارکستراسیونی که به آن
+کامپایل شده نشان می‌دهد.
 
-## Edit the DAG
+## ویرایش DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+ویرایش روی یک **ارکستراسیون** تا زمانی که `proposed` است ممکن است. همهٔ ویرایش‌های
+بوم با صفحه‌کلید انجام می‌شوند:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. روی بوم کلیک کنید، سپس انتخاب را با **کلیدهای جهت‌دار** جابه‌جا کنید.
+2. برای افزودن یک گام **n** را فشار دهید. به‌صورت انتخاب‌شده و با عنوان «گام جدید»
+   ظاهر می‌شود؛ نامش را در بازرس سمت راست تغییر دهید.
+3. روی گامی که باید نخست اجرا شود **e** را فشار دهید، سپس روی گام وابسته کلیک کنید
+   (یا آن را انتخاب کنید و **Enter** را بزنید) تا یک وابستگی وصل شود. برای رها
+   کردن یک اتصال در انتظار **Esc** را فشار دهید.
+4. برای بریدن تازه‌ترین وابستگی گام انتخاب‌شده **x** را فشار دهید، یا
+   وابستگی‌های دقیق را در ویرایشگر وابستگی بازرس روشن/خاموش کنید.
+5. برای حذف گام انتخاب‌شده **Delete** را فشار دهید؛ ارجاع‌های به آن از
+   وابستگی‌های گام‌های باقی‌مانده برداشته می‌شوند.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+در بازرس همچنین می‌توانید شرح، نقش و شِمای خروجی گام را ویرایش کنید. ویرایش‌ها پس
+از مکثی کوتاه به‌صورت یک بازبینی تازه خودکار ذخیره می‌شوند؛ یک خطای اعتبارسنجی (که
+در نوار تأیید نشان داده می‌شود) تا رفع آن، ذخیره را مسدود می‌کند.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+فقط گام‌های کاری ویرایش‌پذیرند. گره‌های ساختاری — پژوهش، بحث و ترکیب —
+فقط‌خواندنی‌اند و هر گامی که کارش از قبل اجرا شده نیز همین‌طور است (با برچسب «از
+قبل اجرا شده» مشخص می‌شود، چون ویرایش آن برنامه را شاخه می‌کند).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+ذخیره‌سازی به‌شکل هم‌روندی خوش‌بینانه بر پایهٔ همان بازبینی‌ای است که از آن شروع
+کرده‌اید. اگر ارکستراسر زیر پای شما برنامه را دوباره طرح کند، ذخیره‌تان به‌جای
+ادغام یا رونویسی خاموش، با پیام «برنامه جلوتر رفته است» رد می‌شود؛ بازبینی جاری را
+دوباره بخوانید و ویرایش‌تان را از نو انجام دهید. طرح‌های مجدد آغازشده از سوی عامل
+خودشان به یکی در هر دو دقیقه محدود شده‌اند، پس این حالت نادر می‌ماند.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+بوم کشیدن-و-جابه‌جایی ندارد: چیدمان از ساختار وابستگی محاسبه می‌شود، پس «جابه‌جا
+کردن» یک گام یعنی بازسیم‌کشی وابستگی‌هایش.
 :::
 
-## Read cost, time and risk estimates
+## خواندن برآوردهای هزینه، زمان و ریسک
 
-Press **Estimate** in the approval bar.
+در نوار تأیید **برآورد** را فشار دهید.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- هر گام روی بوم نشانی با یک بازهٔ هزینه و اندازهٔ نمونهٔ پشت آن می‌گیرد، یا «هنوز
+  تاریخچه‌ای نیست» وقتی نقش آن گام هرگز اجرا نشده است. یک گام را برای جزئیات کامل
+  در بازرس انتخاب کنید: بازهٔ هزینه با اندازهٔ نمونه، یک بازهٔ مدت و یک شعاع اثر
+  (فایل‌ها و نمادها) برگرفته از منشأ گام — یا «ناشناخته» وقتی گام هیچ منشأیی
+  ندارد.
+- نوار تأیید جمع کل برنامه را نشان می‌دهد: یک بازهٔ هزینهٔ کلی، یک بازهٔ مدت برای
+  مسیر بحرانی (شاخه‌های موازی هم‌پوشانی دارند، پس این جمع نیست) و سقف بودجه وقتی
+  برنامه یکی تعیین کرده باشد.
+- اگر فقط برخی گام‌ها تاریخچه داشته باشند، جمع **جزئی** علامت می‌خورد و تنها
+  گام‌های قابل‌برآورد را پوشش می‌دهد. اگر انتهای بالای برآورد از سقف بودجه فراتر
+  برود، جمع با هشدار فراتر از بودجه سرخ می‌شود.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+برآوردها یا صادق‌اند یا غایب: گامی که نقشش هیچ تاریخچه‌ای از اجرای کامل‌شده ندارد،
+اندازهٔ نمونهٔ صفر و هیچ بازه‌ای گزارش می‌کند و به‌جای حدس‌زدن، ناشناخته نمایش داده
+می‌شود. «هنوز تاریخچه‌ای نیست» را «هیچ‌کس نمی‌داند» بگیرید، نه «ارزان».
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/) for controls that actually stop
-spending.
+سقف بودجه یک مقایسهٔ نمایشی با همین برآورد است. پس از آغاز اجرای برنامه هیچ‌چیز آن
+را اجرا نمی‌کند — برای کنترل‌هایی که واقعاً خرج را متوقف می‌کنند
+[مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/) را ببینید.
 
-## Diff a revision against an earlier proposal
+## دیف یک بازبینی در برابر یک پیشنهاد پیشین
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+هر ویرایش و هر طرح مجدد از سوی ارکستراسر به یک خط زمانی بازبینی فقط‌افزودنی
+می‌پیوندد که در پنل **نسخه‌ها** در سمت چپ یک برنامهٔ ارکستراسیون نشان داده می‌شود.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. روی یک بازبینی کلیک کنید تا با پیشنهاد جاری دیف شود. بدون هیچ انتخاب، پنل
+   بازبینی پیشین را با بازبینی جاری دیف می‌گیرد.
+2. دیف را در نیمهٔ پایینی پنل بخوانید: گام‌های افزوده، حذف‌شده یا تغییرکرده میان دو
+   بازبینی.
+3. اگر برنامه هنوز `proposed` است، روی نماد عقب‌بردنِ یک بازبینی کلیک کنید تا به آن
+   برگردید. عقب‌بردن آن پیشنهاد را به‌صورت یک بازبینی **تازه** ذخیره می‌کند —
+   هیچ‌چیز از دست نمی‌رود.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+`propose_orchestration` و ویرایشگر هر دو پس از آنکه برنامه دیگر `proposed` نباشد
+تغییرات را رد می‌کنند، پس یک اجرای در جریان، طرح مجددی در میانهٔ اجرا را برنمی‌دارد.
 
-## Approve, reject, or widen a plan
+## تأیید، رد یا گستردن یک برنامه
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+در اپلیکیشن، یک برنامهٔ پیشنهادشده یک تصمیم یکپارچه است که کامل گرفته می‌شود: از
+نوار تأیید **تأیید برنامه** یا **رد**. **تأیید برنامه** همیشه همهٔ گام‌ها را تأیید
+می‌کند — راهی برای انتخاب زیرمجموعه از پیش وجود ندارد. تا زمانی که پیشنهاد خطای
+اعتبارسنجی داشته باشد تأیید مسدود است؛ این خطاها کنار دکمه‌ها نشان داده می‌شوند.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+تأیید فقط در اختیار اپراتور است. ابزار MCP‌ای برای آن وجود ندارد، پس یک عامل
+می‌تواند برنامه‌ای را پیشنهاد و بازنگری کند اما هرگز آن را تأیید نکند.
 
-Once an orchestration is executing, the bar changes:
+وقتی ارکستراسیون در حال اجرا شد، نوار تغییر می‌کند:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- اگر گامی در میانهٔ اجرا برای پرسیدن متوقف شده باشد، آن را انتخاب کنید و برای
+  ادامه دادنش **ادامهٔ گره** را فشار دهید.
+- برای گستردن یک تأیید _جزئی_ به گام انتخاب‌شده به‌علاوهٔ هر چیزی که به‌طور گذرا به
+  آن وابسته است، **تأیید انتخاب‌شده‌ها** را فشار دهید (یک گام هرگز بدون
+  وابستگی‌هایش تأیید نمی‌شود). این کنترل روی نوار در حال اجرا برای هر
+  ارکستراسیونی هست؛ وقتی برنامه کامل تأیید شده باشد بی‌اثر است.
+- برای متوقف کردن کل ارکستراسیون **لغو اجرا** را فشار دهید.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+گام‌های بیرون از یک مجموعهٔ تأییدشدهٔ جزئی به‌صورت به‌تعویق‌افتاده رندر می‌شوند و تا
+گستردن مجموعه اجرا نمی‌شوند.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[تأییدهای جزئی نمی‌توانند از اپلیکیشن سرچشمه بگیرند]
+یک تأیید جزئی تنها زمانی وجود دارد که چیزی `orchestration.approve` را از طریق RPC
+با فهرست صریح `approved_node_keys` فراخوانی کرده باشد. **تأیید برنامه** در
+اپلیکیشن همیشه همهٔ گام‌ها را تأیید می‌کند. اسناد برنامه در هر حالت یکپارچه تأیید
+می‌شوند، پس یک سند در حال اجرا تنها **لغو اجرا** را عرضه می‌کند.
 :::
 
-## Run a playbook with parameters
+## اجرای یک کتابچه با پارامترها
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/) instead.
+کتابچه یک قالب برنامهٔ ذخیره‌شده با جانگهدارهای `{{param}}` نوع‌دار در هدف،
+عنوان‌های گام، شرح‌ها و پرامپت‌های آن است. جای‌گذاری تحت‌اللفظی است — زبان عبارتی
+وجود ندارد؛ اگر منطق لازم دارید، به‌جای آن از یک
+[پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/) استفاده کنید.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. در بخش **کتابچه‌ها** در هاب، روی کتابچه **اجرا** را فشار دهید (یا پالت ⌘K را باز
+   کنید و کتابچه را از همان‌جا انتخاب کنید).
+2. پارامترها را پر کنید. پارامترهای شمارشی به‌صورت فهرست بازشو رندر می‌شوند؛
+   پارامترهای مخزن و عامل یک ارجاع مخزن یا عامل می‌گیرند؛ پارامترهای اختیاری به
+   مقدار پیش‌فرض خود برمی‌گردند.
+3. **تیکت لنگر**ی را که برنامه در برابر آن پیشنهاد می‌شود انتخاب کنید، سپس تأیید
+   کنید.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+اجرای یک کتابچه تنها یک برنامه **پیشنهاد** می‌کند — ارکستراسیون نمونه‌سازی‌شده در
+Plan Studio به‌صورت `proposed` باز می‌شود و تا زمانی که آن را در آن‌جا تأیید نکنید
+هیچ‌چیز اجرا نمی‌شود. برای حذف یک کتابچه، روی نماد سطل زبالهٔ کارتش فشار دهید.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/).
+عامل‌ها کتابچه‌ها را با ابزارهای MCP `create_playbook` و `run_playbook` می‌سازند و
+اجرا می‌کنند؛ [مرجع ابزارهای MCP(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-mcp/) را ببینید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Use plan mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/): the engine view of an approved plan
+- [استفاده از حالت برنامه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/): چگونه یک عامل با `submit_plan` یک سند برنامه تولید می‌کند
+- [اجرای یک ارکستراسیون(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-ارکستراسیون/): چرخهٔ عمر تأیید یک‌باره از سمت گفتگو
+- [ایجاد قالب پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/): وقتی منطقی لازم دارید که کتابچه نمی‌تواند بیان کند
+- [نظارت بر اجراهای پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها/): نمای موتور از یک برنامهٔ تأییدشده
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Orchestration](/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/)
+- [ارکستراسیون(/fa-IR/راهنمای-کاربر/مفهومها/ارکستراسیون/)

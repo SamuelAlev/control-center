@@ -1,193 +1,191 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: 샌드박스 정책 구성
+description: 에이전트 실행을 제약하는 것, OS 샌드박스가 실행을 감싸고 있는지 판단하는 방법, 그리고 서버가 실제로 읽는 기능 설정을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/샌드박스-정책
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+에이전트 실행이 샌드박스로 감싸지는지는 서버가 부팅할 때 결정합니다
+(`--sandbox`). **설정 → 서버 → 진단 및 개인정보 보호** 아래의 **샌드박싱
+활성화** 토글, **백엔드** 선택기, **기본 기능 · 새 스페이스** 토글은 기기에
+저장되는 기본 설정입니다. **샌드박싱** 카드의 호스트 탐지는 서버 호스트가 무엇을
+감쌀 수 있는지 알려 줍니다.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+실행에 닿는 제어는 두 가지이며 이 가이드에서 둘 다 다룹니다: 아래의 에이전트별
+**샌드박스 권한**과 서버 자체의 `--sandbox` 플래그입니다.
 
-## What constrains an agent run
+## 에이전트 실행을 제약하는 것
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+에이전트를 붙잡는 것은 여섯 가지입니다. 첫째는 OS 샌드박스이며 유일하게 조건부인
+항목입니다 — 나머지 다섯은 모든 호스트에서 유지됩니다.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| 경계                  | 수행하는 일                                                                                                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OS 샌드박스           | macOS에서는 Seatbelt, Linux와 WSL2에서는 bubblewrap입니다. Claude Code CLI, ACP 어댑터, 하네스 `bash` 도구를 감쌉니다. **Windows와, `bwrap`과 `socat`이 없는 Linux에는 없습니다** |
+| 자체 워크트리         | 모든 대화는 쓰기 시 복사 체크아웃을 받습니다. 원본 체크아웃은 쓰기 거부 경로로 실행에 합류하며, 이를 강제하는 것은 샌드박스입니다                                                                            |
+| 중개된 자격 증명      | 자격 증명 브로커가 에이전트의 기능을 바탕으로 실행별 환경을 발급하고 정리할 때 폐기합니다. 기능이 없으면 환경에 토큰도 없습니다                                                                             |
+| 동작 가드레일         | 모든 변경 도구는 자신의 효과 클래스를 선언하고, 가드가 호출이 실행되기 전에 이를 판정합니다. 승인자가 연결되어 있지 않은 `prompt`는 거부됩니다                                                              |
+| 환경 정리             | ACP와 하네스 `bash` 도구는 걸러진 환경을 받습니다. `NoSandboxAdapter`를 통한 Claude Code는 호스트 환경을 그대로 물려받습니다                                                                             |
+| 모드의 도구 표면      | 읽기 전용 모드는 워크트리를 변경하는 도구를 아예 제거하고, 그래도 산출물을 낼 수 있도록 모드 자체의 출력 동사를 고정합니다                                                                                 |
 
-Three things stay weaker than they look:
+세 가지는 보기보다 약한 채로 남습니다:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- **내장 하네스**만 도구 게이트, 완료 계약, 구조적 모드 규칙을 강제합니다. Claude
+  Code 어댑터는 그렇지 않습니다. 특히 Claude Code는
+  `--dangerously-skip-permissions`와 함께 실행되는데, 그렇지 않으면 비대화형
+  `claude -p`가 자체 프롬프트에서 영원히 멈추기 때문입니다 — 따라서 Claude의
+  읽기, 쓰기, 편집, bash 호출은 Control Center가 보지도, 게이트하지도 않습니다.
+  샌드박스가 켜져 있는 곳에서는 샌드박스가 그 주위의 경계입니다.
+- 하네스의 프로세스 내 파일 도구(read, write, edit, apply patch, search, find,
+  search_files)는 서버 프로세스 안에서 실행되므로 어떤 샌드박스 프로필도 이들을
+  제약하지 않습니다. 샌드박스가 적용된 명령 실행기를 거치는 것은 `bash` 도구뿐입니다.
+  그 도구들은 자체 경로 제한과 동작 가드레일로 범위가 정해집니다.
+- 백엔드가 없는 호스트에서는 첫 번째 행이 아예 적용되지 않습니다. ACP와 하네스
+  `bash` 도구는 환경 정리와 명령 정책으로 대체되고, Claude Code는
+  `NoSandboxAdapter`를 통해 호스트 환경을 물려받습니다. 서버는 시작 로그에서 이
+  사실을 알립니다. 아래에서 직접 확인하세요.
 
-## Set an agent's capabilities
+## 에이전트의 기능 설정
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+이것이 서버가 읽는 유일한 기능 제어입니다. 에이전트별로 적용되며, 자격 증명
+브로커가 그 에이전트의 환경에 무엇을 넣을지 결정합니다.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. **설정 → 워크스페이스 → 에이전트**로 이동합니다
+2. 목록에서 에이전트를 선택합니다
+3. **설정** 탭에서 **샌드박스 권한**까지 스크롤합니다
+4. 스위치를 켭니다 — 행의 설명 문구가 **워크스페이스 기본값 사용**에서 바뀝니다
+5. 네 가지 토글을 설정합니다:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| 토글                             | 게이트하는 대상                                                                                                                                                                                                                                       |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **git push 허용**                | 이것이 꺼져 있으면 실행은 `GIT_ASKPASS=/usr/bin/false`와 `GIT_TERMINAL_PROMPT=0`을 받으므로, 푸시가 자격 증명을 묻는 프롬프트를 띄울 수 없습니다                                                                                                          |
+| **GitHub API 호출 허용**         | **git push 허용**과 함께, 브로커가 GitHub 토큰을 `GH_TOKEN` / `GITHUB_TOKEN`으로 주입할지 여부를 게이트합니다                                                                                                                                          |
+| **티켓팅 API 호출 허용**         | 브로커가 `TICKETING_API_KEY`를 주입할지 여부를 게이트합니다                                                                                                                                                                                            |
+| **일반 네트워크 접근 허용**      | 샌드박스가 켜져 있는 곳에서는 실제 이그레스 게이트입니다. 이것이 꺼져 있으면 실행의 허용 목록이 비어 있고 모든 아웃바운드 요청이 프록시에서 거부됩니다. 백엔드가 없는 곳에서는 실행에 기록될 뿐, 스폰된 프로세스가 하는 일을 막지 않습니다 |
 
-6. Save
+6. 저장합니다
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+점검: 에이전트를 다시 열면 스위치가 켜진 채 토글이 그대로 유지됩니다 — 저장된
+기능 집합은 서버를 거쳐 왕복하고, 아무것도 없는 에이전트는 보수적 기본값(푸시
+꺼짐, GitHub API 꺼짐, 티켓팅 꺼짐, 네트워크 켜짐)으로 대체됩니다.
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[여기서 문제가 되는 두 가지]
+부제에는 **워크스페이스 기본값 사용**이라고 적혀 있지만, 서버가 읽는
+워크스페이스 수준 기능 설정은 없습니다. 스위치가 꺼진 에이전트는 내장된 보수적
+기본값을 받습니다.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+따로, 실행의 GitHub 자격 증명은 언제나 브로커의 것입니다 — 저장소 범위의
+GitHub App 설치 토큰이거나 환경 PAT 폴백이며, 요청한 멤버가 직접 저장한 토큰인
+적은 없습니다. `actingUserId`는 소유자가 아니고 GitHub를 연결하지 않은 멤버에게서
+서버 PAT를 *보류*할 수 있도록 전달되며, 꺼진 기능 위에 개인 토큰을 병합하지는
+않습니다. OS 샌드박스가 없는 호스트에서 **GitHub API 호출 허용**을 강한 이그레스
+경계로 여기지 마세요. 스폰된 프로세스는 여전히 네트워크에 닿을 수 있습니다.
 :::
 
-## Check whether your agent runs are sandboxed
+## 에이전트 실행이 샌드박스로 감싸지는지 확인
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+이를 결정하는 것은 둘이며 둘 다 서버에 있습니다: 호스트가 백엔드를 제공하는지,
+그리고 `--sandbox`가 켜져 있는지입니다. 이 순서대로 확인하세요.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. **설정 → 서버 → 진단 및 개인정보 보호**로 이동합니다
+2. **샌드박싱** 카드를 읽습니다. **호스트** 항목은 지금 보고 있는 머신이 아니라
+   `cc_server`가 실행되는 머신입니다. **백엔드** 필드에는 **네이티브
+   샌드박스**(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 **격리 없음**이
+   나열됩니다. **적용 중** 항목은 서버가 실제로 사용하는 래핑이 아니라 이 기기의
+   기본 설정입니다.
+3. 서버의 시작 로그를 읽습니다. 다음 세 줄 중 정확히 하나를 출력합니다:
+   - `agent sandbox ON`에 백엔드 설명이 붙음 — 실행이 감싸집니다
+   - `no OS-native agent sandbox on this host`에 해당하는 경우 설치 안내가 붙음 —
+     실행이 감싸지지 않습니다
+   - `agent sandbox DISABLED by --sandbox off` — 의도적인 옵트아웃
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz`는 샌드박스 상태를 보고하지 않으므로, 시작 로그가 확인 수단입니다.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+샌드박스를 의도적으로 끄려면 — 프로필이 오작동하는 호스트야말로 이 옵션이 존재하는
+이유입니다 — 서버를 `--sandbox off`로 시작하거나 `CC_SERVER_SANDBOX=off`를
+설정하세요. 기본값은 `on`이며 `on`은 “호스트에 백엔드가 있으면 사용한다”는
+뜻이지, 결코 “백엔드를 요구한다”는 뜻이 아닙니다.
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+두 가지 상황에서는 네이티브 샌드박스 래핑을 결코 받지 못합니다. **Windows**에서는
+네이티브 프로브가 언제나 사용 불가를 보고하고 설치할 것도 없습니다 — 에이전트
+디스패치는 `none`을 사용합니다. `microvm` 백엔드는 별개이며(대화형 터미널과 리그)
+자체 런타임에 대한 프로브로 게이트됩니다. **Linux와 WSL2**에서는 `bwrap`과
+`socat`이 모두 `PATH`에 있어야 합니다. 없으면 프로브가 사용 불가를 보고하고 빠진
+패키지를 알려 줍니다.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+bubblewrap이 설치된 Linux/WSL2에서는 표준 정책의 시크릿 파일 글롭을 에이전트가
+나중에 만드는 파일에 대해서는 강제할 수 없습니다. 이런 네이티브 실행은 이제 규칙을
+조용히 무시하는 대신 실패합니다. 따라서 부팅 프로브가 긍정적이어도 Linux
+디스패치가 시작될 수 있다는 보장은 아닙니다. `--sandbox off`는 의도적인 비구속
+옵트아웃이지, 대체 보안 경계가 아닙니다.
 
-## Know what a mode already forbids
+## 모드가 이미 금지하는 것 알기
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+모드는 스페이스별로 저장되며 **모드 프리셋** 계층으로 가드레일 판정기에
+입력됩니다. 네 가지 모드 중 셋은 읽기 전용이며, 읽기 전용 모드는 열한 개의 효과
+클래스를 곧바로 거부합니다:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| 모드               | 워크트리  | 프리셋이 거부하는 것                                                                                                                                                            |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent** (`chat`) | 쓰기 가능 | 없음 — 내장 기본값이 적용됩니다                                                                                                                                             |
+| **플랜**           | 읽기 전용 | 파일 삭제, 워크트리 밖에 쓰기, 커밋, 푸시, PR 열기, 게시 또는 병합, 외부 트래커에 쓰기, 패키지 설치, 프로세스 실행, 워크스페이스 구조 변경, 인클로저 부팅 또는 조작 |
+| **리뷰**           | 읽기 전용 | 같은 열한 개. 사용자가 선택할 수 없습니다 — 작성기는 Agent, 플랜, 오케스트레이트만 제공합니다                                                                                         |
+| **오케스트레이트** | 읽기 전용 | 같은 열한 개                                                                                                                                                                     |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+네트워크 접근과 시크릿 접근은 읽기 전용 모드가 의도적으로 _거부하지 않습니다_:
+조사 연구야말로 읽기 전용 모드의 존재 이유입니다.
 
-## Require approval before an action runs
+## 작업이 실행되기 전에 승인 요구
 
-Approval is a guardrail decision, not a sandbox setting.
+승인은 샌드박스 설정이 아니라 가드레일 결정입니다.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. **설정 → 워크스페이스 → 에이전트 권한**으로 이동합니다
+2. 워크스페이스, 에이전트 또는 스페이스 범위에서 작업 클래스를 **먼저 묻기**로 설정합니다
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/) for the full
-resolution order.
+**먼저 묻기** 결정은 실행을 중단하고 여러분에게 묻습니다. 승인자가 연결되어 있지
+않으면 실패 시 거부로 처리되어 그 작업은 거부됩니다. 전체 판정 순서는
+[가드레일 구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)을 참고하세요.
 
-## Troubleshooting
+## 문제 해결
 
-### An agent cannot push and I never denied it
+### 에이전트가 푸시하지 못하는데 거부한 적이 없습니다
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+에이전트의 **샌드박스 권한**을 확인하세요. 사용자 지정 기능 집합이 없는 에이전트는
+보수적 기본값을 받으며, 여기서는 **git push 허용**이 꺼져 있습니다 — 따라서
+브로커가 GitHub 토큰을 주입하지 않고 git이 인증할 방법이 없습니다.
 
-### The Sandboxing card reports no native sandbox
+### 샌드박싱 카드가 네이티브 샌드박스가 없다고 보고합니다
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/).
+그러면 그 호스트의 에이전트 실행은 Seatbelt나 bubblewrap으로 감싸지지 않으며,
+남은 경계가 여러분이 가진 전부입니다. Linux와 WSL2에서는 빠진 두 도구를 설치하고
+— `sudo apt-get install bubblewrap socat` — 서버를 다시 시작하세요. 그러면 시작
+로그에 샌드박스가 켜져 있다고 나와야 합니다. Windows에는 설치할 네이티브 백엔드가
+없으므로 대신 가드레일을 강화하세요: [가드레일
+구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)을 참고하세요.
 
-### An agent reached a file outside its worktree
+### 에이전트가 워크트리 밖의 파일에 닿았습니다
 
-Which tool reached it decides whether this is expected.
+어느 도구가 거기에 닿았는지가 이것이 예상된 일인지 결정합니다.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+하네스의 프로세스 내 파일 도구(read, write, edit, apply patch, search, find,
+search_files)는 서버 프로세스 안에서 실행되므로 어떤 샌드박스 프로필도 이들에게
+적용되지 않습니다 — 이들의 범위는 자체 경로 제한과 가드레일입니다. `bash` 명령이나
+Claude Code CLI는 백엔드가 있는 곳에서 _감싸지며_, 여러분이 등록한 체크아웃은 모든
+모드에서 그 래핑 안에서 쓰기 거부입니다. 심볼릭 링크가 해석된 표기까지
+포함해서입니다(macOS에서 `/tmp`나 `/var/folders`를 거쳐 도달한 경로는 `/private`
+아래로 해석되며, 이제 두 표기 모두 거부됩니다). 백엔드가 없는 호스트에서는 이 중
+어느 것도 적용되지 않습니다. 어느 경우든 가드레일은 **워크트리 밖에 쓰기**를
+곧바로 거부할 수 있습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Configure guardrails](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Diagnose an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
-- [Sandbox backends](/ko-KR/매뉴얼/레퍼런스/샌드박스-백엔드/)
-- [cc_server CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): the `--sandbox` flag
+- [가드레일 구성](/ko-KR/매뉴얼/사용-가이드/가드레일-구성/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
+- [샌드박스 백엔드](/ko-KR/매뉴얼/레퍼런스/샌드박스-백엔드/)
+- [cc_server CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli/): `--sandbox` 플래그
 
-## Related concepts
+## 관련 개념
 
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)

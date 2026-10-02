@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: Glosari
+description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['Ejen', 'Pekerja AI dengan identiti, peranan, kemahiran dan keupayaan. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.'],
+['Penyesuai', 'Pelari yang melaksanakan satu giliran ejen. Dua disertakan: Control Center (terbina) — harness dalam proses yang bercakap dengan penyedia model — dan Claude Code melalui CLI claude. Cursor, Codex dan penyedia model lain menyertai penyesuai terbina, bukan sebagai pelari berasingan.'],
+['Ruang kerja', 'Penyewa pengasingan peringkat teratas. Mengelompokkan ejen, repo, ruang, tiket, memori dan pipeline. Pengasingan bersifat struktur, bukan konvensyen: setiap ruang kerja mempunyai fail SQLite sendiri, jadi bacaan merentas ruang kerja tidak dapat dikompil. Setiap laluan dalam apl diawali dengan /workspaces/:workspaceId.'],
+['Forge', 'Hos kod — GitHub, GitLab atau Bitbucket Cloud. Properti setiap repo, dibaca daripada remote origin semasa pendaftaran. Satu ruang kerja boleh memegang repo pada ketiga-tiganya.'],
+['Repo', 'Repositori Git yang didaftarkan dalam satu ruang kerja. Berskop ruang kerja: checkout yang sama yang didaftarkan dalam dua ruang kerja ialah dua baris dengan dua id, dan identiti repo merentas ruang kerja adalah mengikut laluan sistem fail, tidak pernah mengikut id. Pendaftaran memerlukan pokok kerja git yang remote originnya menunjuk ke forge yang disokong (GitHub, GitLab atau Bitbucket Cloud).'],
+['Repo terasing', 'Worktree berskop ruang kerja bagi repo yang didaftarkan. Copy-on-write melalui rift di mana natif itu disertakan; git worktree pada Windows. Disediakan mengikut ruang supaya setiap perbualan dalam ruang itu berkongsi satu checkout; ejen tidak pernah mengubah sumbernya.'],
+['Ruang', 'Kontena kerjasama berskop ruang kerja dengan peserta manusia dan ejen, Modus yang dikekalkan, status penyediaan dan SpaceKind (topic, agentPeer, system, pr atau slack) yang menentukan cara ia dibahagikan, dibisukan, diberi lencana dan dikutip sampah. Ia memiliki worktree terasing yang dikongsi oleh perbualannya (copy-on-write melalui rift; git worktree pada Windows).'],
+['Perbualan', 'Satu aliran mesej di dalam sesuatu Ruang, dengan id, sejarah dan konteks larian ejen tersendiri. Perbualan dalam satu ruang adalah setara rata — tiada aliran utama atau "main". Setiap satu dibuka sebagai tab editor; status belum dibaca sesuatu ruang diagregatkan merentas kesemuanya.'],
+['Benang', 'Perbualan yang anchorMessageIdnya ditetapkan: bersauh pada satu mesej perbualan bersebelahan dalam Ruang yang sama, dengan konteks ejen baharu yang disemai oleh mesej sauh itu. Satu peringkat dalam — benang tidak pernah bersauh pada benang.'],
+['Tiket', 'Agregat unit kerja. Neutral vendor: local secara lalai, dengan penyesuai penyegerakan untuk Linear, GitHub Issues, Jira Cloud dan ClickUp, walaupun tiada permukaan dalam apl yang mencipta sambungan penyegerakan. Menyokong hierarki, pautan dan perwakilan. Penugasan kepada ejen merekod pemilikan dan tidak menghantar apa-apa; penugasan kepada pasukan ialah pengecualian (TeamRoutingService menghantar ketua).'],
+['Pipeline', 'Aliran kerja berasaskan DAG yang merantai langkah (penghantaran ejen, skrip, bersyarat) bersama. Ditakrifkan oleh templat; dilaksanakan sebagai larian.'],
+['Mesyuarat', 'Sesi mesyuarat yang dirakam dan ditranskripsikan secara setempat. Menangkap mikrofon dan audio sistem, mentranskripsi pada peranti dengan model ASR yang boleh dipilih (Parakeet TDT v3 secara lalai; Parakeet TDT v2, Whisper large-v3-turbo dan Whisper base.en ialah alternatif), memisahkan penutur dan meringkaskan kepada nota, item tindakan dan keputusan. Model ASR yang dipilih dipasang secara paksa semasa but dan operasi rakaman menyala selepas satu permulaan semula. Berskop ruang kerja.'],
+['CalendarEvent', 'Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual, Mesyuarat ialah sesi yang dirakam.'],
+['CalendarAccount', 'Akaun Google yang bersambung, bagi setiap ruang kerja dan e-mel. Token penyegaran OAuth disimpan di pihak pelayan sebagai kunci google_* dalam fail secrets.json di bawah direktori data dan tidak pernah sampai ke klien; bendera authExpiredAt memacu sepanduk sambung semula.'],
+['AgentRole', 'Peranan tersenarai (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Menentukan persona, akses memori dan hierarki.'],
+['AgentSkills', 'Set pengenal kemahiran yang tidak sensitif huruf besar-kecil yang menyuntik konteks berkaitan ke dalam prompt semasa penghantaran.'],
+['Sumber kemahiran', 'Repositori GitHub yang didaftarkan bagi setiap ruang kerja sebagai katalog kemahiran. Tidak dipercayai secara binaan: metadata repositori itu hanya untuk paparan dan setiap pemasangan melalui pintu imbasan gagal-tertutup sebelum sebarang kandungan sampai ke cakera atau prompt.'],
+['skills-lock.json', 'Manifes kemahiran yang dipasang bagi setiap ruang kerja: bagi setiap satu, repositori sumbernya, laluan dalam repo, commit yang dipinkan padanya dan hash kandungan terkumpul. Pemasangan, kemas kini dan nyahpasang menjaganya terkini; verify_skills menyemaknya terhadap cakera.'],
+['AgentCapabilities', 'Empat bendera (push ke repo, API GitHub, penetikan, keluar rangkaian) diselesaikan bagi setiap penghantaran: lalai ejen, kemudian lalai pengguna, dengan penggantian bagi setiap perbualan. Dikuatkuasakan melalui ketiadaan, kerana keupayaan yang dilumpuhkan bermakna token atau keluar itu semata-mata tidak pernah disuntik.'],
+['Modus', 'chat, plan, review, atau orchestrate. Disimpan mengikut ruang, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP.'],
+['SandboxBackend', 'microvm (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), native (Seatbelt natif OS pada macOS, bubblewrap pada Linux dan WSL2) atau none. Diprobe sekali semasa but; native membalut penghantaran ejen apabila tersedia. Windows tiada bahagian belakang natif dan Linux memerlukan bwrap serta socat, jadi larian di sana tidak dibalut; --sandbox off memilih untuk keluar secara sengaja.'],
+['Stesen', 'Mesin pakai buang yang dipandu ejen secara masa nyata: penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan alat ejen menuju ke satu mesin yang sama.'],
+['Persekitaran terasing', 'Sifat pengasingan yang lebih kuat yang tersedia untuk stesen bersandarkan VM: sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos, jadi ia tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail enclosureControl.'],
+['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.'],
+['WakeReason', 'Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.'],
+['SandboxPort', 'Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).'],
+['CredentialBrokerPort', 'Menempa kelayakan berskop yang digerbangi keupayaan untuk pelancaran kotak pasir dan mencabutnya semasa pembongkaran.'],
+['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.'],
+['EmbeddingPort', 'Menghasilkan vektor embedding teks bernorma unit untuk carian semantik.'],
+['NotificationPort', 'Menunjukkan pemberitahuan desktop natif dengan menghormati gerbang kategori/laluan.'],
+['TicketProviderPort', 'Sempadan neutral vendor ke bahagian belakang penetikan (create, get, list, update, transition, assign).'],
+['PipelineEnginePort', 'Memulakan larian pipeline daripada templat, memisahkan pemanggil daripada enjin konkrit.'],
+['AgentDispatchService', 'Melancarkan larian ejen: menyediakan repo terasing, membina prompt, mencipta log larian, mengembalikan strim acara langsung.'],
+['TicketWorkflowService', 'Enjin kitaran hayat tiket domain tulen dengan titik sesak mutasi konkurensi optimistik dan penguatkuasaan pengasingan ruang kerja. Graf peralihan yang dikuatkuasakannya hanya mengikat ejen dan automasi; perubahan UI yang dipacu pengguna menghantar force true dan memintasnya.'],
+['PipelineEngine', 'Mengorkestra pelaksanaan larian: memulakan larian, menjadualkan langkah, mengekalkan keadaan, mengendalikan router/join/continue-on-fail, menyambung semula larian yang sedang berjalan selepas permulaan semula.'],
+['PipelineTriggerDispatcher', 'Melanggan acara domain dan memulakan secara automatik larian pipeline yang sepadan bagi pencetus yang didayakan.'],
+['MemoryAccessPolicy', 'Menyelesaikan dan menguatkuasakan kebenaran memori peranan ejen pada domain.'],
+['HarnessCostCalculator', 'Menghitung penggunaan token harness terbina menjadi RunCost daripada katalog models.dev. Penghantaran mengekalkan rekod itu ke atas log larian.'],
+['BudgetEnforcementService', 'Mengira perbelanjaan bulanan bagi setiap ejen dan sekatan pra-penghantaran (checkInvocationBlock). Sekatan itu hanya dirujuk oleh reconciler pemulihan (OrphanRunReaper, StrandedTicketReconciler), tidak pernah oleh penghantaran biasa.'],
+['BudgetGovernanceService', 'Menilai perbelanjaan bulanan bagi setiap ejen selepas setiap larian: ambang lembut merekodkan insiden amaran; kehabisan merekodkan insiden keras dan menukar kitaran hayat ejen kepada paused.'],
+['DomainEventBus', 'Bas terbit/langgan siaran dalam proses untuk komunikasi merentas ciri. Acara adalah bertipe; pelanggan menggunakan strim mengikut jenis.'],
+['DomainEvent', 'Antara muka asas. Setiap acara mempunyai occurredAt. Kategori utama: ruang kerja/ejen, PR/semakan, pemesejan, penetikan, pipeline, mesyuarat/kalendar, identiti, stesen, kebolehcerapan.'],
+['Clean Architecture', 'Peraturan kebergantungan: Presentation ke Application/Providers ke Domain, dengan Infrastructure menunjuk ke dalam. Domain mempunyai sifar import infrastruktur.'],
+['Port dan penyesuai', 'Domain mentakrifkan antara muka abstrak (port); infrastruktur menyediakan pelaksanaan konkrit (penyesuai). Akar komposisi mengikatnya.'],
+['Kernel dikongsi', 'Entiti, objek nilai, port dan perkhidmatan core/domain/ yang dikongsi merentas 3+ ciri.'],
+['Berteraskan ciri', 'Kod disusun mengikut domain perniagaan (ejen, pipeline, pemesejan) dan bukan mengikut lapisan teknikal.'],
+['Seni bina klien nipis', 'Tiada klien membuka pangkalan data; proses cc_server tanpa kepala memiliki data dan menyajikannya melalui RPC WebSocket. Setiap klien (desktop, web, telefon) ialah pemapar di atas satu sambungan RPC itu.'],
+['cc_server', 'Binari pelayan tanpa kepala (Dart tulen, tiada enjin Flutter). Memiliki pangkalan data Drift/SQLite, menyajikan repo-RPC melalui WebSocket dan menjalankan perkhidmatan latar belakang (pipeline, MCP, reconciler).'],
+['ServerConnectionMode', 'Cara desktop mencapai pelayannya: local (lancarkan cc_server pada mesin ini) atau remote (dail satu di tempat lain). Klien web sentiasa remote.'],
+['RemoteRpcClient', 'Klien JSON-RPC bebas pengangkutan yang digunakan setiap klien nipis untuk bercakap dengan pelayannya, melalui WSS, loopback, atau geganti berperantara.'],
+['Skop ruang kerja per panggilan', 'Pelayan adalah tanpa keadaan: tiada pengikatan ruang kerja bagi setiap sesi, jadi berbilang klien pada satu pelayan tidak pernah berkongsi ruang kerja semasa. Setiap repo/call dan sub/subscribe berskop ruang kerja mesti membawa workspace_id dalam argumennya; id yang hilang atau tidak didaftarkan ditolak sebelum mana-mana pangkalan data dibuka. Akses kemudiannya digerbangi oleh keahlian dan peranan ruang kerja, bukan oleh sesi.'],
+['cc_remote', 'Klien nipis telefon — PWA web Flutter yang mengawal armada dari jauh melalui geganti berperantara dengan polisi alat tolak-secara-lalai.'],
+['cc_signaling_server', 'Broker geganti WebSocket tanpa keadaan yang menghoskan bilik bergerbang jemputan. Geganti bodoh: ia hanya memajukan bingkai tersegel hujung-ke-hujung, tidak memegang data apl dan tidak pernah melihat PSK penggandingan.'],
+['Principal', 'Nilai tersegel yang menyatukan manusia dan ejen sebagai satu abstraksi pelaku. UserPrincipal(userId) atau AgentPrincipal(agentId). Setiap mesej, tiket, semakan, pelan dan log larian diatribusikan melalui Principal.'],
+['Pengguna', 'Identiti manusia, disimpan dalam global.db dan oleh itu global merentas ruang kerja. Principal yang mencipta sesuatu ruang kerja menjadi pemiliknya, distempel pada Workspace.ownerUserId dengan baris keahlian berperanan pemilik; yang lain menyertai melalui jemputan atau SSO.'],
+['WorkspaceMember', 'Baris keahlian yang mengikat seorang Pengguna pada sesuatu Ruang kerja pada sesuatu WorkspaceRole. Keahlian — bukan kunci penggandingan — ialah sempadan akses.'],
+['WorkspaceRole', 'Peranan keahlian berperingkat: owner, admin, member, viewer, atau guest. Titik sesak op repo memperoleh lantai peranan minimum bagi setiap jenis op.'],
+['ParticipantPresence', 'Kesedaran fana untuk sesuatu Principal (status, lokus, kursor, menaip, status langsung ejen + kos berjalan). Tidak pernah dikekalkan; berhab pelayan; ditapis geran repo sebelum disebarkan.'],
+['Modus ikut', 'Klik avatar untuk menaiki viewportnya sehingga anda bertindak, kemudian lepaskan. Berfungsi untuk manusia dan untuk ejen ("lihat ejen bekerja").'],
+['Dail autonomi', 'Kawalan bagi setiap ruang dan setiap ejen — propose-only / act-with-approval / act-freely — dilaksanakan sebagai profil bernama di atas stor guardrail tindakan.'],
+['cc_worker', 'Binari pelaksana armada Dart tulen tanpa kepala. Berganding dengan cc_server, mengisytiharkan keupayaannya, menarik kerja yang dipajak, melaksanakannya dan menstrim acara kembali. Tidak memegang sebarang keadaan berkekalan.'],
+['JobSpec', 'Spesifikasi bertipe untuk segala yang boleh dilaksanakan (larian ejen, langkah pipeline, indeks kod, render golden, benchmark, kelompok eval): keupayaan diperlukan, keutamaan, bajet, ruang kerja.'],
+['ActionClass', 'Set tertutup 13 kelas kesan (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan allow / prompt / deny mengikut skop.'],
+['WriteLedger', 'Ledger idempotensi berskop ruang kerja. Setiap mutasi membawa kunci idempotensi bagi setiap tindakan logik; main balik mengembalikan hasil asal yang identik bait demi bait. Menjadikan sambung semula dan berbilang klien selamat secara binaan.'],
+['Kunci idempotensi', 'UUIDv7 yang dijana klien, ditempa bagi setiap tindakan logik (bukan setiap percubaan). Menyahduplikasi percubaan semula merentas sambung semula dan klien.'],
+['Peti masuk "Needs me"', 'Baris gilir merentas tiang dengan peraturan ketat: sesuatu item muncul hanya jika ia menyekat sesuatu (ejen, cantuman, segerak) atau secara eksplisit meminta pengendali.'],
+['Plan Studio', 'Permukaan perancangan interaktif: cadangan orkestrasi atau pelan ejen tunggal yang dipaparkan sebagai DAG bertipe yang boleh disunting, dengan anggaran kos/masa/risiko bagi setiap langkah, versi diff pelan dan kelulusan separa.'],
+['Pengiraan semakan', 'Pengiraan semakan di pihak pelayan untuk sesuatu PR: kohort fail terbitan graf, rajah panduan bertipe, diff visual UI, diff kontrak OpenAPI, peta jejari letupan dan pintu bagi setiap paksi, disajikan melalui review_studio.* dan dilipat ke dalam keputusan tab Semakan.'],
+['Ruang semakan', "Ruang sokongan tunggal sesuatu PR (modus review, jenis pr), dicipta secara idempoten dan dipautkan pada PR oleh ReviewSpaceAssociation. Setiap penyemak memfailkan penemuannya di dalamnya, dan itulah yang menjadikannya boleh dibandingkan; worktree terasingnya mempunyai PR yang di-checkout pada headnya."],
+['Nod semakan', 'Unit berstruktur bagi penemuan semakan AI: jenis (bug, suggestion, recommendation, question, ticket), keutamaan P0-P3, tiga serangkai triaj kategori/keterukan/usaha, sauh fail-dan-baris, cadangan pembaikan pilihan dan skor keyakinan. Difailkan dengan add_review_node; keputusan dikira daripada nod, bukan prosa.'],
+['Sedia konsensus', 'Status nod semakan yang dicapai hanya apabila penyemak rakan sebaya mengesahkan sesuatu penemuan — ejen tidak boleh mengesahkan penemuannya sendiri. Butang terbitkan pada tab Semakan menghantar setiap penemuan terbuka yang tinggal; alat MCP publish_review_to_github masih secara lalai menghantar penemuan yang disahkan rakan sebaya sahaja.'],
+['Tahap semakan', 'Polisi ruang kerja (light, balanced, thorough) yang mengawal penyemak mana yang disebar (jurutera sahaja; +qa+arkitek; +security+perf) dan di mana penemuan bawah ambang dipaparkan. Tidak pernah memadam penemuan.'],
+['Paksi semakan', 'Salah satu daripada lima lorong penilaian bagi setiap semakan: correctness, security dan testGap diambil daripada penemuan penyemak; visual dan apiContract deterministik. Paksi berpintu dilipat ke dalam keputusan dan hanya boleh menjadikannya lebih berat — pintu partial atau unavailable menahan keputusan itu dan bukan meluluskannya.'],
+['Keputusan semakan', 'ship, hold atau block. Mana-mana penemuan P0 dengan keyakinan >= 0.7 menyekat; mana-mana P0 lain atau mana-mana P1 menahan; sebaliknya ship. Paksi gagal berpintu memaksa block dan tidak boleh dikalahkan oleh penemuan.'],
+['SessionRecording', 'Strim acara serta kaset HTTP/LLM dan I/O alat yang ditangkap bagi satu larian, dipasangkan dengan AgentConfigHash.'],
+['Sesi golden', 'SessionRecording yang telah disahkan dan dipinkan bagi setiap ejen atau playbook.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "Glosari Control Center",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## Entiti teras
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Ejen**: Pekerja AI dengan identiti, peranan, kemahiran dan keupayaan. Tergolong dalam tepat satu ruang kerja. Pelaku utama dalam sistem.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
+**Penyesuai**: Pelari yang melaksanakan satu giliran ejen. Dua disertakan: **Control Center (terbina)** — harness dalam proses yang bercakap dengan penyedia model — dan **Claude Code** melalui `claude -p`. Cursor, Codex, Anthropic, OpenAI dan yang lain ialah penyedia pada penyesuai terbina, bukan CLI berasingan. Lihat [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/ms-MY/manual-pengguna/rujukan/peta-laluan/).
+**Ruang kerja**: Penyewa pengasingan peringkat teratas. Mengelompokkan ejen, repo, ruang, tiket, memori dan pipeline. Pengasingan bersifat struktur, bukan konvensyen: setiap ruang kerja mempunyai fail SQLite sendiri (`<dataDir>/<workspaceId>/workspace.db`), jadi bacaan merentas ruang kerja tidak dapat dikompil. Setiap laluan dalam apl diawali dengan `/workspaces/:workspaceId` — lihat [peta laluan](/ms-MY/manual-pengguna/rujukan/peta-laluan/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
+**Forge**: Hos kod — **GitHub**, **GitLab** atau **Bitbucket Cloud**. Forge ialah properti setiap repo, dibaca daripada remote `origin` semasa pendaftaran, dan ia memilih penyesuai API serta kelayakan repo itu. Satu ruang kerja boleh memegang repo pada ketiga-tiganya; permukaan pengagregatan (peti masuk, baris gilir PR) menyebar merentas setiap forge yang diwakili dan menggabungkan hasilnya, mengasingkan kegagalan supaya forge yang tidak dapat dicapai tidak pernah mengosongkan yang lain. Forge berbeza dari segi apa yang disokongnya — lihat jadual keupayaan dalam [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**Repo**: Repositori Git yang didaftarkan dalam satu ruang kerja. **Berskop ruang kerja** — checkout yang sama yang didaftarkan dalam dua ruang kerja ialah dua baris bebas dengan dua id; identiti repo merentas ruang kerja adalah mengikut laluan sistem fail, tidak pernah mengikut id. Pendaftaran memerlukan pokok kerja git yang remote `origin`nya menunjuk ke forge yang disokong. Setiap repo membawa **forge** itu (`github` / `gitlab` / `bitbucket`), yang memilih penyesuai API dan kelayakan yang digunakan untuknya.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**Repo terasing**: Worktree berskop ruang kerja bagi repo yang didaftarkan. Copy-on-write melalui `rift` di mana natif itu disertakan; `git worktree` pada Windows. Disediakan **mengikut ruang** — setiap perbualan dalam ruang itu berkongsi satu checkout — jadi ejen tidak pernah mengubah sumbernya.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**Ruang**: Kontena kerjasama berskop ruang kerja dengan peserta manusia dan ejen, `Mode` yang dikekalkan, status penyediaan dan `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) yang menentukan cara ia dibahagikan, dibisukan, diberi lencana dan dikutip sampah. Ia memiliki worktree terasing yang dikongsi oleh perbualannya (copy-on-write melalui `rift`; `git worktree` pada Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**Perbualan**: Satu aliran mesej di dalam sesuatu Ruang, dengan id, sejarah dan konteks larian ejen tersendiri. Perbualan dalam satu ruang adalah setara rata — tiada aliran utama atau "main". Setiap satu dibuka sebagai tab editor; status belum dibaca sesuatu ruang diagregatkan merentas kesemuanya.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**Benang**: Perbualan yang `anchorMessageId`nya ditetapkan: bersauh pada satu mesej perbualan bersebelahan dalam Ruang yang sama, dengan konteks ejen baharu yang disemai oleh mesej sauh itu. Satu peringkat dalam — benang tidak pernah bersauh pada benang.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**Tiket**: Agregat unit kerja. Neutral vendor: `local` secara lalai, dengan penyesuai penyegerakan untuk Linear, GitHub Issues, Jira Cloud dan ClickUp — walaupun tiada permukaan dalam apl yang mencipta sambungan penyegerakan. Menyokong hierarki, pautan dan perwakilan. Penugasan kepada ejen merekod pemilikan dan tidak menghantar apa-apa; penugasan kepada pasukan ialah pengecualian (`TeamRoutingService` menghantar ketua).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**Pipeline**: Aliran kerja berasaskan DAG yang merantai langkah (penghantaran ejen, skrip, bersyarat) bersama. Ditakrifkan oleh templat; dilaksanakan sebagai larian.
 
-## Value objects
+## Objek nilai
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: Peranan tersenarai (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Menentukan persona, akses memori dan hierarki.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: Set pengenal kemahiran yang tidak sensitif huruf besar-kecil yang menyuntik konteks berkaitan ke dalam prompt semasa penghantaran.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/ms-MY/manual-pengguna/panduan-cara/urus-kemahiran/).
+**Sumber kemahiran**: Repositori GitHub yang didaftarkan bagi setiap ruang kerja sebagai katalog kemahiran. Tidak dipercayai secara binaan: metadata repositori itu hanya untuk paparan dan setiap pemasangan melalui pintu imbasan gagal-tertutup sebelum sebarang kandungan sampai ke cakera atau prompt. Lihat [pasang dan urus kemahiran](/ms-MY/manual-pengguna/panduan-cara/urus-kemahiran/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: Manifes kemahiran yang dipasang bagi setiap ruang kerja: bagi setiap satu, repositori sumbernya, laluan dalam repo, commit yang dipinkan padanya dan hash kandungan terkumpul. Pemasangan, kemas kini dan nyahpasang menjaganya terkini; `verify_skills` menyemaknya terhadap cakera.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: Empat bendera (push ke repo, API GitHub, penetikan, keluar rangkaian) diselesaikan bagi setiap penghantaran — lalai ejen → lalai pengguna, dengan penggantian bagi setiap perbualan. Dikuatkuasakan melalui ketiadaan: keupayaan yang dilumpuhkan bermakna token atau keluar itu semata-mata tidak pernah disuntik.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Modus**: `chat`, `plan`, `review`, atau `orchestrate`. Disimpan **mengikut ruang**, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP. Penggubah hanya menawarkan `chat`, `plan` dan `orchestrate`; `chat` dilabelkan "Ejen".
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), `native` (Seatbelt pada macOS, bubblewrap pada Linux dan WSL2) atau `none`. Diprobe sekali semasa but; `native` **digunakan pada penghantaran ejen** apabila tersedia, membalut CLI Claude Code dan alat `bash` harness. Windows tiada bahagian belakang natif dan Linux memerlukan `bwrap` serta `socat`, jadi larian di sana tidak dibalut; `--sandbox off` memilih untuk keluar secara sengaja.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/ms-MY/manual-pengguna/konsep/stesen/).
+**Stesen**: Mesin pakai buang yang dipandu ejen secara masa nyata — penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan panggilan `browser_use` / `computer_use` / `mobile_use` / `ios_use` ejen menuju ke satu mesin lalai. Lihat [Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**Persekitaran terasing**: Sempadan stesen bersandarkan VM yang lebih kuat — sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos dan tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail `enclosureControl`.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.
 
-## Ports
+## Port
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Menempa kelayakan berskop yang digerbangi keupayaan untuk pelancaran kotak pasir dan mencabutnya semasa pembongkaran.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: Menghasilkan vektor embedding teks bernorma unit untuk carian semantik.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: Menunjukkan pemberitahuan desktop natif dengan menghormati gerbang kategori/laluan.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: Sempadan neutral vendor ke bahagian belakang penetikan (create, get, list, update, transition, assign).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: Memulakan larian pipeline daripada templat, memisahkan pemanggil daripada enjin konkrit.
 
-## Domain services
+## Perkhidmatan domain
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: Melancarkan larian ejen: menyediakan repo terasing, membina prompt, mencipta log larian, mengembalikan strim acara langsung.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: Enjin kitaran hayat tiket domain tulen dengan titik sesak mutasi konkurensi optimistik dan penguatkuasaan pengasingan ruang kerja. Graf peralihannya hanya mengikat ejen dan automasi; perubahan UI yang dipacu pengguna menghantar `force: true` dan memintasnya. Tiada penghantar tiket bagi penerima tugas ejen — `AgentDispatchService` memiliki penghantaran, dan menugaskan tiket kepada ejen tidak memulakan sebarang larian. Menugaskan tiket kepada pasukan ialah pengecualian (`TeamRoutingService` menghantar ketua).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: Mengorkestra pelaksanaan larian: memulakan larian, menjadualkan langkah, mengekalkan keadaan, mengendalikan router/join/continue-on-fail, menyambung semula larian yang sedang berjalan selepas permulaan semula.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: Melanggan acara domain dan memulakan secara automatik larian pipeline yang sepadan bagi pencetus yang didayakan.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: Menyelesaikan dan menguatkuasakan kebenaran memori peranan ejen pada domain.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: Menghitung penggunaan token harness terbina menjadi `RunCost` daripada katalog models.dev. Penghantaran mengekalkan rekod itu ke atas log larian.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: Mengira perbelanjaan bulanan bagi setiap ejen dan sekatan pra-penghantaran (`checkInvocationBlock`). Sekatan itu hanya dirujuk oleh reconciler pemulihan (`OrphanRunReaper`, `StrandedTicketReconciler`), tidak pernah oleh penghantaran pengguna atau ejen biasa.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: Menilai perbelanjaan bulanan bagi setiap ejen selepas setiap larian — ambang lembut merekodkan insiden amaran; kehabisan merekodkan insiden keras dan menukar kitaran hayat ejen kepada `paused`.
 
-## Events
+## Acara
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: Bas terbit/langgan siaran dalam proses untuk komunikasi merentas ciri. Acara adalah bertipe; pelanggan menggunakan strim `on<T>()`.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: Antara muka asas. Setiap acara mempunyai `occurredAt`. Kategori utama: ruang kerja/ejen, PR/semakan, pemesejan, penetikan, pipeline, mesyuarat/kalendar, identiti, stesen, kebolehcerapan.
 
-## Meetings and calendar
+## Mesyuarat dan kalendar
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Mesyuarat**: Sesi mesyuarat yang dirakam dan ditranskripsikan secara setempat. Menangkap mikrofon dan audio sistem, mentranskripsi pada peranti dengan model ASR yang boleh dipilih (Parakeet TDT v3 secara lalai; Parakeet TDT v2, Whisper large-v3-turbo dan Whisper base.en ialah alternatif), memisahkan penutur dan meringkaskan kepada nota, item tindakan dan keputusan. Model ASR yang dipilih dipasang secara paksa semasa but dan operasi rakaman menyala selepas satu permulaan semula. Berskop ruang kerja; kekal pada mesin.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: Satu tetingkap audio yang ditranskripsikan, bertanda penutur (`me`/`them`) dengan label pemisahan penutur dan offset milisaat.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: Output berstruktur yang diekstrak oleh pipeline ringkasan dan disimpan sebagai baris berasingan. Item tindakan boleh dipautkan pada tiket.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual; Mesyuarat ialah sesi yang dirakam. Dipautkan satu-ke-satu melalui `MeetingCalendarLink`.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: Akaun Google yang bersambung, bagi setiap ruang kerja dan e-mel. Token penyegaran OAuth disimpan di pihak pelayan sebagai kunci `google_*` dalam `<dataDir>/secrets.json` dan tidak pernah sampai ke klien; aliran kod peranti selesai pada pelayan. Bendera `authExpiredAt` memacu sepanduk sambung semula.
 
-## Architecture terms
+## Istilah seni bina
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Clean Architecture**: Peraturan kebergantungan: Presentation → Application/Providers → Domain ← Infrastructure. Domain mempunyai sifar import infrastruktur.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**Port dan penyesuai**: Domain mentakrifkan antara muka abstrak (port); infrastruktur menyediakan pelaksanaan konkrit (penyesuai). Akar komposisi mengikatnya.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**Kernel dikongsi**: Entiti, objek nilai, port dan perkhidmatan `core/domain/` yang dikongsi merentas 3+ ciri.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**Berteraskan ciri**: Kod disusun mengikut domain perniagaan (ejen, pipeline, pemesejan) dan bukan mengikut lapisan teknikal.
 
-## Multiplayer, identity and velocity
+## Multipemain, identiti dan kepantasan
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Principal**: Nilai tersegel yang menyatukan manusia dan ejen sebagai satu abstraksi pelaku — `UserPrincipal(userId)` atau `AgentPrincipal(agentId)`. Setiap mesej, tiket, semakan, pelan dan log larian diatribusikan melalui Principal.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**Pengguna**: Identiti manusia, disimpan dalam `global.db` dan oleh itu global merentas ruang kerja. Principal yang mencipta sesuatu ruang kerja menjadi **pemiliknya** — distempel pada `Workspace.ownerUserId` dengan baris keahlian berperanan owner dalam operasi yang sama. Yang lain menyertai melalui jemputan atau SSO.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: Baris keahlian yang mengikat seorang Pengguna pada sesuatu Ruang kerja pada sesuatu peranan (`owner` / `admin` / `member` / `viewer` / `guest`). **Keahlian — bukan kunci penggandingan — ialah sempadan akses.** Geran setiap repo menghalang keahlian daripada memberi keistimewaan melebihi forge.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: Kesedaran fana untuk sesuatu Principal (status, lokus, kursor, menaip, status langsung ejen dan kos berjalan). Tidak pernah dikekalkan; berhab pelayan; ditapis geran repo sebelum disebarkan.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**Modus ikut**: Klik avatar untuk menaiki viewportnya sehingga anda bertindak, kemudian lepaskan. Berfungsi untuk manusia dan untuk ejen ("lihat ejen bekerja").
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**Dail autonomi**: Kawalan bagi setiap ruang dan setiap ejen — `propose-only` / `act-with-approval` / `act-freely` — dilaksanakan sebagai profil bernama di atas stor guardrail tindakan.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Set tertutup 13 kelas kesan (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan `allow` / `prompt` / `deny` mengikut skop (ruang > ejen > ruang kerja > praset modus > lalai terbina).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **kunci idempotensi**: Setiap mutasi membawa kunci idempotensi yang dijana klien (UUIDv7, bagi setiap tindakan logik). Ledger berskop ruang kerja menyahduplikasi sebelum pengendali berjalan; main balik mengembalikan hasil asal yang identik bait demi bait. Menjadikan sambung semula dan berbilang klien selamat secara binaan.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**Peti masuk "Needs me"**: Baris gilir merentas tiang dengan peraturan ketat — sesuatu item muncul hanya jika ia _menyekat_ sesuatu (ejen, cantuman, segerak) atau secara eksplisit meminta pengendali.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: Permukaan perancangan interaktif — pelan DAG bertipe yang boleh disunting dengan kos, masa dan risiko setiap langkah, serta kelulusan separa.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**Pengiraan semakan**: Pengiraan semakan PR di pihak pelayan (kohort terbitan graf, rajah panduan bertipe, diff visual, diff kontrak API, pintu berbilang paksi) yang disajikan melalui `review_studio.*` dan dilipat ke dalam tab Semakan.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**Ruang semakan**: Ruang sokongan tunggal sesuatu PR (modus `review`, jenis `pr`), dicipta secara idempoten dan dipautkan pada PR oleh `ReviewSpaceAssociation`. Setiap penyemak memfailkan penemuan di dalamnya, dan itulah yang menjadikan penemuan mereka boleh dibandingkan; worktree terasingnya mempunyai PR yang di-checkout pada headnya.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**Nod semakan**: Unit berstruktur bagi penemuan semakan AI: jenis (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), keutamaan P0–P3, tiga serangkai triaj kategori/keterukan/usaha, sauh fail-dan-baris, cadangan pembaikan pilihan dan skor keyakinan. Difailkan dengan `add_review_node`; keputusan dikira daripada nod, bukan prosa.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Sedia konsensus**: Status nod semakan yang dicapai hanya apabila penyemak rakan sebaya mengesahkan sesuatu penemuan — ejen tidak boleh mengesahkan penemuannya sendiri. Butang **Terbitkan ke GitHub** pada tab Semakan menghantar setiap penemuan terbuka yang tinggal (`selection: all_open`); alat MCP `publish_review_to_github` masih secara lalai menghantar penemuan yang disahkan rakan sebaya sahaja.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**Tahap semakan**: Polisi ruang kerja (`light`, `balanced`, `thorough`) yang mengawal penyemak mana yang disebar (jurutera sahaja; +qa+arkitek; +security+perf) dan di mana penemuan bawah ambang dipaparkan. Tidak pernah memadam penemuan.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**Paksi semakan**: Salah satu daripada lima lorong penilaian bagi setiap semakan: `correctness`, `security` dan `testGap` diambil daripada penemuan penyemak; `visual` dan `apiContract` deterministik. Paksi berpintu dilipat ke dalam keputusan dan hanya boleh menjadikannya lebih berat — pintu `partial` atau `unavailable` menahan keputusan itu dan bukan meluluskannya.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**Keputusan semakan**: `ship`, `hold` atau `block`. Mana-mana penemuan P0 dengan keyakinan ≥ 0.7 menyekat; mana-mana P0 lain atau mana-mana P1 menahan; sebaliknya ship. Paksi gagal berpintu memaksa block dan tidak boleh dikalahkan oleh penemuan.
 
-## Fleet and evals
+## Armada dan eval
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: Binari pelaksana armada Dart tulen tanpa kepala. Berganding dengan `cc_server`, mengisytiharkan keupayaan hosnya, menarik kerja yang dipajak, melaksanakannya dan menstrim acara proses kembali. Tidak memegang **sebarang keadaan berkekalan** — satu pelayan berwibawa, N anggota badan yang tidak berfikir.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: Spesifikasi bertipe untuk segala yang boleh dilaksanakan (larian ejen, langkah pipeline, indeks kod, render golden, benchmark, kelompok eval).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**Suite eval**: Takrif penilaian berskop ruang kerja (prompt, ejen dan modus sasaran, penggred). Lima set permulaan disemai semasa penciptaan ruang kerja; Kebolehcerapan → Kualiti menyenaraikannya.
 
-## Deployment and clients
+## Penerapan dan klien
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**Seni bina klien nipis**: Tiada klien membuka pangkalan data; proses `cc_server` tanpa kepala memiliki data dan menyajikannya melalui RPC WebSocket. Setiap klien (desktop, web, telefon) ialah pemapar di atas satu sambungan RPC itu.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: Binari pelayan tanpa kepala (Dart tulen, tiada enjin Flutter). Memiliki pangkalan data Drift/SQLite, menyajikan repo-RPC melalui WebSocket dan menjalankan perkhidmatan latar belakang (pipeline, MCP, reconciler).
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: Cara desktop mencapai pelayannya — `local` (lancarkan `cc_server` pada mesin ini, lalai) atau `remote` (dail satu di tempat lain). Klien web sentiasa `remote`.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: Klien JSON-RPC bebas pengangkutan yang digunakan setiap klien nipis untuk bercakap dengan pelayannya — melalui WSS, loopback, atau geganti berperantara.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**Skop ruang kerja per panggilan**: Pelayan adalah tanpa keadaan — **tiada** pengikatan ruang kerja bagi setiap sesi, jadi berbilang klien pada satu pelayan tidak pernah berkongsi "ruang kerja semasa". Setiap `repo/call` dan `sub/subscribe` berskop ruang kerja mesti membawa `workspace_id` dalam argumennya; id yang hilang atau tidak didaftarkan ditolak sebelum mana-mana pangkalan data dibuka. Akses kemudiannya digerbangi oleh keahlian dan peranan ruang kerja, bukan oleh sesi.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: Klien nipis telefon — PWA web Flutter yang mengawal armada dari jauh melalui geganti berperantara dengan polisi alat tolak-secara-lalai.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: Broker geganti WebSocket tanpa keadaan yang menghoskan bilik bergerbang jemputan — geganti bodoh yang hanya memajukan bingkai tersegel hujung-ke-hujung, tidak memegang data apl dan tidak pernah melihat PSK penggandingan.
 
-## See also
+## Lihat juga
 
-- [Route map](/ms-MY/manual-pengguna/rujukan/peta-laluan/)
-- [Architecture](/ms-MY/manual-pengguna/konsep/seni-bina/)
-- [Workspaces](/ms-MY/manual-pengguna/konsep/ruang-kerja/)
-- [Domain events](/ms-MY/manual-pengguna/rujukan/acara-domain/)
+- [Peta laluan](/ms-MY/manual-pengguna/rujukan/peta-laluan/)
+- [Seni bina](/ms-MY/manual-pengguna/konsep/seni-bina/)
+- [Ruang kerja](/ms-MY/manual-pengguna/konsep/ruang-kerja/)
+- [Acara domain](/ms-MY/manual-pengguna/rujukan/acara-domain/)

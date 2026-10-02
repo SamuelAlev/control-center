@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Διακλάδωση συνομιλίας
+description: Δοκίμασε διαφορετική προσέγγιση από ένα προηγούμενο σημείο χωρίς να χάσεις αυτήν που έχεις ήδη, και μετά διακλάδωσε ή εξήγαγε ό,τι θέλεις να κρατήσεις.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακλάδωση-συνομιλίας
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Αυτός ο οδηγός δείχνει πώς να γυρίσεις σε ένα προηγούμενο σημείο μιας συνομιλίας και να την οδηγήσεις αλλού — κρατώντας τη διαδρομή που άφησες.
 
-## The one thing worth knowing
+## Το μόνο που αξίζει να ξέρεις
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Η διακλάδωση δεν γράφει τίποτα.** Μια συνομιλία είναι ένα δέντρο μηνυμάτων με έναν δείκτη στο άκρο, και η επιστροφή μετακινεί τον δείκτη. Τίποτα δεν διαγράφεται, τίποτα δεν κρύβεται, και η επιστροφή πίσω είναι άλλη μια μετακίνηση του δείκτη.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Γι' αυτό η επεξεργασία μιας προτροπής και η εκ νέου εκτέλεσή της είναι ασφαλής εδώ: η απάντηση με την οποία τη συνέκρινες είναι ακόμη εκεί.
 
-## See the branches
+## Δες τους κλάδους
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Ο πλοηγός απαριθμεί κάθε μήνυμα, με εσοχή σε κάθε διακλάδωση, και σημειώνει την τρέχουσα διαδρομή ως **Σε αυτόν τον κλάδο**. Μια συνομιλία που δεν διακλαδώθηκε ποτέ εμφανίζεται ως η επίπεδη λίστα που ήταν πάντα — ο πλοηγός δεν κοστίζει τίποτα να τον κοιτάξεις μέχρι να υπάρξει κάτι για πλοήγηση.
 
-Each row offers two actions.
+Κάθε γραμμή προσφέρει δύο ενέργειες.
 
-| Action                          | Effect                                                    |
+| Ενέργεια | Αποτέλεσμα |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **Συνέχεια από εδώ** | Μετακινεί τον δείκτη. Το επόμενο μήνυμά σου συνεχίζει από εκείνο το μήνυμα. |
+| **Διακλάδωση σε νέα συνομιλία** | Αντιγράφει τη διαδρομή έως εκείνο το μήνυμα σε μια νέα συνομιλία. |
 
-## Branch: try a different approach
+## Διακλάδωση: δοκίμασε διαφορετική προσέγγιση
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Βρες το μήνυμα από το οποίο θέλεις να ξεκινήσεις ξανά — συνήθως το τελευταίο με το οποίο ήσουν ικανοποιημένος.
+3. **Συνέχεια από εδώ.**
+4. Πληκτρολόγησε τη νέα προτροπή.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Η προηγούμενη συνέχεια βρίσκεται ακόμη στο δέντρο· το `/tree` θα δείξει τώρα δύο διαδρομές από εκείνο το σημείο, και μπορείς να εναλλάσσεσαι ελεύθερα μεταξύ τους.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Η διαδρομή που άφησες είναι ακόμη εκεί]
+Η διακλάδωση δεν κρύβει ούτε διαγράφει τίποτα. Το `/tree` απαριθμεί κάθε διαδρομή, σημειώνει την τρέχουσα ως **Σε αυτόν τον κλάδο** και είναι ο τρόπος με τον οποίο εναλλάσσεσαι.
 :::
 
-## Fork: take it somewhere else
+## Διακλάδωση σε νέα συνομιλία: πήγαινέ την αλλού
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Η διακλάδωση σε νέα συνομιλία αντιγράφει τη διαδρομή σε μια **νέα συνομιλία** στον ίδιο χώρο. Χρησιμοποίησέ την όταν οι δύο κατευθύνσεις πρόκειται να αποκλίνουν συνέχεια και θέλεις να τις έχεις δίπλα δίπλα αντί να εναλλάσσεσαι.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Το αντίγραφο έχει νέα αναγνωριστικά μηνυμάτων. Δύο συνομιλίες που θα μοιράζονταν γραμμές θα έδειχναν η μία τα μεταγενέστερα μηνύματα της άλλης — ακριβώς αυτό που υποτίθεται ότι αποτρέπει η διακλάδωση σε νέα συνομιλία.
 
-## Revert versus branch
+## Επαναφορά έναντι διακλάδωσης
 
-They are different tools and the difference matters.
+Είναι διαφορετικά εργαλεία και η διαφορά έχει σημασία.
 
-|                     | Revert                                             | Branch                          |
+|                     | Επαναφορά                                             | Διακλάδωση                          |
 | ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| Τα μεταγενέστερα μηνύματα | Κρύβονται από την απομαγνητοφώνηση                  | Παραμένουν ορατά στο `/tree`         |
+| Το **worktree**     | Επαναφέρεται στο στιγμιότυπο εκείνης της σειράς        | Αμετάβλητο                        |
+| Αναίρεση            | Η **Αναίρεση επαναφοράς** επαναφέρει την ομάδα αλλαγών | Μετακίνησε τον δείκτη πίσω            |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Η επαναφορά είναι αυτό που θέλεις όταν ο πράκτορας άλλαξε *αρχεία* που θέλεις να πάρεις πίσω. Η διακλάδωση είναι αυτό που θέλεις όταν η συνομιλία πήρε λάθος δρόμο αλλά τα αρχεία είναι εντάξει.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+Η επαναφορά μετακινεί επίσης το άκρο του κλάδου, ώστε το επόμενο μήνυμά σου να συνεχίζει από το σωστό σημείο και όχι από μια ουρά που δεν μπορεί πια να δει κανείς.
 
-## Take it out of the app
+## Πάρε την έξω από την εφαρμογή
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Γράφει ένα **αυτόνομο αρχείο HTML**: ολόκληρη τη συνομιλία με αναδιπλούμενες κάρτες εργαλείων που δείχνουν τι δόθηκε σε κάθε κλήση και τι επέστρεψε. Χωρίς φύλλο στυλ, χωρίς σενάριο, χωρίς διακομιστή εικόνων — λειτουργεί από ένα στικάκι USB και θα λειτουργεί ακόμη και σε πέντε χρόνια.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Υπολογιστής:** `Documents/ControlCenter/exports/`, με χρονική σήμανση ώστε μια δεύτερη εξαγωγή να μην αντικαθιστά την πρώτη.
+- **Web:** λήψη από το πρόγραμμα περιήγησης.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Αντιγράφει την απομαγνητοφώνηση στο πρόχειρο ως markdown, με τις κλήσεις εργαλείων σε αναδιπλούμενα μπλοκ. Αυτή είναι η κατάλληλη για επικόλληση σε ένα issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Ο συλλογισμός παραλείπεται σκόπιμα: είναι ο πρόχειρος χώρος του μοντέλου, και μια αναφορά σφάλματος τη διαβάζει άνθρωπος.
 
-## Related
+## Σχετικά
 
-- [Conversation history](/el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/) — `/tree`, `/export`, `/dump`
+- [Ιστορικό συνομιλιών](/el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών/) — γιατί το δέντρο είναι μετακίνηση δείκτη και τι επαναφέρει στην πραγματικότητα η συνέχιση
+- [Εντολές slash](/el-GR/εγχειρίδιο/αναφορά/εντολές-slash/) — `/tree`, `/export`, `/dump`

@@ -1,129 +1,119 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: 스킬 설치 및 관리
+description: GitHub 저장소를 스킬 소스로 추가하고, 카탈로그를 둘러보며, 바이러스 검사 관문을 거쳐 스킬을 설치, 업데이트 또는 설치 해제합니다.
 slug: ko-KR/매뉴얼/사용-가이드/스킬-관리
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+이 가이드는 GitHub에서 가져온 스킬로 워크스페이스를 채우는 방법을 보여 줍니다: 저장소를
+소스로 추가하고, 그 안에서 원하는 스킬을 설치하며, 시간이 지나도 최신 상태로 유지하는
+방법입니다.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/ko-KR/매뉴얼/개념/에이전트-모델/); this page stays
-on the doing.
+시작하기 전에 꼭 알아야 할 점이 있습니다: **소스 저장소는 신뢰할 수 없습니다.** 그 이름,
+설명, 스타 수는 저장소를 소유한 사람이 작성합니다. Control Center가 신뢰하는 유일한 안전
+신호는 바이러스 검사 판정이며, 모든 설치는 무언가가 디스크나 에이전트 프롬프트에 도달하기
+전에 이 검사를 통과합니다. 근거가 궁금하다면
+[에이전트 모델의 스킬 섹션](/ko-KR/매뉴얼/개념/에이전트-모델/)을 읽어 보세요. 이 페이지는
+실제로 하는 일에 머뭅니다.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+스킬은 **설정 → 워크스페이스 → 스킬**
+(`/workspaces/<id>/settings/workspace/skills`)에 있습니다. 스킬은 워크스페이스 범위이며,
+여기서 설치한 스킬은 이 워크스페이스에만 속합니다. 페이지에는 두 개의 탭이 있습니다:
+**설치됨**(로컬 스킬, **새 스킬** 편집기 포함)과 **소스**(GitHub 카탈로그). 두 탭의 쓰기는
+동일한 검사 관문을 통과합니다.
 
-## Add a skill repository
+## 스킬 저장소 추가
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. **설정 → 워크스페이스 → 스킬**을 열고 **소스** 탭으로 전환합니다.
+2. **저장소 추가**를 누릅니다.
+3. GitHub 저장소 URL(예: `https://github.com/anthropics/skills`)을 붙여넣고 확인합니다.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+서버는 자격 증명으로 해당 저장소가 존재하고 볼 수 있는지 확인한 다음 왼쪽 레일에
+추가합니다. 중간에 큐레이션된 스토어는 없습니다. 어떤 GitHub 저장소든 사용할 수 있으며,
+이는 평판을 직접 판단해야 한다는 뜻이기도 합니다. 스타 수는 근거일 뿐 결코 보장이
+아닙니다.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+저장소의 스킬은 `SKILL.md`를 포함하는 디렉터리입니다(최대 세 단계 깊이까지이며, Claude
+플러그인 마켓플레이스 레이아웃 `plugins/<plugin>/skills/<skill>`도 포함합니다. 의존성 및
+벤더 트리는 건너뜁니다). 나중에 그리드에서 해당 저장소에 스킬이 없다고 표시된다면 바로 그
+뜻입니다. 저장소 안에 스킬 규칙에 맞는 디렉터리가 하나도 없다는 것입니다.
 
-## Inspect a skill before installing
+## 설치하기 전에 스킬 살펴보기
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+레일에서 저장소를 선택하면 오른쪽에 스킬이 그리드로 나타나며, 그 위의 필터 필드에서
+이름, 설명 또는 슬러그로 카탈로그를 좁힐 수 있습니다. 카드를 클릭하면 상세 보기가
+열립니다. 상세 보기에는 세 가지가 표시됩니다:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **README**: 마크다운으로 렌더링됩니다. 스킬 디렉터리의 `README.md`이거나, README가
+  없을 때는 `SKILL.md` 본문입니다.
+- **검사 미리보기**: 판정(`pass`, `warn`, `quarantine`), 스킬 콘텐츠가 선언한
+  기능(셸 실행, 파일 쓰기, 네트워크 접근…) 그리고 스캐너가 기록한 모든 발견 항목입니다.
+- **파일 수**: 설치는 `SKILL.md`만이 아니라 스킬의 디렉터리 전체를 기록합니다.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+미리보기는 설치가 기록할 바로 그 바이트를 검사하므로, 표시되는 판정이 곧 설치가 받는
+판정입니다. 뒤에서 몰래 다시 판정하는 일은 없습니다.
 
-## Install a skill
+## 스킬 설치
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. 스킬의 상세 보기를 엽니다.
+2. 검사 판정을 읽습니다. `warn` 또는 `pass` 판정이면 **설치**를 누릅니다.
+3. `quarantine` 판정이면 **위험을 이해했습니다. 그래도 설치**를 선택할 때까지 설치가
+   비활성화된 상태로 유지됩니다. 이 재정의는 가정되지 않고 기록됩니다.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+설치는 스킬의 디렉터리를 워크스페이스에 기록하고, `skills-lock.json`에 핀을 기록하며
+(소스 저장소, 경로, 가져온 커밋, 콘텐츠 해시), 그 스킬은 워크스페이스의 에이전트가 사용할
+수 있게 됩니다. 카드에 **이미 사용 중인 이름**이 표시되면 다른 스킬이 이미 그 이름을
+로컬에서 차지하고 있다는 뜻이므로, 먼저 그 스킬을 설치 해제하세요.
 
-## Update skills over time
+## 시간이 지나면서 스킬 업데이트
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+설치된 스킬의 카드에는 배지가 붙습니다: **설치됨**, 또는 저장소가 고정한 커밋을 넘어선
+경우 **업데이트 있음**. 상세 보기를 열고 **업데이트**를 누르면 새 커밋에서 다시
+가져옵니다. 업데이트는 설치와 동일한 검사 관문을 통과하며, 새 버전이 격리되는 스킬은
+거부되고 기존 버전은 그대로 유지됩니다. 이전 버전의 해시는 롤백 참조로 잠금 파일에
+보관됩니다.
 
-## Uninstall a skill, remove a repository
+## 스킬 설치 해제, 저장소 제거
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+**설치 해제**(설치된 스킬의 상세 보기에서, 또는 설치됨 탭에서 삭제)는 스킬의 디렉터리와
+잠금 핀을 함께 제거합니다. 설치 해제한 스킬은 아무것도 남기지 않습니다.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+레일에서 **저장소를 제거**하면 카탈로그만 제거됩니다. 그 저장소에서 설치한 스킬은 계속
+설치된 상태로 남고 여전히 업데이트됩니다. 핀은 소스 항목에 대한 참조가 아니라 이름으로
+저장소를 기록하기 때문입니다. 다시 둘러보고 싶다면 저장소를 다시 추가하세요.
 
-## Invoke a skill
+## 스킬 호출
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+스킬은 자체 네임스페이스 아래에서 호출되므로 내장 슬래시 명령(`/plan`, `/goal`, `/loop`,
+`/compact`)과 충돌하지 않습니다:
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — 이 워크스페이스에 설치되었거나 에이전트에 연결된 스킬
+- `/skill:<repo>:<name>` — 이 스페이스에 체크아웃된 저장소가 제공하는 스킬
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+내장이 아닌 이름을 그대로 써도 여전히 해석됩니다. 네임스페이스가 생기기 전에 작성된
+메시지가 그렇습니다. `plan`이라는 이름의 스킬에 닿는 것은 `/skill:plan`이며, `/plan`은
+언제나 내장 명령입니다.
 
-## Repo-scoped skills
+## 저장소 범위 스킬
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+체크아웃된 저장소는 `.agents/skills/`, `.agent/skills/`, `.claude/skills/`,
+`.opencode/skills/` 또는 `skills/`에 자체 스킬을 포함할 수 있습니다. 이 스킬들은 이
+페이지를 통해 설치되는 것이 **아닙니다**. 에이전트는 현재 작업 중인 저장소의 스킬만
+지니며, 저장소가 바뀌면 스킬도 바뀝니다. 컴포저는 그런 식으로 범위가 정해지지 않습니다.
+`/skill:<repo>:<name>`은 스페이스의 어느 저장소에든 닿습니다.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+저장소 스킬은 프런트매터가 프롬프트에 도달하기 전에 동일한 닫힌 상태로 실패하는
+검사(`pass` / `warn` / `quarantine`)를 통과합니다. `warn`은 허용되고 `quarantine`은
+보류되며, 그 경로에는 운영자 재정의가 없습니다.
 
-See [Repo-scoped skills](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills) and
-[Slash commands](/ko-KR/매뉴얼/레퍼런스/슬래시-명령/).
+자세한 내용은 [저장소 범위 스킬](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills)과
+[슬래시 명령](/ko-KR/매뉴얼/레퍼런스/슬래시-명령/)을 참고하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
 
-## Related concepts
+## 관련 개념
 
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/)
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)

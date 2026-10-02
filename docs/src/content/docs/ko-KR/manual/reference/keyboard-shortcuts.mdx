@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: 키보드 단축키
+description: 범위별 전체 키 바인딩 레지스트리와 각 단축키가 발동하는 조건입니다.
 slug: ko-KR/매뉴얼/레퍼런스/키보드-단축키
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+단축키는 `lib/core/constants/keybindings.dart`에 있는 `KeybindingRegistry`라는 하나의 `const` 레지스트리에서 비롯됩니다. 여기에는 **바인딩 48개**가 들어 있습니다. 설정 → 나 → 키 바인딩은 이 레지스트리를 **읽기 전용 레퍼런스**로 렌더링합니다. 키를 다시 지정하는 UI도, 사용자 키 바인딩 파일도 없습니다.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+아래에서 `Cmd`는 기본 명령 수정자, 즉 macOS에서는 ⌘, Windows와 Linux에서는 Ctrl입니다. 바인딩은 해당 명령이 현재 화면에 등록된 핸들러를 가지고 있고 `when` 절이 성립할 때만 발동합니다. `!textInputFocus`는 그 키가 대신 포커스된 텍스트 필드로 전달된다는 뜻입니다.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+숫자 키 탐색 단축키는 없습니다. 받은편지함, 티켓, 풀 리퀘스트 등은 사이드바나 ⌘K로 접근합니다. 옵저버빌리티에도 단축키가 없습니다.
 
-## Global (19)
+## 전역 (19)
 
-Scope `global`, so they are live anywhere in the shell.
+범위가 `global`이므로 셸 어디에서나 동작합니다.
 
-### System
+### 시스템
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| 단축키                                      | 동작                                             | 조건                                                       |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | 커맨드 팔레트                                    | —                                                          |
+| `Shift + /` (`?`)                           | 키보드 단축키 치트시트                           | 필드에 입력 중이 아님                                      |
+| `Cmd/Ctrl + Z`                              | 실행 취소                                        | 필드에 입력 중이 아님(포커스된 필드는 자체 실행 취소를 유지) |
+| `Cmd/Ctrl + Shift + Z`                      | 다시 실행                                        | 필드에 입력 중이 아님                                      |
+| `Cmd/Ctrl + Shift + T`                      | 테마 토글                                        | —                                                          |
+| `Cmd/Ctrl + ,`                              | 설정 열기(`/settings/you/appearance`로 이동)     | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | 포커스 모드 토글                                 | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | 워크스페이스 전환 토글                           | —                                                          |
+| `Cmd/Ctrl + ]`                              | 다음 워크스페이스                                | —                                                          |
+| `Cmd/Ctrl + [`                              | 이전 워크스페이스                                | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | 워크스페이스 1–9로 전환                          | —                                                          |
 
-## Pull request list (3)
+## 풀 리퀘스트 목록 (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+범위는 `/pull-requests`입니다. 모두 `route == '/pull-requests'`와 포커스된 텍스트 필드 없음이 필요하므로, PR 상세 라우트가 목록 위에 열려 있는 동안에는 발동하지 않습니다.
 
-| Shortcut | Action           |
+| 단축키   | 동작             |
 | -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| `R`      | 새로 고침        |
+| `Enter`  | PR 열기          |
+| `F`      | 필터 메뉴 열기   |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter`(`pr.list-open`)는 레지스트리에 선언되어 있고 키 바인딩 레퍼런스에 나타나지만, **목록 화면은 이에 대한 핸들러를 등록하지 않으므로** 현재는 발동하지 않습니다. `F`는 검색이 아니라 필터 메뉴(`pr.list-open-filter`)를 엽니다.
 
-## Pull request detail (2)
+## 풀 리퀘스트 상세 (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+범위는 `/pull-requests/`입니다. 새로 고침은 포커스된 텍스트 필드가 없어야 합니다. 탭 닫기는 텍스트 입력 가드가 없고(⌘ 수정 키가 붙은 키 입력은 결코 일반 텍스트가 아닙니다) 목록에서 발동하지 않도록 하는 라우트 정규식을 갖춥니다.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| 단축키         | 동작       | 조건                               |
+| -------------- | ---------- | ---------------------------------- |
+| `R`            | 새로 고침  | 필드에 입력 중이 아님              |
+| `Cmd/Ctrl + W` | 탭 닫기    | `/pull-requests/<…>` 위치          |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+탭 전환(`1`/`2`/`3`), 파일 보기/접기(`V`/`C`), 파일 목록(`T`), diff 내 찾기(`Cmd/Ctrl + F`)는 diff 뷰어 자체 핸들러가 담당합니다. [레지스트리 밖의 diff 뷰어 키](#레지스트리-밖의-diff-뷰어-키)를 참고하세요.
 
-## Inbox (1)
+## 받은편지함 (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| 단축키 | 동작           |
+| ------ | -------------- |
+| `F`    | 필터 메뉴 열기 |
 
-Requires `route == '/inbox'` and no focused text field.
+`route == '/inbox'`와 포커스된 텍스트 필드 없음이 필요합니다.
 
-## GitHub user and team profiles (3)
+## GitHub 사용자 및 팀 프로필 (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+범위는 `/users/`입니다. `when` 절은 `/users/<login>` **또는** `/teams/<organization>/<slug>`에 대한 정규식이며, 여기에 포커스된 텍스트 필드가 없어야 한다는 조건이 더해집니다.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| 단축키         | 동작        |
+| -------------- | ----------- |
+| `R`            | 새로 고침   |
+| `/`            | 검색 포커스 |
+| `Cmd/Ctrl + F` | 검색 포커스 |
 
-## Spaces (8)
+## 스페이스 (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+범위는 `/spaces`입니다. `when` 절이 정규식을 사용하므로 스페이스 목록(`/spaces`)과 선택한 스페이스(`/spaces/<id>`) 모두에서 발동합니다.
 
-| Shortcut               | Action                 | Condition             |
+| 단축키                 | 동작                   | 조건                  |
 | ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Enter`                | 메시지 보내기          | —                     |
+| `Cmd/Ctrl + N`         | 새 스페이스            | `/spaces` 라우트      |
+| `J`                    | 다음 스페이스          | 필드에 입력 중이 아님 |
+| `K`                    | 이전 스페이스          | 필드에 입력 중이 아님 |
+| `Cmd/Ctrl + Shift + D` | 눌러서 말하기 받아쓰기 | —                     |
+| `Cmd/Ctrl + T`         | 에디터 탭 열기         | `/spaces` 라우트      |
+| `Cmd/Ctrl + W`         | 에디터 탭 닫기         | `/spaces` 라우트      |
+| `Cmd/Ctrl + B`         | 에디터 사이드바 토글   | `/spaces` 라우트      |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Enter로 보내기는 작성기 텍스트 필드가 담당하고, 눌러서 말하기는 작성기의 마이크 버튼(자체 하드웨어 키보드 핸들러)이 담당합니다. 둘 다 설정 레퍼런스를 위해 레지스트리에 나열됩니다.
 
-## Workspace picker (2)
+## 워크스페이스 피커 (2)
 
-Scope `/workspaces`, live only on the picker itself.
+범위는 `/workspaces`이며, 피커 자체에서만 동작합니다.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| 단축키         | 동작                     |
+| -------------- | ------------------------ |
+| `Cmd/Ctrl + N` | 새 워크스페이스          |
+| `Enter`        | 선택한 워크스페이스 열기 |
 
-`Enter` requires no focused text field.
+`Enter`는 포커스된 텍스트 필드가 없어야 합니다.
 
-## Settings (5)
+## 설정 (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| 단축키         | 동작                | 화면                                |
+| -------------- | ------------------- | ----------------------------------- |
+| `J`            | 다음 설정 페이지    | 모든 `/settings` 라우트, 입력 중 아님 |
+| `K`            | 이전 설정 페이지    | 모든 `/settings` 라우트, 입력 중 아님 |
+| `Cmd/Ctrl + N` | 새 에이전트         | 설정 → 워크스페이스 → 에이전트      |
+| `Cmd/Ctrl + N` | 리포지토리 추가     | 설정 → 워크스페이스 → 리포지토리    |
+| `R`            | 어댑터 다시 스캔    | 설정 → 서버 → 모델 제공업체         |
 
-## Newsfeed (5)
+## 뉴스피드 (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+범위는 `/newsfeed`입니다. 모두 `route == '/newsfeed'`와 포커스된 텍스트 필드 없음이 필요합니다.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| 단축키  | 동작             |
+| ------- | ---------------- |
+| `J`     | 다음 아티클      |
+| `K`     | 이전 아티클      |
+| `Enter` | 아티클 열기      |
+| `S`     | 북마크 토글      |
+| `R`     | 피드 새로 고침   |
 
-## Diff viewer keys outside the registry
+## 레지스트리 밖의 diff 뷰어 키
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+PR diff 뷰어는 이 키들을 직접 처리합니다(`PrDiffKeyboardHandler`). 검색/보기/접기는 설정 레퍼런스용으로만 레지스트리 주석에 나열되어 있습니다. 디스패처 핸들러가 등록되어 있지 않으므로 디스패처는 이 키들을 diff 뷰에 맡깁니다. 키 바인딩 레퍼런스에는 자체 행으로 나타나지 않습니다.
 
-| Shortcut        | Action                                               |
+| 단축키          | 동작                                                 |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | diff에서 검색                                        |
+| `J` / `K`       | 다음 / 이전 파일                                     |
+| `V`             | 포커스된 파일의 보기 토글                            |
+| `C`             | 포커스된 파일의 접기 토글                            |
+| `T`             | 파일 목록 표시                                       |
+| `Enter`         | 다음 검색 일치(diff 내 찾기가 열려 있을 때만)        |
+| `Shift + Enter` | 이전 검색 일치                                       |
+| `Escape`        | diff 내 찾기 닫기 또는 diff 텍스트 선택 지우기       |
+| `Cmd/Ctrl + C`  | diff 선택 항목 복사                                  |
 
-## Browser-reserved combinations
+## 브라우저가 예약하는 조합
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+웹 빌드에서는 브라우저가 일부 액셀러레이터를 페이지가 인식하기 전에 소비하므로, 해당 바인딩은 웹에서 절대 발동할 수 없습니다. 데스크톱에서는 정상적으로 동작합니다. 기본 명령 수정자와 함께 사용하면 예약됩니다: `T`, `W`, `N`과 숫자 `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+여기에는 `Cmd/Ctrl + Alt + 1`–`9` 워크스페이스 전환, `Cmd/Ctrl + N`(새 스페이스, 새 워크스페이스, 새 에이전트, 리포지토리 추가), 그리고 스페이스와 PR 상세의 `Cmd/Ctrl + T` / `Cmd/Ctrl + W`가 포함됩니다.
 
-## See also
+## 함께 보기
 
-- [Route map](/ko-KR/매뉴얼/레퍼런스/라우트-맵/)
-- [Focus mode](/ko-KR/매뉴얼/사용-가이드/포커스-모드/)
+- [라우트 맵](/ko-KR/매뉴얼/레퍼런스/라우트-맵/)
+- [포커스 모드](/ko-KR/매뉴얼/사용-가이드/포커스-모드/)

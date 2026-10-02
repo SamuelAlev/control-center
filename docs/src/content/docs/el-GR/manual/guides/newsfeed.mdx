@@ -1,130 +1,144 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Επιμέλεια της ροής ειδήσεών σας
+description: Προσθέστε και διαχειριστείτε ροές RSS/Atom, διαβάστε άρθρα με αποκλεισμό περιεχομένου και μάθετε ότι οι ροές σας σας ακολουθούν σε κάθε χώρο εργασίας.
 dateModified: 2026-09-19
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ροή-ειδήσεων
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Αυτός ο οδηγός δείχνει πώς να διαμορφώσετε τη ροή ειδήσεων: από ποιες πηγές
+αντλεί, πώς διαβάζονται τα άρθρα και τι κάνει ο αποκλεισμός περιεχομένου.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Η ροή ειδήσεων είναι ανά χρήστη, όχι ανά χώρο εργασίας]
+Οι ροές και τα άρθρα ανήκουν στον συνδεδεμένο χρήστη: η λίστα των ροών σας, η
+κατάσταση ανάγνωσης και οι σελιδοδείκτες σας ακολουθούν εσάς σε κάθε χώρο
+εργασίας και σε κάθε συσκευή από την οποία συνδέεστε, και κανένας άλλος χρήστης
+δεν τις βλέπει. Οι ροές ζουν στην καθολική βάση δεδομένων του διακομιστή, οπότε
+η διεύθυνση `/newsfeed` περιέχει αναγνωριστικό χώρου εργασίας μόνο επειδή το
+κάνει κάθε διαδρομή εντός της εφαρμογής.
 :::
 
-## Read articles
+## Διαβάστε άρθρα
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Κάντε κλικ στην επιλογή **Ροή ειδήσεων** στην πλαϊνή στήλη
+2. Εναλλάξτε μεταξύ **Όλα**, **Μη αναγνωσμένα** και **Αποθηκευμένα** με τα τμήματα της γραμμής εργαλείων
+3. Περιορίστε τη λίστα με το πλαίσιο αναζήτησης ή τον επιλογέα πηγής
+4. Εναλλάξτε μεταξύ του πλέγματος περιοδικού και της πυκνής λίστας με τα κουμπιά διάταξης
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Το άνοιγμα ενός άρθρου το σημαίνει ως αναγνωσμένο. Χρησιμοποιήστε τη **Σήμανση
+όλων ως αναγνωσμένων** στην κεφαλίδα της σελίδας — εμφανίζεται μόνο όσο υπάρχει
+κάτι μη αναγνωσμένο — για να καθαρίσετε όλη την εκκρεμότητα με μία κίνηση, και
+τον έλεγχο σελιδοδείκτη σε μια κάρτα για να αποθηκεύσετε ένα άρθρο για αργότερα.
 
-The layout choice persists across launches.
+Η επιλογή διάταξης διατηρείται μεταξύ των εκκινήσεων.
 
-## Add a feed
+## Προσθήκη ροής
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Ανοίξτε **Ρυθμίσεις → Εσείς → Ροή ειδήσεων** (το εικονίδιο ρυθμίσεων στην
+   κεφαλίδα της ροής ειδήσεων σας πηγαίνει απευθείας εκεί)
+2. Πατήστε **Προσθήκη ροής**
+3. Συμπληρώστε ένα **όνομα** και το **URL ροής** (RSS ή Atom)
+4. Προαιρετικά, αναπτύξτε το **Για προχωρημένους** και ορίστε ένα προσαρμοσμένο
+   **User-Agent** — ορισμένοι εκδότες επιστρέφουν διαφορετική απάντηση σε έναν
+   προεπιλεγμένο πελάτη
+5. Πατήστε **Προσθήκη ροής**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Σημείο ελέγχου: η ροή εμφανίζεται στη λίστα **Ροές** και τα άρθρα της
+καταφθάνουν μετά την πρώτη λήψη. Μια διεύθυνση URL στην οποία είστε ήδη
+συνδρομητές απορρίπτεται με το μήνυμα «Υπάρχει ήδη ροή με αυτό το URL».
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Δεκατέσσερις ροές προετοιμάζονται για κάθε χρήστη κατά την πρώτη χρήση: Control
+Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI,
+Import AI, The Pragmatic Engineer, Martin Fowler, Will Larson's Irrational
+Exuberance, The Engineering Manager, Lea Verou και CSS-Tricks.
 
-## Manage feeds
+## Διαχείριση ροών
 
-Each row in the **Feeds** list gives you three controls:
+Κάθε γραμμή στη λίστα **Ροές** σας δίνει τρία στοιχεία ελέγχου:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Στοιχείο ελέγχου | Αποτέλεσμα                                                          |
+| ---------------- | ------------------------------------------------------------------- |
+| Διακόπτης        | Απενεργοποιεί τη ροή. Μια απενεργοποιημένη γραμμή εμφανίζεται θαμπή και δεν λαμβάνεται πλέον |
+| Εικονίδιο ανανέωσης | Λαμβάνει τώρα αυτή τη ροή                                        |
+| Εικονίδιο κάδου  | Διαγράφει τη ροή, μετά από επιβεβαίωση                              |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+Η **Ανανέωση όλων** στο επάνω μέρος της λίστας λαμβάνει κάθε ενεργοποιημένη ροή.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Ο υπότιτλος μιας ροής δείχνει την περιγραφή της και πόσος χρόνος έχει περάσει
+από τη λήψη της· μια ροή που απέτυχε εμφανίζει το σφάλμα στη θέση της, με χρώμα
+προειδοποίησης.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Δεν υπάρχει δυνατότητα επεξεργασίας — για να αλλάξετε το όνομα, τη διεύθυνση URL
+ή το user agent μιας ροής, διαγράψτε τη και προσθέστε τη ξανά.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Η λήψη εκτελείται εξ ολοκλήρου στον διακομιστή: μία φορά ανά χρήστη κατά την
+εκκίνηση (και κατά την πρώτη χρήση για λογαριασμούς που δημιουργήθηκαν
+αργότερα), και έπειτα κάθε 30 λεπτά.
 
-## Block ads and trackers in the reader
+## Αποκλεισμός διαφημίσεων και ιχνηλατών στον αναγνώστη
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Στις Ρυθμίσεις → Εσείς → Ροή ειδήσεων, βρείτε τις **Προτιμήσεις ανάγνωσης**
+2. Αφήστε το **Άνοιγμα άρθρων στην εφαρμογή** ενεργό για να χρησιμοποιήσετε τον
+   ενσωματωμένο αναγνώστη, ή απενεργοποιήστε το για να παραδίδονται τα άρθρα στο
+   πρόγραμμα περιήγησης του συστήματός σας
+3. Αφήστε το **Αποκλεισμός διαφημίσεων, ιχνηλατών και banner cookies** ενεργό
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Ο αποκλεισμός είναι ενεργός από προεπιλογή. Ο ενσωματωμένος αναγνώστης υπάρχει
+μόνο σε macOS και Windows: στην έκδοση web και στο Linux, ο αναγνώστης _είναι_ το
+πρόγραμμα περιήγησης του συστήματος και το άρθρο ανοίγει εκεί (σε νέα καρτέλα
+στον web). Στον web, ο διακόπτης αποκλεισμού, η κάρτα **Λίστες φίλτρων** και η
+κάρτα **Έμπιστοι ιστότοποι** είναι κρυμμένα.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Ο αναγνώστης εντός της εφαρμογής δεν αναδιαμορφώνει το άρθρο. Αποδίδει τη σελίδα
+του εκδότη σε ενσωματωμένο webview και καταστέλλει διαφημίσεις, ιχνηλάτες και
+banner cookies χρησιμοποιώντας προσωρινά αποθηκευμένες λίστες φίλτρων.
 
-### Check or update the filter lists
+### Έλεγχος ή ενημέρωση των λιστών φίλτρων
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Η κάρτα **Λίστες φίλτρων** δείχνει πόσοι κανόνες απόκρυψης cookies, απόκρυψης
+διαφημίσεων και αποκλεισμού δικτύου έχουν φορτωθεί, καθώς και ποιες παραμέτρους
+ιχνηλάτησης αφαιρεί και πότε ενημερώθηκαν τελευταία οι λίστες. Πατήστε **Έλεγχος
+ενημερώσεων** για να τις ανανεώσετε.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Οι πηγές είναι οι EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster,
+αρκετές λίστες του uBlock Origin και η λίστα παραμέτρων ιχνηλάτησης του uBO.
+Μέχρι να ολοκληρωθεί επιτυχώς μια λήψη, η κάρτα χαρακτηρίζει τις λίστες ως
+ενσωματωμένες προεπιλογές που δεν ενημερώθηκαν ποτέ — οι μετρητές κανόνων
+διαφημίσεων, cookies και δικτύου παραμένουν στο μηδέν· η αφαίρεση παραμέτρων
+ιχνηλάτησης εξακολουθεί να χρησιμοποιεί ένα ενσωματωμένο προεπιλεγμένο σύνολο.
 
-### Allowlist a site
+### Προσθήκη ιστότοπου σε λίστα επιτρεπόμενων
 
-Some sites break under blocking.
+Ορισμένοι ιστότοποι παρουσιάζουν προβλήματα με τον αποκλεισμό.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Στις Ρυθμίσεις → Εσείς → Ροή ειδήσεων, μεταβείτε στους **Έμπιστους ιστότοπους**
+2. Πατήστε **Προσθήκη έμπιστου ιστότοπου** και εισαγάγετε τον τομέα
 
-Blocking is skipped there.
+Ο αποκλεισμός παραλείπεται εκεί.
 
-## Troubleshooting
+## Αντιμετώπιση προβλημάτων
 
-### A feed I added shows up in another workspace
+### Μια ροή που πρόσθεσα εμφανίζεται σε άλλο χώρο εργασίας
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Αναμενόμενο. Η ροή ειδήσεων είναι ανά χρήστη, όχι ανά χώρο εργασίας — οι ροές
+σας σας ακολουθούν παντού όπου είστε συνδεδεμένοι. Δείτε την προειδοποίηση στην
+αρχή.
 
-### A feed row shows an error instead of a description
+### Μια γραμμή ροής εμφανίζει σφάλμα αντί για περιγραφή
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Η τελευταία λήψη απέτυχε και η γραμμή εμφανίζει τον λόγο αυτούσιο. Πατήστε το
+εικονίδιο ανανέωσης για να δοκιμάσετε ξανά και ελέγξτε ότι η διεύθυνση URL
+εξακολουθεί να παρέχει RSS ή Atom. Ένας εκδότης που απορρίπτει άγνωστους πελάτες
+μπορεί να απαιτεί προσαρμοσμένο user agent, πράγμα που σημαίνει διαγραφή της
+ροής και εκ νέου προσθήκη της.
 
-### An article page renders badly
+### Μια σελίδα άρθρου αποδίδεται άσχημα
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Απενεργοποιήστε το **Αποκλεισμός διαφημίσεων, ιχνηλατών και banner cookies** για
+αυτόν τον τομέα μέσω των **Έμπιστων ιστότοπων**, ή απενεργοποιήστε το **Άνοιγμα
+άρθρων στην εφαρμογή** και διαβάστε το στο πρόγραμμα περιήγησής σας.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Configure notifications](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
-- [Triage your inbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)
+- [Ρύθμιση ειδοποιήσεων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ειδοποιήσεις/)
+- [Ταξινόμηση εισερχομένων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ταξινόμηση-εισερχομένων/)

@@ -1,95 +1,104 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Hubungkan penyedia OpenID Connect
+description: Sambungkan issuer OIDC apa pun — Pocket ID, Keycloak, Auth0, Zitadel — ke proses masuk Control Center.
 slug: id-ID/panduan-pengguna/panduan-praktis/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Gunakan panduan ini ketika penyedia identitas Anda berbicara **OpenID
+Connect**, bukan SAML. Setiap issuer bersertifikasi OIDC dapat dipakai —
+Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace, dan sejenisnya
+mengikuti langkah yang sama; yang berbeda hanyalah tempat penyedia Anda
+menampilkan nilai-nilainya.
 
-## Prerequisites
+## Prasyarat
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- penyedia OIDC tempat Anda dapat membuat klien — catat **client id** dan
+  **URL issuer**-nya (basis tempat dokumen
+  `.well-known/openid-configuration` berada), plus **client secret**-nya
+  ketika klien tersebut berjenis rahasia (klien PKCE publik tidak punya
+  client secret),
+- server Control Center yang Anda kelola (sebagai **pemilik server**).
 
-## Steps
+## Langkah-langkah
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Buka **Pengaturan → Server → Single sign-on** lalu beralih ke
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Isi **URL issuer**, **Client ID**, dan **Client secret (opsional)**
+   ketika penyedia menerbitkannya. Control Center menemukan endpoint dari
+   dokumen penemuan standar milik issuer — tanpa konfigurasi per penyedia.
+3. Di penyedia, daftarkan URI pengalihan
+   `https://<your-server>/oidc/callback` pada klien tersebut.
+4. Jika grup Anda berada di bawah claim selain `groups`, tetapkan nama
+   **Claim grup**; petakan grup ke peran jika Anda mau (SSO tidak akan
+   pernah dapat memberikan peran pemilik).
+5. Pilih kebijakan keanggotaan (tambahkan otomatis ke setiap ruang kerja,
+   atau wajibkan undangan per ruang kerja), aktifkan **Gunakan OpenID
+   Connect untuk masuk**, lalu tekan **Simpan koneksi**.
+6. Tekan **Uji koneksi** — server mengambil dokumen penemuan milik issuer
+   dan memastikan endpoint-nya, jadi toast hijau berarti semuanya selain
+   perjalanan bolak-balik browser sudah berfungsi. Untuk memeriksa
+   pendaftaran klien juga, gunakan
+   [pemeriksa di bawah](#periksa-konfigurasi-anda-dari-halaman-ini).
+7. Lakukan proses masuk: layar koneksi web menampilkan **Masuk dengan
+   OpenID Connect**, atau buka `https://<your-server>/oidc/login`
+   secara langsung.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claim (email, nama, grup) dibaca dari endpoint token milik issuer melalui
+TLS oleh server Anda — browser tidak pernah memasoknya, sehingga tidak ada
+verifikasi tanda tangan JWT lokal yang terlibat. Klien harus diizinkan
+meminta scope `openid profile email`, yang persis itulah yang diminta
+Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Karena kanal TLS itulah satu-satunya yang mengautentikasi claim, URL issuer
+harus **https** — issuer plaintext akan memungkinkan penyerang mana pun di
+jalur memalsukan identitas secara massal. `http` hanya diterima untuk
+issuer loopback (`localhost`, `127.0.0.1`, `::1`), untuk pengembangan
+lokal.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Klien publik atau klien rahasia?]
+Bentuk default — sekaligus yang direkomendasikan — adalah **klien publik**
+yang memakai alur authorization code dengan **PKCE** (RFC 7636): verifier
+kode sekali pakai yang dipegang server menggantikan secret, dan pertukaran
+token terikat pada permintaan otorisasi yang memulainya. Tidak ada secret
+yang bisa bocor, dan authorization code yang dicuri tidak berguna tanpa
+verifier. Beberapa penyedia menyebut jenis klien ini "SPA" atau "native"
+saat Anda membuatnya.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Jika penyedia Anda justru menerbitkan klien **rahasia**, tandai klien itu
+sebagai publik di penyedia (PKCE tetap aktif apa pun pilihannya), atau
+tempelkan client secret ke bidang **Client secret (opsional)** pada
+koneksi. Secret disimpan di berkas rahasia server dengan izin 0600 (tidak
+pernah di database), dikirim ke endpoint token sebagai `client_secret_post`
+dan tidak pernah dikembalikan melalui RPC; membiarkan bidang itu kosong
+saat menyimpan akan mempertahankan secret yang tersimpan. Ketika login
+gagal pada pertukaran token, log server menyebutkan error dari penyedia itu
+sendiri (`invalid_client` hampir selalu berarti secret-nya hilang atau
+salah).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim).
+:::note[Keterjangkauan]
+Login itu sendiri dimediasi browser: issuer hanya mengalihkan browser
+pengguna kembali ke `/oidc/callback` dan server Anda melakukan panggilan
+HTTPS keluar ke endpoint token — tidak diperlukan koneksi masuk dari
+issuer, sehingga server di belakang NAT tetap berfungsi asalkan browser
+pengguna dapat menjangkaunya (LAN, VPN, Tailscale, atau terowongan).
+**Penyediaan SCIM adalah pengecualiannya**: IdP memanggil server Anda
+secara langsung, yang memerlukan terowongan atau URL publik — lihat
+[Provision pengguna dengan SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim).
 :::
 
-## Check your configuration from this page
+## Periksa konfigurasi Anda dari halaman ini
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Pemeriksa di bawah ini berjalan di browser Anda. Ia mengambil dokumen
+penemuan milik issuer Anda secara langsung, sehingga situs ini tidak pernah
+melihatnya, lalu menerapkan aturan server: issuer https yang cocok dengan
+dokumen tersebut, endpoint pada origin issuer itu sendiri, PKCE S256, dan
+metode autentikasi token yang dibutuhkan jenis klien Anda. Dengan client ID
+dan alamat server, ia dapat membuka percobaan login yang menunjukkan apakah
+klien beserta URI pengalihannya sudah terdaftar. Ia tidak pernah meminta
+client secret.
 
 <SsoCheck kind="oidc" />

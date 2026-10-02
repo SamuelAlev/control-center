@@ -1,172 +1,174 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: 에이전트와 채팅
+description: 에이전트가 있는 스페이스를 만들고, 작업을 보내고, 실행 중에 스티어링하고 중지합니다.
 slug: ko-KR/매뉴얼/사용-가이드/에이전트와-채팅
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+이 가이드에서는 스페이스에서 에이전트와 함께 작업하는 방법을 설명합니다.
 
-## Create a space
+## 스페이스 만들기
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. 사이드바에서 **스페이스**로 이동합니다
+2. 스페이스 제목 옆의 **+** 버튼을 클릭합니다
+3. **이름**을 입력합니다. 이 항목은 필수입니다. 빈 이름은 거부되며
+   대화 상자는 열린 상태로 유지됩니다
+4. 선택 사항으로 워크스페이스의 에이전트를 추가합니다
+5. 워크스페이스에 저장소가 하나라도 있으면 저장소 선택기가 나타납니다. 처음에는
+   모든 저장소가 선택된 상태로 시작합니다. 이 스페이스가 워크트리를 프로비저닝할
+   저장소로 범위를 좁힙니다(저장소 하나만 선택 해제하는 것도 포함).
+6. 확인합니다
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center는 스페이스를 열고 백그라운드에서 선택한 저장소마다 copy-on-write
+워크트리 프로비저닝을 시작합니다.
 
-## Send the first message
+## 첫 메시지 보내기
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+작성기에 메시지를 입력하고 Enter를 누릅니다. 에이전트가 디스패치되어 응답
+스트리밍을 시작합니다.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+스페이스가 아직 프로비저닝 중이면 메시지는 유실되지 않고 보류됩니다. 작성기가
+메시지를 보관하고, 워크트리가 준비되면 자동으로 전송합니다.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+에이전트가 작업하는 동안 턴 스트림이 표시됩니다. 추론 세그먼트, 도구 호출
+(파일 읽기, 쓰기, 셸 명령), 답변 텍스트가 모두 하나의 에이전트 턴 메시지 안에
+들어 있습니다.
 
-## Steer a running agent
+## 실행 중인 에이전트 스티어링
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+에이전트가 작업하는 동안 일반 대화 텍스트는 새 턴을 대기열에 넣지 **않습니다**.
+그 텍스트는 작성기 위 스트립에 대기 중인 스티어링 카드로 표시되고, 다음 턴 경계에서
+실행 중인 런에 주입됩니다. 토스트 알림은 없습니다. 카드 자체가 피드백입니다.
 
-Three things change that behaviour:
+이 동작을 바꾸는 경우는 세 가지입니다:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- **@멘션**이 포함된 메시지는 항상 메시지로 전송되며, 스티어링으로 처리되지
+  않습니다
+- **슬래시 명령**으로 시작하는 메시지는 항상 해당 명령으로 처리됩니다
+- **첨부 파일**이 있는 메시지는 항상 메시지로 전송됩니다. 스티어링 대기열은
+  텍스트만 지원합니다
+- 실행 중인 런이 모두 이미 끝났다면 텍스트는 그대로 전달되어 일반 메시지로
+  전송됩니다
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[스티어링에는 기본 제공 하네스가 필요합니다]
+Control Center의 기본 제공 하네스만 실행 도중에 주입합니다. Claude Code
+어댑터에서는 텍스트가 여전히 스티어링 카드로 대기열에 들어가며, 런이 끝나면 아직
+대기 중인 내용은 일반 메시지로 변환됩니다.
 :::
 
-## Approve a blocked action
+## 차단된 작업 승인
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+에이전트가 가드레일이 가로막는 작업(파괴적인 명령, 권한이 필요한 도구)에
+도달하면, 서버는 **런을 차단**하고 연결된 모든 클라이언트에 승인 요청을
+게시합니다. 해당 대화를 열어 두었다면 요청은 **채팅에**, 작성기 위에,
+`ask_user`에 사용되는 것과 동일한 번호 선택지 카드로 나타납니다(거부, 승인,
+선택적으로 8시간 동안 승인). 건너뛰기는 없습니다. 차단된 에이전트는 결정을
+기다리고 있습니다.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+앱의 다른 위치에 있더라도 셸의 항상 위에 표시되는 패널에 대기 중인 항목이 계속
+나열되므로, 스페이스를 찾아 헤매지 않고도 에이전트를 차단 해제할 수 있습니다.
+해당 스페이스의 대화가 화면에 표시되는 순간 오버레이에서 요청이 숨겨지므로, 같은
+프롬프트에 두 번 답할 일이 없습니다.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+타임아웃은 없습니다. 차단된 에이전트는 누군가 결정할 때까지 기다립니다. 같은
+요청은 받은편지함의 주의 스트립과 휴대폰 클라이언트에도 나타납니다.
 
-## Answer an agent's question
+## 에이전트의 질문에 답하기
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+선호, 빠진 요구 사항, 또는 실제로 갈리는 선택이 필요한 에이전트는 **반드시**
+`ask_user`를 호출해야 합니다. 질문을 채팅 메시지로 작성하면 턴이 끝나고 다시
+프롬프트해야 합니다. 이 도구는 대화에 번호 카드(선택지, 선택적 자유 입력, 또는
+둘 다)를 렌더링하고, 런은 답변을 기다립니다.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+선택지를 하나 탭하면 전송됩니다(마우스를 올리면 뒤의 숫자가 화살표로 바뀝니다).
+다중 선택과 직접 입력한 답변은 **계속**(`⌘↵` / `Ctrl↵`)을 사용합니다.
+**건너뛰기**는 에이전트에게 합리적인 기본값을 선택하고 다시 묻지 말라고
+지시합니다.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+이것은 위의 승인 카드와는 별개의 메커니즘입니다. 승인은 "이렇게 해도 될까요?"이고,
+질문은 "이 중 어떤 것을 의미했나요?"입니다. 질문하기는 읽기 전용 모드를 포함한
+모든 모드의 기본 제공 하네스에서 사용할 수 있으며(아무것도 변경하지 않습니다),
+의도적으로 승인 프롬프트로 감싸지 않았습니다. 대화 상자 앞에 대화 상자를 두면
+승인자가 연결되지 않은 상태에서 닫힌 채 실패하기 때문입니다. 렌더링할 대화가 없는
+런은 이 도구를 받지 않습니다.
 
-## Stop an agent
+## 에이전트 중지
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+런이 살아 있는 동안 작성기의 전송 버튼이 **중지** 버튼이 됩니다. 작성기를 비우고
+이 버튼을 누릅니다. 그러면 해당 대화에서 실행 중인 모든 에이전트가 중지됩니다.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+스페이스 헤더에는 중지 컨트롤이 없고, 이를 위한 키보드 단축키도 없습니다. 여러
+런이 살아 있을 때 하나만 중지하려면 해당 런의 활동 탭을 엽니다. 그 헤더에 런
+범위의 일시 중지/재개와 중지가 있습니다(중지는 확인을 요청합니다).
+**옵저버빌리티 → 실시간**에는 동일한 컨트롤과 함께 워크스페이스에서 실행 중인 모든
+에이전트가 나열됩니다.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+중지된 런은 중지됨으로 표시됩니다. 다시 디스패치하려면 새 메시지를 보냅니다.
 
-## Use slash commands
+## 슬래시 명령 사용
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+작성기에서 `/`를 입력하면 명령 목록이 표시됩니다. 대화의 동작을 바꾸는 명령은
+다음과 같습니다:
 
-| Command        | What it does                                                                                                                         |
+| 명령           | 하는 일                                                                                                                              |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | 스페이스를 플랜 모드로 전환합니다. `/plan`만 입력하면 모드만 준비되고, `/plan <request>`는 모드를 준비하고 나머지를 메시지로 보냅니다 |
+| `/goal <text>` | 대화의 작업 목표를 기록합니다                                                                                                        |
+| `/loop <text>` | 작업이 완료될 때까지 반복합니다                                                                                                      |
+| `/compact`     | 오래된 기록을 고정된 요약으로 접고 압축된 컨텍스트에서 계속합니다                                                                    |
+| `/todo …`      | 이 대화의 영속 할 일 목록을 보고 편집합니다                                                                                          |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+스킬은 자체 `skill:` 네임스페이스 아래 같은 목록에 나타나므로 위 명령과 충돌하지
+않습니다. `plan` 또는 `compact`라는 이름의 스킬도 계속 사용할 수 있습니다:
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| 명령                    | 실행하는 것                                                   |
+| ----------------------- | ------------------------------------------------------------- |
+| `/skill:<name>`         | 워크스페이스에 설치된 스킬, 또는 에이전트에 연결된 스킬        |
+| `/skill:<repo>:<name>`  | 이 스페이스에 체크아웃된 저장소 중 하나가 제공하는 스킬        |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+저장소 스킬에는 출처 저장소가 배지로 표시됩니다. 이름만으로는 어떤 서비스의
+관례를 담고 있는지 알 수 없고, 두 저장소가 각각 `testing`을 제공할 수도 있기
+때문입니다. 스킬을 찾을 때 접두사를 입력할 필요는 없습니다. 스킬 이름만 입력해도
+네임스페이스가 붙은 항목과 일치합니다.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+에이전트는 현재 작업 중인 저장소의 스킬만 항상 보유합니다. 자세한 내용은
+[저장소 범위 스킬](/ko-KR/매뉴얼/개념/에이전트-모델/#repo-scoped-skills)을
+참고하세요. 작성기는 그런 식으로 범위가 제한되지 않습니다. 이름을 지정하면 어떤
+저장소의 스킬이든 호출할 수 있습니다.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact`와 `/todo`는 클라이언트에서 가로채며 메시지로 영속되지 않습니다. 대화
+기록에 `/compact` 줄이 있으면 다음 압축의 기준점이 한 턴 뒤로 밀리기 때문입니다.
+`/plan`은 텍스트로 전달되지 않고 스페이스에 저장된 모드를 전환합니다. 따라서 이
+세 가지는 "에이전트에게 보내는 메시지"가 아니며, 기록에 나타나리라고 기대하지
+마세요.
 
-## Ask for a plan first
+## 먼저 플랜 요청하기
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/).
+복잡한 변경을 하기 전에 `/plan`, 작성기 도구 모음의 모드 드롭다운, 또는
+Shift+Tab으로 스페이스를 플랜 모드로 전환합니다. 그러면 에이전트는 읽기 전용으로
+조사하고, 작업이 시작되기 전에 승인할 수 있는 타입이 지정된 계획을 제공합니다.
+[플랜 모드 사용](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)을 참고하세요.
 
-## Reach an agent without a dedicated space
+## 전용 스페이스 없이 에이전트에게 접근하기
 
-You do not need a space per agent. In any space:
+에이전트마다 스페이스를 둘 필요는 없습니다. 어느 스페이스에서든 다음과 같이
+입력합니다:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/) for how names are
-matched.
+멘션된 에이전트는 스페이스에 추가되고 해당 스페이스의 컨텍스트와 함께
+디스패치됩니다. 이름이 어떻게 일치하는지는
+[에이전트 @멘션](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/)을 참고하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Use spaces](/ko-KR/매뉴얼/사용-가이드/스페이스/)
-- [@-mention agents](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/)
-- [Use plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/) to do the same from Slack
+- [스페이스 사용](/ko-KR/매뉴얼/사용-가이드/스페이스/)
+- [에이전트 @멘션](/ko-KR/매뉴얼/사용-가이드/에이전트-멘션/)
+- [플랜 모드 사용](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)을 참고하면 Slack에서도 같은 작업을 할 수 있습니다
 
-## Related concepts
+## 관련 개념
 
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)

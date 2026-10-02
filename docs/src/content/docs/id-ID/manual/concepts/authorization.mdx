@@ -1,123 +1,139 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Otorisasi — siapa yang boleh melakukan apa, dan bagaimana Anda membuktikannya
+description: Katalog izin di balik peran Control Center, jejak audit yang dapat mendeteksi manipulasi tempat setiap keputusan otorisasi bermuara, dan kontrol tingkat instalasi yang dapat ditetapkan operator.
 slug: id-ID/panduan-pengguna/konsep/otorisasi
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/).
+Control Center menjawab dua pertanyaan otorisasi, dan keduanya sungguh
+berbeda. **“Bolehkah orang ini memanggil operasi ini?”** menyangkut manusia,
+peran, dan repositori. **“Bolehkah agen ini menimbulkan efek ini?”**
+menyangkut tindakan, argumen, dan radius dampak — pertanyaan itu dibahas di
+[Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/).
 
-This page is the first question, plus the record both of them leave behind.
+Halaman ini membahas pertanyaan pertama, plus catatan yang ditinggalkan
+keduanya.
 
-## One decision point
+## Satu titik keputusan
 
-Every human-side authorization decision resolves through a single function:
+Setiap keputusan otorisasi di sisi manusia diselesaikan melalui satu fungsi:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Sebuah **izin** berbentuk `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Katalognya **diturunkan**, bukan ditulis
+tangan: katalog dihitung dari permukaan operasi itu sendiri (prefiks nama
+operasi menentukan domain, sedangkan batas peran minimum yang sudah
+ditegakkannya menentukan tingkatnya), sehingga semua ~550 operasi membawa
+izin tanpa perlu ada yang mengetikkannya.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Penurunan itulah properti yang layak dilindungi. Artinya, operasi BARU sudah
+dibatasi secara default — mode kegagalan dari model yang dianotasi tangan
+adalah ada orang yang lupa, dan yang dilupakan adalah gerbangnya. Uji ratchet
+mematok himpunan domain yang dihasilkan, sehingga menambahkan operasi di
+bawah prefiks baru menjadi keputusan penamaan yang dibuat manusia, bukan
+kecelakaan.
 
-The four tiers map exactly onto the built-in roles:
+Keempat tingkat tersebut memetakan persis ke peran bawaan:
 
-| Tier | Role floor | Example |
+| Tingkat | Peran minimum | Contoh |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Tamu | `tickets:read` |
+| `write` | Anggota | `tickets:write` |
+| `administer` | Admin | `members:administer` |
+| `own` | Pemilik | `workspace:own` |
 
-## Roles
+## Peran
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Lima peran bawaan — **Pemilik, Admin, Anggota, Penampil, Tamu** — adalah
+preset di atas katalog tersebut. Kepemilikan adalah satu kursi per ruang
+kerja, yang dialihkan secara eksplisit dengan **Alihkan kepemilikan**
+(pemilik yang pergi tidak dapat dihapus dengan cara lain: deprovisioning SCIM
+menolak setiap pemilik ruang kerja — alihkan dulu).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Peran kustom bersifat mengurangi.** Peran kustom menyebut satu preset dasar
+(`admin`, `member`, `viewer`, atau `guest` — tidak pernah `owner`) dan
+sekumpulan izin yang DIHAPUS darinya — “Admin, tetapi tidak dapat mengelola
+anggota”. Peran ini tidak pernah dapat memberikan lebih dari dasarnya, dan
+itulah yang membuatnya aman diperkenalkan ke instalasi yang sudah ada: setiap
+pemeriksaan yang ada tetap menjadi batas atas yang sah. Anggota memegangnya
+sebagai `custom:<id>`, dan klien yang terlalu lama untuk memahami nilai
+tersebut kembali ke Tamu daripada menebak.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Di bawah peran terdapat **pemberian izin per repo** (`none` / `read` /
+`review` / `write`): keanggotaan ruang kerja tidak pernah diam-diam
+melampaui hak istimewa host kode. Setiap permukaan yang mengekspos kode
+memeriksanya — termasuk yang menjangkau kode dari samping, seperti terminal
+atau sesi editor yang dibuka pada worktree sebuah space.
 
-## Server authority
+## Kewenangan server
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Sebagian operasi sama sekali bukan tentang ruang kerja: pengaturan seluruh
+instalasi, konfigurasi SSO, kredensial penyedia, pengelolaan model, cadangan
+seluruh instalasi. Operasi tersebut mendeklarasikan **kewenangan server** dan
+ditolak untuk semua orang kecuali operator instalasi (pemilik server yang
+tercatat). Identitas operator sengaja hanya satu, dengan satu definisi untuk
+itu.
 
-## The audit trail
+## Jejak audit
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Setiap keputusan otorisasi — **mengizinkan dan menolak** — ditambahkan ke
+jejak audit per ruang kerja yang dirantai hash.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Log yang hanya mencatat penolakan menjawab “apa yang kami blokir?” tetapi
+bukan “apa yang sebenarnya dilakukan agen ini, dan siapa yang
+mengotorisasinya?” — pertanyaan yang menjadi titik awal tinjauan insiden.
+Karena itu, setiap entri mencatat rantai atribusi lengkap: prinsipal yang
+bertindak, manusia yang diwakilinya, delegasi yang dilaluinya, tindakan
+beserta argumennya (sebagai digest), keputusannya, dan **aturan yang
+memutuskan**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Entri-entri dirantai: hash setiap entri mencakup hash entri sebelumnya,
+sehingga mengedit, menghapus, atau mengubah urutan baris mana pun memutus
+setiap hash setelahnya. **Verifikasi rantai** menurunkan ulang keseluruhannya
+dan menyebutkan mata rantai pertama yang tidak valid. Log audit yang tidak
+dapat Anda periksa hanyalah log; log yang dapat Anda turunkan ulang adalah
+bukti.
 
-Two consequences worth knowing:
+Dua konsekuensi yang perlu diketahui:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Tabel audit **dikecualikan dari pemangkasan berbasis usia**. Rantai hash
+  tidak dapat dipangkas dari tengah. Retensi dilakukan dengan ekspor lalu
+  pemotongan, dan pemotongan itu meninggalkan checkpoint yang membawa hash
+  terminal segmen yang dihapus, sehingga apa yang tersisa tetap terverifikasi
+  sampai ke awal.
+- Jejak ini berada **di samping** timeline aktivitas, bukan di atasnya.
+  Timeline mencatat apa yang dilakukan orang; jejak ini mencatat apa yang
+  diotorisasi dan ditolak. Dengan id korelasi bersama, satu panggilan dapat
+  dibaca di kedua tempat.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Jejak ini diekspor sebagai JSON yang dibatasi baris baru dan dapat dialirkan
+ke SIEM (Splunk, Elastic, Sentinel — endpoint HTTP dengan bearer token).
+Streaming bersifat best-effort secara desain: SIEM yang mati tidak boleh
+menghalangi panggilan alat agen, dan salinan yang tahan lama serta dapat
+diverifikasi tetap ada di disk.
 
-## Sessions
+## Sesi
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Sebuah instalasi dapat menetapkan **usia sesi maksimum** dan **batas waktu
+tidak aktif**. Keduanya ditegakkan pada pemeriksaan kredensial perangkat
+tempat setiap jalur terautentikasi bermuara — batas sesi yang bisa diabaikan
+klien hanya menjawab kuesioner, bukan menangkal penyerang. Instalasi juga
+dapat mewajibkan SSO, yang menonaktifkan pairing manual untuk perangkat baru
+(dengan pengaman penguncian: permintaan ditolak selama tidak ada koneksi SSO
+yang berfungsi).
 
-## What this is not
+## Apa yang tidak termasuk di sini
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Bukan ACL per objek.** Tidak ada izin per tiket atau per pesan, dan itu
+  disengaja. Pemisahan tingkat repositori adalah yang benar-benar diminta tim,
+  dan itu sudah ada; berbagi per objek adalah permukaan kombinatorial tanpa
+  permintaan yang terbukti di sini.
+- **Bukan mesin kebijakan yang Anda konfigurasikan lewat DSL.** Kosakatanya
+  ditutup dengan sengaja, sehingga seluruh kebijakan dapat ditampilkan,
+  dijelaskan, dan dienumerasi.
+- **Tidak ditegakkan di mana pun selain server.** Pemeriksaan di sisi klien
+  hanya ada agar tidak menawarkan kontrol yang akan ditolak. Keputusan yang
+  berwenang selalu milik server.

@@ -1,135 +1,153 @@
 ---
-title: Use plan mode
-description: Switch a space into plan mode, get a typed plan and approve it into running work.
+title: Usar el modo plan
+description: Cambia un espacio al modo plan, obtén un plan tipado y apruébalo para convertirlo en trabajo en ejecución.
 slug: es-MX/manual/guias/modo-plan
+sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
 ---
 
-This guide shows you how to get a structured plan out of an agent before it writes
-any code.
+Esta guía te muestra cómo obtener un plan estructurado de un agente antes de que
+escriba una sola línea de código.
 
-In plan mode the agent researches read-only and its only deliverable is a **typed
-plan**: a dependency graph of steps you approve, which Control Center then compiles
-into real work. Use it when you want to see the scope of a change, get the steps
-broken down, or have risks and dependencies named before anything is touched.
+En el modo plan el agente investiga en solo lectura y su único entregable es un
+**plan tipado**: un grafo de dependencias de pasos que tú apruebas y que Control
+Center compila después en trabajo real. Úsalo cuando quieras ver el alcance de un
+cambio, tener los pasos desglosados o conocer los riesgos y las dependencias antes
+de tocar nada.
 
-## Switch a space into plan mode
+## Cambiar un espacio al modo plan
 
-Any of these flips the space's mode and the change is persisted:
+Cualquiera de estas acciones cambia el modo del espacio y el cambio se guarda:
 
-- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
-- Press **Shift+Tab**
-- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
-  sends the rest as your message
+- Elige **Plan** en el desplegable de modo, en el extremo izquierdo de la barra de
+  herramientas del compositor
+- Presiona **Shift+Tab**
+- Envía `/plan`. Un `/plan` a secas solo arma el modo; `/plan <request>` lo arma y
+  envía el resto como tu mensaje
 
-`/plan` never travels as text — it sets the stored mode, which is the authority the
-tool surface, the guard preset and the prompt all read. So the mode holds for this
-turn and every turn after it, until you change it back.
+`/plan` nunca viaja como texto: fija el modo almacenado, que es la autoridad que
+leen la superficie de herramientas, el preajuste de barandillas y el prompt. Así
+que el modo se mantiene durante este turno y todos los siguientes, hasta que lo
+vuelvas a cambiar.
 
-The mode is stored on the space, so the same agent can be in plan mode here and
-in agent mode elsewhere.
+El modo se almacena en el espacio, así que un mismo agente puede estar en modo plan
+aquí y en modo agente en otro sitio.
 
-## What the agent produces
+## Qué produce el agente
 
-1. It researches read-only — memory, the code index, files
-2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
-   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
-   (which is what lets independent work run in parallel)
-3. It stops
+1. Investiga en solo lectura: la memoria, el índice de código, los archivos
+2. Llama a `submit_plan` **una sola vez**, con un `goal` más `nodes`, y cada nodo
+   lleva una `key` estable, un `title`, una `description` y las claves de nodo
+   indicadas en `dependsOn` (los nodos de los que depende; eso es lo que permite
+   que el trabajo independiente se ejecute en paralelo)
+3. Se detiene
 
-The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
-returns violations for the agent to fix rather than accepting a broken plan.
+La herramienta valida el grafo —claves duplicadas, dependencias colgantes,
+ciclos— y devuelve las infracciones para que el agente las corrija, en lugar de
+aceptar un plan roto.
 
-The plan appears **in the conversation** as a compact row showing the goal, its
-status and the step count. **Plan Studio** — the dependency graph, the per-node
-inspector and the cost estimate — opens as a tab beside the conversation: press
-**Open** on the row, or simply wait, because a plan that lands within 30 seconds
-while you are watching the conversation opens its tab itself.
+El plan aparece **en la conversación** como una fila compacta que muestra el
+objetivo, su estado y el número de pasos. **Plan Studio** —el grafo de
+dependencias, el inspector por nodo y la estimación de costos— se abre como una
+pestaña junto a la conversación: presiona **Abrir** en la fila o simplemente
+espera, porque un plan que llega en menos de 30 segundos mientras estás mirando la
+conversación abre su pestaña solo.
 
-:::note[The read-only guarantee is structural, but only on the built-in harness]
-Control Center's own harness builds the agent's tool registry from plan mode's
-surface spec, so there simply is no write, edit or command tool to call — the
-restriction is not a prompt instruction the model could talk itself out of.
+:::note[La garantía de solo lectura es estructural, pero solo en el arnés integrado]
+El arnés propio de Control Center construye el registro de herramientas del agente
+a partir de la especificación de superficie del modo plan, así que sencillamente no
+hay ninguna herramienta de escritura, edición ni ejecución de comandos a la que
+llamar: la restricción no es una instrucción del prompt de la que el modelo pueda
+escabullirse.
 
-The Claude Code adapter gets no such filtering: the mode reaches it as a
-request its own runner may or may not honour and Control Center only ever sees
-its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
-exactly when that is the case.
+El adaptador de Claude Code no recibe ese filtrado: el modo le llega como una
+solicitud que su propio ejecutor puede respetar o no, y Control Center solo alcanza
+a ver sus llamadas `mcp__*`. La insignia de aplicación situada junto al
+desplegable de modo aparece exactamente cuando ese es el caso.
 :::
 
-:::note[The agent can ask you clarifying questions]
-When the request is ambiguous, a plan agent can pause and ask you up to three
-blocking questions with the `ask_user` tool. It renders a form in the
-conversation — options, or free text — and the run blocks until you answer. The
-tool is read-tier, so it survives plan mode's read-only surface, and it is
-exempt from the approval wrapper (a prompt in front of a prompt would fail
-closed with no approver connected, denying the agent the act of asking).
+:::note[El agente puede hacerte preguntas de aclaración]
+Cuando la solicitud es ambigua, un agente en modo plan puede detenerse y hacerte
+hasta tres preguntas bloqueantes con la herramienta `ask_user`. Muestra un
+formulario en la conversación —opciones o texto libre— y la ejecución se bloquea
+hasta que respondas. La herramienta es de nivel de lectura, así que sobrevive a la
+superficie de solo lectura del modo plan, y está exenta del envoltorio de
+aprobación (un prompt delante de otro prompt fallaría en cerrado sin ningún
+aprobador conectado, lo que le negaría al agente el propio acto de preguntar).
 
-It needs a space to render into, so a one-shot dispatch with no conversation
-does not get it. Front-loading the scope, the target repo and the acceptance
-criteria in your first message is still faster than a round-trip.
+Necesita un espacio en el que mostrarse, así que un despacho puntual sin
+conversación no la tiene. Aun así, adelantar el alcance, el repo de destino y los
+criterios de aceptación en tu primer mensaje sigue siendo más rápido que una ida y
+vuelta.
 :::
 
-Prose is not a deliverable here. A run that ends without calling `submit_plan`
-posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
-the conversation and flags the run as having missed its deliverable. The run's
-status deliberately stays _completed_ — that keeps pipeline and ticket state
-machines untouched — so read the line, not the status badge.
+La prosa no es un entregable aquí. Una ejecución que termina sin llamar a
+`submit_plan` publica una línea visible «Ended without submitting a plan (no
+`submit_plan` call).» en la conversación y marca la ejecución como una que no
+produjo su entregable. El estado de la ejecución se queda deliberadamente en
+_completed_ —así las máquinas de estados de pipelines y tickets no se tocan—, así
+que fíjate en la línea, no en la insignia de estado.
 
-## Approve the plan
+## Aprobar el plan
 
-From the plan's row in the conversation, press **Approve and run**. From Plan
-Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
-disabled while the graph has a validation error).
+En la fila del plan en la conversación, presiona **Aprobar y ejecutar**. En la
+barra de aprobación de Plan Studio, presiona **Aprobar plan** (o **Rechazar**, justo
+al lado; la aprobación está desactivada mientras el grafo tenga un error de
+validación).
 
-Then:
+Después:
 
-1. Control Center compiles the plan into an orchestration and materializes it — the
-   tickets and the run. No model is involved in this step; it is deterministic
-2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
-   that agent's call at run time — it can `delegate_task` a step to a better-suited
-   teammate, within the workspace's delegation depth cap
-3. The plan's goal becomes **the conversation's goal** and the work runs **in that
-   same conversation**: each step posts what the agent was asked and streams its
-   turn back, so you follow it (and can stop a turn) where you already are
-4. The goal row in the conversation's **General** side panel (under Todos) carries
-   the run's progress as `settled/total` and its stop button; Plan Studio shows
-   per-node state on the graph and cancels there too
+1. Control Center compila el plan en una orquestación y la materializa: los tickets
+   y la ejecución. En este paso no interviene ningún modelo; es determinista
+2. El plan se ejecuta como el agente que lo escribió. Decidir si entra alguien más
+   es cosa de ese agente en tiempo de ejecución: puede delegar un paso con
+   `delegate_task` a un compañero de equipo más adecuado, dentro del límite de
+   profundidad de delegación del espacio de trabajo
+3. El objetivo del plan pasa a ser **el objetivo de la conversación** y el trabajo
+   se ejecuta **en esa misma conversación**: cada paso publica lo que se le pidió
+   al agente y transmite su turno de vuelta, así que lo sigues (y puedes detener un
+   turno) donde ya estás
+4. La fila del objetivo en el panel lateral **General** de la conversación (bajo
+   Tareas) lleva el progreso de la ejecución como `settled/total` y su botón de
+   detener; Plan Studio muestra el estado de cada nodo en el grafo y también
+   permite cancelar allí
 
-## Keep working without approving
+## Seguir trabajando sin aprobar
 
-If you would rather stay in this conversation than approve the plan, the agent can
-call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
-approval request linked to the conversation and returns `pending` — the
-space stays in plan mode and the agent must not act. Once the request is
-approved, the agent's next `exit_plan_mode` call flips the space from plan
-to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
-request against a revised plan.
+Si prefieres quedarte en esta conversación en lugar de aprobar el plan, el agente
+puede llamar a `exit_plan_mode`. Es la única salida autorizada: abre una solicitud
+de aprobación duradera vinculada a la conversación y devuelve `pending`: el espacio
+sigue en modo plan y el agente no debe actuar. Una vez aprobada la solicitud, la
+siguiente llamada del agente a `exit_plan_mode` pasa el espacio del modo plan al
+modo agente y desbloquea sus herramientas que mutan. Un rechazo le permite abrir
+una solicitud nueva contra un plan revisado.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+Para salir del modo plan, cambia el desplegable del compositor (o Shift+Tab), o
+aprueba el plan enviado. `exit_plan_mode` abre una aprobación duradera que se decide
+con la herramienta MCP `decide_approval`. La superposición de barandillas para las
+llamadas de herramientas bloqueadas es otra cola, en memoria, y no transporta
+solicitudes de salida del modo plan.
 
-## Plan mode in a pipeline step
+## El modo plan en un paso de pipeline
 
-A `messaging.createSpace` pipeline node reads the conversation mode from the node
-config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
-other spelling, including `conversationMode` or `dispatchMode`, is silently
-ignored and the room falls back to the body's default, which is **review** mode,
-not chat. A `promptAgent` step joins a room it did not create and does not
-re-permission it. The node config editor's **Dispatch mode** select
-(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
-with `extras['mode']` on a template that opens the space, or on that node's
-config through the API.
+Un nodo de pipeline `messaging.createSpace` lee el modo de conversación del
+**extra** `mode` de la configuración del nodo: `extras['mode']: 'plan'`. La clave
+debe coincidir exactamente: cualquier otra grafía, incluidas `conversationMode` o
+`dispatchMode`, se ignora en silencio y la sala recurre al valor predeterminado del
+cuerpo, que es el modo **revisión**, no el de chat. Un paso `promptAgent` se une a
+una sala que no creó y no le vuelve a definir los permisos. El selector **Modo de
+despacho** del editor de configuración de nodos (`allParallel` / `manager`) es para
+los nodos de despacho de equipo. Define el modo de conversación con `extras['mode']`
+en una plantilla que abra el espacio, o en la configuración de ese nodo a través de
+la API.
 
-## Related guides
+## Guías relacionadas
 
-- [Chat with an agent](/es-MX/manual/guias/chatear-con-agente/)
-- [Use spaces](/es-MX/manual/guias/espacios/)
-- [Work in Plan Studio](/es-MX/manual/guias/plan-studio/)
-- [Run an orchestration](/es-MX/manual/guias/ejecutar-orquestacion/)
+- [Chatear con un agente](/es-MX/manual/guias/chatear-con-agente/)
+- [Usar espacios](/es-MX/manual/guias/espacios/)
+- [Trabajar en Plan Studio](/es-MX/manual/guias/plan-studio/)
+- [Ejecutar una orquestación](/es-MX/manual/guias/ejecutar-orquestacion/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Modes](/es-MX/manual/conceptos/modos/)
-- [Orchestration](/es-MX/manual/conceptos/orquestacion/)
+- [Modos](/es-MX/manual/conceptos/modos/)
+- [Orquestación](/es-MX/manual/conceptos/orquestacion/)

@@ -1,131 +1,132 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: 에이전트에 작업 위임
+description: 대화에서 에이전트에게 티켓을 맡기고, 깊이와 순환 가드 아래에서 에이전트끼리 하위 작업을 위임하도록 하는 방법을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/티켓-위임
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+이 가이드는 내 손에서 일을 덜어 에이전트에게 넘기는 방법과, 에이전트끼리 일을
+주고받을 때 벌어지는 일을 다룹니다.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[티켓을 에이전트에 배정해도 디스패치되지 않습니다]
+에이전트 담당자를 위한 티켓 디스패처는 없습니다. 배정은 소유권을 기록할 뿐
+그 이상은 아무것도 하지 않습니다 — 스페이스도 만들어지지 않고, 상태도 바뀌지
+않으며, 어떤 에이전트도 시작되지 않습니다. 예외는 **팀**에 배정된 티켓으로,
+이는 그 팀의 리더를 깨웁니다. 이름이 지정된 담당자의 에이전트 작업은 대화에
+있으므로, 바로 거기서 시작합니다.
 :::
 
-## Hand a ticket to an agent
+## 티켓을 에이전트에 넘기기
 
-1. [Create the ticket](/ko-KR/매뉴얼/사용-가이드/티켓-관리/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. 작업에 착수할 수 있을 만큼 정확한 제목과 설명으로
+   [티켓을 만듭니다](/ko-KR/매뉴얼/사용-가이드/티켓-관리/).
+2. 소유권이 기록에 남도록 티켓의 **담당자**를 그 에이전트로 설정합니다.
+3. 스페이스를 열고(또는 만들어) 그 에이전트를 @멘션합니다.
+4. 메시지에서 `#` 멘션으로 티켓을 참조하고 — 작성기는 워크스페이스 티켓을
+   자동 완성합니다 — 무엇을 해 주기를 원하는지 말합니다.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+에이전트는 그 대화에서 작업을 집어갑니다. 진행 상황은 그 스페이스로
+스트리밍됩니다.
 
-## What the agent receives
+## 에이전트가 받는 것
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- 태그한 티켓 참조를 포함한, 보낸 메시지.
+- 작업하고 보고할 스페이스.
+- 워크스페이스에 연결된 저장소에서 만든 격리된 워크트리.
+- 실행의 도구 표면을 좌우하는, 스페이스의 **모드**.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ko-KR/매뉴얼/개념/모드/).
+모드는 티켓이 아니라 스페이스의 속성입니다 — 티켓에는 모드가 없습니다.
+따라서 같은 에이전트가 한 스페이스에서는 `chat`, 다른 스페이스에서는 `plan`에
+있을 수 있습니다. 작성기의 모드 드롭다운(**Agent**, **Plan** 또는
+**Orchestrate**)에서 선택합니다. `review`는 PR 리뷰 스페이스가 설정하며 선택할
+수 없습니다. [모드](/ko-KR/매뉴얼/개념/모드/)를 참고하세요.
 
-## Require a structured result
+## 구조화된 결과 요구하기
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+출력 계약은 티켓이 아니라 디스패치에 선언합니다: `expected_output_schema`와
+`output_contract_mode`(기본값은 strict)입니다. 에이전트는 `submit_output`을
+호출해 이를 충족하며, 이 호출은 페이로드를 스키마에 따라 검증하고 규격에 맞지
+않는 것은 거부합니다.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+수락된 출력과 거부된 출력은 모두 **에이전트 실행 로그**에 남습니다. 티켓 자체의
+상태는 이와 무관합니다 — 계약이 실패해도 티켓이 실패하지는 않습니다.
 
-## Monitor progress
+## 진행 상황 모니터링
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **스페이스** — 실시간 에이전트 활동을 보여 주는 기본 화면입니다.
+- **티켓** — 티켓을 옮기는 쪽이 설정한 대로의 상태입니다.
+- **옵저버빌리티 → 실시간**
+  (`/workspaces/<workspace-id>/observability`) — 실시간 에이전트 로스터입니다.
+- **옵저버빌리티 → 인사이트** — 비용과 소요 시간이 함께 있는 실행 로그입니다.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+대시보드 화면은 없습니다. 워크스페이스 URL만 열면 받은편지함으로
+리디렉션됩니다.
 
-## Let agents delegate to each other
+## 에이전트끼리 위임하게 하기
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+부분 문제에 부딪힌 에이전트는 `delegate_task` MCP 도구로 위임합니다. 이 도구는
+다른 에이전트에 배정된 하위 티켓을 만들고, `parent_ticket_id`를 전달하면 가드가
+볼 수 있도록 그 체인을 기록합니다.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+티켓팅 병목 지점에서는 프롬프트 지시가 아니라 항상 두 가지 구조적 가드가
+실행됩니다:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **깊이 상한** — 3홉보다 깊은 체인은 거부됩니다.
+- **순환 감지** — 이미 체인에 있는 에이전트로 되돌아가는 홉은 거부됩니다.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+`from_agent_id`를 전달하면 가드 두 가지가 더 실행됩니다(프로덕션은 항상 리졸버
+포트를 제공합니다):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **자율성 상한** — 위임받은 에이전트의 스페이스 내 실효 레벨은 위임한 쪽을
+  넘을 수 없습니다.
+- **예산 한도** — 위임은 위임한 쪽의 남은 강제 중단 예산에 청구되며 그 이상을
+  만들어 낼 수 없습니다. 정책이 없거나 정책이 무제한이면 통과합니다.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+거부는 시끄럽습니다. 도구는 가드의 사유를 그대로 반환하므로 위임한 에이전트가
+정확히 왜 거부되었는지 봅니다. `delegatedByAgentId` 필드는 누가 위임했는지를
+기록해 위임 트리를 이룹니다.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket`은 모든 가드를 건너뜁니다]
+구형 `delegate_ticket` 도구는 여전히 등록되어 있으며 `createTicket`을 직접
+호출합니다 — 깊이 상한도, 순환 검사도, 자율성 상한도, 예산 한도도 없습니다.
+`delegate_task`를 사용하는 것이 좋습니다.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+이 위임 깊이 상한 3은 내장 하네스의 서브에이전트 중첩 상한 2와는 다른
+한도입니다 — 하나는 에이전트 사이의 티켓을 제한하고, 다른 하나는 단일 실행 안의
+서브에이전트를 제한합니다.
 
-## Put several agents on one ticket
+## 한 티켓에 여러 에이전트 투입하기
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+티켓에 이들을 **협업자**로 추가합니다(역할: 담당자, 협업자, 리뷰어). 이것은
+로스터, 즉 누가 관련되어 있는지의 기록일 뿐이며 그 자체로는 아무 권한도
+부여하지 않습니다.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ko-KR/매뉴얼/사용-가이드/스페이스/).
+실제로 에이전트들을 같은 대화에 넣으려면 스페이스 헤더에서 참가자로 추가합니다.
+그러면 그곳에서 서로를 @멘션할 수 있습니다.
+[스페이스](/ko-KR/매뉴얼/사용-가이드/스페이스/)를 참고하세요.
 
-## Automated ticket creation
+## 자동 티켓 생성
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+파이프라인 팔레트에는 티켓을 만드는 노드가 없으므로, 파이프라인이 작업을 배정된
+티켓으로 펼쳐 낼 수는 없습니다.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/).
+실제로 존재하는 경로는 오케스트레이션입니다. 제안을 승인하면 프로젝트와 팀이
+만들어지고, 제안의 하위 티켓 DAG가 **파이프라인 템플릿**으로 컴파일되며(하위
+티켓마다 `Ticket` 행이 아니라 `promptAgent` 단계 하나), 그 실행이 시작됩니다.
+[오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)을
+참고하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Create and manage tickets](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
-- [Chat with an agent](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
-- [Organize work with projects](/ko-KR/매뉴얼/사용-가이드/프로젝트/)
-- [Ticket lifecycle reference](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/)
+- [티켓 생성 및 관리](/ko-KR/매뉴얼/사용-가이드/티켓-관리/)
+- [에이전트와 채팅](/ko-KR/매뉴얼/사용-가이드/에이전트와-채팅/)
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/)
+- [프로젝트로 작업 정리](/ko-KR/매뉴얼/사용-가이드/프로젝트/)
+- [티켓 수명주기 레퍼런스](/ko-KR/매뉴얼/레퍼런스/티켓-수명주기/)
 
-## Related concepts
+## 관련 개념
 
-- [Tickets](/ko-KR/매뉴얼/개념/티켓/)
-- [Dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/)
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)

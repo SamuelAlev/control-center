@@ -1,128 +1,73 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: 日历与日程
+description: Control Center 如何在服务器上同步 Google Calendar、登录为何采用设备码授权，以及只读作用域涵盖哪些内容。
 slug: zh-CN/手册/概念/日历
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/zh-CN/手册/概念/会议/).
+Control Center 会连接到 Google Calendar，让你的日程与机群并排呈现。它会同步你的事件，在月、周、日和议程视图中显示它们，在会议开始前提醒你，并把任意事件变成一场录制并总结了内容的[会议](/zh-CN/手册/概念/会议/)。
 
-## What it changes on Google
+## Google 侧会改动什么
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+几乎什么都不改。该集成只拉取事件并把它们渲染出来。它不会创建、编辑或删除事件，也不会回复邀请。无论是内置客户端还是自带客户端，每一次设备码连接都会请求 `calendar.readonly` 以及 `openid email`。
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+事件会同步到工作区自己的数据库中，该数据库**位于服务器上**（`<dataDir>/<workspaceId>/workspace.db`），并由每个客户端通过 RPC 渲染。没有任何客户端持有 Google 凭据。
 
-## Per-workspace accounts
+## 按工作区划分的账户
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/zh-CN/手册/概念/工作区/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+日历账户与工作区绑定，Control Center 中的其他一切也是如此。每个[工作区](/zh-CN/手册/概念/工作区/)都连接自己的 Google 账户（可以是一个或多个），一个工作区的事件和令牌永远无法从另一个工作区看到。切换工作区，你看到的日历也随之切换。
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+一个工作区可以连接**多个** Google 账户，例如一个工作账户和一个个人账户，它们的事件会合并到相同的视图中。
 
-## Why sign-in is a device code
+## 登录为何使用设备码
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+无界面的 `cc_server` 没有浏览器来接收 OAuth 重定向。因此它不使用重定向，而是通过**设备码授权**（RFC 8628）完成授权。服务器显示一个简短的验证码和一个 Google URL，你在任何有浏览器的设备上批准，服务器会轮询直到你批准为止。无界面安装之所以能连接账户，正是因为无需托管任何重定向端点。
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+在自带凭据之前需要了解的后果是：客户端类型必须是 Google 的 “TV and Limited Input devices”。Google 只向该客户端类型授予允许列表中的一组作用域，如果某个项目未获准将它用于 Calendar，则会以 `invalid_scope` 失败——这种情况下你需要改用环回客户端或 Web 客户端。
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+令牌永远不会离开服务器。它们会写入服务器数据目录中的 `secrets.json`，键为 `google_google:<workspaceId>:<email>`，与数据库放在一起，并处于同一主机文件系统信任边界之内。服务器会自动刷新访问权限；当 Google 永久性地使某个账户失效时（会话被撤销或长期过期），服务器会发布 `CalendarAuthExpired`，并显示**重新连接**横幅，而不是静默失败。
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+从源码构建的版本**完全不**附带 Google 凭据——客户端 ID 和密钥由你自己提供。官方发行版会内置一个非机密的设备码客户端，因此连接流程开箱即用；服务器只保存一个引用它的标记，绝不保存副本。环境中的 `GOOGLE_OAUTH_CLIENT_ID`（及其密钥）始终优先于内置的这一对。这里刻意不提供 `--google-client-id` 标志：未知标志会被忽略，而命令行上的密钥可以通过 `ps` 读到。
 
-For running your own Google project, see
-[Connect a Google Calendar](/zh-CN/手册/操作指南/连接日历/).
+若要运行你自己的 Google 项目，请参阅[连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)。
 
-## Sync
+## 同步
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+服务器会拉取每个已连接账户事件的滚动窗口——账户上的所有日历，而不只是主日历——**每两分钟**一次，另外还会按需拉取（启动时、连接时、手动刷新时）。这么短的间隔之所以可承受，是因为扫描是增量的：每个日历都带有自己的同步令牌，因此未变化的日历只需一次几乎为空的响应，而不必重新拉取五个月的窗口。
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+重复事件在服务器端展开，因此没有任何客户端需要解析重复规则。导航到当前窗口之外的月份时，会延迟加载该范围。被删除或移出范围的事件会在下一次同步时对账清除。
 
-## Views
+## 视图
 
-| View       | What it shows                                         |
+| 视图       | 显示内容                                              |
 | ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| **月**     | 完整的月网格（由 `kalender` 包提供支持）              |
+| **周**     | 一周中的定时事件，按时间网格显示                      |
+| **日**     | 单日的定时事件，按时间网格显示                        |
+| **议程**   | 可滚动的即将到来事件列表                              |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+在 `/calendar` 打开日历；选择一个事件会在 `/calendar/:eventId` 打开它的详情。你选择的视图保存在该客户端自己的偏好设置中，因此不会跟随你到其他设备。
 
-## Meeting alerts
+## 会议提醒
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/zh-CN/手册/概念/领域事件/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+每分钟运行一次的调度器会扫描在可配置的提前窗口内开始的事件，并触发 **“会议即将开始”** 通知（一个 `MeetingStartingSoon` [领域事件](/zh-CN/手册/概念/领域事件/)）。通知在存在参会链接时会带上它，点击即可打开事件详情。提醒会根据事件的 `alertedAt` 去重，因此同一场会议绝不会提醒两次，即使跨重启也是如此；而在应用关闭期间已经过了开始时间的事件也绝不会补报。
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+有两个限制很容易被忽略。调度器**在桌面端的客户端本地**运行，而且只针对你当前打开的工作区——你不在其中的工作区不会发出任何提醒。另外，Web 版本完全没有操作系统通知管线，因此也不会发出提醒。
 
-## Record and link
+## 录制并链接
 
-From a calendar event you can start a [meeting recording](/zh-CN/手册/概念/会议/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+从日历事件出发，你可以开始一次[会议录制](/zh-CN/手册/概念/会议/)，并以该事件的标题预填。Control Center 会在录制与该事件之间保存一对一的关联，因此会议笔记与日历条目保持关联，而两个功能都不依赖对方。
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**开始录制并关联**仅限桌面端。在 Web 客户端上，该操作会提示录制不可用——尽管会议界面自身的录制流程在浏览器中确实可以正常工作。
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[智能体无法读取你的日历]
+不存在日历 MCP 工具。智能体无法列出事件、读取事件详情或替你回复邀请；`calendar.*` 接口只面向人类客户端提供 RPC。
 :::
 
-## See also
+## 另请参阅
 
-- [Meetings and transcription](/zh-CN/手册/概念/会议/): what happens after you start a recording
-- [Workspaces and isolation](/zh-CN/手册/概念/工作区/): why calendar accounts are per-workspace
-- [Domain events](/zh-CN/手册/概念/领域事件/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/zh-CN/手册/操作指南/连接日历/)
-- [Record and summarize a meeting](/zh-CN/手册/操作指南/录制会议/)
+- [会议与转录](/zh-CN/手册/概念/会议/)：开始录制之后会发生什么
+- [工作区与隔离](/zh-CN/手册/概念/工作区/)：日历账户为何按工作区划分
+- [领域事件](/zh-CN/手册/概念/领域事件/)：`MeetingStartingSoon` 与 `CalendarAuthExpired`
+- [连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)
+- [录制并总结会议](/zh-CN/手册/操作指南/录制会议/)

@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: チャットブリッジ
+description: チャットブリッジのプロバイダー、コマンド、資格情報、ケイパビリティ、RPC 操作、ストレージについて説明します。
 slug: ja-JP/マニュアル/リファレンス/チャットブリッジ
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## プロバイダー
 
-| Provider | Wire value | Transport                  | Space kind |
+| プロバイダー | ワイヤ値 | トランスポート             | スペース種別 |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode（外向き WSS）  | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack は唯一のプロバイダーです。** `ChatProvider` は単一値の列挙型で、`cc_server` は 1 つのプラグインを登録します。スキーマ、すべてのルックアップ、すべての一意インデックスは `provider` をキーとするため、id がプロバイダーをまたぐことはなく、プロバイダーの追加はサーバー側だけの変更で済みます。
 
-One provider-side app per **workspace × provider**.
+プロバイダー側のアプリは**ワークスペース × プロバイダー**ごとに 1 つです。
 
-## Chat commands
+## チャットコマンド
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+コマンド名はアプリごとです（デフォルトは `cc`、つまり `/cc`）。管理者はこれを変更できます。その場合、ブリッジは最後に呼び出されたときの名前を使います。
 
-| Command                               | Effect                                                        |
+| コマンド                               | 動作                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help`（または動詞なしの `/cc`）   | ボットができることの一覧を表示します                          |
+| `/cc link <code>`                     | ワンタイムコードを引き換え、送信者のチャット ID をリンクします |
+| `/cc ticket <title>`                  | リンク済みメンバーが報告したローカルチケットを起票します       |
+| `/cc ticket <title> \| <description>` | 同じですが、最初の `\|` より後をすべて説明として扱います       |
+| 未知の動詞                            | 未知の動詞とヘルプテキストを報告します                        |
 
-Ways to reach an agent:
+エージェントに到達する方法:
 
-| Gesture                    | Behavior                                                                                                               |
+| 操作                    | 動作                                                                                                               |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| チャンネルでの `@bot …`      | Slack スレッドとそれに対応する Control Center スペースを開きます。エージェントは Slack スレッド内で返信します        |
+| ブリッジ済み Slack スレッドでの返信 | 同じ Control Center スペースを継続します — メンションは不要です                                                       |
+| チャンネルへの通常のメッセージ | 無視されます（ボット宛てではなく、ブリッジ済み Slack スレッドにもないため）                                            |
+| ボットへの DM              | DM 会話ごとに 1 つの Control Center スペースを作成します。Slack スレッドのタイトルと、エージェントの作業中に「考え中…」ステータスを設定します |
 
-## Credential fields (Slack)
+## 資格情報フィールド（Slack）
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+プロバイダーディスクリプタが宣言し、それが接続ダイアログを生成し、送信内容を検証します。
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| フィールド ID        | ラベル                     | 必須 | プレフィックス | 場所                                                  |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | ボットトークン                  | はい     | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | アプリレベルトークン            | はい     | `xapp-` | Basic Information → App-Level Tokens、スコープ `connections:write` |
+| `configRefreshToken` | アプリ設定トークン              | いいえ   | `xoxe`  | api.slack.com/apps のアプリ設定トークン                        |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` はアプリ管理用の資格情報です。これがなくても接続は機能しますが、Control Center からボットを作成したり編集したりすることはできません。これは使用のたびにローテーションされ、ローテーション後の値は即座に保存されます。
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+値はトリムされ、宣言されていないキーは破棄され、プレフィックスの不一致はクライアントとサーバーの両方で同じ文とともに拒否されます。必須フィールドは接続のたびに存在しなければなりません。任意フィールドを空のままにすると、すでに保存されている値が維持されます。
 
-## Slack app requirements
+## Slack アプリの要件
 
-Bot token scopes:
+ボットトークンのスコープ:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+ボットのイベント購読:
 
 ```text
 app_home_opened
@@ -75,228 +76,228 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Control Center がアプリを作成または編集するときに表明する構造的設定: Socket Mode を有効化、リクエスト URL なし、メッセージタブを有効かつ書き込み可能、ボットを `always_online`、必要なスコープとイベントをアプリがすでに持っているものにマージ（決して差し引かない）、そして説明文 `File a ticket or link your Control Center account` を持つ 1 つのスラッシュコマンド — エクスポートされたマニフェストの中で Control Center 自身のコマンドを識別するマーカーです。
 
-## Connection states
+## 接続状態
 
-| State            | Wire           | Meaning                                                         |
+| 状態            | ワイヤ           | 意味                                                         |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| 未接続          | `disconnected` | このワークスペース × プロバイダーに保存された資格情報がありません |
+| 接続中…         | `connecting`   | 資格情報は保存済みで、トランスポートが接続または再接続中です   |
+| 稼働中          | `connected`    | トランスポートが稼働し、イベントを受信しています               |
+| 接続エラー      | `error`        | 保存済みですが失敗しています。プロバイダー自身のエラーが併せて表示されます |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+再接続は、30 秒を上限とするジッター付きの指数バックオフです。プロバイダー主導のソケットローテーションでは、バックオフをエスカレートさせずに速やかに再接続します。拒否された資格情報（`invalid_auth`、`not_authed`、`token_revoked`、`account_inactive`、`token_expired`、`invalid_app_id`）またはスコープの欠落は終端です。ブリッジは新しい資格情報が届くまで再試行を停止します。
 
-## Provider capabilities (Slack)
+## プロバイダーのケイパビリティ（Slack）
 
-The bridge is written against the richest surface and degrades per capability.
+ブリッジは最も豊かなサーフェスを前提に書かれており、ケイパビリティごとに縮退します。
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| ケイパビリティ            | Slack  | 欠けている場合の動作                                                                           |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | あり   | 返信全体が最後に 1 回だけ投稿されます                                                          |
+| `streamingRequiresThread` | あり   | スレッドアンカーのない返信先では、返信がまとめて投稿されます                                   |
+| `ephemeralMessages`       | あり   | 使用可能な返信ハンドルを持たないスラッシュコマンドの回答は破棄されます（拒否は常にスレッド内に投稿されます） |
+| `threadStatus`            | あり   | 一時的な「考え中…」行はありません                                                              |
+| `threadTitle`             | あり   | チャットスレッドはデフォルトのタイトルを保ちます                                               |
+| `slashCommands`           | あり   | `/cc` サーフェスがありません                                                                   |
+| `taskCards`               | あり   | テキストのみ — 返信の上にカードがなく、「View in Control Center」リンクもありません            |
+| `maxMessageLength`        | 39,000 | 長い返信は Control Center へのポインター付きで切り詰められます                                |
+| `maxStreamChunkLength`    | 3,800  | 追記は段落、行、またはスペースの境界で分割されます                                             |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+ストリーミングを広告することは、それを約束することではありません。Slack のストリーミングには有料プランの Agents & AI Apps 機能が必要です。呼び出し時の拒否（`streaming_not_supported`、`feature_not_enabled`、`paid_only`、…）はその接続の存続期間中記憶され、`streamingAvailable: false` として表面化します。Slack のタスクカードは同じ呼び出しに乗るため、カードの表示モードを拒否する Slack は、接続の存続期間中、ストリームを維持し、カードだけを 1 回失います。
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+ストリームはまた、誰に向けたものかを名指ししなければなりません。Slack は**チャンネル**でストリームを開く場合、受信ユーザーとそのチームの両方を要求し（DM では要求しません）、そうでなければ `missing_recipient_user_id` / `missing_recipient_team_id` で拒否します — これは呼び出しごとの拒否であるため、ブリッジは試行を続け、その間ターンは 1 つの投稿済み返信として届きます。受信者は、質問した本人であり、受信メッセージから取得されます（アプリのチームではなくその人のチームであるため、Slack Connect チャンネルも正しく解決されます）。チャットから誰も開始しなかったターン — すでにブリッジ済みの会話に対して Control Center で開始された作業 — では、ブリッジを作成したリンクのメンバーが受信者です。そのメンバーがその後チャットアカウントのリンクを解除している場合、そのターンはストリーミングではなくまとめて投稿されます。
 
-## Task cards
+## タスクカード
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+エージェントのターンごとに 1 枚のグループ化されたカード（`task_display_mode: plan`）で、ステップごとに行があります。各行は `id` + `title` + `status` の `task_update` で、思考の準備ができたときには一度だけ `details` が付きます。同じ id の `details` と `output` は区切りなしで連結されるため、`details` は 1 回だけ送信され、`output` がストリーミングされることはありません。プランのタイトルは要求であり、回答は `markdown_text` チャンクを運ぶ、後続の別の追記です。
 
-| Part           | Content                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| 部分           | 内容                                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| プランのタイトル | 何が要求されたか                                                                                                                                          |
+| セットアップ行  | `Working on it…`、次に `Cloning …`、次に `Starting the agent…` — 1 行で、タイトルが置き換わります                                                           |
+| 思考行         | `Thinking…`。エージェントが推論を始めたときに追加されます。思考はこの行の `details` で、推論が終了したときに 1 回だけ送信されます                             |
+| ツール行       | ツールごとに 1 行（`Bash which swift`）。一意の id を持つため横並びに表示されます                                                                           |
+| ステータス      | その行の実行中は進行中。次の行が始まるかターンが終了すると完了。失敗、中断、ターン上限の場合はエラー                                                        |
+| コールトゥアクション | ターンが終了したときの末尾の行としての `View in Control Center` — 作業がまだ実行中のときは表示されず、サーバーに到達可能な公開 URL がないときも表示されません |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+カードが決して運ばないもの: ツール出力、その許可リストの外にある引数、データベースから読み取ったものは一切ありません。推論の散文は `Thinking…` 行の詳細（256 文字以内）だけであり、メッセージ本文ではありません。新しいことを何も言わないカードは再送されません。メンションはストリームを即座に開くため、Slack スレッドが沈黙することはありません。その後テキストをまったく生成しなかったターンは、2 つ目のメッセージを投稿するのではなく、その同じカードを短い注記で完了させます。ストリームを一度も開いていないスペース（カードがない、またはストリーミングがすでに拒否されている）での言葉のないターンでも、完成したカードと注記を載せた 1 つのメッセージを投稿します。
 
-Streamed and posted cards are different payloads:
+ストリーミングされるカードと投稿されるカードは、異なるペイロードです:
 
-| Form     | Shape                                                | Prose                                            |
+| 形式     | 形                                                | 散文                                            |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| ストリーミング | `id` をキーとする `plan_update` と `task_update` チャンク | プレーン文字列、チャンクごとに 256 文字以内      |
+| 投稿     | `task_id` をキーとする `task_card` を包む `plan` ブロック | リッチテキスト                                  |
 
-Failure handling:
+障害時の処理:
 
-| Situation                                    | Behavior                                                                                                                    |
+| 状況                                    | 動作                                                                                                                        |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| プロバイダーが追記時にカードを拒否する       | その追記はカードなしで即座に再試行されます。散文は引き続きライブで届き、カードはその接続の存続期間中破棄されます             |
+| プロバイダーが散文も拒否する                 | ストリームは閉じられ、返信はまとめて投稿されます                                                                            |
+| 返信の一部が届いた後にストリームが切断される | ストリームは閉じられ、何も再投稿されません                                                                                  |
 
-See [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/) for why the payload is split this way.
+ペイロードがこのように分割されている理由は、[チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)を参照してください。
 
-### Setup, before there is a turn
+### セットアップ、ターンが始まる前
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+カードは、メンションが受け入れられたときに開きます。クローンの前であり、最初のトークンの前です。それに続くターンは同じカードとストリームを引き継ぎます。その後のナレーションは、ドメインイベントバス上の `SpaceProvisioningChanged` から来ます — デスクトップのプロビジョニングバナーがスペース行から読み取るのと同じ進捗です。
 
-| Provisioning state          | Narration                                                      |
+| プロビジョニング状態        | ナレーション                                                   |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| メンションを受け付け        | `Working on it…`                                               |
+| ステップ `repo`             | `Cloning <repo>…`                                              |
+| ステップ `prCheckout`       | `Checking out the pull request in <repo>…`                     |
+| ステップ `script`           | `Running the setup script for <repo>…`                         |
+| ステップ `agent`            | `Setting up <agent>…`                                          |
+| `provisioning`、ステップはまだなし | `Preparing the workspace…`                              |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| エージェントの推論中        | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+セットアップのナレーションには、4 つの条件すべてが必要です:
 
-| Condition                                 |
+| 条件                                      |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| プロバイダーがカードを描画する            |
+| この接続でストリーミングが利用可能である  |
+| スペースにチャットリクエストが処理中である |
+| そこですでにターンを報告しているカードがない |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+リクエストは、ターンが始まるかセットアップが失敗するまで処理中のままです。カードがすでに開いていない `ready` イベントはウォームなスペースであり、静かなままにされます。また、チャットで誰も待っていないプロビジョニング — アプリで開いた会話や、起動時に再開された取り残された会話 — は、カードをまったく生成しません。
 
-## The `/open` bounce page
+## `/open` バウンスページ
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+チャット製品はリンク内で `http(s)` しか受け付けないため、コールトゥアクションがデスクトップのスキームを直接名指しすることはできません。
 
-| Property   | Value                                                                                                                                       |
+| プロパティ | 値                                                                                                                                          |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| ルート      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                  |
+| オリジン    | サーバーの公開 URL から導出されます（`ws` → `http`、`wss` → `https`）。ループバックは維持されます                                            |
+| レスポンス  | `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` へ遷移し、手動ボタンを表示する小さな no-store HTML ページ                  |
+| 検証        | id は `[A-Za-z0-9_.-]{1,128}` に一致しなければなりません。それ以外は 404 です                                                               |
+| アクセス    | パブリックかつ不活性です — データベースを読まないため存在オラクルにはならず、認可はこのページが開くアプリが行います                          |
 
-## Bot profile fields
+## ボットプロフィールフィールド
 
-| Field              | Limit       | Notes                                                                                             |
+| フィールド          | 制限        | 備考                                                                                             |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1〜35 文字  | デフォルトは `Control Center · <workspace name>`                                                  |
+| `botDisplayName`   | 1〜80 文字  | デフォルトは `control-center`                                                                     |
+| `description`      | 140 文字以内 |                                                                                                   |
+| `agentDescription` | 300 文字以内 | ボットとの DM の上に表示されます                                                                  |
+| `command`          | 32 文字以内 | 正規化: 先頭のスラッシュを取り除き、小文字化し、`[^a-z0-9_-]` を削除。空の場合は `cc` にフォールバックします |
+| `agentEnabled`     | —           | DM／エージェント体験を公開するかどうか                                                            |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+空のボックスは「そのままにする」を意味し、「消去する」ではありません。制限は Slack のものであり、モデル化されている製品の中で最も厳しいものです。
 
-## Link codes
+## リンクコード
 
-| Property | Value                                                                                    |
+| プロパティ | 値                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| 長さ     | 6 文字                                                                                   |
+| アルファベット | `23456789ABCDEFGHJKLMNPQRSTVWXYZ`（`0`/`O`、`1`/`I`、`U` を除く）                      |
+| 有効期間 | 15 分                                                                                    |
+| 使用回数 | 1 回                                                                                     |
+| ストレージ | メモリ上 — サーバーの再起動で未使用のコードは無効になります                             |
+| スコープ | 1 つのワークスペースと 1 つのプロバイダー。新しいコードを発行すると、そのメンバーの以前のコードは無効になります |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+引き換えは大文字と小文字を区別せずに照合されます。未知のコード、期限切れのコード、別のワークスペース向けのコード、誤ったプロバイダーのコードは、意図的にすべて同じように失敗します。
 
-## Link methods
+## リンク方法
 
-| Method | Wire    | How                                                                            |
+| 方法 | ワイヤ    | 仕組み                                                                             |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| コード | `code`  | メンバーが `/cc link <code>` を引き換えました                                           |
+| メール | `email` | プロバイダーが検証したメールアドレスが、すでにワークスペースのメンバーであるユーザーと一致しました |
 
-## RPC operations
+## RPC 操作
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+すべてワークスペーススコープです。サーバーはステートレスであるため、各呼び出しは自身の `workspace_id` を args に持ちます。ディスパッチャーは、それを省略したワークスペーススコープの操作を、データベースを開く前に拒否します。資格情報は*入ってくる*だけです — ステータスの読み取りがそれらを返すことはありません。
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| 操作                    | 種別        | 最小ロール                                       | アクションクラス                  |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
-| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`、`networkEgress` |
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
-| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.unlinkUser`       | mutate      | 自分自身には `member`、他人には `admin`         | —                               |
+| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`、`networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+読み取り操作はその種別から `guest` の下限を継承します。明示的な下限のない変更操作には `member` が必要です。
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` はボットプロフィールからプロバイダーのアプリ作成 URL を組み立てます。シークレットを読まず、何もダイヤルしないため、アクションクラスを宣言しません — 唯一の呼び出しを行うのはユーザー自身のブラウザーです。
 
-One reactive query completes the surface:
+1 つのリアクティブクエリがサーフェスを完成させます:
 
-| Query                 | Kind  | Emits                                                    |
+| クエリ                 | 種別  | 送出                                                    |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | 名簿。リンクが作成または削除されるたびに再プッシュされます |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+これが存在するのは、リンクが*反対側*で行われるためです。メンバーはワンタイムコードをボットに入力するので、クライアントのどのレスポンスも答えを返すことはできません。設定の名簿と、開いている「アカウントをリンク」ダイアログの両方がこれを購読しており、ダイアログはメンバー自身のリンクが届いた瞬間に確認表示へ切り替わります。
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` は常に呼び出し元自身のアイデンティティ用のコードを発行します。`chat.updateBotProfile` は、ステップが残っている場合（通常は再インストール）にのみ `remaining_step` を返します。それがなければ、編集は反映済みです。
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` は、提供されているプロバイダーごとに 1 つのエントリを返します — ディスクリプタと、存在する場合は接続ステータスです。設定 UI が描画するものはすべてそのペイロードから来るため、プロバイダーの追加はサーバー側だけの変更で済みます。
 
-## Storage
+## ストレージ
 
-| What                       | Where                                                                                                        |
+| 対象                       | 場所                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| 接続資格情報               | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| 途中まで進んだガイド付きセットアップ | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| レガシー Slack ファイル    | `<dataDir>/<workspaceId>/slack_credentials.json` と `slack_app_setup.json`。一度読み込まれ、その場で移行されます |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+資格情報はワークスペースのデータベースの隣にあり、その中にはありません。ワークスペースを削除するとそのチャットトークンも一緒に削除され、`workspace.export` やバックアップは `workspace.db` をコピーします — したがって、他人に渡されたワークスペースに有効なボットトークンは含まれません。書き込みはアトミック（一時ファイルとリネーム）で、所有者のみに制限されます。
 
-## Database tables
+## データベーステーブル
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+どちらもワークスペースデータベースにあり、そこはスカッシュされた v1 ベースラインを持つため、ワークスペースをまたぐ読み取りはコンパイルされません。
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — 1 つの外部会話 ↔ 1 つの Control Center スペース:
 
-| Column                                                 | Notes                                                                      |
+| 列                                                 | 備考                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | ワークスペーススコープ                                                    |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Slack チーム `T…`。この概念を持たないプロバイダーでは空                   |
+| `external_channel_id`                                  | Slack チャンネル `C…`、グループ `G…`、DM `D…`                              |
+| `external_thread_id`                                   | Slack スレッドアンカー。会話全体がアンカーである場合（ボット DM）は null  |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
-| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+| `created_by_user_id`、`created_at`、`last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+`(workspace_id, provider, external_channel_id, external_thread_id)` に一意で、スレッド id が null の場合にも同じ制約を課す部分インデックスが付きます（SQLite は NULL を別個のものとして扱います）。
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — 1 つの外部メンバー ↔ 1 つの Control Center ユーザー:
 
-| Column                                 | Notes                                           |
+| 列                                 | 備考                                           |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | ワークスペーススコープ                         |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`、`external_user_id` | Slack メンバー `U…`                             |
+| `user_id`                              | Control Center ユーザー（グローバルなので外部キーなし） |
+| `method`                               | `code` または `email`                           |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+`(workspace_id, provider, external_team_id, external_user_id)` に一意、および `(workspace_id, provider, user_id)` に一意 — 双方向で単一値の帰属であり、一方で 1 人が複数のプロバイダーでリンクされることは可能です。
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+リンクはアイデンティティの解決であり、アクセス権の付与では**ありません**。メンバーシップはすべての受信イベントで再確認されるため、その後削除されたメンバーへのリンクは拒否に解決されます。
 
-## Space kind and message metadata
+## スペース種別とメッセージメタデータ
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+ブリッジされたスペースは、プロバイダーの `SpaceKind`（`slack`）で作成されます。これは通常の人間向けスペースのように振る舞い — `topic` と同様に通知され、セクション分けされ — 、`isExternalChat` があらゆる振る舞い（ミラーリング、バッジ付け、保持）が通るチェックです。
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+ブリッジが取り込むすべてのメッセージは `metadata['chat']` スタンプを持ちます:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+このスタンプはエコーガードでもあります。外向きのミラーはこのスタンプを持つメッセージをスキップし、これが受信したチャットメッセージがそのまま投稿し返されるのを防ぎます。
 
-## Relay behavior
+## リレー動作
 
-| Behavior                               | Detail                                                                                                         |
+| 振る舞い                               | 詳細                                                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| 外向きに中継されるもの                 | エージェントの**テキスト**のみ、およびタスクカードのステータス行。推論の散文とツール出力は Control Center にとどまります  |
+| ストリーミングの間隔                   | ターンの実行中は 1 秒に 1 回のフラッシュにスロットルされます。カードとそれが説明するテキストは同じ呼び出しで運ばれます |
+| Control Center で入力された人間のメッセージ | リンクされたスレッドにミラーリングされ、作成者の表示名が先頭に付きます                                    |
+| 空のターン                             | 沈黙ではなく短い注記（実行の失敗、中断、ターン上限での停止）として報告されます                               |
+| 重複排除                               | プロバイダー自身のイベント id をキーとし、直近 512 件が記憶されます                                          |
+| フロントドアエージェント               | 新しいブリッジ済み会話は、ワークスペースの CEO エージェントを、なければ最初のエージェントを、それもなければ誰も起こしません |
+| スペースの命名                         | Slack チャンネルスレッドには `#channel · <request>`、DM には `Slack DM · <request>`。タイトルは 48 文字で切り詰められます |
+| 障害の分離                             | 1 つの不良イベントがブリッジを落とすことはありません。接続は他のすべての会話へのサービスを続けます           |
 
-## See also
+## 関連情報
 
-- [Set up Slack integration](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
-- [Link your Slack account](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
-- [Customize the chat bot](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
-- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/) for the action classes the ops declare
+- [Slack インテグレーションを設定](/ja-JP/マニュアル/ハウツーガイド/slack-インテグレーション/)
+- [Slack アカウントをリンク](/ja-JP/マニュアル/ハウツーガイド/チャットアカウントのリンク/)
+- [チャットボットをカスタマイズ](/ja-JP/マニュアル/ハウツーガイド/チャットボットのカスタマイズ/)
+- [チャットブリッジ](/ja-JP/マニュアル/コンセプト/チャットブリッジ/)
+- RPC 操作が宣言するアクションクラスについては、[ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)を参照してください

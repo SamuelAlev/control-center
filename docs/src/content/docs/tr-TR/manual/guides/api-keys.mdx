@@ -1,115 +1,125 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: API anahtarlarını yönetme
+description: Her kimlik bilgisinin nerede yaşadığı — sunucudaki kullanıcı hesabınız, sunucunun kendisi ya da harici bir CLI — ve nasıl ayarlanacağı, döndürüleceği ve kaldırılacağı.
 slug: tr-TR/kilavuz/nasil-yapilir/api-anahtarlari
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Bu kılavuz, Control Center’ın kullandığı her kimlik bilgisinin nerede
+saklandığını ve nasıl değiştirileceğini gösterir.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Yazı yazdığınız makinede hiçbir şey saklanmaz.** Her kimlik bilgisi sunucuda
+yaşar; belirli bir isteğe hangisinin yanıt verdiği, arkasında bir insan olup
+olmadığına bağlıdır.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Kimlik bilgisi                          | Saklandığı yer                                                        | Kim kullanır                                                              |
+| --------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Forge / biletleme kimlik bilginiz       | Sunucunun 0600 izinli sırlar dosyası, kullanıcı kimliğinize göre       | İstediğiniz her şey: PR yüzeyi, ajan çalıştırmalarınız, imajlarınız        |
+| Sunucunun uygulama kimliği              | Aynı dosya, sır olmayanlar içinse `server_settings`                    | Hiçbir insanın istemediği işler: webhook’lar, PR yoklaması, bilet eşitleme |
+| Model sağlayıcı anahtarları ve OAuth token’ları | Sunucunun kendi kimlik bilgisi deposu                          | Kurulumdaki her çalışma alanı için yerleşik adaptör                        |
+| Slack bot token’ları                    | Sunucuda `<dataDir>/<workspaceId>/chat_credentials/`                  | O çalışma alanının sohbet köprüsü                                         |
+| Harici CLI kimlik bilgileri             | O CLI’ın kullandığı her ne ise                                        | Sunucu ana makinesindeki Claude Code                                      |
 
-## Two GitHub credentials, and they answer different questions
+## İki GitHub kimlik bilgisi ve farklı sorulara yanıt verirler
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Sizinki**, oturum açmadan (cihaz akışı) ya da bir token yapıştırmadan gelir.
+  *Sizin adınıza* yapılan her isteğin kullandığı şey budur, dolayısıyla sizin
+  için gönderilen bir yorum sizin adınızı taşır. Başka bir üye bunu okuyamaz;
+  kendi kimlik bilgisini kendisi bağlar
+- **Sunucununki**, operatörün kaydettiği GitHub App’ten gelir. Çağıranı olmayan
+  her şeye yanıt verir — böylece biri ayrıldığında ya da bir token’ı
+  döndürdüğünde forge erişimi ortadan kalkmaz
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-and [Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/).
+Sizinki **Ayarlar → Çalışma alanı → Profil ve kimlik** altındaki **Kod
+barındırma** kartında ayarlanır; sunucununki **Ayarlar → Sunucu → Tek oturum
+açma** altındaki **Sağlayıcı uygulamaları**'nda. Bkz.
+[GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+ve [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Yalnızca URL ile erişilen bir ekran da var]
+`/workspaces/<workspaceId>/api-keys` adresi, ilk kurulumun ilk adımındaki iki
+kartın aynısını gösterir. **Arayüzün hiçbir yerinde gezinme girişi yoktur**;
+yalnızca URL yazılarak ulaşılır. Bunun yerine Ayarlar → Çalışma alanı → Profil ve
+kimlik yolunu kullanın.
 :::
 
-## Set model provider keys
+## Model sağlayıcı anahtarlarını ayarlama
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Yerleşik adaptör sağlayıcılarda kimlik doğrulamasını kendisi yapar ve bu kimlik
+bilgileri sunucuda yaşar.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. **Ayarlar → Sunucu → Model sağlayıcıları**'na gidin
+2. **Sağlayıcılar ve modeller**'e kaydırın
+3. Sağlayıcıyı bağlayın — OpenAI, Codex, Cursor ve Kimi Code için tarayıcı
+   OAuth’u; Anthropic ve geri kalanı için bir API anahtarı
 
-See [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/) for the full list and
-for adding a custom endpoint.
+Tam liste ve özel bir uç nokta ekleme için
+[Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/) sayfasına bakın.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Bu kimlik bilgileri **ana makine genelinde geçerlidir**: tek bir anahtar
+kurulumdaki her çalışma alanına hizmet eder. OAuth token’ları süreleri dolmadan
+yenilenir.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Harici adaptör CLI’ları kendi kimlik bilgilerini, kendi yapılandırmalarında,
+sunucu ana makinesinde tutar — Control Center bunları yönetmez. Claude Code’un
+kimlik doğrulamasını, `cc_server`’ın çalıştığı makinede, kendi belgelerinin
+söylediği şekilde yapın.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
+Adaptör başına **Ortam değişkenleri** iletişim kutusu, bunlardan biri için bir
+anahtar koyulacak yer gibi görünür ama değildir: sizin cihazınıza yazar, oysa
+sunucu kendi kopyasını okur ve ikisi arasında hiçbir köprü yoktur. Bkz.
+[Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
 
-## Connect a ticketing vendor
+## Bir bilet sağlayıcısı bağlama
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+**Ayarlar → Çalışma alanı → Genel** üzerindeki **Biletler** kartı tek bir kararın
+iki yarısını barındırır: biletlerinizin hangi sağlayıcıda yaşadığı ve ona ait
+kimlik bilgisi. **Yerel**'i seçmek kimlik bilgisi satırını gizler — yerel
+biletler bu sunucunun kendi veritabanında yaşar ve kimlik doğrulaması yapılacak
+bir şeyleri yoktur.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/).
+Anahtarınız, forge’daki gibi, sunucuda kullanıcı kimliğinize bağlı olarak
+saklanır. Sunucu kendi Linear anahtarını ayrıca tutar (**Sağlayıcı
+uygulamaları**); hiçbir insan istemediğinde bilet eşitlemesi bunun üzerinden
+çalışır. Bir ajanın aldığı anahtar, yalnızca ajan **Bilet API çağrılarına izin
+ver** yeteneğine sahipse enjekte edilir. Bkz.
+[Linear entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/).
 
-## Rotate or revoke
+## Döndürme veya iptal etme
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- **GitHub kimlik bilginiz**: **Bağlantıyı kes**'e basın, ardından yeniden oturum
+  açın ya da yeni token’ı yapıştırın. Eskisini GitHub’da iptal edin
+- **Sunucunun uygulaması**: uygulamanın GitHub sayfasında yeni bir özel anahtar
+  ya da istemci sırrı oluşturun, **Sağlayıcı uygulamaları**'na yapıştırın ve
+  **Test**'e basın
+- **Bir model sağlayıcısı**: satırında oturumu kapatın (OAuth) ya da anahtarı
+  kaldırın, sonra yeniden bağlayın
+- **Slack**: token’ları bağlantı iletişim kutusuna yeniden yapıştırın. Bkz.
+  [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
 
-## Troubleshooting
+## Sorun giderme
 
-### The PR list is empty but my token works in `curl`
+### PR listesi boş ama token’ım `curl` ile çalışıyor
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+**Kod barındırma** satırının alt başlığına bakın. Başka bir kaynak adı veriyorsa
+(“bu sunucunun uygulaması üzerinden”, “ortamdan”), test ettiğiniz kimlik bilgisi
+yanıt veren değildir — sizinki kaydedilmemiştir.
 
-### The token is accepted but later requests fail
+### Token kabul ediliyor ama sonraki istekler başarısız oluyor
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Token, saklandığı hâliyle yoklanır, dolayısıyla satır arkasındaki hesabın adını
+verir — ama yalnızca hesabı, kapsamları değil. Kapsamları çok az olan bir token
+bağlanır, sonra tek tek isteklerde başarısız olur. Kapsamları ve son kullanma
+tarihini kontrol edin:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Set up GitHub integration](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
-- [Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)
-- [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
-- [Set up Linear integration](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/)
+- [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
+- [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)
+- [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Linear entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/)

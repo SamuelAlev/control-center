@@ -1,216 +1,101 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: 多人協作——身份、成員身份與線上狀態
+description: Control Center 如何把人類與代理建模為對等的參與者、究竟是甚麼在把關工作區的存取，以及為甚麼即時感知與共享記錄會走在兩條不同的通道上。
 slug: zh-HK/手冊/概念/多人協作
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center 可供單一操作者使用，但支撐它的模型從一開始就是多參與者的。人類與代理在同一個空間裏發訊息、編輯同一批工單，也出現在同一份名冊上。要讓這一切既安全又易於理解，歸根結柢是三個決定：**誰算得上參與者**、**甚麼在把關存取**，以及**哪些狀態是持久共享的、哪些只是即時廣播的**。
 
-## Principals: users and agents are co-equal actors
+## 主體：使用者與代理是對等的參與者
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+每一處記錄「這是誰做的」的地方——訊息、工單、審查、計劃、執行日誌、稽核記錄——都經由一個**主體**解析，它是 `UserPrincipal` 與 `AgentPrincipal` 的密封聯合類型，帶有精簡的傳輸形式（`user:<id>` / `agent:<id>`）。歸屬絕不會把 N 個人類（或 N 個代理）併成一個哨兵帳號，因此代理留下的審查與人留下的審查，在任何出現的地方都能區分開。
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+由於主體是身份單位，它也是隔離管控的單位：
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **速率限制按主體計算，而不是按工作階段計算。** 遠端工具呼叫上的洪泛防護按使用者、而不是按連線分配額度：一位成員的所有裝置共用同一個滑動視窗（每分鐘 120 次呼叫，其中最多 30 次可產生變更），因此開啟三部裝置不會讓任何人的額度變成三倍，一個吵鬧的成員也無法耗盡其他人的額度。
+- **撤銷按主體計算。** 每個用戶端的操作日誌只記錄其_自己_的主體所做的變更。你可以用 ⌘Z 撤銷自己做的工單編輯，卻無法撤銷隊友的——等你看到它時，持久通道早已把它解析完了（見下文）。
 
-## Membership is the access boundary — not the pairing key
+## 成員身份才是存取邊界——而不是配對金鑰
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/zh-HK/手冊/概念/遙控/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+兩種彼此獨立的憑證回答兩個彼此獨立的問題。**配對金鑰**（見[遙控與流動裝置](/zh-HK/手冊/概念/遙控/)）向伺服器認證一台_裝置_。**成員身份**則授權該裝置的使用者在一個_工作區_內行動。若一台已配對裝置的使用者在某工作區中不持有成員身份，他就既不能讀取、也不能變更該工作區。
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+成員身份是每個（工作區、使用者）一行，存放在**該工作區自己的資料庫檔案**中——因此「誰在這個工作區裏？」是一次普通的限定範圍讀取，而反過來的問題「我屬於哪些工作區？」必然要跨檔案，也是少數獲認可的跨工作區扇出之一。工作區選擇器在任何工作區被選中之前，跑的正是它。
 
-Each row carries a role from a five-level, rank-ordered ladder:
+每一行都帶有一個角色，取自一條五級、按等級排序的階梯：
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| 角色     | 可以                                                                         |
+| -------- | ---------------------------------------------------------------------------- |
+| `owner`  | 完全控制，包括刪除工作區；每個工作區恰好一個                                 |
+| `admin`  | 管理成員、邀請、設定與破壞性操作                                             |
+| `member` | 日常讀寫：訊息、工單、代理執行                                               |
+| `viewer` | 對整個工作區唯讀；機密排除 glob 會在涉及程式碼的介面上隱藏相符的路徑          |
+| `guest`  | 唯讀下限與檢視者相同，位於階梯的最低等級                                     |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+每個存取決定都歸結為一個問題：「呼叫者的角色是否至少為 X」。除操作明確聲明下限外，下限由操作的種類推導得出：讀取需要 `guest`，變更需要 `member`，破壞性操作需要 `admin`。除下文按程式庫的授權之外，按物件的 ACL 刻意不在範圍內。
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**邀請**是授予成員身份的方式，入口在設定 → 工作區 → 成員。管理員產生一個一次性代碼（以連結或 QR 碼形式），預設七天後過期；伺服器只儲存該代碼的 SHA-256 雜湊，代碼本身只顯示一次。兌換它會即時佈建該使用者、按邀請所帶的角色記錄成員身份（絕不會是 `owner`——擁有權是明確轉移的，從不經邀請授予），並接着轉入裝置配對。配對之後簽發的裝置憑證本身期限上限為 30 天，所以一次配對並不是一把永久金鑰。
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**程式庫授權**位於成員身份之下。由於伺服器持有完整的檢出副本，僅憑工作區成員身份絕不能取得高於程式碼託管的權限：每個涉及程式碼的介面——檔案、差異、PR 審查、程式碼搜尋——都會檢查該成員在_該程式庫_上的授權。授權按（工作區、使用者、程式庫）劃分，分級為 `none` → `read` → `review` → `write`，其中 `write` 意味着發起向該程式庫寫入的代理執行。缺少對應的資料列即表示 `none`；擁有者與管理員對每個已連結的程式庫隱式持有 `write`，並且完全不帶任何資料列。
 
-## Two lanes of collaboration state
+## 協作狀態的兩條通道
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center 把共享狀態拆成兩條持久性規則相反的通道，因為這兩類狀態的失效方式正好相反。
 
-### The ephemeral presence lane
+### 短暫的線上狀態通道
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+線上狀態——誰在線上、他們身在何處、正在輸入甚麼、某個代理此刻在做甚麼——一旦過時就毫無價值。如果把它持久化，每次重新連線都得把「資料庫說 Sam 正在編輯這張工單」與現實核對。因此線上狀態**絕不寫入資料庫**。它存在於伺服器上一個記憶體中的**線上狀態中樞**裏：用戶端用 `presence.update` 發佈，同伴用 `presence.watch` 訂閱，項目在三次缺失心跳後自動過期（心跳每 10 秒一次；中樞每 5 秒清掃一次）。這裏沒有甚麼需要核對——只需任由它失效。
 
-Two properties keep the lane trustworthy:
+兩個特性讓這條通道值得信賴：
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **身份來自工作階段，絕不來自用戶端參數。** 伺服器把已連線的已認證裝置映射到一個使用者 id；用戶端只能更新自己的線上狀態，因此沒有人能冒充其他參與者的狀態或位置。一次明確的 `offline` 更新（中斷連線或開啟隱身開關）會立即移除該項目。
+- **名冊以伺服器為中樞。** 同伴之間絕不直接交換線上狀態，因此無論拓撲如何，每個參與者看到的都是同一份名冊。代理沒有用戶端，所以伺服器會根據即時執行狀態_合成_它們的項目——思考中、執行中、因核准閘門而受阻、已完成——並由一次代表性執行決定代理的狀態與位置，使並行執行不會令名冊反覆跳動。
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+扇出按消費端分層：桌面與網頁走完整層級（每 100 ms 至多推送一次名冊），手機走摘要層級（每 500 ms），這樣以游標級頻率產生的更新才不會拖垮 PWA。
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+參與者的**位置**——他們當前所在之處，精確到具體產物——是一個密封聯合類型：`Space`、`File`（程式庫 + 路徑 + 可選行號）、`Pr`、`Ticket`、`PlanNode`。並非每種位置都有可跳轉的去處：沒有檔案檢視器路由，所以 `File` 位置只會渲染成標籤，而不是一個跳轉目標。這條通道還承載**軟性佔用聲明**（「Sam 正在編輯這張工單」「某個代理持有這個 worktree」）：是衝突的_可見性_，而不是鎖。未知的位置種類會解析為 null，因此舊用戶端只是不渲染它看不懂的東西。
 
-### The durable shared lane
+### 持久的共享通道
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+必須留存下來的記錄——工單、空間中共用的筆記文件、訊息——走的是相反的路：權威、有序且被持久化。並行編輯按**伺服器接收順序的最後寫入者勝出**來解析，絕不依據用戶端時鐘。這種解析刻意做得細緻：工單編輯是_按欄_的，因此兩個人編輯同一張工單的不同欄位都能落定，誰也不會覆蓋對方（工作流程轉換仍保留樂觀鎖）；空間的筆記文件只有一欄，所以整份文件都是 LWW，由線上狀態通道上的軟性佔用聲明讓並行編輯變得可見，而不是被鎖定。它刻意不是 CRDT——舉證責任在 CRDT 一方，而按接收順序的 LWW 加上可見的佔用聲明，已涵蓋實際的協作模式。
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+「最後寫入者」指的是**伺服器接收順序**，絕不是用戶端時鐘——一部時鐘偏移的筆記型電腦無法贏回一次它已經輸掉的編輯。持久通道背後是**同步饋送**：SQLite 觸發器在寫入交易_內部_把每一次變更加入按工作區劃分的變更日誌，並在與變更本身同一個交易裏分配一個按工作區單調遞增的序號。一個伺服器服務按序號順序跟進該日誌，把它轉成帶版本的增量幀。用戶端由完整快照演進至增量；序號一旦出現缺口，該儲存就退回快照模式，而不是錯誤地套用幀。
 
-## Follow, steer, take over, hand back
+## 跟隨、引導、接管、交還
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+線上狀態通道不只是一份名冊——它還驅動着這些協作動作：
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **跟隨模式。** 點擊某位參與者，你的用戶端就跟着他的位置，隨他導覽而導覽。跟隨是「直到你動手為止」：你一旦自行導覽，跟隨就會脫離。當另一位參與者正在聚焦（展示）你所在的空間時，會出現一條可關閉的橫幅加以提示。
+- **引導。** 發給正在執行的代理的訊息會排入佇列作為引導；代理會在繼續下一個回合之前重新讀取它，因此你可以在執行途中推動它，而不必中止它。
+- **接管。** 接管一段對話的控制權，會在下一個乾淨的回合邊界暫停所有進行中的執行（Claude Code 的執行沒有安全邊界，會被直接停止），並置於每回合的 git 快照之後，因此這次接管可以還原。一個持久標記會阻止向該空間派發新的執行，並在伺服器重新啟動後依然存在——伺服器絕不會自動恢復、闖進人類未完成的編輯裏。每個 worktree 只有一位即時編輯者，這是一項軟性佔用聲明：第二次接管會可見並被拒絕，而不是被靜默合併。
+- **交還。** 交回控制權時，會把 worktree 的結構化差異摘要發佈到該空間，將它排入佇列作為已暫停執行的引導，恢復它們並清除標記。
 
-## The autonomy dial
+## 自主程度
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+引導與接管都是事後介入。**自主程度**是常設設定：按空間、按代理，在空間標頭中設定，它決定代理碰到受管控操作時會發生甚麼事。
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| 級別         | 傳輸值            | 對受管控工具呼叫的影響                                                                                    |
+| ------------ | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| 僅提出建議   | `proposeOnly`     | 直接拒絕，並附上一個要求代理轉達的理由——它可以描述該操作，但不能執行它                                    |
+| 經核准後行動 | `actWithApproval` | 失效即拒絕的核准閘門：一則確認會呈遞給已連線的操作員，沒有核准人即為拒絕                                  |
+| 自由行動     | `actFreely`       | 預先核准，除非有硬性 `deny` 護欄規則適用——deny 規則永遠優先                                             |
+| （未設定）   | `null`            | 與經核准後行動相同：伺服器的預設值                                                                        |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+有兩件事在兩個方向上都落在這個設定之外。模式本身的輸出動詞是固定的，無論這個設定怎麼說，它都絕不會被拒絕——編排模式曾經在結構上無法產出它唯一的交付物，因為某個預設集拒絕了該動詞所聲明的效果類別。而動作護欄發出的硬性 `deny`，無法被 `actFreely` 覆寫。
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/zh-HK/手冊/概念/代理模型/).
+:::note[這個設定只管控內置執行框架]
+執行框架迴圈會在其核准回呼中查詢它。在 Claude Code 配接器上執行的代理，會在自己的行程內自行發出工具呼叫，Control Center 在那裏沒有任何可管控的東西——見[代理模型](/zh-HK/手冊/概念/代理模型/)。
 :::
 
-## Solo zero-regression
+## 單人情境零回歸
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+這些全都是增量式的。單人操作者的工作流程毫無改變：只有一個人且沒有代理時，線上狀態中樞沒有任何東西可廣播，因此這條通道發出初始快照後，便以零流量閒置；LWW 與同步機制仍然是向來那條單一寫入者的路徑；配對金鑰也仍然是它一向以來的裝置憑證。成員身份本來就是存取邊界——只有一個人時，就只有一行擁有者資料列，也沒有任何名冊介面元素。
 
-## Related concepts
+## 相關概念
 
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/): the boundary membership enforces
-- [Remote control and mobile](/zh-HK/手冊/概念/遙控/): the pairing key and device credential side of identity
-- [The agent model](/zh-HK/手冊/概念/代理模型/): the agent half of the principal union
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/): the runs that steering and take-over pause and resume
-- [Guardrails](/zh-HK/手冊/概念/護欄/): the effect-class policy the autonomy dial composes with
-- [Domain events](/zh-HK/手冊/概念/領域事件/): the bus that live updates ride
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/)：成員身份所執行的邊界
+- [遙控與流動裝置](/zh-HK/手冊/概念/遙控/)：身份中配對金鑰與裝置憑證的那一面
+- [代理模型](/zh-HK/手冊/概念/代理模型/)：主體聯合體中代理那一半
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)：引導與接管所暫停和恢復的那些執行
+- [護欄](/zh-HK/手冊/概念/護欄/)：自主程度與之組合的效果類別政策
+- [領域事件](/zh-HK/手冊/概念/領域事件/)：即時更新所搭載的匯流排

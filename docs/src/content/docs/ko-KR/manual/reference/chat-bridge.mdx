@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: 채팅 브리지
+description: 채팅 브리지의 제공업체, 명령, 자격 증명, 능력, RPC 연산과 저장소.
 slug: ko-KR/매뉴얼/레퍼런스/채팅-브리지
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## 제공업체
 
-| Provider | Wire value | Transport                  | Space kind |
+| 제공업체 | 와이어 값 | 전송 방식                  | 스페이스 종류 |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode(아웃바운드 WSS) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack은 유일한 제공업체입니다.** `ChatProvider`는 단일 값 열거형이고 `cc_server`는 플러그인 하나를 등록합니다. 스키마와 모든 조회, 모든 고유 인덱스는 `provider`를 키로 삼으므로 id가 제공업체를 넘나드는 일은 없고, 제공업체를 추가하는 일은 서버만 바꾸면 됩니다.
 
-One provider-side app per **workspace × provider**.
+제공업체 측 앱은 **워크스페이스 × 제공업체**마다 하나입니다.
 
-## Chat commands
+## 채팅 명령
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+명령 이름은 앱마다 다릅니다(기본값은 `cc`이므로 `/cc`). 관리자가 이름을 바꿀 수 있으며, 그러면 브리지는 마지막으로 호출된 이름을 사용합니다.
 
-| Command                               | Effect                                                        |
+| 명령                               | 효과                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help`(또는 동사 없는 `/cc`)      | 봇이 할 수 있는 일을 나열합니다                               |
+| `/cc link <code>`                     | 일회용 코드를 사용하고 보낸 사람의 채팅 신원을 연결합니다      |
+| `/cc ticket <title>`                  | 연결된 멤버가 보고한 로컬 티켓을 접수합니다                   |
+| `/cc ticket <title> \| <description>` | 첫 `\|` 뒤의 모든 내용을 설명으로 삼는 점만 다릅니다          |
+| 알 수 없는 동사                       | 알 수 없는 동사와 도움말 텍스트를 함께 보고합니다             |
 
-Ways to reach an agent:
+에이전트에 도달하는 방법:
 
-| Gesture                    | Behavior                                                                                                               |
+| 제스처                     | 동작 방식                                                                                                              |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| 채널에서 `@bot …`          | Slack 스레드와 이에 대응하는 Control Center 스페이스를 엽니다. 에이전트는 Slack 스레드에서 답합니다                    |
+| 브리지된 Slack 스레드에서 답장 | 같은 Control Center 스페이스를 이어 갑니다 — 멘션이 필요 없습니다                                                 |
+| 채널의 일반 메시지         | 무시합니다(봇에게 보낸 것도 아니고 브리지된 Slack 스레드에 있는 것도 아니므로)                                         |
+| 봇에게 보내는 DM           | DM 대화마다 Control Center 스페이스 하나를 만듭니다. Slack 스레드 제목과, 에이전트가 작업하는 동안 "is thinking…" 상태를 설정합니다 |
 
-## Credential fields (Slack)
+## 자격 증명 필드(Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+제공업체 디스크립터가 선언하며, 이 디스크립터가 연결 대화상자를 생성하고 제출을 검증합니다.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| 필드 id              | 레이블                  | 필수   | 접두사  | 위치                                                            |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | 봇 토큰                 | 예       | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | 앱 수준 토큰            | 예       | `xapp-` | Basic Information → App-Level Tokens, 스코프 `connections:write` |
+| `configRefreshToken` | 앱 구성 토큰            | 아니요   | `xoxe`  | api.slack.com/apps의 앱 구성 토큰                               |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken`은 앱 관리 자격 증명입니다. 이것이 없어도 연결은 동작하지만, Control Center에서 봇을 만들거나 편집할 수는 없습니다. 사용할 때마다 회전하며, 회전된 값은 즉시 저장됩니다.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+값은 공백이 제거되고, 선언되지 않은 키는 버려지며, 접두사가 맞지 않으면 클라이언트와 서버에서 같은 문장으로 거부됩니다. 필수 필드는 연결할 때마다 있어야 하며, 비워 둔 선택 필드는 이미 저장된 값을 그대로 유지합니다.
 
-## Slack app requirements
+## Slack 앱 요구 사항
 
-Bot token scopes:
+봇 토큰 스코프:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+봇 이벤트 구독:
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Control Center가 앱을 만들거나 편집할 때 강제하는 구조 설정: Socket Mode 사용, 요청 URL 없음, Messages 탭 사용 및 쓰기 가능, 봇 `always_online`, 필수 스코프와 이벤트를 앱에 이미 있는 것에 병합(제거하지는 않음), 그리고 설명이 `File a ticket or link your Control Center account`인 슬래시 명령 하나 — 내보낸 매니페스트에서 Control Center 자신의 명령을 식별하는 표식입니다.
 
-## Connection states
+## 연결 상태
 
-| State            | Wire           | Meaning                                                         |
+| 상태            | 와이어           | 의미                                                         |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| 연결되지 않음   | `disconnected` | 이 워크스페이스 × 제공업체에 저장된 자격 증명이 없습니다       |
+| 연결 중…        | `connecting`   | 자격 증명은 저장되었고, 전송이 연결 또는 재연결 중입니다       |
+| 실시간          | `connected`    | 전송이 살아 있고 이벤트를 수신합니다                           |
+| 연결 오류       | `error`        | 저장되었지만 실패 중이며, 제공업체 자체의 오류가 함께 표시됩니다 |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+재연결은 지터를 섞은 지수 백오프이며 30초로 상한을 둡니다. 제공업체가 시작한 소켓 회전은 백오프를 키우지 않고 즉시 다시 연결합니다. 거부된 자격 증명(`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`)이나 누락된 스코프는 종결입니다: 브리지는 새 자격 증명이 들어올 때까지 재시도를 멈춥니다.
 
-## Provider capabilities (Slack)
+## 제공업체 능력(Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+브리지는 가장 풍부한 표면을 기준으로 작성되었고, 능력별로 성능을 낮춥니다.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| 능력                      | Slack  | 없을 때의 효과                                                                                 |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | 예     | 답변 전체가 끝날 때 한 번 게시됩니다                                                           |
+| `streamingRequiresThread` | 예     | 스레드 앵커가 없는 답변 대상은 답변을 통째로 게시합니다                                        |
+| `ephemeralMessages`       | 예     | 사용할 수 있는 답변 핸들이 없는 슬래시 명령 응답은 버려집니다(거부는 항상 스레드 안에 게시됩니다) |
+| `threadStatus`            | 예     | 일시적인 "is thinking…" 줄이 없습니다                                                          |
+| `threadTitle`             | 예     | 채팅 스레드가 기본 제목을 유지합니다                                                           |
+| `slashCommands`           | 예     | `/cc` 표면이 없습니다                                                                          |
+| `taskCards`               | 예     | 텍스트만 — 답변 위에 카드가 없고 "View in Control Center" 링크도 없습니다                      |
+| `maxMessageLength`        | 39,000 | 긴 답변은 Control Center로 가는 안내와 함께 잘립니다                                           |
+| `maxStreamChunkLength`    | 3,800  | 덧붙이는 내용은 문단, 줄, 공백 경계에서 나뉩니다                                               |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+스트리밍을 알린다고 스트리밍을 약속하는 것은 아닙니다: Slack의 스트리밍에는 유료 요금제의 Agents & AI Apps 기능이 필요합니다. 호출 시점의 거부(`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …)는 연결이 살아 있는 동안 기억되고 `streamingAvailable: false`로 드러납니다. Slack의 작업 카드는 같은 호출을 타므로, 카드의 표시 모드를 거부하는 Slack은 스트림을 유지하고 카드만 잃습니다 — 연결이 살아 있는 동안 한 번만 잃습니다.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+스트림은 또한 그것을 읽을 대상을 지정해야 합니다. Slack은 **채널**에서 스트림을 열려면 받는 사용자와 그 사용자의 팀이 모두 필요하며(DM은 그렇지 않습니다), 그렇지 않으면 `missing_recipient_user_id` / `missing_recipient_team_id`로 거부합니다 — 호출별 거부이므로 브리지는 계속 시도하고, 그동안 그 턴은 게시된 답장 하나로 도착합니다. 받는 사람은 요청한 사람, 즉 인바운드 메시지에서 가져온 사람입니다(앱의 팀이 아니라 그 사람의 팀이므로 Slack Connect 채널도 올바르게 해석됩니다). 채팅에서 아무도 시작하지 않은 턴, 즉 이미 브리지된 대화에서 Control Center에서 시작한 작업에서는 연결을 만든 링크의 멤버가 대상입니다. 그 멤버가 그사이 채팅 계정 연결을 해제했다면 그 턴은 스트리밍 대신 통째로 게시됩니다.
 
-## Task cards
+## 작업 카드
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+에이전트 턴마다 그룹화된 카드 하나(`task_display_mode: plan`)가 있고, 단계마다 행이 하나씩 있습니다. 각 행은 `id` + `title` + `status`의 `task_update`이며, 생각이 준비되면 일회성 `details`가 더해집니다. 같은 id의 `details`와 `output`은 구분자 없이 이어 붙으므로, `details`는 한 번만 보내고 `output`은 절대 스트리밍하지 않습니다. 플랜의 제목은 요청이고, 답변은 `markdown_text` 청크를 실은 별도의 나중 덧붙임입니다.
 
-| Part           | Content                                                                                                                                                       |
+| 부분           | 내용                                                                                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| 플랜 제목      | 요청된 내용                                                                                                                                                   |
+| 준비 행        | `Working on it…`, 그다음 `Cloning …`, 그다음 `Starting the agent…` — 행 하나로, 제목이 교체됩니다                                                             |
+| 생각 행        | `Thinking…`, 에이전트가 추론을 시작할 때 추가됩니다. 생각은 이 행의 `details`이며, 추론이 끝날 때 한 번 전송됩니다                                             |
+| 도구 행        | 도구마다 하나(`Bash which swift`), 고유 id를 가져 나란히 놓입니다                                                                                              |
+| 상태           | 그 행이 실행되는 동안 진행 중, 다음 행이 시작되거나 턴이 끝나면 완료, 실패·중단·턴 한도에서는 오류                                                            |
+| 콜 투 액션     | 턴이 끝날 때 마지막 행으로 `View in Control Center` — 작업이 아직 실행 중일 때는 없고, 서버에 도달 가능한 공개 URL이 없을 때도 없습니다                        |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+카드가 결코 싣지 않는 것: 도구 출력, 그 허용 목록 밖의 인자, 데이터베이스에서 읽은 어떤 것입니다. 추론 산문은 메시지 본문이 아니라 `Thinking…` 행의 details(256자로 제한)뿐입니다. 새로 말할 것이 없는 카드는 다시 보내지 않습니다. 멘션은 스트림을 즉시 열어 Slack 스레드가 침묵하지 않게 합니다. 그 뒤 텍스트를 전혀 만들지 않은 턴은 두 번째 메시지를 게시하는 대신 같은 카드를 짧은 메모로 마무리합니다. 스트림을 한 번도 연 적 없는 스페이스(카드가 없거나 스트리밍이 이미 거부된 경우)에서의 말 없는 턴은 완성된 카드와 그 메모를 실은 메시지 하나를 여전히 게시합니다.
 
-Streamed and posted cards are different payloads:
+스트리밍된 카드와 게시된 카드는 서로 다른 페이로드입니다:
 
-| Form     | Shape                                                | Prose                                            |
+| 형식     | 형태                                                | 산문                                            |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| 스트리밍 | `id`를 키로 하는 `plan_update`와 `task_update` 청크 | 청크마다 256자로 제한되는 일반 문자열            |
+| 게시     | `task_id`를 키로 하는 `task_card`를 감싸는 `plan` 블록 | 서식 있는 텍스트                              |
 
-Failure handling:
+실패 처리:
 
-| Situation                                    | Behavior                                                                                                                    |
+| 상황                                          | 동작                                                                                                                        |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| 제공업체가 덧붙임에서 카드를 거부            | 그 덧붙임은 카드 없이 즉시 재시도됩니다. 산문은 여전히 실시간으로 도착하고, 카드는 연결이 살아 있는 동안 버려집니다         |
+| 제공업체가 산문도 거부                       | 스트림을 닫고 답변을 통째로 게시합니다                                                                                      |
+| 답변의 일부가 도착한 뒤 스트림이 끊김        | 스트림을 닫고 아무것도 다시 게시하지 않습니다                                                                               |
 
-See [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/) for why the payload is split this way.
+페이로드를 이렇게 나누는 이유는 [채팅 브리지](/ko-KR/매뉴얼/개념/채팅-브리지/)를 참고하세요.
 
-### Setup, before there is a turn
+### 설정, 턴이 있기 전
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+카드는 멘션이 접수될 때, 클론 전이고 첫 토큰 전에 열립니다. 뒤따르는 턴은 같은 카드와 스트림을 물려받습니다. 그 뒤의 내레이션은 도메인 이벤트 버스의 `SpaceProvisioningChanged`에서 나옵니다 — 데스크톱의 프로비저닝 배너가 스페이스 행에서 읽는 것과 같은 진행 상황입니다.
 
-| Provisioning state          | Narration                                                      |
+| 프로비저닝 상태             | 내레이션                                                       |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| 멘션 접수됨                 | `Working on it…`                                               |
+| 단계 `repo`                 | `Cloning <repo>…`                                              |
+| 단계 `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| 단계 `script`               | `Running the setup script for <repo>…`                         |
+| 단계 `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, 아직 단계 없음 | `Preparing the workspace…`                                  |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| 에이전트 추론 중            | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+설정 내레이션에는 네 가지 조건이 모두 필요합니다:
 
-| Condition                                 |
+| 조건                                        |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| 제공업체가 카드를 렌더링합니다              |
+| 이 연결에서 스트리밍을 사용할 수 있습니다   |
+| 스페이스에 처리 중인 채팅 요청이 있습니다   |
+| 그곳에서 이미 턴을 보고하는 카드가 없습니다 |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+요청은 턴이 시작되거나 설정이 실패할 때까지 처리 중으로 남습니다. 이미 열린 카드가 없는 `ready` 이벤트는 데워진 스페이스이며 조용히 남겨지고, 채팅에서 아무도 기다리지 않는 프로비저닝 — 앱에서 연 대화, 부팅 시 재개된 고립된 대화 — 은 카드를 전혀 만들지 않습니다.
 
-## The `/open` bounce page
+## `/open` 바운스 페이지
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+채팅 제품은 링크에 `http(s)`만 받아들이고 그 외에는 아무것도 받지 않으므로, 콜 투 액션이 데스크톱의 스킴을 직접 가리킬 수 없습니다.
 
-| Property   | Value                                                                                                                                       |
+| 속성       | 값                                                                                                                                          |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| 라우트     | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| 오리진     | 서버의 공개 URL에서 파생됩니다(`ws` → `http`, `wss` → `https`). 루프백은 유지됩니다                                                        |
+| 응답       | `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>`로 이동하고 수동 버튼을 표시하는 작은 no-store HTML 페이지                |
+| 검증       | id는 `[A-Za-z0-9_.-]{1,128}`와 일치해야 하며, 그 외에는 404입니다                                                                           |
+| 접근       | 공개적이고 아무것도 하지 않습니다 — 데이터베이스를 읽지 않으므로 존재 여부를 알려 주는 오라클이 아니며, 권한 부여는 이 페이지가 여는 앱이 합니다 |
 
-## Bot profile fields
+## 봇 프로필 필드
 
-| Field              | Limit       | Notes                                                                                             |
+| 필드               | 제한        | 비고                                                                                              |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1~35자      | 기본값은 `Control Center · <workspace name>`                                                      |
+| `botDisplayName`   | 1~80자      | 기본값은 `control-center`                                                                         |
+| `description`      | 140자 이하  |                                                                                                   |
+| `agentDescription` | 300자 이하  | 봇과의 DM 위에 표시됩니다                                                                         |
+| `command`          | 32자 이하   | 정규화: 앞의 슬래시를 제거하고, 소문자로 바꾸고, `[^a-z0-9_-]`를 지우며, 비면 `cc`로 대체         |
+| `agentEnabled`     | —           | DM/에이전트 환경을 노출할지 여부                                                                  |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+빈 입력란은 “그대로 두기”를 뜻하며 “지우기”를 뜻하지 않습니다. 한도는 Slack의 것이며, 모델링한 제품 중 가장 빡빡합니다.
 
-## Link codes
+## 링크 코드
 
-| Property | Value                                                                                    |
+| 속성     | 값                                                                                       |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| 길이     | 6자                                                                                      |
+| 알파벳   | `23456789ABCDEFGHJKLMNPQRSTVWXYZ`(`0`/`O`, `1`/`I`, `U` 없음)                            |
+| 수명     | 15분                                                                                     |
+| 사용     | 1회                                                                                      |
+| 저장     | 메모리 — 서버를 재시작하면 미사용 코드가 무효화됩니다                                    |
+| 범위     | 워크스페이스 하나와 제공업체 하나. 새 코드를 발급하면 그 멤버의 이전 코드가 무효화됩니다 |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+코드 사용은 대소문자를 구분하지 않고 매칭됩니다. 알 수 없거나 만료되었거나 다른 워크스페이스용이거나 다른 제공업체의 코드는 모두 의도적으로 동일하게 실패합니다.
 
-## Link methods
+## 연결 방법
 
-| Method | Wire    | How                                                                            |
+| 방법   | 와이어  | 방식                                                                            |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| 코드   | `code`  | 멤버가 `/cc link <code>`를 사용했습니다                                        |
+| 이메일 | `email` | 제공업체의 검증된 이메일이 이미 워크스페이스 멤버인 사용자와 일치했습니다      |
 
-## RPC operations
+## RPC 연산
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+모두 워크스페이스 범위입니다. 서버는 무상태이므로 각 호출은 자신의 `workspace_id`를 args에 담습니다. 디스패처는 이를 생략한 워크스페이스 범위 연산을 데이터베이스를 열기 전에 거부합니다. 자격 증명은 _안으로만_ 흐릅니다 — 상태 조회는 절대 자격 증명을 돌려주지 않습니다.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| 연산                    | 종류        | 최소 역할                                      | 액션 클래스                     |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | 본인은 `member`, 다른 사람은 `admin`           | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+읽기 연산은 종류에서 `guest` 하한을 물려받고, 명시적 하한이 없는 변경 연산은 `member`를 요구합니다.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink`는 봇 프로필로 제공업체 앱 생성 URL을 구성합니다. 시크릿을 읽지도 않고 아무 데도 연결하지 않으므로 액션 클래스를 선언하지 않습니다 — 유일한 호출은 사용자 자신의 브라우저가 합니다.
 
-One reactive query completes the surface:
+반응형 쿼리 하나가 이 표면을 완성합니다:
 
-| Query                 | Kind  | Emits                                                    |
+| 쿼리                  | 종류  | 내보내는 것                                              |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | 명단이며, 연결이 만들어지거나 제거될 때마다 다시 푸시됩니다 |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+이 쿼리가 있는 이유는 연결이 _반대편_에서 일어나기 때문입니다. 멤버가 일회용 코드를 봇에게 입력하므로, 어떤 클라이언트 응답도 그 답을 되돌려 나를 수 없습니다. 설정의 명단과 열려 있는 “내 계정 연결” 대화상자가 모두 이 쿼리를 따르며, 대화상자는 멤버 자신의 연결이 도착하는 순간 확인 화면으로 바뀝니다.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink`는 항상 호출자 자신의 신원을 위한 코드를 발급합니다. `chat.updateBotProfile`은 단계가 남았을 때만(보통 재설치) `remaining_step`을 반환하며, 이것이 없다는 것은 편집이 바로 적용되었다는 뜻입니다.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers`는 제공되는 제공업체마다 항목 하나를 반환합니다 — 디스크립터와, 있을 경우 연결 상태입니다. 설정 UI가 렌더링하는 모든 것이 이 페이로드에서 나오므로, 제공업체 추가는 서버만 바꾸는 변경입니다.
 
-## Storage
+## 저장소
 
-| What                       | Where                                                                                                        |
+| 대상                  | 위치                                                                                                         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| 연결 자격 증명        | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| 중간에 멈춘 안내형 설정 | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| 레거시 Slack 파일     | `<dataDir>/<workspaceId>/slack_credentials.json` 및 `slack_app_setup.json`, 한 번 읽고 제자리에서 마이그레이션됩니다 |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+자격 증명은 워크스페이스의 데이터베이스 안이 아니라 그 옆에 있습니다. 워크스페이스를 삭제하면 채팅 토큰도 함께 사라지고, `workspace.export`나 백업은 `workspace.db`를 복사합니다 — 따라서 다른 사람에게 넘긴 워크스페이스에는 살아 있는 봇 토큰이 들어 있지 않습니다. 쓰기는 원자적이며(임시 파일에 쓴 뒤 이름 바꾸기) 소유자 전용으로 조여집니다.
 
-## Database tables
+## 데이터베이스 테이블
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+둘 다 워크스페이스 데이터베이스에 있습니다. 이 데이터베이스는 스쿼시된 v1 베이스라인을 가지므로, 워크스페이스를 넘는 읽기는 컴파일되지 않습니다.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — 외부 대화 하나 ↔ Control Center 스페이스 하나:
 
-| Column                                                 | Notes                                                                      |
+| 컬럼                                                   | 비고                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | 워크스페이스 범위                                                          |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Slack 팀 `T…`, 이 개념이 없는 제공업체에서는 비어 있음                     |
+| `external_channel_id`                                  | Slack 채널 `C…`, 그룹 `G…`, DM `D…`                                        |
+| `external_thread_id`                                   | Slack 스레드 앵커, 대화 전체가 앵커일 때(봇 DM)는 null                     |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+`(workspace_id, provider, external_channel_id, external_thread_id)`에 고유하며, null 스레드 id에 대해서도 같은 제약을 강제하는 부분 인덱스가 있습니다(SQLite는 NULL을 서로 다른 값으로 취급합니다).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — 외부 멤버 하나 ↔ Control Center 사용자 하나:
 
-| Column                                 | Notes                                           |
+| 컬럼                                   | 비고                                            |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | 워크스페이스 범위                               |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Slack 멤버 `U…`                                 |
+| `user_id`                              | Control Center 사용자(전역이므로 외래 키 없음)  |
+| `method`                               | `code` 또는 `email`                             |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+`(workspace_id, provider, external_team_id, external_user_id)`와 `(workspace_id, provider, user_id)`에 고유합니다 — 양방향으로 단일 값 귀속이며, 한 사람이 여러 제공업체에 연결될 수는 있습니다.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+연결은 신원 해석이며 **접근 권한 부여가 아닙니다**: 멤버십은 인바운드 이벤트마다 다시 확인되므로, 그사이 제거된 멤버로의 연결은 거부로 귀결됩니다.
 
-## Space kind and message metadata
+## 스페이스 종류와 메시지 메타데이터
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+브리지된 스페이스는 제공업체의 `SpaceKind`(`slack`)로 만들어집니다. 일반적인 사람 대상 스페이스처럼 동작합니다 — `topic`처럼 알림이 가고 섹션으로 묶입니다 — 그리고 `isExternalChat`이 모든 동작(미러링, 배지, 보존)이 거쳐 가는 검사입니다.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+브리지가 들여오는 모든 메시지에는 `metadata['chat']` 표식이 붙습니다:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+이 표식은 에코 가드이기도 합니다. 아웃바운드 미러는 이 표식을 지닌 메시지를 모두 건너뛰며, 그래서 들어온 채팅 메시지가 그대로 다시 게시되지 않습니다.
 
-## Relay behavior
+## 릴레이 동작
 
-| Behavior                               | Detail                                                                                                         |
+| 동작                                   | 세부 사항                                                                                                      |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| 바깥으로 중계되는 것                   | 에이전트 **텍스트**와 작업 카드의 상태 줄뿐입니다. 추론 산문과 도구 출력은 Control Center에 남습니다          |
+| 스트리밍 주기                          | 턴이 도는 동안 초당 한 번의 플러시로 제한됩니다. 카드와 그것이 설명하는 텍스트는 같은 호출로 함께 이동합니다  |
+| Control Center에서 입력한 사람 메시지  | 연결된 스레드로 미러링되며, 작성자의 표시 이름이 앞에 붙습니다                                                 |
+| 빈 턴                                  | 침묵 대신 짧은 메모(실행 실패, 중단됨, 또는 턴 한도에서 정지)로 보고됩니다                                     |
+| 중복 제거                              | 제공업체 자체의 이벤트 id를 키로 삼으며, 최근 512개를 기억합니다                                               |
+| 프런트도어 에이전트                    | 새로 브리지된 대화는 워크스페이스의 CEO 에이전트를, 없으면 첫 에이전트를, 그것도 없으면 아무도 깨우지 않습니다 |
+| 스페이스 이름                          | Slack 채널 스레드는 `#channel · <request>`, DM은 `Slack DM · <request>`이며, 제목은 48자로 제한됩니다          |
+| 실패 격리                              | 잘못된 이벤트 하나가 브리지를 무너뜨리는 일은 없습니다. 연결은 다른 모든 대화를 계속 처리합니다                |
 
-## See also
+## 관련 항목
 
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
-- [Link your Slack account](/ko-KR/매뉴얼/사용-가이드/채팅-계정-연결/)
-- [Customize the chat bot](/ko-KR/매뉴얼/사용-가이드/채팅-봇-사용자-지정/)
-- [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/)
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/) for the action classes the ops declare
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- [Slack 계정 연결](/ko-KR/매뉴얼/사용-가이드/채팅-계정-연결/)
+- [채팅 봇 사용자 지정](/ko-KR/매뉴얼/사용-가이드/채팅-봇-사용자-지정/)
+- [채팅 브리지](/ko-KR/매뉴얼/개념/채팅-브리지/)
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/) — 연산이 선언하는 액션 클래스

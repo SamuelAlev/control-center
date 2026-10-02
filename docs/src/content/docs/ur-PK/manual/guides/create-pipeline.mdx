@@ -1,241 +1,253 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: پائپ لائن ٹیمپلیٹ بنائیں
+description: پائپ لائن ایڈیٹر میں DAG ورک فلو ٹیمپلیٹ لکھیں — نوڈز شامل کریں، اُنہیں جوڑیں، اِن پٹس کا اعلان کریں اور اُسے چلانے کے قابل بنائیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+پائپ لائن ٹیمپلیٹس ورک اسپیس کی ترتیبات میں لکھے جاتے ہیں۔ ورک اسپیس کے
+سائیڈبار میں **پائپ لائنز** اندراج _رن کی قطار_ ہے، ٹیمپلیٹس کی فہرست نہیں —
+اُس میں "ٹیمپلیٹ بنائیں" کا کوئی ایکشن نہیں ہوتا۔
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/).
+ہر قدم کی قسم، باڈی کلید اور کنفیگ فیلڈ کا مطلب کیا ہے، یہ
+[پائپ لائن قدم کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/) میں دیکھیں۔
 
-## Create a template
+## ٹیمپلیٹ بنائیں
 
-1. Go to **Settings → Workspace → Pipeline templates**
-   (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+1. **ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** پر جائیں
+   (`/workspaces/<workspace-id>/settings/pipelines`)۔
+2. **نیا ٹیمپلیٹ** دبائیں۔
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+کوئی id ڈائیلاگ نہیں کھلتا۔ ایڈیٹر فوراً ایک سیڈ شدہ ڈھانچے پر کھل جاتا ہے جس
+کا نام **نئی پائپ لائن** ہوتا ہے اور جسے خودکار طور پر id الاٹ ہوتی ہے
+(`pipeline_1`، پھر `pipeline_2`، …)۔ نام بدلنے کے لیے ہیڈر میں عنوان پر کلک
+کریں۔
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+کینوس خالی نہیں ہوتا: ایک **Trigger** داخلی نوڈ، ایک پرامپٹ-ایجنٹ نوڈ جس کا
+لیبل **Step** ہے، اور ایک ٹرمینل سینٹینل جو رن ختم کرتا ہے۔ سینٹینل کھینچا
+نہیں جاتا۔ ایڈیٹر اُس پوشیدہ ٹرمینل کو ہر قابلِ رسائی سنک سے دوبارہ جوڑ دیتا
+ہے، اس لیے **Step** کے بعد لگایا گیا کام پھر بھی چلتا ہے۔
 
-## Add nodes
+## نوڈز شامل کریں
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+**نوڈ لائبریری** سائیڈبار ایڈیٹر کے بائیں طرف مستقل رہتا ہے۔ اُسے
+**نوڈز تلاش کریں** باکس سے فلٹر کریں اور کوئی اندراج کینوس پر گھسیٹیں — نوڈ
+وہیں اترتا ہے جہاں آپ اُسے چھوڑتے ہیں، بغیر کسی آنے والے کنکشن کے۔
 
-| Palette node                    | Step kind | What it does                                                                         |
+| پیلیٹ نوڈ                       | قدم کی قسم | یہ کیا کرتا ہے                                                                       |
 | ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| **Bash script**                 | listen    | `{{state}}` کی جگہ بھر کر شیل اسکرپٹ چلاتا ہے؛ کوئی ایجنٹ ڈسپیچ نہیں ہوتا              |
+| **Open conversation**           | listen    | رن کی واحد نظر آنے والی اسپیس اور اُس کا چیک آؤٹ کھولتا ہے؛ ایجنٹ نوڈز اسی کمرے میں شامل ہوتے ہیں |
+| **Clone PR branch**             | listen    | `gh pr view` کے ذریعے PR کی ہیڈ برانچ تلاش کرتا ہے اور اُسے رن ڈائریکٹری میں کلون کرتا ہے |
+| **Post PR comment**             | listen    | مجمّع نتائج PR پر GitHub ریویو تبصرے کے طور پر پوسٹ کرتا ہے                          |
+| **Reviewer (prompt)**           | listen    | ایک ماہر ریویوور ایجنٹ ڈسپیچ کرتا ہے؛ جب تک ایجنٹ اپنا نتیجہ جمع نہ کرا دے معطل رہتا ہے  |
+| **Consolidate (join)**          | join      | کئی بالائی شاخوں کا انتظار کرتا ہے، پھر ایک ایجنٹ سے اُن کے آؤٹ پٹس مجمّع کرنے کو کہتا ہے |
+| **Custom prompt**               | listen    | عمومی پرامپٹ پر چلنے والا نوڈ جو `promptAgent` باڈی سے گزرتا ہے                      |
+| **Post to space**               | listen    | میسجنگ اسپیس کو پیغام بھیجتا ہے                                                      |
+| **Condition / switch (router)** | router    | اسٹیٹ ویلیو پر فلو کو شاخوں میں تقسیم کرتا ہے                                        |
+| **If file exists (router)**     | router    | جب کلون کے تحت کوئی پاتھ موجود ہو تو `"true"` روٹ کرتا ہے، ورنہ `"false"`             |
+| **Any file exists (OR router)** | router    | جب فہرست کا کوئی بھی پاتھ موجود ہو تو `"true"` روٹ کرتا ہے                           |
+| **All conditions (AND router)** | router    | `"true"` صرف اُس وقت روٹ کرتا ہے جب فہرست کا ہر پاتھ موجود ہو                        |
+| **Team dispatch**               | listen    | پوری ٹیم ڈسپیچ کرتا ہے اور اُس کے ختم ہونے تک معطل رہتا ہے                           |
+| **Approval gate**               | listen    | منظوری کے فیصلے کے لیے رک جاتا ہے                                                    |
+| **For each (map)**              | forEach   | ہر عنصر کے لیے ایک پرامپٹ تیار کرتا ہے، پھر وہ پرامپٹس جوڑ کر ایجنٹ کو ایک بار ڈسپیچ کرتا ہے |
+| **Call sub-pipeline**           | listen    | کسی دوسرے ٹیمپلیٹ کو متداخل قدم کے طور پر چلاتا ہے                                  |
+| **Clean up worktrees**          | listen    | پرانے الگ تھلگ worktrees ہٹاتا ہے؛ طے شدہ، کوئی ایجنٹ ڈسپیچ نہیں ہوتا                |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+لائبریری اِنہیں **فلو اور منطق**، **PR ریویو**، **ایجنٹس**، **میسجنگ** اور
+**کوڈ** کے تحت گروپ کرتی ہے۔ کوئی Demo گروپ نہیں ہے۔
 
-## Wire nodes together
+## نوڈز کو آپس میں جوڑیں
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+ہر کام والے نوڈ کے دائیں کنارے پر ایک گول **آؤٹ پٹ پورٹ** ہوتا ہے۔ اُس پورٹ سے
+دوسرے نوڈ تک گھسیٹ کر اُنہیں جوڑیں۔ شروع کرنے والے ٹریگرز بھی ایسے ہی ہیں: ہر
+ایک کا اپنا پورٹ ہوتا ہے، اس لیے **شیڈول** سے نکلنے والا تار **دستی رن** سے بھی
+نہیں نکلتا۔ کسی نوڈ کے فوراً بعد ایک اور قسم داخل کرنے کے لیے
+**مرحلہ شامل کریں** (`+`) دبائیں۔ کسی موجودہ کنارے کے درمیانی نقطے پر کرسر
+لائیں اور منقطع کرنے کے لیے × دبائیں۔
 
-Connections are also edited from the node that _receives_ them:
+کنکشنز اُس نوڈ سے بھی ایڈٹ کیے جاتے ہیں جو اُنہیں _وصول_ کرتا ہے:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. نیچے والا نوڈ منتخب کریں۔ اُس کا کنفیگ پینل دائیں طرف کھل جاتا ہے۔
+2. **Triggers from** تک سکرول کریں اور ہر اُس بالائی نوڈ کی چپ پر ٹیپ کریں جسے
+   یہ نوڈ سننا چاہیے۔ منتخب چپ پر ٹیپ کرنے سے کنکشن ہٹ جاتا ہے۔
+3. اگر کوئی بالائی نوڈ روٹر ہو تو چپس کے نیچے **روٹ کلیدیں** کا بلاک ظاہر ہوتا
+   ہے، جس میں ہر روٹر کنارے کے لیے ایک **&lt;node&gt; سے روٹ کلید** فیلڈ ہوتی
+   ہے۔ وہ کلید درج کریں جس پر وہ کنارہ فائر کرتا ہے — فائل کے وجود والے روٹرز
+   کے لیے `true` یا `false`، یا سوئچ کے لیے کیس کا نام۔
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+ہر ٹریگر نوڈ ایک داخلی نقطہ ہے۔ کوئی نوڈ کئی بالائی نوڈز سن سکتا ہے (فین اِن)
+اور کئی نیچے والوں کو فیڈ کر سکتا ہے (فین آؤٹ)، اور گراف کو حلقے سے پاک ہی رہنا
+چاہیے — ایڈیٹر میں کوئی چیز آپ کو حلقہ جوڑنے سے نہیں روکتی، اس لیے اپنا کام
+جانچ لیں۔
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+ٹرمینل سینٹینل کینوس سے فلٹر کر دیا جاتا ہے، اس لیے اُسے منتخب نہیں کیا جا
+سکتا۔ گراف بدلتے ہی ایڈیٹر اُسے ہر قابلِ رسائی سنک سے دوبارہ جوڑ دیتا ہے، اس
+لیے سیڈ شدہ **Step** کے بعد لگایا گیا کام پھر بھی چلتا ہے۔ خالی گراف (ایسا
+ٹریگر جس کے بعد کوئی کام والا قدم نہ ہو) ٹریگر کو خود فہرست کرتا ہے تاکہ رن
+فوراً مکمل ہو جائے۔
 
-## Configure a node
+## نوڈ کنفیگر کریں
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+نوڈ منتخب کریں تاکہ اُس کا کنفیگ پینل کھل جائے۔ کون سی فیلڈز ظاہر ہوتی ہیں،
+یہ نوڈ کی باڈی پر منحصر ہے۔
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+ہر نوڈ میں **لیبل**، **ان پٹ کلیدیں** (کاما سے جدا اسٹیٹ کلیدیں جو اجرا کے وقت
+پڑھی جاتی ہیں) اور **اعلیٰ** کے تحت **ریڈیوسر**، **ٹائم آؤٹ (ms)**،
+**دوبارہ کوششیں**، **ناکامی پر جاری رکھیں** اور **آؤٹ پٹ اسکیما** ہوتے ہیں۔
+listen اور join نوڈز اپنی **قسم** بھی اِن دونوں کے درمیان بدل سکتے ہیں۔
 
-### Open conversation
+### گفتگو کھولیں
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+ایک **ریپو اسکوپ** منتخب کنندہ (کون سے ورک اسپیس ریپوز چیک آؤٹ کرنے ہیں؛ خالی
+کا مطلب کوئی نہیں)، ایک **اسپیس کا نام** اور ایک **گفتگو بنائیں** چیک باکس
+شامل کرتا ہے۔ جب وہ چیک باکس آن ہو تو **گفتگو کا عنوان** فیلڈ اُس اسٹریم کا نام
+دیتی ہے جس کے ساتھ کمرہ کھلتا ہے۔ ایجنٹ نوڈز اسی کمرے میں شامل ہوتے ہیں — وہ
+اپنا الگ کمرہ نہیں کھولتے۔
 
-### Prompt agent
+### پرامپٹ ایجنٹ
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+**ایجنٹ** (کون سا ایجنٹ ڈسپیچ کرنا ہے)، **پرامپٹ** (`{{key}}` سے اِن پٹس یا
+بالائی آؤٹ پٹس کا حوالہ دیں) اور **آؤٹ پٹ کلید** شامل کرتا ہے۔
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**ٹائم آؤٹ (ms)** _ملی سیکنڈز_ میں ہے، سیکنڈز میں نہیں — `900000` پندرہ منٹ
+ہیں۔ `900` درج کرنے سے قدم کو 0.9 سیکنڈ ملتے ہیں۔
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+پرامپٹ-ایجنٹ نوڈ جس گفتگو موڈ میں چلتا ہے، اُس کے لیے ایجنٹ نوڈ پر ایڈیٹر میں
+کوئی فیلڈ نہیں ہوتی۔ یہ کمرہ بنانے والے **Open conversation** نوڈ پر
+`extras['mode']` (`chat`، `plan` یا `review`) کے ذریعے چلتی ہے (ڈیفالٹ
+`review`)۔ اُسے ایجنٹ قدم پر سیٹ کرنا نظر انداز کر دیا جاتا ہے۔ کلید عین مطابق
+میچ ہوتی ہے: کوئی اور ہجے خاموشی سے نظر انداز کر دی جاتی ہے۔
 
-### Bash script
+### Bash اسکرپٹ
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+**اسکرپٹ** شامل کرتا ہے۔ کوئی ورکنگ ڈائریکٹری یا ماحول کی فیلڈ نہیں ہوتی،
+کیونکہ دونوں میں سے کوئی بھی کنفیگر نہیں کیا جا سکتا:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- ایک رن میں ہر bash قدم ایک ہی cwd شیئر کرتا ہے: `<cc_root>/pipelines/<runId>/`۔
+- `GITHUB_TOKEN` کریڈینشلز اسٹور سے انجیکٹ ہوتا ہے، اس لیے `gh` اور
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` بغیر کسی سیٹ اپ کے کام کرتے
+  ہیں۔
+- اسکرپٹ کو حرفی طور پر `bash` ایگزیکیوٹیبل کے طور پر اسپان کیا جاتا ہے، اس
+  لیے `bash` کا سرور ہوسٹ کے `PATH` پر ہونا ضروری ہے۔ یہ Windows کا پہلو ہے۔
 
-### Router
+### روٹر
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+روٹر کوئی شرط جانچتا ہے اور ایک روٹ کلید واپس دیتا ہے؛ انجن صرف وہی نیچے والا
+کنارہ چلاتا ہے جس کی روٹ کلید میل کھاتی ہو اور باقی شاخوں کو نظر انداز نشان زد
+کر دیتا ہے۔
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+روٹر منتخب کرنے سے **آؤٹ پٹ کلید** فیلڈ کی جگہ شرط ایڈیٹر آ جاتا ہے۔ اُس کے
+چار موڈز میں سے ایک چنیں:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **فائل(یں) موجود — کوئی بھی** — جب فہرست کا کوئی بھی پاتھ موجود ہو تو
+  `"true"` روٹ کرتا ہے۔
+- **فائلیں موجود — سب** — `"true"` صرف اُس وقت روٹ کرتا ہے جب فہرست کا ہر پاتھ
+  موجود ہو۔
+- **موازنہ** — کسی اسٹیٹ ویلیو کا کسی لٹرل سے موازنہ کرتا ہے۔
+- **سوئچ** — کسی اسٹیٹ کلید کی ویلیو پر روٹ کرتا ہے، ایک ڈیفالٹ کیس کے ساتھ۔
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+پھر جانے والے کناروں پر مماثل روٹ کلیدیں سیٹ کریں (دیکھیں
+[نوڈز کو آپس میں جوڑیں](#نوڈز-کو-آپس-میں-جوڑیں))۔
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/).
+بولین `and` / `or` / `not` گروپس باڈی میں معاون ہیں مگر اِس فارم سے لکھے نہیں
+جا سکتے — اُن کے لیے `extras.predicate` کے تحت ہاتھ سے لکھا گیا پریڈیکیٹ ٹری
+درکار ہوتا ہے۔ پریڈیکیٹ اور آپریٹر کی مکمل اصطلاحات
+[پائپ لائن قدم کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/) میں ہیں۔
 
-### Join
+### جوائن
 
-No configuration of its own: it waits for all of its upstream steps.
+اپنی کوئی کنفیگریشن نہیں: یہ اپنے تمام بالائی قدموں کا انتظار کرتا ہے۔
 
-### Approval gate
+### منظوری گیٹ
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+گیٹ منظوری دینے والے ایجنٹ کو گیٹ پرامپٹ کے ساتھ ایک پوشیدہ گفتگو میں ڈسپیچ
+کرتا ہے اور معطل ہو جاتا ہے۔ منظوری دینے والا گفتگو میں آپ کا فیصلہ طلب کرتا
+ہے اور اُسے `submit_output` کے ذریعے
+`{ "decision": "approved" | "rejected", "reason": "..." }` کی صورت میں جمع
+کراتا ہے۔ فیصلہ آؤٹ پٹ کلید کے تحت آتا ہے (ڈیفالٹ `approval_decision`)، اس لیے
+نیچے والا سوئچ روٹر اُس پر شاخ بنا سکتا ہے۔
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+**ایجنٹ** کو منظوری دینے والا اور **پرامپٹ** کو گیٹ کا سوال سیٹ کریں۔ گیٹ
+`submit_output` کے ذریعے `{ "decision": "approved" | "rejected", "reason": "..." }`
+کی صورت میں حل ہوتا ہے۔ Reviewer (prompt) نوڈز بھی اسی طرح جمع کراتے ہیں۔
 
-### Team dispatch
+### ٹیم ڈسپیچ
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+**Team ID** اور **ڈسپیچ موڈ** شامل کرتا ہے۔ منتخب کنندہ بالکل دو موڈ پیش کرتا ہے:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — فی رکن ایک ٹاسک، سب مکمل ہونے تک معطل رہتا ہے۔
+- `manager` — لیڈر کو ڈسپیچ کرتا ہے، اور وہ آگے تفویض کرتا ہے۔
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+کوئی بھی اور محفوظ ویلیو `allParallel` کی طرح برتاؤ کرتی ہے۔ ہر رکن کا نتیجہ
+آؤٹ پٹ کلید کے تحت فہرست میں جمع کرنے کے لیے **ریڈیوسر** کو `append` پر سیٹ
+کریں۔
 
-### For each and Call sub-pipeline
+### ہر عنصر کے لیے اور ذیلی پائپ لائن کال
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** ڈیفالٹ طور پر `items` اسٹیٹ کلید پر میپ کرتا ہے (نوڈ پر
+`extras.iterableKey` / `extras.itemKey`)۔ یہ اپنا پرامپٹ فی عنصر ایک بار تیار
+کرتا ہے (ڈیفالٹ `{{item}}`) اور وہ پرامپٹس جوڑ کر ایجنٹ کو **ایک بار** ڈسپیچ
+کرتا ہے۔ خالی مجموعہ فوراً خالی فہرست کے ساتھ مکمل ہو جاتا ہے۔ یہ فی عنصر ایک
+متوازی ڈسپیچ نہیں ہے۔
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** اُس وقت تک معطل رہتا ہے جب تک چائلڈ رن کسی حتمی حالت تک
+نہ پہنچ جائے، پھر چائلڈ کی آخری حالت آؤٹ پٹ کلید کے تحت ضم کر دیتا ہے (ڈیفالٹ
+`subflow_result`)۔ `extras.templateId` کے ذریعے اُسے کسی چائلڈ کی طرف اشارہ
+کریں۔ کوئی ٹیمپلیٹ خود کو کال نہیں کر سکتا؛ ناکام یا منسوخ چائلڈ پیرنٹ قدم کو
+ناکام کر دیتا ہے، جو پھر اُس قدم کی دوبارہ کوشش اور ناکامی پر جاری رکھنے کی
+پالیسی کو فیڈ کرتا ہے۔
 
-## Declare inputs and allow manual runs
+## اِن پٹس کا اعلان کریں اور دستی رنز کی اجازت دیں
 
-Both live behind **Manual run** in the editor header.
+دونوں ایڈیٹر ہیڈر میں **دستی رن** کے پیچھے ہیں۔
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. **دستی رن** دبائیں۔
+2. **دستی رن کی اجازت دیں** آن کریں۔ یہ سوئچ فوراً محفوظ ہو جاتا ہے — یہ وہی
+   `manual` ٹریگر قطار بناتا (یا حذف کرتا) ہے جس سے ٹیمپلیٹ رن لانچر میں ظاہر
+   ہوتا ہے۔
+3. اگر حد مقرر کرنا چاہیں تو **زیادہ سے زیادہ متوازی رنز** سیٹ کریں (لامحدود
+   کے لیے خالی چھوڑیں)۔ اضافی شروع کیے گئے رنز `queued` حالت میں انتظار کرتے
+   ہیں جب تک کوئی سلاٹ خالی نہ ہو۔
+4. ہر اُس فارم فیلڈ کے لیے **ان پٹ شامل کریں** دبائیں جو دستی رن کو جمع کرنا
+   چاہیے:
 
-| Field             | Description                                                    |
+| فیلڈ               | تفصیل                                                          |
 | ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| **کلید**           | وہ اسٹیٹ کلید جس کے تحت ویلیو محفوظ ہوتی ہے؛ اُس کا حوالہ `{{key}}` سے دیں |
+| **لیبل**           | ڈسپلے لیبل (ڈیفالٹ کلید)                                       |
+| **قسم**            | متن، کثیر سطری متن، عدد، ٹوگل، منتخب، ریپوزٹری                  |
+| **آپشنز**          | کاما سے جدا اختیارات، صرف منتخب کے لیے                          |
+| **ڈیفالٹ ویلیو**   | پہلے سے بھری ویلیو                                             |
+| **پلیس ہولڈر**     | خالی فیلڈ کے اندر اشارے کا متن                                  |
+| **مدد کا متن**     | فیلڈ کے نیچے مددگار متن                                        |
+| **ضروری**          | یہ کہ رن فارم خالی ویلیو پر رکتا ہے یا نہیں                     |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+**ریپوزٹری** اِن پٹ ورک اسپیس کے ریپوز پر ایک منتخب کنندہ دکھاتا ہے اور رن پے
+لوڈ میں `repo_id`، `repo_local_path`، `repo_full_name` اور — جب ریپو کا GitHub
+ریموٹ ہو — `repo_owner` اور `repo_name` بھرتا ہے۔
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. ڈائیلاگ میں **محفوظ کریں** دبائیں۔ اِن پٹ کی تبدیلیاں ڈرافٹ میں شامل ہو
+   جاتی ہیں؛ ٹیمپلیٹ محفوظ کرنے پر وہ برقرار رہتی ہیں۔
 
-## Save and enable
+## محفوظ کریں اور فعال کریں
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/).
+1. ایڈیٹر ہیڈر میں **محفوظ کریں** دبائیں۔ ایسا کرنے تک ہیڈر "غیر محفوظ
+   تبدیلیاں" دکھاتا ہے۔
+2. واپس **ترتیبات → ورک اسپیس → پائپ لائن ٹیمپلیٹس** پر جائیں اور دیکھیں کہ
+   ٹیمپلیٹ کی قطار کا سوئچ آن ہو۔ انجن غیر فعال ٹیمپلیٹ شروع کرنے سے انکار کرتا
+   ہے اور غیر فعال ٹیمپلیٹ رن لانچر میں کبھی ظاہر نہیں ہوتا۔
+3. خودکار طور پر شروع کرنے کے لیے نوڈ لائبریری سے کوئی ٹریگر کینوس پر گھسیٹیں
+   — دیکھیں
+   [پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a pipeline manually](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)
-- [Set up pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
-- [Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
-- [Pipeline steps reference](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/)
+- [پائپ لائن دستی طور پر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)
+- [پائپ لائن ٹریگرز سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
+- [پائپ لائن رنز کی نگرانی کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
+- [پائپ لائن قدم کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
+- [پائپ لائنز](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)

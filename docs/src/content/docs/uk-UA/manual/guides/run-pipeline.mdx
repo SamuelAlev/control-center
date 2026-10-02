@@ -1,68 +1,71 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Запустити конвеєр вручну
+description: Запустіть конвеєр із екрана запуску, заповніть його входи й перейдіть на сторінку деталей запуску.
 slug: uk-UA/керівництво/практичні-посібники/запустити-конвеєр
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/).
+Цей посібник описує, як запустити конвеєр вручну. Про те, як спостерігати за
+запуском, читати вивід кроків і відновлюватися після збою, дивіться
+[Моніторити запуски конвеєрів](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/).
 
-## Start a run
+## Почати запуск
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
+1. Натисніть **Конвеєри** на бічній панелі робочого простору.
+2. Натисніть **Запустити конвеєр** у заголовку. Ви потрапляєте на екран запуску
    (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+3. Виберіть шаблон на лівій панелі. Кожна картка показує назву шаблону, його
+   опис і те, чи приймає він входи.
+4. Заповніть форму входів праворуч. Обов’язкові поля блокують кнопку, доки в них
+   немає значення; шаблон без входів прямо про це повідомляє.
+5. Натисніть **Запустити конвеєр**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Ви потрапляєте на сторінку деталей запуску, де вже працюють каскадна діаграма
+часу та полотно графа.
 
-## If the rail is empty
+## Якщо панель порожня
 
-The launcher shows a template only when **both** are true:
+Екран запуску показує шаблон, лише коли виконуються **обидві** умови:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Перемикач шаблону увімкнено в **Налаштування → Робочий простір → Шаблони конвеєрів**.
+- **Дозволити ручний запуск** увімкнено в діалозі **Ручний запуск** редактора
+  шаблону — саме цей перемикач створює тригер `manual`, який читає екран запуску.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Вісім із тринадцяти вбудованих шаблонів постачаються вимкненими:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` і `pr_digest`. Рушій відмовляється
+запускати вимкнений шаблон, тож увімкніть його перемикач, перш ніж шукати його тут.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+У списку шаблонів немає дії **Запустити** для окремого шаблону, і в редакторі
+немає кнопки запуску — екран запуску єдиний пункт ручного входу.
 
-## Fill in a repository input
+## Заповнити вхід типу «Репозиторій»
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Вхід із типом **Репозиторій** показує засіб вибору з-поміж зареєстрованих
+репозиторіїв робочого простору. Вибір одного з них заповнює `repo_id`,
+`repo_local_path`, `repo_full_name` і — якщо в репозиторію є віддалений
+GitHub — `repo_owner` та `repo_name` у корисному навантаженні запуску, тож
+наступні кроки можуть читати те, що їм потрібно.
 
-## Watch it run
+## Спостерігати за запуском
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Сторінка деталей запуску має три частини: смуга метаданих (час початку, активна
+тривалість, прогрес кроків, банер збою, **Повторити** та **Видалити**), каскадна
+діаграма часу, яку можна згорнути, з тривалістю й вартістю кожного кроку, та
+полотно графа. Вибір вузла відкриває панель деталей цього кроку.
 
-[Monitor pipeline runs](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Моніторити запуски конвеєрів](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/) охоплює все це,
+зокрема те, як читати призупинений крок і що робити, коли один із них зазнає
+збою.
 
-Every run you start from the app is a real one.
+Кожен запуск, який ви починаєте із застосунку, справжній.
 
-## Related guides
+## Пов’язані посібники
 
-- [Create a pipeline template](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/)
-- [Set up pipeline triggers](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
-- [Monitor pipeline runs](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
+- [Створити шаблон конвеєра](/uk-UA/керівництво/практичні-посібники/створити-конвеєр/)
+- [Налаштувати тригери конвеєра](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
+- [Моніторити запуски конвеєрів](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Pipelines](/uk-UA/керівництво/поняття/конвеєри/)
+- [Конвеєри та автоматизація](/uk-UA/керівництво/поняття/конвеєри/)

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: จัดการต้นทุน
+description: ดูว่าเอเจนต์ของคุณใช้จ่ายไปกับอะไร จำกัดงบของการรันอัตโนมัติ และลดการใช้โทเค็น
 slug: th-TH/คู่มือ/วิธีทำ/จัดการต้นทุน
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+คู่มือนี้แสดงวิธีดูว่าการรันเอเจนต์มีต้นทุนเท่าใด และวิธีจำกัดงบของการรันอัตโนมัติ
 
-## How costs are recorded
+## ต้นทุนถูกบันทึกอย่างไร
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+การรันเอเจนต์ทุกครั้งจะเขียนบันทึกการรันที่พกโทเค็นอินพุต โทเค็นเอาต์พุต โทเค็นการคิด โทเค็นการอ่านจากแคชและเขียนลงแคช ค่าใช้จ่ายโดยประมาณเป็นเซนต์ และค่าใช้จ่ายของเอเจนต์ย่อยใด ๆ ที่มันสร้างขึ้น
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+ราคามาจากแค็ตตาล็อก models.dev ซึ่งใช้เพียงเพื่อเติมข้อมูลราคาและหน้าต่างบริบทให้รายการโมเดล — ไม่เคยใช้เป็นแหล่งของ id โมเดล โมเดลที่แค็ตตาล็อกราคาไม่ได้จะบันทึกเป็น **$0** และการรันที่ไม่มีค่าใช้จ่ายจะถูกตัดออกจากสรุป **การใช้งานและค่าใช้จ่าย** โมเดล Ollama ในเครื่องจึงไม่แสดงการใช้จ่ายเลย แม้จำนวนโทเค็นของมันยังถูกบันทึกไว้ แผนราคาเหมาจ่าย (kimi-code, การสมัครใช้ Claude) จะเป็นเช่นนั้นเฉพาะเมื่อแค็ตตาล็อกไม่มีราคาของโมเดลที่ให้บริการอยู่ หากมี การรันก็ยังถูกประเมินด้วยอัตราเหล่านั้นอยู่ดี ภายใต้ห่วงโซ่สำรอง การรันจะถูกคิดราคาตามโมเดลที่ให้บริการจริง ไม่ใช่โมเดลที่ร้องขอ
 
-## See what you are spending
+## ดูว่าคุณใช้จ่ายไปกับอะไร
 
-### Observability → Insights
+### การสังเกตการณ์ → ข้อมูลเชิงลึก
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+เข้าถึงได้จากส่วนท้ายของแถบข้าง → **การสังเกตการณ์** แท็บ **การใช้งาน** จะเปิดขึ้นก่อน (ยอดโทเค็นสะสมทั้งหมด) สลับไปที่ **ข้อมูลเชิงลึก** — แท็บที่สอง — เพื่อดูพื้นผิวหลักของค่าใช้จ่าย:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- ตัวเลือกช่วงเวลา: 24 ชั่วโมงที่แล้ว, 7 วันที่แล้ว, 30 วันที่แล้ว หรือทั้งหมด
+- ตัวกรองแบบหลายมิติตามเอเจนต์ โมเดล สถานะ และบทบาท ในรูปแบบชิปที่ปิดทิ้งได้
+- แถบ KPI: รันทั้งหมด ค่าใช้จ่ายทั้งหมด อัตราข้อผิดพลาด อัตราแคช โทเค็นต่อวินาที ความหน่วงเฉลี่ย และเวลาถึงโทเค็นแรก โดยแต่ละค่ามีการเปลี่ยนแปลงเทียบกับช่วงก่อนหน้า (ซ่อนเมื่อเลือก "ทั้งหมด")
+- แผนภูมิกิจกรรมและค่าใช้จ่าย พร้อมรายละเอียด **ค่าใช้จ่ายตามบทบาท** ที่แยกการใช้จ่ายระหว่างเอเจนต์หลัก เอเจนต์ย่อยของมัน และที่ปรึกษาของมัน
+- ตารางรายเอเจนต์ที่เรียงตามค่าใช้จ่าย สิบอันดับแรกพร้อมตัวสลับแสดงทั้งหมด การแตะที่แถวหนึ่งจะกรองพื้นผิวอื่นทั้งหมดให้เหลือเอเจนต์นั้น
+- บันทึกการรันแบบละเอียด ซึ่งเปิดลิ้นชักทรานสคริปต์สำหรับการรันที่เลือก
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note["ทั้งหมด" ไม่ใช่ทั้งหมด]
+ฟีดการรันสมัครรับบันทึกการรันใหม่สุด 2000 รายการจากทุกเวิร์กสเปซ แล้วจึงกรองเหลือเวิร์กสเปซที่ใช้งานอยู่ บนเซิร์ฟเวอร์ที่มีหลายเวิร์กสเปซและมีงานหนาแน่น ประวัติที่เก่ากว่าของเวิร์กสเปซที่ไม่ค่อยมีงานจะหลุดออกจากหน้าต่างนั้น
 :::
 
-### Settings → Server → Model providers
+### การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+การ์ด **การใช้งานและค่าใช้จ่าย** บนหน้านี้แสดงการใช้จ่ายที่สังเกตได้ในเจ็ดวันล่าสุดเป็นตัวเลขดอลลาร์ตัวเดียว พร้อมรายละเอียดรายผู้ให้บริการ และเมื่อผู้ให้บริการเผยแพร่ข้อมูลดังกล่าว เวลาจนถึงการรีเซ็ตหน้าต่างโควตาถัดไป
 
-### A single agent's runs
+### การรันของเอเจนต์ตัวเดียว
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**การตั้งค่า → เวิร์กสเปซ → เอเจนต์** → เลือกเอเจนต์ → **บันทึก** จะแสดงรายการการรันของมันพร้อมสถานะ ระยะเวลา เวลาเริ่มและเวลาเสร็จสิ้น PID และอะแดปเตอร์ แท็บนี้ **ไม่** แสดงค่าใช้จ่าย — ให้ใช้ตารางรายเอเจนต์ใน การสังเกตการณ์ → ข้อมูลเชิงลึก แทน
 
-## Cap an autonomous run
+## จำกัดงบของการรันอัตโนมัติ
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+คำสั่งสแลชสองคำสั่งที่พิมพ์ในช่องเขียนข้อความของสเปซเป็นเพียงการรันเดียวที่มีเพดานการใช้จ่าย:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- แต่ละช่วงของการรัน `/goal` หรือ `/loop` จะหยุดเมื่อการใช้จ่ายที่คิดราคาแล้วถึง **500 เซนต์ ($5.00)** ที่ 80% ของจำนวนนั้น ลูปจะบังคับทิศทางให้โมเดลสรุปงานและส่งต่ออย่างเรียบร้อยก่อน เพื่อไม่ให้มันตายกลางงาน
+- เป้าหมายแบบคงทนทั้งอันมีเพดานที่ **5000 เซนต์ ($50.00)** เว้นแต่คุณส่ง `--budget <dollars>` ตัวควบคุมจะร้อยงบประมาณที่ _เหลืออยู่_ ของเป้าหมายเข้าไปในแต่ละช่วง งบประมาณที่ระบุไว้อย่างชัดเจนจึงไม่มีทางถูกใช้เกินไปทั้งช่วง
+- `--days N` เพิ่มกำหนดเส้นตายตามนาฬิกาจริง และ `--max N` เพิ่มเพดานจำนวนรัน ทั้งคู่ต้องเลือกเปิดใช้เอง หากไม่ระบุ เป้าหมายจะถูกจำกัดด้วยค่าใช้จ่ายเท่านั้น
+- เป้าหมายที่ชนเพดานของตัวเองจะหยุดที่ `budgetExhausted` และกลับมาทำต่อได้โดยการเพิ่มงบประมาณเท่านั้น
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+เนื่องจากเพดานนี้คิดจากราคา โมเดลที่แค็ตตาล็อกราคาไม่ได้จึงไปไม่ถึงเพดานเลย การรันเช่นนั้นจะถูกจำกัดด้วยตัวป้องกันการวนซ้ำซาก การที่ตัวควบคุมยอมแพ้หลังล้มเหลวติดต่อกันสามครั้ง และตัวคุณเองแทน
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+ข้อความในสเปซ การ @-mention หรือขั้นตอนไปป์ไลน์ไม่มีเพดานการใช้จ่าย การรันจะจบลงเมื่อโมเดลหยุด เมื่อคุณสั่งให้หยุด หรือเมื่อตัวป้องกันการวนซ้ำซากบังคับทิศทางมัน
 
-## Cut token use
+## ลดการใช้โทเค็น
 
-### Compact a long conversation
+### ย่อบทสนทนายาว
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+พิมพ์ `/compact` ในช่องเขียนข้อความของสเปซ คำสั่งนี้ถูกดักจับฝั่งไคลเอนต์และไม่เคยไปอยู่ในทรานสคริปต์ เซิร์ฟเวอร์จะพับประวัติที่เก่ากว่าไว้เป็นสรุปที่ปักหมุดไว้ และบทสนทนาจะดำเนินต่อไปบนบริบทที่ย่อแล้ว
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+การย่อจะถูกปฏิเสธขณะเอเจนต์อยู่กลางเทิร์น และเมื่อไม่มีอะไรเก่าพอให้พับ ฮาร์เนสในตัวยังย่อเองด้วยเมื่อประวัติเข้าใกล้หน้าต่างบริบทของโมเดล
 
-### Choose the effort level deliberately
+### เลือกระดับความพยายามอย่างตั้งใจ
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+**ความพยายามในการคิด** ของเอเจนต์ (การตั้งค่า → เวิร์กสเปซ → เอเจนต์) เสนอระดับต่าง ๆ เท่าที่โมเดลที่เลือกประกาศไว้ ระดับที่สูงขึ้นใช้โทเค็นการคิดมากขึ้น สงวนระดับสูงสุดไว้สำหรับงานที่ต้องใช้มันจริง ๆ
 
-### Choose the model per agent
+### เลือกโมเดลต่อเอเจนต์
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+โมเดลเป็นฟิลด์รายเอเจนต์ เอเจนต์จัดรูปแบบหรือเอเจนต์คัดแยกจึงรันบนโมเดลราคาถูกได้ ขณะที่เอเจนต์สถาปัตยกรรมรันบนโมเดลราคาแพง กรองตารางรายเอเจนต์ใน การสังเกตการณ์ → ข้อมูลเชิงลึก ตามโมเดล เพื่อดูว่าการจับคู่ใดกำลังทำให้คุณเสียค่าใช้จ่ายจริง ๆ
 
-### Look for runs with outsized token counts
+### มองหาการรันที่มีจำนวนโทเค็นสูงผิดปกติ
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+เปิดบันทึกการรันใน ข้อมูลเชิงลึก (50 การรันที่ผ่านการกรองล่าสุด) และเปิดลิ้นชักทรานสคริปต์บนรายการที่ผิดปกติ สาเหตุที่พบบ่อยคือพรอมต์ระบบหรือเพอร์โซนาที่ยาวเกินไป บริบทที่ควรถูกย่อไปแล้ว และงานที่ควรถูกแบ่งเป็นงานย่อยหลายงาน
 
-## What happens if a budget is set out of band
+## เกิดอะไรขึ้นเมื่อตั้งงบประมาณนอกช่องทางปกติ
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+เพื่อความครบถ้วน หากมีการเขียน `monthlyBudgetCents` หรือนโยบายงบประมาณลงในแถวของเอเจนต์โดยตรง:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- งบประมาณจะถูกประเมิน **หลัง** การรันเสร็จสิ้น ไม่ใช่ก่อนการสั่งงาน ตัวรับฟังเหตุการณ์เมื่อการรันเสร็จสิ้นจะเทียบการใช้จ่ายตั้งแต่ต้นเดือนถึงปัจจุบันของเอเจนต์กับเพดานของมัน
+- การข้ามเกณฑ์อ่อน (ค่าเริ่มต้น 80%) จะบันทึกอุบัติการณ์ระดับคำเตือน และยิงเหตุการณ์ `BudgetThresholdCrossed` ที่คุณใช้ผูกทริกเกอร์ไปป์ไลน์ได้
+- การใช้งบประมาณจนหมดจะบันทึกอุบัติการณ์ระดับรุนแรง ยิงเหตุการณ์เดียวกัน และพลิกสถานะวงจรชีวิตของเอเจนต์เป็น `paused`
+- ตัวบล็อกก่อนการสั่งงานมีอยู่จริง แต่มีเพียงตัวเก็บกวาดการรันกำพร้าและตัวกระทบยอดตั๋วงานที่ค้างอยู่เท่านั้นที่ปรึกษามันเมื่อจัดตารางการกู้คืน — การสั่งงานปกติไปไม่ถึงตัวบล็อกนั้น และไม่มีอะไรในเส้นทางการสั่งงานที่ตรวจสอบสถานะ paused สัญญาณเดียวที่มองเห็นได้คือป้ายวงจรชีวิตในผังองค์กร
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
-- [Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
-- [Run agent diagnostics](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
-- [Agent configuration reference](/th-TH/คู่มือ/อ้างอิง/การตั้งค่าเอเจนต์/)
+- [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/)
+- [จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
+- [วินิจฉัยเอเจนต์](/th-TH/คู่มือ/วิธีทำ/วินิจฉัยเอเจนต์/)
+- [ข้อมูลอ้างอิงการตั้งค่าเอเจนต์](/th-TH/คู่มือ/อ้างอิง/การตั้งค่าเอเจนต์/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/)

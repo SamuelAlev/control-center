@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: Kieruj workerami w tle
+description: Użyj trybu vibe, aby przestać wykonywać pracę samodzielnie i zacząć kierować kilkoma agentami, którzy robią to równolegle.
 slug: pl-PL/podrecznik/poradniki/kierowanie-workerami-w-tle
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+Ten poradnik pokazuje, jak prowadzić rozmowę jako **dyrektor**, a nie jako worker: sesja czyta i weryfikuje, a edycją zajmują się agenci działający w tle.
 
-## What changes when you type `/vibe`
+## Co się zmienia, gdy wpisujesz `/vibe`
 
-Two things, and only the first is enforced by the machinery:
+Dwie rzeczy, i tylko pierwsza jest egzekwowana przez mechanizm:
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **Własne narzędzia sesji zostają ograniczone do tylko do odczytu**, plus pięć czasowników workera. Jedyny sposób, w jaki sesja może wpłynąć na repozytorium, to worker, a jedyny sposób, w jaki może się dowiedzieć, co się stało, to odczytanie plików, których worker dotknął.
+2. **Dostaje polecenie weryfikowania przez czytanie, a nie przez wiarę.** Raport workera to twierdzenie o tym, co zrobił, a nie dowód, że zadziałało.
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+To pierwsze jest kluczowe. Dyrektor, który wciąż może greppować i edytować, pod presją wykona tę pracę sam — a to właśnie tryb awarii, któremu to rozwiązanie ma zapobiegać.
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## Workery zaczynają od zera
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+Worker nigdy nie widział Twojej rozmowy i nigdy jej nie zobaczy. Zlecenie to cały jego kontekst.
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+To właśnie czyni ten wzorzec tanim — dwadzieścia workerów, z których każdy trzymałby historię dyrektora, kosztowałoby dwadzieścia razy więcej kontekstu niż sam dyrektor — i to zarazem jedyna rzecz, przez którą zlecenia trudno się pisze. „A teraz zrób też to drugie” brzmi dla dyrektora jak kompletne polecenie, a dla świeżej sesji jak nic.
 
-A good brief names files, commands and the definition of done:
+Dobre zlecenie wymienia pliki, polecenia i definicję ukończenia:
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> W `lib/features/auth/` zastąp każde wywołanie `SessionStore.read(key)` wywołaniem `SessionStore.get(key)`. Nowa metoda zwraca `Future<String?>`, a stara zwracała `String?`, więc wywołujący potrzebują `await`. Po zakończeniu uruchom `fvm flutter analyze lib/features/auth` i zgłoś błędy, których nie udało Ci się poprawić.
 
-## The five verbs
+## Pięć czasowników
 
-| Verb         | What it does                                            |
+| Czasownik    | Co robi                                                 |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | Uruchamia workera na podstawie zlecenia. **Zwraca wynik natychmiast.** |
+| `vibe_list`  | Poziom, status, czas i ostatni wynik dla wszystkich       |
+| `vibe_send`  | Kolejna tura dla workera, który zakończył pracę           |
+| `vibe_wait`  | Blokuje, aż jeden worker zakończy pracę                   |
+| `vibe_kill`  | Zatrzymuje jednego                                        |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+Uruchamianie workerów jest asynchroniczne z założenia. Dyrektor, który blokuje się przy każdym uruchomieniu, wykonuje pracę workerów pojedynczo, czyli w wolniejszy sposób robi to, co i tak robiłby sam. Używaj `vibe_wait` tylko wtedy, gdy naprawdę nie możesz kontynuować bez konkretnej odpowiedzi.
 
-## Two tiers
+## Dwa poziomy
 
-| Tier   | For                                                              |
+| Poziom | Dla                                                              |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | Praca mechaniczna o jasnej specyfikacji — edycje, zmiany nazw, szkice, uruchamianie poleceń |
+| `good` | Projektowanie, osąd albo recenzowanie tego, co wytworzył worker `fast` |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+Częsty schemat to rozdzielenie workerów `fast` po niezależnych plikach, a potem uruchomienie jednego workera `good`, który zrecenzuje ich wspólny wynik.
 
-## Verifying
+## Weryfikowanie
 
-This is the part that decides whether the pattern is worth anything.
+To jest ta część, która decyduje, czy ten wzorzec jest czegokolwiek wart.
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+Następnie **odczytaj pliki, które wymienił**. Dyrektor ma `read`, `search`, `lsp` i `ast_grep`; po to je zachowano. Dyrektor, który przyjmuje raport za dobrą monetę, jest streszczaczem optymizmu innych agentów.
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+`lsp(action: "diagnostics", file: "*")` po rundzie workerów to zwykle najszybsza pojedyncza kontrola.
 
-## When a worker loses the thread
+## Gdy worker traci wątek
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+Zabij go i przygotuj nowe zlecenie. Świeże, poprawione zlecenie jest tańsze niż sprzeczka, a `vibe_send` działa tylko na workerze, który już zakończył swoją turę.
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## Ograniczenia
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **Osiem równoczesnych workerów.** Pułap wydatków, a nie limit techniczny: każdy z nich to pełna sesja modelu, a dyrektor, który rozdziela pracę na dwudziestu, przestaje śledzić, co wszyscy robią.
+- **Żaden worker nie przeżyje trybu.** Gdy uruchomienie się kończy, każdy z nich zostaje zatrzymany, a zapis rozmowy podaje, ilu ich było. Agent działający w tle, który wciąż edytuje pliki po tym, jak rozmowa poszła dalej, to jedyna awaria, do jakiej nie może tu dojść.
+- **Pod spodem workery to zwykli podagenci.** Ten sam limit głębokości, ta sama polityka guardraili, ten sam podrzędny dziennik uruchomienia. Vibe zmienia to, kto nimi kieruje, a nie to, na co im wolno — więc prośby o zatwierdzenie nadal pojawiają się przy wywołaniach zapisu i exec workera.
 
-## When not to use it
+## Kiedy tego nie używać
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/pl-PL/podrecznik/poradniki/tworzenie-potoku/) or an [orchestration](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+Tryb vibe służy do pracy, którą można rozłożyć na niezależne zlecenia. Jeśli następny krok zależy od wyniku poprzedniego, opisujesz [potok](/pl-PL/podrecznik/poradniki/tworzenie-potoku/) albo [orkiestrację](/pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji/), a oba wyrażają zależności w należyty sposób, zamiast kazać dyrektorowi symulować je za pomocą `vibe_wait`.
 
-## Related
+## Powiązane
 
-- [Run agents in parallel](/pl-PL/podrecznik/poradniki/agenci-rownolegle/) — the other ways to fan out
-- [Orchestration](/pl-PL/podrecznik/koncepcje/orkiestracja/) — when the work has a shape
-- [Built-in agent tools](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow/) — the verbs and their arguments
+- [Uruchamiaj agentów równolegle](/pl-PL/podrecznik/poradniki/agenci-rownolegle/) — inne sposoby rozdzielania pracy
+- [Orkiestracja](/pl-PL/podrecznik/koncepcje/orkiestracja/) — gdy praca ma swój kształt
+- [Wbudowane narzędzia agentów](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow/) — czasowniki i ich argumenty

@@ -1,207 +1,232 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Απομακρυσμένος έλεγχος και κινητό
+description: Πώς το τηλέφωνο φτάνει στον διακομιστή σας μέσω αναμετάδοσης με διαμεσολαβητή, σφραγισμένης από άκρο σε άκρο, αντί για ομότιμη σύνδεση, και το πολυεπίπεδο μοντέλο πρόσβασης που κρατά αυτή την εμβέλεια στενή.
 slug: el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Το Control Center είναι εφαρμογή υπολογιστή, αλλά η εργασία που παρακολουθεί δεν
+σταματά όταν απομακρύνεστε από το γραφείο σας. Ο **απομακρυσμένος έλεγχος**
+ζευγνύει το τηλέφωνό σας με τον `cc_server` σας, μέσω του
+**[Remote](https://remote.usectrl.dev/)**, της συνοδευτικής εφαρμογής στο
+remote.usectrl.dev, ώστε να μπορείτε να παρακολουθείτε τον στόλο από εκεί: να
+διαβάζετε μηνύματα και εισιτήρια, να απαντάτε σε έναν πράκτορα, να ταξινομείτε
+τη ροή ειδήσεών σας, χωρίς ο ήχος, η μεταγραφή, ο πηγαίος κώδικας ή τα
+διαπιστευτήρια που βρίσκονται στον διακομιστή να τον εγκαταλείπουν ποτέ.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Σκεφτείτε το ως συνοδευτικό της κύριας εφαρμογής, με έμφαση στην ανάγνωση. Δεν
+προορίζεται να αντικαταστήσει τον πλήρη πελάτη υπολογιστή.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) for how the two differ.
+:::note[Δύο διαφορετικές απομακρυσμένες διαδρομές]
+Η συνοδευτική εφαρμογή του τηλεφώνου ζευγνύει με έναν `cc_server` μέσω μιας
+**αναμετάδοσης WebSocket με διαμεσολαβητή** που μεταφέρει πλαίσια JSON-RPC
+σφραγισμένα από άκρο σε άκρο. Η πλήρης **έκδοση web** (και ένας υπολογιστής που
+δείχνει σε απομακρυσμένο διακομιστή) είναι η άλλη απομακρυσμένη διαδρομή: καλεί
+τον `cc_server` μέσω WebSocket και αποδίδει την πλήρη εφαρμογή. Δείτε
+[Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) για το πώς διαφέρουν
+οι δύο.
 :::
 
-## Transport
+## Μεταφορά
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Το τηλέφωνο φτάνει στον `cc_server` μέσω WebSocket: είτε με απευθείας σύνδεση
+(loopback, LAN, tailnet ή `wss://`) είτε μέσω αίθουσας προσβάσιμης μόνο με
+πρόσκληση σε έναν διαμεσολαβητή σηματοδότησης, ο οποίος αναμεταδίδει
+σφραγισμένα πλαίσια. Δεν υπάρχει ομότιμο κανάλι δεδομένων.
 
-## What the phone can do
+## Τι μπορεί να κάνει το τηλέφωνο
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Το συζευγμένο τηλέφωνο φτάνει σε ένα μικρό, σκόπιμα περιορισμένο τμήμα της
+επιφάνειας του διακομιστή:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Ανάγνωση** εισιτηρίων, πρακτόρων, χώρων και των μηνυμάτων τους, καθώς και
+  της ροής ειδήσεών σας
+- **Απάντηση**: αποστολή μηνύματος σε έναν χώρο, ενημέρωση ή ανάθεση
+  εισιτηρίου, επισήμανση άρθρου ως αναγνωσμένου ή αποθηκευμένου
+- **Εκτέλεση playbook**: δημιουργία στιγμιότυπου από ένα αποθηκευμένο πρότυπο
+  σχεδίου με τις παραμέτρους του. Αυτό απλώς _προτείνει_ ένα σχέδιο· τίποτα δεν
+  εκτελείται ούτε δαπανάται μέχρι να το εγκρίνει ένας διαχειριστής στο Plan
+  Studio σε έναν πλήρη πελάτη
+- **Αλλαγή χώρου εργασίας**, από τον δικό του επιλογέα του τηλεφώνου
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+Αυτά είναι σχεδόν όλα. Ένα τηλέφωνο είναι **κύριος με χαμηλότερα προνόμια** από
+έναν πλήρη πελάτη. Δεν μπορεί να εκκινήσει διεργασίες, να δαπανήσει
+προϋπολογισμό LLM, να κάνει push στο GitHub ή να δημιουργήσει χώρους εργασίας.
+Δείτε [το μοντέλο πρόσβασης](#το-μοντέλο-πρόσβασης) για το πώς αυτό επιβάλλεται και
+δεν είναι απλώς πρόθεση.
 
-## How the link is built
+## Πώς χτίζεται η σύνδεση
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Η σύνδεση βασίζεται σε μια **αναμετάδοση μέσω διαμεσολαβητή**: ο διακομιστής
+μπαίνει ως ιδιοκτήτης σε μία αίθουσα προσβάσιμη μόνο με πρόσκληση σε έναν
+διαμεσολαβητή `wss://` και κάθε συζευγμένος πελάτης — υπολογιστής, web,
+τηλέφωνο — μπαίνει στην ίδια αίθουσα με διακριτικό εισόδου περιορισμένης
+διάρκειας. Τρία κομμάτια συνδυάζονται:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Κομμάτι | Ρόλος |
+| --- | --- |
+| **Remote (εφαρμογή τηλεφώνου)** | Η συνοδευτική εφαρμογή web, φιλοξενούμενη από προεπιλογή στο `remote.usectrl.dev` ή αυτο-φιλοξενούμενη. Φορτώνει σε πρόγραμμα περιήγησης και κρατά την εγγραφή σύζευξης στο IndexedDB. |
+| **Διαμεσολαβητής αναμετάδοσης** | Μια αναμετάδοση `wss://` χωρίς κατάσταση (`cc_signaling_server`) που φιλοξενεί αίθουσες N συμμετεχόντων. Μεταφέρει **μόνο αδιαφανή πλαίσια**: κάθε ωφέλιμο φορτίο είναι σφραγισμένο από άκρο σε άκρο μεταξύ τηλεφώνου και διακομιστή, οπότε ο διαμεσολαβητής δεν βλέπει ποτέ δεδομένα της εφαρμογής ή το μυστικό σύζευξης και δεν ερμηνεύει ποτέ ό,τι προωθεί. |
+| **`cc_server`** | Ο ιδιοκτήτης της αίθουσας. Απαντά στις κλήσεις του τηλεφώνου μέσω του ίδιου διανομέα που χρησιμοποιεί κάθε άλλος πελάτης. |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Μια προσφορά σύζευξης φέρει έναν **περιγραφέα σύνδεσης** που απαριθμεί κάθε
+διαδρομή προς τον διακομιστή (LAN, tailnet, δημόσιο `wss://`, αναμετάδοση) μαζί
+με το αποτύπωμα ταυτότητάς του. Ο μηχανισμός επίλυσης του τηλεφώνου επιλέγει την
+καλύτερη προσβάσιμη διαδρομή και καθηλώνει το αποτύπωμα στην πρώτη σύνδεση
+(TOFU)· η αναμετάδοση εγγυάται συνδεσιμότητα ακόμη και όταν δεν υπάρχει άμεση
+διαδρομή, χωρίς να μπορεί ποτέ να διαβάσει την κίνηση.
 
-## What the pairing payload is
+## Τι είναι το ωφέλιμο φορτίο σύζευξης
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/) for the procedure. The anatomy is
-what matters here.
+Η σύζευξη εκδίδεται από την εφαρμογή και παραδίδεται ως βαθύς σύνδεσμος· δείτε
+[Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/) για τη
+διαδικασία. Εδώ έχει σημασία η ανατομία.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Το ωφέλιμο φορτίο ταξιδεύει στο **τμήμα** του URL, το κομμάτι μετά το `#` που
+τα προγράμματα περιήγησης δεν στέλνουν ποτέ στον διακομιστή, οπότε ο κάτοχος
+HTTPS της PWA δεν το βλέπει ποτέ. Περιέχει όλα όσα χρειάζεται το τηλέφωνο για
+να φτάσει στον διακομιστή και να αποδείξει ποια είναι: τον περιγραφέα σύνδεσης
+(κάθε διαδρομή συν το αποτύπωμα ταυτότητας), ένα αναγνωριστικό συσκευής που μόλις
+εκδόθηκε, ένα προκοινόχρηστο κλειδί 32 byte και μια σφραγίδα λήξης. Το τηλέφωνο
+το αποκωδικοποιεί, αποθηκεύει τοπικά μια εγγραφή σύζευξης και αφαιρεί το τμήμα,
+ώστε το μυστικό να φύγει από το URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Υπάρχουν δύο σχήματα ωφέλιμου φορτίου και **δεν είναι εναλλάξιμα**. Το QR του
+τηλεφώνου που εκδίδεται από το πλαίσιο σύζευξης εντός της εφαρμογής είναι το v2
+`PairingPayload` παραπάνω, με προορισμό τον κάτοχο της Remote PWA. Το
+`cc_server pair --client-url` εκδίδει έναν διαφορετικό, παλαιότερο σύνδεσμο v1
+(`{s, i, k}` — URL διακομιστή, αναγνωριστικό συσκευής, κλειδί) που προορίζεται
+**μόνο** για τον πελάτη **web**.
 
-They also differ in lifetime, which is easy to get wrong:
+Διαφέρουν επίσης στη διάρκεια ζωής, κάτι που είναι εύκολο να το μπερδέψει κανείς:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Εκδίδεται από | Λήξη διαπιστευτηρίου |
+| --- | --- |
+| **Πλαίσιο σύζευξης εντός της εφαρμογής** (`pairing.mint`) | 30 ημέρες, πάντα |
+| **`cc_server pair` στη γραμμή εντολών** | **Καμία** — το διαπιστευτήριο δεν λήγει |
 
-## The access model
+## Το μοντέλο πρόσβασης
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Μια συζευγμένη συσκευή είναι **πιστοποιημένη αλλά μη έμπιστη**. Αρκετοί
+ανεξάρτητοι φραγμοί εμποδίζουν μια εγκεκριμένη (ή διερρηγμένη) σύζευξη να
+μετατραπεί σε πλήρη έλεγχο του διακομιστή.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Η ιδιότητα μέλους, όχι η σύζευξη, είναι το όριο
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Ένα έγκυρο κλειδί σύζευξης αποδεικνύει _ποια συσκευή_ είστε. Το τι επιτρέπεται
+να διαβάσετε ή να αλλάξετε το καθορίζει ο **ρόλος σας στον χώρο εργασίας**, που
+επιλύεται εκ νέου σε κάθε μεμονωμένη κλήση, και οι παραχωρήσεις ανά αποθετήριο
+για οτιδήποτε εκθέτει περιεχόμενο αποθετηρίου. Μια συσκευή που κρατά ένα
+απολύτως έγκυρο κλειδί αλλά ανήκει σε χρήστη που δεν είναι μέλος του δηλωμένου
+χώρου εργασίας απορρίπτεται με «Not a member of this workspace».
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Ο κατώτατος ρόλος προκύπτει από το είδος της λειτουργίας, εκτός αν η ίδια
+δηλώνει τον δικό της: οι αναγνώσεις απαιτούν `guest`, οι μεταβολές απαιτούν
+`member`, οι καταστροφικές λειτουργίες απαιτούν `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Ένα τηλέφωνο είναι χαμηλότερο επίπεδο συνεδρίας
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Πέρα από τον έλεγχο ρόλου, μια συνεδρία τηλεφώνου φέρει χαμηλότερες δυνατότητες
+από μια συνεδρία υπολογιστή ή web. Λειτουργίες που έχουν δηλωθεί ως
+αποκλειστικά για πλήρη πελάτη απορρίπτονται για ένα τηλέφωνο πριν εκτελεστεί ο
+χειριστής, ανεξάρτητα από το πόσο προνομιούχος είναι ο χρήστης πίσω από αυτό:
+έκδοση, καταγραφή, μετονομασία και ανάκληση συζεύξεων συσκευών· ανάγνωση και
+ορισμός συνδεσιμότητας σήραγγας· αντίγραφο ασφαλείας διακομιστή και
+εξαγωγή/εισαγωγή χώρου εργασίας· ανίχνευση και τερματισμός διεργασιών· δοκιμές
+προσαρμογέων· ρυθμίσεις διακομιστή· διαχείριση SSO· έλεγχος στόλου· και ανάληψη
+ή επιστροφή ενός πράκτορα που εκτελείται.
 
-### 3. A default-deny tool allow-list
+### 3. Λίστα επιτρεπόμενων εργαλείων με άρνηση εξ ορισμού
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Ειδικά για την επιφάνεια εργαλείων MCP (`tools/call`), μια λίστα επιτρεπόμενων
+με άρνηση εξ ορισμού καθορίζει ποια εργαλεία επιτρέπεται να καλέσει το τηλέφωνο.
+Οτιδήποτε δεν περιλαμβάνεται στη λίστα απορρίπτεται πριν εκτελεστεί. Η λίστα
+είναι κατά βάση αναγνώσεις και παρατήρηση, συν μια χούφτα **τοπικές μόνο**
+εγγραφές — ένα μήνυμα, μια ενημέρωση εισιτηρίου, μια επισήμανση άρθρου — που δεν
+δαπανούν προϋπολογισμό LLM, δεν εκκινούν διεργασία και δεν αγγίζουν κανένα
+εξωτερικό σύστημα.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Απορρίπτονται, για παράδειγμα: η συμβουλή με πράκτορα, η έναρξη ελέγχου με AI, ο
+τερματισμός πράκτορα, η δημοσίευση ελέγχου στο GitHub, η πρόσληψη ή απόλυση
+πρακτόρων, η δημιουργία χώρου εργασίας.
 
-### 4. Per-call workspace scoping
+### 4. Περιορισμός χώρου εργασίας ανά κλήση
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) invariant the rest of the
-product enforces.
+Ο διακομιστής δεν κρατά **κανέναν** «τρέχοντα χώρο εργασίας». Είναι σχεδιασμένος
+χωρίς κατάσταση: κάθε κλήση με εμβέλεια χώρου εργασίας πρέπει να δηλώνει το
+`workspace_id`-στόχο στα ορίσματά της και ο διανομέας απορρίπτει την κλήση
+κατηγορηματικά όταν λείπει ή όταν δηλώνει χώρο εργασίας που ο διακομιστής δεν
+έχει καταχωρισμένο — πριν ανοίξει οτιδήποτε μια βάση δεδομένων. Επομένως ένα
+τηλέφωνο δεν μπορεί ποτέ να κληρονομήσει ή να παρεκκλίνει στην εμβέλεια άλλου
+πελάτη, και η δήλωση ξένου χώρου εργασίας δεν βοηθά επίσης, επειδή ισχύει ακόμη
+ο έλεγχος μέλους του φραγμού 1. Πρόκειται για το ίδιο αναλλοίωτο της
+[απομόνωσης χώρου εργασίας](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) που
+επιβάλλει και το υπόλοιπο προϊόν.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Πλαίσια σφραγισμένα από άκρο σε άκρο με το προκοινόχρηστο κλειδί
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Κάθε πλαίσιο μεταξύ τηλεφώνου και διακομιστή είναι σφραγισμένο με το κλειδί
+σύζευξης· το διακριτικό εισόδου απλώς βάζει έναν πελάτη στην αίθουσα, δεν
+αποκρυπτογραφεί τίποτα. Ο διαμεσολαβητής αναμεταδίδει κρυπτοκείμενο και δεν
+βλέπει ποτέ το κλειδί. Μια συσκευή που έχει ανακληθεί βρίσκει το διαπιστευτήριό
+της ήδη χαμένο, οπότε **αποτυγχάνει κλειστά** στην επανασύνδεση.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Ένα διαπιστευτήριο που εκδίδεται από την εφαρμογή έχει χρονικό περιορισμό 30
+ημερών· μετά από αυτό, ο φραγμός σύνδεσης το απορρίπτει και το τηλέφωνο πρέπει
+να συζευχθεί ξανά. Η ανάκληση είναι άμεση: ο διακομιστής παρακολουθεί τον πίνακα
+συσκευών και κλείνει τις ανοιχτές συνεδρίες μιας ανακλημένης συσκευής μέσα σε
+δευτερόλεπτα, αντί να περιμένει την επόμενη σύνδεσή της.
 
-### 6. Rate limiting per principal
+### 6. Περιορισμός ρυθμού ανά κύριο
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Ένας περιοριστής κυλιόμενου παραθύρου περιορίζει την απομακρυσμένη κίνηση
+εργαλείων στις 120 κλήσεις το λεπτό, με ένα αυστηρότερο υποόριο 30 το λεπτό για
+τα ρήματα τροποποίησης. Το όριο ανήκει στον **κύριο, όχι στη συνεδρία**: τρεις
+συσκευές σας αντλούν από ένα περιθώριο, οπότε ένας παραβιασμένος πελάτης δεν
+μπορεί να αποκτήσει περιθώριο ανοίγοντας περισσότερες συνεδρίες και ένα
+θορυβώδες μέλος δεν μπορεί να στερήσει τους άλλους.
 
-### 7. A broker that learns nothing
+### 7. Ένας διαμεσολαβητής που δεν μαθαίνει τίποτα
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Ο διαμεσολαβητής αναμετάδοσης είναι σκόπιμα «χαζός»: φιλοξενεί αίθουσες,
+προωθεί σφραγισμένα πλαίσια και δεν κρατά λογαριασμούς, δεδομένα εφαρμογής ή
+κλειδιά. Οι αίθουσες είναι προσβάσιμες μόνο με πρόσκληση και παροδικές. Τα
+δεδομένα της εφαρμογής, ο ήχος, η μεταγραφή, ο πηγαίος κώδικας και τα
+διαπιστευτήρια μένουν όλα στον διακομιστή.
 
-## Live updates
+## Ζωντανές ενημερώσεις
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+Μόλις γίνει η σύζευξη, το τηλέφωνο λαμβάνει **ζωντανές ενημερώσεις** ως πλαίσια
+ειδοποιήσεων — νέα μηνύματα πρακτόρων, εισιτήρια που σας ανατίθενται, αλλαγές
+κατάστασης — που αντιγράφουν τις ειδοποιήσεις του υπολογιστή. Ο διακομιστής
+μεταδίδει αυτά τα πλαίσια σε κάθε συνδεδεμένη συνεδρία και το φίλτρο χώρου
+εργασίας εφαρμόζεται στην πλευρά του πελάτη, οπότε αυτό που βλέπετε περιορίζεται
+στον χώρο εργασίας που κοιτάτε.
 
-## Where it lives
+## Πού βρίσκεται
 
-| Surface                                                                             | What it shows                                                                                               |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| Επιφάνεια | Τι εμφανίζει |
+| --- | --- |
+| **Ρυθμίσεις → Εσείς → Οι συσκευές σας** (`/workspaces/:workspaceId/settings/you/devices`) | Συζευγμένοι πελάτες με ζωντανή κατάσταση, καθώς και **Σύζευξη νέου πελάτη** (πρόγραμμα περιήγησης, εφαρμογή υπολογιστή ή τηλέφωνο) και ανάκληση |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Το ίδιο πλαίσιο εκδίδει συζεύξεις για δεύτερο πρόγραμμα περιήγησης ή εφαρμογή
+υπολογιστή, όχι μόνο για τηλέφωνα — η ροή είναι ίδια, μόνο ο βαθύς σύνδεσμος
+διαφέρει.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Ο απομακρυσμένος έλεγχος είναι στην πλευρά του διακομιστή και **δεν** εκτίθεται
+μέσω MCP. Το τηλέφωνο μιλά στον ίδιο τον διανομέα του διακομιστή μέσω της
+αναμετάδοσης· δεν είναι πελάτης MCP ενός εξωτερικού διακομιστή.
 ::::
 
-## See also
+## Δείτε επίσης
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): roles, membership and repo grants
-- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/): where remote control sits among the client tiers
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): where remote control sits in the stack
-- [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/)
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): ο περιορισμός ανά κλήση στον οποίο στηρίζεται
+- [Συνεργασία — ταυτότητα, ιδιότητα μέλους και παρουσία](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/): ρόλοι, ιδιότητα μέλους και παραχωρήσεις αποθετηρίων
+- [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/): πού βρίσκεται ο απομακρυσμένος έλεγχος ανάμεσα στα επίπεδα πελατών
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): πού βρίσκεται ο απομακρυσμένος έλεγχος στη στοίβα
+- [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/)

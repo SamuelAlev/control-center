@@ -1,95 +1,125 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Leagă contul tău Slack
+description: Dovedește că o identitate Slack este a ta, astfel încât agenții să acționeze pe baza mesajelor tale, iar munca ta să ți se atribuie.
 slug: ro-RO/manual/ghiduri-practice/leaga-cont-de-chat
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Acest ghid îți arată cum să legi identitatea ta de chat de utilizatorul tău
+Control Center și cum să o dezlegi.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Fiecare membru face asta o dată per provider de chat. Este separat de conectarea
+aplicației: conexiunea face botul accesibil pentru tot spațiul de lucru, iar
+legătura te face pe _tine_ recognoscibil în el.
 
-## Why linking is required
+## De ce este necesară legarea
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Puntea refuză să acționeze pentru un cont de chat pe care nu îl poate rezolva la
+un membru al spațiului de lucru. Lucrul este intenționat — fără o legătură,
+fiecare mesaj din Slack ar trebui atribuit celui care a instalat aplicația, iar
+jurnalul de audit, limitele de rată per principal și raportorii de tichete ar
+indica toate persoana greșită.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Un membru nelegat care menționează botul primește un răspuns în acel fir Slack
+care explică cum să facă legarea. Nimic nu este trimis.
 
-## Link with a code
+## Leagă cu un cod
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Mergi la **Setări → Spațiu de lucru → Profil și identitate** și derulează
+   până la cardul **Conturi de chat legate**
+2. În blocul Slack, apasă **Leagă-mi contul Slack**
+3. Copiază comanda pe care o afișează, de exemplu:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. În Slack, trimite acea comandă botului — un DM este locul cel mai simplu
+5. Botul confirmă utilizatorul Control Center de care ești acum legat, iar
+   dialogul pe care l-ai lăsat deschis se actualizează spunând acest lucru în
+   același moment — nu trebuie să îl închizi ca să verifici
 
-The code:
+Codul:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Se folosește o singură dată și expiră **15 minute** după ce este generat
+- Este generat mereu pentru _tine_, niciodată pentru un coleg
+- Înlocuiește orice cod pe care îl ai deja, așa că apăsarea din nou a butonului
+  îl invalidează pe cel anterior
+- Există doar în memorie, așa că o repornire a serverului invalidează codurile
+  încă nefolosite — apasă din nou butonul
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Un cod necunoscut, expirat sau generat pentru un alt spațiu de lucru eșuează în
+același mod indistinguibil: „that code is not valid (or has expired)”.
 
-## Automatic linking by email
+## Legarea automată după email
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Dacă profilul tău Slack conține un email verificat care corespunde unui
+utilizator Control Center ce este **deja membru al acestui spațiu de lucru**,
+puntea te leagă prima dată când vorbești cu ea. Nu este nevoie de cod.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Ambele jumătăți contează: potrivirea emailului dovedește identitatea, dar numai
+apartenența acordă acces, așa că un străin al cărui email se întâmplă să existe
+pe server nu se leagă de nimic. Lista arată cum a fost făcută fiecare legătură
+(„potrivit după email” sau „legat cu un cod”).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Legarea automată are nevoie de scope-ul `users:read.email`. Fără el, Slack nu va
+divulga adresa, iar fluxul cu cod este singura cale.
 
-## See who is linked
+## Vezi cine este legat
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Lista ține de administrarea spațiului de lucru, așa că se află pe cealaltă
+jumătate a suprafeței: **Setări → Spațiu de lucru → General → Punți de chat →
+Conturi legate**. Ea enumeră fiecare membru legat din spațiul de lucru, împreună
+cu contul Slack căruia îi corespunde fiecare și cu modul în care a fost făcută
+legătura.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Starea ta se află pe pagina de profil: rândul **Leagă-mi contul Slack** scrie
+„Legat de _your-slack-id_” odată ce ești legat și îți spune să faci legarea când
+nu ești.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Lista este o abonare în direct, pentru că schimbarea se produce de cealaltă
+parte — tu tastezi codul în Slack, așa că nicio cerere din aplicație nu poate
+aduce răspunsul înapoi.
 
-## Unlink
+## Dezlegare
 
-Click **Unlink** on a row in the workspace roster.
+Apasă **Dezleagă** pe un rând din lista spațiului de lucru.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Oricine se poate dezlega singur
+- Numai un administrator poate dezlega un alt membru
+- Dezlegarea revocă și orice cod de legare nefolosit al acelui membru
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+După dezlegare, acel cont Slack nu mai poate dirija agenți până când nu se leagă
+din nou. Spațiile, transcrierile și tichetele existente își păstrează atribuirea
+originală — dezlegarea nu este o retractare a muncii trecute.
 
-## Troubleshooting
+## Depanare
 
-### The bot says I am not a member of this workspace
+### Botul spune că nu sunt membru al acestui spațiu de lucru
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/ro-RO/manual/concepte/multiplayer/).
+Contul tău Slack este legat de un utilizator Control Center, dar acel utilizator
+nu are nicio apartenență la acest spațiu de lucru. Cere unui administrator să te
+invite; vezi [Multiplayer — identitate, apartenență și
+prezență](/ro-RO/manual/concepte/multiplayer/).
 
-### The bot says my role is read-only
+### Botul spune că rolul meu este doar-citire
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Rolurile `viewer` și `guest` nu pot porni muncă. Un administrator trebuie să îți
+ridice rolul la `member` sau mai sus.
 
-### The slash command is not recognized
+### Comanda slash nu este recunoscută
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Verifică faptul că respectiva comandă slash există în Slack și că trimiți comanda
+pe care ți-a arătat-o dialogul de setări — un administrator poate să o fi
+redenumit, caz în care dialogul afișează numele actual.
 
-## Related guides
+## Ghiduri conexe
 
-- [Set up Slack integration](/ro-RO/manual/ghiduri-practice/integrare-slack/)
-- [Customize the chat bot](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
-- [Chat bridge](/ro-RO/manual/referinta/punte-de-chat/)
+- [Configurează integrarea Slack](/ro-RO/manual/ghiduri-practice/integrare-slack/)
+- [Personalizează botul de chat](/ro-RO/manual/ghiduri-practice/personalizeaza-botul-de-chat/)
+- [Punte de chat](/ro-RO/manual/referinta/punte-de-chat/)
 
-## Related concepts
+## Concepte conexe
 
-- [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/)
-- [Multiplayer — identity, membership and presence](/ro-RO/manual/concepte/multiplayer/)
+- [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/)
+- [Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/)

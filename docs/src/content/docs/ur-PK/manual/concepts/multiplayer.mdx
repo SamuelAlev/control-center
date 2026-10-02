@@ -1,216 +1,225 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: ملٹی پلیئر — شناخت، رکنیت اور موجودگی
+description: Control Center انسانوں اور ایجنٹس کو ہم مرتبہ شرکا کے طور پر کیسے ماڈل کرتا ہے، ورک اسپیس تک رسائی کا اصل دروازہ کیا ہے اور براہِ راست آگاہی اور مشترکہ ریکارڈ دو مختلف راستوں پر کیوں سفر کرتے ہیں۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center ایک ہی آپریٹر کے لیے کام کرتا ہے، مگر اُس کے نیچے کا ماڈل
+شروع ہی سے متعدد اداکاروں والا ہے۔ انسان اور ایجنٹ ایک ہی اسپیسز میں پیغام
+بھیجتے ہیں، ایک ہی ٹکٹس میں ترمیم کرتے ہیں اور ایک ہی روسٹر پر نظر آتے
+ہیں۔ اِسے محفوظ اور قابلِ فہم بنانا تین فیصلوں پر اُتر آتا ہے: **اداکار
+کون گنے جاتے ہیں**، **رسائی کا دروازہ کیا ہے** اور **کون سی حالت پائیدار
+طور پر مشترک ہوتی ہے اور کون سی صرف براہِ راست نشر**۔
 
-## Principals: users and agents are co-equal actors
+## پرنسپل: صارفین اور ایجنٹس ہم مرتبہ اداکار ہیں
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+”یہ کس نے کیا“ درج کرنے والی ہر چیز — پیغامات، ٹکٹس، ریویوز، پلانز، رن
+لاگز، آڈٹ اندراجات — ایک **پرنسپل** سے گزر کر طے ہوتی ہے: `UserPrincipal`
+اور `AgentPrincipal` کا ایک سِیل بند اتحاد، جس کی وائر شکل مختصر ہوتی ہے
+(`user:<id>` / `agent:<id>`)۔ انتساب کبھی N انسانوں (یا N ایجنٹس) کو ایک ہی
+سینٹینل اکاؤنٹ میں سمو نہیں دیتا، اس لیے کسی ایجنٹ کا چھوڑا ہوا ریویو اور
+کسی شخص کا چھوڑا ہوا ریویو جہاں بھی سامنے آئیں، الگ پہچانے جاتے ہیں۔
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+چونکہ پرنسپل شناخت کی اکائی ہے، یہی محدود رکھنے کی اکائی بھی ہے:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **ریٹ لمٹس فی پرنسپل ہیں، فی سیشن نہیں۔** ریموٹ ٹول کالز پر فلڈ گارڈ بجٹ
+  فی صارف رکھتا ہے، فی کنکشن نہیں: کسی رکن کے تمام ڈیوائس ایک ہی مشترکہ
+  سلائیڈنگ ونڈو سے خرچ کرتے ہیں (ایک منٹ میں 120 کالز، جن میں سے زیادہ سے
+  زیادہ 30 بدلاؤ کرنے والی ہوں)، اس لیے تین ڈیوائس کھولنے سے کسی کا کوٹہ
+  تین گنا نہیں ہوتا اور ایک شور مچانے والا رکن باقیوں کو بھوکا نہیں رکھ
+  سکتا۔
+- **اَنڈو فی پرنسپل ہے۔** ہر کلائنٹ کا ایکشن جرنل صرف وہی بدلاؤ درج کرتا
+  ہے جو _اُس کے_ پرنسپل نے کیے۔ آپ اپنی ٹکٹ ترمیم پر ⌘Z دبا سکتے ہیں؛ کسی
+  ساتھی کی واپس نہیں کر سکتے — جب تک وہ آپ کو نظر آئے، پائیدار راستہ اُسے حل
+  کر چکا ہوتا ہے (نیچے دیکھیں)۔
 
-## Membership is the access boundary — not the pairing key
+## رکنیت رسائی کی حد ہے — پیئرنگ کی نہیں
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+دو الگ اسناد دو الگ سوالوں کے جواب دیتی ہیں۔ **پیئرنگ کی**
+(دیکھیں [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/))
+کسی _ڈیوائس_ کی سرور کے سامنے توثیق کرتی ہے۔ **رکنیت** اُس ڈیوائس کے صارف
+کو کسی _ورک اسپیس_ کے اندر عمل کرنے کا اختیار دیتی ہے۔ جو جوڑا ہوا ڈیوائس
+ایسا صارف رکھتا ہو جس کی کسی ورک اسپیس میں رکنیت نہ ہو، وہ نہ اُسے پڑھ
+سکتا ہے نہ اُس میں بدلاؤ کر سکتا ہے۔
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+رکنیت فی (ورک اسپیس، صارف) ایک قطار ہوتی ہے، جو **اُس ورک اسپیس کی اپنی
+ڈیٹا بیس فائل** میں محفوظ ہوتی ہے — اس لیے ”اِس ورک اسپیس میں کون ہے؟“ ایک
+عام اسکوپ شدہ ریڈ ہے، جبکہ اُلٹا سوال، ”میں کن ورک اسپیسز میں ہوں؟“،
+لازماً فائلوں کے پار جاتا ہے اور اُن چند اجازت یافتہ کراس ورک اسپیس فین
+آؤٹس میں سے ایک ہے۔ ورک اسپیس پکر کوئی ورک اسپیس چنے جانے سے پہلے یہی
+چلاتا ہے۔
 
-Each row carries a role from a five-level, rank-ordered ladder:
+ہر قطار پانچ سطحوں کی، درجے کے لحاظ سے ترتیب دی گئی سیڑھی سے ایک کردار
+اُٹھاتی ہے:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| کردار | کیا کر سکتا ہے |
+| --- | --- |
+| `owner` | مکمل کنٹرول، بشمول ورک اسپیس حذف کرنا؛ فی ورک اسپیس بالکل ایک |
+| `admin` | اراکین، دعوتیں، ترتیبات اور تباہ کن آپریشنز کا نظم |
+| `member` | روزمرہ پڑھائی و لکھائی: پیغامات، ٹکٹس، ایجنٹ رنز |
+| `viewer` | پورے ورک اسپیس میں صرف پڑھنے کی اجازت؛ خفیہ معلومات خارج کرنے والے گلوبز کوڈ والی سطحوں پر مماثل پاتھ چھپا دیتے ہیں |
+| `guest` | ناظر جیسی صرف پڑھنے کی کم سے کم حد، مگر سیڑھی کے سب سے نچلے درجے پر |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+ہر رسائی کا فیصلہ اِس پر اُتر آتا ہے کہ ”کیا کال کرنے والے کا کردار کم از
+کم X ہے؟“۔ حد آپریشن کی قسم سے اخذ ہوتی ہے، الا یہ کہ وہ خود کوئی حد واضح
+طور پر بیان کرے: ایک ریڈ کے لیے `guest` چاہیے، بدلاؤ کے لیے `member`، اور
+تباہ کن آپریشن کے لیے `admin`۔ نیچے دیے گئے فی ریپو گرانٹس کے علاوہ فی
+آبجیکٹ ACLs جان بوجھ کر دائرے سے باہر ہیں۔
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**دعوتیں** رکنیت دینے کا ذریعہ ہیں، ترتیبات → ورک اسپیس → اراکین سے۔ کوئی
+ایڈمن ایک بار استعمال ہونے والا کوڈ (لنک یا QR کے طور پر) بناتا ہے جو بطور
+ڈیفالٹ سات دن بعد ختم ہو جاتا ہے؛ سرور صرف کوڈ کا SHA-256 ہیش رکھتا ہے اور
+خود کوڈ بالکل ایک بار دکھایا جاتا ہے۔ اُسے استعمال کرنا صارف کو JIT
+پروویژن کرتا ہے، رکنیت دعوت کے کردار پر درج کرتا ہے (`owner` کبھی نہیں —
+ملکیت واضح طور پر منتقل کی جاتی ہے، دعوت سے کبھی نہیں دی جاتی) اور پھر
+ڈیوائس پیئرنگ کے حوالے کر دیتا ہے۔ پیئرنگ کے بعد بنائی گئی ڈیوائس اسناد خود
+30 دن کی حد میں بندھی ہوتی ہیں، اس لیے ایک پیئرنگ مستقل کلید نہیں ہے۔
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**فی ریپو گرانٹس** رکنیت کے نیچے بیٹھتے ہیں۔ چونکہ سرور مکمل چیک آؤٹس رکھتا
+ہے، صرف ورک اسپیس کی رکنیت کبھی forge کے اختیارات سے آگے نہیں بڑھنی چاہیے:
+کوڈ سامنے لانے والی ہر سطح — فائلیں، ڈفز، PR ریویو، کوڈ سرچ — _اُس ریپو_
+پر رکن کے گرانٹ کی جانچ کرتی ہے۔ گرانٹس فی (ورک اسپیس، صارف، ریپو) ہوتے
+ہیں اور `none` → `read` → `review` → `write` کے درجوں میں ہوتے ہیں، جہاں
+`write` کا مطلب ایسے ایجنٹ رنز چلانا ہے جو ریپو میں لکھتے ہیں۔ قطار کا نہ
+ہونا `none` کے برابر ہے؛ مالک اور ایڈمن ہر منسلک ریپو پر بالواسطہ `write`
+رکھتے ہیں اور کوئی قطار رکھتے ہی نہیں۔
 
-## Two lanes of collaboration state
+## تعاون کی حالت کے دو راستے
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center مشترکہ حالت کو دو راستوں میں بانٹتا ہے جن کے پائیداری کے
+اصول اُلٹے ہیں، کیونکہ دونوں طرح کی حالت اُلٹے طریقوں سے ناکام ہوتی ہے۔
 
-### The ephemeral presence lane
+### عارضی موجودگی کا راستہ
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+موجودگی — کون آن لائن ہے، کہاں ہے، کیا ٹائپ کر رہا ہے، کوئی ایجنٹ اس وقت
+کیا کر رہا ہے — باسی ہوتے ہی بےکار ہو جاتی ہے۔ اگر اُسے محفوظ کیا جاتا، تو
+ہر دوبارہ جڑنے پر ”ڈیٹا بیس کہتا ہے کہ سیم اِس ٹکٹ میں ترمیم کر رہا ہے“ کو
+حقیقت سے مِلانا پڑتا۔ اس لیے موجودگی **کبھی ڈیٹا بیس میں نہیں لکھی جاتی**۔
+یہ سرور پر ایک میموری میں رہنے والے **موجودگی ہب** میں رہتی ہے: کلائنٹس
+`presence.update` سے شائع کرتے ہیں، ساتھی `presence.watch` سے سبسکرائب کرتے
+ہیں اور اندراجات تین چھوٹی ہوئی ہارٹ بیٹس کے بعد خودکار طور پر ختم ہو
+جاتے ہیں (ہارٹ بیٹس ہر 10 سیکنڈ بعد چلتی ہیں؛ ہب ہر 5 سیکنڈ بعد صفائی
+کرتا ہے)۔ مِلانے کو کچھ نہیں — صرف باسی ہونے دینا ہے۔
 
-Two properties keep the lane trustworthy:
+دو خصوصیات اِس راستے کو قابلِ اعتماد رکھتی ہیں:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **شناخت سیشن سے آتی ہے، کلائنٹ کے دلائل سے کبھی نہیں۔** سرور کنکشن کے
+  توثیق شدہ ڈیوائس کو ایک صارف id سے جوڑتا ہے؛ کوئی کلائنٹ صرف اپنی ہی
+  موجودگی بدل سکتا ہے، اس لیے کوئی دوسرے شرکت کنندہ کی حالت یا مقام کی جعل
+  سازی نہیں کر سکتا۔ ایک واضح `offline` اپ ڈیٹ (کنکشن منقطع ہونا یا پوشیدہ
+  ٹوگل) اندراج کو فوراً ہٹا دیتا ہے۔
+- **روسٹر سرور کے ہب سے چلتا ہے۔** ساتھی کبھی موجودگی کا تبادلہ براہِ راست
+  نہیں کرتے، اس لیے ٹوپولوجی سے قطع نظر ہر شرکت کنندہ ایک ہی روسٹر دیکھتا
+  ہے۔ ایجنٹس کا کوئی کلائنٹ نہیں ہوتا، چنانچہ سرور اُن کے اندراجات زندہ رن
+  کی حالت سے _ترکیب_ کرتا ہے — سوچ رہا ہے، چل رہا ہے، منظوری کے گیٹ پر رکا
+  ہوا ہے، مکمل — اور ایجنٹ کی حالت اور مقام ایک واحد نمائندہ رن طے کرتا ہے
+  تاکہ بیک وقت چلنے والے رنز روسٹر کو ہلنے نہ دیں۔
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+فین آؤٹ ہر صارف کے لیے درجوں میں ہوتا ہے: ڈیسک ٹاپ اور ویب مکمل درجہ
+استعمال کرتے ہیں (زیادہ سے زیادہ 100 ms میں ایک روسٹر اخراج)، فون خلاصے کا
+درجہ (فی 500 ms)، تاکہ کرسر کی رفتار والے اپ ڈیٹس PWA کو پگھلا نہ دیں۔
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+شرکت کنندہ کا **مقام** — وہ اس وقت کہاں ہے، حتیٰ کہ کس شے تک — ایک سِیل بند
+اتحاد ہے: `Space`، `File` (ریپو + پاتھ + اختیاری لائن)، `Pr`، `Ticket`،
+`PlanNode`۔ ہر مقام کے پاس کہیں چھلانگ لگانے کی جگہ نہیں ہوتی: فائل ویوئر
+کا کوئی روٹ نہیں، اس لیے `File` مقام منزل کے بجائے ایک لیبل کے طور پر
+دکھایا جاتا ہے۔ یہ راستہ **نرم دعوے** بھی لے کر چلتا ہے (”سیم اِس ٹکٹ میں
+ترمیم کر رہا ہے“، ”ایک ایجنٹ اِس worktree کو تھامے ہوئے ہے“): ٹکراؤ کی
+_نظر آنا_، تالے نہیں۔ نامعلوم مقام اقسام null میں پارس ہو جاتی ہیں، اس لیے
+ایک پرانا کلائنٹ جو سمجھ نہیں پاتا اُسے بس دکھاتا نہیں۔
 
-### The durable shared lane
+### پائیدار مشترکہ راستہ
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+جو ریکارڈ باقی رہنا ضروری ہیں — ٹکٹس، اسپیس کا مشترکہ Notes دستاویز،
+پیغامات — اُلٹا راستہ لیتے ہیں: مستند، ترتیب شدہ اور محفوظ۔ بیک وقت کی گئی
+ترامیم **سرور کے وصولی کی ترتیب میں آخری لکھنے والا جیتتا ہے** کے اصول سے
+طے ہوتی ہیں، کلائنٹ کی گھڑیوں سے کبھی نہیں۔ طے کرنا جان بوجھ کر باریک بین
+ہے: ٹکٹ کی ترامیم _فی کالم_ ہوتی ہیں، اس لیے ایک ہی ٹکٹ کے مختلف فیلڈز میں
+ترمیم کرنے والے دو افراد دونوں محفوظ ہو جاتے ہیں اور کوئی بھی دوسرے کو
+مٹاتا نہیں (ورک فلو کی منتقلیاں اِس کے بجائے آپٹمسٹک لاکنگ رکھتی ہیں)؛
+اسپیس کا Notes دستاویز ایک کالم ہے، اس لیے پوری دستاویز LWW ہے اور موجودگی
+کے راستے پر نرم دعوے بیک وقت کی ترمیم کو مقفل ہونے کے بجائے نظر آنے دیتے
+ہیں۔ یہ جان بوجھ کر CRDT نہیں ہے — ثبوت کا بوجھ CRDT پر ہے اور وصولی کی
+ترتیب والا LWW اور نظر آنے والے دعوے حقیقی تعاون کے نمونوں کو پورا کرتے
+ہیں۔
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+”آخری لکھنے والا“ کا مطلب **سرور کے وصولی کی ترتیب** ہے، کلائنٹ کی گھڑی
+کبھی نہیں — ٹیڑھی گھڑی والا لیپ ٹاپ کوئی ایسی ترمیم نہیں جیت سکتا جو وہ
+ہار چکا ہو۔ پائیدار راستے کے پیچھے **سنک فیڈ** بیٹھا ہے: SQLite ٹرگرز ہر
+بدلاؤ کو فی ورک اسپیس تبدیلی لاگ میں _لکھنے والے ٹرانزیکشن کے اندر ہی_
+شامل کرتے ہیں اور خود بدلاؤ والے ٹرانزیکشن میں ہی فی ورک اسپیس یکساں بڑھتا
+ہوا ترتیبی نمبر مختص کرتے ہیں۔ ایک سرور سروس اُس لاگ کو ترتیب وار ورژن
+شدہ ڈیلٹا فریمز میں ڈھال کر آگے بڑھتی رہتی ہے۔ کلائنٹ مکمل اسنیپ شاٹس سے
+ڈیلٹاز تک ترقی کرتے ہیں؛ ترتیب میں کوئی خلا اُس اسٹور کو فریمز غلط لگانے
+کے بجائے واپس اسنیپ شاٹ موڈ پر گرا دیتا ہے۔
 
-## Follow, steer, take over, hand back
+## پیروی کریں، اسٹیئر کریں، سنبھالیں، واپس کریں
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+موجودگی کا راستہ صرف ایک روسٹر نہیں — یہ تعاون کے فعل چلاتا ہے:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **پیروی موڈ۔** کسی شرکت کنندہ پر کلک کریں اور آپ کا کلائنٹ اُس کے مقام
+  کے ساتھ چلتا ہے، جہاں وہ جاتا ہے آپ بھی جاتے ہیں۔ پیروی ”جب تک آپ خود
+  عمل نہ کریں“ ہے: جس لمحے آپ خود اپنی مرضی سے کہیں جاتے ہیں، پیروی چھوٹ
+  جاتی ہے۔ ایک ہٹایا جا سکنے والا بینر بتاتا ہے کہ کوئی دوسرا شرکت کنندہ
+  اُس اسپیس کو اسپاٹ لائٹ (یعنی پیش) کر رہا ہے جس میں آپ موجود ہیں۔
+- **اسٹیئر۔** چلتے ہوئے ایجنٹ کو دیا گیا پیغام اسٹیئرنگ کے طور پر قطار میں
+  لگ جاتا ہے؛ ایجنٹ اپنی اگلی باری شروع کرنے سے پہلے اُسے دوبارہ پڑھتا ہے،
+  اس لیے آپ رن کو مارے بغیر اُسے دورانِ پرواز ہلکا سا ہدایت دے سکتے ہیں۔
+- **سنبھالیں۔** کسی گفتگو کا کنٹرول سنبھالنے سے ہر فعال رن اپنی اگلی صاف
+  باری کی حد پر رک جاتا ہے (Claude Code کا رن، جس کی کوئی محفوظ حد نہیں، روک
+  دیا جاتا ہے) اور یہ ایک فی باری git اسنیپ شاٹ کے پیچھے ہوتا ہے، اس لیے
+  سنبھالنا واپس پلٹایا جا سکتا ہے۔ ایک پائیدار مارکر اسپیس میں نئے ڈسپیچز
+  روک دیتا ہے اور سرور کے دوبارہ شروع ہونے پر بھی قائم رہتا ہے — سرور کبھی
+  کسی انسان کی ادھوری ترمیم میں خود بخود دوبارہ شروع نہیں ہوتا۔ فی worktree
+  ایک زندہ ایڈیٹر ایک نرم دعویٰ ہے: دوسرا سنبھالنا نظر آتا ہے اور مسترد ہو
+  جاتا ہے، خاموشی سے ضم نہیں ہوتا۔
+- **واپس کریں۔** کنٹرول واپس کرنا worktree کا ایک ساختی ڈف خلاصہ اسپیس میں
+  شائع کرتا ہے، رکے ہوئے رنز کے لیے اُسے اسٹیئرنگ کے طور پر قطار میں
+  لگاتا ہے، اُنہیں دوبارہ شروع کرتا ہے اور مارکر صاف کر دیتا ہے۔
 
-## The autonomy dial
+## خود مختاری ڈائل
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+اسٹیئرنگ اور سنبھالنا واقعے کے بعد کی مداخلتیں ہیں۔ **خود مختاری ڈائل**
+مستقل ترتیب ہے: فی اسپیس، فی ایجنٹ، اسپیس ہیڈر سے مقرر ہوتی ہے اور طے
+کرتی ہے کہ جب کوئی ایجنٹ کسی گیٹڈ اقدام تک پہنچے تو کیا ہوگا۔
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| سطح | وائر ویلیو | گیٹڈ ٹول کال پر اثر |
+| --- | --- | --- |
+| صرف تجویز | `proposeOnly` | براہِ راست مسترد، ایک وجہ کے ساتھ جو ایجنٹ کو آگے پہنچانے کا کہا جاتا ہے — وہ اقدام بیان کر سکتا ہے مگر کر نہیں سکتا |
+| منظوری سے عمل | `actWithApproval` | ناکامی پر بند ہونے والا منظوری گیٹ: ایک تصدیق جڑے ہوئے آپریٹر کو دکھائی جاتی ہے اور کوئی منظوری دینے والا نہ ہو تو مسترد |
+| آزادانہ عمل | `actFreely` | پہلے سے منظور، سوائے وہاں جہاں گارڈریل کا کوئی سخت `deny` اصول لاگو ہو — انکار کا اصول ہمیشہ جیتتا ہے |
+| (غیر مقرر) | `null` | منظوری سے عمل جیسا ہی: سرور کا ڈیفالٹ |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+دو چیزیں دونوں سمتوں میں ڈائل سے باہر بیٹھتی ہیں۔ کسی موڈ کا اپنا آؤٹ پٹ
+ورب پن شدہ ہوتا ہے اور اُسے کبھی مسترد نہیں کیا جا سکتا، چاہے ڈائل کچھ بھی
+کہے — آرکیسٹریٹ موڈ ایک زمانے میں ساختی طور پر اپنا واحد ڈیلیوریبل جاری
+کرنے سے قاصر تھا کیونکہ ایک پریسیٹ نے اُس اثر کی کلاس سے انکار کر دیا تھا
+جس کا اعلان وہ ورب کرتا ہے۔ اور ایکشن گارڈریلز کا سخت `deny` `actFreely` سے
+ناقابلِ تبدیلی ہے۔
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/).
+:::note[ڈائل صرف بلٹ اِن ہارنس کو گیٹ کرتا ہے]
+اِس سے ہارنس لوپ کا منظوری کال بیک رجوع کرتا ہے۔ Claude Code اڈاپٹر پر چلنے
+والا ایجنٹ اپنی ٹول کالز اپنے ہی پراسیس کے اندر کرتا ہے، جہاں Control
+Center کے پاس گیٹ کرنے کو کچھ نہیں — دیکھیں
+[ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)۔
 :::
 
-## Solo zero-regression
+## تنہا استعمال: کوئی رجعت نہیں
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+یہ سب اضافی ہے۔ اکیلے آپریٹر کا ورک فلو ویسا ہی رہتا ہے: ایک انسان اور کوئی
+ایجنٹ نہ ہو تو موجودگی ہب کے پاس نشر کرنے کو کچھ نہیں ہوتا، اس لیے راستہ
+اپنا ابتدائی اسنیپ شاٹ جاری کر کے صفر ٹریفک پر بیکار پڑا رہتا ہے؛ LWW اور
+سنک کا نظام وہی واحد لکھاری والا راستہ ہے جو ہمیشہ سے تھا؛ اور پیئرنگ کی
+وہی ڈیوائس اسناد رہتی ہے جو ہمیشہ سے تھی۔ رکنیت پہلے ہی رسائی کی حد ہے —
+ایک انسان کے ساتھ صرف ایک مالک کی قطار ہوتی ہے اور روسٹر کی کوئی اضافی
+جھلک نہیں۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): the boundary membership enforces
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/): the pairing key and device credential side of identity
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): the agent half of the principal union
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): the runs that steering and take-over pause and resume
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): the effect-class policy the autonomy dial composes with
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): the bus that live updates ride
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): وہ حد جسے رکنیت نافذ کرتی ہے
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/): شناخت کا پیئرنگ کی اور ڈیوائس اسناد والا پہلو
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): پرنسپل اتحاد کا ایجنٹ والا حصہ
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/): وہ رنز جنہیں اسٹیئرنگ اور سنبھالنا روکتے اور دوبارہ شروع کرتے ہیں
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): وہ اثر کلاس پالیسی جس کے ساتھ خود مختاری ڈائل مل کر کام کرتی ہے
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): وہ بس جس پر براہِ راست اپ ڈیٹس سوار ہوتے ہیں

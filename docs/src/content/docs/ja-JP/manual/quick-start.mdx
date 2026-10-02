@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: クイックスタート
+description: Control Center をインストールし、エージェントを 1 体設定して、自分のリポジトリで動く様子を確認します。
 slug: ja-JP/マニュアル/クイックスタート
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+何もない状態から、自分のコードに対して動くエージェントができるまでの、最短の完全な道筋です。順番どおりに進めてください。各ステップはその前のステップに依存しています。
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+必要なのは Git、GitHub アカウント、そしてモデルプロバイダーのアカウント（Anthropic、OpenAI、Codex、Cursor、Kimi Code、または API キーを持つ任意のプロバイダー）か、インストール済みの Claude Code CLI のいずれかです。それ以外は途中で設定していきます。
 
-## Step 1: Install and launch
+## ステップ 1: インストールして起動する
 
-Install Control Center as described in [Install](/ja-JP/マニュアル/インストール/), then open it.
+[インストール](/ja-JP/マニュアル/インストール/)の説明に従って Control Center をインストールし、起動します。
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+初回起動時に、デスクトップ版は **「Control Centerをどのように実行しますか？」** と尋ねます。**このアプリ内で実行** を選びます。Control Center はこのマシン上でヘッドレスの `cc_server` を起動し、これがデータを所有してすべての作業を行います。`cc_server` を目にすることはありません。代わりにオンボーディング画面が開きます。
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/ja-JP/マニュアル/インストール/#use-it-in-your-browser) for the browser route.
+:::note[何もインストールしたくない場合]
+同じアプリは、同じ機能のままブラウザーで [app.usectrl.dev](https://app.usectrl.dev) でも動作します。
+ただし、ブラウザーのタブはサーバーをホストできないため、サーバーは自分で用意します —
+`cc_server` をローカルで実行して `ws://localhost:9030` に接続するか、別のマシン上の
+サーバーを指定します。このクイックスタートは、サーバーのセットアップが不要なデスクトップ版の
+経路をたどります。ブラウザーでの方法は[インストール](/ja-JP/マニュアル/インストール/#use-it-in-your-browser)を参照してください。
 :::
 
-## Step 2: Work through onboarding
+## ステップ 2: オンボーディングを進める
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+オンボーディングには 5 つのステップがあり、順番に実行されます — 途中を飛ばすことはできません。
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **接続**: GitHub でサインインするか、`repo` と `read:org` を持つパーソナルアクセストークンを貼り付けます。資格情報はサーバー上に、あなたのアカウントに紐づけて保存されます。
+2. **ワークスペース**: 最初のワークスペースに名前を付け、任意でロゴを選びます。作成すると 5 体のエージェント（CEO と `qa`、`architect`、`engineer`、`librarian`）と、組み込みのパイプラインテンプレートがシードされます。
+3. **サンドボックス**: サンドボックスの設定を記録します。どちらを選んでも続行できます。
+4. **アダプター**: エージェントが既定で使うアダプターとモデルを選びます。**Control Center (built-in)** を選択し、続いて表示されるプロバイダーピッカーでモデルプロバイダーにサインインします — 1 つ接続するまでモデル一覧は空のままです。このステップを完了すると、ワークスペースの CEO エージェントにアダプターとモデルが刻印されます。
+5. **音声（任意）**: ディクテーション用のオンデバイス音声モデルをインストールするか、スキップします。
 
-Control Center then opens your workspace inbox.
+その後、Control Center がワークスペースの受信トレイを開きます。
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/).
+:::note[エージェントの実行を制約するもの]
+利用可能であれば、エージェントのコマンドはホストの OS ネイティブのサンドボックスでラップされます — macOS では Seatbelt、Linux では bubblewrap です。Windows にはバックエンドがないため、そこでの実行を制約するのは他の層だけです: 会話自身のワークツリー（Windows では `git worktree`、`rift` が出荷される環境ではコピーオンライト）、起動ごとにブローカー経由で発行され終了時に取り消される資格情報、そしてアクションガードレールです。[サンドボックスとセキュリティ](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/)を参照してください。
 :::
 
-## Step 3: Add a repository
+## ステップ 3: リポジトリを追加する
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+**設定 → ワークスペース → リポジトリ** に移動し、**リポジトリを追加** をクリックします。
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+ダイアログが参照するのは、サーバーを実行しているマシン上のフォルダーであり、あなたのクライアントではありません。また、そのサーバーが公開するよう設定されているルート（既定ではそのサーバーのユーザーのホームディレクトリ）の内部にとどまります。チェックボックスが付くのは git のチェックアウトだけです。自分のものにチェックを入れて登録します。
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+チェックアウトが受け入れられるのは、git ワークツリーの内部にあり、`origin` リモートを持ち、そのリモートがサポート対象のコードホスト — github.com、gitlab.com、bitbucket.org — を指している場合だけです。それ以外は理由とともに拒否されます。
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+リポジトリのスコープはワークスペース単位です: ここでチェックアウトを登録すると、それは_この_ワークスペースに入ります。別途リンクする手順はありません。
 
-## Step 4: Give an agent an adapter and a model
+## ステップ 4: エージェントにアダプターとモデルを設定する
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+**設定 → ワークスペース → エージェント** に移動します。名簿で `engineer` エージェントを選択します。
 
-On the **Settings** tab, set:
+**設定** タブで、次を設定します:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **アダプター**: `Control Center (built-in)`
+- **モデル**: オンボーディングで接続したプロバイダーから 1 つ選びます
 
-Press **Save changes**.
+**変更を保存** を押します。
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+このステップは事実上省略できません。オンボーディングで選んだアダプターを継承するのは CEO エージェントだけであり、4 体のスペシャリストはアダプターなしで作成されます。彼らは Anthropic の既定モデルで **Control Center (built-in)** にフォールバックするため、実行されるのは Anthropic アカウントを接続している場合だけです — そして接続している場合は、あなたが選んでいないモデルで実行されます。
 
-## Step 5: Send the agent a task
+## ステップ 5: エージェントにタスクを送る
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. サイドバーで **スペース** セクションを見つけ、**+** ボタンをクリックします。
+2. スペースに名前を付け、**エージェントを追加** で `engineer` エージェントを追加し、作成します。
+3. 登録したリポジトリに対する、具体的で小さなタスクを入力し、Enter を押します。
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center は、この会話のためにワークスペースのリポジトリのコピーオンライトのワークツリーをプロビジョニングし、エージェントのロール、ペルソナ、スキル、そしてスペースのコンテキストからプロンプトを組み立てて、実行をディスパッチします。元のチェックアウトに触れることは一切ありません。
 
-## Step 6: Watch it work
+## ステップ 6: 動く様子を確認する
 
-You should see, in order:
+次の順で表示されるはずです:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- この会話でエージェントが作業しているため、コンポーザーの送信ボタンが停止ボタンに変わる
+- エージェントの推論、ツール呼び出し、テキストがトランスクリプトにストリーミングされる
+- 実行が終わると送信ボタンが戻る
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+次に **設定 → ワークスペース → エージェント** を開き、エージェントを選択して **ログ** タブを確認します: 実行が 1 行あり、そのステータス、所要時間、開始時刻と終了時刻、実行に使用されたアダプターが示されています。
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+これがループです。Control Center のその他すべて — プルリクエストのレビュー、パイプライン、チケット、ミーティング、Slack — は、これを起点に広がっています。
 
-## Next steps
+## 次のステップ
 
-- [Your first workspace](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/ja-JP/マニュアル/チュートリアル/初めてのプルリクエスト/): take an agent's branch through review and merge
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): what an agent is made of
-- [Create and configure an agent](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/): the rest of the agent form
-- [Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/): one goal, one approval, a generated pipeline
-- [Pair your phone](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): follow the fleet from anywhere
-- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/): how the desktop, web and phone clients relate to the server
+- [初めてのワークスペース](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/): 同じ内容を、よりゆっくりと、分離モデルの説明とともに扱います
+- [初めてのプルリクエストをレビュー](/ja-JP/マニュアル/チュートリアル/初めてのプルリクエスト/): エージェントのブランチをレビューからマージまで通します
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): エージェントが何でできているか
+- [エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/): エージェントフォームの残りの部分
+- [オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/): 1 つのゴール、1 回の承認、生成されるパイプライン
+- [スマートフォンをペアリング](/ja-JP/マニュアル/ハウツーガイド/デバイスのペアリング/): どこからでもフリートを追跡する
+- [デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/): デスクトップ、Web、スマートフォンの各クライアントがサーバーとどう関係するか

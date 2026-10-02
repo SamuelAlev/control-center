@@ -1,185 +1,185 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: 포커스 모드와 사운드스케이프 사용
+description: 떠 있는 카운트다운 알약과 함께 알림이 억제되는 시간 제한 포커스 세션을 실행하고, 그 아래에서 재생되는 적응형 사운드스케이프를 조정합니다.
 dateModified: 2026-08-17
 slug: ko-KR/매뉴얼/사용-가이드/포커스-모드
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+이 가이드에서는 포커스 세션을 실행하는 방법을 설명합니다. 포커스 세션은
+지정한 시간 동안 Control Center가 긴급하지 않은 알림을 억제하고 다른 창 위에
+카운트다운 알약을 띄우는 구간입니다. 세션 아래에서 기본적으로 재생되는
+사운드스케이프도 다룹니다. 사운드스케이프는 서버가 실시간으로 합성하는 끝없는
+앰비언트 트랙으로, 선택한 분위기와 바깥 날씨, 하루 중 시각에 따라 형태가
+달라집니다.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+포커스 세션은 셸 수준 기능입니다. 어떤 필러에도 속하지 않으며, 레이아웃을
+바꾸거나 사이드바를 숨기거나 PR 리뷰 화면을 변경하지 않습니다.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[데스크톱 전용]
+떠 있는 알약과 사운드스케이프의 분리형 미니 플레이어는 네이티브 형제 창이며,
+데스크톱 부트스트랩에서만 마운트됩니다. `app.usectrl.dev`의 웹 빌드에는 둘 다
+없고 OS 알림 파이프라인도 없으므로, 그곳에서는 포커스 세션이 표시하거나
+억제할 대상이 없습니다. 사운드스케이프 패널과 그 재생은 서버에 연결하는
+어디서든 동작합니다.
 :::
 
-## Start a focus session
+## 포커스 세션 시작
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. 제목 표시줄 오른쪽의 포커스 아이콘을 클릭합니다 (툴팁 **집중 세션 시작**)
+2. 대화상자에서 선택 사항인 **목표**를 입력합니다 — 무엇을 하고 있는지
+3. **시간**을 선택합니다: 25m, 50m, 1h, 1h 30m 또는 2h입니다. 기본값은 50m이며
+   마지막 선택이 기억됩니다
+4. **시작**을 누릅니다
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+확인: 제목 표시줄 버튼이 남은 분을 표시하는 강조 색 칩으로 바뀌고, 다른 창
+위에 떠 있는 알약이 나타나며, **집중 모드와 함께 시작**이 켜져 있으면
+사운드스케이프가 재생되기 시작합니다.
 
-Two other entry points reach the same session:
+같은 세션에 도달하는 진입점이 두 개 더 있습니다:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session**은 같은 대화상자를 엽니다.
+- **⌘⇧⌥F**는 기억된 시간으로 목표 없이 세션을 즉시 시작합니다 — 대화상자를
+  건너뜁니다. 다시 누르면 세션이 종료됩니다.
 
-## Read the floating pill
+## 떠 있는 알약 읽기
 
-The pill is a small frameless window you can drag anywhere. It shows:
+알약은 어디로든 끌 수 있는 작은 프레임 없는 창입니다. 다음을 표시합니다:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- 실시간 프레즌스 점과 `mm:ss` 형식의 남은 시간
+- 설정한 목표, 목표를 설정하지 않았다면 "Focus session"
+- 아래쪽 가장자리를 따라 놓인 얇은 진행률 표시줄
 
-Hover it to reveal two actions:
+마우스를 올리면 두 가지 작업이 나타납니다:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — 카운트다운을 멈춥니다. 일시정지는 알약에만
+  적용되며, 세션 자체는 계속 활성 상태로 남습니다.
+- **Complete** — 세션을 종료합니다.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+알약은 메인 창이 어떤 테마를 쓰든 어두운 팔레트를 고수합니다. 임의의 바탕
+화면 콘텐츠 위에 떠 있기 때문입니다.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+제목 표시줄에서 알약을 닫아도 세션은 계속 실행됩니다. 다시 불러오려면 포커스
+칩 옆의 픽처 인 픽처 버튼(툴팁 **막대로 최소화**)을 누릅니다.
 
-## Know what gets suppressed
+## 무엇이 억제되는지 알아 두기
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+세션이 활성 상태인 동안 Control Center는 두 범주를 제외한 모든 알림을
+버립니다. 그 두 범주는 항상 전달됩니다:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **회의가 곧 시작됩니다** — 뒤늦게 보게 되는 회의 알림은 쓸모가 없습니다
+- **PR 게시됨**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+그 밖의 모든 것은 세션 내내 소리 없이 억제됩니다 — 소리도, OS 토스트도
+없습니다. 억제된 알림은 나중에 전달되도록 대기열에 쌓이지 않습니다.
 
-## Play a soundscape
+## 사운드스케이프 재생하기
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. 제목 표시줄 오른쪽의 스피커 아이콘(툴팁 **사운드스케이프**)을 클릭해 패널을
+   엽니다
+2. **분위기**를 선택합니다 — **집중**, **상승**, **휴식** 또는 **수면**
+3. **재생**을 누릅니다
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+확인: **지금 재생 중** 카드에 현재 장면이 표시됩니다 — 워크스페이스 위치의
+날씨, °C 단위 온도, 위치 레이블입니다. "분위기를 맞추는 중…"이라고 표시되는
+동안에는 장면이 아직 결정되는 중입니다.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+트랙은 반복 재생이 아닙니다. 서버가 분위기, 워크스페이스 위치의 실시간 날씨,
+하루 중 시각을 바탕으로 트랙을 끊임없이 합성합니다. 비는 밝고 분주하게
+들리고, 폭풍은 크고 거세게, 안개는 먹먹하게 들립니다. 밤은 한낮보다 더 어둡고
+잔향이 더 깁니다. 분위기가 어휘를 정합니다:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| 분위기 | 소리                                                                     |
+| ------ | ------------------------------------------------------------------------ |
+| 집중   | 낮은 맥동이 있는 부드럽고 또렷한 앰비언스 — 작업 아래에 깔리도록 만든 소리 |
+| 상승   | 부드러운 맥동이 있는 경쾌한 멜로디 — 작업이 무겁게 느껴질 때             |
+| 휴식   | 더 따뜻하고 화음이 풍부한 패드, 박자 없음                                |
+| 수면   | 이벤트가 거의 없는 낮은 드론, 깊은 잔향                                  |
 
-Switching mood while playing hands playback to the new mood without stopping.
+재생 중에 분위기를 바꾸면 재생을 멈추지 않고 새 분위기로 넘깁니다.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+이 패널은 ⌘K의 **Focus** 카테고리에서 포커스 세션 바로 옆에서도 열 수 있습니다.
 
-## Shape the sound
+## 소리 다듬기
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **톤** (집중, 상승, 휴식) — 끌 수 있는 퍽이 있는 정사각형 패드입니다. 가로는
+  **부드러운**에서 **활기찬**으로(얼마나 많은 일이 일어나는지), 세로는
+  **몽환적인**에서 **밝은**으로(소리가 얼마나 열려 있는지)입니다. 패드를 두 번
+  탭하면 중립 중심으로 초기화되고, 화살표 키로 퍽을 조금씩 옮길 수 있습니다.
+  톤은 분위기별로 기억되며, 조정 내용은 실행 중인 믹스에 부드럽게 녹아듭니다 —
+  스트림은 다시 시작되지 않습니다. 수면 분위기는 설계상 조정할 수 없습니다.
+- **볼륨** — 0~100% 슬라이더이며 기본값은 60%입니다. 시스템 볼륨과는 별개이고
+  기억됩니다.
+- **위치** — 워크스페이스에서 자동으로 감지됩니다. 장면을 다시 가져오려면
+  **날씨 새로고침**을 누릅니다.
 
-## Pop out the mini player
+## 미니 플레이어 분리하기
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+오디오가 재생되는 동안 제목 표시줄에 두 번째 버튼(툴팁 **플레이어 분리**)이
+생깁니다. 이 버튼은 재생/일시정지, 날씨 글리프, 장면 이름, **앱으로 돌아가기**
+버튼이 있는 작은 항상 위 HUD를 띄웁니다 — 포커스 세션 때문에 완전히 다른 앱에
+들어가 있을 때 편리합니다.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+미니 플레이어에서 일시정지해도 창이 닫히지 않습니다. 닫기 버튼(또는 앱
+종료)만이 창을 없앱니다.
 
-## Run them together
+## 함께 사용하기
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+두 기능은 사운드스케이프 패널의 스위치 하나로 연결됩니다: **집중 모드와 함께
+시작**이며, 기본적으로 켜져 있습니다.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- 포커스 세션을 시작하면 아무것도 재생 중이 아닐 때 사운드스케이프가
+  시작됩니다.
+- 세션이 끝나면 — 타이머가 다 되어 끝나는 경우를 포함해 어떻게 끝나든 —
+  사운드스케이프가 멈춥니다. 사운드스케이프를 직접 시작한 경우에도
+  마찬가지입니다.
 
-Turn the switch off to keep the two independent.
+두 기능을 서로 독립적으로 유지하려면 스위치를 끕니다.
 
-## End a session
+## 세션 종료하기
 
-Any one of these ends it:
+다음 중 하나만 해도 세션이 끝납니다:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- 제목 표시줄의 포커스 칩을 클릭합니다 (툴팁 **집중 모드 사용 중 — 탭하여
+  종료**)
+- 알약에서 **Complete**를 누릅니다
+- **⌘⇧⌥F**를 누릅니다
+- ⌘K에서 **Exit focus mode**를 선택합니다
+- 타이머가 다 되게 둡니다 — 0이 되면 세션이 자동으로 완료됩니다
 
-The pill closes, notifications resume immediately and the soundscape stops.
+알약이 닫히고, 알림이 즉시 재개되며, 사운드스케이프가 멈춥니다.
 
-## Understand what does not persist
+## 유지되지 않는 것 이해하기
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+세션은 앱을 한 번 실행하는 동안에만 유지됩니다. Control Center를 종료하고 다시
+열면, 세션 도중이었더라도 타이머가 초기화된 비활성 상태로 시작합니다 —
+크래시 복구도, 세션 기록도 없습니다.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+넘어가는 것은 두 가지뿐입니다: 선호하는 시간과 알림 차단 플래그입니다. 목표,
+경과 시간, 알약의 열림 상태는 넘어가지 않습니다.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+재생도 마찬가지로 일시적입니다 — 사운드스케이프는 항상 실행 시 멈춰 있습니다.
+분위기, 볼륨, 분위기별 톤은 유지되지만 스트림 자체는 스스로 재개되지 않습니다.
 
-## Troubleshooting
+## 문제 해결
 
-### The tune pad is missing
+### 톤 패드가 없습니다
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+수면 분위기에서는 의도적으로 조정할 수 없습니다. 패드를 되돌리려면 집중 또는
+휴식으로 전환합니다.
 
-### Nothing plays after restarting the app
+### 앱을 다시 시작한 뒤 아무 소리도 나지 않습니다
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+의도된 동작입니다 — 재생은 항상 앱 실행 시 멈춰 있습니다. 패널을 열고
+**재생**을 다시 누릅니다. 그래도 소리가 나지 않으면 시스템 볼륨과 별개인
+패널의 볼륨 슬라이더를 확인합니다.
 
-### The weather or temperature looks wrong
+### 날씨나 온도가 잘못 표시됩니다
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+장면은 활성 워크스페이스의 위치를 따릅니다. 패널에서 **날씨 새로고침**을 눌러
+다시 가져옵니다.
 
-## Related guides
+## 관련 가이드
 
-- [Configure notifications](/ko-KR/매뉴얼/사용-가이드/알림/)
-- [Keyboard shortcuts](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)
+- [알림 구성](/ko-KR/매뉴얼/사용-가이드/알림/)
+- [키보드 단축키](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)

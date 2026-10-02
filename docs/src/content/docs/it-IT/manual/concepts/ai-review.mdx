@@ -1,225 +1,220 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: Revisione IA
+description: Come una pull request diventa revisionata — spazi di revisione, nodi di revisione e consenso tra pari, coorti e assi, il verdetto Ship/Hold/Block e perché la pubblicazione resta un passaggio che fai tu.
 slug: it-IT/manuale/concetti/revisione-ia
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## La forma di una revisione
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+Una revisione IA è una singola esecuzione della pipeline `pr_review` preconfigurata su una pull
+request aperta. La pipeline apre lo spazio di revisione della PR, distribuisce gli agenti revisori
+perché leggano il diff nel checkout isolato di quello spazio, ciascuno deposita i propri rilievi
+come **nodi di revisione** strutturati, un agente lead li consolida in un percorso guidato e un
+finalizzatore calcola un unico verdetto: **Ship**, **Hold** o **Block**. Ciò che la pipeline non fa
+mai è pubblicare: la pubblicazione su GitHub è un passaggio separato e deliberato che compie una
+persona.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Il resto di questa pagina spiega i pezzi e perché hanno questa forma.
 
-## One review space per PR
+## Uno spazio di revisione per PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Il contesto di revisione di una PR è uno spazio di messaggistica — modalità `review`, tipo `pr` —
+collegato alla pull request da un'**associazione dello spazio di revisione**. Viene creato in modo
+idempotente: la pagina della PR, la pipeline di revisione e le superfici di chat risolvono tutte
+l'_unico_ spazio di supporto della PR attraverso lo stesso percorso di codice, così un modello che
+revisiona una PR e una persona che la apre non possono mai ritrovarsi in due stanze diverse a
+guardare due checkout diversi.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Il worktree isolato dello spazio ha la PR in checkout al suo head ref. Una stanza significa anche
+un solo checkout: ogni revisore lavora nello stesso spazio invece di ricevere ciascuno il proprio
+clone dello spazio di lavoro.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Ogni revisore pubblica nel proprio flusso con nome dentro quell'unico spazio, e i rilievi sono
+messaggi `review_node` anziché semplice prosa. La raccolta finale a livello dell'intero spazio è
+deliberata: un verdetto calcolato dai rilievi di un solo thread sarebbe, in silenzio, un verdetto su
+un solo revisore.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+L'associazione porta con sé una scala di stati — `requested` → `in progress` → `awaiting approval` →
+`completed` — ed è ciò che sblocca **Pubblica su GitHub** nella scheda Revisione della PR.
 
-## Review levels
+## Livelli di revisione
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Quanto è profonda una revisione è una policy dello spazio di lavoro con tre livelli, impostata in
+**Impostazioni → Spazio di lavoro → Generale**, sulla scheda **Criteri dello spazio di lavoro**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Livello     | Revisori distribuiti                          | Rendicontazione                                |
+| ----------- | --------------------------------------------- | ---------------------------------------------- |
+| `light`     | Solo l'ingegnere                              | Solo ciò che conta davvero                     |
+| `balanced`  | Ingegnere, QA, architetto (predefinito)       | La passata ordinaria                           |
+| `thorough`  | Tutti e cinque, inclusi sicurezza e prestazioni | Nulla viene declassato                       |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Il livello muove due manopole contemporaneamente: quali revisori vengono distribuiti, imposto dai
+gate di stato `runWhen` del modello di pipeline anziché dalla formulazione del prompt — la
+formulazione del prompt si può ignorare, un gate no — e dove vengono visualizzati i rilievi sotto la
+soglia. Nessuna delle due manopole elimina mai un rilievo: un livello che segnala meno ne deposita
+esattamente altrettanti e raggruppa il resto.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Le passate di sicurezza e prestazioni riutilizzano gli agenti architetto e ingegnere preconfigurati
+anziché introdurne di nuovi. La specializzazione è il brief con cui il revisore viene inviato, non
+un agente separato per asse: un agente per asse sarebbero cinque righe in più in ogni spazio di
+lavoro senza alcuna capacità in più. La selezione dei revisori non ispeziona mai il diff per
+linguaggio o dominio.
 
-## Review nodes: findings as data, not prose
+## Nodi di revisione: i rilievi come dati, non come prosa
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+Un rilievo depositato con `add_review_node` diventa un **nodo di revisione** sulla PR: è ciò che la
+scheda Revisione mostra, ciò da cui si calcola il verdetto e ciò che “Pubblica su GitHub” trasforma
+in un commento inline. Un revisore che restituisce solo prosa produce un'esecuzione di pipeline che
+sembra riuscita e una superficie di revisione vuota; depositare è la parte che regge il tutto.
 
-Each node carries:
+Ogni nodo porta con sé:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Campo                | Valori                                                                      |
+| -------------------- | --------------------------------------------------------------------------- |
+| Tipo                 | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                  |
+| Priorità             | P0 (critico) → P3 (dettaglio)                                                |
+| Terna di triage      | categoria (`security`, `stability`, …), gravità, impegno                     |
+| Ancoraggio           | Percorso del file, riga iniziale e finale                                    |
+| Correzione suggerita | Righe di sostituzione suggerite, un diff opzionale, un prompt di correzione opzionale |
+| Confidenza           | Un punteggio in [0, 1]                                                       |
+| Ragionamento         | L'analisi, scritta prima del rilievo                                         |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Due dettagli sono deliberati. Un suggerimento GitHub con un solo clic viene offerto solo quando il
+revisore ha fornito righe di sostituzione esatte: ricavarle da un diff unificato sbaglia in
+silenzio, e un commit con un clic di un'inferenza sbagliata è peggio di nessun pulsante. Inoltre lo
+schema di `add_review_node` presenta `reasoning` prima del rilievo, così un modello che compila
+l'oggetto nell'ordine dello schema scrive prima l'analisi. Il campo è facoltativo: ometterlo non fa
+rifiutare il nodo. Un nodo il cui payload è malformato scompare anziché inquinare la revisione.
 
-## Peer consensus
+## Consenso tra pari
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Un nodo passa attraverso `open` → `consensus-ready` → `resolved` o `dismissed`. Il passaggio
+intermedio è il cuore del modello: **un rilievo viene promosso solo quando un revisore pari lo
+conferma, e un agente non può mai confermare un proprio rilievo.** Lo strumento MCP
+`publish_review_to_github` e l'impostazione predefinita RPC pubblicano ancora solo i rilievi
+confermati dai pari. Il pulsante **Pubblica su GitHub** della scheda Revisione invia invece ogni
+rilievo ancora aperto.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+La regola è applicata in tre punti indipendenti — lo strumento di conferma, il finalizzatore e il
+componente di pubblicazione — così sopravvive a un chiamante difettoso in uno qualsiasi di essi.
+Tutti i cambi di stato passano da un unico servizio, ed è questo che dà un senso a uno stato: prima,
+due percorsi parziali potevano non concordare sul fatto che lo stesso rilievo fosse risolto.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Quando i revisori non sono d'accordo — stesso file e stessa riga, priorità distanti due o più
+livelli, oppure uno che lo chiama `bug` e l'altro che lo chiama `suggestion` — il disaccordo viene
+evidenziato sopra l'elenco dei rilievi. È lì che le opinioni dei revisori divergono e che il
+giudizio di una persona vale di più.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Scartare un rilievo scrive anche un fatto di soppressione soft nel dominio della memoria, a bassa
+confidenza: uno scarto è una preferenza, non una regola.
 
-## Cohorts: what the review is grouped around
+## Coorti: ciò attorno a cui si raggruppa la revisione
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+La passata di calcolo della revisione raggruppa i file modificati di una PR in **coorti** derivate
+dal grafo del codice: i file modificati mappano ai simboli che toccano, i simboli ai componenti
+connessi, e le coorti sono ordinate per raggio d'impatto. Una coorte porta con sé un ordine di
+lettura guidato, diagrammi e approfondimenti, invece di essere un semplice elenco di file.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Due regole di onestà ne determinano la forma. Le chiavi delle coorti derivano dal contenuto e sono
+stabili tra un push e l'altro, così i rilievi e l'avanzamento della revisione sopravvivono a un
+rebase o a un force-push invece di restare orfani. E quando il repo non ha un indice del codice, il
+raggruppamento ripiega sui percorsi semplici e lo dichiara: il fallback non finge mai una confidenza
+semantica.
 
-## Review axes and gates
+## Assi e gate di revisione
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Accanto ai rilievi dei revisori, una revisione accumula **risultati degli assi**: sei assi, di due
+tipi.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Asse                          | Tipo          | Ricavato da                          |
+| ----------------------------- | ------------- | ------------------------------------ |
+| `correctness`, `security` | Guidato dai token  | I rilievi dei revisori stessi                     |
+| `testGap`                 | Guidato dai token  | I rilievi dei revisori                            |
+| `visual`, `apiContract`   | Deterministico | Calcolato senza spendere token                     |
+| `performance`             | Deterministico | Solo enumerazione: nulla nel prodotto ne calcola un risultato |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Il verdetto di un asse è `pass`, `warn`, `fail`, `partial` o `unavailable` — e solo `pass` o `warn`
+supera un gate. La distinzione tra `fail`, `partial` e `unavailable` è portante: un asse con gate che
+non ha potuto completarsi o non ha potuto essere eseguito affatto trattiene il verdetto complessivo
+anziché farlo passare. **L'assenza di prove non si converte mai in un gate verde.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Alcuni assi sono consultivi di proposito. L'asse dei gap di test derivato dalle coorti non può
+vedere la copertura di dependency injection o delle factory: un repo non indicizzato con una suite
+approfondita e uno senza alcun test appaiono identici da lì, quindi affermare l'uno o l'altro
+sarebbe una bugia; compare nella dashboard senza fare da gate. Gli assi dei token sono consultivi
+perché le priorità dei rilievi guidano già il verdetto, e rifare il gate su di essi conterebbe due
+volte.
 
-## The verdict
+## Il verdetto
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+Il finalizzatore calcola il verdetto sui rilievi con stato `open` o `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- qualunque rilievo P0 con confidenza ≥ 0.7 → **Block**
+- altrimenti, qualunque P0 (a bassa confidenza) o qualunque P1 → **Hold**
+- altrimenti → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Il verdetto porta con sé una confidenza aggregata derivata dalla dispersione delle confidenze che vi
+contribuiscono: l'accordo la alza, la divergenza la abbassa.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Il consolidamento dell'agente lead (CEO) è una passata editoriale, non un secondo elenco: una
+seconda copia scritta a mano dei rilievi è esattamente ciò che diverge da quella reale. I rilievi
+duplicati vengono declassati anziché ripetuti: diversi revisori sono puntati sullo stesso diff con
+ambiti deliberatamente sovrapposti, quindi lo stesso difetto che raggiunge tre volte il finalizzatore
+è il sistema che funziona; pubblicarlo tre volte è il sistema che lascia filtrare la propria
+architettura nella posta in arrivo del lettore. A una nuova revisione, i rilievi vengono improntati e
+messi in diff rispetto al giro precedente, così a emergere è il delta.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+Infine subentrano gli assi, e possono solo rendere il verdetto **più** severo: un asse con gate in
+stato di errore forza Block — non può essere messo in minoranza dai rilievi — e un asse con gate che
+non ha potuto completarsi forza almeno Hold.
 
-## Publishing stays with you
+## La pubblicazione resta nelle tue mani
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+La pipeline di proposito non pubblica su GitHub; la pubblicazione è soggetta al controllo
+dell'utente, così una revisione non può mai essere pubblicata due volte. Quando premi **Pubblica su
+GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Viene inviata una sola revisione GitHub. I rilievi già risolti o scartati vengono saltati. Il
+  pulsante pubblica ogni rilievo ancora aperto (`selection: all_open`). Lo strumento MCP
+  `publish_review_to_github` usa ancora come impostazione predefinita solo i rilievi confermati dai
+  pari (`consensus`).
+- I rilievi ancorati a un file e a una riga diventano commenti inline; tutto il resto si ripiega nel
+  corpo del riepilogo, ciascuno con un piè di pagina “— Control Center AI review” perché la fonte
+  sia inequivocabile.
+- Gli ancoraggi vengono riverificati rispetto al diff _attuale_ della PR al momento della
+  pubblicazione. Un commento su codice già riscritto è la cosa che distrugge di più la fiducia che
+  un revisore possa lasciare; se GitHub rifiuta comunque un ancoraggio inline, l'intera revisione
+  viene inviata di nuovo con ogni rilievo ripiegato nel corpo, così nulla viene perso in silenzio.
+- Un verdetto **Block** viene inviato come `REQUEST_CHANGES`; **Hold** come `COMMENT`; **Ship** come
+  `APPROVE` dal pulsante (`approve_on_ship: true`). Lo strumento MCP lascia Ship come `COMMENT` a
+  meno che tu non passi `approve_on_ship`.
+- La revisione viene pubblicata sotto l'identità dell'app del server. Chi ha premuto Pubblica viene
+  registrato per il gate del ruolo e il registro di controllo; non è l'autore GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/it-IT/manuale/concetti/guardrail/).
+La pubblicazione dichiara la classe di azione `prPublish`, quindi il punto di strozzatura dei
+guardrail la sottopone a gate come qualsiasi azione di modifica: richiede conferma per impostazione
+predefinita e fallisce in modo restrittivo quando non è connesso alcun approvatore. Vedi
+[Guardrail](/it-IT/manuale/concetti/guardrail/).
 
-## What a reviewer may do
+## Cosa può fare un revisore
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Gli agenti revisori vengono eseguiti in modalità `review`: un sandbox di sola lettura e un elenco
+curato di strumenti consentiti che copre rilievi, commenti, ticket e revisione tra pari, ma nessuna
+modifica. Un revisore non può correggere il codice che critica; può allegare una correzione
+suggerita che una persona applica. Il messaggio di rifiuto della modalità dice a un agente che tenta
+comunque di agire di finalizzare la revisione e di lasciare che l'utente agisca sul riepilogo
+pubblicato.
 
-## Related concepts
+## Concetti correlati
 
-- [Guardrails](/it-IT/manuale/concetti/guardrail/) — the policy engine that gates publishing
-- [Modes](/it-IT/manuale/concetti/modalita/) — what `review` mode changes for an agent
-- [Pipelines and automation](/it-IT/manuale/concetti/pipeline/) — the engine the review runs on
-- [Agent dispatch lifecycle](/it-IT/manuale/concetti/ciclo-di-vita-invio/) — where the isolated worktree comes from
+- [Guardrail](/it-IT/manuale/concetti/guardrail/) — il motore di policy che fa da gate alla pubblicazione
+- [Modalità](/it-IT/manuale/concetti/modalita/) — cosa cambia la modalità `review` per un agente
+- [Pipeline e automazione](/it-IT/manuale/concetti/pipeline/) — il motore su cui viene eseguita la revisione
+- [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/) — da dove viene il worktree isolato
 
-## Related guides
+## Guide correlate
 
-- [Use AI-powered review](/it-IT/manuale/guide/revisione-ia/) — run a review and publish it
-- [Dispatch reviewer agents](/it-IT/manuale/guide/invia-revisori/) — choose the reviewers yourself
-- [Review compute](/it-IT/manuale/guide/calcolo-revisione/) — cohorts, axes and diffs
+- [Usa la revisione basata sull'IA](/it-IT/manuale/guide/revisione-ia/) — esegui una revisione e pubblicala
+- [Invia agenti revisori](/it-IT/manuale/guide/invia-revisori/) — scegli tu i revisori
+- [Calcolo della revisione (coorti e assi)](/it-IT/manuale/guide/calcolo-revisione/) — coorti, assi e diff

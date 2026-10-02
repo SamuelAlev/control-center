@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: Sözlük
+description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['Ajan', 'Kimliği, rolü, becerileri ve yetenekleri olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.'],
+['Adaptör', 'Bir ajan turunu yürüten çalıştırıcı. İki tanesi gelir: Control Center (built-in) — model sağlayıcılarıyla konuşan süreç içi harness — ve claude CLI üzerinden Claude Code. Cursor, Codex ve diğer model sağlayıcıları ayrı çalıştırıcılar olarak değil, yerleşik adaptöre bağlanır.'],
+['Çalışma alanı', 'En üst düzey yalıtım kiracısı. Ajanları, depoları, alanları, biletleri, belleği ve pipeline’ları gruplar. Yalıtım yapısaldır, geleneksel değil: her çalışma alanının kendi SQLite dosyası vardır, bu yüzden çalışma alanları arası bir okuma derlenmez. Uygulama içindeki her rota /workspaces/:workspaceId ile öneklenir.'],
+['Forge', 'Bir kod barındırıcısı — GitHub, GitLab veya Bitbucket Cloud. Her deponun bir özelliği; kayıt sırasında origin uzak deposundan okunur. Bir çalışma alanı üçünde de depo barındırabilir.'],
+['Depo', 'Bir çalışma alanı içinde kayıtlı bir Git deposu. Çalışma alanına özel: iki çalışma alanında kayıtlı aynı checkout, iki kimlikli iki satırdır ve bir deponun çalışma alanları arasındaki kimliği kimlikle değil, her zaman dosya sistemi yoluyla belirlenir. Kayıt, origin uzak deposu desteklenen bir forge’a (GitHub, GitLab veya Bitbucket Cloud) işaret eden bir git çalışma ağacı gerektirir.'],
+['Yalıtılmış depo', 'Kayıtlı bir deponun çalışma alanına özel çalışma ağacı. Bu yerel ikilinin geldiği her yerde rift üzerinden kopyala-üzerine-yaz; Windows’ta git worktree. Alan başına hazırlanır; böylece o alandaki her konuşma tek bir checkout’u paylaşır ve ajanlar kaynağı asla değiştirmez.'],
+['Alan', 'İnsan ve ajan katılımcıları, kalıcı bir Mode’u, hazırlama durumu ve nasıl bölümleneceğine, sessize alınacağına, rozetleneceğine ve çöp toplanacağına karar veren bir SpaceKind’ı (topic, agentPeer, system, pr veya slack) olan, çalışma alanına özel bir işbirliği kapsayıcısı. Konuşmalarının paylaştığı yalıtılmış çalışma ağaçlarına sahiptir (rift üzerinden kopyala-üzerine-yaz; Windows’ta git worktree).'],
+['Konuşma', 'Bir Alan içindeki tek bir ileti akışı; kendi kimliği, geçmişi ve ajan çalıştırma bağlamı vardır. Bir alandaki konuşmalar düz eşitlerdir — birincil ya da ana akış yoktur. Her biri bir düzenleyici sekmesi olarak açılır; bir alanın okunmamış durumu hepsini kapsayacak biçimde toplanır.'],
+['Thread', 'anchorMessageId değeri ayarlanmış bir Konuşma: aynı Alandaki kardeş bir konuşmanın tek bir iletisine sabitlenir ve bu çapa iletisiyle tohumlanan taze bir ajan bağlamı taşır. Tek düzey derinliğindedir — thread’ler asla thread’lere sabitlenmez.'],
+['Bilet', 'İş birimi toplamı. Satıcıdan bağımsız: varsayılan olarak local; Linear, GitHub Issues, Jira Cloud ve ClickUp için eşitleme adaptörleri vardır — yine de hiçbir uygulama içi yüzey bir eşitleme bağlantısı oluşturmaz. Hiyerarşiyi, bağlantıları ve devretmeyi destekler. Bir ajana atama sahipliği kaydeder ve hiçbir şey göndermez; bir ekibe atama istisnadır (lideri TeamRoutingService gönderir).'],
+['Pipeline', 'Adımları (ajan gönderimi, betikler, koşullar) birbirine zincirleyen DAG tabanlı bir iş akışı. Şablonlarla tanımlanır; çalıştırmalar olarak yürütülür.'],
+['Toplantı', 'Yerel olarak kaydedilen ve yazıya dökülen bir toplantı oturumu. Mikrofonu ve sistem sesini yakalar, cihaz üzerinde seçilebilir bir ASR modeliyle (varsayılan olarak Parakeet TDT v3; Parakeet TDT v2, Whisper large-v3-turbo ve Whisper base.en alternatiflerdir) yazıya döker, konuşmacıları ayırır ve notlar, eylem öğeleri ve kararlar hâlinde özetler. Seçilen ASR modeli önyüklemede zorla kurulur ve kayıt işlemleri bir yeniden başlatmanın ardından devreye girer. Çalışma alanına özel.'],
+['CalendarEvent', 'Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür, bir Toplantı ise kaydedilmiş bir oturumdur.'],
+['CalendarAccount', 'Çalışma alanı ve e-posta başına bir bağlı Google hesabı. OAuth yenileme jetonları sunucu tarafında, veri dizinindeki secrets.json dosyasında google_* anahtarları olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; bir authExpiredAt bayrağı yeniden bağlanma şeridini yönetir.'],
+['AgentRole', 'Numaralandırılmış rol (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Personayı, bellek erişimini ve hiyerarşiyi belirler.'],
+['AgentSkills', 'Gönderim anında istemlere ilgili bağlamı enjekte eden, büyük-küçük harf duyarsız beceri tanımlayıcıları kümesi.'],
+['Beceri kaynağı', 'Çalışma alanı başına beceri kataloğu olarak kaydedilen bir GitHub deposu. Yapısı gereği güvenilmezdir: deponun üst verisi yalnızca görüntüleme amaçlıdır ve her kurulum, herhangi bir içerik diske ya da bir isteme ulaşmadan önce hataya kapalı tarama kapısından geçer.'],
+['skills-lock.json', 'Kurulu becerilerin çalışma alanı başına manifestosu: her biri için kaynak deposu, depo yolu, sabitlendiği commit ve toplanmış bir içerik karması. Kurulumlar, güncellemeler ve kaldırmalar onu güncel tutar; verify_skills onu diskle karşılaştırır.'],
+['AgentCapabilities', 'Gönderim başına çözümlenen dört bayrak (depoya push, GitHub API, biletleme, ağ çıkışı): önce ajan varsayılanı, sonra kullanıcı varsayılanı ve konuşma başına bir geçersiz kılma. Yokluğuyla uygulanır; çünkü devre dışı bir yetenek, jetonun ya da çıkışın hiç enjekte edilmemesi anlamına gelir.'],
+['Mode', 'chat, plan, review veya orchestrate. Alan başına saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar.'],
+['SandboxBackend', 'microvm (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), native (macOS’ta işletim sistemine özgü Seatbelt, Linux ve WSL2’de bubblewrap) veya none. Önyüklemede bir kez yoklanır; native, kullanılabilir olduğunda ajan gönderimini sarar. Windows’ta yerel bir arka uç yoktur ve Linux bwrap artı socat gerektirir; bu yüzden oradaki çalıştırmalar sarılmaz; --sandbox off bilinçli olarak vazgeçer.'],
+['Rig', 'Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine: kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajan aracı tek bir makineyi adresler.'],
+['Enclosure', 'VM destekli rig’lerin sahip olduğu daha güçlü yalıtım özelliği: bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır; bu yüzden bu sınırı talep etmezler. Herhangi bir rig’i yönetmek enclosureControl koruma sınıfını kullanır.'],
+['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).'],
+['WakeReason', 'Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.'],
+['SandboxPort', 'Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).'],
+['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı, yetenekle kapılanmış kimlik bilgileri üretir ve sökme sırasında bunları iptal eder.'],
+['GitRepoInspectorPort', 'Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.'],
+['EmbeddingPort', 'Anlamsal arama için birim normlu metin gömme vektörleri üretir.'],
+['NotificationPort', 'Kategori/rota kapılamasına uyarak yerel masaüstü bildirimleri gösterir.'],
+['TicketProviderPort', 'Bir biletleme arka ucuna satıcıdan bağımsız sınır (create, get, list, update, transition, assign).'],
+['PipelineEnginePort', 'Bir şablondan bir pipeline çalıştırması başlatır ve çağıranları somut motordan ayırır.'],
+['AgentDispatchService', 'Ajan çalıştırmalarını başlatır: yalıtılmış depoları hazırlar, istemleri kurar, çalıştırma günlükleri oluşturur, canlı olay akışları döndürür.'],
+['TicketWorkflowService', 'İyimser eşzamanlılık için bir mutasyon geçiş noktası ve çalışma alanı yalıtımı uygulaması olan saf alan bilet yaşam döngüsü motoru. Uyguladığı geçiş grafiği yalnızca ajanları ve otomasyonu bağlar; kullanıcı kaynaklı arayüz değişiklikleri force true geçirir ve onu atlar.'],
+['PipelineEngine', 'Çalıştırma yürütmesini orkestre eder: çalıştırmaları başlatır, adımları zamanlar, durumu kalıcılaştırır, yönlendiricileri/birleşmeleri/başarısızlıkta devamı yönetir, yeniden başlatmanın ardından uçuştaki çalıştırmaları sürdürür.'],
+['PipelineTriggerDispatcher', 'Alan olaylarına abone olur ve etkin tetikleyiciler için eşleşen pipeline çalıştırmalarını otomatik başlatır.'],
+['MemoryAccessPolicy', 'Ajan rolü bellek izinlerini alanlar üzerinde çözer ve uygular.'],
+['HarnessCostCalculator', 'Yerleşik harness jeton kullanımını models.dev kataloğundan bir RunCost’a fiyatlandırır. Gönderim bu dökümü çalıştırma günlüğüne yazar.'],
+['BudgetEnforcementService', 'Ajan başına aylık harcamayı ve gönderim öncesi bir bloğu (checkInvocationBlock) hesaplar. Bu bloğa yalnızca kurtarma uzlaştırıcıları (OrphanRunReaper, StrandedTicketReconciler) başvurur; sıradan gönderim asla.'],
+['BudgetGovernanceService', 'Her çalıştırmadan sonra ajan başına aylık harcamayı değerlendirir: yumuşak bir eşik bir uyarı olayı kaydeder; tükenme katı bir olay kaydeder ve ajanın yaşam döngüsünü paused durumuna çevirir.'],
+['DomainEventBus', 'Özellikler arası iletişim için süreç içi yayın tabanlı publish/subscribe veri yolu. Olaylar tiplidir; aboneler türe göre filtrelenmiş akışları tüketir.'],
+['DomainEvent', 'Temel arayüz. Her olayda occurredAt vardır. Temel kategoriler: çalışma alanı/ajan, PR/inceleme, mesajlaşma, biletleme, pipeline, toplantılar/takvim, kimlik, rig’ler, gözlemlenebilirlik.'],
+['Clean Architecture', 'Bağımlılık kuralı: Presentation, Application/Providers, Domain ile Infrastructure ise içe doğru işaret eder. Alanın sıfır altyapı içe aktarımı vardır.'],
+['Portlar ve adaptörler', 'Alan soyut arayüzleri (portlar) tanımlar; altyapı somut uygulamaları (adaptörler) sağlar. Kompozisyon kökü bunları bağlar.'],
+['Paylaşılan çekirdek', 'core/domain/ altında 3+ özellik arasında paylaşılan varlıklar, değer nesneleri, portlar ve hizmetler.'],
+['Özellik öncelikli', 'Kod, teknik katmana göre değil, iş alanına (ajanlar, pipeline’lar, mesajlaşma) göre düzenlenir.'],
+['İnce istemci mimarisi', 'Hiçbir istemci veritabanını açmaz; headless bir cc_server süreci verinin sahibidir ve onu WebSocket RPC üzerinden sunar. Her istemci (masaüstü, web, telefon) o tek RPC bağlantısı üzerinden çizen bir istemcidir.'],
+['cc_server', 'Headless sunucu ikilisi (saf Dart, Flutter motoru yok). Drift/SQLite veritabanının sahibidir, WebSocket üzerinden repo-RPC sunar ve arka plan hizmetlerini (pipeline’lar, MCP, uzlaştırıcılar) çalıştırır.'],
+['ServerConnectionMode', 'Masaüstünün sunucusuna nasıl ulaştığı: local (bu makinede bir cc_server başlatır) veya remote (başka bir yerdekine bağlanır). Web istemcisi her zaman remote’tur.'],
+['RemoteRpcClient', 'Her ince istemcinin sunucusuyla konuşmak için kullandığı, taşıma katmanından bağımsız JSON-RPC istemcisi; WSS, loopback ya da aracılı relay üzerinden.'],
+['Çağrı başına çalışma alanı kapsamı', 'Sunucu durumsuzdur: oturum başına bir çalışma alanı bağlaması yoktur, bu yüzden tek bir sunucudaki birden çok istemci hiçbir zaman geçerli bir çalışma alanını paylaşmaz. Çalışma alanına kapsamlı her repo/call ve sub/subscribe, argümanlarında workspace_id taşımalıdır; eksik ya da kayıtsız bir kimlik, herhangi bir veritabanı açılmadan önce reddedilir. Erişim daha sonra oturumla değil, çalışma alanı üyeliği ve rolüyle kapılanır.'],
+['cc_remote', 'Telefon ince istemcisi — varsayılan olarak reddeden bir araç politikasıyla filoyu aracılı relay üzerinden uzaktan kontrol eden bir Flutter web PWA’sı.'],
+['cc_signaling_server', 'Davetle kapılanan odalar barındıran durumsuz bir WebSocket relay broker’ı. Aptal bir relay: yalnızca uçtan uca mühürlenmiş çerçeveleri iletir, hiçbir uygulama verisi tutmaz ve eşleştirme PSK’sını asla görmez.'],
+['Principal', 'İnsanları ve ajanları tek aktör soyutlaması olarak birleştiren mühürlü bir değer. UserPrincipal(userId) veya AgentPrincipal(agentId). Her ileti, bilet, inceleme, plan ve çalıştırma günlüğü bir Principal üzerinden atfedilir.'],
+['User', 'global.db içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Bir çalışma alanını oluşturan principal onun sahibi olur; Workspace.ownerUserId üzerine ve sahip rolünde bir üyelik satırıyla damgalanır; diğerleri davetle ya da SSO ile katılır.'],
+['WorkspaceMember', 'Bir User’ı bir Workspace’e bir WorkspaceRole ile bağlayan üyelik satırı. Erişim sınırı, bir eşleştirme anahtarı değil, üyeliktir.'],
+['WorkspaceRole', 'Kademeli üyelik rolü: owner, admin, member, viewer veya guest. Depo işlemi geçiş noktası, işlem türü başına bir asgari rol tabanı türetir.'],
+['ParticipantPresence', 'Bir Principal için geçici farkındalık (durum, konum, imleç, yazıyor olma, ajanın canlı durumu ve çalışan maliyeti). Hiçbir zaman kalıcılaştırılmaz; sunucu merkezlidir; dağıtımdan önce depo yetkisiyle filtrelenir.'],
+['Takip modu', 'Bir avatarı tıklayın; siz harekete geçene kadar onun görüntüsünü takip edin, sonra ayrılın. Hem insanlar hem de ajanlar için çalışır ("bir ajanın çalışmasını izleyin").'],
+['Özerklik kadranı', 'Alan başına ve ajan başına bir denetim — propose-only / act-with-approval / act-freely — eylem koruma deposu üzerinde adlandırılmış bir profil olarak uygulanır.'],
+['cc_worker', 'Headless, saf Dart bir filo yürütücüsü ikilisi. Bir cc_server ile eşleşir, yeteneklerini bildirir, kiralanmış işleri çeker, yürütür ve olayları geri akıtır. Kalıcı durum tutmaz.'],
+['JobSpec', 'Yürütülebilir her şeyin tipli spesifikasyonu (ajan çalıştırması, pipeline adımı, kod indeksi, golden render, kıyaslama, eval partisi): gerekli yetenekler, öncelik, bütçe, çalışma alanı.'],
+['ActionClass', '13 etki sınıfından oluşan kapalı bir küme (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına allow / prompt / deny kararını verir.'],
+['WriteLedger', 'Çalışma alanına özel bir idempotency defteri. Her mutasyon mantıksal eylem başına bir idempotency anahtarı taşır; bir yeniden oynatma, bayt bayt aynı özgün sonucu döndürür. Yeniden bağlanmayı ve çok istemcili çalışmayı yapısı gereği güvenli kılar.'],
+['Idempotency anahtarı', 'Mantıksal eylem başına (deneme başına değil) üretilen, istemci tarafından oluşturulmuş UUIDv7. Yeniden bağlanmalar ve istemciler arasında yeniden denemeleri tekilleştirir.'],
+['“Needs me” gelen kutusu', 'Katı bir kuralı olan, tüm sütunları kapsayan bir kuyruk: bir öğe yalnızca bir şeyi engelliyorsa (bir ajanı, bir birleştirmeyi, bir eşitlemeyi) ya da açıkça operatörü istiyorsa görünür.'],
+['Plan Studio', 'Etkileşimli planlama yüzeyi: adım başına maliyet/zaman/risk tahminleri, plan-diff sürümlemesi ve kısmi onayla, düzenlenebilir tipli bir DAG olarak işlenen bir orkestrasyon önerisi ya da tek ajanlı plan.'],
+['Review compute', 'Bir PR için sunucu tarafı inceleme hesaplaması: graftan türetilen dosya kohortları, tipli anlatım diyagramları, arayüz görsel diff’leri, OpenAPI sözleşme diff’leri, etki yarıçapı haritası ve eksen başına kapılar; review_studio.* üzerinden sunulur ve İnceleme sekmesinin kararına katılır.'],
+['Review space', 'Bir PR’ın tek destek alanı (mode review, kind pr), idempotent biçimde oluşturulur ve PR’a bir ReviewSpaceAssociation ile bağlanır. Her inceleyici bulgularını oraya kaydeder; bulguları karşılaştırılabilir kılan da budur; yalıtılmış çalışma ağacında PR, head’inde checkout edilmiş olarak durur.'],
+['Review node', 'Bir YZ inceleme bulgusunun yapılandırılmış birimi: tür (bug, suggestion, recommendation, question, ticket), P0-P3 önceliği, kategori/önem/emek üçlüsünden oluşan bir triyaj, bir dosya-ve-satır çapası, isteğe bağlı önerilen düzeltme ve bir güven puanı. add_review_node ile kaydedilir; karar düzyazıdan değil, düğümlerden hesaplanır.'],
+['Consensus-ready', 'Yalnızca bir akran inceleyici bir bulguyu doğruladığında ulaşılan inceleme düğümü durumu — bir ajan kendi bulgusunu doğrulayamaz. İnceleme sekmesindeki Yayınla düğmesi kalan tüm açık bulguları gönderir; MCP aracı publish_review_to_github hâlâ varsayılan olarak yalnızca akran onaylı bulguları gönderir.'],
+['Review level', 'Hangi inceleyicilerin dağıtılacağını (yalnızca engineer; +qa+architect; +security+perf) ve eşik altı bulguların nerede görüntüleneceğini ayarlayan çalışma alanı politikası (light, balanced, thorough). Bir bulguyu asla silmez.'],
+['Review axis', 'İnceleme başına beş puanlama şeridinden biri: inceleyici bulgularından alınan correctness, security ve testGap; visual ve apiContract ise belirleyicidir. Kapılanan eksenler karara katılır ve onu yalnızca daha ağır yapabilir — partial ya da unavailable bir kapı, kararı geçirmek yerine askıda tutar.'],
+['Review verdict', 'ship, hold veya block. Güveni >= 0.7 olan herhangi bir P0 bulgusu block verir; diğer herhangi bir P0 ya da herhangi bir P1 hold verir; aksi hâlde ship. Kapılanan ve başarısız olan bir eksen block’u zorlar ve bulgular tarafından alt edilemez.'],
+['SessionRecording', 'Tek bir çalıştırma için yakalanan bir olay akışı artı HTTP/LLM kasetleri ve araç G/Ç’si; bir AgentConfigHash ile eşleştirilir.'],
+['Altın oturum', 'Ajan ya da playbook başına sabitlenmiş, kutsanmış bir SessionRecording.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "Control Center sözlüğü",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## Çekirdek varlıklar
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Ajan**: Kimliği, rolü, becerileri ve yetenekleri olan bir YZ çalışanı. Tam olarak tek bir çalışma alanına aittir. Sistemdeki birincil aktör.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
+**Adaptör**: Bir ajan turunu yürüten çalıştırıcı. İki tanesi gelir: **Control Center (built-in)** — model sağlayıcılarıyla konuşan süreç içi harness — ve `claude -p` üzerinden **Claude Code**. Cursor, Codex, Anthropic, OpenAI ve geri kalanı, ayrı CLI’lar değil, yerleşik adaptör üzerindeki sağlayıcılardır. Bkz. [Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/tr-TR/kilavuz/referans/rota-haritasi/).
+**Çalışma alanı**: En üst düzey yalıtım kiracısı. Ajanları, depoları, alanları, biletleri, belleği ve pipeline’ları gruplar. Yalıtım yapısaldır, geleneksel değil: her çalışma alanının kendi SQLite dosyası (`<dataDir>/<workspaceId>/workspace.db`) vardır, bu yüzden çalışma alanları arası bir okuma derlenmez. Uygulama içindeki her rota `/workspaces/:workspaceId` ile öneklenir — bkz. [rota haritası](/tr-TR/kilavuz/referans/rota-haritasi/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
+**Forge**: Bir kod barındırıcısı — **GitHub**, **GitLab** veya **Bitbucket Cloud**. Forge her deponun bir özelliğidir; kayıt sırasında `origin` uzak deposundan okunur ve o deponun API adaptörünü ve kimlik bilgisini seçer. Bir çalışma alanı üçünde de depo barındırabilir; toplayıcı yüzeyler (gelen kutusu, PR kuyruğu) temsil edilen her forge’a dağılır ve sonuçları birleştirir, arızaları yalıtır; böylece erişilemeyen bir forge diğerlerini hiçbir zaman boşaltmaz. Forge’lar destekledikleri konularda farklılaşır — [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/) sayfasındaki yetenek tablosuna bakın.
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**Depo**: Tek bir çalışma alanı içinde kayıtlı bir Git deposu. **Çalışma alanına özel** — iki çalışma alanında kayıtlı aynı checkout, iki kimlikli iki bağımsız satırdır; bir deponun kimliği çalışma alanları arasında kimlikle değil, her zaman dosya sistemi yoluyla belirlenir. Kayıt, `origin` uzak deposu desteklenen bir forge’a işaret eden bir git çalışma ağacı gerektirir. Her depo, kendisi için kullanılan API adaptörünü ve kimlik bilgisini seçen o **forge**’u (`github` / `gitlab` / `bitbucket`) taşır.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**Yalıtılmış depo**: Kayıtlı bir deponun çalışma alanına özel çalışma ağacı. Bu yerel ikilinin geldiği her yerde `rift` üzerinden kopyala-üzerine-yaz; Windows’ta `git worktree`. **Alan başına** hazırlanır — o alandaki her konuşma tek bir checkout’u paylaşır — böylece ajanlar kaynağı asla değiştirmez.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**Alan**: İnsan ve ajan katılımcıları, kalıcı bir `Mode`’u, hazırlama durumu ve nasıl bölümleneceğine, sessize alınacağına, rozetleneceğine ve çöp toplanacağına karar veren bir `SpaceKind`’ı (`topic` / `agentPeer` / `system` / `pr` / `slack`) olan, çalışma alanına özel bir işbirliği kapsayıcısı. Konuşmalarının paylaştığı yalıtılmış çalışma ağaçlarına sahiptir (`rift` üzerinden kopyala-üzerine-yaz; Windows’ta `git worktree`).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**Konuşma**: Bir Alan içindeki tek bir ileti akışı; kendi kimliği, geçmişi ve ajan çalıştırma bağlamı vardır. Bir alandaki konuşmalar düz eşitlerdir — birincil ya da "ana" akış yoktur. Her biri bir düzenleyici sekmesi olarak açılır; bir alanın okunmamış durumu hepsini kapsayacak biçimde toplanır.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**Thread**: `anchorMessageId` değeri ayarlanmış bir Konuşma: aynı Alandaki kardeş bir konuşmanın tek bir iletisine sabitlenir ve bu çapa iletisiyle tohumlanan taze bir ajan bağlamı taşır. Tek düzey derinliğindedir — thread’ler asla thread’lere sabitlenmez.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**Bilet**: İş birimi toplamı. Satıcıdan bağımsız: varsayılan olarak `local`; Linear, GitHub Issues, Jira Cloud ve ClickUp için eşitleme adaptörleri vardır — yine de hiçbir uygulama içi yüzey bir eşitleme bağlantısı oluşturmaz. Hiyerarşiyi, bağlantıları ve devretmeyi destekler. Bir ajana atama sahipliği kaydeder ve hiçbir şey göndermez; bir ekibe atama istisnadır (`TeamRoutingService` lideri gönderir).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**Pipeline**: Adımları (ajan gönderimi, betikler, koşullar) birbirine zincirleyen DAG tabanlı bir iş akışı. Şablonlarla tanımlanır; çalıştırmalar olarak yürütülür.
 
-## Value objects
+## Değer nesneleri
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: Numaralandırılmış rol (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Personayı, bellek erişimini ve hiyerarşiyi belirler.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: Gönderim anında istemlere ilgili bağlamı enjekte eden, büyük-küçük harf duyarsız beceri tanımlayıcıları kümesi.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme/).
+**Beceri kaynağı**: Çalışma alanı başına beceri kataloğu olarak kaydedilen bir GitHub deposu. Yapısı gereği güvenilmezdir: deponun üst verisi yalnızca görüntüleme amaçlıdır ve her kurulum, herhangi bir içerik diske ya da bir isteme ulaşmadan önce hataya kapalı tarama kapısından geçer. Bkz. [becerileri kurma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: Kurulu becerilerin çalışma alanı başına manifestosu: her biri için kaynak deposu, depo yolu, sabitlendiği commit ve toplanmış bir içerik karması. Kurulumlar, güncellemeler ve kaldırmalar onu güncel tutar; `verify_skills` onu diskle karşılaştırır.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: Gönderim başına çözümlenen dört bayrak (depoya push, GitHub API, biletleme, ağ çıkışı) — ajan varsayılanı → kullanıcı varsayılanı, konuşma başına bir geçersiz kılmayla. Yokluğuyla uygulanır: devre dışı bir yetenek, jetonun ya da çıkışın hiçbir zaman enjekte edilmemesi anlamına gelir.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Mode**: `chat`, `plan`, `review` veya `orchestrate`. **Alan başına** saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar. Composer yalnızca `chat`, `plan` ve `orchestrate` sunar; `chat` "Ajan" olarak etiketlenir.
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), `native` (macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap) veya `none`. Önyüklemede bir kez yoklanır; `native`, kullanılabilir olduğunda **ajan gönderimine uygulanır** ve Claude Code CLI’yi ile harness’ın `bash` aracını sarar. Windows’ta yerel bir arka uç yoktur ve Linux `bwrap` artı `socat` gerektirir; bu yüzden oradaki çalıştırmalar sarılmaz; `--sandbox off` bilinçli olarak vazgeçer.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/tr-TR/kilavuz/kavramlar/rigler/).
+**Rig**: Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine — kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajanın `browser_use` / `computer_use` / `mobile_use` / `ios_use` çağrıları tek bir varsayılan makineyi adresler. Bkz. [Rig’ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**Enclosure**: VM destekli rig’lerin daha güçlü yalıtım sınırı — bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır ve bu sınırı talep etmezler. Herhangi bir rig’i yönetmek `enclosureControl` koruma sınıfını kullanır.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.
 
-## Ports
+## Portlar
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Sandbox başlatması için kapsamlı, yetenekle kapılanmış kimlik bilgileri üretir ve sökme sırasında bunları iptal eder.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: Anlamsal arama için birim normlu metin gömme vektörleri üretir.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: Kategori/rota kapılamasına uyarak yerel masaüstü bildirimleri gösterir.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: Bir biletleme arka ucuna satıcıdan bağımsız sınır (create, get, list, update, transition, assign).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: Bir şablondan bir pipeline çalıştırması başlatır ve çağıranları somut motordan ayırır.
 
-## Domain services
+## Alan hizmetleri
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: Ajan çalıştırmalarını başlatır: yalıtılmış depoları hazırlar, istemleri kurar, çalıştırma günlükleri oluşturur ve canlı olay akışları döndürür.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: İyimser eşzamanlılık için bir mutasyon geçiş noktası ve çalışma alanı yalıtımı uygulaması olan saf alan bilet yaşam döngüsü motoru. Uyguladığı geçiş grafiği yalnızca ajanları ve otomasyonu bağlar; kullanıcı kaynaklı arayüz değişiklikleri `force: true` geçirir ve onu atlar. Bir ajan atayanı için hiçbir bilet göndericisi yoktur — gönderimin sahibi `AgentDispatchService`’tir ve bir bileti bir ajana atamak hiçbir çalıştırma başlatmaz. Bir bileti bir ekibe atamak istisnadır (`TeamRoutingService` lideri gönderir).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: Çalıştırma yürütmesini orkestre eder: çalıştırmaları başlatır, adımları zamanlar, durumu kalıcılaştırır, yönlendiricileri/birleşmeleri/başarısızlıkta devamı yönetir ve yeniden başlatmanın ardından uçuştaki çalıştırmaları sürdürür.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: Alan olaylarına abone olur ve etkin tetikleyiciler için eşleşen pipeline çalıştırmalarını otomatik olarak başlatır.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: Ajan rolü bellek izinlerini alanlar üzerinde çözer ve uygular.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: Yerleşik harness’ın jeton kullanımını models.dev kataloğundan bir `RunCost` olarak fiyatlandırır. Gönderim bu dökümü çalıştırma günlüğüne yazar.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: Ajan başına aylık harcamayı ve gönderim öncesi bir bloğu (`checkInvocationBlock`) hesaplar. Bu bloğa yalnızca kurtarma uzlaştırıcıları (`OrphanRunReaper`, `StrandedTicketReconciler`) başvurur; sıradan bir kullanıcı ya da ajan gönderimi asla.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: Her çalıştırmadan sonra ajan başına aylık harcamayı değerlendirir — yumuşak bir eşik bir uyarı olayı kaydeder; tükenme katı bir olay kaydeder ve ajanın yaşam döngüsünü `paused` durumuna çevirir.
 
-## Events
+## Olaylar
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: Özellikler arası iletişim için süreç içi yayın tabanlı publish/subscribe veri yolu. Olaylar tiplidir; aboneler `on<T>()` akışlarını tüketir.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: Temel arayüz. Her olayda `occurredAt` vardır. Temel kategoriler: çalışma alanı/ajan, PR/inceleme, mesajlaşma, biletleme, pipeline, toplantılar/takvim, kimlik, rig’ler, gözlemlenebilirlik.
 
-## Meetings and calendar
+## Toplantılar ve takvim
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Toplantı**: Yerel olarak kaydedilen ve yazıya dökülen bir toplantı oturumu. Mikrofonu ve sistem sesini yakalar, cihaz üzerinde seçilebilir bir ASR modeliyle (varsayılan olarak Parakeet TDT v3; Parakeet TDT v2, Whisper large-v3-turbo ve Whisper base.en alternatiflerdir) yazıya döker, konuşmacıları ayırır ve notlar, eylem öğeleri ve kararlar hâlinde özetler. Seçilen ASR modeli önyüklemede zorla kurulur ve kayıt işlemleri bir yeniden başlatmanın ardından devreye girer. Çalışma alanına özel; makinede kalır.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: Konuşmacı etiketli (`me`/`them`), bir diarizasyon etiketi ve milisaniye cinsinden ofsetler taşıyan, yazıya dökülmüş tek bir ses penceresi.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: Özet pipeline’ı tarafından çıkarılan ve ayrı satırlar olarak saklanan yapılandırılmış çıktılar. Eylem öğeleri bir bilete bağlanabilir.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür; bir Toplantı kaydedilmiş bir oturumdur. Bir `MeetingCalendarLink` ile bire bir bağlanır.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: Çalışma alanı ve e-posta başına bir bağlı Google hesabı. OAuth yenileme jetonları sunucu tarafında `<dataDir>/secrets.json` içinde `google_*` anahtarları olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; cihaz kodu akışı sunucuda tamamlanır. Bir `authExpiredAt` bayrağı yeniden bağlanma şeridini yönetir.
 
-## Architecture terms
+## Mimari terimler
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Clean Architecture**: Bağımlılık kuralı: Presentation → Application/Providers → Domain ← Infrastructure. Alanın sıfır altyapı içe aktarımı vardır.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**Portlar ve adaptörler**: Alan soyut arayüzleri (portlar) tanımlar; altyapı somut uygulamaları (adaptörler) sağlar. Kompozisyon kökü bunları bağlar.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**Paylaşılan çekirdek**: `core/domain/` altında 3+ özellik arasında paylaşılan varlıklar, değer nesneleri, portlar ve hizmetler.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**Özellik öncelikli**: Kod, teknik katmana göre değil, iş alanına (ajanlar, pipeline’lar, mesajlaşma) göre düzenlenir.
 
-## Multiplayer, identity and velocity
+## Çok oyunculu, kimlik ve hız
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Principal**: İnsanları ve ajanları tek aktör soyutlaması olarak birleştiren mühürlü bir değer — `UserPrincipal(userId)` veya `AgentPrincipal(agentId)`. Her ileti, bilet, inceleme, plan ve çalıştırma günlüğü bir Principal üzerinden atfedilir.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**User**: `global.db` içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Bir çalışma alanını oluşturan principal onun **sahibi** olur — aynı işlemde `Workspace.ownerUserId` üzerine ve sahip rolünde bir üyelik satırıyla damgalanır. Diğerleri davetle ya da SSO ile katılır.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: Bir User’ı bir Workspace’e bir rolle (`owner` / `admin` / `member` / `viewer` / `guest`) bağlayan bir üyelik satırı. **Erişim sınırı, bir eşleştirme anahtarı değil, üyeliktir.** Depo başına yetkiler, üyeliğin forge’dan daha fazla ayrıcalık kazanmasını engeller.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: Bir Principal için geçici farkındalık (durum, konum, imleç, yazıyor olma, bir ajanın canlı durumu ve çalışan maliyeti). Hiçbir zaman kalıcılaştırılmaz; sunucu merkezlidir; dağıtımdan önce depo yetkisiyle filtrelenir.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**Takip modu**: Bir avatarı tıklayın; siz harekete geçene kadar onun görüntüsünü takip edin, sonra ayrılın. Hem insanlar hem de ajanlar için çalışır ("bir ajanın çalışmasını izleyin").
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**Özerklik kadranı**: Alan başına ve ajan başına bir denetim — `propose-only` / `act-with-approval` / `act-freely` — eylem koruma deposu üzerinde adlandırılmış bir profil olarak uygulanır.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: 13 etki sınıfından oluşan kapalı bir küme (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına `allow` / `prompt` / `deny` kararını verir (alan > ajan > çalışma alanı > mod ön ayarı > yerleşik varsayılan).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **idempotency anahtarı**: Her mutasyon, istemci tarafından üretilen bir idempotency anahtarı taşır (UUIDv7, mantıksal eylem başına). Çalışma alanına özel defter, işleyici çalışmadan önce tekilleştirir; bir yeniden oynatma, bayt bayt aynı özgün sonucu döndürür. Yeniden bağlanmayı ve çok istemcili çalışmayı yapısı gereği güvenli kılar.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**“Needs me” gelen kutusu**: Tüm sütunları kapsayan bir kuyruk; katı bir kuralı vardır — bir öğe yalnızca bir şeyi _engelliyorsa_ (bir ajanı, bir birleştirmeyi, bir eşitlemeyi) ya da açıkça operatörü istiyorsa görünür.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: Etkileşimli planlama yüzeyi — adım başına maliyet, zaman ve riskle düzenlenebilir tipli DAG planları ve kısmi onay.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**Review compute**: Sunucu tarafı PR inceleme hesaplaması (graftan türetilen kohortlar, tipli diyagramlar, görsel diff’ler, API sözleşme diff’leri, çok eksenli kapılar), `review_studio.*` üzerinden sunulur ve İnceleme sekmesine katılır.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**Review space**: Bir PR’ın tek destek alanı (mode `review`, kind `pr`), idempotent biçimde oluşturulur ve PR’a bir `ReviewSpaceAssociation` ile bağlanır. Her inceleyici bulgularını oraya kaydeder; bulguları karşılaştırılabilir kılan da budur; yalıtılmış çalışma ağacında PR, head’inde checkout edilmiş olarak durur.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**Review node**: Bir YZ inceleme bulgusunun yapılandırılmış birimi: tür (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), P0–P3 önceliği, kategori/önem/emek üçlüsünden oluşan bir triyaj, bir dosya-ve-satır çapası, isteğe bağlı önerilen düzeltme ve bir güven puanı. `add_review_node` ile kaydedilir; karar düzyazıdan değil, düğümlerden hesaplanır.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Consensus-ready**: Yalnızca bir akran inceleyici bir bulguyu doğruladığında ulaşılan inceleme düğümü durumu — bir ajan kendi bulgusunu doğrulayamaz. İnceleme sekmesinin **GitHub'a yayınla** düğmesi kalan tüm açık bulguları (`selection: all_open`) gönderir; MCP aracı `publish_review_to_github` hâlâ varsayılan olarak yalnızca akran onaylı bulguları gönderir.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**Review level**: Hangi inceleyicilerin dağıtılacağını (yalnızca engineer; +qa+architect; +security+perf) ve eşik altı bulguların nerede görüntüleneceğini ayarlayan çalışma alanı politikası (`light`, `balanced`, `thorough`). Bir bulguyu asla silmez.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**Review axis**: İnceleme başına beş puanlama şeridinden biri: `correctness`, `security` ve `testGap` inceleyici bulgularından alınır; `visual` ve `apiContract` ise belirleyicidir. Kapılanan eksenler karara katılır ve onu yalnızca daha ağır yapabilir — `partial` ya da `unavailable` bir kapı, kararı geçirmek yerine askıda tutar.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**Review verdict**: `ship`, `hold` veya `block`. Güveni ≥ 0.7 olan herhangi bir P0 bulgusu block verir; diğer herhangi bir P0 ya da herhangi bir P1 hold verir; aksi hâlde ship. Kapılanan ve başarısız olan bir eksen block’u zorlar ve bulgular tarafından alt edilemez.
 
-## Fleet and evals
+## Filo ve eval’ler
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: Headless, saf Dart bir filo yürütücüsü ikilisi. Bir `cc_server` ile eşleşir, ana makine yeteneklerini bildirir, kiralanmış işleri çeker, yürütür ve süreç olaylarını geri akıtır. **Kalıcı durum tutmaz** — bir yetkili sunucu, N aptal uzuv.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: Yürütülebilir her şeyin tipli spesifikasyonu (ajan çalıştırması, pipeline adımı, kod indeksi, golden render, kıyaslama, eval partisi).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**Eval paketi**: Çalışma alanına özel bir değerlendirme tanımı (istem, hedef ajan ve mod, değerlendiriciler). Çalışma alanı oluşturulduğunda beş başlangıç paketi tohumlanır; Gözlemlenebilirlik → Kalite bunları listeler.
 
-## Deployment and clients
+## Dağıtım ve istemciler
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**İnce istemci mimarisi**: Hiçbir istemci veritabanını açmaz; headless bir `cc_server` süreci verinin sahibidir ve onu WebSocket RPC üzerinden sunar. Her istemci (masaüstü, web, telefon) o tek RPC bağlantısı üzerinden çizen bir istemcidir.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: Headless sunucu ikilisi (saf Dart, Flutter motoru yok). Drift/SQLite veritabanının sahibidir, WebSocket üzerinden repo-RPC sunar ve arka plan hizmetlerini (pipeline’lar, MCP, uzlaştırıcılar) çalıştırır.
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: Masaüstünün sunucusuna nasıl ulaştığı — `local` (bu makinede bir `cc_server` başlatır, varsayılan) veya `remote` (başka bir yerdekine bağlanır). Web istemcisi her zaman `remote`’tur.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: Her ince istemcinin sunucusuyla konuşmak için kullandığı, taşıma katmanından bağımsız JSON-RPC istemcisi — WSS, loopback ya da aracılı relay üzerinden.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**Çağrı başına çalışma alanı kapsamı**: Sunucu durumsuzdur — oturum başına **hiçbir** çalışma alanı bağlaması yoktur, bu yüzden tek bir sunucudaki birden çok istemci hiçbir zaman bir "geçerli çalışma alanını" paylaşmaz. Çalışma alanına kapsamlı her `repo/call` ve `sub/subscribe`, argümanlarında `workspace_id` taşımalıdır; eksik ya da kayıtsız bir kimlik, herhangi bir veritabanı açılmadan önce reddedilir. Erişim daha sonra oturumla değil, çalışma alanı üyeliği ve rolüyle kapılanır.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: Telefon ince istemcisi — varsayılan olarak reddeden bir araç politikasıyla filoyu aracılı relay üzerinden uzaktan kontrol eden bir Flutter web PWA’sı.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: Davetle kapılanan odalar barındıran durumsuz bir WebSocket relay broker’ı — yalnızca uçtan uca mühürlenmiş çerçeveleri ileten, hiçbir uygulama verisi tutmayan ve eşleştirme PSK’sını asla görmeyen aptal bir relay.
 
-## See also
+## Ayrıca bakınız
 
-- [Route map](/tr-TR/kilavuz/referans/rota-haritasi/)
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/)
-- [Workspaces](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
-- [Domain events](/tr-TR/kilavuz/referans/alan-olaylari/)
+- [Rota haritası](/tr-TR/kilavuz/referans/rota-haritasi/)
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/)
+- [Çalışma alanları](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+- [Alan olayları](/tr-TR/kilavuz/referans/alan-olaylari/)

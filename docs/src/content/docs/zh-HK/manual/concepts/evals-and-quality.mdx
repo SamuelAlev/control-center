@@ -1,33 +1,22 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: 評估與質素
+description: 評估套件、預置入每個工作區的入門套件，以及它們在可觀測性中的位置。
 slug: zh-HK/手冊/概念/評估與質素
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**評估套件**是一種以工作區為界的任務定義，用來針對某個代理執行：一段提示詞、一個目標代理與模式、可選的預備步驟、一個帶有固定 SHA 的可選夾具，以及一組評分器。評分器以確定性檢查為先；確定性檢查無法表達的部分，則交由按 LLM 評分標準判斷的評審處理。
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+建立工作區時會預置五個入門套件。它們涵蓋編排提案、能找出預置錯誤的審查、計劃模式維持唯讀、計劃模式產出計劃，以及工單往返。預置程序會監聽 `WorkspaceCreated`（`workspace.upsert` 或 `workspace.create`），略過已存在的名稱，亦不會回填較早的工作區。
 
-## Where they appear
+## 它們出現的位置
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**可觀測性 → 質素**（`/workspaces/<id>/observability`）會列出工作區內的每個套件。
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+透過 `evals.upsertSuite`、`evals.deleteSuite` 和 `evals.watchSuites` 來建立、列出、編輯和刪除套件。質素分頁就是這份清單，而這些操作就是編輯器。
 
-## Related concepts
+## 相關概念
 
-- [The agent model](/zh-HK/手冊/概念/代理模型/): the configuration a suite
-  pins
-- [Guardrails](/zh-HK/手冊/概念/護欄/): the autonomy dial
-- [Manage costs and budgets](/zh-HK/手冊/操作指南/管理成本/): spend recorded
-  alongside a run
+- [代理模型](/zh-HK/手冊/概念/代理模型/)：套件所固定的設定
+- [護欄](/zh-HK/手冊/概念/護欄/)：自主程度旋鈕
+- [管理成本與預算](/zh-HK/手冊/操作指南/管理成本/)：隨執行一併記錄的開支

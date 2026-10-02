@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Trimite agenți revizori
+description: Trimite agenți revizori specializați pe un PR din vederea PR-ului, dintr-un instrument MCP sau dintr-un pas de pipeline.
 slug: ro-RO/manual/ghiduri-practice/trimite-agenti-revizori
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Acest ghid îți arată cum să trimiți agenți revizori care să revizuiască pull request-uri.
 
-## From the PR view
+## Din vederea PR-ului
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Deschide PR-ul și mergi la tab-ul **Prezentare**
+2. Deschide meniul derulant ⋯ și alege **Întreabă AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Aceasta pornește pipeline-ul predefinit `pr_review`, care deschide spațiul de
+revizuire al PR-ului și trimite recenzenții pentru nivelul de revizuire al
+spațiului de lucru — trei implicit (agenții predefiniți **qa**, **architect** și
+**engineer**) — apoi îl pune pe agentul lider să consolideze. Pe această cale nu
+alegi rolurile. Pentru control asupra rolurilor care rulează și asupra
+fișierelor la care se uită fiecare, folosește instrumentul MCP sau un pas de
+pipeline de mai jos.
 
-## Via the `dispatch_reviewers` MCP tool
+## Prin instrumentul MCP `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Apelează-l din interiorul unui spațiu de revizuire existent:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,116 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` și `reviewers` sunt toate obligatorii. Fiecare
+specificație de recenzent ia un `role` plus un `scope` opțional de tip glob de
+fișiere și un `prompt_override` care înlocuiește instrucțiunea implicită. Un
+`concurrency` opțional (1–8) limitează trimiterile paralele; când este omis, se
+aplică setarea `review_concurrency` a spațiului de lucru (implicit 3, setată în
+Setări → Spațiu de lucru → General).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Instrumentul se întoarce imediat cu listele `dispatched` și `unmatched`. Fiecare
+recenzent trimis este adăugat în spațiu ca participant, anunțat printr-un mesaj
+de sistem și trimis cu instrucțiunea lui. Constatările ajung ca mesaje
+`review_node` în acel spațiu.
 
-## From a pipeline step
+## Dintr-un pas de pipeline
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Deschide **Setări → Spațiu de lucru → Șabloane pipeline**, deschide un șablon,
+apoi:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. Adaugă un nod **Reviewer (prompt)** din paletă
+2. Alege agentul de trimis și scrie promptul de recenzent, folosind substituenți
+   `{{key}}` pentru ieșirile din amonte (de exemplu `{{repo_local_path}}`,
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. Setează cheia de ieșire (implicit `reviewer_findings`) ca pașii din aval să
+   poată citi constatările
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Pasul trimite agentul și suspendă execuția până când rularea respectivă se
+încheie. Motorul colectează apoi payload-ul `submit_output` al rulării în starea
+pipeline-ului, sub cheia de ieșire a nodului. (Descrierea din paletă spune în
+continuare că pasul așteaptă un apel `complete_task` — acel instrument nu
+există; ignoră textul.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Ramifică în paralel conectând mai multe noduri de recenzent la același pas din
+amonte, apoi consolidează-le ieșirile cu un nod **Consolidate (join)**.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Editorul recablează terminalul ascuns către fiecare destinație accesibilă, așa
+că un nod pe care îl adaugi după pasul predefinit rulează totuși. Nodurile de
+ramificare conectate la același pas din amonte rulează în paralel.
 
-## Automatic dispatch on a new PR
+## Trimitere automată la un PR nou
 
-To have a review pipeline fire by itself:
+Pentru ca un pipeline de revizuire să pornească singur:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Deschide șablonul la **Setări → Spațiu de lucru → Șabloane pipeline**
+2. Trage **PR publicat** sau **PR extern deschis** din secțiunea **Declanșatori**
+   a bibliotecii de noduri pe canvas (sau alege-l din plăcuța fantomă
+   **Adaugă un declanșator**)
+3. Selectează nodul nou și activează **Activat** în inspectorul lui, apoi
+   activează șablonul
 
-Two events matter here and they are not interchangeable:
+Două evenimente contează aici și nu sunt interschimbabile:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| Eveniment              | Se declanșează când                                                                                             | Chei de payload                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | Un PR este deschis **prin Control Center** — suprafața de compunere sau un agent care apelează `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | Serviciul de interogare a PR-urilor găsește un PR deschis direct pe GitHub                                      | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+Un PR deschis pe github.com nu declanșează niciodată `PullRequestPublished`, așa
+că un șablon conectat doar la acel eveniment nu îl va vedea. Reține de asemenea
+că `PullRequestPublished` nu poartă niciun `pr_number` — un pas al cărui script
+sau prompt face referire la `{{pr_number}}` trebuie alimentat de
+`ExternalPrDetected` sau de o rulare manuală care îl furnizează.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Punct de verificare: după activare, deschide **Pipeline-uri** și confirmă că
+apare o rulare pentru următorul PR potrivit. Un șablon lăsat dezactivat face ca
+declanșatorul lui să tragă în gol — motorul respinge un șablon dezactivat și se
+întoarce fără să pornească vreo rulare.
 
-## How a role is matched to an agent
+## Cum este potrivit un rol cu un agent
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` punctează fiecare agent din spațiul de lucru față de fiecare
+etichetă de rol cerută, fără să țină cont de majuscule:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Potrivire                               | Punctaj |
+| --------------------------------------- | ------- |
+| Un skill care conține eticheta de rol   | +3      |
+| Un titlu care conține eticheta de rol   | +2      |
+| Un nume de agent care conține eticheta de rol | +1  |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Punctajele se acumulează și câștigă totalul cel mai mare (la egalitate, primul
+candidat găsit). Dacă niciun candidat nu punctează peste zero, specificația se
+întoarce în lista `unmatched` a instrumentului în loc să fie trimisă — așa că un
+rol pe care nu îl potrivește nimeni este raportat, niciodată omis în tăcere.
 
-## The review space
+## Spațiul de revizuire
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+Un PR are exact **un** spațiu de revizuire, nu unul per recenzent. Este creat
+idempotent de `pr.ensureSpace`, legat de PR printr-o `ReviewSpaceAssociation` și
+provisionat față de ref-ul de vârf al PR-ului. Fiecare recenzent trimis se
+alătură acelui spațiu și își publică acolo constatările `review_node`, ceea ce
+face constatările comparabile și îi permite agentului lider să ajungă la consens
+asupra lor.
 
-## Monitor the dispatch
+## Monitorizează trimiterea
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Fiecare recenzent trimis primește propriul `AgentRunLog`. Urmărește progresul în:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **Spațiul de revizuire**, unde constatările curg în timp real
+- Tab-ul **Revizuire** al PR-ului, care afișează bara de stare a revizuirii și
+  verdictul
+- **Observabilitate → Live** (`/workspaces/:id/observability`), lista de agenți
+  cu starea per rulare, timpul scurs în direct, un sertar de transcriere și un
+  control de oprire forțată. Nu are scurtătură de tastatură — ajungi la ea din
+  subsolul barei laterale.
 
-## Related guides
+## Ghiduri conexe
 
-- [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/)
-- [Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
+- [Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/)
+- [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
+- [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
 
-## Related concepts
+## Concepte conexe
 
-- [AI review](/ro-RO/manual/concepte/revizuire-ia/)
-- [Pipelines](/ro-RO/manual/concepte/pipeline-uri/)
+- [Revizuire IA](/ro-RO/manual/concepte/revizuire-ia/)
+- [Pipeline-uri](/ro-RO/manual/concepte/pipeline-uri/)

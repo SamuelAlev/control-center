@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: Bilet oluşturma ve yönetme
+description: Bilet oluşturun, bunları yaşam döngülerinde ilerletin, etiketleyip ilişkilendirin ve neyin kime ait olduğunu kaydedin.
 slug: tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+Bu kılavuz, biletlerin nasıl oluşturulacağını ve yönetileceğini gösterir.
 
-## Create a ticket
+## Bilet oluşturma
 
-### From the UI
+### Arayüzden
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. Çalışma alanı kenar çubuğunda **Biletler**'e tıklayın.
+2. **Yeni bilet**'e basın.
+3. Şunları doldurun:
+   - **Başlık** — kısa özet. Tek zorunlu alan budur.
+   - **Açıklama** — biçimlendirme araç çubuğuyla markdown.
+   - **Durum** — **Yapılacak** (varsayılan) veya **Backlog**. Başlamış ve
+     terminal durumlara yaşam döngüsü üzerinden ulaşılır, oluşturma anında değil.
+   - **Öncelik** — yok, acil, yüksek, orta veya düşük.
+   - **Atanan** — kendiniz veya çalışma alanındaki herhangi bir ajan.
+   - **Proje** — isteğe bağlı gruplama.
+4. **Oluştur**'a basın ya da hızlı giriş için iletişim penceresini açık tutmak
+   üzere önce **Daha fazla oluştur**'u açın.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+İletişim penceresinde sağlayıcı seçici yoktur. Bilet, çalışma alanının etkin
+bilet sağlayıcısına karşı oluşturulur.
 
-### From an agent
+### Bir ajandan
 
-Ask an agent in a space:
+Bir alandaki ajandan şunu isteyin:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> Yavaş bağlantılarda oturum açma zaman aşımı sorununu düzeltmek için bir bilet oluştur.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+Ajan, `create_ticket` MCP aracını çağırır. Bu araçtaki öncelik bir **tamsayıdır**,
+bir ad değil:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| Değer | Öncelik |
+| ----- | ------- |
+| `0`   | Yok     |
+| `1`   | Acil    |
+| `2`   | Yüksek  |
+| `3`   | Orta    |
+| `4`   | Düşük   |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+Yalnızca `workspace_id` ve `title` zorunludur; `description`, `priority`,
+`assignee` (bir ajan kimliği) ve `team_id` isteğe bağlıdır. Araç, bir sağlayıcı
+eşitleme yazımı olarak sınıflandırılır ve çalışmadan önce onayınızı ister.
 
-## Update ticket status
+## Bilet durumunu güncelleme
 
-Tickets follow this lifecycle:
+Biletler şu yaşam döngüsünü izler:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,128 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` ve `cancelled` terminaldir. `cancelled` durumuna terminal
+olmayan her durumdan ulaşılabilir. `done` ve `failed` durumlarına `inProgress`
+veya `inReview` üzerinden ulaşılır; `open` doğrudan `blocked` durumuna da
+geçebilir. Arayüzdeki durum seçici `failed` dışındaki her durumu listeler —
+ajanlar bunu `fail_ticket` ile işaretler.
 
-To change it, use any of:
+Değiştirmek için şunlardan herhangi birini kullanın:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- biletin özellikler bölmesindeki **Durum** satırı,
+- listede bir biletin sağ tık menüsündeki **Durum** alt menüsü,
+- birden çok bilet seçtikten sonra yüzen çubuktaki **Durum** çipi.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[Yaşam döngüsü grafiği sizi değil, ajanları bağlar]
+Arayüzden yapılan her durum değişikliği zorla geçirilir ve grafik tümüyle
+atlanır — bir bileti seçicinin listelediği her duruma taşıyabilirsiniz; `done`,
+`failed` veya `cancelled` bir bileti yeniden açmak dahil. Seçici hedef olarak
+`failed` sunmaz. Yukarıdaki diyagram ajanları ve otomasyonu yönetir: bir MCP
+aracının ya da bir uzlaştırıcının denediği geçersiz bir geçiş günlüğe yazılır ve
+yok sayılır, uygulanmaz.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/).
+Durum değişiklikleri, pipeline'ları tetikleyebilen alan olayları
+(`TicketStatusChanged`, `TicketCompleted` ve diğerleri) yayımlar. Bkz.
+[Pipeline tetikleyicileri kurma](/tr-TR/kilavuz/nasil-yapilir/pipeline-tetikleyicileri/).
 
-## Assign a ticket
+## Bilet atama
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. Bileti açın.
+2. Özellikler bölmesinde **Atanan** alanını ayarlayın — kendiniz, başka bir
+   çalışma alanı üyesi ya da bir ajan.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)).
+:::caution[Atama hiçbir işi başlatmaz]
+Atama sahipliği kaydeder, fazlasını değil. Hiçbir alan oluşturmaz, hiçbir durumu
+değiştirmez ve hiçbir ajanı göndermez — `TicketAssigned`, arkasında hiçbir
+gönderici olmayan saf bir denetim sinyalidir. Bir ajanı çalıştırmak için ona bir
+alanda ileti gönderin (bkz.
+[Bir ajanla sohbet etme](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+Tek istisna: `TicketAssigned`, bir pipeline tetikleyicisi bağlayabileceğiniz bir
+olay türüdür; böylece kendi şablonunuz bir atamaya tepki verebilir.
 :::
 
-## Add labels
+## Etiket ekleme
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+Etiketler tek bir biletten değil, bilet listesinden toplu olarak uygulanır —
+özellikler bölmesinde etiket denetimi yoktur.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. Bilet listesindeki bir satırın üzerine gelin ve onay kutusunu işaretleyin.
+   İhtiyacınız kadarını işaretleyin; herhangi bir şey seçildiğinde yüzen bir
+   çubuk belirir.
+2. Bu çubukta **Etiketler** çipini açın.
+3. Bir etiket seçin. Seçili olup bu etiketi barındırmayan her bilete eklenir;
+   var olan etiketler asla silinmez. **Etiketleri temizle** hepsini kaldırır.
+   Seçici, çalışma alanındaki bir bilette hâlihazırda bulunan etiketleri
+   listeler. Ajanlar `update_ticket` ya da `tickets.patch` ile yeni bir ad
+   ekleyebilir.
 
-## Link tickets
+## Biletleri ilişkilendirme
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+İlişkiler, özellikler bölmesindeki biletin **İlişkiler** kartında ya da listenin
+sağ tık menüsünde **İlişkilendir**'in arkasında bulunur.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. Bileti açın ve **İlişkiler** kartını bulun.
+2. Ekleme denetimine basın ve ilişkiyi seçin:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| İlişki          | Anlamı                                  |
+| --------------- | --------------------------------------- |
+| **Alt konusu…** | Bu biletin üst öğesi diğeridir          |
+| **Üst konusu…** | Diğer bilet bunun alt öğesidir          |
+| **Engelleyen…** | Bu bilet diğeri tarafından engelleniyor |
+| **Engelliyor…** | Bu bilet diğerini engelliyor            |
+| **İlişkili…**   | Simetrik, yön belirtmez                 |
+| **Kopyası…**    | Bu bilet diğerinin kopyasıdır           |
 
-3. Pick the target ticket.
+3. Hedef bileti seçin.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**Kopyaları** kartta görünür ama seçicide görünmez — **Kopyası** ilişkisinin
+tersidir ve diğer biletten ayarlanır. Listelenen her ilişki, bağlı bileti açmak
+için tıklanabilir ve üzerine gelindiğinde kaldırılabilir.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+Üst ve alt konu ilişkileri, bağlantı satırları olarak değil biletin kendisinde
+saklanır; bu yüzden bir üst öğenin silinmesi alt öğelerine zincirleme yansır
+(aşağıya bakın), engelleme ve ilişkili bağlantılar ise yansımaz.
 
-## Add collaborators
+## İşbirlikçi ekleme
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+İşbirlikçiler bilet üzerindeki bir kadrodur — kimin, hangi sıfatla dahil olduğu.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. Bileti açın.
+2. **İşbirlikçi ekle** kartındaki kişi artı denetimine basın.
+3. Bir ajan seçin.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+Üç rol şunlardır: **assignee**, **collaborator** (varsayılan) ve **reviewer**.
+Arayüz seçicisi yalnızca çalışma alanı ajanlarını listeler ve her zaman
+varsayılan rolü yazar; insanlar satır olarak görünebilir ama o menüde sunulmaz.
+MCP `add_ticket_collaborator` aracı bir `role` kabul eder.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/tr-TR/kilavuz/nasil-yapilir/alanlar/).
+İşbirlikçi eklemek bir satır yazar ve hiçbir alan olayı yayımlamaz; hiçbir alan
+erişimi vermez. Bir ajanı bir konuşmaya koymak için onu bunun yerine alan
+başlığından katılımcı olarak ekleyin — bkz.
+[Alanlar](/tr-TR/kilavuz/nasil-yapilir/alanlar/).
 
-## Delete a ticket
+## Bilet silme
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+Özellikler bölmesinin altındaki **Bileti sil**'i, sağ tık menüsünü ya da birden
+çok bilet seçtikten sonra yüzen çubuğun silme eylemini kullanın.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[Silme yalnızca yereldir]
+Harici bir takip sisteminden gelen bir bilet orada silinmez — hiçbir sağlayıcı
+bunu desteklemez — bu yüzden bir sonraki eşitlemede yeniden ortaya çıkabilir.
+Silme ayrıca zincirleme yansır: biletin işbirlikçileri ve varsa alt biletleri de
+onunla birlikte gider.
 :::
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Delegate work to agents](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
-- [Organize work with projects](/tr-TR/kilavuz/nasil-yapilir/projeler/)
-- [Chat with an agent](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
-- [Ticket lifecycle reference](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/)
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [İşleri projelerle düzenleme](/tr-TR/kilavuz/nasil-yapilir/projeler/)
+- [Bir ajanla sohbet etme](/tr-TR/kilavuz/nasil-yapilir/ajanla-sohbet/)
+- [Bilet yaşam döngüsü referansı](/tr-TR/kilavuz/referans/bilet-yasam-dongusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Tickets](/tr-TR/kilavuz/kavramlar/biletler/)
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/)
+- [Biletler](/tr-TR/kilavuz/kavramlar/biletler/)
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/)

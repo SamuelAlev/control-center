@@ -1,249 +1,109 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Sohbet köprüleri
+description: Slack entegrasyonunun neden dinlemek yerine dışarı bağlandığı, sohbetten gelen bir iletiyi gerçekte neyin yetkilendirdiği ve tek bir köprünün her sohbet ürününe nasıl hizmet ettiği.
 slug: tr-TR/kilavuz/kavramlar/sohbet-kopruleri
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+Bir sohbet köprüsü, harici bir sohbet ürününü — bugün Slack’i — bir Control Center çalışma alanına birinci sınıf bir giriş yolu haline getirir. Botu etiketleyin, bir ajan uyanır; Slack dizisinde yanıtlayın, konuşma kaldığı yerden sürer; bir slash komutu yazın, bir bilet açılır. Altında, masaüstü uygulamasının kullandığı alanların, transkriptlerin, biletlerin ve atıfların aynısı vardır. Sohbet, çalışma alanı üzerinde bir _yüzeydir_, onun bir kopyası değil.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Ürünle birlikte gelen tek sağlayıcı Slack’tir.** Ürünün hiçbir yerinde bir Discord, Telegram, Teams veya Matrix uygulaması yoktur. Özellik bilinçli olarak sağlayıcıdan bağımsız yazılmıştır — ikinci bir ürün eklemek bir enum değeri, bir adaptör ve bir eklentidir — ama bugün "sohbet" Slack demektir.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Bu işi iki yüzey kapsar ve bunlar farklı kişilere aittir. Bir çalışma alanını Slack’e bağlamak ve botu özelleştirmek, Ayarlar → Çalışma alanı → Genel altındaki **yönetici** eylemleridir. Kendi sohbet hesabınızı Control Center kimliğinize bağlamak ise Ayarlar → Çalışma alanı → Profil ve kimlik altındaki **üye** eylemidir.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Tüm özelliği üç karar şekillendirir: **bağlantının hangi yönde kurulduğu**, **dışarıdan gelen bir iletiyi neyin yetkilendirdiği** ve **ürüne özgü bilginin nerede yaşamasına izin verildiği**.
 
-## Outbound by design
+## Tasarım gereği dışa dönük
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Köprü, sağlayıcıyı asla dinlemez. Slack’e **Socket Mode** üzerinden ulaşılır: sunucu Slack’ten bir soket URL’si ister ve dışarı bağlanır, ardından etiketlemeleri, DM’leri ve slash komutlarını bu bağlantı üzerinden alır.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Asıl mesele bu sonuçtur. NAT arkasındaki bir dizüstü, alan adı olmayan bir ev sunucusu, ağlar arasında gezen bir makine — hepsi köprüyü gelen port olmadan, tünel olmadan, TLS sertifikası olmadan ve değiştiğinde döndürülecek bir herkese açık URL olmadan çalıştırabilir. Güvence altına alınacak bir webhook uç noktası yoktur, çünkü ortada bir webhook uç noktası yoktur. Control Center uygulama tanımını oluştururken Socket Mode’u dayatır ve varsa istek URL’sini kaldırır; çünkü ikisi için yapılandırılmış bir uygulama, yarı yarıya çalışan bir uygulama olurdu.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Bunun bedeli, canlı tutulması gereken bir bağlantıdır ve bu sunucunun işidir: yeniden bağlanma, 30 saniyeyle sınırlanmış, jitter eklenmiş üstel geri çekilmedir; sağlayıcının başlattığı bir soket rotasyonu, bu geri çekilmeyi artırmadan yeniden bağlanır ve _reddedilen bir kimlik bilgisi_ nihaidir — iptal edilmiş bir token’ı sonsuza dek yeniden denemek yalnızca bir hız sınırı kazandırır; bu yüzden köprü durur ve ayarlarda sağlayıcının kendi hatasını birebir bildirirken yeni token’ları bekler.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+Sohbet uygulaması olmayan bir çalışma alanının maliyeti hiç yoktur: soket yok, zamanlayıcı yok, trafik yok. Üstelik her şey sunucunun hazır bildiriminden _sonra_ başlar; çünkü yanıt vermekte yavaş kalan bir sohbet uygulaması açılışı asla geciktirmemelidir.
 
-## Membership authorizes, not token possession
+## Yetkilendiren üyeliktir, token sahipliği değil
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Uygulamayı kuran kişi, iletiyi gönderen kişi değildir. Bu yüzden her gelen olay, herhangi bir şey olmadan önce bir **Principal**’a çözümlenir ve bir açıklamayla birlikte reddeder:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Bağlı olmayan bir sohbet hesabına**, yazdığı Slack dizisinde nasıl bağlanacağı söylenir.
+- **Bağlı bir hesabın kullanıcısı bu çalışma alanının üyesi değilse**, bir yöneticiden davet istemesi söylenir.
+- **Rolü salt okunur olan bir üyeye** (`viewer`, `guest`), rolünün iş başlatamayacağı söylenir.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/)
-for the membership model this leans on.
+Bunların hiçbiri devam etmez. Bir sohbet iletisi, onu göndermeyen birine asla atfedilmez — denetim kaydını, principal başına hız sınırlarını ve bilet bildirenleri dürüst tutan şey budur. Bu sayfanın dayandığı üyelik modeli için bkz. [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/).
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Bağlama, bir kimlik çözümlemesidir, bir erişim izni **değildir**. Üyelik her olayda yeniden denetlenir; böylece sonradan çıkarılmış birine ait bir bağlantı, eski ayrıcalıklarına değil bir redde çözümlenir. Bağlantı kurmanın iki yolu vardır: üyenin sohbette yazdığı, kısa ömürlü ve tek kullanımlık bir kod ya da sağlayıcının _doğrulanmış_ e-postası üzerinden otomatik eşleşme — ve e-posta yolu, eşleşen kullanıcının zaten üye olmasını gerektirir; dolayısıyla adresi sunucuda bulunan bir yabancı hiçbir şeye bağlanmaz.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Kodlar bilinçli olarak bellekte, 15 dakikalık bir yaşam süresiyle tutulur. Birini kalıcı hale getirmek, yok olmaya yazgılı bir şey için kalıcı, kimlik bilgisi biçiminde bir satır yaratırdı ve bir sunucu yeniden başlatmasının bekleyen her kodu geçersiz kılması bir gerileme değil, doğru davranıştır — üye yeniden "hesabımı bağla" seçeneğine basar.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Bir ret, **iletinin açtığı Slack dizisinde**, gerçek bir yanıt olarak verilir. Diziye verilen bir yanıt, yanıtladığı iletiye rozet ekler, ihtiyaç duyan tek kişiye ulaşır ve yine de "bağlı değilsiniz" uyarısını kanalın kendisinden uzak tutar. İleti göndermek ayrıca her sağlayıcının sahip olduğu tek yetenektir; böylece açıklama, uygulamanın taşımayabileceği bir özelliğe asla bağlı kalmaz.
 
-## Provenance and the echo problem
+## Köken ve yankı sorunu
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+Her iki yöne de aynalayan bir köprü, iki yönü birbirinden ayıran bir şey olmadıkça döngüye girer. Köprünün içeri getirdiği her ileti `metadata['chat']` ile damgalanır — sağlayıcı, ekip, konuşma, dizi, ileti ve gönderen. Dışa dönük aynalama, bu damgayı taşıyan her iletiyi atlar.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Çift yönlü aynamayı güvenli kılan tek kural budur: Control Center’da yazılan bir insan iletisi, yazarın adı öne eklenerek bağlı diziye aktarılır; sohbetten _gelen_ bir ileti ise girdiği yerde durur.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Dışarı geçen şey bilinçli olarak dardır. Ajanın **yanıtı**, sıradan sohbet metni olarak aktarılır. Kısa bir düşünce, kartın `Thinking…` satırında görünebilir. Araç çıktısı bir diff duvarıdır ve Control Center’da kalır; kısaltılmış bir yanıtın işaret ettiği yer de orasıdır.
 
-## A card reports the work; the text is still the message
+## Kart işi bildirir; ileti yine metindir
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Sağlayıcının bunları görüntülediği yerlerde, bir tur **tek bir görev kartı** taşır; kart, tur sürdüğü sürece yerinde düzenlenir ve açıkladığı yanıtın üstünde durur.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Kart, ezilmiş bir paragraf değil, gruplanmış tek bir plandır. Slack aynı görevdeki `details` ile `output` değerlerini birleştirir; bu yüzden bir satırın ayrıntıları bir kez gönderilir (`Thinking…` satırındaki düşünce) ve `output` asla akış halinde gönderilmez. Kurulum, başlığı değiştirilen tek bir satırdır (`Working on it…`, `Cloning …`). Akıl yürütme bir `Thinking…` satırı ekler. Her araç kendi satırıdır (`Read lib/main.dart`). Yanıt, kartın altındaki sıradan metindir — Slack’in plan görünümü onu görevlerin içine karışmış bir parçadan değil, sonradan eklenen bir markdown bloğundan okur. Başka hiçbir şey yoktur: araç çıktısı yoktur ve yalnızca kısa bir izin listesinden gelen bir araç argümanı vardır; çünkü bilinmeyen bir aracın argümanları koca bir dosya gövdesi olabilir ve bir satır tek satırdır.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Kart, turdan _önceki_ bekleyişi de kapsar. İlk etiketleme konuşmayı oluşturur ve bunu yapmak, ajanın çalışacağı her depoyu klonlar — gerçek bir depoda bu, ajana henüz hiçbir şey sorulmamışken geçen dakikalar demektir ve diziyi izleyene bot isteği yok saymış gibi görünür. Bu yüzden kart, etiketleme kabul edildiği anda açılır (`Working on it…`) ve ardından bu kurulum satırı, masaüstünün gösterdiği aynı sözcüklerle güncellenir — `Cloning acme/widgets…`, `Setting up Reviewer…`, `Starting the agent…` — sonra ajan akıl yürütmeye başlar başlamaz bir `Thinking…` satırı, ardından her araç için bir satır gelir. Tek kart, tek ileti: "sizi duydum"dan, altındaki sıradan metin olarak yanıta kadar. Kurulum yalnızca sohbette birinin beklediği yerde bildirilir: uygulamada hazırlanan bir konuşma ya da sunucu açılışında kaldığı yerden sürdürülen başıboş bir konuşma, hiç kart olmadan hazırlanır.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Kart, sohbetin okuyucuya veremeyeceği tek şeyi taşır: yanıtın arkasındaki konuşmaya giden bir **View in Control Center** bağlantısı. Sohbet ürünleri bir bağlantıda `http(s)` dışında hiçbir şey kabul etmez; bu yüzden düğme, bu sunucunun sunduğu küçük bir sayfayı işaret eder ve o sayfa tarayıcıyı masaüstü uygulamasının `control-center://` bağlantısına yönlendirir. O sayfa hiçbir şey okumaz ve hiçbir şeyi çözümlemez — URL’sindeki kimlikler yalnızca bir derin bağlantıya kopyalanır, başka hiçbir yere — ve erişilebilir herkese açık URL’si olmayan bir sunucu, bozuk bir kart yerine düğmesiz bir kart üretir.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Kartlar da her şey gibi bir yetenektir. Kartı olmayan bir sağlayıcı tıpkı eskisi gibi davranır, yalnızca metin; çağrı anında kartı reddeden bir sağlayıcı ise akışını korur: yanıt her zaman onu anlatan karttan üstündür. Akış tamamen kapalıysa, tamamlanan kart bunun yerine gönderilen tek iletiye biner. Açılan bir bilet de aynı muameleyi görür — `/cc ticket` onayı, var oluş sebebi yeni oluşturulan bilete giden bağlantı olan tamamlanmış bir karttır.
 
-## Capabilities are negotiated, then remembered
+## Yetenekler pazarlık edilir, sonra hatırlanır
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Sohbet ürünleri, neleri görüntüleyebildikleri konusunda farklılaşır; bu yüzden köprü en zengin yüzeye göre yazılmıştır — bir dizi içinde canlı olarak büyüyen bir yanıt, geçici bir "düşünüyor…" durumu, başlıklı bir dizi, bir slash komutuna geçici bir yanıt — ve yetenekleri tek tek azaltır. Bunların hiçbirine sahip olmayan bir sağlayıcı yine de çalışır; yanıtlar tek bir ileti olarak gelir.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Bir yeteneği bildirmek, onu vaat etmek değildir. Slack’in akış halindeki yanıtları ücretli bir plan özelliği gerektirir ve Slack yalnızca çağrı anında reddeder. Kalıcı olarak işaretlenen bir ret, **bağlantının tüm ömrü boyunca** hatırlanır: köprü sormayı bırakır ve o andan sonra yanıtları bütün halinde gönderir ve ayarlar bunu açıkça yazar; çünkü "yanıtlarım artık akış halinde gelmiyor" sorusu bir günlük okumadan yanıtlanabilmelidir. Slack bir görev kartını reddederse kartlar da aynı şekilde bırakılır.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Her sınır röleye değil sağlayıcıya aittir: ileti üst sınırı, akış parçası üst sınırı ve bir akışın dizi çapası gerektirip gerektirmediği adaptör tarafından bildirilir ve uzun bir yanıt, sözcüğün ortasından değil, paragraf, satır ya da sözcük sınırından bölünür.
 
-## One bridge, one adapter per product
+## Tek köprü, ürün başına bir adaptör
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Ürüne özgü her şey bir portun arkasında yaşar. Genel çekirdek markdown, sohbet konuşmaları, sohbet dizileri ve üyeleri bilir; Slack zarf yapıları, `mrkdwn` ya da gateway intent’leri hakkında hiçbir şey bilmez. Bunu işler kılan üç parça vardır:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Adaptör** tek bir ürünü normalleştirir: taşımasını, API çağrılarını, metin kodekini ve zarf tuhaflıklarını. Slack’inki öğreticidir — bir kanal etiketlemesi iki kez gelir (`app_mention` _olarak ve_ `message` olarak) ve çoğu ileti alt türü yeni istekler değil, süslemedir. İkisi de adaptörde çözümlenir; böylece çekirdek, Slack’in çift teslim ettiğini asla öğrenmez.
+- **Tanımlayıcı**, sağlayıcının genel görünümüdür: hangi kimlik bilgilerine ihtiyaç duyduğu, biçimlerinin ne olduğu, hangi URL’lerin kullanıcının bunları bulmasına yardımcı olduğu, neler yapabildiği ve uygulamasının buradan oluşturulup düzenlenebilip düzenlenemeyeceği. Ayarlar kartı, bağlantı iletişim kutusu ve argüman doğrulaması bunun üzerinden _üretilir_ — istemci geriye bir sağlayıcı ve alan kimliğine göre anahtarlanmış bir eşleme gönderir.
+- **Eklenti**, sunucu tarafındaki bileşimdir: kimlik bilgilerinin nasıl doğrulanmış bir bağlantıya dönüştüğü, bir adaptörün nasıl kurulduğu ve sağlayıcı tarafındaki uygulamanın nasıl yönetildiği.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Yani bir ürün eklemek, bir enum değeri, bir adaptör ve bir eklentidir. Yeni bir RPC işlemi yok, şema değişikliği yok, istemci değişikliği yok — ve istemci dürüst kalır; çünkü hiç duymadığı bir alan bile sunucunun sağladığı etiketle görüntülenir.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+İki ayrıntı, soyutlamanın yukarı doğru sızmasını engeller. Bir sağlayıcının API’si olmayan uygulama yönetimi adımları (bir token üret, uygulamayı yükle, izin değişikliğinden sonra yeniden yükle) **kendi bağlantılarına sahip adlandırılmış adımlar** olarak döndürülür; böylece kurulumu tamamlama ekranı, hangi sağlayıcı olduğunu bilmeden bunları gösterir. Ve köprünün yazdığı her talimat, sağlayıcıyı ve uygulamanın gerçekte kullandığı komutu adlandırır; böylece adı değişmiş bir komut ya da ikinci bir sağlayıcı, yeni bir metin gerekmeden doğru okunur.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[İzin değişikliğinden sonra yeniden yükle]
+Botun adını, açıklamasını veya simgesini düzenlemek hemen etkili olur. Bir **izin** değişikliği ise yeniden yükleme gerektirir: Slack yeni manifesti uygular ama verilmiş izni kurulu olduğu haliyle korur. Düzenleme, Slack’in "Reinstall to Workspace" sayfasına bağlantı içeren bir kalan adım döndürür.
 :::
 
-## Where credentials live
+## Kimlik bilgileri nerede yaşar
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+Bir çalışma alanının sohbet token’ları, o çalışma alanının **kendi dizininde, veritabanının yanında** durur — `<dataDir>/<workspaceId>/chat_credentials/<provider>.json` yolunda düz JSON olarak; veritabanında değil ve bilinçli olarak işletim sistemi anahtar zincirinde de değil. İki sonucun sonradan gözden kaçması kolaydır: bir çalışma alanını silmek dizinin bağlantısını keser ve token’ları da onunla gider; bir çalışma alanını dışa aktarmak veya yedeklemek `workspace.db` dosyasını kopyalar, böylece başkasına verilen bir çalışma alanı içinde canlı bot token’ları taşımaz. Dosya, sunucu makinesinin dosya sistemi güven sınırını devralır — veri dizinine okuma erişimi olan her şey bir bot token’ını okuyabilir; bu da veritabanlarının arkasında durduğu sınırın aynısıdır.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+Sağlayıcı başına tek dosya, atomik olarak ve yalnızca sahibinin erişimiyle yazılır: iptal edilen bir uygulama tek bir dosyanın bağlantısı kesilerek silinir ve bozuk bir dosya, tüm sağlayıcılar yerine yalnızca birine mal olur. Kimlik bilgileri bağlantı işlemiyle _içeri_ girer ve asla geri çıkmaz — durum okumaları yalnızca bağlantı meta verileriyle yanıt verir.
 
-## What is deliberately not offered
+## Bilinçli olarak sunulmayanlar
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Yapısal uygulama ayarları.** Taşıma, kapsamlar ve olay abonelikleri dayatılır, açığa çıkarılmaz. Bir ayarlar ekranından sessizliğe ayarlanabilen bir uygulama, bir özellik değil bir destek talebidir.
+- **Konuşma artı slash komutları.** Slack yüzeyi iletiler, dizi yanıtları ve slash komutlarıdır.
+- **İkinci bir doğruluk kaynağı.** Sohbet, işin saklandığı bir yer değildir. Slack dizisi bir alandır, yanıt bir transkripttir, bilet bir bilettir — hepsi çalışma alanında ve her istemciden erişilebilir.
 
-## See also
+## Ayrıca bakınız
 
-- [Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): why links and credentials are per workspace
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): what wakes when a mention arrives
-- [Tickets and delegation](/tr-TR/kilavuz/kavramlar/biletler/): what `/cc ticket` files
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu/)
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
-- [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
-- [Customize the chat bot](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
-- [PR conversations](/tr-TR/kilavuz/kavramlar/pr-konusmalari/): the same three decisions, made for a forge
+- [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): köprünün içinden çözümlediği Principal’lar ve roller
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): bağlantıların ve kimlik bilgilerinin neden çalışma alanı başına olduğu
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir etiketleme geldiğinde neyin uyandığı
+- [Biletler ve devretme](/tr-TR/kilavuz/kavramlar/biletler/): `/cc ticket` neyi kaydeder
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/): köprünün sunucu ile istemciler arasında nerede durduğu
+- [Slack’i çalışma alanınıza bağlayın](/tr-TR/kilavuz/ogreticiler/ilk-sohbet-koprusu/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
+- [Sohbet botunu özelleştirme](/tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme/)
+- [PR konuşmaları](/tr-TR/kilavuz/kavramlar/pr-konusmalari/): bir forge için verilen aynı üç karar

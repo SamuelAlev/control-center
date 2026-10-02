@@ -1,97 +1,103 @@
 ---
-title: Give an agent a machine to test on
-description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
+title: Дати агенту машину для тестів
+description: Дайте агенту одноразовий браузер, робочий стіл, емулятор Android або симулятор iOS — спостерігайте наживо й перехоплюйте керування, коли захочете.
 slug: uk-UA/керівництво/практичні-посібники/використовувати-rigs
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
-A **rig** is a throwaway machine an agent opens when it needs to actually try
-something: load a page, click through a desktop app, tap around a phone. You
-can watch it work in real time, and take the controls whenever you want.
+**Rig** — це одноразова машина, яку агент відкриває, коли йому треба справді
+щось спробувати: завантажити сторінку, поклацати в застосунку для робочого
+столу, потицяти в телефоні. Ви можете спостерігати за його роботою в
+реальному часі й будь-коли перехопити керування.
 
-Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
-gated networks. Android and iOS are host-managed emulators: their device state
-is disposable, but their networking follows the server host.
+Ізольовані rig термінала, браузера й робочого столу — це ВМ з одноразовими
+дисками й мережами за шлюзом. Android і iOS — керовані хостом емулятори:
+їхній стан пристрою одноразовий, але мережа прямує за хостом сервера.
 
-## Set it up once
+## Налаштуйте один раз
 
-Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are five user-facing surfaces; desktop and mobile
-surfaces need host setup:
+Rig працюють на машині, де розміщено `cc_server`, — саме на тій машині, а не
+на тій, на яку ви дивитеся. Є п’ять поверхонь, видимих користувачеві;
+поверхням робочого столу та мобільним потрібне налаштування хоста:
 
-| Surface | Runs on | Setup |
+| Поверхня | Де працює | Налаштування |
 |---|---|---|
-| **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
-| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
+| **Terminal (VM)** | мікроВМ, що завантажує закріплений образ Ubuntu | Нічого — образ отримують автоматично під час першого використання |
+| **Browser (VM)** | мікроВМ, що завантажує закріплений образ Debian, а Chromium, Firefox або WebKit встановлюється під час першого використання | Нічого — так само |
+| **Комп’ютер (VM)** | QEMU з образом робочого столу Linux, що містить Chromium, Firefox, WebKit і базовий набір CLI рівня GitHub-hosted runner | Установіть QEMU (`brew install qemu`), а тоді **Імпортувати** образ робочого столу в **Налаштування → Сервер → Rigs** |
+| **Android** | емулятор Android від Google | Установіть Android SDK, створіть AVD і запустіть його (нижче) |
+| **Симулятор iOS** | CoreSimulator на сервері Mac | Установіть Xcode і потрібне середовище виконання iOS, а тоді встановіть міст автоматизації в **Налаштування → Сервер → Rigs** |
 
-The terminal and browser machines boot from digest-pinned images: the exact
-bytes are named in advance, fetched once on first boot, and cached — after the
-first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Rigs** shows what your server can boot
-and every machine running right now.
+Машини термінала й браузера завантажуються з образів, закріплених за
+дайджестом: точні байти названо заздалегідь, один раз отримано під час
+першого запуску й закешовано — після першого запуску кожного різновиду
+наступні машини взагалі пропускають завантаження й піднімаються за секунди.
+**Налаштування → Сервер → Rigs** показує, що може запустити ваш сервер, і
+кожну машину, що працює просто зараз.
 
-An installed desktop image stays manageable from the same page: **Import**
-replaces it with a newer qcow2, and **Delete** removes it so you can install a
-fresh build.
+Установленим образом робочого столу й далі можна керувати з тієї ж сторінки:
+**Імпортувати** замінює його новішим qcow2, а **Видалити** прибирає його, щоб
+ви могли встановити свіжу збірку.
 
-### Mobile devices are set up differently
+### Мобільні пристрої налаштовують інакше
 
-There is no image of ours for Android or iOS, and that is not an omission.
-Android system images come from Google's SDK; iOS runtimes come from Xcode.
-For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Rigs page then
-reports Android as available.
+Для Android чи iOS немає наших образів, і це не недогляд. Системні образи
+Android постачає SDK від Google; середовища виконання iOS — Xcode. Для
+Android установіть Android Studio (або інструменти SDK командного рядка),
+додайте віртуальний пристрій у **Device Manager** і запустіть його. Тоді
+сторінка Rigs повідомить, що Android доступний.
 
-It also tells you exactly which step you are missing — no SDK, no emulator, no
-virtual device, or a device that simply is not running — because those have
-four different fixes and only one of them is a download. If you start
-`cc_server` from a shell that cannot see the SDK, export it:
+Вона також точно підказує, якого кроку вам бракує — немає SDK, немає
+емулятора, немає віртуального пристрою або пристрій просто не запущено, — бо
+кожен із цих чотирьох випадків має власне виправлення, і лише одне з них
+полягає в завантаженні. Якщо ви запускаєте `cc_server` з оболонки, яка не
+бачить SDK, експортуйте його:
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
-For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Rigs** and press
-**Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
-automation store. No simulator boots during setup.
+Для iOS сам сервер має працювати на macOS з установленими Xcode і середовищем
+виконання Симулятора iOS. Відкрийте **Налаштування → Сервер → Rigs** і
+натисніть **Установити міст автоматизації iOS**. Сервер отримує артефакт
+WebDriverAgent, закріплений за контрольною сумою, перевіряє його й
+установлює у сховище автоматизації, що належить серверу. Під час
+налаштування жоден симулятор не запускається.
 
-## Open a machine
+## Відкрийте машину
 
-Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu, under **Machines**:
+Машини живуть як **вкладки** — поруч із чатом і діфом, у просторі чи на
+сторінці PR, у тому самому меню `+`, під пунктом **Машини**:
 
-- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
-- **Chromium**, **Firefox** or **WebKit** — a browser
-- **Android** — the running Android emulator
-- **iOS Simulator** — a disposable simulator created for this conversation
+- **Комп’ютер** — робочий стіл Linux із Chromium, Firefox і WebKit
+- **Chromium**, **Firefox** або **WebKit** — браузер
+- **Android** — запущений емулятор Android
+- **Симулятор iOS** — одноразовий симулятор, створений для цієї розмови
 
-Pick one and press **Start the machine**. The tab says which stage the boot is
-in ("Starting the microVM", "Waiting for the guest to come up") rather than
-just spinning.
+Виберіть одну й натисніть **Запустити машину**. Вкладка показує, на якому
+етапі запуск («Запуск мікроВМ», «Очікування, поки гість підніметься»), а не
+просто крутить індикатор.
 
-The tab is scoped to the conversation, and so is the agent tool. A Chromium,
-Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
-Simulator and `ios_use` address the same default machine. Additional UI slots
-are separate comparison machines; agent tools always use the default.
+Вкладка прив’язана до розмови, як і інструмент агента. Вкладка Chromium,
+Firefox або WebKit і `browser_use`, Android і `mobile_use`, або Симулятор iOS
+і `ios_use` вказують на ту саму типову машину. Додаткові слоти інтерфейсу —
+це окремі машини для порівняння; інструменти агента завжди використовують
+типову.
 
-To build, install and start a Flutter app on Android:
+Щоб зібрати, установити й запустити застосунок Flutter на Android:
 
 ```sh
 fvm flutter build apk --debug
 ```
 
-Then call `mobile_use` with `install_apk` and
-`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
-Android package name. `ui_dump`, screenshots and input drive the same device
-shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
-`open_url`, and argv-shaped `shell` calls cover the rest of the development
-cycle without invoking a shell on the server host.
+А тоді викличте `mobile_use` з `install_apk` і
+`build/app/outputs/flutter-apk/app-debug.apk`, далі `start_app` і назву
+пакета Android. `ui_dump`, знімки екрана й введення керують тим самим
+пристроєм, що показано у вкладці для людини. `stop_app`, `clear_app_data`,
+`uninstall_app`, `open_url` і виклики `shell` у формі argv покривають решту
+циклу розробки, не запускаючи оболонку на хості сервера.
 
-To build, install and start a Flutter app on iOS Simulator:
+Щоб зібрати, установити й запустити застосунок Flutter у Симуляторі iOS:
 
 ```sh
 fvm flutter build ios --simulator --debug
@@ -99,204 +105,220 @@ fvm flutter build ios --simulator --debug
   build/ios/iphonesimulator/Runner.app/Info.plist
 ```
 
-Then call `ios_use` with `install_app` and the `.app` directory, followed by
-`start_app` and the bundle identifier printed by `plutil`.
-The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
-argv-shaped `spawn` action for simulator-local diagnostics.
+А тоді викличте `ios_use` з `install_app` і каталогом `.app`, далі `start_app`
+та ідентифікатор пакета, який виведе `plutil`. Інструмент iOS також надає
+`stop_app`, `uninstall_app`, `open_url` і дію `spawn` у формі argv для
+локальної діагностики симулятора.
 
-Desktop and browser displays resize to the panel. iOS keeps the simulator's
-fixed point size and letterboxes it. Every surface still has two independent
-lanes: the agent gets small, cheap screenshots while you get the live view.
-Switching tabs stops the human stream so a background machine costs no display
-bandwidth.
+Дисплеї робочого столу й браузера змінюють розмір під панель. iOS зберігає
+фіксований розмір симулятора в пунктах і додає чорні поля. Кожна поверхня все
+одно має два незалежні канали: агент отримує маленькі дешеві знімки екрана, а
+ви — живий перегляд. Перемикання вкладок зупиняє канал для людини, тож фонова
+машина не споживає пропускну здатність дисплея.
 
-A rig tab does not start a machine by itself, including during layout restore.
-That rule prevents an app launch from unexpectedly booting VMs or creating
-simulator devices.
+Вкладка rig сама не запускає машину, зокрема під час відновлення розкладки.
+Це правило не дає запуску застосунку несподівано вмикати ВМ чи створювати
+пристрої симуляторів.
 
-## Drive the machine
+## Керуйте машиною
 
-The canvas is yours to type and click into whenever nobody else holds
-exclusive control — or when you do. While you hold that lock, the status tag
-reads **You have control**, the agent can still take screenshots, and the
-server refuses its mutating actions at the single chokepoint every action
-passes through. Everything you do is recorded against your name.
+Полотно доступне для введення тексту й клацань щоразу, коли ексклюзивне
+керування не тримає ніхто інший — або коли його тримаєте ви. Поки цей замок у
+вас, статусний ярлик показує **Керування у вас**, агент усе ще може робити
+знімки екрана, а сервер відхиляє його змінювальні дії в єдиній точці, через
+яку проходить кожна дія. Усе, що ви робите, записується під вашим ім’ям.
 
-Press **Stop the machine** when you are done.
+Коли закінчите, натисніть **Зупинити машину**.
 
-Control is exclusive on purpose: two actors typing into one machine produces
-input neither of them meant.
+Керування ексклюзивне навмисно: коли двоє суб’єктів вводять щось в одну
+машину, виходить введення, якого не мав на увазі жоден із них.
 
-## Move things in and out
+## Переміщайте дані всередину й назовні
 
-Copy and paste work in both directions across the rig canvas, and so does
-dragging files.
+Копіювання й вставлення працюють в обидва боки через полотно rig, як і
+перетягування файлів.
 
-**Copy and paste.** Press the copy chord over the canvas and whatever the
-machine copied — text, an image, a list of files — lands on your clipboard.
-Paste sends yours the other way and presses paste inside the machine. On macOS
-the chord is ⌘C/⌘V; ⌃C still reaches a guest shell as an interrupt. On Windows
-and Linux use ⌃C/⌃V — the guest receives the same keystroke it would have
-anyway, so ⌃C in a guest terminal still interrupts and your own clipboard is
-left alone.
+**Копіювання й вставлення.** Натисніть сполучення для копіювання над
+полотном, і те, що скопіювала машина — текст, зображення, список файлів, —
+потрапить у ваш буфер обміну. Вставлення надсилає ваш вміст у зворотному
+напрямку й натискає «вставити» всередині машини. У macOS сполучення —
+⌘C/⌘V; ⌃C і далі доходить до оболонки гостя як переривання. У Windows і Linux
+використовуйте ⌃C/⌃V — гість отримує те саме натискання, яке отримав би й
+так, тож ⌃C у гостьовому терміналі й далі перериває роботу, а ваш власний
+буфер обміну залишається недоторканим.
 
-Nothing syncs in the background. A password you copy on your own machine does
-not arrive inside a VM because a timer fired; it crosses when you paste.
+Нічого не синхронізується у фоні. Пароль, скопійований на вашій машині, не
+потрапляє всередину ВМ через те, що спрацював таймер; він перетинає межу
+тоді, коли ви вставляєте.
 
-Paste into a rig is allowed by default. Copy out of a rig prompts first — a
-ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
-Clipboard access**. The two directions are independent, and they follow you,
-not the workspace.
+Вставлення в rig дозволене за замовчуванням. Копіювання з rig спершу запитує
+підтвердження — дозвіл на десять хвилин або **Завжди дозволяти** в
+**Налаштування → Сервер → Rigs → Доступ до буфера обміну**. Ці два напрямки
+незалежні й супроводжують вас, а не робочий простір.
 
-**Drag files in.** Drop them anywhere on the canvas.
+**Перетягування файлів усередину.** Кидайте їх будь-де на полотні.
 
-- On the **Browser (VM)**, the page receives a *real* drop at the point you let
-  go, so an upload zone behaves exactly as it would with a local file.
-- On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
-  the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
-  running a privileged daemon inside the VM, which rigs deliberately do not have
-  — so the toast tells you where the files went rather than pretending a drop
-  happened.
-- On a **terminal**, the file is copied in and its path is typed at the prompt,
-  ready to pass to a command. Pasting an *image* into a terminal does the same
-  thing: it is saved in the machine and you get the path.
+- У **Browser (VM)** сторінка отримує *справжнє* перетягування в тій точці,
+  де ви відпустили, тож зона завантаження поводиться точно так, як із
+  локальним файлом.
+- У **Комп’ютер (VM)** файли потрапляють у `~/Drops`, а їхні шляхи — у буфер
+  обміну машини, тож ⌃V вставляє їх у файловий менеджер чи поле завантаження.
+  Хост не може синтезувати перетягування в довільний застосунок Linux, не
+  запустивши привілейований демон усередині ВМ, якого rig навмисно не мають,
+  — тож спливаюче повідомлення каже, куди поділися файли, а не вдає, ніби
+  перетягування відбулося.
+- У **терміналі** файл копіюють усередину, а його шлях вводять у запрошенні,
+  готовий передати команді. Вставлення *зображення* в термінал робить те
+  саме: його зберігають у машині, а ви отримуєте шлях.
 
-**Drag files out** works from the Computer (VM). Start dragging a file inside
-the machine, carry the pointer out of the canvas, and it becomes a real drag on
-your desktop — drop it in Finder or Explorer. Copying files in the machine's
-file manager and pasting on your side works too. The Browser (VM) does not
-offer this: a headless browser has no drag payload to read, and guessing from
-the page's text selection would hijack ordinary clicks.
+**Перетягування файлів назовні** працює з Комп’ютер (VM). Почніть перетягувати
+файл усередині машини, виведіть вказівник за межі полотна — і воно стане
+справжнім перетягуванням на вашому робочому столі: киньте його у Finder чи
+Explorer. Копіювання файлів у файловому менеджері машини й вставлення на
+вашому боці теж працює. У **Browser (VM)** цього немає: у безголового
+браузера немає вмісту перетягування, який можна прочитати, а вгадування за
+виділеним текстом сторінки перехоплювало б звичайні клацання.
 
 :::note
-The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
-**Import** on the installed image to replace it.
+Комп’ютер (VM) потребує образу, зібраного після появи підтримки буфера обміну.
+Якщо ви імпортували свій раніше, перезберіть його за допомогою
+`scripts/rigs/build_image.sh`, а тоді скористайтеся **Імпортувати** для
+встановленого образу, щоб замінити його.
 :::
 
-## Terminals inside a rig
+## Термінали всередині rig
 
-The terminals in a space or on a PR page can run inside a rig instead of on
-the server's own machine. When they do, the panel shows an **Enclosed VM** badge.
+Термінали в просторі чи на сторінці PR можуть працювати всередині rig, а не на
+власній машині сервера. Коли так, панель показує значок **Ізольована VM**.
 
-What changes:
+Що змінюється:
 
-- Nothing you run reaches the host. A `rm -rf` in there costs you the rig.
-- The network is deny-by-default. Only hosts on the rig's allowlist are
-  reachable, and everything goes through a gate that enforces it.
-- `git push` still works. The rig has no stored credential; it asks the server
-  for a short-lived one per operation, and that token is revoked when the rig
-  closes.
+- Ніщо з того, що ви запускаєте, не дістається хоста. `rm -rf` там коштує вам
+  rig.
+- Мережа заборонена за замовчуванням. Доступні лише хости зі списку
+  дозволених rig, і все проходить через шлюз, який це забезпечує.
+- `git push` усе ще працює. У rig немає збережених облікових даних; для кожної
+  операції він просить у сервера короткочасні, і цей токен відкликають, коли
+  rig закривається.
 
-What to know:
+Що варто знати:
 
-- **A restored enclosed terminal waits for you.** Like a rig tab, a `microvm`
-  terminal that comes back with your layout shows an **Open the shell** button
-  rather than booting its VM at launch. A host-shell terminal costs a process;
-  an enclosed one costs a machine.
-- **Files dropped on the terminal are typed, not opened.** Drop a CSV on an
-  enclosed terminal and it is copied into the machine and its guest path
-  appears at the prompt — the host path would be a command that fails there.
-- **The copy in the rig is a copy.** Your worktree on the host stays the source
-  of truth. Commits you make inside a rig are carried back into
-  `refs/rigs/<id>/*` when you ask — they never move your branch or touch your
-  working tree.
-- **Host-target work still runs on the host.** A Linux guest cannot build for
-  macOS or run `xcodebuild`. Pick the native backend explicitly for that; the app
-  will ask you to confirm rather than switching quietly.
+- **Відновлений ізольований термінал чекає на вас.** Як і вкладка rig,
+  термінал `microvm`, що повертається з вашою розкладкою, показує кнопку
+  **Відкрити shell**, а не запускає свою ВМ під час старту. Термінал в
+  оболонці хоста коштує процес; ізольований — машину.
+- **Файли, кинуті на термінал, вводяться, а не відкриваються.** Киньте CSV на
+  ізольований термінал — його скопіюють у машину, а його гостьовий шлях
+  з’явиться в запрошенні; шлях хоста був би командою, яка там не спрацює.
+- **Копія в rig — це копія.** Ваше робоче дерево на хості залишається
+  джерелом істини. Коміти, зроблені всередині rig, переносяться назад у
+  `refs/rigs/<id>/*`, коли ви попросите, — вони ніколи не пересувають вашу
+  гілку й не чіпають робоче дерево.
+- **Робота під хост усе ще виконується на хості.** Гість Linux не може
+  збирати для macOS чи запускати `xcodebuild`. Для цього явно виберіть
+  нативний бекенд; застосунок попросить вас підтвердити, а не перемкнеться
+  тихо.
 
-## Ports
+## Порти
 
-Run a dev server in the Terminal (VM) — `pnpm dev` on port 3000, say — and
-within a few seconds the plug icon in the terminal's corner lights up: the
-port is forwarded to `localhost:3000` on your machine, reachable at
-`localhost:3000` inside the Browser (VM), shareable on your network, and
-nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
-sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from a terminal](/uk-UA/керівництво/практичні-посібники/проброс-портів/).
+Запустіть dev-сервер у Terminal (VM) — скажімо, `pnpm dev` на порту 3000 — і
+за кілька секунд іконка вилки в куті термінала засвітиться: порт
+переадресовується на `localhost:3000` на вашій машині, доступний за
+`localhost:3000` усередині Browser (VM), доступний для спільного використання
+у вашій мережі й отримує ім’я `https://myapp.test`. Увесь цей процес —
+автопереадресація, спільний доступ у локальній мережі, dev-домени з HTTPS —
+описано в окремому посібнику:
+[Пробросити порти з термінала](/uk-UA/керівництво/практичні-посібники/проброс-портів/).
 
-## Custom images
+## Власні образи
 
-A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
-the default image with the toolchain your project needs so every terminal
-starts ready, or reuse an image your team already publishes.
+Робочий простір може вказати для Terminal (VM) і Browser (VM) власні образи —
+у **Налаштування → Сервер → Rigs → Власні образи (цей робочий простір)**.
+Типове застосування: доповнити типовий образ інструментарієм, потрібним
+вашому проєкту, щоб кожен термінал стартував готовим, або повторно
+використати образ, який ваша команда вже публікує.
 
-The machine still boots inside the same enclosure: same egress gate, same
-credential broker, same lifecycle. Only workspace admins can change the
-setting, new machines pick it up (running ones keep theirs), and the reference
-must be a registry image — local paths are refused.
+Машина все одно запускається в тому самому ізольованому середовищі: той самий
+шлюз виходу, той самий брокер облікових даних, той самий життєвий цикл.
+Змінювати це налаштування можуть лише адміністратори робочого простору, нові
+машини його підхоплюють (уже запущені зберігають свій), а посилання має
+вказувати на образ із реєстру — локальні шляхи відхиляються.
 
-What an image must provide:
+Що має надавати образ:
 
-- **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
-  and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically, along
-  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
-  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
-  are not preinstalled). Guest port `7911` is reserved for the port
-  forwarder.
-- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
-  `chromium` binary. The server starts Chromium itself as
-  `chromium --headless=new` and relays DevTools from guest `9223` onto
-  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
-  `FROM chromedp/headless-shell` — that binary has no audio. The override
-  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
-  pinned Debian image. Guest ports `9222`/`9223` are reserved.
+- **Terminal (VM)** — образ Linux із `bash`. Йому також потрібні `git`, `curl`
+  і `socat` — або встановлені заздалегідь, або такі, що їх можна встановити
+  під час першого запуску (підійде будь-який образ на основі Debian/Ubuntu:
+  їх установлюють автоматично, разом із набором CLI у стилі GitHub-hosted
+  runner: компілятори, Python 3, `jq`, інструменти для архівів, `rsync`.
+  Мовні середовища виконання на кшталт Node/Go/Java та Docker не встановлено
+  заздалегідь). Гостьовий порт `7911` зарезервовано для переадресації портів.
+- **Browser (VM)** — образ Debian/Ubuntu з `bash` і `socat`, а також бінарним
+  файлом `chromium`. Сервер сам запускає Chromium як
+  `chromium --headless=new` і передає DevTools із гостьового `9223` на
+  `9222`. PulseAudio та ffmpeg установлюють під час першого запуску. Не
+  збирайте `FROM chromedp/headless-shell` — у цього бінарного файлу немає
+  звуку. Заміна стосується лише rig Chromium; Firefox і WebKit її ігнорують і
+  завантажують закріплений образ Debian. Гостьові порти `9222`/`9223`
+  зарезервовано.
 
-Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
-cannot change under you, and host it on Docker Hub or GitHub Container
-Registry — those registries' download hosts are admitted through the egress
-gate automatically; others may need their content delivery hosts reachable to
-pull.
+Дві поради: закріпіть посилання за дайджестом (`@sha256:…`), щоб байти не
+могли змінитися під вами, і розмістіть його на Docker Hub або GitHub
+Container Registry — хости завантаження цих реєстрів допускаються через шлюз
+виходу автоматично; іншим може знадобитися, щоб їхні хости доставки вмісту
+були доступні для завантаження.
 
-## When a rig goes away
+## Коли rig зникає
 
-Rigs are meant to be temporary:
+Rig задумані як тимчасові:
 
-- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
-  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
-  terminal waits 45 minutes. After twice the idle window, it closes.
-- **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
-  is doing.
-- **Memory** — if the server needs room for a new rig it closes the
-  least-recently-used one. A rig somebody is driving, watching, or has a terminal
-  open in is never taken.
+- **Простій** — після ~15 хвилин без жодної активності rig браузера, робочого
+  столу чи мобільний переходить у режим паркування (заморожений, прокидається
+  миттєво з наступною дією). Ізольований термінал чекає 45 хвилин. Після
+  подвійного вікна простою він закривається.
+- **Обмеження часу** — кожен rig має жорсткий строк життя, який не може
+  продовжити, хоч би що він робив.
+- **Пам’ять** — якщо серверу потрібне місце для нового rig, він закриває той,
+  що використовувався найдавніше. Rig, яким хтось керує, за яким спостерігає
+  або в якому відкрито термінал, ніколи не забирають.
 
-When an enclosed rig closes, its disk is discarded. Closing an Android rig
-detaches from the host emulator — it does not delete it. An iOS rig deletes
-the CoreSimulator device it created. Carry anything you want to keep back first.
+Коли ізольований rig закривається, його диск відкидається. Закриття rig
+Android від’єднується від емулятора на хості — він його не видаляє. Rig iOS
+видаляє створений ним пристрій CoreSimulator. Спершу перенесіть назад усе, що
+хочете зберегти.
 
-## What a rig can reach
+## До чого rig має доступ
 
-Enclosed terminal, browser and desktop rigs default to a deny-by-default
-egress gate: you grant hosts explicitly, and the guest's only route is a gate
-that enforces that list. A browser rig also admits the product site
-(`usectrl.dev`) out of the box. The credential broker uses the same list.
+Ізольовані rig термінала, браузера й робочого столу типово мають шлюз виходу,
+заборонений за замовчуванням: ви надаєте хости явно, і єдиний шлях для гостя —
+шлюз, який забезпечує цей список. Rig браузера також одразу допускає сайт
+продукту (`usectrl.dev`). Брокер облікових даних використовує той самий
+список.
 
-Two honest caveats:
+Дві чесні застороги:
 
-- **Mobile networking follows the host.** Android's emulator and Apple's
-  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
-  offers a network-bypass control because the host-managed network is already
-  unrestricted.
-- **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
-  and view dumps come back to the agent wrapped in markers that say "this is data,
-  not instructions". A page that tries to give your agent orders reads as a quoted
-  string.
+- **Мобільна мережа прямує за хостом.** Емулятор Android і CoreSimulator від
+  Apple не стоять за шлюзом виходу ізольованого середовища. Жодна з мобільних
+  вкладок не пропонує елемента керування для обходу мережі, бо керована
+  хостом мережа вже необмежена.
+- **Усе, що rig читає, — ненадійне.** Текст сторінки, DOM, дерева доступності
+  та дампи подання повертаються агенту загорнутими в маркери, які кажуть «це
+  дані, а не інструкції». Сторінка, яка намагається віддавати вашому агенту
+  накази, читається як рядок у лапках.
 
-You can see everything running, and stop any of it, under **Settings → Server →
-Rigs**.
+Побачити все, що працює, і зупинити будь-що з цього можна в
+**Налаштування → Сервер → Rigs**.
 
-## Related
+## Пов’язане
 
-- [Rigs and enclosures](/uk-UA/керівництво/поняття/rigs/) — the model behind all of
-  this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from a terminal](/uk-UA/керівництво/практичні-посібники/проброс-портів/) — reach
-  a dev server from anywhere it matters
-- [Rigs reference](/uk-UA/керівництво/довідка/rigs/) — every surface, verb, port and
-  default in one place
-- [Configure guardrails](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/) — `Drive an
-  enclosure (rig)` is an action class you can set to allow, ask-first or deny,
-  per workspace, agent or space. Read-only modes deny it outright.
+- [Rigs та ізольовані середовища](/uk-UA/керівництво/поняття/rigs/) — модель,
+  що стоїть за всім цим: чому ВМ, два канали відображення, брокер облікових
+  даних, життєвий цикл
+- [Пробросити порти з термінала](/uk-UA/керівництво/практичні-посібники/проброс-портів/) —
+  дістатися dev-сервера звідки завгодно, де це важливо
+- [Довідка з rigs](/uk-UA/керівництво/довідка/rigs/) — кожна поверхня, дія,
+  порт і типове значення в одному місці
+- [Налаштувати обмеження](/uk-UA/керівництво/практичні-посібники/налаштувати-обмеження/) — `Drive an
+  enclosure (rig)` — це клас дій, який можна налаштувати на дозвіл, «спочатку
+  запитати» чи заборону для робочого простору, агента або простору. Режими
+  лише для читання забороняють його цілком.

@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Lägg till repos i en arbetsyta
+description: Registrera Git-utcheckningar i en arbetsyta så att agenter kan arbeta med dem.
 slug: sv-SE/handbok/how-to-guider/lagg-till-repos
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Den här guiden visar hur du registrerar en Git-utcheckning i en arbetsyta, indexerar om den och tar bort den igen.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Repos är **knutna till arbetsytan**. Det finns inget globalt register och inget länkningssteg: att lägga till ett repo och att placera det i en arbetsyta är samma handling. Samma utcheckning som registreras i två arbetsytor blir två oberoende rader med två olika id:n — mellan arbetsytor är ett repos identitet dess filsökväg, aldrig dess id.
 
-## Before you start
+## Innan du börjar
 
-A folder can only be registered if all three of these hold:
+En mapp kan bara registreras om alla tre av följande villkor är uppfyllda:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Den ligger inuti ett **Git-worktree**.
+2. Det worktreet har en **`origin`-remote**.
+3. `origin`-remoten pekar på en **forge som stöds**: github.com, gitlab.com eller bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Allt annat avvisas vid registreringen med ett uttryckligt meddelande: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." eller "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Det finns inget läge som bara är lokalt.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Forgen läses från remoten och lagras på repot — du väljer den aldrig själv. En arbetsyta kan innehålla repos från alla tre samtidigt, och var och en kontaktas via sitt eget API med sin egen autentiseringsuppgift. GitLabs nästlade namnrymder bevaras, så `gitlab.com/group/subgroup/project` registreras med ägaren `group/subgroup` och namnet `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Mappen måste också ligga på den maskin som kör `cc_server`, inuti en av serverns `--repo-roots`-kataloger. Den tillåtelselistan har som standard hemkatalogen för serverns användare, och att bläddra ovanför en rot avvisas.
 
-## Register a checkout
+## Registrera en utcheckning
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Öppna **Inställningar → Arbetsyta → Arkiv** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Klicka på **Lägg till arkiv**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Dialogen är en navigerbar utforskare över **serverns** filsystem, inte ditt eget. Flödet är detsamma på dator, webb och telefon, eftersom en inbyggd mappväljare skulle välja en mapp på fel maskin.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Navigera inom serverns konfigurerade rötter. Mappar som är Git-utcheckningar markeras.
+4. Kryssa i hur många som helst av dem. Markeringen finns kvar medan du navigerar, så du kan samla utcheckningar från flera mappar.
+5. Registrera dem i en och samma sats.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Ett misslyckat val tar aldrig bort resten av satsen — du får de id:n som skapades plus ett fel per sökväg för var och en som avvisades. Om du registrerar en sökväg som redan finns i den här arbetsytan får du tillbaka det befintliga repot i stället för att skapa en dubblett.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Varje registrerat repo visas i listan med sitt `owner/name`, ett märke som anger forgen och dess sökväg på servern. GitHub-repos visar dessutom ägarens avatar; de andra forges har ingen gissningsbar URL för ägaravatar, så de faller tillbaka på initialer.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Forgemärket spelar roll i en blandad arbetsyta: två repos kan båda heta `acme/web` på olika forges, och de beter sig olika — vad en granskning kan göra, och vart en länk leder.
 
-## What happens next
+## Vad som händer sedan
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Registreringen utlöser en `RepoAdded`-händelse som är knuten till den här arbetsytan, vilket startar pipelinen `index_code` för den utcheckningen. Det är vad som fyller kodgrafen, så att sökning och påverkansanalys har något att svara med.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/sv-SE/handbok/how-to-guider/sok-kod/).
+Bara filer vars språk har en medföljande grammatik indexeras (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB och Ada). Se [Sök kod med kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/).
 
-## Re-index a repo
+## Indexera om ett repo
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Varje rad har en knapp för **Indexera kod**. Klicka på den för att köra indexeraren igen för den utcheckningen; medan den körs blir knappen en förloppsvisning som visar antalet klara filer av totalt antal, med en avbryt-kontroll. När den är klar övergår den till en bock med antalet symboler, eller en varning om körningen misslyckades.
 
-## Reorder repos
+## Ändra ordning på repos
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Dra i handtaget på en rad. Ordningen du ställer in är den ordning som varje repolista i appen läser ut.
 
-## Fix the GitHub link
+## Åtgärda GitHub-länken
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Länkikonen på en rad öppnar en redigerare för repots GitHub-ägare och reponamn — användbart när remoten har bytt namn eller flyttats.
 
-## Remove a repo
+## Ta bort ett repo
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Öppna **Inställningar → Arbetsyta → Arkiv**.
+2. Klicka på papperskorgsikonen på raden.
+3. Bekräfta "Ta bort arkiv från arbetsytan?".
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Dialogen säger vad den gör: "_name_ tas bort från den här arbetsytan. De lokala filerna på disk rörs inte."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Borttagningen tar bort reporaden från den här arbetsytan och kaskaderar bort dess rader i kodgrafen — symboler, kanter, filer och indexkontrollpunkter — plus varje repobehörighet per medlem på den, dess yta-repo-kopplingar och dess poster för isolerade utcheckningar. Samma utcheckning som är registrerad i en annan arbetsyta är en oberoende rad och påverkas inte. De worktrees på disk som posterna pekade på rivs inte ner av borttagningen.
 
-## Related guides
+## Relaterade guider
 
-- [Search code with the code graph](/sv-SE/handbok/how-to-guider/sok-kod/)
-- [Run agents in parallel](/sv-SE/handbok/how-to-guider/parallella-agenter/)
-- [Set up GitHub integration](/sv-SE/handbok/how-to-guider/github-integration/)
-- [Your first workspace](/sv-SE/handbok/guider/forsta-arbetsyta/)
+- [Sök kod med kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/)
+- [Kör agenter parallellt](/sv-SE/handbok/how-to-guider/parallella-agenter/)
+- [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
+- [Din första arbetsyta](/sv-SE/handbok/guider/forsta-arbetsyta/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/)
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/)

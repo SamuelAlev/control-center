@@ -2,6 +2,7 @@
 title: Give an agent a machine to test on
 description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
 slug: en-GB/manual/guides/use-rigs
+sourceHash: 8bc366a72438ac92dec11bb868b81b55dc252335
 ---
 
 A **rig** is a throwaway machine an agent opens when it needs to actually try
@@ -56,7 +57,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
 runtime installed. Open **Settings → Server → Rigs** and press
 **Install iOS automation bridge**. The server fetches the checksum-pinned
-WebDriverAgent artifact, verifies it, and installs it into the server-owned
+WebDriverAgent artefact, verifies it, and installs it into the server-owned
 automation store. No simulator boots during setup.
 
 ## Open a machine
@@ -154,7 +155,7 @@ not the workspace.
   go, so an upload zone behaves exactly as it would with a local file.
 - On the **Computer (VM)**, the files land in `~/Drops` and their paths go on
   the machine's clipboard, so ⌃V pastes them into a file manager or an upload
-  field. A host cannot synthesize a drag into an arbitrary Linux app without
+  field. A host cannot synthesise a drag into an arbitrary Linux app without
   running a privileged daemon inside the VM, which rigs deliberately do not have
   — so the toast tells you where the files went rather than pretending a drop
   happened.

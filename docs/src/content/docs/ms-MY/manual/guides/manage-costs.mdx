@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Urus kos
+description: Lihat apa yang dibelanjakan oleh ejen anda, hadkan larian autonomi dan kurangkan penggunaan token.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-kos
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Panduan ini menunjukkan cara melihat kos larian ejen dan cara menghadkan larian autonomi.
 
-## How costs are recorded
+## Bagaimana kos direkodkan
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Setiap larian ejen menulis log larian yang membawa token input, token output, token penaakulan, token bacaan cache dan token penulisan cache, anggaran kos dalam sen serta kos mana-mana subejen yang dilahirkannya.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Harga datang daripada katalog models.dev, yang digunakan hanya untuk memperkayakan senarai model dengan harga dan tetingkap konteks — tidak pernah sebagai sumber id model. Model yang tidak dapat dihargakan oleh katalog merekodkan **$0**, dan larian berkos sifar dikecualikan daripada ringkasan **Penggunaan & kos**. Oleh itu, model Ollama tempatan tidak menunjukkan sebarang perbelanjaan, walaupun bilangan tokennya masih direkodkan. Pelan kadar tetap (kimi-code, langganan Claude) hanya sama apabila katalog tiada harga untuk model yang disajikan; jika ada, larian itu tetap dianggarkan pada kadar tersebut. Dalam rantaian sandaran, kos larian dikira berdasarkan model yang benar-benar menyajikannya, bukan model yang diminta.
 
-## See what you are spending
+## Lihat apa yang anda belanjakan
 
-### Observability → Insights
+### Kebolehcerapan → Wawasan
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Capainya daripada pengaki bar sisi → **Kebolehcerapan**. Tab **Penggunaan** terbuka dahulu (jumlah token seumur hayat); bertukar kepada **Wawasan** — tab kedua — untuk permukaan kos utama:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- Pemilih julat masa: 24 jam lalu, 7 hari lalu, 30 hari lalu, atau sepanjang masa
+- Penapis bermuka atas ejen, model, status dan peranan, sebagai cip yang boleh dibuang
+- Jalur KPI: jumlah larian, jumlah kos, kadar ralat, kadar cache, token sesaat, purata kependaman dan masa ke token pertama, setiap satu dengan perubahan berbanding tempoh sebelumnya (tersembunyi pada "Sepanjang masa")
+- Carta aktiviti dan kos, serta pecahan **kos mengikut peranan** yang membahagikan perbelanjaan antara ejen utama, subejennya dan penasihatnya
+- Jadual mengikut ejen yang diisih mengikut kos, sepuluh teratas dengan togol tunjuk semua. Mengetik satu baris menapis setiap permukaan lain kepada ejen itu
+- Log larian terperinci, yang menyandarkan laci transkrip bagi larian yang dipilih
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note["Sepanjang masa" bukan sepanjang masa]
+Suapan larian melanggan 2000 log larian terbaharu merentas setiap ruang kerja, kemudian menapisnya kepada ruang kerja yang aktif. Pada pelayan berbilang ruang kerja yang sibuk, sejarah lama bagi ruang kerja yang senyap tercicir daripada tetingkap itu.
 :::
 
-### Settings → Server → Model providers
+### Tetapan → Pelayan → Penyedia model
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+Kad **Penggunaan & kos** pada halaman ini menunjukkan perbelanjaan yang diperhatikan bagi tujuh hari lalu sebagai satu angka dolar, dengan pecahan mengikut penyedia dan, apabila penyedia menerbitkannya, masa sehingga tetingkap kuota seterusnya ditetapkan semula.
 
-### A single agent's runs
+### Larian satu ejen
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Tetapan → Ruang kerja → Ejen** → pilih ejen → **Log** menyenaraikan lariannya dengan status, tempoh, masa mula dan masa selesai, PID dan penyesuai. Tab ini **tidak** menunjukkan kos — gunakan jadual mengikut ejen dalam Kebolehcerapan → Wawasan untuk itu.
 
-## Cap an autonomous run
+## Hadkan larian autonomi
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Dua perintah slash, yang ditaip dalam komposer ruang, ialah satu-satunya larian yang mempunyai had perbelanjaan:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Setiap segmen larian `/goal` atau `/loop` berhenti apabila perbelanjaan berharganya mencapai **500 sen ($5.00)**. Pada 80% daripadanya, gelung itu mula-mula mengemudi model supaya menyelesaikan kerja dan meninggalkan serahan yang bersih, jadi ia tidak mati di pertengahan tugasan.
+- Keseluruhan matlamat tahan lama dihadkan pada **5000 sen ($50.00)** melainkan anda menghantar `--budget <dollars>`. Penyelia menyalurkan belanjawan matlamat yang _tinggal_ ke dalam setiap segmen, jadi belanjawan eksplisit tidak pernah dilampaui oleh keseluruhan segmen.
+- `--days N` menambah tarikh akhir masa sebenar dan `--max N` siling bilangan larian. Kedua-duanya pilihan; tanpanya, matlamat hanya dibatasi oleh kos.
+- Matlamat yang mencapai dindingnya berhenti pada `budgetExhausted` dan hanya boleh disambung semula dengan menaikkan belanjawan.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Kerana had itu berasaskan harga, model yang tidak dapat dihargakan oleh katalog tidak pernah mencapainya. Larian sedemikian sebaliknya dibatasi oleh pengawal pengulangan gelung malapetaka, penyerahan penyelia selepas tiga kegagalan berturut-turut dan anda.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Mesej dalam ruang, @-sebutan, atau langkah pipeline tiada had perbelanjaan. Larian tamat apabila model berhenti, apabila anda menghentikannya, atau apabila pengawal gelung malapetaka mengemudinya.
 
-## Cut token use
+## Kurangkan penggunaan token
 
-### Compact a long conversation
+### Mampatkan perbualan yang panjang
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Taip `/compact` dalam komposer ruang. Perintah itu dipintas di pihak klien dan tidak pernah masuk ke dalam transkrip; pelayan melipat sejarah lama menjadi ringkasan berlabuh dan perbualan diteruskan pada konteks yang dimampatkan.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+Pemampatan ditolak semasa ejen berada di pertengahan giliran dan apabila tiada apa-apa yang cukup lama untuk dilipat. Harness terbina juga memampatkan sendiri apabila sejarah menghampiri tetingkap konteks model.
 
-### Choose the effort level deliberately
+### Pilih tahap usaha secara sengaja
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+**Usaha penaakulan** ejen (Tetapan → Ruang kerja → Ejen) menawarkan apa-apa tahap yang diterbitkan oleh model yang dipilih. Tahap yang lebih tinggi membelanjakan lebih banyak token penaakulan. Simpan tahap tertinggi untuk kerja yang memerlukannya.
 
-### Choose the model per agent
+### Pilih model bagi setiap ejen
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+Model ialah medan bagi setiap ejen, jadi ejen pemformatan atau triage boleh berjalan pada model murah manakala ejen seni bina berjalan pada model mahal. Tapis jadual mengikut ejen dalam Kebolehcerapan → Wawasan mengikut model untuk melihat pasangan mana yang sebenarnya membebankan kos anda.
 
-### Look for runs with outsized token counts
+### Cari larian dengan bilangan token yang berlebihan
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Buka log larian dalam Wawasan (50 larian tertapis yang terbaharu) dan laci transkrip pada apa-apa yang luar biasa. Punca biasa ialah prompt sistem atau persona yang terlalu panjang, konteks yang sepatutnya telah dimampatkan dan tugasan yang sepatutnya dipecahkan kepada beberapa tugasan yang lebih kecil.
 
-## What happens if a budget is set out of band
+## Apa yang berlaku jika belanjawan ditetapkan di luar jalur
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+Untuk kesempurnaan, jika `monthlyBudgetCents` atau polisi belanjawan ditulis terus ke baris ejen:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Belanjawan dinilai **selepas** larian selesai, bukan sebelum penghantaran. Pendengar pada penyempurnaan larian membandingkan perbelanjaan bulan semasa ejen dengan silingnya.
+- Melangkaui ambang lembut (80% secara lalai) merekodkan insiden amaran dan mencetuskan peristiwa `BudgetThresholdCrossed` yang boleh anda gantungkan pencetus pipeline padanya.
+- Menghabiskan belanjawan merekodkan insiden keras, mencetuskan peristiwa yang sama dan menukar status kitaran hayat ejen kepada `paused`.
+- Sekatan pra-penghantaran itu wujud tetapi hanya dirujuk oleh pengutip larian yatim dan penyelaras tiket terkandas semasa menjadualkan pemulihan — penghantaran biasa tidak pernah mencapainya dan tiada apa-apa pada laluan penghantaran menyemak status jeda. Satu-satunya isyarat yang kelihatan ialah lencana kitaran hayat dalam carta organisasi.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
-- [Run agent diagnostics](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)
-- [Agent configuration reference](/ms-MY/manual-pengguna/rujukan/konfigurasi-ejen/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
+- [Diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)
+- [Konfigurasi ejen](/ms-MY/manual-pengguna/rujukan/konfigurasi-ejen/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)

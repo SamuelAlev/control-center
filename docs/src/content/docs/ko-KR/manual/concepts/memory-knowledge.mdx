@@ -1,199 +1,196 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: 메모리와 지식
+description: Control Center가 에이전트 지식을 저장하는 방식, 에이전트의 프롬프트에 실제로 도달하는 내용, 그리고 메모리 읽기가 왜 페일 오픈인지 설명합니다.
 slug: ko-KR/매뉴얼/개념/메모리와-지식
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## 메모리의 용도
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+메모리가 없으면 모든 에이전트 대화는 0에서 시작합니다. 같은 관례를 다시
+설명하고, 같은 결정을 다시 다투고, 같은 막다른 길을 다시 탐색해야 합니다.
+메모리는 실행을 넘어 살아남는 워크스페이스 범위 저장소이며, 한 에이전트가
+만든 지식을 나중에 다른 에이전트가 찾을 수 있게 하려고 존재합니다.
 
-It has three layers and they answer different questions:
+메모리에는 세 계층이 있고, 이들은 서로 다른 질문에 답합니다:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **팩트** — 무엇이 참인가(관례, 결과, 결정).
+2. **정책** — 그에 대해 에이전트가 무엇을 해야 하는가(규범적 규칙).
+3. **워킹 메모리** — 한 에이전트가 무엇을 하던 중이었는가.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+이 구분이 중요한 이유는 세 계층이 서로 다른 경로로 에이전트에 도달하기
+때문입니다. 팩트는 검색됩니다. 정책은 푸시됩니다. 워킹 메모리는 비공개입니다.
 
-## Facts
+## 팩트
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact`는 워크스페이스와 도메인 범위로 한정된 지식 단위입니다.
 
-| Attribute                                   | What it is                                                                |
+| 속성                                        | 설명                                                                      |
 | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| `domain`                                    | 지식 도메인("conventions", "decisions", "codebase")                       |
+| `topic`                                     | 짧은 주제 레이블                                                          |
+| `content`                                   | 지식 텍스트                                                               |
+| `confidence`                                | 0.0–1.0, 출처에서 초기값을 얻고 재언급으로 올라감                         |
+| `memoryType`                                | 팩트의 종류 — 시간에 따른 감쇠 곡선을 결정함                              |
+| `veracity`                                  | 어떻게 알게 되었는지 — 신뢰도의 초기값을 정하고 재언급마다 상승폭을 결정함 |
+| `sourceObservationIds`                      | 이 팩트로 이어진 관측                                                     |
+| `supersededBy`                              | 이 팩트를 대체한 더 새로운 팩트(있는 경우)                                |
+| `validUntil`, `recallCount`, `mentionCount` | 회수 시 사용되는 만료 및 사용 신호                                        |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+마지막 두 행은 사람들이 놓치기 쉬운 항목이며, _어떤_ 팩트가 표면에 드러날지를
+결정하는 것이 바로 이 둘입니다. `memoryType`은 유형별 Weibull 감쇠 매개변수를
+가지므로, 기한이 정해진 약속은 빠르게 희미해지지만 안정적인 프로필 팩트는
+그렇지 않습니다. `veracity`는 출처를 기록합니다. 사람이 진술(가중치 1.0),
+에이전트가 추론(0.7), 도구가 생성(0.5), 가져옴(0.6) 등이며, 이 가중치가 팩트의
+시작 신뢰도를 정합니다.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+팩트는 반박되더라도 제자리에서 편집되지 않습니다. 팩트를 기록하면 같은
+도메인·같은 주제의 팩트를 대상으로 충돌 감지가 실행되고, 패배한 쪽을 대체하면서
+충돌 행을 기록합니다. 감사 추적이 핵심입니다. 이전에 무엇을 믿었고 무엇이
+그것을 대체했는지 항상 볼 수 있습니다.
 
-## Policies
+## 정책
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy`는 팩트에서 파생된 규범적 규칙으로, 워크스페이스와 도메인 범위로
+한정되며 활성 플래그와 선택적 `requiredRole`을 가집니다.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+워크스페이스의 모든 **활성** 정책은 **모든** 디스패치에 필터링 없이 주입됩니다.
+도메인, 역할, 작업, 스페이스 중 어느 것으로도 필터링하지 않습니다. 스무 번째
+정책을 쓰기 전에 알아 둘 만한 사실입니다. 정책은 작업과 같은 컨텍스트 윈도를
+두고 경쟁하기 때문입니다. 정책의 `requiredRole`이 권고에 그치는 이유이기도
+합니다. 이는 규칙이 누구를 겨냥하는지 설명할 뿐, 규칙이 다른 모든 사람에게
+도달하는 것을 막지는 않습니다.
 
-## Domains
+## 도메인
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain`은 워크스페이스 안에서 팩트와 정책을 묶습니다. 도메인은 지식에
+조직적 구조를 부여하며, 접근 권한 부여가 기록되는 단위입니다. 다만 도메인을
+기밀성 경계로 취급하기 전에 아래 주의를 보십시오.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+도메인은 워크스페이스 전체(`architecture`)이거나 저장소 하나로
+한정됩니다(`repo:<slug>/architecture`). 두 범위에서 같은 이름은 서로 독립적인
+두 저장소입니다. 한 코드베이스에 참인 팩트가 워크스페이스 전체 팩트를
+덮어쓰지 않습니다. `search_memory`와 디스패치 프리앰블은 에이전트가 해당
+저장소에서 작업할 때 저장소 범위 메모리를 먼저 정렬합니다. 나머지를 걸러 내지는
+않습니다. 그 범위에 쓰거나 가중치를 높이려면 `propose_fact` / `propose_policy` /
+`search_memory`에 `repo`를 전달하십시오.
 
-## Access control is fail-open for reads
+## 접근 제어는 읽기에 대해 페일 오픈입니다
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant`는 에이전트 역할과 도메인을 세 가지 권한 수준 중 하나로
+매핑합니다:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| 권한    | 의미                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------- |
+| `none`  | 접근 없음                                                                                         |
+| `read`  | 팩트를 검색하고 가져올 수 있음                                                                    |
+| `write` | `propose_policy`에 필요함. 팩트 쓰기(`propose_fact`, `supersede_fact`)는 권한 부여로 제한되지 않음 |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[권한 부여가 없으면 거부가 아니라 읽기입니다]
+`(role, domain)` 쌍에 대한 권한 부여 행이 없으면 실제 권한은 **`read`**입니다.
+읽기는 설계상 페일 오픈입니다. 예외를 던지는 유일한 쓰기는 `write` 권한이 없는
+`propose_policy`입니다(`InsufficientMemoryPermission`). 민감한 콘텐츠를 메모리
+도메인에 넣는다고 해서, 그것을 보지 말아야 할 모든 역할에 `none` 권한 부여를
+명시적으로 기록하지 않는 한 읽을 수 있는 대상을 제한하지는 않습니다.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+또한 오늘날 제품 어디에도 권한 부여를 위한 UI가 없습니다. 메모리 화면에는
+사실, 정책, 지식 그래프 탭만 있고 그 외에는 없으며, 권한 부여는
+`memory_access_grant.*` RPC 작업으로만 접근할 수 있습니다.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+읽기에는 관대하고 정책 쓰기에는 엄격한 이 비대칭은 의도적인 절충입니다.
+메모리는 순환할 때 가장 유용하며, 읽기 거부는 문제를 보고하는 에이전트가 아니라
+조용히 덜 아는 에이전트를 만들어 냅니다. 반대로 정책 쓰기 거부는 요란하고
+교정할 수 있으므로, 강제가 적용되는 지점은 그쪽입니다. 새로 만든 도메인은 모든
+역할에 `write`를 초기값으로 부여합니다. 이후에 이를 조이려면 RPC로만 편집할 수
+있습니다. 권한 부여 UI가 없기 때문입니다.
 
-## Working memory
+## 워킹 메모리
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+각 에이전트에는 `AgentWorkingMemory`가 있습니다. 워크스페이스와 에이전트를 키로
+하는 자유 형식의 스크래치패드입니다. 이는 실행을 넘어 유지되고, 해당
+에이전트에게만 비공개이며, 모든 디스패치에서 그 에이전트의 프롬프트에
+주입됩니다. "auth 리팩터링을 절반쯤 해 두었다" 같은 내용이 사는 곳이며, 다음
+실행으로 가져갈 가치는 있지만 영구적인 팩트로 승격할 가치는 없는 상태입니다.
 
-## What actually reaches an agent's prompt
+## 에이전트의 프롬프트에 실제로 도달하는 것
 
-At dispatch, the memory preamble is assembled from exactly three things:
+디스패치 시점에 메모리 프리앰블은 정확히 세 가지로 구성됩니다:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **모든 활성 워크스페이스 정책** — `- [domain] rule` 줄 형태로.
+- **에이전트 자신의 워킹 메모리** — 그대로.
+- **이 작업에 대해 키워드로 매칭된 팩트 후보 목록** — 최대 5개, 약 1,200자
+  예산 안에서, 작업 설명이 20자 이상일 때만. 더 짧은 작업에는 팩트가 전혀
+  제공되지 않습니다.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+후보 목록은 FTS/키워드 전용이며, 의도적으로 개수가 제한됩니다. 쿼리 임베딩은
+느리고 디스패치 경로는 지연이 즉시 드러나는 유일한 지점이므로, 느린 의미론적
+경로는 의도적으로 여기에서 배제됩니다. 프리앰블은 핵심이 되는 항목을
+`search_memory`로 검증하라고 에이전트에 알리며 끝납니다. 전체 회수 모델은
+그곳에 있습니다.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+이 경로에서는 접근 권한 부여를 조회하지 않습니다. 후보 목록이 찾은 것이 곧
+에이전트가 보는 것입니다.
 
-## Recall: one query, four voices
+## 회수: 쿼리 하나, 목소리 넷
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+에이전트가 사용하는 `search_memory` 도구에는 세 가지 모드가 있으며, 이들은
+정말로 서로 다른 검색입니다:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — FTS5만 사용합니다.
+- **`semantic`** — BM25와 벡터 결과를 상호 순위 융합으로 결합합니다.
+- **`hybrid`**(기본값) — 다성적 회수: 순위가 매겨진 네 개의 목소리를 함께
+  융합한 뒤 다양화합니다.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+네 목소리는 어휘(FTS), 의미론(벡터 KNN), 시간(최근 활성 팩트), 그래프입니다.
+그래프 목소리는 가장 강한 어휘·의미론 시드에서 시작해 에피소드 엣지를 두 번
+건너뛰는 탐색입니다. 그래프 목소리는 에피소드 엣지가 아예 존재하는 이유입니다.
+질문의 어떤 단어와도 일치하지 않지만 답과 _연결된_ 팩트를 드러내기 때문입니다.
+각 목소리는 분류된 쿼리 의도에 따라 가중치가 부여되고(기본적으로 의미론이 가장
+큰 가중치를 가지며, 그다음이 그래프와 어휘, 그다음이 최신성), 모든 후보의
+점수는 Weibull 감쇠로 조정되며, 결과 집합은 MMR로 다양화되어 한 팩트를 다섯 번
+다시 말한 내용이 서로 다른 네 팩트를 밀어내지 않습니다.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[의미론적 회수는 모델이 설치되기 전까지 조용합니다]
+벡터 목소리는 온디바이스 임베딩 모델을 다운로드한 뒤에야 기여합니다. 그전까지
+하이브리드 회수는 세 목소리로 동작하며, 소급 백필이 없습니다. 모델을 설치하기
+전에 기록된 팩트는 결코 벡터를 얻지 못합니다. SQLite 벡터 확장 자체가 로드에
+실패하면 벡터 경로는 더 나빠져, 압축된 임베딩에 대한 Dart 내부 스캔으로
+떨어집니다. 그래도 회수는 응답하며, 다만 더 느립니다.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+데스크톱과 웹의 메모리 검색은 별개의 더 단순한 경로입니다.
+`memory_fact.search` RPC 작업은 **FTS5 전용**입니다. 씬 클라이언트는 쿼리
+임베딩을 실어 보낼 수 없고 하이브리드 경로는 호스트 내부에 머물기 때문입니다.
+따라서 메모리 브라우저에서 보이는 순위는 에이전트가 `search_memory`에서 받는
+순위와 다릅니다. 이는 예상된 동작이며 버그가 아니지만, UI에서 "검색했는데
+없더라"가 에이전트도 찾지 못한다는 증거는 아니라는 뜻입니다.
 
-## Where memory lives and who writes it
+## 메모리가 사는 곳과 누가 쓰는지
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+메모리 브라우저는 **설정 → 워크스페이스 → 메모리**
+(`/workspaces/<id>/settings/memory`)에 있으며, 사실, 정책, 지식 그래프 탭이
+있습니다.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+여기에는 사람들을 놀라게 하는 비대칭이 있습니다. **메모리를 편집하고 삭제할
+수는 있지만, 만들 수는 없습니다.** 사실 탭과 정책 탭 어디에도 추가 기능은
+없습니다. 작성은 에이전트 쪽에서 `propose_fact`와 `propose_policy`로
+이루어집니다(대체하려면 `supersede_fact` / `supersede_policy`). `remember`는
+세션 범위의 핫 티어 항목을 기록하며, `consolidate_memory`가 나중에 이를 팩트로
+승격할 수 있습니다. `record_observation`과 `update_my_notes`는 디스패치 시
+주입되는 비공개 스크래치패드를 기록합니다. 브라우저는 검토와 교정 표면이지
+작성 표면이 아닙니다. 따라서 메모리에 팩트를 넣고 싶다면, 넣는 방법은
+에이전트에게 말하는 것입니다.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+두 가지 유지 관리 작업 역시 예약 실행이 아니라 에이전트가 호출합니다.
+`consolidate_memory`는 누적된 팩트를 병합하고 정리하며, `harmonize_memory`는
+에이전트마다 갈라진 믿음을 조정합니다. `list_memory_conflicts`는 충돌 감지가
+이미 기록한 내용을 보여 줍니다. 이들을 타이머로 대신 실행해 주는 것은 없습니다.
+회의 결정은 회의 영속화 단계가 이를 기록할 때 `decisions` 도메인으로
+수집됩니다. 이는 완료된 에이전트 실행에 걸린 타이머가 아닙니다.
 
-## Related concepts
+## 관련 개념
 
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): roles are what grants are written against
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/ko-KR/매뉴얼/사용-가이드/메모리-관리/): working with memory in practice
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 권한 부여의 기준이 되는 것은 역할입니다
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/): 메모리는 워크스페이스 범위이며 해당 워크스페이스 자체의 데이터베이스 파일에 저장됩니다
+- [워크스페이스 메모리 관리](/ko-KR/매뉴얼/사용-가이드/메모리-관리/): 실제로 메모리 다루기

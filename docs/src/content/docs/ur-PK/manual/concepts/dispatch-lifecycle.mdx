@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: ایجنٹ ڈسپیچ لائف سائیکل
+description: پیغام پہنچنے اور رن لاگ بند ہونے کے درمیان کیا ہوتا ہے — پرامپٹ کی تشکیل، worktree، شناخت، رن کو کیا حد میں رکھتا ہے اور اس کا نتیجہ دیانت داری سے کیسے ریکارڈ ہوتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## ڈسپیچ کیا ہے
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+ڈسپیچ ایک ایجنٹ کا ایک رن ہے، ایک گفتگو میں، ایک اڈاپٹر پر۔ اس کا سارا کچھ `cc_server` پر ہوتا ہے: کلائنٹ پیغام بھیجتا ہے اور پھر ایونٹس کو واپس اسٹریم ہوتے دیکھتا ہے۔ کسی بھی کلائنٹ میں ڈسپیچ کا کوئی راستہ نہیں ہے۔
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+ایجنٹس چھ وجوہات سے جگائے جاتے ہیں، جنہیں رن اپنے **ویک کنٹیکسٹ** کے طور پر لے کر چلتا ہے تاکہ ایجنٹ کو معلوم ہو کہ وہ _کیوں_ جاگا ہے:
 
-| Wake reason      | Trigger                                                      |
+| جاگنے کی وجہ     | ٹرگر                                                         |
 | ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `userMessage`    | کسی نے اسپیس میں پیغام بھیجا، یا ایجنٹ کا ذکر کیا            |
+| `assignment`     | ایجنٹ کو ایک ٹکٹ تفویض ہوا                                   |
+| `pipelineStep`   | ایک پائپ لائن قدم نے اسے ڈسپیچ کیا                            |
+| `childCompleted` | ایک ذیلی ٹکٹ مکمل ہوا                                         |
+| `followUp`       | شیڈول شدہ فالو اپ ہارٹ بیٹ                                    |
+| `recovery`       | ریکوری پاتھ نے ناکامی کے بعد دوبارہ ڈسپیچ کیا                 |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+ویک کنٹیکسٹ ان ids کو لے کر چلتا ہے جو وجہ کے ساتھ جاتے ہیں — ٹکٹ، اسپیس، پیغام، پائپ لائن رن — اور یہ ایجنٹ کے ماحول اور پرامپٹ میں انجیکٹ ہوتے ہیں۔
 
-## Prompt assembly
+## پرامپٹ کی تشکیل
 
-The prompt is built in layers, each one a labelled section:
+پرامپٹ تہوں میں بنتا ہے، ہر تہہ ایک لیبل والا سیکشن:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **شناخت** — ایجنٹ کی اپنی id، نام اور ورک اسپیس id، ساتھ میں واضح ہدایت کہ یہی UUIDs ورک اسپیس سے منسلک ٹولز کو دیے جائیں۔ ورک اسپیس ایجنٹ کا داخلی حصہ ہے، اس لیے ہمیشہ موجود رہتی ہے۔
+- **ٹول کیٹلاگ اور ریسورس پروٹوکولز**، پھر **ورک اسپیس لے آؤٹ**۔
+- **سسٹم پرامپٹ اوور رائیڈ**، اگر ایجنٹ کے پاس ہو، پھر **شخصیت** (کردار کے مطابق) اور **ٹیم بریف**۔
+- **مہارتیں** — ایجنٹ پر موجود نام۔
+- موجودہ موڈ کے لیے **ایگزیکیوشن کنٹریکٹ اور طریقہ کار**۔
+- **ویک کنٹیکسٹ** اور **مینشن کنٹیکسٹ**: ایجنٹ کو کس نے بلایا اور اس کے ارد گرد کا روسٹر۔
+- **موڈ بلاک** — موڈ کے صلاحیت پروفائل _اور اس کی میٹریلائزڈ ٹول فہرست_ سے تیار ہوتا ہے، اس لیے کوئی پرامپٹ ایسے ٹول کا نام کبھی نہیں لے سکتا جو رن کے پاس واقعی نہ ہو۔
+- **میموری کنٹیکسٹ** — کام کے لیے حاصل کیے گئے حقائق۔
+- **گفتگو کنٹیکسٹ** — حالیہ اسپیس کی تاریخ، جو ایجنٹ کے کنفیگر کردہ کنٹیکسٹ سائز سے قطع نظر لفظ بہ لفظ ونڈو کے 50,000 حروف تک محدود ہوتی ہے۔ پرانی تاریخ کاٹ نہیں دی جاتی: ایجنٹ اسے `get_messages` کے ذریعے ضرورت پر حاصل کرتا ہے اور معنوی طور پر متعلقہ پرانے پیغام بھی سامنے آتے ہیں۔
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[سلیش کمانڈز خام صارف متن سے پارس ہوتی ہیں]
+تہہ دار پرامپٹ ایک کنٹیکسٹ بلاک سے شروع ہوتا ہے، اس لیے یہ سلیش سے شروع نہیں ہوتا۔ کمانڈز صارف کے پیغام سے لفظ بہ لفظ پارس ہوتی ہیں اور پھر تہہ دار پرامپٹ کے آخر سے کاٹ کر الگ کر دی جاتی ہیں تاکہ ہر کنٹیکسٹ تہہ بچی رہے۔
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+کمانڈز دو جگہوں پر تقسیم ہیں۔ `/todo` اور `/compact` کمپوزر میں روک لی جاتی ہیں اور جان بوجھ کر کبھی پیغام کے طور پر محفوظ نہیں ہوتیں اور نہ ایجنٹ کو بھیجی جاتی ہیں — `/compact` کو محفوظ کرنا کمپیکشن کٹ کو ایک ٹرن پیچھے دھکیل دیتا اور ٹرانسکرپٹ کو آلودہ کرتا۔ `/plan` دونوں جگہ سنبھالی جاتی ہے: کمپوزر اسپیس کا موڈ پلٹ دیتا ہے، اور یہی چیز ٹول سطح، گارڈ پری سیٹ اور پرامپٹ کو اس ٹرن اور اس کے بعد کے ہر ٹرن کے لیے ہم آہنگ رکھتی ہے۔ `/goal`، `/loop` اور `/skill:<name>` خود رن کے اندر سنبھالی جاتی ہیں اور صرف بلٹ اِن ہارنس پر — `/goal` اور `/loop` لاگت بجٹ کے ساتھ خود مختار کام شروع کرتی ہیں، اور `skill:` والا نام ایک مہارت کے طور پر تلاش ہوتا ہے جس کا `SKILL.md` متن اس ٹرن کی ہدایت بن جاتا ہے۔ نیم اسپیس ہی دونوں ذخیرہ ہائے الفاظ کو الگ رکھتا ہے: کسی خالی نام کو مہارتوں کے خلاف حل کرنے کا مطلب تھا کہ `plan` یا `compact` نامی مہارت بلٹ اِن کی وجہ سے مستقل چھپی رہے۔ خالی غیر بلٹ اِن نام اب بھی حل ہوتا ہے، ان پیغامات کے لیے جو نیم اسپیس وجود میں آنے سے پہلے لکھے گئے۔ ناقابل شناخت نام سادہ متن کے طور پر گزر جاتا ہے۔
 
-## Worktree provisioning
+## worktree کی تیاری
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+کچھ بھی چلنے سے پہلے، گفتگو کو اپنا کام کرنے کا روٹ ملتا ہے، جس کے نیچے ہر ریپو کے لیے الگ تھلگ copy-on-write worktree ہوتا ہے۔ ڈیفالٹ میں یہ ورک اسپیس سے منسلک ہر ریپو ہوتا ہے؛ PR اسپیس — یا واضح انتخاب کے ساتھ بنائی گئی اسپیس — صرف اجازت یافتہ ریپوز تیار کرتی ہے اور PR ریویو گفتگو اپنے ایک ریپو کو pull request کے ہیڈ ریف پر پن کرتی ہے جبکہ باقی اپنی ڈیفالٹ برانچ پر رہتے ہیں۔ سورس چیک آؤٹ کبھی تبدیل نہیں ہوتا اور اسپیس حذف ہونے پر پوری گفتگو ڈائریکٹری واپس لے لی جاتی ہے۔
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+جہاں بھی `rift` بھیجا جاتا ہے وہاں copy-on-write **واحد** عمل درآمد ہے، جس کی پشت پر بنڈل شدہ نیٹو ہے۔ ایسا فائل سسٹم جو reflink نہ کر سکے — یا ایسی ڈیٹا ڈائر جو ریپو سے مختلف والیوم پر ہو — فال بیک ہونے کے بجائے تیاری ناکام کر دیتا ہے۔ Windows پر بیک اینڈ `git worktree` ہے، جہاں بنانے کے لیے کوئی copy-on-write بیک اینڈ نہیں ہے، اور دوسرے ہوسٹس پر یہ خاموش تنزلی نہیں ہے۔ جس پلیٹ فارم میں `rift` بھیجا جاتا ہے وہاں اس کا غائب ہونا ٹوٹی ہوئی انسٹال ہے — سرور خاموشی سے فال بیک ہونے کے بجائے بوٹ کرنے سے انکار کر دیتا ہے، کیونکہ خاموش فال بیک خرابی کو ہمیشہ کے لیے ایک سست راستے کے پیچھے چھپا دیتا ہے۔
 
-## Identity and credentials
+## شناخت اور اسناد
 
-Two identities are resolved per run, before any process launches.
+ہر رن کے لیے دو شناختیں حل ہوتی ہیں، کسی بھی پراسیس کے شروع ہونے سے پہلے۔
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git مصنفیت۔** ایجنٹ جو کمٹ بناتا ہے وہ _ایجنٹ کے طور پر_ تصنیف ہوتے ہیں — `<Name> (agent) <agentId@agents.control-center.local>` بطور `GIT_AUTHOR_*` اور `GIT_COMMITTER_*` — کبھی کسی انسان کی نقالی نہیں کرتے۔ local-part ایجنٹ کا UUID ہے، اس کا نام سلاگ نہیں۔ درخواست کرنے والے انسان کو `Co-Authored-By:` ٹریلر سے کریڈٹ ملتا ہے، جو ماحول میں لے جایا جاتا ہے اور سسٹم پرامپٹ میں ہدایت کی جاتی ہے۔ واضح طور پر کالر کا سیٹ کردہ شناخت ہمیشہ دونوں پر غالب آتی ہے۔
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**کوڈ ہوسٹ شناخت۔** رن کی GitHub سند ہمیشہ صرف بروکر کی ہوتی ہے — ریپو تک محدود App انسٹالیشن ٹوکن، یا اس کا ماحولیاتی PAT فال بیک — کبھی درخواست کرنے والے ممبر کا اپنا محفوظ ٹوکن نہیں۔ `actingUserId` PAT فال بیک کو حد میں رکھتا ہے تاکہ جو ممبر سرور کا مالک نہیں وہ سرور کی رسائی کا وارث نہ بنے؛ یہ ایجنٹ کے ماحول پر کوئی ذاتی ٹوکن نہیں چڑھاتا۔
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**ماڈل فراہم کنندہ کی اسناد** ایک مقررہ ترتیب سے حل ہوتی ہیں اور ترتیب اہم ہے:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. فی اڈاپٹر ماحولیاتی اوور رائیڈ،
+2. کالر کا ماحول،
+3. سرور کی اسناد اسٹور (OAuth ٹوکن کی میعاد قریب ہو تو تازہ کرتے ہوئے)،
+4. پراسیس کا ماحول۔
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+چونکہ فی اڈاپٹر اوور رائیڈ پہلے آتا ہے، یہ ایپ میں جڑے فراہم کنندہ اکاؤنٹ پر خاموشی سے غالب آ جاتا ہے۔ اگر کوئی رن غلط اکاؤنٹ پر بل کر رہا ہو، تو پہلے اسی اوور رائیڈ کو دیکھیں۔ فراہم کنندہ کی اسناد ہوسٹ-گلوبل ہوتی ہیں — انسٹال کے ہر ورک اسپیس میں مشترک۔
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/).
+صلاحیت سے مشروط ٹوکن (GitHub، ٹکٹنگ) اسناد بروکر سے آتے ہیں، جو صرف وہی انجیکٹ کرتا ہے جس کی رن کی صلاحیتیں اجازت دیں۔ [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/) دیکھیں۔
 
-## Launch
+## لانچ
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+رن کو اس کے worktree کو کام کی ڈائریکٹری بنا کر شروع کیا جاتا ہے اور — Claude Code کے لیے — ایک تیار کردہ MCP کنفیگ کے ساتھ تاکہ ایجنٹ Control Center کی ٹول سطح تک پہنچ سکے۔ ACP اور ہارنس کے `bash` کو سانٹائز شدہ ماحول ملتا ہے؛ `NoSandboxAdapter` کے ذریعے Claude Code ہوسٹ کا ماحول وراثت میں لیتا ہے۔
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[OS سینڈ باکس رن کو صرف وہیں لپیٹتا ہے جہاں ہوسٹ کے پاس بیک اینڈ ہو]
+`cc_server` بوٹ پر ایک بار ہوسٹ کی جانچ کرتا ہے اور، بیک اینڈ دستیاب ہونے پر، ایجنٹ پراسیسز کو اس میں لپیٹ دیتا ہے — macOS پر Seatbelt، Linux اور WSL2 پر bubblewrap۔ ڈسپیچ کے دونوں سیم لپیٹے جاتے ہیں، کیونکہ وہ ایک سیم مشترک نہیں کرتے: Claude Code CLI سینڈ باکس پورٹ سے گزرتا ہے؛ ACP اڈاپٹرز اور بلٹ اِن ہارنس کا `bash` ٹول سینڈ باکس مینیجر سے گزرتے ہیں۔ یہی وہ چیز ہے جو رن کے محفوظ پاتھ لاگو کرتی ہے: آپ کے رجسٹرڈ ریپو چیک آؤٹ سینڈ باکس کے اندر، ہر موڈ میں، رائٹ ممنوع ہوتے ہیں۔
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+جہاں بیک اینڈ نہیں، وہاں رن سینڈ باکس میں **نہیں** ہوتا اور تلافی کے لیے کچھ اور نہیں بدلتا۔ یعنی Windows ہمیشہ (کوئی نیٹو ریپ نہیں — `microvm` ٹرمینلز اور رگز کے لیے الگ، پروب سے مشروط راستہ ہے) اور Linux یا WSL2 جہاں `PATH` پر `bwrap` اور `socat` نہ ہوں۔ سرور اپنی اسٹارٹ اپ لاگ لائن پر بتاتا ہے کہ وہ کس حالت میں ہے اور `--sandbox off` جان بوجھ کر باہر نکلتا ہے۔
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+سینڈ باکس آن ہونے پر بھی دو خلا باقی رہ جاتے ہیں۔ ہارنس کے پراسیس کے اندر چلنے والے فائل ٹولز (read, write, edit, apply patch, search, find, search_files) سرور پراسیس کے اندر چلتے ہیں، اس لیے کوئی پروفائل انہیں قابو نہیں کرتا — ان کی حد خود ٹولز کی پاتھ قید اور گارڈریلز ہے۔ اور Claude Code `--dangerously-skip-permissions` کے ساتھ شروع ہوتا ہے، اس لیے اس کی اپنی فائل اور شیل کالز Control Center سے گیٹ نہیں ہوتیں؛ OS سینڈ باکس ان کے گرد حد ہے۔
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+باقی حدیں ہر ہوسٹ پر قائم رہتی ہیں، سینڈ باکس ہو یا نہ ہو: رن کا اپنا worktree (جہاں `rift` بھیجا جاتا ہے وہاں copy-on-write؛ Windows پر `git worktree`)، صلاحیت سے مشروط اسناد جو ہر لانچ پر بروکر کے ذریعے دی جاتی ہیں اور ٹیئر ڈاؤن پر واپس لے لی جاتی ہیں، یکجا ایکشن گارڈریلز (فیل-کلوزڈ — کوئی `prompt` فیصلہ جس سے کوئی منظور کرنے والا جڑا نہ ہو مسترد ہو جاتا ہے) اور وہ ٹول سطح جس کی گفتگو کا موڈ اجازت دیتا ہے۔ ACP اور ہارنس کا `bash` پھر بھی ماحول سانٹائز کرتے ہیں؛ `NoSandboxAdapter` کے ذریعے Claude Code ہوسٹ کا ماحول وراثت میں لیتا ہے۔
 :::
 
-## Streaming
+## اسٹریمنگ
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+رن واپس ٹائپ شدہ ایونٹ ترتیب اسٹریم کرتا ہے، جسے اسٹریم پروسیسر میسج ڈیلٹاز کے طور پر محفوظ کرتا ہے، ٹرانسکرپٹ سیگمنٹس میں تہہ کرتا ہے اور میسجنگ ایونٹس میں بدلتا ہے:
 
-| Event              | What it carries                                                                                                  |
+| ایونٹ                | کیا لے کر آتا ہے                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| `thinking`         | استدلال کا آؤٹ پٹ، سیدھا اندر دکھایا گیا                                                                           |
+| `text`             | نظر آنے والا آؤٹ پٹ                                                                                               |
+| `toolCall`         | ایک ٹول کی کال، اس کی id اور ساختی دلائل کے ساتھ                                                                    |
+| `toolResult`       | مطابق نتیجہ، خرابی یا جزوی اسٹریم ہونے پر نشان زد                                                                  |
+| `usage`            | پیمائش کی ونڈو کے لیے ٹوکن کی گنتی اور لاگت                                                                         |
+| `error`            | ایک ایرر، اڈاپٹر کا ساختی کوڈ شامل جب اس نے رپورٹ کیا ہو                                                          |
+| `sandboxViolation` | OS نے سس کال سے انکار کیا۔ صرف وہیں جاری ہوتا ہے جہاں سینڈ باکس واقعی پراسیس کو لپیٹ رہا ہو — اوپر نوٹ دیکھیں      |
+| `debug`            | رن ٹائم تشخیص (لانچ مارکر، گارڈ فیصلے، کنٹریکٹ کی جھٹکیں)                                                          |
+| `done`             | رن مکمل ہوا                                                                                                       |
 
-## What bounds a run
+## رن کو کیا حد میں رکھتا ہے
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+جان بوجھ کر **کہیں بھی ٹرن کی کوئی حد نہیں**۔ سخت تکرار گنتی جائز طویل کام (مائیگریشنز، فین آؤٹ صفائی) مار دیتی ہے اور وہ کچھ نہیں پکڑتی جو نیچے والے گارڈز اس سے پہلے پکڑ لیتے ہیں۔ رن اس وقت ختم ہوتا ہے جب:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **ماڈل** خود **رک جائے**؛
+- **کوئی انسان اسے روک دے**، یا گفتگو سنبھال لے (جو بلٹ اِن ہارنس کو اس کی اگلی صاف ٹرن حد پر روک دیتا ہے — Claude Code کا رن، جس کی کوئی محفوظ حد نہیں، اس کے بجائے بند کر دیا جاتا ہے)؛
+- **خاموشی واچ ڈاگ بج جائے۔** حد تک کوئی آؤٹ پٹ نہ ہو تو سیشن `silentRun` ناکامی کے ساتھ ختم کر دیا جاتا ہے۔ ڈیفالٹ 15 منٹ ہے، جو زیادہ تر پڑھنے والے موڈز (ریویو اور پلان) میں 10 رہ جاتا ہے؛ ایجنٹ اسے 1 سے 240 منٹ کے درمیان اوور رائیڈ کر سکتا ہے۔ واچ ڈاگ اس وقت فعال ہوتا ہے جب چائلڈ پراسیس اپنا PID رپورٹ کرے، اس لیے یہ Claude Code CLI کو کور کرتا ہے — **نہ کہ** بلٹ اِن ہارنس کو، جو کچھ تخلیق نہیں کرتا؛
+- **لاگت کی حد لگے** — مگر صرف خود مختار کمانڈز کے لیے۔
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+ڈوم-لوپ گارڈ خاتمہ کرنے والا نہیں: لگاتار تین یکساں ٹول کالز اور لوپ ایجنٹ کو _اسٹیئر_ کرتا ہے کہ طریقہ بدلے۔
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[عام ٹرن پر لاگت کی کوئی حد نہیں]
+سیشن کے اندر لاگت گارڈ صرف `/goal` اور `/loop` کے لیے جڑا ہے؛ باقی ہر رن کوئی بجٹ ہی نہیں دیتا۔ ان کمانڈز کے لیے، ایک غیر حاضر سیگمنٹ ڈیفالٹ میں 500 سینٹ ($5.00) جلا سکتا ہے، ساتھ میں 80% پر نرم اسٹیئر جو ایجنٹ سے کہتا ہے کہ سخت توقف سے پہلے صفائی سے سمیٹ لے، اور سیگمنٹس میں 5000 سینٹ ($50.00) کا پائیدار گول بجٹ۔ کوئی واضح `/goal --budget` کبھی پورے سیگمنٹ سے تجاوز نہیں کرتا۔
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+مجموعی طور پر، بلٹ اِن ہارنس پر ایک عام انٹرایکٹو ٹرن میں نہ ٹرن کی حد ہے، نہ لاگت کی حد، نہ خاموشی واچ ڈاگ۔ یہ اس وقت ختم ہوتا ہے جب ماڈل رکے یا جب آپ اسے روکیں۔ یہ جان بوجھ کر کیا گیا سودا ہے — متبادل سب جائز طویل کام مار دیتے ہیں — مگر اس کا مطلب یہ ہے کہ غیر حاضر انٹرایکٹو رن ماڈل کی اپنی صوابدید کے سوا کسی چیز سے محدود نہیں۔
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+رن کے دوران، چلتے ایجنٹ کو بھیجا گیا پیغام **اسٹیئرنگ** کے طور پر قطار میں لگ جاتا ہے اور اگلی ٹرن حد پر نکال لیا جاتا ہے، تاکہ آپ رن کو مارے بغیر اسے ہلکا سا ہدایت دے سکیں۔ اسٹیئرنگ، روکنا، ذیلی ایجنٹس اور تکمیل کنٹریکٹ بلٹ اِن ہارنس کی خصوصیات ہیں؛ Claude Code میں ان میں سے کوئی نہیں۔
 
-## How a run is recorded
+## رن کیسے ریکارڈ ہوتا ہے
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+ہر ڈسپیچ ایک `AgentRunLog` لکھتا ہے: آغاز اور اختتام کا وقت، خلاصہ، ٹوکن کی گنتی اور تخمینی لاگت (ذیلی ایجنٹس سے شامل کی گئی لاگت سمیت)، اڈاپٹر اور ماڈل، پراسیس id اور لاگ پاتھ، گفتگو اور کوئی بھی ٹکٹ یا پائپ لائن رن جس سے وہ تعلق رکھتا ہو، نیز دو درجہ بندی والے فیلڈز جو زیادہ تر سچ بتاتے ہیں۔
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **حالت** موٹی ہے: `pending`، `running`، `completed`، `error`۔
+- **زندہ پن** زیادہ باریک پڑھائی ہے: `alive`، `productive`، `completed`، `blocked`، `empty`، `looping`، `failed`، `stalled`، `dead`۔
+- **ایرر فیملی** ناکامیوں کو مفید طریقے سے گروپ کرتی ہے: `transientUpstream`، `sandboxInfrastructure`، `budgetExceeded`، `processLost`، `silentRun`، `unknown`۔
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` کا مطلب "حوالے کیا گیا" نہیں]
+جب کوئی رن اس ڈیلیوریبل کے بغیر ختم ہو جائے جو اس کے موڈ نے لازم کیا تھا — پلان موڈ کا ایسا رن جس نے کبھی `submit_plan` نہیں بلایا، ایسا آرکیسٹریٹ رن جس نے کبھی تجویز نہیں دی — تو حالت `completed` ہی رہتی ہے، کیونکہ پراسیس صاف طریقے سے ختم ہوا تھا۔ دیانت دار اشارہ زندہ پن (`empty`)، ایرر فیملی (`silentRun`) اور ایک خلاصے پر سوار ہوتا ہے جو بالکل بتاتا ہے کہ کیا پیدا نہیں ہوا۔ وہ خلاصہ محفوظ ہے: فائنلائزیشن اسے ماڈل کی آخری بڑبڑاہٹ سے نہیں بدلے گی۔
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+یہ جان بوجھ کر ہے۔ حالت پلٹنے سے ٹکٹ اور پائپ لائن کی اسٹیٹ مشینیں حرکت میں آ جائیں گی جن کا گمشدہ آرٹیفیکٹ سے کوئی تعلق نہیں۔ اس کا یہ مطلب بھی ہے کہ صرف "status: completed" کبھی یہ نتیجہ نکالنے کے لیے کافی نہیں کہ رن کامیاب رہا — خلاصہ پڑھیں۔
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+رن بند کرنا `AgentRunCompleted` شائع کرتا ہے اور بہت کچھ اس پر منحصر ہے: اطلاع کا فریم اور اس کی پائیدار فیڈ انٹری، وہ لائیو فارورڈر جو اسے جڑے کلائنٹس تک پہنچاتا ہے، پائپ لائن لاگت کا رول اپ، رن کا انتظار کرنے والے پائپ لائن قدم کو دوبارہ شروع کرنا، پیچھے والے ٹکٹ کو مکمل کرنا، آرکیسٹریشن کو حتمی حالت سے جوڑنا، گول سپروائزر کا جاری رکھنے یا روکنے کا فیصلہ، چیکر کردار اور رن کے بعد بجٹ کا جائزہ۔ موجودگی روسٹر الگ سے آتا ہے، ایونٹ کے بجائے حالیہ رن لاگز دیکھ کر۔
 
-## Budgets, after the fact
+## بجٹ، بعد ازاں
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+بجٹ کا نفاذ ایک _ردِ عمل_ ہے، گیٹ نہیں۔ جب رن مکمل ہوتا ہے تو جائزہ لینے والا ایجنٹ کے مہینے کے اب تک کے خرچ کا اس کی مؤثر حد سے موازنہ کرتا ہے (منسلک بجٹ پالیسی اگر ہو، ورنہ ایجنٹ کا اپنا ماہانہ عدد؛ صفر کا مطلب لامحدود)۔ نرم حد عبور کرنے پر انتباہی واقعہ درج ہوتا ہے؛ بجٹ ختم ہونے پر سخت واقعہ درج ہوتا ہے اور آرگ چارٹ پر ایجنٹ کی لائف سائیکل حالت `paused` ہو جاتی ہے۔ ڈسپیچ پھر بھی اس ایجنٹ سے کام قبول کرتا ہے۔ ایک `BudgetThresholdCrossed` پائپ لائن ٹرگر اسی ایونٹ سے فالو اپ کام شروع کر سکتا ہے۔
 
-## Retry lineage
+## دوبارہ کوشش کا سلسلہ
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+ہر رن لاگ دوبارہ کوشش کا سلسلہ لے کر چل سکتا ہے — والد رن id، کوشش کا کاؤنٹر اور تسلسل کا خلاصہ۔ گفتگو کا رن ٹری کوشش کا نمبر اس وقت دکھاتا ہے جب وہ غیر صفر ہو۔ چیٹ سے "دوبارہ کوشش" ایک نیا ڈسپیچ ہے جس کا رن لاگ بالکل نیا ہوتا ہے۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): what the adapter can and cannot enforce
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/): where the tool surface and the completion contract come from
-- [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): the effect-class policy every gated call passes
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): the isolation story in full
-- [Multiplayer](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): steering, take-over and the autonomy dial
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): what `AgentRunCompleted` sets off
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): اڈاپٹر کیا نافذ کر سکتا ہے اور کیا نہیں
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/): ٹول سطح اور تکمیل کنٹریکٹ کہاں سے آتے ہیں
+- [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/): وہ اثر کی قسم کی پالیسی جس سے ہر گیٹڈ کال گزرتی ہے
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): تنہائی کی پوری کہانی
+- [ملٹی پلیئر](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): اسٹیئرنگ، سنبھالنا اور خود مختاری ڈائل
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): `AgentRunCompleted` کیا شروع کرتا ہے

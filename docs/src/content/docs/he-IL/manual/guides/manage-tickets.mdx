@@ -1,39 +1,40 @@
 ---
-title: Create and manage tickets
-description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+title: יצירה וניהול של כרטיסים
+description: צרו כרטיסים, העבירו אותם במחזור החיים שלהם, הוסיפו להם תוויות וקשרים ותעדו מי הבעלים של מה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-כרטיסים
+sourceHash: d6776f22cd569564bfb54efe3b06738519ea2f36
 ---
 
-This guide shows you how to create and manage tickets.
+מדריך זה מראה כיצד ליצור ולנהל כרטיסים.
 
-## Create a ticket
+## יצירת כרטיס
 
-### From the UI
+### מהממשק
 
-1. Click **Tickets** in the workspace sidebar.
-2. Press **New ticket**.
-3. Fill in:
-   - **Title** — short summary. It is the only required field.
-   - **Description** — markdown, with a formatting toolbar.
-   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
-     states are reached through the lifecycle, not at creation.
-   - **Priority** — none, urgent, high, medium or low.
-   - **Assignee** — yourself or any agent in the workspace.
-   - **Project** — optional grouping.
-4. Press **Create**, or turn on **Create more** first to keep the dialog open
-   for rapid entry.
+1. לחצו על **כרטיסים** בסרגל הצד של סביבת העבודה.
+2. לחצו על **כרטיס חדש**.
+3. מלאו:
+   - **כותרת** — סיכום קצר. זהו השדה היחיד שחובה למלא.
+   - **תיאור** — markdown, עם סרגל עיצוב.
+   - **סטטוס** — **לביצוע** (ברירת המחדל) או **בקלוג**. מצבים שהתחילו ומצבי
+     סיום מושגים דרך מחזור החיים, ולא ביצירה.
+   - **עדיפות** — ללא, דחופה, גבוהה, בינונית או נמוכה.
+   - **אחראי** — אתם עצמכם או כל סוכן בסביבת העבודה.
+   - **פרויקט** — קיבוץ אופציונלי.
+4. לחצו על **יצירה**, או הפעילו קודם את **יצירת עוד** כדי להשאיר את תיבת
+   הדו-שיח פתוחה להזנה מהירה.
 
-There is no provider picker in the dialog. The ticket is created against the
-workspace's active ticket provider.
+אין בורר ספקים בתיבת הדו-שיח. הכרטיס נוצר מול ספק הכרטיסים הפעיל של סביבת
+העבודה.
 
-### From an agent
+### מסוכן
 
-Ask an agent in a space:
+בקשו מסוכן במרחב:
 
-> Create a ticket for fixing the login timeout issue on slow connections.
+> צרו כרטיס לתיקון בעיית פסק הזמן של הכניסה בחיבורים איטיים.
 
-It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
-not a name:
+הסוכן קורא לכלי ה-MCP בשם `create_ticket`. העדיפות בכלי הזה היא **מספר שלם**,
+לא שם:
 
 ```
 create_ticket(
@@ -44,21 +45,21 @@ create_ticket(
 )
 ```
 
-| Value | Priority |
-| ----- | -------- |
-| `0`   | None     |
-| `1`   | Urgent   |
-| `2`   | High     |
-| `3`   | Medium   |
-| `4`   | Low      |
+| ערך  | עדיפות   |
+| ---- | -------- |
+| `0`  | ללא      |
+| `1`  | דחופה    |
+| `2`  | גבוהה    |
+| `3`  | בינונית  |
+| `4`  | נמוכה    |
 
-Only `workspace_id` and `title` are required; `description`, `priority`,
-`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
-vendor sync write and asks for your approval before it runs.
+רק `workspace_id` ו-`title` נדרשים; `description`, `priority`, `assignee`
+(מזהה סוכן) ו-`team_id` הם אופציונליים. הכלי מסווג ככתיבת סנכרון של ספק
+ומבקש את אישורכם לפני שהוא רץ.
 
-## Update ticket status
+## עדכון סטטוס כרטיס
 
-Tickets follow this lifecycle:
+הכרטיסים מתנהלים לפי מחזור החיים הזה:
 
 ```
 backlog → open → inProgress ⇄ blocked
@@ -68,122 +69,120 @@ backlog → open → inProgress ⇄ blocked
               done / failed   (terminal)
 ```
 
-`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
-non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`. The UI status picker
-lists every status except `failed` — agents mark that with `fail_ticket`.
+`done`, `failed` ו-`cancelled` הם מצבי סיום. אל `cancelled` אפשר להגיע מכל
+סטטוס שאינו מצב סיום. אל `done` ו-`failed` אפשר להגיע מ-`inProgress` או
+מ-`inReview`; `open` יכול גם לעבור ישירות ל-`blocked`. בורר הסטטוסים בממשק
+מציג כל סטטוס מלבד `failed` — סוכנים מסמנים אותו עם `fail_ticket`.
 
-To change it, use any of:
+כדי לשנות אותו, השתמשו בכל אחד מאלה:
 
-- the **Status** row in the ticket's properties rail,
-- the **Status** submenu on a ticket's right-click menu in the list,
-- the **Status** chip on the floating bar after multi-selecting tickets.
+- השורה **סטטוס** בפס המאפיינים של הכרטיס,
+- תת-התפריט **סטטוס** בתפריט הלחיצה הימנית על כרטיס ברשימה,
+- הצ'יפ **סטטוס** בסרגל הצף לאחר בחירה מרובה של כרטיסים.
 
-:::note[The lifecycle graph binds agents, not you]
-Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status the picker lists, including
-reopening a `done`, `failed` or `cancelled` one. The picker does not offer
-`failed` as a target. The diagram above governs agents and automation:
-an illegal transition attempted by an MCP tool or a reconciler is logged and
-ignored, not applied.
+:::note[גרף מחזור החיים מחייב סוכנים, לא אתכם]
+כל שינוי סטטוס שנעשה מהממשק נכפה ועובר, כשהוא עוקף את הגרף לחלוטין — אתם
+יכולים להעביר כרטיס לכל סטטוס שהבורר מציג, כולל פתיחה מחדש של כרטיס במצב
+`done`, `failed` או `cancelled`. הבורר אינו מציע את `failed` כיעד. התרשים
+שלמעלה חל על סוכנים ואוטומציה: מעבר לא חוקי שכלי MCP או מנגנון יישור מנסים
+לבצע נרשם ביומן ומתעלמים ממנו, ולא מיושם.
 :::
 
-Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
-others) that can trigger pipelines. See
-[Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/).
+שינויי סטטוס פולטים אירועי תחום (`TicketStatusChanged`, `TicketCompleted`
+ואחרים) שיכולים להפעיל פייפליינים. ראו
+[הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/).
 
-## Assign a ticket
+## הקצאת כרטיס
 
-1. Open the ticket.
-2. In the properties rail, set **Assignee** — yourself, another workspace
-   member, or an agent.
+1. פתחו את הכרטיס.
+2. בפס המאפיינים, הגדירו **אחראי** — אתם עצמכם, חבר אחר בסביבת העבודה,
+   או סוכן.
 
-:::caution[Assigning does not start any work]
-Assignment records ownership and nothing else. It creates no space, changes
-no status and dispatches no agent — `TicketAssigned` is a pure audit signal
-with no dispatcher behind it. To get an agent working, message it in a space
-(see [Chat with an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)).
+:::caution[הקצאה אינה מפעילה שום עבודה]
+הקצאה רושמת בעלות ותו לא. היא אינה יוצרת מרחב, אינה משנה סטטוס ואינה משגרת
+סוכן — `TicketAssigned` הוא אות ביקורת טהור בלי משגר מאחוריו. כדי לגרום
+לסוכן לעבוד, כתבו לו במרחב (ראו
+[צ'אט עם סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)).
 
-The one exception: `TicketAssigned` is an event type you can wire a pipeline
-trigger to, so a template of your own can react to an assignment.
+החריג היחיד: `TicketAssigned` הוא סוג אירוע שאפשר לחווט אליו טריגר של פייפליין,
+כך שתבנית משלכם יכולה להגיב להקצאה.
 :::
 
-## Add labels
+## הוספת תוויות
 
-Labels are applied in bulk from the ticket list, not from a single ticket —
-the properties rail has no label control.
+תוויות מוחלות בבת אחת מהרשימה של הכרטיסים, ולא מכרטיס בודד — לפס
+המאפיינים אין פקד תוויות.
 
-1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
-   need; a floating bar appears once anything is selected.
-2. In that bar, open the **Labels** chip.
-3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them. The picker
-   lists labels already on a ticket in the workspace. Agents can add a new
-   name through `update_ticket` or `tickets.patch`.
+1. רחפו מעל שורה ברשימת הכרטיסים וסמנו את תיבת הסימון שלה. סמנו כמה שאתם
+   צריכים; הסרגל הצף מופיע ברגע שמשהו נבחר.
+2. בסרגל הזה, פתחו את הצ'יפ **תוויות**.
+3. בחרו תווית. היא נוספת לכל כרטיס נבחר שחסרה בו; תוויות קיימות לעולם אינן
+   נמחקות. **ניקוי תוויות** מסיר את כולן. הבורר מציג תוויות שכבר קיימות על
+   כרטיס בסביבת העבודה. סוכנים יכולים להוסיף שם חדש דרך `update_ticket` או
+   `tickets.patch`.
 
-## Link tickets
+## קישור כרטיסים
 
-Relations live on the ticket's **Relations** card in the properties rail, or
-behind **Relate to** in the list's right-click menu.
+הקשרים יושבים בלוח **קשרים** בפס המאפיינים, או מאחורי **קישור אל** בתפריט
+הלחיצה הימנית של הרשימה.
 
-1. Open the ticket and find the **Relations** card.
-2. Press its add control and choose the relation:
+1. פתחו את הכרטיס ומצאו את הלוח **קשרים**.
+2. לחצו על פקד ההוספה שלו ובחרו את הקשר:
 
-| Relation          | Meaning                                 |
-| ----------------- | --------------------------------------- |
-| **Sub-issue of…** | This ticket's parent is the other one   |
-| **Parent of…**    | The other ticket is a child of this one |
-| **Blocked by…**   | This ticket is blocked by the other     |
-| **Blocking…**     | This ticket blocks the other            |
-| **Related to…**   | Symmetric, no direction implied         |
-| **Duplicate of…** | This ticket duplicates the other        |
+| קשר               | משמעות                                     |
+| ----------------- | ------------------------------------------ |
+| **תת-כרטיס של…**  | הכרטיס האחר הוא ההורה של הכרטיס הזה        |
+| **הורה של…**      | הכרטיס האחר הוא ילד של הכרטיס הזה          |
+| **חסום על ידי…**  | הכרטיס הזה חסום על ידי האחר                |
+| **חוסם את…**      | הכרטיס הזה חוסם את האחר                    |
+| **קשור אל…**      | סימטרי, ללא כיוון משתמע                    |
+| **כפילות של…**    | הכרטיס הזה מכפיל את האחר                   |
 
-3. Pick the target ticket.
+3. בחרו את כרטיס היעד.
 
-**Duplicated by** appears in the card but not in the picker — it is the inverse
-of **Duplicate of** and is set from the other ticket. Each listed relation is
-clickable to open the linked ticket and removable on hover.
+**משוכפל על ידי** מופיע בלוח אך לא בבורר — הוא ההופכי של **כפילות של** ונקבע
+מהכרטיס האחר. כל קשר ברשימה ניתן ללחיצה כדי לפתוח את הכרטיס המקושר, וניתן
+להסרה במעבר עכבר.
 
-Parent and sub-issue relations are stored on the ticket itself rather than as
-link rows, so deleting a parent cascades to its children (see below), while
-blocking and related links do not.
+קשרי הורה ותת-כרטיס נשמרים על הכרטיס עצמו ולא כשורות קישור, ולכן מחיקת הורה
+יורדת בשרשור אל ילדיו (ראו בהמשך), בעוד שקישורי חסימה וקשירה אינם כך.
 
-## Add collaborators
+## הוספת משתפי פעולה
 
-Collaborators are a roster on the ticket — who is involved, in what capacity.
+משתפי פעולה הם רשימה על הכרטיס — מי מעורב, ובאיזה תפקיד.
 
-1. Open the ticket.
-2. Press the person-plus control on the **Add collaborator** card.
-3. Pick an agent.
+1. פתחו את הכרטיס.
+2. לחצו על פקד הוספת האדם בלוח **הוספת משתף פעולה**.
+3. בחרו סוכן.
 
-The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. The UI picker only lists workspace agents and always writes the
-default role; humans can appear as rows but are not offered in that menu.
-The MCP `add_ticket_collaborator` tool accepts a `role`.
+שלושת התפקידים הם **אחראי**, **משתף פעולה** (ברירת המחדל) ו**סוקר**. הבורר
+בממשק מציג רק סוכנים בסביבת העבודה ותמיד כותב את תפקיד ברירת המחדל; בני אדם
+יכולים להופיע כשורות אך אינם מוצעים בתפריט הזה. כלי ה-MCP בשם
+`add_ticket_collaborator` מקבל `role`.
 
-Adding a collaborator writes a row and publishes no domain event; it grants no
-space access. To put an agent into a conversation, add it as a participant from
-the space header instead — see [Spaces](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/).
+הוספת משתף פעולה כותבת שורה ואינה מפרסמת שום אירוע תחום; היא אינה מקנה גישה
+למרחב. כדי להכניס סוכן לשיחה, הוסיפו אותו כמשתתף מכותרת המרחב במקום זאת — ראו
+[מרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/).
 
-## Delete a ticket
+## מחיקת כרטיס
 
-Use **Delete ticket** at the bottom of the properties rail, the right-click
-menu, or the floating bar's delete action after multi-selecting.
+השתמשו ב**מחק כרטיס** בתחתית פס המאפיינים, בתפריט הלחיצה הימנית, או
+בפעולת המחיקה של הסרגל הצף לאחר בחירה מרובה.
 
-:::caution[Deletion is local only]
-A ticket that came from an external tracker is not deleted there — no provider
-supports it — so it can reappear on the next sync. Deleting also cascades: the
-ticket's collaborators and any child tickets go with it.
+:::caution[המחיקה מקומית בלבד]
+כרטיס שהגיע ממערכת ניהול כרטיסים חיצונית אינו נמחק שם — אין ספק שתומך בכך —
+ולכן הוא יכול להופיע שוב בסנכרון הבא. המחיקה גם יורדת בשרשור: משתפי הפעולה
+של הכרטיס וכל כרטיסי הילדים נמחקים איתו.
 :::
 
-## Related guides
+## מדריכים קשורים
 
-- [Delegate work to agents](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
-- [Organize work with projects](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)
-- [Chat with an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
-- [Ticket lifecycle reference](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/)
+- [האצלת עבודה לסוכנים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/האצלת-כרטיסים/)
+- [ארגון עבודה בפרויקטים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/פרויקטים/)
+- [צ'אט עם סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/צאט-עם-סוכן/)
+- [מחזור חיי כרטיס](/he-IL/מדריך-למשתמש/עזר/מחזור-חיי-כרטיס/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Tickets](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
-- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/)
+- [כרטיסים](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/)
+- [אירועי תחום](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/)

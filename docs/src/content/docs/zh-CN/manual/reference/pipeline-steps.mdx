@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: 流水线步骤
+description: 流水线步骤种类、步骤主体键、它们的配置以及步骤结果的参考。
 slug: zh-CN/手册/参考/流水线步骤
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+一个流水线步骤有两个彼此独立的维度：
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **种类**（`StepKind`）——引擎相对于步骤的触发器_调度_该步骤的方式。
+- **主体键**（`BuiltInBodyKeys`）——由哪个已注册的主体闭包_执行_该步骤的工作。
 
-## Step kinds
+## 步骤种类
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+定义于 `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`。
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| 种类       | 调度语义                                                                                                                                                                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | 强制入口点——每个模板恰好一个，始终是第一个节点。它自身不做任何工作；启动这次运行的是什么（手动 / 事件 / 计划）会单独记录为 `PipelineTrigger` 行。它的主体是空操作的 `pipeline.trigger`。                                                  |
+| `listen`   | 当所有源步骤（在 `StepTrigger.sourceStepIds` 中）完成时触发。                                                                                                                                                                            |
+| `join`     | 当 `waitForStepIds` 中的所有步骤都达到终态时触发。                                                                                                                                                                                        |
+| `router`   | 条件分支——主体返回 `StepResult.route(key)`，它只触发 `routeKey` 匹配的那条下游边；未被选中的分支会被标记为跳过。                                                                                                                          |
+| `forEach`  | 与 `listen` 一样调度（当所有 `sourceStepIds` 完成时触发）。真正负责迭代的是已注册的 `flow.forEach` 主体；引擎不会为每个条目生成一个子步骤。                                                                                              |
+| `terminal` | 没有主体的调度器哨兵。当某个终态步骤完成时，这次流水线运行即告完成。                                                                                                                                                                      |
 
-## Step bodies
+## 步骤主体
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+按 `BuiltInBodyKeys` 中的常量注册的主体闭包（`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`）。共有 25 个，全部列在下面。除非另有说明，配置从步骤的 `PipelineNodeConfig`（见下文）读取；“状态键”在执行时从流水线状态 / 触发器载荷中读取。
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+`bodyKey` 未注册的步骤会在模板加载时产生一条警告，然后永远不会执行——但不会导致这次运行失败。`trigger` 和 `terminal` 步骤不受这条警告影响：触发器仍会运行空操作的 `pipeline.trigger` 主体；`terminal` 步骤没有主体。
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+强制 `trigger` 节点的空操作主体——立即完成，以便引擎向下游监听者扇出。无配置。
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+无智能体的 shell 步骤（`bash -c`）。脚本中的 `{{key}}` 占位符会用经过 shell 转义的值，从状态 + 触发器载荷替换。
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| 配置字段    | 说明                                                    |
+| ----------- | ------------------------------------------------------- |
+| `script`    | 要执行的 shell 命令（必需）                             |
+| `outputKey` | 在退出码为 0 时接收去除首尾空白后的 stdout 的状态键     |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+运行时的工作目录是 `<cc_root>/pipelines/<pipelineRunId>/`（同一次运行中的所有 bash 步骤共享该目录），环境中带有 `GITHUB_TOKEN`。还会把 `<stepId>_runDir` 写入状态。非零退出会让该步骤以 stderr 的末尾内容失败。
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+通用的提示并派发节点：渲染提示词，把智能体派发进一个对话，并挂起直到这次运行结束。智能体的 `submit_output` 载荷会被收集到 `outputKey` 下的状态中。
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| 配置字段                   | 说明                                                             |
+| -------------------------- | ---------------------------------------------------------------- |
+| `agentId`                  | 要派发的工作区级智能体 UUID（必需）                              |
+| `prompt`                   | 指令文本；支持 `{{key}}` 替换（必需）                            |
+| `outputKey`                | 收集到的输出所写入的状态键                                       |
+| `outputSchema`             | 输出必须满足的 JSON Schema                                       |
+| `label`                    | 画布上显示的人类可读标签                                         |
+| `extras.spaceId`           | 要在其中工作的已有对话（默认：一个隐藏的对话）                   |
+| `extras.conversationTitle` | 该空间内的具名流（可选）                                         |
+| `extras.mode`              | 在*打开*房间的节点（`messaging.createSpace`）上读取，而不是在这里。默认 `review`。 |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+路由器主体——读取 `config.extras`，评估一个条件并返回 `StepResult.route(key)`。条件**不是** JavaScript 表达式；支持三种编写形态，按优先级排列：
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **谓词树**（`extras.predicate`）——一棵布尔树，路由 `"true"` / `"false"`。每个节点都是一个带 `type` 的映射：
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` —— 当所列路径中有任何一个在磁盘上存在时为 true；`negate` 将其翻转；`recursive` 还会搜索子目录（跳过 `.git`、`node_modules`、`build`、`.dart_tool`）。相对路径相对 `state[baseKey]`（默认 `repo_local_path`）解析，否则相对每次运行的工作区目录解析。
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` —— 运算符有 `equals`、`notEquals`、`contains`、`exists`、`notExists`、`gt`、`lt`；读取的是流水线状态，而不是文件系统。
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` —— 布尔组。
+  - `{"type": "not", "of": <predicate>}` —— 取反。
+- **Switch**（`extras.switchKey`）—— `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`；路由到状态值以不区分大小写方式包含的第一个 case，否则路由到 `default`。
+- **Comparison**（旧式顶层 `extras.left` / `extras.op` / `extras.right`）—— 等价于一个 `comparison` 谓词，为在谓词树之前编写的模板保留。
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+从该节点出发的边带有一个 `routeKey`，它必须与返回的键匹配。
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+通过 GitHub PR 客户端把汇总后的发现项发布为一条 PR 审查评论。
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| 状态键                   | 说明                                    |
+| ------------------------ | --------------------------------------- |
+| `repo_full_name`         | `owner/repo`（必需）                    |
+| `pr_number`              | PR 编号——整数或数字字符串（必需）       |
+| `consolidated_findings`  | 评论正文（必需）                        |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+返回 `StepResult.terminal`，并在状态中带有 `comment_review_id` 和 `commented_at`。
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+通过 `MessagingPort` 向一个消息空间发布消息。
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| 状态键      | 说明                                        |
+| ----------- | ------------------------------------------- |
+| `space_id`  | 目标空间（必需）                            |
+| `content`   | 消息正文，逐字从状态读取（必需）            |
 
-Writes `posted_space_id` and `posted_at` to state.
+把 `posted_space_id` 和 `posted_at` 写入状态。
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+派发一整支团队，而不是单个智能体，然后挂起直到各成员的运行结束。
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| 配置字段                                   | 说明                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `teamId`                                   | 要派发的工作区级团队（必需；与 `agentId` 互斥）                                                   |
+| `prompt`                                   | 目标文本；支持 `{{key}}` 替换（必需）                                                             |
+| `dispatchMode`                             | `allParallel`（默认——每个成员一个任务）或 `manager`（只派发负责人去协调）                         |
+| `outputKey`                                | 收集到的成员输出所写入的状态键                                                                    |
+| `outputSchema`、`label`、`extras.spaceId`  | 与 `conversation.promptAgent` 相同                                                                |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+审批闸门。把审批者智能体派发进一个对话（审查模式），带上闸门提示词和一份 `{decision, reason}` 输出契约，然后挂起直到审批者通过 `submit_output` 提交。
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| 配置字段                  | 说明                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `agentId`                 | 审批者智能体（必需）                                                              |
+| `prompt`                  | 闸门提示词（可选；缺省时使用一个默认值）                                          |
+| `outputKey`               | 收集到的 `{decision, reason}` 载荷所写入的状态键                                  |
+| `outputSchema`            | 默认使用一份审批 schema（`decision`：`approved` / `rejected`，`reason`）          |
+| `label`、`extras.spaceId` | 与 `conversation.promptAgent` 相同                                                |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+该闸门只通过 `submit_output` 解决。`BuiltInBodyKeys.humanGate`、节点类型库以及某个内置模板的提示词文本，都提到了 `approve_step` 和 `reject_step` 这两个 MCP 工具；**这两个工具在任何包或注册表中都不存在**。
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+移除陈旧的隔离工作树；从触发器载荷中选取自己的模式。遵守这次运行的 `dryRun` 标志。
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| 状态键                        | 说明                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `ticket_id`                   | 释放该工单的工作树                                                                       |
+| `repo_full_name` + `pr_number` | 释放那个临时的 PR 编辑器工作树                                                          |
+| `space_id`                    | 拆除该对话的工作树和文件夹                                                               |
+| （以上都没有）                | 清扫工作区：已消失的目录、已失效的空间、孤立的对话文件夹                                 |
 
-`outputKey` (optional) receives a summary string.
+`outputKey`（可选）会接收一个摘要字符串。
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+对状态集合做 map / 扇出：为每个条目渲染一次提示词，然后把这些提示词以 `---` 分隔符拼接起来，**一次性**把智能体派发出去，并挂起直到那次运行结束。空集合会立即以空列表完成。它不是为每个条目各做一次并行派发。
 
-| Config field         | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| 配置字段             | 说明                                                               |
+| -------------------- | ------------------------------------------------------------------ |
+| `agentId`            | 每个条目要派发的智能体（必需）                                     |
+| `prompt`             | 按条目渲染的提示词；支持 `{{key}}` 替换（必需）                    |
+| `extras.iterableKey` | 保存该集合的状态键（必需）                                         |
+| `extras.itemKey`     | 提示词中绑定当前条目的键（默认 `item`）                            |
+| `outputKey`          | 收集到的输出所写入的状态键（一次派发，而不是一个列表）             |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+把另一个流水线模板作为一个嵌套子步骤运行（子流水线会作为一次设置了 `parentPipelineRunId` 的子运行运行）。该步骤会挂起直到子运行达到终态，随后子运行的最终状态会被合并到 `outputKey` 下。
 
-| Config field        | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| 配置字段            | 说明                                                             |
+| ------------------- | ---------------------------------------------------------------- |
+| `extras.templateId` | 要运行的子模板（必需；一个流水线不能调用自身）                   |
+| `inputKeys`         | 复制进子运行触发器载荷的状态键                                   |
+| `outputKey`         | 子运行合并后的最终状态所写入的状态键                             |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+后台 tree-sitter 索引：遍历一个仓库，在工作进程隔离区中提取符号/边，并把它们摄入工作区代码图。把进度流式写入步骤运行行；支持试运行。tree-sitter 及其语法是必需的本地组件——缺少某个 dylib 意味着服务器从未启动过，而某个语法在运行中途解析失败会让该步骤失败，而不是跳过它。
 
-| State key         | Description                           |
+| 状态键            | 说明                                  |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | 要索引的仓库（必需）                  |
+| `repo_local_path` | 检出的本地路径（必需）                |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+离线说话人分离。读取会议保留的音频，把它聚类成若干说话人（`Person 1`、`Person 2`……），重新标注转写片段并重写 `transcript` 状态；还会为并行的 `meeting.updateTranscript` 步骤发出 `diarization_spans`。当没有保留任何音频、或模型尚未安装时，会原样透传转写内容。
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| 状态键       | 说明                          |
+| ------------ | ----------------------------- |
+| `meeting_id` | 要分离说话人的会议（必需）    |
 
-### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
+### `meeting.saveNotes`、`meeting.addActionItems`、`meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+确定性的会议摘要持久化主体。每个都会从状态中读取 `meeting_id` 以及智能体步骤的结构化 `meeting_outcome` 载荷（`{summary, enhancedNotes, actionItems[], decisions[]}`），并把自己的那部分写入各自的表——笔记、待办事项或决策。在降级运行中，先前已保存的行永远不会被抹掉。
 
-### Other built-in bodies
+### 其他内置主体
 
-| Body key                           | Description                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| 主体键                             | 说明                                                                                                                                                                                                                                                     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meeting.identifySpeakers`         | 跨会议说话人识别：把经过分离的说话人与已保存的声纹档案进行匹配，并自动应用高置信度的匹配。没有声纹档案 / 嵌入时不执行任何操作。                                                                                                                           |
+| `meeting.updateTranscript`         | 应用来自 `diarization_spans` 的 `Person N` 标签，把按窗口切分的片段合并成按说话人划分的回合，然后持久化清理后的转写内容。当说话人分离没有产出任何结果时不执行任何操作。                                                                                   |
+| `meeting.assemblePlayback`         | 从保留的各声道 WAV 组装会议的混音回放音轨。当没有保留任何音频时不执行任何操作。                                                                                                                                                                           |
+| `orchestration.markPhase`          | 在工作 DAG 的末尾，为没有产出的子工单写入失败哨兵，并把编排切换为 `synthesizing`。                                                                                                                                                                       |
+| `orchestration.persistDeliverable` | 把综合产出写入父工单，完成它，发布交付物，并把编排标记为 `completed`。                                                                                                                                                                                   |
+| `orchestration.awaitApproval`      | 部分批准闸门：当该步骤的节点键位于编排的已批准集合中时立即完成，否则挂起直到之后的某次批准恢复它。这是唯一会设置 `extras.awaitApproval` 的主体，这使它免受 24 小时挂起步骤超时的约束。                                                                      |
+| `messaging.createSpace`            | 打开模板其余部分在其中工作的对话，并把它发布在该步骤的 `outputKey` 下（内置模板使用 `pipeline_space_id`）。空的 `repoIds` 列表什么也不检出；`extras['allRepos']` 会检出工作区中的每一个仓库。`extras['createConversation']`（默认关闭）还会打开一个具名流。智能体步骤只会加入房间，从不会打开房间，因此没有该节点的扇出会在派发时失败——而只接一次线就让它成为整个扇出共享一份检出，而不是各自准备一份。 |
+| `prReview.finalize`                | PR 审查模板的最后一步：把累积起来的审查节点分拣进共识分桶，并计算每个 PR 的判定。                                                                                                                                                                        |
+| `skills.analyze`                   | 对工作区中已安装的技能运行技能供应链扫描，并记录每个判定。                                                                                                                                                                                               |
 
-## Step results
+## 步骤结果
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+步骤主体返回一个 `StepResult`（`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`）。除 `failed` 外，所有工厂都接受一个可选的 `mutatedState` 映射，它会被合并进流水线状态。
 
-| Factory                     | Signature                                                       | Description                                                               |
+| 工厂                        | 签名                                                            | 说明                                                                      |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | 正常完成；下游监听者会被评估                                              |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | 路由器完成；选中 `routeKey` 匹配的那条下游分支                            |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | 暂停，直到某个特定的领域事件类型触发                                      |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | 暂停，直到所列的全部任务都达到终态                                        |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | 这次流水线运行已结束——不会再有步骤                                        |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | 该步骤以一条错误消息失败                                                  |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+节点主体失败时的重试行为（`PipelineNodeConfig.retryPolicy`；为 null 时禁用重试）。
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| 字段             | 类型     | 说明                                                                              |
+| ---------------- | -------- | --------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | 包括第一次在内的总尝试次数（3 = 1 次尝试 + 2 次重试）；必须 ≥ 1                   |
+| `backoff`        | `String` | `linear` 或 `exponential`（默认）                                                 |
+| `initialDelayMs` | `int`    | 第一次重试前的延迟，以毫秒计；之后的延迟按 `backoff` 增长                         |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+承载在步骤定义内部的按节点配置（`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`）。内置节点和自定义节点都共用这一形态；每个主体只读取自己关心的字段。
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| 字段             | 类型                    | 说明                                                                                                                                    |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`         | `String?`               | 支持 `{{key}}` 替换的提示词模板                                                                                                         |
+| `script`         | `String?`               | 支持 `{{key}}` 替换的 bash 脚本主体                                                                                                     |
+| `agentId`        | `String?`               | 要派发的工作区级智能体 UUID                                                                                                             |
+| `inputKeys`      | `List<String>`          | 该节点作为输入消费的状态键                                                                                                              |
+| `repoIds`        | `List<String>`          | `messaging.createSpace` 节点检出的仓库（`<repoId>` 或 `<repoId>@<branch>`）。为空 = 不检出；`extras['allRepos']` = 工作区中的每一个仓库。在智能体步骤上会被忽略。 |
+| `outputKey`      | `String?`               | 该节点的输出写入的状态键                                                                                                                |
+| `label`          | `String?`               | 画布上显示的人类可读标签（默认为该步骤 ID）                                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | 输出值必须满足的 JSON Schema（子集）                                                                                                    |
+| `reducer`        | `String?`               | 并行分支写入同一个 `outputKey` 时的合并策略：`append`、`mergeLists`、`mergeMaps`、`sum` 或 `override`（默认）                            |
+| `retryPolicy`    | `StepRetryPolicy?`      | 主体失败时的重试策略；为 null = 只尝试一次                                                                                              |
+| `continueOnFail` | `bool`                  | 为 true 时，一次终态失败不会让这次运行失败；错误会被暂存在 `state['_stepErrors'][stepId]` 下                                             |
+| `timeoutMs`      | `int?`                  | 节点主体的墙钟超时，以毫秒计；为 null = 无超时                                                                                          |
+| `teamId`         | `String?`               | 要派发的团队（`team.dispatch` 节点）；与 `agentId` 互斥                                                                                 |
+| `dispatchMode`   | `String?`               | 团队执行模式：`allParallel` 或 `manager`                                                                                                |
+| `extras`         | `Map<String, dynamic>`  | 自由形式、按主体区分的配置（例如 `iterableKey`、`templateId`、条件树）                                                                  |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+派生访问器：`spaceId`（`extras['spaceId']`——要在其中工作的已有对话）、`createsConversation`（`extras['createConversation']`）、`conversationTitle`（`extras['conversationTitle']`）、`modeName`（`extras['mode']`——`chat` / `review` / `plan`，在打开空间的节点上读取）以及 `runWhen`（`extras['runWhen']`——未满足时跳过该节点）。
 
-## See also
+## 另请参阅
 
-- [Pipelines](/zh-CN/手册/概念/流水线/)
-- [Create a pipeline](/zh-CN/手册/操作指南/创建流水线/)
-- [Pipeline triggers](/zh-CN/手册/操作指南/流水线触发器/)
-- [Run a pipeline](/zh-CN/手册/操作指南/运行流水线/)
+- [流水线与自动化](/zh-CN/手册/概念/流水线/)
+- [创建流水线模板](/zh-CN/手册/操作指南/创建流水线/)
+- [设置流水线触发器](/zh-CN/手册/操作指南/流水线触发器/)
+- [手动运行流水线](/zh-CN/手册/操作指南/运行流水线/)

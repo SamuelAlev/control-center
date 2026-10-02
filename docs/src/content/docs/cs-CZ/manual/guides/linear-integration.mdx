@@ -1,34 +1,36 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Nastavte integraci Linear
+description: Ulož na server API klíč Linear, aby agenti mohli volat Linear, a zvol Linear jako poskytovatele ticketingu pro nové tickety.
 slug: cs-CZ/prirucka/navody/integrace-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/).
+Vlož na server API klíč Linear ke svému uživateli, stejně jako připojuješ
+forge. Tickety, projekty, vazby, spolupracovníci, delegování a přiřazení
+fungují nad vlastní databází Control Center a žádnou externí službu
+nepotřebují. Viz
+[Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/).
 
-## Store your Linear key
+## Ulož klíč Linear
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**API klíč ticketingu** je v **Nastavení → Pracovní prostor → Obecné**, na
+kartě **Ticketing**. Klíč se uloží na server k tvému id uživatele. Vlastní
+klíč serveru pro práci, o kterou nikdo nepožádal, bere `LINEAR_API_KEY` nebo
+kartu **Aplikace poskytovatelů** a jako `TICKETING_API_KEY` se vloží jen
+tehdy, když má ten agent schopnost **Povolit volání ticketing API**.
 
-## Stamp new tickets as Linear
+## Označ nové tickety jako Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Poskytovatel ticketingu** (první krok onboardingu a
+`/workspaces/<workspaceId>/api-keys`) nabízí `local` a `linear`. Když zvolíš
+`linear`, na tickety, které od té chvíle vytvoříš, se zapíše `provider: linear`.
 
-## Related guides
+## Související návody
 
-- [Create and manage tickets](/cs-CZ/prirucka/navody/sprava-ticketu/)
-- [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/)
-- [Manage API keys](/cs-CZ/prirucka/navody/api-klice/)
+- [Vytvářejte a spravujte tickety](/cs-CZ/prirucka/navody/sprava-ticketu/)
+- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
+- [Spravujte API klíče](/cs-CZ/prirucka/navody/api-klice/)
 
-## Related concepts
+## Související koncepty
 
-- [Tickets and delegation](/cs-CZ/prirucka/koncepty/tickety/)
+- [Tickety a delegování](/cs-CZ/prirucka/koncepty/tickety/)

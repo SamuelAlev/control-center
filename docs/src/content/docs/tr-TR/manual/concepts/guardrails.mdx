@@ -1,248 +1,258 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Korumalar — her değiştirici eylem için tek ilke
+description: Control Center her ajan yan etkisini neden tek bir izin/soru/ret motorundan geçiriyor, ActionClass sınıflandırması bilinçli olarak nasıl küçük kalıyor ve özerklik kadranı gerçekte neyi değiştiriyor.
 slug: tr-TR/kilavuz/kavramlar/korumalar
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center'daki ajanlar dosya silebilir, dal push edebilir, pull request
+yayımlayabilir ve harici API'ler çağırabilir. Bunların her biri farklı bir risk
+_türüdür_ ve uzun süre boyunca yalnızca biri — shell komutları — için bir ilke
+vardı. Korumalar, bir ajanın gerçekleştirebileceği her değiştirici eylem için, o
+eylemi hangi çalışma zamanının veya aracın önerdiğinden bağımsız olarak tek bir
+soruyu aynı biçimde yanıtlamak için vardır: **buna izin mi veriliyor, onay mı
+gerekiyor, yoksa reddediliyor mu?**
 
-## One engine, every chokepoint
+## Tek motor, her kilit nokta
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Tam olarak tek bir ilke motoru vardır. Bir eylemin sistemden çıkabileceği her
+noktada ona danışılır: yerleşik harness'ın araç kaydı, sunucu tarafındaki MCP
+dağıtıcı kapısı ve repo-op mutasyonları. Bu yüzden bir kez yazılan kural, hem
+yerleşik çalışma zamanında hem de harici ajan CLI'larında geçerli olur —
+etrafından dolaşan ikinci, daha sessiz bir yol yoktur. Eski yalnızca-bash komut
+ilkesi hâlâ çalışır: bir kural, eylem sınıfı yerine bir komut önekiyle
+eşleşebilir ve iki biçim aynı depoda bir arada bulunur.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Ne var ki motor, işletim sistemi sandbox'ının yerini tutmaz; sandbox da onun
+yerini tutmaz. Farklı soruları yanıtlarlar: korumalar, Control Center'ın
+görebildiği bir çağrının gerçekleşmesine hiç izin verilip verilmediğine karar
+verir; sandbox ise ortaya çıkan sürecin nerelere erişebileceğini sınırlar.
+`cc_server`, ana makine bir arka uç sunduğunda sandbox'ı uygular — ancak
+[Windows hiçbir şey sunmaz ve Linux `bwrap` ile `socat` gerektirir](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/). Bu
+ana makinelerde korumalar, bir tabanın üzerinde oturan bir ilke değil, en dıştaki
+uygulama katmanıdır; ne kadar izin verici olacağınıza karar verirken bunu bilmek
+faydalıdır.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: bilinçli olarak kapalı bir sınıflandırma
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Her değiştirici araç, kapalı bir on üç etki sınıfı kümesinden hangi
+**ActionClass**'lara ait olduğunu bildirir. Bunlardan beşi kutudan çıktığı
+hâliyle sorar; geri kalanı izin verir ve bunu değiştiren şey bir kuraldır.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Sınıf                      | Yerleşik varsayılan | Neyi kapsar                                                          |
+| -------------------------- | ------------------- | -------------------------------------------------------------------- |
+| `fileDelete`               | **önce sor**        | Bir dosyayı silme (silme biçimli bir yazma, `rm`)                    |
+| `gitPush`                  | **önce sor**        | Uzak bir git deposuna push etme                                      |
+| `prCreate`                 | **önce sor**        | Pull request oluşturma                                               |
+| `prPublish`                | **önce sor**        | İnceleme yayımlama, PR birleştirme                                   |
+| `vendorSyncWrite`          | **önce sor**        | Harici bir bilet sağlayıcısına yazma (Linear, Jira, GitHub senkronizasyonu) |
+| `fileWriteOutsideWorktree` | izin ver            | Yalıtılmış çalışma ağacının dışındaki bir dosyaya yazma              |
+| `gitCommit`                | izin ver            | Bir git commit'i oluşturma                                           |
+| `networkEgress`            | izin ver            | Ağa çıkış (web getirme, rastgele HTTP)                               |
+| `secretAccess`             | izin ver            | Bir secret veya kimlik bilgisi okuma                                 |
+| `packageInstall`           | izin ver            | Paket kurma (npm, pip, pub, brew)                                    |
+| `processSpawn`             | izin ver            | Süreç başlatma (shell ve shell'e çıkan her şey)                      |
+| `workspaceMutation`        | izin ver            | Çalışma alanı yapısını değiştirme (depolar, alanlar, ajanlar)        |
+| `enclosureControl`         | izin ver            | Bir enclosure'ı (rig) yönetme: bir VM başlatma, ona girdi gönderme   |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+Varsayılan olarak izin veren sekiz sınıf, altlarında sandbox tabanının geçerli
+olduğu varsayımıyla seçildi. Ana makine bir arka uç sunduğunda bu böyledir;
+Windows'ta ya da `bwrap` ve `socat` eksik bir Linux makinesinde ise böyle
+değildir — dolayısıyla orada `fileWriteOutsideWorktree` veya `packageInstall`
+için bir kapı istiyorsanız, yazmanız gereken bir kural vardır.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Küme bilinçli olarak kapalıdır. Sınıf bildirmeyen yeni bir değiştirici araç
+ratchet testini geçemez; bu yüzden sınıflandırma ancak açık ve gerekçeli bir
+kararla büyüyebilir — "sınıflandırmanın şişmesi bu özelliğin sonu demektir." On
+üç sınıf, insanların gerçekte yazdığı ilkeleri ifade etmeye yeter (sormadan asla
+push etme, bir çalışma ağacının dışında asla silme, okumalara her zaman izin
+ver) ve ayarlar arayüzünün anlaşılır kalmasını sağlayacak kadar da azdır.
 
-## Rules and scope resolution
+## Kurallar ve kapsam çözümlemesi
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+Bir kural `(scope, ActionClass | command prefix) → allow | prompt | deny`
+eşlemesi yapar. Kapsamlar en özgülden en gene doğru iç içe geçer:
 
-**space > agent > workspace > mode preset > built-in default**
+**alan > ajan > çalışma alanı > mod ön ayarı > yerleşik varsayılan**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Çözümleme **önce özgüllük** ilkesine göre yapılır: eşleşen bir kurala sahip ilk
+kapsam kararı verir ve çözümleme orada durur. En kısıtlayıcı olma yalnızca bir
+eşitlik bozucudur — tek bir kapsam içindeki iki eşit özgüllükte kural arasında ve
+tek bir eylemin bildirdiği birkaç sınıfı birleştirirken. Bir kapsam içinde komut
+kuralı en uzun komut önekiyle eşleşir. İzin, hiçbir yerde reddi yenmez.
 
-Two decisions carry hard guarantees:
+İki karar katı garanti taşır:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Varsayılanı ret olan sorular.** Bağlı bir onaylayıcı yokken bir `prompt`
+  _reddedildi_ olarak çözülür. Yanıtsız bir soru asla evet değildir.
+- **En kısıtlayıcı birleşim.** Birkaç sınıfa yayılan bir eylem, bunları en
+  kısıtlayıcı biçimde birleştirir; birkaç sınıf sorduğunda tek bir onay hepsini
+  listeler.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Bilinçli olarak tur başına kalıcı bir kilit yoktur. Her araç çağrısı ilkeyi
+sıfırdan yeniden çözümler; bu yüzden aynı eylem için tekrar tekrar sorulması,
+tura bağlı herhangi bir şeyle değil, operatörün kendi "bu kararı hatırla"
+tercihiyle sınırlanır.
 
-## Argument-level rules
+## Argüman düzeyinde kurallar
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+Bir kural, bir eylemin yalnızca fiilini değil ARGÜMANLARINI da kısıtlayabilir.
+"Push edebilir" ile "`feature/*` dalına push edebilir" farklı iddialardır ve
+yalnızca ikincisi bir denetimdir — yalnızca fiile yetki veren bir yetenek kapısı,
+yayımlanmış ajan olaylarının çoğunun arkasındaki biçimdir.
 
-A constraint may name:
+Bir kısıt şunları adlandırabilir:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **yollar** — glob kalıpları (`repos/**`, `!**/.env`)
+- **ref'ler** — git ref'leri, `!` olumsuzlamasıyla (`['**', '!main']` "main
+  dışındaki her dal" diye okunur)
+- **host'lar** — alt alan adı joker karakterleriyle ağ hedefleri (`*.internal`)
+- **komutlar** — sözcük sınırında eşleşen komut önekleri
+- **üst sınırlar** — `maxCount` / `maxCents`, böylece "en fazla 50 dosya sil"
+  ifade edilebilir
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Dilbilgisini kapalı ve döngüsüz tutmanın üç sonucu vardır ve üçü de asıl amaçtır:
+her kural geri okuyabileceğiniz bir cümle olarak görünür, her ret eşleşen kısıtı
+adlandırabilir ve ilkenin tamamı numaralandırılabilir — bir ajanın *çalışmadan
+önce* neler yapabileceğini görebilirsiniz.
 
-Three rules that matter:
+Önem taşıyan üç kural:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **Kısıtlı bir kural**, aynı kapsamda kısıtsız olandan **daha özgüldür**; bu
+  yüzden "`main` dalına push etmeyi reddet", sıralamayı kimse düşünmeden "push
+  etmeye izin ver"i yener.
+- **Kısıtlayıcı** bir kural (reddet / sor), istek adlandırdığı değerlerden
+  *herhangi birine* dokunduğunda uygulanır; **izin verici** bir kural (izin ver)
+  ise yalnızca istek onun *tamamen* içinde olduğunda uygulanır. İkisini aynı
+  biçimde okumak, bir ajanın yasak bir yolun yanına zararsız bir yol ekleyerek
+  yasağı aklamasına izin verirdi.
+- İsteğin hiçbir şey söylemediği bir yönü adlandıran bir kural ne uygulanır ne
+  atlanır: **onaya yükseltir**. Sessizce atlamak, korumalı dal kurallarının
+  tamamını ref'ini bildirmeyen bir araca karşı işlevsiz kılardı; sessizce
+  reddetmek, çıkarıcının tanımlayamadığı her push'u geri çevirirdi. Bağlı bir
+  onaylayıcı yokken, mevcut varsayılanı ret olan kural bu yükseltmeyi bir redde
+  dönüştürür.
 
-## What a command rule can and cannot catch
+## Bir komut kuralının yakalayabildikleri ve yakalayamadıkları
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+Bir `commandPrefix` kuralı sözcük sınırında eşleşir: `git push` ifadesi
+`git push origin main` ile eşleşir, `git pushx` ile eşleşmez. Shell'i
+**normalleştirmez**.
+`git  push` (iki boşluk), `cd sub && git push` ve `GIT_DIR=… git push` farklı
+dizelerdir ve hiçbiri `git push` hakkındaki bir kuralla eşleşmez.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Bu gerçek bir sınırdır ve üstü örtülmek yerine açıkça söyleniyor: komut kuralları,
+sıradan ajan davranışını biçimlendirmek için bir operatör kolaylığıdır;
+**düşmanca** davranan bir ajana karşı bir sınır değildir. Sınırlar etki
+sınıflarıdır (bir aracın bildirdiği ve yeniden adlandıramayacağı sınıflar), ilke
+deposunun altındaki mod komut ağı ve her ikisinin altındaki işletim sistemi
+sandbox'ıdır. `allow` olarak çözülen bir komut kuralı bu ikisinden hiçbirini
+hiçbir zaman gevşetmez — mod ağı sonradan çalışır ve onun `deny` kararı nihaidir.
 
-## Standing approvals
+## Kalıcı onaylar
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Bir soruyu "bunu hatırla" diyerek yanıtlamak gerçek bir ilke kuralı yazar:
+kapsamlıdır (alan / ajan / çalışma alanı), **argümanla kısıtlıdır**
+(`feature/login` dalına yönelik bir push'u onaylamak `main`i değil `feature/**`
+kalıbını verir) ve açık bir TTL ile **kendini iptal eder**. Önümüzdeki birkaç
+saat için evet demek, kalıcı ilkenizi sessizce yeniden yazmakla aynı şey değildir;
+yazdığı kurallar aynı depoya `remembered` kaynağı ve bir son kullanma tarihiyle
+düşer, böylece erkenden iptal edilebilirler.
 
-## Enforcement levels
+## Uygulama düzeyleri
 
-Each rule carries one:
+Her kural birini taşır:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **tavsiye** — izin verir, ancak kuralın eşleştiğini kaydeder. Bu, benimseme
+  yoludur: katı bir kuralı tavsiye kipinde devreye alın, bir hafta boyunca
+  denetim kaydını okuyup tam olarak neyi *engelleyeceğini* görün, sonra onu
+  yükseltin. Bu kademe olmasaydı katı ilkeler hiçbir zaman etkinleştirilmezdi.
+- **yumuşak** — reddeder; geçersiz kılma iznine sahip biri tarafından, kayda
+  geçen bir gerekçeyle geçersiz kılınabilir. Geçersiz kılmanın kendisi de
+  denetlenen bir olaydır.
+- **katı** (varsayılan) — reddeder. Hiçbir şey onu geçersiz kılamaz.
 
-## The managed tier
+## Yönetilen katman
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+Bir kurulum operatörü, hiçbir çalışma alanı yöneticisinin gevşetemeyeceği bir
+ilke sabitleyebilir. Yönetilen kurallar sunucu tarafında yaşar ve her çalışma
+alanının kendi zinciriyle **en kısıtlayıcı** biçimde birleştirilir — zincirin
+başındaki bir kapsam değildirler, çünkü zincirin başında yer alan yönetilen bir
+`allow`, kurulumun bir çalışma alanının ret kararını geçersiz kılmasına izin
+verirdi; bu da bir kıskacın var olma amacının tam tersidir. Bu nedenle yönetilen
+bir kural yalnızca sıkılaştırabilir.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+`CC_SERVER_MANAGED_POLICY` değişkenini bir JSON dosyasına ayarlamak, depolanan
+kuralları tamamen geçersiz kılar; bir operatörün hiçbir yönetici arayüzünün
+değiştiremeyeceği bir duruşu sabitlemesini sağlayan şey budur —
+"geliştiricilerimin güvenlik denetimlerini devre dışı bırakmasını engelleyebilir
+miyim?" sorusunun yanıtı.
 
-## The autonomy dial is a profile, not a parallel system
+## Özerklik kadranı paralel bir sistem değil, bir profildir
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Alan başına özerklik kadranı, ikinci bir mekanizma değil, aynı ilke deposu
+üzerinde adlandırılmış bir profildir. Üç ayarı `proposeOnly`, `actWithApproval`
+ve `actFreely` olarak saklanır ve gönderilir (tireli biçimler yalnızca arayüz
+metnidir ve `autonomy.setForSpace` başka her şeyi reddeder). Ayar boş
+bırakılırsa `actWithApproval` gibi davranır.
 
-What each one does to a resolved decision:
+Her birinin çözümlenmiş bir karara etkisi:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** kapıya tabi her aracı doğrudan reddeder. Ajan yine de akıl
+  yürütüp yanıt verebilir; yalnızca harekete geçemez ve mesajı bunun nedenini
+  söyler.
+- **`actWithApproval`** (ve ayarın boş bırakılması), yukarıda açıklanan
+  varsayılanı ret olan onay kapısıdır.
+- **`actFreely`**, katı bir `deny` olarak çözülmeyen her şeyi önceden onaylar.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Sonuncusunun yumuşatılmak yerine açıkça söylenmesi gerekir: `actFreely` altında
+bir `prompt` kararı bir onaylayıcıya **yükseltilmez** — izin verilir ve kimseye
+sorulmaz. Kadrandan yalnızca açık bir `deny` kuralı sağ çıkar. Dolayısıyla
+`actFreely` bir kolaylık ayarı değil, bilinçli bir özerklik devridir ve
+varsayılanı ret olan kural tam da önemli olduğu durumu (`actWithApproval`,
+varsayılan) korur.
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Ajanlar arasındaki devretme, `delegate_task` kilit noktasında dört korumanın
+tamamıyla korunur: bir derinlik sınırı (varsayılan 3), döngü algılama, bir
+**özerklik tavanı** (devredilen ajan, kendisine devreden ajandan asla daha fazla
+özerklikle hareket edemez — ayrıcalık, iş daha serbest bir ajana verilerek
+aklanamaz) ve bir **bütçe zarfı** (devretme, devredenin kalan bütçesinden düşer
+ve yeni bütçe yaratamaz). Her biri, korumanın gerekçesi ajana birebir
+döndürülerek yüksek sesle reddedilir.
 
-## The adapter honesty matrix
+## Adaptör dürüstlük matrisi
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Her çalışma zamanı, Control Center'ın her eylemi yakalamasına izin vermez. Harici
+ajan CLI'ları bazı araçları yerel olarak, süreç içinde çalıştırır; oraya hiçbir
+kapı yerleşemez. Bunun aksini varsaymak yerine her adaptör bir **dürüstlük
+matrisi** taşır: adaptör başına, Control Center'ın araç yüzeyini filtreleyip
+filtrelemediği, araç çağrılarını yakalayıp yakalamadığı, tamamlanma sözleşmesini
+gözlemleyip gözlemlediği, çalıştırıcının yerel araçlarını görüp göremediği ve
+süreç içi araçların bir sandbox profiliyle kapsanıp kapsanmadığı.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Bir yapılandırmaya güvenmeden önce okunmaya değer iki kayıt var. Yerleşik harness,
+süreç içi dosya araçlarının **sandbox'ta çalışmadığını** bildirir — sahip olduğu
+tek dosya sistemi sınırı araç yüzeyi ve bu ilke motorudur. Claude Code, kendi
+araç çağrılarının **yakalanamadığını** bildirir; çünkü
+`--dangerously-skip-permissions` ile başlatılır. Control Center yalnızca `mcp__*`
+çağrılarını görür; kendi read, write, edit ve shell araçları görünmeden çalışır.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Ayarlar ekranı bu matrisi gösterir; çünkü bir koruma sistemi için affedilmez tek
+hata, var olmayan bir kapsamı iddia etmektir.
 
-## Probing policy before it bites
+## İlke ısırmadan önce yoklama
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Korumalar **Ayarlar → Çalışma alanı → Ajan izinleri** altında yer alır
+(`/workspaces/<id>/settings/workspace/permissions`). Ekranda kuralların
+yazıldığı ilke matrisi, ilke şablonları, bir "ne olur?" sorgusu, yetkilendirme
+denetim kaydı ve adaptör dürüstlük matrisi bulunur.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Sorgu bir eylem sınıfı (veya bir komut) ile bir kapsam alır ve hangi kuralın
+karar verdiğini ve nedenini gösterir. Çözümleme saf ve belirlenimci olduğundan —
+aynı eylem, aynı kapsam, aynı karar — sorgunun yanıtı, ajanın alacağı yanıttır.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/): writing and testing rules in practice
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): bir ajan çalıştırmasını gerçekte neyin kısıtladığı ve bu motorun altındaki işletim sistemi tabanının ne kadar eriştiği
+- [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): alanlar, asıl kimlikler ve özerklik kadranının nerede yaşadığı
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/): kuralları pratikte yazma ve test etme

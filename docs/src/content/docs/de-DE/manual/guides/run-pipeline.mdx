@@ -1,68 +1,77 @@
 ---
-title: Run a pipeline manually
-description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+title: Eine Pipeline manuell ausführen
+description: Starte einen Pipeline-Lauf von der Ausführungsseite, fülle die Eingaben aus und gelange zur Detailseite des Laufs.
 slug: de-DE/handbuch/anleitungen/pipeline-ausfuehren
+sourceHash: 0ff7030a102b78ff872925bf9d92ff7fe3a87472
 ---
 
-This guide covers starting a run by hand. For watching one, reading step
-output and recovering from a failure, see
-[Monitor pipeline runs](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/).
+Diese Anleitung beschreibt, wie du einen Lauf von Hand startest. Zum Beobachten,
+zum Lesen der Schrittausgabe und zum Wiederherstellen nach einem Fehler siehe
+[Pipeline-Läufe überwachen](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/).
 
-## Start a run
+## Einen Lauf starten
 
-1. Click **Pipelines** in the workspace sidebar.
-2. Press **Run pipeline** in the header. You land on the launcher
-   (`/workspaces/<workspace-id>/pipelines/run`).
-3. Pick a template from the left rail. Each card shows the template's name, its
-   description and whether it takes inputs.
-4. Fill in the input form on the right. Required fields block the button until
-   they have a value; a template with no inputs says so.
-5. Press **Run pipeline**.
+1. Klicke in der Seitenleiste des Arbeitsbereichs auf **Pipelines**.
+2. Drücke **Pipeline ausführen** in der Kopfzeile. Du gelangst zur
+   Ausführungsseite (`/workspaces/<workspace-id>/pipelines/run`).
+3. Wähle eine Vorlage aus der linken Leiste. Jede Karte zeigt den Namen der
+   Vorlage, ihre Beschreibung und ob sie Eingaben hat.
+4. Fülle das Eingabeformular rechts aus. Erforderliche Felder blockieren die
+   Schaltfläche, bis sie einen Wert haben; eine Vorlage ohne Eingaben zeigt
+   „Diese Pipeline benötigt keine Eingaben.“
+5. Drücke **Pipeline ausführen**.
 
-You land on the run's detail page, with the timing waterfall and the graph
-canvas live.
+Du gelangst zur Detailseite des Laufs. Zeit-Wasserfall und Graph-Zeichenfläche
+aktualisieren sich live.
 
-## If the rail is empty
+## Wenn die Leiste leer ist
 
-The launcher shows a template only when **both** are true:
+Die Ausführungsseite zeigt eine Vorlage nur, wenn **beides** gilt:
 
-- The template's switch is on in **Settings → Workspace → Pipeline templates**.
-- **Allow manual run** is on in the template editor's **Manual run** dialog —
-  that switch is what creates the `manual` trigger the launcher reads.
+- Der Schalter der Vorlage ist unter **Einstellungen → Arbeitsbereich →
+  Pipeline-Vorlagen** an.
+- **Manuelle Ausführung zulassen** ist im Dialog **Manuelle Ausführung** des
+  Vorlageneditors an — dieser Schalter legt den Trigger `manual` an, den die
+  Ausführungsseite liest.
 
-Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
-`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
-`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
-turn its switch on before looking for it here.
+Acht der dreizehn mitgelieferten Vorlagen werden deaktiviert ausgeliefert:
+`external_pr_welcome`, `cross_review`, `ticket_to_pr`, `pr_triage`,
+`pre_merge_gate`, `release_notes`, `dep_audit` und `pr_digest`. Die Engine
+startet eine deaktivierte Vorlage nicht, schalte ihren Schalter also ein, bevor
+du sie hier suchst.
 
-There is no per-template **Run** action on the templates list and no run button
-inside the editor — the launcher is the only manual entry point.
+In der Vorlagenliste gibt es keine Aktion **Ausführen** je Vorlage und im
+Editor keine Startschaltfläche — die Ausführungsseite ist der einzige manuelle
+Einstieg.
 
-## Fill in a repository input
+## Eine Repository-Eingabe ausfüllen
 
-An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
-when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
-payload, so downstream steps can read whichever they need.
+Eine Eingabe vom Typ **Repository** zeigt eine Auswahl über die registrierten
+Repos des Arbeitsbereichs. Die Wahl schreibt `repo_id`, `repo_local_path`,
+`repo_full_name` und — wenn das Repo ein GitHub-Remote hat — `repo_owner` und
+`repo_name` in die Nutzlast des Laufs, sodass nachgelagerte Schritte den Wert
+lesen können, den sie brauchen.
 
-## Watch it run
+## Den Lauf beobachten
 
-The run detail page has three parts: a meta strip (start time, active duration,
-step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
-waterfall with per-step duration and cost and the graph canvas. Selecting a
-node opens that step's detail panel.
+Die Detailseite des Laufs hat drei Teile: eine Metaleiste (Startzeit, aktive
+Dauer, Schrittfortschritt, eine Fehlerzusammenfassung, **Erneut versuchen** und
+**Löschen**), einen einklappbaren Zeit-Wasserfall mit Dauer und Kosten je
+Schritt und die Graph-Zeichenfläche. Wählst du einen Knoten, öffnet sich das
+Schrittpanel dieses Schritts.
 
-[Monitor pipeline runs](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/) covers all of it,
-including how to read a suspended step and what to do when one fails.
+[Pipeline-Läufe überwachen](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/)
+deckt das alles ab, auch wie du einen Schritt im Status Suspended liest und was
+du tust, wenn einer scheitert.
 
-Every run you start from the app is a real one.
+Jeder Lauf, den du aus der App startest, ist ein echter Lauf.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Create a pipeline template](/de-DE/handbuch/anleitungen/pipeline-erstellen/)
-- [Set up pipeline triggers](/de-DE/handbuch/anleitungen/pipeline-trigger/)
-- [Monitor pipeline runs](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/)
+- [Eine Pipeline-Vorlage erstellen](/de-DE/handbuch/anleitungen/pipeline-erstellen/)
+- [Pipeline-Trigger einrichten](/de-DE/handbuch/anleitungen/pipeline-trigger/)
+- [Pipeline-Läufe überwachen](/de-DE/handbuch/anleitungen/pipelines-ueberwachen/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Pipelines](/de-DE/handbuch/konzepte/pipelines/)
+- [Pipelines und Automatisierung](/de-DE/handbuch/konzepte/pipelines/)

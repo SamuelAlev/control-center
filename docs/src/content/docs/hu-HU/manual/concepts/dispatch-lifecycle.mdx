@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Az ügynökindítás életciklusa
+description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Mi az indítás
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Az indítás egy ügynök egyetlen futtatása, egy beszélgetésben, egy adapteren. Minden, ami vele kapcsolatos, a `cc_server`-en történik: a kliens elküld egy üzenetet, majd figyeli, ahogy az események visszaáramlanak. Egyetlen kliensben sincs indítási útvonal.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Az ügynököket hat okból ébresztjük fel; ezeket a futtatás **ébresztési kontextusként** hordozza, hogy az ügynök tudja, _miért_ van ébren:
 
-| Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| Az ébresztés oka  | Kiváltó esemény |
+| ----------------- | ------------------------------------------------------------ |
+| `userMessage`     | Valaki üzenetet küldött egy térben, vagy megemlítette az ügynököt |
+| `assignment`      | Hozzárendeltek egy jegyet az ügynökhöz |
+| `pipelineStep`    | Egy pipeline-lépés indította el |
+| `childCompleted`  | Egy gyermekjegy elkészült |
+| `followUp`        | Ütemezett utókövetési szívverés |
+| `recovery`        | A helyreállítási útvonal egy hiba után újraindította |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Az ébresztési kontextus hordozza az okhoz tartozó azonosítókat — jegy, tér, üzenet, pipeline-futtatás —, és ezek bekerülnek az ügynök környezetébe és promptjába.
 
-## Prompt assembly
+## A prompt összeállítása
 
-The prompt is built in layers, each one a labelled section:
+A prompt rétegekben épül fel, mindegyik egy címkézett szakasz:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identitás** — az ügynök saját azonosítója, neve és munkaterület-azonosítója, valamint egy explicit utasítás, hogy pontosan ezeket a UUID-kat adja át a munkaterület-hatókörű eszközöknek. A munkaterület az ügynök eredendő tulajdonsága, ezért mindig jelen van.
+- **Eszközkatalógus és erőforrás-protokollok**, majd a **munkaterület elrendezése**.
+- **Rendszerprompt-felülírás**, ha az ügynöknek van ilyen, majd a **persona** (szerepkör szerint paraméterezve) és a **csapatösszefoglaló**.
+- **Készségek** — az ügynökhöz rendelt nevek.
+- **Végrehajtási szerződés és eljárás** az aktuális módhoz.
+- **Ébresztési kontextus** és **említési kontextus**: ki hívta az ügynököt, és milyen névsor veszi körül.
+- **Módblokk** — a mód képességprofiljából _és annak materializált eszközlistájából_ generálódik, így egy prompt soha nem nevezhet meg olyan eszközt, amellyel a futtatás valójában nem rendelkezik.
+- **Memóriakontextus** — a feladathoz előkeresett tények.
+- **Beszélgetési kontextus** — a tér közelmúltbeli előzményei, szó szerinti ablakként 50 000 karakterre korlátozva, függetlenül az ügynök beállított kontextusméretétől. A régebbi előzmények nem csonkulnak le: az ügynök igény szerint előkeresi őket a `get_messages` segítségével, és a szemantikailag releváns régebbi üzenetek továbbra is előkerülnek.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Slash-parancsok a nyers felhasználói szövegből kerülnek feldolgozásra]
+A rétegzett prompt egy kontextusblokkal kezdődik, ezért nem perjellel indul. A parancsok a felhasználó üzenetéből szó szerint kerülnek feldolgozásra, majd kivágódnak a rétegzett prompt végéből, így minden kontextusréteg megmarad.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+A parancsok kezelése két helyen történik. A `/todo` és a `/compact` a beviteli mezőben kerül elfogásra, és szándékosan soha nem perzisztálódnak üzenetként, illetve nem kerülnek elküldésre az ügynöknek — a `/compact` perzisztálása egy körrel hátrébb tolná a tömörítési határt, és beszennyezné az átiratot. A `/plan` mindkét helyen kezelve van: a beviteli mező átállítja a tér módját, ettől lesz összhangban az eszközfelszín, a korlát-előbeállítás és a prompt ebben a körben és minden utána következő körben. A `/goal`, a `/loop` és a `/skill:<name>` magában a futtatásban kerül kezelésre, és csak a beépített harness esetén — a `/goal` és a `/loop` költségkerettel autonóm munkát indít, a `skill:` előtaggal ellátott nevet pedig készségként keressük ki, amelynek `SKILL.md` törzse lesz a kör utasítása. A névtér az, ami szétválasztja a két szókincset: ha a csupasz nevet készségek ellenében oldanánk fel, akkor egy `plan` vagy `compact` nevű készséget tartósan elfedne a beépített parancs. A csupasz, nem beépített név továbbra is feloldódik, azoknak az üzeneteknek a kedvéért, amelyek a névtér megjelenése előtt íródtak. Egy ismeretlen név egyszerűen sima szövegként megy tovább.
 
-## Worktree provisioning
+## Worktree-k létrehozása
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Mielőtt bármi elindulna, a beszélgetés saját munkagyökeret kap, amely alatt repónként egy elszigetelt, copy-on-write worktree található. Alapértelmezés szerint ez a munkaterülethez kapcsolt összes repó; egy PR-tér — vagy egy explicit kijelöléssel létrehozott tér — csak az engedélyezett listán szereplőket hozza létre, és egy PR-átnézési beszélgetés az egyetlen repóját a pull request head refjére rögzíti, míg a többi az alapértelmezett ágán marad. A forrás-munkapéldány soha nem módosul, és a tér törlésekor a teljes beszélgetéskönyvtár felszabadul.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+A copy-on-write az **egyetlen** implementáció mindenhol, ahol a `rift` elérhető, a csomagolt natív komponensre támaszkodva. Egy olyan fájlrendszer, amely nem tud reflinket — vagy egy másik köteten lévő adatkönyvtár, mint a repó —, inkább meghiúsítja a létrehozást, mintsem visszaesne egy tartalékra. Windows alatt a `git worktree` a háttérrendszer, ahol nincs mit építeni copy-on-write háttérrendszerként, és más hosztokon ez nem csendes degradáció. Egy hiányzó `rift` egy olyan platformon, amely szállítja, törött telepítést jelent — a szerver inkább megtagadja az indulást, mintsem csendben visszaesne egy tartalékra, mert a csendes visszaesés örökre egy lassabb útvonal mögé rejti a hibát.
 
-## Identity and credentials
+## Identitás és hitelesítő adatok
 
-Two identities are resolved per run, before any process launches.
+Futtatásonként két identitás oldódik fel, mielőtt bármilyen folyamat elindulna.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git szerzőség.** Az ügynök által készített commitok szerzője _az ügynök_ — `<Name> (agent) <agentId@agents.control-center.local>` a `GIT_AUTHOR_*` és a `GIT_COMMITTER_*` változókban egyaránt —, soha nem embernek adva ki magát. A helyi rész az ügynök UUID-ja, nem a nevének slugja. A kérő ember egy `Co-Authored-By:` utótaggal jelenik meg jóváíróként, amelyet a környezet hordoz, és a rendszerprompt előír. Egy explicit, hívó által beállított identitás mindig felülírja mindkettőt.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Forge-identitás.** A futtatás GitHub-hitelesítő adata soha nem lehet más, mint a brókeré — egy repóra szűkített App-telepítési token vagy annak környezeti PAT-tartaléka —, soha nem a kérő tag saját tárolt tokenje. Az `actingUserId` korlátozza a PAT-tartalékot, így az a tag, aki nem a szerver tulajdonosa, nem örökli a szerver elérését; ugyanakkor nem is illeszt személyes tokent az ügynök környezetére.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**A modellszolgáltató hitelesítő adatai** rögzített sorrendben oldódnak fel, és a sorrend számít:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. adapterenkénti környezeti felülírás,
+2. a hívó környezete,
+3. a szerver hitelesítőadat-tára (frissítve az OAuth-tokent, ha közel a lejárata),
+4. a folyamat környezete.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Mivel az adapterenkénti felülírás az első, csendben felülírja az alkalmazásban csatlakoztatott szolgáltatói fiókot. Ha egy futtatás rossz fiókra számláz, elsőként ezt a felülírást érdemes megnézni. A szolgáltatói hitelesítő adatok hoszt-szintűek — a telepítés minden munkaterülete között megosztottak.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
+A képesség alapján kapuzott tokenek (GitHub, jegykövetés) a hitelesítőadat-brókertől származnak, amely csak azt injektálja, amit a futtatás képességei megengednek. Lásd: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
 
-## Launch
+## Indítás
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+A futtatás a worktree-jét használva munkakönyvtárként indul, és — a Claude Code esetében — egy generált MCP-konfigurációval, hogy az ügynök elérje a Control Center eszközfelszínét. Az ACP és a harness `bash` tisztított környezetet kap; a Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Az operációs rendszer homokozója csak ott veszi körül a futtatást, ahol a hosztnak van háttérrendszere]
+A `cc_server` induláskor egyszer felméri a hosztot, és ha van elérhető háttérrendszer, abba csomagolja az ügynökfolyamatokat — macOS-en Seatbelt, Linuxon és WSL2-n bubblewrap. Mindkét indítási varrat be van csomagolva, mert nem ugyanazt használják: a Claude Code CLI a homokozóporthoz fut be; az ACP-adapterek és a beépített harness `bash` eszköze a homokozókezelőn keresztül mennek. Ez az is, ami érvényesíti a futtatás védett útvonalait: a regisztrált repó-munkapéldányok írása minden módban tiltott a homokozón belül.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Ahol nincs háttérrendszer, a futtatás **nincs** homokozóba zárva, és semmi más nem változik ezt kompenzálandó. Ez mindig így van Windows alatt (nincs natív csomagolás — a `microvm` külön, próba alapján kapuzott útvonal a terminálokhoz és az állomásokhoz), valamint Linuxon vagy WSL2-n, ha a `bwrap` és a `socat` nincs a `PATH`-ban. A szerver a naplójának induló sorában megnevezi, melyik állapotban van, és a `--sandbox off` szándékosan kikapcsolja.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Két rés akkor is megmarad a homokozóban, ha az be van kapcsolva. A harness folyamaton belüli fájleszközei (read, write, edit, apply patch, search, find, search_files) a szerverfolyamaton belül futnak, így semmilyen profil nem korlátozza őket — a korlátjukat az eszközök saját útvonalkorlátozása és a korlátok adják. A Claude Code pedig `--dangerously-skip-permissions` kapcsolóval indul, így a saját fájl- és shell-hívásait nem kapuzza a Control Center; a körülöttük lévő határ az operációs rendszer homokozója.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+A fennmaradó korlátok minden hoszton érvényesek, homokozóval vagy anélkül: a futtatás saját worktree-je (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`), az indításonként brókerezett, a lebontáskor visszavont, képesség alapján kapuzott hitelesítő adatok, az egységes műveleti korlátok (fail-closed — egy `prompt` döntés, amelyhez nincs csatlakoztatva jóváhagyó, elutasításra kerül) és a beszélgetés módja által engedett eszközfelszín. Az ACP és a harness `bash` továbbra is tisztítja a környezetet; a Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
 :::
 
-## Streaming
+## Streamelés
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+A futtatás egy típusos eseménysorozatot streamel vissza, amelyet a streamfeldolgozó üzenetdeltákként perzisztál, átiratszegmensekké fűz össze, és üzenetküldési eseményekké alakít:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| Esemény            | Mit hordoz |
+| ------------------ | ------------------------------------------------------------ |
+| `thinking`         | Gondolkodási kimenet, beágyazva megjelenítve |
+| `text`             | Látható kimenet |
+| `toolCall`         | Egy eszközhívás, annak azonosítójával és strukturált argumentumaival |
+| `toolResult`       | A hozzá tartozó eredmény, megjelölve, ha hibázott, vagy ha részleges stream |
+| `usage`            | Tokenek száma és költség egy mérési ablakra |
+| `error`            | Egy hiba, az adapter strukturált kódjával, ha az jelentett ilyet |
+| `sandboxViolation` | Az operációs rendszer megtagadott egy rendszerhívást. Csak ott kerül kibocsátásra, ahol egy homokozó ténylegesen körülveszi a folyamatot — lásd a fenti megjegyzést |
+| `debug`            | Futásidejű diagnosztika (indítási jelölők, korlát-döntések, szerződésemlékeztetők) |
+| `done`             | A futtatás befejeződött |
 
-## What bounds a run
+## Mi korlátoz egy futtatást
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Szándékosan **nincs sehol körplafon**. Egy kemény iterációszám megölne legitim, hosszú munkákat (migrációk, fan-out takarítás), és semmit nem kapna el korábban, mint az alábbi őrök. Egy futtatás akkor ér véget, amikor:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **a modell magától megáll**;
+- **egy ember leállítja**, vagy átveszi a beszélgetést (ez a beépített harness-t a következő tiszta körhatárán szünetelteti — egy Claude Code futtatás, amelynek nincs biztonságos határa, inkább leállításra kerül);
+- **a csendfigyelő riaszt.** Ha a küszöbértékig nincs kimenet, a munkamenet `silentRun` hibával lezárul. Az alapérték 15 perc, amely a nagyrészt olvasásra épülő módokban (átnézési és tervmód) 10 percre csökken; az ügynök 1 és 240 perc között felülírhatja. A csendfigyelő akkor élesedik, amikor egy gyermekfolyamat jelenti a PID-jét, így lefedi a Claude Code CLI-t — **nem** fedi le viszont a beépített harness-t, amely semmit nem indít;
+- **egy költségkorlát életbe lép** — de csak az autonóm parancsoknál.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+A végzetes hurok elleni őr nem lezáró: három egymás utáni azonos eszközhívás esetén a hurok _más irányba tereli_ az ügynököt, hogy változtasson a megközelítésén.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Egy normál körnek nincs költségkorlátja]
+A munkameneten belüli költségőr csak a `/goal` és a `/loop` esetében van bekötve; minden más futtatás egyáltalán nem ad át költségkeretet. Ezeknél a parancsoknál egy felügyelet nélküli szegmens alapértelmezés szerint 500 centet (5,00 dollárt) emészthet fel, 80%-nál egy szelíd tereléssel, amely arra kéri az ügynököt, hogy a kemény leállás előtt fejezze be tisztán a munkát, a szegmenseken átnyúló tartós célkeret pedig 5000 cent (50,00 dollár). Egy explicit `/goal --budget` értéket soha nem lépheti túl egy teljes szegmens.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Összevetve: egy közönséges interaktív kör a beépített harness-en nem rendelkezik körplafonnal, költségkorláttal és csendfigyelővel sem. Akkor ér véget, amikor a modell megáll, vagy amikor te leállítod. Ez szándékos kompromisszum — az alternatívák mind megölnék a legitim, hosszú munkát —, azt viszont jelenti, hogy egy felügyelet nélküli interaktív futtatást semmi más nem korlátoz, csak a modell saját megítélése.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Futtatás közben a futó ügynöknek küldött üzenet **irányításként** sorba áll, és a következő körhatáron ürül ki, így anélkül terelheted a futtatást, hogy megölnéd. Az irányítás, a szüneteltetés, az alügynökök és a befejezési szerződés a beépített harness funkciói; a Claude Code egyikkel sem rendelkezik.
 
-## How a run is recorded
+## Hogyan rögzül egy futtatás
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Minden indítás ír egy `AgentRunLog`-ot: kezdési és befejezési idő, összefoglaló, tokenek száma és becsült költség (beleértve az alügynököktől összesített költséget), adapter és modell, folyamatazonosító és naplóútvonal, a beszélgetés, valamint minden jegy vagy pipeline-futtatás, amelyhez tartozik, továbbá két osztályozási mező, amelyek az igazság nagy részét hordozzák.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Az állapot** durva: `pending`, `running`, `completed`, `error`.
+- **Az elevenség** a finomabb kép: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **A hibatípus** hasznosan csoportosítja a hibákat: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[A `completed` nem jelent „leszállított” állapotot]
+Amikor egy futtatás a módja által megkövetelt eredmény nélkül ér véget — egy tervmódú futtatás, amely soha nem hívta meg a `submit_plan`-t, egy orchestrációs futtatás, amely soha nem terjesztett elő javaslatot —, az állapot `completed` marad, mert a folyamat tisztán kilépett. Az őszinte jelzést az elevenség (`empty`), a hibatípus (`silentRun`) és egy összefoglaló hordozza, amely pontosan megmondja, mi nem készült el. Ez az összefoglaló védett: a lezárás nem írja felül a modell utolsó fecsegésével.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Ez szándékos. Az állapot átbillentése olyan jegy- és pipeline-állapotgépeket mozgatna meg, amelyeknek semmi közük a hiányzó artefaktumhoz. Az is következik ebből, hogy a „status: completed” önmagában soha nem elég annak megállapításához, hogy egy futtatás sikeres volt — olvasd el az összefoglalót.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+A futtatás lezárása közzéteszi az `AgentRunCompleted` eseményt, amelyre sok minden épül: az értesítési keret és annak tartós hírfolyam-bejegyzése, az élő továbbító, amely eljuttatja a csatlakozott kliensekhez, a pipeline-költségek összesítése, egy futtatásra váró pipeline-lépés folytatása, a mögöttes jegy lezárása, egy orchestráció terminális állapotra képezése, a célfelügyelő folytatás-vagy-leállás döntése, az ellenőrző szerepkör és a futtatás utáni költségkeret-kiértékelés. A jelenléti névsor külön következik, a közelmúltbeli futtatási naplók figyelésével, nem az esemény alapján.
 
-## Budgets, after the fact
+## Költségkeretek, utólag
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+A költségkeret érvényesítése _reakció_, nem kapu. Amikor egy futtatás befejeződik, a kiértékelő összehasonlítja az ügynök hónap eleje óta tartó költését annak tényleges felső korlátjával (egy csatolt költségkeret-szabályzattal, ha van ilyen, egyébként az ügynök saját havi értékével; a nulla korlátlant jelent). A lágy küszöb átlépése figyelmeztető incidenst rögzít; a költségkeret kimerítése kemény incidenst rögzít, és a szervezeti ábrán az ügynök életciklus-állapotát `paused`-ra billenti. Az indítás továbbra is elfogad munkát attól az ügynöktől. Egy `BudgetThresholdCrossed` pipeline-eseményindító ugyanabból az eseményből utókövetési munkát indíthat.
 
-## Retry lineage
+## Újrapróbálkozások leszármazási vonala
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Minden futtatási napló hordozhat újrapróbálkozási leszármazást — egy szülő futtatásazonosítót, egy kísérletszámlálót és egy folytatási összefoglalót. A beszélgetés futtatásfája akkor jeleníti meg a kísérlet számát, ha az nem nulla. Egy „próbáld újra” a csevegésből egy új indítás, friss futtatási naplóval.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): what the adapter can and cannot enforce
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/): where the tool surface and the completion contract come from
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/): the effect-class policy every gated call passes
-- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/): the isolation story in full
-- [Multiplayer](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): steering, take-over and the autonomy dial
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): what `AgentRunCompleted` sets off
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): mit tud és mit nem tud érvényesíteni az adapter
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/): honnan származik az eszközfelszín és a befejezési szerződés
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az effektosztály-szabályzat, amelyen minden kapuzott hívás átmegy
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/): az elszigetelés teljes története
+- [Többszereplős mód](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): irányítás, átvétel és az autonómiaszabályzó
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): mit indít el az `AgentRunCompleted`

@@ -1,166 +1,181 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: GitHub-integráció beállítása
+description: Jelentkezzen be a GitHubra, hogy a PR-felület, a repóregisztráció és az ügynökfuttatások működjenek.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Ez az útmutató a beállítás GitHub-specifikus részeit tárgyalja. A GitHub a három
+támogatott kódhoszt egyike — a GitLab vagy a Bitbucket csatlakoztatásáról,
+illetve arról, hogyan használ egy munkaterület egyszerre többet, lásd a
+[Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
+oldalt.
 
-## Prerequisites
+## Előfeltételek
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Egy GitHub-fiók, amely hozzáfér azokhoz a repókhoz, amelyeken dolgozni szeretne
+- Vagy egy GitHub App, amely a szerveréhez van regisztrálva (lásd a
+  [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt), hogy **be tudjon
+  jelentkezni**, **vagy** egy személyes hozzáférési token a `repo` és a
+  `read:org` jogosultsággal, amelyet beilleszthet
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[A hitelesítő adatok a szerveren élnek, Önhöz rendelve]
+Semmi nem tárolódik azon a gépen, amelyen éppen gépel. A hitelesítő adatát a
+`cc_server` tárolja, az Ön felhasználói azonosítójához rendelve, és minden
+eszköz, amelyről bejelentkezik, ugyanazt használja — asztali gép, web és
+telefon. Ugyanazon szerver egy másik tagja nem tudja kiolvasni, és a
+bejelentkeztetése olyan dolog, amelyet ők maguk végeznek el.
 :::
 
-## Sign in with GitHub
+## Bejelentkezés a GitHubra
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Egy **device flow**: a GitHub mutat egy rövid kódot, Ön jóváhagyja a github.com
+oldalon, és a szerver megkapja a hitelesítő adatot — nincs visszahívási URL,
+nincs port, nincs semmi, amit ki kellene tennie. Akkor érhető el, ha a
+szerverhez tartozik Kliens-ID, amellyel egy hivatalos build már eleve
+rendelkezik.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely**
+   oldalt (vagy a bevezető első lépését)
+2. A **GitHub** sorban kattintson a **Bejelentkezés ezzel: GitHub** elemre
+3. A párbeszédablak egy nyolckarakteres kódot mutat, és megnyitja a
+   [github.com/login/device](https://github.com/login/device) oldalt a
+   böngészőjében. A kód már a vágólapján van
+4. Illessze be, hagyja jóvá az alkalmazást, majd térjen vissza. A sor magától
+   erre vált: „Bejelentkezve mint _your-username_”
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+A párbeszédablak bezárható, amíg a böngészőben befejezi a műveletet — a szerver
+addig kérdezgeti a szolgáltatót, amíg a kód le nem jár (körülbelül 15 perc),
+így a bejelentkezés akkor is célba ér.
 
-## Or paste a token
+## Vagy illesszen be egy tokent
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Ez a tartalék megoldás, ha a szerveren nincs alkalmazás, ha az alkalmazás nincs
+telepítve egy szükséges fiókra, vagy ha egyszerűen inkább PAT-ot szeretne
+használni.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** oldalt
+2. A **GitHub** sorban kattintson a **Token hozzáadása** elemre
+3. Illesszen be egy `repo` és `read:org` jogosultságú tokent (classic), és
+   mentse el. A **fine-grained** tokenhez a tárolónál a **Contents** és a
+   **Pull requests** (read and write), valamint a **Checks** és az **Actions**
+   (read) szükséges.
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+A tokent a rendszer a mentés pillanatában ellenőrzi, így a sor meg tudja
+nevezni a hozzá tartozó fiókot. Az eltávolításához kattintson a **Leválasztás**
+elemre.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Ellenőrzőpont: a **GitHub** sor ezt írja: „Bejelentkezve mint _your-username_”.
+Ha nem az Ön hitelesítő adata válaszol, egy utótag nevezi meg a forrást —
+„ennek a szervernek az alkalmazásán keresztül” vagy „a környezetből”.
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[A sorrend rögzített]
+Az Ön nevében indított kérés az **Ön** hitelesítő adatát használja, és semmi
+mást — a környezet a szerver hitelesítő adata, nem az Öné, ezért soha nem lép a
+helyébe. A mögötte ember nélkül futó munka (webhookok, PR-lekérdezés,
+jegyszinkronizálás) a szerver alkalmazásidentitását használja, majd a
+szervertulajdonos hitelesítő adatát, végül a környezetet.
 :::
 
-## What the integration gives you
+## Mit ad az integráció
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Funkció | Hogyan |
+| --- | --- |
+| PR-lista és részletek | A GitHub REST API a szerverről, az alkalmazásidentitással vagy az Ön saját hitelesítő adatával |
+| Check-futtatások | A GitHub Checks API |
+| Átnézés közzététele | Felhasználó által indított lépés, amely közzéteszi az átnézését a PR-ben |
+| Repóregisztráció | Egy checkout akkor fogadható el, ha az `origin` remote-ja a github.com-ra mutat — vagy a gitlab.com / bitbucket.org oldalra |
+| Ügynök GitHub-hozzáférése | A hitelesítőadat-bróker `GH_TOKEN` / `GITHUB_TOKEN` néven injektálja a tokent, az ügynök képességei által szabályozva |
+| Értesítési jelzések | A GitHub-értesítési postaládájának szerveroldali lekérdezése „Említve egy pull requestben” és „Átnézést kértek” értesítéseket vált ki |
+| Felhasználói profilok | Profilkártyák rámutatáskor és a PR-ek szerző szerinti szűrése |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Egyes útvonalak a REST helyett a GraphQL API-t használják, ahol az olcsóbb — az
+ágak tevékenységét a PR-összeállító választóhoz, és az élő átnézési állapotot,
+amely eldönti, hogy egy „átnézést kértek” értesítés még függőben van-e.
 
-## Watch for GitHub outages
+## Figyelje a GitHub-kimaradásokat
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+A címsor állapotjelvényt mutat, ha egy szolgáltató csökkentett szolgáltatással
+üzemel; ez a GitHubra, a Claude-ra, az OpenAI-ra és a Kimira terjed ki.
+**Mindaddig rejtve marad, amíg minden egészséges** — a jelenlét problémát jelez,
+nem annak hiányát.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Kattintson a jelvényre egy lenyíló panel megnyitásához, amely minden szolgáltató
+állapotát és egy frissítés gombot mutat. Az állapotok maguktól frissülnek
+kétpercenként.
 
-## Know how agents act on GitHub
+## Hogyan lépnek fel az ügynökök a GitHubon
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Egy ügynök csak akkor kap GitHub-tokent, ha rendelkezik a **GitHub API-hívások
+  engedélyezése** vagy a **git push engedélyezése** képességgel. Lásd a
+  [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalt
+- Az ügynök által létrehozott commitok **az ügynökként** szerzőzöttek — a
+  megjelenített név plusz ` (agent)`, az ügynök azonosítójából származó
+  szintetikus címen —, soha nem emberként. A kérő személyt egy `Co-Authored-By`
+  trailerrel tünteti fel a rendszer
+- Ha GitHub App van beállítva, a bróker indításonként szűk hatókörű, a repóra
+  korlátozott, körülbelül egyórás telepítési tokent állít ki a széles token
+  átadása helyett. A telepítést a futtatás repójának **tulajdonosa** alapján
+  oldja fel, így egy több fiókra telepített alkalmazás pontosan arra a fiókra
+  korlátozódik, amelyet a futtatás érint. Alkalmazás nélkül az ügynökök a
+  környezeti tokent kapják
+- Egy bejelentkezett tag által kért futtatás **az adott tag** GitHub-identitása
+  alatt cselekszik — a hitelesítő adatát a bróker környezete után fésüli össze,
+  így az ügynök általa tett commitja vagy megjegyzése neki tulajdonítható
 
-## Troubleshooting
+## Hibakeresés
 
-### The PR list is empty and says GitHub is not connected
+### A PR-lista üres, és azt írja, hogy a GitHub nincs csatlakoztatva
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Nincs GitHub-hitelesítő adata ezen a szerveren. Jelentkezzen be, vagy illesszen
+be egy tokent a **Kódtárhely** alatt. A más kódhosztokon lévő repók érintetlenek
+— csak a GitHub repói nem járulnak hozzá semmivel.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### A sor felkínálja a „Token hozzáadása” elemet, de a „Bejelentkezés ezzel: GitHub” elemet nem
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+A szerverhez nem tartozik Kliens-ID — ez a forrásból készült build normál
+állapota, mivel a hitelesítő adatok csak a hivatalos buildekbe vannak beépítve.
+Lásd a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt: körülbelül
+két percet vesz igénybe, és csak a szervertulajdonosnak kell egyszer elvégeznie.
 
-### The sign-in dialog says the provider returned no device code
+### A bejelentkezési párbeszédablak azt írja, hogy a szolgáltató nem adott vissza device-kódot
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+A GitHub App létezik, de a **Device flow** jelölőnégyzet ki van kapcsolva.
+Kapcsolja be az alkalmazás beállításaiban (General → Device flow), és próbálja
+újra.
 
-### The row says "via this server's app" when I expected my own account
+### A sor „ennek a szervernek az alkalmazásán keresztül” feliratot mutat, pedig a saját fiókomat vártam
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Nem jelentkezett be; amit lát, az a szerver alkalmazásidentitása, amely
+válaszol. Kattintson ebben a sorban a **Bejelentkezés ezzel: GitHub** elemre.
 
-### A fine-grained PAT shows no merge button or check status
+### Egy fine-grained PAT nem mutat összefésülés gombot vagy check-állapotot
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+A tokenhez a **Contents** és a **Pull requests** (read and write), valamint a
+**Checks** és az **Actions** (read) szükséges. Módosítás után illessze be újra a
+**Kódtárhely** alatt.
 
-### Adding a repo is rejected
+### Egy repó hozzáadása elutasításra kerül
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
+A regisztrációhoz mindhárom feltétel kell: az útvonal egy git-worktree-n belül
+van, van `origin` remote-ja, és ez a remote egy támogatott kódhosztra mutat
+(github.com, gitlab.com vagy bitbucket.org). Lásd a
+[Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/) oldalt.
 
-### Everything stops working for a while after heavy use
+### Nagy használat után egy időre minden leáll
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Ez a sebességkorlát-védőkapcsoló. A GitHub az elsődleges korlátját egy `403`-mal
+jelzi, amely `x-ratelimit-remaining: 0` értéket és egy visszaállítási időt
+hordoz; amikor a kliens ilyet lát, a további kéréseket hálózati hívás nélkül,
+helyben hiúsítja meg az ablak elteltéig, így az újrapróbálkozások vihara nem
+mélyíti tovább a korlátot. Az átmeneti hibákat legfeljebb háromszor próbálja
+újra exponenciális visszalépéssel, a `retry-after` fejlécet betartva.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create the GitHub App](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)
-- [Connect a code host](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
-- [Manage API keys](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
-- [Add repos to a workspace](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
-- [Review and merge a PR](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/)
+- [Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/)
+- [API-kulcsok kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok/)
+- [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
+- [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)

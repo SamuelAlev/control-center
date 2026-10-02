@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: اولین عامل را اعزام کنید
+description: یک عامل بسازید، به آن یک فضا و یک کار بدهید و ببینید که اجرا زنده جریان می‌یابد.
 slug: fa-IR/راهنمای-کاربر/آموزشها/اولین-عامل
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## آنچه خواهید ساخت
 
-By the end of this tutorial, you will have:
+در پایان این آموزش، این‌ها را در اختیار خواهید داشت:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- عاملی که خودتان ساختید و پیکربندی کردید
+- فضایی که شما و آن عامل در آن گفتگو می‌کنید
+- یک اجرای کامل‌شده، با کاری کامیت‌شده در یک worktree ایزوله و یک سطر در گزارش اجرای عامل
 
-Prerequisites: [Your first workspace](/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/) completed, so this workspace has a repo registered and at least one model provider connected.
+پیش‌نیازها: [اولین فضای کاری شما(/fa-IR/راهنمای-کاربر/آموزشها/اولین-فضای-کاری/) را کامل کرده باشید تا این فضای کاری یک مخزن ثبت‌شده و دست‌کم یک ارائه‌دهندهٔ مدل متصل داشته باشد.
 
-## Step 1: Create an agent
+## گام 1: یک عامل بسازید
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. به **تنظیمات → فضای کاری → عامل‌ها** بروید
+2. روی **عامل جدید** کلیک کنید. بلافاصله عاملی با نام «عامل بی‌نام» ساخته می‌شود و در فهرست انتخاب می‌گردد — هیچ پنجرهٔ ساخت و چیزی برای تأیید وجود ندارد. آن را همان‌جا پیکربندی می‌کنید.
+3. در زبانهٔ **تنظیمات**، این‌ها را پر کنید:
+   - **نام**: چیزی کوتاه و به‌یادماندنی، مثل `alice`. این همان چیزی است که پس از `@` تایپ می‌کنید.
+   - **عنوان**: کاری که انجام می‌دهد، مثلاً «مهندس بک‌اند»
+   - **آداپتور**: `Control Center (built-in)`. این یکی را آگاهانه انتخاب کنید — فقط هارنس داخلی را می‌توان در میانهٔ اجرا هدایت کرد و در مرز نوبت متوقف کرد و به نصب هیچ CLI روی میزبان سرور نیاز ندارد.
+   - **مدل**: از فهرستی که ارائه‌دهندهٔ متصل ارائه می‌دهد انتخاب کنید
+   - **مهارت‌ها**: هر کدام که مناسب بود را ضمیمه کنید، مثلاً `testing` یا `architecture`
+4. **ذخیرهٔ تغییرات** را فشار دهید
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[عاملی بدون آداپتور روی حلقهٔ داخلی اجرا می‌شود]
+وقتی فیلد آداپتور تنظیم نشده باشد، اعزام به **Control Center (built-in)** برمی‌گردد — همان حلقهٔ عامل داخل سرور، پس چیزی برای نصب روی میزبان نیست. با این حال به یک مدل نیاز دارد: اگر هیچ مدلی تنظیم نشده باشد، مدل پیش‌فرض را از Anthropic می‌پرسد؛ این کار اگر حساب Anthropic متصل کرده باشید جواب می‌دهد و در غیر این صورت با `No credential for provider "anthropic"` شکست می‌خورد. با این وجود هر دو را صریحاً تنظیم کنید، وگرنه با مدلی اجرا می‌شوید که خودتان انتخابش نکرده‌اید.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**نقطهٔ بررسی.** سطر فهرست، نام عامل شما و یک حلقهٔ وضعیت توخالی را نشان می‌دهد.
 
-## Step 2: Start a space
+## گام 2: یک فضا را شروع کنید
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. در نوار کناری، بخش **فضاها** را پیدا کنید و روی دکمهٔ **+** کلیک کنید
+2. به فضا یک نام بدهید
+3. زیر **افزودن عامل‌ها**، عاملی را که همین حالا ساختید انتخاب کنید
+4. اگر فضای کاری مخزنی دارد، انتخاب کنید که این فضا روی کدام‌ها کار کند
+5. روی **ایجاد** کلیک کنید
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+فضا باز می‌شود. Control Center در پس‌زمینه برای این گفتگو یک worktree کپی‌رایتی (copy-on-write) از مخزن‌های انتخاب‌شده، روی شاخهٔ خودش، فراهم می‌کند. checkout منبع شما هرگز تغییر نمی‌کند.
 
-## Step 3: Send a task
+## گام 3: یک کار بفرستید
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+یک کار مشخص و کوچک روی مخزنی که ثبت کرده‌اید تایپ کنید. چیزی با نتیجه‌ای قابل‌بررسی بهترین جواب را می‌دهد — یک تست اضافه کنید، یک ایراد lint را برطرف کنید، یک نماد را تغییر نام دهید.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Enter را فشار دهید. نیازی نیست کسی را با `@` منشن کنید: وقتی فضا یک عامل دارد، یک پیام ساده بیدارش می‌کند. در فضایی با چند عامل، `@name` یکی را انتخاب می‌کند.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center پرامپت را از دستورالعمل‌ها، پرسونا و مهارت‌های عامل و بافت فضا می‌سازد و سپس اجرا را اعزام می‌کند.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**نقطهٔ بررسی.** دکمهٔ ارسال ویرایشگر پیام به دکمهٔ توقف تبدیل می‌شود — عاملی در این گفتگو مشغول کار است — و متن شروع به رسیدن می‌کند.
 
-## Step 4: Watch it work
+## گام 4: تماشا کنید که کار می‌کند
 
-The conversation renders the run as it happens:
+گفتگو اجرا را همان‌طور که رخ می‌دهد نمایش می‌دهد:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **استدلال**، همان‌طور که عامل فکر می‌کند به‌صورت درون‌خطی نشان داده می‌شود
+- **فراخوانی‌های ابزار**: خواندن و نوشتن فایل، جستجوها، فرمان‌های shell، هرکدام همراه با نتیجه‌اش
+- **متن**: خلاصه‌ها، توضیح‌ها و پرسش‌هایی برای شما
 
-If the agent asks something, answer in the conversation and it resumes.
+اگر عامل چیزی بپرسد، در همان گفتگو پاسخ دهید تا ادامه دهد.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+برای دیدن سنجه‌های خودِ یک اجرا و کنترل‌های توقف موقت، ادامه و توقف آن، عاملِ در حال اجرا را در بخش **عامل‌ها** در پنل عمومی فضا پیدا کنید و **باز کردن فعالیت** را انتخاب کنید.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+در پنل فعالیت، نشان وضعیت **در حال اجرا** را نشان می‌دهد و وقتی اجرا پایان یابد **موفق**. اجرایی که گیر کند یا در حلقه بیفتد **مسدود** خوانده می‌شود؛ اجرایی که خطا بدهد **ناموفق**. در رجیستری عامل‌ها، حلقهٔ وضعیت پیش از نخستین اجرا توخالی است و به‌محض اینکه عامل دوباره بیکار شود، توپُر می‌شود.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/).
+آنچه اجرا را محدود می‌کند: worktree کپی‌رایتی خودش، اعتبارنامه‌هایی که هنگام راه‌اندازی برایش واسطه‌گری می‌شوند و هنگام برچیدن لغو می‌گردند، محیط پاک‌سازی‌شده، سطح ابزاری که حالتش مجاز می‌داند و گاردریل‌های کنش. اثرهایی مانند پوش‌کردن یک شاخه یا باز کردن یک pull request جداگانه دروازه‌بندی می‌شوند — [گاردریل‌ها(/fa-IR/راهنمای-کاربر/مفهومها/گاردریلها/) را ببینید.
 
-## Step 5: Check the result
+## گام 5: نتیجه را بررسی کنید
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. **تنظیمات → فضای کاری → عامل‌ها** را باز کنید و عامل خود را انتخاب کنید
+2. زبانهٔ **گزارش‌ها** را باز کنید
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**نقطهٔ بررسی.** یک سطر اجرا، که وضعیت، مدت، زمان شروع و پایان و آداپتوری که روی آن اجرا شده را نشان می‌دهد.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+تغییرهای عامل روی شاخهٔ گفتگو، در worktree آن، کامیت می‌شوند. کامیت‌ها به نام عامل نوشته می‌شوند و شما در یک trailer به شکل `Co-Authored-By:` اعتبار می‌گیرید.
 
-## Getting a pull request
+## گرفتن یک pull request
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+هیچ‌چیز به خودی خود pull request باز نمی‌کند. اگر یکی می‌خواهید، در همان گفتگو درخواستش کنید:
 
-> Push this branch and open a pull request against the default branch.
+> این شاخه را پوش کنید و یک pull request در برابر شاخهٔ پیش‌فرض باز کنید.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+پوش‌کردن (`gitPush`) و ساختن PR (`prCreate`) هر دو به‌طور پیش‌فرض درخواست تأیید شما را مطرح می‌کنند، پس پیش از هرکدام منتظر یک تأیید باشید. اگر هنگام نمایش درخواست هیچ تأییدکننده‌ای متصل نباشد، کنش به‌جای مجاز شمرده‌شدن، رد می‌شود — گاردریل‌ها در حالت بسته شکست می‌خورند.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR با همان هویت GitHub باز می‌شود که اجرا از توکنش استفاده کرده است — هویت شما، اگر توکن شخصی ذخیره کرده باشید — نه به نام عامل. نویسندگی عامل روی کامیت‌ها دیده می‌شود.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+خودتان هم می‌توانید بازش کنید: پنل **کنترل منبع** فضا یک دکمهٔ **ایجاد pull request** دارد که شاخهٔ گفتگو را به صفحهٔ نگارش می‌برد و **Pull requestها → PR جدید** همان صفحه را خالی باز می‌کند. آموزش بعدی از همین نقطه ادامه می‌دهد.
 
-## Recap
+## خلاصه
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+یک عامل ساختید، آداپتور و مدلش را پیکربندی کردید، به آن یک فضا و یک کار دادید و تماشا کردید که یک اجرای واقعی در یک worktree ایزوله و بدون دست‌زدن به checkout شما به پایان برسد.
 
-**Next:** [Review your first pull request](/fa-IR/راهنمای-کاربر/آموزشها/اولین-pr/) to learn the review workflow.
+**بعدی:** [اولین pull request را بازبینی کنید(/fa-IR/راهنمای-کاربر/آموزشها/اولین-pr/) تا جریان کار بازبینی را یاد بگیرید.
 
-For more on agents: [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/). For dispatch details: [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/).
+برای اطلاعات بیشتر دربارهٔ عامل‌ها: [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/). برای جزئیات اعزام: [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/).

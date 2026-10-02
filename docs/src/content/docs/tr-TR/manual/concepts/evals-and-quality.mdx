@@ -1,33 +1,36 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Eval’ler ve kalite
+description: Eval paketleri, her çalışma alanına tohumlanan başlangıç kümesi ve bunların Gözlemlenebilirlik’te nerede göründüğü.
 slug: tr-TR/kilavuz/kavramlar/evaller-ve-kalite
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Bir **eval paketi**, bir ajana karşı çalıştırılacak bir görevin çalışma alanı
+kapsamlı tanımıdır: bir istem, bir hedef ajan ve mod, isteğe bağlı kurulum,
+sabitlenmiş bir SHA’ya sahip isteğe bağlı bir test düzeneği ve bir
+değerlendirici listesi. Değerlendiricilerde önce deterministik olanlar çalışır;
+onların ifade edemediği şeyleri ise LLM rubriğine dayalı bir yargıç kapsar.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Bir çalışma alanı oluşturulduğunda beş başlangıç paketi tohumlanır. Bu paketler
+orkestrasyon önerilerini, yerleştirilmiş bir hatayı bulan bir incelemeyi, plan
+modunun salt okunur kalmasını, plan modunun bir plan üretmesini ve bir bilet
+gidiş-dönüşünü kapsar. Tohumlama `WorkspaceCreated` olayını dinler
+(`workspace.upsert` veya `workspace.create`), zaten var olan bir adı atlar ve
+eski çalışma alanlarını geriye dönük doldurmaz.
 
-## Where they appear
+## Nerede görünürler
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Gözlemlenebilirlik → Kalite** (`/workspaces/<id>/observability`) çalışma
+alanındaki her paketi listeler.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Paketleri `evals.upsertSuite`, `evals.deleteSuite` ve `evals.watchSuites`
+üzerinden oluşturun, listeleyin, düzenleyin ve silin. Kalite sekmesi liste; bu
+işlemler ise düzenleyicidir.
 
-## Related concepts
+## İlgili kavramlar
 
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): the configuration a suite
-  pins
-- [Guardrails](/tr-TR/kilavuz/kavramlar/korumalar/): the autonomy dial
-- [Manage costs and budgets](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/): spend recorded
-  alongside a run
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir paketin
+  sabitlediği yapılandırma
+- [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): özerklik ayarı
+- [Maliyetleri ve bütçeleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/): bir
+  çalıştırmayla birlikte kaydedilen harcama

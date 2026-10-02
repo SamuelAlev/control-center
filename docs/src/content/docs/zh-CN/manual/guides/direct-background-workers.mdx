@@ -1,58 +1,59 @@
 ---
-title: Direct background workers
-description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+title: 指挥后台工作进程
+description: 使用 vibe 模式，不再自己动手干活，转而指挥多个并行完成工作的智能体。
 slug: zh-CN/手册/操作指南/指挥后台工作进程
+sourceHash: a7c6408d7dcb42a172dbfec72a206680229d69b4
 ---
 
-This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+本指南介绍如何以**指挥者**而不是工作进程的身份运行一段对话：会话负责读取和验证，后台智能体负责编辑。
 
-## What changes when you type `/vibe`
+## 输入 `/vibe` 后会发生什么变化
 
-Two things, and only the first is enforced by the machinery:
+有两件事，其中只有第一件由机制强制保证：
 
-1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
-2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+1. **会话自身的工具降级为只读**，另外还剩五个工作进程动词。它影响仓库的唯一途径是通过工作进程，而它了解发生了什么的唯一途径是读取工作进程动过的文件。
+2. **它被告知要通过读取来验证，而不是靠相信。** 工作进程的报告只是关于它做了什么的一种声称，而不是它确实做成了的证据。
 
-The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+第一件才是关键。一个仍能 grep、仍能编辑的指挥者，在压力之下就会亲自动手去做这些工作，而这正是这套机制存在的目的——避免这种失败模式。
 
 ```
 /vibe migrate the auth module to the new session API
 ```
 
-## Workers start blank
+## 工作进程从空白开始
 
-A worker has never seen your conversation and never will. The brief is its entire context.
+工作进程从未见过你的对话，以后也永远不会看到。简报就是它的全部上下文。
 
-That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+这正是这套模式保持低成本的原因——二十个工作进程各自持有指挥者的历史，代价会是指挥者上下文的二十倍——也正是这一点让简报难以撰写。“顺便把另一个也做了”，对指挥者读起来是一条完整的指令，对一段全新的会话则完全等于什么都没说。
 
-A good brief names files, commands and the definition of done:
+一份好的简报会点明文件、命令以及“完成”的定义：
 
-> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+> 在 `lib/features/auth/` 中，把对 `SessionStore.read(key)` 的每一处调用替换为 `SessionStore.get(key)`。新方法返回 `Future<String?>`，而旧方法返回 `String?`，因此调用方需要 `await`。完成后运行 `fvm flutter analyze lib/features/auth`，并报告所有你无法修复的错误。
 
-## The five verbs
+## 五个动词
 
-| Verb         | What it does                                            |
+| 动词         | 作用                                                    |
 | ------------ | ------------------------------------------------------- |
-| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
-| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
-| `vibe_send`  | A follow-up turn for a worker that has finished          |
-| `vibe_wait`  | Blocks until one worker settles                          |
-| `vibe_kill`  | Stops one                                                |
+| `vibe_spawn` | 依据一份简报启动一个工作进程。**立即返回。**             |
+| `vibe_list`  | 所有人的层级、状态、已用时间和最近一次结果               |
+| `vibe_send`  | 为已结束回合的工作进程追加一个后续回合                    |
+| `vibe_wait`  | 阻塞，直到某个工作进程结束                               |
+| `vibe_kill`  | 停止某一个工作进程                                       |
 
-Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+启动工作进程在设计上就是异步的。每次启动都阻塞的指挥者，等于一次只跑一个工作进程，这不过是用更慢的方式做它本来就在自己做的事。只有当你确实缺了某个具体答案就无法继续时，才使用 `vibe_wait`。
 
-## Two tiers
+## 两个层级
 
-| Tier   | For                                                              |
+| 层级   | 适用场景                                                         |
 | ------ | ---------------------------------------------------------------- |
-| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
-| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+| `fast` | 规格明确的机械性工作——编辑、重命名、草拟、运行命令                 |
+| `good` | 设计、判断，或审查一个 `fast` 工作进程的产出                       |
 
-A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+一种常见的做法是把 `fast` 工作进程扇出到相互独立的文件上，然后再启动一个 `good` 工作进程，审查它们共同的产出。
 
-## Verifying
+## 验证
 
-This is the part that decides whether the pattern is worth anything.
+这一部分决定了这套模式到底有没有价值。
 
 ```
 vibe_list
@@ -60,31 +61,31 @@ vibe_list
   w2 [fast] tests — running (12s)
 ```
 
-Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+然后**读取它提到的那些文件**。指挥者拥有 `read`、`search`、`lsp` 和 `ast_grep`；保留这些工具正是全部意义所在。把报告照单全收的指挥者，只是在替其他智能体的乐观说辞做摘要。
 
-`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+在一轮工作进程结束后执行 `lsp(action: "diagnostics", file: "*")`，通常是最快的单项检查。
 
-## When a worker loses the thread
+## 当工作进程跑偏时
 
-Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+终止它，重新写一份简报。一份全新且经过修正的简报比一场争论更便宜，而且 `vibe_send` 只对已经结束回合的工作进程有效。
 
 ```
 vibe_kill(worker_id: "w2")
 vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
 ```
 
-## Limits
+## 限制
 
-- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
-- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
-- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+- **最多八个并发工作进程。** 这是花费上的上限，而不是技术限制：每一个都是完整的模型会话，而扇出二十个工作进程的指挥者，已经不再清楚它们都在做什么了。
+- **没有工作进程能比这个模式活得更久。** 运行结束时，它们每一个都会被停止，转录中会说明一共多少个。对话已经继续往下走了，后台智能体却还在编辑文件——这是绝对不能出现的一种失败。
+- **工作进程本质上就是普通的子智能体。** 相同的深度上限、相同的护栏策略、相同的运行日志子项。vibe 改变的是由谁驱动它们，而不是它们被允许做什么——因此工作进程的 write 和 exec 调用仍会弹出批准提示。
 
-## When not to use it
+## 什么时候不该用它
 
-Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/zh-CN/手册/操作指南/创建流水线/) or an [orchestration](/zh-CN/手册/操作指南/运行编排/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+vibe 模式适用于能拆解成一份份独立简报的工作。如果下一步依赖上一步的产出，你描述的其实是[流水线](/zh-CN/手册/操作指南/创建流水线/)或[编排](/zh-CN/手册/操作指南/运行编排/)，这两者都能以正确的方式表达依赖关系，而不必让指挥者用 `vibe_wait` 去模拟它们。
 
-## Related
+## 相关内容
 
-- [Run agents in parallel](/zh-CN/手册/操作指南/并行智能体/) — the other ways to fan out
-- [Orchestration](/zh-CN/手册/概念/编排/) — when the work has a shape
-- [Built-in agent tools](/zh-CN/手册/参考/智能体工具/) — the verbs and their arguments
+- [并行运行智能体](/zh-CN/手册/操作指南/并行智能体/)——其他扇出方式
+- [编排](/zh-CN/手册/概念/编排/)——当工作本身有固定形态时
+- [内置智能体工具](/zh-CN/手册/参考/智能体工具/)——这些动词及其参数

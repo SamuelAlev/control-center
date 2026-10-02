@@ -1,128 +1,146 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Ημερολόγιο και προγραμματισμός
+description: Πώς το Control Center συγχρονίζει το Google Calendar στον διακομιστή, γιατί η σύνδεση γίνεται με εκχώρηση κωδικού συσκευής και τι καλύπτει το δικαίωμα μόνο για ανάγνωση.
 slug: el-GR/εγχειρίδιο/έννοιες/ημερολόγιο
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/).
+Το Control Center συνδέεται με το Google Calendar, ώστε η μέρα σας να βρίσκεται
+δίπλα στον στόλο σας. Συγχρονίζει τα συμβάντα σας, τα εμφανίζει σε προβολές
+μήνα, εβδομάδας, ημέρας και ατζέντας, σας προειδοποιεί πριν ξεκινήσει μια
+σύσκεψη και μετατρέπει κάθε συμβάν σε καταγεγραμμένη, συνοψισμένη
+[σύσκεψη](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/).
 
-## What it changes on Google
+## Τι αλλάζει στο Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Σχεδόν τίποτα. Η ενσωμάτωση αντλεί συμβάντα και τα αποδίδει. Δεν δημιουργεί,
+δεν επεξεργάζεται, δεν διαγράφει ούτε απαντά σε προσκλήσεις. Κάθε σύνδεση με
+κωδικό συσκευής, ενσωματωμένη ή δική σας, ζητά τα δικαιώματα `calendar.readonly`
+και `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Τα συμβάντα συγχρονίζονται στη βάση δεδομένων του ίδιου του χώρου εργασίας **στον
+διακομιστή** (`<dataDir>/<workspaceId>/workspace.db`) και αποδίδονται από κάθε
+πελάτη μέσω RPC. Κανένας πελάτης δεν κρατά διαπιστευτήριο Google.
 
-## Per-workspace accounts
+## Λογαριασμοί ανά χώρο εργασίας
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Οι λογαριασμοί ημερολογίου έχουν εμβέλεια χώρου εργασίας, όπως και όλα τα άλλα
+στο Control Center. Κάθε [χώρος εργασίας](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) συνδέει
+τον δικό του λογαριασμό Google (ή περισσότερους) και τα συμβάντα και τα token
+ενός χώρου εργασίας δεν είναι ποτέ ορατά από άλλον. Η εναλλαγή χώρου εργασίας
+αλλάζει και ποια ημερολόγια βλέπετε.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Ένας χώρος εργασίας μπορεί να συνδέσει **πολλούς** λογαριασμούς Google, όπως έναν
+επαγγελματικό και έναν προσωπικό, και τα συμβάντα τους συγχωνεύονται στις ίδιες
+προβολές.
 
-## Why sign-in is a device code
+## Γιατί η σύνδεση γίνεται με κωδικό συσκευής
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+Ο headless `cc_server` δεν έχει πρόγραμμα περιήγησης για να πιάσει μια
+ανακατεύθυνση OAuth. Επομένως δεν χρησιμοποιεί καμία: εξουσιοδοτείται με την
+**εκχώρηση κωδικού συσκευής** (RFC 8628). Ο διακομιστής εμφανίζει έναν σύντομο
+κωδικό χρήστη και ένα URL της Google, εσείς εγκρίνετε από οποιαδήποτε συσκευή
+διαθέτει πρόγραμμα περιήγησης και ο διακομιστής ερωτά επανειλημμένα μέχρι να το
+κάνετε. Μια εγκατάσταση χωρίς διεπαφή μπορεί να συνδέσει λογαριασμό ακριβώς
+επειδή δεν υπάρχει τελικό σημείο ανακατεύθυνσης για φιλοξενία.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Η συνέπεια που πρέπει να γνωρίζετε πριν φέρετε τα δικά σας διαπιστευτήρια: ο
+τύπος πελάτη πρέπει να είναι «TV and Limited Input devices» της Google. Η Google
+παραχωρεί μόνο έναν κατάλογο επιτρεπόμενων δικαιωμάτων σε αυτόν τον τύπο πελάτη
+και ένα έργο όπου το Calendar δεν επιτρέπεται για αυτόν αποτυγχάνει με
+`invalid_scope` — θα χρειαζόσασταν αντ' αυτού πελάτη loopback ή web.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Τα token δεν φεύγουν ποτέ από τον διακομιστή. Γράφονται στο `secrets.json` του
+διακομιστή, στον κατάλογο δεδομένων του, με κλειδιά
+`google_google:<workspaceId>:<email>`, δίπλα στις βάσεις δεδομένων και κάτω από
+το ίδιο όριο εμπιστοσύνης του συστήματος αρχείων του κεντρικού υπολογιστή. Ο
+διακομιστής ανανεώνει την πρόσβαση αυτόματα και, όταν η Google ακυρώσει οριστικά
+έναν λογαριασμό (ανακλημένη ή επί μακρόν ληγμένη συνεδρία), δημοσιεύει το
+`CalendarAuthExpired` και εμφανίζει ένα πλαίσιο **επανασύνδεσης** αντί να
+αποτυγχάνει σιωπηλά.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Μια έκδοση από τον πηγαίο κώδικα δεν περιλαμβάνει **κανένα** διαπιστευτήριο
+Google — τα δικά σας client id και secret τα παρέχετε εσείς. Οι επίσημες εκδόσεις
+ενσωματώνουν έναν μη εμπιστευτικό πελάτη κωδικού συσκευής, ώστε η ροή σύνδεσης
+να λειτουργεί αμέσως· ο διακομιστής αποθηκεύει μόνο έναν δείκτη που τον
+αναφέρει, ποτέ αντίγραφό του. Το `GOOGLE_OAUTH_CLIENT_ID` (και το secret του)
+στο περιβάλλον υπερισχύει πάντα του ενσωματωμένου ζεύγους. Σκόπιμα δεν υπάρχει
+flag `--google-client-id`: τα άγνωστα flags αγνοούνται και ένα secret σε γραμμή
+εντολών είναι αναγνώσιμο μέσω `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/).
+Για να τρέξετε το δικό σας έργο Google, δείτε
+[Σύνδεση Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/).
 
-## Sync
+## Συγχρονισμός
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Ο διακομιστής αντλεί ένα κυλιόμενο παράθυρο συμβάντων κάθε συνδεδεμένου
+λογαριασμού — κάθε ημερολόγιο του λογαριασμού, όχι μόνο το κύριο — **κάθε δύο
+λεπτά**, καθώς και κατ' απαίτηση (εκκίνηση, σύνδεση, χειροκίνητη ανανέωση). Η
+σύντομη συχνότητα είναι προσιτή επειδή η σάρωση είναι επαυξητική: κάθε
+ημερολόγιο φέρει το δικό του token συγχρονισμού, οπότε ένα αμετάβλητο ημερολόγιο
+κοστίζει μία σχεδόν κενή απάντηση αντί να ανακτά ξανά ένα παράθυρο πέντε μηνών.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Τα επαναλαμβανόμενα συμβάντα επεκτείνονται στον διακομιστή, ώστε κανένας πελάτης
+να μην αναλύει ποτέ κανόνα επανάληψης. Η μετάβαση σε έναν μήνα εκτός του
+τρέχοντος παραθύρου φορτώνει αργά αυτό το εύρος. Τα συμβάντα που διαγράφηκαν ή
+μετακινήθηκαν εκτός εύρους συμβιβάζονται και αφαιρούνται κατά τον επόμενο
+συγχρονισμό.
 
-## Views
+## Προβολές
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Προβολή     | Τι εμφανίζει                                          |
+| ----------- | ----------------------------------------------------- |
+| **Μήνας**   | Ένα πλήρες πλέγμα μήνα (με το πακέτο `kalender`)      |
+| **Εβδομάδα** | Τα συμβάντα μιας εβδομάδας με ώρα σε πλέγμα χρόνου   |
+| **Ημέρα**   | Τα συμβάντα μιας ημέρας με ώρα σε πλέγμα χρόνου       |
+| **Ατζέντα** | Μια λίστα με δυνατότητα κύλισης για επερχόμενα συμβάντα |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Ανοίξτε το ημερολόγιο στο `/calendar`· η επιλογή ενός συμβάντος ανοίγει τη
+λεπτομέρειά του στο `/calendar/:eventId`. Η προβολή που επιλέγετε αποθηκεύεται
+στις προτιμήσεις του ίδιου του πελάτη, οπότε δεν σας ακολουθεί σε άλλη συσκευή.
 
-## Meeting alerts
+## Ειδοποιήσεις σύσκεψης
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Ένας χρονοπρογραμματιστής που τρέχει κάθε λεπτό σαρώνει για συμβάντα που
+ξεκινούν εντός ενός διαμορφώσιμου παραθύρου προειδοποίησης και εκπέμπει μια
+ειδοποίηση **«Η σύσκεψη ξεκινά σύντομα»** (ένα `MeetingStartingSoon`
+[γεγονός τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/)). Η ειδοποίηση φέρει
+το URL συμμετοχής όταν υπάρχει και το κλικ σε αυτήν ανοίγει τη λεπτομέρεια του
+συμβάντος. Οι ειδοποιήσεις αποδιπλοποιούνται με βάση το `alertedAt` του
+συμβάντος, οπότε η ίδια σύσκεψη δεν ειδοποιεί ποτέ δύο φορές, ακόμη και μετά από
+επανεκκινήσεις, και ένα συμβάν του οποίου η έναρξη πέρασε όσο η εφαρμογή ήταν
+κλειστή δεν αναπαράγεται ποτέ.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Δύο όρια ξεπερνιούνται εύκολα κατά λάθος. Ο χρονοπρογραμματιστής εκτελείται
+**στην πλευρά του πελάτη, στην επιφάνεια εργασίας** και μόνο για τον χώρο
+εργασίας που έχετε ανοιχτό αυτή τη στιγμή — ένας χώρος εργασίας στον οποίο δεν
+βρίσκεστε δεν εκπέμπει καμία ειδοποίηση. Και η έκδοση για ιστό δεν έχει καθόλου
+δίοδο ειδοποιήσεων του λειτουργικού συστήματος, οπότε δεν εκπέμπει καμία.
 
-## Record and link
+## Καταγραφή και σύνδεση
 
-From a calendar event you can start a [meeting recording](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Από ένα συμβάν ημερολογίου μπορείτε να ξεκινήσετε μια
+[καταγραφή σύσκεψης](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) με αρχικό τίτλο αυτόν
+του συμβάντος. Το Control Center αποθηκεύει μια σχέση ένα προς ένα μεταξύ της
+καταγραφής και του συμβάντος, ώστε οι σημειώσεις της σύσκεψης και η καταχώριση
+του ημερολογίου να μένουν συνδεδεμένες χωρίς καμία από τις δύο λειτουργίες να
+εξαρτάται από την άλλη.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+Η **Έναρξη εγγραφής και σύνδεση** είναι διαθέσιμη μόνο στην επιφάνεια εργασίας.
+Στον πελάτη ιστού η ενέργεια αναφέρει ότι η καταγραφή δεν είναι διαθέσιμη — ακόμη
+και αν η δική της ροή καταγραφής στην οθόνη συσκέψεων λειτουργεί στο πρόγραμμα
+περιήγησης.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Οι πράκτορες δεν μπορούν να διαβάσουν το ημερολόγιό σας]
+Δεν υπάρχουν εργαλεία MCP ημερολογίου. Ένας πράκτορας δεν μπορεί να εμφανίσει
+συμβάντα, να διαβάσει τις λεπτομέρειες ενός συμβάντος ή να δηλώσει συμμετοχή εκ
+μέρους σας· η επιφάνεια `calendar.*` είναι RPC μόνο για πελάτες ανθρώπων.
 :::
 
-## See also
+## Δείτε επίσης
 
-- [Meetings and transcription](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/): what happens after you start a recording
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): why calendar accounts are per-workspace
-- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
-- [Record and summarize a meeting](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/)
+- [Συσκέψεις και μεταγραφή](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/): τι συμβαίνει αφού ξεκινήσετε μια καταγραφή
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): γιατί οι λογαριασμοί ημερολογίου είναι ανά χώρο εργασίας
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/): `MeetingStartingSoon` και `CalendarAuthExpired`
+- [Σύνδεση Google Calendar](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-ημερολογίου/)
+- [Καταγραφή και σύνοψη σύσκεψης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/καταγραφή-σύσκεψης/)

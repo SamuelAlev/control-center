@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: ניפוי באגים בבדיקה שנכשלה עם סוכן
+description: תנו לסוכן להציב נקודת עצירה, להפעיל תחת מנפה ולקרוא מסגרת מחסנית אמיתית במקום להוסיף הצהרות הדפסה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניפוי-בדיקה-שנכשלה
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+מדריך זה מראה כיצד לגרום לסוכן להשתמש במנפה בכשל שהצהרות הדפסה אינן מסבירות.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+הכלי `debug` מפעיל סשן Debug Adapter Protocol אמיתי. מסגרת עצורה עונה בבת אחת על כל שאלה על אותו רגע — כל משתנה מקומי, כל קורא, וביטוי שמחושב בתחום של המסגרת עצמה — בעוד הצהרת הדפסה עונה רק על השאלה שחשבתם לשאול לפני ההרצה.
 
-## Before you start
+## לפני שמתחילים
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+הכלי נשאר על פני המשטח כדי שהסוכן יוכל לשאול מדוע שום דבר אינו שמיש, במקום לנחש. מתאם יכול להתחיל לפעול רק כאשר **שני** התנאים האלה מתקיימים:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- סמן שורש ב-checkout, וגם
+- קובץ ההרצה של המתאם נפתר.
 
-Ask the agent to check:
+בקשו מהסוכן לבדוק:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+הוא עונה במה שמצא, או מסביר שמתאם זקוק לשני החלקים.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| שפה             | מתאם                         | סמן                                             | התקנה                              |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | מגיע עם ה-SDK — אין מה לעשות       |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | מגיע עם LLVM                       |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python בוחר את המפרש של הפרויקט]
+`debugpy` מאותר ב-`.venv/bin` או ב-`venv/bin` לפני `$PATH`. מפרש `python` מ-`$PATH` הוא סביבה אחרת, והתחברות מהמפרש הלא נכון נכשלת באופן שנראה כמו קוד שבור ולא כמו מפרש לא נכון.
 :::
 
-## Set the breakpoint first, then launch
+## הציבו את נקודת העצירה קודם, ואז הפעילו
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+הסדר חשוב, והכלי אוכף אותו: אפשר להציב נקודות עצירה **לפני** שקיים סשן, כי זה הרצף שהפרוטוקול דורש.
 
-Ask the agent something like:
+בקשו מהסוכן משהו כמו:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> הפונקציה `compute` ב-`bin/main.dart` מחזירה ערך שגוי. הצב נקודת עצירה על השורה שמשימה ל-`product`, הפעל אותה תחת המנפה וספר לי מהם בפועל `a` ו-`b`.
 
-It will run roughly:
+הוא יריץ בערך:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+ההפעלה מדווחת היכן היא עצרה:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[אם במקום זאת הוא מדווח שהתוכנית הסתיימה]
+נקודת העצירה לא נקשרה. שורה ריקה, שורת הערה או שורה שלא מקומפלת אל תוך הבנייה אינה יכולה להחזיק נקודה. קריאה ל-`breakpoints` מול סשן פעיל מדווחת כמה מהנקודות שהצבתם אכן שובצו.
 :::
 
-## Read the frame
+## קראו את המסגרת
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+ואז צעדו לתוכה:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+אובייקט עם ילדים מדווח `[expand: reference N]` — אבל רק כשבאמת יש משהו מאחוריו, כך שהרחבה שהסוכן לא יכול להשתמש בה לעולם אינה מוצעת.
 
-For anything not visible as a local:
+לכל דבר שאינו נראה כמשתנה מקומי:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## צעדו צעד אחר צעד
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| מה אתם רוצים              | פעולה       |
+| ------------------------- | ----------- |
+| לרוץ עד לעצירה הבאה       | `continue`  |
+| השורה הבאה, באותה מסגרת   | `step_over` |
+| להיכנס לתוך הקריאה        | `step_in`   |
+| לצאת אל הקורא            | `step_out`  |
+| לעצור תוכנית שרצה         | `pause`     |
 
-## Attach to something already running
+## התחברות לתהליך שכבר רץ
 
-For a wedged process rather than one you are starting:
+עבור תהליך תקוע ולא כזה שאתם מפעילים:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## סיום
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+תמיד סיימו את הסשן. מתאם ניפוי מחזיק ב**תהליך עצור** שאוחז בכל מה שהתהליך הזה אוחז — פורט, מנעול, חיבור למסד נתונים.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[הוא לא יכול לברוח מכם]
+לכל סשן יש TTL קשוח שהוא אינו יכול להאריך, יש בדיוק אחד לכל שיחה, והכול מפורק כשהשרת נעצר. `launch` שני נדחה במקום להחליף את הראשון: סוכן שמתחיל אחד בלי לסיים את האחר כמעט בוודאות איבד את הקשר לראשון.
 :::
 
-## Bounded output
+## פלט חסום
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+הרחבת `variables` על גרף אובייקטים עמוק היא בלתי חסומה מטבעה — ווידג'ט Flutter אחד מגיע לכל עץ האלמנטים. מספר הילדים לכל תחום מוגבל ל-50, הערכים ל-400 תווים ומסגרות המחסנית ל-30. תוצאת כלי שממלאת את חלון ההקשר היא כלי שמסיים את הריצה שהוא אמור היה לעזור לה.
 
-## Related
+## נושאים קשורים
 
-- [Code intelligence](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — every `debug` op and argument
-- [Diagnose an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/) — when the problem is the agent, not the code
+- [אינטליגנציית קוד](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — למה מנפה, מהדר ומתאים עונים על שאלות שונות
+- [כלי סוכן מובנים](/he-IL/מדריך-למשתמש/עזר/כלי-סוכן/) — כל פעולה וארגומנט של `debug`
+- [אבחון סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/) — כשהבעיה היא הסוכן, לא הקוד

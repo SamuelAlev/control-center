@@ -1,109 +1,110 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: 원격 서버 연결
+description: 데스크톱 앱이나 웹 클라이언트를 다른 곳에서 실행 중인 cc_server로 지정하고, 재시작 없이 서버 간을 전환합니다.
 slug: ko-KR/매뉴얼/사용-가이드/원격-서버-연결
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+모든 클라이언트는 데이터를 소유하는 `cc_server` 위의 렌더러입니다. 데스크톱은
+자신 안에서 서버를 실행할 수 있지만, [app.usectrl.dev](https://app.usectrl.dev)의
+웹 앱은 그럴 수 없습니다. 브라우저 탭은 서버를 호스팅할 수 없기 때문입니다. 어느
+쪽이든 이 가이드는 클라이언트를 다른 곳에서 실행 중인 서버, 즉 작은 장비나 클라우드
+VM, 빌드 서버로 지정합니다.
 
-## Prerequisites
+## 사전 요구 사항
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- 실행 중인 `cc_server`. 아직 없다면 [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)을 참고하십시오.
+- 서버가 발급한 세 가지 페어링 값 — **서버 URL**(`ws://…/rpc` 또는 `wss://…/rpc`), **기기 ID**, **페어링 키** — **또는** 워크스페이스 관리자가 발급한 일회용 **초대 코드**. 초대를 사용하면 사용자가 프로비저닝되고 멤버십이 기록되며 이 클라이언트의 자격 증명이 대신 발급되므로, 기기 ID나 키를 직접 다룰 필요가 없습니다.
 
-### Make sure the server is reachable
+### 서버에 닿을 수 있는지 확인
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+로컬 서버는 아무것도 필요하지 않습니다. 브라우저가 루프백을 신뢰할 수 있는
+오리진으로 취급하므로 `ws://localhost:9030/rpc`는 데스크톱과 브라우저 모두에서
+작동합니다.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+다른 머신의 서버는 다릅니다. `app.usectrl.dev`는 HTTPS로 제공되므로 브라우저는
+이미 신뢰하는 인증서가 있는 `wss://` 소켓만 엽니다. 게다가 `cc_server`는 TLS 없이
+비루프백 주소에 바인딩하는 것을 애초에 거부합니다. 다음 중 하나를 제공하십시오.
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- `--tls-cert`와 `--tls-key`로 인증서를 직접 지정
+- 앞단에 TLS 종료 리버스 프록시를 두고 서버를 `--insecure`로 시작(프록시 뒤는 평문이며, 신뢰할 수 있는 네트워크에서만)
+- 인증서를 공급하는 터널이나 VPN — Tailscale, cloudflared 등. **설정 → 서버 → 연결 및 상태**의 **이 서버 공유** 아래에 내장 터널 옵트인이 있습니다.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+서버 쪽에서 놓치기 쉬운 설정이 두 가지 있습니다. 프록시, NAT 또는 터널 뒤에서는
+클라이언트가 실제로 접속할 주소로 `--public-url`을 설정하십시오. 기본값은 로컬
+바인드이므로 이를 설정하지 않으면 클라이언트가 잘못된 호스트를 시도합니다. 또한
+웹 빌드를 직접 호스팅하는 경우 그 오리진을 `--allowed-origins`에 추가하십시오.
+이 목록의 기본값은 `https://app.usectrl.dev` 하나뿐이며, 루프백과 네이티브
+클라이언트는 항상 허용됩니다.
 
-## Connect the desktop app
+## 데스크톱 앱 연결
 
-On a fresh install:
+새로 설치한 경우:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Control Center를 실행합니다. 첫 실행 화면에서 **Control Center를 어떻게 실행할까요?**라고 묻습니다.
+2. **이 앱에서 실행** 대신 연결 필드에 서버 URL과, 초대 코드 또는 기기 ID와 페어링 키를 입력합니다.
+3. **연결**을 클릭합니다. Control Center가 서버에 접속해 워크스페이스 받은편지함으로 이동합니다.
 
-On a desktop that already runs its own server:
+이미 자체 서버를 실행 중인 데스크톱의 경우:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. **설정 → 서버 → 연결 및 상태**를 엽니다.
+2. **서버 추가**를 클릭합니다. 서버 URL(`wss://host:9030/rpc`)과, 초대 코드 또는 기기 ID와 페어링 키를 입력합니다. URL 필드의 접미사 버튼은 LAN이나 Tailnet에서 `cc_server` 인스턴스를 검색합니다.
+3. **연결**을 클릭한 다음 새 서버 행에서 **전환**을 클릭합니다.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+전환은 실시간으로 이루어집니다. 앱이 재시작 없이 새 세션을 중심으로 즉석에서 다시
+구성됩니다. 연결에 실패하면 현재 서버에 그대로 남아 오류를 확인합니다. 현재
+접속한 서버의 행에는 **전환** 동작이 없습니다. 로컬 서버는 첫 번째 행이며 **이 앱에서
+실행**으로 표시됩니다.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+전환하고 나면 데스크톱은 데이터베이스를 소유하지 않습니다. 모든 화면이 WebSocket을
+통해 원격 서버로 읽고 씁니다.
 
-## Connect the web client
+## 웹 클라이언트 연결
 
-The web build is always remote.
+웹 빌드는 항상 원격입니다.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. [app.usectrl.dev](https://app.usectrl.dev) 또는 직접 호스팅한 웹 빌드를 엽니다.
+2. 서버 URL과, 초대 코드 또는 기기 ID와 페어링 키를 입력합니다.
+3. 클라이언트가 서버에 접속해 데스크톱과 동일한 인터페이스를 렌더링합니다.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+URL에 페어링 딥 링크가 있으면 필드가 미리 채워집니다. 페어링 키는 URL
+**프래그먼트**에 실리며, 브라우저는 이 부분을 페이지를 호스팅하는 서버로 보내지
+않으므로 정적 호스트는 키를 볼 수 없습니다.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[미디어와 보안]
+미디어(아바타, 피드 이미지, PR 스크린샷)는 연결된 서버를 통해 프록시되므로 브라우저가
+업스트림 호스트를 직접 가져오지 않습니다. 민감하지 않은 쿠키에서 요청마다 발급되는
+Content-Security Policy는 연결된 서버의 오리진만 허용합니다.
 :::
 
-### What the browser does not do
+### 브라우저가 하지 않는 것
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+웹 클라이언트는 데스크톱과 동일한 서버를 읽고 쓰지만, 몇몇 표면은 네이티브 창이나
+머신 자체의 장치가 필요합니다.
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- OS 알림 토스트, 알림 소리, 주변 배너 레일 없음(앱 내 알림 센터는 여전히 작동)
+- **서버 추가** 대화 상자에서 LAN 또는 Tailnet 서버 검색 없음
+- 앱 내 기사 리더 없음 — 뉴스피드 기사는 새 탭에서 열림
+- 회의 요약 재실행 불가, 처리 중인 요약 취소 불가
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+두 가지는 빠진 것이 아니라 다르게 동작합니다. 회의 **녹음**은 브라우저에서 작동하며,
+마이크와 오디오 트랙을 포함한 화면 공유를 캡처합니다. **IDE에서 열기**도 작동하지만,
+서버에 _서버의_ 디스플레이에서 편집기를 실행하도록 요청하므로, 편집기가 설치되지
+않은 헤드리스 호스트에서는 버튼이 스스로 숨겨집니다.
 
-## Troubleshooting
+## 문제 해결
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/).
+- **연결 시간 초과**: 서버는 클라이언트에서 닿을 수 있어야 합니다. 바인드(`--bind any`)와 포트가 열려 있는지, `--public-url`이 클라이언트가 실제로 접속할 수 있는 주소를 가리키는지 확인하십시오. 공용 인터넷에서는 TLS가 필수입니다. 프록시 뒤에서 `--insecure`로 시작하지 않은 한 평문 비루프백 바인드는 시작 시 거부됩니다.
+- **브라우저는 연결을 거부하지만 네이티브 클라이언트는 작동**: 브라우저의 오리진이 서버의 `--allowed-origins` 목록에 없습니다. 기본값은 `https://app.usectrl.dev`(및 루프백)만 허용합니다.
+- **페어링 키 거부**: 서버에서 `cc_server pair`를 다시 실행해 해당 기기의 키를 교체한 다음 새 키를 입력하십시오. 폐기된 기기는 자격 증명이 사라진 것을 확인하고 안전하게 실패합니다. 폐기는 실행 중인 세션을 몇 초 안에 끊습니다.
+- **잘못된 워크스페이스**: 워크스페이스는 URL(`/workspaces/:workspaceId/…`)의 일부이며 모든 호출에 함께 전달되므로, 한 클라이언트에서 워크스페이스를 전환해도 자신의 뷰만 바뀝니다. 자신이 멤버인 워크스페이스에만 접근할 수 있으며, 그 외에는 "Not a member of this workspace"로 거부됩니다. [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/)를 참고하십시오.
 
-## Related guides
+## 관련 가이드
 
-- [Run a headless server](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
-- [Pair a device](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): the phone relay path
+- [헤드리스 서버 실행](/ko-KR/매뉴얼/사용-가이드/헤드리스-서버-실행/)
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): 휴대폰 릴레이 경로
 
-## Related concepts
+## 관련 개념
 
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/)
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/)
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/)
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/)

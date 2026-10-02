@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: Ενσωματωμένα εργαλεία πράκτορα
+description: Η επιφάνεια εργαλείων που δίνει το ενσωματωμένο harness σε έναν πράκτορα — διακομιστής γλώσσας, δομική αναζήτηση, αποσφαλματωτής, πυρήνες και έλεγχος εργατών — με κάθε λειτουργία και τα ορίσματά της.
 slug: el-GR/εγχειρίδιο/αναφορά/εργαλεία-πράκτορα
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+Αυτά είναι τα **δεσμευμένα στον διακομιστή** εργαλεία που καταχωρίζει απευθείας το ενσωματωμένο runtime πράκτορα — διακομιστής γλώσσας, δομική αναζήτηση, αποσφαλματωτής, πυρήνες, ερωτήσεις και έλεγχος εργατών — σε αντίθεση με τα [εργαλεία MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/) που γεφυρώνει και τα γενικά εργαλεία αρχείων, αναζήτησης και shell από το runtime του harness. Δεν βρίσκονται στο μητρώο MCP: ένας εξωτερικός πελάτης MCP δεν θα τα δει, επειδή το καθένα είναι δεσμευμένο σε έναν ζωντανό πόρο στην πλευρά του διακομιστή — μια διεργασία διακομιστή γλώσσας, έναν προσαρμογέα αποσφαλμάτωσης, έναν διερμηνέα — που ανήκει σε μία μόνο εκτέλεση.
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+Κάθε εργαλείο εδώ καταχωρίζεται μόνο όταν ο πόρος που το στηρίζει είναι συνδεδεμένος για την εκτέλεση — ένας επόπτης διακομιστή γλώσσας ή αποσφαλμάτωσης, ένας αναλυτής tree-sitter, ένα εργοστάσιο πυρήνων, μια θύρα ερωτήσεων, ένας κατάλογος vibe. Η ανίχνευση διακομιστή γλώσσας ή προσαρμογέα αποσφαλμάτωσης για *αυτό το checkout* είναι ξεχωριστός, μεταγενέστερος έλεγχος (`status` / `adapters`): αυτά τα εργαλεία παραμένουν στην επιφάνεια, ώστε ο πράκτορας να μπορεί να ρωτήσει γιατί τίποτα δεν είναι αξιοποιήσιμο, αντί να μαντεύει.
 
-## Approval tiers
+## Βαθμίδες έγκρισης
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+Κάθε εργαλείο δηλώνει μια βαθμίδα, και η βαθμίδα αποφασίζει **ποιες επιφάνειες το βλέπουν** — όχι απλώς αν ζητά έγκριση. Η λειτουργία σχεδίου και οι υποπράκτορες μόνο για ανάγνωση περιορίζονται στο `read`, οπότε ένα εργαλείο βαθμίδας `write` ή `exec` απουσιάζει εντελώς από το σχήμα τους.
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| Βαθμίδα | Σημασία                       | Εργαλεία εδώ                                       |
+| ------- | ----------------------------- | -------------------------------------------------- |
+| `read`  | Χωρίς παρενέργειες            | `lsp`, `ast_grep`, `ask_user`, τα πέντε `vibe_*`   |
+| `write` | Αλλάζει αρχεία                | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Ξεκινά ή ελέγχει μια διεργασία | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — ερωτήματα διακομιστή γλώσσας
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+Καταχωρίζεται όταν η εκτέλεση έχει έναν επόπτη διακομιστή γλώσσας και έναν κατάλογο εργασίας. Το αν ένας διακομιστής μπορεί όντως να απαντήσει ανιχνεύεται τη στιγμή της κλήσης, ως **τομή**: ένας δείκτης ρίζας πρέπει να υπάρχει *και* το εκτελέσιμο του διακομιστή πρέπει να επιλύεται. Ο ένας από τους δύο μόνος του σημαίνει ότι κανένας διακομιστής δεν ξεκινά — το `status` το λέει — αντί για μια σιωπηλή εικασία.
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+Οι θέσεις προσδιορίζονται με `line` συν μια υποσυμβολοσειρά `symbol`, ποτέ με στήλη. Ένα μοντέλο στο οποίο ζητείται στήλη μαντεύει, και μια λανθασμένη μαντεψιά επιλύεται σε διαφορετικό σύμβολο στην ίδια γραμμή — μια απάντηση που φαίνεται σωστή και αφορά κάτι άλλο. Η παράλειψη του `symbol` σε μια ενέργεια πλοήγησης είναι σφάλμα, όχι εικασία για την πρώτη στήλη.
 
-| Action            | Arguments                        | Returns                                    |
+| Ενέργεια          | Ορίσματα                         | Επιστρέφει                                |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (ή `"*"`)                 | Σφάλματα και προειδοποιήσεις· το `"*"` εκτελεί αντ' αυτού τον ελεγκτή έργου |
+| `definition`      | `file`, `line`, `symbol`         | Πού δηλώνεται το σύμβολο                   |
+| `type_definition` | `file`, `line`, `symbol`         | Πού δηλώνεται ο τύπος του                 |
+| `implementation`  | `file`, `line`, `symbol`         | Συγκεκριμένες υλοποιήσεις                  |
+| `references`      | `file`, `line`, `symbol`         | Κάθε χρήση, με όριο 50                     |
+| `hover`           | `file`, `line`, `symbol`         | Υπογραφή και σχόλιο τεκμηρίωσης            |
+| `symbols`         | `query` ή `file`                 | Αναζήτηση στον χώρο εργασίας με `query` (όριο 100)· σύμβολα εγγράφου με `file` (όριο 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Γρήγορες διορθώσεις που προσφέρει ο διακομιστής |
+| `status`          | —                                | Ποιοι διακομιστές εκτελούνται, και για ποιες ρίζες |
+| `reload`          | —                                | Επανεκκινεί τον διακομιστή για αυτή τη ρίζα |
 
-### Diagnostics on write
+### Διαγνωστικά κατά την εγγραφή
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+Το κέρδος δεν είναι το εργαλείο. Τα `write`, `edit` και `apply_patch` είναι **τυλιγμένα**: μετά την εγγραφή, το αρχείο συγχρονίζεται και αποθηκεύεται μέσω του διακομιστή γλώσσας, και μόνο τα **νεοεισαχθέντα** διαγνωστικά ενσωματώνονται στο αποτέλεσμα του εργαλείου. Ένας πράκτορας μαθαίνει ότι έσπασε το build τη στιγμή που το έσπασε, χωρίς να χρειάζεται να θυμηθεί να ρωτήσει.
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+Τα διαγνωστικά που έχουν ήδη αναφερθεί καταστέλλονται από ένα μητρώο ανά εκτέλεση με κλειδί τη σοβαρότητα, τον κωδικό και το μήνυμα — η θέση αποκλείεται σκόπιμα, ώστε ένα διαγνωστικό που απλώς κατέβηκε τέσσερις γραμμές να μην αναφέρεται ξανά ως νέο.
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — μετονομασία σε όλο το έργο
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+Ένα ξεχωριστό εργαλείο, βαθμίδας `write`, για έναν ακριβώς λόγο: η βαθμίδα αποφασίζει την ορατότητα. Η ενσωμάτωση της μετονομασίας στο `lsp` θα έδινε είτε σε έναν εξερευνητή μόνο για ανάγνωση τη δυνατότητα να ξαναγράψει το αποθετήριο, είτε θα έβαζε κάθε `hover` πίσω από μια προτροπή έγκρισης.
 
-| Argument | Meaning                                    |
-| -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| Όρισμα     | Σημασία                                    |
+| ---------- | ------------------------------------------ |
+| `file`     | Πού βρίσκεται το σύμβολο                   |
+| `line`     | Γραμμή με δείκτη από το 1                  |
+| `symbol`   | Υποσυμβολοσειρά που το αναγνωρίζει σε αυτή τη γραμμή |
+| `new_name` | Πώς θα ονομαστεί                           |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — δομική αναζήτηση
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+Βρίσκει κώδικα με βάση το **σχήμα** και όχι το κείμενο. Το `$NAME` αντιστοιχίζει οποιονδήποτε κόμβο, το `$$$NAME` αντιστοιχίζει μια σειρά από αδέλφια, και το `$_` είναι ένας μπαλαντέρ που δεν δεσμεύει τίποτα.
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+Η ιδιότητα που το κάνει αντιστοιχιστή και όχι μια regex με επιπλέον βήματα: μια μεταβλητή μοτίβου που επαναλαμβάνεται σε ένα μοτίβο πρέπει να συλλαμβάνει το ίδιο κείμενο.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+αντιστοιχίζει έναν φρουρό που κάνει dispose σε αυτό που έλεγξε, και **δεν** αντιστοιχίζει έναν που κάνει dispose σε κάτι άλλο.
 
-| Argument      | Meaning                                                     |
+| Όρισμα        | Σημασία                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | Ένα απόσπασμα κώδικα με μεταβλητές μοτίβου                   |
+| `path`        | Αρχείο ή φάκελος προς αναζήτηση· από προεπιλογή ολόκληρος ο χώρος εργασίας |
+| `language`    | Ένα αναγνωριστικό γραμματικής που διανέμεται (`dart`, `python`, `rust`, `c`, …). Συμπεραίνεται όταν το `path` ονομάζει αρχείο |
+| `max_results` | Προεπιλογή 50                                               |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[Το μοτίβο αναλύεται από την ίδια γραμματική με το αρχείο]
+Έτσι, το `dispose(x)` αντιστοιχίζει την κλήση όπως κι αν είναι αραιωμένη με κενά, τυλιγμένη ή σχολιασμένη — και δεν αντιστοιχίζει ποτέ τους ίδιους χαρακτήρες μέσα σε ένα string literal ή ένα σχόλιο.
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[Ένα απόσπασμα αναλύεται μέσα σε ένα ικρίωμα, όχι σκέτο]
+Το `dispose(x)` που αναλύεται στο ανώτατο επίπεδο της Dart είναι μια έγκυρη *υπογραφή συνάρτησης*. Ο μεταγλωττιστής μοτίβων δοκιμάζει μια κλίμακα πλαισίων (εντολή, έκφραση, μέλος κλάσης, δήλωση) και χρησιμοποιεί το πρώτο που αποδέχεται το απόσπασμα. Ένα μοτίβο που κανένα πλαίσιο δεν αποδέχεται αναφέρεται ως μη αναλύσιμο, αντί να αναζητηθεί και να μη βρεθεί σιωπηλά.
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — δομική αναδιατύπωση, σε στάδιο
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+Ίδια αντιστοίχιση, συν ένα πρότυπο `rewrite` με τις μεταβλητές μοτίβου να αντικαθίστανται ξανά μέσα. **Τίποτα δεν γράφεται.** Η αλλαγή προετοιμάζεται σε στάδιο και το αποτέλεσμα ονομάζει ένα `edit_id`.
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| Όρισμα     | Σημασία                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | Τι να αντιστοιχιστεί                                |
+| `rewrite`  | Τι να μπει εκεί, με αντικατάσταση του `$NAME`       |
+| `path`     | Εμβέλεια· από προεπιλογή ολόκληρος ο χώρος εργασίας |
+| `language` | Αναγνωριστικό γλώσσας                               |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — υποβολή ή απόρριψη μιας αλλαγής σε στάδιο
 
-| Argument  | Meaning                          |
+| Όρισμα    | Σημασία                          |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | Από το αποτέλεσμα `(proposed)`   |
+| `action`  | `accept` ή `discard`             |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+Κάθε αρχείο συγκρίνεται με το περιεχόμενο που καταγράφηκε τη στιγμή της προετοιμασίας, και **οποιαδήποτε** ασυμφωνία απορρίπτει ολόκληρη την αλλαγή. Μια μερικώς εφαρμοσμένη δομική αναδιατύπωση αφήνει ένα δέντρο που δεν μεταγλωττίζεται ούτε με το παλιό ούτε με το νέο σχήμα.
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — οδήγηση αποσφαλματωτή
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Καταχωρίζεται όταν η εκτέλεση έχει έναν επόπτη συνεδρίας αποσφαλμάτωσης, έναν κατάλογο εργασίας και ένα αναγνωριστικό συνομιλίας. Το αν ένας προσαρμογέας μπορεί όντως να ξεκινήσει ανιχνεύεται τη στιγμή της κλήσης, με τον ίδιο κανόνα τομής όπως για τον διακομιστή γλώσσας (δείκτης ρίζας *και* εκτελέσιμο). Βαθμίδα `exec`· όχι ασφαλές για παραλληλισμό (μια συνεδρία είναι κατάσταση που διαρκεί μεταξύ κλήσεων, οπότε ένα `continue` που προσπερνά το `stack` θα διάβαζε ένα frame που έχει ήδη μετακινηθεί).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+Μία συνεδρία ανά συνομιλία, με αυστηρό TTL (30 λεπτά). Ένα δεύτερο `launch` απορρίπτεται, αντί να αντικαθιστά σιωπηλά το πρώτο.
 
-| Op            | Arguments                     | Notes                                          |
+| Λειτουργία    | Ορίσματα                      | Σημειώσεις                                     |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | Ποιοι προσαρμογείς είναι αξιοποιήσιμοι εδώ, και γιατί όχι |
+| `status`      | —                             | Αν εκτελείται μια συνεδρία, και πού σταμάτησε  |
+| `breakpoints` | `file`, `lines[]`             | Κενό `lines` καθαρίζει το αρχείο. Μπορούν να οριστούν **πριν** την εκκίνηση |
+| `launch`      | `program`, `args[]`           | Ξεκινά το πρόγραμμα σταματημένο στα σημεία διακοπής σας |
+| `attach`      | `port`                        | Συνδέεται σε ένα αποσφαλματωμένο πρόγραμμα που εκτελείται ήδη |
+| `continue`    | `thread_id?`                  | Εκτελείται μέχρι την επόμενη διακοπή           |
+| `pause`       | `thread_id?`                  | Το σταματά εκεί που βρίσκεται                  |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Μετακινεί ένα βήμα                  |
+| `threads`     | —                             | Αναγνωριστικά και ονόματα νημάτων              |
+| `stack`       | `thread_id?`                  | Frames, με όριο 30                             |
+| `scopes`      | `frame_id`                    | Πεδία εμβέλειας σε ένα frame, καθένα με ένα `reference` |
+| `variables`   | `reference`                   | Παιδιά, με όριο 50, τιμές με όριο 400 χαρακτήρες |
+| `evaluate`    | `expression`, `frame_id?`     | Αξιολογείται στην εμβέλεια του ίδιου του frame |
+| `output`      | —                             | Το stdout/stderr του αποσφαλματωμένου προγράμματος, με όριο |
+| `terminate`   | —                             | Τερματίζει τη συνεδρία και σκοτώνει τον προσαρμογέα |
 
-### Adapters
+### Προσαρμογείς
 
-| Id        | Command                    | Root markers                                    |
+| Id        | Εντολή                     | Δείκτες ρίζας                                   |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+Το `debugpy` προτιμά ένα `.venv/bin` ή `venv/bin` τοπικό στο έργο από το `$PATH`: μια python του `$PATH` είναι διαφορετικό περιβάλλον, και η σύνδεση από το λάθος περιβάλλον αποτυγχάνει με τρόπο που διαβάζεται σαν σπασμένος κώδικας.
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — μόνιμοι διερμηνείς
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+Ένα κελί Python ή JavaScript του οποίου οι μεταβλητές, τα imports και τα δεδομένα που φορτώθηκαν επιβιώνουν μεταξύ κλήσεων. Βαθμίδα `exec`· όχι ασφαλές για παραλληλισμό.
 
-| Argument      | Meaning                                          |
+| Όρισμα        | Σημασία                                          |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | Το κελί                                          |
+| `description` | Απαιτείται. 5–10 λέξεις για την ετικέτα της απομαγνητοφώνησης |
+| `language`    | `python` (προεπιλογή) ή `javascript`             |
+| `reset`       | Απορρίπτει τον διερμηνέα και ξεκινά από καθαρή κατάσταση πρώτα |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- Η τελευταία έκφραση επιστρέφεται όπως σε ένα notebook.
+- Το `display()` λειτουργεί, ένα frame της pandas αποδίδεται ως πίνακας, και ένα σχήμα της matplotlib επιστρέφει ως **εικόνα που εμφανίζει η απομαγνητοφώνηση**.
+- Τα ιδιώματα της IPython που πληκτρολογεί κανείς αντανακλαστικά — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — ξαναγράφονται σε απλό κώδικα. Το `%pip` καθαρίζει επίσης το `sys.modules`, ώστε το επόμενο `import` να βλέπει αυτό που μόλις εγκαταστάθηκε.
 
-### Calling your own tools from inside a cell
+### Κλήση των δικών σας εργαλείων μέσα από ένα κελί
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+Η γέφυρα **επανεισέρχεται στο μητρώο εργαλείων του harness**, οπότε οι περιορισμοί, η έγκριση και κάθε περιτύλιγμα εφαρμόζονται ακριβώς όπως σε μια κλήση που εκδίδει το μοντέλο. Ταξιδεύει πάνω στον ίδιο σωλήνα του πυρήνα και όχι σε socket loopback: χωρίς θύρα, χωρίς μυστικό, χωρίς κανόνα εξόδου δικτύου.
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+Το χρονικό όριο του κελιού είναι ένας προϋπολογισμός *αδράνειας* (προεπιλογή 5 λεπτά) και **αναστέλλεται** όσο εκκρεμεί μια κλήση μέσω της γέφυρας, ώστε ένα κελί που απλώνεται σε υποπράκτορες να μην σκοτώνεται στη μέση της διασποράς.
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[Πού εκτελείται ο πυρήνας]
+Στο περίβλημα της συνομιλίας όταν αυτή έχει ένα, αλλιώς στον κεντρικό υπολογιστή. Δεν εκκινεί περίβλημα για να φτάσει εκεί — ο ίδιος κανόνας που εμποδίζει μια καρτέλα σταθμού να ξεκινήσει αυτόματα.
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — ερώτηση προς τον άνθρωπο
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+Βαθμίδα `read`. Ο **μόνος** τρόπος με τον οποίο μια εκτέλεση ρωτά κάτι τον χειριστή. Αποδίδει μια αριθμημένη κάρτα στη συνομιλία και αποκλείει μέχρι κάποιος να απαντήσει, να παραλείψει, ή μέχρι να λήξει το χρονικό όριο της ερώτησης. Μην γράφετε ποτέ την ερώτηση ως μήνυμα συνομιλίας — αυτό τερματίζει τη στροφή.
 
-| Argument       | Meaning                                    |
-| -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| Όρισμα            | Σημασία                                    |
+| ----------------- | ------------------------------------------ |
+| `question`        | Τι να ρωτηθεί                              |
+| `context`         | Προαιρετικό: γιατί ρωτάτε και τι κρέμεται από την απάντηση |
+| `options[]`       | Επιλογές, καθεμία `{label, description?}`  |
+| `allow_free_text` | Αν γίνεται δεκτή πληκτρολογημένη απάντηση  |
+| `multi_select`    | Αν μπορούν να επιλεγούν πολλές επιλογές    |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+Μια παράλειψη είναι επιτυχία: προχωρήστε με βάση μια δηλωμένη παραδοχή και μην ξαναρωτήσετε. Η λήξη του χρονικού ορίου είναι σφάλμα με την ίδια οδηγία. Οι προτροπές άδειας («επιτρέπεται να το κάνω αυτό;») είναι ξεχωριστή πύλη και αποδίδονται ως η ίδια κάρτα στη συνομιλία.
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+Καταχωρίζεται μόνο όταν υπάρχουν και μια θύρα ερωτήσεων και ένας χώρος προορισμού. Χωρίς συνδεδεμένο άνθρωπο, η κλήση **αποτυγχάνει** αντί να αποκλείει για πάντα — η ίδια στάση ασφαλούς αποτυχίας που παίρνει ένα `prompt` περιορισμού όταν δεν είναι συνδεδεμένος εγκρίνων.
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — κατεύθυνση εργατών παρασκηνίου
 
-Registered only while [vibe mode](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κατεύθυνση-εργατών-παρασκηνίου/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+Καταχωρίζονται μόνο όσο είναι ενεργή η [λειτουργία vibe](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/κατεύθυνση-εργατών-παρασκηνίου/). Και τα πέντε είναι βαθμίδας `read`: η πύλη ανήκει στα εργαλεία του εργάτη, εκεί όπου συμβαίνει στην πραγματικότητα η επεξεργασία.
 
-| Tool         | Arguments                                | Notes                                       |
+| Εργαλείο     | Ορίσματα                                 | Σημειώσεις                                  |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Επιστρέφει αμέσως· ο εργάτης συνεχίζει να εκτελείται |
+| `vibe_send`  | `worker_id`, `message`                   | Προσθέτει στην ανάθεση και επανεκτελεί      |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Αποκλείει μέχρι να κατασταλάξει             |
+| `vibe_kill`  | `worker_id`                              | Τον σταματά                                 |
+| `vibe_list`  | —                                        | Βαθμίδα, κατάσταση, χρόνος που πέρασε και τελευταίο αποτέλεσμα |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+Το `tier` είναι `fast` (μηχανική εργασία με σαφή προδιαγραφή) ή `good` (σχεδιασμός, κρίση ή έλεγχος της εξόδου ενός εργάτη `fast`).

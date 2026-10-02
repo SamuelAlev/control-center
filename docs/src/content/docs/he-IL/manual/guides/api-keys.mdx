@@ -1,115 +1,111 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: ניהול מפתחות API
+description: היכן נשמר כל פרט גישה — חשבון המשתמש שלכם בשרת, השרת עצמו או CLI חיצוני — ואיך להגדיר, להחליף ולמחוק אותו.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/מפתחות-api
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+המדריך הזה מראה היכן נשמר כל פרט גישה שבו משתמש Control Center ואיך לשנות
+אותו.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**שום דבר לא נשמר במחשב שאתם מקלידים בו.** כל פרטי הגישה נמצאים בשרת; איזה מהם
+עונה לבקשה נתונה תלוי בכך אם יש אדם מאחוריה.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| פרט גישה                              | היכן נשמר                                                 | מי משתמש בו                                                     |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| פרט הגישה שלכם למארח הקוד / לכרטוס     | קובץ הסודות 0600 של השרת, לפי מזהה המשתמש שלכם             | כל מה שאתם מבקשים: משטח בקשות המשיכה, הרצות הסוכנים שלכם, התמונות שלכם |
+| זהות האפליקציה של השרת                | אותו קובץ, ובנוסף `server_settings` למה שאינו סוד          | עבודה שאף אדם לא ביקש: webhooks, סריקת בקשות משיכה, סנכרון כרטיסים |
+| מפתחות ספקי מודלים ואסימוני OAuth      | מאגר פרטי הגישה של השרת עצמו                              | המתאם המובנה, עבור כל סביבת עבודה בהתקנה                         |
+| אסימוני הבוט של Slack                 | `<dataDir>/<workspaceId>/chat_credentials/` בשרת          | גשר הצ'אט של אותה סביבת עבודה                                    |
+| פרטי גישה של CLI חיצוני                | מה שאותו CLI משתמש בו                                    | Claude Code, במארח השרת                                          |
 
-## Two GitHub credentials, and they answer different questions
+## שני פרטי גישה ל-GitHub, והם עונים על שאלות שונות
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **שלכם**, מכניסה (device flow) או מהדבקה של אסימון. הוא זה שמשמש כל בקשה
+  שנשלחת *בשמכם*, כך שהערה שמפורסמת עבורכם נושאת את השם שלכם. חבר אחר לא יכול
+  לקרוא אותו, והוא מחבר את שלו
+- **של השרת**, מ-GitHub App שהמפעיל רשם. הוא עונה לכל בקשה שאין מאחוריה אדם —
+  כך שהגישה למארח הקוד לא נעלמת כשאדם אחד עוזב או מחליף אסימון
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
-and [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/).
+שלכם נקבע בכרטיס **אחסון קוד** ב**הגדרות ← סביבת עבודה ← פרופיל וזהות**; של
+השרת ב**אפליקציות ספק** ב**הגדרות ← שרת ← כניסה מאוחדת**. ראו
+[הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
+ו[יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[יש גם מסך שנגיש רק דרך כתובת URL]
+‏`/workspaces/<workspaceId>/api-keys` מציג את אותם שני כרטיסים כמו הצעד הראשון
+של תהליך ההיכרות. **אין לו שום ערך ניווט בממשק**; אפשר להגיע אליו רק בהקלדת
+הכתובת. השתמשו במקום זה ב**הגדרות ← סביבת עבודה ← פרופיל וזהות**.
 :::
 
-## Set model provider keys
+## הגדרת מפתחות ספקי מודלים
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+המתאם המובנה מאמת את הספקים בעצמו, ופרטי הגישה האלה נשמרים בשרת.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. עברו אל **הגדרות ← שרת ← ספקי מודלים**
+2. גללו אל **ספקים ומודלים**
+3. חברו את הספק — OAuth בדפדפן עבור OpenAI,‏ Codex,‏ Cursor ו-Kimi Code;
+   מפתח API עבור Anthropic והשאר
 
-See [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/) for the full list and
-for adding a custom endpoint.
+ראו [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/) לרשימה
+המלאה ולהוספה של נקודת קצה מותאמת אישית.
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+פרטי הגישה האלה הם **גלובליים למארח**: מפתח אחד משרת כל סביבת עבודה בהתקנה.
+אסימוני OAuth מתרעננים לפני שפג תוקפם.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+ה-CLI של מתאמים חיצוניים שומר על פרטי הגישה שלו, בהגדרות שלו, במארח השרת —
+Control Center לא מנהל אותם. אמתו את Claude Code לפי התיעוד שלו, במחשב שעליו
+רץ `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
+הדיאלוג **משתני סביבה** שלכל מתאם נראה כמו מקום לשים בו מפתח עבור אחד מהם,
+אבל הוא לא: הוא כותב למכשיר שלכם, בעוד שהשרת קורא את העותק שלו, ושום דבר לא
+מגשר בין השניים. ראו
+[ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/).
 
-## Connect a ticketing vendor
+## חיבור ספק כרטוס
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+הכרטיס **כרטוס** ב**הגדרות ← סביבת עבודה ← כללי** מחזיק את שני החצאים של החלטה
+אחת: באיזה ספק מאוחסנים הכרטיסים שלכם, ופרטי הגישה עבורו. בחירה ב**מקומי**
+מסתירה את שורת פרטי הגישה — כרטיסים מקומיים נמצאים במסד הנתונים של השרת הזה
+עצמו ואין להם למה להזדהות.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-linear/).
+המפתח שלכם נשמר בשרת לפי מזהה המשתמש שלכם, כמו זה של מארח הקוד. השרת שומר מפתח
+Linear משלו בנפרד (**אפליקציות ספק**), וזה מה שסנכרון הכרטיסים עובד לפיו כשאף
+אדם לא ביקש. מפתח שסוכן מקבל מוזרק רק כשהסוכן מחזיק ביכולת **התרת קריאות API של
+ניהול כרטיסים**. ראו
+[הגדרת אינטגרציית Linear](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-linear/).
 
-## Rotate or revoke
+## החלפה או שלילה
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- **פרט הגישה שלכם ל-GitHub**: לחצו על **ניתוק**, ואז היכנסו שוב או הדביקו את
+  האסימון החדש. שללו את הישן ב-GitHub
+- **האפליקציה של השרת**: צרו מפתח פרטי חדש או סוד לקוח חדש בעמוד ה-GitHub של
+  האפליקציה, הדביקו אותו ב**אפליקציות ספק** ולחצו על **בדוק**
+- **ספק מודלים**: בשורה שלו, התנתקו (OAuth) או הסירו את המפתח, ואז התחברו שוב
+- **Slack**: הדביקו שוב את האסימונים בדיאלוג החיבור. ראו
+  [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
 
-## Troubleshooting
+## פתרון תקלות
 
-### The PR list is empty but my token works in `curl`
+### רשימת בקשות המשיכה ריקה אבל האסימון שלי עובד ב-`curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+בדקו את כתובית השורה של **אחסון קוד**. אם היא מציינת מקור אחר ("דרך האפליקציה
+של השרת הזה", "מהסביבה"), פרט הגישה שאתם בודקים אינו זה שעונה — שלכם לא נשמר.
 
-### The token is accepted but later requests fail
+### האסימון מתקבל אבל בקשות מאוחרות יותר נכשלות
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+האסימון נבדק כפי שהוא נשמר, ולכן השורה מציינת את החשבון שמאחוריו — אבל רק את
+החשבון, לא את ההיקפים. אסימון עם מעט מדי היקפים מתחבר ואז נכשל בבקשות בודדות.
+בדקו את ההיקפים ואת תפוגת התוקף:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## מדריכים קשורים
 
-- [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
-- [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)
-- [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
-- [Set up Slack integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
-- [Set up Linear integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-linear/)
+- [הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
+- [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)
+- [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
+- [הגדרת אינטגרציית Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack/)
+- [הגדרת אינטגרציית Linear](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-linear/)

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: Administrar costos
+description: Consulta cuánto gastan tus agentes, pon un tope a una ejecución autónoma y reduce el uso de tokens.
 slug: es-MX/manual/guias/administrar-costos
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+Esta guía muestra cómo ver cuánto cuestan las ejecuciones de un agente y cómo poner un tope a una ejecución autónoma.
 
-## How costs are recorded
+## Cómo se registran los costos
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Cada ejecución de un agente escribe un registro de ejecución que incluye sus tokens de entrada, tokens de salida, tokens de razonamiento, tokens de lectura en caché y de escritura en caché, un costo estimado en centavos y el costo de los subagentes que haya lanzado.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Los precios provienen del catálogo de models.dev, que se usa solo para enriquecer la lista de modelos con el precio y la ventana de contexto, nunca como fuente de identificadores de modelos. Un modelo al que el catálogo no puede asignar precio registra **$0**, y las ejecuciones sin costo quedan excluidas del resumen de **Uso y coste**. Un modelo local de Ollama, por lo tanto, no muestra ningún gasto, aunque sus conteos de tokens sí se registran. Un plan de tarifa plana (kimi-code, una suscripción de Claude) se comporta igual solo cuando el catálogo no tiene precio para el modelo que sirvió la ejecución; si lo tiene, la ejecución se estima de todos modos con esas tarifas. En una cadena de respaldo, la ejecución se cotiza según el modelo que realmente la sirvió, no el que se solicitó.
 
-## See what you are spending
+## Consulta cuánto estás gastando
 
-### Observability → Insights
+### Observabilidad → Resumen
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+Llega desde el pie de la barra lateral → **Observabilidad**. La pestaña **Uso** se abre primero (totales de tokens de todo el historial); cambia a **Resumen** —la segunda pestaña— para ver la superficie principal de costos:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- Un selector de rango de tiempo: últimas 24 horas, últimos 7 días, últimos 30 días o todo el tiempo
+- Filtros facetados por agente, modelo, estado y rol, como chips que puedes descartar
+- Una franja de KPI: ejecuciones totales, costo total, tasa de error, tasa de caché, tokens por segundo, latencia media y tiempo hasta el primer token, cada uno con su variación respecto al período anterior (oculta en «Todo»)
+- Gráficas de actividad y de costos, más un desglose de **Costo por rol** que reparte el gasto entre el agente principal, sus subagentes y su asesor
+- Una tabla por agente ordenada por costo, con los diez primeros y un botón para mostrar todos. Al tocar una fila, todas las demás superficies se filtran a ese agente
+- El registro de ejecución detallado, que ancla un panel de transcripción para una ejecución seleccionada
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[«Todo» no lo abarca todo]
+El feed de ejecuciones se suscribe a los 2000 registros de ejecución más recientes de todos los espacios de trabajo y luego filtra al que está activo. En un servidor ocupado con varios espacios de trabajo, el historial más antiguo de un espacio tranquilo queda fuera de esa ventana.
 :::
 
-### Settings → Server → Model providers
+### Ajustes → Servidor → Proveedores de modelos
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+La tarjeta **Uso y coste** de esta página muestra los últimos siete días de gasto observado como una sola cifra en dólares, con un desglose por proveedor y, cuando el proveedor lo publica, el tiempo que falta para que se reinicie la próxima ventana de cuota.
 
-### A single agent's runs
+### Las ejecuciones de un solo agente
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**Ajustes → Espacio de trabajo → Agentes** → selecciona un agente → **Registros** enumera sus ejecuciones con el estado, la duración, las horas de inicio y finalización, el PID y el adaptador. Esta pestaña **no** muestra el costo: para eso, usa la tabla por agente en Observabilidad → Resumen.
 
-## Cap an autonomous run
+## Pon un tope a una ejecución autónoma
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+Dos comandos slash, escritos en el compositor de un espacio, son las únicas ejecuciones con tope de gasto:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- Cada segmento de una ejecución de `/goal` o `/loop` se detiene cuando su gasto cotizado alcanza los **500 centavos ($5.00)**. Al llegar al 80 % de esa cifra, el bucle primero orienta al modelo para que cierre y deje un traspaso limpio, de modo que no muera a mitad de la tarea.
+- Un objetivo duradero completo tiene un tope de **5000 centavos ($50.00)** a menos que pases `--budget <dollars>`. El supervisor inyecta el presupuesto _restante_ del objetivo en cada segmento, así que un presupuesto explícito nunca se excede en un segmento entero.
+- `--days N` agrega una fecha límite de reloj y `--max N` un techo de número de ejecuciones. Ambos son opcionales; sin ellos, el objetivo solo queda acotado por el costo.
+- Un objetivo que choca con su límite se detiene en `budgetExhausted` y solo puede reanudarse aumentando el presupuesto.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+Como el tope se calcula con precios, un modelo al que el catálogo no puede asignar precio nunca lo alcanza. Esa ejecución queda acotada, en cambio, por la protección contra bucles repetitivos, el abandono del supervisor tras tres fallas consecutivas y tú.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Un mensaje en un espacio, una mención con @ o un paso de pipeline no tienen tope de gasto. La ejecución termina cuando el modelo se detiene, cuando tú la detienes o cuando la protección contra bucles la orienta.
 
-## Cut token use
+## Reduce el uso de tokens
 
-### Compact a long conversation
+### Compacta una conversación larga
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+Escribe `/compact` en el compositor del espacio. El comando se intercepta en el cliente y nunca llega a la transcripción; el servidor pliega el historial más antiguo en un resumen anclado y la conversación continúa sobre el contexto compactado.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+La compactación se rechaza mientras un agente está a mitad de turno y cuando no hay nada lo bastante antiguo para plegar. El arnés integrado también compacta por su cuenta a medida que el historial se acerca a la ventana de contexto del modelo.
 
-### Choose the effort level deliberately
+### Elige el nivel de esfuerzo de forma deliberada
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+El **Esfuerzo de razonamiento** de un agente (Ajustes → Espacio de trabajo → Agentes) ofrece los niveles que publique el modelo seleccionado. Los niveles más altos gastan más tokens de razonamiento. Reserva los niveles más altos para el trabajo que los necesite.
 
-### Choose the model per agent
+### Elige el modelo de cada agente
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+El modelo es un campo por agente, así que un agente de formato o de clasificación puede ejecutarse en un modelo barato mientras que un agente de arquitectura lo hace en uno caro. Filtra por modelo la tabla por agente en Observabilidad → Resumen para ver qué combinación te está costando de verdad.
 
-### Look for runs with outsized token counts
+### Busca ejecuciones con conteos de tokens desproporcionados
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Abre el registro de ejecución de Resumen (las 50 ejecuciones filtradas más recientes) y el panel de transcripción en cualquier cosa inusual. Las causas habituales son un prompt de sistema o una persona demasiado largos, un contexto que debería haberse compactado y una tarea que debería haber sido varias tareas más pequeñas.
 
-## What happens if a budget is set out of band
+## Qué ocurre si un presupuesto se define fuera de banda
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+Para ser exhaustivos, si `monthlyBudgetCents` o una política de presupuesto se escriben directamente en la fila de un agente:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- Los presupuestos se evalúan **después** de que termina una ejecución, no antes del despacho. Un listener al completarse la ejecución compara el gasto del agente en lo que va del mes con su techo.
+- Cruzar el umbral suave (80 % de forma predeterminada) registra un incidente de advertencia y dispara un evento `BudgetThresholdCrossed` al que puedes enganchar un disparador de pipeline.
+- Agotar el presupuesto registra un incidente grave, dispara el mismo evento y cambia el estado del ciclo de vida del agente a `paused`.
+- El bloque previo al despacho existe, pero solo lo consultan el recolector de ejecuciones huérfanas y el conciliador de tickets varados al programar una recuperación; un despacho normal nunca llega a él y nada en la ruta de despacho revisa el estado `paused`. La única señal visible es la insignia del ciclo de vida en el organigrama.
 
-## Related guides
+## Guías relacionadas
 
-- [Create and configure an agent](/es-MX/manual/guias/crear-agente/)
-- [Manage adapters and models](/es-MX/manual/guias/adaptadores/)
-- [Run agent diagnostics](/es-MX/manual/guias/diagnosticar-agente/)
-- [Agent configuration reference](/es-MX/manual/referencia/configuracion-de-agentes/)
+- [Crear y configurar un agente](/es-MX/manual/guias/crear-agente/)
+- [Administrar adaptadores y modelos](/es-MX/manual/guias/adaptadores/)
+- [Diagnosticar un agente](/es-MX/manual/guias/diagnosticar-agente/)
+- [Configuración de agentes](/es-MX/manual/referencia/configuracion-de-agentes/)
 
-## Related concepts
+## Conceptos relacionados
 
-- [Agent dispatch lifecycle](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/)
+- [Ciclo de vida del despacho de un agente](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/)

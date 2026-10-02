@@ -1,149 +1,150 @@
 ---
-title: Agent dispatch lifecycle
-description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+title: Životní cyklus odeslání agenta
+description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
+sourceHash: a2db888d30216f5f86a4512e0baf0f07d9d01b14
 ---
 
-## What a dispatch is
+## Co je odeslání
 
-A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+Odeslání je jeden běh jednoho agenta, v jedné konverzaci, na jednom adaptéru. Celé se to odehrává na `cc_server`: klient pošle zprávu a pak sleduje, jak se události streamují zpátky. V žádném klientovi cesta odeslání není.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Agenti se probouzejí ze šesti důvodů. Běh je nese jako **kontext probuzení**, aby agent věděl, _proč_ je vzhůru:
 
-| Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
-| `assignment`     | A ticket was assigned to the agent                           |
-| `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| Důvod probuzení | Spouštěč |
+| --- | --- |
+| `userMessage` | Někdo poslal zprávu v prostoru, nebo agenta zmínil |
+| `assignment` | Agentovi byl přiřazen ticket |
+| `pipelineStep` | Odeslal ho krok pipeline |
+| `childCompleted` | Dokončil se dceřiný ticket |
+| `followUp` | Naplánovaný kontrolní tep |
+| `recovery` | Cesta obnovy ho po selhání odeslala znovu |
 
-The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
+Kontext probuzení nese id, která k důvodu patří: ticket, prostor, zprávu a běh pipeline. Vloží se do prostředí agenta i do promptu.
 
-## Prompt assembly
+## Skládání promptu
 
-The prompt is built in layers, each one a labelled section:
+Prompt se skládá po vrstvách. Každá vrstva je pojmenovaná sekce:
 
-- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
-- **Tool catalogue and resource protocols**, then the **workspace layout**.
-- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
-- **Skills** — the names on the agent.
-- **Execution contract and procedure** for the current mode.
-- **Wake context** and **mention context**: who summoned the agent and the roster around it.
-- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
-- **Memory context** — facts retrieved for the task.
-- **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
+- **Identita**: vlastní id agenta, jméno a id pracovního prostoru, s výslovným pokynem předat nástrojům vázaným na pracovní prostor přesně tahle UUID. Pracovní prostor k agentovi patří, takže je v promptu vždy.
+- **Katalog nástrojů a protokoly zdrojů**, potom **rozložení pracovního prostoru**.
+- **Přepsání systémového promptu**, pokud ho agent má, potom **persona** (podle role) a **týmové zadání**.
+- **Skilly**: názvy, které agent nese.
+- **Kontrakt provedení a postup** pro aktuální režim.
+- **Kontext probuzení** a **kontext zmínky**: kdo agenta přivolal a sestava kolem něj.
+- **Blok režimu** vzniká z profilu schopností režimu _a z materializovaného seznamu jeho nástrojů_, takže prompt nikdy nejmenuje nástroj, který běh ve skutečnosti nemá.
+- **Kontext paměti**: fakta stažená k úkolu.
+- **Kontext konverzace**: nedávná historie prostoru, nanejvýš 50 000 znaků doslovného okna, bez ohledu na nastavenou velikost kontextu agenta. Starší historie se neořezává. Agent si ji na požádání načte přes `get_messages` a sémanticky blízké starší zprávy se pořád objeví.
 
-:::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
+:::note[Příkazy s lomítkem se čtou ze surového textu uživatele]
+Vrstvený prompt začíná blokem kontextu, takže nezačíná lomítkem. Příkazy se vezmou doslova ze zprávy uživatele a pak se vystřihnou z konce vrstveného promptu, aby každá vrstva kontextu zůstala.
 :::
 
-Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
+Příkazy se dělí na dvě místa. `/todo` a `/compact` zachytí pole zprávy a záměrně se nikdy neuloží jako zprávy ani nepošlou agentovi. Uložit `/compact` by posunulo řez kompakce o tah zpátky a zašpinilo přepis. `/plan` se řeší na obou stranách: pole zprávy přepne režim prostoru, a právě tím se pro tenhle tah i pro každý další sejde sada nástrojů, předvolba guardů a prompt. `/goal`, `/loop` a `/skill:<name>` se řeší uvnitř běhu a jen na vestavěném harnessu. `/goal` a `/loop` spustí autonomní práci s rozpočtem nákladů a jméno s předponou `skill:` se najde jako skill, jehož tělo `SKILL.md` se stane pokynem tahu. Jmenný prostor drží oba slovníky od sebe. Když se holé jméno rozlišovalo proti skillům, skill jménem `plan` nebo `compact` zůstal natrvalo ve stínu vestavěného příkazu. Holé jméno, které vestavěné není, se pořád rozliší, kvůli zprávám napsaným před vznikem jmenného prostoru. Nerozpoznané jméno projde jako obyčejný text.
 
-## Worktree provisioning
+## Příprava worktree
 
-Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
+Než se cokoli spustí, dostane konverzace vlastní pracovní kořen a pod ním izolovaný copy-on-write worktree na každý repozitář. Ve výchozím stavu je to každý repozitář navázaný na pracovní prostor. Prostor pull requestu, nebo prostor založený s výslovným výběrem, připraví jen repozitáře ze seznamu povolených. Konverzace revize PR připne svůj jediný repozitář na head ref pull requestu a ostatní nechá na výchozí větvi. Zdrojový checkout se nikdy nemění a celý adresář konverzace se při smazání prostoru uvolní.
 
-Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write je **jediná** implementace všude, kde se dodává `rift`, a stojí na přibalené nativní knihovně. Souborový systém, který neumí reflink, nebo datový adresář na jiném svazku než repozitář, přípravu shodí. Náhradní cesta není. `git worktree` je backend na Windows, kde copy-on-write backend není z čeho sestavit, a na ostatních hostitelích to není tiché zhoršení. Chybějící `rift` na platformě, která ho dodává, znamená rozbitou instalaci. Server odmítne naběhnout, místo aby potichu ustoupil: tichý ústup by poruchu schoval za pomalejší cestu natrvalo.
 
-## Identity and credentials
+## Identita a pověření
 
-Two identities are resolved per run, before any process launches.
+Na každý běh se před startem jakéhokoli procesu vyřeší dvě identity.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Autorství v Gitu.** Commit, který agent udělá, je autorovaný _jako agent_: `<Name> (agent) <agentId@agents.control-center.local>` v `GIT_AUTHOR_*` i v `GIT_COMMITTER_*`. Za člověka se nikdy nevydává. Místní část adresy je UUID agenta, ne slug jména. Žádající člověk je v traileru `Co-Authored-By:`, který jede v prostředí a je přikázaný v systémovém promptu. Identita, kterou volající nastaví výslovně, vyhraje nad oběma.
 
-**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
+**Identita ve forgi.** Pověření GitHubu pro běh je vždy jen od brokeru: token instalace App vázaný na repozitář, nebo záložní PAT z prostředí. Nikdy uložený token žádajícího člena. `actingUserId` ohraničí záložní PAT, aby člen, který není vlastníkem serveru, nezdědil dosah serveru. Osobní token do prostředí agenta nepřekryje.
 
-**Model provider credentials** resolve in a fixed order and the order matters:
+**Pověření poskytovatele modelu** se řeší v pevném pořadí a na pořadí záleží:
 
-1. a per-adapter environment override,
-2. the caller's environment,
-3. the server's credential store (refreshing an OAuth token if it is near expiry),
-4. the process environment.
+1. přepsání prostředí u adaptéru,
+2. prostředí volajícího,
+3. úložiště pověření na serveru (token OAuth se obnoví, když se blíží konec platnosti),
+4. prostředí procesu.
 
-Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+Přepsání u adaptéru je první, takže potichu přebije účet poskytovatele připojený v aplikaci. Když běh účtuje špatný účet, podívej se nejdřív tam. Pověření poskytovatelů platí pro celého hostitele a sdílí je každý pracovní prostor na instalaci.
 
-Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/).
+Tokeny vázané na schopnosti (GitHub, tickety) jdou z brokeru pověření. Vloží jen to, co schopnosti běhu dovolí. Viz [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/).
 
-## Launch
+## Spuštění
 
-The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Běh se spustí s worktree jako pracovním adresářem a u Claude Code ještě s vygenerovanou konfigurací MCP, aby agent dosáhl na sadu nástrojů Control Center. ACP a `bash` harnessu dostanou očištěné prostředí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
 
-:::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+:::note[Sandbox operačního systému obalí běh jen tam, kde má hostitel backend]
+`cc_server` hostitele při startu jednou osondá. Když je backend k dispozici, obalí v něm procesy agentů: Seatbelt na macOS, bubblewrap na Linuxu a na WSL2. Obalí se obě cesty odeslání, protože nesdílejí jednu. CLI Claude Code jde přes port sandboxu. Adaptéry ACP a nástroj `bash` vestavěného harnessu jdou přes správce sandboxu. Tou samou cestou se uplatní chráněné cesty běhu: tvoje registrované checkouty repozitářů mají uvnitř sandboxu zákaz zápisu, v každém režimu.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Kde backend není, běh **není** v sandboxu a nic jiného to nenahrazuje. To platí vždy na Windows (nativní obal není; `microvm` je samostatná cesta braná sondou, pro terminály a stanice) a na Linuxu nebo WSL2 bez `bwrap` a `socat` na `PATH`. Server na řádku startovacího logu řekne, ve kterém stavu je. `--sandbox off` sandbox vypne schválně.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Dvě skuliny zůstanou i tam, kde sandbox běží. Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search, find, search_files) běží uvnitř procesu serveru, takže je neváže žádný profil. Drží je jen vlastní omezení cest nástrojů a guardraily. Claude Code se navíc spouští s `--dangerously-skip-permissions`, takže jeho volání souborů a shellu Control Center nehlídá. Kolem nich je hranicí sandbox operačního systému.
 
-The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
+Ostatní hranice platí na každém hostiteli, se sandboxem i bez něj: vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), pověření vázaná na schopnosti, která broker přidělí při spuštění a odebere při úklidu, sjednocené guardraily akcí (při selhání se zavře: rozhodnutí `prompt` bez připojeného schvalovatele se zamítne) a sada nástrojů, kterou režim konverzace dovolí. ACP a `bash` harnessu prostředí pořád čistí. Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
 :::
 
-## Streaming
+## Streamování
 
-The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+Běh streamuje zpět typovanou řadu událostí. Procesor streamu je ukládá jako přírůstky zpráv, skládá do segmentů přepisu a mění na události zpráv:
 
-| Event              | What it carries                                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `thinking`         | Reasoning output, rendered inline                                                                                |
-| `text`             | Visible output                                                                                                   |
-| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
-| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
-| `usage`            | Token counts and cost for a measurement window                                                                   |
-| `error`            | An error, with the adapter's structured code when it reported one                                                |
-| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
-| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
-| `done`             | The run finished                                                                                                 |
+| Událost | Co nese |
+| --- | --- |
+| `thinking` | Výstup uvažování, vykreslený v řádku |
+| `text` | Viditelný výstup |
+| `toolCall` | Vyvolání nástroje, s jeho id a strukturovanými argumenty |
+| `toolResult` | Odpovídající výsledek, označený, když skončil chybou nebo je to neúplný proud |
+| `usage` | Počty tokenů a cena za měřicí okno |
+| `error` | Chyba, se strukturovaným kódem adaptéru, když ho nahlásil |
+| `sandboxViolation` | Operační systém zamítl systémové volání. Vysílá se jen tam, kde sandbox proces opravdu obaluje. Viz poznámka výše |
+| `debug` | Diagnostika za běhu (značky spuštění, rozhodnutí guardů, postrčení kontraktu) |
+| `done` | Běh skončil |
 
-## What bounds a run
+## Co běh ohraničuje
 
-There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+Záměrně **nikde není strop tahů**. Pevný počet iterací zabíjí legitimní dlouhou práci (migrace, úklid po rozvětvení) a nechytí nic, co guardy níže chytí dřív. Běh skončí, když:
 
-- **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **se model zastaví** sám;
+- **ho zastaví člověk**, nebo převezme konverzaci (to pozastaví vestavěný harness na další čisté hranici tahu; běh Claude Code, který bezpečnou hranici nemá, se místo toho zastaví);
+- **spustí hlídač ticha.** Žádný výstup po dobu prahu a relace skončí selháním `silentRun`. Výchozí hodnota je 15 minut, v režimech, které hlavně čtou (revize a plán), klesá na 10. Agent ji může přepsat v rozmezí 1 až 240 minut. Hlídač se aktivuje, když dceřiný proces nahlásí své PID, takže pokrývá CLI Claude Code, **ne** vestavěný harness, který nic nespouští;
+- **narazí se na strop nákladů**, ale jen u autonomních příkazů.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
+Ochrana před zacyklením běh neukončuje: tři stejná volání nástroje za sebou a smyčka agenta _nasměruje_, aby změnil postup.
 
-:::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::note[Běžný tah nemá strop nákladů]
+Hlídač nákladů uvnitř relace je zapojený jen u `/goal` a `/loop`. Každý jiný běh nepředává žádný rozpočet. U těchto příkazů může jeden bezobslužný segment ve výchozím stavu spotřebovat 500 centů ($5.00). Při 80 % přijde měkké nasměrování, ať agent čistě skončí, než přijde tvrdé zastavení, a trvalý rozpočet cíle je 5000 centů ($50.00) přes všechny segmenty. Celý segment nikdy nepřestřelí výslovné `/goal --budget`.
 :::
 
-Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+Běžný interaktivní tah na vestavěném harnessu tak nemá strop tahů, strop nákladů ani hlídače ticha. Skončí, když se model zastaví, nebo když ho zastavíš. Je to záměrný kompromis: každá alternativa zabíjí legitimní dlouhou práci. Bezobslužný interaktivní běh tak neohraničuje nic než vlastní úsudek modelu.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Uprostřed běhu se zpráva běžícímu agentovi zařadí do fronty jako **korekce** a na další hranici tahu se odebere, takže běh postrčíš, aniž bys ho ukončil. Korekce, pozastavení, podagenti a kontrakt dokončení patří vestavěnému harnessu. Claude Code z nich nemá nic.
 
-## How a run is recorded
+## Jak se běh zaznamenává
 
-Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+Každé odeslání zapíše `AgentRunLog`: čas začátku a konce, shrnutí, počty tokenů a odhadovanou cenu (včetně ceny sečtené z podagentů), adaptér a model, id procesu a cestu k logu, konverzaci a případný ticket nebo běh pipeline, ke kterému patří, plus dvě klasifikační pole, na kterých leží většina pravdy.
 
-- **Status** is coarse: `pending`, `running`, `completed`, `error`.
-- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
-- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+- **Stav** je hrubý: `pending`, `running`, `completed`, `error`.
+- **Živost** je jemnější údaj: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Rodina chyb** seskupuje selhání tak, aby se s nimi dalo pracovat: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
 
-:::note[`completed` does not mean "delivered"]
-When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+:::note[`completed` neznamená „doručeno“]
+Když běh skončí bez toho, co měl režim dodat (běh v režimu plánu, který nikdy nezavolal `submit_plan`, nebo běh orchestrace, který nikdy nic nenavrhl), stav zůstane `completed`, protože proces skončil čistě. Poctivý signál je v živosti (`empty`), v rodině chyb (`silentRun`) a ve shrnutí, které řekne přesně, co nevzniklo. Shrnutí je chráněné: finalizace ho nepřepíše posledním tlacháním modelu.
 
-This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+Je to schválně. Přepnutí stavu by pohnulo automaty ticketů a pipeline, které s chybějícím artefaktem nemají co dělat. Samotné „status: completed“ taky nikdy nestačí, abys z něj usoudil, že běh uspěl. Přečti shrnutí.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+Uzavření běhu publikuje `AgentRunCompleted` a na té události visí hodně: rámec oznámení a jeho trvalá položka v přehledu, živý přeposílač, který ji tlačí připojeným klientům, souhrn nákladů pipeline, obnovení kroku pipeline, který na běh čekal, dokončení podkladového ticketu, namapování orchestrace na koncový stav, rozhodnutí supervizora cíle, jestli pokračovat, nebo zastavit, role kontrolora a vyhodnocení rozpočtu po běhu. Seznam přítomnosti jde vlastní cestou: sleduje nedávné záznamy běhů, ne tuhle událost.
 
-## Budgets, after the fact
+## Rozpočty až potom
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Vynucení rozpočtu je _reakce_, ne brána. Když běh skončí, vyhodnocovač porovná útratu agenta od začátku měsíce s jeho účinným stropem (navázaná politika rozpočtu, pokud nějaká je, jinak vlastní měsíční číslo agenta; nula znamená bez omezení). Překročení měkkého prahu zapíše varovný incident. Vyčerpání rozpočtu zapíše tvrdý incident a na organizačním schématu přepne stav životního cyklu agenta na `paused`. Odeslání od toho agenta práci pořád bere. Spouštěč pipeline `BudgetThresholdCrossed` může ze stejné události rozjet navazující práci.
 
-## Retry lineage
+## Linie opakování
 
-Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
+Každý záznam běhu může nést linii opakování: id nadřazeného běhu, počítadlo pokusů a shrnutí pokračování. Strom běhů konverzace ukáže číslo pokusu, když není nula. Zopakování z chatu je nové odeslání s čerstvým záznamem běhu.
 
-## Related concepts
+## Související koncepty
 
-- [The agent model](/cs-CZ/prirucka/koncepty/model-agentu/): what the adapter can and cannot enforce
-- [Modes](/cs-CZ/prirucka/koncepty/rezimy/): where the tool surface and the completion contract come from
-- [Guardrails](/cs-CZ/prirucka/koncepty/guardraily/): the effect-class policy every gated call passes
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): the isolation story in full
-- [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/): steering, take-over and the autonomy dial
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/): what `AgentRunCompleted` sets off
+- [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): co adaptér vynutit umí a co ne
+- [Režimy](/cs-CZ/prirucka/koncepty/rezimy/): odkud se bere sada nástrojů a kontrakt dokončení
+- [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): politika tříd efektů, kterou projde každé hlídané volání
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): celý příběh izolace
+- [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/): korekce, převzetí a ovládání autonomie
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): co spouští `AgentRunCompleted`

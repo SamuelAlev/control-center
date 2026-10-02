@@ -1,95 +1,117 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: เชื่อมบัญชี Slack ของคุณ
+description: พิสูจน์ว่าตัวตน Slack นั้นเป็นของคุณ เพื่อให้เอเจนต์ลงมือกับข้อความของคุณและงานของคุณถูกระบุที่มาว่าเป็นของคุณ
 slug: th-TH/คู่มือ/วิธีทำ/เชื่อมบัญชีแชท
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+คู่มือนี้แสดงวิธีลิงก์ตัวตนแชทของคุณเข้ากับผู้ใช้ Control Center ของคุณ และวิธี
+เลิกลิงก์
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+สมาชิกทุกคนทำขั้นตอนนี้ครั้งเดียวต่อผู้ให้บริการแชทหนึ่งราย มันแยกจากการเชื่อมแอป:
+การเชื่อมทำให้บอทเข้าถึงได้สำหรับทั้งเวิร์กสเปซ ส่วนการลิงก์ทำให้ _คุณ_ ถูกจดจำได้
+ภายในเวิร์กสเปซนั้น
 
-## Why linking is required
+## เหตุใดจึงต้องลิงก์
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+สะพานจะปฏิเสธที่จะลงมือแทนบัญชีแชทที่มันแปลงเป็นสมาชิกของเวิร์กสเปซไม่ได้ นั่นเป็น
+ความตั้งใจ — หากไม่มีการลิงก์ ข้อความทุกฉบับจาก Slack จะต้องถูกระบุที่มาให้กับคนที่
+ติดตั้งแอป และร่องรอยการตรวจสอบ ขีดจำกัดอัตราต่อ Principal และผู้รายงานตั๋วงาน
+ก็จะระบุชื่อผิดคนทั้งหมด
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+สมาชิกที่ยังไม่ได้ลิงก์ซึ่งกล่าวถึงบอทจะได้รับคำตอบในเธรด Slack นั้นที่อธิบายวิธี
+ลิงก์ ไม่มีการส่งงานใด ๆ
 
-## Link with a code
+## ลิงก์ด้วยรหัส
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน** แล้วเลื่อนไปที่การ์ด
+   **บัญชีแชทที่ลิงก์**
+2. ในบล็อก Slack คลิก **ลิงก์บัญชี Slack ของฉัน**
+3. คัดลอกคำสั่งที่มันแสดง ตัวอย่างเช่น:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. ใน Slack ส่งคำสั่งนั้นถึงบอท — ข้อความส่วนตัวเป็นที่ที่ง่ายที่สุด
+5. บอทจะยืนยันผู้ใช้ Control Center ที่คุณลิงก์อยู่ด้วยในตอนนี้ และกล่องโต้ตอบ
+   ที่คุณเปิดค้างไว้จะอัปเดตบอกเรื่องนี้ในจังหวะเดียวกัน — คุณไม่ต้องปิดมันแล้ว
+   ไปดูเอง
 
-The code:
+รหัสนี้:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- ใช้ได้ครั้งเดียวและหมดอายุ **15 นาที** หลังถูกสร้าง
+- ถูกสร้างสำหรับ _คุณ_ เสมอ ไม่เคยสร้างให้เพื่อนร่วมทีม
+- แทนที่รหัสใด ๆ ที่คุณถืออยู่แล้ว การกดปุ่มอีกครั้งจึงทำให้รหัสก่อนหน้าใช้ไม่ได้
+- ถูกเก็บไว้ในหน่วยความจำเท่านั้น การรีสตาร์ตเซิร์ฟเวอร์จึงทำให้รหัสที่ค้างอยู่
+  ใช้ไม่ได้ — กดปุ่มอีกครั้ง
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+รหัสที่ไม่รู้จัก หมดอายุ หรือถูกสร้างสำหรับเวิร์กสเปซอื่น จะล้มเหลวด้วยวิธีที่แยก
+ไม่ออกจากกันแบบเดียวกัน: "that code is not valid (or has expired)"
 
-## Automatic linking by email
+## ลิงก์อัตโนมัติด้วยอีเมล
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+หากโปรไฟล์ Slack ของคุณมีอีเมลที่ผ่านการยืนยันซึ่งตรงกับผู้ใช้ Control Center
+ที่ **เป็นสมาชิกของเวิร์กสเปซนี้อยู่แล้ว** สะพานจะลิงก์คุณในครั้งแรกที่คุณคุยกับมัน
+ไม่ต้องใช้รหัส
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+ทั้งสองส่วนสำคัญเท่ากัน: การตรงกันของอีเมลพิสูจน์ตัวตน แต่มีเพียงสมาชิกภาพเท่านั้น
+ที่ให้สิทธิ์เข้าถึง คนแปลกหน้าที่อีเมลของเขาบังเอิญมีอยู่บนเซิร์ฟเวอร์จึงลิงก์กับ
+อะไรไม่ได้ รายชื่อจะแสดงว่าลิงก์แต่ละอันเกิดขึ้นได้อย่างไร ("จับคู่ด้วยอีเมล" หรือ
+"ลิงก์ด้วยรหัส")
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+การลิงก์อัตโนมัติต้องใช้สโคป `users:read.email` หากไม่มี Slack จะไม่เปิดเผยที่อยู่
+และเส้นทางผ่านรหัสคือเส้นทางเดียว
 
-## See who is linked
+## ดูว่าใครถูกลิงก์ไว้
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+รายชื่อเป็นงานดูแลเวิร์กสเปซ มันจึงอยู่บนอีกครึ่งของพื้นผิว:
+**การตั้งค่า → เวิร์กสเปซ → ทั่วไป → สะพานแชท → บัญชีที่ลิงก์** มันแสดงรายชื่อ
+สมาชิกทุกคนที่ลิงก์ไว้ในเวิร์กสเปซ พร้อมบัญชี Slack ที่แต่ละคนแปลงไปถึง และวิธี
+ที่ลิงก์นั้นถูกสร้างขึ้น
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+สถานะของคุณเองอยู่บนหน้าโปรไฟล์ของคุณ: แถว **ลิงก์บัญชี Slack ของฉัน** จะอ่านว่า
+"ลิงก์กับ _your-slack-id_" เมื่อคุณลิงก์แล้ว และบอกให้คุณลิงก์เมื่อยังไม่ได้ลิงก์
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+รายชื่อเป็นการสมัครรับแบบสด เพราะการเปลี่ยนแปลงเกิดขึ้นที่อีกฝั่ง — คุณพิมพ์รหัส
+ใน Slack ดังนั้นไม่มีคำขอใดจากแอปที่พาคำตอบกลับมาได้
 
-## Unlink
+## เลิกลิงก์
 
-Click **Unlink** on a row in the workspace roster.
+คลิก **เลิกลิงก์** บนแถวใดแถวหนึ่งในรายชื่อของเวิร์กสเปซ
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- ใครก็เลิกลิงก์ตัวเองได้
+- เฉพาะแอดมินเท่านั้นที่เลิกลิงก์สมาชิกคนอื่นได้
+- การเลิกลิงก์ยังเพิกถอนรหัสลิงก์ที่ค้างอยู่ทั้งหมดของสมาชิกคนนั้นด้วย
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+หลังเลิกลิงก์ บัญชี Slack นั้นจะขับเคลื่อนเอเจนต์ไม่ได้อีกจนกว่าจะลิงก์ใหม่ สเปซ
+ทรานสคริปต์ และตั๋วงานที่มีอยู่เดิมยังคงการระบุที่มาเดิมไว้ — การเลิกลิงก์ไม่ใช่
+การถอนงานที่ผ่านมา
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### The bot says I am not a member of this workspace
+### บอทบอกว่าฉันไม่ใช่สมาชิกของเวิร์กสเปซนี้
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/).
+บัญชี Slack ของคุณลิงก์กับผู้ใช้ Control Center แต่ผู้ใช้คนนั้นไม่มีความเป็นสมาชิก
+ในเวิร์กสเปซนี้ ขอให้แอดมินเชิญคุณ ดู[การทำงานร่วมกันแบบหลายคน — ตัวตน สมาชิกภาพ และการปรากฏตัว](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/)
 
-### The bot says my role is read-only
+### บอทบอกว่าบทบาทของฉันเป็นแบบอ่านอย่างเดียว
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+บทบาท `viewer` และ `guest` เริ่มงานไม่ได้ แอดมินต้องยกระดับบทบาทของคุณเป็น
+`member` หรือสูงกว่า
 
-### The slash command is not recognized
+### คำสั่งสแลชไม่ถูกจดจำ
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+ตรวจสอบว่าคำสั่งสแลชนั้นมีอยู่ใน Slack และคุณกำลังส่งคำสั่งที่กล่องโต้ตอบการตั้งค่า
+แสดงให้คุณ — แอดมินอาจเปลี่ยนชื่อมัน ซึ่งในกรณีนั้นกล่องโต้ตอบจะแสดงชื่อปัจจุบัน
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
-- [Customize the chat bot](/th-TH/คู่มือ/วิธีทำ/ปรับแต่งแชทบอต/)
-- [Chat bridge](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/)
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- [ปรับแต่งแชทบอต](/th-TH/คู่มือ/วิธีทำ/ปรับแต่งแชทบอต/)
+- [สะพานแชท](/th-TH/คู่มือ/อ้างอิง/สะพานแชท/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)
-- [Multiplayer — identity, membership and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/)
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)
+- [การทำงานร่วมกันแบบหลายคน — ตัวตน สมาชิกภาพ และการปรากฏตัว](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/)

@@ -1,185 +1,196 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: Odak modu ve ses manzaralarını kullanma
+description: Yüzen bir geri sayım kapsülü ve bastırılan bildirimlerle zamanlanmış bir odak oturumu yürütün, altında çalan uyarlanabilir ses manzarasını biçimlendirin.
 dateModified: 2026-08-17
 slug: tr-TR/kilavuz/nasil-yapilir/odak-modu
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+Bu kılavuz bir odak oturumunun nasıl yürütüleceğini gösterir: Control Center’ın
+acil olmayan bildirimleri bastırdığı ve diğer pencerelerinizin üzerinde bir geri
+sayım kapsülü yüzdürdüğü zamanlanmış bir blok. Ayrıca (varsayılan olarak) onun
+altında çalan ses manzarasını da ele alır — sunucunuzun seçtiğiniz ruh haline,
+dışarıdaki hava durumuna ve günün saatine göre canlı olarak sentezlediği sonsuz
+bir ambiyans parçası.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+Bir odak oturumu kabuk düzeyinde bir özelliktir. Hiçbir sütuna bağlı değildir —
+düzeni değiştirmez, kenar çubuğunu gizlemez ve bir PR inceleme yüzeyini de
+değiştirmez.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[Yalnızca masaüstünde]
+Yüzen kapsül ve ses manzarasının ayrı mini oynatıcısı, yalnızca masaüstü
+önyükleyicisi tarafından bağlanan yerel kardeş pencerelerdir. `app.usectrl.dev`
+adresindeki web derlemesinde ikisi de yoktur ve işletim sistemi bildirim hattı
+bulunmaz; bu yüzden orada bir odak oturumunun göstereceği ya da bastıracağı
+hiçbir şey yoktur. Ses manzarası paneli ve oynatması, bir sunucuya bağlandığınız
+her yerde çalışır.
 :::
 
-## Start a focus session
+## Odak oturumu başlatma
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. Başlık çubuğunun sağındaki odak simgesine tıklayın (araç ipucu **Odak
+   oturumunu başlat**)
+2. Açılan iletişim kutusunda isteğe bağlı bir **Hedef** yazın — ne üzerinde
+   çalıştığınızı
+3. Bir **Süre** seçin: 25m, 50m, 1h, 1h 30m veya 2h. Varsayılan 50m’dir ve son
+   seçiminiz hatırlanır
+4. **Başlat**’a basın
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+Kontrol noktası: başlık çubuğundaki düğmenin yerini kalan dakikaları gösteren
+vurgulu bir çip alır, yüzen kapsül diğer pencerelerinizin üzerinde belirir ve
+**Odak moduyla başlat** açıkken ses manzarası çalmaya başlar.
 
-Two other entry points reach the same session:
+Aynı oturuma ulaşan iki giriş noktası daha vardır:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** aynı iletişim kutusunu açar.
+- **⌘⇧⌥F**, hatırlanan süreyle ve hedef olmadan hemen bir oturum başlatır —
+  iletişim kutusunu atlar. Tekrar basmak oturumu bitirir.
 
-## Read the floating pill
+## Yüzen kapsülü okuma
 
-The pill is a small frameless window you can drag anywhere. It shows:
+Kapsül, her yere sürükleyebileceğiniz küçük ve çerçevesiz bir penceredir.
+Şunları gösterir:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- Canlı bir varlık noktası ve `mm:ss` biçiminde kalan süre
+- Hedefiniz ya da bir hedef belirlemediyseniz “Focus session”
+- Alt kenar boyunca ince bir ilerleme çubuğu
 
-Hover it to reveal two actions:
+Üzerine gelin, iki eylem görünür:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — geri sayımı durdurur. Duraklatma yalnızca kapsül için
+  geçerlidir; oturumun kendisi etkin kalır.
+- **Complete** — oturumu bitirir.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+Kapsül, ana pencerenin kullandığı temadan bağımsız olarak koyu palete bağlı
+kalır; çünkü rastgele masaüstü içeriğinin üzerinde yüzer.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+Kapsülü başlık çubuğundan kapatırsanız oturum çalışmaya devam eder. Geri
+getirmek için odak çipinin yanındaki resim içinde resim düğmesine basın (araç
+ipucu **Çubuğa küçült**).
 
-## Know what gets suppressed
+## Nelerin bastırıldığını bilme
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+Bir oturum etkinken Control Center, her zaman iletilen iki kategori hariç her
+bildirimi düşürür:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **Toplantı yakında başlıyor** — sonradan gördüğünüz bir toplantı uyarısı işe
+  yaramaz
+- **PR yayınlandı**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+Diğer her şey oturum boyunca sessizce bastırılır — ses yok, işletim sistemi
+bildirimi yok. Bastırılan bildirimler daha sonra teslim edilmek üzere kuyruğa
+alınmaz.
 
-## Play a soundscape
+## Ses manzarası çalma
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. Paneli açmak için başlık çubuğunun sağındaki hoparlör simgesine tıklayın
+   (araç ipucu **Ses manzaraları**)
+2. Bir **Ruh hali** seçin — **Odak**, **Yükseliş**, **Rahatla** veya **Uyku**
+3. **Oynat**’a basın
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+Kontrol noktası: **Şimdi çalıyor** kartı geçerli sahneyi adlandırır — çalışma
+alanınızın bulunduğu yerdeki hava durumu, °C cinsinden sıcaklık ve konum
+etiketi. Kart “Ortam ayarlanıyor…” yazdığı sürece sahne henüz çözümleniyordur.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+Parça bir döngü değildir. Sunucunuz onu ruh halinden, çalışma alanının bulunduğu
+yerdeki canlı hava durumundan ve günün saatinden sürekli olarak sentezler. Yağmur
+parlak ve hareketli duyulur, fırtına gürültülü ve rüzgârlı, sis boğuk; gece ise
+gün ortasından daha karanlık ve daha yankılıdır. Ruh hali dağarcığı belirler:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| Ruh hali | Ses                                                                                |
+| -------- | ---------------------------------------------------------------------------------- |
+| Odak     | İşin altında çalmak için tasarlanmış, düşük nabızlı yumuşak ve uyanık bir ambiyans |
+| Yükseliş | İş ağırlaştığında işe yarayan, yumuşak nabızlı coşkulu bir melodi                  |
+| Rahatla  | Daha sıcak, daha uyumlu pad’ler, ritim yok                                         |
+| Uyku     | Neredeyse hiç olay içermeyen bas drone’lar, derin yankılanma                       |
 
-Switching mood while playing hands playback to the new mood without stopping.
+Çalarken ruh hali değiştirmek, oynatmayı durdurmadan yeni ruh haline devreder.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+Panele ⌘K’dan, odak oturumunun hemen yanındaki **Focus** kategorisi altından da
+ulaşılabilir.
 
-## Shape the sound
+## Sesi biçimlendirme
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **Ton** (Odak, Yükseliş ve Rahatla) — sürüklenebilir bir topuzu olan kare bir
+  ped. Yatay eksen **Yumuşak** ile **Enerjik** arasındadır (ne kadar şey
+  olduğu), dikey eksen **Uzaysı** ile **Parlak** arasındadır (kulağa ne kadar
+  açık geldiği). Pedi nötr merkeze döndürmek için iki kez dokunun; ok tuşları
+  topuzu hafifçe kaydırır. Tonunuz ruh hali başına hatırlanır ve ayarlamalar
+  çalan miksine akıcı biçimde geçer — akış hiçbir zaman yeniden başlamaz. Uyku
+  ruh hali tasarım gereği ayarlanamaz.
+- **Ses** — %0’dan %100’e bir kaydırıcı; varsayılanı %60. Sistem sesinden
+  ayrıdır ve hatırlanır.
+- **Konum** — çalışma alanından otomatik olarak algılanır. Sahneyi yeniden
+  almak için **Hava durumunu yenile**’ye basın.
 
-## Pop out the mini player
+## Mini oynatıcıyı ayırma
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+Ses çalarken başlık çubuğunda ikinci bir düğme belirir (araç ipucu **Oynatıcıyı
+ayır**). Oynatma/duraklatma, hava durumu simgesi, sahne adı ve **Uygulamaya dön**
+düğmesi içeren, her zaman üstte duran küçük bir HUD’u yüzdürür — bir odak
+oturumu sizi tamamen başka bir uygulamaya çektiğinde işe yarar.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+Mini oynatıcıdan duraklatmak onu kapatmaz; onu yalnızca kapatma düğmesi (ya da
+uygulamadan çıkmak) kaldırır.
 
-## Run them together
+## İkisini birlikte çalıştırma
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+İki özellik, ses manzarası panelindeki tek bir anahtarla birbirine bağlanır:
+**Odak moduyla başlat**; varsayılan olarak açıktır.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- Bir odak oturumu başlatmak, hâlihazırda çalan bir şey yoksa ses manzarasını da
+  başlatır.
+- Oturumu bitirmek — nasıl bittiğinden bağımsız olarak, zamanlayıcının dolması
+  dahil — ses manzarasını durdurur; onu elle başlatmış olsanız bile.
 
-Turn the switch off to keep the two independent.
+İkisini bağımsız tutmak için anahtarı kapatın.
 
-## End a session
+## Oturumu bitirme
 
-Any one of these ends it:
+Bunlardan herhangi biri oturumu bitirir:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- Başlık çubuğundaki odak çipine tıklayın (araç ipucu **Odak modu açık —
+  bitirmek için dokunun**)
+- Kapsüldeki **Complete**’e basın
+- **⌘⇧⌥F** tuşlarına basın
+- ⌘K’da **Exit focus mode** seçeneğini seçin
+- Zamanlayıcının dolmasını bekleyin — oturum sıfırda kendiliğinden tamamlanır
 
-The pill closes, notifications resume immediately and the soundscape stops.
+Kapsül kapanır, bildirimler hemen yeniden başlar ve ses manzarası durur.
 
-## Understand what does not persist
+## Neyin kalıcı olmadığını anlama
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+Bir oturum tam olarak bir uygulama çalıştırması boyunca yaşar. Control Center’dan
+çıkıp yeniden açtığınızda, oturum ortasında olsanız bile sıfırlanmış bir
+zamanlayıcıyla etkin olmayan durumda başlarsınız — çökme kurtarma ve oturum
+geçmişi yoktur.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+Yalnızca iki şey aktarılır: tercih ettiğiniz süre ve bildirimleri engelleme
+bayrağı. Hedef, geçen süre ve kapsülün açık olup olmadığı aktarılmaz.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+Oynatma da aynı derecede geçicidir — ses manzarası başlangıçta her zaman
+durdurulur. Ruh haliniz, sesiniz ve ruh hali başına tonlarınız kalıcıdır; akışın
+kendisi hiçbir zaman kendiliğinden devam etmez.
 
-## Troubleshooting
+## Sorun giderme
 
-### The tune pad is missing
+### Ton pedi eksik
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+Uyku ruh halindesiniz; bu ruh hali kasıtlı olarak ayarlanamaz. Pedin geri
+gelmesi için Odak veya Rahatla ruh haline geçin.
 
-### Nothing plays after restarting the app
+### Uygulama yeniden başlatıldıktan sonra hiçbir şey çalmıyor
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+Bu tasarım gereğidir — oynatma, uygulama başlatıldığında her zaman durdurulur.
+Paneli açıp yeniden **Oynat**’a basın. Yine sessiz kalırsa paneldeki, sistem
+sesinden ayrı olan ses kaydırıcısını denetleyin.
 
-### The weather or temperature looks wrong
+### Hava durumu veya sıcaklık yanlış görünüyor
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+Sahne, etkin çalışma alanının konumunu izler. Yeniden almak için paneldeki
+**Hava durumunu yenile**’ye basın.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Configure notifications](/tr-TR/kilavuz/nasil-yapilir/bildirimler/)
-- [Keyboard shortcuts](/tr-TR/kilavuz/referans/klavye-kisayollari/)
+- [Bildirimleri yapılandırma](/tr-TR/kilavuz/nasil-yapilir/bildirimler/)
+- [Klavye kısayolları](/tr-TR/kilavuz/referans/klavye-kisayollari/)

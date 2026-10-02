@@ -1,19 +1,19 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: כניסה מאוחדת
+description: איך עובדות התחברויות SAML ו-OIDC, מה הן מאמתות ואיך החשבונות נשארים מוגנים.
 slug: he-IL/מדריך-למשתמש/מושגים/כניסה-מאוחדת
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+הכניסה המאוחדת מאפשרת לספק זהויות חיצוני (IdP) להחליט מי רשאי להיכנס לשרת
+Control Center שלכם. שני פרוטוקולים נתמכים — SAML 2.0 ו-OpenID Connect —
+ושניהם מגיעים לאותה נקודה: פרטי גישה של מכשיר שנוצרו זה עתה, שאינם ניתנים
+להבחנה מהזמנה או משיוך ב-QR בכל מקום בהמשך.
 
-## The shape of a login
+## הצורה של התחברות
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+התחברויות SAML **מתווכות על ידי הדפדפן**. ה-IdP לעולם אינו פותח חיבור
+לשרת שלכם; הדפדפן של המשתמש נושא את הכול:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +26,75 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+מכיוון שהדפדפן הוא השליח, **שרת מאחורי NAT עובד היטב** לצורך התחברות:
+localhost, LAN, Tailscale, VPN או מנהרה — כולם מתאימים; רק הדפדפן של המשתמש
+חייב להגיע לכתובת ה-ACS. ממסר ה-WebSocket שמשמש לשליטה מרחוק מהטלפון אינו
+יכול לשאת את סבב ה-HTTP, ולכן נקודות הכניסה של SSO תמיד מכוונות למקור
+ה-HTTP של השרת.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect פועל באותה צורה, בסבב של authorization code + PKCE;
+ה-claims נקראים מנקודת הקצה לאסימונים של המנפיק דרך TLS, כך שהדפדפן כלל
+אינו מספק נתוני זהות.
 
-## The adapters
+## המתאמים
 
-Control Center splits the responsibility deliberately:
+Control Center מחלק את האחריות במכוון:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| רכיב                          | היכן                               | אחראי על                                                                                                                                        |
+| ----------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc_saml` native              | `packages/cc_natives/native/saml/` | אימות XML-DSig, קנוניקליזציה, אימות פרופיל SAML — מואצל לקרייט `saml` הטהור ב-Rust שמוצמד, מאחורי C ABI חסר מצב                                |
+| `SamlService` / `OidcService` | `cc_server_core`                   | מצב ההתחברות (מעקב אחר בקשות ממתינות, סינון כפילויות של שידור חוזר), מתגי מדיניות האימות, קריאת ההקצאה המשותפת                                    |
+| `SsoProvisioner`              | `cc_server_core`                   | איתור או יצירה של המשתמש, קיבוע ה־subject של הספק, הענקת חברויות לפי מדיניות החברות האוטומטית                                                    |
+| `ScimService`                 | `cc_server_core`                   | משטח הדחיפה של SCIM 2.0 (מחזור חיי הקצאה וביטול הקצאה)                                                                                           |
+| `SsoSettingsService`          | `cc_server_core`                   | שורות החיבור השמורות, החלה מחדש בזמן אמת, אסימון ה-SCIM                                                                                          |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+בכוונה **אין נפילה לאחור של הצפנת SAML ב-Dart טהור**: XML-DSig וקנוניקליזציה
+במימוש עצמי הם בדיוק המקום שבו חיות חולשות עטיפת חתימה, ולכן ספרייה `cc_saml`
+חסרה מסרבת הן להתחברות SAML והן לאתחול השרת. ה-native חסר מצב בתכנונו — מצב
+חוצה־בקשות חי בשירותי ה-Dart, חד־פעמי וקצר־מועד.
 
-## What a login verifies
+## מה ההתחברות מאמתת
 
-Inside the verified native and the service, in order:
+בתוך ה-native המאומת והשירות, לפי הסדר:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. את ה**חתימה** של ההצהרה (נדרשת תמיד; זו של מעטפת התגובה אופציונלית
+   בהתאם לתצורה) — עמידה מבנית מפני עטיפת חתימה, משום שהמטען המאומת כבול
+   לאלמנט המאומת,
+2. את ה**מנפיק** — תואם ל-IdP המוגדר,
+3. את ה**קהל** — מציין את ספק השירות הזה,
+4. את ה**יעד** — הוא כתובת ה-ACS שלנו,
+5. את `InResponseTo` — תואם לבקשת AuthnRequest ממתינה שהנפקנו (תגובות
+   לא־מבוקשות שיזם ה-IdP כבויות כברירת מחדל),
+6. את חלונות ה**תוקף** — עומדים בסטיית השעון (ברירת מחדל: 90 שניות), ואת
+7. את **מזהה ההצהרה** — לא נראה מעולם קודם לכן (מטמון שידור חוזר).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+כשלים חוזרים כקודים טיפוסיים — signature, expired, audience, destination,
+issuer, request-match — ונקודות הקצה עונות בשגיאות כלליות, כך שתוקף לא לומד
+דבר על הסיבה לכשל של זיוף.
 
-## Accounts and subject pinning
+## חשבונות וקיבוע ה־subject
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+התחברות ה-SSO הראשונה מקבעת על החשבון את ה־subject הקבוע של הספק (`issuer`
+בתוספת SAML NameID / OIDC `sub`, או SCIM externalId). מעתה, ה־subject — ולא
+כתובת הדוא"ל — הוא שמזהה את ההתחברות. אם מישהו אחר יציג בהמשך את אותה כתובת
+דוא"ל מאותו IdP או מאחר, החשבון המקובע מסרב לו. זה מה שמונע מכתובת דוא"ל
+שמוחזרה אצל ספק להפוך להשתלטות על חשבון.
 
-## Provisioning and deprovisioning
+## הקצאה וביטול הקצאה
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+הקצאת JIT מתרחשת בזמן ההתחברות (`SsoProvisioner`). SCIM הוא משטח דחיפה נפרד
+(`ScimService`) שמקבע את אותו subject על שורת המשתמש; הוא אינו מעניק חברויות
+בסביבות עבודה. ביטול הקצאה — SCIM `active: false` או `DELETE` — מסרב אם
+החשבון הוא בעלים של סביבת עבודה (יש להעביר בעלות קודם). אחרת, הוא קודם כל
+שולל כל פרטי גישה של מכשיר (הסשנים נופלים בתוך שניות דרך מעקב המכשיר), מסיר
+כל חברות בסביבת עבודה ומסמן את החשבון כלא פעיל. שורת המשתמש שורדת: הייחוס הוא
+קבוע. הפעלה מחדש מחזירה את הכניסה אך לעולם אינה מעניקה מחדש חברויות.
 
-## What stays out
+## מה נשאר בחוץ
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **מיפוי קבוצה→תפקיד מתרחש בזמן ההתחברות** מתוך מאפייני SAML / ה־claims של
+  OIDC — קבוצות שנדחפות ב-SCIM אינן נשמרות.
+- **לא ניתן להגיע לתפקיד הבעלים דרך SSO** — לא כברירת מחדל של תפקיד ולא דרך
+  מיפוי קבוצה.
+- ממסר ה-WebSocket אינו ערוץ SSO לעולם; טלפונים שמגיעים לשרת רק דרך הממסר
+  אינם יכולים להשלים מולו סבב דפדפן.

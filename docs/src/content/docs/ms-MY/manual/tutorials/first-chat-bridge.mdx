@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Jambatkan Slack ke ruang kerja anda
+description: Cipta apl Slack, sambungkannya, pautkan akaun anda dan dapatkan ejen yang menjawab dalam utas Slack.
 slug: ms-MY/manual-pengguna/tutorial/jambatan-sembang-pertama
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Apa yang akan anda bina
 
-By the end of this tutorial, you will have:
+Menjelang akhir tutorial ini, anda akan mempunyai:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- Apl Slack yang dicipta untuk ruang kerja anda, dengan kebenaran dan peristiwa yang betul sudah ditetapkan
+- Sambungan hidup antara Slack dan Control Center
+- Akaun Slack anda sendiri dipautkan kepada pengguna Control Center anda
+- Ejen yang menjawab anda dalam utas Slack dan tiket yang difailkan daripada perintah slash
 
-Prerequisites:
+Prasyarat:
 
-- [Your first workspace](/ms-MY/manual-pengguna/tutorial/ruang-kerja-pertama/) and [Dispatch your first agent](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [Ruang kerja pertama anda](/ms-MY/manual-pengguna/tutorial/ruang-kerja-pertama/) dan [Hantar ejen pertama anda](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) telah selesai — ruang kerja tanpa ejen boleh menerima mesej Slack tetapi tiada sesiapa untuk menjawabnya
+- **Ejen CEO** ruang kerja itu mempunyai penyesuai dan model yang ditetapkan di **Tetapan → Ruang kerja → Ejen**. Jambatan itu membangunkan ejen CEO, bukan ejen yang anda konfigurasikan dalam tutorial sebelumnya, dan ejen tanpa penyesuai berjalan pada gelung terbina dengan model lalai Anthropic.
+- Peranan `owner` atau `admin` dalam ruang kerja Control Center (menyambungkan apl sembang mewakili seluruh ruang kerja)
+- Kebenaran untuk mencipta dan memasang apl dalam ruang kerja Slack anda
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Tiada apa di sini memerlukan alamat awam, terowong atau port masuk. Control Center menghubungi _keluar_ ke Slack melalui Socket Mode, jadi ini berfungsi daripada komputer riba di belakang NAT.
 
-## Step 1: Get a Slack app configuration token
+## Langkah 1: Dapatkan token konfigurasi apl Slack
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Ini satu-satunya rahsia yang perlu anda peroleh sendiri. Ia membolehkan Control Center mencipta dan kemudian menyunting apl itu untuk anda.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Buka [api.slack.com/apps](https://api.slack.com/apps)
+2. Tatal ke bahagian token konfigurasi apl di bahagian bawah halaman
+3. Jana sepasang token untuk ruang kerja Slack anda
+4. Salin token **penyegaran** — ia bermula dengan `xoxe-`
 
-## Step 2: Let Control Center create the app
+## Langkah 2: Biarkan Control Center mencipta apl itu
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan cari kad **Jambatan sembang**
+2. Pada blok **Slack**, klik **Cipta apl untuk saya**
+3. Tampal token konfigurasi apl
+4. Semak rupa bot itu nanti:
+   - **Nama apl**: cara Slack menyenaraikan apl itu, contohnya `Control Center · Acme`
+   - **Nama bot**: apa yang orang taip selepas `@`, contohnya `control-center`
+   - **Perihalan ringkas** dan **Apa yang bot kata ia boleh lakukan**
+   - **Perintah slash**: `cc` secara lalai, jadi perintahnya ialah `/cc`
+   - **Mesej terus**: biarkan hidup supaya ahli boleh menghantar DM kepada bot
+5. Klik **Cipta apl**
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+Control Center menyusun keseluruhan definisi apl itu — Socket Mode dihidupkan, skop bot dan langganan peristiwa yang diperlukannya, perintah slash, tab Mesej — dan menciptanya dalam Slack.
 
-## Step 3: Finish the two steps only Slack can do
+## Langkah 3: Selesaikan dua langkah yang hanya boleh dilakukan oleh Slack
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+Slack tiada API untuk menjana token peringkat apl atau memasang apl, jadi dialog itu memberikan kedua-duanya sebagai pautan:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Jana token peringkat apl** — membuka **Basic Information → App-Level Tokens**. Cipta token dengan skop `connections:write` dan salinnya. Ia bermula dengan `xapp-`
+2. **Pasang apl** — membuka **Install App**. Pasang ke ruang kerja anda, kemudian salin **Bot User OAuth Token**. Ia bermula dengan `xoxb-`
 
-Keep both values around for the next step.
+Simpan kedua-dua nilai itu untuk langkah seterusnya.
 
-## Step 4: Connect
+## Langkah 4: Sambung
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. Kembali dalam dialog, klik **Tampal kelayakan**
+2. Masukkan **Token bot** (`xoxb-…`) dan **Token peringkat apl** (`xapp-…`)
+3. Biarkan **Token konfigurasi apl** kosong — yang dari langkah 1 sudah disimpan (Slack memutarkannya dan Control Center menyimpan yang baharu)
+4. Klik **Sambung**
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+Control Center mengesahkan token bot dengan Slack sebelum ia menyimpan apa-apa, kemudian membuka soket. Baris itu kini memaparkan nama bot dan nama ruang kerja Slack anda dengan teg **Langsung**.
 
-## Step 5: Link your own Slack account
+## Langkah 5: Pautkan akaun Slack anda sendiri
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+Sambungan itu menjadikan bot boleh dihubungi; memautkan menjadikan _anda_ boleh dikenali. Sehingga identiti Slack anda dipautkan, bot itu tidak akan bertindak atas mesej anda — ia tidak pernah mengatribusikan mesej kepada sesiapa yang memasang apl itu.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Memautkan bersifat peribadi, jadi ia terletak pada halaman yang berbeza daripada sambungan seluruh ruang kerja.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti** dan cari kad **Akaun sembang dipautkan**
+2. Klik **Pautkan akaun Slack saya**
+3. Salin perintah yang ditunjukkannya, contohnya `/cc link K7M2QP`
+4. Dalam Slack, hantar perintah itu kepada bot dalam DM
+5. Bot menjawab "Dipautkan — anda ialah …"
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+Kod itu sekali guna dan tamat tempoh dalam 15 minit. Jika e-mel Slack anda sepadan dengan pengguna Control Center yang sudah menjadi ahli ruang kerja ini, jambatan itu memautkan anda secara automatik kali pertama anda bercakap dengannya dan anda boleh langkau langkah ini.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Jika anda menyebut bot itu sebelum ini selesai, ia menolak dan menyatakan sebabnya. Ketiga-tiga penolakan itu berbeza, jadi baca yang mana satu anda terima:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Penghantar belum dipautkan**: bot memberitahu anda cara memautkannya. Kembali ke langkah ini.
+- **Dipautkan, tetapi bukan ahli ruang kerja ini**: minta pentadbir menjemput anda.
+- **Ahli dengan peranan hanya baca** (viewer atau guest): bot tidak akan memulakan kerja bagi pihak anda.
 
-## Step 6: Put an agent on something
+## Langkah 6: Serahkan sesuatu kepada ejen
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. Dalam Slack, jemput bot itu ke dalam saluran: `/invite @control-center`
+2. Sebut bot itu dengan permintaan sebenar:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center rumuskan PR terbuka pada repo api
 
-The bridge:
+Jambatan itu:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Mencipta ruang Control Center untuk utas Slack itu, dinamakan sempena saluran Slack dan permintaan anda
+2. Membangunkan ejen pintu depan ruang kerja itu (ejen CEO apabila ada, jika tidak ejen pertama)
+3. Menstrim jawapan ejen itu kembali ke dalam utas Slack semasa ia ditulis
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Balas dalam utas Slack yang sama untuk teruskan — tidak perlu sebut lagi, kerana utas Slack itu kini dijambatkan. Atau hantar DM kepada bot dan bukan menggunakan saluran; setiap perbualan DM memandu ruang Control Center tersendiri, dengan tajuk dan baris status "is thinking…" semasa ejen bekerja.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+Penstriman memerlukan API penstriman Slack, yang tidak dimiliki oleh setiap pelan. Jika apl anda ditolak aksesnya, jambatan itu berhenti mencuba untuk keseluruhan sambungan itu dan menyiarkan setiap balasan sebagai satu mesej, dan kad **Jambatan sembang** memaparkan "Penstriman langsung dimatikan untuk apl Slack ini — balasan tiba sebagai satu mesej." Segala-galanya yang lain berfungsi sama.
 
-## Step 7: File a ticket without leaving Slack
+## Langkah 7: Failkan tiket tanpa meninggalkan Slack
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+Bot menjawab dengan kunci tiket yang difailkannya. Tiket itu ialah tiket Control Center tempatan biasa, dilaporkan oleh anda, sedia untuk diberikan kepada ejen. `/cc help` menyenaraikan segala yang boleh dilakukan oleh perintah itu.
 
-## Recap
+## Ringkasan
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Anda mencipta apl Slack daripada Control Center, menyambungkannya melalui soket keluar, memautkan identiti Slack anda kepada pengguna Control Center anda dan memandu ejen daripada utas Slack. Segala yang berlaku dalam Slack juga wujud dalam Control Center: utas Slack ialah ruang, balasan itu ialah transkrip, tiket itu ialah tiket.
 
-**Next:** [Set up Slack integration](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/ms-MY/manual-pengguna/konsep/jambatan-sembang/).
+**Seterusnya:** [Sediakan integrasi Slack](/ms-MY/manual-pengguna/panduan-cara/integrasi-slack/) merangkumi laluan manual, memutar token dan penyelesaian masalah. Untuk model di sebaliknya, baca [Jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/).

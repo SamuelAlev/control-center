@@ -1,7 +1,8 @@
 ---
 title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+description: Complete catalogue of the MCP tools cc_server registers, by family.
 slug: en-GB/manual/reference/mcp-tools
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
 `cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
@@ -82,7 +83,7 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
 | `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
 
-## Plan, playbook and artifact tools
+## Plan, playbook and artefact tools
 
 | Tool               | Description                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
@@ -90,9 +91,9 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
 | `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
 | `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
+| `revise_artifact`  | Replace a published artefact's content                                                                                |
+| `list_artifacts`   | List the workspace's artefacts                                                                                        |
+| `get_artifact`     | Read one artefact                                                                                                     |
 | `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
 
 ## Workspace tools
@@ -122,7 +123,7 @@ Every install and update passes through a fail-closed scan gate before any skill
 
 | Tool                       | Description                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
+| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalise |
 | `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
 | `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
 | `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
@@ -133,7 +134,7 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
 | `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
 | `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| `publish_review_to_github` | Publish the finalised review to GitHub as inline comments plus a summary body                          |
 
 ## Memory tools
 
@@ -151,14 +152,14 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
 | `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
 | `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
+| `harmonize_memory`      | Run cross-agent belief harmonisation (SHMR) and flag contradictions                                 |
 | `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
 
 ## Governance tools
 
 | Tool                         | Description                                                                                           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
+| `create_goal`                | Create an organisational goal (company, team, agent, or task level)                                   |
 | `list_goals`                 | List goals with level, status and aggregated progress                                                 |
 | `update_goal_progress`       | Set a goal's progress                                                                                 |
 | `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
@@ -267,7 +268,7 @@ Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP disp
 | Mode          | Tool surface                                                                                                                                                                                                                        |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
+| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artefacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
 | `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
 | `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
 
@@ -275,7 +276,7 @@ Permitted in every mode regardless of allow-list:
 
 | Set                  | Tools                                                                                                                                                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Memory and artefacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
 | Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
 | Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 

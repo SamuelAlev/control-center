@@ -1,37 +1,32 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: سكربتات المستودع
+description: سكربتات إعداد وأرشفة لكل مستودع، تُشغَّل في شجرة عمل المساحة.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/سكربتات-المستودع
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+سكربتات المستودع سكربتات صدفة تضبطها لكل مستودع (الإعدادات ← المستودعات ← أيقونة الطرفية في صف المستودع)، ويشغّلها خادم Control Center في **شجرة عمل المساحة** لذلك المستودع — نسخة العمل المعزولة تحت `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` حيث يعمل الوكلاء.
 
-There are two kinds:
+هناك نوعان:
 
-| Script | When it runs | Use it for |
+| السكربت | متى يعمل | الغرض |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **إعداد** | فور تجهيز شجرة العمل لمساحة | تثبيت التبعيات، وتوليد الملفات، ونسخ `.env` |
+| **أرشفة** | مباشرة قبل تدمير شجرة العمل أو جمع مهملاتها | تنظيف الموارد خارج شجرة العمل (شبكات Docker، والأنفاق، والحالة الخارجية) |
 
-## Where scripts run
+## أين تعمل السكربتات
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+يُشغَّل السكربتان عبر `bash -lc` (صدفة دخول، فتكون الأدوات المثبّتة بـ Homebrew أو nvm على `PATH`)، و**شجرة العمل هي دليل العمل**، وتُعيَّن متغيرات البيئة هذه:
 
-| Variable | Value |
+| المتغير | القيمة |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | شجرة العمل (دليل العمل الحالي للسكربت) |
+| `CC_ROOT_PATH` | المستودع المصدر المسجّل — نسخة عملك أنت |
+| `CC_SPACE_ID` | المساحة التي تنتمي إليها شجرة العمل |
+| `CC_SPACE_NAME` | الاسم المعروض للمساحة |
+| `CC_REPO_NAME` | الاسم المعروض للمستودع |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+ومثاله سكربت إعداد يثبّت التبعيات ويجلب ملف `.env` الذي يستثنيه Git في المستودع:
 
 ```bash
 pnpm install
@@ -39,28 +34,17 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## سلوك الفشل
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- إن خرج سكربت **إعداد** برمز غير صفري، أو انقضت مهلة الخمس دقائق، فشل تجهيز المساحة: تظهر المساحة في حالة الفشل مع إعادة المحاولة، ويُسجَّل ذيل مخرجات التشغيل. إعادة المحاولة تجهّز من شجرة عمل نظيفة وتشغّل السكربت من جديد — اكتب سكربتات الإعداد بحيث تنجح إعادة التشغيل بعد تثبيت جزئي (مديرو الحزم يتصرفون هكذا أصلًا).
+- سكربت **الأرشفة** يعمل بأفضل جهد: يُسجَّل الفشل (أو انتهاء مهلة الدقيقتين)، لكنه **لا يمنع الحذف أبدًا**. تُشغَّل الأرشفة في مسارات جمع المهملات، حيث لا أحد يجيب عن سؤال (مساحة محذوفة، أو طلب سحب مُدمَج، أو تنظيف مجدول).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+لا يُشغَّل الإعداد إلا على شجرة عمل **جديدة**: إعادة إرسال الوكلاء إلى مساحة ما زالت قائمة تعيد استخدام نسخة العمل الموجودة، فلا تُدفع تكلفة التثبيت مرة أخرى.
 
-## Run history
+## سجل التشغيلات
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+يُسجَّل كل تنفيذ بحالته ومدته ورمز خروجه وذيل مخرجات محدود، ويظهر في حوار الإعدادات نفسه تحت «عمليات التشغيل الأخيرة» (يبثّه اشتراك `repos.watchScriptRuns` مباشرة).
 
-## Permissions
+## الأذونات
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+السكربتات صدفة ينفّذها **الخادم**، فكتابتها مقصورة على مسؤولي مساحة العمل، وتخضع لصنف الإجراء `processSpawn` — شبكة الضوابط نفسها التي تتحكّم في كل عملية أخرى تُشغِّل عملية.

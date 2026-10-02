@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: Csevegőhíd
+description: Szolgáltatók, parancsok, hitelesítő adatok, képességek, RPC-műveletek és a csevegőhíd tárolása.
 slug: hu-HU/kezikonyv/referencia/csevegohid
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## Szolgáltatók
 
-| Provider | Wire value | Transport                  | Space kind |
+| Szolgáltató | Átviteli érték | Szállítás                  | Tértípus |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode (kimenő WSS) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**A Slack az egyetlen szolgáltató.** A `ChatProvider` egyetlen értékű enum, és a `cc_server` egy plugint regisztrál. A séma, minden keresés és minden egyedi index a `provider` alapján kulcsolt, így az azonosítók soha nem lépnek át szolgáltatók között, és egy új hozzáadása csak szerveroldali változás.
 
-One provider-side app per **workspace × provider**.
+Egy szolgáltató oldali alkalmazás **munkaterületenként × szolgáltatónként**.
 
-## Chat commands
+## Csevegőparancsok
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+A parancsnév alkalmazásonként értendő (`cc` az alapértelmezett, tehát `/cc`). Egy admin átnevezheti; a híd ezután azt használja, amivel utoljára meghívták.
 
-| Command                               | Effect                                                        |
+| Parancs                               | Hatás                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (vagy `/cc` ige nélkül)    | Felsorolja, mit tud a bot                                     |
+| `/cc link <code>`                     | Bevált egy egyszer használatos kódot, és összekapcsolja a küldő csevegőidentitását |
+| `/cc ticket <title>`                  | Helyi jegyet hoz létre az összekapcsolt tag bejelentése alapján |
+| `/cc ticket <title> \| <description>` | Ugyanaz, az első `\|` utáni minden a leírás                   |
+| Ismeretlen ige                        | Jelenti az ismeretlen igét és a súgószöveget                  |
 
-Ways to reach an agent:
+Így érhet el egy ügynököt:
 
-| Gesture                    | Behavior                                                                                                               |
+| Művelet                    | Viselkedés                                                                                                             |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` egy csatornában   | Megnyit egy Slack szálat és egy hozzá tartozó Control Center-teret; az ügynök a Slack szálban válaszol                |
+| Válasz egy hídon átvezetett Slack szálban | Ugyanazt a Control Center-teret folytatja — említés nem szükséges                                          |
+| Egyszerű üzenet egy csatornában | Figyelmen kívül marad (nem a botnak szól, és nem egy hídon átvezetett Slack szálban van)                          |
+| DM a botnak                | DM-beszélgetésenként egy Control Center-tér; beállít egy Slack szálcímet és egy „is thinking…” állapotot, amíg az ügynök dolgozik |
 
-## Credential fields (Slack)
+## Hitelesítőadat-mezők (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+A szolgáltató deskriptora deklarálja őket; ez generálja a csatlakozási párbeszédablakot, és ez érvényesíti a beküldött adatokat.
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| Mezőazonosító        | Címke                           | Kötelező | Előtag  | Hol található                                                   |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | Bot token                       | Igen     | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | Alkalmazásszintű token          | Igen     | `xapp-` | Basic Information → App-Level Tokens, `connections:write` hatókör |
+| `configRefreshToken` | Alkalmazáskonfigurációs token   | Nem      | `xoxe`  | App configuration tokens az api.slack.com/apps oldalon          |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+A `configRefreshToken` az alkalmazáskezelési hitelesítő adat: nélküle a kapcsolat működik, de a bot nem hozható létre és nem szerkeszthető a Control Centerből. Minden használatkor rotálódik, és a rotált érték azonnal tárolásra kerül.
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+Az értékek elejéről és végéről eltávolítjuk a szóközöket, a nem deklarált kulcsokat eldobjuk, az előtag eltérését pedig ugyanazzal a mondattal utasítja el a kliens és a szerver is. A kötelező mezőknek minden csatlakozáskor jelen kell lenniük; egy üresen hagyott nem kötelező mező megtartja a korábban tárolt értéket.
 
-## Slack app requirements
+## A Slack-alkalmazás követelményei
 
-Bot token scopes:
+A bot token hatókörei:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+A bot eseményfeliratozásai:
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+Szerkezeti beállítások, amelyeket a Control Center kikényszerít, amikor létrehozza vagy szerkeszti az alkalmazást: a Socket Mode bekapcsolva, nincs kérési URL, a **Messages** fül engedélyezve és írható, a bot `always_online`, a szükséges hatókörök és események beolvasztva abba, ami az alkalmazásban már megvan (soha nem kivonva), valamint egyetlen slash-parancs, amelynek leírása `File a ticket or link your Control Center account` — ez a jelölő, amely egy exportált manifesztben azonosítja a Control Center saját parancsát.
 
-## Connection states
+## Kapcsolati állapotok
 
-| State            | Wire           | Meaning                                                         |
+| Állapot           | Átviteli érték | Jelentés                                                        |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| Nincs csatlakoztatva | `disconnected` | Ehhez a munkaterület × szolgáltató pároshoz nincs tárolt hitelesítő adat |
+| Csatlakozás…      | `connecting`   | A hitelesítő adatok tárolva, a szállítás tárcsáz vagy újratárcsáz |
+| Élő               | `connected`    | A szállítás fut, és fogadja az eseményeket                      |
+| Kapcsolati hiba   | `error`        | Tárolva, de hibázik; mellette a szolgáltató saját hibája látható |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Az újracsatlakozás exponenciális visszakapcsolás jitterrel, 30 másodpercben maximalizálva. A szolgáltató által kezdeményezett socket-rotáció azonnal újracsatlakozik, anélkül hogy fokozná a visszakapcsolást. Az elutasított hitelesítő adat (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) vagy egy hiányzó hatókör végleges: a híd felhagy az újrapróbálkozással, amíg új hitelesítő adatok nem érkeznek.
 
-## Provider capabilities (Slack)
+## A szolgáltató képességei (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+A híd a leggazdagabb felületre íródott, és képességenként degradálódik.
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| Képesség                  | Slack  | Hatás, ha hiányzik                                                                             |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | igen   | A teljes válasz egyszer, a végén kerül közzétételre                                            |
+| `streamingRequiresThread` | igen   | Egy szálhorgony nélküli válaszcél teljes válaszokat tesz közzé                                 |
+| `ephemeralMessages`       | igen   | A használható válaszhivatkozás nélküli slash-parancs válasza elvész (az elutasítások mindig a szálban jelennek meg) |
+| `threadStatus`            | igen   | Nincs átmeneti „is thinking…” sor                                                              |
+| `threadTitle`             | igen   | A csevegőszál megtartja az alapértelmezett címét                                               |
+| `slashCommands`           | igen   | Nincs `/cc` felület                                                                            |
+| `taskCards`               | igen   | Csak szöveg — nincs kártya a válasz felett, és nincs „View in Control Center” hivatkozás       |
+| `maxMessageLength`        | 39 000 | A hosszabb válaszok levágásra kerülnek, a Control Centerre mutató hivatkozással                |
+| `maxStreamChunkLength`    | 3 800  | A hozzáfűzések bekezdés-, sor- vagy szóhatáron tördelődnek                                    |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+A hirdetett streamelés nem ígéret a streamelésre: a Slackéhez az **Agents & AI Apps** funkció kell egy fizetős csomagban. A hívás pillanatában érkező elutasítást (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) a kapcsolat teljes élettartamára megjegyezzük, és `streamingAvailable: false` formában jelenítjük meg. A Slack feladatkártyái ugyanezen a híváson mennek keresztül, így egy olyan Slack, amely elutasítja a kártya megjelenítési módját, megtartja a streamjét, és csak a kártyát veszíti el — egyszer, a kapcsolat élettartamára.
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+Egy streamnek meg kell neveznie azt is, kinek szól. A Slackhez egy **csatornában** való megnyitáshoz egyszerre kell egy címzett felhasználó és annak csapata (egy DM-hez nem), és minden más esetben `missing_recipient_user_id` / `missing_recipient_team_id` hibával utasít el — ez hívásonkénti elutasítás, így a híd tovább próbálkozik, és a kör addig egyetlen közzétett válaszként érkezik meg. A címzett az, aki kérdezett, a bejövő üzenetből véve (az ő csapata, nem az alkalmazásé, így egy Slack Connect-csatorna helyesen oldódik fel). Egy olyan körnél, amelyet senki nem indított a csevegésből — a Control Centerben egy már hídon átvezetett beszélgetésen elindított munka —, az a tag a címzett, akinek az összekapcsolása létrehozta a hidat; ha azóta leválasztotta a csevegőfiókját, az a kör streamelés helyett teljes egészében kerül közzétételre.
 
-## Task cards
+## Feladatkártyák
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+Ügynökkörönként egy csoportosított kártya (`task_display_mode: plan`), lépésenként egy sorral. Minden sor egy `task_update` `id` + `title` + `status` mezőből, valamint egy egyszeri `details`, amikor a gondolat készen áll. Az azonos azonosítójú `details` és `output` elválasztó nélkül fűződik össze, ezért a `details` egyszer megy ki, az `output` pedig soha nem streamelődik. A terv címe a kérés; a válasz egy későbbi, külön hozzáfűzés, amely egy `markdown_text` darabot hordoz.
 
-| Part           | Content                                                                                                                                                       |
+| Rész           | Tartalom                                                                                                                                                      |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| Terv címe      | Mit kértek                                                                                                                                                    |
+| Beállítási sor | `Working on it…`, majd `Cloning …`, majd `Starting the agent…` — egy sor, a cím cserélődik                                                                    |
+| Gondolkodási sor | `Thinking…`, akkor kerül hozzá, amikor az ügynök elkezd gondolkodni; a gondolat ennek a sornak a `details` mezője, egyszer elküldve, amikor a gondolkodás befejeződik |
+| Eszközsorok    | Eszközönként egy (`Bash which swift`), egyedi azonosítóval, hogy egymás mellett álljanak                                                                      |
+| Állapot        | Folyamatban, amíg az a sor fut; befejezett, amikor a következő sor elindul vagy a kör véget ér; hiba a sikertelen, a megszakított és a körlimit elérése esetén |
+| Cselekvésre felhívás | `View in Control Center` záró sorként, amikor a kör véget ér — hiányzik, amíg a munka még folyik, és hiányzik, ha a szervernek nincs elérhető nyilvános URL-je |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+Amit egy kártya soha nem hordoz: eszközkimenetet, az engedélylistán kívüli argumentumot, vagy bármit, ami az adatbázisból származik. Az érvelő szöveg csak a `Thinking…` sor részletei (256 karakterben maximalizálva), nem az üzenettörzs. Egy kártya, amely nem mondana újat, nem kerül újraküldésre. Egy említés azonnal megnyitja a streamet, hogy a Slack szál ne maradjon néma; egy kör, amely ezután egyáltalán nem termelt szöveget, ugyanazt a kártyát zárja le egy rövid megjegyzéssel, ahelyett hogy egy második üzenetet tenne közzé. Egy szótlan kör egy olyan téren, amely soha nem nyitott streamet (nincsenek kártyák, vagy a streamelést már elutasították), akkor is közzétesz egy üzenetet a kész kártyával és a megjegyzéssel.
 
-Streamed and posted cards are different payloads:
+A streamelt és a közzétett kártyák különböző hasznos terhek:
 
-| Form     | Shape                                                | Prose                                            |
+| Forma      | Alak                                                 | Szöveg                                           |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| Streamelt  | `plan_update`, valamint `id` kulccsal ellátott `task_update` darabok | Egyszerű sztring, darabonként 256 karakterben maximalizálva |
+| Közzétett  | `task_id` kulcsú `task_card`-okat körbeölelő `plan` blokk | Formázott szöveg                                 |
 
-Failure handling:
+Hibakezelés:
 
-| Situation                                    | Behavior                                                                                                                    |
+| Helyzet                                      | Viselkedés                                                                                                                  |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| A szolgáltató elutasítja a kártyát egy hozzáfűzés során | A hozzáfűzés azonnal, nélküle kerül újrapróbálásra; a szöveg továbbra is élőben érkezik, a kártyák pedig a kapcsolat élettartamára elmaradnak |
+| A szolgáltató a szöveget is elutasítja       | A stream lezárul, és a válasz teljes egészében kerül közzétételre                                                           |
+| A stream megszakad, miután a válasz egy része megérkezett | A stream lezárul, és semmi nem kerül újra közzétételre                                                           |
 
-See [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/) for why the payload is split this way.
+Lásd a [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/) oldalt, hogy miért oszlik meg így a hasznos teher.
 
-### Setup, before there is a turn
+### Beállítás, mielőtt kör lenne
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+A kártya akkor nyílik meg, amikor egy említést elfogadnak, a klónozás előtt és az első token előtt; az ezután következő kör ugyanazt a kártyát és streamet veszi át. Az ezt követő narráció a domaineseménybuszon érkező `SpaceProvisioningChanged` eseményből származik — ugyanaz a folyamat, amelyet az asztali alkalmazás előkészítési sávja a tér sorából kiolvas.
 
-| Provisioning state          | Narration                                                      |
+| Előkészítési állapot        | Narráció                                                        |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| Említés elfogadva           | `Working on it…`                                               |
+| `repo` lépés                | `Cloning <repo>…`                                              |
+| `prCheckout` lépés          | `Checking out the pull request in <repo>…`                     |
+| `script` lépés              | `Running the setup script for <repo>…`                         |
+| `agent` lépés               | `Setting up <agent>…`                                          |
+| `provisioning`, még nincs lépés | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| Az ügynök gondolkodik       | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+A beállítási narráció mind a négy feltételt megköveteli:
 
-| Condition                                 |
-| ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| Feltétel                                   |
+| ------------------------------------------ |
+| A szolgáltató kártyákat jelenít meg        |
+| A streamelés elérhető ezen a kapcsolaton   |
+| A téren van folyamatban lévő csevegőkérés  |
+| Ott még egy kártya sem számol be körről    |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+A kérés folyamatban marad, amíg el nem indul egy kör, vagy a beállítás meg nem hibázik. Egy `ready` esemény, amelyhez még nem nyílt kártya, egy meleg tér, és csendben marad; az olyan előkészítés pedig, amelyre a csevegésben senki sem vár — egy alkalmazásban megnyitott beszélgetés, egy indításkor folytatott, elakadt beszélgetés —, egyáltalán nem hoz létre kártyát.
 
-## The `/open` bounce page
+## A `/open` átirányító oldal
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+A csevegőtermékek egy hivatkozásban csak `http(s)`-t fogadnak el, mást nem, ezért egy cselekvésre felhívás nem nevezheti meg közvetlenül az asztali alkalmazás sémáját.
 
-| Property   | Value                                                                                                                                       |
+| Tulajdonság | Érték                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| Útvonal    | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| Eredet     | A szerver nyilvános URL-jéből származik (`ws` → `http`, `wss` → `https`); a loopback megmarad                                               |
+| Válasz     | Egy kis, no-store HTML-oldal, amely a `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` címre navigál, és egy kézi gombot jelenít meg |
+| Érvényesítés | Az azonosítóknak meg kell felelniük a `[A-Za-z0-9_.-]{1,128}` mintának; minden más 404                                                       |
+| Hozzáférés | Nyilvános és hatástalan — nem olvas adatbázist, így nem létezési orákulum; a megnyitott alkalmazás végzi a jogosultságellenőrzést           |
 
-## Bot profile fields
+## A botprofil mezői
 
-| Field              | Limit       | Notes                                                                                             |
+| Mező               | Korlát      | Megjegyzések                                                                                       |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 karakter | Alapértelmezés: `Control Center · <workspace name>`                                              |
+| `botDisplayName`   | 1–80 karakter | Alapértelmezés: `control-center`                                                                 |
+| `description`      | ≤ 140 karakter |                                                                                                   |
+| `agentDescription` | ≤ 300 karakter | A bottal folytatott DM felett jelenik meg                                                        |
+| `command`          | ≤ 32 karakter | Normalizálva: a vezető perjelek eltávolítva, kisbetűsítve, `[^a-z0-9_-]` eltávolítva, üres esetén `cc` az alapértelmezés |
+| `agentEnabled`     | —           | Azt szabályozza, hogy a DM- és ügynöktapasztalat elérhető-e                                       |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+Egy üres mező azt jelenti, hogy „hagyd békén”, nem azt, hogy „töröld”. A korlátok a Slackéi, amelyek a modellezett termékek közül a legszűkebbek.
 
-## Link codes
+## Összekapcsolási kódok
 
-| Property | Value                                                                                    |
+| Tulajdonság | Érték                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| Hossz    | 6 karakter                                                                               |
+| Karakterkészlet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (nincs `0`/`O`, `1`/`I`, `U`)                    |
+| Élettartam | 15 perc                                                                                |
+| Felhasználás | Egy                                                                                   |
+| Tárolás  | Memóriában — a szerver újraindítása érvényteleníti a függőben lévő kódokat                |
+| Hatókör  | Egy munkaterület és egy szolgáltató; új kód kiállítása érvényteleníti a tag előző kódját  |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+A beváltás kis- és nagybetűt nem megkülönböztetve történik. Az ismeretlen, a lejárt, a más munkaterülethez tartozó és a rossz szolgáltatóhoz tartozó kódok szándékosan ugyanúgy hibáznak.
 
-## Link methods
+## Összekapcsolási módok
 
-| Method | Wire    | How                                                                            |
+| Mód    | Átviteli érték | Hogyan                                                                          |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| Kód    | `code`  | A tag beváltotta a `/cc link <code>` parancsot                                  |
+| E-mail | `email` | A szolgáltató ellenőrzött e-mail-címe egyezett egy olyan felhasználóval, aki már tagja a munkaterületnek |
 
-## RPC operations
+## RPC-műveletek
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+Mindegyik munkaterülethez kötött. A szerver állapotmentes, ezért minden hívás a saját `workspace_id` értékét hordozza az argumentumokban; a diszpécser az adatbázis megnyitása előtt elutasítja az azt elhagyó, munkaterülethez kötött műveletet. A hitelesítő adatok csak _befelé_ utaznak — az állapotlekérdezések soha nem adják vissza őket.
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| Művelet                 | Fajta       | Minimum szerepkör                               | Műveletosztályok                |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | `member` saját magadhoz, `admin` bárki máshoz  | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+Az olvasási műveletek a fajtájukból öröklik a `guest` alsó szintet; a kifejezett alsó szint nélküli módosításokhoz `member` szükséges.
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+A `chat.setupLink` a botprofilból állítja össze a szolgáltató alkalmazáslétrehozási URL-jét. Nem deklarál műveletosztályt, mert nem olvas titkot és nem tárcsáz semmit — az egyetlen hívást a felhasználó saját böngészője indítja.
 
-One reactive query completes the surface:
+Egy reaktív lekérdezés teszi teljessé a felületet:
 
-| Query                 | Kind  | Emits                                                    |
+| Lekérdezés            | Fajta | Kibocsátás                                              |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | A névsor, amely újra kiküldésre kerül, amikor egy kapcsolat létrejön vagy megszűnik |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+Azért létezik, mert az összekapcsolás a _másik_ oldalon történik: a tag a botba írja be az egyszer használatos kódot, így egyetlen kliensválasz sem hozhatja vissza a választ. A beállítások névsora és a nyitva lévő „fiókom összekapcsolása” párbeszédablak is ezt követi, és a párbeszédablak abban a pillanatban visszaigazolásra vált, amikor a tag saját kapcsolata létrejön.
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+A `chat.beginUserLink` mindig a hívó saját identitásához állít ki kódot. A `chat.updateBotProfile` csak akkor ad vissza `remaining_step` értéket, ha maradt egy lépés (jellemzően egy újratelepítés); ennek hiánya azt jelenti, hogy a szerkesztés életbe lépett.
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+A `chat.providers` szolgáltatónként egy bejegyzést ad vissza — a deskriptort, valamint, ha van, a kapcsolat állapotát. Minden, amit a beállítások felülete megjelenít, ebből a hasznos teherből származik, ezért egy szolgáltató hozzáadása csak szerveroldali változás.
 
-## Storage
+## Tárolás
 
-| What                       | Where                                                                                                        |
+| Mi                         | Hol                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| Kapcsolati hitelesítő adatok | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                  |
+| Félkész, vezetett beállítás | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                            |
+| Régi Slack-fájlok          | `<dataDir>/<workspaceId>/slack_credentials.json` és `slack_app_setup.json`, egyszer beolvasva és a helyén migrálva |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+A hitelesítő adatok a munkaterület adatbázisa mellett élnek, nem benne: egy munkaterület törlése magával viszi a csevegési tokenjeit, a `workspace.export` vagy egy mentés pedig átmásolja a `workspace.db`-t — így egy másnak átadott munkaterület nem hordoz élő bottokeneket. Az írások atomikusak (ideiglenes fájl és átnevezés), és csak a tulajdonos számára engedélyezettek.
 
-## Database tables
+## Adatbázistáblák
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Mindkettő a munkaterület adatbázisában él, amely egy összevont v1 alapsémát hordoz — így a munkaterületek közötti olvasás nem fordul le.
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — egy külső beszélgetés ↔ egy Control Center-tér:
 
-| Column                                                 | Notes                                                                      |
+| Oszlop                                                 | Megjegyzések                                                               |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | Munkaterület-hatókör                                                       |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | Slack csapat `T…`, üres azoknál a szolgáltatóknál, amelyeknél nincs ilyen fogalom |
+| `external_channel_id`                                  | Slack csatorna `C…`, csoport `G…`, DM `D…`                                 |
+| `external_thread_id`                                   | Slack szálhorgony, vagy null, amikor a teljes beszélgetés a horgony (bot DM-ek) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+Egyedi a `(workspace_id, provider, external_channel_id, external_thread_id)` mezőcsoporton, és egy részleges index ugyanezt kényszeríti ki a null szálazonosítókra (az SQLite a NULL értékeket különbözőnek tekinti).
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — egy külső tag ↔ egy Control Center-felhasználó:
 
-| Column                                 | Notes                                           |
+| Oszlop                                 | Megjegyzések                                    |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | Munkaterület-hatókör                            |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | Slack tag `U…`                                  |
+| `user_id`                              | Control Center-felhasználó (globális, ezért nincs idegen kulcs) |
+| `method`                               | `code` vagy `email`                             |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+Egyedi a `(workspace_id, provider, external_team_id, external_user_id)` és a `(workspace_id, provider, user_id)` mezőcsoporton — egyértékű hozzárendelés mindkét irányban, miközben egy személy több szolgáltatónál is összekapcsolható.
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+Az összekapcsolás identitásfeloldás, **nem** hozzáférési jogosultság megadása: a tagság minden bejövő eseménynél újraellenőrzésre kerül, így egy olyan taghoz tartozó kapcsolat, akit azóta eltávolítottak, elutasítást eredményez.
 
-## Space kind and message metadata
+## Tértípus és üzenetmetaadatok
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+A hídon átvezetett tér a szolgáltató `SpaceKind` értékével (`slack`) jön létre. Úgy viselkedik, mint egy közönséges, embereknek szánt tér — értesítés és szekcióba sorolás tekintetében mint a `topic` —, és az `isExternalChat` az az ellenőrzés, amelyen minden viselkedés (tükrözés, jelvényezés, megőrzés) keresztülmegy.
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+Minden üzenet, amelyet a híd behoz, `metadata['chat']` bélyegzőt hordoz:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+A bélyegző egyben az echóőr is: a kifelé irányuló tükrözés kihagy minden ilyen bélyegzőt viselő üzenetet, ez az, ami megakadályozza, hogy egy bejövő csevegőüzenet egyenesen visszakerüljön.
 
-## Relay behavior
+## Továbbítási viselkedés
 
-| Behavior                               | Detail                                                                                                         |
+| Viselkedés                             | Részletek                                                                                                      |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| Mi kerül kifelé                        | Csak az ügynök **szövege**, valamint a feladatkártya állapotsora. Az érvelő szöveg és az eszközkimenet a Control Centerben marad |
+| Streamelési ütem                       | Egy kör futása közben másodpercenként egy kiíratásra korlátozva; a kártya és az általa magyarázott szöveg ugyanabban a hívásban utazik |
+| A Control Centerben beírt emberi üzenetek | A csatolt szálba tükrözve, az író megjelenített nevével az élen                                              |
+| Üres körök                            | Rövid megjegyzésként jelentve (a futás sikertelen, megszakadt, vagy a körlimitjénél leállt), a csend helyett  |
+| Deduplikáció                          | A szolgáltató saját eseményazonosítója alapján; az utolsó 512 marad meg                                        |
+| Fogadó ügynök                         | Egy új, hídon átvezetett beszélgetés a munkaterület CEO-ügynökét ébreszti fel, ennek hiányában az első ügynökét, azok hiányában senkit |
+| Tér elnevezése                        | `#channel · <request>` egy Slack csatornaszálhoz, `Slack DM · <request>` egy DM-hez, a címek 48 karakterben maximalizálva |
+| Hibaizoláció                          | Egyetlen hibás esemény soha nem viszi le a hidat; a kapcsolat tovább szolgálja az összes többi beszélgetést    |
 
-## See also
+## Lásd még
 
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
-- [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
-- [Customize the chat bot](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) for the action classes the ops declare
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
+- [A csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) azokról a műveletosztályokról, amelyeket a műveletek deklarálnak

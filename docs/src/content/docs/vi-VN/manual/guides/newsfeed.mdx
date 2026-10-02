@@ -1,130 +1,136 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Quản lý bảng tin của bạn
+description: Thêm và quản lý feed RSS/Atom, đọc bài viết với tính năng chặn nội dung, và biết rằng feed của bạn đi theo bạn qua mọi không gian làm việc.
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/bang-tin
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Hướng dẫn này chỉ cách định hình bảng tin: nó kéo về những nguồn nào, cách đọc
+bài viết và tính năng chặn nội dung làm gì.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Bảng tin thuộc từng người dùng, không theo phạm vi không gian làm việc]
+Feed và bài viết thuộc về người dùng đang đăng nhập: danh sách feed, trạng thái
+đã đọc và dấu trang của bạn đi theo bạn vào mọi không gian làm việc và tới mọi
+thiết bị bạn đăng nhập, và không người dùng nào khác nhìn thấy chúng. Feed nằm
+trong cơ sở dữ liệu toàn cục của máy chủ, nên URL `/newsfeed` mang id không gian
+làm việc chỉ vì mọi tuyến trong ứng dụng đều như vậy.
 :::
 
-## Read articles
+## Đọc bài viết
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Nhấp **Bảng tin** trên thanh bên
+2. Chuyển giữa **Tất cả**, **Chưa đọc** và **Đã lưu** bằng các phân đoạn trên
+   thanh công cụ
+3. Thu hẹp danh sách bằng ô tìm kiếm hoặc bộ chọn nguồn
+4. Chuyển đổi giữa dạng lưới tạp chí và danh sách dày đặc bằng các nút bố cục
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Mở một bài viết sẽ đánh dấu bài đó là đã đọc. Dùng **Đánh dấu tất cả đã đọc** ở
+tiêu đề trang — mục này chỉ xuất hiện khi còn bài chưa đọc — để xóa sạch tồn
+đọng trong một lần, và dùng nút đánh dấu trên thẻ để lưu một bài lại đọc sau.
 
-The layout choice persists across launches.
+Lựa chọn bố cục được giữ nguyên qua các lần khởi chạy.
 
-## Add a feed
+## Thêm feed
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Mở **Cài đặt → Bạn → Bảng tin** (biểu tượng cài đặt trong tiêu đề bảng tin
+   sẽ đưa bạn thẳng tới đó)
+2. Nhấn **Thêm feed**
+3. Điền **Tên** và **URL feed** (RSS hoặc Atom)
+4. Tùy chọn, mở rộng **Nâng cao** và đặt **User-Agent** tùy chỉnh — một số nhà
+   xuất bản trả về phản hồi khác cho máy khách mặc định
+5. Nhấn **Thêm feed**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Điểm kiểm tra: feed xuất hiện trong danh sách **Feed** và các bài viết của nó
+xuất hiện sau lần tải đầu tiên. Một URL đã được đăng ký sẽ bị từ chối với thông
+báo “Đã có feed với URL này.”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Mười bốn feed được tạo sẵn cho mọi người dùng trong lần sử dụng đầu tiên: Control
+Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI,
+Import AI, The Pragmatic Engineer, Martin Fowler, Will Larson's Irrational
+Exuberance, The Engineering Manager, Lea Verou và CSS-Tricks.
 
-## Manage feeds
+## Quản lý feed
 
-Each row in the **Feeds** list gives you three controls:
+Mỗi hàng trong danh sách **Feed** có ba nút điều khiển:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Nút điều khiển     | Tác dụng                                                              |
+| ------------------ | --------------------------------------------------------------------- |
+| Nút gạt            | Tắt feed. Hàng bị tắt sẽ mờ đi và không còn được tải nữa              |
+| Biểu tượng làm mới | Tải ngay feed này                                                     |
+| Biểu tượng thùng rác | Xóa feed, sau khi xác nhận                                          |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Làm mới tất cả** ở đầu danh sách sẽ tải mọi feed đang bật.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Phụ đề của feed hiển thị mô tả và thời điểm tải gần nhất; feed bị lỗi sẽ hiển thị
+thông báo lỗi ở vị trí đó, bằng màu cảnh báo.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Không có cách chỉnh sửa — muốn đổi tên, URL hoặc user agent của feed, hãy xóa feed
+rồi thêm lại.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+Việc tải chạy hoàn toàn trên máy chủ: mỗi người dùng một lần khi khởi động (và
+trong lần sử dụng đầu tiên với các tài khoản được tạo sau này), sau đó cứ 30 phút
+một lần.
 
-## Block ads and trackers in the reader
+## Chặn quảng cáo và trình theo dõi trong trình đọc
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Trong Cài đặt → Bạn → Bảng tin, tìm **Tùy chọn trình đọc**
+2. Để **Mở bài viết trong ứng dụng** bật để dùng trình đọc tích hợp, hoặc tắt để
+   chuyển bài viết sang trình duyệt hệ thống
+3. Để **Chặn quảng cáo, trình theo dõi & banner cookie** bật
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Tính năng chặn được bật mặc định. Trình đọc nhúng chỉ có trên macOS và Windows:
+trên bản web và trên Linux, trình duyệt hệ thống _chính là_ trình đọc và bài viết
+mở ở đó (một tab mới trên web). Trên web, nút chặn, thẻ **Lọc danh sách** và thẻ
+**Trang tin cậy** bị ẩn.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Trình đọc trong ứng dụng không định dạng lại bài viết. Nó hiển thị trang của nhà
+xuất bản trong một webview nhúng và loại bỏ quảng cáo, trình theo dõi cùng banner
+cookie bằng các danh sách bộ lọc đã lưu trong bộ nhớ đệm.
 
-### Check or update the filter lists
+### Kiểm tra hoặc cập nhật danh sách bộ lọc
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+Thẻ **Lọc danh sách** hiển thị số lượng quy tắc ẩn cookie, ẩn quảng cáo và chặn
+mạng đã được nạp, cùng các tham số theo dõi mà nó loại bỏ và thời điểm cập nhật
+gần nhất của danh sách. Nhấn **Kiểm tra cập nhật** để làm mới chúng.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Các nguồn gồm EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, một số
+danh sách của uBlock Origin và danh sách tham số theo dõi của uBO. Cho tới khi
+tải xuống thành công, thẻ ghi các danh sách này là mặc định đi kèm và chưa từng
+được cập nhật — số lượng quy tắc quảng cáo, cookie và mạng vẫn bằng không; việc
+loại bỏ tham số theo dõi vẫn dùng bộ mặc định tích hợp.
 
-### Allowlist a site
+### Đưa một trang vào danh sách tin cậy
 
-Some sites break under blocking.
+Một số trang bị hỏng khi bật chặn.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Trong Cài đặt → Bạn → Bảng tin, vào **Trang tin cậy**
+2. Nhấn **Thêm trang tin cậy** và nhập tên miền
 
-Blocking is skipped there.
+Việc chặn sẽ được bỏ qua ở đó.
 
-## Troubleshooting
+## Xử lý sự cố
 
-### A feed I added shows up in another workspace
+### Feed tôi thêm xuất hiện trong một không gian làm việc khác
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Đúng như thiết kế. Bảng tin thuộc từng người dùng, không theo không gian làm việc
+— feed của bạn đi theo bạn tới mọi nơi bạn đã đăng nhập. Xem phần chú ý ở đầu
+trang.
 
-### A feed row shows an error instead of a description
+### Một hàng feed hiển thị lỗi thay vì mô tả
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+Lần tải gần nhất đã thất bại và hàng đó hiển thị nguyên văn lý do. Nhấn biểu tượng
+làm mới để thử lại và kiểm tra xem URL còn phục vụ RSS hoặc Atom hay không. Nhà
+xuất bản từ chối các máy khách lạ có thể cần user agent tùy chỉnh, nghĩa là bạn
+phải xóa feed rồi thêm lại.
 
-### An article page renders badly
+### Một trang bài viết hiển thị kém
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Tắt **Chặn quảng cáo, trình theo dõi & banner cookie** cho tên miền đó qua **Trang
+tin cậy**, hoặc tắt **Mở bài viết trong ứng dụng** và đọc bài viết trong trình
+duyệt.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Configure notifications](/vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao/)
-- [Triage your inbox](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)
+- [Cấu hình thông báo](/vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao/)
+- [Phân loại hộp thư](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)

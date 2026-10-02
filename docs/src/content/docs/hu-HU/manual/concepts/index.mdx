@@ -1,64 +1,65 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Fogalmak
+description: Így működik a Control Center, és miért épült ilyen módon — a háttérolvasmány az útmutatók mögött.
 slug: hu-HU/kezikonyv/fogalmak
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/hu-HU/kezikonyv/gyakorlati-utmutatok/); when you want to look
-something up, go to the [reference](/hu-HU/kezikonyv/referencia/).
+Ezek az oldalak azt magyarázzák el, **hogyan működik a Control Center, és miért**. Megértésre
+szolgálnak, nem cselekvésre: itt egyetlen oldal sem követendő eljárás. Ha egy konkrét feladatot
+szeretne elvégezni, lapozzon a [gyakorlati útmutatókhoz](/hu-HU/kezikonyv/gyakorlati-utmutatok/); ha
+valamit ki szeretne keresni, forduljon a [referenciához](/hu-HU/kezikonyv/referencia/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Bármilyen sorrendben olvashatók. Ha most ismerkedik a rendszerrel, az alapmodellnél érdemes kezdeni.
 
-## Core model
+## Alapmodell
 
-The four ideas everything else is built on.
+A négy gondolat, amelyre minden más épül.
 
-- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) — what happens between your message and the agent's first token
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — the code graph, language server, structural search and debugger
-- [Conversation history](/hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek/) — persistence, compaction and forking a transcript
+- [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/) — a bérlői határ, és hogy miért az adatbázis elrendezése kényszeríti ki, nem pedig a lekérdezések fegyelme
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/) — miből áll egy ügynök: identitás, szerep, készségek, képességek, adapter és modell
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) — mi történik az üzenete és az ügynök első tokenje között
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/) — hogyan változtatja meg a `chat`, `plan`, `review` és `orchestrate` azt, hogy egy ügynök mit tehet
+- [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) — miért csak az eszközei egy részét látja egy ügynök, hogyan érheti el a többit, és mi tartja melegen a szolgáltató gyorsítótárát
+- [Kódintelligencia](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — a kódgráf, a nyelvi szerver, a strukturális keresés és a hibakereső
+- [Beszélgetési előzmények](/hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek/) — tartósítás, tömörítés és egy átirat elágaztatása
 
-## Safety and control
+## Biztonság és vezérlés
 
-What an agent is allowed to touch and who decides.
+Mit érinthet egy ügynök, és ki dönt erről.
 
-- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) — what actually constrains an agent run today
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/hu-HU/kezikonyv/fogalmak/jogosultsag/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) — mi korlátozza valójában ma egy ügynök futását
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) — egyetlen szabályzatmotor minden módosító művelethez, és hogyan oldódik fel egy szabály
+- [Jogosultság](/hu-HU/kezikonyv/fogalmak/jogosultsag/) — szerepkörök, az engedélykatalógus és az auditnapló
+- [Állomások és elszigetelt környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/) — miért kapnak az ügynökök eldobható VM-eket az Ön gépe helyett, és mi is valójában a határ
 
-## Directing the work
+## A munka irányítása
 
-Turning intent into work that gets done.
+Hogyan lesz a szándékból elvégzett munka.
 
-- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/) — one goal, one approval, a generated pipeline
-- [AI review](/hu-HU/kezikonyv/fogalmak/mi-atnezes/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/hu-HU/kezikonyv/fogalmak/pr-beszelgetesek/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/) — eval suites and the Quality tab
+- [Jegyek és delegálás](/hu-HU/kezikonyv/fogalmak/jegyek/) — a szállítófüggetlen munkaegység, amelyet az egész flotta használ
+- [Pipeline-ok és automatizálás](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) — DAG-munkafolyamatok, eseményindítók és folytatható futások
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/) — egy cél, egy jóváhagyás, egy generált pipeline
+- [MI-átnézés](/hu-HU/kezikonyv/fogalmak/mi-atnezes/) — hogyan lesz egy PR-ből átnézett PR: átnézési terek, társi konszenzus, tengelyek és a Ship/Hold/Block ítélet
+- [PR-beszélgetések](/hu-HU/kezikonyv/fogalmak/pr-beszelgetesek/) — egy GitHub-említés vagy az `ai-review` címke megválaszolása magából a kódhosztból
+- [Memória és tudás](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/) — tények, szabályzatok, és hogy mit tudhat egy ügynök
+- [Kiértékelések és minőség](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/) — kiértékelési csomagok és a Minőség lap
 
-## People and reach
+## Emberek és elérés
 
-Working with other humans and reaching the fleet from elsewhere.
+Munka más emberekkel, és a flotta elérése máshonnan.
 
-- [Multiplayer and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/hu-HU/kezikonyv/fogalmak/egyszeri-bejelentkezes/) — SAML and OIDC logins
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/hu-HU/kezikonyv/fogalmak/naptar/) — Google Calendar sync and meeting alerts
+- [Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/) — emberek és ügynökök egyenrangú résztvevőként, és mi szabályozza a hozzáférést
+- [Egyszeri bejelentkezés](/hu-HU/kezikonyv/fogalmak/egyszeri-bejelentkezes/) — SAML- és OIDC-bejelentkezés
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/) — miért kifelé indítja a kapcsolatot a Slack-híd, és mi jogosítja fel a csevegőből érkező üzenetet
+- [Távoli vezérlés és mobil](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) — hogyan ér el egy telefon az Ön szerveréhez, és a köré épülő biztonsági modell
+- [Megbeszélések és átírás](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) — rögzítés az eszközön, átírás és összefoglalás
+- [Naptár és ütemezés](/hu-HU/kezikonyv/fogalmak/naptar/) — Google Calendar szinkronizálás és megbeszélésértesítések
 
-## Under the hood
+## A motorháztető alatt
 
-The shape of the system itself.
+Maga a rendszer, annak felépítése.
 
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/) — the in-process bus features talk over
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/) — rétegződés, a közös kernel, portok és adapterek
+- [Telepítés és kliensek](/hu-HU/kezikonyv/fogalmak/telepites/) — hogyan viszonyul az asztali, webes és telefonos kliens egyetlen szerverhez
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/) — a folyamaton belüli busz, amelyen a funkciók kommunikálnak

@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: کی بورڈ شارٹ کٹس
+description: مکمل کی بائنڈنگ رجسٹری، دائرہ کار کے لحاظ سے، اور ہر شارٹ کٹ کے فعال ہونے کی شرائط۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/کی-بورڈ-شارٹ-کٹس
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+شارٹ کٹس ایک ہی `const` رجسٹری سے آتے ہیں، جو `lib/core/constants/keybindings.dart` میں `KeybindingRegistry` ہے۔ اس میں **48 بائنڈنگز** ہیں۔ ترتیبات → آپ → کی بائنڈنگز اُس رجسٹری کو ایک **صرف پڑھنے کے قابل حوالے** کے طور پر دکھاتا ہے: نہ کوئی دوبارہ بائنڈ کرنے والا UI ہے اور نہ صارف کی کی بائنڈنگز کی کوئی فائل۔
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+نیچے `Cmd` بنیادی کمانڈ موڈیفائر ہے — macOS پر ⌘، اور Windows اور Linux پر Ctrl۔ کوئی بائنڈنگ صرف اُس وقت فعال ہوتی ہے جب موجودہ اسکرین پر اُس کے کمانڈ کا کوئی رجسٹرڈ ہینڈلر ہو اور اُس کی `when` شرط پوری ہو؛ `!textInputFocus` کا مطلب ہے کہ کلید اُس کے بجائے فوکس میں موجود ٹیکسٹ فیلڈ کو دے دی جاتی ہے۔
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+اعداد کی کلیدوں سے نیویگیشن کا کوئی شارٹ کٹ نہیں۔ ان باکس، ٹکٹس، pull requests اور باقی سب سائیڈ بار یا ⌘K سے پہنچتے ہیں۔ آبزرویبلٹی کا بھی کوئی شارٹ کٹ نہیں۔
 
-## Global (19)
+## عالمی (19)
 
-Scope `global`, so they are live anywhere in the shell.
+دائرہ کار `global`، اس لیے یہ شیل میں ہر جگہ فعال رہتے ہیں۔
 
-### System
+### سسٹم
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| شارٹ کٹ                                     | عمل                                               | شرط                                                        |
+| ------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | کمانڈ پیلیٹ                                       | —                                                          |
+| `Shift + /` (`?`)                           | کی بورڈ شارٹ کٹ چیٹ شیٹ                           | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں                            |
+| `Cmd/Ctrl + Z`                              | انڈو                                              | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں (فوکس میں موجود فیلڈ اپنا انڈو خود رکھتا ہے) |
+| `Cmd/Ctrl + Shift + Z`                      | ریڈو                                              | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں                            |
+| `Cmd/Ctrl + Shift + T`                      | تھیم ٹوگل کریں                                    | —                                                          |
+| `Cmd/Ctrl + ,`                              | ترتیبات کھولیں (`/settings/you/appearance` پر پہنچتا ہے) | —                                                   |
+| `Cmd/Ctrl + Shift + Alt + F`                | فوکس موڈ ٹوگل کریں                                | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | ورک اسپیس سوئچر ٹوگل کریں                         | —                                                          |
+| `Cmd/Ctrl + ]`                              | اگلا ورک اسپیس                                    | —                                                          |
+| `Cmd/Ctrl + [`                              | پچھلا ورک اسپیس                                   | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | ورک اسپیس 1–9 پر جائیں                            | —                                                          |
 
-## Pull request list (3)
+## pull requests کی فہرست (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+دائرہ کار `/pull-requests`۔ ان سب کے لیے `route == '/pull-requests'` اور یہ کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو، لازم ہے، اس لیے جب فہرست کے اوپر PR تفصیل کا روٹ کھلا ہو تو یہ فعال نہیں ہوتے۔
 
-| Shortcut | Action           |
+| شارٹ کٹ | عمل                |
+| -------- | ------------------ |
+| `R`      | تازہ کریں          |
+| `Enter`  | PR کھولیں          |
+| `F`      | فلٹر مینو کھولیں   |
+
+`Enter` (`pr.list-open`) رجسٹری میں درج ہے اور کی بائنڈنگز کے حوالے میں نظر آتا ہے، مگر **فہرست کی اسکرین اس کے لیے کوئی ہینڈلر رجسٹر نہیں کرتی**، اس لیے یہ فی الحال فعال نہیں ہوتا۔ `F` فلٹر مینو (`pr.list-open-filter`) کھولتا ہے، تلاش نہیں۔
+
+## pull request کی تفصیل (2)
+
+دائرہ کار `/pull-requests/`۔ تازہ کرنے کے لیے یہ لازم ہے کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو۔ ٹیب بند کرنے کا کوئی ٹیکسٹ اِن پٹ گارڈ نہیں (⌘ کے ساتھ ملایا گیا کی اسٹروک کبھی سادہ متن نہیں ہوتا) اور اُس کے لیے ایک روٹ ریجیکس ہے، اس لیے یہ فہرست پر فعال نہیں ہوتا۔
+
+| شارٹ کٹ        | عمل             | شرط                                  |
+| -------------- | --------------- | ------------------------------------ |
+| `R`            | تازہ کریں       | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں     |
+| `Cmd/Ctrl + W` | ٹیب بند کریں    | `/pull-requests/<…>` لوکیشن پر       |
+
+ٹیب کی تبدیلی (`1`/`2`/`3`)، فائل کا دیکھا گیا/سکیڑنا (`V`/`C`)، فائل فہرست (`T`) اور diff میں تلاش (`Cmd/Ctrl + F`) diff ویوور کے اپنے ہینڈلر کے پاس ہیں — دیکھیں [رجسٹری سے باہر diff ویوور کی کلیدیں](#رجسٹری-سے-باہر-diff-ویوور-کی-کلیدیں)۔
+
+## ان باکس (1)
+
+| شارٹ کٹ | عمل              |
 | -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| `F`      | فلٹر مینو کھولیں |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+اس کے لیے `route == '/inbox'` اور یہ کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو، لازم ہے۔
 
-## Pull request detail (2)
+## GitHub صارف اور ٹیم پروفائلز (3)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+دائرہ کار `/users/`۔ `when` شرط `/users/<login>` **یا** `/teams/<organization>/<slug>` پر لاگو ایک ریجیکس ہے، اور اُس کے ساتھ یہ بھی کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو۔
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
-
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
-
-## Inbox (1)
-
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
-
-Requires `route == '/inbox'` and no focused text field.
-
-## GitHub user and team profiles (3)
-
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
-
-| Shortcut       | Action       |
+| شارٹ کٹ        | عمل          |
 | -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| `R`            | تازہ کریں    |
+| `/`            | تلاش پر فوکس |
+| `Cmd/Ctrl + F` | تلاش پر فوکس |
 
-## Spaces (8)
+## اسپیسز (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+دائرہ کار `/spaces`۔ `when` شرائط ایک ریجیکس استعمال کرتی ہیں، اس لیے یہ اسپیس فہرست (`/spaces`) اور منتخب اسپیس (`/spaces/<id>`) دونوں پر فعال ہوتی ہیں۔
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| شارٹ کٹ                | عمل                    | شرط                     |
+| ---------------------- | ---------------------- | ----------------------- |
+| `Enter`                | پیغام بھیجیں           | —                       |
+| `Cmd/Ctrl + N`         | نئی اسپیس              | `/spaces` روٹ پر        |
+| `J`                    | اگلی اسپیس             | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں |
+| `K`                    | پچھلی اسپیس            | کسی فیلڈ میں ٹائپ نہ کر رہے ہوں |
+| `Cmd/Ctrl + Shift + D` | دبا کر بولنے کی ڈکٹیشن | —                       |
+| `Cmd/Ctrl + T`         | ایڈیٹر ٹیب کھولیں       | `/spaces` روٹ پر        |
+| `Cmd/Ctrl + W`         | ایڈیٹر ٹیب بند کریں     | `/spaces` روٹ پر        |
+| `Cmd/Ctrl + B`         | ایڈیٹر سائیڈ بار ٹوگل کریں | `/spaces` روٹ پر     |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+انٹر سے بھیجنے کا اختیار کمپوزر کے ٹیکسٹ فیلڈ کے پاس ہے؛ دبا کر بولنے کا اختیار کمپوزر کے مائیک بٹن کے پاس ہے (اس کا اپنا ہارڈ ویئر کی بورڈ ہینڈلر)۔ دونوں ترتیبات کے حوالے کے لیے رجسٹری میں درج ہیں۔
 
-## Workspace picker (2)
+## ورک اسپیس پکر (2)
 
-Scope `/workspaces`, live only on the picker itself.
+دائرہ کار `/workspaces`، جو صرف خود پکر پر فعال ہوتے ہیں۔
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| شارٹ کٹ        | عمل                       |
+| -------------- | ------------------------- |
+| `Cmd/Ctrl + N` | نیا ورک اسپیس             |
+| `Enter`        | منتخب ورک اسپیس کھولیں    |
 
-`Enter` requires no focused text field.
+`Enter` کے لیے یہ لازم ہے کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو۔
 
-## Settings (5)
+## ترتیبات (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| شارٹ کٹ        | عمل                    | اسکرین                                |
+| -------------- | ---------------------- | ------------------------------------- |
+| `J`            | اگلا ترتیبات صفحہ      | کوئی بھی `/settings` روٹ، ٹائپ کرتے ہوئے نہیں |
+| `K`            | پچھلا ترتیبات صفحہ     | کوئی بھی `/settings` روٹ، ٹائپ کرتے ہوئے نہیں |
+| `Cmd/Ctrl + N` | نیا ایجنٹ              | ترتیبات → ورک اسپیس → ایجنٹس          |
+| `Cmd/Ctrl + N` | ریپوزٹری شامل کریں     | ترتیبات → ورک اسپیس → ریپوزٹریز       |
+| `R`            | اڈاپٹرز دوبارہ اسکین کریں | ترتیبات → سرور → ماڈل فراہم کنندگان |
 
-## Newsfeed (5)
+## نیوز فیڈ (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+دائرہ کار `/newsfeed`۔ ان سب کے لیے `route == '/newsfeed'` اور یہ کہ کوئی ٹیکسٹ فیلڈ فوکس میں نہ ہو، لازم ہے۔
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| شارٹ کٹ | عمل               |
+| -------- | ----------------- |
+| `J`      | اگلا مضمون        |
+| `K`      | پچھلا مضمون       |
+| `Enter`  | مضمون کھولیں      |
+| `S`      | بک مارک ٹوگل کریں |
+| `R`      | فیڈز تازہ کریں    |
 
-## Diff viewer keys outside the registry
+## رجسٹری سے باہر diff ویوور کی کلیدیں
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+PR کا diff ویوور یہ خود سنبھالتا ہے (`PrDiffKeyboardHandler`)۔ تلاش/دیکھا گیا/سکیڑنا صرف ترتیبات کے حوالے کے لیے رجسٹری کے کمنٹس میں درج ہیں — کوئی ڈسپیچر ہینڈلر رجسٹر نہیں ہے، اس لیے ڈسپیچر انہیں diff ویو کے حوالے کر دیتا ہے۔ یہ کی بائنڈنگز کے حوالے میں اپنی الگ قطاروں کے طور پر نظر نہیں آتے۔
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| شارٹ کٹ        | عمل                                                    |
+| --------------- | ------------------------------------------------------ |
+| `Cmd/Ctrl + F`  | diff میں تلاش                                          |
+| `J` / `K`       | اگلی / پچھلی فائل                                      |
+| `V`             | فوکس میں موجود فائل پر دیکھا گیا ٹوگل کریں              |
+| `C`             | فوکس میں موجود فائل پر سکیڑنا ٹوگل کریں                 |
+| `T`             | فائل فہرست دکھائیں                                      |
+| `Enter`         | اگلا تلاش کا مماثل (صرف اُس وقت جب diff میں تلاش کھلی ہو) |
+| `Shift + Enter` | پچھلا تلاش کا مماثل                                    |
+| `Escape`        | diff میں تلاش بند کریں، یا diff کا منتخب شدہ متن صاف کریں |
+| `Cmd/Ctrl + C`  | diff کا منتخب حصہ کاپی کریں                            |
 
-## Browser-reserved combinations
+## براؤزر کی محفوظ کردہ ترکیبیں
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+ویب بلڈ میں براؤزر کچھ ایکسیلیریٹرز کو صفحے تک پہنچنے سے پہلے ہی لے لیتا ہے، اس لیے متعلقہ بائنڈنگز وہاں کبھی فعال نہیں ہو سکتیں۔ ڈیسک ٹاپ پر یہ معمول کے مطابق کام کرتی ہیں۔ بنیادی کمانڈ موڈیفائر کے ساتھ ملانے پر یہ محفوظ ہو جاتی ہیں: `T`، `W`، `N` اور اعداد `1`–`9`۔
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+اس میں `Cmd/Ctrl + Alt + 1`–`9` سے ورک اسپیس کی تبدیلی، `Cmd/Ctrl + N` (نئی اسپیس، نیا ورک اسپیس، نیا ایجنٹ، ریپوزٹری شامل کریں) اور اسپیسز اور PR تفصیل میں `Cmd/Ctrl + T` / `Cmd/Ctrl + W` شامل ہیں۔
 
-## See also
+## مزید دیکھیں
 
-- [Route map](/ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ/)
-- [Focus mode](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فوکس-موڈ/)
+- [روٹ میپ](/ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ/)
+- [فوکس موڈ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فوکس-موڈ/)

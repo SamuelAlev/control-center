@@ -1,207 +1,226 @@
 ---
-title: Remote control and mobile
-description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+title: Удалённое управление и мобильный клиент
+description: Как телефон добирается до вашего сервера через реле с брокером и сквозным шифрованием, а не по прямому каналу между устройствами, и как многоуровневая модель доступа удерживает этот доступ в узких рамках.
 slug: ru-RU/руководство/понятия/удалённое-управление
+sourceHash: 961002db892ddf82fedbe57e05e1c96ab64e7d7c
 ---
 
-Control Center is a desktop app, but the work it tracks doesn't stop when you
-step away from your desk. **Remote control** pairs your phone with your
-`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
-at remote.usectrl.dev, so you can follow the fleet from there: read messages
-and tickets, reply to an agent, triage your newsfeed, without the audio,
-transcript, source code, or credentials that live on the server ever leaving
-it.
+Control Center — приложение для компьютера, но работа, за которой оно следит,
+не останавливается, когда вы отходите от стола. **Удалённое управление**
+привязывает ваш телефон к `cc_server` через
+**[Remote](https://remote.usectrl.dev/)** — приложение-компаньон на
+remote.usectrl.dev, — чтобы вы могли следить за флотом оттуда: читать
+сообщения и тикеты, отвечать агенту, разбирать ленту новостей, при этом аудио,
+транскрипция, исходный код и учётные данные, которые хранятся на сервере,
+никогда его не покидают.
 
-Think of it as a read-mostly companion to the deck. It is not meant to replace
-the full desktop client.
+Считайте его компаньоном к рабочему столу, предназначенным в основном для
+чтения. Он не призван заменить полноценный клиент для компьютера.
 
-:::note[Two different remote paths]
-The phone companion pairs with a `cc_server` over a **brokered WebSocket
-relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
-(and a desktop pointed at a remote server) is the other remote path; it dials
-`cc_server` over WebSocket and renders the complete app. See
-[Deployment and clients](/ru-RU/руководство/понятия/развёртывание/) for how the two differ.
+:::note[Два разных удалённых пути]
+Телефонный компаньон сопрягается с `cc_server` через **WebSocket-реле с
+брокером**, которое переносит запечатанные сквозным шифрованием кадры JSON-RPC.
+Полная **веб-сборка** (и приложение для компьютера, нацеленное на удалённый
+сервер) — второй удалённый путь: оно подключается к `cc_server` по WebSocket и
+отрисовывает приложение целиком. О том, чем эти два пути различаются, см.
+[Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/).
 :::
 
-## Transport
+## Транспорт
 
-The phone reaches `cc_server` over a WebSocket: either a direct connection
-(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
-broker that relays sealed frames. There is no peer-to-peer data channel.
+Телефон добирается до `cc_server` по WebSocket: либо прямым соединением
+(loopback, локальная сеть, tailnet или `wss://`), либо через комнату по
+приглашению на сигнальном брокере, который ретранслирует запечатанные кадры.
+Канала данных напрямую между устройствами нет.
 
-## What the phone can do
+## Что умеет телефон
 
-The paired phone reaches a small, intentional slice of the server's surface:
+Сопряжённый телефон получает доступ к небольшому, намеренно ограниченному
+срезу возможностей сервера:
 
-- **Read** tickets, agents, spaces and their messages and your newsfeed
-- **Reply**: send a message in a space, update or assign a ticket, mark an
-  article read or saved
-- **Run a playbook**: instantiate a saved plan template with its parameters.
-  This only _proposes_ a plan; nothing executes or spends until an operator
-  approves it in Plan Studio on a full client
-- **Switch workspaces**, from the phone's own picker
+- **Читать** тикеты, агентов, пространства, их сообщения и вашу ленту новостей
+- **Отвечать**: отправлять сообщение в пространстве, обновлять или назначать
+  тикет, отмечать статью прочитанной или сохранённой
+- **Запускать плейбук**: инстанцировать сохранённый шаблон плана с его
+  параметрами. Это лишь _предлагает_ план: ничего не выполняется и не тратится,
+  пока оператор не утвердит его в Plan Studio в полном клиенте
+- **Переключать рабочие пространства** — из собственного средства выбора на
+  телефоне
 
-That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
-create workspaces. See
-[the access model](#the-access-model) for how that is enforced rather than
-merely intended.
+На этом список почти исчерпан. Телефон — **субъект с меньшими привилегиями**,
+чем полный клиент. Он не может запускать процессы, тратить бюджет LLM,
+отправлять изменения в GitHub или создавать рабочие пространства. О том, как
+это обеспечивается на деле, а не только задумано, см.
+[модель доступа](#модель-доступа).
 
-## How the link is built
+## Как устроено соединение
 
-The connection rides a **brokered relay**: the server joins one invite-gated
-room on a `wss://` broker as its owner and every paired client — desktop, web,
-phone — joins the same room with a time-boxed admission token. Three pieces
-come together:
+Соединение идёт через **реле с брокером**: сервер как владелец заходит в одну
+комнату по приглашению на брокере `wss://`, и каждый сопряжённый клиент —
+компьютер, веб, телефон — заходит в ту же комнату с токеном допуска,
+ограниченным по времени. Здесь сходятся три части:
 
-| Piece                  | Role                                                                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
-| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
-| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+| Часть                          | Роль                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Remote (приложение для телефона)** | Веб-приложение-компаньон, по умолчанию размещённое на `remote.usectrl.dev`, либо развёрнутое самостоятельно. Загружается в браузере, хранит запись сопряжения в IndexedDB.                                                                                                                                                            |
+| **Брокер-реле**                | Реле `wss://` без состояния (`cc_signaling_server`), обслуживающее комнаты на N участников. Оно переносит **только непрозрачные кадры**: каждая полезная нагрузка запечатана сквозным шифрованием между телефоном и сервером, поэтому брокер никогда не видит данные приложения или секрет сопряжения и не интерпретирует то, что пересылает. |
+| **`cc_server`**                | Владелец комнаты. Он отвечает на вызовы телефона через тот же диспетчер, которым пользуются все остальные клиенты.                                                                                                                                                                                                                     |
 
-A pairing offer carries a **connection descriptor** listing every path to the
-server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
-The phone's resolver picks the best reachable path and pins the fingerprint on
-first connect (TOFU); the relay guarantees connectivity even when no direct
-path exists, without ever being able to read the traffic.
+Предложение сопряжения несёт **дескриптор подключения** со списком всех путей к
+серверу (локальная сеть, tailnet, публичный `wss://`, реле) и отпечатком
+идентичности сервера. Резолвер на телефоне выбирает наилучший доступный путь и
+закрепляет отпечаток при первом подключении (TOFU); реле гарантирует связность,
+даже когда прямого пути нет, и при этом никогда не может прочитать трафик.
 
-## What the pairing payload is
+## Что представляет собой полезная нагрузка сопряжения
 
-Pairing is minted from the app and delivered as a deep link; see
-[Pair a device](/ru-RU/руководство/практические-руководства/привязать-устройство/) for the procedure. The anatomy is
-what matters here.
+Сопряжение создаётся в приложении и доставляется как глубокая ссылка; порядок
+действий описан в разделе
+[Привязать устройство](/ru-RU/руководство/практические-руководства/привязать-устройство/).
+Здесь важно, из чего она состоит.
 
 ```
 https://<pwa-host>/#<payload>
 ```
 
-The payload rides in the URL **fragment**, the part after `#` that browsers
-never send to the server, so the PWA's HTTPS host never sees it. It carries
-everything the phone needs to reach the server and prove who it is: the
-connection descriptor (every path plus the identity fingerprint), a freshly
-minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
-decodes it, stores a pairing record locally and strips the fragment so the
-secret leaves the URL.
+Полезная нагрузка едет во **фрагменте** URL — той части после `#`, которую
+браузеры никогда не отправляют на сервер, поэтому HTTPS-хост PWA её не видит. В
+ней есть всё, что нужно телефону, чтобы добраться до сервера и подтвердить, кто
+он: дескриптор подключения (все пути плюс отпечаток идентичности), только что
+созданный идентификатор устройства, 32-байтовый предварительно распределённый
+ключ и отметка о сроке действия. Телефон её декодирует, сохраняет запись
+сопряжения локально и удаляет фрагмент, чтобы секрет ушёл из URL.
 
-There are two payload shapes and they are **not interchangeable**. The phone QR
-minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
-at the Remote PWA host. `cc_server pair --client-url` emits a different, older
-v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
-client only.
+Форм полезной нагрузки две, и они **не взаимозаменяемы**. QR-код для телефона,
+созданный на панели сопряжения в приложении, — это описанный выше v2
+`PairingPayload`, нацеленный на хост PWA Remote. Команда
+`cc_server pair --client-url` выдаёт другую, более старую ссылку v1
+(`{s, i, k}` — URL сервера, идентификатор устройства, ключ), предназначенную
+только для **веб**-клиента.
 
-They also differ in lifetime, which is easy to get wrong:
+Различаются они и сроком жизни, в чём легко ошибиться:
 
-| Minted by                             | Credential expiry                         |
-| ------------------------------------- | ----------------------------------------- |
-| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
-| `cc_server pair` on the command line  | **None** — the credential does not expire |
+| Чем создано                            | Срок действия учётных данных                    |
+| -------------------------------------- | ----------------------------------------------- |
+| Панель сопряжения в приложении (`pairing.mint`) | 30 дней, всегда                         |
+| `cc_server pair` в командной строке    | **Нет** — учётные данные не истекают            |
 
-## The access model
+## Модель доступа
 
-A paired device is **authenticated but untrusted**. Several independent gates
-keep an approved (or leaked) pairing from becoming full control of the server.
+Сопряжённое устройство **аутентифицировано, но не является доверенным**.
+Несколько независимых барьеров не дают одобренному (или утёкшему) сопряжению
+превратиться в полный контроль над сервером.
 
-### 1. Membership, not pairing, is the boundary
+### 1. Граница — членство, а не сопряжение
 
-A valid pairing key proves _which device_ you are. What you may read or change
-is decided by your **workspace role**, re-resolved on every single call and by
-per-repo grants on anything that exposes repo content. A device holding a
-perfectly good key but belonging to a user who is not a member of the named
-workspace is refused with "Not a member of this workspace".
+Действительный ключ сопряжения доказывает, _какое именно устройство_ перед
+вами. Что вам можно читать или менять, решают ваша **роль в рабочем
+пространстве**, заново определяемая при каждом отдельном вызове, и разрешения на
+уровне репозитория для всего, что раскрывает содержимое репозитория. Устройству
+с вполне исправным ключом, но принадлежащему пользователю, который не состоит в
+указанном рабочем пространстве, отказывают с сообщением "Not a member of this
+workspace".
 
-The role floor is derived from the operation's kind unless it declares its own:
-reads need `guest`, mutations need `member`, destructive operations need
-`admin`.
+Минимальная роль выводится из вида операции, если операция не объявляет свою:
+для чтения нужна роль `guest`, для изменений — `member`, для разрушительных
+операций — `admin`.
 
-### 2. A phone is a lower session tier
+### 2. Телефон — более низкий уровень сессии
 
-Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Operations declared full-client-only are refused for a phone
-before the handler runs, regardless of how privileged the user behind it is:
-minting, listing, renaming and revoking device pairings; reading and setting
-tunnel connectivity; server backup and workspace export/import; process
-detection and kill; adapter probes; server settings; SSO admin; fleet control;
-and taking over or handing back a running agent.
+Помимо проверки роли, сессия телефона несёт меньший набор возможностей, чем
+сессия компьютера или веб-клиента. Операции, объявленные доступными только
+полному клиенту, отклоняются для телефона до запуска обработчика, как бы
+привилегирован ни был стоящий за ним пользователь: создание, перечисление,
+переименование и отзыв сопряжений устройств; чтение и настройка подключения
+через туннель; резервное копирование сервера и экспорт/импорт рабочего
+пространства; обнаружение и завершение процессов; проверки адаптеров; настройки
+сервера; администрирование SSO; управление флотом; а также перехват или возврат
+работающего агента.
 
-### 3. A default-deny tool allow-list
+### 3. Список разрешённых инструментов с запретом по умолчанию
 
-For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
-governs which tools the phone may invoke. Anything not listed is rejected before
-it runs. The list is read-and-observe heavy plus a handful of **local-only**
-writes — a message, a ticket update, an article flag — that spend no LLM budget,
-spawn no process and touch no external system.
+Для набора инструментов MCP в частности (`tools/call`) тем, какие инструменты
+телефон может вызывать, управляет список разрешённых, работающий по принципу
+«запрещено по умолчанию». Всё, чего в нём нет, отклоняется до запуска. Список
+тяготеет к чтению и наблюдению, плюс несколько **локальных** операций записи —
+сообщение, обновление тикета, пометка статьи, — которые не тратят бюджет LLM,
+не запускают процессы и не трогают внешние системы.
 
-Denied, for example: consulting an agent, starting an AI review, killing an
-agent, publishing a review to GitHub, hiring or firing agents, creating a
-workspace.
+Запрещено, например: обращаться к агенту, запускать ИИ-проверку, завершать
+агента, публиковать ревью в GitHub, нанимать или увольнять агентов, создавать
+рабочее пространство.
 
-### 4. Per-call workspace scoping
+### 4. Привязка к рабочему пространству при каждом вызове
 
-The server holds **no** "current workspace". It is stateless by design: every
-workspace-scoped call must name its target `workspace_id` in its arguments and
-the dispatcher refuses the call outright when that is missing or names a
-workspace the server does not have registered — before anything opens a
-database. A phone can therefore never inherit or drift into another client's
-scope and naming a foreign workspace does not help either, because the
-membership check in gate 1 still applies. This is the same
-[workspace isolation](/ru-RU/руководство/понятия/рабочие-пространства/) invariant the rest of the
-product enforces.
+На сервере **нет** «текущего рабочего пространства». Он по замыслу не хранит
+состояния: каждый вызов, привязанный к рабочему пространству, обязан назвать
+свой целевой `workspace_id` в аргументах, и диспетчер отклоняет вызов сразу,
+если тот отсутствует или называет рабочее пространство, которое сервер не
+зарегистрировал, — до того, как что-либо откроет базу данных. Поэтому телефон
+никогда не может унаследовать область другого клиента или незаметно в неё
+съехать, и указание чужого рабочего пространства тоже не помогает, потому что
+проверка членства из барьера 1 всё равно срабатывает. Это тот же инвариант
+[изоляции рабочих пространств](/ru-RU/руководство/понятия/рабочие-пространства/),
+который обеспечивает остальная часть продукта.
 
-### 5. End-to-end-sealed frames keyed by the pre-shared key
+### 5. Кадры, запечатанные сквозным шифрованием на предварительно распределённом ключе
 
-Every frame between phone and server is sealed with the pairing key; the
-admission token only gets a client into the room, it decrypts nothing. The
-broker relays ciphertext and never sees the key. A device that is revoked finds
-its credential already gone, so it **fails closed** on reconnect.
+Каждый кадр между телефоном и сервером запечатан ключом сопряжения; токен
+допуска лишь впускает клиента в комнату и ничего не расшифровывает. Брокер
+передаёт шифротекст и никогда не видит ключ. У отозванного устройства учётных
+данных уже нет, поэтому при повторном подключении оно **безопасно отказывает**.
 
-An app-minted credential is time-boxed to 30 days; past that the connect gate
-fails it and the phone must re-pair. Revocation is live: the server watches the
-device table and drops a revoked device's open sessions within seconds rather
-than waiting for its next connect.
+Учётные данные, созданные в приложении, ограничены сроком в 30 дней; после
+этого барьер подключения их отклоняет, и телефон должен пройти сопряжение
+заново. Отзыв применяется немедленно: сервер следит за таблицей устройств и
+разрывает открытые сессии отозванного устройства за секунды, не дожидаясь его
+следующего подключения.
 
-### 6. Rate limiting per principal
+### 6. Ограничение частоты запросов на субъект
 
-A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
-tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
-**principal, not the session**: three of your devices draw from one allowance,
-so a hijacked client cannot buy headroom by opening more sessions and one noisy
-member cannot starve the others.
+Ограничитель со скользящим окном держит удалённый трафик инструментов на уровне
+120 вызовов в минуту, с более жёстким дополнительным порогом в 30 вызовов в
+минуту для изменяющих операций. Бюджет принадлежит **субъекту, а не сессии**:
+три ваших устройства черпают из одного лимита, поэтому захваченный клиент не
+может выторговать себе запас, открывая новые сессии, а один шумный участник не
+может заморить остальных.
 
-### 7. A broker that learns nothing
+### 7. Брокер, который ничего не узнаёт
 
-The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
-and holds no accounts, no app data and no keys. Rooms are invite-gated and
-transient. The app data, audio, transcript, source and credentials all stay on
-the server.
+Брокер-реле намеренно прост: он обслуживает комнаты, пересылает запечатанные
+кадры и не хранит ни учётных записей, ни данных приложений, ни ключей. Комнаты
+доступны по приглашению и недолговечны. Данные приложения, аудио, транскрипция,
+исходный код и учётные данные остаются на сервере.
 
-## Live updates
+## Живые обновления
 
-Once paired, the phone receives **live updates** as notification frames — new
-agent messages, tickets assigned to you, status changes — mirroring the
-desktop's own notifications. The server broadcasts those frames to every
-connected session and the workspace filter is applied client-side, so what you
-see is scoped to the workspace you are looking at.
+После сопряжения телефон получает **живые обновления** в виде
+кадров-уведомлений — новые сообщения агентов, назначенные вам тикеты, изменения
+статуса, — повторяя собственные уведомления приложения для компьютера. Сервер
+рассылает эти кадры всем подключённым сессиям, а фильтр рабочего пространства
+применяется на стороне клиента, поэтому вы видите только то, что относится к
+открытому у вас рабочему пространству.
 
-## Where it lives
+## Где это живёт
 
-| Surface                                                                             | What it shows                                                                                               |
+| Место                                                                               | Что показывает                                                                                               |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+| **Настройки → Вы → Ваши устройства** (`/workspaces/:workspaceId/settings/you/devices`) | Сопряжённые клиенты с живым статусом, а также **Привязать новый клиент** (веб-браузер, приложение для компьютера или телефон) и отзыв |
 
-The same panel mints pairings for a second browser or desktop app, not just
-phones — the flow is identical, only the deep link differs.
+Та же панель создаёт сопряжения и для второго браузера или приложения для
+компьютера, не только для телефонов: порядок действий один и тот же,
+различается только глубокая ссылка.
 
 ::::note
-Remote control is server-side and is **not** exposed over MCP. The phone speaks
-to the server's own dispatcher over the relay; it is not an MCP client of an
-external server.
+Удалённое управление работает на стороне сервера и **не** выставляется через
+MCP. Телефон общается через реле с собственным диспетчером сервера; он не
+является клиентом MCP внешнего сервера.
 ::::
 
-## See also
+## См. также
 
-- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/): the per-call scoping this leans on
-- [Multiplayer — identity, membership and presence](/ru-RU/руководство/понятия/совместная-работа/): roles, membership and repo grants
-- [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/): where remote control sits among the client tiers
-- [Architecture](/ru-RU/руководство/понятия/архитектура/): where remote control sits in the stack
-- [Pair a device](/ru-RU/руководство/практические-руководства/привязать-устройство/)
+- [Рабочие пространства и изоляция](/ru-RU/руководство/понятия/рабочие-пространства/): привязка к рабочему пространству при каждом вызове, на которую это опирается
+- [Совместная работа — идентичность, членство и присутствие](/ru-RU/руководство/понятия/совместная-работа/): роли, членство и разрешения на уровне репозиториев
+- [Развёртывание и клиенты](/ru-RU/руководство/понятия/развёртывание/): место удалённого управления среди уровней клиентов
+- [Архитектура](/ru-RU/руководство/понятия/архитектура/): место удалённого управления в стеке
+- [Привязать устройство](/ru-RU/руководство/практические-руководства/привязать-устройство/)

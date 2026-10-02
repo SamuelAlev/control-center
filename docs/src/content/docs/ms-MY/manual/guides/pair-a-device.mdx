@@ -1,96 +1,103 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Gandingkan peranti
+description: Gandingkan telefon anda (atau pelayar atau desktop kedua) dengan pelayan Control Center anda supaya anda boleh mengikuti armada dari jauh.
 slug: ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/) for how the link
-works and its security model.
+Panduan ini menunjukkan cara menggandingkan telefon dengan Control Center,
+supaya anda boleh membaca mesej dan tiket serta membalas dari mana-mana sahaja.
+Aliran yang sama turut menggandingkan pelayar atau aplikasi desktop kedua. Lihat
+[Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/) untuk
+cara pautan ini berfungsi dan model keselamatannya.
 
-## Prerequisites
+## Prasyarat
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Klien desktop atau web yang bersambung ke pelayan anda serta ruang kerja yang telah disediakan. Operasi penggandingan memerlukan klien penuh, jadi telefon yang sudah berganding tidak boleh menggandingkan — atau menarik balik — peranti lain.
+- Pelayan boleh dicapai dari peranti yang anda gandingkan. Dalam rangkaian yang sama, ia berfungsi begitu sahaja; dari tempat yang lebih jauh, geganti berperantara membawa trafik tersebut. Jika panel menunjukkan **Tidak boleh dicapai** dan bukan kod QR atau kelayakan, terbitkan laluan terlebih dahulu — pilihan masuk terowong di **Tetapan → Pelayan → Sambungan & status** (**Kongsi pelayan ini**), atau `--public-url` pelayan (lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)).
+- Untuk telefon: tiada apa-apa untuk dipasang. Kod QR tersebut membuka aplikasi web **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) secara lalai).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Pengehosan sendiri.** Remote dan broker geganti ialah sumber terbuka dalam repo
+ini: aplikasi telefon (`apps/cc_remote`, PWA web Flutter yang boleh anda terapkan
+ke Cloudflare Pages melalui `wrangler.jsonc`-nya, ke imej nginx `docker/cc_remote`,
+atau ke mana-mana hos statik dengan HTTPS — pekerja perkhidmatan dan IndexedDB
+terikat konteks selamat) dan geganti (`apps/cc_signaling_server`, satu binari Dart
+tanpa keadaan yang tidak menyimpan sebarang data aplikasi dan tidak pernah melihat
+rahsia penggandingan — ia hanya memajukan bingkai tersegel hujung ke hujung).
+Lihat README masing-masing untuk langkah binaan dan larian.
 
-## Step 1: Open the pairing panel
+## Langkah 1: Buka panel penggandingan
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Buka **Tetapan → Anda → Peranti anda**. Bahagian **Peranti anda** menyenaraikan
+klien yang berganding dengan akaun anda pada pelayan ini. (Pemilik pelayan
+melihat setiap peranti pada pelayan; orang lain hanya melihat peranti mereka
+sendiri.)
 
-## Step 2: Pair a new client
+## Langkah 2: Gandingkan klien baharu
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Klik **Pasangkan klien baharu** dalam pengepala halaman, berikannya label (cth.
+"Telefon saya"), pilih jenisnya — **Penyemak imbas web**, **Apl desktop**, atau
+**Telefon** — dan klik **Pasangkan**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Untuk **telefon**, kod QR akan muncul. Imbasnya dengan kamera telefon, atau salin pautan itu dan buka dalam mana-mana pelayar. Ia mengarahkan aplikasi Remote ke pelayan anda dan membawa kelayakan tersebut.
+- Untuk **pelayar** atau **desktop**, salin pautan yang dipaparkan (atau id peranti dan kunci penggandingan) ke dalam klien baharu itu. Pautan sekali ketik hanya ditawarkan apabila anda menggandingkan dari klien web, kerana binari desktop tiada asal web untuk membinanya.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Kod QR telefon dan pautan yang dicetak oleh `cc_server pair --client-url` pada CLI
+ialah **muatan yang berbeza dan tidak boleh ditukar ganti**: pautan CLI mengisi
+borang sambungan klien web, manakala kod QR ini membawa deskriptor sambungan
+penuh pelayan dan cap jari identiti untuk PWA Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Di sisi telefon, membuka pautan penggandingan tidak menggandingkan secara senyap.
+Remote menunjukkan nama pelayan yang diiklankan dan meminta anda mengesahkan
+sebelum ia menyimpan apa-apa, jadi pautan palsu tidak boleh merampas aplikasi ke
+pelayan orang lain.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Kod QR yang diimbas memberikan akses serta-merta]
+Tiada langkah menunggu-kemudian-lulus: peranti yang dijana sudah aktif dari saat
+ia dicipta dan gerbang sambungan hanya memeriksa bahawa kelayakan itu aktif dan
+belum tamat tempoh. Anggap kod QR dan kunci penggandingan seperti kata laluan dan
+tarik balik apa-apa yang tidak sepatutnya anda serahkan.
 :::
 
-## Manage paired devices
+## Urus peranti yang berganding
 
-From **Settings → You → Your devices** you can:
+Dari **Tetapan → Anda → Peranti anda** anda boleh:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Namakan semula** sesuatu peranti
+- **Tarik balik** peranti yang tidak lagi anda percayai. Menarik balik memusnahkan kelayakannya dan menggugurkan sesi langsungnya dalam beberapa saat, jadi ia gagal secara tertutup apabila menyambung semula
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Menarik balik ialah tindakan yang betul untuk telefon yang hilang atau sudah
+diganti. Ia serta-merta dan tidak boleh dipulihkan dari perspektif peranti
+tersebut.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Kelayakan yang dijana dari panel ini dibatasi masa: ia tamat tempoh 30 hari
+selepas dikeluarkan dan gerbang sambungan menggagalkannya secara tertutup selepas
+itu. Kelayakan yang dijana dengan `cc_server pair` pada baris perintah **tidak
+mempunyai tempoh tamat sama sekali** — tarik balik secara manual apabila mesin
+yang dimaksudkannya sudah dinyahaktifkan.
 
-## Switch workspaces from the phone
+## Tukar ruang kerja dari telefon
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Telefon yang berganding boleh bertukar antara ruang kerja secara bebas daripada
+desktop. Telefon menghantar ruang kerja itu dengan setiap panggilan dan pelayan
+memeriksa keahlian serta peranan anda dalam ruang kerja tersebut pada setiap
+panggilan — jadi telefon hanya mencapai ruang kerja yang anda anggotai dan
+pertukaran di situ tidak pernah mengubah apa yang dipaparkan oleh desktop.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Sesi telefon juga dihadkan kepada senarai izin kecil alat berat baca: ia boleh
+menyenaraikan dan membaca tiket, ejen, ruang, mesej dan artikel suapan serta
+boleh mengemas kini atau menetapkan tiket, menghantar mesej dalam ruang dan
+menandai artikel sebagai telah dibaca atau disimpan. Apa-apa di luar set itu
+ditolak sebelum ia sampai ke dispatcher pelayan.
 
-## Related guides
+## Panduan berkaitan
 
-- [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): make the server reachable in the first place
-- [Connect to a remote server](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/): point a full client at it
-- [Use spaces](/ms-MY/manual-pengguna/panduan-cara/ruang/): what you'll mostly do from the phone
-- [Create and manage tickets](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/): triage from the road
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/): pastikan pelayan boleh dicapai terlebih dahulu
+- [Sambung ke pelayan jauh](/ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh/): arahkan klien penuh kepadanya
+- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/): apa yang paling kerap anda lakukan dari telefon
+- [Cipta dan urus tiket](/ms-MY/manual-pengguna/panduan-cara/urus-tiket/): lakukan triage semasa dalam perjalanan
 
-## Related concepts
+## Konsep berkaitan
 
-- [Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
-- [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/)
+- [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
+- [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/)

@@ -1,162 +1,167 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Sao lưu và khôi phục
+description: Tạo ảnh chụp bản cài đặt, chuyển một không gian làm việc giữa các máy, khôi phục một không gian làm việc hoặc toàn bộ, và giữ bản sao ở nơi khác.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/vi-VN/so-tay/tham-chieu/sao-luu/).
+Hướng dẫn này bao quát năm việc người ta thực sự làm với bản sao lưu: tạo một bản,
+thu nó về, chuyển một không gian làm việc, đặt một bản trở lại, và giữ bản sao ngoài
+máy. Để biết hình dạng chính xác của từng artifact và thao tác, xem
+[tham chiếu sao lưu](/vi-VN/so-tay/tham-chieu/sao-luu/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Mọi thứ ở đây nằm tại **Cài đặt → Máy chủ → Sao lưu và khôi phục**.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- Một **máy khách đầy đủ** — ứng dụng desktop hoặc web. Một điện thoại đã ghép nối không kích hoạt được bất cứ phần nào trong số này, và đó là chủ đích.
+- Để tạo, liệt kê, tải xuống hoặc xóa một **ảnh chụp cài đặt**: **owner** của bản cài đặt.
+- Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất, **owner** để nhập hoặc xóa nó.
+- Với tải xuống và tải lên: một kết nối **trực tiếp** tới máy chủ. Relay được môi giới chở các khung RPC chứ không chở truyền tệp, và các điều khiển truyền tự vô hiệu hóa kèm một ghi chú khi bạn đang đi qua nó.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Ảnh chụp cài đặt là thao tác thủ công]
+**Sao lưu ngay** vẫn chỉ tạo ảnh chụp toàn bộ cài đặt khi có yêu cầu. Quy trình
+**Workspace backup** tích hợp thì có thể sao lưu cơ sở dữ liệu của một không gian
+làm việc mỗi tuần một lần và xóa các bản sao lưu của không gian làm việc đó cũ hơn
+30 ngày. Nó không sao chép `global.db`, các không gian làm việc khác, hay các tệp
+bên cạnh cơ sở dữ liệu. Hãy giữ bản sao ngoài máy ở nơi riêng.
 :::
 
-## What a backup covers
+## Bản sao lưu bao gồm những gì
 
-Both artifacts are **databases only**:
+Cả hai artifact đều **chỉ là cơ sở dữ liệu**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- Một **ảnh chụp cài đặt** là một thư mục có dấu thời gian: `manifest.json`, `global.db` và một `<workspaceId>/workspace.db` cho mỗi không gian làm việc.
+- Một **bản xuất không gian làm việc** là chính tệp `workspace.db` đó.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Cả hai đều không mang theo phần còn lại của thư mục dữ liệu: `secrets.json` (khóa
+ghép nối, thông tin xác thực nhà cung cấp, SSO), `blobs/` của một không gian làm việc
+(ảnh được dán vào tin nhắn), `skills/`, `agents/`, `chat_credentials/`, âm thanh cuộc
+họp đã ghi hay ảnh rig. Phần nào trong đó có thể bỏ đi, phần nào thì không —
+[bảng đầy đủ nằm trong tham chiếu](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain),
+và che phủ nó chính là việc mà [phần ngoài máy](#sao-chép-bản-sao-lưu-ra-khỏi-máy) hướng tới.
 
-## Take a snapshot of the whole install
+## Tạo ảnh chụp toàn bộ bản cài đặt
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Mở **Cài đặt → Máy chủ → Sao lưu và khôi phục**.
+2. Dưới **Ảnh chụp cài đặt**, nhấn **Sao lưu ngay**.
+3. Thông báo nổi nêu tên thư mục đã được ghi, trên máy chủ. Ảnh chụp mới xuất hiện ở đầu danh sách.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+Máy chủ vẫn chạy suốt quá trình. Mỗi tệp được ghi bằng `VACUUM INTO`, vốn nhất quán
+ngay cả với một cơ sở dữ liệu đang sống, nên không cần cửa sổ bảo trì và không cần
+dừng agent.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Mỗi hàng trong danh sách hiển thị dấu thời gian, kích thước trên đĩa, số không gian
+làm việc đã được chụp và liệu ảnh chụp là **Hoàn tất** hay **Chưa hoàn tất**. Chưa
+hoàn tất nghĩa là manifest bị thiếu hoặc nêu những tệp không tồn tại — một bản sao lưu
+bị ngắt giữa chừng do sự cố hoặc do đĩa đầy. Những ảnh chụp đó vẫn được liệt kê là có
+chủ đích: một ảnh chụp bạn không nhìn thấy là một ảnh chụp bạn tưởng mình đang có. Một
+ảnh chụp chưa hoàn tất không thể khôi phục toàn bộ bản cài đặt, nhưng các tệp không
+gian làm việc mà nó có vẫn có thể được nhận về từng cái một.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Một hàng cũng có thể ghi **_n_ không gian làm việc không được chụp**. Đó là một không
+gian làm việc đã đăng ký nhưng chưa từng được ghi vào (chưa có tệp), hoặc một không
+gian làm việc mà bản sao của nó thất bại — hãy kiểm tra nhật ký máy chủ.
 
-## Schedule workspace backups and retention
+## Lên lịch sao lưu không gian làm việc và lưu giữ
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Mở **Cài đặt → Pipelines → Mẫu quy trình** cho không gian làm việc và tìm
+**Workspace backup**. Lịch đã bật của nó chạy vào mỗi Chủ nhật lúc 03:00 UTC:
+**Back up workspace**, tiếp theo là **Delete backups older than** (mặc định 30 ngày).
+Nút thứ hai chỉ chạy sau khi bản sao lưu thành công. Bạn có thể đổi số ngày lưu giữ
+trên nút hoặc tắt lịch. Nếu máy chủ ngoại tuyến vào thời điểm đã lên lịch, lịch sẽ
+chạy bù một lần khi máy chủ trở lại, thay vì phát lại mọi tuần đã lỡ.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Các bản sao lưu không gian làm việc nằm trên máy chủ tại
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Nút lưu giữ chỉ
+xóa các bản sao lưu cũ của không gian làm việc này; nó không bao giờ xóa ảnh chụp cài
+đặt hay bản sao lưu của các không gian làm việc khác. Những tệp này chỉ chứa cơ sở dữ
+liệu. Để lưu giữ ngoài máy, hãy sao chép chúng một cách độc lập.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Những bản sao lưu này tách biệt với danh sách **Ảnh chụp cài đặt**. Để khôi phục một
+bản, dùng **Dữ liệu không gian làm việc → Nhập** với đường dẫn `workspace.db` phía máy
+chủ của bản sao lưu đó. Nhập sẽ thay thế cơ sở dữ liệu hiện tại của không gian làm việc
+đó, nên hãy xuất nó trước nếu bạn có thể cần hoàn tác lần khôi phục.
 
-## Delete an install snapshot
+## Xóa một ảnh chụp cài đặt
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Dưới **Ảnh chụp cài đặt**, mở rộng ảnh chụp, kể cả ảnh chụp chưa hoàn tất, và dùng
+**Xóa ảnh chụp** trong vùng nguy hiểm. Xác nhận tên của nó. Toàn bộ thư mục ảnh chụp
+bị xóa vĩnh viễn khỏi máy chủ; hãy tải nó xuống trước nếu bạn cần một bản sao. Quy
+trình sao lưu không gian làm việc không bao giờ xóa những ảnh chụp này.
 
-## Collect a copy on your own machine
+## Thu một bản sao về máy của bạn
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+Những đường dẫn mà trang này hiển thị nằm trên máy đang chạy `cc_server`. Khi đó không
+phải máy bạn đang ngồi, hãy dùng các nút **Tải xuống**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Bên cạnh mỗi **không gian làm việc** dưới **Dữ liệu không gian làm việc** → **Tải xuống**, để lấy một tệp `.db`.
+- Bên cạnh mỗi **ảnh chụp** dưới **Ảnh chụp cài đặt** → **Tải xuống**, để lấy toàn bộ ảnh chụp dưới dạng `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Trên desktop, bạn chọn nơi tệp hạ cánh và thông báo nổi nêu tên nó; trên web, tệp đi
+vào thư mục tải xuống của trình duyệt. Dù theo cách nào, cả hai đều báo tiến độ theo
+byte, bởi đây là hai payload có thể lên tới hàng gigabyte.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Cả hai đều tạo một bản sao mới ngay lúc bạn nhấn nút, truyền phát nó, rồi xóa bản sao
+trên máy chủ sau đó — tải xuống không phải là "lấy tệp mà nút xuất đã tạo trước đó".
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Giải nén một tệp lưu trữ ảnh chụp tái tạo chính xác bố cục của ảnh chụp, và đó là
+điều khiến việc khôi phục nó chỉ còn là một thao tác sao chép trở lại.
 
-## Move a workspace to another install
+## Chuyển một không gian làm việc sang bản cài đặt khác
 
-One workspace is one database file, so handing it over is a file operation.
+Một không gian làm việc là một tệp cơ sở dữ liệu, nên chuyển giao nó là một thao tác tệp.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Trên máy chủ **nguồn**, **Cài đặt → Máy chủ → Sao lưu và khôi phục → Dữ liệu không gian làm việc**, mở rộng không gian làm việc và nhấn **Tải xuống**.
+2. Trên máy chủ **đích**, tạo (hoặc chọn) không gian làm việc sẽ nhận nó.
+3. Mở rộng không gian làm việc đó, và dưới **Khôi phục từ thiết bị này** nhấn **Chọn tệp và tải lên**. Chọn tệp `.db` bạn đã tải xuống.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Nếu cả hai máy chủ đều là máy bạn đang ngồi, **Lưu trên máy chủ** cộng với **Nhập** →
+**Chọn tệp** làm đúng việc đó mà không cần đi vòng; các đường dẫn trong hộp thoại nhập
+được phân giải trên máy chủ.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Nhập thay thế mọi thứ]
+Nhập sẽ ghi đè mọi thứ mà không gian làm việc đích đang giữ, và không thể hoàn tác.
+Hãy xuất đích trước nếu nó giữ bất cứ thứ gì bạn có thể muốn lấy lại.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Hai trường hợp được cho phép và ghi nhật ký thay vì bị từ chối: nhập một tệp có id
+không gian làm việc được ghi khác với đích (đây là cách bạn nhân bản một không gian làm
+việc hoặc khôi phục nó dưới một id mới), và nhập một tệp từ một **bản cài đặt khác**.
+Trong trường hợp thứ hai, các thiết bị đã ghép nối và id người dùng của tệp thuộc về
+bản cài đặt gốc và sẽ không phân giải được trên bản cài đặt này — dữ liệu của chính
+không gian làm việc vẫn nguyên vẹn, nhưng hãy kiểm tra lại tư cách thành viên sau khi
+nhận nó.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Token của bot chat nằm bên cạnh cơ sở dữ liệu chứ không nằm trong đó, nên một không
+gian làm việc bạn trao cho người khác không mang theo thông tin xác thực nào đang sống.
+Bản cài đặt nhận sẽ tự kết nối lại thông tin xác thực của chính nó.
 
-## Restore one workspace from a snapshot
+## Khôi phục một không gian làm việc từ ảnh chụp
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Dưới **Ảnh chụp cài đặt**, mở rộng ảnh chụp bạn muốn.
+2. Tìm hàng của không gian làm việc và nhấn **Khôi phục**.
+3. Xác nhận. Mọi việc không gian làm việc đó đã làm kể từ khi ảnh chụp được tạo sẽ mất.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Đây là cùng thao tác như một lần nhập, trỏ vào bản sao trong ảnh chụp của tệp không
+gian làm việc đó — là có chủ đích, để không tồn tại cơ chế thứ hai có thể xử lý cùng
+một tệp theo cách khác.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Một hàng có thể ghi **Không còn trên máy chủ này**, với **Khôi phục** bị vô hiệu hóa:
+ảnh chụp chứa một không gian làm việc mà bản cài đặt này không còn nữa. Hãy đưa nó trở
+lại bằng tay — tạo một không gian làm việc, rồi dưới **Dữ liệu không gian làm việc**
+nhập vào nó từ `<snapshot path>/<old workspace id>/workspace.db`. Ảnh chụp đã mở rộng
+hiển thị **Đường dẫn trên máy chủ** của chính nó trong một trường sao chép, và tiêu đề
+của hàng là id không gian làm việc cũ, nên bạn có cả hai nửa của đường dẫn đó ngay
+trước mắt.
 
-## Restore a whole install
+## Khôi phục toàn bộ bản cài đặt
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Không có nút cho việc này, và cũng không nên có: nó thay thế những cơ sở dữ liệu mà
+máy chủ đang chạy giữ mở.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Dừng `cc_server`.** Nếu bạn chạy ứng dụng desktop với máy chủ nhúng của nó, hãy thoát ứng dụng.
+2. Sao chép nội dung của ảnh chụp đè lên thư mục dữ liệu. Bố cục ảnh chụp phản chiếu bố cục đang chạy, nên đây chỉ là một thao tác sao chép đơn thuần:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +176,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Xóa mọi tệp `-wal` và `-shm` nằm cạnh những cơ sở dữ liệu bạn đã thay thế. Chúng thuộc về các tệp cũ, và một tệp cũ sót lại bên cạnh cơ sở dữ liệu đã khôi phục là một rủi ro hỏng dữ liệu.
+4. Khởi động lại máy chủ.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+Ảnh chụp không chứa `secrets.json`, nên một bản cài đặt được khôi phục lên một máy
+chủ **hoàn toàn mới** giữ được dữ liệu nhưng không giữ được thông tin xác thực: các
+thiết bị đã ghép nối, token nhà cung cấp và cài đặt SSO phải được thiết lập lại, hoặc
+khôi phục từ nơi bạn đã cất tệp đó. Khôi phục lên cùng máy chủ, nơi `secrets.json`
+chưa từng bị mất, giữ được mọi thứ.
 
-## Copy backups off the machine
+## Sao chép bản sao lưu ra khỏi máy
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Một ảnh chụp nằm trên cùng đĩa với cơ sở dữ liệu mà nó đã sao chép bảo vệ bạn khỏi một
+lần nhập hỏng, chứ không khỏi hỏng đĩa. Không có gì trong Control Center tự gửi bản sao
+đi đâu cả, nên phần này là việc của bạn.
 
-### Sync the snapshots
+### Đồng bộ các ảnh chụp
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Ảnh chụp là bất biến sau khi được ghi và được đặt tên theo dấu thời gian, nên mọi công
+cụ đồng bộ đều xử lý chúng tốt. Hãy loại trừ `transfer/`, vốn là nơi làm việc cho các
+tải xuống và tải lên đang diễn ra:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +212,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` phản chiếu việc dọn dẹp cục bộ của bạn lên remote. Bỏ nó đi nếu bạn muốn
+remote giữ ảnh chụp lâu hơn máy chủ.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Đừng bao giờ đồng bộ trực tiếp các cơ sở dữ liệu đang chạy]
+Đừng trỏ rsync, `aws s3 sync` hay một agent sao lưu cấp tệp vào `global.db` hoặc
+`<workspaceId>/workspace.db` khi máy chủ đang chạy. Một cơ sở dữ liệu SQLite đang sống
+có tệp phụ `-wal`, và một bản sao từng tệp một sẽ chụp hai thứ đó ở hai thời điểm khác
+nhau — kết quả là một tệp thường vẫn mở được nhưng âm thầm thiếu các ghi gần đây, hoặc
+không mở được chút nào. Hãy sao chép **ảnh chụp**, vốn được ghi trong một giao dịch
+đọc, hoặc tạo một ảnh chụp bằng `VACUUM INTO` như dưới đây.
 :::
 
-### Include what a snapshot leaves out
+### Bổ sung những gì ảnh chụp bỏ sót
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Để có thể dựng lại cả bản cài đặt chứ không chỉ dữ liệu của nó, hãy sao chép cả những
+thứ này. Chúng là những tệp thông thường, sao chép an toàn trong khi máy chủ đang chạy:
 
 ```bash
 rsync -a \
@@ -234,20 +242,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` có quyền `0600` và chứa mọi khóa ghép nối, thông tin xác thực nhà cung
+cấp và cài đặt SSO trên bản cài đặt. Nơi nó hạ cánh phải được bảo vệ ít nhất ngang với
+máy chủ — mã hóa khi lưu trữ, và không phải một bucket mà người khác đọc được.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Bỏ qua `spaces/` (các worktree copy-on-write, được cấp phát lại từ kho mã của bạn),
+`pr_clones/` (một bộ đệm), `models/` (tải lại được), `media_cache/` và `rigs/` (trạng
+thái máy, và dung lượng lớn). Âm thanh cuộc họp đã ghi trong `meetings/` đáng để đưa
+vào nếu bạn có lưu cuộc họp.
 
-### Schedule a whole-install snapshot outside the app
+### Lên lịch ảnh chụp toàn bộ cài đặt ngoài ứng dụng
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+Quy trình tích hợp chỉ sao lưu một không gian làm việc. Với một ảnh chụp **toàn bộ cài
+đặt** không cần người trực, không có lệnh con CLI nào, và RPC ảnh chụp yêu cầu một máy
+khách đầy đủ đã ghép nối và chính là chủ sở hữu bản cài đặt. Một bộ hẹn giờ phía máy
+chủ có thể dùng `VACUUM INTO` trên các cơ sở dữ liệu đang sống:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +275,17 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Hãy chạy nó bằng chính người dùng sở hữu thư mục dữ liệu, từ cron hoặc một bộ hẹn giờ
+systemd, rồi đồng bộ `DEST` ra khỏi máy chủ sau đó. `VACUUM INTO` cần SQLite 3.27 trở lên.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Hãy ghi nó ra **bên ngoài** `<dataDir>/backups/`. Một thư mục do bạn tự tạo ở đó không
+có `manifest.json`, nên ứng dụng sẽ liệt kê nó như một ảnh chụp chưa hoàn tất và danh
+sách sẽ không còn là bản ghi trung thực về những gì chính máy chủ đã tạo.
 
-### Prune old whole-install snapshots
+### Dọn các ảnh chụp toàn bộ cài đặt cũ
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Bạn có thể xóa từng ảnh chụp cài đặt trong ứng dụng. Với một chính sách lưu giữ phía
+máy chủ, hãy giữ thư mục sao lưu không gian làm việc tách biệt khỏi các ảnh chụp cài đặt:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +293,50 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Hãy kiểm tra đầu ra của một lần chạy `-print` trước khi thêm `-exec`. Giữ nhiều hơn một
+bản: thất bại mà bạn đang phòng ngừa thường là "bản sao lưu cuối cùng cũng dính vấn đề".
 
-## Check that a backup is good
+## Kiểm tra một bản sao lưu có tốt không
 
-A backup nobody has restored is a hypothesis.
+Một bản sao lưu chưa từng được ai khôi phục chỉ là một giả thuyết.
 
-Cheap check — the file opens and its pages are intact:
+Cách kiểm tra rẻ — tệp mở được và các trang của nó nguyên vẹn:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Cách kiểm tra thật — nhận nó về. Tạo một không gian làm việc tạm trên một bản cài đặt
+không phải production, nhập một tệp không gian làm việc vào đó, rồi xem các space, phiếu
+và tin nhắn bạn mong đợi có ở đó không. Thao tác này chạy đúng con đường mà một lần
+khôi phục thật đi qua, kể cả việc dựng lại FTS, và đây là cách kiểm tra duy nhất cho
+bạn biết bản sao lưu khôi phục được chứ không chỉ đọc được.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Hãy làm việc này một lần khi bạn thiết lập sao lưu, và lặp lại mỗi khi bạn thay đổi nơi
+lưu chúng.
 
-## Troubleshooting
+## Khắc phục sự cố
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Triệu chứng | Nguyên nhân và cách khắc phục |
+| --- | --- |
+| Điều khiển tải xuống và tải lên bị vô hiệu hóa kèm ghi chú về relay | Bạn đang kết nối qua relay được môi giới, vốn không chở truyền tệp. Hãy kết nối trực tiếp |
+| "Máy chủ từ chối" | Vai trò. Tạo hoặc liệt kê một ảnh chụp cài đặt cần operator của bản cài đặt. Tải xuống một không gian làm việc cần admin, khôi phục một không gian làm việc cần owner, một tệp zip toàn bộ ảnh chụp cần operator của bản cài đặt |
+| "Máy chủ này không có bề mặt sao lưu" | Máy chủ không có cổng sao lưu nào được nối — một máy chủ demo. Các thao tác vắng mặt thay vì bị từ chối |
+| "Tệp lớn hơn mức máy chủ chấp nhận" | Tải lên bị giới hạn ở 8 GiB. Hãy đặt tệp lên máy chủ và dùng **Nhập** → **Chọn tệp** thay thế |
+| Nhập bị từ chối: không phải cơ sở dữ liệu không gian làm việc của Control Center | Tệp không có hàng `workspace_meta` — nó không phải một bản xuất không gian làm việc, hoặc nó bị cắt cụt. Không có gì bị thay thế |
+| Một ảnh chụp được liệt kê là **Chưa hoàn tất** | Manifest của nó bị thiếu hoặc nêu những tệp không tồn tại. Hãy tạo một ảnh chụp mới; trong lúc chờ, hãy nhận từng tệp không gian làm việc từ nó |
+| Một ảnh chụp báo có không gian làm việc không được chụp | Những không gian làm việc đó chưa từng được ghi vào, hoặc bản sao của chúng thất bại. Hãy kiểm tra nhật ký máy chủ |
+| Một bản cài đặt đã khôi phục không có thông tin xác thực forge hay SSO | `secrets.json` không nằm trong ảnh chụp. Hãy khôi phục nó từ nơi bạn đã cất, hoặc kết nối lại các nhà cung cấp |
+| Một không gian làm việc đã khôi phục bị thiếu ảnh đã dán | Blob nằm bên cạnh cơ sở dữ liệu chứ không nằm trong đó. Hãy sao chép cả `<workspaceId>/blobs/` sang |
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): where the data directory comes from
-- [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/): direct versus relayed connections
-- [Pair a device](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): the credential the transfer routes sign with
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): thư mục dữ liệu đến từ đâu
+- [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/): kết nối trực tiếp so với kết nối qua relay
+- [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): thông tin xác thực mà các tuyến truyền dùng để ký
 
-## Related concepts and reference
+## Khái niệm và tham chiếu liên quan
 
-- [Backup, export and import](/vi-VN/so-tay/tham-chieu/sao-luu/): every operation, route, field and limit
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): why one workspace is one file
-- [`cc_server` CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server/): the data directory layout
+- [Sao lưu, xuất và nhập](/vi-VN/so-tay/tham-chieu/sao-luu/): mọi thao tác, tuyến, trường và giới hạn
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): vì sao một không gian làm việc là một tệp
+- [`cc_server` CLI](/vi-VN/so-tay/tham-chieu/cli-cc-server/): bố cục thư mục dữ liệu

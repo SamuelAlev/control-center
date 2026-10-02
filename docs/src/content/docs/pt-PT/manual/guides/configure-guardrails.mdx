@@ -1,152 +1,164 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: Configurar guardrails
+description: Defina regras de permitir, perguntar primeiro e negar para as ações dos agentes, teste-as com a sonda «E se?» e ajuste a autonomia por espaço.
 slug: pt-PT/manual/guias/configurar-guardrails
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+Este guia mostra-lhe como configurar as guardrails: as regras que decidem se a
+ação de um agente é executada, se pede aprovação primeiro ou se é recusada.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+As guardrails abrangem as treze classes de efeitos que cada ferramenta mutável
+declara. São aplicadas do lado do servidor, no momento em que a ferramenta é
+chamada, nunca por uma instrução num prompt.
 
-## Set a decision for an action class
+## Definir uma decisão para uma classe de ações
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. Aceda a **Definições → Espaço de trabalho → Permissões dos agentes**
+2. Escolha um âmbito com o controlo segmentado: **Espaço de trabalho**,
+   **Agente** (e depois escolha o agente) ou **Espaço** (e depois escolha o
+   espaço)
+3. Na linha da classe de ações, escolha **Permitir**, **Perguntar primeiro** ou
+   **Negar**
+4. Para remover uma regra que definiu, pressione o botão de reposição que
+   aparece no fim dessa linha (**Repor para o valor herdado**) — a decisão recai
+   sobre o âmbito mais amplo
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+Cada linha mostra a decisão efetiva como uma etiqueta de estado e um distintivo
+com a sua origem: **Este âmbito**, **Herdado** ou **Predefinição**. A matriz
+resolve-se no modo Agente (`chat`), pelo que **Predefinição do modo** nunca
+aparece aqui — use a sonda «E se?» com um modo só de leitura selecionado para
+ver essa camada.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+Escrever uma regra exige a função `admin`. Ler a matriz, não.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+Ponto de verificação: defina **Fazer push para um remoto** como **Negar** no
+âmbito do espaço de trabalho e, em seguida, execute a sonda «E se?» abaixo com
+`git push origin main`. O resultado indica `deny` com origem `workspace`.
 
-## Understand how a decision is resolved
+## Compreender como uma decisão é resolvida
 
-Resolution is **specificity first, then restrictiveness**:
+A resolução dá **primeiro prioridade à especificidade e depois à
+restritividade**:
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. Regras de **Espaço**, depois de **agente**, depois de **espaço de trabalho**.
+   O primeiro âmbito com uma regra correspondente decide e a resolução termina
+   aí
+2. Se nenhuma regra corresponder, aplica-se a **predefinição do modo** — um modo
+   só de leitura (plan, review, orchestrate) recusa onze das treze classes
+3. Se o modo não tiver nada a dizer, aplica-se a **predefinição**
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+Dentro de um mesmo âmbito, uma regra de comando resolve-se pelo prefixo
+correspondente mais longo e um conflito igualmente específico resolve-se **pelo
+mais restritivo** — negar prevalece sobre perguntar primeiro, que prevalece
+sobre permitir. Uma ação que declara várias classes resolve cada uma de forma
+independente e depois combina-as pelo mais restritivo.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[Permitir não prevalece sobre negar]
+Uma regra mais estreita ganha por especificidade e um empate é desfeito pela
+restritividade — por isso um **Permitir** no âmbito do espaço de trabalho não se
+sobrepõe a um **Negar** em lado nenhum.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+Uma decisão **Perguntar primeiro** apresenta um único pedido de aprovação que
+abrange todas as classes resolvidas como `prompt`. **Sem um aprovador ligado, a
+ação é negada**, tanto para comandos de shell como para chamadas de ferramentas
+do harness. Isto é intencional: uma execução sem controlo é pior do que uma
+recusada.
 
-### Action classes and built-in defaults
+### Classes de ações e predefinições
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| Classe de ação                    | Predefinição     |
+| --------------------------------- | ---------------- |
+| Eliminar um ficheiro              | Perguntar primeiro |
+| Escrever fora da árvore de trabalho | Permitir       |
+| Criar um commit                   | Permitir         |
+| Fazer push para um remoto         | Perguntar primeiro |
+| Abrir um pull request             | Perguntar primeiro |
+| Publicar uma revisão ou fazer merge | Perguntar primeiro |
+| Escrever num rastreador externo   | Perguntar primeiro |
+| Aceder à rede                     | Permitir         |
+| Ler um segredo                    | Permitir         |
+| Instalar um pacote                | Permitir         |
+| Executar um processo              | Permitir         |
+| Alterar a estrutura do espaço de trabalho | Permitir  |
+| Controlar um recinto (rig)        | Permitir         |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+A taxonomia é fechada. Uma nova ferramenta lançada sem declarar as suas classes
+falha um teste de trinquete em CI, pelo que nada chega com um conjunto de efeitos
+silenciosamente vazio.
 
-## Test a rule with the what-if probe
+## Testar uma regra com a sonda «E se?»
 
-Before changing a rule, check how the current policy already resolves it.
+Antes de alterar uma regra, verifique como a política atual já a resolve.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. Na mesma página, desça até **E se?**
+2. Escolha uma **Ação** (uma das treze classes)
+3. Opcionalmente, preencha **Comando** (por exemplo `git push origin main`),
+   **Agente**, **Espaço** e **Modo**
+4. Leia o resultado: a decisão, o motivo e **Origem:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+A sonda executa o mesmo resolvedor que o percurso de aplicação usa, sobre as suas
+regras em vigor, pelo que a resposta é exata. Se o resultado o surpreender,
+altere uma regra na matriz acima e volte a sondar.
 
-## Set a space's autonomy dial
+## Definir o dial de autonomia de um espaço
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+O dial é por agente e por espaço e compõe-se com as regras em vez de as
+substituir.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. Abra o espaço
+2. Abra **Gerir participantes** a partir do cabeçalho do espaço
+3. Em **Autonomia**, na linha do agente, escolha um nível:
 
-| Level                 | Effect                                                                                              |
+| Nível                 | Efeito                                                                                              |
 | --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| **Padrão**            | Sem definição no espaço — comporta-se como **Agir com aprovação**                                    |
+| **Somente propor**    | Todas as ferramentas controladas são negadas de imediato, com uma mensagem a dizer ao agente para propor a ação em vez disso |
+| **Agir com aprovação** | As ações de risco passam pelo portão de aprovação de falha fechada                                  |
+| **Agir livremente**   | Pré-aprova tudo o que não tenha sido resolvido como uma negação firme                                |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[Agir livremente engole todos os pedidos]
+Com **Agir livremente**, uma decisão **Perguntar primeiro** é concedida sem lhe
+perguntar. Apenas um `deny` — de uma regra, da predefinição do modo ou de uma
+predefinição — continua a bloquear. Recorra a ele quando estiver a vigiar o
+espaço, não como predefinição.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+O dial só alcança o harness integrado. O adaptador Claude Code executa as suas
+próprias ferramentas fora deste portão.
 
-## Know where guardrails do not reach
+## Saber onde as guardrails não chegam
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+A tabela **Onde as regras são aplicadas**, no fundo da mesma página, é a versão
+na aplicação disto: por classe de efeito, indica se cada executor a interceta no
+portão de política, se a deixa à sandbox ou se não a consegue intercetar de todo.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/pt-PT/manual/guias/politicas-de-sandbox/).
+- **O adaptador Claude Code** não é controlado nas suas próprias chamadas de
+  ferramentas. O Claude Code é lançado com `--dangerously-skip-permissions`, pelo
+  que as suas chamadas de read, write, edit e bash nunca passam pelo controlo. O
+  que é controlado nesse adaptador é a superfície de ferramentas MCP a que ele
+  chama de volta e o comando de shell que o Control Center lança para o iniciar.
+- **O verbo de saída de um modo** (`submit_plan`, `propose_orchestration`) está
+  fixado e nunca pode ser negado — de outro modo, um modo ficaria estruturalmente
+  incapaz de produzir o seu único resultado.
+- **Se a sandbox sustenta estas regras depende do anfitrião.** Onde o `cc_server`
+  encontra um backend, envolve a CLI do Claude Code e a ferramenta `bash` do
+  harness, pelo que uma regra que não escreveu continua a ter um piso do SO por
+  baixo. **No Windows não existe nenhum** e no Linux ou WSL2 sem `bwrap` e
+  `socat` também não existe — aí, as guardrails mais a superfície de ferramentas
+  do modo são toda a aplicação, e não uma segunda linha dela. Veja em que caso se
+  encontra com
+  [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/).
 
-## Related guides
+## Guias relacionados
 
-- [Configure sandbox policies](/pt-PT/manual/guias/politicas-de-sandbox/)
-- [Create and configure an agent](/pt-PT/manual/guias/criar-agente/)
-- [Manage adapters and models](/pt-PT/manual/guias/adaptadores/)
+- [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/)
+- [Criar e configurar um agente](/pt-PT/manual/guias/criar-agente/)
+- [Gerir adaptadores e modelos](/pt-PT/manual/guias/adaptadores/)
 
-## Related concepts
+## Conceitos relacionados
 
-- [Guardrails — one policy for every mutating action](/pt-PT/manual/conceitos/barreiras/)
-- [Modes](/pt-PT/manual/conceitos/modos/)
-- [Sandbox and security](/pt-PT/manual/conceitos/sandbox-e-seguranca/)
+- [Barreiras — uma política para cada ação mutável](/pt-PT/manual/conceitos/barreiras/)
+- [Modos](/pt-PT/manual/conceitos/modos/)
+- [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/)

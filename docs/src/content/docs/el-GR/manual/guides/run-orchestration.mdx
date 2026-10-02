@@ -1,126 +1,143 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Εκτέλεση ενορχήστρωσης
+description: Ζητήστε από έναν ενορχηστρωτή ένα σχέδιο, ελέγξτε και επεξεργαστείτε το στο Plan Studio, εγκρίνετέ το μία φορά και αφήστε μια παραγόμενη pipeline να κάνει τη δουλειά.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) for how it works.
+Αυτός ο οδηγός δείχνει πώς να μετατρέψετε έναν μεγάλο στόχο σε ένα σχέδιο για
+όλη την ομάδα που εκτελείται μόνο του. Δείτε την
+[Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) για το πώς λειτουργεί.
 
-## When to use an orchestration
+## Πότε να χρησιμοποιείτε μια ενορχήστρωση
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/); for a process you can spell out by
-hand, build a [pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/).
+Καταφύγετε σε μια ενορχήστρωση όταν το αίτημα είναι μεγαλύτερο από έναν πράκτορα
+και δεν γνωρίζετε ήδη τα ακριβή βήματα. Για μία μεμονωμένη εργασία, στείλτε
+μήνυμα σε έναν πράκτορα σε έναν
+[χώρο](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/)· για μια διαδικασία που μπορείτε να
+περιγράψετε χειροκίνητα, δημιουργήστε ένα
+[πρότυπο pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/).
 
-## Step 1: Ask for the plan
+## Βήμα 1: Ζητήστε το σχέδιο
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Ανοίξτε (ή δημιουργήστε) έναν χώρο και ένα **εισιτήριο άγκυρας**. Κάθε
+   πρόταση απαιτεί ένα (`propose_orchestration` δέχεται `ticket_id`)· ο
+   κοινόχρηστος χώρος προκύπτει από αυτό το εισιτήριο.
+2. Προαιρετικά, αλλάξτε το αναπτυσσόμενο μενού λειτουργίας του πεδίου σύνταξης
+   σε **Ενορχήστρωση**. Αυτή η λειτουργία περιορίζει τον πράκτορα στην ανάγνωση
+   και την υποβολή προτάσεων — μνήμη, το γράφημα κώδικα, αναγνώσεις αποθετηρίων
+   και εισιτηρίων, `propose_orchestration` και τα εργαλεία playbook — ώστε να μην
+   μπορεί να αρχίσει να γράφει κώδικα αντί να σχεδιάζει.
+3. Κάντε @-αναφορά στον ενορχηστρωτή σας (συνήθως τον πράκτορα CEO) και
+   διατυπώστε τον στόχο σε απλή γλώσσα:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Ερεύνησε το ανταγωνιστικό τοπίο για έναν καταγραφέα σύσκεψης με
+> προτεραιότητα στη λειτουργία εκτός σύνδεσης και γράψε ένα έγγραφο τοποθέτησης
+> μίας σελίδας.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Ο ενορχηστρωτής απαντά με μια δομημένη **κάρτα πρότασης** στον χώρο: τους ρόλους
+που χρειάζεται, την εργασία σπασμένη σε υπο-εισιτήρια, μια προαιρετική φάση
+έρευνας και συζήτησης, ένα βήμα σύνθεσης που παράγει το παραδοτέο και έναν
+προϋπολογισμό.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Επειδή η πρόταση είναι ένα τυποποιημένο αντικείμενο, η εφαρμογή την επικυρώνει
+(καλά σχηματισμένοι ρόλοι, δηλωμένα σχήματα εξόδου, ένα DAG χωρίς κύκλους) πριν
+εκτελεστεί οτιδήποτε. Μια πρόταση που αποτυγχάνει στην επικύρωση δεν μπορεί να
+εγκριθεί.
 
-## Step 2: Review and edit the proposal
+## Βήμα 2: Ελέγξτε και επεξεργαστείτε την πρόταση
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Η κάρτα μέσα στη συνομιλία προσφέρει τρεις ενέργειες: **Έγκριση σχεδίου**,
+**Απόρριψη** και **Άνοιγμα** — που ανοίγει το σχέδιο στο Plan Studio ως καρτέλα
+επεξεργαστή. Η ίδια η κάρτα δεν μπορεί να επεξεργαστεί.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Για να αλλάξετε οτιδήποτε, πατήστε **Άνοιγμα** και εργαστείτε στον επιθεωρητή στα
+δεξιά:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Τίτλο**, **περιγραφή**, **ρόλο**, **εξαρτήσεις** και **σχήμα εξόδου**
+  οποιουδήποτε βήματος εργασίας. Ρόλος εδώ σημαίνει ποιο από τα υπάρχοντα
+  κλειδιά ρόλων του σχεδίου κατέχει το βήμα — δεν μπορείτε να δεσμεύσετε έναν
+  ρόλο σε έναν επώνυμο πράκτορα ούτε να επεξεργαστείτε τη λίστα προσλήψεων από
+  τον επιθεωρητή, και δεν μπορείτε να επεξεργαστείτε τον προϋπολογισμό.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Δύο πράγματα είναι μόνο για ανάγνωση: οι δομικοί κόμβοι (έρευνα, συζήτηση,
+σύνθεση) και κάθε κόμβος του οποίου η εργασία έχει ήδη εκτελεστεί. Η επεξεργασία
+είναι δυνατή μόνο όσο η ενορχήστρωση είναι ακόμη `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/) for the full editor.
+Πατήστε **Εκτίμηση** στη γραμμή έγκρισης για εύρη κόστους, διάρκειας και ακτίνας
+επίδρασης πριν δεσμευτείτε. Δείτε την
+[Εργασία στο Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/) για τον πλήρη επεξεργαστή.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/).
+:::note[Ο προϋπολογισμός δεν είναι όριο δαπάνης]
+Ο προϋπολογισμός μιας πρότασης συγκρίνεται με την _εκτίμηση_ στη γραμμή έγκρισης:
+όταν το ανώτερο άκρο της εκτίμησης τον υπερβαίνει, το σύνολο γίνεται κόκκινο με
+προειδοποίηση υπέρβασης προϋπολογισμού. Τίποτα δεν ελέγχει τις δαπάνες όσο
+εκτελείται το σχέδιο, οπότε δεν θα σταματήσει ούτε θα αποτύχει μια εκτέλεση. Για
+πραγματικό σταμάτημα των δαπανών, χρησιμοποιήστε πολιτικές προϋπολογισμού ανά
+πράκτορα — δείτε τη
+[Διαχείριση κόστους](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/).
 :::
 
-## Step 3: Approve
+## Βήμα 3: Εγκρίνετε
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Εγκρίνετε το σχέδιο, από την κάρτα συνομιλίας ή από τη γραμμή έγκρισης του Plan
+Studio. **Αυτή είναι η μόνη απόφαση που παίρνετε.** Η έγκριση είναι αποκλειστικά
+του χειριστή — δεν υπάρχει εργαλείο MCP γι' αυτήν, οπότε ένας πράκτορας μπορεί να
+προτείνει και να αναθεωρήσει αλλά ποτέ να εγκρίνει το δικό του σχέδιο.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) and creates the
-scaffolding:
+Από εδώ και πέρα, ένας ντετερμινιστικός υλοποιητής (μια καθαρή συνάρτηση, χωρίς
+LLM) μετατρέπει την πρόταση σε μια πραγματική
+[pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) και δημιουργεί τον σκελετό:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- προσλαμβάνει όποιους νέους ρόλους χρειάζονται (και καταγράφει τα αναγνωριστικά
+  των πρακτόρων που προσλήφθηκαν, ώστε μια κατάρρευση στη μέση της έγκρισης να
+  συνεχίζεται χωρίς διπλές προσλήψεις)
+- ομαδοποιεί τους ρόλους σε μια **ομάδα**
+- δημιουργεί ένα **έργο** και καταχωρίζει το γονικό εισιτήριο κάτω από αυτό
+- ξεκινά την **εκτέλεση pipeline** που τα κινεί όλα
 
-The status moves to `approved`, then `executing`.
+Η κατάσταση μεταβαίνει σε `approved` και έπειτα σε `executing`.
 
-## Step 4: Watch it run
+## Βήμα 4: Παρακολουθήστε την εκτέλεση
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Τα υπο-εισιτήρια εκτελούνται ως βήματα pipeline· αν έχετε ενεργοποιήσει γύρο
+συζήτησης, κάθε ρόλος δημοσιεύει πρώτα μια θέση. Η πρόοδος εμφανίζεται εκεί που
+κοιτάτε ήδη:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
-- the **project** the parent ticket was filed under
+- το **γονικό εισιτήριο** στο οποίο αγκυρώθηκε η ενορχήστρωση
+- τον κοινόχρηστο **χώρο** όπου μιλά η ομάδα, όπου η γραμμή του σχεδίου
+  παρακολουθεί την κατάσταση κάθε κόμβου
+- τη λεπτομέρεια της **εκτέλεσης pipeline**, με τον συνήθη καταρράκτη και το
+  κόστος ανά βήμα — δείτε την
+  [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+- το **έργο** στο οποίο καταχωρίστηκε το γονικό εισιτήριο
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Μόλις ολοκληρωθούν τα υπο-εισιτήρια, η κατάσταση μεταβαίνει σε `synthesizing` και
+το βήμα σύνθεσης παράγει το παραδοτέο. Το κείμενο αυτό αναρτάται στον κοινόχρηστο
+χώρο και το γονικό εισιτήριο επισημαίνεται ως ολοκληρωμένο, έπειτα `completed`.
 
-## Stop it early
+## Σταματήστε το πρόωρα
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Πατήστε **Ακύρωση ενορχήστρωσης** στην κάρτα μέσα στη συνομιλία ή **Ακύρωση
+εκτέλεσης** στη γραμμή έγκρισης του Plan Studio. Η ακύρωση τερματίζει την εργασία
+που βρίσκεται σε εξέλιξη.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Μια ενορχήστρωση αποτυγχάνει όταν αποτύχει η υλοποίηση ή όταν αποτύχει η
+παραγόμενη εκτέλεση pipeline (έρευνα, συζήτηση, σύνθεση ή persist — αυτά τα
+βήματα δεν συνεχίζουν σε αποτυχία). Τα παραγόμενα βήματα **εργασίας** συνεχίζουν
+πάντα σε αποτυχία, οπότε ένα αποτυχημένο υπο-εισιτήριο δεν αποτυγχάνει την
+εκτέλεση. Δεν υπάρχει διαδρομή αποτυχίας λόγω υπέρβασης προϋπολογισμού ούτε
+κάποιο κατώφλι «απέτυχαν όλα τα υπο-εισιτήρια».
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/): where the parent ticket is filed
-- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-ομάδας/): the roles an orchestration fills or hires
+- [Εργασία στο Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/): επεξεργασία, εκτίμηση, diff και έγκριση του σχεδίου
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/): το γονικό εισιτήριο στο οποίο αγκυρώνεται μια ενορχήστρωση
+- [Οργάνωση εργασίας με έργα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/): όπου καταχωρίζεται το γονικό εισιτήριο
+- [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/): πώς φαίνεται μια υλοποιημένη ενορχήστρωση στον μηχανισμό
+- [Δημιουργία ομάδας πρακτόρων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-ομάδας/): τους ρόλους που μια ενορχήστρωση καλύπτει ή προσλαμβάνει
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)

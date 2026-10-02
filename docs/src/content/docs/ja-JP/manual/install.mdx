@@ -1,153 +1,131 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: インストール
+description: ブラウザーで Control Center を使うか、デスクトップアプリをインストールし、エージェントバックエンドを設定して、サーバーをどこで実行するかを選びます。
 slug: ja-JP/マニュアル/インストール
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center の使い方は 2 通りあります。ダウンロード不要の **Web アプリ**として [app.usectrl.dev](https://app.usectrl.dev) で使うか、インストールする **デスクトップアプリ**として使うかです。どちらも同じ機能を持つ同じアプリケーションで、違うのはサーバーをどこで実行するかだけです — そして Web アプリは、あなたの代わりにサーバーを実行することはできません。
 
-## Use it in your browser
+## ブラウザーで使う
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) は、このアプリケーションをブラウザー向けにコンパイルしたものです。インストールも更新も不要です。開いて接続するだけです。
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+ブラウザーのタブにできないのは、サーバーそのものに_なる_ことです。すべてのクライアント — デスクトップ、Web、スマートフォン — は、データベースを所有して実際の処理を行うヘッドレスの `cc_server` の上で描画する薄いレンダラーにすぎないため、Web アプリは常に、自分で実行しているサーバーと通信します。サーバーを用意する方法は 2 つあります:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**自分のマシン上のサーバー。** `cc_server` をローカルで起動し、Web アプリの接続先を `ws://localhost:9030` にします。ブラウザーは `localhost` を信頼できるものとして扱うため、証明書もトンネルも不要です。Web アプリを試す最短の方法であり、データがマシンの外に出ることはありません。
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**別のマシン上のサーバー。** `app.usectrl.dev` は HTTPS で配信されるため、ローカル以外のサーバーには、ブラウザーがすでに信頼している証明書を伴う `wss://` で到達できる必要があります。`cc_server` は TLS なしで非ループバックアドレスをバインドすることを拒否するため、次のいずれかを選びます:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- `--tls-cert` と `--tls-key` で証明書を直接渡す
+- TLS 終端のリバースプロキシの背後に置き、`--insecure` を付けて起動する
+- 証明書を提供するトンネルか VPN 経由で公開する — Tailscale、cloudflared などです。**設定 → サーバー → 接続とステータス**には、**このサーバーを共有**の下に組み込みのトンネルのオプトインがあります。
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+サーバーがプロキシ、NAT、トンネルの背後にある場合は常に、クライアントが実際に接続すべきアドレスを `--public-url` に設定します。既定ではローカルのバインドから導出されるため、これを設定しないとクライアントは誤ったホストに接続しようとします。
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Web クライアントを自分でホストしますか？]
+`cc_server` が受け入れるブラウザーオリジンは `--allowed-origins` リストにあるものだけで、その既定値は `https://app.usectrl.dev` です。Web ビルドをセルフホストする場合は、自分のオリジンをそこに追加してください。ループバックとネイティブクライアントは、このリストに関係なく常に許可されます。
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+ネイティブウィンドウやマシン自身のオーディオデバイスを必要とするため、デスクトップ専用のままの機能がいくつかあります: フローティングのフォーカスモードのピル、OS の通知トースト（アプリ内の通知センターはどこでも動作します）、カレンダーイベントからの「録音を開始してリンク」、ミーティングの要約の再実行です。それ以外 — スペース、エージェント、プルリクエストのレビュー、パイプライン、チケット、メモリ、そしてミーティングの録音そのもの — はすべて同じように動作します。
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/). To host the server,
-follow [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/).
+Web アプリをサーバーに接続するには、[リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/)に従ってください。サーバーを自分でホストするには、[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)に従ってください。
 
-## Desktop system requirements
+## デスクトップ版のシステム要件
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| 要件             | macOS                                                 | Windows     | Linux                                                      |
+| ---------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| OS のバージョン  | macOS 13+（Ventura）                                  | Windows 10+ | Ubuntu 22.04+、または glibc 2.35+ と GTK 3 を備えた別のディストリビューション |
+| アーキテクチャ   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git              | 必須                                                  | 必須        | 必須                                                       |
+| ディスク容量     | アプリ用に約 200 MB、加えてサーバーのデータディレクトリ | 約 200 MB   | 約 200 MB                                                  |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Intel Mac 向けのビルド済みダウンロードはありません。代わりに[ソースからビルド](#ソースからビルド)してください。
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+サーバーのデータディレクトリは、アプリ本体よりも大きくなります。初回起動時に `cc_server` はオンデバイスのモデル — テキスト埋め込み（約 90 MB）、話者分離（約 35 MB）、選択した音声モデル（既定では Parakeet TDT v3、約 600 MB。Whisper の各バリアントは 198–626 MB） — と、埋め込みの code-server ビルドを強制的にインストールします。さらに、エージェントの会話ごとに、作業対象のリポジトリのコピーオンライトのワークツリーが作られます（Windows では通常の `git worktree`）。音声は任意ではありません: ASR モデルがないと、ミーティングとディクテーションの操作は提供されません。音声モデルの初回ダウンロードでは、録音が使えるようになるまでに再起動が 1 回必要です。
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+デスクトップは、サーバーのデータを OS のユーザーごとのアプリケーションサポートディレクトリに置きます。`--data-dir` を付けずに手動で起動した `cc_server` は、既定で `<application data>/control-center` を使います — macOS では `~/Library/Application Support/control-center`、Windows では `%APPDATA%\control-center`、Linux では `$XDG_DATA_HOME/control-center`（または `~/.local/share/control-center`）です。
 
-## Download
+## ダウンロード
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+以下のすべての成果物は [GitHub Releases](https://github.com/SamuelAlev/control-center/releases) から入手できます。
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+`Control-Center-<version>-arm64.dmg` をダウンロードして開き、Control Center を Applications にドラッグします。このビルドは Developer ID で署名され、Apple による公証を受けているため、そのまま開けます。
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: ユーザーごとのインストーラー。
+- `Control-Center-<version>-windows-x64.zip`: ポータブルな zip。
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows ではスペースのチェックアウトに `git worktree` を使います（コピーオンライトはありません）。
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage は更新情報を内包しているため、[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) や appimaged を使って、変更された分だけをダウンロードしながらその場で最新リリースに更新できます。
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+どちらも Ubuntu 22.04 でビルドされ、それ以降のもの（Debian 12、Fedora 36 以降）で動作します。glibc 2.35 と GCC 12 の libstdc++ にリンクし、GTK 3 はシステムのものを利用します。標準的なデスクトップに欠けていることがある少数のライブラリは同梱されているため、ほかにインストールするものはありません。音声 — ミーティングの再生、サウンドスケープ、リグの音声、通知チャイム — はシステムの libmpv で再生されます（Ubuntu 22.04 では `libmpv1`、新しい Ubuntu と Debian では `libmpv2`、Fedora では `mpv-libs`）。これがないと、アプリはそれらのコントロールを非表示にして起動します。
 
-### Standalone server
+### スタンドアロンサーバー
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/).
+各リリースには、ヘッドレスサーバー単体も収められています — `cc_server-<version>-macos-arm64.tar.gz`、`cc_server-<version>-linux-x64.tar.gz`、`cc_server-<version>-windows-x64.zip` — さらに GHCR 上の `cc-server`、`cc-webapp`、`cc-remote` イメージもあります。詳しくは[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)を参照してください。
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linux アーカイブは Ubuntu 22.04 でビルドされ、同梱のネイティブライブラリは glibc 2.35 と GCC 12 の libstdc++ にリンクしているため、少なくともそれと同じか新しいホスト（Ubuntu 22.04、Debian 12、Fedora 36 以降）が必要です。古いディストリビューションでは、代わりに `cc-server` イメージを実行してください — コンテナは独自のユーザーランドを持ち込むため、カーネルだけがホストのものであれば済みます。
 
-## Agent backend
+## エージェントバックエンド
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center は**アダプター**を通じてエージェントをディスパッチします。アダプターは 2 つだけで、この一覧は固定であり、自動的に検出されます — 別のものを登録する方法はありません。
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+**Control Center (built-in)** アダプターは外部 CLI を必要としません。エージェントループがサーバー内で実行され、モデルプロバイダーとは HTTP で通信するため、常に利用できます。プロバイダーは**設定 → サーバー → モデルプロバイダー**で接続します。OpenAI、Codex、Cursor、Kimi Code はブラウザーでのサインインに対応し、Anthropic、OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai、Moonshot は API キーを使います。Codex と Cursor は、別個の CLI ではなく、このランナー上のプロバイダーです。z.ai が 2 つ表示されるのは意図的です: **z.ai** は従量課金のオープンプラットフォームで、アカウントの残高に対して課金され、**z.ai GLM Coding Plan** はサブスクリプションです。アカウントキーは同じですが、z.ai はこのプランを別のホストから提供します — コーディングプランのキーを素の z.ai のタイルに貼り付けると、すべてのリクエストが `429 … "Insufficient balance or no resource package"` を返します。そのプランには消費できる残高がないためです。Claude Pro/Max のサブスクリプションは Anthropic API のログインではありません。そのプランを使うには、代わりに Claude Code アダプターを経由してください。そのページで追加_できる_のは**カスタムプロバイダー**です — OpenAI または Anthropic 互換の任意のエンドポイント（Ollama、LM Studio、vLLM、プライベートデプロイメント）を、**カスタムプロバイダー → プロバイダーを追加**から追加できます。
 
-The other adapter wraps an external CLI:
+もう一方のアダプターは外部 CLI をラップします:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+検出は `cc_server` を実行しているマシンの `PATH` を調べます — デスクトップが独自のサーバーを実行している場合は同じマシン、それ以外の場合はリモートホストです。Claude Code CLI はクライアントではなくそこにインストールしてください。そのページの**更新**ボタンで、検出をやり直せます。
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ja-JP/マニュアル/ハウツーガイド/アダプター/).
+モデル一覧は、接続された各プロバイダーからライブで提供されます。[models.dev](https://models.dev) は料金とコンテキストウィンドウのメタデータを補うだけです。詳しくは[アダプターとモデルを管理](/ja-JP/マニュアル/ハウツーガイド/アダプター/)を参照してください。
 
-## GitHub authentication
+## GitHub の認証
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+GitHub の資格情報は**あなたのものであり、サーバー上に存在し**、あなたのユーザー id をキーとして管理されます — クライアント OS のキーチェーンには保存されません。サインインするどのデバイスも同じものを使い、他のメンバーが読み取ることはできません。
 
-If the server has a GitHub App registered ([Create the GitHub App](/ja-JP/マニュアル/ハウツーガイド/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+サーバーに GitHub App が登録されている場合（[GitHub App を作成](/ja-JP/マニュアル/ハウツーガイド/github-app/)）、**設定 → ワークスペース → プロフィールと識別情報 → コードホスティング**に **GitHubでサインイン**が表示されます（サーバーが実行するデバイスフローです）。それ以外の場合は、個人アクセストークンを貼り付けます:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- クラシック: `repo` と `read:org`
+- きめ細かい: **Contents** と **Pull requests**（読み取りと書き込み）、**Checks** と **Actions**（読み取り）
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+トークンは [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) で作成します。サーバーは保存時にトークンを検証してアカウント名を取得するため、行には「…としてサインインしています」と表示されます。検証に失敗してもトークンは保存され、誤字や不足したスコープは後になって失敗したリクエストとして現れます。
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/).
+オンボーディングの最初のステップがこの接続です。その後も、同じカードで置き換えたり解除したりします。GitLab と Bitbucket も同じカードを使います。詳しくは[コードホストを接続](/ja-JP/マニュアル/ハウツーガイド/コードホスト接続/)を参照してください。
 
-## Choose where the server runs
+## サーバーをどこで実行するかを選ぶ
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/) explains what that split means for the desktop, web and phone.
+Control Center は、データベースを所有してすべての処理を行うヘッドレスの `cc_server` プロセスの上で動くシンクライアントです。この分離がデスクトップ、Web、スマートフォンにとって何を意味するかは、[デプロイメントとクライアント](/ja-JP/マニュアル/コンセプト/デプロイメント/)で説明しています。
 
-On first launch the desktop asks **"How should Control Center run?"**:
+初回起動時に、デスクトップ版は **「Control Centerをどのように実行しますか？」** と尋ねます:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ja-JP/マニュアル/クイックスタート/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **このアプリで実行**: デスクトップがこのマシン上で `cc_server` を起動して監視し、ループバック経由で通信します。ほかに設定するものはありません。[クイックスタート](/ja-JP/マニュアル/クイックスタート/)が前提としている構成です。
+- **リモートインスタンスに接続**: 別の場所で動いている `cc_server` を、その WebSocket URL、デバイス id、そしてペアリングキーまたは 1 回限りの招待コードで指定します。データを所有するのはそのサーバーで、このデスクトップはそれを描画するだけです。
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/).
+サーバーの追加や切り替えは、後から**設定 → サーバー → 接続とステータス**で行えます。切り替えはその場で再接続され、再起動は不要です。ブラウザーはサーバーを実行できないため、Web クライアントは常にリモートです。詳しくは[リモートサーバーに接続](/ja-JP/マニュアル/ハウツーガイド/リモートサーバー接続/)を参照してください。
 
-To host a server yourself, follow [Run a headless server](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+サーバーを自分でホストするには、[ヘッドレスサーバーを実行](/ja-JP/マニュアル/ハウツーガイド/ヘッドレスサーバー実行/)に従ってください。バイナリのビルド、初回起動前のペアリングキーの発行、`--data-dir` / `--port` / `--bind` フラグを扱っています。
 
-## Verify your setup
+## セットアップを確認する
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **設定 → サーバー → モデルプロバイダー**に両方のアダプターが一覧されます。「Control Center (built-in)」はバージョン `built-in` で検出済みと表示され、Claude Code は CLI がサーバーホストの `PATH` にあれば検出済みと表示されます。見つからない場合は**更新**を押します。
+2. **設定 → ワークスペース → リポジトリ**にこのワークスペースのリポジトリが一覧され、**リポジトリを追加**でサーバーホストのフォルダーを参照できます。
+3. **設定 → ワークスペース → エージェント**に、最初のワークスペースがシードした 5 体のエージェントが一覧されます。実行するには、それぞれに**アダプター**と**モデル**を設定する必要があります。
+4. **設定 → サーバー → 診断とプライバシー**は、このホストが提供するサンドボックスバックエンド、埋め込みモデルの状態、ログを表示します。
 
-## Build from source
+## ソースからビルド
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+ネイティブライブラリは必須で、縮退モードはありません。1 つでも欠けると起動が失敗し、遅くなるだけでは済みません。何よりも先にそれらをステージングしてください。Flutter と Dart のコマンドはすべて `fvm` を経由します。SDK のバージョンはリポジトリで固定されているためです。
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +137,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+macOS では、セキュアストレージ（GitHub、Linear、Google のサインイン）を使うために、Apple チームによるアプリの署名が必要です — 無料の Apple ID で十分で、[local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos) に書かれている 1 回限りの設定です。これがなくてもアプリは起動しますが、セキュアストレージだけが利用できません。Windows と Linux では署名は不要です。
 
-To build the headless server binary, stage the natives the same way first, then:
+ヘッドレスサーバーのバイナリをビルドするには、まず同じようにネイティブライブラリをステージングしてから、次を実行します:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+ビルドフックは、その時点で `build/natives/` にあるものをそのままバンドルへコピーするため、ステージングの前にビルドすると、ネイティブを含まないバンドルができ、サーバーは起動を拒否します。
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Web クライアントには `scripts/build_web.sh` を使います（スマートフォン PWA には `--target remote`）。これは CI が実行するものと同じです。素の `flutter build web` では、ビルド ID のスタンプ、Web Worker の再生成、デプロイマニフェスト、アセット予算のチェックが省略されます。

@@ -1,241 +1,227 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: יצירת תבנית פייפליין
+description: כתבו תבנית זרימת עבודה מסוג DAG בעורך הפייפליינים — הוסיפו צמתים, חברו אותם, הצהירו על קלטים והפכו אותה להרצה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-פייפליין
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+תבניות פייפליין נכתבות בהגדרות סביבת העבודה. הפריט **פייפליינים** בסרגל הצד של
+סביבת העבודה הוא _תור ההרצות_, ולא רשימת התבניות — אין בו פעולה של "יצירת
+תבנית".
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
+לפירוש של כל סוג שלב, מפתח גוף ושדה תצורה, ראו
+[סוגי שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
 
-## Create a template
+## יצירת תבנית
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. עברו אל **הגדרות ← סביבת עבודה ← תבניות פייפליין**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. לחצו על **תבנית חדשה**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+אין תיבת דו־שיח למזהה. העורך נפתח מיד על שלד מוכן מראש בשם **פייפליין חדש**, עם
+מזהה שמוקצה אוטומטית (`pipeline_1`, ואחריו `pipeline_2`, …). לחצו על הכותרת
+בראש העורך כדי לשנות את שמו.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+הקנבס אינו ריק: צומת כניסה **טריגר**, צומת סוכן הנחיה אחד שכותרתו **Step**
+וזקיף סופי שמסיים את ההרצה. הזקיף אינו מצויר. העורך מחווט מחדש את הזקיף המוסתר
+אל כל כיור שאפשר להגיע אליו, כך שעבודה שתלוו אחרי **Step** עדיין רצה.
 
-## Add nodes
+## הוספת צמתים
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+סרגל הצד **ספריית צמתים** יושב דרך קבע משמאל לעורך. סננו אותו בתיבת **חיפוש
+צמתים** וגררו פריט אל הקנבס — הצומת נוחת במקום שבו שחררתם אותו, בלי חיבור נכנס.
 
-| Palette node                    | Step kind | What it does                                                                         |
+| צומת בפלטה                      | סוג שלב   | מה הוא עושה                                                                          |
 | ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| **Bash script**                 | listen    | מריץ סקריפט מעטפת עם החלפת `{{state}}`; לא נשלח סוכן                                   |
+| **Open conversation**           | listen    | פותח את המרחב הגלוי היחיד של ההרצה ואת הצ׳קאאוט שלו; צומתי סוכנים מצטרפים למרחב הזה    |
+| **Clone PR branch**             | listen    | מגלה את ענף הראש של ה-PR באמצעות `gh pr view` ומשבט אותו לתיקיית ההרצה                 |
+| **Post PR comment**             | listen    | מפרסם את הממצאים המאוחדים ב-PR כהערת סקירה ב-GitHub                                    |
+| **Reviewer (prompt)**           | listen    | שולח סוכן סוקר מתמחה; משהה עד שהסוכן מגיש את תוצאתו                                    |
+| **Consolidate (join)**          | join      | ממתין לכמה ענפים במעלה הזרם, ואז מבקש מסוכן לאחד את הפלטים שלהם                        |
+| **Custom prompt**               | listen    | צומת כללי מונחה הנחיה, מנותב דרך הגוף `promptAgent`                                    |
+| **Post to space**               | listen    | שולח הודעה אל מרחב הודעות                                                             |
+| **Condition / switch (router)** | router    | מסתעף את הזרימה לפי ערך מצב                                                           |
+| **If file exists (router)**     | router    | מנתב `"true"` כשנתיב קיים תחת השיבוט, אחרת `"false"`                                   |
+| **Any file exists (OR router)** | router    | מנתב `"true"` כשאחד מהנתיבים ברשימה קיים                                               |
+| **All conditions (AND router)** | router    | מנתב `"true"` רק כשכל הנתיבים ברשימה קיימים                                            |
+| **Team dispatch**               | listen    | שולח צוות שלם ומשהה עד שיסיים                                                          |
+| **Approval gate**               | listen    | עוצר לצורך החלטת אישור                                                                |
+| **For each (map)**              | forEach   | מרנדר הנחיה לכל פריט, ואז שולח את הסוכן פעם אחת כשההנחיות האלה מחוברות זו לזו           |
+| **Call sub-pipeline**           | listen    | מריץ תבנית אחרת כשלב מקונן                                                             |
+| **Clean up worktrees**          | listen    | מסיר עצי עבודה מבודדים ומיושנים; דטרמיניסטי, לא נשלח סוכן                              |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+הספרייה מקבצת אותם תחת **זרימה ולוגיקה**, **סקירת PR**, **סוכנים**, **הודעות**
+ו**קוד**. אין קבוצת Demo.
 
-## Wire nodes together
+## חיבור הצמתים זה לזה
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+לכל צומת עבודה יש **פורט פלט** עגול בקצהו הימני. גררו מהפורט הזה אל צומת אחר כדי
+לחבר ביניהם. טריגרי ההתחלה זהים: לכל אחד פורט משלו, כך שחוט מ**לוח זמנים** אינו
+יוצא גם מ**הרצה ידנית**. לחצו על **הוספת שלב** (`+`) ממש אחרי צומת כדי להוסיף
+אחריו סוג. רחפו מעל נקודת האמצע של קשת קיימת ולחצו על × כדי לנתק.
 
-Connections are also edited from the node that _receives_ them:
+אפשר לערוך חיבורים גם מהצומת ש_מקבל_ אותם:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. בחרו את הצומת שבמורד הזרם. לוח התצורה שלו נפתח מימין.
+2. גללו אל **טריגרים מ־** והקישו על הצ'יפ של כל צומת במעלה הזרם שצומת זה אמור
+   להאזין לו. הקשה על צ'יפ נבחר מסירה את החיבור.
+3. אם צומת במעלה הזרם הוא נתב, מופיע מתחת לצ'יפים אזור **מפתחות ניתוב** עם שדה
+   **מפתח ניתוב מ-&lt;node&gt;** אחד לכל קשת של נתב. הזינו את המפתח שהקשת הזו
+   יורה עליו — `true` או `false` עבור נתבי קיום הקבצים, או שם המקרה עבור מיתוג.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+כל צומת טריגר הוא נקודת כניסה. צומת יכול להאזין לכמה צמתים במעלה הזרם (fan-in)
+ולהזין כמה צמתים במורד הזרם (fan-out), והגרף חייב להישאר חסר מעגלים — שום דבר
+בעורך לא עוצר בעדכם מליצור מעגל, אז בדקו את העבודה שלכם.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+הזקיף הסופי מסונן מהקנבס, ולכן אי אפשר לבחור בו. העורך מחווט אותו מחדש אל כל כיור
+שאפשר להגיע אליו בכל פעם שהגרף משתנה, כך שעבודה שתלוו אחרי ה-**Step** הנזרע עדיין
+רצה. גרף ריק (טריגר בלי ממשיכי עבודה) מציג את הטריגר עצמו, כך שההרצה מסתיימת
+מיד.
 
-## Configure a node
+## הגדרת צומת
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+בחרו צומת כדי לפתוח את לוח התצורה שלו. אילו שדות מופיעים תלוי בגוף של הצומת.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+לכל צומת יש **תווית**, **מפתחות קלט** (מפתחות מצב מופרדים בפסיקים, הנקראים בזמן
+ההרצה) ותחת **מתקדם** — **Reducer**, **זמן קצוב (ms)**, **ניסיונות חוזרים**,
+**המשך אם שלב זה נכשל** ו**סכמת פלט (JSON)**. צמתי listen ו-join יכולים גם
+להחליף את ה**סוג** שלהם בין השניים.
 
 ### Open conversation
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+מוסיף בורר **מאגרים לשיבוט** (אילו מאגרים של סביבת העבודה לבצע להם צ׳קאאוט; ריק
+פירושו ללא), **שם המרחב**, ותיבת סימון **פתיחת שיחה בתוכו**. כשהתיבה מסומנת,
+שדה **שם השיחה** מגדיר את השיחה שאיתה נפתח המרחב. צומתי סוכנים מצטרפים למרחב הזה
+— הם לא פותחים אחד משלהם.
 
-### Prompt agent
+### סוכן הנחיה
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+מוסיף **סוכן** (איזה סוכן לשלוח), **תבנית הנחיה** (השתמשו ב-`{{key}}` כדי להפנות
+לקלטים או לפלטים של צמתים במעלה הזרם) ו**מפתח פלט**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**זמן קצוב (ms)** נמדד ב_מילישניות_, לא בשניות — `900000` הם 15 דקות. הזנת `900`
+נותנת לשלב 0.9 שניות.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+למצב השיחה שצומת סוכן הנחיה רץ בו אין שדה בעורך על צומת הסוכן. הוא נוסע על
+`extras['mode']` (`chat`, `plan` או `review`) בצומת **Open conversation** שיצר את
+המרחב (ברירת מחדל `review`). הגדרה שלו על שלב סוכן מתעלמים ממנה. המפתח מותאם
+בהתאמה מדויקת: כל איות אחר מתעלמים ממנו בשקט.
 
 ### Bash script
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+מוסיף **סקריפט**. אין שדות של תיקיית עבודה או של משתני סביבה, מפני ששניהם אינם
+ניתנים להגדרה:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- כל שלב bash בהרצה חולק את תיקיית העבודה הנוכחית `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` מוזרק ממאגר פרטי הגישה, כך ש-`gh` ו-`git clone https://x-access-token:$GITHUB_TOKEN@…` עובדים בלי הגדרה.
+- הסקריפט מופעל כקובץ ההרצה המילולי `bash`, ולכן `bash` חייב להיות ב-`PATH` של
+  מארח השרת. זה שיקול שכדאי לזכור ב-Windows.
 
-### Router
+### נתב
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+נתב מעריך תנאי ומחזיר מפתח ניתוב; המנוע מפעיל רק את הקשת שבמורד הזרם שמפתח הניתוב
+שלה תואם, ואת שאר הענפים הוא מסמן כדולג.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+בחירה בנתב מחליפה את השדה **מפתח פלט** בעורך התנאי. בחרו אחד מארבעת המצבים שלו:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **קבצים קיימים — אחד לפחות** — מנתב `"true"` כשאחד מהנתיבים ברשימה קיים.
+- **קבצים קיימים — כולם** — מנתב `"true"` רק כשכל הנתיבים ברשימה קיימים.
+- **השוואה** — משווה ערך מצב מול ערך מילולי.
+- **מיתוג** — מנתב לפי הערך של מפתח מצב, עם מקרה ברירת מחדל.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+לאחר מכן הגדירו את מפתחות הניתוב המתאימים בקשתות היוצאות (ראו
+[חיבור הצמתים זה לזה](#חיבור-הצמתים-זה-לזה)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
+קבוצות בוליאניות `and` / `or` / `not` נתמכות בגוף, אבל אי אפשר לכתוב אותן מהטופס
+הזה — הן דורשות עץ פרדיקטים כתוב ביד תחת `extras.predicate`. אוצר המילים המלא של
+פרדיקטים ואופרטורים נמצא ב
+[סוגי שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/).
 
-### Join
+### איחוד
 
-No configuration of its own: it waits for all of its upstream steps.
+אין לו תצורה משלו: הוא ממתין לכל השלבים שלפניו במעלה הזרם.
 
 ### Approval gate
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+השער שולח את סוכן המאשר אל שיחה מוסתרת עם הנחיית השער ומשהה את ההרצה. המאשר מבקש
+את החלטתכם בשיחה ומגיש אותה עם `submit_output` כ-
+`{ "decision": "approved" | "rejected", "reason": "..." }`. ההחלטה נוחתת תחת
+מפתח הפלט (ברירת מחדל `approval_decision`), כך שנתב מיתוג במורד הזרם יכול להסתעף
+לפיה.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+הגדירו את **סוכן** למאשר ואת **תבנית הנחיה** לשאלת השער. השער נפתר דרך
+`submit_output` כ-`{ "decision": "approved" | "rejected", "reason": "..." }`.
+צמתי Reviewer (prompt) מגישים באותה דרך.
 
 ### Team dispatch
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+מוסיף **מזהה צוות** ו**מצב שיגור**. הבורר מציע בדיוק שני מצבים:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — משימה אחת לכל חבר, ומשהה עד שכולם מסיימים.
+- `manager` — שולח את המוביל, והוא מאציל.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+כל ערך אחר שנשמר מתנהג כמו `allParallel`. הגדירו את **Reducer** ל-`append` כדי
+לאסוף את התוצאה של כל חבר לרשימה תחת מפתח הפלט.
 
-### For each and Call sub-pipeline
+### For each ו-Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** ממפה כברירת מחדל מעל מפתח המצב `items` (`extras.iterableKey` /
+`extras.itemKey` בצומת). הוא מרנדר את ההנחיה שלו פעם אחת לכל פריט (`{{item}}`
+כברירת מחדל) ושולח את הסוכן **פעם אחת** כשההנחיות האלה משורשרות זו לזו. אוסף ריק
+מסתיים מיד עם רשימה ריקה. זה אינו שיגור מקבילי אחד לכל פריט.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** משהה עד שהרצת הבן מגיעה למצב סופי, ואז ממזג את המצב הסופי
+של הבן תחת מפתח הפלט (ברירת מחדל `subflow_result`). כוונו אותו אל בן באמצעות
+`extras.templateId`. תבנית אינה יכולה לקרוא לעצמה; בן שנכשל או בוטל מכשיל את שלב
+האב, והכישלון הזה כפוף למדיניות הניסיונות החוזרים ולמדיניות ההמשך בעת כשל של אותו
+שלב.
 
-## Declare inputs and allow manual runs
+## הצהרת קלטים והתרת הרצות ידניות
 
-Both live behind **Manual run** in the editor header.
+שניהם נמצאים מאחורי **הרצה ידנית** בכותרת העורך.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. לחצו על **הרצה ידנית**.
+2. הפעילו את **התרת הרצה ידנית**. המתג הזה נשמר מיד — הוא יוצר (או מוחק) את
+   שורת הטריגר `manual` שמציגה את התבנית בבורר ההרצה.
+3. הגדירו **מקסימום הרצות במקביל** אם אתם רוצים תקרה (השאירו ריק ללא הגבלה).
+   התחלות נוספות ממתינות במצב `queued` עד שמתפנה מקום.
+4. לחצו על **הוספת קלט** עבור כל שדה טופס שהרצה ידנית אמורה לאסוף:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| שדה                 | תיאור                                                    |
+| ------------------- | -------------------------------------------------------- |
+| **מפתח**            | מפתח המצב שהערך נשמר תחתיו; הפנו אליו כ-`{{key}}`         |
+| **תווית**           | תווית תצוגה (ברירת מחדל: המפתח)                          |
+| **סוג**             | טקסט, טקסט מרובה שורות, מספר, מתג, בחירה, מאגר            |
+| **אפשרויות**        | אפשרויות מופרדות בפסיקים, עבור בחירה בלבד                 |
+| **ערך ברירת מחדל**  | ערך שממולא מראש                                          |
+| **מציין מקום**      | טקסט רמז בתוך השדה הריק                                  |
+| **טקסט עזרה**       | טקסט עזר מתחת לשדה                                       |
+| **חובה**            | האם טופס ההרצה נחסם כשיש ערך ריק                         |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+קלט מסוג **מאגר** מציג בורר מעל המאגרים של סביבת העבודה ומאכלס את `repo_id`,
+`repo_local_path`, `repo_full_name` וגם — כשהמאגר מחזיק remote של GitHub — את
+`repo_owner` ו-`repo_name` במטען ההרצה.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. לחצו על **שמור** בתיבת הדו־שיח. עריכות הקלט נכנסות אל הטיוטה ונשמרות כשתשמרו
+   את התבנית.
 
-## Save and enable
+## שמירה והפעלה
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/).
+1. לחצו על **שמור** בכותרת העורך. עד שתעשו זאת, הכותרת מציגה "שינויים שלא נשמרו".
+2. חזרו אל **הגדרות ← סביבת עבודה ← תבניות פייפליין** ובדקו שהמתג בשורה של
+   התבנית דלוק. המנוע מסרב להפעיל תבנית מושבתת, ותבנית מושבתת לא מופיעה לעולם
+   בבורר ההרצה.
+3. כדי להפעיל אותה אוטומטית, גררו טריגר מספריית הצמתים אל הקנבס — ראו
+   [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/).
 
-## Related guides
+## מדריכים קשורים
 
-- [Run a pipeline manually](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
-- [Set up pipeline triggers](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
-- [Monitor pipeline runs](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
-- [Pipeline steps reference](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/)
+- [הפעלת פייפליין ידנית](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-פייפליין/)
+- [הגדרת טריגרים לפייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריגרים-לפייפליין/)
+- [מעקב אחר הרצות פייפליין](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מעקב-פייפליינים/)
+- [סוגי שלבי פייפליין](/he-IL/מדריך-למשתמש/עזר/שלבי-פייפליין/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Pipelines](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)
+- [פייפליינים ואוטומציה](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/)

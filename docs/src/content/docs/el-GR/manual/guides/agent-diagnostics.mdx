@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Διάγνωση πράκτορα
+description: Περάστε από την καταγραφή εκτέλεσης, τον έλεγχο προσαρμογέων, την κατάσταση του διακομιστή και τα διαγνωστικά του κεντρικού υπολογιστή όταν ένας πράκτορας σταματήσει να παράγει εκτελέσεις.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Αυτός ο οδηγός δείχνει πώς να ανακαλύψετε γιατί ένας πράκτορας δεν παράγει εκτελέσεις.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Δουλέψτε από πάνω προς τα κάτω: πρώτα τις εκτελέσεις του ίδιου του πράκτορα, μετά το backend του, έπειτα τον διακομιστή και στο τέλος τον κεντρικό υπολογιστή.
 
-## 1. Check the agent's run history
+## 1. Ελέγξτε το ιστορικό εκτελέσεων του πράκτορα
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** → επιλέξτε τον πράκτορα → **Αρχεία καταγραφής**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Κάθε εκτέλεση εμφανίζει μια ένδειξη κατάστασης, μια διάρκεια («Running…» όσο βρίσκεται σε εξέλιξη), τις ώρες έναρξης και ολοκλήρωσης, το PID της και τον προσαρμογέα που χρησιμοποίησε. Η **Προβολή** ανοίγει την ακατέργαστη ροή συμβάντων αυτής της εκτέλεσης. Η **Διακοπή** τερματίζει μια διεργασία που εκτελείται και επισημαίνει την εκτέλεση ως «Killed by user»· ο **Τερματισμός εκτέλεσης** στην κεφαλίδα κάνει το ίδιο για κάθε εκτέλεση αυτού του πράκτορα που βρίσκεται σε εξέλιξη.
 
-Read it like this:
+Διαβάστε το ως εξής:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Καμία εκτέλεση καθόλου** — η αποστολή δεν έγινε ποτέ. Οι αναφορές στον συνθέτη μηνυμάτων είναι `@` συν χαρακτήρες λέξης (γράμματα, ψηφία, κάτω παύλα). Η αντιστοίχιση γίνεται ακριβώς ή κατά πρόθεμα με το όνομα του πράκτορα, οπότε το `@code-reviewer` αναλύεται ως `code` και μπορεί ακόμη να ξυπνήσει έναν πράκτορα με το όνομα `code-reviewer`. Ένα όνομα με κενό δεν μπορεί να αναφερθεί ως ένα διακριτικό. Στη συνέχεια πηγαίνετε στο βήμα 2.
+- **Μια εκτέλεση που τελείωσε αμέσως με σφάλμα** — ανοίξτε την **Προβολή**. Μια αποτυχία εκκίνησης του backend εμφανίζεται εδώ ως σφάλμα διεργασίας.
+- **Μια εκτέλεση κολλημένη στο «Running…»** — σταματήστε την και μετά ελέγξτε το **Χρονικό όριο σιωπής** του πράκτορα στην καρτέλα Ρυθμίσεις. Ένα μη ορισμένο όριο χρησιμοποιεί την προεπιλογή ανά λειτουργία.
+- **Μια ολοκληρωμένη εκτέλεση χωρίς χρήσιμη έξοδο** — η κατάσταση στην καταγραφή εκτέλεσης παραμένει `completed` για μια εκτέλεση που τελείωσε χωρίς το δηλωμένο παραδοτέο της· το ειλικρινές σήμα είναι το κείμενο της σύνοψης, όχι η ένδειξη.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Η καρτέλα **Αρχεία καταγραφής** δεν εμφανίζει κόστος. Για τη δαπάνη, χρησιμοποιήστε τον πίνακα ανά πράκτορα στην **Παρατηρησιμότητα → Στοιχεία**.
 
-## 2. Check the agent's backend
+## 2. Ελέγξτε το backend του πράκτορα
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Η λίστα **Ανιχνευμένοι εκτελεστές** δείχνει κάθε προσαρμογέα με το αποτέλεσμα του ελέγχου του — μια εγκατεστημένη έκδοση, «Έλεγχος…» ή «Δεν βρέθηκε» — καθώς και τη διαδρομή που εντοπίστηκε και τα πλακίδια δυνατοτήτων για ένα CLI που βρέθηκε. Πατήστε **Ανανέωση** στην κεφαλίδα της σελίδας για επανάληψη του ελέγχου.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Ο έλεγχος εκτελείται στο μηχάνημα που φιλοξενεί το `cc_server`, όχι στο μηχάνημα που κοιτάτε. Αν βρίσκεστε στον web client ή σε μια συζευγμένη συσκευή, το «Δεν βρέθηκε» σημαίνει ότι το CLI λείπει από τον κεντρικό υπολογιστή του διακομιστή.
 
-Two things to confirm:
+Δύο πράγματα που πρέπει να επιβεβαιώσετε:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Ο πράκτορας έχει ορίσει καθόλου προσαρμογέα.** Ένας πράκτορας με κενό προσαρμογέα αποστέλλεται στο **Control Center (ενσωματωμένο)** και η καταγραφή εκτέλεσης καταχωρεί `cc-harness`, ώστε να φαίνεται τι έτρεξε. Χωρίς μοντέλο επίσης, ζητά από την Anthropic το προεπιλεγμένο της — κάτι που αποτυγχάνει με `No credential for provider "anthropic"` αν δεν έχετε συνδέσει λογαριασμό Anthropic. Οι ειδικοί του αρχικού εφοδιασμού έρχονται χωρίς προσαρμογέα.
+- **Ο ενσωματωμένος προσαρμογέας έχει μοντέλο.** Η λίστα μοντέλων του προέρχεται ζωντανά από τους παρόχους που είναι συνδεδεμένοι πιο κάτω στην ίδια σελίδα, οπότε ένας πάροχος χωρίς αποθηκευμένο διαπιστευτήριο συνεισφέρει μηδέν μοντέλα.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Ο κατάλογος των προσαρμογέων είναι σταθερός — δεν υπάρχει τρόπος να καταχωρίσετε νέο προσαρμογέα. Αυτό που μπορείτε να αλλάξετε ανά προσαρμογέα εδώ είναι τα ορίσματα εκκίνησης και οι μεταβλητές περιβάλλοντος. Σημειώστε ότι μια παράκαμψη περιβάλλοντος ανά προσαρμογέα υπερισχύει σιωπηλά ενός συνδεδεμένου λογαριασμού παρόχου όταν επιλύονται τα διαπιστευτήρια.
 
-## 3. Check the server
+## 3. Ελέγξτε τον διακομιστή
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση** (`/settings/server/connection`) δείχνει σε ποιον διακομιστή μιλάει αυτός ο πελάτης και τι αναφέρει.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Για έναν headless διακομιστή, το `GET /healthz` δίνει τις ίδιες πληροφορίες χωρίς πελάτη. Είναι χωρίς έλεγχο ταυτότητας και ανοιχτό σε CORS εκ σχεδιασμού:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Επιστρέφει την κατάσταση του διακομιστή, τον χρόνο λειτουργίας σε δευτερόλεπτα, τον αριθμό των ζωντανών συνδέσεων, τη δεσμευμένη θύρα, την έκδοση build και το git SHA, την έκδοση του σχήματος του χώρου εργασίας, την έκδοση του καταλόγου RPC, το αναγνωριστικό, το όνομα και το αποτύπωμα ταυτότητας του διακομιστή, αν η δέσμευση είναι μη ασφαλής, και ένα μπλοκ `codeGraph` με μετρητές `watching` / `indexing` / `pending`. Όταν μια προσωρινή μνήμη έχει δεχθεί κίνηση, περιλαμβάνει επίσης ένα μπλοκ `caches`· ένας διακομιστής επίδειξης προσθέτει `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Δύο πράγματα που αξίζει να γνωρίζετε όταν μια αλλαγή «δουλεύει στα τεστ αλλά όχι στην εφαρμογή»:
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Η εφαρμογή desktop εκκινεί κατά προτίμηση ένα **προκατασκευασμένο** δυαδικό `cc_server` αντί για τον πηγαίο κώδικα. Μια νέα λειτουργία RPC ή ένα νέο εργαλείο MCP δεν εμφανίζεται μέχρι να ξαναχτιστεί το δυαδικό, και η εκκίνηση καταγράφει προειδοποίηση όταν το git SHA του θυγατρικού διαφέρει από αυτό της εφαρμογής.
+- Η εφαρμογή desktop τερματίζει έναν διακομιστή που εκκίνησε και δεν έχει εκτυπώσει το πανό ετοιμότητάς του εντός 20 δευτερολέπτων, πέφτοντας σε οθόνη σφάλματος.
 
-## 4. Check the host
+## 4. Ελέγξτε τον κεντρικό υπολογιστή
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο** (`/settings/server/diagnostics`) είναι η σελίδα επιπέδου κεντρικού υπολογιστή. Περιλαμβάνει:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Sandboxing** — τον γενικό διακόπτη, το ανιχνευμένο backend, μια υπόδειξη εγκατάστασης και τους προεπιλεγμένους διακόπτες δυνατοτήτων. Μόνο το ανιχνευμένο backend προέρχεται από τον διακομιστή· δείτε την προσοχή παρακάτω. Δεν υπάρχει στοιχείο επαναφοράς.
+- **Σημασιολογική αναζήτηση** — τον κύκλο ζωής του μοντέλου ενσωμάτωσης στη συσκευή: εγκατεστημένο, σε λήψη με ποσοστό, μη εγκατεστημένο ή σφάλμα εγκατάστασης. Μέχρι να εγκατασταθεί, η αναζήτηση μνήμης και κώδικα παραμένει μόνο με λέξεις-κλειδιά.
+- **Συμπεριφορά συστήματος** — να μένει ο υπολογιστής σε εγρήγορση όσο εκτελούνται πράκτορες.
+- **Μηχανή συγχρονισμού** — διακόπτες τερματισμού ανά αποθήκη για εισιτήρια, μηνύματα και σημειώσεις. Είναι δικλίδες διαφυγής έκτακτης ανάγκης προς συνδρομές πλήρους στιγμιότυπου· μια αλλαγή επηρεάζει μόνο τις νέες συνδρομές, οπότε έχει πλήρη ισχύ μετά από επαναφόρτωση.
+- **Επίπεδο καταγραφής** — ανεβάστε το πριν αναπαραγάγετε μια αποτυχία.
+- **Απόρρητο** — αν το ακατέργαστο περιεχόμενο diff μπορεί να προωθηθεί στο μοντέλο του πράκτορα και αν αποστέλλονται αναφορές κατάρρευσης.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Αυτή η ενότητα αναφέρει τον κεντρικό υπολογιστή, αλλά τα χειριστήριά της βρίσκονται στην πλευρά του πελάτη]
+Η ανίχνευση και η επιβολή συμφωνούν πλέον: όπου ο ανιχνευτής αναφέρει εγγενές backend, οι εκτελέσεις πρακτόρων σε αυτόν τον κεντρικό υπολογιστή είναι πραγματικά περιτυλιγμένες σε αυτό. Όμως ο ανιχνευτής είναι το μόνο ζωντανό στοιχείο αυτής της ενότητας. Ο γενικός διακόπτης, ο επιλογέας backend και οι προεπιλεγμένοι διακόπτες δυνατοτήτων είναι προτιμήσεις αποθηκευμένες στη συσκευή σας και ο διακομιστής δεν διαβάζει καμία από αυτές — ο δικός του διακόπτης είναι το `--sandbox` (`on` από προεπιλογή, `off` για εξαίρεση) και για κάθε πράκτορα που έχει μείνει στο «Χρήση προεπιλογής χώρου εργασίας» ο διακομιστής πέφτει στη συντηρητική προεπιλογή του: χωρίς git push, χωρίς GitHub API, χωρίς κλειδί εισιτηρίων, δίκτυο ενεργό.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Έτσι, μια προειδοποίηση εδώ αξίζει να την αντιμετωπίσετε, αλλά συνήθως δεν είναι ο λόγος που αποτυγχάνει ένας πράκτορας. Για να επιβεβαιώσετε σε ποια κατάσταση βρίσκεται ο διακομιστής, διαβάστε το αρχείο καταγραφής εκκίνησής του: εκτυπώνει `agent sandbox ON` με τη σημείωση του backend, `no OS-native agent sandbox on this host` με υπόδειξη εγκατάστασης ή `agent sandbox DISABLED by --sandbox off`. Το `GET /healthz` δεν περιέχει πεδίο sandbox.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Όπου δεν υπάρχει backend — πάντα στα Windows, σε Linux ή WSL2 χωρίς `bwrap` και `socat` — οι εκτελέσεις **δεν** είναι σε sandbox και αυτό που τις περιορίζει είναι το ίδιο το checkout της συνομιλίας, οι δυνατότητες που ελέγχουν ποια διαπιστευτήρια εκδίδονται μέσα σε αυτό, οι περιορισμοί ενεργειών, η απολύμανση του περιβάλλοντος και η επιφάνεια εργαλείων που επιτρέπει η λειτουργία του.
 :::
 
-## Common failures
+## Συνήθεις αποτυχίες
 
-### The run never starts and the adapter shows "Not found"
+### Η εκτέλεση δεν ξεκινά ποτέ και ο προσαρμογέας εμφανίζει «Δεν βρέθηκε»
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Εγκαταστήστε το CLI **στον κεντρικό υπολογιστή του διακομιστή** και μετά πατήστε **Ανανέωση** στη σελίδα Πάροχοι μοντέλων. Ή αλλάξτε τον πράκτορα στον ενσωματωμένο προσαρμογέα, που δεν χρειάζεται CLI, και συνδέστε έναν πάροχο στην ίδια σελίδα.
 
-### The agent cannot push or open a pull request
+### Ο πράκτορας δεν μπορεί να κάνει push ή να ανοίξει pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Οι δυνατότητές του είναι η πύλη. Ανοίξτε **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** → τον πράκτορα → **Δικαιώματα sandbox**, ενεργοποιήστε τον διακόπτη και ενεργοποιήστε τα **Να επιτρέπεται git push** και **Να επιτρέπονται κλήσεις GitHub API**. Αν αφήσετε τον διακόπτη στο «Χρήση προεπιλογής χώρου εργασίας», ο πράκτορας δεν παίρνει κανένα από αυτά.
 
-### Semantic search returns nothing useful
+### Η σημασιολογική αναζήτηση δεν επιστρέφει τίποτα χρήσιμο
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Ελέγξτε **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο → Σημασιολογική αναζήτηση**. Μέχρι να εγκατασταθεί το μοντέλο ενσωμάτωσης, η αναζήτηση γίνεται μόνο με λέξεις-κλειδιά. Οι εγγραφές που γράφτηκαν πριν από την εγκατάσταση του μοντέλου δεν συμπληρώνονται αναδρομικά, οπότε παραμένουν μόνο με λέξεις-κλειδιά ακόμη και μετά.
 
-### The server will not boot at all
+### Ο διακομιστής δεν ξεκινά καθόλου
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Απαιτούνται εγγενείς βιβλιοθήκες και δεν υπάρχει υποβαθμισμένη λειτουργία. Μια dylib που λείπει κάνει το `cc_server` να αρνείται να ξεκινήσει και να ονομάζει τον ένοχο στο σφάλμα. Τοποθετήστε τα εγγενή αρχεία με το `scripts/natives/build_natives.sh` και ξαναχτίστε το δυαδικό του διακομιστή.
 
-### An action is silently denied
+### Μια ενέργεια απορρίπτεται σιωπηλά
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Μια απόφαση περιορισμού `prompt` χωρίς συνδεδεμένο εγκριτή απορρίπτεται, εκ σχεδιασμού. Ελέγξτε τους κανόνες του χώρου εργασίας στις **Ρυθμίσεις → Χώρος εργασίας → Δικαιώματα πρακτόρων**.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
-- [Configure guardrails](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/)
+- [Ρύθμιση περιορισμών](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ρύθμιση-περιορισμών/)
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
+- [Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)

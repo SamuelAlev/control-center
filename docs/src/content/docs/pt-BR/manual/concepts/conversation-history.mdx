@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Histórico de conversa
+description: Como uma execução mantém, dobra, cria branches e retoma seu contexto — estratégias de compactação, a árvore de sessão e o que “retomar” realmente significa.
 slug: pt-BR/manual/conceitos/historico-de-conversa
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Uma conversa longa acaba batendo em um muro intransponível: a janela de contexto do modelo. Tudo nesta página existe por causa desse muro, e a parte interessante é o que é jogado fora, o que é mantido e o que pode ser recuperado.
 
-## Four ways to reclaim context
+## Quatro formas de recuperar contexto
 
-They are not alternatives so much as a ladder, cheapest first.
+Não são bem alternativas, e sim uma escada, do mais barato ao mais caro.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Mecanismo      | Custo                 | Mantém                               | Perde                             |
+| -------------- | --------------------- | ------------------------------------ | --------------------------------- |
+| **Elisão**     | Nada                  | Cada palavra da narrativa            | Resultados antigos de ferramentas sem incidentes |
+| **Descarte de imagens** | Nada         | O texto ao redor delas               | Capturas de tela antigas          |
+| **Instantâneos** | Nada                | Cada palavra, como pixels            | Legibilidade para um modelo sem visão |
+| **Resumo**     | Uma chamada ao modelo | Uma narrativa                        | Os detalhes que ele não escolheu  |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+A elisão e o descarte rodam primeiro porque são gratuitos e sem perdas no que importa: eles eliminam volume que ninguém ia reler.
 
-### Why summarizing is the last resort
+### Por que resumir é o último recurso
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Um resumo é o único dos quatro que **gasta uma chamada ao modelo** e o único que **decide por você** o que importava. Ambos são custos reais. A chamada é o mais interessante, por causa de quando ela acontece.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+A compactação geralmente roda *antes* do muro, com base em um limite. Mas ela também roda **de forma reativa**, depois que o próprio provedor rejeita uma requisição por ser grande demais — a estimativa heurística subestimou o que o provedor realmente mediu. Nessa situação, um compactador que resume precisa fazer uma requisição para encolher o contexto, e a requisição que ele faz é justamente a que acabou de estourar.
 
-### Snapshots
+### Instantâneos
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+A compactação por instantâneos renderiza o histórico descartado em páginas densas de glifos em pixels e as devolve como imagens.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+A premissa é uma peculiaridade de cobrança: um modelo de visão cobra por uma imagem uma tarifa fixa ou proporcional à área, que não tem nada a ver com quantos caracteres há nela. Doze mil caracteres de conversa descartada custam o equivalente a doze mil caracteres em tokens de texto. Os mesmos caracteres renderizados em uma única página custam uma imagem.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+O que faz valer a pena tê-lo, em vez de ser apenas engenhoso, é que ele não precisa de **nenhuma chamada ao modelo, nenhuma chave e nenhuma rede**. É a única estratégia sempre disponível durante a recuperação após estouro.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+A forma da reconstrução é: início literal, meio em imagem, fim literal. O início é a tarefa e as restrições às quais tudo o que vem depois se refere; o fim é onde o trabalho está no momento. O meio é o que menos se relê e o que mais custa.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Ela se degrada honestamente]
+Um modelo sem visão não consegue ler páginas de pixels, e renderizar um texto que ninguém consegue olhar não é uma compactação degradada — é uma conversa apagada. Portanto, é a capacidade do leitor que decide, e um modelo sem visão sempre recebe o resumo.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[A forma da página é precificada para a API, não para os pesos]
+O Gemini cobra uma tarifa fixa por imagem, então cada caractere extra na página é gratuito e suas páginas são as mais largas. A OpenAI e a Anthropic cobram por área, então uma página maior não compra nada. Alguns processadores reduzem a resolução acima de um limite, o que destrói silenciosamente glifos de 5 pixels, então as páginas deles ficam abaixo desse limite. Um Claude servido por meio de um gateway é cobrado pelo gateway, então a forma segue o id do modelo conforme a rota o nomeia.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Os instantâneos são renderizados novamente a partir do **texto de origem retido** a cada passagem, nunca a partir dos pixels da passagem anterior. Converter uma imagem em imagem degrada os glifos uma geração por compactação, até que ninguém mais consiga lê-los.
 
-## What a run actually resumes from
+## De onde uma execução realmente retoma
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Historicamente, toda execução de harness começava com um histórico vazio e reconstruía a continuidade a partir de um bloco `<context>` no prompt — um *resumo* da conversa, e não a conversa em si. Três consequências vieram disso:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Retomar era recontar.** O modelo nunca via o próprio raciocínio anterior nem os bytes reais que suas ferramentas retornavam, apenas uma descrição deles.
+- **Rebobinar morria com o processo.** Um `checkpoint` é um índice na lista de mensagens ativas, então um reinício perdia todas as etiquetas que o modelo havia definido.
+- **Tentar novamente não conseguia distinguir “nada a tentar de novo” de “nada carregado”.** Depois de um reinício, o turno que falhou some do estado ativo de qualquer forma.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Os três problemas são resolvidos ao persistir a transcrição. Ela é salva em cada **limite de turno** e nunca no meio de um turno: um histórico capturado entre uma chamada de ferramenta e seu resultado é um que nenhum provedor aceitará, então uma falha nesse instante restaura o turno *anterior*, e não um meio turno que não pode ser reproduzido.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Uma execução retomada é reduzida às suas mensagens mais recentes, cortando em um limite que não seja um resultado de ferramenta órfão — um resultado cuja chamada foi cortada é uma requisição que os provedores rejeitam de imediato, e uma transcrição que não pode ser enviada é pior do que uma curta.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Onde ela fica]
+Um arquivo JSON por conversa e agente, no diretório do próprio espaço de trabalho, ao lado de seu banco de dados. Dois agentes em uma mesma conversa guardam dois históricos: eles viram resultados de ferramentas diferentes e receberam prompts de sistema diferentes, então mesclá-los entregaria a cada um o raciocínio do outro como se fosse seu.
 :::
 
-## The session tree
+## A árvore de sessão
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Cada mensagem registra aquela de que continua, e cada conversa nomeia sua **ponta do branch** atual. Essa única decisão é a funcionalidade inteira.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Criar um branch não grava nada.** Isso apenas move o ponteiro. O caminho que você deixou ainda está lá, então voltar é outro movimento de ponteiro, e não uma restauração — e editar um prompt para executá-lo de novo deixa de custar a resposta com a qual você estava comparando.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Sem isso, toda forma de voltar atrás precisa ocultar ou excluir mensagens, e ocultar é uma mentira que o próximo leitor não consegue enxergar.
 
-### Branch versus fork
+### Branch ou bifurcação
 
-|                | Branch              | Fork                        |
+|                | Branch              | Bifurcação                  |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| O que acontece | O ponteiro se move  | O caminho é copiado         |
+| Para onde vai  | A mesma conversa    | Uma nova conversa           |
+| Custo          | Nada                | Uma cópia do branch         |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Uma bifurcação copia com **ids novos**, em vez de compartilhar linhas. Duas conversas que compartilhassem linhas mostrariam uma à outra suas mensagens posteriores, que é justamente a única coisa que uma bifurcação não pode fazer.
 
-### Rewind rides the same pointer
+### Rebobinar usa o mesmo ponteiro
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+O par `checkpoint` / `rewind` dentro da execução marca um limite de turno limpo e retorna a ele depois de uma exploração, guardando um digest. Como os checkpoints são persistidos junto com a transcrição, uma etiqueta definida pelo modelo antes de um reinício ainda cai onde foi definida. Um checkpoint cujo destino não sobreviveu a um corte é **descartado**, não ajustado — rebobinar “até a etiqueta” e cair em outro lugar é exatamente a falha que uma etiqueta existe para evitar.
 
-## Related
+## Veja também
 
-- [Branch a conversation](/pt-BR/manual/guias/branch-de-conversa/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/pt-BR/manual/conceitos/contexto-de-ferramentas/) — the other half of what fills a context window
-- [Slash commands](/pt-BR/manual/referencia/comandos-slash/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Criar um branch de uma conversa](/pt-BR/manual/guias/branch-de-conversa/) — o navegador da árvore, a bifurcação e a exportação
+- [Contexto de ferramentas e cache de prompts](/pt-BR/manual/conceitos/contexto-de-ferramentas/) — a outra metade do que preenche uma janela de contexto
+- [Comandos slash](/pt-BR/manual/referencia/comandos-slash/) — `/compact`, `/shake`, `/context`, `/tree`

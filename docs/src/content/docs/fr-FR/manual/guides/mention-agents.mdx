@@ -1,121 +1,136 @@
 ---
-title: "@-mention agents"
-description: Mention agents in a space to dispatch them and teammates to notify them.
+title: "Mentionner des agents avec @"
+description: Mentionnez des agents dans un espace pour les lancer, et des coéquipiers pour les notifier.
 slug: fr-FR/manuel/guides/mentionner-agents
+sourceHash: e7ad9ca2f7f8ed6e413296f6e79f4d959878b18f
 ---
 
-This guide shows you how to @-mention agents and teammates in a space.
+Ce guide vous montre comment mentionner des agents et des coéquipiers avec @ dans
+un espace.
 
-## Mention an agent
+## Mentionner un agent
 
-Type `@` in the composer and pick an agent from the autocomplete, or type the name
-yourself:
+Saisissez `@` dans le compositeur et choisissez un agent dans l’autocomplétion,
+ou tapez le nom vous-même :
 
 ```
 @alice fix the login bug
 ```
 
-The mentioned agent is added to the space as a participant if it is not already
-one and dispatched with the space's context and mode. Unmentioned participants
-see the message but do not dispatch.
+L’agent mentionné est ajouté à l’espace comme participant s’il ne l’est pas déjà,
+puis lancé avec le contexte et le mode de l’espace. Les participants non
+mentionnés voient le message, mais ne sont pas lancés.
 
-If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the
-conversation's owner when it has one, otherwise the first top-level agent
-among the space's participants. In a one-agent space that is always the sole
-agent.
+Si vous envoyez un message sans mention d’agent, Control Center choisit lui-même
+qui répond : l’agent qui a parlé en dernier dans la conversation, sinon le
+propriétaire de la conversation lorsqu’elle en a un, sinon le premier agent de
+premier niveau parmi les participants de l’espace. Dans un espace à un seul
+agent, c’est toujours l’unique agent.
 
-## Know how a name is matched
+## Savoir comment un nom est mis en correspondance
 
-A mention token is matched **case-insensitively**, by **exact name or prefix**. So
-`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+Un jeton de mention est mis en correspondance **sans distinction de casse**, par
+**nom exact ou préfixe**. Ainsi, `@arch` atteint un agent nommé `architect` et
+`@Alice` atteint `alice`.
 
-Two consequences worth planning around:
+Deux conséquences à anticiper :
 
-- **A short token is not an error.** If two agents share a prefix, the first one
-  found wins and which one that is depends on ordering — not on any tie-break
-  rule. Use the full name whenever names overlap.
-- **Only letters, digits and underscores are part of a token.** The parser matches
-  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
-  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
-  reliably — including through the autocomplete, which inserts the name as plain
-  text. Name agents in one word, or with underscores.
+- **Un jeton court n’est pas une erreur.** Si deux agents partagent un préfixe,
+  le premier trouvé l’emporte, et lequel c’est dépend de l’ordre — pas d’une
+  règle de départage. Utilisez le nom complet dès que des noms se chevauchent.
+- **Seuls les lettres, les chiffres et les traits de soulignement font partie
+  d’un jeton.** L’analyseur applique `@(\w+)`, donc `@code-reviewer` est lu comme
+  le jeton `code` et `@my agent` comme `my`. Un agent dont le nom contient un
+  trait d’union, un point ou une espace ne peut pas être mentionné de manière
+  fiable — y compris via l’autocomplétion, qui insère le nom comme texte brut.
+  Nommez les agents en un seul mot, ou avec des traits de soulignement.
 
-Mentions are stripped from the text before it reaches the agent. A message that is
-_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+Les mentions sont retirées du texte avant qu’il n’atteigne l’agent. Un message qui
+n’est _que_ des mentions (`@alice`) ne lance donc rien : donnez-lui quelque chose
+à faire.
 
-## Mention several agents at once
+## Mentionner plusieurs agents à la fois
 
 ```
 @alice refactor the auth module. @bob write tests for it.
 ```
 
-Both agents dispatch in parallel into the same conversation and both receive the
-full message.
+Les deux agents sont lancés en parallèle dans la même conversation et reçoivent
+tous les deux le message complet.
 
-They also **share that space's worktrees**. Repo worktrees are provisioned
-per space, not per agent; each agent gets its own overlay working directory for
-its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
-two agents mentioned together can see — and collide with — each other's edits.
+Ils **partagent aussi les arbres de travail de cet espace**. Les arbres de travail
+des dépôts sont provisionnés par espace, et non par agent ; chaque agent dispose
+de son propre répertoire de travail superposé pour son `AGENTS.md`, ses skills et
+sa configuration, les dépôts partagés étant liés en lecture-écriture. Deux agents
+mentionnés ensemble peuvent donc voir les modifications de l’autre — et entrer en
+collision avec elles.
 
-## Mention a teammate
+## Mentionner un coéquipier
 
-Any `@token` that does not match an agent is tried against the workspace's human
-members, by handle, with the same case-insensitive exact-or-prefix rule.
+Tout `@token` qui ne correspond à aucun agent est confronté aux membres humains de
+l’espace de travail, par identifiant, avec la même règle : nom exact ou préfixe,
+sans distinction de casse.
 
-A resolved human mention **dispatches nothing**. It rides on the message's metadata
-purely so the notification router can ping that person.
+Une mention de personne résolue **ne lance rien**. Elle ne voyage dans les
+métadonnées du message que pour que le routeur de notifications puisse alerter
+cette personne.
 
-Agent names are always tried first and a token claimed by an agent is never
-offered to the member list — one `@word` can only ever resolve to one principal.
+Les noms d’agents sont toujours essayés en premier, et un jeton revendiqué par un
+agent n’est jamais proposé à la liste des membres : un `@word` ne peut jamais se
+résoudre qu’en une seule identité.
 
-## What the agent receives
+## Ce que reçoit l’agent
 
-A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
-listing the space roster — the other agents (marked top-level or subordinate) and
-the human members — so it knows who it can hand off to. The block also tells it
-that mentioning another agent in its reply wakes that agent and that mentioning
-itself is ignored.
+Un agent lancé reçoit dans son prompt un bloc « Summons » qui nomme celui qui l’a
+convoqué et énumère l’effectif de l’espace — les autres agents (signalés comme de
+premier niveau ou subordonnés) et les membres humains — afin qu’il sache à qui il
+peut transmettre du travail. Le bloc lui indique aussi que mentionner un autre
+agent dans sa réponse réveille cet agent, et que se mentionner lui-même est
+ignoré.
 
-## When an agent mentions an agent
+## Quand un agent en mentionne un autre
 
-An agent can hand off in its own reply. When a turn **finishes cleanly**, the
-mentions in its text are resolved and those agents are added to the space and
-dispatched into the same conversation, with the mentioning turn as their prompt.
-A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+Un agent peut transmettre du travail dans sa propre réponse. Quand un tour
+**se termine proprement**, les mentions de son texte sont résolues, et ces agents
+sont ajoutés à l’espace et lancés dans la même conversation, avec pour prompt le
+tour qui les mentionne. Un tour qui a échoué ou qui a été interrompu ne réveille
+personne : il s’est arrêté en pleine réflexion.
 
-The rules are deliberately stricter than the composer's, because nobody is
-watching to correct a wrong guess:
+Les règles sont délibérément plus strictes que celles du compositeur, car personne
+ne surveille pour corriger une supposition erronée :
 
-- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
-  types it; from an agent it reaches nobody. A name matching two agents also
-  reaches nobody.
-- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
-  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
-  An unterminated fence blanks everything after it.
-- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
-  `pkg/@scope` and `node@20` resolve to nobody.
-- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
-  token `code`.
-- **At most three agents per turn.** An agent listing six teammates in a summary
-  is listing them, not summoning them.
+- **Noms exacts uniquement.** Aucune correspondance par préfixe. `@arch` atteint
+  `architect` quand un humain le saisit ; venant d’un agent, il n’atteint
+  personne. Un nom qui correspond à deux agents n’atteint personne non plus.
+- **Le code n’est pas de la prose.** Les mentions à l’intérieur de blocs délimités
+  ou de `` `backticks` `` sont ignorées, donc citer une annotation `@Override` ou
+  un `pip install foo@1.2` est sans risque. Un bloc délimité non fermé neutralise
+  tout ce qui suit.
+- **Un `@` collé au jeton précédent n’est pas une mention** — `sam@host.com`,
+  `pkg/@scope` et `node@20` ne se résolvent vers personne.
+- **Les traits d’union sont conservés**, donc `@code-reviewer` se résout comme
+  lui-même et non comme le jeton `code`.
+- **Trois agents au maximum par tour.** Un agent qui énumère six coéquipiers dans
+  un résumé les énumère, il ne les convoque pas.
 
-A wake chain is bounded the same way delegation is: **depth 3**, and an agent
-already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
-is also rate-limited across chains. A refused wake posts a system message into the
-conversation saying which mention was not delivered and why — an unresolved name
-does not, since any `@` in a sentence would otherwise narrate itself.
+Une chaîne de réveil est bornée de la même manière que la délégation :
+**profondeur 3**, et un agent déjà présent dans la chaîne ne peut pas être réveillé
+à nouveau par elle (pas de `A → B → A`). Une paire ordonnée est aussi soumise à
+une limite de fréquence d’une chaîne à l’autre. Un réveil refusé publie un message
+système dans la conversation, indiquant quelle mention n’a pas été transmise et
+pourquoi ; un nom non résolu ne le fait pas, sinon chaque `@` d’une phrase se
+raconterait lui-même.
 
-For a handoff that must not depend on prose — a request/reply, or reaching an
-agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
-tools instead.
+Pour une transmission qui ne doit pas dépendre de la prose — une requête avec
+réponse, ou atteindre un agent hors de l’espace —, utilisez plutôt les outils
+`send_to_agent`, `ask_agent` et `delegate_task`.
 
-## Related guides
+## Guides liés
 
-- [Chat with an agent](/fr-FR/manuel/guides/discuter-avec-agent/)
-- [Use spaces](/fr-FR/manuel/guides/espaces/)
-- [Run agents in parallel](/fr-FR/manuel/guides/agents-en-parallele/)
+- [Discuter avec un agent](/fr-FR/manuel/guides/discuter-avec-agent/)
+- [Utiliser les espaces](/fr-FR/manuel/guides/espaces/)
+- [Exécuter des agents en parallèle](/fr-FR/manuel/guides/agents-en-parallele/)
 
-## Related concepts
+## Concepts liés
 
-- [Dispatch lifecycle](/fr-FR/manuel/concepts/cycle-de-vie-du-lancement/)
+- [Cycle de vie du lancement d’un agent](/fr-FR/manuel/concepts/cycle-de-vie-du-lancement/)

@@ -1,118 +1,156 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Megbeszélés rögzítése és összefoglalása
+description: Vegyen fel egy hívást, kapjon átiratot, és alakítsa jegyzetekké, teendőkké és döntésekké.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/megbeszeles-rogzitese
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) for how it works.
+Ez az útmutató megmutatja, hogyan rögzíthet egy megbeszélést, és hogyan kaphat
+MI-vel generált összefoglalót. A működését lásd a
+[Megbeszélések és átírás](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) oldalon.
 
-## Before you start
+## Mielőtt elkezdené
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Várja meg a hangmodellt, majd indítsa újra a szervert.** Egy normál indítás a
+  háttérben erőltetetten telepíti a kiválasztott ASR-modellt (Parakeet TDT 0.6B v3,
+  a többnyelvű alapértelmezést, körülbelül 600 MB). A szerver a modellt
+  **pontosan egyszer, indításkor** oldja fel, így az első futtatásban
+  újraindításig még mindig nem érhetők el a felvételi műveletek. Ha nincs modell
+  a lemezen, a felvétel ezzel hibázik: `Could not start recording on the host: …`.
+  Másik build kiválasztásához menjen a **Beállítások → Szerver → Hang- és
+  megbeszélésmodellek** helyre — ehhez is újraindítás kell.
+- Az első felvételnél engedélyezze a **mikrofon** hozzáférést, amikor az
+  operációs rendszer kéri.
+- **macOS 14.4+** rendszeren a rendszerhang rögzítése Core Audio process
+  tap-ekkel történik — nem kell illesztőprogramot telepíteni, de az operációs
+  rendszer másodszor is kér egy _hangrögzítési_ engedélyt. Ez nem a
+  képernyőfelvétel, és soha nem gyújtja fel a képernyőfelvétel-jelzőt. Ha
+  megtagadja, az indítás ezzel hibázik: `System-audio capture permission denied.`
+  A macOS 14.4 alatti verziókon nincs rendszerhang-rögzítés.
+- **Linux** rendszeren a `parecord` (pulseaudio-utils) vagy a `pw-record`
+  (pipewire) programnak a `PATH`-ban kell lennie — a rögzítés az egyiket indítja
+  el egy PipeWire/PulseAudio monitorforrás ellenében. Ha egyik sincs meg, az
+  indítás ezzel hibázik: `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Hová kerül a megbeszélés hangja]
+A rögzítés, az átírás, a visszhangszűrés és a beszélőszétválasztás mind az
+eszközön fut, felhőhívás nélkül — az „eszköz” azonban a **cc_server gazdagépet**
+jelenti, amely másik gép, ha a szervert távolról futtatja. A végső összefoglaló
+pedig egy közönséges ügynökfuttatás: a `meeting_summary` pipeline elküldi a
+teljes átiratot és a nyers jegyzeteit ahhoz a modellszolgáltatóhoz, amelyet az az
+ügynök használ. Ha az átiratnak nem szabad elhagynia a gépet, állítsa azt az
+ügynököt helyi szolgáltatóra.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+A felvétel képernyője mindezt kiírja felvétel közben, így a döntés már azelőtt
+Ön előtt van, hogy egyáltalán lenne elküldendő átirat.
 :::
 
-## Start a recording
+## Felvétel indítása
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Nyissa meg a **Megbeszélések** elemet az oldalsávban.
+2. Kattintson a **Megbeszélés felvétele** gombra. Az élő felvételi HUD a
+   `/meetings/record` útvonalon nyílik meg.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+A felvétel azonnal elindul, és a mikrofonját, valamint a rendszer kimeneti hangját
+— a többi résztvevőt — rögzíti. Nincs módválasztó párbeszédablak és nincs
+hangforrás-választó: a személyes, egyetlen mikrofonos mód létezik az API-ban, de
+felülete ma még nincs.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+Böngészőben ugyanez a folyamat működik, egyetlen különbséggel: a „rendszerhang”
+itt egy képernyőmegosztás, amelynek hangművet is kell tartalmaznia. Osszon meg
+egy böngészőlapot (vagy a teljes képernyőt), és a választóban engedélyezze a
+„Share tab audio” / „Share system audio” beállítást. A Safari és a Firefox,
+valamint a macOS-en a teljes képernyős megosztás gyakran nem tud ilyet adni.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+A HUD egy szintmérőt, az eltelt időt és az egyik oldalon épülő élő átiratot
+mutat.
 
-## During the meeting
+## A megbeszélés alatt
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Vessen fel nyers jegyzeteket** a jegyzetpanelben. Azokat gépelés közben menti
+  a rendszer, és később átadja az összegző ügynöknek, ezért jegyezzen fel
+  mindent, amit az átirat esetleg kihagy.
+- **Válassza ki a jegyzetsablont** az **Aktív sablon** sorban. Ez alakítja a
+  megbeszélés összefoglalóját, és a felvétellel együtt rögzül, így egy későbbi
+  újrafuttatás ugyanazt a sablont hozza létre, amelyet itt választott.
+- **Szüneteltetés és folytatás** a szünet vezérlőelemmel. Szüneteltetés közben az
+  átírás leáll, és az időzítő megfagy.
+- Az átirat beszélőcímkékkel streamel: az Ön szavai **Ön** jelöléssel, a hívás
+  mindenki másé **Mások** jelöléssel — amíg a beszélőszétválasztás fel nem
+  bontja a Másokat `Person 1`, `Person 2`, … beszélőkre, amelyeket átnevezhet.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Előfordulhat, hogy egy nagyon halk beszélőt nem ír át]
+Az átírás kihagy minden olyan hangablakot, amely soha nem emelkedett a
+csendküszöb fölé, és egyáltalán nem dekódolja azt. Ez megóvja attól, hogy egy
+halk csatorna a hallucinált, nem beszédhangú tokenekkel égesse a CPU-t, de azt is
+jelenti, hogy egy halk vagy távoli beszélőnek nem lesz átirata. A szintmérőt
+inkább korán ellenőrizze, ne a végén.
 :::
 
-## Stop and summarize
+## Leállítás és összefoglalás
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Kattintson a **Leállítás és összefoglalás** gombra.
+2. A Control Center egyenesen a megbeszélés részletnézetére viszi, amely
+   **Feldolgozás** jelöléssel áll: a beszélőszétválasztás egyedi beszélőkre
+   bontja a távoli csatornát, és a `meeting_summary` pipeline legenerálja az
+   összefoglalót.
+3. A megbeszélés **Kész** állapotra vált, amint az a pipeline befejeződik. Nem
+   kell megvárnia — a részletnézet magától frissül.
 
-## Review the writeup
+## Az összefoglaló átnézése
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+A megbeszélés részletnézetének (`/meetings/:meetingId`) négy füle van:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Fül          | Mi található itt                                                                |
+| ------------ | ------------------------------------------------------------------------------- |
+| **Jegyzetek** | Az MI-összefoglaló és a kibővített jegyzetek, a nyers jegyzeteiből + az átiratból felépítve |
+| **Átirat** | A teljes, beszélőcímkékkel ellátott átirat időbélyegekkel |
+| **Teendők** | Kinyert tennivalók, mindegyikhez opcionális felelőssel |
+| **Döntések** | A hívás során rögzített döntések |
 
-From here you can:
+Innen a következőket teheti:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Beszélők átnevezése**: változtassa a `Person 1` értéket valódi névre; a
+  módosítás az egész átiratra érvényes.
+- **Pipálja ki a teendőket**, ahogy elvégzi őket.
+- **Jegy létrehozása** egy teendőből: ez egy új, hozzárendelés nélküli jegyet hoz
+  létre a teendő címével, és visszahivatkozik rá a sorból. Az ügynökhöz rendelést
+  magából a jegyből végezze (lásd
+  [Munka delegálása ügynököknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)).
+- **Összefoglaló újrafuttatása** egy friss menethez (például a beszélők
+  átnevezése után). Újra felhasználja a megbeszélés rögzítésekor rögzített
+  sablont. Az aktív sablont a **Beállítások → Munkaterület → Megbeszélések**
+  helyen választhatja ki.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+A jegyzetek, a cím, a teendők és a döntések szerkesztése mindenhol működik. Az
+**Összefoglaló újrafuttatása** és egy feldolgozás alatti megbeszélés megszakítása
+**csak asztali környezetben** érhető el — böngészőben mindkét gomb hatástalan.
 
-## Record straight from a calendar event
+## Felvétel közvetlenül naptáreseményből
 
-If you've [connected a calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Ha már [csatlakoztatta a
+naptárát](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/),
+kihagyhatja a kézi indítást. Ez **csak asztali környezetben** érhető el; a webes
+kliens elutasítja.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Nyissa meg az eseményt a **Naptár** nézetből.
+2. Kattintson a **Felvétel indítása és összekapcsolás** gombra.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+A felvétel az esemény címével indul, és össze lesz kapcsolva vele, így a
+jegyzetek és a naptárbejegyzés kapcsolatban maradnak.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[A megbeszélés törlése nem törli a hangját]
+A megbeszélés törlése eltávolítja a sorait, de a `<dataDir>/meetings/<meetingId>/`
+alatt rögzített WAV-fájlok a lemezen maradnak — nincs megőrzési szabályzat,
+méretkorlát vagy tisztító átvizsgálás. Ha a hang számít, Önnek kell törölnie azt
+a könyvtárat.
 :::
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Connect a Google Calendar](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
-- [Delegate work to agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
+- [Google Calendar csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/)
+- [Munka delegálása ügynököknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Meetings and transcription](/hu-HU/kezikonyv/fogalmak/megbeszelesek/)
+- [Megbeszélések és átírás](/hu-HU/kezikonyv/fogalmak/megbeszelesek/)

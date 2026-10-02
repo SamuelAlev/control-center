@@ -1,148 +1,150 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Arbeidsområder og isolasjon
+description: Hvorfor et arbeidsområde er en hard leietakergrense, hvordan databasedelingen gjør grensen strukturell, og hva som bevisst krysser den.
 slug: nb-NO/handbok/konsepter/arbeidsomrader
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Hva er et arbeidsområde?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Et arbeidsområde er den øverste isolerte leietakeren i Control Center. Det samler agenter, repoer, områder, saker, minne, pipelines og medlemmer i én avgrenset kontekst. Alt som skjer inne i et arbeidsområde, blir værende der.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Et typisk arbeidsområde tilsvarer ett prosjekt eller én kodebase. Du kan ha egne arbeidsområder for «api-service», «frontend-v2» og «infrastructure».
 
-## Workspace-scoped data
+## Data med arbeidsområdeomfang
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Radene til et arbeidsområde ligger i arbeidsområdets egen SQLite-fil, på `<dataDir>/<workspaceId>/workspace.db`. Hvert arbeidsområde får en mappe i stedet for bare en fil, fordi et arbeidsområde samler mer enn én database — worktrees per samtale, agent- og skill-filene, legitimasjon til chatboten — og å gi det en mappe betyr at alt dette lever og slettes sammen.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Enhet                                                 | Omfang                                            |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| Agenter                                               | Tilhører nøyaktig ett arbeidsområde               |
+| Repoer                                               | Registreres i ett arbeidsområde (se nedenfor)     |
+| Områder, samtaler og meldinger                        | Arbeidsområdeomfang                               |
+| Saker, prosjekter, planer, orkestreringer             | Arbeidsområdeomfang                               |
+| Minnefakta, policyer, domener, tilgangstildelinger     | Arbeidsområdeomfang                               |
+| Pipeline-kjøringer, maler, utløsere                   | Arbeidsområdeomfang                               |
+| Pull request-tilstand, gjennomgangsområder, gjennomgangskohorter | Arbeidsområdeomfang                     |
+| Agentkjøringslogger og arbeidsminne                   | Arbeidsområdeomfang                               |
+| Medlemmer, invitasjoner, tildelinger per repo          | Arbeidsområdeomfang                               |
+| Symboler og kanter i kodegrafen                        | Begrenset av `repoId` i arbeidsområdefilen        |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+De fleste av disse radene har en `workspaceId`-kolonne; atskilte databasefiler håndhever isolasjonen. Se isolasjonsinvarianten nedenfor.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repoer har arbeidsområdeomfang; identitet på tvers av arbeidsområder følger stien
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Raden til et repo ligger i arbeidsområdets egen databasefil — filen _er_ omfanget, så tabellen har ingen `workspaceId`-kolonne og ingen koblingstabell.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Du legger til et repo i et arbeidsområde i Innstillinger → Arbeidsområde → Arkiv. Å registrere samme checkout i to arbeidsområder oppretter to uavhengige rader med to id-er; identiteten til et repo _på tvers av_ arbeidsområder følger filsystemstien (eller GitHub-eier/navn), aldri id-en.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Registreringen er streng: stien må ligge inne i et git-worktree, den må ha et `origin`-remote, og det remote-et må peke på en støttet kodevert (github.com, gitlab.com eller bitbucket.org). Kodeverten leses fra remote-et og lagres på repoet, så ett arbeidsområde kan inneholde repoer fra alle tre. Alt annet avvises. Mappeleseren du velger fra, viser filsystemet til **serververten**, begrenset til serverens `--repo-roots`-tillatelsesliste (som som standard er hjemmemappen til serverbrukeren).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Å fjerne et repo fra et arbeidsområde sletter raden fullstendig og kaskaderer kodesymbolene, kantene, filene, indekssjekkpunktene og tildelingene per medlem. Checkout-en på disken berøres ikke.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Kodegrafen ligger i samme fil, med `repoId` som nøkkel, fordi ulike arbeidsområder kan ha samme repo på ulike grener med ulik kode.
 
-## The isolation invariant
+## Isolasjonsinvarianten
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Datalekker på tvers av arbeidsområder behandles som feil. Isolasjonen er **strukturell** og håndheves på flere nivåer:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Databaselaget.** Hvert arbeidsområde har sin egen SQLite-fil, utlevert av `WorkspaceDatabaseManager.of(workspaceId)`. En arbeidsområdedatabase deklarerer ikke `users`, `workspaces` eller tabellene til noe annet arbeidsområde, så en lesing på tvers av arbeidsområder er ikke en feil du kan skrive — den kompilerer ikke. Repoer løser opp DAO-en sin per kall i stedet for å cache én, og fordi hver repo-metode tar en påkrevd `workspaceId`, kan arbeidsområdet aldri utledes eller settes til en standardverdi.
+- **Arbeidsområde-id-en er et stisegment.** Fordi id-en blir et mappenavn, må den samsvare med et trygt mønster for ett enkelt segment (alfanumerisk start, deretter alfanumeriske tegn, punktum, understreker og bindestreker; ingen `..`). Id-er er UUID-er overalt i produktet. Alt annet gir en feil i stedet for å bli sanert — det er vernet mot stitraversering, og det feiler høylytt i stedet for å skrive dataene til et arbeidsområde til en sti noen andre har valgt.
+- **Forsvar i dybden.** `workspaceId`-kolonnene er fortsatt der og skrives fortsatt. Overflødige innenfor én fil holder de sync-feed-utløserne, FTS-indeksene og de eksisterende radformene uendret, og de gjør en fil selvbeskrivende når den inspiseres på egen hånd — som er det eksport og import bygger på.
+- **Domenelaget.** Tjenester som muterer entiteter etter id, validerer `entity.workspaceId == workspaceId` på ett enkelt kontrollpunkt før de fortsetter, og kaster `WorkspaceMismatchException` ved avvik — den høylytte feilen for en id som kom fra feil kontekst. Å avvise høylytt betyr noe: en stille no-op skjuler feilen, og å fortsette lekker data.
+- **RPC-laget.** Repo-RPC-dispatchøren er kontrollpunktet. Hver operasjon med arbeidsområdeomfang må ha `workspace_id` i sine egne argumenter — det finnes ingen «gjeldende arbeidsområde» per økt som kan lekke, og en ukjent id avvises som ikke funnet _før_ noe åpner en database, så en dårlig id kan ikke materialisere en spøkelses-`workspace.db`. Operasjoner som virkelig er globale (nyhetsstrømmen, flåkekøen) erklærer seg som uten omfang, som et eksplisitt og gjennomgått valg. MCP-verktøy følger samme regel: ethvert verktøy som berører data med arbeidsområdeomfang, krever `workspace_id`.
+- **Fan-out på tvers av arbeidsområder kan regnes opp.** Å svare på et spørsmål om flere arbeidsområder betyr å åpne flere databaser. Den fan-outen er begrenset til én hjelper, `CrossWorkspaceQueries`, slik at den fullstendige listen over ting som med rette krysser grensen, ligger i kallpunktene til én fil i stedet for å spre seg bak dokumentasjonskommentarer. Disse kallpunktene er: aggregering for hele serveren, avstemmere ved oppstart, opprydding av oppbevaring og GC, sikkerhetskopi, hendelsesrutere — og medlemskapsoppslaget nedenfor.
+- **Tilgang kun via id er ikke nok.** Å slå opp en entitet etter UUID-en dens beviser ikke at den tilhører arbeidsområdet til den som spør. Fildelingen gjør feil fil uoppnåelig; valideringen i domenelaget fanger opp en feil id som kommer inn gjennom en legitim fil.
 
-## Membership, not the pairing key, is what grants access
+## Medlemskap, ikke paringsnøkkelen, gir tilgang
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Å holde en enhetslegitimasjon autentiserer en _enhet_. Den autoriserer ikke noe inne i et arbeidsområde. Hver operasjon med arbeidsområdeomfang løser opp medlemskapsrollen til den som spør, og håndhever en nedre grense utledet fra operasjonens art — lesing krever `guest`, en mutasjon krever `member`, en destruktiv operasjon krever `admin` — og operasjoner som viser repoinndhold, sjekker i tillegg tildelingen den som spør har for det repoet. En gyldig paringsnøkkel uten medlemskap får `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Konsekvensen for isolasjonen er elegant: medlemskapsradene ligger i _arbeidsområdets egen_ fil, så «hvem er i dette arbeidsområdet?» er en helt vanlig lesing med omfang. Det motsatte spørsmålet — «hvilke arbeidsområder er jeg i?» — er per definisjon spredt over flere filer, så det er en av de få godkjente `CrossWorkspaceQueries`-fan-outene, og det er det arbeidsområdevelgeren kjører før noe arbeidsområde er valgt.
 
-See [Multiplayer](/nb-NO/handbok/konsepter/flerbruker/) for the role ladder and repo grants.
+Se [Flerbruker og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/) for rollestigen og repotildelinger.
 
-## The global registry
+## Det globale registeret
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Ikke alt har arbeidsområdeomfang. En andre database, `<dataDir>/global.db`, inneholder det som virkelig gjelder hele serveren:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **arbeidsområderegisteret**, slik at bytteren kan liste opp hvert arbeidsområde uten å åpne én eneste arbeidsområdefil — og slik at navnet, logoen, eieren, den manuelle rekkefølgen og markøren for myk sletting til et arbeidsområde ligger utenfor filen de beskriver;
+- **identitet**: brukere, brukerinnstillinger og parede enheter, fordi ett menneske er én bruker på tvers av alle arbeidsområder, og en paret enhet overlever at et arbeidsområde slettes;
+- **flåkekøen** (arbeidere, jobber, plasseringslogg), der planleggeren matcher hele køen mot hver arbeider ved hvert tikkeslag;
+- **nyhetsstrømmen**, som er per bruker (ikke per arbeidsområde) — legger du til en strøm, følger den deg inn i hvert arbeidsområde;
+- **`workspace_routes`**, indeksen før autentisering som svarer på «hvilket arbeidsområde eier denne nøkkelen?» for inngangspunkter som kommer med ingenting annet enn en hemmelighet eller en ugjennomsiktig id (en invitasjonshash, et webhook-token, en dyp lenke) og ikke noe arbeidsområde. Et bom der gir «ikke funnet»; det finnes bevisst ingen skanning som reserve;
+- **innstillinger og identitet for hele installasjonen**: installasjons-id-en, innstillinger på vertsnivå, SSO-tilkoblinger og styrte handlingspolicyer (en innstramming for hele installasjonen som bare kan stramme inn tillatelsesreglene for arbeidsområdet).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Oppstarten åpner bare denne filen. Arbeidsområdefiler åpnes ikke før de berøres første gang, så oppstartskostnaden holder seg flat uansett hvor mye historikk arbeidsområdene samler, og `quick_check` per fil betales ved første bruk i stedet for underveis fram til banneret som viser at serveren er klar.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+En arbeidsområdefil inneholder bare én enkelt rad `workspace_meta` for selvidentifikasjon (id-en, installasjonen som opprettet den, skjemaversjonen den ble opprettet med, og når). Alt beskrivende om et arbeidsområde ligger i registeret.
 
-## Creating a workspace
+## Opprette et arbeidsområde
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Å opprette et arbeidsområde gjør mer enn å sette inn en registerrad. I én operasjon stempler serveren brukeren som oppretter det, som `ownerUserId`, registrerer eierrolle-medlemskapet til den brukeren og publiserer en `WorkspaceCreated`-domenehendelse. Lyttere på den hendelsen forhåndsfyller deretter, idempotent og i bakgrunnen:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- en **CEO-agent** pluss fire spesialister — `qa`, `architect`, `engineer`, `librarian` — der spesialistene rapporterer til CEO-en;
+- de **innebygde pipeline-malene** og utløserne deres (hendelses- og manuelle utløsere er slått på fra start; planlagte er valgfrie, bortsett fra den daglige worktree-GC-oppryddingen);
+- **start-suitene med evals**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/nb-NO/handbok/konsepter/agentmodell/).
+Dette skjer for _hvert_ arbeidsområde, ikke bare det første. De forhåndsopprettede agentene opprettes uten adapter, så de kjører på **Control Center (built-in)** med Anthropics standardmodell (`claude-opus-4-8` hvis du ikke låser fast en annen) til du angir en adapter og modell per agent i Innstillinger → Arbeidsområde → Agenter. Se [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Skrivingen av eier-medlemskapet betyr mer enn det ser ut som: uten den ville det nyopprettede arbeidsområdet ikke ha noen medlemmer, og hvert kall med arbeidsområdeomfang som oppretteren gjør etterpå, ville bli avvist.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agenter kan ikke opprette et arbeidsområde]
+Det finnes ikke noe `create_workspace`-MCP-verktøy. Mennesker oppretter et arbeidsområde gjennom `workspace.create` (kontrollpunkt med bare navn) eller `workspace.upsert` (fullstendig post, også brukt til oppdateringer). Begge stempler brukeren som oppretter det, som `owner` og publiserer `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Slette, eksportere, importere
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Å slette et arbeidsområde **markerer registerraden og fjerner koblingen til mappen**. Arbeidsområdet forsvinner fra alle lister og oppslag. Registerraden blir stående (mykt slettet), slik at id-en fortsatt er kjent for sikkerhetskopi og vedlikehold, men `workspace.delete` fjerner umiddelbart mappen til det arbeidsområdet — database, worktrees, agentfiler og resten — via `WorkspaceDatabaseManager.dropAndClose`. Bare **eieren** av arbeidsområdet kan slette det.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Fordi ett arbeidsområde er én fil, er det å overlevere et arbeidsområde en filoperasjon og ikke en tabell-for-tabell-dump:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` er en enkelt `VACUUM INTO` — et konsistent, defragmentert øyeblikksbilde tatt under en lesetransaksjon mens serveren fortsetter å betjene forespørsler.
+- `workspace.import` adopterer en slik fil og erstatter alt mål-arbeidsområdet til enhver tid inneholder. Den innebygde `workspace_meta` lar en import skille «min egen fil, gjenadoptert» fra «en fil fra en annen installasjon» (det siste er tillatt, men loggføres i stedet for å være usynlig).
+- `server.backupNow` tar et øyeblikksbilde av hele installasjonen til en mappe med tidsstempel som speiler den aktive datamappen — `manifest.json`, `global.db` og én `<workspaceId>/workspace.db` per arbeidsområde — så gjenoppretting er å kopiere den tilbake.
+- `server.listBackups` leser den mappen tilbake, nyeste først, med størrelsen og arbeidsområdelisten til hvert øyeblikksbilde. Et øyeblikksbilde der manifestet mangler eller navngir filer som ikke finnes, rapporteres likevel, flagget som ufullstendig — å skjule det er hvordan en operatør begynner å tro at de har en sikkerhetskopi de ikke har.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Sikkerhetskopieringen ligger under **Innstillinger → Server → Sikkerhetskopi og gjenoppretting**:
+**Sikkerhetskopier nå** tar et øyeblikksbilde av installasjonen, listen viser hvilke
+øyeblikksbilder som er komplette og lar installasjonseieren slette ett etter
+bekreftelse, og hvert arbeidsområde tilbyr eksport og import. Den innebygde
+pipelinen **Workspace backup** tar bare databasen til det arbeidsområdet på en
+ukentlig plan og sletter sine egne sikkerhetskopier som er eldre enn den
+konfigurerte oppbevaringsalderen. Å gjenopprette et arbeidsområde fra et
+installasjonsøyeblikksbilde er `workspace.import` rettet mot øyeblikksbildets
+`<workspaceId>/workspace.db`; å gjenopprette en hel installasjon er fortsatt en
+tilbakekopiering av øyeblikksbildemappen med serveren stoppet.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/nb-NO/handbok/referanse/sikkerhetskopi/#what-a-backup-does-not-contain) has the full table.
+Det ingen av dem tar med, er resten av arbeidsområdemappen. Et arbeidsområde samler mer enn én database — innlimte bilder, skill- og agentfiler, chatlegitimasjon, worktrees — og eksport og import flytter **filen**, så alt ved siden av den blir liggende der det er. Det er bevisst for legitimasjon og kan kastes for worktrees; for resten er det en begrensning å kjenne til, ikke en funksjon. [Sikkerhetskopireferansen](/nb-NO/handbok/referanse/sikkerhetskopi/#what-a-backup-does-not-contain) har hele tabellen.
 
-## Moving a backup between the server and your device
+## Flytte en sikkerhetskopi mellom serveren og enheten din
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/nb-NO/handbok/referanse/sikkerhetskopi/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Hver operasjon ovenfor snakker om stier på **serveren**, noe som bare er et fullstendig svar når serveren er din egen maskin. Tre signerte HTTP-ruter — [`/backup/workspace`, `/backup/snapshot` og `/backup/restore`](/nb-NO/handbok/referanse/sikkerhetskopi/#transfer-routes) — frakter bytene for alle andre topologier, på samme autentiserte bane som medieproxyen og bildelageret allerede bruker. På siden er dette en **Last ned**-knapp ved siden av hver eksport og hvert øyeblikksbilde (du velger hvor den lander), og **Velg en fil og last opp** for å gjenopprette fra en fil som ligger på maskinen du bruker. Opplastingen er den som virker når serveren ikke er din maskin: `workspace.import` trenger at filen allerede ligger på verten, og det er slik den kommer dit.
 
-Three properties are worth knowing:
+Tre egenskaper er verdt å kjenne til:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **En nedlasting lager en fersk kopi, og serveren beholder ingenting av den.** Å laste ned er ikke «hent filen eksportknappen lagde» — den eksporterer på nytt, strømmer den og sletter den. Svaret er `no-store` med `Accept-Ranges: none` av samme grunn: et gjenopptatt intervall ville spleise to forskjellige eksporter til én fil som ser gyldig ut, men ikke er det.
+- **En opplasting strømmes til disk, bufres aldri**, i begge ender, og den mellomlagrede kopien slettes på hver vei ut — også ved avvisning. En arbeidsområdedatabase er ikke et skjermbilde.
+- **En reléert tilkobling har ingen HTTP-opprinnelse**, så overføringskontrollene er deaktivert der, med en merknad som sier hvorfor. Alt som snakker om stier på serversiden, fortsetter å virke over reléet; bare byte-banene trenger en direkte tilkobling.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Hvilke stier tilhører hvem]
+Stiene siden *viser* — mappen for øyeblikksbildet, filen en eksport skrev, kilden en import leser — ligger på maskinen som kjører `cc_server`. Stien en **nedlasting** rapporterer, ligger på maskinen du sitter ved. Den forskjellen er grunnen til at begge finnes: den første er det et vedlikeholdsskript eller en ssh-økt trenger, den andre er det en person som samler en sikkerhetskopi, trenger.
 :::
 
-## Multiple workspaces
+## Flere arbeidsområder
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Du kan kjøre flere arbeidsområder side om side. Hvert av dem fungerer uavhengig: agenter i ett arbeidsområde kan ikke sende meldinger til agenter i et annet, kan ikke lese minnet til et annet arbeidsområde og kan ikke se sakene der. Oppslag av mottakere for agent-til-agent-meldinger er eksakt og krysser aldri et arbeidsområde.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Det finnes ingen dashbord på tvers av arbeidsområder. Analyseflaten på `/workspaces/:workspaceId/observability` abonnerer på en avgrenset global strøm av nylige kjøringer og begrenser den umiddelbart til det aktive arbeidsområdet, så det du ser der, er ett arbeidsområde om gangen. De eneste flatene som virkelig favner flere arbeidsområder og som et menneske berører, er arbeidsområdevelgeren og bytteren.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Én praktisk begrensning er verdt å kjenne til: et arbeidsområde noen bruker, holder seg åpent — det finnes ingen LRU. Når det er flere enn 32 av dem, advarer serveren i stedet for å avvise, fordi hver åpne fil holder en bakgrunnsisolat og en sidecache. Fan-out på tvers av arbeidsområder åpner filer flyktig og lukker dem etterpå hvis ingenting annet har gjort krav på dem.
 
-## Related concepts
+## Relaterte konsepter
 
-- [Multiplayer](/nb-NO/handbok/konsepter/flerbruker/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/nb-NO/handbok/konsepter/agentmodell/): agents belong to exactly one workspace
-- [Memory and knowledge](/nb-NO/handbok/konsepter/minne-og-kunnskap/): memory is workspace-scoped
-- [Architecture](/nb-NO/handbok/konsepter/arkitektur/): where the databases sit in the client/server split
-- [Back up and restore](/nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/nb-NO/handbok/referanse/sikkerhetskopi/): every operation, route, manifest field and limit
-- [Add repositories](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/): registering a checkout into a workspace
+- [Flerbruker og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/): medlemskap, roller og repotildelinger — tilgangshalvdelen av isolasjonen
+- [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): agenter tilhører nøyaktig ett arbeidsområde
+- [Minne og kunnskap](/nb-NO/handbok/konsepter/minne-og-kunnskap/): minne har arbeidsområdeomfang
+- [Arkitektur](/nb-NO/handbok/konsepter/arkitektur/): hvor databasene ligger i klient/server-delingen
+- [Sikkerhetskopier og gjenopprett](/nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett/): ta et øyeblikksbilde, flytte et arbeidsområde, oppbevare kopier andre steder
+- [Sikkerhetskopi, eksport og import](/nb-NO/handbok/referanse/sikkerhetskopi/): hver operasjon, rute, manifestfelt og grense
+- [Legg til repoer](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/): registrere en checkout i et arbeidsområde

@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: สถาปัตยกรรม
+description: โครงสร้างของ Control Center ด้วยโมเดลเซิร์ฟเวอร์และไคลเอนต์แบบบาง สถาปัตยกรรมแบบคลีนที่ยึดฟีเจอร์เป็นหลัก และพอร์ตกับอะแดปเตอร์
 dateModified: 2026-09-19
 slug: th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## ภาพรวม
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center ใช้สถาปัตยกรรมแบบคลีนที่ยึดฟีเจอร์เป็นหลัก พร้อมรูปแบบพอร์ตและอะแดปเตอร์ โค้ดเบสจัดโครงสร้างตามโดเมนธุรกิจ (ฟีเจอร์) และมีกฎการพึ่งพาที่เข้มงวดซึ่งบังคับใช้ด้วยการทดสอบสถาปัตยกรรมอัตโนมัติ
 
-## A thin client over a headless server
+## ไคลเอนต์แบบบางบนเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center เป็น**สถาปัตยกรรมไคลเอนต์แบบบาง** ไม่มีไคลเอนต์ใดเปิดฐานข้อมูลเอง — โพรเซส **`cc_server`** แบบไม่มีส่วนติดต่อเป็นเจ้าของข้อมูล (ไฟล์ `global.db` ขนาดเล็กบวกไฟล์ SQLite หนึ่งไฟล์ต่อเวิร์กสเปซ ซึ่งเปิดแบบ lazy) และให้บริการข้อมูลนั้นผ่าน WebSocket RPC แอปเดสก์ท็อป เว็บบิลด์ และแอปคู่หูบนโทรศัพท์ ต่างเป็นตัวแสดงผลบนการเชื่อมต่อ RPC เดียวกันนั้น
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+เมื่อเปิดใช้งานครั้งแรก เดสก์ท็อปจะเลือกวิธีเชื่อมต่อกับเซิร์ฟเวอร์ของตัวเอง: **ภายในเครื่อง** (สปอว์น `cc_server` บนเครื่องนี้แล้วสื่อสารผ่านลูปแบ็ก — เป็นค่าเริ่มต้น) หรือ **ระยะไกล** (ต่อกับ `cc_server` ที่อื่นผ่าน WebSocket ที่ปลอดภัย) ไคลเอนต์เว็บเป็นแบบระยะไกลเสมอ ตัวแก้เส้นทางตอนบูต (`bootstrap/server_backend.dart`) เป็นผู้เลือกเส้นทางก่อนที่ Riverpod จะมีอยู่ แล้วเขียนทับ `rpcClientProvider` ด้วยไคลเอนต์ที่เชื่อมต่อแล้ว — ฟีเจอร์ทุกตัวจึงอ่านและเขียนผ่านเซิร์ฟเวอร์ แทนที่จะอ่านเขียนฐานข้อมูลในเครื่อง
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+ชั้น RPC เองเป็นแบบ**ไร้สถานะ**: เซสชันผ่านการยืนยันตัวตนแล้ว แต่ไม่ได้ผูกกับเวิร์กสเปซใด การเรียกที่ผูกกับเวิร์กสเปซทุกรายการจะแนบ `workspace_id` ของตัวเองมาในอาร์กิวเมนต์ และดิสแพตเชอร์จะปฏิเสธการเรียกเช่นนั้นหากไม่มีค่านั้น นั่นคือสิ่งที่ทำให้ไคลเอนต์สองตัวบนเซิร์ฟเวอร์เดียวกันถือเวิร์กสเปซที่ใช้งานอยู่ต่างกันได้ โดยไม่มี "เวิร์กสเปซปัจจุบัน" ที่เซิร์ฟเวอร์เก็บไว้ให้ขัดแย้งกัน — และยังหมายความว่าการแยกโดเมนถูกบังคับใช้ต่อการเรียกแต่ละครั้ง ไม่ใช่ต่อการเชื่อมต่อ
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) for the full client matrix and what runs where.
+นี่คือ**เวิร์กสเปซของ Dart** ที่ใช้ lockfile เดียวที่แก้ไขครบแล้ว ประกอบด้วยสมาชิกยี่สิบเอ็ดราย — แพ็กเกจสิบห้าและแอปหกตัว — โดยมีแอปเดสก์ท็อปและเว็บ (`control_center`) เป็นรากของเวิร์กสเปซ แอปทั้งหกคือไบนารีเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ (`cc_server`), ตัวรันงานของฟลีตแบบไม่มีส่วนติดต่อ (`cc_worker`), PWA บนโทรศัพท์ (`cc_remote`), โบรกเกอร์รีเลย์ WebSocket (`cc_signaling_server`), แกลเลอรี Widgetbook (`cc_gallery`) และโฮสต์เดโมสาธารณะ (`cc_demo_server`) ส่วนแพ็กเกจทั้งสิบห้าคือ `cc_ui` (ระบบดีไซน์), `cc_domain` (เคอร์เนลที่ใช้ร่วมกันซึ่งเป็น Dart ล้วน: เอนทิตี ออบเจกต์ค่า พอร์ต เหตุการณ์ และเลเยอร์โดเมนของทุกฟีเจอร์), `cc_harness` (เคอร์เนลเอเจนต์ในตัว: ลูปเอเจนต์แบบ Dart ล้วน — ข้อความ พอร์ตผู้ให้บริการ เครื่องมือ การย่อบริบท การชี้นำ ฮุก ซับเอเจนต์ — โดยไม่ใช้ `dart:io` และไม่พึ่งพา `cc_*` ตัวอื่นใด), `cc_harness_runtime` (อะแดปเตอร์รันไทม์ของฮาร์เนสในตัว: ผู้ให้บริการสตรีมแบบเฉพาะ VM การจัดการข้อมูลรับรอง OAuth/PKCE ที่เก็บข้อมูลรับรอง และชุดเครื่องมือทั่วไป — รันเอเจนต์ได้โดยไม่ต้องติดตั้ง CLI ภายนอก), `cc_rpc` (ทรานสปอร์ตฝั่งไคลเอนต์), `cc_host` (เคอร์เนลฝั่งเซิร์ฟเวอร์), `cc_data` (รีโพซิทอรีระยะไกล), `cc_persistence` (ฐานข้อมูลฝั่งเซิร์ฟเวอร์), `cc_server_core` (การประกอบแอปและเซิร์ฟเวอร์ + รันไทม์ของตัวตน/สถานะออนไลน์/ฟลีต/การประเมิน), `cc_infra` (อะแดปเตอร์แบบเฉพาะ VM), `cc_mcp` (เครื่องมือ MCP), `cc_mcp_client` (ไคลเอนต์สำหรับเซิร์ฟเวอร์ MCP ภายนอก โดยเชื่อมเครื่องมือของเซิร์ฟเวอร์เหล่านั้นเข้าสู่รีจิสทรีในเครื่อง), `cc_markdown` (เอนจิน markdown ที่อยู่ในรีโพ), `cc_natives` (โหนดปลายของ FFI) และ `system_audio_capture` ดู [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) สำหรับเมทริกซ์ไคลเอนต์แบบเต็มและสิ่งที่รันอยู่ที่ใด
 
-## Dependency rule
+## กฎการพึ่งพา
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **เลเยอร์โดเมน**: เอนทิตี ออบเจกต์ค่า อินเทอร์เฟซรีโพซิทอรี พอร์ต และบริการโดเมนที่เขียนด้วย Dart ล้วน ไม่มีการนำเข้าจากชั้นโครงสร้างพื้นฐานเลย (ไม่มี dio, drift หรือโมเดลเครือข่าย)
+- **เลเยอร์พรีเซนเทชัน**: หน้าจอ วิดเจ็ต และนอติไฟเออร์ ไม่เข้าถึง drift/DAO/ชั้นข้อมูลโดยตรง ทุกอย่างไหลผ่านผู้ให้บริการ Riverpod → รีโพซิทอรี
+- **เลเยอร์โครงสร้างพื้นฐาน**: อิมพลีเมนเตชันจริงของพอร์ตโดเมนและอินเทอร์เฟซรีโพซิทอรี โดยขึ้นกับโดเมน ไม่มีทางเป็นกลับกัน
 
-## Feature structure
+## โครงสร้างของฟีเจอร์
 
-The full feature shape is:
+รูปแบบเต็มของฟีเจอร์คือ:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+มีฟีเจอร์ไม่กี่ตัวใต้ `lib/features/` ที่มีครบทั้งสี่ไดเรกทอรีจริง ๆ และช่องว่างเหล่านั้นก็ให้ข้อมูลที่เป็นประโยชน์มากกว่าเกิดขึ้นโดยบังเอิญ เคอร์เนลที่ใช้ร่วมกันได้ดูดกลืน `domain/` ของทุกฟีเจอร์เข้าไปไว้ใน `cc_domain` และไคลเอนต์แบบบางไม่มีอิมพลีเมนเตชันของรีโพซิทอรีอยู่เลย ฟีเจอร์ส่วนใหญ่ใต้ `lib/` จึงมีเพียง `presentation/` กับ `providers/` เท่านั้น ไดเรกทอรี `data/` หรือ `domain/` ที่ยังเหลืออยู่ในไคลเอนต์จึงเป็นเครื่องหมายว่าส่วนนั้นเป็นงานฝั่งไคลเอนต์จริง ๆ
 
-Two named exceptions are worth knowing:
+มีข้อยกเว้นที่ตั้งชื่อไว้สองข้อที่ควรรู้:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** มีเฉพาะผู้ให้บริการเท่านั้น ส่วน UI การตั้งค่าและสถานะของมันอยู่ใน `settings/` และตัวพื้นผิวเครื่องมือเองเป็นแพ็กเกจ (`cc_mcp`) ไม่ใช่โฟลเดอร์ฟีเจอร์
+- **`orchestration`** และ **`plan_studio`** มีเพียง `presentation/` กับ `providers/`
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) for the model.
+ฟีเจอร์ **`guardrails`** วางเลเยอร์โดเมนไว้ที่ `cc_domain/features/guardrails/` แทนที่จะไว้ในแอปราก เพราะเซิร์ฟเวอร์เป็นผู้บังคับใช้: กฎหนึ่งข้อจับคู่ `ActionClass` (หรือ `commandPrefix` ของเชลล์) เข้ากับการตัดสินใจอย่างใดอย่างหนึ่ง — `allow`, `prompt` หรือ `deny` — ณ สโคปหนึ่ง กฎถูกเก็บแยกตามเวิร์กสเปซ และทุกการกระทำของเอเจนต์ที่อยู่ภายใต้การกำกับจะคลี่คลายผ่านสายนโยบายก่อนที่จะรัน การคลี่คลายไล่จาก `space > agent > workspace > mode preset > built-in default` และ **สโคปแรกที่มีกฎตรงกันเป็นตัวตัดสิน**; การเลือกตัวที่เข้มงวดที่สุดเป็นเพียงตัวตัดสินเสมอเมื่ออยู่ภายในสโคปเดียวกัน และเมื่อต้องรวมหลายคลาสที่การกระทำหนึ่งประกาศไว้ พื้นผิวที่ผู้ปฏิบัติงานเห็นคือ การตั้งค่า → เวิร์กสเปซ → สิทธิ์ของเอเจนต์ ที่ `/workspaces/<id>/settings/workspace/permissions` ดู [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/) สำหรับโมเดลนี้
 
-## Shared kernel
+## เคอร์เนลที่ใช้ร่วมกัน
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` เก็บเอนทิตีและรีโพซิทอรีที่ใช้ร่วมกันตั้งแต่ 3 ฟีเจอร์ขึ้นไป เป็นโค้ด Dart ล้วนที่ไม่พึ่งพาโครงสร้างพื้นฐานใด ๆ จึงทำให้ทั้งไคลเอนต์ Flutter และไบนารีเซิร์ฟเวอร์ที่ไม่ใช้ Flutter นำนิยามชุดเดียวกันไปใช้ได้:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- เอนทิตีหลัก: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- ตัวตนและการทำงานร่วมกันแบบหลายคน: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- เอนทิตีหน่วยความจำ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- ออบเจกต์ค่าที่ใช้ร่วมกัน: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- พอร์ตที่ใช้ร่วมกัน: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- บริการโดเมน: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + ชนิดเหตุการณ์ (เวิร์กสเปซ/เอเจนต์, PR/รีวิว, การส่งข้อความ, ตั๋วงาน, ไปป์ไลน์, การประสานงาน, หน่วยความจำ, ปฏิทิน/การประชุม, ตัวตนและสมาชิกภาพ, การสังเกตการณ์)
 
-## Identity & multiplayer
+## ตัวตนและการทำงานร่วมกันแบบหลายคน
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center รองรับผู้ใช้หลายคน: มนุษย์และเอเจนต์เป็นผู้กระทำที่มีศักดิ์เท่ากัน รวมเป็นหนึ่งเดียวกันด้วย `Principal` สมาชิกเวิร์กสเปซคือ `User` ที่ผูกกับ `Workspace` ผ่าน `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`) **สมาชิกภาพคือขอบเขตของการเข้าถึง** ไม่ใช่คีย์จับคู่ และการให้สิทธิ์รายรีโพซิทอรีช่วยไม่ให้สมาชิกภาพของเวิร์กสเปซให้สิทธิ์เกินกว่าโฮสต์โค้ด ผู้ใช้คนแรกที่ถูกสร้างบนเซิร์ฟเวอร์ใหม่จะเป็นเจ้าของการติดตั้งนี้ คนอื่นเข้าร่วมด้วยคำเชิญหรือ OIDC การสร้างเวิร์กสเปซจะประทับผู้ใช้คนนั้นเป็น `owner`
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+การทำงานร่วมกันแบบเรียลไทม์ใช้แนวทาง **เซิร์ฟเวอร์เป็นผู้ตัดสิน + ผู้เขียนหลังสุดชนะ (LWW) แยกต่อฟิลด์** ไม่ใช่ CRDT สถานะออนไลน์ (ใครอยู่ตรงนี้ อยู่ตรงไหน เคอร์เซอร์ การพิมพ์ สถานะสดและค่าใช้จ่ายที่กำลังรันของเอเจนต์) เป็น**ช่องทางชั่วคราวที่แยกออกไปและไม่ถูกบันทึกถาวรเลย**; ส่วนสถานะถาวรใช้แกนกลางแบบปรับเปลี่ยนแบบมองโลกในแง่ดี + ให้เซิร์ฟเวอร์รีเบส + LWW มนุษย์และเอเจนต์ใช้รายชื่อชุดเดียวกัน เมื่อมีผู้ปฏิบัติงานที่เป็นมนุษย์เพียงคนเดียว ช่องทางสถานะออนไลน์จะอยู่นิ่งและไม่มีองค์ประกอบส่วนติดต่อของรายชื่อปรากฏขึ้น — การทำงานร่วมกันแบบหลายคนไม่ทำให้ผู้ใช้ที่ทำงานคนเดียวต้องเสียอะไรเลย
 
-## Ports and adapters
+## พอร์ตและอะแดปเตอร์
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+พอร์ตคืออินเทอร์เฟซแบบนามธรรมในเลเยอร์โดเมน ส่วนอะแดปเตอร์คืออิมพลีเมนเตชันจริงในชั้นโครงสร้างพื้นฐาน เนื่องจากเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อเป็นเจ้าของข้อมูลและต้องบิลด์ได้โดยไม่ใช้ Flutter อะแดปเตอร์เกือบทั้งหมดจึงใช้ได้เฉพาะบน VM และอยู่ใน `packages/cc_infra/lib/src/` โดยจัดกลุ่มตามเรื่องที่ดูแล:
 
-| Port                   | Adapter location                                                                                            |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
-| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
-| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
-| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
-| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| พอร์ต                  | ตำแหน่งอะแดปเตอร์                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                                                            |
+| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)                                          |
+| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                                                       |
+| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                                                  |
+| `NotificationPort`     | `lib/core/notifications/` (ฝั่งไคลเอนต์: เรนเดอร์เหตุการณ์จากเซิร์ฟเวอร์ในเครื่อง)                                                          |
+| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)                                   |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`) Jira, ClickUp และ GitHub Issues เป็นอะแดปเตอร์ซิงก์ตั๋วงานใน `cc_infra/lib/src/tickets/sync/`; ตั๋วงานในเครื่องอยู่ในฐานข้อมูลของเวิร์กสเปซโดยไม่มี `TicketProviderPort` |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (บริการโดเมนที่เขียนด้วย Dart ล้วน — ไม่ต้องใช้โครงสร้างพื้นฐานเลย)                      |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+รากการประกอบของแอป (`di/providers.dart`) ผูกพอร์ตฝั่งไคลเอนต์เข้ากับอิมพลีเมนเตชันผ่านผู้ให้บริการ Riverpod ส่วนเซิร์ฟเวอร์ประกอบอะแดปเตอร์ของตัวเองใน `cc_server_core`
 
-## State management
+## การจัดการสถานะ
 
-**Riverpod** for all client state:
+**Riverpod** สำหรับสถานะฝั่งไคลเอนต์ทั้งหมด:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` และ `AsyncNotifier<T>` สำหรับสถานะที่เปลี่ยนแปลงได้
+- `FutureProvider<T>` สำหรับข้อมูลแบบอะซิงโครนัส
+- รายการและแถวข้อมูลสดมาถึงผ่านการสมัครรับข้อมูล RPC ในรูป `AsyncValue<List<T>>` — เซิร์ฟเวอร์ใช้ Drift `.watch()` ภายใน ส่วนไคลเอนต์ไม่เปิด Drift
+- เครื่องมือ MCP รับดีเพนเดนซีเป็นพารามิเตอร์ของคอนสตรักเตอร์แบบมีชนิดข้อมูล ไม่ใช้ `Ref`
 
-## Database
+## ฐานข้อมูล
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite) แยกเป็นสองฐานข้อมูล โดยทั้งคู่อยู่ใน `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — ตารางสั้น ๆ ที่เป็นของทั้งเซิร์ฟเวอร์จริง ๆ ได้แก่ ทะเบียนเวิร์กสเปซ, ผู้ใช้/ค่ากำหนด/อุปกรณ์ที่จับคู่, การเชื่อมต่อ SSO, การตั้งค่าเซิร์ฟเวอร์ระดับการติดตั้ง, นโยบายการกระทำแบบมีการจัดการ (กลไกจำกัดระดับการติดตั้งที่ทำได้เพียงรัดกุมขึ้นเท่านั้นเมื่อเทียบกับกฎคุมของเวิร์กสเปซ), ฟีดข่าวรายผู้ใช้, คิวของฟลีต (วอร์กเกอร์/งาน/บันทึกการจัดวาง), ดัชนี `workspace_routes` ก่อนการยืนยันตัวตน และเมทาดาทาของการติดตั้ง ตอนบูตจะเปิดเฉพาะไฟล์นี้เท่านั้น ต้นทุนการเริ่มระบบจึงคงที่ ไม่ว่าเวิร์กสเปซจะสะสมประวัติไว้มากแค่ไหน การเพิ่มตารางที่นี่เป็นการตัดสินใจด้านการแยกโดเมนที่การทดสอบแบบแรตเช็ตบังคับให้คุณต้องออกมาถกเหตุผล
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — หนึ่ง*ไดเรกทอรี*ต่อหนึ่งเวิร์กสเปซ บรรจุไฟล์ SQLite หนึ่งไฟล์พร้อมทุกอย่างที่เกี่ยวข้องกับเวิร์กสเปซนั้นเพียงแห่งเดียว เพื่อให้ worktree ของการสนทนาและไฟล์ของเอเจนต์วางอยู่ข้างฐานข้อมูลและถูกลบไปพร้อมกัน เกือบทุกอย่างอยู่ที่นี่: เอเจนต์ สเปซ ตั๋วงาน หน่วยความจำ ไปป์ไลน์ การประชุม กราฟโค้ด รีวิว รีโพซิทอรี ไฟล์จะถูกเปิดแบบ lazy เมื่อถูกเรียกใช้ครั้งแรกผ่าน `WorkspaceDatabaseManager.of(workspaceId)` และจะจ่าย `quick_check`, การติดตั้ง FTS/ทริกเกอร์ และ `vector_init` ของตัวเองตอนนั้น
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+ทั้งสองส่วนเริ่มจากเส้นฐาน v1 ที่ถูกยุบรวม — `onCreate` สร้างสคีมาปัจจุบัน — โดยจะเพิ่มขั้นตอนการย้ายข้อมูลต่อท้ายเฉพาะเมื่อฐานข้อมูลที่ติดตั้งใช้งานอยู่ต้องถูกพาไปข้างหน้า
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+เพราะหนึ่งเวิร์กสเปซคือหนึ่งไฟล์ การนำเวิร์กสเปซออกจึงเป็นคำสั่ง `VACUUM INTO` เดียว (`workspace.export`) ไม่ใช่การดัมป์ทีละตาราง; ส่วน `workspace.import` จะรับไฟล์แบบนั้นมาใช้ และอาศัย `workspace_meta` ที่ฝังอยู่ในไฟล์เพื่อแยกว่าจะนำไฟล์ของตัวเองกลับมาใช้ใหม่ หรือรับไฟล์ที่มาจากการติดตั้งอื่น
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+ฐานข้อมูลทั้งสองเป็นของ `cc_persistence` และถูกเปิดโดย `cc_server` เท่านั้น ไม่มีไคลเอนต์ใดเปิด DB — ไคลเอนต์ทุกตัวอ่าน/เขียนผ่าน RPC ตารางถูกนิยามไว้ใน `packages/cc_persistence/lib/database/tables/` ส่วน DAO อยู่ใน `.../daos/`; เอนทิตีของโดเมนเป็น Dart ล้วน แยกจากคลาสตารางของ Drift โดยมีการแมปในชั้นข้อมูล FTS5 ดูแลการค้นหาแบบเต็มข้อความ และ `sqlite_vector` ดูแลการฝังเวกเตอร์ ซึ่งทั้งคู่ทำงานฝั่งเซิร์ฟเวอร์เท่านั้น; ฐานข้อมูลทั้งสองรัน `PRAGMA foreign_keys=ON` ในโหมดบันทึกแบบ WAL
 
-## Routing
+## การกำหนดเส้นทาง
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router** โดยมีข้อเท็จจริงหนึ่งข้อที่ครอบงำส่วนที่เหลือทั้งหมด: **ทุกปลายทางในแอปมีคำนำหน้าเป็นเวิร์กสเปซ** ในรูป `/workspaces/:workspaceId/…` ไอดีเวิร์กสเปซใน URL เป็นแหล่งความจริงเดียวสำหรับเวิร์กสเปซที่ใช้งานอยู่ — `activeWorkspaceIdProvider` ถูกขับจากเส้นทาง ไม่ใช่ทางกลับกัน — จึงเป็นเหตุผลว่าทำไมการอ่านข้อมูลที่ผูกกับเวิร์กสเปซนอกเส้นทางที่มีคำนำหน้าจึงไม่มีที่มาของไอดี
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- _ฟังก์ชัน_ สร้างเส้นทางใน `router/routes.dart` โดยแต่ละตัวรับไอดีเวิร์กสเปซเป็นอาร์กิวเมนต์ตัวแรก ไม่ใช่ค่าคงที่สตริง
+- มีสี่เส้นทางก่อนเข้าบริบทที่ไม่มีคำนำหน้า: `/splash`, `/onboarding`, `/signed-out` และ `/workspaces` (ตัวเลือกเวิร์กสเปซ)
+- `ShellRoute` ครอบเชลล์ของแอป; พื้นผิวทั้งสี่นั้นเรนเดอร์เต็มหน้าจอนอกเชลล์
+- ตัวกั้นการยืนยันตัวตน: การตั้งค่าที่ยังไม่สมบูรณ์จะไปที่ `/onboarding`; การตั้งค่าที่สมบูรณ์แล้วแต่ข้อมูลรับรองของโฮสต์โค้ดหายไปจะไปที่ `/signed-out` คำว่าสมบูรณ์หมายถึงมีโฮสต์โค้ดอย่างน้อยหนึ่งแห่งที่เชื่อมต่อไว้สำหรับผู้ใช้ที่ลงชื่อเข้าใช้ และมีเวิร์กสเปซอย่างน้อยหนึ่งแห่ง — ไม่ได้เจาะจงว่าเป็น GitHub และ CLI `gh` ไม่ใช่วิธีการยืนยันตัวตน
+- ด่านการเริ่มต้นใช้งานอยู่ใน `features/auth/providers/`
 
-## Networking (server-side)
+## เครือข่าย (ฝั่งเซิร์ฟเวอร์)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+HTTP ภายนอกทั้งหมดอยู่ที่เซิร์ฟเวอร์ ไคลเอนต์ไม่เคยต่อตรงไปยัง GitHub, Linear หรือ Google — แต่จะเรียกอ็อป RPC ของเซิร์ฟเวอร์ และแม้แต่สื่อจากระยะไกลก็ถูกดึงผ่านปลายทาง `/proxy/media` ของเซิร์ฟเวอร์ แทนที่จะดึงจากต้นทางโดยตรง
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- ไคลเอนต์ **dio** ใน `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` และ `GoogleCalendarApiClient`
+- การฉีดโทเค็นยืนยันตัวตนผ่านอินเทอร์เซปเตอร์ รวมถึงอินเทอร์เซปเตอร์ Google OAuth แยกตามบัญชีใน `cc_server_core` ที่รีเฟรชโทเค็นเมื่อเจอ 401
+- ข้อผิดพลาดทั้งหมดถูกแมปผ่าน `packages/cc_infra/lib/src/network/error_mapper.dart` → คลาสย่อยของ `AppException` ที่มีชนิดข้อมูลชัดเจนซึ่งนิยามไว้ใน `cc_domain`
 
-## Security
+## ความปลอดภัย
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+เซิร์ฟเวอร์เป็นผู้ถือข้อมูลรับรองที่สำคัญ: โทเค็น GitHub และโทเค็นของระบบตั๋วงานที่ใช้ในการสั่งเอเจนต์ คีย์ของผู้ให้บริการ LLM และโทเค็น OAuth ล้วนอยู่ในไดเรกทอรีข้อมูลของเซิร์ฟเวอร์หรือสภาพแวดล้อมของมัน ส่วนสิ่งที่พวงกุญแจของไคลเอนต์ยังถืออยู่คือข้อมูลรับรองของอุปกรณ์เอง และคีย์จับคู่สำหรับเซิร์ฟเวอร์ระยะไกล
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- ความลับใน `flutter_secure_storage` (พวงกุญแจ macOS, ตัวจัดการข้อมูลรับรอง Windows, libsecret บน Linux) — ข้อมูลรับรองของอุปกรณ์ฝั่งไคลเอนต์และคีย์จับคู่ระยะไกล ไม่ใช่โทเค็นของผู้ให้บริการ
+- `shared_preferences` สำหรับค่ากำหนดที่ไม่ละเอียดอ่อนเท่านั้น (ธีม ฟอนต์ เลย์เอาต์)
+- ความลับของผู้ให้บริการที่ตกค้างจากการติดตั้งเวอร์ชันเก่าจะถูกส่งมอบให้เซิร์ฟเวอร์หนึ่งครั้งโดย `features/auth/providers/credential_migration.dart` แล้วลบออกจากพวงกุญแจของไคลเอนต์
 
-## Architecture enforcement
+## การบังคับใช้สถาปัตยกรรม
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+ข้อจำกัดด้านสถาปัตยกรรมถูกตรวจสอบโดย `test/core/architecture_constraints_test.dart` ซึ่งจะล้มเหลวหากมีการฝ่าฝืนกฎการพึ่งพา
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): how isolation is enforced
-- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): the dispatch flow
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): cross-feature communication
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): the thin-client server model and the client matrix
+- [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/): การแยกโดเมนถูกบังคับใช้อย่างไร
+- [วงจรชีวิตการสั่งงานเอเจนต์](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/): ขั้นตอนการสั่งงาน
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): การสื่อสารระหว่างฟีเจอร์
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/): โมเดลเซิร์ฟเวอร์กับไคลเอนต์แบบบางและเมทริกซ์ไคลเอนต์

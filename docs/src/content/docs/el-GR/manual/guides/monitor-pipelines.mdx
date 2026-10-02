@@ -1,150 +1,167 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Παρακολούθηση εκτελέσεων pipeline
+description: Διαχειριστείτε την ουρά εκτελέσεων, διαβάστε το διάγραμμα χρονισμού και τον πίνακα βημάτων μιας εκτέλεσης και ανακάμψτε από ένα βήμα που απέτυχε ή έχει κολλήσει.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/).
+Αυτή η σελίδα καλύπτει ό,τι συμβαίνει αφού ξεκινήσει μια εκτέλεση: τον εντοπισμό
+της, την ανάγνωση του τι έκανε κάθε βήμα και το πώς θα ξαναβάλετε μπροστά μια
+αποτυχημένη εκτέλεση. Για να ξεκινήσετε μία, δείτε
+[Χειροκίνητη εκτέλεση pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/).
 
-## Find a run
+## Εντοπισμός εκτέλεσης
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Κάντε κλικ στο **Pipelines** στην πλαϊνή στήλη του χώρου εργασίας. Η οθόνη
+   είναι η ουρά εκτελέσεων του χώρου εργασίας — κάθε εκτέλεση, με τη νεότερη
+   πρώτη.
+2. Χρησιμοποιήστε την αριστερή στήλη για φιλτράρισμα. Υπάρχουν ακριβώς τρία
+   φίλτρα, το καθένα με ζωντανό μετρητή: **Όλα**, **Σε εκτέλεση**, **Απέτυχε**.
+3. Περιηγηθείτε στον πίνακα με <kbd>↑</kbd>/<kbd>↓</kbd> (ή <kbd>j</kbd>/<kbd>k</kbd>)
+   και πατήστε <kbd>Enter</kbd> για να ανοίξετε την εκτέλεση που έχει την εστίαση.
+   Το κλικ σε μια γραμμή κάνει το ίδιο.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Κάθε γραμμή εμφανίζει ένα σύμβολο για το πώς ξεκίνησε η εκτέλεση (play για τη
+χειροκίνητη· ένα σύμβολο αρχείου για παρακολούθηση γραφήματος κώδικα· διαφορετικά
+το αυτόματο έναυσμα). Η επεξήγηση εργαλείου αναφέρει το έναυσμα — **Χειροκίνητα**,
+**Δημοσιεύτηκε PR**, **Αλλαγή αρχείου** και ούτω καθεξής — και, για μια εκτέλεση
+παρακολούθησης, ποια αρχεία άλλαξαν. Έπειτα έρχονται το όνομα του pipeline, ένα
+σήμα κατάστασης, η ενεργή διάρκεια (ή η θέση στην ουρά για μια εκτέλεση σε
+κατάσταση `queued`) και πόσος χρόνος έχει περάσει από την έναρξη αυτής της
+απόπειρας. Η ενεργή διάρκεια εξαιρεί τα κενά αδράνειας από διακοπές και
+επανεκκινήσεις, οπότε δεν είναι το πραγματικό διάστημα ρολογιού.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Δεν υπάρχει φίλτρο για ολοκληρωμένες, σε αναστολή ή ακυρωμένες εκτελέσεις, ούτε
+φίλτρο ανά πρότυπο, ούτε χρονικό παράθυρο, ούτε προβολή ιστορικού εκτελέσεων ανά
+πρότυπο. Για να συγκρίνετε εκτελέσεις ενός προτύπου, πρέπει να σαρώσετε την ουρά
+αναζητώντας το όνομά του.
 
-## Read the run detail
+## Ανάγνωση των λεπτομερειών εκτέλεσης
 
-A run's page has three stacked parts.
+Η σελίδα μιας εκτέλεσης έχει τρία μέρη σε στοίβαξη.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Η λωρίδα μεταδεδομένων** περιέχει την ώρα έναρξης, την ενεργή διάρκεια, την
+πρόοδο των βημάτων («3 από 7 βήματα»), μια σύνοψη αποτυχίας που αναφέρει το βήμα
+που έσπασε και τον λόγο, καθώς και τις ενέργειες **Επανάληψη** και **Διαγραφή**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Το διάγραμμα χρονισμού** δίνει μία μπάρα ανά βήμα, με τη διάρκειά του και — για
+βήματα πράκτορα — το κόστος του σε σεντς. Ένα βήμα που επαναλήφθηκε εμφανίζει ένα
+επίθεμα `×N` μετά τη διάρκειά του· αυτό το επίθεμα είναι το μόνο σημείο όπου
+εμφανίζεται ο αριθμός των αποπειρών.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Ο καμβάς του γραφήματος** σχεδιάζει το πρότυπο με τη ζωντανή κατάσταση κάθε
+κόμβου. Η επιλογή ενός κόμβου ανοίγει τον πίνακα βημάτων του.
 
-### Run and step statuses
+### Καταστάσεις εκτέλεσης και βημάτων
 
-| Status        | Meaning                                           |
+| Κατάσταση     | Σημασία                                           |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **Εκκρεμεί**  | Δημιουργήθηκε, δεν έχει ξεκινήσει ακόμη           |
+| **Σε ουρά**   | Έγινε δεκτή αλλά συγκρατείται: το όριο μέγιστου παραλληλισμού αυτού του προτύπου έχει καλυφθεί· δεν υπάρχουν ακόμη γραμμές βημάτων |
+| **Σε εκτέλεση** | Εκτελείται                                      |
+| **Σε αναστολή** | Περιμένει κάτι εξωτερικό — φυσιολογικό, όχι κολλημένο |
+| **Ολοκληρώθηκε** | Τερματίστηκε με επιτυχία                        |
+| **Απέτυχε**   | Τερματίστηκε με σφάλμα                            |
+| **Ακυρώθηκε** | Σταμάτησε από χρήστη ή από το σύστημα             |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Τα βήματα έχουν αυτές τις καταστάσεις χωρίς το **Σε ουρά**, συν το
+**Παραλείφθηκε**, για κλάδο που δεν ακολούθησε ένας δρομολογητής (και τους πλέον
+μη προσπελάσιμους απογόνους του).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+Η κατάσταση **Σε αναστολή** είναι εκεί όπου ένα βήμα πράκτορα περνά το μεγαλύτερο
+μέρος της ζωής του: ένας απεσταλμένος πράκτορας ή μια πύλη έγκρισης συγκρατεί το
+βήμα μέχρι να ολοκληρωθεί η εργασία του. Δύο δικλείδες ασφαλείας του μηχανισμού
+αποτυγχάνουν ολόκληρη την εκτέλεση αντί να τη συνεχίσουν: ένα βήμα που βρίσκεται
+σε αναστολή για περισσότερο από 24 ώρες (`extras.awaitApproval` — το σώμα
+`orchestration.awaitApproval` — εξαιρείται· το `human.gate` όχι) και ένα μη
+ταυτοδύναμο βήμα που βρισκόταν σε εξέλιξη όταν σταμάτησε ο διακομιστής.
 
-## Inspect a step
+## Επιθεώρηση βήματος
 
-Select a node on the canvas. The step panel shows, in order:
+Επιλέξτε έναν κόμβο στον καμβά. Ο πίνακας βημάτων εμφανίζει, με τη σειρά:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Ένα πλαίσιο **Σφάλμα** όταν το βήμα απέτυχε, ή ένα πλαίσιο **Παραλείφθηκε** με
+  τον λόγο όταν παραλείφθηκε.
+- **Ξεκίνησε**, **Ολοκληρώθηκε** και διάρκεια.
+- **Κλάδος** — το ευρετήριο κλάδου, για παράλληλους κλάδους.
+- **Προβολή συνομιλίας** — μεταβαίνει στη συνομιλία στην οποία εκτελέστηκε το
+  βήμα. Οι συνομιλίες pipeline είναι κρυμμένες από την πλαϊνή στήλη, οπότε αυτός
+  είναι ο μόνος τρόπος πρόσβασης.
+- **Είσοδος** και **Έξοδος**, ως αναπτυσσόμενο JSON.
+- **Δραστηριότητα πράκτορα** — ένα πλακίδιο ανά εκτέλεση πράκτορα που απέστειλε το
+  βήμα, με την κατάσταση, τη σύνοψη, τη διάρκεια και το κόστος της.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Για ένα βήμα πράκτορα, η **Έξοδος** είναι το δομημένο ωφέλιμο φορτίο που υπέβαλε
+ο πράκτορας με το `submit_output`, όχι το πεζό κείμενό του. Το ίχνος συλλογισμού
+βρίσκεται στη **Δραστηριότητα πράκτορα** και στη συνομιλία πίσω από την **Προβολή
+συνομιλίας**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Για ένα βήμα bash, η **Έξοδος** είναι το περικομμένο stdout που έγραψε το σενάριο
+κατά την έξοδο με κωδικό 0. Μια έξοδος με μη μηδενικό κωδικό αποτυγχάνει το βήμα,
+με την ουρά του stderr ως μήνυμα σφάλματος.
 
-## Recover a failed run
+## Ανάκαμψη αποτυχημένης εκτέλεσης
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Διαβάστε τη σύνοψη αποτυχίας στη λωρίδα μεταδεδομένων· αναφέρει το βήμα που
+   απέτυχε. Το πλαίσιο **Σφάλμα** του πίνακα βημάτων έχει το μήνυμα.
+2. Ελέγξτε την **Είσοδο** του βήματος — ένα κλειδί κατάστασης που λείπει ή έχει
+   ορθογραφικό λάθος είναι η πιο συχνή αιτία. Ένα βήμα prompt-agent αποτυγχάνει
+   αμέσως και αναφέρει τα άλυτα σύμβολα θέσης· ένα βήμα bash τα αποδίδει ως κενές
+   συμβολοσειρές και εκτελείται ούτως ή άλλως, κάτι που συνήθως εμφανίζεται ένα
+   βήμα αργότερα.
+3. Για ένα βήμα πράκτορα, ανοίξτε την **Προβολή συνομιλίας** και διαβάστε τι έκανε
+   πραγματικά ο πράκτορας.
+4. Πατήστε **Επανάληψη** στη λωρίδα μεταδεδομένων. Τα ολοκληρωμένα και
+   παραλειφθέντα βήματα διατηρούν τις εξόδους τους· όλα τα υπόλοιπα διαγράφονται
+   και εκτελούνται ξανά και η εκτέλεση επανέρχεται σε κατάσταση εκτέλεσης. Το
+   ρολόι διάρκειας ξεκινά από την αρχή για αυτή την απόπειρα.
 
-Common causes worth checking first:
+Συνήθεις αιτίες που αξίζει να ελέγξετε πρώτες:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Χρονικό όριο** — το βήμα υπερέβη το **Χρονικό όριο (ms)**. Θυμηθείτε ότι το
+  πεδίο είναι σε χιλιοστά του δευτερολέπτου.
+- **Σφάλμα σεναρίου** — η εντολή bash τερματίστηκε με μη μηδενικό κωδικό, ή το
+  `bash` δεν βρίσκεται στο `PATH` του κεντρικού υπολογιστή του διακομιστή.
+- **Επικύρωση σχήματος** — το ωφέλιμο φορτίο `submit_output` του πράκτορα δεν
+  ικανοποιούσε το σχήμα εξόδου του βήματος.
+- **Άλυτο σύμβολο θέσης** — ένα `{{key}}` που αναφέρει ένα βήμα prompt-agent δεν
+  γράφτηκε ποτέ στα ανάντη. Το σφάλμα αναφέρει κάθε άλυτο κλειδί.
+- **Μη καταχωρισμένο σώμα** — ένα βήμα του οποίου το κλειδί σώματος δεν είναι
+  καταχωρισμένο παράγει προειδοποίηση κατά τη φόρτωση του προτύπου και έπειτα
+  απλώς δεν εκτελείται ποτέ.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Η Επανάληψη λειτουργεί μόνο σε εκτέλεση που απέτυχε ή ακυρώθηκε]
+Το κουμπί **Επανάληψη** εμφανίζεται μόνο όταν η εκτέλεση βρίσκεται σε κατάσταση
+`failed` ή `cancelled`. Ο μηχανισμός επιστρέφει αμέσως για οποιαδήποτε άλλη
+κατάσταση.
 :::
 
-## Stop a step that is stuck
+## Διακοπή ενός βήματος που έχει κολλήσει
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Επιλέξτε το βήμα που εκτελείται και πατήστε το κουμπί **Τερματισμός εκτέλεσης**
+στην κεφαλίδα του πίνακα βημάτων. Αυτό τερματίζει τη διεργασία του βήματος,
+σηματοδοτεί το βήμα ως αποτυχημένο και επομένως αποτυγχάνει ολόκληρη την εκτέλεση
+— κάθε ανοιχτός αδελφός κλάδος κλείνει μαζί της.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Δεν υπάρχει στοιχείο ελέγχου ακύρωσης εκτέλεσης σε αυτή την οθόνη. Το
+`pipeline.cancel` υπάρχει ως λειτουργία RPC και ο μηχανισμός το υλοποιεί, αλλά
+τίποτα στο UI των pipelines δεν το καλεί· ο **Τερματισμός εκτέλεσης** σε ένα βήμα,
+ή η **Διαγραφή** στην εκτέλεση, είναι οι μόνες διαθέσιμες ενέργειες διακοπής.
 
-## Track cost
+## Παρακολούθηση κόστους
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Το κόστος αναφέρεται ανά βήμα, στη δεξιά στήλη του διαγράμματος χρονισμού και σε
+κάθε πλακίδιο κάτω από τη **Δραστηριότητα πράκτορα**. Δεν υπάρχει σύνολο
+εκτέλεσης στη σελίδα λεπτομερειών ούτε στήλη κόστους στην ουρά εκτελέσεων, οπότε
+για να συγκρίνετε το κόστος δύο εκτελέσεων πρέπει να αθροίσετε τα βήματά τους.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run a pipeline manually](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
-- [Create a pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
-- [Manage costs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/)
-- [Pipeline steps reference](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/)
+- [Χειροκίνητη εκτέλεση pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-pipeline/)
+- [Δημιουργία προτύπου pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/)
+- [Διαχείριση κόστους](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/)
+- [Είδη βημάτων pipeline](/el-GR/εγχειρίδιο/αναφορά/βήματα-pipeline/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Pipelines](/el-GR/εγχειρίδιο/έννοιες/pipeline/)
+- [Pipeline και αυτοματισμός](/el-GR/εγχειρίδιο/έννοιες/pipeline/)

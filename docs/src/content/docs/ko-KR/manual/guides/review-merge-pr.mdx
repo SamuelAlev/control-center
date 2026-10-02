@@ -1,135 +1,131 @@
 ---
-title: Review and merge a PR
-description: Open a PR workbench, read the diff, leave inline comments, submit a review and merge.
+title: PR 리뷰 및 병합
+description: PR 워크벤치를 열고 diff를 읽고 인라인 댓글을 남긴 다음, 리뷰를 제출하고 병합합니다.
 slug: ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합
+sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
 ---
 
-This guide shows you how to review and merge a pull request.
+이 가이드에서는 풀 리퀘스트를 리뷰하고 병합하는 방법을 설명합니다.
 
-## Open the PR workbench
+## PR 워크벤치 열기
 
-1. Navigate to **Pull requests** in the sidebar
-2. Select a PR from the list
+1. 사이드바에서 **풀 리퀘스트**로 이동합니다
+2. 목록에서 PR을 선택합니다
 
-A PR opens as a tabbed workbench, not a single page. Five tabs open by default, in
-this order: **Overview**, **Diff**, **Source control**, **Chat** and **Actions**
-(CI checks grouped by workflow). **Review** — the review pipeline's progress, then
-the artifact it published with its findings rail — is deliberately not one of them:
-a PR has no review until someone asks for one, so **Ask AI** opens it. A terminal,
-a single-file editor, an embedded code-server and an in-app browser open on demand;
-deployment-preview tabs are injected automatically when a preview URL is detected
-on the PR. Your tab layout is remembered per PR.
+PR은 단일 페이지가 아니라 탭으로 이루어진 워크벤치로 열립니다. 기본적으로 다섯
+개의 탭이 다음 순서로 열립니다: **개요**, **Diff**, **소스 제어**, **채팅**,
+**작업**(워크플로별로 묶은 CI 검사). **리뷰** — 리뷰 파이프라인의 진행 상황과,
+그다음에 파이프라인이 발견 사항 레일과 함께 게시한 아티팩트 — 는 의도적으로 이
+목록에 없습니다. 누군가 요청하기 전까지 PR에는 리뷰가 없으므로, **AI에게
+물어보기**가 리뷰를 엽니다. 터미널, 단일 파일 편집기, 내장 code-server, 인앱
+브라우저는 필요할 때 엽니다. 배포 미리보기 탭은 PR에서 미리보기 URL이 감지되면
+자동으로 삽입됩니다. 탭 레이아웃은 PR마다 기억됩니다.
 
-The Overview tab carries the PR's metadata (author, branch, labels, assignees,
-reactions, commits, check status) and the action row: refresh, **Review**,
-**Merge**, open in IDE and a ⋯ overflow menu.
+개요 탭에는 PR의 메타데이터(작성자, 브랜치, 레이블, 담당자, 리액션, 커밋, 검사
+상태)와 작업 행이 있습니다: 새로 고침, **리뷰**, **병합**, IDE에서 열기, ⋯
+오버플로 메뉴.
 
-## Read the diff
+## diff 읽기
 
-Open the **Diff** tab to see the whole PR diff at once, with a file tree for
-jumping between files.
+**Diff** 탭을 열면 PR 전체 diff를 한 번에 볼 수 있고, 파일 사이를 이동할 수 있는
+파일 트리도 함께 표시됩니다.
 
-- The settings button in the diff toolbar switches **split** (side-by-side) and
-  **unified** view and toggles line wrapping and code-font ligatures.
-- `@@` hunk headers are replaced by **Show N lines** / **Show end of file**
-  affordances that splice in the surrounding context on click.
-- Press `j` / `k` to step between files, `c` to collapse or expand the focused
-  file, `t` to return the sidebar to the file tree and `⌘F` to search across the
-  whole diff (`Enter` / `Shift+Enter` walk the matches).
-- Press `v` to mark the focused file as viewed, and the cursor advances to the
-  next file. On GitHub the viewed state is stored on the forge, so it follows you
-  between clients; GitLab and Bitbucket have no such API, so there it is
-  remembered on this device only.
+- diff 도구 모음의 설정 버튼은 **분할**(나란히 보기) 보기와 **통합** 보기를
+  전환하고, 줄 바꿈과 코드 글꼴 합자를 켜거나 끕니다.
+- `@@` 헝크 헤더는 클릭하면 주변 컨텍스트를 이어 붙이는 **Show N lines** /
+  **Show end of file** 어포던스로 대체됩니다.
+- `j` / `k`를 눌러 파일 사이를 이동하고, `c`로 포커스된 파일을 접거나 펼치고,
+  `t`로 사이드바를 파일 트리로 되돌리고, `⌘F`로 전체 diff를 검색합니다(`Enter` /
+  `Shift+Enter`로 일치 항목을 순회합니다).
+- `v`를 누르면 포커스된 파일이 확인으로 표시되고 커서가 다음 파일로 이동합니다.
+  GitHub에서는 확인 상태가 코드 호스트에 저장되므로 클라이언트 사이를 따라옵니다.
+  GitLab과 Bitbucket에는 그런 API가 없어 이 기기에만 기억됩니다.
 
-Mouse-drag in the code area selects text down to the exact column and `⌘C`
-copies the raw source rather than the rendered diff markers.
+코드 영역에서 마우스로 끌면 정확한 열까지 텍스트가 선택되고, `⌘C`는 렌더링된
+diff 마커가 아니라 원본 소스를 복사합니다.
 
-## Leave inline comments
+## 인라인 댓글 남기기
 
-1. Tap a code row's gutter to open a composer anchored to that line, or use the
-   `+` button on a file header for a file-level comment
-2. Write your feedback in Markdown
-3. Submit
+1. 코드 행의 여백을 탭하면 그 줄에 고정된 작성기가 열립니다. 파일 수준 댓글에는
+   파일 헤더의 `+` 버튼을 사용합니다
+2. Markdown으로 피드백을 작성합니다
+3. 제출합니다
 
-On GitHub and GitLab the composer offers two submits: **Add single comment**
-posts immediately, and **Start a review** / **Add to review** queues the
-comment onto a pending review that goes out with **Approve**, **Request
-changes** or **Comment**. Bitbucket has no pending-review batching, so there
-every submit posts immediately. An immediate post shows a pending state until
-the forge confirms it, then flips to synced. If the post fails, the thread is
-marked with the error and offers a retry.
+GitHub과 GitLab에서 작성기는 두 가지 제출 방식을 제공합니다. **댓글만 추가**는
+즉시 게시하고, **리뷰 시작** / **리뷰에 추가**는 댓글을 대기 중인 리뷰에 쌓아
+두었다가 **승인**, **변경 요청**, **댓글**과 함께 내보냅니다. Bitbucket에는 대기
+중인 리뷰 일괄 처리가 없으므로, 거기서는 모든 제출이 즉시 게시됩니다. 즉시
+게시는 코드 호스트가 확인할 때까지 대기 상태를 표시하고, 그다음 동기화됨으로
+바뀝니다. 게시에 실패하면 스레드에 오류가 표시되고 재시도할 수 있습니다.
 
-Only the review _body_ is a draft: it is saved server-side against
-(owner, repo, PR number) a moment after you stop typing, so it survives a reload
-and follows you between the desktop and web clients.
+초안이 되는 것은 리뷰 _본문_뿐입니다. 입력을 멈추고 잠시 뒤 (소유자, 리포지토리,
+PR 번호)를 기준으로 서버 측에 저장되므로, 새로 고침해도 남고 데스크톱과 웹
+클라이언트 사이를 따라옵니다.
 
-## Submit a review
+## 리뷰 제출하기
 
-1. Press **Review** in the Overview action row (it is hidden on your own PRs and
-   on a closed or merged PR)
-2. Write the review body. You can attach an image, insert an emoji or a GIF and
-   toggle between write and preview
-3. Press **Request changes**, **Comment** or **Approve**
+1. 개요 탭의 작업 행에서 **리뷰**를 누릅니다(직접 올린 PR과 닫히거나 병합된
+   PR에서는 숨겨집니다)
+2. 리뷰 본문을 작성합니다. 이미지를 첨부하고 이모지나 GIF를 삽입할 수 있으며,
+   작성과 미리보기를 전환할 수 있습니다
+3. **변경 요청**, **댓글**, **승인** 중 하나를 누릅니다
 
-The verdict _is_ the button — there is no separate verdict picker. After
-**Approve** or **Request changes**, the button relabels itself to **Approved**
-or **Requested changes** and the draft body is cleared. A **Comment** verdict
-leaves the button labelled **Review**.
+판정은 곧 버튼입니다 — 별도의 판정 선택기는 없습니다. **승인** 또는 **변경
+요청** 후에는 버튼 레이블이 **승인됨** 또는 **변경 요청함**으로 바뀌고 초안
+본문이 지워집니다. **댓글** 판정은 버튼 레이블을 **리뷰**로 남겨 둡니다.
 
-:::caution[Submitting is irreversible]
-`pr_review.submitReview` publishes to the forge and never enters the undo stack.
-There is no "unsubmit" from Control Center.
+:::caution[제출은 되돌릴 수 없습니다]
+`pr_review.submitReview`는 코드 호스트에 게시하며 실행 취소 스택에 절대 들어가지
+않습니다. Control Center에서는 제출을 취소할 수 없습니다.
 :::
 
-## Merge
+## 병합
 
-The **Merge** button appears when you have write access and the PR is open and not
-a draft. Its colour is a readiness signal derived from required approvals and
-check state (ready / pending / blocked) — it is advisory only. The button is never
-disabled by review state; the forge's own branch protection is what enforces
-the rules.
+**병합** 버튼은 쓰기 권한이 있고 PR이 열려 있으며 초안이 아닐 때 나타납니다.
+버튼의 색은 필수 승인과 검사 상태(준비됨 / 대기 중 / 차단됨)에서 도출된 준비도
+신호이며, 참고용일 뿐입니다. 이 버튼은 리뷰 상태로 비활성화되지 않습니다. 규칙을
+실제로 강제하는 것은 코드 호스트 자체의 브랜치 보호입니다.
 
-1. Press **Merge** to open the merge flyout
-2. Pick a merge method: **squash**, **merge commit** or **rebase** (squash is the
-   default). Bitbucket has no true rebase merge, so rebase maps to its
-   fast-forward strategy and fails on a diverged branch
-3. For squash and merge commit, edit the prefilled commit title and description.
-   Rebase takes neither and hides both fields
-4. Read the warnings panel — it names failing checks and pending reviews, but does
-   not block you
-5. Press the merge button in the flyout to confirm
+1. **병합**을 눌러 병합 플라이아웃을 엽니다
+2. 병합 방법을 고릅니다: **스쿼시**, **병합 커밋**, **리베이스**(기본값은
+   스쿼시). Bitbucket에는 진정한 리베이스 병합이 없으므로 리베이스는
+   패스트포워드 전략으로 매핑되고, 분기된 브랜치에서는 실패합니다
+3. 스쿼시와 병합 커밋의 경우 미리 채워진 커밋 제목과 설명을 편집합니다.
+   리베이스는 둘 다 받지 않고 두 필드를 모두 숨깁니다
+4. 경고 패널을 확인합니다 — 실패한 검사와 대기 중인 리뷰를 알려 주지만, 작업을
+   막지는 않습니다
+5. 플라이아웃의 병합 버튼을 눌러 확인합니다
 
-Merging is irreversible: it pushes commits to the forge, so it gets a confirmation
-step instead of an undo entry. Afterwards the PR's cache is invalidated, its status
-flips to **Merged** and a `PullRequestStatusChanged` event fires with status
-`merged`. That event releases the ephemeral "open in editor" worktree and starts
-two seeded pipelines: **Stale repository cleanup**, which removes the PR's stale
-worktrees and conversation folders and **Release notes**, which drafts a changelog
-entry.
+병합은 되돌릴 수 없습니다. 코드 호스트로 커밋을 푸시하므로 실행 취소 항목 대신
+확인 단계를 거칩니다. 병합 후에는 PR의 캐시가 무효화되고, 상태가 **병합됨**으로
+바뀌며, `PullRequestStatusChanged` 이벤트가 `merged` 상태로 발생합니다. 이
+이벤트는 임시 “편집기에서 열기” 워크트리를 해제하고 두 개의 시드 파이프라인을
+시작합니다: PR의 오래된 워크트리와 대화 폴더를 제거하는 **Stale repository
+cleanup**과, 변경 로그 항목을 작성하는 **Release notes**입니다.
 
-:::note[The PR review space is not auto-archived]
-Auto-archiving the review space's conversations is wired to a separate `PrMerged`
-domain event that nothing in the product currently emits, so the space stays as
-you left it after a merge. The daily cleanup sweep still reclaims its worktree;
-delete the space yourself if you want it out of the sidebar.
+:::note[PR 리뷰 스페이스는 자동 보관되지 않습니다]
+리뷰 스페이스의 대화 자동 보관은 별도의 `PrMerged` 도메인 이벤트에 연결되어
+있는데, 현재 제품에서 이 이벤트를 발행하는 곳이 없으므로 병합 후에도 스페이스는
+그대로 남습니다. 일일 정리 스윕은 여전히 그 워크트리를 회수합니다. 사이드바에서
+없애려면 스페이스를 직접 삭제하십시오.
 :::
 
-## Hand the PR to reviewer agents
+## PR을 리뷰어 에이전트에 넘기기
 
-The ⋯ overflow menu on the Overview tab carries **Ask AI**, which starts the
-seeded `pr_review` pipeline for this PR. It only appears while the PR is open. See
-[Use AI-powered review](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/) for what the pipeline does and
-how to publish its findings, and [Review compute](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
-for the deterministic cohort and axis model.
+개요 탭의 ⋯ 오버플로 메뉴에는 **AI에게 물어보기**가 있으며, 이 PR에 대해 시드된
+`pr_review` 파이프라인을 시작합니다. 이 항목은 PR이 열려 있는 동안에만
+나타납니다. 파이프라인이 하는 일과 발견 사항을 게시하는 방법은
+[AI 기반 리뷰 사용](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)을, 결정적 코호트와 축
+모델은 [리뷰 컴퓨트](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)를 참고하십시오.
 
-## Review an external PR
+## 외부 PR 리뷰하기
 
-Control Center also imports PRs opened by humans outside the app. The review flow
-above is identical. External PRs are detected by the PR polling service.
+Control Center는 앱 밖의 사람이 연 PR도 가져옵니다. 위의 리뷰 흐름은 동일합니다.
+외부 PR은 PR 폴링 서비스가 감지합니다.
 
-## Related guides
+## 관련 가이드
 
-- [Use AI-powered review](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)
-- [Dispatch reviewer agents](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
-- [Review compute (cohorts and axes)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
-- [Connect a code host](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
+- [AI 기반 리뷰 사용](/ko-KR/매뉴얼/사용-가이드/ai-리뷰/)
+- [리뷰어 에이전트 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
+- [리뷰 컴퓨트(코호트와 축)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
+- [코드 호스트 연결](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)

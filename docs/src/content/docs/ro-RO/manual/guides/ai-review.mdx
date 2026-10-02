@@ -1,152 +1,163 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Folosește revizuirea bazată pe IA
+description: Rulează pipeline-ul pr_review pe un PR, citește constatările și verdictul, apoi publică revizuirea pe GitHub.
 slug: ro-RO/manual/ghiduri-practice/revizuire-ia
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Acest ghid îți arată cum să pui agenți recenzori să revizuiască un pull request și
+cum să publici rezultatul pe GitHub.
 
-## Start an AI review
+## Pornește o revizuire IA
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Deschide PR-ul și mergi la tab-ul **Prezentare**
+2. Deschide meniul derulant ⋯ din rândul de acțiuni și alege **Întreabă AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Elementul apare doar cât timp PR-ul este deschis — este o acțiune dinaintea
+fuziunii. Același buton este oferit ca **Întreabă AI** în starea goală a tab-ului
+**Revizuire**, înainte să existe vreo revizuire.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center pornește pipeline-ul predefinit `pr_review` și deschide tab-ul
+**Revizuire** al PR-ului, ca să îl poți urmări. Pipeline-ul:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Deschide spațiul de revizuire propriu al PR-ului, al cărui worktree izolat are
+   PR-ul extras la ref-ul său de vârf
+2. Distribuie recenzenții pentru nivelul de revizuire al spațiului de lucru —
+   trei implicit (agenții predefiniți **qa**, **architect** și **engineer**, în
+   paralel). Nu există detectare de limbaj sau domeniu
+3. Pune agentul lider (CEO) să le consolideze constatările într-o parcurgere
+   ghidată
+4. Finalizează: sortează constatările în grupe de consens și calculează
+   verdictul. Când asocierea ajunge la `awaiting approval`, **Publică pe GitHub**
+   apare în tab-ul Revizuire
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Cât de profund merge revizuirea este **nivelul de revizuire** al spațiului de
+lucru — `light` (un recenzent), `balanced` (trei, implicit) sau `thorough` (toți
+cinci, adăugând specialiștii de securitate și performanță) — setat în
+**Setări → Spațiu de lucru → General**, pe cardul **Politică spațiu de lucru**.
+Un nivel mai ușor înregistrează exact la fel de multe constatări; raportează mai
+puține dintre ele din start.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ro-RO/manual/concepte/revizuire-ia/) for how the pieces fit together.
+Toți recenzenții publică în singurul spațiu de revizuire al PR-ului, ceea ce face
+constatările lor comparabile. Vezi
+[Revizuire IA](/ro-RO/manual/concepte/revizuire-ia/) pentru cum se leagă piesele.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/).
+`pr_review` vine doar cu un trigger manual. Ca să pornească la fiecare PR
+publicat, adaugă singur un trigger — vezi
+[Trimite agenți revizori](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/). Poți
+porni una și chiar din GitHub, fără trigger de pipeline: menționează botul
+serverului pe PR sau adaugă eticheta `ai-review` — vezi
+[Vorbește cu Control Center dintr-un PR GitHub](/ro-RO/manual/ghiduri-practice/conversatii-pr-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Dacă o notificare spune că o revizuire rulează deja pentru acest pull request,
+una este deja în curs; rămâi în tab-ul **Revizuire** sau deschide
+**Pipeline-uri** ca să o găsești.
 
-## Read the findings
+## Citește constatările
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Recenzenții înregistrează constatările ca **noduri de revizuire** în spațiul de
+revizuire. Fiecare conține:
 
-| Field          | Description                                                   |
+| Câmp           | Descriere                                                     |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Tip            | `bug`, `suggestion`, `recommendation`, `question` sau `ticket` |
+| Prioritate     | P0 (critic) → P3 (minor)                                      |
+| Categorie      | `security`, `stability`, `data_integrity`, `correctness`, `performance` sau `maintainability` |
+| Fișier și linie | Unde este ancorată constatarea                                |
+| Cod original   | Codul la care se referă constatarea                           |
+| Cod sugerat    | Remedierea propusă                                            |
+| Încredere      | Cât de sigur este recenzentul                                 |
+| Stare          | `open` → `consensus-ready` → `resolved` sau `dismissed`       |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+O constatare ajunge la **consensus-ready** doar când un recenzent _coleg_ o
+confirmă. Un agent nu își poate confirma propria constatare, așa că opinia unui
+singur recenzent nu avansează niciodată de una singură.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/) for what the pass produces.
+Tab-ul **Revizuire** afișează lista de constatări, filtrabilă după tip și stare,
+cu o comutare pentru constatările respinse, lângă artefactul publicat de agentul
+care consolidează. Vederea deterministă — cohorte, tabloul de bord cu mai multe
+axe, diff-urile de contract și vizuale — este calculată pe server, dar nu are
+nicio suprafață în aplicație; vezi
+[Calculul revizuirii](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/) pentru ce produce trecerea.
 
-## Check the disagreements panel
+## Verifică panoul de dezacorduri
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Când doi recenzenți ancorează constatări la același fișier și aceeași linie, dar
+le notează foarte diferit — priorități la două sau mai multe niveluri distanță
+sau unul o numește `bug` în timp ce celălalt o numește `suggestion` — un panou de
+dezacorduri apare deasupra listei de constatări. Citește-le pe acelea mai întâi:
+acolo diverg opiniile recenzenților și acolo judecata ta valorează cel mai mult.
 
-## Read the verdict
+## Citește verdictul
 
-When the lead agent finalizes, it computes a **verdict**:
+Când agentul lider finalizează, calculează un **verdict**:
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| Verdict   | Semnificație                                   |
+| --------- | ---------------------------------------------- |
+| **Ship**  | Nu s-a găsit nimic blocant                     |
+| **Hold**  | Probleme care ar trebui rezolvate înainte de fuziune |
+| **Block** | Probleme critice care trebuie reparate         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Verdictul poartă un scor de încredere agregat și numărători de constatări per
+prioritate.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Axele revizuirii se adaugă apoi la el și îl pot face doar **mai** sever. O axă cu
+poartă care eșuează forțează **Block**; o axă cu poartă care nu a putut fi
+finalizată (`partial`) sau nu a putut rula deloc (`unavailable`) forțează cel
+puțin **Hold**. Absența dovezilor nu trece niciodată o poartă.
 
-## Publish the review to GitHub
+## Publică revizuirea pe GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Publicarea este un pas separat, condiționat în mod deliberat de utilizator.
+Pipeline-ul `pr_review` păstrează revizuirea în Control Center; nu o postează pe
+GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. În tab-ul **Revizuire**, așteaptă până când apare **Publică pe GitHub**
+2. Apasă **Publică pe GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center trimite **o singură** revizuire GitHub. Constatările deja
+rezolvate sau respinse sunt sărite. Butonul include fiecare constatare deschisă
+rămasă și, la **Ship**, trimite `APPROVE`. (Instrumentul MCP
+`publish_review_to_github` folosește în continuare implicit doar constatările
+confirmate de colegi și nu aprobă decât dacă transmiți `approve_on_ship`.) Cele
+care poartă o ancoră de fișier și linie devin comentarii inline; tot restul se
+pliază în corpul rezumatului, fiecare cu un subsol "— Control Center AI review",
+astfel încât sursa este neechivocă. Un verdict **Block** este trimis ca
+`REQUEST_CHANGES`; **Hold** ca `COMMENT`; **Ship** ca `APPROVE` din acest buton.
+O notificare afișează apoi **Publicat**. Revizuirea este postată sub identitatea
+de aplicație a serverului.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Dacă GitHub respinge o ancoră inline pentru că linia nu face parte din diff,
+întreaga revizuire este retrimisă cu fiecare constatare pliată în corp, astfel
+încât nimic nu este eliminat în tăcere.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Publicarea este condiționată de guardrail-uri]
+`pr_review.publishReview` declară clasa de acțiune `prPublish` și trece prin
+punctul de control al guardrail-urilor. Dacă decizia rezolvată este `prompt` și
+nu este conectat niciun aprobator, publicarea este refuzată — guardrail-urile
+eșuează închis. Setează o regulă explicită în
+Setări → Spațiu de lucru → Permisiuni agent dacă vrei să ruleze nesupravegheat.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Alte pipeline-uri integrate postează direct pe GitHub: `cross_review`,
+`pr_triage`, `ticket_to_pr` și `pre_merge_gate` se termină fiecare cu un pas de
+comentariu. Doar `pr_review` își ține rezultatul înapoi pentru tine.
 
-## Dispatch reviewers yourself
+## Trimite singur recenzenții
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/).
+Pentru control asupra rolurilor care revizuiesc PR-ul și asupra fișierelor la
+care se uită fiecare, folosește instrumentul MCP `dispatch_reviewers` într-un
+spațiu de revizuire existent sau adaugă noduri de recenzent într-un pipeline.
+Ambele căi, cu semnătura exactă a instrumentului, sunt în
+[Trimite agenți revizori](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/).
 
-## Related guides
+## Ghiduri conexe
 
-- [Review and merge a PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
-- [Dispatch reviewer agents](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/)
-- [Review compute (cohorts and axes)](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/)
+- [Revizuiește și îmbină un PR](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/)
+- [Trimite agenți revizori](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/)
+- [Calculul revizuirii (cohorte și axe)](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/)
 
-## Related concepts
+## Concepte conexe
 
-- [AI review](/ro-RO/manual/concepte/revizuire-ia/)
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/)
+- [Revizuire IA](/ro-RO/manual/concepte/revizuire-ia/)
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/)

@@ -1,130 +1,148 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Hírfolyam gondozása
+description: Adjon hozzá és kezeljen RSS/Atom-hírfolyamokat, olvasson cikkeket tartalomblokkolással, és tudja, hogy a hírfolyamai minden munkaterületen elkísérik.
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/hirfolyam
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Ez az útmutató megmutatja, hogyan alakíthatja a hírfolyamot: mely forrásokból
+dolgozik, hogyan olvashatók a cikkek, és mit tesz a tartalomblokkolás.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[A hírfolyam felhasználónkénti, nem munkaterülethez kötött]
+A hírfolyamok és a cikkek a bejelentkezett felhasználóhoz tartoznak: a
+hírfolyamlista, az olvasási állapot és a könyvjelzők minden munkaterületbe és
+minden eszközre elkísérik, ahonnan bejelentkezik, más felhasználó pedig nem
+látja őket. A hírfolyamok a szerver globális adatbázisában élnek, így a
+`/newsfeed` URL csak azért tartalmaz munkaterület-azonosítót, mert minden
+alkalmazásbeli útvonal tartalmaz.
 :::
 
-## Read articles
+## Cikkek olvasása
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Kattintson az oldalsávon a **Hírfolyam** elemre
+2. Váltson a **Mind**, az **Olvasatlan** és a **Mentett** között az eszköztár
+   szegmenseivel
+3. Szűkítse a listát a keresőmezővel vagy a forrásválasztóval
+4. Váltson a magazinrács és a sűrű lista között az elrendezésgombokkal
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Egy cikk megnyitása olvasottnak jelöli. A fejlécben lévő **Mind olvasottnak
+jelölése** gombbal — amely csak akkor jelenik meg, ha van olvasatlan cikk —
+egyetlen mozdulattal letudhatja a hátralékot, egy kártya könyvjelző-vezérlőjével
+pedig későbbre menthet egy cikket.
 
-The layout choice persists across launches.
+A választott elrendezés az indítások között is megmarad.
 
-## Add a feed
+## Hírfolyam hozzáadása
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Nyissa meg a **Beállítások → Ön → Hírfolyam** oldalt (a hírfolyam
+   fejlécében lévő beállításikon egyenesen oda visz)
+2. Nyomja meg a **Hírfolyam hozzáadása** gombot
+3. Töltse ki a **Név** és a **Hírfolyam URL** mezőt (RSS vagy Atom)
+4. Szükség esetén nyissa le a **Haladó** részt, és állítson be egyéni
+   **User-Agent**et — egyes kiadók más választ adnak az alapértelmezett
+   kliensnek
+5. Nyomja meg a **Hírfolyam hozzáadása** gombot
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Ellenőrzési pont: a hírfolyam megjelenik a **Hírfolyamok** listában, és a cikkei
+az első lekérés után megérkeznek. Egy már feliratkozott URL-t a rendszer
+elutasít a következővel: „Már létezik hírfolyam ezzel az URL-lel.”
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Első használatkor minden felhasználóhoz tizennégy hírfolyam kerül be: Control
+Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI,
+Import AI, The Pragmatic Engineer, Martin Fowler, Will Larson Irrational
+Exuberance, The Engineering Manager, Lea Verou és CSS-Tricks.
 
-## Manage feeds
+## Hírfolyamok kezelése
 
-Each row in the **Feeds** list gives you three controls:
+A **Hírfolyamok** lista minden sora három vezérlőelemet kínál:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Vezérlőelem  | Hatás                                                                   |
+| ------------ | ----------------------------------------------------------------------- |
+| Kapcsoló    | Letiltja a hírfolyamot. A letiltott sor elhalványul, és nem tölti le többé |
+| Frissítés ikon | Azonnal lehívja ezt az egy hírfolyamot                                |
+| Kuka ikon    | Megerősítés után törli a hírfolyamot                                     |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+A lista tetején a **Mind frissítése** az összes engedélyezett hírfolyamot
+lehívja.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Egy hírfolyam alcíme a leírását és a legutóbbi lekérés óta eltelt időt mutatja; a
+sikertelen hírfolyam a helyén a hibaüzenetet jeleníti meg, figyelmeztető
+színnel.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Nincs szerkesztési lehetőség — a hírfolyam nevének, URL-jének vagy
+user agentjének módosításához törölje, majd adja hozzá újra.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+A lekérés teljes egészében a szerveren fut: felhasználónként egyszer induláskor
+(és első használatkor a később létrehozott fiókoknál), majd 30 percenként.
 
-## Block ads and trackers in the reader
+## Hirdetések és követők blokkolása az olvasóban
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. A Beállítások → Ön → Hírfolyam oldalon keresse meg az **Olvasóbeállítások**
+   részt
+2. Hagyja bekapcsolva a **Cikkek megnyitása az alkalmazásban** lehetőséget, hogy
+   a beépített olvasót használja, vagy kapcsolja ki, hogy a cikkeket a rendszer
+   böngészőjének adja át
+3. Hagyja bekapcsolva a **Hirdetések, követők és cookie-sávok blokkolása**
+   lehetőséget
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+A blokkolás alapértelmezésben be van kapcsolva. A beágyazott olvasó csak
+macOS-en és Windows-on érhető el: a webes buildben és Linuxon a rendszer
+böngészője _maga_ az olvasó, és a cikk ott nyílik meg (weben új lapon). Weben a
+blokkolás kapcsolója, a **Szűrőlisták** kártya és a **Megbízható oldalak** kártya
+rejtve van.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Az alkalmazáson belüli olvasó nem formázza át a cikket. A kiadó oldalát egy
+beágyazott webview-ban jeleníti meg, és a gyorsítótárazott szűrőlisták
+segítségével elnyomja a hirdetéseket, a követőket és a cookie-sávokat.
 
-### Check or update the filter lists
+### A szűrőlisták ellenőrzése vagy frissítése
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+A **Szűrőlisták** kártya megmutatja, hány cookie-elrejtő, hirdetéselrejtő és
+hálózatblokkoló szabály van betöltve, továbbá az eltávolított követési
+paramétereket és azt, hogy mikor frissültek utoljára a listák. A **Frissítések
+keresése** gombbal frissítheti őket.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+A források: EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, több
+uBlock Origin lista és az uBO követési paramétereinek listája. Amíg egy letöltés
+nem sikerül, a kártya a listákat sosem frissített, beépített
+alapértelmezettként címkézi — a hirdetés-, cookie- és hálózatiszabály-számok
+nullán maradnak; a követési paraméterek eltávolítása továbbra is egy beépített
+alapértelmezett készletet használ.
 
-### Allowlist a site
+### Oldal felvétele az engedélyezett listára
 
-Some sites break under blocking.
+Egyes oldalak elromlanak a blokkolás mellett.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. A Beállítások → Ön → Hírfolyam oldalon lépjen a **Megbízható oldalak** részre
+2. Nyomja meg a **Megbízható oldal hozzáadása** gombot, és adja meg a domaint
 
-Blocking is skipped there.
+Ott a blokkolás kimarad.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### A feed I added shows up in another workspace
+### Egy általam hozzáadott hírfolyam megjelenik egy másik munkaterületen
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+Ez várt viselkedés. A hírfolyam felhasználónkénti, nem munkaterületenkénti — a
+hírfolyamai mindenhová elkísérik, ahol be van jelentkezve. Lásd a fenti
+figyelmeztetést.
 
-### A feed row shows an error instead of a description
+### Egy hírfolyamsor hibát mutat leírás helyett
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+A legutóbbi lekérés sikertelen volt, és a sor szó szerint a hiba okát jeleníti
+meg. Nyomja meg a frissítés ikont az újrapróbálkozáshoz, és ellenőrizze, hogy az
+URL továbbra is szolgál-e RSS-t vagy Atomot. Egy ismeretlen klienseket elutasító
+kiadóhoz egyéni user agentre lehet szükség, ami a hírfolyam törlését és újbóli
+hozzáadását jelenti.
 
-### An article page renders badly
+### Egy cikkoldal hibásan jelenik meg
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Kapcsolja ki a **Hirdetések, követők és cookie-sávok blokkolása** lehetőséget
+ahhoz a domainhez a **Megbízható oldalak** segítségével, vagy kapcsolja ki a
+**Cikkek megnyitása az alkalmazásban** lehetőséget, és olvassa el a cikket a
+böngészőjében.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Configure notifications](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)
-- [Triage your inbox](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)
+- [Értesítések konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek/)
+- [Beérkezett üzenetek triázsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)

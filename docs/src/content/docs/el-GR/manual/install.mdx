@@ -1,153 +1,176 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Εγκατάσταση
+description: Χρησιμοποιήστε το Control Center στο πρόγραμμα περιήγησης ή εγκαταστήστε την εφαρμογή υπολογιστή, ρυθμίστε ένα υποσύστημα πράκτορα και επιλέξτε πού εκτελείται ο διακομιστής του.
 slug: el-GR/εγχειρίδιο/εγκατάσταση
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Το Control Center εκτελείται με δύο τρόπους: ως **εφαρμογή web** στο
+[app.usectrl.dev](https://app.usectrl.dev), χωρίς τίποτα να κατεβάσετε, ή ως **εφαρμογή
+υπολογιστή** που εγκαθιστάτε. Είναι η ίδια εφαρμογή με τις ίδιες δυνατότητες. Η μόνη
+διαφορά είναι πού εκτελείται ο διακομιστής — και η εφαρμογή web δεν μπορεί να εκτελέσει
+έναν για εσάς.
 
-## Use it in your browser
+## Χρήση στο πρόγραμμα περιήγησης
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+Το [app.usectrl.dev](https://app.usectrl.dev) είναι αυτή η εφαρμογή μεταγλωττισμένη για το πρόγραμμα περιήγησης.
+Τίποτα να εγκαταστήσετε, τίποτα να ενημερώσετε. Ανοίξτε το και συνδεθείτε.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Αυτό που δεν μπορεί να κάνει μια καρτέλα του προγράμματος περιήγησης είναι να _είναι_ ο
+διακομιστής. Κάθε πελάτης — υπολογιστής, web, τηλέφωνο — είναι ένας λεπτός μηχανισμός
+απόδοσης πάνω από έναν headless `cc_server` που κατέχει τη βάση δεδομένων και εκτελεί
+την εργασία, οπότε η εφαρμογή web μιλά πάντα με έναν διακομιστή που εκτελείτε εσείς. Δύο
+τρόποι για να της δώσετε έναν:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Ένας διακομιστής στο δικό σας μηχάνημα.** Εκκινήστε το `cc_server` τοπικά και στρέψτε
+την εφαρμογή web στο `ws://localhost:9030`. Τα προγράμματα περιήγησης θεωρούν το
+`localhost` αξιόπιστο, οπότε αυτό δεν χρειάζεται πιστοποιητικό ούτε σήραγγα. Είναι ο
+ταχύτερος τρόπος να δοκιμάσετε την εφαρμογή web και τα δεδομένα σας δεν φεύγουν ποτέ από
+το μηχάνημά σας.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Ένας διακομιστής σε άλλο μηχάνημα.** Επειδή το `app.usectrl.dev` σερβίρεται μέσω HTTPS,
+ένας μη τοπικός διακομιστής πρέπει να είναι προσβάσιμος μέσω `wss://` με πιστοποιητικό
+που το πρόγραμμα περιήγησης εμπιστεύεται ήδη. Το `cc_server` αρνείται να δεσμεύσει
+διεύθυνση εκτός loopback χωρίς TLS, οπότε διαλέξτε ένα από τα εξής:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- δώστε του πιστοποιητικό απευθείας, με `--tls-cert` και `--tls-key`
+- βάλτε το πίσω από έναν αντίστροφο διαμεσολαβητή που τερματίζει το TLS και εκκινήστε το
+  με `--insecure`
+- εκθέστε το μέσω σήραγγας ή VPN που παρέχει το πιστοποιητικό — Tailscale,
+  cloudflared ή παρόμοιο. Οι **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση** έχουν τη
+  δήλωση συμμετοχής για την ενσωματωμένη σήραγγα, στην ενότητα **Κοινή χρήση αυτού του διακομιστή**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Όποτε ο διακομιστής βρίσκεται πίσω από διαμεσολαβητή, NAT ή σήραγγα, ορίστε το
+`--public-url` στη διεύθυνση που πρέπει πραγματικά να καλέσουν οι πελάτες. Προεπιλέγεται
+στην τοπική δέσμευση, οπότε χωρίς αυτό οι πελάτες δοκιμάζουν λάθος κεντρικό υπολογιστή.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Φιλοξενείτε το δικό σας αντίγραφο του πελάτη web;]
+Το `cc_server` δέχεται προελεύσεις προγράμματος περιήγησης μόνο από τη λίστα
+`--allowed-origins`, που έχει ως προεπιλογή το `https://app.usectrl.dev`. Προσθέστε εκεί
+τη δική σας προέλευση αν αυτοφιλοξενείτε το build web. Το loopback και οι εγγενείς
+πελάτες επιτρέπονται πάντα ανεξάρτητα από αυτή τη λίστα.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Λίγα πράγματα παραμένουν μόνο για υπολογιστή, επειδή χρειάζονται εγγενές παράθυρο ή τις
+ίδιες τις συσκευές ήχου του μηχανήματος: η αιωρούμενη κάψουλα λειτουργίας εστίασης, οι
+αναδυόμενες ειδοποιήσεις του λειτουργικού συστήματος (το κέντρο ειδοποιήσεων εντός της
+εφαρμογής λειτουργεί παντού), η «Έναρξη εγγραφής και σύνδεση» από ένα γεγονός
+ημερολογίου και η επανεκτέλεση μιας σύνοψης σύσκεψης. Όλα τα υπόλοιπα — χώροι, πράκτορες,
+έλεγχος pull request, pipeline, εισιτήρια, μνήμη και η ίδια η καταγραφή σύσκεψης —
+συμπεριφέρονται το ίδιο.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/). To host the server,
-follow [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
+Για να συνδέσετε την εφαρμογή web με έναν διακομιστή, ακολουθήστε τη
+[Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/). Για να φιλοξενήσετε τον διακομιστή,
+ακολουθήστε την [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
 
-## Desktop system requirements
+## Απαιτήσεις συστήματος για υπολογιστή
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Απαίτηση     | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Έκδοση λειτουργικού | macOS 13+ (Ventura)                            | Windows 10+ | Ubuntu 22.04+ ή άλλη διανομή με glibc 2.35+ και GTK 3      |
+| Αρχιτεκτονική | Apple Silicon (arm64)                                | x64         | x86_64                                                     |
+| Git          | Απαιτείται                                            | Απαιτείται  | Απαιτείται                                                 |
+| Χώρος στον δίσκο | ~200 MB για την εφαρμογή, συν τον κατάλογο δεδομένων του διακομιστή | ~200 MB | ~200 MB                                     |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Δεν υπάρχει έτοιμη λήψη για Mac με Intel. Αντ' αυτού, κάντε
+[Δημιουργία από τον πηγαίο κώδικα](#δημιουργία-από-τον-πηγαίο-κώδικα).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Ο κατάλογος δεδομένων του διακομιστή ξεπερνά σε μέγεθος την εφαρμογή. Στην πρώτη του
+εκκίνηση το `cc_server` εγκαθιστά αναγκαστικά τα μοντέλα στη συσκευή — ενσωματώσεις
+κειμένου (~90 MB), διαχωρισμό ομιλητών (~35 MB) και το επιλεγμένο μοντέλο ομιλίας
+(Parakeet TDT v3 από προεπιλογή, ~600 MB· οι παραλλαγές Whisper 198–626 MB) — συν ένα
+ενσωματωμένο build του code-server, και κάθε συνομιλία πράκτορα παίρνει ένα worktree
+copy-on-write των αποθετηρίων στα οποία εργάζεται (σκέτο `git worktree` στα Windows). Η
+ομιλία δεν είναι προαιρετική: χωρίς το μοντέλο ASR, οι λειτουργίες σύσκεψης και
+υπαγόρευσης δεν εξυπηρετούνται. Η πρώτη λήψη του μοντέλου ομιλίας χρειάζεται ακόμη μία
+επανεκκίνηση πριν ενεργοποιηθεί η καταγραφή.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Η εφαρμογή υπολογιστή στρέφει τον διακομιστή της στον κατάλογο υποστήριξης εφαρμογών ανά
+χρήστη του λειτουργικού συστήματος. Ένα `cc_server` που εκκινείται με το χέρι χωρίς
+`--data-dir` προεπιλέγει το `<application data>/control-center` —
+`~/Library/Application Support/control-center` στο macOS, `%APPDATA%\control-center` στα
+Windows, `$XDG_DATA_HOME/control-center` (ή `~/.local/share/control-center`) στο Linux.
 
-## Download
+## Λήψη
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Κάθε τεχνουργείο παρακάτω προέρχεται από τις [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Κατεβάστε το `Control-Center-<version>-arm64.dmg`, ανοίξτε το και σύρετε το Control Center στον φάκελο Applications. Το build είναι υπογεγραμμένο με Developer ID και φέρει επικύρωση της Apple, οπότε ανοίγει κανονικά.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: πρόγραμμα εγκατάστασης ανά χρήστη.
+- `Control-Center-<version>-windows-x64.zip`: φορητό zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Τα Windows χρησιμοποιούν `git worktree` για τα checkouts των χώρων (χωρίς copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+Το AppImage φέρει πληροφορίες ενημέρωσης, οπότε το [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) ή το appimaged μπορούν να το φέρουν στη θέση του στην τελευταία έκδοση, κατεβάζοντας μόνο ό,τι άλλαξε.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Και τα δύο είναι χτισμένα σε Ubuntu 22.04 και εκτελούνται σε αυτό ή σε κάτι νεότερο (Debian 12, Fedora 36 και μετά): συνδέονται με τη glibc 2.35 και τη libstdc++ του GCC 12 και παίρνουν τη GTK 3 από το σύστημα. Οι λίγες βιβλιοθήκες που μπορεί να λείπουν από έναν τυπικό υπολογιστή ταξιδεύουν μέσα τους, οπότε δεν χρειάζεται να εγκαταστήσετε τίποτα άλλο. Ο ήχος — αναπαραγωγή σύσκεψης, το ηχητικό περιβάλλον, ο ήχος των σταθμών και οι ήχοι ειδοποιήσεων — παίζει μέσω του libmpv του συστήματος (`libmpv1` στο Ubuntu 22.04, `libmpv2` σε νεότερα Ubuntu και Debian, `mpv-libs` στο Fedora)· χωρίς αυτό, η εφαρμογή εκκινεί με αυτά τα στοιχεία ελέγχου κρυμμένα.
 
-### Standalone server
+### Αυτόνομος διακομιστής
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
+Κάθε έκδοση φέρει επίσης τον headless διακομιστή μεμονωμένα — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — μαζί με τα images `cc-server`, `cc-webapp` και `cc-remote` στο GHCR. Δείτε την [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Το αρχείο Linux είναι χτισμένο σε Ubuntu 22.04 και οι εγγενείς βιβλιοθήκες που περιλαμβάνει συνδέονται με τη glibc 2.35 και τη libstdc++ του GCC 12, οπότε χρειάζεται ξενιστή τουλάχιστον τόσο πρόσφατο (Ubuntu 22.04, Debian 12, Fedora 36 ή νεότερο). Σε παλαιότερη διανομή εκτελέστε το image `cc-server` — ένα κοντέινερ φέρνει τον δικό του χώρο χρήστη, οπότε μόνο ο πυρήνας πρέπει να είναι δικός σας.
 
-## Agent backend
+## Υποσύστημα πράκτορα
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Το Control Center αποστέλλει πράκτορες μέσω **προσαρμογέων**. Υπάρχουν δύο, η λίστα είναι σταθερή και ανιχνεύονται αυτόματα — δεν υπάρχει τρόπος να καταχωρίσετε άλλον.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Ο προσαρμογέας **Control Center (ενσωματωμένο)** δεν χρειάζεται εξωτερικό CLI: ο βρόχος πράκτορα εκτελείται μέσα στον διακομιστή και επικοινωνεί με τους παρόχους μοντέλων μέσω HTTP, οπότε είναι πάντα διαθέσιμος. Συνδέστε έναν πάροχο στις **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων**. Τα OpenAI, Codex, Cursor και Kimi Code προσφέρουν σύνδεση μέσω προγράμματος περιήγησης· τα Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai και Moonshot απαιτούν κλειδί API. Τα Codex και Cursor είναι πάροχοι σε αυτόν τον εκτελεστή, όχι ξεχωριστά CLI. Το z.ai εμφανίζεται δύο φορές σκόπιμα: το **z.ai** είναι η ανοιχτή πλατφόρμα χρέωσης κατά χρήση, που χρεώνεται στο υπόλοιπο του λογαριασμού σας, ενώ το **z.ai GLM Coding Plan** είναι η συνδρομή. Είναι το ίδιο κλειδί λογαριασμού, αλλά το z.ai σερβίρει το πρόγραμμα από διαφορετικό κεντρικό υπολογιστή — επικολλήστε ένα κλειδί του προγράμματος στο απλό πλακίδιο z.ai και κάθε αίτημα επιστρέφει `429 … "Insufficient balance or no resource package"`, επειδή το πρόγραμμα δεν έχει υπόλοιπο για κατανάλωση. Μια συνδρομή Claude Pro/Max δεν είναι σύνδεση API της Anthropic· φτάστε σε εκείνο το πρόγραμμα μέσω του προσαρμογέα Claude Code. Αυτό που _μπορείτε_ να προσθέσετε σε εκείνη τη σελίδα είναι ένας **προσαρμοσμένος πάροχος** — οποιοδήποτε τελικό σημείο συμβατό με OpenAI ή Anthropic (Ollama, LM Studio, vLLM, μια ιδιωτική ανάπτυξη) στους **Προσαρμοσμένους παρόχους → Προσθήκη παρόχου**.
 
-The other adapter wraps an external CLI:
+Ο άλλος προσαρμογέας περιτυλίγει ένα εξωτερικό CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Η ανίχνευση εξετάζει το `PATH` του μηχανήματος που εκτελεί το `cc_server` — το ίδιο μηχάνημα όταν η εφαρμογή υπολογιστή εκτελεί τον δικό της διακομιστή, αλλιώς τον απομακρυσμένο ξενιστή. Εγκαταστήστε το CLI του Claude Code εκεί, όχι στον πελάτη. Το κουμπί **Ανανέωση** σε εκείνη τη σελίδα εκτελεί ξανά την ανίχνευση.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
+Οι λίστες μοντέλων σερβίρονται ζωντανά από κάθε συνδεδεμένο πάροχο· το [models.dev](https://models.dev) παρέχει μόνο μεταδεδομένα τιμής και παραθύρου πλαισίου. Δείτε τη [Διαχείριση προσαρμογέων και μοντέλων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσαρμογείς/).
 
-## GitHub authentication
+## Αυθεντικοποίηση GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Ένα διαπιστευτήριο GitHub είναι **δικό σας και φιλοξενείται στον διακομιστή**, με κλειδί το αναγνωριστικό χρήστη σας — όχι στο keychain του λειτουργικού συστήματος του πελάτη. Κάθε συσκευή από την οποία συνδέεστε χρησιμοποιεί το ίδιο και κανένα άλλο μέλος δεν μπορεί να το διαβάσει.
 
-If the server has a GitHub App registered ([Create the GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Αν ο διακομιστής έχει καταχωρισμένη GitHub App ([Δημιουργία της GitHub App](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/github-app/)), οι **Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα** προσφέρουν **Σύνδεση με GitHub** (μια ροή με κωδικό συσκευής που εκτελεί ο διακομιστής). Αλλιώς επικολλήστε ένα προσωπικό token πρόσβασης:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Classic: `repo` και `read:org`
+- Fine-grained: **Contents** και **Pull requests** (read and write), **Checks** και **Actions** (read)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Δημιουργήστε ένα στο [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Ο διακομιστής εξετάζει το token για το όνομα λογαριασμού όπως είναι αποθηκευμένο, ώστε η γραμμή να μπορεί να λέει «Συνδεθήκατε ως …»· μια αποτυχημένη εξέταση αποθηκεύει και πάλι το token, και ένα τυπογραφικό λάθος ή ένα scope που λείπει εμφανίζεται αργότερα ως αποτυχημένο αίτημα.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/).
+Το πρώτο βήμα της εισαγωγής είναι αυτή η σύνδεση. Έπειτα, στην ίδια κάρτα μπορείτε να την αντικαταστήσετε ή να την καθαρίσετε. Το GitLab και το Bitbucket χρησιμοποιούν την ίδια κάρτα· δείτε τη [Σύνδεση κεντρικού υπολογιστή κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-κεντρικού-υπολογιστή-κώδικα/).
 
-## Choose where the server runs
+## Επιλέξτε πού εκτελείται ο διακομιστής
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) explains what that split means for the desktop, web and phone.
+Το Control Center είναι ένας λεπτός πελάτης πάνω από μια διεργασία headless `cc_server` που κατέχει τη βάση δεδομένων και εκτελεί όλη την εργασία· η [Ανάπτυξη και πελάτες](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) εξηγεί τι σημαίνει αυτός ο διαχωρισμός για τον υπολογιστή, το web και το τηλέφωνο.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Στην πρώτη εκκίνηση η εφαρμογή υπολογιστή ρωτά **«Πώς να εκτελείται το Control Center;»**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Εκτέλεση σε αυτή την εφαρμογή**: η εφαρμογή υπολογιστή εκκινεί και επιβλέπει έναν `cc_server` σε αυτό το μηχάνημα και επικοινωνεί μαζί του μέσω loopback. Τίποτα άλλο να ρυθμίσετε. Αυτή είναι η διάταξη που προϋποθέτει η [γρήγορη εκκίνηση](/el-GR/εγχειρίδιο/γρήγορη-εκκίνηση/).
+- **Σύνδεση σε απομακρυσμένη παρουσία**: στρέψτε την εφαρμογή υπολογιστή σε έναν `cc_server` που εκτελείται αλλού, με το URL του WebSocket, ένα ID συσκευής και είτε ένα κλειδί σύζευξης είτε έναν κωδικό πρόσκλησης μίας χρήσης. Εκείνος ο διακομιστής κατέχει τα δεδομένα· αυτή η εφαρμογή υπολογιστή απλώς τα αποδίδει.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/).
+Προσθέστε ή αλλάξτε διακομιστές αργότερα στις **Ρυθμίσεις → Διακομιστής → Σύνδεση και κατάσταση**. Η αλλαγή επανασυνδέεται επί τόπου — χωρίς επανεκκίνηση. Ένα πρόγραμμα περιήγησης δεν μπορεί να εκτελέσει διακομιστή, οπότε ο πελάτης web είναι πάντα απομακρυσμένος· δείτε τη [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/).
 
-To host a server yourself, follow [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Για να φιλοξενήσετε έναν διακομιστή μόνοι σας, ακολουθήστε την [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/). Καλύπτει τη δημιουργία του εκτελέσιμου, τη δημιουργία κλειδιού σύζευξης πριν από την πρώτη εκκίνηση και τις σημαίες `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Επαληθεύστε τη ρύθμισή σας
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. Οι **Ρυθμίσεις → Διακομιστής → Πάροχοι μοντέλων** παραθέτουν και τους δύο προσαρμογείς. Το «Control Center (ενσωματωμένο)» εμφανίζεται ως «βρέθηκε» με έκδοση `built-in`· το Claude Code εμφανίζεται ως «βρέθηκε» αν το CLI του βρίσκεται στο `PATH` του κεντρικού υπολογιστή του διακομιστή. Πατήστε **Ανανέωση** αν λείπει.
+2. Οι **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια** παραθέτουν τα αποθετήρια αυτού του χώρου εργασίας και το **Προσθήκη αποθετηρίου** περιηγείται στους φακέλους του κεντρικού υπολογιστή του διακομιστή.
+3. Οι **Ρυθμίσεις → Χώρος εργασίας → Πράκτορες** παραθέτουν τους πέντε πράκτορες που δημιούργησε ο πρώτος χώρος εργασίας σας. Καθένας χρειάζεται να έχει ορίσει **Προσαρμογέα** και **Μοντέλο** πριν μπορέσει να εκτελεστεί.
+4. Οι **Ρυθμίσεις → Διακομιστής → Διαγνωστικά και απόρρητο** αναφέρουν τα υποσυστήματα sandbox που προσφέρει αυτός ο κεντρικός υπολογιστής, την κατάσταση του μοντέλου ενσωματώσεων και την καταγραφή.
 
-## Build from source
+## Δημιουργία από τον πηγαίο κώδικα
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Οι εγγενείς βιβλιοθήκες είναι υποχρεωτικές και δεν υπάρχει υποβαθμισμένη λειτουργία: μια βιβλιοθήκη που λείπει αποτελεί σκληρή αποτυχία εκκίνησης, όχι πιο αργή διαδρομή. Προετοιμάστε τις πριν από οτιδήποτε άλλο. Κάθε εντολή Flutter και Dart περνά από το `fvm`, επειδή η έκδοση του SDK είναι καρφιτσωμένη από το αποθετήριο.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +182,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Στο macOS, η ασφαλής αποθήκευση (σύνδεση σε GitHub, Linear και Google) απαιτεί την εφαρμογή υπογεγραμμένη από μια ομάδα της Apple — αρκεί ένα δωρεάν Apple ID, και είναι μια εφάπαξ ρύθμιση που περιγράφεται στην ενότητα [υπογραφή για τοπική ανάπτυξη](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Χωρίς αυτό, η εφαρμογή εκκινεί ακόμη· μόνο η ασφαλής αποθήκευση δεν είναι διαθέσιμη. Τα Windows και το Linux δεν χρειάζονται υπογραφή.
 
-To build the headless server binary, stage the natives the same way first, then:
+Για να δημιουργήσετε το εκτελέσιμο του headless διακομιστή, προετοιμάστε πρώτα τις εγγενείς βιβλιοθήκες με τον ίδιο τρόπο και μετά:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Το hook του build αντιγράφει ό,τι βρίσκεται ήδη στο `build/natives/` μέσα στο bundle, οπότε αν κάνετε build πριν από την προετοιμασία θα πάρετε ένα bundle χωρίς εγγενείς βιβλιοθήκες και έναν διακομιστή που αρνείται να εκκινήσει.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Για τον πελάτη web χρησιμοποιήστε το `scripts/build_web.sh` (`--target remote` για το PWA του τηλεφώνου). Είναι αυτό που εκτελεί το CI: ένα σκέτο `flutter build web` παραλείπει τη σφραγίδα ταυτότητας του build, την αναδημιουργία του Web Worker, το manifest ανάπτυξης και τον έλεγχο προϋπολογισμού πόρων.

@@ -1,57 +1,58 @@
 ---
-title: Chat bridge
-description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+title: สะพานแชท
+description: ผู้ให้บริการ คำสั่ง ข้อมูลรับรอง ความสามารถ การดำเนินการ RPC และที่จัดเก็บของสะพานแชท
 slug: th-TH/คู่มือ/อ้างอิง/สะพานแชท
+sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
 ---
 
-## Providers
+## ผู้ให้บริการ
 
-| Provider | Wire value | Transport                  | Space kind |
+| ผู้ให้บริการ | ค่าไวร์ | ทรานสปอร์ต                | ชนิดสเปซ |
 | -------- | ---------- | -------------------------- | -------------- |
-| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+| Slack    | `slack`    | Socket Mode (WSS ขาออก) | `slack`        |
 
-**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+**Slack เป็นผู้ให้บริการรายเดียว** `ChatProvider` เป็น enum ที่มีค่าเดียว และ `cc_server` ลงทะเบียนปลั๊กอินหนึ่งตัว สคีมา การค้นหาทุกครั้ง และดัชนีไม่ซ้ำทุกตัวใช้ `provider` เป็นคีย์ ID จึงไม่ข้ามผู้ให้บริการกัน และการเพิ่มผู้ให้บริการอีกรายเป็นการเปลี่ยนแปลงฝั่งเซิร์ฟเวอร์เท่านั้น
 
-One provider-side app per **workspace × provider**.
+หนึ่งแอปฝั่งผู้ให้บริการต่อ **เวิร์กสเปซ × ผู้ให้บริการ**
 
-## Chat commands
+## คำสั่งแชท
 
-The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+ชื่อคำสั่งเป็นรายแอป (`cc` โดยค่าเริ่มต้น จึงเป็น `/cc`) ผู้ดูแลระบบเปลี่ยนชื่อได้ สะพานจะใช้ชื่อที่มันถูกเรียกครั้งล่าสุด
 
-| Command                               | Effect                                                        |
+| คำสั่ง                               | ผลลัพธ์                                                        |
 | ------------------------------------- | ------------------------------------------------------------- |
-| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
-| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
-| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
-| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
-| Unknown verb                          | Reports the unknown verb plus the help text                   |
+| `/cc help` (หรือ `/cc` โดยไม่มีคำกริยา)    | แสดงรายการสิ่งที่บอททำได้                                     |
+| `/cc link <code>`                     | แลกรหัสใช้ครั้งเดียวและลิงก์ตัวตนแชทของผู้ส่ง  |
+| `/cc ticket <title>`                  | สร้างตั๋วงานภายในที่รายงานโดยสมาชิกที่ลิงก์ไว้            |
+| `/cc ticket <title> \| <description>` | เหมือนข้างบน โดยทุกอย่างหลัง `\|` ตัวแรกเป็นคำอธิบาย |
+| คำกริยาที่ไม่รู้จัก                          | รายงานคำกริยาที่ไม่รู้จักพร้อมข้อความช่วยเหลือ                   |
 
-Ways to reach an agent:
+วิธีเข้าถึงเอเจนต์:
 
-| Gesture                    | Behavior                                                                                                               |
+| ท่าทาง                    | พฤติกรรม                                                                                                               |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@bot …` in a channel      | Opens a Slack thread and a matching Control Center space; the agent replies in the Slack thread                        |
-| Reply in a bridged Slack thread | Continues the same Control Center space — no mention needed                                                       |
-| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged Slack thread)                                                   |
-| DM to the bot              | One Control Center space per DM conversation; sets a Slack thread title and an "is thinking…" status while the agent works   |
+| `@bot …` ในแชนเนล      | เปิดเธรด Slack และสเปซ Control Center ที่เข้าคู่กัน; เอเจนต์ตอบในเธรด Slack นั้น                        |
+| ตอบกลับในเธรด Slack ที่เชื่อมสะพานไว้ | ทำบทสนทนาเดิมในสเปซ Control Center เดียวกันต่อ — ไม่ต้องกล่าวถึง                                                       |
+| ข้อความธรรมดาในแชนเนล | ถูกละเว้น (ไม่ได้ส่งถึงบอทและไม่ได้อยู่ในเธรด Slack ที่เชื่อมสะพานไว้)                                                   |
+| ส่งข้อความส่วนตัวถึงบอท              | หนึ่งสเปซ Control Center ต่อการสนทนาทางข้อความส่วนตัวหนึ่งครั้ง; ตั้งชื่อเธรด Slack และสถานะ "is thinking…" ขณะเอเจนต์ทำงาน   |
 
-## Credential fields (Slack)
+## ฟิลด์ข้อมูลรับรอง (Slack)
 
-Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+ประกาศโดย descriptor ของผู้ให้บริการ ซึ่งเป็นสิ่งที่สร้างกล่องโต้ตอบการเชื่อมต่อและตรวจสอบข้อมูลที่ส่งมา
 
-| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| ID ฟิลด์             | ป้ายกำกับ                           | จำเป็น | คำนำหน้า  | อยู่ที่ไหน                                                  |
 | -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
-| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
-| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
-| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+| `botToken`           | โทเค็น OAuth ของผู้ใช้บอท            | ใช่      | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | โทเค็นระดับแอป                 | ใช่      | `xapp-` | Basic Information → App-Level Tokens, สโคป `connections:write` |
+| `configRefreshToken` | โทเค็นรีเฟรชการตั้งค่าแอป | ไม่       | `xoxe`  | App configuration tokens บน api.slack.com/apps                  |
 
-`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+`configRefreshToken` คือข้อมูลรับรองสำหรับจัดการแอป: หากไม่มี การเชื่อมต่อยังทำงานได้ แต่บอทจะสร้างหรือแก้ไขจาก Control Center ไม่ได้ มันหมุนเวียนใหม่ทุกครั้งที่ใช้ และค่าที่หมุนใหม่จะถูกจัดเก็บทันที
 
-Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+ค่าจะถูกตัดช่องว่างหัวท้าย คีย์ที่ไม่ได้ประกาศไว้จะถูกทิ้ง และคำนำหน้าที่ไม่ตรงจะถูกปฏิเสธด้วยข้อความเดียวกันทั้งฝั่งไคลเอนต์และเซิร์ฟเวอร์ ฟิลด์ที่จำเป็นต้องมีทุกครั้งที่เชื่อมต่อ ส่วนฟิลด์ที่ไม่บังคับซึ่งเว้นว่างไว้จะคงค่าที่จัดเก็บไว้เดิม
 
-## Slack app requirements
+## ข้อกำหนดของแอป Slack
 
-Bot token scopes:
+สโคปของโทเค็นบอท:
 
 ```text
 app_mentions:read
@@ -65,7 +66,7 @@ users:read
 users:read.email
 ```
 
-Bot event subscriptions:
+การสมัครรับเหตุการณ์ของบอท:
 
 ```text
 app_home_opened
@@ -75,149 +76,149 @@ message.groups
 message.im
 ```
 
-Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+การตั้งค่าเชิงโครงสร้างที่ Control Center กำหนดเมื่อสร้างหรือแก้ไขแอป: เปิด Socket Mode, ไม่มี request URL, เปิดแท็บ Messages และเขียนได้, บอท `always_online`, รวมสโคปและเหตุการณ์ที่จำเป็นเข้ากับสิ่งที่แอปมีอยู่แล้ว (ไม่เคยตัดออก) และคำสั่งสแลชหนึ่งคำสั่งที่ใช้คำอธิบาย `File a ticket or link your Control Center account` — เครื่องหมายที่ระบุคำสั่งของ Control Center เองในแมนิเฟสต์ที่นำออก
 
-## Connection states
+## สถานะการเชื่อมต่อ
 
-| State            | Wire           | Meaning                                                         |
+| สถานะ            | ค่าไวร์           | ความหมาย                                                         |
 | ---------------- | -------------- | --------------------------------------------------------------- |
-| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
-| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
-| Live             | `connected`    | Transport up and receiving events                               |
-| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+| ยังไม่เชื่อมต่อ    | `disconnected` | ยังไม่มีข้อมูลรับรองที่จัดเก็บไว้สำหรับเวิร์กสเปซ × ผู้ให้บริการนี้             |
+| กำลังเชื่อมต่อ…      | `connecting`   | จัดเก็บข้อมูลรับรองแล้ว ทรานสปอร์ตกำลังเชื่อมต่อหรือเชื่อมต่อใหม่             |
+| ออนไลน์             | `connected`    | ทรานสปอร์ตทำงานอยู่และกำลังรับเหตุการณ์                               |
+| ข้อผิดพลาดในการเชื่อมต่อ | `error`        | จัดเก็บไว้แต่ล้มเหลว; ข้อผิดพลาดของผู้ให้บริการเองจะแสดงควบคู่กัน |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+การเชื่อมต่อใหม่ใช้การถอยกลับแบบเอกซ์โพเนนเชียลพร้อม jitter และจำกัดไว้ที่ 30 วินาที การหมุนซ็อกเก็ตที่ผู้ให้บริการเป็นผู้เริ่มจะเชื่อมต่อใหม่ทันทีโดยไม่เพิ่มการถอยกลับ ข้อมูลรับรองที่ถูกปฏิเสธ (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) หรือสโคปที่หายไปถือเป็นจุดสิ้นสุด: สะพานจะหยุดลองใหม่จนกว่าจะมีข้อมูลรับรองใหม่มา
 
-## Provider capabilities (Slack)
+## ความสามารถของผู้ให้บริการ (Slack)
 
-The bridge is written against the richest surface and degrades per capability.
+สะพานถูกเขียนขึ้นโดยอิงพื้นผิวที่สมบูรณ์ที่สุด และจะลดความสามารถลงทีละรายการ
 
-| Capability                | Slack  | Effect when absent                                                                             |
+| ความสามารถ                | Slack  | ผลเมื่อไม่มี                                                                             |
 | ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
-| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
-| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
-| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
-| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
-| `slashCommands`           | yes    | No `/cc` surface                                                                               |
-| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
-| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
-| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+| `streaming`               | ใช่    | คำตอบทั้งหมดจะถูกโพสต์ครั้งเดียวตอนจบ                                                     |
+| `streamingRequiresThread` | ใช่    | เป้าหมายการตอบที่ไม่มีจุดยึดของเธรดจะโพสต์คำตอบทั้งหมด                                       |
+| `ephemeralMessages`       | ใช่    | คำตอบของคำสั่งสแลชที่ไม่มีตัวจับการตอบที่ใช้ได้จะถูกทิ้ง (การปฏิเสธจะโพสต์ในเธรดเสมอ) |
+| `threadStatus`            | ใช่    | ไม่มีบรรทัด "is thinking…" ชั่วคราว                                                               |
+| `threadTitle`             | ใช่    | เธรดแชทคงชื่อเริ่มต้นไว้                                                        |
+| `slashCommands`           | ใช่    | ไม่มีพื้นผิว `/cc`                                                                               |
+| `taskCards`               | ใช่    | ข้อความเท่านั้น — ไม่มีการ์ดเหนือคำตอบและไม่มีลิงก์ "View in Control Center"                       |
+| `maxMessageLength`        | 39,000 | คำตอบที่ยาวกว่าจะถูกตัด พร้อมตัวชี้ไปยัง Control Center                                  |
+| `maxStreamChunkLength`    | 3,800  | การต่อท้ายจะถูกแบ่งที่ขอบเขตย่อหน้า บรรทัด หรือช่องว่าง                                      |
 
-Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+การประกาศว่าสตรีมได้ไม่ใช่คำสัญญาว่าจะสตรีมได้: ของ Slack ต้องใช้ฟีเจอร์ Agents & AI Apps บนแผนแบบชำระเงิน การปฏิเสธ ณ เวลาเรียก (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) จะถูกจดจำไว้ตลอดอายุการเชื่อมต่อ และถูกเปิดเผยเป็น `streamingAvailable: false` การ์ดงานของ Slack ไปกับคำเรียกเดียวกัน ดังนั้น Slack ที่ปฏิเสธโหมดแสดงผลของการ์ดจะยังคงสตรีมไว้และเสียเพียงการ์ดเท่านั้น ครั้งเดียว ตลอดอายุการเชื่อมต่อ
 
-A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+สตรีมยังต้องระบุผู้อ่านที่มันมีไว้ให้ด้วย Slack ต้องมีทั้งผู้ใช้ปลายทางและทีมของผู้นั้นจึงจะเปิดสตรีมใน **แชนเนล** ได้ (ข้อความส่วนตัวทำไม่ได้) และจะปฏิเสธด้วย `missing_recipient_user_id` / `missing_recipient_team_id` มิฉะนั้น — เป็นการปฏิเสธต่อการเรียกแต่ละครั้ง สะพานจึงลองต่อไป และระหว่างนั้นเทิร์นจะมาถึงในรูปคำตอบที่โพสต์ครั้งเดียว ผู้รับคือผู้ที่ถาม นำมาจากข้อความขาเข้า (ทีมของผู้นั้น ไม่ใช่ของแอป แชนเนล Slack Connect จึงแก้ไขได้อย่างถูกต้อง) สำหรับเทิร์นที่ไม่มีใครเริ่มจากแชท — งานที่เริ่มใน Control Center บนบทสนทนาที่เชื่อมสะพานไว้แล้ว — ผู้รับคือสมาชิกที่การลิงก์ของเขาสร้างสะพานนี้ขึ้น; หากต่อมาผู้นั้นเลิกลิงก์บัญชีแชทของตน เทิร์นนั้นจะโพสต์ทั้งหมดแทนการสตรีม
 
-## Task cards
+## การ์ดงาน
 
-One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+การ์ดแบบกลุ่มหนึ่งใบต่อเทิร์นของเอเจนต์ (`task_display_mode: plan`) โดยมีหนึ่งแถวต่อหนึ่งขั้นตอน แต่ละแถวคือ `task_update` ที่ประกอบด้วย `id` + `title` + `status` บวก `details` ที่ส่งครั้งเดียวเมื่อความคิดพร้อม `details` และ `output` ที่มี id เดียวกันจะถูกต่อกันโดยไม่มีตัวคั่น `details` จึงถูกส่งครั้งเดียว และ `output` จะไม่ถูกสตรีมเลย ชื่อเรื่องของแผนคือคำขอ; คำตอบคือการต่อท้ายแยกต่างหากในภายหลังที่พา chunk `markdown_text` มา
 
-| Part           | Content                                                                                                                                                       |
+| ส่วน           | เนื้อหา                                                                                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan title     | What was asked                                                                                                                                                |
-| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
-| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
-| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
-| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
-| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+| ชื่อเรื่องของแผน     | สิ่งที่ถูกถาม                                                                                                                                                |
+| แถวการเตรียมการ      | `Working on it…`, แล้ว `Cloning …`, แล้ว `Starting the agent…` — หนึ่งแถว โดยชื่อถูกแทนที่                                                                      |
+| แถวความคิด   | `Thinking…`, เพิ่มเมื่อเอเจนต์เริ่มให้เหตุผล; ความคิดคือ `details` ของแถวนี้ ส่งครั้งเดียวเมื่อการให้เหตุผลเสร็จสิ้น                                    |
+| แถวเครื่องมือ      | หนึ่งแถวต่อเครื่องมือหนึ่งรายการ (`Bash which swift`) ใช้ id ไม่ซ้ำเพื่อให้วางเคียงกัน                                                                                         |
+| สถานะ         | กำลังดำเนินการขณะแถวนั้นทำงาน; เสร็จสมบูรณ์เมื่อแถวถัดไปเริ่มหรือเทิร์นจบ; ผิดพลาดเมื่อล้มเหลว ถูกขัดจังหวะ หรือถึงขีดจำกัดเทิร์น                         |
+| การเรียกให้ลงมือ | `View in Control Center` เป็นแถวท้ายเมื่อเทิร์นจบ — ไม่มีขณะงานยังทำงานอยู่ และไม่มีเมื่อเซิร์ฟเวอร์ไม่มี URL สาธารณะที่เข้าถึงได้ |
 
-What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the Slack thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a space that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+สิ่งที่การ์ดไม่เคยพามา: เอาต์พุตของเครื่องมือ, อาร์กิวเมนต์ที่อยู่นอกรายการที่อนุญาตนั้น, หรือสิ่งใดก็ตามที่อ่านจากฐานข้อมูล ข้อความบรรยายการให้เหตุผลมีเพียง details ของแถว `Thinking…` (จำกัด 256 ตัวอักษร) ไม่ใช่เนื้อความของข้อความ การ์ดที่จะไม่บอกอะไรใหม่จะไม่ถูกส่งซ้ำ การกล่าวถึงจะเปิดสตรีมทันทีเพื่อให้เธรด Slack ไม่เงียบ; เทิร์นที่ต่อมาไม่ผลิตข้อความใดเลยจะปิดการ์ดใบเดิมนั้นด้วยบันทึกสั้น ๆ แทนที่จะโพสต์ข้อความที่สอง เทิร์นที่ไม่มีข้อความบนสเปซที่ไม่เคยเปิดสตรีม (ไม่มีการ์ด หรือสตรีมถูกปฏิเสธไปแล้ว) จะยังโพสต์ข้อความหนึ่งฉบับที่พาการ์ดที่เสร็จแล้วและบันทึกนั้นมา
 
-Streamed and posted cards are different payloads:
+การ์ดที่สตรีมกับการ์ดที่โพสต์เป็นเพย์โหลดที่ต่างกัน:
 
-| Form     | Shape                                                | Prose                                            |
+| รูปแบบ     | โครงสร้าง                                                | ข้อความบรรยาย                                            |
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
-| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+| สตรีม | `plan_update` บวก chunk `task_update` ที่ใช้ `id` เป็นคีย์   | สตริงธรรมดา จำกัด 256 ตัวอักษรต่อ chunk |
+| โพสต์   | บล็อก `plan` ที่ห่อ `task_card` ซึ่งใช้ `task_id` เป็นคีย์ | ข้อความแบบ rich text                                        |
 
-Failure handling:
+การจัดการความล้มเหลว:
 
-| Situation                                    | Behavior                                                                                                                    |
+| สถานการณ์                                    | พฤติกรรม                                                                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
-| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
-| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+| ผู้ให้บริการปฏิเสธการ์ดในการต่อท้ายหนึ่งครั้ง       | การต่อท้ายจะถูกลองใหม่ทันทีโดยไม่มีการ์ด; ข้อความบรรยายยังมาถึงแบบสด และการ์ดจะถูกทิ้งไปตลอดอายุการเชื่อมต่อ |
+| ผู้ให้บริการปฏิเสธข้อความบรรยายด้วย               | สตรีมถูกปิดและคำตอบถูกโพสต์ทั้งหมด                                                                          |
+| สตรีมขาดหลังจากคำตอบส่วนหนึ่งไปถึงแล้ว | สตรีมถูกปิดและไม่มีอะไรถูกโพสต์ซ้ำ                                                                               |
 
-See [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) for why the payload is split this way.
+ดู [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) ว่าทำไมเพย์โหลดจึงถูกแบ่งแบบนี้
 
-### Setup, before there is a turn
+### การเตรียมการ ก่อนที่จะมีเทิร์น
 
-The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
+การ์ดจะเปิดเมื่อการกล่าวถึงได้รับการยอมรับ ก่อนการโคลนและก่อนโทเค็นแรก; เทิร์นที่ตามมาจะใช้การ์ดและสตรีมเดียวกัน คำบรรยายหลังจากนั้นมาจาก `SpaceProvisioningChanged` บนบัสเหตุการณ์โดเมน — ความคืบหน้าเดียวกับที่แถบการเตรียมการของเดสก์ท็อปอ่านจากแถวสเปซ
 
-| Provisioning state          | Narration                                                      |
+| สถานะการเตรียมการ          | คำบรรยาย                                                      |
 | --------------------------- | -------------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                               |
-| Step `repo`                 | `Cloning <repo>…`                                              |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
-| Step `agent`                | `Setting up <agent>…`                                          |
-| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| การกล่าวถึงได้รับการยอมรับ            | `Working on it…`                                               |
+| ขั้นตอน `repo`                 | `Cloning <repo>…`                                              |
+| ขั้นตอน `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| ขั้นตอน `script`               | `Running the setup script for <repo>…`                         |
+| ขั้นตอน `agent`                | `Setting up <agent>…`                                          |
+| `provisioning` ยังไม่มีขั้นตอน | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
-| Agent reasoning             | `Thinking…`                                                    |
+| เอเจนต์กำลังให้เหตุผล             | `Thinking…`                                                    |
 | `failed`                    | `Workspace setup failed — details are in Control Center.`      |
 | `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
-Setup narration requires all four conditions:
+คำบรรยายการเตรียมการต้องมีครบทั้งสี่เงื่อนไข:
 
-| Condition                                 |
+| เงื่อนไข                                 |
 | ----------------------------------------- |
-| The provider renders cards                |
-| Streaming is available on this connection |
-| The space has a chat request in flight    |
-| No card is already reporting a turn there |
+| ผู้ให้บริการแสดงการ์ด                |
+| สตรีมมิ่งพร้อมใช้บนการเชื่อมต่อนี้ |
+| สเปซมีคำขอแชทที่กำลังดำเนินอยู่    |
+| ยังไม่มีการ์ดใดรายงานเทิร์นอยู่ที่นั่น |
 
-The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm space and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+คำขอจะคงอยู่ระหว่างดำเนินการจนกว่าเทิร์นจะเริ่มหรือการเตรียมการล้มเหลว เหตุการณ์ `ready` ที่ยังไม่มีการ์ดเปิดอยู่หมายถึงสเปซที่อุ่นอยู่แล้ว จึงถูกปล่อยให้เงียบ และการเตรียมการที่ไม่มีใครในแชทรอ — บทสนทนาที่เปิดในแอป หรือบทสนทนาที่ค้างอยู่และกลับมาทำงานต่อตอนบูต — ไม่ผลิตการ์ดใดเลย
 
-## The `/open` bounce page
+## หน้ากระเด้ง `/open`
 
-Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+ผลิตภัณฑ์แชทยอมรับเฉพาะ `http(s)` ในลิงก์และไม่รับอย่างอื่น การเรียกให้ลงมือจึงระบุสคีมาของเดสก์ท็อปโดยตรงไม่ได้
 
-| Property   | Value                                                                                                                                       |
+| คุณสมบัติ   | ค่า                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
-| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
-| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` and shows a manual button |
-| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
-| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+| เส้นทาง      | `GET /open/workspaces/<workspaceId>/(spaces\|tickets)/<id>`                                                                                 |
+| ต้นทาง     | ได้มาจาก URL สาธารณะของเซิร์ฟเวอร์ (`ws` → `http`, `wss` → `https`); ที่อยู่ลูปแบ็กยังคงไว้                                                     |
+| การตอบกลับ   | หน้า HTML ขนาดเล็กที่ไม่แคช (no-store) ซึ่งนำทางไปยัง `control-center://workspaces/<workspaceId>/(spaces\|tickets)/<id>` และแสดงปุ่มให้กดเอง |
+| การตรวจสอบ | ID ต้องตรงกับ `[A-Za-z0-9_.-]{1,128}`; สิ่งอื่นใดถือเป็น 404                                                                              |
+| การเข้าถึง     | สาธารณะและไม่ทำอะไร — มันไม่อ่านฐานข้อมูลใด จึงไม่ใช่วงออราเคิลบอกการมีอยู่; แอปที่มันเปิดเป็นผู้ทำการอนุญาต                          |
 
-## Bot profile fields
+## ฟิลด์โปรไฟล์บอท
 
-| Field              | Limit       | Notes                                                                                             |
+| ฟิลด์              | ขีดจำกัด       | หมายเหตุ                                                                                             |
 | ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
-| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
-| `description`      | ≤ 140 chars |                                                                                                   |
-| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
-| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
-| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+| `appName`          | 1–35 ตัวอักษร  | ค่าเริ่มต้นคือ `Control Center · <workspace name>`                                                   |
+| `botDisplayName`   | 1–80 ตัวอักษร  | ค่าเริ่มต้นคือ `control-center`                                                                      |
+| `description`      | ≤ 140 ตัวอักษร |                                                                                                   |
+| `agentDescription` | ≤ 300 ตัวอักษร | แสดงเหนือข้อความส่วนตัวที่ส่งถึงบอท                                                                     |
+| `command`          | ≤ 32 ตัวอักษร  | ทำให้เป็นมาตรฐาน: ตัดสแลชนำหน้าออก ทำเป็นตัวพิมพ์เล็ก ลบ `[^a-z0-9_-]` ออก และถ้าว่างจะกลับไปใช้ `cc` |
+| `agentEnabled`     | —           | ว่าเปิดเผยประสบการณ์ข้อความส่วนตัว/เอเจนต์หรือไม่                                                        |
 
-An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+กล่องว่างหมายถึง "อย่าไปแตะ" ไม่ใช่ "ล้างทิ้ง" ขีดจำกัดเป็นของ Slack ซึ่งเข้มงวดที่สุดในบรรดาผลิตภัณฑ์ที่จำลองไว้
 
-## Link codes
+## รหัสลิงก์
 
-| Property | Value                                                                                    |
+| คุณสมบัติ | ค่า                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Length   | 6 characters                                                                             |
-| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
-| Lifetime | 15 minutes                                                                               |
-| Uses     | One                                                                                      |
-| Storage  | In memory — a server restart invalidates outstanding codes                               |
-| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+| ความยาว   | 6 ตัวอักษร                                                                             |
+| ชุดอักขระ | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (โดยไม่มี `0`/`O`, `1`/`I`, `U`)                             |
+| อายุการใช้งาน | 15 นาที                                                                               |
+| จำนวนการใช้     | หนึ่งครั้ง                                                                                      |
+| ที่จัดเก็บ  | ในหน่วยความจำ — การรีสตาร์ตเซิร์ฟเวอร์ทำให้รหัสที่ค้างอยู่ใช้ไม่ได้                               |
+| ขอบเขต    | หนึ่งเวิร์กสเปซและหนึ่งผู้ให้บริการ; การสร้างรหัสใหม่ทำให้รหัสก่อนหน้าของสมาชิกใช้ไม่ได้ |
 
-Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+การแลกรหัสจะจับคู่โดยไม่คำนึงถึงตัวพิมพ์เล็กใหญ่ รหัสที่ไม่รู้จัก หมดอายุ มาจากเวิร์กสเปซอื่น และผิดผู้ให้บริการ ล้วนล้มเหลวเหมือนกันโดยเจตนา
 
-## Link methods
+## วิธีการลิงก์
 
-| Method | Wire    | How                                                                            |
+| วิธีการ | ค่าไวร์    | อย่างไร                                                                            |
 | ------ | ------- | ------------------------------------------------------------------------------ |
-| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
-| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+| รหัส   | `code`  | สมาชิกแลกรหัส `/cc link <code>`                                          |
+| อีเมล  | `email` | อีเมลที่ผ่านการยืนยันของผู้ให้บริการตรงกับผู้ใช้ที่เป็นสมาชิกของเวิร์กสเปซอยู่แล้ว |
 
-## RPC operations
+## การดำเนินการ RPC
 
-All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+ทั้งหมดจำกัดขอบเขตที่เวิร์กสเปซ เซิร์ฟเวอร์ไม่มีสถานะ คำเรียกแต่ละครั้งจึงพา `workspace_id` ของตัวเองมาใน args; dispatcher จะปฏิเสธ op ที่จำกัดขอบเขตเวิร์กสเปซซึ่งละเว้นค่านั้น ก่อนที่ฐานข้อมูลใดจะถูกเปิด ข้อมูลรับรองเดินทางเข้าเท่านั้น — การอ่านสถานะไม่เคยส่งคืนมันกลับมา
 
-| Operation               | Kind        | Min role                                       | Action classes                  |
+| การดำเนินการ               | ชนิด        | บทบาทขั้นต่ำ                                       | คลาสการกระทำ                  |
 | ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
 | `chat.providers`        | read        | `guest`                                        | —                               |
 | `chat.status`           | read        | `guest`                                        | —                               |
@@ -225,78 +226,78 @@ All are workspace-scoped. The server is stateless, so each call carries its own 
 | `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
 | `chat.listUserLinks`    | read        | `guest`                                        | —                               |
 | `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
-| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.unlinkUser`       | mutate      | `member` สำหรับตัวเอง, `admin` สำหรับคนอื่น | —                               |
 | `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
 | `chat.setupLink`        | read        | `admin`                                        | —                               |
 | `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
 | `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
 
-Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+การดำเนินการอ่านสืบทอดระดับขั้นต่ำ `guest` จากชนิดของมัน; การดำเนินการแบบ mutate ที่ไม่มีระดับขั้นต่ำระบุชัดเจนต้องใช้ `member`
 
-`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+`chat.setupLink` ประกอบ URL สำหรับสร้างแอปของผู้ให้บริการขึ้นจากโปรไฟล์บอท มันไม่ประกาศคลาสการกระทำใดเพราะไม่อ่านความลับใดและไม่ต่อออกไปไหน — เบราว์เซอร์ของผู้ใช้เองเป็นผู้เรียกเพียงครั้งเดียว
 
-One reactive query completes the surface:
+มีคำสั่งสืบค้นเชิงตอบสนองหนึ่งรายการที่ทำให้พื้นผิวสมบูรณ์:
 
-| Query                 | Kind  | Emits                                                    |
+| คำสั่งสืบค้น                 | ชนิด  | ส่งออก                                                    |
 | --------------------- | ----- | -------------------------------------------------------- |
-| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+| `chat.watchUserLinks` | watch | รายชื่อ ซึ่งถูกส่งใหม่ทุกครั้งที่มีการสร้างหรือลบลิงก์ |
 
-It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+มันมีอยู่เพราะการลิงก์เกิดขึ้นที่อีกฝั่ง: สมาชิกพิมพ์รหัสใช้ครั้งเดียวลงในบอท คำตอบจากไคลเอนต์จึงพาคำตอบกลับมาไม่ได้ รายชื่อในหน้าตั้งค่าและกล่องโต้ตอบ "ลิงก์บัญชีของฉัน" ที่เปิดค้างอยู่ต่างติดตามมัน และกล่องโต้ตอบจะเปลี่ยนไปเป็นการยืนยันทันทีที่ลิงก์ของสมาชิกเองมาถึง
 
-`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+`chat.beginUserLink` สร้างรหัสสำหรับตัวตนของตัวผู้เรียกเองเสมอ `chat.updateBotProfile` จะคืนค่า `remaining_step` เฉพาะเมื่อยังมีขั้นตอนเหลืออยู่ (โดยทั่วไปคือการติดตั้งใหม่); การไม่มีค่านั้นหมายความว่าการแก้ไขมีผลแล้ว
 
-`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+`chat.providers` คืนหนึ่งรายการต่อผู้ให้บริการที่เสนอ — descriptor บวกสถานะการเชื่อมต่อ (ถ้ามี) ทุกอย่างที่ UI ตั้งค่าแสดงล้วนมาจากเพย์โหลดนั้น จึงเป็นเหตุผลว่าทำไมการเพิ่มผู้ให้บริการจึงเป็นการเปลี่ยนแปลงฝั่งเซิร์ฟเวอร์เท่านั้น
 
-## Storage
+## ที่จัดเก็บ
 
-| What                       | Where                                                                                                        |
+| อะไร                       | ที่ไหน                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
-| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+| ข้อมูลรับรองการเชื่อมต่อ     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| การตั้งค่าแบบมีคำแนะนำที่ทำค้างไว้ | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| ไฟล์ Slack แบบเก่า         | `<dataDir>/<workspaceId>/slack_credentials.json` และ `slack_app_setup.json`, อ่านครั้งเดียวและโยกย้ายในตำแหน่งเดิม |
 
-Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+ข้อมูลรับรองอยู่ข้างฐานข้อมูลของเวิร์กสเปซ ไม่ได้อยู่ข้างใน: การลบเวิร์กสเปซจะพาโทเค็นแชทของมันไปด้วย และ `workspace.export` หรือการสำรองข้อมูลจะคัดลอก `workspace.db` — เวิร์กสเปซที่ส่งต่อให้คนอื่นจึงไม่มีโทเค็นบอทที่ใช้งานได้ติดไป การเขียนเป็นแบบอะตอมมิก (ไฟล์ชั่วคราวบวกการเปลี่ยนชื่อ) และถูกจำกัดสิทธิ์ให้เฉพาะเจ้าของ
 
-## Database tables
+## ตารางฐานข้อมูล
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+ทั้งสองอยู่ในฐานข้อมูลของเวิร์กสเปซ ซึ่งมี baseline v1 ที่ถูกยุบรวมไว้ — การอ่านข้ามเวิร์กสเปซจึงไม่คอมไพล์
 
-`chat_space_links` — one external conversation ↔ one Control Center space:
+`chat_space_links` — หนึ่งบทสนทนาภายนอก ↔ หนึ่งสเปซ Control Center:
 
-| Column                                                 | Notes                                                                      |
+| คอลัมน์                                                 | หมายเหตุ                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `id`                                                   | UUID v4                                                                    |
-| `workspace_id`                                         | Workspace scope                                                            |
+| `workspace_id`                                         | ขอบเขตเวิร์กสเปซ                                                            |
 | `provider`                                             | `ChatProvider.wire`                                                        |
-| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
-| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
-| `external_thread_id`                                   | Slack thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `external_team_id`                                     | ทีม Slack `T…` ว่างสำหรับผู้ให้บริการที่ไม่มีแนวคิดนี้                   |
+| `external_channel_id`                                  | แชนเนล Slack `C…` กลุ่ม `G…` ข้อความส่วนตัว `D…`                                    |
+| `external_thread_id`                                   | จุดยึดเธรด Slack หรือ null เมื่อทั้งบทสนทนาเป็นจุดยึด (ข้อความส่วนตัวกับบอท) |
 | `cc_space_id`                                          | `REFERENCES spaces(id) ON DELETE CASCADE`                                  |
 | `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
 
-Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+ไม่ซ้ำบน `(workspace_id, provider, external_channel_id, external_thread_id)` โดยมีดัชนีบางส่วนบังคับเช่นเดียวกันสำหรับ id ของเธรดที่เป็น null (SQLite ถือว่า NULL ต่างกัน)
 
-`chat_user_links` — one external member ↔ one Control Center user:
+`chat_user_links` — หนึ่งสมาชิกภายนอก ↔ หนึ่งผู้ใช้ Control Center:
 
-| Column                                 | Notes                                           |
+| คอลัมน์                                 | หมายเหตุ                                           |
 | -------------------------------------- | ----------------------------------------------- |
 | `id`                                   | UUID v4                                         |
-| `workspace_id`                         | Workspace scope                                 |
+| `workspace_id`                         | ขอบเขตเวิร์กสเปซ                                 |
 | `provider`                             | `ChatProvider.wire`                             |
-| `external_team_id`, `external_user_id` | Slack member `U…`                               |
-| `user_id`                              | Control Center user (global, so no foreign key) |
-| `method`                               | `code` or `email`                               |
+| `external_team_id`, `external_user_id` | สมาชิก Slack `U…`                               |
+| `user_id`                              | ผู้ใช้ Control Center (ทั่วโลก จึงไม่มี foreign key) |
+| `method`                               | `code` หรือ `email`                               |
 | `linked_at`                            |                                                 |
 
-Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+ไม่ซ้ำบน `(workspace_id, provider, external_team_id, external_user_id)` และบน `(workspace_id, provider, user_id)` — การระบุที่มาแบบค่าเดียวทั้งสองทิศทาง ขณะที่คนหนึ่งคนสามารถถูกลิงก์บนหลายผู้ให้บริการได้
 
-A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+การลิงก์คือการแก้ไขตัวตนให้ตรงกัน **ไม่ใช่** การให้สิทธิ์เข้าถึง: สมาชิกภาพถูกตรวจซ้ำในทุกเหตุการณ์ขาเข้า ลิงก์ที่ชี้ไปยังสมาชิกที่ต่อมาถูกถอดออกจึงลงเอยเป็นการปฏิเสธ
 
-## Space kind and message metadata
+## ชนิดสเปซและเมทาดาทาของข้อความ
 
-A bridged space is created with the provider's `SpaceKind` (`slack`). It behaves like an ordinary human-facing space — notified and sectioned like `topic` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+สเปซที่เชื่อมสะพานจะถูกสร้างด้วย `SpaceKind` ของผู้ให้บริการ (`slack`) มันทำงานเหมือนสเปซทั่วไปที่หันหน้าสู่มนุษย์ — แจ้งเตือนและจัดอยู่ในหมวดเหมือน `topic` — และ `isExternalChat` คือการตรวจที่ทุกพฤติกรรม (การมิเรอร์ การติดป้าย การเก็บรักษา) ต้องผ่าน
 
-Every message the bridge brings in carries a `metadata['chat']` stamp:
+ทุกข้อความที่สะพานนำเข้ามาจะมีตราประทับ `metadata['chat']`:
 
 ```json
 {
@@ -312,25 +313,25 @@ Every message the bridge brings in carries a `metadata['chat']` stamp:
 }
 ```
 
-The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+ตราประทับนี้ยังเป็นตัวกันเสียงสะท้อนด้วย: การมิเรอร์ขาออกจะข้ามข้อความใดที่มีตรานี้ ซึ่งเป็นสิ่งที่หยุดไม่ให้ข้อความแชทขาเข้าถูกโพสต์กลับไปทันที
 
-## Relay behavior
+## พฤติกรรมการส่งต่อ
 
-| Behavior                               | Detail                                                                                                         |
+| พฤติกรรม                               | รายละเอียด                                                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
-| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
-| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
-| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
-| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
-| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
-| Space naming                           | `#channel · <request>` for a Slack channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters |
-| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+| สิ่งที่ถูกส่งต่อออกไป                    | **ข้อความ**ของเอเจนต์เท่านั้น บวกบรรทัดสถานะของการ์ดงาน ข้อความบรรยายการให้เหตุผลและเอาต์พุตของเครื่องมือจะอยู่ใน Control Center  |
+| จังหวะการสตรีม                      | ถูกจำกัดไว้ที่หนึ่งครั้งต่อวินาทีขณะเทิร์นทำงาน; การ์ดและข้อความที่มันอธิบายไปในคำเรียกเดียวกัน |
+| ข้อความของมนุษย์ที่พิมพ์ใน Control Center | ถูกมิเรอร์ไปยังเธรดที่ลิงก์ไว้ โดยนำหน้าด้วยชื่อที่แสดงของผู้เขียน                                         |
+| เทิร์นว่าง                            | ถูกรายงานเป็นบันทึกสั้น ๆ (การรันล้มเหลว ถูกขัดจังหวะ หรือหยุดที่ขีดจำกัดเทิร์นของมัน) แทนความเงียบ           |
+| การขจัดข้อมูลซ้ำ                          | ใช้ id เหตุการณ์ของผู้ให้บริการเองเป็นคีย์; จำ 512 รายการล่าสุดไว้                                              |
+| เอเจนต์ประตูหน้า                       | บทสนทนาที่เชื่อมสะพานใหม่จะปลุกเอเจนต์ CEO ของเวิร์กสเปซ มิฉะนั้นเอเจนต์ตัวแรก มิฉะนั้นไม่มีใคร                  |
+| การตั้งชื่อสเปซ                           | `#channel · <request>` สำหรับเธรดในแชนเนล Slack, `Slack DM · <request>` สำหรับข้อความส่วนตัว, ชื่อจำกัดที่ 48 ตัวอักษร |
+| การแยกความล้มเหลว                      | เหตุการณ์เสียหนึ่งครั้งไม่เคยทำให้สะพานล่ม; การเชื่อมต่อยังให้บริการบทสนทนาอื่นทุกอันต่อไป               |
 
-## See also
+## ดูเพิ่มเติม
 
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
-- [Link your Slack account](/th-TH/คู่มือ/วิธีทำ/เชื่อมบัญชีแชท/)
-- [Customize the chat bot](/th-TH/คู่มือ/วิธีทำ/ปรับแต่งแชทบอต/)
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)
-- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) for the action classes the ops declare
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- [เชื่อมบัญชี Slack ของคุณ](/th-TH/คู่มือ/วิธีทำ/เชื่อมบัญชีแชท/)
+- [ปรับแต่งแชทบอต](/th-TH/คู่มือ/วิธีทำ/ปรับแต่งแชทบอต/)
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/)
+- [กฎคุม](/th-TH/คู่มือ/แนวคิด/กฎคุม/) สำหรับคลาสการกระทำที่ op ประกาศไว้

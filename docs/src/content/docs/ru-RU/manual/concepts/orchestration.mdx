@@ -1,113 +1,123 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Оркестрация
+description: Как один «большой запрос» превращается в план для всей команды, который вы утверждаете один раз, а затем в сгенерированный конвейер, который его выполняет.
 slug: ru-RU/руководство/понятия/оркестрация
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Один агент хорош в чём-то одном. Но некоторые задачи крупнее: «исследуй рынок X
+и напиши документ о позиционировании», «доведи эту функцию до конца», «проверь
+этот модуль и исправь то, что найдёшь». **Оркестрация** — это то, как Control
+Center справляется с такими задачами: оркестратор (обычно ваш агент CEO)
+предлагает план для всей команды, вы утверждаете его **один раз**, а
+детерминированный материализатор превращает его в конвейер, который выполняет
+работу.
 
-It sits between the two existing ways of getting work done:
+Она находится между двумя существующими способами выполнять работу:
 
-| When you want to…                                 | Use                                                       |
+| Когда вы хотите…                                  | Используйте                                               |
 | ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ru-RU/руководство/понятия/жизненный-цикл-запуска/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ru-RU/руководство/понятия/конвейеры/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Передать одну задачу одному агенту                | [Сообщение в пространстве](/ru-RU/руководство/понятия/жизненный-цикл-запуска/) |
+| Вручную закодировать процесс, который вы уже знаете | [Шаблон конвейера](/ru-RU/руководство/понятия/конвейеры/) |
+| Назвать цель и позволить команде продумать план   | **Оркестрация**                                          |
 
-## The shape of a proposal
+## Структура предложения
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Когда вы задаёте оркестратору цель, он возвращает структурированный
+**`OrchestrationProposal`**: типизированный план, который приложение может
+проверить и выполнить, а не свободный текст. Предложение содержит:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ru-RU/руководство/понятия/тикеты/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Цель**: ваша исходная задача, переформулированная.
+- **Роли**: кто выполняет работу. Каждая роль — это либо **существующий агент**,
+  которого вы выбираете, либо **новый найм**, которого оркестрация создаёт при
+  утверждении.
+- **Подтикеты**: работа, разбитая в DAG из [тикетов](/ru-RU/руководство/понятия/тикеты/).
+- **Исследование** _(необязательно)_: фаза исследования, которая выполняется
+  первой и питает остальные.
+- **Обсуждение** _(необязательно)_: ограниченный раунд, в котором каждая роль
+  публикует структурированную позицию до начала работы.
+- **Синтез**: завершающий шаг, на котором создаётся итоговый результат.
+- **Бюджет**: заявленный потолок стоимости.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Бюджет носит рекомендательный характер]
+Потолок стоимости предложения сравнивается с оценочной суммой плана и помечает
+план, выходящий за бюджет, на панели утверждения _до_ того, как вы утвердите
+его. После запуска его уже никто не читает, поэтому он не останавливает и не
+проваливает оркестрацию, вышедшую за рамки. Политики бюджета для отдельных
+агентов и рабочих пространств — это отдельный механизм, и именно они фактически
+останавливают расходы.
 :::
 
-## Where you review it
+## Где вы его просматриваете
 
-Two surfaces show the same orchestration.
+Одну и ту же оркестрацию показывают две поверхности.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Карточка предложения** живёт в разговоре, в котором возник план. Это одно
+сообщение, которое перерисовывается на протяжении всего жизненного цикла —
+предложен, выполняется, завершён — с действиями утверждения и отмены на нём.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** — это редактор: холст DAG, инспектор узлов, панель ревизий и
+diff и панель утверждения с оценкой. Он открывается как вкладка редактора прямо
+из этой карточки. В боковой панели намеренно нет пункта «Планы»; `/plans` и
+`/plans/:kind/:id` существуют как глубокие ссылки для обмена.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Утверждение доступно **только оператору**. Для него нет инструмента MCP: агент
+может предложить план (`propose_orchestration`), отправить план (`submit_plan`)
+или инстанцировать плейбук (`run_playbook`), но утверждает только человек.
+Ревизии, инициированные агентом, вдобавок ограничены по частоте двухминутным
+периодом ожидания, поэтому цикл перепланирования схлопывается, а не заваливает
+вашу ленту.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Перед утверждением вы можете изменить ровно то, что показывает инспектор узлов:
+переименовать или переписать подтикет, сменить **роль**, которой он принадлежит,
+перестроить его зависимости, отредактировать схему его вывода или вовсе удалить
+узел. Структурные узлы (исследование, обсуждение, синтез) и уже выполненные
+узлы доступны только для чтения. В редакторе нельзя закрепить роль за
+конкретным именованным агентом и нельзя редактировать бюджет.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Конфликт двух редакторов одного плана разрешается оптимистичным контролем
+параллелизма, а не слиянием. Каждое изменение несёт `base_revision`, относительно
+которой оно сделано; изменение на основе устаревшей ревизии отклоняется с
+сообщением «план ушёл вперёд», а не молча перезаписывает чужое. Откат — тоже не
+удаление: он добавляет старое предложение как новую ревизию, поэтому шкала
+ревизий только растёт.
 
-## Honest estimates, or none
+## Честные оценки, или никаких
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Оценка на панели утверждения строится по реальной истории завершённых запусков
+для каждой роли в виде межквартильного диапазона (p25–p75). Итоговая стоимость
+**суммирует** оцениваемые узлы; длительность — это **критический путь** по DAG,
+а не сумма (параллельные ветви перекрываются).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Узел, для роли которого **нет истории завершённых запусков**, сообщает
+`sampleSize: 0` и пустые диапазоны. Это отображается ровно так — неизвестно — и
+никогда как выдуманное точечное значение, потому что оценка, которой нельзя
+доверять, хуже отсутствия оценки. Когда у одних узлов история есть, а у других
+нет, итог помечается как частичный. Радиус воздействия появляется только тогда,
+когда узел объявил ссылки на происхождение `symbol` или `file`; узел без них
+остаётся «неизвестным», а не выводится из текста.
 
-## One approval, then deterministic execution
+## Одно утверждение, затем детерминированное выполнение
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ru-RU/руководство/понятия/конвейеры/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+В этом и состоит основная идея: **агент планирует, а выполняет детерминированная
+функция.** Когда вы утверждаете план, `OrchestrationMaterializer` — чистая
+функция без LLM и без ввода-вывода — превращает предложение в настоящий
+[конвейер](/ru-RU/руководство/понятия/конвейеры/). При одном и том же
+предложении и одном и том же наборе ролей он всегда выдаёт один и тот же DAG.
+Это важно, потому что сгенерированный конвейер бесплатно наследует всё, что
+движок уже умеет: приостановку и возобновление после перезапусков,
+восстановление после сбоев, сводки затрат и токенов по запуску и интерфейс
+деталей запуска.
 
-Approval also creates the scaffolding the work needs:
+Утверждение также создаёт каркас, необходимый для работы:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- **нанимает** все роли, помеченные как новые (и записывает id нанятых агентов,
+  чтобы сбой посреди утверждения можно было возобновить без дублирующих наймов)
+- **команду**, объединяющую роли
+- **проект**, в который попадает родительский тикет
+- **шаблон конвейера и запуск**, которые всем этим управляют
 
-## The lifecycle
+## Жизненный цикл
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +125,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| Статус         | Значение                                                                          |
+| -------------- | --------------------------------------------------------------------------------- |
+| `proposed`     | План готов и ждёт вашего единственного предварительного утверждения               |
+| `approved`     | Вы его утвердили; материализация идёт (наймы, команда, проект, конвейер)          |
+| `executing`    | Сгенерированный конвейер выполняется: подтикеты, обсуждение, работа               |
+| `synthesizing` | Подтикеты готовы; шаг синтеза создаёт итоговый результат                          |
+| `completed`    | Готово: родительский тикет помечен завершённым, а итоговый результат опубликован в общем пространстве |
+| `failed`       | Материализация не удалась или запуск сгенерированного конвейера завершился сбоем  |
+| `cancelled`    | Вы его отменили                                                                   |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Монотонно возрастающий номер **ревизии** отслеживает предложение, пока
+оркестратор дорабатывает его, пока статус ещё `proposed`; приложение
+записывает, какую ревизию вы утвердили. `propose_orchestration` отказывает в
+новой ревизии, как только статус перестаёт быть `proposed`.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Оркестрация всегда открывается относительно **родительского тикета** и
+использует одно общее **пространство** обсуждения, так что всё усилие
+прослеживается до одной единицы работы и команда общается в одной комнате.
 
-## What happens when it finishes
+## Что происходит, когда она завершается
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Постоянно работающий слушатель следит за сгенерированным конвейером и переносит
+его терминальное состояние обратно на оркестрацию и родительский тикет, поэтому
+завершение и сбой проявляются там, где вы и так следите. Оркестрации не нужен
+собственный движок выполнения.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Оркестрацию можно отменить в любой момент; отмена сворачивает работу,
+находящуюся в процессе.
 
 ::::note
-Orchestration builds on [pipelines](/ru-RU/руководство/понятия/конвейеры/) and
-[tickets](/ru-RU/руководство/понятия/тикеты/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Оркестрация строится на [конвейерах](/ru-RU/руководство/понятия/конвейеры/) и
+[тикетах](/ru-RU/руководство/понятия/тикеты/). Это слой планирования и утверждения
+поверх них, а не отдельная среда выполнения.
 ::::
 
-## See also
+## См. также
 
-- [Pipelines and automation](/ru-RU/руководство/понятия/конвейеры/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ru-RU/руководство/понятия/тикеты/): the parent ticket an orchestration is anchored on
-- [The agent model](/ru-RU/руководство/понятия/модель-агента/): the roles an orchestration fills or hires
-- [Run an orchestration](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
-- [Work in Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/)
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/): движок, на котором выполняется материализованная оркестрация
+- [Тикеты и делегирование](/ru-RU/руководство/понятия/тикеты/): родительский тикет, к которому привязана оркестрация
+- [Модель агента](/ru-RU/руководство/понятия/модель-агента/): роли, которые оркестрация заполняет или нанимает
+- [Запустить оркестрацию](/ru-RU/руководство/практические-руководства/запустить-оркестрацию/)
+- [Работать в Plan Studio](/ru-RU/руководство/практические-руководства/plan-studio/)

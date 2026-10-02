@@ -2,18 +2,19 @@
 title: Backup, export and import
 description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
 slug: en-GB/manual/reference/backup
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
 Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
+artefact. To actually take a backup, see
 [Back up and restore](/en-GB/manual/guides/back-up-and-restore/); for why persistence is
 split this way, see [Workspaces and isolation](/en-GB/manual/concepts/workspaces/).
 
-## Artifacts
+## Artefacts
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+There are three database-copy artefacts, with different scopes and deletion policies.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| Artefact                | Written by                   | Shape                                 | Covers                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
 | **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
 | **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
@@ -80,7 +81,7 @@ as a whole cannot restore an install.
 
 ## What a backup does not contain
 
-Both artifacts are **databases only**. A workspace directory holds more than its
+Both artefacts are **databases only**. A workspace directory holds more than its
 database, and none of the rest travels:
 
 | Path                                | In a snapshot? | In a workspace export? |

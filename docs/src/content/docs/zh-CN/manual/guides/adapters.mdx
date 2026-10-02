@@ -1,172 +1,129 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: 管理适配器与模型
+description: 连接模型提供商，选择智能体运行所用的模型，并查看服务器主机上有哪些智能体运行器 CLI。
 slug: zh-CN/手册/操作指南/适配器
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+本指南说明如何连接模型提供商，以及如何为智能体选择运行平台。
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+这里的一切都在同一个页面上：**设置 → 服务器 → 模型提供商**。子侧边栏中的条目名为“模型提供商”；页面标题为“适配器”。
 
-## What an adapter is
+## 适配器是什么
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+适配器是执行智能体回合的_运行器_。共有两个，且列表是固定的——你无法添加第三个。
 
-| Adapter                   | CLI      | Transport                                           |
+| 适配器                    | CLI      | 传输方式                                            |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (built-in) | 无       | 进程内智能体循环，通过 HTTP 与提供商通信            |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor、Codex、Anthropic、OpenAI 以及其他都是内置适配器上的**提供商**，而不是各自独立的 CLI。你_可以_添加的是另一个提供商——任何兼容 OpenAI 或兼容 Anthropic 的端点。那就是下一节的内容。
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[检测探测的是服务器，而不是你的机器]
+**检测到的运行器**卡片列出的是 `cc_server` 在_服务器主机_的 `PATH` 上找到的内容。在瘦客户端或 Web 客户端上，那是另一台机器，而不是你正在查看的这台。请把 CLI 安装到运行 `cc_server` 的机器上。
 :::
 
-## Connect a model provider
+## 连接模型提供商
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+内置适配器在能够运行之前，至少需要一个已连接的提供商。目录中随附了十四个。
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. 前往 **设置 → 服务器 → 模型提供商**
+2. 滚动到**提供商与模型**
+3. 找到你的提供商并连接它：
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| 提供商                                                                                                   | 连接方式                                                                                                                      |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API 密钥。Claude Pro/Max 订阅不是 Anthropic API 登录——该套餐请使用 Claude Code 适配器                                        |
+| OpenAI、Codex、Cursor                                                                                    | 浏览器 OAuth 登录，或 API 密钥。Codex 是通过 Codex Responses 后端提供的 ChatGPT Plus/Pro，而不是派生出的 CLI                  |
+| Kimi Code                                                                                                | 仅支持浏览器 OAuth——一种设备码流程。它是统一费率的套餐，因此没有按 token 计费的价格                                          |
+| OpenRouter、Groq、Google Gemini、DeepSeek、Mistral、xAI、z.ai、z.ai GLM Coding Plan、Moonshot (Kimi API) | API 密钥                                                                                                                      |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+检查点：该行的徽章会变为已连接，展开后它会列出该提供商所提供的模型，每个模型都带有每百万 token 的价格和上下文窗口。
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth 令牌会存入服务器自己的凭据存储，并会在过期前刷新。提供商凭据是**主机全局**的——它们由该安装上的每个工作区共享，而不是只属于某一个工作区。
 
-### Add a custom provider
+### 添加自定义提供商
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+适用于 Ollama、LM Studio、vLLM 或私有部署。
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. 在**提供商与模型**中，于**自定义提供商**下，按**添加提供商**
+2. 填写**名称**，选择 **API 类型**（兼容 OpenAI 或兼容 Anthropic），并给出**基础 URL**（例如 `http://localhost:11434/v1`）
+3. 如果端点需要，再添加一个 **API 密钥**，然后按**添加提供商**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+自定义提供商会出现在同一个列表中，并带有一个其内置同类所没有的删除按钮。
 
-## Pick a model for an agent
+## 为智能体选择模型
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. 前往 **设置 → 工作区 → 智能体** 并选择该智能体
+2. 在**设置**标签页上，选择**适配器**
+3. 从旁边的下拉列表中选择**模型**
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+对于内置适配器，该下拉列表是根据每个已连接提供商自己的目录实时组装的。没有存储凭据的提供商贡献零个模型，这正是空下拉列表几乎总是意味着“尚未连接任何提供商”、而不是“没有可用模型”的原因。
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev 只是补充信息，绝不是 id 的来源]
+随附的 [models.dev](https://models.dev) 目录会为已经在实时列表中的模型提供价格和上下文窗口。它从不新增模型 id。如果你期望出现的模型缺失了，那是提供商的端点没有返回它。
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+内置适配器的模型 id 是带限定符的 `provider/model`，并且可以带一条以 `|` 分隔的回退链。在存在回退时，费用按实际服务该回合的模型计价，而不是按你请求的那个模型计价。
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[未设置适配器的智能体在内置循环上运行]
+每个工作区都会预置五个智能体——一位 CEO 加上 `qa`、`architect`、`engineer` 和 `librarian`——它们都没有适配器，也没有模型。派发会回退到 **Control Center (built-in)**，而不是本页上的**默认运行器**设置；后者是客户端偏好，派发路径从不读取它。运行日志会为这些运行记录 `cc-harness`，因此转录会写明实际运行的到底是什么。
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+同样没有模型时，内置循环会向 Anthropic 索取其默认模型。因此，完全未做设置的智能体，只有在你已连接 Anthropic 账号时才能运行，否则会以 `No credential for provider "anthropic"` 失败。
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+完成入门流程的适配器步骤时，会用你选择的这一组适配器与模型回填**每一个**仍然缺少适配器或模型的智能体——CEO 与各专家，覆盖当时已存在的所有工作区。之后创建的工作区仍然会把五个智能体全部预置为未设置状态。请在你打算使用的每个智能体上显式设置适配器和模型。
 :::
 
-## Install a runner CLI
+## 安装运行器 CLI
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+内置适配器无需安装。对于 Claude Code，请用该工具自己的包管理器**在服务器主机上**安装它的 CLI，例如：
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+然后按页面顶部的**刷新**。每个检测到的行都会显示解析出的版本和路径，并附有标明它是否支持 JSON 模式和模型选择的标签。
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+外部 CLI 在服务器主机上以自己的配置保存自己的凭据。Control Center 不管理它们。
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[适配器参数与环境变量只保存在本设备上]
+每个适配器行都提供一个**参数**字段和一个**环境变量**对话框。这些值保存在你的设备上。服务器从其自己的设置存储中读取启动 argv 和环境变量。请把提供商密钥放在服务器上（用 OAuth，或模型提供商页面上的密钥字段），而不是放在这两个字段里。
 :::
 
-## Restrict which providers a workspace may use
+## 限制工作区可使用的提供商
 
-Provider governance is per workspace and is evaluated last-match-wins.
+提供商治理按工作区进行，并采用最后匹配胜出的方式评估。
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. 在**提供商与模型**中，将提供商行上的**允许**开关关闭
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+这会在活动工作区中为该提供商写入一条 `deny` 语句，其模型也会从该工作区的目录中消失。重新打开该开关即会移除这条语句。
 
-## Troubleshooting
+## 故障排查
 
-### A runner shows as not found
+### 运行器显示为未找到
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- 检查 CLI 是否位于**服务器主机的** `PATH` 上，而不只是你自己的 `PATH`
+- 通过 GUI 启动的桌面应用会用最小化的 `PATH` 派生其服务器；安装在仅 shell 可见路径下的 CLI 可能对它不可见
+- 安装后按**刷新**
 
-### The model dropdown is empty
+### 模型下拉列表为空
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- 适配器是内置的那个，且没有连接任何提供商——请在**提供商与模型**中连接一个
+- 或者提供商已连接，但被该工作区的治理开关拒绝
 
-### A model runs but the price shows as unknown
+### 模型可以运行，但价格显示为未知
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+实时模型列表带有 id；价格和上下文来自 models.dev。一个全新的模型，或来自自定义提供商的模型，还没有目录条目。
 
-## Related guides
+## 相关指南
 
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Manage API keys](/zh-CN/手册/操作指南/api-密钥/)
-- [Diagnose an agent](/zh-CN/手册/操作指南/诊断智能体/)
-- [Manage costs](/zh-CN/手册/操作指南/管理成本/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [管理 API 密钥](/zh-CN/手册/操作指南/api-密钥/)
+- [诊断智能体](/zh-CN/手册/操作指南/诊断智能体/)
+- [管理成本](/zh-CN/手册/操作指南/管理成本/)
 
-## Related concepts
+## 相关概念
 
-- [The agent model](/zh-CN/手册/概念/智能体模型/)
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)

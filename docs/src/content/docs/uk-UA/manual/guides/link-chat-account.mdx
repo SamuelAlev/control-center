@@ -1,95 +1,118 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Прив’язати обліковий запис Slack
+description: Доведіть, що ідентичність у Slack належить вам, щоб агенти діяли за вашими повідомленнями, а ваша робота приписувалася вам.
 slug: uk-UA/керівництво/практичні-посібники/підключити-обліковий-запис-чату
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Цей посібник показує, як прив’язати свою ідентичність у чаті до користувача Control Center і як відв’язати її.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Кожен учасник робить це один раз для кожного провайдера чату. Це окремо від
+підключення застосунку: з’єднання робить бота доступним для всього робочого
+простору, а прив’язка робить _вас_ упізнаваним у ньому.
 
-## Why linking is required
+## Для чого потрібна прив’язка
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Міст відмовляється діяти від імені облікового запису в чаті, який не вдається
+зіставити з учасником робочого простору. Це навмисно — без прив’язки кожне
+повідомлення зі Slack довелося б приписувати тому, хто встановив застосунок, і
+журнал аудиту, обмеження частоти для кожного Principal та автори тікетів
+указували б не на ту людину.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Неприв’язаний учасник, який згадує бота, отримує відповідь у тій гілці Slack із
+поясненням, як виконати прив’язку. Нічого не запускається.
 
-## Link with a code
+## Прив’язати за кодом
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Перейдіть у **Налаштування → Робочий простір → Профіль і ідентичність** і прокрутіть до картки **Прив’язані облікові записи чату**
+2. У блоці Slack натисніть **Прив’язати мій обліковий запис Slack**
+3. Скопіюйте команду, яку він показує, наприклад:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. У Slack надішліть цю команду боту — найпростіше це зробити в особистому повідомленні
+5. Бот підтверджує, до якого користувача Control Center вас тепер прив’язано, і залишений відкритим діалог тієї ж миті оновлюється відповідно — вам не потрібно закривати його й перевіряти
 
-The code:
+Код:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Одноразовий і втрачає чинність через **15 хвилин** після створення
+- Завжди створюється для _вас_, ніколи для колеги
+- Замінює будь-який код, який ви вже маєте, тож повторне натискання кнопки робить попередній недійсним
+- Зберігається лише в пам’яті, тож перезапуск сервера робить невикористані коди недійсними — натисніть кнопку ще раз
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Код, невідомий, прострочений або створений для іншого робочого простору, зазнає
+тієї самої невідрізнюваної невдачі: «that code is not valid (or has expired)».
 
-## Automatic linking by email
+## Автоматична прив’язка за електронною поштою
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Якщо у вашому профілі Slack указано підтверджену адресу електронної пошти, що
+збігається з користувачем Control Center, який **уже є учасником цього робочого
+простору**, міст прив’язує вас під час першого звернення до нього. Код не
+потрібен.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Важливі обидві половини: збіг адрес доводить ідентичність, але доступ надає
+лише членство, тож стороння особа, чия адреса випадково вже є на сервері, не
+прив’язується ні до чого. Список показує, як саме створено кожну прив’язку
+(«зіставлено за email» або «прив’язано кодом»).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Автоматична прив’язка потребує області доступу `users:read.email`. Без неї Slack
+не розкриє адресу, і єдиним шляхом залишається прив’язка за кодом.
 
-## See who is linked
+## Подивитися, хто прив’язаний
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Список належить до адміністрування робочого простору, тож він живе в іншій
+половині поверхні: **Налаштування → Робочий простір → Загальні → Чат-мости →
+Прив’язані облікові записи**. Він перелічує всіх прив’язаних учасників робочого
+простору, із зазначенням облікового запису Slack, якому відповідає кожен із них,
+і способу створення прив’язки.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Ваш власний стан — на сторінці профілю: рядок **Прив’язати мій обліковий запис
+Slack** показує «Прив’язано до _your-slack-id_», коли вас прив’язано, і пропонує
+виконати прив’язку, коли ні.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Список — це жива підписка, бо зміна відбувається на іншому боці: ви вводите код
+у Slack, тож жоден запит із застосунку не може принести відповідь назад.
 
-## Unlink
+## Відв’язати
 
-Click **Unlink** on a row in the workspace roster.
+Натисніть **Відв’язати** в рядку списку робочого простору.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Кожен може відв’язати себе
+- Лише адміністратор може відв’язати іншого учасника
+- Відв’язування також відкликає будь-який невикористаний код прив’язки цього учасника
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Після відв’язування цей обліковий запис Slack більше не може керувати агентами,
+доки не прив’яжеться знову. Наявні простори, транскрипти й тікети зберігають
+початкову атрибуцію — відв’язування не скасовує минулої роботи.
 
-## Troubleshooting
+## Усунення несправностей
 
-### The bot says I am not a member of this workspace
+### Бот каже, що я не учасник цього робочого простору
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/).
+Ваш обліковий запис Slack прив’язано до користувача Control Center, але цей
+користувач не має членства в цьому робочому просторі. Попросіть адміністратора
+запросити вас; див. [Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/).
 
-### The bot says my role is read-only
+### Бот каже, що моя роль доступна лише для читання
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Ролі `viewer` і `guest` не можуть запускати роботу. Адміністратор має підвищити
+вашу роль до `member` або вище.
 
-### The slash command is not recognized
+### Slash-команда не розпізнається
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Перевірте, чи існує slash-команда в Slack, і чи надсилаєте ви ту команду, яку
+показав діалог налаштувань, — можливо, адміністратор перейменував її, і тоді
+діалог показує поточну назву.
 
-## Related guides
+## Пов’язані посібники
 
-- [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
-- [Customize the chat bot](/uk-UA/керівництво/практичні-посібники/налаштувати-чат-бота/)
-- [Chat bridge](/uk-UA/керівництво/довідка/чат-міст/)
+- [Налаштувати інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
+- [Налаштувати чат-бота](/uk-UA/керівництво/практичні-посібники/налаштувати-чат-бота/)
+- [Чат-міст](/uk-UA/керівництво/довідка/чат-міст/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Chat bridges](/uk-UA/керівництво/поняття/чат-мости/)
-- [Multiplayer — identity, membership and presence](/uk-UA/керівництво/поняття/спільна-робота/)
+- [Чат-мости](/uk-UA/керівництво/поняття/чат-мости/)
+- [Спільна робота — ідентичність, членство та присутність](/uk-UA/керівництво/поняття/спільна-робота/)

@@ -1,225 +1,128 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: مراجعة بالذكاء الاصطناعي
+description: كيف يصبح طلب السحب طلبًا مُراجَعًا — مساحات المراجعة، وعقد المراجعة، وإجماع الأقران، والمجموعات والمحاور، وحكم Ship أو Hold أو Block، ولماذا يبقى النشر خطوة تتخذها أنت.
 slug: ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## شكل المراجعة
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+المراجعة بالذكاء الاصطناعي تشغيل واحد لخط الأنابيب `pr_review` المُنشأ مع مساحة العمل، على طلب سحب مفتوح واحد. يفتح خط الأنابيب مساحة مراجعة الطلب، ويوزّع وكلاء المراجعة ليقرؤوا الفروق في السحب المعزول لتلك المساحة، ويودع كل منهم نتائجه في **عقد مراجعة** منظَّمة، ويجمّعها وكيل قائد في استعراض موجّه، ويحسب المُنهي حكمًا واحدًا: **Ship** أو **Hold** أو **Block**. النشر خارج خط الأنابيب. الإرسال إلى GitHub خطوة منفصلة ومقصودة يتخذها إنسان.
 
-The rest of this page explains the pieces and why they are shaped this way.
+تشرح بقية الصفحة هذه الأجزاء، ولماذا اتُّخذ لها هذا الشكل.
 
-## One review space per PR
+## مساحة مراجعة واحدة لكل طلب سحب
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+سياق مراجعة طلب السحب مساحة مراسلة، وضعها `review` ونوعها `pr`، ويربطها بالطلب **ارتباط مساحة المراجعة**. الإنشاء متماثل الأثر: استدعاؤه مرة أو مرات يعيد المساحة نفسها. صفحة طلب السحب، وخط أنابيب المراجعة، وواجهات الدردشة، كلها تصل إلى المساحة الداعمة _الواحدة_ عبر مسار الشفرة نفسه، فلا ينتهي قالب يراجع الطلب وإنسان يفتحه في غرفتين مختلفتين أمام سحبين مختلفين.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+في شجرة العمل المعزولة للمساحة يُسحب طلب السحب عند مرجع head. الغرفة الواحدة تعني سحبًا واحدًا: المراجعون كلهم يعملون في هذه المساحة، والسحب مشترك بينهم لا نسخة لكل مراجع من مساحة العمل.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+ينشر كل مراجع في مجرى مسمّى خاص به داخل هذه المساحة الواحدة، والنتائج رسائل `review_node` لا نثرًا عاديًا. الجمع على نطاق المساحة في النهاية مقصود: حكم يُحسب من نتائج خيط واحد يكون، في صمت، حكمًا على مراجع واحد.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+يحمل الارتباط سلّم حالات، `requested` ثم `in progress` ثم `awaiting approval` ثم `completed`، وهو ما يضبط **النشر على GitHub** في لسان المراجعة على طلب السحب.
 
-## Review levels
+## مستويات المراجعة
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+عمق المراجعة سياسة لمساحة العمل ذات ثلاثة مستويات، تُضبط من **الإعدادات → مساحة العمل → عام**، على بطاقة **سياسة مساحة العمل**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| المستوى | المراجعون الذين يُوزَّعون | الإبلاغ |
+| --- | --- | --- |
+| `light` | المهندس فقط | ما يهم فعليًا فقط |
+| `balanced` | المهندس، وضمان الجودة، والمعماري (الافتراضي) | التقرير المعتاد |
+| `thorough` | الخمسة جميعًا، بما في ذلك الأمان والأداء | لا يُخفَّض شيء |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+يحرّك المستوى مؤشرين معًا. الأول يحدد المراجعين الذين يُوزَّعون، وتفرض ذلك بوابات الحالة `runWhen` في قالب خط الأنابيب. صياغة المطالبة يمكن تجاهلها، والبوابة تبقى. الثاني يحدد أين تُعرض النتائج التي تقع دون العتبة. لا يحذف أي من المؤشرين نتيجة: المستوى الذي يبلّغ أقل يودع المقدار نفسه، ويجمّع الباقي.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+جولات الأمان والأداء تعيد استخدام وكيلي المعماري والمهندس المُنشأين مع مساحة العمل، ولا تضيف وكيلين جديدين. التخصص هو الموجز الذي يُرسَل به المراجع. وكيل مستقل لكل محور يضيف خمسة صفوف في كل مساحة عمل، والقدرة لا تزيد. اختيار المراجعين لا ينظر إلى لغة الفروق ولا إلى مجالها.
 
-## Review nodes: findings as data, not prose
+## عقد المراجعة: النتائج بيانات لا نثر
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+النتيجة المودَعة عبر `add_review_node` تصبح **عقدة مراجعة** على طلب السحب. لسان المراجعة يعرضها، والحكم يُحسب منها، و«النشر على GitHub» يحوّلها إلى تعليق مضمّن. مراجع لا يعيد إلا نثرًا يترك تشغيل خط الأنابيب في مظهر النجاح وسطح المراجعة فارغًا. الإيداع هو الجزء الحامل.
 
-Each node carries:
+تحمل كل عقدة:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| الحقل | القيم |
+| --- | --- |
+| النوع | `bug`، `suggestion`، `recommendation`، `question`، `ticket` |
+| الأولوية | P0 (حرج) إلى P3 (ملاحظة طفيفة) |
+| ثلاثية الفرز | الفئة (`security`، `stability`، …)، والخطورة، والجهد |
+| المرساة | مسار الملف، وبداية السطر ونهايته |
+| حمولة الإصلاح | أسطر استبدال مقترحة، وفرق اختياري، ومطالبة إصلاح اختيارية |
+| الثقة | درجة ضمن [0, 1] |
+| التعليل | التحليل، ويُكتب قبل النتيجة |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+تفصيلان مقصودان. اقتراح GitHub بنقرة واحدة لا يُعرض إلا إذا قدّم المراجع أسطر الاستبدال بحذافيرها. استنتاجها من فرق موحّد يخطئ بهدوء، وإيداع الاستنتاج الخاطئ بنقرة واحدة أسوأ من غياب الزر. ويقدّم مخطط `add_review_node` الحقل `reasoning` قبل النتيجة، فالنموذج الذي يملأ الكائن بترتيب المخطط يكتب التحليل أولًا. الحقل اختياري، وإغفاله لا يرفض العقدة. العقدة ذات الحمولة المشوّهة تختفي، ولا تلوّث المراجعة.
 
-## Peer consensus
+## إجماع الأقران
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+تنتقل العقدة عبر `open` ثم `consensus-ready` ثم `resolved` أو `dismissed`. الخطوة الوسطى قلب النموذج: **لا تترقّى النتيجة إلا حين يؤكّدها مراجع نظير، ولا يستطيع الوكيل تأكيد نتيجته هو.** أداة MCP `publish_review_to_github` والافتراضي في RPC ينشران النتائج التي أكّدها الأقران فقط. زر **النشر على GitHub** في لسان المراجعة يرسل كل نتيجة مفتوحة متبقية.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+تُفرَض القاعدة في ثلاثة مواضع مستقلة: أداة التأكيد، والمُنهي، والناشر. فتبقى سارية ولو أخطأ المستدعي في واحد منها. تمر كل تغيّرات الحالة عبر خدمة واحدة، وهذا ما يجعل للحالة معنى واحدًا. قبل ذلك كان يمكن لمسارين ناقصين أن يختلفا: هل حُلّت النتيجة نفسها أم لا.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+إذا اختلف المراجعون، في الملف والسطر نفسهما، أو بفارق مستويين أو أكثر في الأولوية، أو سمّاها أحدهما `bug` والآخر `suggestion`، يُبرَز الخلاف فوق قائمة النتائج. هناك يفترق الرأي، وهناك يكون حكم الإنسان أجدى ما يكون.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+تجاهل نتيجة يكتب أيضًا حقيقة كبح لينة في نطاق الذاكرة، بثقة منخفضة. التجاهل مرةً تفضيل، ولا يُتَّخذ قاعدة.
 
-## Cohorts: what the review is grouped around
+## المجموعات: ما تُجمَّع حوله المراجعة
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+تجمّع جولة حوسبة المراجعة ملفات طلب السحب المتغيّرة في **مجموعات** مشتقة من مخطط الشفرة: تُقابَل الملفات المتغيّرة بالرموز البرمجية التي تلمسها، وتُقابَل الرموز بالمكوّنات المتصلة، وتُرتَّب المجموعات حسب نصف قطر التأثير. تحمل المجموعة ترتيب قراءة موجّهًا ومخططات ورؤى، لا قائمة ملفات مسطّحة.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+قاعدتا صدق تشكّلان هذا. مفاتيح المجموعات مشتقة من المحتوى وثابتة بين عمليات الدفع، فتبقى النتائج وتقدّم المراجعة بعد rebase أو force-push ولا تُتيتَم. وإذا لم يكن للمستودع فهرس شفرة، يعود التجميع إلى مسارات الملفات ويصرّح بذلك. البديل لا يدّعي ثقة دلالية.
 
-## Review axes and gates
+## محاور المراجعة وبواباتها
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+إلى جانب نتائج المراجعين، تجمع المراجعة **نتائج محاور**: ستة محاور من نوعين.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| المحور | النوع | المصدر |
+| --- | --- | --- |
+| `correctness`، `security` | مدفوع بالرموز | نتائج المراجعين أنفسهم |
+| `testGap` | مدفوع بالرموز | نتائج المراجعين |
+| `visual`، `apiContract` | حتمي | يُحسب من غير استهلاك رموز |
+| `performance` | حتمي | تعداد فقط — لا شيء في المنتج يحسب نتيجة |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+حكم المحور أحد هذه: `pass` أو `warn` أو `fail` أو `partial` أو `unavailable`. لا يجتاز البوابة إلا `pass` أو `warn`. التمييز بين `fail` و`partial` و`unavailable` جوهري: محور عليه بوابة ولم يكتمل، أو لم يستطع العمل أصلًا، يُمسك الحكم الكلي ولا يمرّره. **غياب الدليل لا يتحوّل إلى بوابة خضراء.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+بعض المحاور استشاري عن قصد. محور فجوة الاختبارات المشتق من المجموعات لا يرى تغطية حقن التبعيات ولا تغطية المصانع. مستودع بلا فهرس وحزمته وافية، وآخر بلا اختبارات أصلًا، يبدوان من هناك متطابقين، فالقول بأي منهما كذب. يظهر المحور في لوحة المعلومات من غير بوابة. محاور الرموز استشارية لأن أولويات النتائج تقود الحكم أصلًا، وضبط بوابة عليها مرة أخرى يحسب الشيء مرتين.
 
-## The verdict
+## الحكم
 
-The finalizer computes the verdict over the findings with status `open` or
-`consensus-ready`:
+يحسب المُنهي الحكم من النتائج التي حالتها `open` أو `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- أي نتيجة P0 بثقة ≥ 0.7 تؤدي إلى **Block**
+- وإلا فأي P0 (ثقة منخفضة) أو أي P1 تؤدي إلى **Hold**
+- وإلا فالحكم **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+يحمل الحكم ثقة مجمّعة تُشتق من تشتت درجات الثقة المساهِمة: الاتفاق يرفعها، والافتراق يخفضها.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+تجميع الوكيل القائد (CEO) مرور تحريري، لا إعادة لسرد النتائج. نسخة ثانية تُكتب باليد من النتائج هي ما ينحرف عن النسخة الحقيقية. تُخفَّض النتائج المكررة ويبقى ذكرها مرة واحدة. عدة مراجعين يُوجَّهون إلى الفروق نفسها باختصاصات متداخلة عمدًا، فوصول العيب نفسه إلى المُنهي ثلاث مرات علامة على أن النظام يعمل، ونشره ثلاث مرات تسريب لبنية النظام إلى صندوق وارد القارئ. عند إعادة المراجعة تُبصَم النتائج وتُقارَن بالجولة السابقة، فيظهر الفرق.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+ثم تنضم المحاور، ولا تستطيع إلا أن تجعل الحكم **أشد**. محور عليه بوابة وفشل يفرض Block، ولا تتغلّب النتائج عليه بالتصويت. ومحور عليه بوابة ولم يكتمل يفرض Hold على الأقل.
 
-## Publishing stays with you
+## النشر يبقى بيدك
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+خط الأنابيب لا يرسل إلى GitHub عمدًا. النشر مشروط بفعل المستخدم، حتى لا تُنشر المراجعة مرتين. حين تضغط **النشر على GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- تُقدَّم مراجعة واحدة على GitHub. تُتخطى النتائج المحلولة أو المتجاهَلة أصلًا. ينشر الزر كل نتيجة مفتوحة متبقية (`selection: all_open`). أداة MCP `publish_review_to_github` تفترض النتائج التي أكّدها الأقران فقط (`consensus`).
+- النتائج المربوطة بملف وسطر تصبح تعليقات مضمّنة، وما عداها يُطوى في متن الملخص، ويحمل كل منها تذييل "— Control Center AI review" حتى يبقى المصدر واضحًا.
+- تُعاد مطابقة المراسي مع فروق طلب السحب _الحالية_ وقت النشر. تعليق على شفرة أُعيدت كتابتها هو أشد ما يهدم الثقة مما قد يتركه مراجع. إذا رفض GitHub مرساة مضمّنة رغم ذلك، تُرسَل المراجعة كلها من جديد وكل نتيجة مطوية في المتن، حتى لا يسقط شيء في صمت.
+- يُقدَّم حكم **Block** بصفة `REQUEST_CHANGES`، و**Hold** بصفة `COMMENT`، و**Ship** بصفة `APPROVE` من الزر (`approve_on_ship: true`). أداة MCP تُبقي Ship على `COMMENT` ما لم تُمرَّر `approve_on_ship`.
+- تُنشر المراجعة بهوية تطبيق الخادم. يُسجَّل من ضغط النشر لبوابة الدور ولسجل التدقيق، وهو ليس مؤلف GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
+يصرّح النشر بفئة الإجراء `prPublish`، فتضبطه نقطة الاختناق في الضوابط كما تضبط أي إجراء يعدّل الحالة: الموافقة مطلوبة افتراضيًا، ويفشل الطلب مغلقًا إذا لم يكن هناك معتمِد متصل. انظر [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/).
 
-## What a reviewer may do
+## ما يجوز للمراجع
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+يعمل وكلاء المراجعة في وضع `review`: بيئة معزولة للقراءة فقط، وقائمة سماح منتقاة تغطي النتائج والتعليق والتذاكر ومراجعة الأقران، وتستبعد التعديل. لا يصلح المراجع الشفرة التي ينتقدها، ويستطيع إرفاق إصلاح مقترح يطبّقه إنسان. رسالة الرفض في هذا الوضع تقول للوكيل الذي يحاول الفعل رغم ذلك أن ينهي المراجعة، وأن يترك للمستخدم التصرف بناءً على الملخص المنشور.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) — the policy engine that gates publishing
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) — what `review` mode changes for an agent
-- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) — the engine the review runs on
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) — where the isolated worktree comes from
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) — محرك السياسات الذي يضبط النشر
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) — ما يغيّره وضع `review` للوكيل
+- [خطوط الأنابيب والأتمتة](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) — المحرك الذي تعمل عليه المراجعة
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) — من أين تأتي شجرة العمل المعزولة
 
-## Related guides
+## أدلة ذات صلة
 
-- [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/) — run a review and publish it
-- [Dispatch reviewer agents](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/) — choose the reviewers yourself
-- [Review compute](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/) — cohorts, axes and diffs
+- [استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/) — تشغيل مراجعة ونشرها
+- [إرسال وكلاء مراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة/) — اختيار المراجعين بنفسك
+- [حوسبة المراجعة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/حوسبة-المراجعة/) — المجموعات والمحاور والفروق

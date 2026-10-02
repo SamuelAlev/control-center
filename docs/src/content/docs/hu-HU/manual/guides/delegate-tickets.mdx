@@ -1,131 +1,140 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Munka delegálása ügynököknek
+description: Adjon át egy jegyet egy ügynöknek egy beszélgetésben, és engedje, hogy az ügynökök részfeladatokat delegáljanak egymásnak a mélység- és ciklusőrök felügyelete alatt.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Ez az útmutató arról szól, hogyan vegyen le munkát a saját válláról, és tegye
+át egy ügynökére, valamint arról, mi történik, amikor az ügynökök munkát adnak
+át egymásnak.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[A jegy ügynökhöz rendelése nem indít futtatást]
+Egy ügynök hozzárendeltként való beállításához nincs jegykiosztó. A hozzárendelés
+tulajdonjogot rögzít, és semmi többet — nem jön létre tér, nem változik állapot,
+nem indul el ügynök. Kivétel ez alól a **csapathoz** rendelt jegy, amely
+felébreszti az adott csapat csapatvezetőjét. Egy megnevezett hozzárendelthez
+tartozó ügynökmunka a beszélgetésekben él, ezért ott kell elindítania.
 :::
 
-## Hand a ticket to an agent
+## Adjon át egy jegyet egy ügynöknek
 
-1. [Create the ticket](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Hozza létre a jegyet](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/) olyan címmel és
+   leírással, amely elég pontos ahhoz, hogy dolgozni lehessen belőle.
+2. Állítsa a **Hozzárendelt** mezőjét az ügynökre, hogy a tulajdonjog
+   nyilvántartásba kerüljön.
+3. Nyisson (vagy hozzon létre) egy teret, és @-említse meg azt az ügynököt.
+4. Hivatkozzon a jegyre egy `#`-es említéssel az üzenetében — az
+   üzenetszerkesztő automatikusan kiegészíti a munkaterület jegyeit —, és mondja
+   meg, mit szeretne elvégeztetni.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Az ügynök a beszélgetésből veszi fel a munkát. A haladása abba a térbe
+streamel.
 
-## What the agent receives
+## Mit kap meg az ügynök
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Az üzenetét, benne a megjelölt jegyhivatkozással.
+- A teret, amelyben dolgozhat és jelenthet.
+- Egy elszigetelt worktree-t a munkaterülethez kapcsolt repókból.
+- A tér **módját**, amely a futtatás eszközfelületét szabályozza.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/hu-HU/kezikonyv/fogalmak/modok/).
+A mód a tér tulajdonsága, nem a jegyé — a jegynek nincs módja. Ugyanaz az ügynök
+ezért az egyik térben `chat`, a másikban `plan` módban lehet. Az üzenetszerkesztő
+módválasztójából válassza ki (**Ügynök**, **Terv** vagy **Orchestrálás**); a
+`review` módot a PR-átnézési terek állítják be, és nem választható ki. Lásd:
+[Módok](/hu-HU/kezikonyv/fogalmak/modok/).
 
-## Require a structured result
+## Strukturált eredmény megkövetelése
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+A kimeneti szerződést az indításon deklarálják, nem a jegyen:
+`expected_output_schema` és `output_contract_mode` (alapértelmezés szerint
+szigorú). Az ügynök a `submit_output` meghívásával tesz eleget neki, amely a
+séma alapján érvényesíti a beküldött adatokat, és elutasítja a nem megfelelőt.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Az elfogadott kimenet és az esetleges elutasítások is az **ügynök futtatási
+naplójára** kerülnek. A jegy saját állapotát ez nem érinti — egy meghiúsult
+szerződés nem buktatja meg a jegyet.
 
-## Monitor progress
+## A haladás nyomon követése
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **A tér** — az ügynök élő tevékenysége, ez az elsődleges nézet.
+- **A jegy** — az állapota, ahogyan azt éppen a mozgatója beállítja.
+- **Megfigyelhetőség → Élő** (`/workspaces/<workspace-id>/observability`) — az
+  élő ügynöknévsor.
+- **Megfigyelhetőség → Betekintések** — a futtatási napló, költséggel és
+  időtartammal.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Nincs irányítópult-képernyő; a puszta munkaterület-URL a Beérkezett nézetre
+irányít.
 
-## Let agents delegate to each other
+## Engedje, hogy az ügynökök egymásnak delegáljanak
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Az az ügynök, amelyik egy részproblémába ütközik, a `delegate_task` MCP-eszközzel
+delegál. Ez létrehoz egy másik ügynökhöz rendelt gyermekjegyet, és — amikor
+megadja a `parent_ticket_id` értéket — rögzíti a láncot, hogy az őrök láthassák.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Két strukturális őr mindig lefut a jegykezelés szűk keresztmetszeténél, soha nem
+promptutasításra:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Mélységkorlát** — a 3 ugrásnál mélyebb lánc elutasításra kerül.
+- **Ciklusdetektálás** — a láncban már szereplő ügynökhöz visszavezető ugrás
+  elutasításra kerül.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Amikor megadja a `from_agent_id` értéket, további két őr fut le (az éles
+környezet mindig biztosítja a feloldó portokat):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Autonómiaplafon** — a delegált térbeli effektív szintje nem haladhatja meg a
+  delegálóét.
+- **Költségvetési keret** — a delegálás a delegáló fennmaradó hard-stop
+  költségvetését terheli, és nem hozhat létre többet. A szabályzat nélküli vagy
+  korlátlan szabályzat átmegy.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Az elutasítás hangos: az eszköz szó szerint visszaadja az őr indokát, így a
+delegáló ügynök pontosan látja, miért. A `delegatedByAgentId` mező rögzíti, ki
+delegált, és ebből delegálási fa áll össze.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[A `delegate_ticket` minden őrt kihagy]
+A régebbi `delegate_ticket` eszköz továbbra is regisztrálva van, és közvetlenül a
+`createTicket` metódust hívja — nincs mélységkorlát, nincs ciklusellenőrzés,
+nincs autonómiaplafon, nincs költségvetési keret. Részesítse előnyben a
+`delegate_task` eszközt.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Ez a 3-as delegálási mélységkorlát más korlát, mint a beépített harness 2-es
+alügynök-beágyazási korlátja — az egyik az ügynökök közötti jegyeket, a másik
+egyetlen futtatáson belül az alügynököket korlátozza.
 
-## Put several agents on one ticket
+## Több ügynök egyetlen jegyen
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Adja hozzá őket **közreműködőként** a jegyhez (szerepkörök: hozzárendelt,
+közreműködő, átnéző). Ez egy névsor — annak nyilvántartása, hogy ki érintett —,
+és önmagában semmit nem biztosít.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/).
+Ahhoz, hogy az ügynökök ténylegesen ugyanabba a beszélgetésbe kerüljenek,
+résztvevőként adja hozzá őket a tér fejlécéből. Ezután ott @-említhetik egymást.
+Lásd: [Terek](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/).
 
-## Automated ticket creation
+## Automatizált jegyletrehozás
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+A pipeline palettáján egyetlen csomópont sem hoz létre jegyeket, így egy pipeline
+nem tud munkát hozzárendelt jegyekként szétosztani.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/).
+Az egyetlen létező útvonal az orchestráció: egy javaslat jóváhagyása létrehoz egy
+projektet és egy csapatot, a javaslat alticket-DAG-ját **pipeline-sablonná**
+fordítja (altickettenként egy `promptAgent` lépés, nem pedig mindegyikhez
+egy-egy `Ticket` sor), és elindítja azt a futtatást. Lásd:
+[Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Create and manage tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
-- [Organize work with projects](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/)
-- [Ticket lifecycle reference](/hu-HU/kezikonyv/referencia/jegyeletciklus/)
+- [Jegyek létrehozása és kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/)
+- [Munka szervezése projektekkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/)
+- [Jegyéletciklus](/hu-HU/kezikonyv/referencia/jegyeletciklus/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Tickets](/hu-HU/kezikonyv/fogalmak/jegyek/)
-- [Dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Jegyek](/hu-HU/kezikonyv/fogalmak/jegyek/)
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)

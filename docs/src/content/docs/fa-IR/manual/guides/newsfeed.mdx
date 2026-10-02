@@ -1,130 +1,131 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: خوراک خبری خود را بچینید
+description: خوراک‌های RSS/Atom را اضافه و مدیریت کنید، مقاله‌ها را با مسدودسازی محتوا بخوانید و بدانید که خوراک‌های شما در هر فضای کاری همراه‌تان می‌آیند.
 dateModified: 2026-09-19
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/خوراک-خبری
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+این راهنما نشان می‌دهد چطور خوراک خبری را شکل دهید: از چه منابعی می‌خواند،
+مقاله‌ها چگونه خوانده می‌شوند و مسدودسازی محتوا چه می‌کند.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[خوراک خبری مختص کاربر است، نه محدود به فضای کاری]
+خوراک‌ها و مقاله‌ها به کاربر واردشده تعلق دارند: فهرست خوراک‌ها، وضعیت خوانده‌شدن و
+نشانک‌های شما به هر فضای کاری و هر دستگاهی که با آن وارد می‌شوید همراه‌تان می‌آیند
+و هیچ کاربر دیگری آن‌ها را نمی‌بیند. خوراک‌ها در پایگاه‌دادهٔ سراسری سرور قرار دارند، پس
+نشانی `/newsfeed` فقط به این دلیل شناسهٔ فضای کاری را حمل می‌کند که هر مسیر درون‌برنامه‌ای چنین می‌کند.
 :::
 
-## Read articles
+## خواندن مقاله‌ها
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. روی **خوراک خبری** در نوار کناری کلیک کنید
+2. با بخش‌های نوار ابزار میان **همه**، **خوانده‌نشده** و **ذخیره‌شده** جابه‌جا شوید
+3. فهرست را با کادر جستجو یا انتخاب‌گر منبع محدود کنید
+4. با دکمه‌های چیدمان میان شبکهٔ مجله‌ای و فهرست متراکم جابه‌جا شوید
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+باز کردن یک مقاله آن را خوانده‌شده علامت می‌زند. با **علامت همه خوانده‌شده** در سرصفحهٔ
+صفحه — که فقط تا وقتی چیزی خوانده‌نشده باشد پدیدار می‌شود — انبوه خوانده‌نشده‌ها را یک‌جا
+پاک کنید و با کنترل نشانک روی یک کارت، مقاله‌ای را برای بعد ذخیره کنید.
 
-The layout choice persists across launches.
+انتخاب چیدمان میان اجراها باقی می‌ماند.
 
-## Add a feed
+## افزودن خوراک
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. **تنظیمات ← شما ← خوراک خبری** را باز کنید (نماد تنظیمات در سرصفحهٔ خوراک خبری
+   مستقیم به همان‌جا می‌رود)
+2. **افزودن خوراک** را بزنید
+3. یک **نام** و **URL خوراک** (RSS یا Atom) را پر کنید
+4. به‌اختیار **پیشرفته** را باز کنید و یک **User-Agent** سفارشی تنظیم کنید — بعضی
+   ناشران به کلاینت پیش‌فرض پاسخ متفاوتی می‌دهند
+5. **افزودن خوراک** را بزنید
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+نقطهٔ بازبینی: خوراک در فهرست **خوراک‌ها** پدیدار می‌شود و مقاله‌هایش پس از نخستین
+واکشی می‌رسند. اگر نشانی‌ای از قبل مشترک شده باشد، با پیام «خوراکی با این URL از قبل
+وجود دارد.» رد می‌شود.
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+۱۴ خوراک برای هر کاربر در نخستین استفاده از پیش نشانده می‌شود: Control Center، The Verge،
+TechCrunch، Hacker News، ByteByteGo، Product Hunt، TLDR AI، Import AI، The
+Pragmatic Engineer، Martin Fowler، Will Larson's Irrational Exuberance، The
+Engineering Manager، Lea Verou و CSS-Tricks.
 
-## Manage feeds
+## مدیریت خوراک‌ها
 
-Each row in the **Feeds** list gives you three controls:
+هر سطر در فهرست **خوراک‌ها** سه کنترل در اختیارتان می‌گذارد:
 
-| Control      | Effect                                                              |
+| کنترل        | اثر                                                                 |
 | ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| کلید         | خوراک را غیرفعال می‌کند. سطر غیرفعال کم‌رنگ می‌شود و دیگر واکشی نمی‌شود |
+| نماد تازه‌سازی | همین یک خوراک را الآن واکشی می‌کند                                  |
+| نماد سطل زباله | خوراک را پس از یک تأیید حذف می‌کند                                  |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**تازه‌سازی همه** در بالای فهرست، همهٔ خوراک‌های فعال را واکشی می‌کند.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+زیرعنوان یک خوراک، توضیح آن و مدت‌زمان گذشته از واکشی‌اش را نشان می‌دهد؛ خوراکی که
+واکشی‌اش شکست خورده باشد، به‌جای آن خطا را با رنگ هشدار نمایش می‌دهد.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+امکان ویرایش وجود ندارد — برای تغییر نام، URL یا User-Agent یک خوراک، آن را حذف کنید
+و دوباره بیفزایید.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+واکشی به‌طور کامل روی سرور اجرا می‌شود: یک‌بار برای هر کاربر هنگام راه‌اندازی (و در
+نخستین استفاده برای حساب‌هایی که بعداً ساخته می‌شوند)، سپس هر ۳۰ دقیقه.
 
-## Block ads and trackers in the reader
+## مسدود کردن تبلیغات و ردیاب‌ها در خواننده
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. در تنظیمات ← شما ← خوراک خبری، **ترجیحات خواننده** را بیابید
+2. **باز کردن مقاله‌ها در برنامه** را روشن بگذارید تا از خوانندهٔ درونی استفاده شود، یا آن را
+   خاموش کنید تا مقاله‌ها به مرورگر سیستمتان سپرده شوند
+3. **مسدود کردن تبلیغات، ردیاب‌ها و بنرهای کوکی** را روشن بگذارید
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+مسدودسازی به‌طور پیش‌فرض روشن است. خوانندهٔ جاسازی‌شده فقط در macOS و Windows در دسترس
+است: در نسخهٔ وب و روی Linux، مرورگر سیستم _همان_ خواننده است و مقاله آنجا باز می‌شود
+(در وب در زبانهٔ جدید). در وب، کلید مسدودسازی، کارت **فهرست‌های فیلتر** و کارت
+**سایت‌های مورد اعتماد** پنهان‌اند.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+خوانندهٔ درون‌برنامه‌ای مقاله را دوباره قالب‌بندی نمی‌کند. صفحهٔ ناشر را در یک webview
+جاسازی‌شده نمایش می‌دهد و تبلیغات، ردیاب‌ها و بنرهای کوکی را با فهرست‌های فیلتر
+ذخیره‌شده سرکوب می‌کند.
 
-### Check or update the filter lists
+### بررسی یا به‌روزرسانی فهرست‌های فیلتر
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+کارت **فهرست‌های فیلتر** نشان می‌دهد چند قاعدهٔ پنهان‌کنندهٔ کوکی، پنهان‌کنندهٔ تبلیغ و
+مسدودکنندهٔ شبکه بارگذاری شده است، به‌همراه پارامترهای ردیابی که حذف می‌کند و زمان
+آخرین به‌روزرسانی فهرست‌ها. برای تازه‌سازی آن‌ها **بررسی به‌روزرسانی** را بزنید.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+منابع عبارت‌اند از EasyList، i-dont-care-about-cookies، Fanboy Cookiemonster، چند
+فهرست uBlock Origin و فهرست پارامترهای ردیابی uBO. تا وقتی دانلودی موفق نشود، کارت
+فهرست‌ها را به‌عنوان پیش‌فرض‌های همراهِ بسته‌شده برچسب می‌زند که هرگز به‌روزرسانی نشده‌اند —
+شمارش قواعد تبلیغ، کوکی و شبکه صفر می‌ماند؛ حذف پارامترهای ردیابی همچنان از یک مجموعهٔ
+پیش‌فرض درونی استفاده می‌کند.
 
-### Allowlist a site
+### افزودن یک سایت به فهرست مجاز
 
-Some sites break under blocking.
+بعضی سایت‌ها زیر مسدودسازی از کار می‌افتند.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. در تنظیمات ← شما ← خوراک خبری، به **سایت‌های مورد اعتماد** بروید
+2. **افزودن سایت مورد اعتماد** را بزنید و دامنه را وارد کنید
 
-Blocking is skipped there.
+مسدودسازی آنجا نادیده گرفته می‌شود.
 
-## Troubleshooting
+## عیب‌یابی
 
-### A feed I added shows up in another workspace
+### خوراکی که افزوده‌ام در فضای کاری دیگری پدیدار می‌شود
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+چنین انتظار می‌رود. خوراک خبری مختص کاربر است، نه مختص فضای کاری — خوراک‌های شما هر جا
+وارد شده باشید همراه‌تان‌اند. هشدار ابتدای صفحه را ببینید.
 
-### A feed row shows an error instead of a description
+### سطر یک خوراک به‌جای توضیح، خطا نشان می‌دهد
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+آخرین واکشی شکست خورده و سطر عیناً دلیل را نشان می‌دهد. برای تلاش دوباره نماد تازه‌سازی
+را بزنید و بررسی کنید که URL هنوز RSS یا Atom ارائه می‌دهد. ناشری که کلاینت‌های ناشناس را
+رد می‌کند ممکن است به یک User-Agent سفارشی نیاز داشته باشد، یعنی باید خوراک را حذف و
+دوباره اضافه کنید.
 
-### An article page renders badly
+### صفحهٔ یک مقاله بد نمایش داده می‌شود
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+برای آن دامنه از راه **سایت‌های مورد اعتماد** **مسدود کردن تبلیغات، ردیاب‌ها و بنرهای کوکی** را
+خاموش کنید، یا **باز کردن مقاله‌ها در برنامه** را خاموش کنید و آن را در مرورگرتان بخوانید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Configure notifications](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
-- [Triage your inbox](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)
+- [پیکربندی اعلان‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعلانها/)
+- [تریاژ صندوق ورودی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)

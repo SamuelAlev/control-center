@@ -1,185 +1,176 @@
 ---
-title: Use focus mode and soundscapes
-description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+title: שימוש במצב ריכוז ובנופי צליל
+description: הפעילו סשן ריכוז מתוזמן עם גלולה צפה של ספירה לאחור והתראות מושתקות, ועצבו את נוף הצליל המתאים את עצמו שמתנגן תחתיו.
 dateModified: 2026-08-17
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-ריכוז
+sourceHash: cceea407c2ad3be4c7145f223cd42da510430e98
 ---
 
-This guide shows you how to run a focus session: a timed block during which
-Control Center suppresses non-urgent notifications and floats a countdown pill
-over your other windows. It also covers the soundscape that (by default) plays
-under it — an endless ambient track your server synthesizes live, shaped by the
-mood you pick, the weather outside and the hour of the day.
+המדריך הזה מלמד אתכם כיצד להפעיל סשן ריכוז: פרק זמן מתוזמן שבו Control Center
+משתיק התראות שאינן דחופות ומציף גלולה של ספירה לאחור מעל החלונות האחרים שלכם.
+הוא מכסה גם את נוף הצליל שמתנגן (כברירת מחדל) תחתיו — רצועת אווירה אינסופית
+שהשרת שלכם מסנתז בשידור חי, המעוצבת לפי האווירה שתבחרו, מזג האוויר בחוץ ושעת
+היום.
 
-A focus session is a shell-level feature. It is not tied to any pillar — it does
-not change the layout, hide the sidebar, or alter a PR review surface.
+סשן ריכוז הוא תכונה של מעטפת האפליקציה. הוא אינו משויך לשום עמוד תווך — הוא אינו
+משנה את הפריסה, אינו מסתיר את סרגל הצד ואינו נוגע במשטח הסקירה של בקשות משיכה.
 
-:::note[Desktop only]
-The floating pill and the soundscape's pop-out mini player are native sibling
-windows, mounted only by the desktop bootstrap. The web build at
-`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
-session has nothing to show or suppress there. The soundscape panel and its
-playback work wherever you connect to a server.
+:::note[שולחן עבודה בלבד]
+הגלולה הצפה והנגן המוקטן הצף של נוף הצליל הם חלונות אחים מקוריים, שנטענים רק
+מאתחול שולחן העבודה. לבנייה האינטרנטית בכתובת `app.usectrl.dev` אין לא אלה ולא
+צינור התראות של מערכת ההפעלה, ולכן לסשן ריכוז אין שם מה להציג או להשתק. לוח נוף
+הצליל וההשמעה שלו עובדים בכל מקום שבו אתם מתחברים לשרת.
 :::
 
-## Start a focus session
+## התחלת סשן ריכוז
 
-1. Click the focus icon at the right of the title bar (tooltip **Start focus
-   session**)
-2. In the dialog, type an optional **Goal** — what you are working on
-3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
-   last choice is remembered
-4. Press **Start**
+1. לחצו על סמל הריכוז בצד שמאל של סרגל הכותרת (רמז: **התחלת סשן ריכוז**)
+2. בתיבת הדו־שיח, הקלידו **מטרה** אופציונלית — מה שאתם עובדים עליו
+3. בחרו **משך**: 25m, 50m, 1h, 1h 30m או 2h. ברירת המחדל היא 50m והבחירה
+   האחרונה שלכם נשמרת
+4. לחצו על **התחלה**
 
-Checkpoint: the title-bar button is replaced by an accent chip showing the
-minutes remaining, the floating pill appears over your other windows and — with
-**Start with focus mode** on — the soundscape starts playing.
+נקודת ביקורת: כפתור סרגל הכותרת מוחלף בצ'יפ בצבע הדגשה שמציג את הדקות שנותרו,
+הגלולה הצפה מופיעה מעל החלונות האחרים שלכם — וכשהאפשרות **הפעלה עם מצב ריכוז**
+דלוקה — נוף הצליל מתחיל להתנגן.
 
-Two other entry points reach the same session:
+שתי נקודות כניסה נוספות מגיעות לאותו סשן:
 
-- **⌘K → Start focus session** opens the same dialog.
-- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
-  goal — it skips the dialog. Pressing it again ends the session.
+- **⌘K → Start focus session** פותח את אותה תיבת דו־שיח.
+- **⌘⇧⌥F** מפעיל סשן מיד עם המשך שנשמר ועם מטרה — הוא מדלג על תיבת הדו־שיח.
+  לחיצה נוספת עליו מסיימת את הסשן.
 
-## Read the floating pill
+## קריאת הגלולה הצפה
 
-The pill is a small frameless window you can drag anywhere. It shows:
+הגלולה היא חלון קטן בלי מסגרת שאפשר לגרור לכל מקום. היא מציגה:
 
-- A live presence dot and the remaining time as `mm:ss`
-- Your goal, or "Focus session" when you did not set one
-- A thin progress bar along the bottom edge
+- נקודת נוכחות חיה ואת הזמן שנותר כ־`mm:ss`
+- את המטרה שלכם, או "Focus session" כשלא הגדרתם מטרה
+- פס התקדמות דק לאורך השוליים התחתונים
 
-Hover it to reveal two actions:
+רחפו מעליה כדי לחשוף שתי פעולות:
 
-- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
-  session itself stays active.
-- **Complete** — ends the session.
+- **Pause** / **Resume** — עוצר את הספירה לאחור. ההשהיה מקומית לגלולה; הסשן
+  עצמו נשאר פעיל.
+- **Complete** — מסיים את הסשן.
 
-The pill commits to the dark palette whatever theme the main window is using,
-because it floats over arbitrary desktop content.
+הגלולה נשארת בפלטה הכהה, בכל נושא שהחלון הראשי משתמש בו, משום שהיא צפה מעל
+תוכן שולחן עבודה כלשהו.
 
-If you close the pill from the title bar, the session keeps running. Press the
-picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
-bring it back.
+אם תסגרו את הגלולה מסרגל הכותרת, הסשן ימשיך לרוץ. לחצו על כפתור תמונה־בתוך־תמונה
+שלצד צ'יפ הריכוז (רמז: **מזעור לסרגל**) כדי להחזיר אותה.
 
-## Know what gets suppressed
+## מה מושתק
 
-While a session is active, Control Center drops every notification except two
-categories, which are always delivered:
+כשסשן פעיל, Control Center משמיט כל התראה מלבד שתי קטגוריות שנמסרות תמיד:
 
-- **Meeting starting soon** — a meeting alert you see after the fact is worthless
-- **Pull request published**
+- **פגישה מתחילה בקרוב** — התראת פגישה שאתם רואים בדיעבד חסרת ערך
+- **PR פורסם**
 
-Everything else is silently suppressed for the whole session — no sound, no OS
-toast. Suppressed notifications are not queued for later delivery.
+כל השאר מושתק בשקט לאורך כל הסשן — בלי צליל ובלי הודעה קופצת של מערכת ההפעלה.
+התראות מושתקות אינן נשמרות בתור למסירה מאוחרת.
 
-## Play a soundscape
+## הפעלת נוף צליל
 
-1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
-   to open the panel
-2. Pick a **Mood** — **Focus**, **Rise**, **Relax** or **Sleep**
-3. Press **Play**
+1. לחצו על סמל הרמקול בצד שמאל של סרגל הכותרת (רמז: **נופי צליל**) כדי לפתוח את
+   הלוח
+2. בחרו **אווירה** — **ריכוז**, **עלייה**, **רגיעה** או **שינה**
+3. לחצו על **ניגון**
 
-Checkpoint: the **Now playing** card names the current scene — the weather at
-your workspace's location, the temperature in °C and the location label. While
-it reads "Tuning the ambience…" the scene is still resolving.
+נקודת ביקורת: הכרטיס **מתנגן עכשיו** מציין את הסצנה הנוכחית — מזג האוויר במיקום
+של סביבת העבודה שלכם, הטמפרטורה ב־°C ותווית המיקום. כשכתוב בו "מכוונן את
+האווירה…" הסצנה עדיין נפתרת.
 
-The track is not a loop. Your server synthesizes it continuously from the mood,
-the live weather at the workspace's location and the time of day. Rain reads
-bright and busy, a storm loud and gusty, fog muffled; night is darker and more
-reverberant than midday. The mood sets the vocabulary:
+הרצועה אינה לולאה. השרת שלכם מסנתז אותה ברציפות מהאווירה, ממזג האוויר בזמן אמת
+במיקום של סביבת העבודה ומשעת היום. גשם נשמע בהיר ועסוק, סערה רועשת וסוערת, ערפל
+עמום; הלילה כהה ומהדהד יותר מצהרי היום. האווירה קובעת את אוצר המילים:
 
-| Mood   | Sound                                                                                  |
-| ------ | -------------------------------------------------------------------------------------- |
-| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work                      |
-| Rise   | Buoyant melody with a soft pulse — for when work feels heavy                           |
-| Relax  | Warmer, more consonant pads, no beat                                                   |
-| Sleep  | Low drones with almost no events, deep reverb                                          |
+| אווירה | צליל                                                                                    |
+| ------ | --------------------------------------------------------------------------------------- |
+| ריכוז  | אווירה עדינה וערנית עם פעימה נמוכה — מיועדת לשבת מתחת לעבודה                             |
+| עלייה  | מנגינה קלילה עם פעימה רכה — לכשהעבודה מרגישה כבדה                                        |
+| רגיעה  | פדים חמים יותר והרמוניים יותר, בלי ביט                                                   |
+| שינה   | דרון נמוך וכמעט בלי אירועים, הדהוד עמוק                                                  |
 
-Switching mood while playing hands playback to the new mood without stopping.
+החלפת אווירה בזמן ניגון מעבירה את ההשמעה לאווירה החדשה בלי לעצור.
 
-The panel is also reachable from ⌘K under the **Focus** category, next to the
-focus session itself.
+אפשר להגיע ללוח גם מ־⌘K תחת הקטגוריה **Focus**, לצד סשן הריכוז עצמו.
 
-## Shape the sound
+## עיצוב הצליל
 
-- **Tune** (Focus, Rise and Relax) — a square pad with a draggable puck.
-  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
-  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
-  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
-  mood, and adjustments glide into the running mix — the stream never
-  restarts. The Sleep mood is untunable by design.
-- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
-  the system volume and is remembered.
-- **Location** — detected automatically from the workspace. Press **Refresh
-  weather** to refetch the scene.
+- **כוונון** (ריכוז, עלייה ורגיעה) — משטח מרובע עם דיסקית נגררת. הציר האופקי הוא
+  מ־**רך** ל־**אנרגטי** (כמה קורה), והציר האנכי מ־**חללי** ל־**בהיר** (כמה פתוח
+  זה נשמע). הקישו פעמיים על המשטח כדי לאפס למרכז הניטרלי; מקשי החצים מזיזים את
+  הדיסקית במעט. הכוונון שלכם נשמר לכל אווירה בנפרד, והשינויים נמזגים לתוך המיקס
+  הרץ — הזרם לעולם אינו מופעל מחדש. אווירת השינה אינה ניתנת לכוונון במכוון.
+- **עוצמת שמע** — מחוון מ־0 עד 100%, עם ברירת מחדל של 60%. הוא נפרד מעוצמת השמע
+  של המערכת ונשמר.
+- **מיקום** — מזוהה אוטומטית מסביבת העבודה. לחצו על **רענון מזג האוויר** כדי
+  לשלוף את הסצנה מחדש.
 
-## Pop out the mini player
+## הוצאת הנגן המוקטן לחלון צף
 
-While audio is playing, the title bar grows a second button (tooltip **Pop out
-player**). It floats a small always-on-top HUD with play/pause, the weather
-glyph, the scene name and a **Return to app** button — handy once a focus
-session has you in another app entirely.
+בזמן שניגון פועל, סרגל הכותרת מקבל כפתור שני (רמז: **פתיחת הנגן בחלון צף**). הוא
+מציף HUD קטן שנשאר תמיד מעל הכול, עם ניגון/השהיה, סמל מזג האוויר, שם הסצנה
+וכפתור **חזרה לאפליקציה** — שימושי כשסשן ריכוז מעביר אתכם לאפליקציה אחרת לגמרי.
 
-Pausing from the mini player does not dismiss it; only its close button (or
-quitting the app) removes it.
+השהיה מהנגן המוקטן אינה מסתירה אותו; רק כפתור הסגירה שלו (או יציאה מהאפליקציה)
+מסיר אותו.
 
-## Run them together
+## הפעלתם יחד
 
-The two features are coupled by one switch in the soundscape panel:
-**Start with focus mode**, on by default.
+שתי התכונות משויכות זו לזו במתג אחד בלוח נוף הצליל: **הפעלה עם מצב ריכוז**, דלוק
+כברירת מחדל.
 
-- Starting a focus session starts the soundscape if nothing is already playing.
-- Ending the session — however it ends, including the timer running out — stops
-  it, even when you started the soundscape by hand.
+- התחלת סשן ריכוז מפעילה את נוף הצליל אם שום דבר אינו מתנגן כבר.
+- סיום הסשן — בכל דרך שהיא, כולל אזילת הטיימר — עוצר אותו, גם אם הפעלתם את נוף
+  הצליל בידיים.
 
-Turn the switch off to keep the two independent.
+כבו את המתג כדי להשאיר את השניים בלתי תלויים.
 
-## End a session
+## סיום סשן
 
-Any one of these ends it:
+כל אחד מאלה מסיים אותו:
 
-- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
-  end**)
-- Press **Complete** on the pill
-- Press **⌘⇧⌥F**
-- Choose **Exit focus mode** in ⌘K
-- Let the timer run out — the session auto-completes at zero
+- לחצו על צ'יפ הריכוז בסרגל הכותרת (רמז: **מצב ריכוז פעיל — הקישו לסיום**)
+- לחצו על **Complete** בגלולה
+- לחצו על **⌘⇧⌥F**
+- בחרו **Exit focus mode** ב־⌘K
+- תנו לטיימר לאזול — הסשן מסתיים מעצמו באפס
 
-The pill closes, notifications resume immediately and the soundscape stops.
+הגלולה נסגרת, ההתראות חוזרות מיד ונוף הצליל נעצר.
 
-## Understand what does not persist
+## מה אינו נשמר
 
-A session lives for exactly one app run. Quit and reopen Control Center and you
-start inactive with a reset timer, even mid-session — there is no crash recovery
-and no session history.
+סשן חי בדיוק למשך הרצה אחת של האפליקציה. אם תצאו מ-Control Center ותפתחו אותו
+מחדש, תתחילו לא פעילים עם טיימר מאופס, אפילו באמצע סשן — אין שחזור מקריסה ואין
+היסטוריית סשנים.
 
-Only two things carry over: your preferred duration and the block-notifications
-flag. The goal, the elapsed time and the pill's open state do not.
+רק שני דברים עוברים הלאה: המשך המועדף עליכם ודגל **חסימת התראות**. המטרה, הזמן
+שחלף ומצב הפתיחה של הגלולה לא.
 
-Playback is just as ephemeral — the soundscape is always stopped at launch. Your
-mood, volume and per-mood tunes persist; the stream itself never resumes on its
-own.
+ההשמעה חולפת בדיוק כמוה — נוף הצליל תמיד עצור בעלייה. האווירה, עוצמת השמע
+והכוונונות לכל אווירה נשמרים; הזרם עצמו לעולם אינו ממשיך מעצמו.
 
-## Troubleshooting
+## פתרון תקלות
 
-### The tune pad is missing
+### משטח הכוונון חסר
 
-You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
-Relax to get the pad back.
+אתם באווירת השינה, שאינה ניתנת לכוונון במכוון. עברו לריכוז או לרגיעה כדי להחזיר
+את המשטח.
 
-### Nothing plays after restarting the app
+### דבר אינו מתנגן לאחר הפעלה מחדש של האפליקציה
 
-By design — playback is always stopped at app launch. Open the panel and press
-**Play** again. If it still stays silent, check the panel's volume slider, which
-is separate from the system volume.
+כך מתוכנן — ההשמעה תמיד עצורה בעליית האפליקציה. פתחו את הלוח ולחצו שוב על
+**ניגון**. אם הוא עדיין שותק, בדקו את מחוון עוצמת השמע בלוח, שנפרד מעוצמת השמע של
+המערכת.
 
-### The weather or temperature looks wrong
+### מזג האוויר או הטמפרטורה נראים שגויים
 
-The scene follows the active workspace's location. Press **Refresh weather** in
-the panel to refetch it.
+הסצנה עוקבת אחרי המיקום של סביבת העבודה הפעילה. לחצו על **רענון מזג האוויר**
+בלוח כדי לשלוף אותה מחדש.
 
-## Related guides
+## מדריכים קשורים
 
-- [Configure notifications](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התראות/)
-- [Keyboard shortcuts](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/)
+- [הגדרת התראות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התראות/)
+- [קיצורי מקלדת](/he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת/)

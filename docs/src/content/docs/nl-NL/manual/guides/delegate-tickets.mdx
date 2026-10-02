@@ -1,131 +1,139 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Werk delegeren aan agenten
+description: Geef een ticket aan een agent in een gesprek en laat agenten subtaken aan elkaar delegeren, binnen de diepte- en cyclusbewakers.
 slug: nl-NL/handleiding/gidsen/tickets-delegeren
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Deze gids behandelt hoe je werk van je bord krijgt en bij een agent legt, en wat
+er gebeurt wanneer agenten werk aan elkaar doorgeven.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Een ticket aan een agent toewijzen dispatcht niet]
+Er is geen ticketdispatcher voor een toegewezen agent. Toewijzing legt
+eigenaarschap vast en niets meer — er wordt geen ruimte aangemaakt, er verandert
+geen status, er start geen agent. De uitzondering is een ticket dat aan een
+**team** is toegewezen, want dat wekt de teamleider van dat team. Agentwerk voor
+een met naam genoemde toegewezene leeft in gesprekken, dus daar begin je.
 :::
 
-## Hand a ticket to an agent
+## Een ticket aan een agent geven
 
-1. [Create the ticket](/nl-NL/handleiding/gidsen/tickets-beheren/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Maak het ticket aan](/nl-NL/handleiding/gidsen/tickets-beheren/) met een
+   titel en een beschrijving die precies genoeg zijn om mee te werken.
+2. Zet **Toegewezen aan** op de agent, zodat het eigenaarschap vastligt.
+3. Open (of maak) een ruimte en @-vermeld die agent.
+4. Verwijs in je bericht naar het ticket met een `#`-vermelding — de composer
+   vult tickets uit de werkruimte automatisch aan — en zeg wat je gedaan wilt
+   hebben.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+De agent pakt het werk op uit het gesprek. De voortgang streamt naar die ruimte.
 
-## What the agent receives
+## Wat de agent ontvangt
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Je bericht, inclusief de ticketverwijzing die je hebt getagd.
+- De ruimte om in te werken en te rapporteren.
+- Een geïsoleerde worktree uit de gekoppelde repo's van de werkruimte.
+- De **modus** van de ruimte, die bepaalt hoe het tooloppervlak van de run
+  eruitziet.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/nl-NL/handleiding/concepten/modi/).
+De modus is een eigenschap van de ruimte, niet van het ticket — een ticket heeft
+geen modus. Dezelfde agent kan dus in de ene ruimte in `chat` zitten en in de
+andere in `plan`. Kies hem uit de vervolgkeuzelijst voor de modus in de composer
+(**Agent**, **Plan** of **Orkestratie**); `review` wordt ingesteld door
+PR-reviewruimtes en is niet selecteerbaar. Zie
+[Modi](/nl-NL/handleiding/concepten/modi/).
 
-## Require a structured result
+## Een gestructureerd resultaat vereisen
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Een uitvoercontract wordt op de dispatch opgegeven, niet op het ticket:
+`expected_output_schema` plus `output_contract_mode` (standaard strikt). De
+agent voldoet eraan door `submit_output` aan te roepen, dat de payload tegen het
+schema valideert en een niet-conforme payload afwijst.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Zowel de geaccepteerde uitvoer als eventuele afwijzingen komen in het
+**agent-runlogboek** terecht. De status van het ticket zelf blijft daarbij
+ongemoeid — een mislukt contract laat het ticket niet mislukken.
 
-## Monitor progress
+## Voortgang volgen
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **De ruimte** — live agentactiviteit, de primaire weergave.
+- **Het ticket** — de status ervan, zoals degene die hem verzet die instelt.
+- **Observeerbaarheid → Live** (`/workspaces/<workspace-id>/observability`) —
+  het live-rooster van agenten.
+- **Observeerbaarheid → Overzicht** — het runlogboek, met kosten en duur.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Er is geen dashboardscherm; een kale werkruimte-URL verwijst door naar
+Postvak in.
 
-## Let agents delegate to each other
+## Agenten aan elkaar laten delegeren
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Een agent die op een deelprobleem stuit, delegeert met de MCP-tool
+`delegate_task`. Die maakt een kindticket aan dat aan een andere agent is
+toegewezen en legt — wanneer je `parent_ticket_id` meegeeft — de keten vast,
+zodat de bewakers die kunnen zien.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Op het controlepunt van de ticketing lopen altijd twee structurele bewakers,
+nooit via een promptinstructie:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Dieptelimiet** — een keten dieper dan 3 sprongen wordt geweigerd.
+- **Cyclusdetectie** — een sprong terug naar een agent die al in de keten zit,
+  wordt geweigerd.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Wanneer je `from_agent_id` meegeeft, lopen er nog twee bewakers (de
+productieopzet levert altijd de resolver-poorten):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Autonomieplafond** — het effectieve niveau van de gedelegeerde in de ruimte
+  mag niet hoger zijn dan dat van de delegator.
+- **Budgetenvelop** — delegatie schrijft af op het resterende hard-stopbudget van
+  de delegator en kan niet meer bijmaken. Geen beleid, of een onbeperkt beleid,
+  passeert.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Een weigering is luidruchtig: de tool geeft de reden van de bewaker woordelijk
+terug, zodat de delegerende agent precies ziet waarom. Het veld
+`delegatedByAgentId` legt vast wie heeft gedelegeerd en vormt zo een
+delegatieboom.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` slaat elke bewaker over]
+De oudere tool `delegate_ticket` is nog steeds geregistreerd en roept
+`createTicket` rechtstreeks aan — geen dieptelimiet, geen cycluscontrole, geen
+autonomieplafond, geen budgetenvelop. Gebruik bij voorkeur `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Dit dieptelimiet van 3 voor delegatie is een andere limiet dan het nestinglimiet
+van 2 voor subagents van de ingebouwde harness — het ene begrenst tickets tussen
+agenten, het andere begrenst subagents binnen één run.
 
-## Put several agents on one ticket
+## Meerdere agenten op één ticket zetten
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Voeg ze als **medewerkers** toe aan het ticket (rollen: assignee, collaborator,
+reviewer). Dat is een rooster — een registratie van wie erbij betrokken is — en
+verleent op zichzelf niets.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/nl-NL/handleiding/gidsen/ruimtes/).
+Om agenten daadwerkelijk in hetzelfde gesprek te zetten, voeg je ze als
+deelnemers toe vanuit de ruimteheader. Daar kunnen ze elkaar vervolgens
+@-vermelden. Zie [Ruimtes](/nl-NL/handleiding/gidsen/ruimtes/).
 
-## Automated ticket creation
+## Automatische ticketaanmaak
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Geen enkel knooppunt in het pipelinepalet maakt tickets aan, dus een pipeline kan
+werk niet als toegewezen tickets uitwaaieren.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/).
+Het pad dat wél bestaat is orkestratie: een voorstel goedkeuren maakt een project
+en een team aan, compileert de DAG van subtickets uit het voorstel naar een
+**pipelinesjabloon** (één `promptAgent`-stap per subticket, niet voor elk een
+`Ticket`-rij) en start die run. Zie
+[Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/).
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Create and manage tickets](/nl-NL/handleiding/gidsen/tickets-beheren/)
-- [Chat with an agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
-- [Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
-- [Organize work with projects](/nl-NL/handleiding/gidsen/projecten/)
-- [Ticket lifecycle reference](/nl-NL/handleiding/referentie/ticketlevenscyclus/)
+- [Tickets maken en beheren](/nl-NL/handleiding/gidsen/tickets-beheren/)
+- [Chatten met een agent](/nl-NL/handleiding/gidsen/chatten-met-agent/)
+- [Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/)
+- [Werk organiseren met projecten](/nl-NL/handleiding/gidsen/projecten/)
+- [Ticketlevenscyclus](/nl-NL/handleiding/referentie/ticketlevenscyclus/)
 
-## Related concepts
+## Gerelateerde concepten
 
 - [Tickets](/nl-NL/handleiding/concepten/tickets/)
-- [Dispatch lifecycle](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
-- [Modes](/nl-NL/handleiding/concepten/modi/)
+- [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/)
+- [Modi](/nl-NL/handleiding/concepten/modi/)

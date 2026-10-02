@@ -1,123 +1,141 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Autorisation — qui peut faire quoi, et comment vous le prouvez
+description: Le catalogue de permissions qui sous-tend les rôles de Control Center, le journal d’audit à l’épreuve des altérations où aboutit chaque décision d’autorisation, et les contrôles à l’échelle de l’installation qu’un opérateur peut imposer.
 slug: fr-FR/manuel/concepts/autorisation
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/fr-FR/manuel/concepts/garde-fous/).
+Control Center répond à deux questions d’autorisation, et elles sont réellement
+différentes. **« Cette personne peut-elle appeler cette opération ? »** porte
+sur les humains, les rôles et les dépôts. **« Cet agent peut-il provoquer cet
+effet ? »** porte sur les actions, les arguments et le rayon d’impact — cette
+question-là relève des [Garde-fous](/fr-FR/manuel/concepts/garde-fous/).
 
-This page is the first question, plus the record both of them leave behind.
+Cette page traite la première question, ainsi que la trace que l’une et l’autre
+laissent derrière elles.
 
-## One decision point
+## Un seul point de décision
 
-Every human-side authorization decision resolves through a single function:
+Toute décision d’autorisation côté humain se résout à travers une seule
+fonction :
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Une **permission** s’écrit `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Le catalogue est **dérivé**, et non écrit à
+la main : il est calculé à partir de la surface d’opérations elle-même (le
+préfixe du nom de l’opération donne le domaine, le rôle minimal que celle-ci
+applique déjà donne le niveau), si bien que les ~550 opérations portent une
+permission sans que personne n’ait à en saisir une.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Cette dérivation est la propriété qui vaut la peine d’être protégée. Elle
+signifie qu’une opération NOUVELLE est contrôlée par défaut — le mode de
+défaillance d’un modèle annoté à la main, c’est que quelqu’un oublie, et ce
+qu’il oublie est précisément le contrôle. Un test à cliquet fige l’ensemble des
+domaines obtenu, de sorte qu’ajouter une opération sous un nouveau préfixe
+relève d’une décision de nommage prise par un humain plutôt que d’un accident.
 
-The four tiers map exactly onto the built-in roles:
+Les quatre niveaux correspondent exactement aux rôles intégrés :
 
-| Tier | Role floor | Example |
+| Niveau | Rôle minimal | Exemple |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Invité | `tickets:read` |
+| `write` | Membre | `tickets:write` |
+| `administer` | Admin | `members:administer` |
+| `own` | Propriétaire | `workspace:own` |
 
-## Roles
+## Rôles
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Cinq rôles intégrés — **propriétaire, admin, membre, lecteur, invité** — sont
+des préréglages posés au-dessus de ce catalogue. La propriété est un siège
+unique par espace de travail, transmis explicitement via **Transférer la
+propriété** (un propriétaire qui s’en va est sinon impossible à retirer : le
+déprovisionnement SCIM refuse tout propriétaire d’espace de travail — transférez
+d’abord).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Les rôles personnalisés sont soustractifs.** Un rôle personnalisé nomme un
+préréglage de base (`admin`, `member`, `viewer` ou `guest` — jamais `owner`) et
+un ensemble de permissions RETIRÉES de celui-ci — « admin, mais sans la gestion
+des membres ». Il ne peut jamais accorder davantage que sa base, ce qui est
+précisément ce qui les rend sûrs à introduire dans une installation existante :
+chaque contrôle existant reste une borne supérieure valide. Les membres les
+détiennent sous la forme `custom:<id>`, et un client trop ancien pour comprendre
+cette valeur retombe sur invité plutôt que de deviner.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Sous les rôles se trouvent les **attributions par dépôt** (`none` / `read` /
+`review` / `write`) : l’appartenance à un espace de travail ne confère jamais
+silencieusement plus de droits que la forge. Toutes les surfaces qui exposent du
+code les vérifient — y compris celles qui atteignent le code par la bande, comme
+un terminal ou une session d’éditeur ouverte sur l’arbre de travail d’un espace.
 
-## Server authority
+## Autorité du serveur
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Certaines opérations ne concernent pas du tout un espace de travail : les
+réglages à l’échelle de l’installation, la configuration SSO, les identifiants
+des fournisseurs, la gestion des modèles, les sauvegardes complètes de
+l’installation. Celles-là déclarent une **autorité serveur** et sont refusées à
+tout le monde sauf à l’opérateur de l’installation (le propriétaire de serveur
+enregistré). Il existe délibérément une seule identité d’opérateur, et une seule
+définition de celle-ci.
 
-## The audit trail
+## Le journal d’audit
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Chaque décision d’autorisation — **accordée comme refusée** — est ajoutée à un
+journal d’audit chaîné par hachage, propre à chaque espace de travail.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Un journal qui ne consigne que les refus répond à la question « qu’avons-nous
+bloqué ? » mais pas à « qu’a réellement fait cet agent, et qui l’a autorisé ? »,
+qui est la question par laquelle commence un retour d’incident. Chaque entrée
+enregistre donc toute la chaîne d’attribution : le principal agissant, l’humain
+au nom duquel il a agi, la délégation par laquelle il est arrivé, l’action et ses
+arguments (sous forme d’empreinte), la décision, et **la règle qui a décidé**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Les entrées sont chaînées : le hachage de chacune couvre celui de la précédente,
+si bien que modifier, supprimer ou réordonner une ligne rompt tous les hachages
+qui suivent. **Vérifier la chaîne** recalcule la chaîne entière et nomme le
+premier maillon qui ne tient pas. Un journal d’audit que vous ne pouvez pas
+contrôler reste un journal ; un journal que vous pouvez recalculer est une
+preuve.
 
-Two consequences worth knowing:
+Deux conséquences qu’il vaut la peine de connaître :
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- La table d’audit est **exemptée de la purge fondée sur l’âge**. Une chaîne de
+  hachages ne peut pas être tronquée par le milieu. La rétention procède par
+  export puis troncature, et la troncature laisse un point de contrôle portant
+  le hachage terminal du segment supprimé : ce qui subsiste se vérifie donc
+  toujours depuis le début.
+- Elle se trouve **à côté** de la chronologie d’activité, et non au-dessus. La
+  chronologie montre ce que les gens ont fait ; le journal, ce qui a été
+  autorisé et refusé. Un identifiant de corrélation partagé relie un même appel
+  dans les deux.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Il s’exporte en JSON délimité par des sauts de ligne et peut être diffusé en flux
+vers un SIEM (Splunk, Elastic, Sentinel — un point de terminaison HTTP avec un
+jeton bearer). La diffusion en flux est au mieux par conception : un SIEM
+indisponible ne doit jamais bloquer l’appel d’outil d’un agent, et la copie
+durable et vérifiable se trouve sur le disque dans tous les cas.
 
 ## Sessions
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Une installation peut définir un **âge maximal de session** et un **délai
+d’inactivité**. Les deux sont appliqués lors du contrôle des identifiants
+d’appareil par lequel passe chaque voie authentifiée — une limite de session
+qu’un client peut ignorer s’adresse à un questionnaire, pas à un attaquant. Une
+installation peut aussi exiger SSO, ce qui désactive l’association manuelle de
+nouveaux appareils (avec une garde anti-enfermement : l’exigence est refusée
+tant qu’aucune connexion SSO fonctionnelle n’existe).
 
-## What this is not
+## Ce que ce n’est pas
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Pas des ACL par objet.** Il n’existe délibérément aucune permission par
+  ticket ni par message. La séparation au niveau des dépôts est ce que les
+  équipes demandent réellement, et elle existe ; le partage par objet est une
+  surface combinatoire dont la demande n’est pas démontrée ici.
+- **Pas un moteur de politique que l’on configure dans un DSL.** Le vocabulaire
+  est fermé à dessein, de sorte que toute la politique peut être rendue,
+  expliquée et énumérée.
+- **Pas appliqué ailleurs qu’au serveur.** Les vérifications côté client
+  n’existent que pour éviter de proposer un contrôle qui sera refusé. La décision
+  faisant autorité est toujours celle du serveur.

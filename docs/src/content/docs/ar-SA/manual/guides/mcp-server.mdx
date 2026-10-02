@@ -1,45 +1,43 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: استخدام خادم MCP
+description: وجّه عميل MCP خارجيًا إلى خادم أدوات Control Center، واضبط رمز Bearer، واعرف ما يتيحه السطح.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/خادم-mcp
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+يبين هذا الدليل كيف تربط عميل MCP خارجي — Claude Code، أو محرّر، أو MCP Inspector —
+بخادم الأدوات الخاص بـ Control Center.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+يسجّل Control Center **110** أداةً ويقدّمها عبر Model Context Protocol بإصدار
+البروتوكول `2024-11-05`. عائلات أدوات كاملة قد تتوقعها غائبة: لا أدوات
+للاجتماعات ولا للتقويم، ولا أدوات للمشاريع.
 
-## Find the endpoint
+## اعثر على نقطة النهاية
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+سطح MCP على المستمع الرئيسي لـ `cc_server`. لا منفذ منفصل لـ MCP.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| نقطة النهاية | الطريقة | الغرض |
+| --- | --- | --- |
+| `/mcp` | `POST` | نقل Streamable HTTP — هذا ما يتصل به العميل |
+| `/mcp` | `DELETE` | إنهاء الجلسة |
+| `/sse` | `GET` | تدفق إشعارات يرسلها الخادم |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+إذن عنوان التثبيت المحلي الافتراضي `http://127.0.0.1:9030/mcp`.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. انتقل إلى **الإعدادات ← الخادم ← خوادم MCP**
+2. اقرأ بطاقة **خادم MCP** — تعرض «قيد التشغيل» أو «متوقف»، والمنفذ الذي تستمع عليه
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+السطح يعمل افتراضيًا على تثبيت جديد، فيعمل عميل loopback من غير فتح الإعدادات.
+يتحكم **البدء عند تشغيل التطبيق** في عودة السطح بعد إعادة التشغيل، و**بدء** /
+**إيقاف** يتحكمان في الجلسة ولا يغيّران ذلك التفضيل.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+يربط الخادم loopback افتراضيًا، فلا يصل إلى نقطة النهاية إلا الجهاز الذي يعمل
+عليه `cc_server`، ما لم تشغّله بـ `--bind any`.
 
-## Connect a client
+## اربط عميلًا
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+وجّه عميلك إلى نقطة نهاية Streamable HTTP. شكل الإعداد الدقيق شأن عميلك،
+والعنوان واحد في الحالين.
 
 ```json
 {
@@ -54,41 +52,41 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+لن يلتقط Claude Code هذا من ملف `.mcp.json` في المشروع — فهو يحجب خوادم MCP
+المرتبطة بالمشروع خلف مطالبة موافقة لا يجيب عنها تشغيل `claude -p` غير
+التفاعلي. مرّر الإعداد صراحة:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+`--strict-mcp-config` يجعل Claude يقتصر على ذلك الملف، فلا يُكتشَف الخادم نفسه
+من المشروع ويُسجَّل مرتين.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+نقطة التحقق: اطلب من العميل سرد أدواته. يفترض أن ترى أسماء `mcp__*` تغطي
+التذاكر والمساحات والذاكرة ومخطط الشفرة والمراجعة.
 
-## Serve MCP beyond the host
+## اجعل MCP متاحًا خارج الجهاز المضيف
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. في **الإعدادات ← الخادم ← خوادم MCP**، ومن صف **رمز وصول المصادقة**، اضغط
+   **تعيين** والصق رمزًا
+2. أرسله بالشكل `Authorization: Bearer <token>` مع كل طلب `POST /mcp`
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+سطح بلا رمز يرفض أي متصل من غير loopback باستجابة 403. هذا مغلق عند الفشل عن
+قصد: الرمز هو ما يجعل الخدمة خارج الجهاز المضيف ممكنة أصلًا.
 
-Token changes apply to the live surface immediately — no restart.
+تنطبق تغييرات الرمز فورًا على السطح العامل — بلا إعادة تشغيل.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` يقبل الرمز في سلسلة الاستعلام]
+يُفحص تدفق الإشعارات بالرمز كسائر المسارات، لكن `EventSource` في المتصفح لا
+يستطيع إرسال ترويسة `Authorization`، فيقبل `/sse` الرمز أيضًا بالشكل
+`?token=<token>`. من غير رمز يرد 401.
 :::
 
-## Scope every call to a workspace
+## قيّد كل استدعاء بمساحة عمل
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+كل أداة تلمس بيانات على نطاق مساحة العمل تشترط `workspace_id`، ويُرفض
+الاستدعاء الذي يخلو منه ولا يُحسم على «مساحة عمل حالية»:
 
 ```json
 {
@@ -98,56 +96,55 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+المعرّف هو الظاهر في عنوان المتصفح أو التطبيق: `/workspaces/<workspace_id>/…`.
+ولا يُستثنى إلا ما يمتد فعلًا عبر مساحات العمل، مثل `list_workspaces` وأدوات
+موجز الأخبار. الموجز لكل مستخدم لا لكل مساحة عمل، والوكيل بلا مستخدم يخصه،
+فتعمل تلك الأدوات على تغذيات مالك الخادم.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+وتتحقق أدوات نطاق المستودع أيضًا من أن المستودع مربوط بمساحة العمل تلك.
 
-## Know what the surface will refuse
+## اعرف ما يرفضه السطح
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **بوابة الوضع.** يُحسم الاستدعاء على جهة الخادم وفق وضع مساحة الوكيل
+  المستدعي. وكيل في وضع القراءة فقط لا يبلغ أداة كتابة بإسقاط `space_id`،
+  فالوضع يُؤخذ من تشغيله النشط.
+- **ضوابط الإجراء.** تصرّح الأدوات التي تعدّل الحالة بأصناف أثرها، وتمر
+  بالسياسة نفسها التي يستخدمها سائر المنتج. انظر
+  [تهيئة الضوابط](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/).
+- **التأكيد.** تبني بعض الأدوات المدمّرة حمولة تأكيد لا بد من الموافقة عليها
+  قبل أن يمضي الاستدعاء.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+يُعلن الفهرس كاملًا في `tools/list` بلا بوابة اكتشاف. عميل MCP الخارجي يرفض
+استدعاء أداة ليست في قائمته المخزَّنة، فإخفاء الأدوات يعطّلها ولا ينظّف
+القائمة.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### The client sees no tools
+### العميل لا يرى أدواتًا
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- تحقق أن بطاقة **خادم MCP** تعرض «قيد التشغيل»
+- تحقق أن المنفذ يطابق منفذ `cc_server`
+- على Claude Code، تحقق أنك مررت `--mcp-config` و`--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 403 من جهاز غير الخادم
 
-No bearer token is configured. Set one and send it.
+لم يُضبط رمز Bearer. عيّن واحدًا وأرسله.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### يفشل استدعاء أداة برسالة "Missing or invalid argument: workspace_id"
 
-Add `workspace_id`. There is no implicit workspace.
+أضف `workspace_id`. لا مساحة عمل ضمنية.
 
-### A tool call is refused as unknown
+### يُرفض استدعاء أداة على أنها مجهولة
 
-[MCP tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/) lists the catalogue. Call the name
-exactly as it appears there.
+يسرد [أدوات MCP](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/) الفهرس. استدعِ الاسم
+كما يظهر هناك تمامًا.
 
-## Related guides
+## أدلة ذات صلة
 
-- [MCP tools](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/)
-- [Configure guardrails](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/)
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
+- [أدوات MCP](/ar-SA/دليل-المستخدم/مرجع/أدوات-mcp/)
+- [تهيئة الضوابط](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/)
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/)
+- [البنية](/ar-SA/دليل-المستخدم/مفاهيم/بنية/)

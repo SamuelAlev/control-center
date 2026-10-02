@@ -1,37 +1,38 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: دورة حياة التذكرة
+description: حقول التذكرة وحالاتها وانتقالاتها وعلاقاتها ونقطة اختناق التعديل.
 slug: ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## حالات التذكرة
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| الحالة       | سلسلة التخزين | الوصف                                      |
+| ------------ | ------------- | ------------------------------------------ |
+| `backlog`    | `backlog`     | مُلتقَطة، ولم تُفرَز بعد إلى الطابور النشط |
+| `open`       | `open`        | مُفرَزة وجاهزة للعمل، ولم يبدأ العمل       |
+| `inProgress` | `inProgress`  | يُعمَل عليها فعلًا                         |
+| `blocked`    | `blocked`     | بدأ العمل، وهي متعثّرة على أمر خارجي       |
+| `inReview`   | `inReview`    | انتهى العمل، بانتظار المراجعة             |
+| `done`       | `done`        | اكتملت بنجاح (نهائية)                      |
+| `failed`     | `failed`      | انتهت بخطأ (نهائية)                        |
+| `cancelled`  | `cancelled`   | تُركت (نهائية)                             |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+تُخزَّن قيم الحالة بصيغة camelCase (`inProgress` و`inReview`)، ولا تُخزَّن أبدًا بالصيغة `in_progress`. القيمة المخزّنة null تُحلَّل على أنها `open`، والقيمة المجهولة تُلقي استثناء بدل أن تُكرَه على قيمة.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+يقبل `tryParseLoose` الأسماء البديلة التي يقدّمها الوكيل، متجاهلًا حالة الأحرف و`-` و`_` والمسافة:
 
-| Status       | Accepted aliases                              |
+| الحالة       | الأسماء البديلة المقبولة                      |
 | ------------ | --------------------------------------------- |
-| `open`       | `todo`, `ready`, `pending`, `new`             |
-| `inProgress` | `doing`, `started`, `active`, `wip`           |
+| `open`       | `todo`، `ready`، `pending`، `new`             |
+| `inProgress` | `doing`، `started`، `active`، `wip`           |
 | `blocked`    | `stuck`                                       |
-| `inReview`   | `review`, `reviewing`                         |
-| `done`       | `closed`, `complete`, `completed`, `finished` |
-| `failed`     | `error`, `errored`                            |
-| `cancelled`  | `canceled`, `abandoned`, `dropped`            |
+| `inReview`   | `review`، `reviewing`                         |
+| `done`       | `closed`، `complete`، `completed`، `finished` |
+| `failed`     | `error`، `errored`                            |
+| `cancelled`  | `canceled`، `abandoned`، `dropped`            |
 
-## Status transitions
+## انتقالات الحالة
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,154 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**هذا المخطط يُلزم الوكلاء والأتمتة فقط.** يفحصه `TicketWorkflowService.transitionStatus` حين تكون `force` قيمة false، أي أدوات MCP وخدمات المصالحة. الانتقال غير الجائز هناك يُسجَّل ويُتجاهل. كل تغيير حالة يجريه المستخدم في الواجهة يمرّر `force: true` ويتجاوز المخطط كله، فيجوز للإنسان أن ينقل التذكرة إلى أي حالة تعرضها قائمة الاختيار (كل الحالات ما عدا `failed`)، ومنها إعادة فتح حالة نهائية. والوكلاء يضبطون `failed` عبر `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+يجوز للحالة دائمًا أن تنتقل إلى نفسها. الحالات النهائية بلا حواف خارجة.
 
-| From         | Allowed targets                                      |
+| من           | الأهداف المسموحة                                     |
 | ------------ | ---------------------------------------------------- |
-| `backlog`    | `open`, `cancelled`                                  |
-| `open`       | `inProgress`, `blocked`, `cancelled`                 |
-| `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
-| `blocked`    | `inProgress`, `cancelled`                            |
-| `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `backlog`    | `open`، `cancelled`                                  |
+| `open`       | `inProgress`، `blocked`، `cancelled`                 |
+| `inProgress` | `blocked`، `inReview`، `done`، `failed`، `cancelled` |
+| `blocked`    | `inProgress`، `cancelled`                            |
+| `inReview`   | `inProgress`، `done`، `failed`، `cancelled`          |
+| `done`       | — (نهائية)                                           |
+| `failed`     | — (نهائية)                                           |
+| `cancelled`  | — (نهائية)                                           |
 
-## Ticket priorities
+## أولويات التذكرة
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+تُخزَّن عددًا صحيحًا على مقياس Linear الأصلي 0–4. القيمة المجهولة تُحلَّل إلى `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| الأولوية | تُخزَّن كـ |
+| -------- | ---------- |
+| `none`   | `0`        |
+| `urgent` | `1`        |
+| `high`   | `2`        |
+| `medium` | `3`        |
+| `low`    | `4`        |
 
-## Ticket providers
+## مزوّدو التذكرة
 
-An unknown or null stored value parses to `local`.
+القيمة المخزّنة المجهولة أو null تُحلَّل إلى `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| المزوّد  | الحالة                                              |
+| -------- | --------------------------------------------------- |
+| `local`  | تُخزَّن بالكامل في قاعدة بيانات مساحة العمل، وهي الافتراض |
+| `linear` | يملكها البعيد، وتُعكَس محليًا                      |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+محوّلات المزامنة تعيش تحت `packages/cc_infra/lib/src/tickets/sync/` لـ Linear وGitHub Issues وJira Cloud وClickUp. GitHub Issues مورّد لمحوّل مزامنة فقط (`vendorId: github`)، وليست قيمة `TicketProvider`، فتُخزَّن مشكلة GitHub المسحوبة بقيمة `originKind: externalSync` والافتراضي `provider: local`. تعيين المورّد يعيش على `ticket_sync_links`.
 
-## Ticket origin
+## منشأ التذكرة
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` يكتب `manual`. السحب من المورّد يكتب `externalSync`. الأبناء المفوَّضون يبقون `manual`.
 
-| Value          | Meaning                                                      |
+| القيمة         | المعنى                                                       |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | الافتراضي عند `createTicket` (صفوف الإنسان والوكيل والمفوَّضين) |
+| `externalSync` | يضبطها `TicketSyncEngine` عند السحب من المورّد               |
 
-## Ticket fields
+## حقول التذكرة
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+يجمع الكيان جهتين على صف واحد. **المرآة** (المزوّد والمفاتيح والعنوان والوصف والأولوية والتسميات والحالات والطوابع الزمنية) ذاكرة مؤقتة لمزوّد بعيد، وإعادة الجلب تعيد كتابتها كلها. **التراكب** (الإسناد والتفويض والمساحة والأصل والمشروع وطلبات السحب المرتبطة) خاص بـ Control Center، وإعادة الجلب لا تمسّه.
 
-| Field                    | Type                       | Description                                                                                |
+| الحقل                    | النوع                      | الوصف                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | مساحة العمل المالكة                                                                        |
+| `provider`               | `TicketProvider`           | الخلفية التي تملك البيانات الأساس (الافتراضي `local`)                                      |
+| `externalKey`            | `String?`                  | المفتاح الأصلي لدى المزوّد (مثل `LIN-123`). يكتب `createTicket` المحلي هنا UUID *منفصلًا*، لا `id` الصف |
+| `url`                    | `String?`                  | عنوان URL على المزوّد البعيد                                                               |
+| `title`                  | `String`                   | ملخص قصير؛ يجب ألا يكون فارغًا                                                             |
+| `description`            | `String?`                  | متن Markdown أطول                                                                          |
+| `priority`               | `TicketPriority`           | الافتراضي `none`                                                                           |
+| `labels`                 | `List<String>`             | تسميات حرّة                                                                                |
+| `status`                 | `TicketStatus`             | الحالة المطبَّعة الأساس                                                                    |
+| `rawStatus`              | `String?`                  | اسم الحالة الأصلي لدى المزوّد البعيد، يُحفَظ للعرض من غير فقد                              |
+| `externalSyncedAt`       | `DateTime?`                | آخر مزامنة متعددة المورّدين؛ null حتى الأولى. تعيين كل مورّد يعيش في `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | الأصل في شجرة التفويض أو التفكيك                                                           |
+| `projectId`              | `String?`                  | المشروع المالك؛ لا يُدفَع إلى مزوّد بعيد                                                   |
+| `assignedAgentId`        | `String?`                  | معرّف Principal المُسنَد إليه (بيانات وصفية فقط، والإسناد لا يُرسل شيئًا)                  |
+| `assigneeType`           | `PrincipalType`            | أي نوع من Principal يسمّيه `assignedAgentId`، `user` أو `agent` (الافتراضي `agent`)        |
+| `createdByType`          | `PrincipalType?`           | نوع Principal الذي أنشأ التذكرة (`user` أو `agent`)؛ null للصفوف القديمة أو صفوف النظام    |
+| `createdById`            | `String?`                  | معرّف Principal المنشئ                                                                     |
+| `assignedTeamId`         | `String?`                  | الفريق المُسنَد إليه (بيانات وصفية فقط)                                                    |
+| `delegatedByAgentId`     | `String?`                  | الوكيل الذي فوّض هذه التذكرة                                                               |
+| `delegationDepth`        | `int`                      | العمق في سلسلة التفويض؛ الجذر `0`، ويُفحَص مقابل سقف العمق                                 |
+| `delegationRootTicketId` | `String?`                  | جذر سلسلة التفويض؛ null لتذكرة جذر                                                         |
+| `spaceId`                | `String?`                  | المحادثة التي انبثقت منها التذكرة، أو مساحة الوكيل المفوِّض                                |
+| `errorMessage`           | `String?`                  | تُضبط حين تكون `status` هي `failed`                                                        |
+| `linkedPrIds`            | `List<String>`             | معرّفات عقد طلبات السحب المرتبطة بهذه التذكرة                                              |
+| `metadata`               | `Map<String, dynamic>`     | حقيبة حرّة                                                                                 |
+| `createdAt`              | `DateTime`                 | وقت الإنشاء                                                                                |
+| `startedAt`              | `DateTime?`                | حين بدأ العمل                                                                              |
+| `blockedAt`              | `DateTime?`                | حين تعثّرت التذكرة                                                                         |
+| `cancelledAt`            | `DateTime?`                | حين أُلغيت التذكرة                                                                         |
+| `completedAt`            | `DateTime?`                | حين اكتملت التذكرة بنجاح                                                                   |
+| `finishedAt`             | `DateTime?`                | حين بلغت التذكرة أي حالة نهائية                                                            |
+| `updatedAt`              | `DateTime`                 | آخر تعديل (تحديث المرآة أو تغيير التراكب)                                                  |
+| `version`                | `int`                      | عدّاد التزامن المتفائل، يزداد عند كل تعديل                                                 |
+| `originKind`             | `TicketOriginKind`         | كيف وُجدت التذكرة (الافتراضي `manual`)                                                     |
+| `collaborators`          | `List<TicketCollaborator>` | يملؤها المستودع عند الطلب                                                                  |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+مشتقة: `isTerminal` و`isRemote` (`provider != local`) و`isAssignedToUser` و`displayKey` (`externalKey ?? id`، فالتذاكر المحلية تعرض لذلك UUID المنفصل الذي كُتب عند الإنشاء، لا `id` الصف).
 
-## Ticket relations
+## علاقات التذكرة
 
-Stored edges are directional rows in `ticket_links`:
+الحواف المخزّنة صفوف موجَّهة في `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| النوع         | سلسلة التخزين | المعنى                          |
+| ------------- | ------------- | ------------------------------- |
+| `blocks`      | `blocks`      | المصدر يعوق الهدف               |
+| `relatesTo`   | `relates_to`  | علاقة متناظرة                   |
+| `duplicateOf` | `duplicate_of`| المصدر نسخة مكررة من الهدف      |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+المفردات التي تتكلمها الواجهة و`ticket_relation` هي `TicketRelationKind`، وتُشتق من الحافة المخزّنة ومن الطرف الذي يجلس عليه الموضوع:
 
-| Kind           | Derived from                                         |
+| النوع          | يُشتق من                                             |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | صف `blocks` يكون فيه الموضوع هو الهدف                |
+| `blocking`     | صف `blocks` يكون فيه الموضوع هو المصدر               |
+| `relatedTo`    | صف `relates_to` (متناظرة)                            |
+| `duplicateOf`  | صف `duplicate_of` يكون فيه الموضوع هو المصدر         |
+| `duplicatedBy` | صف `duplicate_of` يكون فيه الموضوع هو الهدف          |
+| `subIssueOf`   | `tickets.parent_ticket_id` على الموضوع               |
+| `parentOf`     | `tickets.parent_ticket_id` على التذكرة الأخرى        |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+روابط الأصل والتذكرة الفرعية **ليست** صفوف `ticket_links`، فهي تعيش على `tickets.parent_ticket_id`.
 
-## Domain events
+## أحداث النطاق
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+تعيش هذه الأصناف الثمانية في `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. لا يوجد `TicketStarted` ولا `TicketDelegated` ولا `TicketCollaboratorAdded` ولا `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| الحدث                  | متى يُطلَق                                      |
+| ---------------------- | ----------------------------------------------- |
+| `TicketCreated`        | تُنشأ التذكرة                                   |
+| `TicketAssigned`       | تُسنَد التذكرة إلى Principal أو إلى فريق        |
+| `TicketCompleted`      | ينتهي العمل بنجاح                               |
+| `TicketFailed`         | يفشل العمل                                      |
+| `TicketCancelled`      | تُلغى التذكرة                                   |
+| `TicketStatusChanged`  | أي تغيّر في الحالة                              |
+| `TicketReassigned`     | تُعاد إسناد التذكرة                             |
+| `TicketDetailsUpdated` | يتغيّر العنوان أو الوصف أو الأولوية أو التسميات |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` إشارة تدقيق وإشعار، ومشغّل لخط أنابيب. الإسناد إلى وكيل لا يبدأ تشغيلًا، فلا يوجد موزّع تذاكر يراقب `assignedAgentId`. الإسناد إلى فريق هو الاستثناء: يُرسل `TeamRoutingService` قائد الفريق. إضافة متعاون تكتب صفًا ولا تنشر شيئًا. يُطبَّق خطاف ويب المورّد عبر `TicketSyncEngine` من غير حدث نطاق.
 
-## Mutation chokepoint
+## نقطة اختناق التعديل
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` يملك كل تعديل.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| الآلية             | التفصيل                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| نقطة اختناق واحدة  | تمر كل التعديلات عبر `_mutate`، فيحمّل الصف ويستدعي `_assertWorkspace` قبل التطبيق                                                               |
+| عزل مساحة العمل    | يلقي `_assertWorkspace` الاستثناء `WorkspaceMismatchException` حين لا يطابق `workspaceId` الصف المحمَّل مساحة عمل المستدعي                        |
+| التزامن المتفائل   | يكتب `_mutate` بقيمة `expectedVersion` تساوي `version` الذي قرأه للتو، ويعيد المحاولة عند `ConcurrencyConflictException` بإعادة قراءة الحالة الجديدة |
+| مطالبة حصرية       | `tryCheckout` / `releaseCheckout`؛ والوكيل الثاني الذي يطالب بتذكرة محجوزة يتلقى `CheckoutConflictException`                                      |
+| حارس الانتقال      | `canTransitionTo`، ويُطبَّق فقط حين تكون `force` قيمة false                                                                                        |
 
-## See also
+## انظر أيضًا
 
-- [Tickets](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
-- [Manage tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
-- [Delegate tickets](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
-- [Domain events](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/)
+- [التذاكر والتفويض](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/)
+- [إنشاء التذاكر وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-التذاكر/)
+- [تفويض العمل إلى الوكلاء](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تفويض-التذاكر/)
+- [أحداث النطاق](/ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق/)

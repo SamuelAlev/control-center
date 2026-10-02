@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Jegyéletciklus
+description: A jegy mezői, állapotai, átmenetei, kapcsolatai és a módosítások szűk keresztmetszete.
 slug: hu-HU/kezikonyv/referencia/jegyeletciklus
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Jegyállapotok
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Állapot      | Tárolt érték   | Leírás                                                 |
+| ------------ | -------------- | ------------------------------------------------------ |
+| `backlog`    | `backlog`      | Rögzítve, de még nincs az aktív sorba beosztályozva    |
+| `open`       | `open`         | Beosztályozva és munkára kész, de még nem kezdődött el |
+| `inProgress` | `inProgress`   | Aktívan dolgoznak rajta                                |
+| `blocked`    | `blocked`      | Elkezdődött, de valami külső dolog blokkolja           |
+| `inReview`   | `inReview`     | A munka kész, átnézésre vár                            |
+| `done`       | `done`         | Sikeresen befejeződött (végállapot)                    |
+| `failed`     | `failed`       | Hibával fejeződött be (végállapot)                     |
+| `cancelled`  | `cancelled`    | Elhagyva (végállapot)                                  |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Az állapotértékek camelCase formában tárolódnak (`inProgress`, `inReview`), soha nem `in_progress` alakban. A null tárolt érték `open` értékként értelmeződik; egy ismeretlen érték kivételt dob a kényszerített átalakítás helyett.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+A `tryParseLoose` elfogadja az ügynök által megadott álneveket, figyelmen kívül hagyva a kis- és nagybetűket, valamint a `-` / `_` / szóköz karaktereket:
 
-| Status       | Accepted aliases                              |
+| Állapot      | Elfogadott álnevek                            |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Állapotátmenetek
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,164 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Ez a gráf csak az ügynököket és az automatizálást köti.** A `TicketWorkflowService.transitionStatus` akkor ellenőrzi, amikor a `force` értéke false — az MCP-eszközök és a reconcilerek esetében. Egy szabálytalan átmenet ott naplózódik és figyelmen kívül marad. A felületen minden felhasználó által kezdeményezett állapotváltozás `force: true` értéket ad át, és teljesen megkerüli a gráfot, így egy ember a jegyet a választó által felsorolt bármely állapotba átmozgathatja (a `failed` kivételével mindegyikbe), beleértve egy végállapot újranyitását is. Az ügynökök a `fail_ticket` hívással jelölik `failed` állapotúnak a jegyet.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Egy állapot mindig átléphet önmagába. A végállapotokból nem vezet ki él.
 
-| From         | Allowed targets                                      |
+| Honnan       | Engedélyezett célok                                  |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (végállapot)                                       |
+| `failed`     | — (végállapot)                                       |
+| `cancelled`  | — (végállapot)                                       |
 
-## Ticket priorities
+## Jegyprioritások
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Egész számként tárolódik a Linear natív 0–4 skáláján. Egy ismeretlen érték `none` értékként értelmeződik.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Prioritás | Tárolt érték |
+| --------- | ------------ |
+| `none`    | `0`          |
+| `urgent`  | `1`          |
+| `high`    | `2`          |
+| `medium`  | `3`          |
+| `low`     | `4`          |
 
-## Ticket providers
+## Jegyszolgáltatók
 
-An unknown or null stored value parses to `local`.
+Egy ismeretlen vagy null tárolt érték `local` értékként értelmeződik.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Szolgáltató | Állapot                                                  |
+| ----------- | -------------------------------------------------------- |
+| `local`     | Teljes egészében a munkaterület adatbázisában tárolódik; ez az alapértelmezett |
+| `linear`    | Távoli tulajdonban van, helyben tükrözve                 |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+A szinkronizáló adapterek a `packages/cc_infra/lib/src/tickets/sync/` alatt élnek, a
+Linear, a GitHub Issues, a Jira Cloud és a ClickUp számára. A GitHub Issues csak
+szinkronizálóadapter-szállító (`vendorId: github`) — nem `TicketProvider`-érték,
+ezért egy behúzott GitHub issue `originKind: externalSync` és alapértelmezett
+`provider: local` értékkel tárolódik. A szállítóleképezés a `ticket_sync_links`
+táblán él.
 
-## Ticket origin
+## Jegy eredete
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+A `createTicket` a `manual` értéket írja. Egy szállítói behúzás az `externalSync`
+értéket írja. A delegált gyermekek `manual` értéken maradnak.
 
-| Value          | Meaning                                                      |
+| Érték          | Jelentés                                                     |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | Alapértelmezett a `createTicket` esetében (emberi, ügynök- és delegált sorok) |
+| `externalSync` | A `TicketSyncEngine` állítja be szállítói behúzáskor          |
 
-## Ticket fields
+## Jegy mezői
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Az aggregátum két szempontot fog át egyetlen soron. A **tükör** (szolgáltató,
+kulcsok, cím, leírás, prioritás, címkék, állapotok, időbélyegek) egy távoli
+szolgáltató gyorsítótára, amelyet egy frissítés teljes egészében újraír. A
+**fedvény** (hozzárendelés, delegálás, tér, szülő, projekt, kapcsolt PR-ek) csak
+a Control Centerben létezik, és egy frissítés soha nem nyúl hozzá.
 
-| Field                    | Type                       | Description                                                                                |
+| Mező                     | Típus                      | Leírás                                                                                     |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | A tulajdonló munkaterület                                                                  |
+| `provider`               | `TicketProvider`           | A kanonikus adatokat birtokló háttérrendszer (alapértelmezés: `local`)                     |
+| `externalKey`            | `String?`                  | A szolgáltató natív kulcsa (pl. `LIN-123`). A helyi `createTicket` egy *külön* UUID-t ír ide, nem a sor `id` értékét |
+| `url`                    | `String?`                  | Webes URL a távoli szolgáltatónál                                                          |
+| `title`                  | `String`                   | Rövid összefoglaló; nem lehet üres                                                        |
+| `description`            | `String?`                  | Hosszabb Markdown-törzs                                                                    |
+| `priority`               | `TicketPriority`           | Alapértelmezés: `none`                                                                     |
+| `labels`                 | `List<String>`             | Szabad formátumú címkék                                                                    |
+| `status`                 | `TicketStatus`             | Kanonikus, normalizált állapot                                                             |
+| `rawStatus`              | `String?`                  | A távoli szolgáltató natív állapotneve, a veszteségmentes megjelenítés érdekében megtartva  |
+| `externalSyncedAt`       | `DateTime?`                | Az utolsó több szállítós szinkronizálás; az első előtt null. A szállítónkénti leképezés a `ticket_sync_links` táblán él |
+| `parentTicketId`         | `String?`                  | A szülő a delegálási / bontási fában                                                       |
+| `projectId`              | `String?`                  | A tulajdonló projekt; soha nem kerül fel távoli rendszerre                                 |
+| `assignedAgentId`        | `String?`                  | A hozzárendelt principal azonosítója (csak metaadat — a hozzárendelés semmit nem indít el) |
+| `assigneeType`           | `PrincipalType`            | Megadja, milyen fajta principalra mutat az `assignedAgentId` — `user` vagy `agent` (alapértelmezés: `agent`) |
+| `createdByType`          | `PrincipalType?`           | A jegyet létrehozó principal fajtája (`user` vagy `agent`); régi/rendszersoroknál null     |
+| `createdById`            | `String?`                  | A létrehozó principal azonosítója                                                          |
+| `assignedTeamId`         | `String?`                  | A hozzárendelt csapat (csak metaadat)                                                      |
+| `delegatedByAgentId`     | `String?`                  | Az ügynök, amely delegálta ezt a jegyet                                                    |
+| `delegationDepth`        | `int`                      | Mélység a delegálási láncban; a gyökér `0`, a rendszer a maximális mélység korlátjához ellenőrzi |
+| `delegationRootTicketId` | `String?`                  | A delegálási lánc gyökere; gyökérjegynél null                                              |
+| `spaceId`                | `String?`                  | Az a beszélgetés, amelyből a jegy kivált, vagy a delegáló ügynök tere                      |
+| `errorMessage`           | `String?`                  | Akkor kerül beállításra, amikor a `status` értéke `failed`                                 |
+| `linkedPrIds`            | `List<String>`             | Azon PR-csomópont-azonosítók, amelyekhez ez a jegy kapcsolódik                             |
+| `metadata`               | `Map<String, dynamic>`     | Szabad formátumú gyűjtő                                                                    |
+| `createdAt`              | `DateTime`                 | A létrehozás időpontja                                                                     |
+| `startedAt`              | `DateTime?`                | Amikor a munka elkezdődött                                                                 |
+| `blockedAt`              | `DateTime?`                | Amikor a jegy blokkolttá vált                                                              |
+| `cancelledAt`            | `DateTime?`                | Amikor a jegyet megszakították                                                             |
+| `completedAt`            | `DateTime?`                | Amikor a jegy sikeresen befejeződött                                                       |
+| `finishedAt`             | `DateTime?`                | Amikor a jegy bármely végállapotba került                                                  |
+| `updatedAt`              | `DateTime`                 | Az utolsó módosítás (tükörfrissítés vagy fedvényváltozás)                                  |
+| `version`                | `int`                      | Optimalista párhuzamossági számláló, minden módosításkor növekszik                         |
+| `originKind`             | `TicketOriginKind`         | A jegy létrejöttének módja (alapértelmezés: `manual`)                                      |
+| `collaborators`          | `List<TicketCollaborator>` | A repository igény szerint tölti fel                                                       |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Származtatott: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` és `displayKey` (`externalKey ?? id` — a helyi jegyek ezért a létrehozáskor kapott külön UUID-t jelenítik meg, nem a sor `id` értékét).
 
-## Ticket relations
+## Jegykapcsolatok
 
-Stored edges are directional rows in `ticket_links`:
+A tárolt élek irányított sorok a `ticket_links` táblában:
 
-| Type          | Storage string | Meaning                         |
+| Típus         | Tárolt érték   | Jelentés                        |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | A forrás blokkolja a célt       |
+| `relatesTo`   | `relates_to`   | Szimmetrikus kapcsolat          |
+| `duplicateOf` | `duplicate_of` | A forrás a cél duplikátuma      |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Az a szókészlet, amelyet a felület és a `ticket_relation` használ, a `TicketRelationKind`, amely egy tárolt élből és abból származik, hogy az alany melyik végponton ül:
 
-| Kind           | Derived from                                         |
+| Fajta          | Származtatás                                         |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Egy `blocks` sor, ahol az alany a cél                |
+| `blocking`     | Egy `blocks` sor, ahol az alany a forrás             |
+| `relatedTo`    | Egy `relates_to` sor (szimmetrikus)                  |
+| `duplicateOf`  | Egy `duplicate_of` sor, ahol az alany a forrás       |
+| `duplicatedBy` | Egy `duplicate_of` sor, ahol az alany a cél          |
+| `subIssueOf`   | A `tickets.parent_ticket_id` az alanyon              |
+| `parentOf`     | A `tickets.parent_ticket_id` a másik jegyen          |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+A szülő- és gyermekjegy-kapcsolatok **nem** `ticket_links` sorok — a `tickets.parent_ticket_id` mezőn élnek.
 
-## Domain events
+## Domainesemények
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Ez a nyolc osztály a `packages/cc_domain/lib/core/domain/events/ticketing_events.dart` fájlban él. Nincs `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` vagy `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| Esemény                   | Kiváltódik, amikor                                  |
+| ------------------------- | --------------------------------------------------- |
+| `TicketCreated`           | Létrejön egy jegy                                   |
+| `TicketAssigned`          | Egy jegyet principalhoz vagy csapathoz rendelnek    |
+| `TicketCompleted`         | A munka sikeresen befejeződik                       |
+| `TicketFailed`            | A munka meghiúsul                                   |
+| `TicketCancelled`         | Egy jegyet megszakítanak                            |
+| `TicketStatusChanged`     | Bármely állapotváltozás                             |
+| `TicketReassigned`        | Egy jegyet újra hozzárendelnek                      |
+| `TicketDetailsUpdated`    | A cím, a leírás, a prioritás vagy a címkék megváltoznak |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+A `TicketAssigned` audit- és értesítési jelzés, valamint pipeline-eseményindító. Az ügynökhöz rendelés nem indít futtatást — nincs olyan jegykiosztó, amely az `assignedAgentId` mezőt figyelné. A csapathoz rendelés a kivétel: a `TeamRoutingService` kiosztja a csapatvezetőt. Egy közreműködő hozzáadása kiír egy sort, és semmit nem tesz közzé. Egy szállítói webhook a `TicketSyncEngine`-en keresztül, domainesemény nélkül érvényesül.
 
-## Mutation chokepoint
+## Módosítási szűk keresztmetszet
 
-`TicketWorkflowService` owns every mutation.
+A `TicketWorkflowService` birtokol minden módosítást.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Mechanizmus             | Részletek                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Egyetlen szűk keresztmetszet | Minden módosítás a `_mutate` metóduson halad át, amely betölti a sort, és alkalmazás előtt meghívja az `_assertWorkspace` metódust                 |
+| Munkaterület-elszigetelés | Az `_assertWorkspace` `WorkspaceMismatchException` kivételt dob, amikor a betöltött sor `workspaceId` értéke nem egyezik a hívóéval                |
+| Optimalista párhuzamosság | A `_mutate` úgy ír, hogy az `expectedVersion` értéke az éppen beolvasott `version` legyen, és `ConcurrencyConflictException` esetén a friss állapot újraolvasásával próbálkozik újra |
+| Kizárólagos lefoglalás  | `tryCheckout` / `releaseCheckout`; egy második ügynök, amely egy már kivett jegyet próbál kivenni, `CheckoutConflictException` kivételt kap          |
+| Átmenet-őr              | `canTransitionTo`, csak akkor érvényesül, amikor a `force` értéke false                                                                           |
 
-## See also
+## Lásd még
 
-- [Tickets](/hu-HU/kezikonyv/fogalmak/jegyek/)
-- [Manage tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
-- [Delegate tickets](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
-- [Domain events](/hu-HU/kezikonyv/referencia/domainesemenyek/)
+- [Jegyek](/hu-HU/kezikonyv/fogalmak/jegyek/)
+- [Jegyek létrehozása és kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-kezelese/)
+- [Munka delegálása ügynököknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
+- [Domainesemények](/hu-HU/kezikonyv/referencia/domainesemenyek/)

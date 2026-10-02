@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: فضاهای کاری و ایزوله‌سازی
+description: چرا یک فضای کاری یک مرز سخت مستأجری است، چگونه تفکیک پایگاه داده این مرز را ساختاری می‌کند و چه چیزهایی عامدانه از آن عبور می‌کنند.
 slug: fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## فضای کاری چیست؟
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+فضای کاری، مستأجر ایزوله‌سازی سطح‌بالا در Control Center است. عامل‌ها، مخزن‌ها، فضاها، تیکت‌ها، حافظه، پایپ‌لاین‌ها و اعضا را در یک بافت کران‌دار گرد هم می‌آورد. هر چیزی که درون یک فضای کاری رخ بدهد، درون همان می‌ماند.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+یک فضای کاری نمونه به یک پروژه یا یک کدبیس نگاشت می‌شود. ممکن است برای «api-service»، «frontend-v2» و «infrastructure» فضاهای کاری جداگانه داشته باشید.
 
-## Workspace-scoped data
+## داده‌های محدود به فضای کاری
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+ردیف‌های یک فضای کاری در فایل SQLite خودِ آن فضای کاری، در مسیر `<dataDir>/<workspaceId>/workspace.db`، زندگی می‌کنند. هر فضای کاری یک پوشه می‌گیرد نه یک فایل تنها، چون یک فضای کاری بیش از یک پایگاه داده انباشته می‌کند — worktreeهای هر گفتگو، فایل‌های عامل و مهارت، اعتبارنامه‌های ربات گفتگو — و دادن یک پوشه به آن یعنی همهٔ این‌ها با هم زندگی می‌کنند و با هم پاک می‌شوند.
 
-| Entity                                              | Scope                                        |
+| موجودیت                                              | دامنه                                        |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| عامل‌ها                                              | دقیقاً به یک فضای کاری تعلق دارند            |
+| مخزن‌ها                                              | در یک فضای کاری ثبت می‌شوند (پایین را ببینید) |
+| فضاها، گفتگوها و پیام‌ها                             | محدود به فضای کاری                           |
+| تیکت‌ها، پروژه‌ها، برنامه‌ها، ارکستراسیون‌ها          | محدود به فضای کاری                           |
+| واقعیت‌های حافظه، سیاست‌ها، دامنه‌ها، مجوزهای دسترسی  | محدود به فضای کاری                           |
+| اجراهای پایپ‌لاین، قالب‌ها، تریگرها                   | محدود به فضای کاری                           |
+| وضعیت pull request، فضاهای بازبینی، گروه‌های بازبینی | محدود به فضای کاری                           |
+| گزارش‌های اجرای عامل و حافظهٔ کاری                   | محدود به فضای کاری                           |
+| اعضا، دعوت‌نامه‌ها، مجوزهای هر مخزن                  | محدود به فضای کاری                           |
+| نمادها و یال‌های گراف کد                             | با `repoId` درون فایل فضای کاری محدود می‌شود  |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+بیشتر این ردیف‌ها یک ستون `workspaceId` دارند؛ فایل‌های جداگانهٔ پایگاه داده، ایزوله‌سازی را اعمال می‌کنند. ثابت ایزوله‌سازی را در پایین ببینید.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## مخزن‌ها محدود به فضای کاری‌اند؛ هویت میان فضاهای کاری با مسیر است
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+یک ردیف مخزن در فایل پایگاه دادهٔ خودِ فضای کاری‌اش زندگی می‌کند — خود فایل _دامنه_ است، پس جدول هیچ ستون `workspaceId` و هیچ جدول اتصالی ندارد.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+یک مخزن را در یک فضای کاری از **تنظیمات → فضای کاری → مخزن‌ها** اضافه می‌کنید. ثبت همان checkout در دو فضای کاری، دو ردیف مستقل با دو شناسه می‌سازد؛ هویت مخزن _میان_ فضاهای کاری با مسیر فایل‌سیستم (یا owner/name در GitHub) تعیین می‌شود، هرگز با شناسه.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+ثبت سخت‌گیرانه است: مسیر باید درون یک work tree گیت باشد، باید یک ریموت `origin` داشته باشد و آن ریموت باید به یک forge پشتیبانی‌شده اشاره کند (github.com، gitlab.com یا bitbucket.org). forge از ریموت خوانده و روی مخزن ذخیره می‌شود، پس یک فضای کاری می‌تواند مخزن‌های هر سه را نگه دارد. هر چیز دیگری رد می‌شود. مرورگر پوشه‌ای که از آن انتخاب می‌کنید، فایل‌سیستم **میزبان سرور** را فهرست می‌کند، محدود به فهرست مجاز `--repo-roots` سرور (که به‌طور پیش‌فرض پوشهٔ خانهٔ کاربر سرور است).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+حذف یک مخزن از یک فضای کاری، ردیف را یکسره پاک می‌کند و نمادهای کد، یال‌ها، فایل‌ها، نقطه‌های بازرسی نمایه و مجوزهای هر عضو آن را آبشاری حذف می‌کند. checkout روی دیسک دست‌نخورده می‌ماند.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+گراف کد در همان فایل زندگی می‌کند، با کلید `repoId`، چون فضاهای کاری مختلف ممکن است همان مخزن را روی شاخه‌های مختلف با کد متفاوت داشته باشند.
 
-## The isolation invariant
+## ثابت ایزوله‌سازی
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+نشتی‌های داده میان فضاهای کاری به‌عنوان باگ تلقی می‌شوند. ایزوله‌سازی **ساختاری** است و در چند لایه اعمال می‌شود:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **لایهٔ پایگاه داده.** هر فضای کاری فایل SQLite خودش را دارد که `WorkspaceDatabaseManager.of(workspaceId)` آن را تحویل می‌دهد. یک پایگاه دادهٔ فضای کاری، جداول `users`، `workspaces` یا هیچ فضای کاری دیگری را اعلان نمی‌کند، پس یک خواندن میان‌فضایی باگی نیست که بتوانید بنویسید — کامپایل نمی‌شود. مخزن‌ها DAO خود را در هر فراخوانی حل می‌کنند نه اینکه یکی را کش کنند، و چون هر متد مخزن یک `workspaceId` الزامی می‌گیرد، فضای کاری هرگز نمی‌تواند استنتاج یا پیش‌فرض شود.
+- **شناسهٔ فضای کاری یک قطعهٔ مسیر است.** چون شناسه به نام پوشه تبدیل می‌شود، باید با یک الگوی تک‌قطعه‌ای ایمن مطابقت کند (شروع حرف‌عدد، سپس حرف‌عدد، نقطه، زیرخط، خط تیره؛ بدون `..`). شناسه‌ها در همه‌جای محصول UUID هستند. هر چیز دیگری به‌جای پاک‌سازی، خطا پرتاب می‌کند — همان نگهبان پیمایش مسیر است و با صدای بلند شکست می‌خورد تا دادهٔ یک فضای کاری را در مسیری که کس دیگری انتخاب کرده ننویسد.
+- **دفاع لایه‌لایه.** ستون‌های `workspaceId` هنوز آنجا هستند و هنوز نوشته می‌شوند. هرچند درون یک فایل زائدند، تریگرهای خوراک همگام‌سازی، نمایه‌های FTS و شکل ردیف‌های موجود را دست‌نخورده نگه می‌دارند و فایل را هنگام بازرسی مستقل، خودتوصیف می‌سازند — چیزی که برون‌بری و درون‌بری به آن تکیه دارند.
+- **لایهٔ دامنه.** سرویس‌هایی که موجودیت‌ها را با شناسه تغییر می‌دهند، پیش از ادامه `entity.workspaceId == workspaceId` را در یک نقطهٔ گلوگاه واحد اعتبارسنجی می‌کنند و در صورت ناهم‌خوانی `WorkspaceMismatchException` پرتاب می‌کنند — همان شکست پرسروصدا برای شناسه‌ای که از بافت اشتباه رسیده است. رد کردن با صدای بلند مهم است: یک no-op بی‌صدا باگ را پنهان می‌کند و ادامه دادن، نشت می‌آورد.
+- **لایهٔ RPC.** توزیع‌کنندهٔ RPCِ مخزن، نقطهٔ گلوگاه است. هر عملیات محدود به فضای کاری باید `workspace_id` را در آرگومان‌های خودش داشته باشد — هیچ «فضای کاری جاری» به‌ازای هر نشست وجود ندارد که نشت کند، و شناسهٔ ناشناخته _پیش از_ آنکه چیزی پایگاه داده‌ای باز کند، به‌عنوان پیدا نشد رد می‌شود، پس یک شناسهٔ بد نمی‌تواند یک `workspace.db` شبح‌وار بسازد. عملیات‌های واقعاً سراسری (خوراک خبری، صف ناوگان) خود را به‌عنوان تصمیمی صریح و بازبینی‌شده بدون دامنه اعلام می‌کنند. ابزارهای MCP از همین قاعده پیروی می‌کنند: هر ابزاری که به داده‌های محدود به فضای کاری دست می‌زند، `workspace_id` می‌خواهد.
+- **پخش میان‌فضایی قابل شمارش است.** پاسخ دادن به پرسشی دربارهٔ چند فضای کاری یعنی باز کردن چند پایگاه داده. این پخش در یک کمک‌تابع به نام `CrossWorkspaceQueries` محدود شده است، تا فهرست کامل چیزهایی که به‌طور مشروع از مرز عبور می‌کنند، در نقاط فراخوانی یک فایل زندگی کند نه آنکه پشت کامنت‌های مستندات پخش شود. آن نقاط فراخوانی عبارت‌اند از: تجمیع سراسری سرور، آشتی‌دهنده‌های راه‌اندازی، جاروب‌های نگه‌داشت و GC، پشتیبان‌گیری، مسیریاب‌های رویداد — و جست‌وجوی عضویت که در پایین می‌آید.
+- **دسترسی تنها با شناسه کافی نیست.** جست‌وجوی یک موجودیت با UUID آن اثبات نمی‌کند که به فضای کاری فراخوان تعلق دارد. تفکیک فایل، فایل اشتباه را دست‌نیافتنی می‌کند؛ اعتبارسنجی لایهٔ دامنه، شناسهٔ اشتباهی را که از یک فایل مشروع رسیده است می‌گیرد.
 
-## Membership, not the pairing key, is what grants access
+## عضویت است که دسترسی می‌دهد، نه کلید جفت‌سازی
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+داشتن یک اعتبارنامهٔ دستگاه، یک _دستگاه_ را احراز هویت می‌کند. هیچ چیزی درون فضای کاری را مجاز نمی‌کند. هر عملیات محدود به فضای کاری، نقش عضویت فراخوان را حل می‌کند و کف مجاز را بر اساس نوع عملیات اعمال می‌کند — خواندن `guest` می‌خواهد، تغییر `member` و یک عملیات مخرب `admin` — و عملیاتی که محتوای مخزن را آشکار می‌کند، به‌علاوه مجوز هر مخزن فراخوان را بررسی می‌کند. یک کلید جفت‌سازی معتبر بدون عضویت، پیام `Not a member of this workspace` می‌گیرد.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+پیامدش برای ایزوله‌سازی مرتب است: ردیف‌های عضویت در فایل _خودِ فضای کاری_ زندگی می‌کنند، پس «چه کسی در این فضای کاری است؟» یک خواندن معمولی محدود به دامنه است. پرسش وارون — «من در کدام فضاهای کاری هستم؟» — ذاتاً میان فایل‌ها پخش است، پس یکی از اندک پخش‌های مجاز `CrossWorkspaceQueries` است و همان چیزی است که انتخاب‌گر فضای کاری پیش از انتخاب هر فضای کاری اجرا می‌کند.
 
-See [Multiplayer](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) for the role ladder and repo grants.
+برای نردبان نقش‌ها و مجوزهای مخزن، [چندنفره(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/) را ببینید.
 
-## The global registry
+## رجیستری سراسری
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+نه همه‌چیز محدود به فضای کاری است. یک پایگاه دادهٔ دوم، `<dataDir>/global.db`، چیزهایی را نگه می‌دارد که واقعاً سراسری سرورند:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **رجیستری فضای کاری**، تا تغییردهنده بتواند هر فضای کاری را بدون باز کردن حتی یک فایل فضای کاری فهرست کند — و تا نام، لوگو، مالک، ترتیب دستی و نشانگر حذف نرم یک فضای کاری، بیرون از فایلی که توصیفش می‌کنند زندگی کنند؛
+- **هویت**: کاربران، ترجیحات کاربر و دستگاه‌های جفت‌شده، چون یک انسان در همهٔ فضاهای کاری یک کاربر است و یک دستگاه جفت‌شده از حذف یک فضای کاری جان به در می‌برد؛
+- **صف ناوگان** (کارگرها، کارها، گزارش جای‌گذاری)، که زمان‌بندش در هر تیک کل صف را با هر کارگر تطبیق می‌دهد؛
+- **خوراک خبری**، که به‌ازای کاربر است (نه به‌ازای فضای کاری) — افزودن یک خوراک، شما را به هر فضای کاری دنبال می‌کند؛
+- **`workspace_routes`**، نمایهٔ پیش از احراز هویت که پاسخ می‌دهد «کدام فضای کاری مالک این کلید است؟» برای نقاط ورودی‌ای که تنها با یک راز یا یک شناسهٔ مات (هش دعوت‌نامه، توکن وبهوک، دیپ‌لینک) و بدون هیچ فضای کاری می‌رسند. یک ازدست‌رفته آنجا یعنی پیدا نشد؛ عامدانه هیچ پشتوانهٔ پیمایشی وجود ندارد؛
+- **تنظیمات و هویت در سطح نصب**: شناسهٔ نصب، تنظیمات سطح میزبان، اتصال‌های SSO و سیاست‌های کنش مدیریت‌شده (یک محدودکنندهٔ سطح نصب که فقط می‌تواند گاردریل‌های فضای کاری را سخت‌تر کند).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+راه‌اندازی فقط همین فایل را باز می‌کند. فایل‌های فضای کاری در نخستین لمس به‌صورت تنبل باز می‌شوند، پس هزینهٔ شروع ثابت می‌ماند، هر قدر هم که فضاهای کاری تاریخ انباشته باشند، و `quick_check` هر فایل در نخستین استفاده پرداخت می‌شود نه در مسیر رسیدن به بنر آماده‌بودن.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+یک فایل فضای کاری تنها یک `workspace_meta` تک‌ردیفی برای خودشناسی حمل می‌کند (شناسه‌اش، نصبی که ساخته، نسخهٔ اسکیمایی که با آن ساخته شده، و زمان). هر چیز توصیف‌کنندهٔ یک فضای کاری در رجیستری است.
 
-## Creating a workspace
+## ساختن یک فضای کاری
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+ساختن یک فضای کاری بیش از درج یک ردیف رجیستری است. سرور در یک عملیات، کاربر سازنده را به‌عنوان `ownerUserId` مهر می‌کند، عضویت نقش مالک آن کاربر را ثبت می‌کند و یک رویداد دامنهٔ `WorkspaceCreated` منتشر می‌کند. شنوندگان آن رویداد سپس به‌صورت خودتوان و در پس‌زمینه این‌ها را می‌کارند:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- یک **عامل CEO** به همراه چهار متخصص — `qa`، `architect`، `engineer`، `librarian` — که متخصص‌ها به CEO گزارش می‌دهند؛
+- **قالب‌های پایپ‌لاین داخلی** و تریگرهایشان (تریگرهای رویدادی و دستی فعال عرضه می‌شوند؛ زمان‌بندی‌شده‌ها به‌جز جاروب روزانهٔ GC worktree اختیاری‌اند)؛
+- **مجموعه‌های ارزیابی شروع**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/).
+این برای _هر_ فضای کاری رخ می‌دهد، نه فقط اولی. عامل‌های کاشته‌شده بدون آداپتور ساخته می‌شوند، پس روی **Control Center (built-in)** با مدل پیش‌فرض Anthropic اجرا می‌شوند (`claude-opus-4-8` مگر آنکه مدل دیگری را پین کنید) تا وقتی که برای هر عامل در **تنظیمات → فضای کاری → عامل‌ها** آداپتور و مدل تعیین کنید. [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/) را ببینید.
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+نوشتن عضویت مالک مهم‌تر از آن است که به نظر می‌رسد: بدون آن، فضای کاری تازه‌ساخته هیچ عضوی نداشت و هر فراخوانی محدود به فضای کاری که سازنده بعد انجام می‌داد رد می‌شد.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[عامل‌ها نمی‌توانند فضای کاری بسازند]
+هیچ ابزار MCP به نام `create_workspace` وجود ندارد. انسان‌ها یک فضای کاری را از راه `workspace.create` (نقطهٔ گلوگاه فقط-نام) یا `workspace.upsert` (رکورد کامل، که برای به‌روزرسانی هم استفاده می‌شود) می‌سازند. هر دو کاربر سازنده را به‌عنوان `owner` مهر می‌کنند و `WorkspaceCreated` را منتشر می‌کنند.
 :::
 
-## Deleting, exporting, importing
+## حذف، برون‌بری، درون‌بری
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+حذف یک فضای کاری **ردیف رجیستری را علامت می‌زند و پوشه را برمی‌دارد**. فضای کاری از هر فهرست و جست‌وجویی ناپدید می‌شود. ردیف رجیستری (حذف‌شدهٔ نرم) باقی می‌ماند تا شناسه هنوز برای پشتیبان‌گیری و نگه‌داشت شناخته‌شده باشد، اما `workspace.delete` بی‌درنگ پوشهٔ آن فضای کاری — پایگاه داده، worktreeها، فایل‌های عامل و بقیه — را از راه `WorkspaceDatabaseManager.dropAndClose` حذف می‌کند. تنها **مالک** فضای کاری می‌تواند آن را حذف کند.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+چون یک فضای کاری یک فایل است، دست‌به‌دست کردن یک فضای کاری یک عملیات فایل است نه یک دامپ جدول‌به‌جدول:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` یک `VACUUM INTO` تکی است — یک اسنپ‌شات سازگار و یکپارچه‌سازی‌شده که زیر یک تراکنش خواندن گرفته می‌شود، در حالی که سرور همچنان سرویس می‌دهد.
+- `workspace.import` چنین فایلی را می‌پذیرد و هر چیزی را که فضای کاری هدف هم‌اکنون نگه می‌دارد جایگزین می‌کند. `workspace_meta` جاسازی‌شده به درون‌بری امکان می‌دهد میان «فایل خودم، بازپذیرفته‌شده» و «فایلی از نصبی دیگر» تمایز بگذارد (دومی مجاز است، اما به‌جای نامرئی بودن، ثبت می‌شود).
+- `server.backupNow` کل نصب را در یک پوشهٔ زمان‌دار اسنپ‌شات می‌گیرد که آینهٔ پوشهٔ دادهٔ زنده است — `manifest.json`، `global.db` و یک `<workspaceId>/workspace.db` به‌ازای هر فضای کاری — پس بازیابی همان کپی کردن آن به عقب است.
+- `server.listBackups` آن پوشه را به عقب می‌خواند، از تازه‌ترین، با اندازه و فهرست فضاهای کاری هر اسنپ‌شات. اسنپ‌شاتی که مانیفستش گم است یا فایل‌هایی را نام می‌برد که آنجا نیستند، همچنان گزارش می‌شود و ناقص علامت می‌خورد — پنهان کردنش همان راهی است که یک اپراتور به این باور می‌رسد نسخهٔ پشتیبانی دارد که ندارد.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+عملیات‌های پشتیبان‌گیری زیر **تنظیمات → سرور → پشتیبان و بازیابی** قرار دارند:
+**پشتیبان همین حالا** از نصب اسنپ‌شات می‌گیرد، فهرست نشان می‌دهد کدام اسنپ‌شات‌ها
+کامل‌اند و به مالک نصب اجازه می‌دهد پس از تأیید یکی را حذف کند، و هر
+فضای کاری برون‌بری و درون‌بری عرضه می‌کند. پایپ‌لاین داخلی **Workspace backup**
+فقط پایگاه دادهٔ همان فضای کاری را با زمان‌بندی هفتگی می‌گیرد و پشتیبان‌های خودش را
+که از سن نگه‌داشت پیکربندی‌شده قدیمی‌ترند حذف می‌کند. بازیابی یک فضای کاری از یک
+اسنپ‌شات نصب، همان `workspace.import` است که به
+`<workspaceId>/workspace.db` اسنپ‌شات اشاره می‌کند؛ بازیابی کل نصب همچنان یک
+کپی کردن پوشهٔ اسنپ‌شات با سرور متوقف است.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#what-a-backup-does-not-contain) has the full table.
+آنچه هیچ‌یک از این‌ها حمل نمی‌کنند، بقیهٔ پوشهٔ فضای کاری است. یک فضای کاری بیش از یک پایگاه داده انباشته می‌کند — تصاویر جای‌گذاری‌شده، فایل‌های مهارت و عامل، اعتبارنامه‌های گفتگو، worktreeها — و برون‌بری و درون‌بری **فایل** را جابه‌جا می‌کنند، پس هر چیزی کنارش همان‌جا می‌ماند. این برای اعتبارنامه‌ها عامدانه و برای worktreeها یک‌بارمصرف است؛ برای بقیه، محدودیتی است که باید بدانید، نه یک قابلیت. [مرجع پشتیبان‌گیری(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#what-a-backup-does-not-contain) جدول کامل را دارد.
 
-## Moving a backup between the server and your device
+## جابه‌جا کردن یک پشتیبان میان سرور و دستگاه شما
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+هر عملیات بالا به زبان مسیرهایی روی **سرور** سخن می‌گوید، که فقط وقتی پاسخ کامل است که سرور ماشین خودتان باشد. سه مسیر HTTP امضاشده — [`/backup/workspace`، `/backup/snapshot` و `/backup/restore`(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/#transfer-routes) — بایت‌ها را برای هر توپولوژی دیگری حمل می‌کنند، روی همان خط احراز هویت‌شده‌ای که پروکسی رسانه و مخزن تصویر پیش‌تر استفاده می‌کنند. در صفحه، این یک دکمهٔ **دانلود** کنار هر برون‌بری و هر اسنپ‌شات است (شما انتخاب می‌کنید کجا فرود بیاید)، و **انتخاب فایل و آپلود** برای بازیابی از فایلی که روی ماشینی که با آن کار می‌کنید نشسته است. آپلود همانی است که وقتی سرور ماشین شما نیست کار می‌کند: `workspace.import` می‌خواهد فایل از پیش روی میزبان باشد، و این راه رسیدنش به آنجاست.
 
-Three properties are worth knowing:
+سه ویژگی ارزش دانستن دارند:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **یک دانلود یک نسخهٔ تازه ضرب می‌کند و سرور هیچ‌چیز از آن نگه نمی‌دارد.** دانلود کردن یعنی «همان فایلی را بگیر که دکمهٔ برون‌بری ساخت» نیست — دوباره برون‌بری می‌کند، آن را استریم می‌کند و پاکش می‌کند. پاسخ `no-store` با `Accept-Ranges: none` است به همان دلیل: یک بازهٔ ازسرگرفته‌شده، دو برون‌بری متفاوت را در یک فایل به هم می‌چسباند که معتبر به نظر می‌رسد و نیست.
+- **یک آپلود روی دیسک استریم می‌شود، هرگز بافر نمی‌شود**، در هر دو سر، و نسخهٔ آماده‌شده در هر مسیر خروجی — از جمله یک رد — پاک می‌شود. یک پایگاه دادهٔ فضای کاری یک اسکرین‌شات نیست.
+- **یک اتصال رله‌شده هیچ مبدأ HTTP ندارد**، پس کنترل‌های انتقال آنجا غیرفعال می‌شوند با یادداشتی که دلیلش را می‌گوید. هر چیزی که به زبان مسیرهای سمت سرور سخن می‌گوید روی رله کار می‌کند؛ فقط خطوط بایتی به اتصال مستقیم نیاز دارند.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[کدام مسیرها مال کیست]
+مسیرهایی که صفحه *نشان می‌دهد* — پوشهٔ اسنپ‌شات، فایلی که یک برون‌بری نوشت، مبدأیی که یک درون‌بری می‌خواند — روی ماشینی هستند که `cc_server` را اجرا می‌کند. مسیری که یک **دانلود** گزارش می‌دهد روی ماشینی است که شما کنارش نشسته‌اید. همین تمایز دلیل وجود هر دوی آن‌هاست: اولی چیزی است که یک اسکریپت نگه‌داشت یا یک نشست ssh می‌خواهد، دومی چیزی است که شخصی که پشتیبان جمع می‌کند می‌خواهد.
 :::
 
-## Multiple workspaces
+## چندین فضای کاری
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+می‌توانید چند فضای کاری را کنار هم اجرا کنید. هرکدام مستقلاً کار می‌کند: عامل‌های یک فضای کاری نمی‌توانند به عامل‌های فضای کاری دیگر پیام بدهند، نمی‌توانند حافظهٔ فضای کاری دیگر را بخوانند و نمی‌توانند تیکت‌هایش را ببینند. حل گیرنده برای پیام‌رسانی عامل‌به‌عامل دقیق است و هرگز از فضای کاری عبور نمی‌کند.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+هیچ داشبورد میان‌فضایی وجود ندارد. سطح تحلیل در `/workspaces/:workspaceId/observability` به یک خوراک سراسری کران‌دار از اجراهای اخیر مشترک می‌شود و بی‌درنگ آن را به فضای کاری فعال محدود می‌کند، پس آنچه آنجا می‌بینید هر بار یک فضای کاری است. تنها سطوح واقعاً چندفضاییکاری که یک انسان لمس می‌کند، انتخاب‌گر فضای کاری و تغییردهنده است.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+یک محدودیت عملی که ارزش دانستن دارد: فضای کاری‌ای که کسی در حال استفاده از آن است باز می‌ماند — هیچ LRU وجود ندارد. پس از 32 مورد از این‌ها سرور هشدار می‌دهد به‌جای آنکه رد کند، چون هر فایل باز یک ایزولهٔ پس‌زمینه و یک کش صفحه نگه می‌دارد. پخش میان‌فضایی فایل‌ها را گذرا باز می‌کند و اگر چیز دیگری آن‌ها را ادعا نکرده باشد، بعداً می‌بندد.
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Multiplayer](/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): agents belong to exactly one workspace
-- [Memory and knowledge](/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/): memory is workspace-scoped
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/): where the databases sit in the client/server split
-- [Back up and restore](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پشتیبانگیری-و-بازیابی/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/): every operation, route, manifest field and limit
-- [Add repositories](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/): registering a checkout into a workspace
+- [چندنفره(/fa-IR/راهنمای-کاربر/مفهومها/چندنفره/): عضویت، نقش‌ها و مجوزهای مخزن — نیمهٔ دسترسی ایزوله‌سازی
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/): عامل‌ها دقیقاً به یک فضای کاری تعلق دارند
+- [حافظه و دانش(/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/): حافظه محدود به فضای کاری است
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/): پایگاه‌های داده در تفکیک کلاینت/سرور کجا می‌نشینند
+- [پشتیبان‌گیری و بازیابی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/پشتیبانگیری-و-بازیابی/): گرفتن اسنپ‌شات، جابه‌جا کردن یک فضای کاری، نگه داشتن نسخه‌ها جای دیگر
+- [پشتیبان‌گیری، برون‌بری و درون‌بری(/fa-IR/راهنمای-کاربر/مرجع/پشتیبانگیری/): هر عملیات، مسیر، فیلد مانیفست و محدودیت
+- [افزودن مخزن(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/): ثبت یک checkout در یک فضای کاری

@@ -1,60 +1,61 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: จัดสรรผู้ใช้ด้วย SCIM
+description: ให้ IdP ของคุณสร้าง อัปเดต และถอนการจัดสรรบัญชี Control Center โดยอัตโนมัติ
 slug: th-TH/คู่มือ/วิธีทำ/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+ใช้คู่มือนี้เมื่อคุณต้องการควบคุมวงจรชีวิต — การนำผู้ใช้ออกจากระบบต้องเพิกถอน
+สิทธิ์การเข้าถึงโดยอัตโนมัติ ไม่ใช่แค่ปิดกั้นการลงชื่อเข้าใช้ในอนาคต SCIM คือ
+โปรโตคอลแบบ push ที่ IdP (Okta, Entra ID และรายอื่น ๆ) ใช้เพื่อการนี้โดยเฉพาะ
 
-## Prerequisites
+## สิ่งที่ต้องมีก่อน
 
-- SSO already working (the [SSO tutorial](/th-TH/คู่มือ/บทสอน/sso) or the
-  [OIDC guide](/th-TH/คู่มือ/วิธีทำ/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO ทำงานอยู่แล้ว (ดู[บทสอน SSO](/th-TH/คู่มือ/บทสอน/sso) หรือ
+  [คู่มือ OIDC](/th-TH/คู่มือ/วิธีทำ/sso-oidc)),
+- **เซิร์ฟเวอร์ที่ IdP เข้าถึงได้ผ่าน HTTPS** — การเรียก SCIM มาจาก IdP
+  ไม่ใช่เบราว์เซอร์ของผู้ใช้ ใช้ทันเนลในตัว
+  (การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ → แชร์เซิร์ฟเวอร์นี้ → Cloudflared/ngrok/Tailscale) หรือ URL สาธารณะ
+  เซิร์ฟเวอร์ที่เข้าถึงได้ทางรีเลย์ WebSocket เท่านั้นจะรับ push ของ SCIM ไม่ได้
+  ส่วนการจัดสรรแบบ JIT ยังทำงานที่นั่นได้ คู่มือนี้ไม่ครอบคลุมกรณีนั้น
 
-## Steps
+## ขั้นตอน
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+1. เปิด **การตั้งค่า → เซิร์ฟเวอร์ → ลงชื่อเข้าใช้ครั้งเดียว** → การ์ด
+   **การจัดหาผู้ใช้ (SCIM)** การ์ดนี้จะแสดงเอนด์พอยต์ เช่น
+   `https://<your-server>/scim/v2/Users`
+2. กด **สร้างโทเค็น** (หรือ **สร้างโทเค็นใหม่** หากมีอยู่แล้ว) — bearer token
+   จะปรากฏขึ้นครั้งเดียวในกล่องโต้ตอบและถูกคัดลอกไปยังคลิปบอร์ด เก็บไว้ใน
+   โปรแกรมจัดการรหัสผ่านของคุณ เซิร์ฟเวอร์เก็บไว้เพียงสำเนาที่ตรวจสอบได้แบบ
+   เวลาคงที่
+3. ในหน้าตั้งค่าการจัดสรรของ IdP ให้เปิดใช้ SCIM ด้วย:
+   - **Base URL**: เอนด์พอยต์ด้านบน
+   - **การยืนยันตัวตน**: `Authorization: Bearer <token>`
+   - **ID ผู้ใช้**: `userName` (อีเมล) หรือ `externalId` — จับคู่ได้ทั้งคู่
+4. ทดสอบกับผู้ใช้หนึ่งคน: push ผู้ใช้รายนั้นจาก IdP แล้วยืนยันว่าปรากฏขึ้น
+   (การสร้างผ่าน SCIM จะปักหมุด `externalId` ของผู้ให้บริการไว้กับบัญชี
+   เป็นการปักหมุดเดียวกับที่การลงชื่อเข้าใช้ SSO ครั้งแรกกำหนด)
 
-## What deprovisioning does
+## การถอนการจัดสรรทำอะไร
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+เมื่อ IdP ส่ง `active: false` (หรือ `DELETE`) มา SCIM จะปฏิเสธก่อนหากบัญชีนั้น
+เป็น **เจ้าของ** เวิร์กสเปซ (ต้องโอนความเป็นเจ้าของก่อน) มิฉะนั้น:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. ข้อมูลรับรองอุปกรณ์ทุกชิ้นจะถูกเพิกถอนก่อน — เซสชันที่ใช้งานอยู่จะหลุด
+   ภายในไม่กี่วินาที
+2. สมาชิกภาพเวิร์กสเปซทุกแห่งจะถูกลบออก
+3. บัญชีจะถูกประทับว่าปิดใช้งาน (บัญชีนี้ลงชื่อเข้าใช้ไม่ได้เลย ไม่ว่า IdP
+   จะส่งอะไรมาภายหลัง จนกว่าจะเปิดใช้งานอีกครั้งอย่างชัดเจน)
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+แถวผู้ใช้ยังคงอยู่ — การระบุที่มาบนตั๋วงาน ข้อความ และคอมมิตเป็นสิ่งที่ถาวร
+การเปิดใช้งานอีกครั้ง (SCIM `active: true`) คืนการลงชื่อเข้าใช้ แต่
+**ไม่**คืนสมาชิกภาพ: ต้องมีคำเชิญใหม่หรือนโยบายสมาชิกอัตโนมัติตอนลงชื่อเข้าใช้
 
-## Troubleshooting
+## การแก้ปัญหา
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **ได้ 401 ทุกครั้งที่เรียก** — โทเค็นเปลี่ยนไปแล้ว ให้สร้างใหม่และอัปเดตใน IdP
+- **เอนด์พอยต์เข้าถึงไม่ได้** — ทันเนลล่ม หรือเซิร์ฟเวอร์ใช้ได้ทางรีเลย์เท่านั้น
+  SCIM ต้องใช้ HTTPS โดยตรง ส่วน JIT ยังทำงานได้ตามปกติ
+- **ข้อผิดพลาด 501 จากการ push กลุ่ม** — เป็นเจตนาไว้แบบนั้น: การแมป
+  กลุ่ม→บทบาทเกิดขึ้นตอนลงชื่อเข้าใช้จากแอตทริบิวต์กลุ่มของ SAML/OIDC
+  ไม่ใช่จากกลุ่มที่ push มา

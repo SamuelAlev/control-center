@@ -1,116 +1,117 @@
 ---
-title: Bridge Slack to your workspace
-description: Create the Slack app, connect it, link your account and get an agent answering in a Slack thread.
+title: Slack összekötése a munkaterülettel
+description: Hozzon létre egy Slack-alkalmazást, csatlakoztassa, kapcsolja össze a fiókját, és érje el, hogy egy ügynök válaszoljon egy Slack-szálban.
 slug: hu-HU/kezikonyv/oktatoanyagok/elso-csevegohid
+sourceHash: 77d0762f8a91e9c6371ee83d18056204b3d7d5be
 ---
 
-## What you will build
+## Mit fog felépíteni
 
-By the end of this tutorial, you will have:
+Az oktatóanyag végére a következőkkel fog rendelkezni:
 
-- A Slack app created for your workspace, with the right permissions and events already set
-- A live connection between Slack and Control Center
-- Your own Slack account linked to your Control Center user
-- An agent answering you in a Slack thread and a ticket filed from a slash command
+- A munkaterületéhez létrehozott Slack-alkalmazás, a megfelelő jogosultságokkal és a már beállított eseményekkel
+- Élő kapcsolat a Slack és a Control Center között
+- Az Ön Slack-fiókja összekapcsolva a Control Center-felhasználójával
+- Egy ügynök, amely válaszol Önnek a Slack-szálban, és egy slash-parancsból létrehozott jegy
 
-Prerequisites:
+Előfeltételek:
 
-- [Your first workspace](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/) and [Dispatch your first agent](/hu-HU/kezikonyv/oktatoanyagok/elso-ugynok/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
-- The workspace's **CEO agent** has an adapter and a model set at **Settings → Workspace → Agents**. The bridge wakes the CEO, not the agent you configured in the previous tutorial, and an agent with no adapter runs on the built-in loop with Anthropic's default model.
-- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
-- Permission to create and install apps in your Slack workspace
+- [Az első munkaterületed](/hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet/) és [Az első ügynök indítása](/hu-HU/kezikonyv/oktatoanyagok/elso-ugynok/) kész van — egy ügynök nélküli munkaterület fogadhat Slack-üzenetet, de nincs senki, aki válaszoljon rá
+- A munkaterület **CEO-ügynökének** van adaptere és modellje a **Beállítások → Munkaterület → Ügynökök** helyen. A híd a CEO-t ébreszti fel, nem az előző oktatóanyagban beállított ügynököt, és az adapter nélküli ügynök a beépített cikluson fut az Anthropic alapértelmezett modelljével.
+- Az `owner` vagy `admin` szerepkör a Control Center-munkaterületen (egy csevegőalkalmazás csatlakoztatása az egész munkaterület nevében szól)
+- Jogosultság alkalmazások létrehozásához és telepítéséhez a Slack-munkaterületen
 
-Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials _out_ to Slack over Socket Mode, so this works from a laptop behind NAT.
+Itt semmihez nem kell nyilvános cím, alagút vagy bejövő port. A Control Center a Socket Mode-on keresztül _kifelé_ tárcsáz a Slackhez, így ez egy NAT mögötti laptopról is működik.
 
-## Step 1: Get a Slack app configuration token
+## 1. lépés: Szerezzen be egy Slack-alkalmazáskonfigurációs tokent
 
-This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+Ez az egyetlen titok, amelyet kézzel kell beszereznie. Segítségével a Control Center létrehozza, majd később szerkeszti is az alkalmazást az Ön számára.
 
-1. Open [api.slack.com/apps](https://api.slack.com/apps)
-2. Scroll to the app configuration tokens section at the bottom of the page
-3. Generate a token pair for your Slack workspace
-4. Copy the **refresh** token — it starts with `xoxe-`
+1. Nyissa meg az [api.slack.com/apps](https://api.slack.com/apps) oldalt
+2. Görgessen az oldal alján lévő alkalmazáskonfigurációs tokenek szakaszig
+3. Generáljon egy tokenpárt a Slack-munkaterületéhez
+4. Másolja ki a **refresh** tokent — `xoxe-` előtaggal kezdődik
 
-## Step 2: Let Control Center create the app
+## 2. lépés: Hagyja, hogy a Control Center létrehozza az alkalmazást
 
-1. In Control Center, go to **Settings → Workspace → General** and find the **Chat bridges** card
-2. On the **Slack** block, click **Create app for me**
-3. Paste the app configuration token
-4. Review what the bot will look like:
-   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
-   - **Bot name**: what people type after `@`, e.g. `control-center`
-   - **Short description** and **What the bot says it can do**
-   - **Slash command**: `cc` by default, so the command is `/cc`
-   - **Direct messages**: leave on so members can DM the bot
-5. Click **Create app**
+1. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és keresse meg a **Csevegőhidak** kártyát
+2. A **Slack** blokkon kattintson az **Alkalmazás létrehozása helyettem** elemre
+3. Illessze be az alkalmazáskonfigurációs tokent
+4. Tekintse át, hogyan fog kinézni a bot:
+   - **Alkalmazás neve**: ahogyan a Slack listázza az alkalmazást, például `Control Center · Acme`
+   - **Bot neve**: amit a tagok a `@` után gépelnek, például `control-center`
+   - **Rövid leírás** és **Mit mond a bot, hogy mire képes**
+   - **Slash parancs**: alapértelmezés szerint `cc`, így a parancs a `/cc`
+   - **Közvetlen üzenetek**: hagyja bekapcsolva, hogy a tagok közvetlen üzenetet küldhessenek a botnak
+5. Kattintson az **Alkalmazás létrehozása** elemre
 
-Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+A Control Center összeállítja a teljes alkalmazásdefiníciót — a bekapcsolt Socket Mode-ot, a bot által igényelt hatóköröket és eseményfeliratkozásokat, a slash-parancsot, az Messages lapot —, és létrehozza az alkalmazást a Slackben.
 
-## Step 3: Finish the two steps only Slack can do
+## 3. lépés: Végezze el a két lépést, amelyet csak a Slack tud megtenni
 
-Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+A Slacknek nincs API-ja alkalmazásszintű token generálásához vagy alkalmazás telepítéséhez, ezért a párbeszédablak mindkettőt hivatkozásként adja át Önnek:
 
-1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
-2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+1. **Alkalmazásszintű token generálása** — megnyitja a **Basic Information → App-Level Tokens** oldalt. Hozzon létre egy tokent a `connections:write` hatókörrel, és másolja ki. `xapp-` előtaggal kezdődik
+2. **Az alkalmazás telepítése** — megnyitja az **Install App** oldalt. Telepítse a munkaterületére, majd másolja ki a **Bot User OAuth Token** értékét. `xoxb-` előtaggal kezdődik
 
-Keep both values around for the next step.
+Tartsa meg mindkét értéket a következő lépéshez.
 
-## Step 4: Connect
+## 4. lépés: Csatlakoztatás
 
-1. Back in the dialog, click **Paste the credentials**
-2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
-3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it and Control Center saved the new one)
-4. Click **Connect**
+1. A párbeszédablakban visszatérve kattintson a **Hitelesítő adatok beillesztése** elemre
+2. Adja meg a **Bot token** (`xoxb-…`) és az **Alkalmazásszintű token** (`xapp-…`) értékét
+3. Hagyja üresen az **Alkalmazáskonfigurációs token** mezőt — az 1. lépésben megadott érték már el van tárolva (a Slack rotálta, a Control Center pedig elmentette az újat)
+4. Kattintson a **Csatlakozás** elemre
 
-Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+A Control Center a Slackkel ellenőrzi a bot tokent, mielőtt bármit tárolna, majd megnyitja a socketet. A sor most a bot nevét és a Slack-munkaterülete nevét mutatja egy **Élő** címkével.
 
-## Step 5: Link your own Slack account
+## 5. lépés: Kapcsolja össze a saját Slack-fiókját
 
-The connection makes the bot reachable; linking makes _you_ recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+A kapcsolat teszi a botot elérhetővé; az összekapcsolás teszi _Önt_ felismerhetővé. Amíg a Slack-identitása nincs összekapcsolva, a bot nem cselekszik az üzeneteire — soha nem rendel egy üzenetet ahhoz, aki az alkalmazást telepítette.
 
-Linking is personal, so it lives on a different page from the workspace-wide connection.
+Az összekapcsolás személyes, ezért más oldalon él, mint a munkaterület szintű kapcsolat.
 
-1. Go to **Settings → Workspace → Profile & identity** and find the **Linked chat accounts** card
-2. Click **Link my Slack account**
-3. Copy the command it shows, for example `/cc link K7M2QP`
-4. In Slack, send that command to the bot in a DM
-5. The bot answers "Linked — you are …"
+1. Lépjen a **Beállítások → Munkaterület → Profil és identitás** oldalra, és keresse meg az **Összekapcsolt csevegőfiókok** kártyát
+2. Kattintson **A Slack fiókom összekapcsolása** elemre
+3. Másolja ki a megjelenített parancsot, például `/cc link K7M2QP`
+4. A Slackben küldje el ezt a parancsot a botnak közvetlen üzenetben
+5. A bot ezt válaszolja: „Linked — you are …”
 
-The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+A kód egyszer használatos, és 15 perc múlva lejár. Ha a Slack-e-mail-címe egy olyan Control Center-felhasználóhoz tartozik, aki már tagja ennek a munkaterületnek, a híd az első beszélgetés alkalmával automatikusan összekapcsolja Önt, és kihagyhatja ezt a lépést.
 
-If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
+Ha ezelőtt megemlíti a botot, az elutasítja, és megindokolja, miért. A három elutasítás különbözik, ezért olvassa el, melyiket kapta:
 
-- **Unlinked sender**: the bot tells you how to link. Come back to this step.
-- **Linked, but not a member of this workspace**: ask an admin to invite you.
-- **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
+- **Nem összekapcsolt feladó**: a bot elmondja, hogyan kapcsolhatja össze. Térjen vissza ehhez a lépéshez.
+- **Összekapcsolva, de nem tagja ennek a munkaterületnek**: kérje meg egy admint, hogy hívja meg Önt.
+- **Csak olvasható szerepkörű tag** (viewer vagy guest): a bot nem indít munkát az Ön nevében.
 
-## Step 6: Put an agent on something
+## 6. lépés: Adjon munkát egy ügynöknek
 
-1. In Slack, invite the bot into a channel: `/invite @control-center`
-2. Mention it with a real request:
+1. A Slackben hívja meg a botot egy csatornába: `/invite @control-center`
+2. Említse meg egy valódi kéréssel:
 
-   > @control-center summarize the open PRs on the api repo
+   > @control-center foglalja össze az api repóban nyitott PR-eket
 
-The bridge:
+A híd:
 
-1. Creates a Control Center space for that Slack thread, named after the Slack channel and your request
-2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
-3. Streams the agent's answer back into the Slack thread as it is written
+1. Létrehoz egy Control Center-teret ehhez a Slack-szálhoz, elnevezve a Slack-csatornáról és az Ön kéréséről
+2. Felébreszti a munkaterület belépési ügynökét (a CEO-ügynököt, ha van, egyébként az első ügynököt)
+3. A Slack-szálba streameli vissza az ügynök válaszát, ahogy az íródik
 
-Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
+Válaszoljon ugyanabban a Slack-szálban a folytatáshoz — további említés nem kell, mert a Slack-szál most már át van hidalva. Vagy küldjön közvetlen üzenetet a botnak csatorna helyett; minden közvetlen beszélgetés a saját Control Center-terét vezérli, címmel és egy „is thinking…” állapotsorral, amíg az ügynök dolgozik.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
+A streameléshez a Slack streamelő API-jára van szükség, amellyel nem minden csomag rendelkezik. Ha az alkalmazásától megtagadják, a híd a teljes kapcsolat idejére felhagy a próbálkozással, és minden választ egyetlen üzenetként tesz közzé, a Csevegőhidak kártya pedig ezt írja: „Az élő streamelés ki van kapcsolva ehhez a Slack-alkalmazáshoz — a válaszok egy üzenetként érkeznek.” Minden más ugyanúgy működik.
 
-## Step 7: File a ticket without leaving Slack
+## 7. lépés: Jegy létrehozása a Slack elhagyása nélkül
 
 ```text
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+A bot a létrehozott jegy kulcsával válaszol. A jegy egy közönséges helyi Control Center-jegy, amelyet Ön jelentett be, és készen áll arra, hogy ügynökhöz rendeljék. A `/cc help` listázza mindazt, amit a parancs tud.
 
-## Recap
+## Összefoglaló
 
-You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the Slack thread is a space, the reply is a transcript, the ticket is a ticket.
+Létrehozott egy Slack-alkalmazást a Control Centerből, csatlakoztatta egy kifelé irányuló socketen keresztül, összekapcsolta a Slack-identitását a Control Center-felhasználójával, és egy Slack-szálból vezérelt egy ügynököt. Minden, ami a Slackben történt, a Control Centerben is létezik: a Slack-szál egy tér, a válasz egy átirat, a jegy pedig egy jegy.
 
-**Next:** [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) covers the by-hand path, rotating tokens and troubleshooting. For the model underneath, read [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/).
+**Következő:** a [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) bemutatja a kézi útvonalat, a tokenek rotálását és a hibaelhárítást. A mögötte lévő modellhez olvassa el a [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/) oldalt.

@@ -1,148 +1,141 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: Obszary robocze i izolacja
+description: Dlaczego obszar roboczy jest twardą granicą dzierżawcy, jak podział bazy danych czyni tę granicę strukturalną i co celowo ją przekracza.
 slug: pl-PL/podrecznik/koncepcje/obszary-robocze
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## Czym jest obszar roboczy?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+Obszar roboczy to najwyższego poziomu dzierżawca izolacji w Control Center. Grupuje agentów, repozytoria, przestrzenie, zgłoszenia, pamięć, potoki i członków w jeden kontekst ograniczony. Wszystko, co dzieje się wewnątrz obszaru roboczego, pozostaje w nim.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+Typowy obszar roboczy odpowiada jednemu projektowi albo jednej bazie kodu. Możesz mieć osobne obszary robocze dla „api-service”, „frontend-v2” i „infrastructure”.
 
-## Workspace-scoped data
+## Dane w zakresie obszaru roboczego
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+Wiersze obszaru roboczego leżą w jego własnym pliku SQLite, pod `<dataDir>/<workspaceId>/workspace.db`. Każdy obszar roboczy dostaje katalog, a nie sam plik, ponieważ gromadzi więcej niż bazę danych — worktree poszczególnych rozmów, pliki agentów i skilli, poświadczenia botów czatu — a danie mu folderu sprawia, że wszystko to żyje i jest usuwane razem.
 
-| Entity                                              | Scope                                        |
-| --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| Encja                                              | Zasięg                                            |
+| -------------------------------------------------- | ------------------------------------------------- |
+| Agenci                                             | Należą dokładnie do jednego obszaru roboczego     |
+| Repozytoria                                        | Rejestrowane w jednym obszarze roboczym (patrz niżej) |
+| Przestrzenie, rozmowy i wiadomości                 | W zakresie obszaru roboczego                      |
+| Zgłoszenia, projekty, plany, orkiestracje          | W zakresie obszaru roboczego                      |
+| Fakty pamięci, zasady, domeny, granty dostępu      | W zakresie obszaru roboczego                      |
+| Uruchomienia potoków, szablony, wyzwalacze         | W zakresie obszaru roboczego                      |
+| Stan pull requestów, przestrzenie recenzji, kohorty recenzji | W zakresie obszaru roboczego           |
+| Dzienniki uruchomień agentów i pamięć robocza      | W zakresie obszaru roboczego                      |
+| Członkowie, zaproszenia, granty na repozytoria     | W zakresie obszaru roboczego                      |
+| Symbole i krawędzie grafu kodu                     | W zakresie `repoId` w pliku obszaru roboczego     |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+Większość z tych wierszy ma kolumnę `workspaceId`; izolację wymuszają osobne pliki baz danych. Zobacz niezmiennik izolacji poniżej.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## Repozytoria są w zakresie obszaru roboczego; tożsamość między obszarami roboczymi wyznacza ścieżka
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+Wiersz repozytorium leży we własnym pliku bazy danych obszaru roboczego — to plik _jest_ zakresem, więc tabela nie ma kolumny `workspaceId` ani tabeli łączącej.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+Repozytorium dodajesz do obszaru roboczego w Ustawienia → Obszar roboczy → Repozytoria. Zarejestrowanie tego samego checkoutu w dwóch obszarach roboczych tworzy dwa niezależne wiersze o dwóch identyfikatorach; tożsamość repozytorium _między_ obszarami roboczymi wyznacza ścieżka w systemie plików (albo właściciel/nazwa w GitHubie), nigdy identyfikator.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+Rejestracja jest rygorystyczna: ścieżka musi znajdować się w drzewie roboczym git, musi mieć zdalne repozytorium `origin`, a to zdalne repozytorium musi wskazywać na obsługiwany host kodu (github.com, gitlab.com albo bitbucket.org). Host kodu jest odczytywany ze zdalnego repozytorium i zapisywany w repozytorium, więc jeden obszar roboczy może przechowywać repozytoria ze wszystkich trzech. Wszystko inne jest odrzucane. Przeglądarka folderów, z której wybierasz, pokazuje system plików **hosta serwera**, ograniczony do listy dozwolonych ścieżek serwera `--repo-roots` (która domyślnie wskazuje katalog domowy użytkownika serwera).
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Usunięcie repozytorium z obszaru roboczego kasuje wiersz bezpowrotnie i kaskadowo usuwa jego symbole kodu, krawędzie, pliki, punkty kontrolne indeksu oraz granty poszczególnych członków. Checkout na dysku pozostaje nietknięty.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+Graf kodu żyje w tym samym pliku, kluczowany przez `repoId`, ponieważ różne obszary robocze mogą mieć to samo repozytorium na różnych gałęziach z różnym kodem.
 
-## The isolation invariant
+## Niezmiennik izolacji
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+Wycieki danych między obszarami roboczymi są traktowane jak błędy. Izolacja jest **strukturalna** i wymuszana na kilku poziomach:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **Warstwa bazy danych.** Każdy obszar roboczy ma własny plik SQLite, wydawany przez `WorkspaceDatabaseManager.of(workspaceId)`. Baza danych obszaru roboczego nie deklaruje tabel `users`, `workspaces` ani żadnego innego obszaru roboczego, więc odczyt między obszarami roboczymi to nie błąd, który można napisać — on się nie kompiluje. Repozytoria rozwiązują swoje DAO przy każdym wywołaniu, zamiast buforować jedno, a ponieważ każda metoda repozytorium przyjmuje wymagany `workspaceId`, obszaru roboczego nigdy nie da się wywnioskować ani przyjąć domyślnie.
+- **Identyfikator obszaru roboczego to segment ścieżki.** Ponieważ identyfikator staje się nazwą katalogu, musi pasować do bezpiecznego wzorca pojedynczego segmentu (początek alfanumeryczny, potem znaki alfanumeryczne, kropki, podkreślenia, myślniki; bez `..`). W całym produkcie identyfikatory to UUID-y. Wszystko inne rzuca wyjątek, zamiast być sanityzowane — to zabezpieczenie przed przejściem po ścieżce (path traversal) i zawodzi głośno, zamiast zapisać dane obszaru roboczego pod ścieżką wybraną przez kogoś innego.
+- **Obrona w głąb.** Kolumny `workspaceId` wciąż tam są i wciąż są zapisywane. Zbędne w obrębie jednego pliku, pozostawiają wyzwalacze kanału synchronizacji, indeksy FTS i istniejące kształty wierszy bez zmian, a plik opisuje sam siebie, gdy ogląda się go osobno — na czym opierają się eksport i import.
+- **Warstwa domenowa.** Usługi, które mutują encje po identyfikatorze, walidują `entity.workspaceId == workspaceId` w jednym punkcie kontrolnym, zanim przejdą dalej, i rzucają `WorkspaceMismatchException` przy niezgodności — głośna porażka dla identyfikatora, który przyszedł z niewłaściwego kontekstu. Głośna odmowa ma znaczenie: cicha operacja bez efektu ukrywa błąd, a kontynuowanie powoduje wyciek.
+- **Warstwa RPC.** Dyspozytor repo-RPC jest punktem kontrolnym. Każda operacja w zakresie obszaru roboczego musi nieść `workspace_id` we własnych argumentach — nie ma „bieżącego obszaru roboczego” na sesję, który mógłby wyciec, a nieznany identyfikator jest odrzucany jako nie znaleziono, _zanim_ cokolwiek otworzy bazę danych, więc zły identyfikator nie może zmaterializować widmowego `workspace.db`. Operacje naprawdę globalne (newsfeed, kolejka floty) deklarują się jako nieobjęte zakresem na mocy jawnej, zweryfikowanej decyzji. Narzędzia MCP podlegają tej samej regule: każde narzędzie dotykające danych w zakresie obszaru roboczego wymaga `workspace_id`.
+- **Fan-out między obszarami roboczymi jest policzalny.** Odpowiedź na pytanie o kilka obszarów roboczych oznacza otwarcie kilku baz danych. Ten fan-out jest zamknięty w jednym pomocniku, `CrossWorkspaceQueries`, więc pełna lista rzeczy, które legalnie przekraczają granicę, żyje w miejscach wywołań jednego pliku, zamiast rozpraszać się po komentarzach dokumentacyjnych. Tymi miejscami wywołań są: agregacja dla całego serwera, reconcillery startowe, cykle retencji i GC, kopia zapasowa, routery zdarzeń — oraz wyszukiwanie członkostwa poniżej.
+- **Dostęp wyłącznie po identyfikatorze nie wystarcza.** Znalezienie encji po jej UUID nie dowodzi, że należy do obszaru roboczego wywołującego. Podział plików czyni niewłaściwy plik nieosiągalnym; walidacja w warstwie domenowej wyłapuje zły identyfikator, który przychodzi przez legalny plik.
 
-## Membership, not the pairing key, is what grants access
+## Członkostwo, a nie klucz parowania, przyznaje dostęp
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+Posiadanie poświadczenia urządzenia uwierzytelnia _urządzenie_. Nie upoważnia do niczego wewnątrz obszaru roboczego. Każda operacja w zakresie obszaru roboczego rozwiązuje rolę członkostwa wywołującego i wymusza próg wynikający z rodzaju operacji — odczyt wymaga `guest`, mutacja wymaga `member`, operacja niszcząca wymaga `admin` — a operacje ujawniające treść repozytorium dodatkowo sprawdzają grant wywołującego na dane repozytorium. Ważny klucz parowania bez członkostwa dostaje `Not a member of this workspace`.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+Konsekwencja dla izolacji jest elegancka: wiersze członkostwa leżą w pliku _samego obszaru roboczego_, więc „kto jest w tym obszarze roboczym?” to zwykły odczyt w zakresie. Pytanie odwrotne — „w których obszarach roboczych jestem?” — z definicji rozciąga się na wiele plików, więc jest jednym z niewielu usankcjonowanych fan-outów `CrossWorkspaceQueries` i to je wykonuje selektor obszarów roboczych, zanim zostanie wybrany jakikolwiek obszar roboczy.
 
-See [Multiplayer](/pl-PL/podrecznik/koncepcje/wieloosobowosc/) for the role ladder and repo grants.
+Zobacz [Wieloosobowość](/pl-PL/podrecznik/koncepcje/wieloosobowosc/), aby poznać drabinkę ról i granty na repozytoria.
 
-## The global registry
+## Globalny rejestr
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+Nie wszystko jest w zakresie obszaru roboczego. Druga baza danych, `<dataDir>/global.db`, przechowuje to, co jest naprawdę wspólne dla całego serwera:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **rejestr obszarów roboczych**, dzięki czemu przełącznik może wypisać każdy obszar roboczy bez otwierania choćby jednego pliku obszaru roboczego — a nazwa, logo, właściciel, ręczna kolejność i znacznik miękkiego usunięcia obszaru roboczego leżą poza plikiem, który opisują;
+- **tożsamość**: użytkownicy, preferencje użytkowników i sparowane urządzenia, ponieważ jeden człowiek to jeden użytkownik we wszystkich obszarach roboczych, a sparowane urządzenie przeżywa usunięcie obszaru roboczego;
+- **kolejkę floty** (workery, zadania, dziennik przydziałów), której scheduler dopasowuje całą kolejkę do każdego workera przy każdym takcie;
+- **newsfeed**, który jest przypisany do użytkownika (a nie do obszaru roboczego) — dodanie kanału podąża za Tobą do każdego obszaru roboczego;
+- **`workspace_routes`**, indeks używany przed uwierzytelnieniem, który odpowiada na pytanie „który obszar roboczy jest właścicielem tego klucza?” dla punktów wejścia przychodzących tylko z sekretem albo nieprzejrzystym identyfikatorem (skrót zaproszenia, token webhooka, deep link) i bez obszaru roboczego. Brak trafienia oznacza „nie znaleziono”; celowo nie ma mechanizmu zastępczego w postaci skanowania;
+- **ustawienia i tożsamość dla całej instalacji**: identyfikator instalacji, ustawienia na poziomie hosta, połączenia SSO oraz zarządzane polityki działań (ograniczenie dla całej instalacji, które może tylko zaostrzać guardraile obszarów roboczych).
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+Rozruch otwiera tylko ten plik. Pliki obszarów roboczych otwierają się leniwie przy pierwszym użyciu, więc koszt startu pozostaje stały niezależnie od tego, ile historii zgromadzą obszary robocze, a `quick_check` poszczególnych plików jest opłacany przy pierwszym użyciu, a nie na drodze do banera gotowości.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+Plik obszaru roboczego niesie tylko jednowierszowy `workspace_meta` do samoidentyfikacji (jego identyfikator, instalację, która go utworzyła, wersję schematu, z jaką został utworzony, i kiedy). Wszystko opisowe o obszarze roboczym jest w rejestrze.
 
-## Creating a workspace
+## Tworzenie obszaru roboczego
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+Utworzenie obszaru roboczego to więcej niż wstawienie wiersza do rejestru. W jednej operacji serwer stempluje tworzącego użytkownika jako `ownerUserId`, zapisuje jego członkostwo z rolą właściciela i publikuje zdarzenie domenowe `WorkspaceCreated`. Nasłuchujący tego zdarzenia zasiewają następnie, idempotentnie i w tle:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **agenta CEO** oraz czterech specjalistów — `qa`, `architect`, `engineer`, `librarian` — którzy podlegają CEO;
+- **wbudowane szablony potoków** i ich wyzwalacze (wyzwalacze zdarzeniowe i ręczne są domyślnie włączone; wyzwalacze harmonogramu trzeba włączyć, z wyjątkiem dziennego czyszczenia worktree przez GC);
+- **startowe zestawy ewaluacji**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/pl-PL/podrecznik/koncepcje/model-agentow/).
+Dzieje się tak dla _każdego_ obszaru roboczego, nie tylko pierwszego. Zasiani agenci są tworzeni bez adaptera, więc działają na **Control Center (built-in)** z domyślnym modelem Anthropic (`claude-opus-4-8`, o ile nie przypniesz innego), dopóki nie ustawisz adaptera i modelu dla poszczególnych agentów w Ustawienia → Obszar roboczy → Agenci. Zobacz [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/).
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+Zapis członkostwa właściciela ma większe znaczenie, niż się wydaje: bez niego świeżo utworzony obszar roboczy nie miałby członków, a każde kolejne wywołanie w zakresie obszaru roboczego wykonane przez twórcę zostałoby odrzucone.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[Agenci nie mogą tworzyć obszaru roboczego]
+Nie ma narzędzia MCP `create_workspace`. Ludzie tworzą obszar roboczy przez `workspace.create` (punkt kontrolny przyjmujący tylko nazwę) albo `workspace.upsert` (pełny rekord, używany także do aktualizacji). Oba stemplują tworzącego użytkownika jako `owner` i publikują `WorkspaceCreated`.
 :::
 
-## Deleting, exporting, importing
+## Usuwanie, eksportowanie, importowanie
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+Usunięcie obszaru roboczego **oznacza wiersz rejestru i odłącza katalog**. Obszar roboczy znika z każdej listy i wyszukiwania. Wiersz rejestru pozostaje (miękko usunięty), więc identyfikator jest wciąż znany kopii zapasowej i konserwacji, ale `workspace.delete` natychmiast porzuca katalog tego obszaru roboczego — bazę danych, worktree, pliki agentów i resztę — przez `WorkspaceDatabaseManager.dropAndClose`. Tylko **właściciel** obszaru roboczego może go usunąć.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+Ponieważ jeden obszar roboczy to jeden plik, przekazywanie obszaru roboczego jest operacją na pliku, a nie zrzutem tabela po tabeli:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` to pojedyncze `VACUUM INTO` — spójna, zdefragmentowana migawka wykonana w transakcji odczytu, gdy serwer nadal obsługuje żądania.
+- `workspace.import` przyjmuje taki plik, zastępując wszystko, co docelowy obszar roboczy aktualnie zawiera. Osadzone `workspace_meta` pozwala importowi odróżnić „własny plik, przyjęty ponownie” od „pliku z innej instalacji” (ten drugi jest dozwolony, ale rejestrowany w dzienniku, a nie niewidoczny).
+- `server.backupNow` tworzy migawkę całej instalacji w katalogu ze znacznikiem czasu, który odwzorowuje bieżący katalog danych — `manifest.json`, `global.db` i po jednym `<workspaceId>/workspace.db` na obszar roboczy — więc przywrócenie to skopiowanie go z powrotem.
+- `server.listBackups` odczytuje ten katalog z powrotem, od najnowszego, wraz z rozmiarem i listą obszarów roboczych każdej migawki. Migawka, której manifestu brakuje albo która wymienia nieistniejące pliki, jest nadal raportowana i oznaczana jako niekompletna — ukrycie jej to sposób, w jaki operator zaczyna wierzyć, że ma kopię zapasową, której nie ma.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+Operacje kopii zapasowej znajdują się w **Ustawienia → Serwer → Kopia zapasowa i przywracanie**: **Wykonaj kopię teraz** tworzy migawkę instalacji, lista pokazuje, które migawki są kompletne, i pozwala właścicielowi instalacji usunąć jedną po potwierdzeniu, a każdy obszar roboczy oferuje eksport i import. Wbudowany potok **Workspace backup** bierze w tygodniowym harmonogramie tylko bazę danych tego obszaru roboczego i usuwa własne kopie zapasowe starsze niż skonfigurowany wiek retencji. Przywrócenie obszaru roboczego z migawki instalacji to `workspace.import` wskazany na `<workspaceId>/workspace.db` migawki; przywrócenie całej instalacji pozostaje kopiowaniem z powrotem katalogu migawki przy zatrzymanym serwerze.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain) has the full table.
+Żadna z nich nie przenosi jednak reszty katalogu obszaru roboczego. Obszar roboczy gromadzi więcej niż bazę danych — wklejone obrazy, pliki skilli i agentów, poświadczenia czatu, worktree — a eksport i import przenoszą **plik**, więc wszystko obok niego zostaje tam, gdzie było. W przypadku poświadczeń jest to zamierzone, a w przypadku worktree są one jednorazowe; w pozostałym zakresie to ograniczenie, o którym warto wiedzieć, a nie funkcja. Pełną tabelę zawiera [dokumentacja referencyjna kopii zapasowej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain).
 
-## Moving a backup between the server and your device
+## Przenoszenie kopii zapasowej między serwerem a Twoim urządzeniem
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Każda z powyższych operacji mówi ścieżkami na **serwerze**, co jest pełną odpowiedzią tylko wtedy, gdy serwer jest Twoją własną maszyną. Trzy podpisane trasy HTTP — [`/backup/workspace`, `/backup/snapshot` i `/backup/restore`](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#transfer-routes) — przenoszą bajty w każdej innej topologii, tym samym uwierzytelnionym torem, z którego korzystają już proxy multimediów i magazyn obrazów. Na stronie jest to przycisk **Pobierz** obok każdego eksportu i każdej migawki (wybierasz, gdzie trafi), oraz **Wybierz plik i wyślij**, aby przywrócić z pliku leżącego na maszynie, której używasz. To wysyłanie działa, gdy serwer nie jest Twoją maszyną: `workspace.import` potrzebuje pliku już na hoście i właśnie w ten sposób się tam znajduje.
 
-Three properties are worth knowing:
+Warto znać trzy właściwości:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **Pobieranie tworzy świeżą kopię, a serwer nie zachowuje z niej nic.** Pobieranie to nie „pobierz plik, który zrobił przycisk eksportu” — to ponowny eksport, strumieniowanie go i usunięcie. Odpowiedź ma `no-store` i `Accept-Ranges: none` z tego samego powodu: wznowiony zakres skleiłby dwa różne eksporty w jeden plik, który wygląda na poprawny, a nim nie jest.
+- **Przesyłanie jest strumieniowane na dysk, nigdy buforowane** po obu stronach, a kopia tymczasowa jest usuwana na każdej ścieżce wyjścia — także przy odmowie. Baza danych obszaru roboczego to nie zrzut ekranu.
+- **Połączenie przekazywane przez relay nie ma źródła HTTP**, więc kontrolki transferu są tam wyłączone wraz z informacją, dlaczego tak jest. Wszystko, co mówi ścieżkami po stronie serwera, działa dalej przez relay; bezpośredniego połączenia wymagają tylko tory bajtów.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[Które ścieżki są czyje]
+Ścieżki, które strona *pokazuje* — katalog migawki, plik zapisany przez eksport, źródło czytane przez import — są na maszynie uruchamiającej `cc_server`. Ścieżka, którą podaje **pobieranie**, jest na maszynie, przy której siedzisz. To rozróżnienie jest powodem, dla którego istnieją obie: pierwsza jest tym, czego potrzebuje skrypt konserwacyjny albo sesja ssh, druga — tym, czego potrzebuje osoba zbierająca kopię zapasową.
 :::
 
-## Multiple workspaces
+## Wiele obszarów roboczych
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+Możesz prowadzić wiele obszarów roboczych równolegle. Każdy działa niezależnie: agenci w jednym obszarze roboczym nie mogą wysyłać wiadomości do agentów w innym, nie mogą czytać pamięci innego obszaru roboczego ani widzieć jego zgłoszeń. Rozwiązywanie odbiorców w komunikacji agent–agent jest dokładne i nigdy nie przekracza obszaru roboczego.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+Nie ma pulpitu obejmującego wiele obszarów roboczych. Powierzchnia analityki pod `/workspaces/:workspaceId/observability` subskrybuje ograniczony globalny strumień ostatnich uruchomień i natychmiast zawęża go do aktywnego obszaru roboczego, więc widzisz tam jeden obszar roboczy naraz. Jedyne naprawdę wieloobszarowe powierzchnie, z którymi styka się człowiek, to selektor obszarów roboczych i przełącznik.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+Jedno ograniczenie praktyczne, które warto znać: obszar roboczy, którego ktoś używa, pozostaje otwarty — nie ma LRU. Po przekroczeniu 32 takich obszarów serwer ostrzega, zamiast odmawiać, ponieważ każdy otwarty plik utrzymuje izolat w tle i pamięć podręczną stron. Fan-out między obszarami roboczymi otwiera pliki przejściowo i zamyka je potem, jeśli nic innego ich nie przejęło.
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Multiplayer](/pl-PL/podrecznik/koncepcje/wieloosobowosc/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/pl-PL/podrecznik/koncepcje/model-agentow/): agents belong to exactly one workspace
-- [Memory and knowledge](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/): memory is workspace-scoped
-- [Architecture](/pl-PL/podrecznik/koncepcje/architektura/): where the databases sit in the client/server split
-- [Back up and restore](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/): every operation, route, manifest field and limit
-- [Add repositories](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/): registering a checkout into a workspace
+- [Wieloosobowość](/pl-PL/podrecznik/koncepcje/wieloosobowosc/): członkostwo, role i granty na repozytoria — dostępowa połowa izolacji
+- [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/): agenci należą dokładnie do jednego obszaru roboczego
+- [Pamięć i wiedza](/pl-PL/podrecznik/koncepcje/pamiec-i-wiedza/): pamięć działa w zakresie obszaru roboczego
+- [Architektura](/pl-PL/podrecznik/koncepcje/architektura/): gdzie leżą bazy danych w podziale klient/serwer
+- [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/): tworzenie migawki, przenoszenie obszaru roboczego, trzymanie kopii gdzie indziej
+- [Kopia zapasowa, eksport i import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/): każda operacja, trasa, pole manifestu i limit
+- [Dodaj repozytoria](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/): rejestrowanie checkoutu w obszarze roboczym

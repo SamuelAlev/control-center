@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: 工單生命週期
+description: 工單欄位、狀態、轉換、關聯，以及變更關卡。
 slug: zh-HK/手冊/參考/工單生命週期
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## 工單狀態
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| 狀態         | 儲存字串   | 說明                                           |
+| ------------ | ---------- | ---------------------------------------------- |
+| `backlog`    | `backlog`  | 已擷取，尚未分流進使用中的佇列                 |
+| `open`       | `open`     | 已分流，可以開始處理，但尚未動手               |
+| `inProgress` | `inProgress` | 正在處理中                                   |
+| `blocked`    | `blocked`  | 已開始，但被外部因素阻塞                       |
+| `inReview`   | `inReview` | 工作已完成，等待審查                           |
+| `done`       | `done`     | 成功完成（終端狀態）                           |
+| `failed`     | `failed`   | 因錯誤結束（終端狀態）                         |
+| `cancelled`  | `cancelled` | 已放棄（終端狀態）                            |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+狀態值以小駝峰（camelCase）形式儲存（`inProgress`、`inReview`），絕不會是 `in_progress`。儲存值為 null 時會解析為 `open`；遇到未知值會拋出例外，而不是強行轉換。
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` 接受代理提供的別名，忽略大小寫以及 `-` / `_` / 空格：
 
-| Status       | Accepted aliases                              |
+| 狀態         | 接受的別名                                    |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## 狀態轉換
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,159 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**這張圖只約束代理與自動化。** 當 `force` 為 false 時，`TicketWorkflowService.transitionStatus` 會檢查它——也就是 MCP 工具與對帳器。在那裏，不合法的轉換會被記錄下來並忽略。介面中每一次由使用者驅動的狀態變更都會傳入 `force: true`，完全繞過這張圖，因此人可以將工單移到選擇器所列出的任何狀態（`failed` 以外的每個狀態），包括重新開啟已是終端狀態的工單。代理會以 `fail_ticket` 標記 `failed`。
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+狀態永遠可以轉換到自身。終端狀態沒有任何出邊。
 
-| From         | Allowed targets                                      |
+| 轉換自       | 允許的目標                                           |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | —（終端狀態）                                        |
+| `failed`     | —（終端狀態）                                        |
+| `cancelled`  | —（終端狀態）                                        |
 
-## Ticket priorities
+## 工單優先級
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+以整數形式按 Linear 原生的 0–4 刻度儲存。未知值會解析為 `none`。
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| 優先級   | 儲存為 |
+| -------- | ------ |
+| `none`   | `0`    |
+| `urgent` | `1`    |
+| `high`   | `2`    |
+| `medium` | `3`    |
+| `low`    | `4`    |
 
-## Ticket providers
+## 工單供應商
 
-An unknown or null stored value parses to `local`.
+未知或為 null 的儲存值會解析為 `local`。
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| 供應商   | 狀態                                   |
+| -------- | -------------------------------------- |
+| `local`  | 完全儲存在工作區資料庫中；預設值       |
+| `linear` | 由遠端持有，在本機鏡像                 |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+同步配接器位於 `packages/cc_infra/lib/src/tickets/sync/` 之下，涵蓋 Linear、
+GitHub Issues、Jira Cloud 與 ClickUp。GitHub Issues 只是同步配接器意義上的
+廠商（`vendorId: github`）——它不是 `TicketProvider` 的取值，因此拉取回來的
+GitHub issue 會以 `originKind: externalSync` 和預設的
+`provider: local` 儲存。廠商對應關係保存在 `ticket_sync_links` 上。
 
-## Ticket origin
+## 工單來源
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` 會寫入 `manual`。廠商拉取會寫入 `externalSync`。被委派的
+子工單會保持 `manual`。
 
-| Value          | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| 取值           | 含義                                                |
+| -------------- | --------------------------------------------------- |
+| `manual`       | `createTicket` 上的預設值（人、代理與被委派的資料列） |
+| `externalSync` | 廠商拉取時由 `TicketSyncEngine` 設定                |
 
-## Ticket fields
+## 工單欄位
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+這個聚合把兩類關注點放在同一列資料上。**鏡像**（供應商、索引鍵、標題、描述、優先級、標籤、狀態、時間戳）是遠端供應商的快取，一次重新整理會整體改寫它。**覆蓋層**（指派、委派、空間、父項、項目、已連結的 PR）只屬於 Control Center，重新整理永遠不會觸及它。
 
-| Field                    | Type                       | Description                                                                                |
+| 欄位                     | 類型                       | 說明                                                                                       |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | 所屬工作區                                                                                 |
+| `provider`               | `TicketProvider`           | 擁有標準資料的後端（預設 `local`）                                                         |
+| `externalKey`            | `String?`                  | 供應商原生的索引鍵（例如 `LIN-123`）。本機 `createTicket` 會在這裏寫入一個*獨立的* UUID，而不是資料列的 `id` |
+| `url`                    | `String?`                  | 遠端供應商上的 Web URL                                                                     |
+| `title`                  | `String`                   | 簡短摘要；不得為空                                                                         |
+| `description`            | `String?`                  | 較長的 Markdown 正文                                                                       |
+| `priority`               | `TicketPriority`           | 預設 `none`                                                                                |
+| `labels`                 | `List<String>`             | 自由形式的標籤                                                                             |
+| `status`                 | `TicketStatus`             | 正規化後的標準狀態                                                                         |
+| `rawStatus`              | `String?`                  | 遠端供應商原生的狀態名稱，保留下來以便無損顯示                                             |
+| `externalSyncedAt`       | `DateTime?`                | 最後一次多廠商同步；首次同步之前為 null。逐廠商的對應關係保存在 `ticket_sync_links` 中     |
+| `parentTicketId`         | `String?`                  | 委派／拆解樹中的父項                                                                       |
+| `projectId`              | `String?`                  | 所屬項目；永遠不會推送到遠端                                                               |
+| `assignedAgentId`        | `String?`                  | 被指派主體的 id（僅中繼資料——指派不會派發任何東西）                                        |
+| `assigneeType`           | `PrincipalType`            | `assignedAgentId` 所指的主體種類——`user` 或 `agent`（預設 `agent`）                        |
+| `createdByType`          | `PrincipalType?`           | 建立該工單的主體種類（`user` 或 `agent`）；對舊有／系統資料列為 null                       |
+| `createdById`            | `String?`                  | 建立該工單的主體 id                                                                        |
+| `assignedTeamId`         | `String?`                  | 被指派的團隊（僅中繼資料）                                                                 |
+| `delegatedByAgentId`     | `String?`                  | 委派這張工單的代理                                                                         |
+| `delegationDepth`        | `int`                      | 委派鏈中的深度；根為 `0`，會與最大深度上限比對                                             |
+| `delegationRootTicketId` | `String?`                  | 委派鏈的根；根工單為 null                                                                  |
+| `spaceId`                | `String?`                  | 這張工單被拆分出來的對話，或委派它的代理所在的空間                                         |
+| `errorMessage`           | `String?`                  | 當 `status` 為 `failed` 時設定                                                              |
+| `linkedPrIds`            | `List<String>`             | 這張工單所連結的 PR 節點 id                                                                |
+| `metadata`               | `Map<String, dynamic>`     | 自由形式的容器                                                                             |
+| `createdAt`              | `DateTime`                 | 建立時間                                                                                   |
+| `startedAt`              | `DateTime?`                | 工作開始的時間                                                                             |
+| `blockedAt`              | `DateTime?`                | 工單被阻塞的時間                                                                           |
+| `cancelledAt`            | `DateTime?`                | 工單被取消的時間                                                                           |
+| `completedAt`            | `DateTime?`                | 工單成功完成的時間                                                                         |
+| `finishedAt`             | `DateTime?`                | 工單進入任一終端狀態的時間                                                                 |
+| `updatedAt`              | `DateTime`                 | 最後一次變更（鏡像重新整理或覆蓋層改動）                                                   |
+| `version`                | `int`                      | 樂觀並行計數器，每次變更時遞增                                                             |
+| `originKind`             | `TicketOriginKind`         | 工單的建立方式（預設 `manual`）                                                            |
+| `collaborators`          | `List<TicketCollaborator>` | 由儲存庫按需填充                                                                           |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+衍生欄位：`isTerminal`、`isRemote`（`provider != local`）、`isAssignedToUser` 與 `displayKey`（`externalKey ?? id`——因此本機工單顯示的是建立時那個獨立的 UUID，而不是資料列的 `id`）。
 
-## Ticket relations
+## 工單關聯
 
-Stored edges are directional rows in `ticket_links`:
+儲存的邊是 `ticket_links` 中的有向資料列：
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| 類型          | 儲存字串       | 含義               |
+| ------------- | -------------- | ------------------ |
+| `blocks`      | `blocks`       | 來源封鎖目標       |
+| `relatesTo`   | `relates_to`   | 對稱關聯           |
+| `duplicateOf` | `duplicate_of` | 來源是目標的重複項 |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+介面與 `ticket_relation` 所使用的詞彙是 `TicketRelationKind`，它由一條儲存的邊，加上主體位於哪一個端點推導而來：
 
-| Kind           | Derived from                                         |
+| 種類           | 推導自                                               |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | 一條 `blocks` 資料列，其中主體是目標                 |
+| `blocking`     | 一條 `blocks` 資料列，其中主體是來源                 |
+| `relatedTo`    | 一條 `relates_to` 資料列（對稱）                     |
+| `duplicateOf`  | 一條 `duplicate_of` 資料列，其中主體是來源           |
+| `duplicatedBy` | 一條 `duplicate_of` 資料列，其中主體是目標           |
+| `subIssueOf`   | 主體上的 `tickets.parent_ticket_id`                  |
+| `parentOf`     | 另一張工單上的 `tickets.parent_ticket_id`            |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+父項與子問題關聯**不是** `ticket_links` 資料列——它們保存在 `tickets.parent_ticket_id` 上。
 
-## Domain events
+## 領域事件
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+這八個類別位於 `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`。不存在 `TicketStarted`、`TicketDelegated`、`TicketCollaboratorAdded`，或 `ExternalTicketWebhookReceived`。
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| 事件                      | 觸發時機                             |
+| ------------------------- | ------------------------------------ |
+| `TicketCreated`           | 工單被建立                           |
+| `TicketAssigned`          | 工單被指派給某個主體或團隊           |
+| `TicketCompleted`         | 工作成功完成                         |
+| `TicketFailed`            | 工作失敗                             |
+| `TicketCancelled`         | 工單被取消                           |
+| `TicketStatusChanged`     | 任何狀態變更                         |
+| `TicketReassigned`        | 工單被重新指派                       |
+| `TicketDetailsUpdated`    | 標題、描述、優先級或標籤變更         |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` 既是稽核與通知訊號，也是管線觸發器。將工單指派給代理不會啟動任何執行——沒有任何工單派發器會監看 `assignedAgentId`。指派給團隊是例外：`TeamRoutingService` 會派發團隊領導人。新增協作者只會寫入一列，不會發佈任何東西。廠商 webhook 經由 `TicketSyncEngine` 套用，不會產生領域事件。
 
-## Mutation chokepoint
+## 變更關卡
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` 掌管所有變更。
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| 機制         | 細節                                                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 單一關卡     | 所有變更都經由 `_mutate` 路由，它會在套用之前載入該列並呼叫 `_assertWorkspace`                                                                     |
+| 工作區隔離   | 當載入到的列的 `workspaceId` 與呼叫者的不符時，`_assertWorkspace` 會拋出 `WorkspaceMismatchException`                                             |
+| 樂觀式並行   | `_mutate` 寫入時把 `expectedVersion` 設為自己剛讀到的 `version`，並在遇到 `ConcurrencyConflictException` 時重新讀取最新狀態後重試                 |
+| 獨佔認領     | `tryCheckout` / `releaseCheckout`；第二個代理認領一張已被簽出的工單時，會得到 `CheckoutConflictException`                                         |
+| 轉換守衛     | `canTransitionTo`，僅在 `force` 為 false 時套用                                                                                                   |
 
-## See also
+## 另請參閱
 
-- [Tickets](/zh-HK/手冊/概念/工單/)
-- [Manage tickets](/zh-HK/手冊/操作指南/管理工單/)
-- [Delegate tickets](/zh-HK/手冊/操作指南/委派工單/)
-- [Domain events](/zh-HK/手冊/參考/領域事件/)
+- [工單](/zh-HK/手冊/概念/工單/)
+- [建立與管理工單](/zh-HK/手冊/操作指南/管理工單/)
+- [將工作委派給代理](/zh-HK/手冊/操作指南/委派工單/)
+- [領域事件](/zh-HK/手冊/參考/領域事件/)

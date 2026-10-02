@@ -1,98 +1,100 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Anpassa chattboten
+description: Byt namn på boten, formulera om vad den säger om sig själv eller ändra dess slash-kommando från Control Center.
 slug: sv-SE/handbok/how-to-guider/anpassa-chattbot
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Den här guiden visar hur du ändrar botens app på leverantörssidan utan att lämna Control Center.
 
-## Prerequisites
+## Förutsättningar
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Rollen `owner` eller `admin` i arbetsytan
+- En **ansluten** leverantör. Raden **Anpassa bot** visas först när arbetsytan är ansluten
+- En app som Control Center kan hantera. För Slack innebär det att anslutningen har ett refresh-token för appkonfiguration (`xoxe-…`); om den inte gör det säger raden ifrån och förblir inaktiverad
 
-## What you can change
+## Vad du kan ändra
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Fält                  | Betydelse                                      | Gräns                                                          |
+| --------------------- | ---------------------------------------------- | -------------------------------------------------------------- |
+| **Appnamn**           | Hur leverantören listar appen                  | 1–35 tecken                                                    |
+| **Botnamn (vad medlemmar skriver efter @)** | Vad medlemmar skriver efter `@` | 1–80 tecken                                                    |
+| **Kort beskrivning**  | En rad som leverantören visar                  | högst 140 tecken                                               |
+| **Vad boten säger att den kan göra** | Visas ovanför ett DM med boten  | högst 300 tecken                                               |
+| **Slash-kommando**    | Kommandot som medlemmar anropar, utan snedstrecket | Med små bokstäver, endast `a–z 0–9 _ -`, avkortat vid 32 tecken |
+| **Direktmeddelanden** | Om boten erbjuder DM- och agentupplevelsen     | På eller av                                                    |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center validerar de fyra textfälten innan leverantören anropas, så du får ”the app name must be between 1 and 35 characters” i stället för en ogenomtränglig `invalid_manifest` från en server du inte kan se. Kommandot avvisas inte utan normaliseras: ett inledande snedstreck tas bort, resten skrivs med små bokstäver, allt utanför `a–z 0–9 _ -` tas bort och ett tomt resultat faller tillbaka på `cc`.
 
-## Edit the bot
+## Redigera boten
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Gå till **Inställningar → Arbetsyta → Allmänt** och rulla till kortet **Chattbryggor**
+2. Klicka på **Anpassa bot** i leverantörens block
+3. Dialogrutan öppnas med appens _aktuella_ värden, inlästa från leverantören — så det du utgår från är en ändring som någon har gjort i Slacks eget gränssnitt
+4. Redigera det du behöver och spara
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Att läsa de aktuella värdena kostar en tokenrotation på Slacks sida, och därför är raden ett medvetet klick i stället för något som sidan gör när den läses in.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Skrivningen lägger dina ändringar ovanpå appens nuvarande definition. Allt som Control Center inte modellerar — ett andra slash-kommando som du lade till i Slack, ett arbetsflödessteg, en inställning som inte hör dit — förblir orört. Behörighetsomfång och händelser slås samman, de tas aldrig bort.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+När du har sparat läser Control Center om botens identitet så att namnet i inställningarna stämmer med namnet i chattappen.
 
-## Reinstall when permissions change
+## Installera om när behörigheter ändras
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Installera om efter en behörighetsändring]
+Slack tillämpar den nya appdefinitionen direkt men behåller den installerade
+behörigheten som den var. Installera om appen för att en behörighetsändring ska
+gälla. Bryggan fortsätter köra på den tidigare behörigheten tills du gör det.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+När en sparad ändring ändrar behörigheter förblir dialogrutan öppen och säger
+”Slack ändrade appens behörigheter. Installera om appen för att de ska gälla.”,
+med en knapp **Installera om app** som öppnar Slacks sida för att installera
+appen i teamet. I Slack är det **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Byt namn på slash-kommandot
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Ändra **Slash-kommando** och spara. Bryggan skriver därefter instruktioner med det kommando den senast anropades med, så hjälptexten och länkinstruktionerna följer namnbytet i stället för att nämna ett kommando som inte längre finns.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Att byta namn bryter inte befintliga bryggade trådar: trådar nycklas på konversationen, inte på kommandot.
 
-## What Control Center will not change
+## Vad Control Center inte ändrar
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Strukturella inställningar.** Transporten (Socket Mode), de nödvändiga behörighetsomfången och händelseprenumerationerna framtvingas, de erbjuds inte. En app som kan konfigureras till tystnad från en inställningsskärm är en supportbiljett, inte en funktion
+- **Botens ikon.** Endast leverantörens egna appinställningar kan ändra den, och dialogrutan säger det
+- **Leverantörens egna funktionsmigreringar.** En app som redan ligger på Slacks äldre assistant-form behåller den; den här dialogrutan redigerar en beskrivning, den migrerar inte en app
 
-## Troubleshooting
+## Felsökning
 
-### There is no Customize bot row at all
+### Raden Anpassa bot finns inte alls
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/).
+Arbetsytan är inte ansluten än. Raden visas först när leverantörens block
+visar en aktiv anslutning. Se [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/).
 
-### The Customize bot row is disabled
+### Raden Anpassa bot är inaktiverad
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Anslutningen har inga autentiseringsuppgifter för apphantering — radens
+undertext säger ”Control Center behöver en token för appkonfiguration för att
+redigera boten. Återanslut och ta med en.” För Slack genererar du ett par
+tokens för appkonfiguration på [api.slack.com/apps](https://api.slack.com/apps)
+och återansluter med refresh-tokenet ifyllt. Det är väntat för en app som
+byggts för hand eller skapats via **Skapa i Slack**, eftersom Slack aldrig
+rapporterar vilken app den skapade.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Den sparade anslutningen har inget app-id — vanligtvis en app som anslöts för hand innan ett id registrerades. Återanslut arbetsytan eller skapa appen från Control Center.
 
-### The bot's new name has not appeared in chat
+### Botens nya namn har inte synts i chatten
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Leverantörer cachar appmetadata en kort stund. Om namnet fortfarande är inaktuellt efter en minut kontrollerar du om sparandet bad dig installera om appen.
 
-## Related guides
+## Relaterade guider
 
-- [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/)
-- [Link your Slack account](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
-- [Chat bridge](/sv-SE/handbok/referens/chattbrygga/)
+- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)
+- [Länka ditt Slack-konto](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
+- [Chattbrygga](/sv-SE/handbok/referens/chattbrygga/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/)
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/)

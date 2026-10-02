@@ -1,156 +1,171 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Usa gli spazi
+description: Crea spazi, impostane la modalità, gestisci partecipanti e autonomia e apri conversazioni e thread.
 slug: it-IT/manuale/guide/spazi
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Questa guida mostra come usare gli spazi. Uno **spazio** è la superficie di
+messaggistica in Control Center: una stanza con ambito di spazio di lavoro, con
+uno o più partecipanti (tu e/o agenti), che possiede un worktree copy-on-write
+per ogni repo per cui è stato creato.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Le stanze uno-a-uno e quelle con più agenti sono entrambe semplicemente spazi,
+distinti solo dal numero di partecipanti che hanno. L'unica eccezione sono gli
+spazi che gli agenti aprono per parlarsi tra loro — vedi [Spazi
+agente-agente](#spazi-agente-agente) qui sotto.
 
-## Create a space
+## Crea uno spazio
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Vai su **Spazi**
+2. Fai clic sul pulsante **+** accanto al titolo Spazi
+3. Assegna un **nome** — è obbligatorio. Un nome vuoto viene rifiutato; la
+   finestra di dialogo resta aperta
+4. Facoltativamente, aggiungi agenti dallo spazio di lavoro
+5. Se lo spazio di lavoro ha dei repo, scegli per quali questo spazio prepara i
+   worktree. Sono tutti selezionati per impostazione predefinita; deselezionando
+   ogni repo si crea uno spazio senza nulla estratto
+6. Conferma
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Gli spazi sono circoscritti allo spazio di lavoro: vedi solo gli agenti dello
+spazio di lavoro corrente e uno spazio non mostra mai dati di un altro spazio di
+lavoro.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/it-IT/manuale/concetti/modello-agenti/#repo-scoped-skills).
+Ogni repo viene estratto in `repos/<name>/` all'interno dello spazio. Un repo che
+fornisce le proprie skill per gli agenti le mette a disposizione dell'agente che
+vi sta lavorando — un set di un repo alla volta, che cambia man mano che l'agente
+si sposta. Dal composer puoi raggiungerle tutte con `/skill:<repo>:<name>`. Vedi
+[Skill con ambito di repository](/it-IT/manuale/concetti/modello-agenti/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+La superficie si trova in `/workspaces/<id>/spaces`, e un singolo spazio in
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Imposta la modalità dello spazio
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Uno spazio nuovo parte con la modalità predefinita. Cambiala dal **menu a discesa
+della modalità**, all'estrema sinistra della barra degli strumenti del composer —
+non dalla finestra di creazione (che non ha alcun campo per la modalità) e non
+dall'intestazione dello spazio.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Modalità           | Effetto                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| **Agente**         | Accesso completo. Quella predefinita; `chat` internamente, etichettata «Agente» nel menu a discesa                |
+| **Piano**          | Solo lettura e ricerca; il risultato è un piano tipizzato                                                        |
+| **Orchestrazione** | Lettura e ricerca più un unico verbo `propose_orchestration`; il piano viene eseguito solo dopo la tua approvazione |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab passa dalla modalità piano a quella agente senza aprire il menu a
+discesa.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Esiste una quarta modalità, **Revisione**, ma non è offerta nel menu a discesa:
+viene applicata automaticamente agli spazi di revisione delle PR.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+La modalità è memorizzata sullo spazio, quindi lo stesso agente può trovarsi in
+modalità piano in uno spazio e in modalità agente in un altro. Ogni conversazione
+all'interno di uno spazio condivide la modalità di quello spazio.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Fai attenzione al badge di applicazione]
+Accanto al menu a discesa della modalità compare un badge quando gli agenti dello
+spazio girano su un adapter che non è in grado di applicare la modalità che hai
+scelto. Solo l'harness integrato di Control Center filtra la superficie degli
+strumenti e sottopone a un gate ogni chiamata; gli adapter Claude Code e ACP
+ricevono la modalità come una richiesta che il loro runner può rispettare o meno.
+L'assenza di un badge significa «non si avanza alcuna pretesa», non «verificato
+sicuro».
 :::
 
-See [Modes](/it-IT/manuale/concetti/modalita/) for the full model.
+Vedi [Modalità](/it-IT/manuale/concetti/modalita/) per il modello completo.
 
-## Manage participants and per-agent autonomy
+## Gestisci i partecipanti e l'autonomia per agente
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Fai clic sull'icona delle persone nell'intestazione dello spazio per aprire
+**Gestisci partecipanti**. Per ogni agente già presente nello spazio puoi:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Rimuoverlo dallo spazio
+- Impostare la sua **Autonomia** per questo spazio: **Predefinito**, **Solo
+  proposta**, **Agisci con approvazione** o **Agisci liberamente**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Il quadrante dell'autonomia è per (spazio, agente), quindi un agente di cui ti
+fidi in una stanza può essere tenuto a sola proposta in un'altra.
 
-## React to a message
+## Reagisci a un messaggio
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Passa il mouse su un messaggio e fai clic sull'icona del sorriso per aprire la
+tavolozza delle reazioni. È un set fisso di sei: 👍 👎 🎉 ❤️ 👀 ✅. Non esiste
+alcun selettore libero di emoji: toccandone una la attivi o la disattivi per te e
+i chip aggregati compaiono sotto il messaggio.
 
-## Open a conversation
+## Apri una conversazione
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Uno spazio ospita più conversazioni contemporaneamente e sono tutte sullo stesso
+piano: non ce n'è una principale. Uno spazio mantiene sempre almeno una
+conversazione viva: non puoi archiviare l'ultima attiva, e aprendo uno spazio che
+non ne ha ancora nessuna viene creata una conversazione permanente senza titolo.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Le conversazioni compaiono come schede dell'editor e, quando ce n'è più di una,
+come righe annidate sotto lo spazio nella barra laterale. **Nuova conversazione**
+si trova nel menu di nuova scheda dell'editor e crea una conversazione senza
+titolo, senza alcuna richiesta del titolo: il modello dei titoli la nomina in base
+al primo messaggio. Usane una per svolgere lavoro in parallelo con lo stesso
+agente e lo stesso worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Ogni conversazione mantiene la propria cronologia dei messaggi e le proprie
+sessioni degli agenti, condividendo al tempo stesso i worktree dello spazio e la
+sua modalità. Chiudere una scheda la nasconde; **Archivia conversazione** (la
+riga nella barra laterale o il menu contestuale della scheda della chat) archivia
+solo quella conversazione.
 
-## Start a thread
+## Avvia un thread
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Passa il mouse su un messaggio e scegli **Avvia discussione**. Si apre una
+conversazione ancorata a quel messaggio: l'ancora inizializza il contesto
+dell'agente della nuova conversazione con una riga e la cronologia della
+conversazione madre **non** viene copiata.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Una volta che un thread ha delle risposte, il messaggio da cui pende sviluppa una
+riga sotto di sé: i volti di chi ha parlato, il numero di risposte e quando è
+arrivata l'ultima. Quella riga è la via per rientrare: facendoci clic si apre (o
+si porta in primo piano) la scheda del thread. È l'unica traccia che un thread
+lascia nel flusso da cui si è diramato, ed è proprio per questo che esiste.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+La scheda di un thread si intitola `Thread: <name>` e porta il glifo del ramo,
+così due schede nello stesso spazio non vengono mai scambiate l'una per l'altra.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+I thread non si annidano mai: ancorarsi a un messaggio che si trova già dentro un
+thread viene rifiutato. L'intestazione della conversazione rimanda al messaggio
+ancora. Eliminare il messaggio ancora elimina il thread, e archiviare la
+conversazione madre non blocca i thread esistenti.
 
-## Read state
+## Stato di lettura
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+I contrassegni di lettura sono limitati allo spazio, non alla conversazione:
+aprire una qualsiasi conversazione dello spazio segna come letta l'intera stanza.
+I non letti si aggregano comunque tra tutte le conversazioni di uno spazio, thread
+compresi. Quando le conversazioni sono elencate sotto lo spazio, il punto dei non
+letti si trova sulla conversazione che ha lavoro non visto, anziché sulla riga
+madre.
 
-## Agent-to-agent spaces
+## Spazi agente-agente
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Gli spazi che gli agenti aprono per parlarsi tra loro sono separati nella barra
+laterale sotto **Agenti**, compressi per impostazione predefinita e mostrati in
+attenuazione. Non incrementano mai il tuo badge dei non letti: il chiacchiericcio
+degli agenti è silenzioso per costruzione, non per un'impostazione che devi
+trovare.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Il tipo di uno spazio è uno di cinque valori: `topic` (il valore predefinito per
+qualsiasi cosa tu crei), `agentPeer`, `system` (gestito dalle pipeline), `pr`
+(creato quando una superficie di PR ha bisogno di un'ancora del worktree e
+nascosto dalla barra laterale finché non ha messaggi) e `slack` (creato dal ponte
+di chat per un thread di Slack o un DM al bot, e trattato come una normale
+conversazione umana).
 
-## Related guides
+## Guide correlate
 
-- [Chat with an agent](/it-IT/manuale/guide/chatta-con-agente/)
-- [@-mention agents](/it-IT/manuale/guide/menziona-agenti/)
-- [Use plan mode](/it-IT/manuale/guide/modalita-piano/)
+- [Chatta con un agente](/it-IT/manuale/guide/chatta-con-agente/)
+- [Menziona gli agenti con @](/it-IT/manuale/guide/menziona-agenti/)
+- [Usa la modalità piano](/it-IT/manuale/guide/modalita-piano/)
 
-## Related concepts
+## Concetti correlati
 
-- [Modes](/it-IT/manuale/concetti/modalita/)
-- [Chat bridges](/it-IT/manuale/concetti/ponti-di-chat/): how a Slack thread becomes a space
+- [Modalità](/it-IT/manuale/concetti/modalita/)
+- [Ponti di chat](/it-IT/manuale/concetti/ponti-di-chat/): come un thread di Slack diventa uno spazio

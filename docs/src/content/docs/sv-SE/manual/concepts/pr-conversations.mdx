@@ -1,134 +1,141 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: PR-samtal
+description: Hur en GitHub-PR-kommentar blir en agenttur utan webhook, vad som auktoriserar avsändaren och vem varje sida av samtalet tillskrivs.
 slug: sv-SE/handbok/koncept/pr-samtal
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/sv-SE/handbok/koncept/chattbryggor/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+En pull request är redan platsen där samtalet om kod äger rum. PR-samtal gör den
+till en yta i en Control Center-arbetsyta, på samma sätt som en
+[chattbrygga](/sv-SE/handbok/koncept/chattbryggor/) gör Slack till en: @-nämn
+serverns GitHub App-bot i en PR, svara i dess granskningstrådar, eller lägg till
+etiketten `ai-review`, och arbetet sker i PR:ens granskningsyta — under samma
+tillskrivning och samma räcken som allt som skrivs i appen. En kommentar kräver
+dessutom medlemskap; etiketten gör det inte, eftersom den inte har någon
+avsändare. Botens svar kommer tillbaka på GitHub, i samma spår som frågan
+ställdes i.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+Tre beslut formar funktionen, och vart och ett är samma beslut som
+chattbryggan fattade för chatt, formulerat om för en kodvärd: **vilken riktning
+anslutningen går i**, **vad som auktoriserar en kommentar som kommer utifrån**
+och **vem varje sida tillskrivs**.
 
-## Polling is the transport
+## Pollning är transporten
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+GitHubs enda push-kanal för en app är en webhook, och en webhook kräver en
+inkommande URL — det enda som den här ytan medvetet aldrig behöver. Så
+upptäckten sker genom ett svep: ungefär varje minut ber en aliasbaserad sökning
+per appinstallation GitHub om PR:er som nämner boten (eller dess korta slug)
+och om öppna PR:er som bär granskningsetiketten, PR:er som redan har en
+granskningsyta får sina kommentarstrådar lästa, och allting jämförs via
+kommentars-id mot vad som sågs i förra svepet.
 
-The design consequences are worth naming:
+Designkonsekvenserna är värda att nämna:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **Latensen är ett svepintervall, inte en händelse.** 👀-bekräftelsen landar
+  inom ungefär en minut. Inget brådskande hänger på den.
+- **Exakt en gång, per kommentar.** Kommentars-id är unika i hela GitHub; var
+  och ett registreras i samma stund som det klassas som kvalificerat, innan
+  något agerar på det. En krasch kan förlora hanteringen av en kommentar, men
+  aldrig utlösa den två gånger.
+- **Offlinetid kommer ikapp, inte spelas upp igen.** Uppsättningen av sedda
+  kommentarer sparas, så en omstart levererar det som kom in medan servern var
+  nere. Det enda undantaget är det allra första svepet: utan något minne att
+  jämföra mot registreras allt utestående tyst — en operatör som märkte tjugo
+  PR:er innan den här servern fanns får inte komma tillbaka till tjugo körande
+  granskningar.
+- **Etiketten är en mängd, inte en händelse.** Sökningen rapporterar etikettens
+  _förekomst_, så en märkt PR utlöses en gång, för alltid. Att lägga tillbaka en
+  etikett efter att ha tagit bort den är osynligt för svepet; en nämning är
+  vägen till en ny körning.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+Sökningen körs en gång per installationskonto med den ägarens egen klient,
+eftersom en installationstoken bara ser den egna installationens repon — en
+enda serverövergripande autentiseringsuppgift skulle tyst missa varje PR under
+appens andra installationer.
 
-## Membership authorizes, not the comment
+## Medlemskap auktoriserar, inte kommentaren
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+En PR-kommentar kommer in med föga mer än en avsändarinloggning — en
+oautentiserad extern identitet tills den bevisats. Boten matchar den mot ett
+omvänt index över arbetsytans medlemmar och deras anslutna GitHub-konton, som
+byggs om med ett TTL eftersom människor loggar in och blir inbjudna medan
+servern kör.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+Att misslyckas stängt ser ut som en stege, och varje steg svarar i den tråd det
+nekade i:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **En okänd inloggning** — inte länkad, eller länkad av någon som inte är
+  medlem i den här arbetsytan — uppmanas att logga in och se till att de hör hit
+- **En skrivskyddad medlem** (`viewer` eller `guest`) får veta att deras roll
+  inte kan starta arbete
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+De två fallen med okänd inloggning delar ett svar: det omvända indexet
+returnerar bara en medlem i _den här_ arbetsytan, så ett olänkat konto och en
+länkad icke-medlem är samma bom. Ingen av dem fortsätter. En kommentar tillskrivs
+aldrig någon som inte skickade den, och en främlings ord kommer aldrig in i en
+arbetsyta som de inte kan se.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+Etiketten `ai-review` har ingen avsändare att matcha, så den klättrar inte i den
+här stegen. Att lägga till den startar granskningen i den arbetsyta som redan
+länkar repot.
 
-## Two identities, on purpose
+## Två identiteter, med avsikt
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+Varje sida av samtalet bär en egen identitet, och skillnaden är själva
+funktionen:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **På GitHub är boten servern.** Varje kommentar, reaktion och svar som
+  bryggan publicerar går via appens installationstoken. Ingen klickade på något
+  i en klient, så inget lånar en persons konto — samma regel som håller
+  webhooks och pollning borta från mänskliga autentiseringsuppgifter.
+- **I ytan är frågan din.** Meddelandet tillskrivs den medlem som avsändaren
+  matchades till, och agentkörningen utförs på deras vägnar: commits anger dem
+  som medförfattare, och ytans autonomi-inställning och åtgärdsräcken gäller
+  precis som för ett meddelande som skrivs i appen. Skrivningar till kodvärden
+  från körningen går fortfarande ut som appen — samma regel som punkten ovan —
+  inte med medlemmens personliga token.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+Att publicera granskningsfynd tillbaka till GitHub är fortfarande en persons
+beslut, fattat i Control Center. En nämning kan _starta_ en granskning; bara en
+människa publicerar en.
 
-## The loop guard, and the short name
+## Loopskyddet och kortnamnet
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+Allt som skrivits av ett botkonto kastas innan någon grind körs — vårt
+specifikt, och varje `[bot]`-suffix, så att en annan apps granskningsbot inte
+heller kan väcka vår. Utan detta skulle botens egna svar komma in som nya
+kommentarer och utlösa den om och om igen för alltid.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+Suffixet `[bot]` är också anledningen till att kortformen finns. GitHub låser
+ett appkontos inloggning till `<slug>[bot]`, erbjuder ingen autokomplettering
+för den och matchar aldrig `@slug` till appen — så att acceptera den bara slugen
+är _vår_ matchares beslut, och att upptäcka den kräver ett sökspår över rå
+kommentars-**text** i stället för GitHubs nämningsindex. Kostnaden sägs rakt ut
+i stället för att slätas över: en människa som delar appens slug adresserar
+boten vid varje kortformsnämning av sig själv. Särpräglade appnamn gör
+kollisionen hypotetisk.
 
-## What is deliberately not offered
+## Vad som medvetet inte erbjuds
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **Ingen automatisk publicering.** Fynden landar i granskningsytan;
+  publicering till GitHub är en separat, mänsklig åtgärd
+- **Ingen suddig identitet.** Avsändaren matchas till exakt en medlem eller
+  nekas — det finns ingen gissad tillskrivning
+- **Ingen GitHub App-webhook.** Den här ytan registrerar aldrig någon, så det
+  finns ingen inkommande URL att exponera för PR-kommentarer. Andra
+  produktwebhooks (pipelines, ärendesynk) är en separat, valfri konfiguration.
 
-## See also
+## Se även
 
-- [Talk to Control Center from a GitHub PR](/sv-SE/handbok/how-to-guider/github-pr-samtal/):
-  the how-to for all of this
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/):
-  the principals and roles a login resolves through
-- [Guardrails](/sv-SE/handbok/koncept/racken/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/sv-SE/handbok/how-to-guider/ai-granskning/): the pipeline a mention
-  or label starts
+- [Prata med Control Center från en GitHub-PR](/sv-SE/handbok/how-to-guider/github-pr-samtal/):
+  how-to-guiden för allt det här
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/): samma tre beslut,
+  fattade för chatt
+- [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/): var
+  botidentiteten kommer från
+- [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/):
+  de principals och roller som en inloggning matchas genom
+- [Räcken](/sv-SE/handbok/koncept/racken/): vad den svarande agenten får göra
+- [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/):
+  pipelinen som en nämning eller etikett startar

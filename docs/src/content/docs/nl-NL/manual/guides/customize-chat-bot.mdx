@@ -1,98 +1,102 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: De chatbot aanpassen
+description: Geef de bot een andere naam, herformuleer wat hij over zichzelf zegt of wijzig zijn slash-commando vanuit Control Center.
 slug: nl-NL/handleiding/gidsen/chatbot-aanpassen
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Deze gids laat je zien hoe je de bot-app aan de providerkant een nieuwe vorm geeft zonder Control Center te verlaten.
 
-## Prerequisites
+## Vereisten
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- De rol `owner` of `admin` in de werkruimte
+- Een **verbonden** provider. De rij **Bot aanpassen** verschijnt pas als de werkruimte is verbonden
+- Een app die Control Center kan beheren. Voor Slack betekent dat dat de verbinding een refresh-token voor de app-configuratie bevat (`xoxe-…`); is dat niet zo, dan zegt de rij dat en blijft hij uitgeschakeld
 
-## What you can change
+## Wat je kunt wijzigen
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Veld                  | Betekenis                                                    | Limiet                                              |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
+| **App-naam**          | Hoe de provider de app vermeldt                              | 1–35 tekens                                         |
+| **Botnaam (wat leden na @ typen)** | Wat leden na `@` typen                            | 1–80 tekens                                         |
+| **Korte beschrijving** | Eén regel die de provider toont                             | maximaal 140 tekens                                 |
+| **Wat de bot zegt te kunnen** | Staat boven een DM met de bot                        | maximaal 300 tekens                                 |
+| **Slash-commando**    | Het commando dat leden aanroepen, zonder de schuine streep   | Kleingeschreven, alleen `a–z 0–9 _ -`, afgekapt op 32 tekens |
+| **Directe berichten** | Of de bot de DM- en agentervaring aanbiedt                   | Aan of uit                                          |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center valideert de vier tekstvelden voordat het de provider aanroept, dus krijg je "the app name must be between 1 and 35 characters" in plaats van een ondoorzichtige `invalid_manifest` van een server die je niet kunt zien. Het commando wordt niet geweigerd maar genormaliseerd: een leidende schuine streep wordt verwijderd, de rest wordt kleingeschreven, alles buiten `a–z 0–9 _ -` wordt weggelaten en een lege uitkomst valt terug op `cc`.
 
-## Edit the bot
+## De bot bewerken
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Ga naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+2. Klik in het blok van de provider op **Bot aanpassen**
+3. Het dialoogvenster opent met de _actuele_ waarden van de app, teruggelezen van de provider — dus een wijziging die iemand in de eigen interface van Slack heeft gemaakt, is wat je als uitgangspunt ziet
+4. Bewerk wat je nodig hebt en sla op
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Het lezen van die actuele waarden kost aan de kant van Slack een tokenrotatie. Daarom is de rij een bewuste klik en niet iets wat de pagina bij het laden doet.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+De schrijfactie legt je wijzigingen over de huidige definitie van de app. Alles wat Control Center niet modelleert — een tweede slash-commando dat je in Slack hebt toegevoegd, een workflowstap, een instelling die er niets mee te maken heeft — blijft onaangeroerd. Scopes en gebeurtenissen worden samengevoegd, nooit afgetrokken.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Na het opslaan leest Control Center de identiteit van de bot opnieuw, zodat de naam in de instellingen overeenkomt met de naam in de chat-app.
 
-## Reinstall when permissions change
+## Opnieuw installeren wanneer de rechten wijzigen
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Opnieuw installeren na een rechtenwijziging]
+Slack past de nieuwe app-definitie onmiddellijk toe, maar laat de geïnstalleerde
+autorisatie zoals hij was. Installeer de app opnieuw om een rechtenwijziging van
+kracht te laten worden. De brug blijft op de vorige autorisatie draaien tot je
+dat doet.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Wanneer een opslag de rechten wijzigt, blijft het dialoogvenster open en staat
+er “Slack heeft de rechten van de app gewijzigd. Installeer de app opnieuw zodat
+ze van kracht worden”, met een knop **App opnieuw installeren** die de pagina
+van Slack opent waar die app in het team wordt geïnstalleerd. In Slack heet dat
+**Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Het slash-commando hernoemen
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Wijzig **Slash-commando** en sla op. De brug schrijft daarna instructies met het commando waarmee hij het laatst is aangeroepen, zodat de helptekst en de koppelinstructies de hernoeming volgen in plaats van een commando te noemen dat niet meer bestaat.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Hernoemen breekt bestaande gebrugde threads niet: threads zijn gekoppeld aan het gesprek, niet aan het commando.
 
-## What Control Center will not change
+## Wat Control Center niet wijzigt
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Structurele instellingen.** Het transport (Socket Mode), de vereiste scopes en de gebeurtenisabonnementen worden afgedwongen, niet aangeboden. Een app die je vanaf een instellingenscherm tot stilte kunt configureren, is een supportticket, geen functie
+- **Het pictogram van de bot.** Alleen de eigen app-instellingen van de provider kunnen het wijzigen, en het dialoogvenster zegt dat ook
+- **De eigen functiemigraties van de provider.** Een app die al op de oude assistant-vorm van Slack zit, behoudt die; dit dialoogvenster bewerkt een beschrijving en migreert geen app
 
-## Troubleshooting
+## Problemen oplossen
 
-### There is no Customize bot row at all
+### De rij “Bot aanpassen” ontbreekt helemaal
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/).
+De werkruimte is nog niet verbonden. De rij verschijnt pas als het blok van de
+provider een actieve verbinding toont. Zie [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/).
 
-### The Customize bot row is disabled
+### De rij “Bot aanpassen” is uitgeschakeld
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+De verbinding heeft geen inloggegevens voor app-beheer — de ondertitel van de
+rij zegt “Control Center heeft een app-configuratietoken nodig om de bot te
+bewerken. Verbind opnieuw en geef er een mee.” Genereer voor Slack op
+[api.slack.com/apps](https://api.slack.com/apps) een paar app-configuratietokens
+en verbind opnieuw met het refresh-token ingevuld. Dit is te verwachten bij een
+app die met de hand is gebouwd of via **Maken in Slack** is gemaakt, want Slack
+meldt nooit welke app het heeft gemaakt.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+De opgeslagen verbinding bevat geen app-id — doorgaans een app die met de hand is verbonden voordat er een id werd vastgelegd. Verbind de werkruimte opnieuw, of maak de app vanuit Control Center aan.
 
-### The bot's new name has not appeared in chat
+### De nieuwe naam van de bot is nog niet in de chat verschenen
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Providers cachen de metadata van apps kort. Als de naam na een minuut nog steeds verouderd is, controleer dan of het opslaan je vroeg om de app opnieuw te installeren.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Set up Slack integration](/nl-NL/handleiding/gidsen/slack-integratie/)
-- [Link your Slack account](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
-- [Chat bridge](/nl-NL/handleiding/referentie/chatbrug/)
+- [Slack-integratie instellen](/nl-NL/handleiding/gidsen/slack-integratie/)
+- [Je Slack-account koppelen](/nl-NL/handleiding/gidsen/chataccount-koppelen/)
+- [Chatbrug](/nl-NL/handleiding/referentie/chatbrug/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Chat bridges](/nl-NL/handleiding/concepten/chatbruggen/)
+- [Chatbruggen](/nl-NL/handleiding/concepten/chatbruggen/)

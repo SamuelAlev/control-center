@@ -1,153 +1,166 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Evenimente de domeniu
+description: De ce funcționalitățile comunică printr-un bus de evenimente în proces în loc să se importe reciproc, pentru ce anume este bus-ul sursa de adevăr și pentru ce nu și ce evenimente pot conduce efectiv automatizarea.
 slug: ro-RO/manual/concepte/evenimente-de-domeniu
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Ce este un eveniment de domeniu
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Evenimentele de domeniu sunt mecanismul de decuplare care le permite
+funcționalităților să comunice fără dependențe directe. În loc ca funcționalitatea
+A să o apeleze pe funcționalitatea B, funcționalitatea A publică un eveniment,
+iar funcționalitatea B se abonează la el.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` este un bus de publicare/abonare de tip broadcast, în proces.
+Publicatorii apelează `publish(event)`; abonații consumă un flux tipizat
+`on<T>()`. Fiecare eveniment implementează `DomainEvent` și poartă `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**Bus-ul rulează în interiorul `cc_server`.** Fiecare publicator și fiecare
+abonat activ se află acolo. Niciun client nu vede acest bus. Ce vede un client
+este un subset selectat pe care serverul îl retransmite ca și cadre JSON-RPC
+`notifications/*`.
 
-## Why a bus at all
+## De ce un bus
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Fără evenimente, fiecare reacție între funcționalități este un import. Calea de
+notificări ar trebui să importe funcționalitatea de agenți, cea de pull
+request-uri, tichetele și întâlnirile doar ca să știe când să afișeze un toast —
+iar fiecare dintre acestea ar trebui apoi să știe că notificările există.
+Modulul de tichete ar importa pipeline-uri ca un tichet finalizat să poată
+avansa o rulare. Graful de dependențe se închide într-un nod, iar nucleul
+partajat încetează să mai fie partajat.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Publicarea unui eveniment rupe acest lanț. Calea de notificări se abonează la
+douăzeci și unu de clase de evenimente și nu importă niciuna dintre
+funcționalitățile care le emit. Dispecerul de trigger-e de pipeline se abonează
+la întregul bus și nu știe nimic despre pull request-uri, tichete sau întâlniri.
+Agregatele de observabilitate rezumă rezultatele rulărilor fără să pătrundă în
+logica de trimitere.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+Costul este cel obișnuit: un publicator nu poate spune dacă cineva ascultă, iar
+un ascultător care nu este niciodată construit rămâne mut în mod silențios.
+`TicketRemoteSyncHandler` este exemplul constant: este declarat, acoperit de
+teste și niciodată conectat în producție.
 
-## What the bus is not
+## Ce nu este bus-ul
 
-It is worth being precise about one thing the bus does _not_ own.
+Merită să fim precisi în privința unui singur lucru pe care bus-ul _nu_ îl
+deține.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**Pista de audit nu este o proiecție a fluxului de evenimente.** Fiecare
+operație RPC care modifică datele este auditată implicit — `RepoOp.audited` are
+valoarea implicită true, iar o operație se sustrage doar declarând
+`audited: false`, un act deliberat, vizibil chiar pe operație. Dispecerul adaugă
+rândul „cine a făcut ce, de unde” imediat după un apel reușit. Nu există
+`DomainEventAuditBridge`. `ActivityLogPersister` scrie rânduri `activity_log`
+din evenimente `ActivityLogged`; acesta este un flux separat de auditul RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+Bus-ul de evenimente _este_ transportul pentru notificări și pentru
+automatizare. Nu este sistemul de evidență de referință.
 
-## What the bus does drive
+## Ce conduce bus-ul
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Notificări.** Douăzeci și unu de clase de evenimente sunt transformate de
+  server în cadre `notifications/*`, înregistrate într-un flux durabil per
+  spațiu de lucru și difuzate sesiunilor conectate. Un cadru al cărui
+  `workspace_id` numește un spațiu de lucru din care utilizatorul sesiunii nu
+  face parte este eliminat pe server; clientul filtrează apoi restul la spațiul
+  de lucru pe care îl are în vedere.
+- **Automatizare bazată pe evenimente.** Trigger-ele de pipeline se abonează la
+  bus și pornesc automat pipeline-urile care corespund (vezi mai jos).
+- **Reacții de ciclu de viață.** Crearea unui spațiu de lucru populează agentul
+  CEO și agenții specializați, șabloanele de pipeline incluse și suitele de
+  eval-uri de început. O rulare de agent finalizată reia un pas de pipeline
+  suspendat, închide o sarcină, alimentează supervizorul de obiective, poate
+  trezi un verificator anume și poate declanșa din nou un lider de echipă. Un PR
+  îmbinat sau un spațiu șters declanșează colectarea de gunoi a worktree-urilor.
+- **Sincronizare între furnizori.** Modificările locale ale tichetelor sunt
+  trimise către furnizorii configurați de un coordonator care ascultă cinci
+  evenimente de tichet.
 
-## Event categories
+## Categorii de evenimente
 
-Events span the whole product surface. At a high level:
+Evenimentele acoperă întreaga suprafață a produsului. La nivel general:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Spații de lucru, agenți și repo-uri** — crearea spațiului de lucru, finalizarea rulărilor, înregistrarea repo-urilor, actualizări de skill-uri
+- **Pull request-uri** — publicare, schimbări de stare, îmbinări, cereri de revizuire, mențiuni, urmărirea PR-urilor proprii, PR-uri detectate extern
+- **Mesagerie** — mesaje, spații și progresul de provisionare a spațiilor
+- **Tichete** — creare, atribuire, reatribuire, detalii, stare și cele trei rezultate finale
+- **Sarcini** — cadre de ciclu de viață secvențiate pentru o singură rulare trimisă, astfel încât clienții să le poată ordona și elimina duplicatele
+- **Pipeline-uri** — doar evenimente finale de rulare (finalizat, anulat, eșuat)
+- **Observabilitate** — intrări de jurnal de activitate și praguri de buget
+- **Identitate și apartenență** — membru adăugat, eliminat, rol schimbat
+- **Calendar și întâlniri** — expirarea autentificării, începerea întâlnirilor și finalizarea înregistrărilor
+- **Stații** — preluare, colectare și închidere neașteptată
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+Memoria, orchestrarea, documentele de plan, artefactele, aprobările, preluarea
+sincronizării tichetelor, reîmprospătarea calendarului, îmbinările de
+worktree-uri, crearea utilizatorilor, invitațiile și revocarea dispozitivelor nu
+sunt evenimente de domeniu; vezi referința.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/ro-RO/manual/referinta/evenimente-de-domeniu/). That page is the
-inventory; this one is the model.
+Pentru catalogul complet — toate cele 53 de clase concrete de evenimente,
+payload-urile lor și cei 24 de abonați care le consumă — vezi
+[Referința pentru evenimentele de domeniu](/ro-RO/manual/referinta/evenimente-de-domeniu/). Pagina
+aceea este inventarul; aceasta este modelul.
 
-## Live access control rides two different mechanisms
+## Controlul accesului în timp real se bazează pe două mecanisme diferite
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Evenimentele de apartenență și cele de dispozitiv par simetrice, dar nu sunt,
+ceea ce contează dacă raționezi despre cât de repede își face efectul o
+revocare.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Revocarea unui dispozitiv chiar îi încheie sesiunile.** Serverul supraveghează
+tabelul de dispozitive asociate și elimină orice sesiune activă al cărei
+dispozitiv a ieșit din setul activ, în câteva secunde.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Eliminarea unui membru nu închide socketul.** `WorkspaceMemberRemoved` este
+consumat: `LocalRpcServer` și `RemoteRelayHost` elimină abonamentele la spațiile
+de lucru atașate acelui utilizator, iar `RemoteEventForwarder` își invalidează
+cache-ul de apartenență, astfel încât alte cadre pentru acel spațiu de lucru să
+nu mai fie trimise. Ceea ce respinge următorul RPC este tot poarta de rol, care
+re-rezolvă apartenența la **fiecare** apel — așa că următoarea lor cerere este
+refuzată cu "Not a member of this workspace". Efectul este imediat pentru orice
+încearcă să facă; pur și simplu nu se obține prin închiderea conexiunii lor.
 
-## Pipeline triggers
+## Trigger-ele de pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Trigger-ele de pipeline se abonează la evenimente de domeniu și pornesc automat
+pipeline-urile care corespund. `PipelineTriggerDispatcher` ascultă întregul bus,
+apoi:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Iese imediat dacă tipul evenimentului nu este unul pe care știe să îl mapeze la un payload
+2. Caută trigger-ele activate care corespund acelui tip de eveniment, în fiecare spațiu de lucru
+3. Filtrează fiecare la propriul spațiu de lucru și aplică filtrul de potrivire a payload-ului
+4. Pornește o rulare pentru fiecare trigger care supraviețuiește
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+Constrângerea importantă este pasul 1. Bus-ul transportă 53 de tipuri de
+evenimente; selectorul de adăugare a trigger-elor pornește o rulare pentru
+aceste paisprezece (ramuri de payload din `EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+și `SpaceDeleted`. Nimic altceva nu poate porni un pipeline.
 
-## How a client sees any of this
+## Cum vede un client toate acestea
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/ro-RO/manual/concepte/arhitectura/).
+`RemoteEventForwarder` traduce evenimentele din clasa notificărilor în cadre și
+le trimite prin RPC sesiunilor conectate, unde un mapper de cadre le transformă
+în notificări din aplicație. Un client subțire vede așadar o proiecție a
+fluxului de evenimente al serverului fără să dețină vreo execuție — ceea ce este
+exact ideea din spatele [separării clientului subțire](/ro-RO/manual/concepte/arhitectura/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+Totuși, nu orice cadru trimis este o notificare. Fluxul ciclului de viață al
+sarcinilor și reatribuirea tichetelor sunt trimise în timp real pentru a conduce
+interfața, dar nu sunt înregistrate în fluxul de notificări și nu afișează
+niciun toast.
 
-## See also
+## Vezi și
 
-- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/): what a trigger starts
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/): assignment to an agent vs a team
-- [Architecture](/ro-RO/manual/concepte/arhitectura/): how events fit the dependency rule
-- [Domain events reference](/ro-RO/manual/referinta/evenimente-de-domeniu/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
-- [Configure notifications](/ro-RO/manual/ghiduri-practice/notificari/)
+- [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/): ce pornește un trigger
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/): atribuirea către un agent vs către o echipă
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/): cum se încadrează evenimentele în regula dependențelor
+- [Referința pentru evenimentele de domeniu](/ro-RO/manual/referinta/evenimente-de-domeniu/): catalogul complet și abonații săi
+- [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/)
+- [Configurează notificările](/ro-RO/manual/ghiduri-practice/notificari/)

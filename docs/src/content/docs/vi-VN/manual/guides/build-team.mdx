@@ -1,69 +1,70 @@
 ---
-title: Build an agent team
-description: Group agents under a leader so assigned work routes through one coordinator.
+title: Xây dựng một nhóm agent
+description: Gom các agent dưới một trưởng nhóm để công việc được giao đi qua một đầu mối điều phối.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent
+sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 ---
 
-This guide shows you how to create a team, give it a leader and route work to it.
+Hướng dẫn này chỉ cho bạn cách tạo một nhóm, gán trưởng nhóm cho nhóm đó và đưa công việc đến nhóm.
 
-A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+Một nhóm agent là một tập hợp có tên gồm các agent trong cùng một không gian làm việc, với một agent được chỉ định làm **trưởng nhóm**. Giao một phiếu cho nhóm sẽ đánh thức trưởng nhóm; trưởng nhóm chia nhỏ công việc rồi phân công cho các thành viên; khi một thành viên chạy xong, trưởng nhóm lại được đánh thức để quyết định bước tiếp theo.
 
-Create, rename and staff teams at **Settings → Workspace → Agents → Teams**. Route work to a team in one of two ways: an agent calls `assign_ticket` with that team's `team_id`, or a pipeline **Team dispatch** node dispatches the team (without assigning a ticket). The ticket assignee picker lists you and individual agents.
+Bạn tạo, đổi tên và bổ sung thành viên cho nhóm tại **Cài đặt → Không gian làm việc → Agent → Nhóm**. Có hai cách đưa công việc đến một nhóm: một agent gọi `assign_ticket` với `team_id` của nhóm đó, hoặc node **Team dispatch** của quy trình điều phối cả nhóm (mà không giao phiếu nào). Trình chọn người được gán của phiếu chỉ liệt kê bạn và từng agent riêng lẻ.
 
-## Create a team
+## Tạo một nhóm
 
-1. Open **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-2. Click **Teams** in the page header.
-3. Click **Add team**.
-4. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+1. Mở **Cài đặt → Không gian làm việc → Agent** (`/settings/workspace/agents`).
+2. Nhấp **Nhóm** ở đầu trang.
+3. Nhấp **Thêm nhóm**.
+4. Nhập **tên nhóm** (ví dụ “backend” hoặc “review squad”) và **mô tả** không bắt buộc, rồi nhấp **Tạo**.
 
-The team is created and selected and its editor opens in the right-hand pane.
+Nhóm được tạo và chọn sẵn, trình chỉnh sửa của nhóm mở ra ở khung bên phải.
 
-## Set the leader
+## Đặt trưởng nhóm
 
-This is the step the whole feature depends on. In the team's editor:
+Đây là bước mà toàn bộ tính năng phụ thuộc vào. Trong trình chỉnh sửa của nhóm:
 
-1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
-2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+1. Ở mục **Trưởng nhóm**, chọn một agent. Dòng trợ giúp mô tả chính xác: “Người điều phối nhận công việc giao cho nhóm và phân công cho thành viên phù hợp nhất.”
+2. Không bắt buộc, điền **Hướng dẫn vận hành** — văn bản tự do được trao cho trưởng nhóm kèm mỗi phiếu được chuyển đến.
 
-Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+Nâng một agent lên làm trưởng nhóm cũng biến agent đó thành thành viên nếu chưa phải. Một nhóm để ở **Không có trưởng nhóm** thì không hoạt động: không có gì được điều phối khi công việc được chuyển đến nhóm, và gỡ trưởng nhóm hiện tại khỏi danh sách thành viên sẽ khiến nhóm lại không có trưởng nhóm.
 
-## Add members
+## Thêm thành viên
 
-In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+Trong cùng trình chỉnh sửa đó, dùng thẻ thành viên để thêm agent từ không gian làm việc và gỡ họ ra. Các thành viên chính là danh sách mà trưởng nhóm phân công công việc cho.
 
-Teams are workspace-scoped: only agents in this workspace can join.
+Nhóm thuộc phạm vi không gian làm việc: chỉ agent trong không gian làm việc này mới có thể tham gia.
 
-## Give the team a space
+## Cấp một space cho nhóm
 
-There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+Không có space tự động dành cho nhóm. Nếu muốn, hãy tạo một space thông thường từ **Không gian** rồi thêm các agent của nhóm vào đó. Một `Team` mang tên, mô tả, trưởng nhóm, hướng dẫn và thành viên — không có liên kết với space nào.
 
-## Reporting lines are a separate thing
+## Tuyến báo cáo là chuyện khác
 
-Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page.
+Mỗi agent cũng có trường **Báo cáo cho**, đặt trong **Cài đặt → Không gian làm việc → Agent**. Trường này dựng nên cây báo cáo của không gian làm việc, mà bạn có thể xem bằng nút **Sơ đồ tổ chức** trên trang agent.
 
-It does not drive team routing. A leader picks a delegate from the team's member roster by skills and role, not from the reporting chain. Memory access grants are keyed on an agent's role, not on the reporting chain, and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+Nó không điều khiển việc định tuyến công việc đến nhóm. Trưởng nhóm chọn người được phân công từ danh sách thành viên của nhóm dựa trên kỹ năng và vai trò, chứ không dựa trên chuỗi báo cáo. Quyền truy cập bộ nhớ được gắn với vai trò của agent, không gắn với chuỗi báo cáo, và không có bề mặt phân tích nào tổng hợp theo nhóm hay theo hệ thống cấp bậc. Các rào chắn ủy thác giới hạn độ sâu và phát hiện vòng lặp, nhưng chúng không bao giờ yêu cầu đích phải là cấp dưới.
 
-## What a routed ticket does
+## Điều gì xảy ra với một phiếu được chuyển đến nhóm
 
-When a ticket does carry a team assignment:
+Khi một phiếu thực sự mang phân công cho nhóm:
 
-1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
-2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+1. Trưởng nhóm của nhóm được điều phối kèm phiếu, hướng dẫn vận hành và danh sách thành viên.
+2. Trưởng nhóm phân công cho các thành viên và ghi lại đánh giá của mình bằng công cụ `record_team_activity` — `action` (đã phân công), `no_action` (không còn việc gì để làm, điều này dừng các lần kích hoạt lại tiếp theo) hoặc `failed`.
+3. Mỗi lượt chạy của thành viên hoàn tất sẽ đánh thức trưởng nhóm lần nữa, trong giới hạn của rào chắn no-action.
 
-The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+Node **Team dispatch** của quy trình là điểm vào còn lại. Nó nhận id nhóm, một prompt và một chế độ điều phối:
 
-- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
-- `manager` — dispatch only the leader, which coordinates in the conversation
+- `allParallel` — mỗi thành viên một tác vụ trong một cuộc hội thoại ẩn dùng chung, tạm dừng cho đến khi mọi lượt chạy hoàn tất, với đầu ra của từng thành viên được thu thập dưới khóa đầu ra của node
+- `manager` — chỉ điều phối trưởng nhóm, và trưởng nhóm điều phối trong cuộc hội thoại
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
-- [Run agents in parallel](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
-- [Delegate work to agents](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/)
+- [Chạy agent song song](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
-- [Tickets and delegation](/vi-VN/so-tay/khai-niem/phieu/)
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/)
+- [Phiếu và ủy thác](/vi-VN/so-tay/khai-niem/phieu/)

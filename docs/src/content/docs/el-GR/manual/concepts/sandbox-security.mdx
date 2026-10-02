@@ -1,267 +1,309 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Sandbox και ασφάλεια
+description: Τι περιορίζει πραγματικά έναν πράκτορα στο Control Center σήμερα, πόσο μακριά φτάνει το sandbox του λειτουργικού συστήματος και ποια όρια ισχύουν σε κεντρικό υπολογιστή χωρίς backend.
 slug: el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Πού φτάνει το sandbox του λειτουργικού συστήματος και πού όχι]
+Το `cc_server` ανιχνεύει τον κεντρικό υπολογιστή κατά την εκκίνηση και περιτυλίγει
+την εκτέλεση εντολών των πρακτόρων στο sandbox που παρέχει το ίδιο το λειτουργικό
+σύστημα, όταν υπάρχει διαθέσιμο — Seatbelt στο macOS, bubblewrap στο Linux και
+στο WSL2 (που χρειάζεται τα `bwrap` και `socat` στο `PATH`). Όπου δεν υπάρχει
+backend — στα Windows ή σε ένα μηχάνημα Linux χωρίς αυτά τα εργαλεία — οι
+εκτελέσεις καταφεύγουν στα υπόλοιπα όρια που περιγράφονται παρακάτω και ο
+διακομιστής το δηλώνει στο αρχείο καταγραφής εκκίνησής του. Το `--sandbox off`
+το απενεργοποιεί σκόπιμα.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Δύο κενά επιβιώνουν του sandbox και αξίζει να τα έχετε κατά νου:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- Τα **εργαλεία αρχείων εντός διεργασίας** του ενσωματωμένου harness (`read`,
+  `write`, `edit`, `apply_patch`, `search`, `find`, `search_files`) τρέχουν μέσα
+  στη διεργασία του διακομιστή, οπότε μόνο το `bash` περιτυλίγεται. Αυτό που τα
+  περιορίζει είναι ο περιορισμός διαδρομών στα ίδια τα εργαλεία συν οι
+  περιορισμοί ενεργειών.
+- **Το Claude Code εκκινείται με `--dangerously-skip-permissions`**, επειδή ένα
+  μη διαδραστικό `claude -p` θα κολλούσε για πάντα στην προτροπή έγκρισής του.
+  Οι κλήσεις του για αρχεία και κέλυφος, επομένως, δεν ελέγχονται από τους
+  περιορισμούς του Control Center — το sandbox του λειτουργικού συστήματος είναι
+  το όριο γύρω τους.
   :::
 
-## Why isolation matters here
+## Γιατί η απομόνωση έχει σημασία εδώ
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Ένας πράκτορας διαβάζει αρχεία, εκτελεί εντολές κελύφους και καλεί εξωτερικά API
+για λογαριασμό σας. Η αποτυχία που σας απασχολεί σπάνια είναι κακή πρόθεση —
+είναι ένας πράκτορας που παρερμηνεύει μια διαδρομή και ξαναγράφει το checkout
+στο οποίο εργάζεστε, ή ένας που κάνει push σε έναν κλάδο που δεν είχατε τελειώσει
+τον έλεγχό του. Το ερώτημα, λοιπόν, που πρέπει να απαντήσει το προϊόν δεν είναι
+«είναι ο πράκτορας αξιόπιστος» αλλά «ποιο είναι το εύρος της ζημιάς όταν κάνει
+λάθος».
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Το Control Center το απαντά σε επίπεδα και τα επίπεδα είναι ανεξάρτητα επίτηδες.
+Αν λείπει ένα, τα υπόλοιπα εξακολουθούν να ισχύουν. Αυτό έχει σημασία, επειδή το
+εξωτερικότερο επίπεδο — το sandbox του λειτουργικού συστήματος — είναι το μόνο
+υπό αίρεση: εξαρτάται από το αν ο κεντρικός υπολογιστής παρέχει backend και στα
+Windows κανένας δεν το κάνει.
 
-## What actually constrains an agent
+## Τι περιορίζει πραγματικά έναν πράκτορα
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Πέντε πράγματα οριοθετούν μια εκτέλεση πράκτορα σε κάθε κεντρικό υπολογιστή, με ή
+χωρίς sandbox. Κανένα από αυτά δεν είναι όριο πυρήνα· όλα τους είναι
+πραγματικά. Όπου ο κεντρικός υπολογιστής παρέχει backend, το sandbox του
+λειτουργικού συστήματος κάθεται από πάνω τους και η ενότητα «Τι προσθέτει το
+sandbox και πού σταματά» παρακάτω καλύπτει τι αλλάζει αυτό.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Το δικό του worktree copy-on-write.** Κάθε συνομιλία προετοιμάζει το δικό της
+checkout για κάθε συνδεδεμένο αποθετήριο, κλωνοποιημένο copy-on-write μέσω του
+ενσωματωμένου native `rift` και όχι αντιγραμμένο byte προς byte, ώστε η
+απομόνωση να είναι αρκετά φθηνή για να είναι η προεπιλογή. Το καταχωρισμένο
+αποθετήριο που προσθέσατε στον χώρο εργασίας δεν είναι ο κατάλογος στον οποίο
+εργάζεται ο πράκτορας — δύο συνομιλίες που αγγίζουν το ίδιο αποθετήριο δεν
+βλέπουν η μία τις αλλαγές της άλλης και καμία δεν επεξεργάζεται το checkout σας.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Αξίζει να είμαστε ακριβείς ως προς την υποδιαίρεση: **το worktree είναι ανά
+συνομιλία, όχι ανά πράκτορα.** Δύο πράκτορες στην ίδια συνομιλία παίρνουν
+ξεχωριστούς καταλόγους εργασίας overlay που _μοιράζονται_ το `repos/` αυτής της
+συνομιλίας — που είναι και το ζητούμενο, αφού συνεργάζονται σε μία αλλαγή — ενώ
+οι ιδιωτικοί κατάλογοι των πρακτόρων παραμένουν χωριστοί. Το copy-on-write είναι
+το μόνο backend όπου διατίθεται το `rift`: ένα σύστημα αρχείων που δεν μπορεί να
+κάνει reflink, ή ένας κατάλογος δεδομένων σε διαφορετικό τόμο από το αποθετήριο,
+αποτυγχάνει στην προετοιμασία αντί να καταφύγει σε εναλλακτική λύση. Τα Windows
+αποτελούν την εξαίρεση — εκεί δεν υπάρχει backend copy-on-write, οπότε το
+`git worktree` είναι το backend και όχι μια αθόρυβη υποβάθμιση.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Περιορισμός διαδρομών στα εργαλεία αρχείων του ενσωματωμένου harness.** Τα
+εργαλεία `read`, `write`, `edit`, `apply_patch`, `search`, `find` και
+`search_files` του harness επιλύουν κάθε διαδρομή με βάση τον κατάλογο εργασίας
+της εκτέλεσης συν κοινές ρίζες — τον κατάλογο `repos/` της συνομιλίας, όπου
+ζουν τα worktrees, και τον κατάλογο συνημμένων του χώρου όταν υπάρχει — και
+αρνούνται οτιδήποτε καταλήγει έξω από αυτές. Οι απόλυτες διαδρομές γίνονται
+δεκτές μόνο αν ήταν ήδη μέσα. Ένας symlink μέσα στο worktree που δείχνει έξω από
+αυτό επιλύεται και απορρίπτεται επίσης. Γι' αυτό ένας πράκτορας δεν μπορεί να
+κάνει `write` στο `~/.ssh` ακόμη και όταν δεν υπάρχει καθόλου sandbox στο κάδρο.
 
-**The mode's tool surface.** A conversation's [mode](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Η επιφάνεια εργαλείων της λειτουργίας.** Η [λειτουργία](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)
+μιας συνομιλίας καθορίζει ποια εργαλεία υλοποιούνται καθόλου για την εκτέλεση.
+Στις λειτουργίες μόνο για ανάγνωση (`plan`, `review`, `orchestrate`) τα εργαλεία
+που τροποποιούν δεδομένα απλώς δεν υπάρχουν στο μητρώο και η πολιτική εντολών
+κελύφους αυτών των λειτουργιών απορρίπτει ευθέως κάθε εντολή που τροποποιεί
+δεδομένα — `git commit`, `git push`, `npm install`, `docker` και τα λοιπά — αντί
+να ζητά έγκριση γι' αυτές. Ένα εργαλείο που δεν υπάρχει δεν μπορεί να κληθεί,
+κάτι που είναι ισχυρότερη εγγύηση από ένα εργαλείο που υπάρχει και είναι
+ελεγχόμενο.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) for the resolution model.
+**Οι ενοποιημένοι περιορισμοί ενεργειών.** Κάθε εργαλείο που τροποποιεί δεδομένα
+δηλώνει τις κατηγορίες επιδράσεων που μπορεί να προκαλέσει και η μηχανή πολιτικής
+αποφασίζει για καθεμία αποδοχή, ερώτηση πρώτα ή απόρριψη πριν εκτελεστεί η κλήση.
+Μια τιμή `prompt` χωρίς συνδεδεμένο εγκριτή καταλήγει σε _απόρριψη_ — μια
+ερώτηση που δεν μπορεί να απαντήσει κανείς δεν γίνεται ποτέ «ναι». Δείτε τους
+[Περιορισμούς](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) για το μοντέλο απόφασης.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Διαπιστευτήρια ελεγχόμενα από δυνατότητες και καθαρισμένο περιβάλλον.** Τα
+διαπιστευτήρια δημιουργούνται σε κάθε εκκίνηση από τις δυνατότητες της συνομιλίας
+και ανακαλούνται όταν τελειώσει η εκτέλεση. Το ACP, το `bash` του harness και το
+Claude Code κάτω από το native περιτύλιγμα παίρνουν ένα περιβάλλον
+απαλλαγμένο από τους φορείς έγχυσης μέσω δυναμικού συνδέτη και διερμηνέα
+(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` και τα
+συναφή) προτού ξεκινήσει η διεργασία. Το Claude Code μέσω του `NoSandboxAdapter`
+κληρονομεί το περιβάλλον του κεντρικού υπολογιστή.
 
-### Where those bounds thin out
+### Πού εξασθενούν αυτά τα όρια
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Τα εργαλεία αρχείων του harness τρέχουν _μέσα στη διεργασία του διακομιστή_, όχι
+σε θυγατρική διεργασία, οπότε κανένα προφίλ sandbox δεν θα μπορούσε να τα
+περιορίσει ακόμη κι αν είχε προσαρτηθεί — μόνο το `bash` περνά από τον
+περιτυλιγμένο εκτελεστή εντολών. Ο περιορισμός τους είναι ο έλεγχος διαδρομών
+που περιγράφηκε παραπάνω και ο έλεγχος αυτός είναι, επομένως, κρίσιμος και όχι
+δεύτερη γραμμή άμυνας.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+Το εργαλείο `bash` είναι το άλλο σημείο όπου χρειάζεται ακρίβεια. Οι εντολές του
+αξιολογούνται με βάση την πολιτική εντολών της λειτουργίας και έπειτα εκκινούν με
+καθαρισμένο περιβάλλον και το worktree ως κατάλογο εργασίας. Όπου υπάρχει
+backend, αυτή η εκκίνηση περιτυλίγεται, οπότε το sandbox είναι αυτό που εμποδίζει
+μια εντολή κελύφους να γράψει έξω από το worktree· όπου δεν υπάρχει — στα Windows
+ή σε Linux χωρίς `bwrap` και `socat` — η πολιτική εντολών είναι το μόνο πράγμα
+ανάμεσα στην εντολή και την υπόλοιπη μονάδα δίσκου. Στη λειτουργία `chat` η
+πολιτική απορρίπτει κατηγορηματικά έναν σταθερό κατάλογο (αναβάθμιση προνομίων,
+καταστροφή συστήματος και δίσκου, διαφυγή από container και namespace) και ζητά
+έγκριση για αλλαγές απομακρυσμένης κατάστασης (`git push`, `gh pr create`,
+δημοσιεύσεις και εγκαταστάσεις πακέτων). Ό,τι δεν βρίσκεται σε καμία από τις δύο
+λίστες εκτελείται. Τα pipelines, οι αλυσίδες και τα subshells αναλύονται και
+κάθε υποεντολή αξιολογείται ξεχωριστά, με την πιο περιοριστική απόφαση να
+υπερισχύει.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/#the-adapter-honesty-matrix).
+Το Claude Code, όταν χρησιμοποιείται ως προσαρμογέας, είναι η περίπτωση όπου το
+sandbox έχει τη μεγαλύτερη βαρύτητα. Το Control Center το εκκινεί με
+`--dangerously-skip-permissions`, επειδή ένα μη διαδραστικό `claude -p` θα
+κολλούσε για πάντα στη δική του προτροπή έγκρισης. Οι κλήσεις του για ανάγνωση,
+εγγραφή, επεξεργασία και κέλυφος συμβαίνουν μέσα στη δική του διεργασία και το
+Control Center δεν τις βλέπει ποτέ· οι μόνες κλήσεις του που φτάνουν σε κάποια
+πύλη είναι τα εργαλεία `mcp__*` που σερβίρει το ίδιο το Control Center. Όπου
+υπάρχει backend, αυτές οι αόρατες κλήσεις συμβαίνουν ακόμη μέσα στο περιτύλιγμα
+του sandbox, οπότε το λειτουργικό σύστημα είναι το όριο γύρω τους. Όπου δεν
+υπάρχει, δεν υπάρχει τίποτα. Κάθε προσαρμογέας το δηλώνει στη μήτρα εφαρμογής
+του — δείτε [τη μήτρα ειλικρίνειας
+των προσαρμογέων](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Ο έλεγχος δυνατοτήτων είναι επιβολή μέσω απουσίας
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Μια συνομιλία φέρει τέσσερις δυνατότητες: push στο αποθετήριο, κλήση του GitHub
+API, κλήση του παρόχου εισιτηρίων και πρόσβαση στο δίκτυο. Δεν ελέγχονται όταν
+ενεργεί ο πράκτορας. Ελέγχονται μία φορά, στην εκκίνηση, από τον μεσίτη
+διαπιστευτηρίων — και μια δυνατότητα που είναι κλειστή σημαίνει απλώς ότι το
+αντίστοιχο token δεν μπαίνει ποτέ στο περιβάλλον.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Αυτός είναι ολόκληρος ο μηχανισμός και αξίζει να ειπωθεί στα ίσια, επειδή ο
+τρόπος αποτυχίας δεν είναι αυτός που περιμένουν οι άνθρωποι. Η απενεργοποίηση
+των «κλήσεων GitHub API» δεν παράγει μήνυμα «δυνατότητα απορρίφθηκε». Παράγει
+ένα συνηθισμένο `401` μέσα στον πράκτορα, επειδή δεν υπάρχει `GH_TOKEN` για να
+σταλεί. Ο πράκτορας μπορεί κάλλιστα να το ερμηνεύσει ως πρόβλημα
+διαπιστευτηρίων. Η επιβολή μέσω απουσίας είναι ανθεκτική — δεν υπάρχει έλεγχος
+για να παρακαμφθεί — αλλά είναι σιωπηλή και ο πράκτορας δεν ξέρει γιατί απέτυχε.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Η δυνατότητα δικτύου συμπεριφέρεται με τον ίδιο τρόπο. Με αυτήν κλειστή, τα
+εργαλεία `web_fetch` και `web_search` του harness αρνούνται κάθε κλήση και η
+λίστα επιτρεπομένων του proxy μιας εκκίνησης μέσα σε sandbox είναι κενή, οπότε
+κάθε εξερχόμενη σύνδεση απορρίπτεται.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Τα διαπιστευτήρια ανακαλούνται όταν τερματιστεί η εκτέλεση, ώστε μια λαβή να μην
+επιβιώνει της εκτέλεσης που τη δημιούργησε.
 
-## What the sandbox adds and where it stops
+## Τι προσθέτει το sandbox και πού σταματά
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+Η απαρίθμηση `SandboxBackend` έχει τρεις τιμές — `native` (Seatbelt στο macOS,
+bubblewrap στο Linux και στο WSL2), `none` και `microvm`. Το περιτύλιγμα εντολών
+των πρακτόρων χρησιμοποιεί μόνο τις δύο πρώτες: το `microvm` είναι το backend
+περικλεισμένης εικονικής μηχανής για διαδραστικά τερματικά και σταθμούς, όχι
+σιωπηλή αναβάθμιση ενός περιτυλίγματος `bash`. Η κατανόηση της μορφής του
+native backend εξηγεί τι κερδίζετε όταν αυτό προσαρτάται και τι δεν επρόκειτο
+ποτέ να σας δώσει.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+Το `cc_server` ανιχνεύει τον κεντρικό υπολογιστή μία φορά κατά την εκκίνηση και,
+όπου απαντά ένα backend, τροφοδοτεί και τους δύο αρμούς που έχει η διαδρομή
+αποστολής, επειδή τα μεταγωγικά μέσα δεν μοιράζονται τον ίδιο. Ο πρώτος
+(`SandboxPort`) περιτυλίγει το CLI του Claude Code. Ο δεύτερος
+(`SandboxManager`) περιτυλίγει τους προσαρμογείς ACP και το εργαλείο `bash` του
+ενσωματωμένου harness. Η τροφοδότηση μόνο του ενός θα άφηνε τα άλλα να εκκινούν
+χωρίς περιτύλιγμα, όπως συνέβαινε παλιά. Σε κεντρικό υπολογιστή χωρίς backend, ή
+με `--sandbox off`, όλα εκκινούν χωρίς περιτύλιγμα και ο διακομιστής δηλώνει σε
+ποια περίπτωση βρίσκεστε στη γραμμή εκκίνησής του. Το ACP και το `bash` του
+harness εξακολουθούν να καθαρίζουν το περιβάλλον· το Claude Code μέσω του
+`NoSandboxAdapter` κληρονομεί το περιβάλλον του κεντρικού υπολογιστή.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Μια επιφάνεια εξαιρείται σκόπιμα: το τερματικό που φιλοξενείται στον διακομιστή
+δέχεται όρισμα backend ανά συνεδρία και το `cc_server` το κατασκευάζει με
+προεπιλογή το κέλυφος του κεντρικού υπολογιστή, οπότε ένα τερματικό που ανοίγετε
+από την εφαρμογή τρέχει χωρίς sandbox, εκτός αν κάποιος πελάτης ονομάσει ρητά το
+`native`. Πρόκειται για πραγματικό κέλυφος στον κεντρικό υπολογιστή του
+διακομιστή, όχι για εκτέλεση πράκτορα.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Στο Linux, το `bubblewrap` δημιουργεί namespace προσάρτησης, οπότε ο πράκτορας
+βλέπει πραγματικά μόνο ό,τι έχει προσδεθεί μέσα του. Στο macOS, το `sandbox-exec`
+εφαρμόζει ένα προφίλ Seatbelt που είναι **επιτρεπτικό από προεπιλογή** — ένα
+προφίλ που απορρίπτει τα πάντα από προεπιλογή καθιστά ένα διαδραστικό κέλυφος
+άχρηστο, επειδή ο αριθμός των κλήσεων dyld, XPC και Mach που θα έπρεπε να
+καταγραφούν είναι μη πρακτικός. Το προφίλ του macOS ξεκινά, επομένως, από το
+`(allow default)` και χαράσσει εξαιρέσεις απόρριψης: αναγνώσεις μυστικών
+διαδρομών, πολιτική εγγραφής που επαναφέρεται σε απόρριψη με ρητές επιτρεπτικές
+εξαιρέσεις πάνω της, αποκλεισμό unlink σε κάθε απορριπτόμενη διαδρομή και τους
+προγόνους της, ώστε μια μετονομασία να μην μπορεί να παρακάμψει μια απόρριψη
+εγγραφής, απορρίψεις exec για πάντα επικίνδυνα εκτελέσιμα και για οτιδήποτε
+αντιγράφεται σε εγγράψιμο κατάλογο, και δίκτυο περιορισμένο στις θύρες proxy του
+loopback συν το DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Η πρακτική συνέπεια: στο Linux η εικόνα του πράκτορα για το σύστημα αρχείων
+περιορίζεται· στο macOS ο πράκτορας μπορεί ακόμη να _διαβάσει_ το μεγαλύτερο
+μέρος του κεντρικού υπολογιστή και τα καταχωρισμένα checkouts σας προστατεύονται
+από ρητές απορρίψεις εγγραφής και μετονομασίας και όχι από αορατότητα. Και τα
+δύο είναι απομόνωση σε επίπεδο namespace, όχι όριο ασφαλείας του πυρήνα — τα
+backends το δηλώνουν στις δικές τους σημειώσεις δυνατοτήτων.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Το σύνολο των bind mounts είναι εκεί όπου χαράσσεται το όριο μεταξύ πρακτόρων. Η
+αποστολή overlay (Claude Code και ACP) προσαρτά έως τέσσερις διαδρομές, οι
+οποίες επιλύονται ανά εκτέλεση: τον κατάλογο εργασίας overlay του πράκτορα με
+δικαίωμα ανάγνωσης-εγγραφής, τον κατάλογο ρυθμίσεων του πράκτορα μόνο για
+ανάγνωση, τον κοινόχρηστο κατάλογο `repos/` της συνομιλίας με δικαίωμα
+ανάγνωσης-εγγραφής όταν υπάρχει, και τον κατάλογο συνημμένων του χώρου μόνο για
+ανάγνωση όταν υπάρχει. Ο κατάλογος ενός αδελφού πράκτορα δεν προσαρτάται ποτέ.
+Το περιτύλιγμα `bash` του harness είναι στενότερο: προσαρτά μόνο τον κατάλογο
+εργασίας της εκτέλεσης. Αυτή είναι η ίδια μορφή που επιβάλλει ο έλεγχος
+διαδρομών εντός διεργασίας του harness σε επίπεδο λογισμικού, οπότε τα δύο
+συμφωνούν — αλλά μόνο ο έλεγχος διαδρομών καλύπτει τα δικά του εργαλεία
+αρχείων, τα οποία δεν φτάνουν ποτέ σε namespace προσάρτησης.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Τα καταχωρισμένα checkouts σας προστίθενται στο σύνολο απαγόρευσης εγγραφής πάνω
+σε αυτά, σε κάθε λειτουργία και σε όλες τις τρεις περιτυλιγμένες διαδρομές
+(Claude Code, ACP, `bash` του harness), και κάθε κανόνας εκπέμπεται και στην
+κυριολεκτική του γραφή και στη γραφή μετά την επίλυση symlink. Η δεύτερη γραφή
+δεν είναι περιττή λεπτομέρεια:
+ο πυρήνας αντιστοιχίζει έναν κανόνα απόρριψης
+με την επιλυμένη διαδρομή και το macOS καθιστά την επίλυση τον κανόνα και όχι την
+εξαίρεση — το `/tmp` είναι στην πραγματικότητα `/private/tmp`, το
+`/var/folders/…` είναι στην πραγματικότητα `/private/var/folders/…` — οπότε ένα
+checkout στο οποίο φτάνατε μέσω οποιασδήποτε από τις δύο θα ήταν εγγράψιμο ενώ
+το προφίλ φαινόταν να το απαγορεύει.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Το δίκτυο, μέσα σε sandbox, είναι λίστα επιτρεπόμενων τομέων ανά συνεδρία που
+επιβάλλεται από proxies loopback εντός διεργασίας. Η εξερχόμενη κίνηση
+απορρίπτεται από προεπιλογή: με τη δυνατότητα δικτύου κλειστή, οι proxies
+ξεκινούν ακόμη, αλλά η λίστα επιτρεπομένων τους είναι κενή, οπότε κάθε
+εξερχόμενη σύνδεση απορρίπτεται. Με αυτήν ανοιχτή, ο resolver χτίζει τη λίστα
+επιτρεπομένων από ένα επιμελημένο βασικό σύνολο — παρόχους API LLM, φιλοξενία
+git, μητρώα πακέτων, τον κατάλογο μοντέλων — συν τους τομείς GitHub που της
+εξασφαλίζει η δυνατότητα GitHub ή push του πράκτορα, και αντιστοιχίζει τον
+κεντρικό υπολογιστή-στόχο κάθε σύνδεσης με αυτή. Οι χαρακτήρες μπαλαντέρ
+λειτουργούν (το `*.example.com` ταιριάζει με υποτομείς, όχι με τον τομέα
+κορυφής). Μια ξεχωριστή λίστα διαρκούς απαγόρευσης υπερισχύει της λίστας
+επιτρεπομένων και καλύπτει τελικά σημεία μεταδεδομένων cloud και προορισμούς
+τηλεμετρίας. Αυτό που _δεν_ είναι παραμετροποιήσιμο είναι η ίδια η λίστα: η
+προδιαγραφή διαθέτει πεδίο `egressAllowlist` για πρόσθετους τομείς και ένα hook
+τομέα εισιτηρίων, αλλά τίποτα στη διαδρομή αποστολής δεν συμπληρώνει κανένα από
+τα δύο, οπότε στην πράξη κάθε εκτέλεση παίρνει το βασικό σύνολο συν τους τομείς
+που προκύπτουν από τις δυνατότητές της και τίποτα παραπάνω.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+Οι απορρίψεις, στο macOS, είναι παρατηρήσιμες: ένας μηχανισμός παρακολούθησης
+υποκλέπτει το αρχείο καταγραφής συστήματος για απορρίψεις Sandbox, φιλτράρει
+γνωστό θόρυβο, απαλείφει τα διπλότυπα των καταιγισμών επαναλήψεων και
+αναδεικνύει καθεμία ως `SandboxViolation` που ονομάζει τι επιχειρήθηκε και ποια
+δυνατότητα θα το ξεμπλόκαρε. Στο Linux η διαδρομή περιτυλίγματος αναλύει το
+stderr για `EPERM`, `Operation not permitted` και `Permission denied` και
+εκπέμπει τον ίδιο τύπο γεγονότος — δεν υπάρχει υποκλοπή αρχείου καταγραφής
+συστήματος. Αυτά φτάνουν στη ροή γεγονότων της ίδιας της εκτέλεσης, ώστε μια
+απορριφθείσα κλήση συστήματος να εμφανίζεται στη μεταγραφή και όχι μόνο σε κάποιο
+αρχείο καταγραφής. Η τηλεμετρία υπάρχει μόνο όσο ένα native sandbox περιτυλίγει
+πράγματι τη διεργασία — σε κεντρικό υπολογιστή χωρίς backend δεν υπάρχει τίποτα
+να παρατηρηθεί. Δεν σχετίζεται επίσης με τον έλεγχο δυνατοτήτων: μια παράβαση
+προέρχεται από απορριφθείσα κλήση συστήματος, ποτέ από αναζήτηση δυνατότητας.
 
-## Confirmations come from the guardrails, not the sandbox
+## Οι επιβεβαιώσεις προέρχονται από τους περιορισμούς, όχι από το sandbox
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Το sandbox δεν έχει διαδρομή έγκρισης. Εκκινεί, εκτελεί, εκπέμπει γεγονότα και
+τερματίζεται· δεν υπάρχει πουθενά σε αυτό σημείο όπου ένας άνθρωπος να απαντήσει
+σε ερώτηση. Όταν βλέπετε μια επιβεβαίωση σε έναν χώρο — έγκριση αυτού του push,
+έγκριση αυτής της διαγραφής — αυτή προήλθε από τη μηχανή περιορισμών (ή την
+πολιτική εντολών του harness) _πριν_ η ενέργεια φτάσει καθόλου στο περιβάλλον
+εκτέλεσης.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Αυτή η σειρά είναι σκόπιμη. Μια έγκριση που θα γινόταν μετά την κλήση συστήματος
+θα ήταν εγγραφή ελέγχου, όχι πύλη. Γι' αυτό επίσης ο κανόνας αποτυχίας-σε-απόρριψη
+βρίσκεται στους περιορισμούς: χωρίς συνδεδεμένο εγκριτή, η απόφαση
+λαμβάνεται πριν εκτελεστεί οτιδήποτε και είναι απόρριψη.
 
-## Diagnostics
+## Διαγνωστικά
 
-[Run agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/) is the single place
-that states what can be checked by hand.
+Η [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/) είναι το μοναδικό
+σημείο που δηλώνει τι μπορεί να ελεγχθεί με το χέρι.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): where isolation fits in the dispatch flow
-- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/el-GR/εγχειρίδιο/αναφορά/υποσυστήματα-sandbox/): the backends and their configuration
+- [Σταθμοί και περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/): το επόμενο επίπεδο πάνω από το sandbox — όταν η εργασία χρειάζεται μια ολόκληρη αναλώσιμη μηχανή με όριο πυρήνα, όχι μια περιτυλιγμένη διεργασία
+- [Περιορισμοί](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/): το επίπεδο πολιτικής πάνω από το κατώφλι του λειτουργικού συστήματος και από πού προέρχονται στην πραγματικότητα οι εγκρίσεις
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/): πού χωρά η απομόνωση στη ροή αποστολής
+- [Λειτουργίες](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/): πώς μια λειτουργία περιορίζει την επιφάνεια εργαλείων και την πολιτική εντολών
+- [Υποσυστήματα sandbox](/el-GR/εγχειρίδιο/αναφορά/υποσυστήματα-sandbox/): τα backends και η διαμόρφωσή τους
 
-## Related guides
+## Σχετικοί οδηγοί πρακτικής
 
-- [Configure sandbox policies](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/): capability flags and filesystem posture
-- [Run agent diagnostics](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/): what the diagnostic checks cover
+- [Ρύθμιση πολιτικών sandbox](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/πολιτικές-sandbox/): δυνατότητες και στάση του συστήματος αρχείων
+- [Διάγνωση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διάγνωση-πράκτορα/): τι καλύπτουν οι διαγνωστικοί έλεγχοι

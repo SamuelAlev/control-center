@@ -1,150 +1,163 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Pantau larian pipeline
+description: Kendalikan barisan larian, baca waterfall dan panel langkah sesuatu larian serta pulihkan daripada langkah yang gagal atau tersekat.
 slug: ms-MY/manual-pengguna/panduan-cara/pantau-pipeline
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/).
+Halaman ini merangkumi segala-galanya selepas sesuatu larian bermula: mencarinya,
+membaca apa yang dilakukan setiap langkah dan menjalankan semula larian yang
+gagal. Untuk memulakan satu larian, lihat
+[Jalankan pipeline secara manual](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/).
 
-## Find a run
+## Cari larian
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Klik **Pipeline** pada bar sisi ruang kerja. Skrin ini ialah barisan larian
+   ruang kerja — setiap larian, yang terbaharu dahulu.
+2. Gunakan rel kiri untuk menapis. Terdapat tepat tiga penapis, setiap satu
+   dengan kiraan langsung: **Semua**, **Berjalan**, **Gagal**.
+3. Layari jadual dengan <kbd>↑</kbd>/<kbd>↓</kbd> (atau <kbd>j</kbd>/<kbd>k</kbd>)
+   dan tekan <kbd>Enter</kbd> untuk membuka larian yang difokuskan. Mengklik
+   baris melakukan perkara yang sama.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Setiap baris menunjukkan satu glif tentang cara larian bermula (ikon main untuk
+manual; glif fail untuk pemantauan graf kod; jika tidak, pencetus automatik).
+Petunjuk alat menamakan pencetus itu — **Manual**, **PR diterbitkan**,
+**Perubahan fail**, dan sebagainya — dan, bagi larian pemantauan, fail mana yang
+berubah. Kemudian nama pipeline, lencana status, tempoh aktif (atau kedudukan
+dalam barisan bagi larian `queued`) dan berapa lama dahulu percubaan ini bermula.
+Tempoh aktif mengecualikan jurang melahu semasa henti dan mula semula, jadi ia
+bukan jangka masa jam dinding.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Tiada penapis untuk larian yang selesai, digantung atau dibatalkan, tiada penapis
+mengikut templat, tiada tetingkap masa dan tiada paparan sejarah larian mengikut
+templat. Membandingkan larian bagi satu templat bermakna mengimbas barisan untuk
+mencari namanya.
 
-## Read the run detail
+## Baca butiran larian
 
-A run's page has three stacked parts.
+Halaman sesuatu larian mempunyai tiga bahagian bertindan.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Jalur meta** membawa masa mula, tempoh aktif, kemajuan langkah ("3 daripada
+7 langkah"), ringkasan kegagalan yang menamakan langkah yang gagal dan sebabnya
+serta tindakan **Cuba semula** dan **Padam**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Waterfall pemasaan** memberikan satu bar bagi setiap langkah, dengan tempohnya
+dan — bagi langkah ejen — kosnya dalam sen. Langkah yang dicuba semula menunjukkan
+akhiran `×N` selepas tempohnya; akhiran itu satu-satunya tempat kiraan percubaan
+muncul.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Kanvas graf** melukis templat dengan status langsung setiap nod. Memilih satu
+nod membuka panel langkahnya.
 
-### Run and step statuses
+### Status larian dan langkah
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Status          | Maksud                                            |
+| --------------- | ------------------------------------------------- |
+| **Tertunda**    | Dicipta, belum bermula                            |
+| **Dalam barisan** | Diterima tetapi ditahan: had selari maksimum templat ini penuh; belum ada baris langkah |
+| **Berjalan**    | Sedang dilaksanakan                               |
+| **Digantung**   | Menunggu sesuatu yang luaran — normal, bukan tersekat |
+| **Selesai**     | Berakhir dengan jayanya                           |
+| **Gagal**       | Berakhir dengan ralat                             |
+| **Dibatalkan**  | Dihentikan oleh pengguna atau oleh sistem         |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Langkah mempunyai status tersebut kecuali **Dalam barisan**, ditambah
+**Dilangkau**, bagi cawangan yang tidak diambil oleh router (dan keturunannya
+yang kini tidak lagi boleh dicapai).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Digantung** ialah keadaan tempat langkah ejen menghabiskan sebahagian besar
+hayatnya: ejen yang dihantar atau gerbang kelulusan menahan langkah itu sehingga
+kerjanya selesai. Dua jaring pengaman enjin menggagalkan seluruh larian dan
+bukannya menyambung semula: langkah yang digantung lebih lama daripada 24 jam
+(`extras.awaitApproval` — badan `orchestration.awaitApproval` — dikecualikan;
+`human.gate` tidak) dan langkah tidak idempoten yang berada di pertengahan
+pelaksanaan apabila pelayan berhenti.
 
-## Inspect a step
+## Periksa langkah
 
-Select a node on the canvas. The step panel shows, in order:
+Pilih satu nod pada kanvas. Panel langkah memaparkan, mengikut urutan:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Kad **Ralat** apabila langkah gagal, atau kad **Dilangkau** dengan sebabnya
+  apabila ia dilangkau.
+- **Dimulakan**, **Selesai** dan tempoh.
+- **Cawangan** — indeks cawangan, untuk cawangan selari.
+- **Lihat perbualan** — melompat ke perbualan tempat langkah itu dijalankan.
+  Perbualan pipeline disembunyikan daripada bar sisi, jadi ini satu-satunya cara
+  masuk.
+- **Input** dan **Output**, sebagai JSON yang boleh dikembangkan.
+- **Aktiviti ejen** — satu jubin bagi setiap larian ejen yang dihantar oleh
+  langkah itu, dengan status, ringkasan, tempoh dan kosnya.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Bagi langkah ejen, **Output** ialah muatan berstruktur yang dihantar oleh ejen
+dengan `submit_output`, bukan prosanya. Jejak penaakulan terletak dalam
+**Aktiviti ejen** dan dalam perbualan di sebalik **Lihat perbualan**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Bagi langkah bash, **Output** ialah stdout yang dipangkas yang ditulis oleh skrip
+pada keluar 0. Keluar bukan sifar menggagalkan langkah itu dengan hujung stderr
+sebagai mesej ralat.
 
-## Recover a failed run
+## Pulihkan larian yang gagal
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Baca ringkasan kegagalan pada jalur meta; ia menamakan langkah yang gagal. Kad
+   **Ralat** pada panel langkah mengandungi mesejnya.
+2. Semak **Input** langkah itu — kunci keadaan yang hilang atau salah ejaan ialah
+   punca yang paling biasa. Langkah prompt-agent gagal terus dan menamakan
+   pemegang tempat yang tidak diselesaikan; langkah bash memaparkannya sebagai
+   rentetan kosong dan tetap berjalan, yang biasanya muncul satu langkah
+   kemudian.
+3. Bagi langkah ejen, buka **Lihat perbualan** dan baca apa yang sebenarnya
+   dilakukan oleh ejen.
+4. Tekan **Cuba semula** pada jalur meta. Langkah yang selesai dan dilangkau
+   mengekalkan outputnya; semua yang lain dipadam dan dilaksanakan semula dan
+   larian kembali kepada berjalan. Jam tempoh bermula semula untuk percubaan ini.
 
-Common causes worth checking first:
+Punca biasa yang wajar disemak dahulu:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Tamat masa** — langkah itu melebihi **Tamat masa (ms)**. Ingat, medan itu
+  dalam milisaat.
+- **Ralat skrip** — perintah bash keluar bukan sifar, atau `bash` tiada pada
+  `PATH` hos pelayan.
+- **Pengesahan skema** — muatan `submit_output` ejen tidak memenuhi skema output
+  langkah itu.
+- **Pemegang tempat tidak diselesaikan** — `{{key}}` yang dirujuk oleh langkah
+  prompt-agent tidak pernah ditulis di huluan. Ralat itu menamakan setiap kunci
+  yang tidak diselesaikan.
+- **Badan tidak didaftarkan** — langkah yang kunci badannya tidak didaftarkan
+  memberi amaran semasa templat dimuatkan dan selepas itu tidak pernah
+  dilaksanakan.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Cuba semula hanya berfungsi pada larian yang gagal atau dibatalkan]
+Butang **Cuba semula** dipaparkan hanya apabila larian itu `failed` atau
+`cancelled`. Enjin memulangkan serta-merta untuk sebarang status lain.
 :::
 
-## Stop a step that is stuck
+## Hentikan langkah yang tersekat
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Pilih langkah yang sedang berjalan dan tekan butang **Henti paksa yang berjalan**
+dalam pengepala panel langkah. Ini mematikan proses langkah itu, menandakan
+langkah itu gagal dan oleh itu menggagalkan seluruh larian — setiap cawangan
+bersaudara yang terbuka ditutup bersamanya.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Tiada kawalan batal larian pada skrin ini. `pipeline.cancel` wujud sebagai operasi
+RPC dan enjin melaksanakannya, tetapi tiada apa-apa dalam UI pipeline
+memanggilnya; **Henti paksa yang berjalan** pada langkah, atau **Padam** pada
+larian, ialah satu-satunya cara menghentikan yang tersedia.
 
-## Track cost
+## Jejaki kos
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Kos dilaporkan mengikut langkah, dalam lajur kanan waterfall dan pada setiap
+jubin di bawah **Aktiviti ejen**. Tiada jumlah larian pada halaman butiran dan
+tiada lajur kos dalam barisan larian, jadi membandingkan kos dua larian bermakna
+menjumlahkan langkahnya.
 
-## Related guides
+## Panduan berkaitan
 
-- [Run a pipeline manually](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
-- [Create a pipeline template](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
-- [Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
-- [Pipeline steps reference](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/)
+- [Jalankan pipeline secara manual](/ms-MY/manual-pengguna/panduan-cara/jalankan-pipeline/)
+- [Cipta templat pipeline](/ms-MY/manual-pengguna/panduan-cara/cipta-pipeline/)
+- [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
+- [Jenis langkah pipeline](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Pipelines](/ms-MY/manual-pengguna/konsep/pipeline/)
+- [Pipeline](/ms-MY/manual-pengguna/konsep/pipeline/)

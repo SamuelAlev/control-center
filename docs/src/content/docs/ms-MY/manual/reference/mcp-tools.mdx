@@ -1,310 +1,315 @@
 ---
-title: MCP tools
-description: Complete catalog of the MCP tools cc_server registers, by family.
+title: Alat MCP
+description: Katalog lengkap alat MCP yang didaftarkan oleh cc_server, mengikut keluarga.
 slug: ms-MY/manual-pengguna/rujukan/alat-mcp
+sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran boleh dijambatkan ke dalam daftar yang sama sebagai lapisan dinamik.
 
-## Registry size
+## Saiz daftar
 
-| Measure                                                                   | Count |
-| ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
-| From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Ukuran                                                                   | Kiraan |
+| ------------------------------------------------------------------------ | ------ |
+| Alat yang didaftarkan oleh `cc_server`                                    | 110    |
+| Daripada `packages/cc_mcp`                                                | 108    |
+| Daripada `packages/cc_mcp_client` (penemuan alat)                         | 2      |
+| Didaftarkan dalam daftar asas (`server_mcp_registry.dart`)                | 63     |
+| Didaftarkan selepas boot apabila perkhidmatannya muncul (`cc_server_runtime.dart`) | 47 |
+| Daripada 63 dalam daftar asas, bersyarat pada repositori graf kod         | 5      |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+Kelima-limanya alat graf kod didaftarkan hanya apabila hos menghantar repositori graf kod kepada `buildServerMcpRegistry`. `cc_server` sentiasa menghantar satu, jadi kesemua 110 itu hidup dalam binari yang dibundelkan.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+Daftar penuh diiklankan dalam `tools/list` tanpa pengawalan penemuan. Suntingan tiket ialah alat bertaip.
 
-:::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+:::note[Klien luaran sentiasa melihat keseluruhan katalog]
+`tools/list` tidak pernah dipangkas. Klien MCP mengesahkan nama alat terhadap salinan senarai itu yang dicache sendiri dan menolak apa-apa yang tidak tersenarai tanpa bertanya kepada pelayan, jadi alat yang tersembunyi di situ tidak dapat dicapai dan bukan sekadar senyap.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/ms-MY/manual-pengguna/konsep/konteks-alat).
+**Harness terbina** berbeza: ia memuatkan hanya subset takrifan yang residen bagi setiap permintaan dan menarik masuk selebihnya pada penggunaan pertama, iaitu tingkah laku di sisi harness dan tidak mengubah daftar ini. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat).
 :::
 
-:::note[Every tool class is registered]
-A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
-call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
-fails the build if a new tool class is constructed by nothing.
+:::note[Setiap kelas alat didaftarkan]
+Fail sumber di bawah `packages/cc_mcp/lib/src/tools/` ialah alat yang boleh
+dipanggil oleh ejen. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+menggagalkan binaan jika sesuatu kelas alat baharu tidak dibina oleh apa-apa.
 :::
 
-## Common parameters
+## Parameter biasa
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Wajib** pada setiap alat yang menyentuh data berskop ruang kerja. `workspace_id` yang hilang atau tidak sah mengembalikan ralat yang eksplisit dan nilai yang tidak sepadan dengan ruang kerja entiti sasaran ditolak dan bukannya diabaikan secara senyap. Abaikannya pada alat yang benar-benar global: `list_workspaces` dan enam alat suapan berita (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), yang menaiki senarai suapan setiap pengguna milik pemilik pelayan. Alat penemuan (`search_tool_bm25`, `list_my_tools`) menerimanya secara pilihan supaya ia boleh mengelaskan kebolehpanggilan mengikut modus perbualan. Apabila ejen dihantar oleh pelayan, ruang kerja dipaksa di sisi pelayan, jadi ejen tidak boleh mencapai ruang kerja lain dengan menghantar id asing.
 
-## Tool discovery
+## Penemuan alat
 
-Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so they report what is callable in the _current_ conversation mode.
+Kedua-duanya datang daripada `cc_mcp_client`, bukan `cc_mcp`, dan kedua-duanya merujuk pengawal modus supaya ia melaporkan apa yang boleh dipanggil dalam modus perbualan _semasa_.
 
-| Tool               | Description                                                                                                                 |
+| Alat               | Huraian                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `search_tool_bm25` | Search the tool catalogue by keyword; returns matching tools, their argument schemas and whether each is callable right now |
-| `list_my_tools`    | List the tools callable right now in this conversation, filtered by its mode                                                |
+| `search_tool_bm25` | Cari katalog alat mengikut kata kunci; mengembalikan alat yang sepadan, skema argumennya dan sama ada setiap satu boleh dipanggil sekarang |
+| `list_my_tools`    | Senaraikan alat yang boleh dipanggil sekarang dalam perbualan ini, ditapis mengikut modusnya                                |
 
-A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
+Alat penemuan ketiga, **`search_tools`**, wujud hanya di dalam harness terbina dan bukan sebahagian daripada daftar MCP ini. Ia menyusun kedudukan permukaan alat larian itu sendiri dan, tidak seperti `search_tool_bm25`, **memuatkan** skema apa yang ditemuinya supaya ejen boleh memanggil padanan pada giliran seterusnya. Ejen pada harness wajar mengutamakannya; klien MCP mempunyai `search_tool_bm25`.
 
-## Agent tools
+## Alat ejen
 
-| Tool          | Description                               |
+| Alat          | Huraian                                   |
 | ------------- | ----------------------------------------- |
-| `list_agents` | List the registered agents in a workspace |
+| `list_agents` | Senaraikan ejen yang terdaftar dalam sesuatu ruang kerja |
 
-## Agent peer messaging and delegation
+## Pemesejan rakan sebaya dan perwakilan ejen
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Ejen bercakap sesama sendiri melalui ruang (tahan lama, kelihatan dalam senarai nama). `ask_agent` ialah permintaan/balasan dengan tamat masa yang wajib; `delegate_task` dikawal di sisi pelayan oleh had kedalaman, pengesanan kitaran, sampul belanjawan dan siling autonomi.
 
-| Tool            | Description                                                                                    |
+| Alat            | Huraian                                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
-| `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
-| `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
-| `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `send_to_agent` | Hantar mesej sehala kepada ejen lain, dialamatkan melalui `to_agent_id` atau `to_agent_name` yang tepat |
+| `ask_agent`     | Tanyakan soalan kepada ejen lain dan tunggu balasannya, atau tamat masa                        |
+| `delegate_task` | Wakilkan tugasan kepada ejen lain sebagai tiket anak yang dijejaki                              |
+| `consult_agent` | Tambahkan pakar yang paling sepadan mengikut kemahiran ke ruang itu dan hantarkannya dengan taklimat yang berfokus |
+| `todo_read`     | Baca senarai semak tugasan yang dikekalkan bagi perbualan ini                                   |
 
-## Skill tools
+## Alat kemahiran
 
-Every install and update passes through a fail-closed scan gate before any skill content reaches disk or an agent prompt.
+Setiap pemasangan dan kemas kini melalui get imbasan yang gagal secara tertutup sebelum sebarang kandungan kemahiran sampai ke cakera atau prompt ejen.
 
-| Tool                 | Description                                                               |
+| Alat                 | Huraian                                                                   |
 | -------------------- | ------------------------------------------------------------------------- |
-| `list_skills`        | List the skill slugs available in a workspace                             |
-| `create_skill`       | Create a new skill from markdown content                                  |
-| `install_skill`      | Install a skill's whole directory from a GitHub repository at a pinned ref |
-| `update_skill`       | Update an installed GitHub skill to a new ref, re-scanning and re-pinning |
-| `list_skill_updates` | List skills with a newer version available                                |
-| `verify_skills`      | Verify locked skills against their on-disk content hashes                 |
-| `pin_skill`          | Hash an existing on-disk skill into `skills-lock.json`                    |
+| `list_skills`        | Senaraikan slug kemahiran yang tersedia dalam sesuatu ruang kerja         |
+| `create_skill`       | Cipta kemahiran baharu daripada kandungan markdown                        |
+| `install_skill`      | Pasang keseluruhan direktori sesuatu kemahiran daripada repositori GitHub pada ref yang dipaku |
+| `update_skill`       | Kemas kini kemahiran GitHub yang dipasang kepada ref baharu, sambil mengimbas semula dan memaku semula |
+| `list_skill_updates` | Senaraikan kemahiran yang mempunyai versi lebih baharu tersedia            |
+| `verify_skills`      | Sahkan kemahiran yang dikunci terhadap cincangan kandungannya pada cakera  |
+| `pin_skill`          | Cincang kemahiran sedia ada pada cakera ke dalam `skills-lock.json`        |
 
-## Plan, playbook and artifact tools
+## Alat pelan, buku panduan dan artifak
 
-| Tool               | Description                                                                                                           |
+| Alat               | Huraian                                                                                                               |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `submit_plan`      | Plan mode's output contract: emit a typed `PlanDocument` that opens in Plan Studio                                    |
-| `create_playbook`  | Save a plan as a named, versioned template with typed `{{param}}` placeholders                                        |
-| `run_playbook`     | Instantiate a playbook with parameter values, producing a plan the operator approves                                  |
-| `publish_artifact` | Publish an ordered list of typed blocks (markdown, table, chart, mermaid, code, JSON) rendered natively in the client |
-| `revise_artifact`  | Replace a published artifact's content                                                                                |
-| `list_artifacts`   | List the workspace's artifacts                                                                                        |
-| `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `submit_plan`      | Kontrak output modus pelan: keluarkan `PlanDocument` bertaip yang terbuka dalam Plan Studio                           |
+| `create_playbook`  | Simpan pelan sebagai templat bernama dan berversi dengan pemegang tempat `{{param}}` bertaip                          |
+| `run_playbook`     | Instanskan buku panduan dengan nilai parameter, menghasilkan pelan yang diluluskan oleh pengendali                     |
+| `publish_artifact` | Terbitkan senarai tersusun blok bertaip (markdown, jadual, carta, mermaid, kod, JSON) yang dirender secara asli dalam klien |
+| `revise_artifact`  | Gantikan kandungan artifak yang telah diterbitkan                                                                      |
+| `list_artifacts`   | Senaraikan artifak ruang kerja                                                                                         |
+| `get_artifact`     | Baca satu artifak                                                                                                      |
+| `complete_goal`    | Isytiharkan matlamat tahan lama aktif perbualan ini (yang dimulakan dengan `/goal` atau `/loop`) sebagai tercapai      |
 
-## Workspace tools
+## Alat ruang kerja
 
-| Tool              | Description                                                              |
+| Alat              | Huraian                                                                  |
 | ----------------- | ------------------------------------------------------------------------ |
-| `list_workspaces` | List all workspaces with their ids and names (global; no `workspace_id`) |
+| `list_workspaces` | Senaraikan semua ruang kerja berserta id dan namanya (global; tiada `workspace_id`) |
 
-## Repo tools
+## Alat repo
 
-| Tool         | Description                                                                                                                                              |
+| Alat         | Huraian                                                                                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_repos` | List the repos registered in a workspace. Agent callers receive their conversation's isolated copy-on-write worktree paths, never the original checkouts |
+| `list_repos` | Senaraikan repo yang terdaftar dalam sesuatu ruang kerja. Pemanggil ejen menerima laluan worktree salin-semasa-tulis terasing perbualannya, tidak pernah checkout asal |
 
-## Messaging tools
+## Alat pemesejan
 
-| Tool                   | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `list_spaces`        | List the messaging spaces in a workspace                                  |
-| `get_messages` | Fetch messages from a space                                               |
-| `send_message` | Send a message to a space as a named sender agent                         |
-| `get_space_notes`    | Read a space's shared handoff document                                    |
-| `update_space_notes` | Replace a space's shared handoff document                                 |
-| `todo_write`           | Replace this conversation's task checklist in one call (pass the full list) |
+| Alat                   | Huraian                                                                    |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `list_spaces`        | Senaraikan ruang pemesejan dalam sesuatu ruang kerja                       |
+| `get_messages` | Ambil mesej daripada sesuatu ruang                                         |
+| `send_message` | Hantar mesej ke sesuatu ruang sebagai ejen pengirim yang bernama           |
+| `get_space_notes`    | Baca dokumen serahan bersama sesuatu ruang                                 |
+| `update_space_notes` | Gantikan dokumen serahan bersama sesuatu ruang                             |
+| `todo_write`           | Gantikan senarai semak tugasan perbualan ini dalam satu panggilan (hantar senarai penuh) |
 
-## Review tools
+## Alat semakan
 
-| Tool                       | Description                                                                                            |
+| Alat                       | Huraian                                                                                                |
 | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `start_ai_review`          | Start the AI review for a PR: compute the review areas, fan out specialist reviewers into the PR space, author the walkthrough and finalize |
-| `add_review_node`          | Add a structured review finding (file, line, P0–P3 priority) to a review space                       |
-| `confirm_review_node`      | Confirm a peer's finding; the author cannot self-confirm                                               |
-| `resolve_review_node`      | Mark a finding fixed after actually making the change; posts a trace into the review space              |
-| `dismiss_review_node`      | Dismiss a finding that does not apply; records a suppression fact so reviewers stop re-flagging it      |
-| `request_peer_review`      | Ask another reviewer agent for a second look on a finding                                              |
-| `dispatch_reviewers`       | Dispatch matched reviewer agents into a review space, concurrently                                   |
-| `submit_reviewer_verdict`  | Post a per-reviewer ship/hold/block verdict with confidence and an explanation                         |
-| `finalize_review`          | Compute per-node consensus and the per-PR verdict and close the review                                 |
-| `set_cohort_summary`       | Set a review cohort's plain-language summary                                                           |
-| `add_review_diagram`       | Attach a structured, graph-verified diagram (`sequence`, `entityRelation`, `stateMachine`) to a cohort |
-| `publish_review_to_github` | Publish the finalized review to GitHub as inline comments plus a summary body                          |
+| `start_ai_review`          | Mulakan semakan AI untuk sesuatu PR: kira kawasan semakan, sebarkan ejen penyemak pakar ke ruang PR, karang penerangan berpandu dan akhirkan |
+| `add_review_node`          | Tambah penemuan semakan berstruktur (fail, baris, keutamaan P0–P3) pada ruang semakan                   |
+| `confirm_review_node`      | Sahkan penemuan rakan sebaya; pengarang tidak boleh mengesahkan sendiri                                |
+| `resolve_review_node`      | Tandakan sesuatu penemuan sebagai diperbaiki selepas benar-benar membuat perubahan itu; menyiarkan jejak ke dalam ruang semakan |
+| `dismiss_review_node`      | Tolak penemuan yang tidak berkenaan; merekodkan fakta penindasan supaya penyemak berhenti menandakannya semula |
+| `request_peer_review`      | Minta ejen penyemak lain meneliti semula sesuatu penemuan                                              |
+| `dispatch_reviewers`       | Hantar ejen penyemak yang dipadankan ke dalam ruang semakan, secara serentak                            |
+| `submit_reviewer_verdict`  | Siarkan keputusan ship/hold/block bagi setiap penyemak berserta keyakinan dan penjelasan                |
+| `finalize_review`          | Kira konsensus bagi setiap nod dan keputusan bagi setiap PR, kemudian tutup semakan itu                 |
+| `set_cohort_summary`       | Tetapkan ringkasan bahasa mudah bagi sesuatu kohort semakan                                             |
+| `add_review_diagram`       | Lampirkan gambar rajah berstruktur yang disahkan graf (`sequence`, `entityRelation`, `stateMachine`) pada sesuatu kohort |
+| `publish_review_to_github` | Terbitkan semakan yang telah dimuktamadkan ke GitHub sebagai komen dalam baris berserta badan ringkasan |
 
-## Memory tools
+## Alat memori
 
-| Tool                    | Description                                                                                         |
+| Alat                    | Huraian                                                                                             |
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `search_memory`         | Search facts and policies (keyword, semantic, or hybrid — hybrid is the default)                    |
-| `propose_fact`          | Store a short markdown fact in a domain                                                             |
-| `supersede_fact`        | Mark a fact superseded by another                                                                   |
-| `propose_policy`        | Store a normative rule in a domain (requires write permission on it)                                |
-| `supersede_policy`      | Retire a policy — marks it inactive while keeping it for audit                                      |
-| `list_policies`         | List active policies, optionally filtered by domain                                                 |
-| `list_memory_domains`   | List the workspace's memory domains with fact and policy counts                                     |
-| `record_observation`    | Record a raw observation into the agent's working memory                                            |
-| `get_my_notes`          | Read the calling agent's working-memory scratchpad                                                  |
-| `update_my_notes`       | Update the calling agent's working-memory scratchpad                                                |
-| `remember`              | Add a note to the agent's hot working memory for this session (TTL- and count-bounded)              |
-| `consolidate_memory`    | Run a consolidation ("sleep") pass: evict expired hot items, roll durable ones into long-term facts |
-| `harmonize_memory`      | Run cross-agent belief harmonization (SHMR) and flag contradictions                                 |
-| `list_memory_conflicts` | List detected contradictions and how each was resolved                                              |
+| `search_memory`         | Cari fakta dan polisi (kata kunci, semantik atau hibrid — hibrid ialah lalai)                        |
+| `propose_fact`          | Simpan fakta markdown pendek dalam sesuatu domain                                                    |
+| `supersede_fact`        | Tandakan sesuatu fakta sebagai digantikan oleh fakta lain                                            |
+| `propose_policy`        | Simpan peraturan normatif dalam sesuatu domain (memerlukan keizinan menulis padanya)                 |
+| `supersede_policy`      | Persarakan sesuatu polisi — menandakannya tidak aktif sambil menyimpannya untuk audit                |
+| `list_policies`         | Senaraikan polisi aktif, dengan penapisan pilihan mengikut domain                                    |
+| `list_memory_domains`   | Senaraikan domain memori ruang kerja berserta kiraan fakta dan polisi                                |
+| `record_observation`    | Rekod pemerhatian mentah ke dalam memori kerja ejen                                                  |
+| `get_my_notes`          | Baca papan coretan memori kerja ejen pemanggil                                                       |
+| `update_my_notes`       | Kemas kini papan coretan memori kerja ejen pemanggil                                                 |
+| `remember`              | Tambah nota ke memori kerja panas ejen untuk sesi ini (dibatasi TTL dan kiraan)                      |
+| `consolidate_memory`    | Jalankan pas konsolidasi ("tidur"): buang item panas yang luput, gulungkan yang tahan lama menjadi fakta jangka panjang |
+| `harmonize_memory`      | Jalankan penyelarasan kepercayaan merentas ejen (SHMR) dan tandakan percanggahan                      |
+| `list_memory_conflicts` | Senaraikan percanggahan yang dikesan dan cara setiap satu diselesaikan                                |
 
-## Governance tools
+## Alat tadbir urus
 
-| Tool                         | Description                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
-| `list_goals`                 | List goals with level, status and aggregated progress                                                 |
-| `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
-| `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
-| `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
-| `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
-| `list_runtime_health`        | List each agent's runtime health                                                                      |
-| `list_agent_presence`        | List each agent's presence (health, lifecycle, running and queued counts, capacity)                   |
-| `get_org_chart`              | Read the reporting tree, CEO at the root, nested by `reports_to`                                      |
-| `create_work_product`        | Create a durable deliverable attached to a ticket                                                     |
-| `save_work_product_revision` | Save a new revision; pass `base_revision_id` to be rejected on a concurrent edit                      |
-| `list_work_products`         | List work products, optionally filtered to one ticket                                                 |
-| `get_work_product`           | Read a work product with its revision history                                                         |
-| `create_runtime_profile`     | Define a reusable runtime profile (protocol family, CLI command, fixed launch arguments)              |
-| `list_runtime_profiles`      | List the workspace's runtime profiles                                                                 |
+| Alat                         | Huraian                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `create_goal`                | Cipta matlamat organisasi (peringkat syarikat, pasukan, ejen atau tugasan)                            |
+| `list_goals`                 | Senaraikan matlamat berserta peringkat, status dan kemajuan terkumpul                                 |
+| `update_goal_progress`       | Tetapkan kemajuan sesuatu matlamat                                                                    |
+| `create_approval`            | Buka kelulusan lembaga untuk tindakan yang ditadbir (keluar pelan, cantum, keluaran, ambil pekerja, tersuai) |
+| `list_approvals`             | Senaraikan kelulusan, dengan penapisan pilihan mengikut status                                        |
+| `decide_approval`            | Rekod keputusan: luluskan, tolak, minta semakan semula atau hantar semula                             |
+| `comment_approval`           | Komen pada kelulusan lembaga                                                                          |
+| `exit_plan_mode`             | Buka (dan, setelah diluluskan, gunakan) kelulusan `plan_exit`, menukar perbualan keluar daripada modus pelan |
+| `agent_heartbeat`            | Laporkan keadaan hidup (hidup, melahu, tersekat); mendiamkan diri menukar kesihatan masa jalan kepada baru hilang, kemudian luar talian |
+| `list_runtime_health`        | Senaraikan kesihatan masa jalan setiap ejen                                                           |
+| `list_agent_presence`        | Senaraikan kehadiran setiap ejen (kesihatan, kitaran hayat, kiraan sedang berjalan dan dalam giliran, kapasiti) |
+| `get_org_chart`              | Baca pokok pelaporan, CEO di akar, bersarang mengikut `reports_to`                                    |
+| `create_work_product`        | Cipta hasil kerja tahan lama yang dilampirkan pada sesuatu tiket                                      |
+| `save_work_product_revision` | Simpan revisi baharu; hantar `base_revision_id` untuk ditolak apabila berlaku suntingan serentak      |
+| `list_work_products`         | Senaraikan hasil kerja, dengan penapisan pilihan kepada satu tiket                                    |
+| `get_work_product`           | Baca hasil kerja berserta sejarah revisinya                                                           |
+| `create_runtime_profile`     | Takrifkan profil masa jalan yang boleh diguna semula (keluarga protokol, perintah CLI, argumen pelancaran tetap) |
+| `list_runtime_profiles`      | Senaraikan profil masa jalan ruang kerja                                                              |
 
-## Code graph tools
+## Alat graf kod
 
-Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
+Didaftarkan hanya apabila hos membekalkan repositori graf kod. Indeks itu merangkumi set tatabahasa yang dibundelkan (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); simbol dalam mana-mana bahasa lain tidak hadir.
 
-| Tool           | Description                                                                        |
+| Alat           | Huraian                                                                            |
 | -------------- | ---------------------------------------------------------------------------------- |
-| `search_code`  | Search indexed symbols by name, signature and doc comment (hybrid BM25 + semantic) |
-| `code_symbol`  | Look up symbols by exact name; returns `file:line` and signature                   |
-| `code_callers` | List the symbols that call or depend on a symbol (incoming edges)                  |
-| `code_callees` | List the symbols a symbol calls or depends on (outgoing edges)                     |
-| `code_impact`  | Compute the transitive impact radius of a symbol, to a depth                       |
+| `search_code`  | Cari simbol yang diindeks mengikut nama, tandatangan dan komen dok (hibrid BM25 + semantik) |
+| `code_symbol`  | Cari simbol mengikut nama tepat; mengembalikan `file:line` dan tandatangan         |
+| `code_callers` | Senaraikan simbol yang memanggil atau bergantung pada sesuatu simbol (tepi masuk)   |
+| `code_callees` | Senaraikan simbol yang dipanggil atau dibergantung oleh sesuatu simbol (tepi keluar) |
+| `code_impact`  | Kira jejari kesan transitif sesuatu simbol, hingga kedalaman tertentu               |
 
-## Ticketing tools
+## Alat penetikan
 
-| Tool                      | Description                                                                                                                  |
+| Alat                      | Huraian                                                                                                                      |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `create_ticket`           | Create a ticket on the configured provider                                                                                   |
-| `get_ticket`              | Fetch one ticket by id                                                                                                       |
-| `list_tickets`            | List tickets, optionally filtered by status or assignee                                                                      |
-| `update_ticket`           | Update status, title, description, priority, or labels (status accepts aliases such as `in_progress` / `completed`)          |
-| `assign_ticket`           | Assign a ticket to an agent and/or team                                                                                      |
-| `reassign_ticket`         | Reassign a ticket to a different agent                                                                                       |
-| `add_ticket_collaborator` | Invite an agent to collaborate on a ticket (added to its space)                                                            |
-| `comment_on_ticket`       | Comment on a ticket                                                                                                          |
-| `close_ticket`            | Close a ticket (marks it done) with optional output                                                                          |
-| `fail_ticket`             | Mark a ticket failed with an error message                                                                                   |
-| `delegate_ticket`         | Delegate a ticket to an agent, creating a tracked ticket                                                                     |
-| `ticket_pr_link`          | Link or unlink a ticket and a pull request by PR node id (`action`: `link` \| `unlink`)                                      |
-| `ticket_relation`         | Add or remove a relation between two tickets — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
-| `list_ticket_relations`   | List a ticket's parent, sub-issues and dependency links                                                                      |
+| `create_ticket`           | Cipta tiket pada pembekal yang dikonfigurasikan                                                                               |
+| `get_ticket`              | Ambil satu tiket mengikut id                                                                                                 |
+| `list_tickets`            | Senaraikan tiket, dengan penapisan pilihan mengikut status atau penerima tugas                                                |
+| `update_ticket`           | Kemas kini status, tajuk, huraian, keutamaan atau label (status menerima alias seperti `in_progress` / `completed`)           |
+| `assign_ticket`           | Tetapkan tiket kepada ejen dan/atau pasukan                                                                                  |
+| `reassign_ticket`         | Tetapkan semula tiket kepada ejen yang lain                                                                                  |
+| `add_ticket_collaborator` | Jemput ejen untuk bekerjasama pada sesuatu tiket (ditambahkan ke ruangnya)                                                  |
+| `comment_on_ticket`       | Komen pada sesuatu tiket                                                                                                     |
+| `close_ticket`            | Tutup tiket (menandakannya selesai) dengan output pilihan                                                                     |
+| `fail_ticket`             | Tandakan tiket sebagai gagal berserta mesej ralat                                                                            |
+| `delegate_ticket`         | Wakilkan tiket kepada ejen, sambil mencipta tiket yang dijejaki                                                              |
+| `ticket_pr_link`          | Pautkan atau nyahpautkan tiket dengan pull request mengikut id nod PR (`action`: `link` \| `unlink`)                         |
+| `ticket_relation`         | Tambah atau buang hubungan antara dua tiket — `blocked_by`, `blocking`, `related_to`, `duplicate_of`, `duplicated_by`, `sub_issue_of`, `parent_of` (`action`: `add` \| `remove`) |
+| `list_ticket_relations`   | Senaraikan induk, sub-isu dan pautan kebergantungan sesuatu tiket                                                             |
 
-## Team and pipeline tools
+## Alat pasukan dan pipeline
 
-| Tool                   | Description                                                                                                                    |
+| Alat                   | Huraian                                                                                                                        |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `record_team_activity` | Record a team leader's activity entry against a ticket                                                                         |
-| `preview_trigger`      | Dry-run which pipeline runs a hypothetical event would start, committing nothing                                               |
-| `submit_output`        | Submit the structured output payload for the caller's current pipeline run; validated against the run's declared output schema |
+| `record_team_activity` | Rekod entri aktiviti ketua pasukan terhadap sesuatu tiket                                                                      |
+| `preview_trigger`      | Jalankan cubaan kering untuk melihat larian pipeline yang akan dimulakan oleh peristiwa hipotetikal, tanpa melakukan sebarang komit |
+| `submit_output`        | Hantar muatan output berstruktur bagi larian pipeline semasa pemanggil; disahkan terhadap skema output yang diisytiharkan oleh larian itu |
 
-## Orchestration tools
+## Alat orkestrasi
 
-| Tool                    | Description                                                                                                     |
+| Alat                    | Huraian                                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+| `propose_orchestration` | Keluarkan rancangan orkestrasi berbilang ejen yang berstruktur untuk satu kelulusan awal; mengesahkan dan mengembalikan sebarang pelanggaran |
 
-## Newsfeed tools
+## Alat suapan berita
 
-| Tool                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `list_feeds`        | List the registered RSS/Atom feeds                           |
-| `list_articles`     | List articles, optionally filtered by feed, unread, or saved |
-| `get_article`       | Fetch one article                                            |
-| `set_article_read`  | Mark an article read or unread                               |
-| `set_article_saved` | Save or unsave an article                                    |
-| `refresh_feeds`     | Re-fetch every enabled feed now                              |
+| Alat                | Huraian                                                          |
+| ------------------- | ---------------------------------------------------------------- |
+| `list_feeds`        | Senaraikan suapan RSS/Atom yang terdaftar                        |
+| `list_articles`     | Senaraikan artikel, dengan penapisan pilihan mengikut suapan, belum dibaca atau disimpan |
+| `get_article`       | Ambil satu artikel                                               |
+| `set_article_read`  | Tandakan artikel sebagai dibaca atau belum dibaca                |
+| `set_article_saved` | Simpan atau nyahsimpan artikel                                   |
+| `refresh_feeds`     | Ambil semula setiap suapan yang diaktifkan sekarang              |
 
-## Enclosure (rig) tools
+## Alat persekitaran terasing (stesen)
 
-Drive disposable machines — an enclosed browser or Linux desktop, an Android
-emulator, or an iOS Simulator — from inside a run. Registered post-boot,
-unconditionally: whether a machine can actually boot is a probe question the
-tools answer per call. Repeated calls in one conversation reuse one machine;
-screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. The four use tools plus
-`rig_close` declare the `enclosureControl` [action class](/ms-MY/manual-pengguna/konsep/guardrail/)
-(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
-`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
-declares none — it only reads workspace state. The full verb vocabulary per surface is in the
-[rigs reference](/ms-MY/manual-pengguna/rujukan/stesen/#action-verbs).
+Kawal mesin pakai buang — penyemak imbas atau desktop Linux terasing, emulator
+Android, atau iOS Simulator — dari dalam sesuatu larian. Didaftarkan selepas
+boot, tanpa syarat: sama ada sesuatu mesin benar-benar boleh boot ialah soalan
+siasatan yang dijawab oleh alat itu pada setiap panggilan. Panggilan berulang
+dalam satu perbualan menggunakan semula satu mesin; tangkapan skrin dikembalikan
+sebagai kandungan imej dengan bajet satu imej bagi setiap hasil, dan kandungan
+halaman/UI yang diekstrak dipagari sebagai data tidak dipercayai. Empat alat
+penggunaan serta `rig_close` mengisytiharkan `enclosureControl` [kelas tindakan](/ms-MY/manual-pengguna/konsep/guardrail/)
+(alat penggunaan itu juga mengisytiharkan `networkEgress` dan `processSpawn`;
+`mobile_use` dan `ios_use` juga mengisytiharkan `packageInstall`), jadi modus
+baca sahaja menolaknya. `rig_list` tidak mengisytiharkan apa-apa — ia hanya
+membaca keadaan ruang kerja. Perbendaharaan kata kata kerja penuh bagi setiap
+permukaan ada dalam
+[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#action-verbs).
 
-| Tool           | Description                                                                                     |
+| Alat           | Huraian                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------ |
-| `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
-| `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
-| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
-| `rig_close`    | Destroy a rig and discard its owned machine state |
+| `computer_use` | Kawal desktop Linux dalam VM terasing: gerak, klik, seret, tatal, taip, ubah saiz, papan keratan, tangkapan skrin |
+| `browser_use`  | Kawal Chromium, Firefox atau WebKit tanpa kepala (`engine`): navigasi, klik, isi, ekstrak (a11y/DOM/konsol), papan keratan, tangkapan skrin |
+| `mobile_use`   | Kawal Android melalui ADB: periksa/masukkan input, tangkapan skrin, pasang/mula/henti/set semula/nyahpasang apl, pautan mendalam dan perintah peranti berbentuk argv |
+| `ios_use`      | Kawal iOS Simulator melalui WebDriverAgent/CoreSimulator: periksa/masukkan input, tangkapan skrin, pasang/mula/henti/nyahpasang apl, pautan mendalam dan proses simulator berbentuk argv |
+| `rig_list`     | Senaraikan stesen sesuatu ruang kerja berserta permukaan, status, saiz paparan dan pengawal      |
+| `rig_close`    | Musnahkan sesuatu stesen dan buang keadaan mesin yang dimilikinya                                |
 
-## Not exposed over MCP
+## Tidak didedahkan melalui MCP
 
-Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/ms-MY/manual-pengguna/konsep/mesyuarat/), not as a tool an agent can call.
+Kalendar dan mesyuarat tiada alat MCP. Ejen tidak boleh membaca kalendar, mesyuarat, transkrip, item tindakan atau keputusan anda. Ringkasan yang menghasilkan item tindakan dan keputusan berjalan sebagai [pipeline `meeting_summary`](/ms-MY/manual-pengguna/konsep/mesyuarat/) terbina, bukan sebagai alat yang boleh dipanggil oleh ejen.
 
-## Tool gating by mode
+## Pengawalan alat mengikut modus
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
+Pengawalan dikuatkuasakan dua kali daripada satu jadual (`ModeToolPolicy`): sekali dalam penghantar MCP untuk penyesuai Claude Code dan sekali dalam daftar harness terbina. Panggilan yang disekat mengembalikan sebabnya.
 
-| Mode          | Tool surface                                                                                                                                                                                                                        |
+| Modus         | Permukaan alat                                                                                                                                                                                                                      |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat`        | Every registered tool; no allow-list                                                                                                                                                                                                |
-| `plan`        | A curated allow-list. No worktree writes and no `create` / `assign` / `delegate` ticket verbs, but memory, artifacts, todos, `submit_plan`, `exit_plan_mode` and the ticket-completion verbs on the dispatched ticket are permitted |
-| `review`      | A curated allow-list: review participation, communication, read-only context fetchers and the full ticket verb set including `create_ticket` and `assign_ticket`                                                                    |
-| `orchestrate` | A curated allow-list: research and read tools plus `propose_orchestration`, `create_playbook` and `run_playbook`. Hiring, decomposition and ticket completion happen deterministically after approval, never mid-run                |
+| `chat`        | Setiap alat yang terdaftar; tiada senarai kebenaran                                                                                                                                                                                  |
+| `plan`        | Senarai kebenaran terpilih. Tiada penulisan worktree dan tiada kata kerja tiket `create` / `assign` / `delegate`, tetapi memori, artifak, todo, `submit_plan`, `exit_plan_mode` dan kata kerja penyiapan tiket pada tiket yang dihantar adalah dibenarkan |
+| `review`      | Senarai kebenaran terpilih: penyertaan semakan, komunikasi, pengambil konteks baca sahaja dan set kata kerja tiket yang penuh termasuk `create_ticket` dan `assign_ticket`                                                            |
+| `orchestrate` | Senarai kebenaran terpilih: alat penyelidikan dan bacaan serta `propose_orchestration`, `create_playbook` dan `run_playbook`. Pengambilan pekerja, penguraian dan penyiapan tiket berlaku secara deterministik selepas kelulusan, tidak pernah di tengah-tengah larian |
 
-Permitted in every mode regardless of allow-list:
+Dibenarkan dalam setiap modus tanpa mengira senarai kebenaran:
 
-| Set                  | Tools                                                                                                                                                                                                                                                             |
+| Set                  | Alat                                                                                                                                                                                                                                                              |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Memory and artifacts | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
-| Code graph           | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
-| Run mechanics        | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
+| Memori dan artifak   | `search_memory`, `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy`, `record_observation`, `update_my_notes`, `get_my_notes`, `list_memory_domains`, `list_policies`, `publish_artifact`, `revise_artifact`, `list_artifacts`, `get_artifact` |
+| Graf kod             | `search_code`, `code_symbol`, `code_callers`, `code_callees`, `code_impact`                                                                                                                                                                                       |
+| Mekanik larian       | `search_tool_bm25`, `list_my_tools`, `todo_write`, `todo_read`                                                                                                                                                                                                    |
 
-Being on an allow-list does not make a tool callable, and the reverse also holds: the operator-question capability is a **harness** tool (`ask_user`), so it never appears in this MCP catalogue at all.
+Berada dalam senarai kebenaran tidak menjadikan sesuatu alat boleh dipanggil, dan sebaliknya juga begitu: keupayaan menyoal pengendali ialah alat **harness** (`ask_user`), jadi ia tidak pernah muncul sama sekali dalam katalog MCP ini.
 
-## Approval-gated tools
+## Alat berpagar kelulusan
 
-A tool may declare `requiresApproval`. The dispatcher then builds an `ApprovalPayload` and surfaces it through the `ConfirmationPort` before the tool runs; `cc_server` wires that port, so the gate is live.
+Sesuatu alat boleh mengisytiharkan `requiresApproval`. Penghantar kemudian membina `ApprovalPayload` dan menampilkannya melalui `ConfirmationPort` sebelum alat itu berjalan; `cc_server` menyambungkan port itu, jadi get itu hidup.
 
-Registered tools that declare it: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
+Alat terdaftar yang mengisytiharkannya: `create_ticket`, `update_ticket`, `assign_ticket`, `reassign_ticket`, `close_ticket`, `ticket_relation`, `create_goal`, `update_goal_progress`, `create_approval`, `decide_approval`, `comment_approval`, `create_work_product`, `save_work_product_revision`, `create_runtime_profile`, `install_skill`, `update_skill`.
 
-Independently, the unified action guardrails gate any tool that declares a non-empty `ActionClass` set. A `prompt` decision with no approver connected is denied. See [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/).
+Secara berasingan, guardrail tindakan bersatu mengawal mana-mana alat yang mengisytiharkan set `ActionClass` yang tidak kosong. Keputusan `prompt` tanpa pelulus yang bersambung ditolak. Lihat [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/).
 
-## Capabilities with no tool behind them
+## Keupayaan yang tiada alat di belakangnya
 
-Not every capability in the product is reachable by an agent. These have no tool
-at all, so a name you may have seen referenced elsewhere returns "unknown tool":
+Bukan setiap keupayaan dalam produk ini boleh dicapai oleh ejen. Yang berikut tiada
+alat sama sekali, jadi nama yang mungkin anda lihat dirujuk di tempat lain
+mengembalikan "unknown tool":
 
-| Capability                             | Where it lives instead                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
-| Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/ms-MY/manual-pengguna/panduan-cara/projek/)     |
-| Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
-| Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)      |
-| Calendar and meetings                   | RPC for human clients only (see above)                                                          |
+| Keupayaan                               | Di mana ia berada sebaliknya                                                                  |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Mengambil pekerja, memecat atau menyunting ejen | UI ejen. Tiada alat `hire_agent` / `fire_agent` / `update_agent`                       |
+| Mencipta ruang kerja                    | `workspace.upsert` melalui RPC, yang menyemai dan mengecop pemilikan                            |
+| Projek (cipta / senarai / kemas kini / failkan) | UI tiket. Projek ialah permukaan pengendali — lihat [Projek](/ms-MY/manual-pengguna/panduan-cara/projek/) |
+| Menanyakan soalan yang menyekat kepada pengendali | Alat `ask_user` **harness**, bukan MCP. Ia merender borang dalam perbualan dan menyekat sehingga jawapan diterima |
+| Diagnosis bagi setiap ejen              | Tiada apa-apa. Tiada `doctor` — lihat [Diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/) |
+| Kalendar dan mesyuarat                  | RPC untuk klien manusia sahaja (lihat di atas)                                                  |
 
-## See also
+## Lihat juga
 
-- [Use Control Center as an MCP server](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/)
-- [Modes](/ms-MY/manual-pengguna/konsep/modus/)
-- [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/)
+- [Gunakan Control Center sebagai pelayan MCP](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/)
+- [Modus](/ms-MY/manual-pengguna/konsep/modus/)
+- [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/)

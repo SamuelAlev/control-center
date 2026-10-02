@@ -1,92 +1,98 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: 빠른 시작
+description: Control Center를 설치하고, 에이전트 하나를 구성한 뒤 저장소에서 작동하는 모습을 지켜보세요.
 slug: ko-KR/매뉴얼/빠른-시작
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+아무것도 없는 상태에서 여러분의 코드를 대상으로 에이전트가 실행되기까지의 가장 짧은 완전 경로입니다. 순서대로 따라 하세요. 각 단계는 앞 단계에 의존합니다.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Git, GitHub 계정, 그리고 모델 공급자 계정(Anthropic, OpenAI, Codex, Cursor, Kimi Code 또는 API 키가 있는 임의의 공급자)이나 이미 설치된 Claude Code CLI 중 하나가 필요합니다. 나머지는 진행하면서 설정합니다.
 
-## Step 1: Install and launch
+## 1단계: 설치 및 실행
 
-Install Control Center as described in [Install](/ko-KR/매뉴얼/설치/), then open it.
+[설치](/ko-KR/매뉴얼/설치/)에 설명된 대로 Control Center를 설치한 다음 실행합니다.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+데스크톱 앱은 처음 실행할 때 **"Control Center를 어떻게 실행할까요?"**라고 묻습니다. **이 앱에서 실행**을 선택하세요. 그러면 Control Center가 이 머신에 헤드리스 `cc_server`를 실행하며, 이 서버가 데이터를 소유하고 모든 작업을 수행합니다. 서버는 눈에 보이지 않고, 대신 온보딩 화면이 열립니다.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/ko-KR/매뉴얼/설치/#use-it-in-your-browser) for the browser route.
+:::note[아무것도 설치하고 싶지 않으신가요?]
+같은 앱이 [app.usectrl.dev](https://app.usectrl.dev)에서 브라우저로도 같은 기능과 함께
+실행됩니다. 다만 브라우저 탭은 서버를 호스팅할 수 없으므로 서버는 직접 마련해야 합니다.
+`cc_server`를 로컬에서 실행하고 `ws://localhost:9030`에 연결하거나, 다른 머신의 서버를
+가리키면 됩니다. 이 빠른 시작은 서버 설정이 필요 없는 데스크톱 경로를 따릅니다. 브라우저
+경로는 [설치](/ko-KR/매뉴얼/설치/#use-it-in-your-browser)를 참고하세요.
 :::
 
-## Step 2: Work through onboarding
+## 2단계: 온보딩 진행
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+온보딩은 다섯 단계로 이루어지며 순서대로 진행됩니다. 건너뛸 수 없습니다.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **연결**: GitHub로 로그인하거나 `repo` 및 `read:org` 권한이 있는 개인 액세스 토큰을 붙여 넣습니다. 자격 증명은 서버에 저장되고 계정에 연결됩니다.
+2. **워크스페이스**: 첫 워크스페이스의 이름을 정하고, 원한다면 로고를 고릅니다. 워크스페이스를 만들면 에이전트 다섯 개(CEO와 `qa`, `architect`, `engineer`, `librarian`)와 기본 제공 파이프라인 템플릿이 함께 생성됩니다.
+3. **샌드박스**: 샌드박싱 기본 설정을 기록합니다. 어느 쪽을 골라도 계속 진행할 수 있습니다.
+4. **어댑터**: 에이전트가 기본으로 사용할 어댑터와 모델을 고릅니다. **Control Center (built-in)** 을 선택한 다음, 나타나는 공급자 선택기로 모델 공급자에 로그인합니다. 공급자를 연결하기 전까지 모델 목록은 비어 있습니다. 이 단계를 마치면 워크스페이스의 CEO 에이전트에도 어댑터와 모델이 기록됩니다.
+5. **음성(선택 사항)**: 받아쓰기용 온디바이스 음성 모델을 설치하거나 건너뜁니다.
 
-Control Center then opens your workspace inbox.
+그러면 Control Center가 워크스페이스 받은편지함을 엽니다.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/).
+:::note[에이전트 실행을 제한하는 것]
+에이전트 명령은 호스트의 OS 네이티브 샌드박스를 사용할 수 있을 때 그 안에서 실행됩니다.
+macOS에서는 Seatbelt, Linux에서는 bubblewrap입니다. Windows에는 백엔드가 없으므로,
+그곳의 실행은 다른 계층으로만 제한됩니다. 즉 대화 자체의 워크트리(Windows에서는
+`git worktree`, `rift`가 제공되는 곳에서는 copy-on-write), 실행할 때마다 발급되고 종료 시
+폐기되는 자격 증명, 그리고 동작 가드레일입니다. [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)을
+참고하세요.
 :::
 
-## Step 3: Add a repository
+## 3단계: 저장소 추가
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+**설정 → 워크스페이스 → 리포지토리**로 이동한 다음 **리포지토리 추가**를 클릭합니다.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+이 대화 상자는 여러분의 클라이언트가 아니라 서버를 실행하는 머신의 폴더를 탐색하며, 서버가 노출하도록 구성된 루트(기본값은 서버 사용자의 홈 디렉터리) 안에 머뭅니다. 체크박스는 git 체크아웃에만 표시됩니다. 원하는 체크아웃을 선택하고 등록하세요.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+체크아웃은 git 워크트리 안에 있고, `origin` 원격이 있으며, 그 원격이 지원되는 forge(github.com, gitlab.com 또는 bitbucket.org)를 가리킬 때만 허용됩니다. 그 밖의 경우는 사유와 함께 거부됩니다.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+저장소는 워크스페이스 범위입니다. 여기서 체크아웃을 등록하면 _이_ 워크스페이스에 들어갑니다. 별도의 연결 단계는 없습니다.
 
-## Step 4: Give an agent an adapter and a model
+## 4단계: 에이전트에 어댑터와 모델 지정
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+**설정 → 워크스페이스 → 에이전트**로 이동합니다. 목록에서 `engineer` 에이전트를 선택하세요.
 
-On the **Settings** tab, set:
+**설정** 탭에서 다음을 지정합니다:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **어댑터**: `Control Center (built-in)`
+- **모델**: 온보딩에서 연결한 공급자의 모델 중 하나를 고릅니다
 
-Press **Save changes**.
+**변경 사항 저장**을 누릅니다.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+실제로 이 단계는 선택 사항이 아닙니다. 온보딩에서 고른 어댑터를 상속받는 것은 CEO 에이전트뿐이며, 네 명의 전문 에이전트는 어댑터 없이 생성됩니다. 이들은 Anthropic의 기본 모델과 함께 **Control Center (built-in)** 로 폴백하므로, Anthropic 계정을 연결한 경우에만 실행되며, 연결했다 해도 여러분이 고르지 않은 모델로 실행됩니다.
 
-## Step 5: Send the agent a task
+## 5단계: 에이전트에 작업 보내기
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. 사이드바에서 **스페이스** 섹션을 찾아 **+** 버튼을 클릭합니다.
+2. 스페이스 이름을 정하고, **에이전트 추가**에서 `engineer` 에이전트를 추가한 뒤 생성합니다.
+3. 등록한 저장소를 대상으로 구체적이고 작은 작업을 입력하고 Enter를 누릅니다.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center는 이 대화를 위해 워크스페이스 저장소의 copy-on-write 워크트리를 마련하고, 에이전트의 역할, 페르소나, 스킬과 스페이스의 컨텍스트로 프롬프트를 구성한 뒤 실행을 디스패치합니다. 여러분의 원본 체크아웃은 건드리지 않습니다.
 
-## Step 6: Watch it work
+## 6단계: 작동하는 모습 지켜보기
 
-You should see, in order:
+다음이 순서대로 보일 것입니다:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- 이 대화에서 에이전트가 작업 중이므로 작성기의 전송 버튼이 중지 버튼으로 바뀝니다
+- 에이전트의 추론, 도구 호출, 텍스트가 트랜스크립트로 스트리밍됩니다
+- 실행이 끝나면 전송 버튼이 다시 돌아옵니다
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+그런 다음 **설정 → 워크스페이스 → 에이전트**를 열고 에이전트를 선택한 뒤 **로그** 탭을 확인하세요. 실행 행 하나가 표시되며, 상태, 소요 시간, 시작 및 종료 시각, 실행에 사용된 어댑터가 함께 나옵니다.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+이것이 핵심 루프입니다. Control Center의 나머지 모든 것, 즉 풀 리퀘스트 리뷰, 파이프라인, 티켓, 회의, Slack은 여기에 매달려 있습니다.
 
-## Next steps
+## 다음 단계
 
-- [Your first workspace](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/ko-KR/매뉴얼/튜토리얼/첫-풀-리퀘스트/): take an agent's branch through review and merge
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): what an agent is made of
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/): the rest of the agent form
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/): one goal, one approval, a generated pipeline
-- [Pair your phone](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): follow the fleet from anywhere
-- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/): how the desktop, web and phone clients relate to the server
+- [첫 워크스페이스](/ko-KR/매뉴얼/튜토리얼/첫-워크스페이스/): 같은 내용을 더 천천히 다루며 격리 모델을 설명합니다
+- [첫 풀 리퀘스트 리뷰](/ko-KR/매뉴얼/튜토리얼/첫-풀-리퀘스트/): 에이전트의 브랜치를 리뷰하고 병합합니다
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 에이전트가 무엇으로 구성되는지
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/): 에이전트 양식의 나머지 부분
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/): 하나의 목표, 하나의 승인, 생성된 파이프라인
+- [기기 페어링](/ko-KR/매뉴얼/사용-가이드/기기-페어링/): 어디서든 플릿을 따라갑니다
+- [배포와 클라이언트](/ko-KR/매뉴얼/개념/배포/): 데스크톱, 웹, 폰 클라이언트가 서버와 맺는 관계

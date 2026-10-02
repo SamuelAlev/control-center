@@ -1,34 +1,38 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Configurează integrarea Linear
+description: Stochează o cheie API Linear pe server pentru ca agenții să poată apela Linear și alege Linear ca provider de ticketing pentru tichetele noi.
 slug: ro-RO/manual/ghiduri-practice/integrare-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/).
+Lipește o cheie API Linear pe server, asociată utilizatorului tău, exact la fel
+cum conectezi un forge. Tichetele, proiectele, legăturile, colaboratorii,
+delegarea și atribuirea funcționează toate pe baza propriei baze de date a
+Control Center, fără să fie nevoie de vreun serviciu extern — vezi
+[Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/).
 
-## Store your Linear key
+## Stochează cheia Linear
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Cheie API ticketing** se află în **Setări → Spațiu de lucru → General**, pe
+cardul **Ticketing**. Ea stochează cheia pe server, asociată ID-ului tău de
+utilizator. Cheia proprie a serverului pentru lucrul nesupravegheat provine din
+`LINEAR_API_KEY` sau din cardul **Aplicații provider** și este injectată ca
+`TICKETING_API_KEY` doar atunci când agentul respectiv are capabilitatea
+**Permite apeluri ticketing API**.
 
-## Stamp new tickets as Linear
+## Marchează tichetele noi ca Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Provider de ticketing** (primul pas din onboarding și
+`/workspaces/<workspaceId>/api-keys`) oferă `local` și `linear`. Alegerea
+variantei `linear` marchează cu `provider: linear` tichetele pe care le creezi
+de acum înainte.
 
-## Related guides
+## Ghiduri conexe
 
-- [Create and manage tickets](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
-- [Set up GitHub integration](/ro-RO/manual/ghiduri-practice/integrare-github/)
-- [Manage API keys](/ro-RO/manual/ghiduri-practice/chei-api/)
+- [Creează și gestionează tichete](/ro-RO/manual/ghiduri-practice/gestioneaza-tichete/)
+- [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
+- [Gestionează cheile API](/ro-RO/manual/ghiduri-practice/chei-api/)
 
-## Related concepts
+## Concepte conexe
 
-- [Tickets and delegation](/ro-RO/manual/concepte/tichete/)
+- [Tichete și delegare](/ro-RO/manual/concepte/tichete/)

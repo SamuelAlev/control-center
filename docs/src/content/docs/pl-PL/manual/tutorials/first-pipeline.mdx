@@ -1,102 +1,103 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Zbuduj pierwszy potok
+description: Utwórz szablon potoku, skonfiguruj jego krok, zezwól na ręczne uruchomienia i rozpocznij jedno.
 slug: pl-PL/podrecznik/samouczki/pierwszy-potok
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Co zbudujesz
 
-By the end of this tutorial, you will have:
+Po ukończeniu tego samouczka będziesz mieć:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Zapisany szablon potoku, który wysyła agenta z promptem
+- Włączone ręczne uruchomienia, dzięki którym szablon da się uruchomić z ręki
+- Jedno ukończone uruchomienie, z widocznym wejściem i wyjściem kroku
 
-Prerequisites: [Dispatch your first agent](/pl-PL/podrecznik/samouczki/pierwszy-agent/) completed, so you have an agent with an adapter and a model.
+Wymagania wstępne: ukończony [Wyślij pierwszego agenta](/pl-PL/podrecznik/samouczki/pierwszy-agent/), czyli agent z adapterem i modelem.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/pl-PL/podrecznik/koncepcje/potoki/); for the full step vocabulary, [Pipeline step kinds](/pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku/).
+Potok to DAG kroków. Szablony definiują graf, a uruchomienia to wykonania. Model, który za tym stoi, opisuje [Potoki i automatyzacja](/pl-PL/podrecznik/koncepcje/potoki/); pełne słownictwo kroków znajdziesz w [Rodzajach kroków potoku](/pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku/).
 
-## Step 1: Create a template
+## Krok 1: Utwórz szablon
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Przejdź do **Ustawienia → Obszar roboczy → Szablony potoków**
+2. Kliknij **Nowy szablon**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Edytor otwiera się na przygotowanym szkielecie o nazwie **Nowy potok** (id `pipeline_N`).
+Kliknij tytuł w nagłówku i zmień nazwę — w tym samouczku
+dobrze sprawdzi się `code_quality_check`. Nie ma okna dialogowego z identyfikatorem
+ani pola opisu.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Kanwa nie jest pusta. Nowy szablon jest od razu podłączony jako **Trigger → Step →
+wartownik**, gdzie „Step” to węzeł agenta promptowego, a wartownik to
+niewidzialny element, który edytor przepina na każde osiągalne ujście.
 
-You configure the Step that is already there.
+Konfigurujesz ten **Step**, który już tam jest.
 
-## Step 2: Configure the step
+## Krok 2: Skonfiguruj krok
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Kliknij węzeł **Step** na kanwie
+2. W panelu **Konfiguracja węzła** po prawej ustaw:
+   - **Agent**: swojego agenta z poprzedniego samouczka
+   - **Szablon promptu**: „Przejrzyj kod na bieżącej gałęzi pod kątem problemów z jakością. Wypisz, co znajdziesz.”
+3. Pozostaw **Triggers from** bez zmian — węzeł jest już podłączony tak, aby uruchamiał się po Trigger
 
-## Step 3: Save
+## Krok 3: Zapisz
 
-Press **Save** in the editor header.
+Naciśnij **Zapisz** w nagłówku edytora.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Punkt kontrolny.** Podpis „Niezapisane zmiany” znika.
 
-## Step 4: Allow manual runs
+## Krok 4: Zezwól na ręczne uruchomienia
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Kliknij przerywany kafelek **Dodaj wyzwalacz** na kanwie (albo przeciągnij **Uruchomienie ręczne**
+   z sekcji **Wyzwalacze** biblioteki węzłów) i wybierz **Uruchomienie ręczne**.
+2. Wybierz ten węzeł. W inspektorze po prawej włącz **Włączone** —
+   „Pokaż na stronie uruchomienia i startuj ręcznie.”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+To nie jest opcjonalne i łatwo to przeoczyć. Nowy szablon powstaje **bez żadnego wiersza wyzwalacza**, więc dopóki tego nie włączysz, strona uruchamiania nie będzie go wyświetlać i nie będzie czego uruchomić. Przełącznik zapisuje wyzwalacz od razu; nie czeka na kolejne zapisanie.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Ten sam przełącznik kryje się za **Ręczne uruchamianie** w nagłówku edytora, obok zadeklarowanych danych wejściowych szablonu.
 
-## Step 5: Run it
+## Krok 5: Uruchom go
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Kliknij **Potoki** na pasku bocznym
+2. Kliknij **Uruchom potok** w nagłówku
+3. Wybierz `code_quality_check` na lewej szynie
+4. Kliknij **Uruchom potok** w formularzu — Twój szablon nie deklaruje żadnych danych wejściowych, więc nie ma czego wypełniać
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Punkt kontrolny.** Powiadomienie typu toast potwierdza rozpoczęcie uruchomienia, a Control Center otwiera szczegóły uruchomienia.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Silnik tworzy rekord uruchomienia, kończy wyzwalacz, planuje krok, wysyła agenta i kończy uruchomienie, gdy zakończy się gałąź wchodząca do wartownika.
 
-## Step 6: Inspect the result
+## Krok 6: Sprawdź wynik
 
-Click the step in the run to open its detail panel:
+Kliknij krok w uruchomieniu, aby otworzyć jego panel szczegółów:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Znaczniki czasu **Rozpoczęto** i **Zakończono** oraz **Czas trwania**
+- **Wejście**: stan przekazany do kroku
+- **Wyjście**: to, co krok wygenerował — tutaj odpowiedź agenta
+- **Aktywność agenta**, z odsyłaczem do rozmowy, którą poprowadził krok
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Punkt kontrolny.** Krok widnieje jako ukończony, a jego wyjście zawiera recenzję agenta.
 
-## Adding more steps
+## Dodawanie kolejnych kroków
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Węzły dodaje się, przeciągając pozycję z biblioteki węzłów po lewej na
+kanwę, albo naciskając **Dodaj krok** (`+`) tuż za węzłem. Przeciągnij z
+portu wyjściowego węzła na inny węzeł, aby je połączyć, albo wybierz nowy węzeł
+i zaznacz jego krok nadrzędny pod **Triggers from**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Węzeł wartownika nie jest rysowany i nie można go wybrać. Edytor przepina go
+na każde osiągalne ujście, więc węzeł dodany po początkowym **Step** i tak się wykona.
 
-## Recap
+## Podsumowanie
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Utworzyłeś szablon, skonfigurowałeś węzeł agenta promptowego z przygotowanego szkieletu, zapisałeś go, uczyniłeś go uruchamialnym ręcznie, rozpocząłeś uruchomienie i odczytałeś wejście oraz wyjście kroku.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Potoki bywają znacznie większe — routery warunkowe, równoległe gałęzie, węzły złączeń, rozgałęzienia for-each, bramki dla człowieka — ale ich kształt nigdy się nie zmienia: kroki w DAG, przekazujące stan.
 
-**Next:** [Bridge Slack to your workspace](/pl-PL/podrecznik/samouczki/pierwszy-most-czatu/), the last tutorial in this sequence.
+**Dalej:** [Połącz Slack z obszarem roboczym](/pl-PL/podrecznik/samouczki/pierwszy-most-czatu/), ostatni samouczek w tej serii.
 
-- [Set up pipeline triggers](/pl-PL/podrecznik/poradniki/wyzwalacze-potokow/) to start pipelines from events or a schedule
-- [Pipelines and automation](/pl-PL/podrecznik/koncepcje/potoki/) for the model underneath
-- [Pipeline step kinds](/pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku/) for every step type
+- [Skonfiguruj wyzwalacze potoków](/pl-PL/podrecznik/poradniki/wyzwalacze-potokow/), aby uruchamiać potoki na podstawie zdarzeń lub harmonogramu
+- [Potoki i automatyzacja](/pl-PL/podrecznik/koncepcje/potoki/) — model, który za tym stoi
+- [Rodzaje kroków potoku](/pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku/) — każdy typ kroku

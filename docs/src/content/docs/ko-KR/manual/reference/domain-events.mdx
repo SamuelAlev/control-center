@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: 도메인 이벤트
+description: 53개 도메인 이벤트의 전체 목록, 각 이벤트의 페이로드, 그리고 이를 소비하는 서버 측 구독자를 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/도메인-이벤트
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## 이벤트 버스
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus`는 프로세스 내 브로드캐스트 발행/구독 버스입니다. 발행자는 `publish(event)`를 호출하고, 구독자는 타입이 지정된 `on<T>()` 스트림을 소비합니다. 모든 이벤트는 `DomainEvent`를 구현하며 `occurredAt`을 함께 전달합니다.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**버스는 `cc_server` 안에서 실행됩니다.** 모든 발행자와 살아 있는 모든 구독자가 그곳에 있습니다. 어떤 클라이언트도 이 버스를 보지 못합니다. 서버가 선별한 일부를 `notifications/*` JSON-RPC 프레임으로 전달하고, 구독자마다 워크스페이스 멤버십에 따라 필터링합니다.
 
-| Measure                                                     | Count                                       |
+| 항목                                                        | 개수                                        |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| 구체적 이벤트 클래스                                        | 53                                          |
+| 소스 파일 (`packages/cc_domain/lib/core/domain/events/`)     | 14 (`domain_event_bus.dart` 포함)           |
+| 직접 발행되지 않는 추상 기반 클래스                         | 1 (`TaskLifecycleEvent`, sealed 계층 구조)  |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+아래 목록의 모든 이벤트는 이 한 디렉터리에 있습니다. 다른 곳에 선언된 도메인 이벤트는 없습니다.
 
-## Workspace, agent and repo events
+## 워크스페이스, 에이전트, 저장소 이벤트
 
-| Event               | Payload                                                | Fired when                                              |
+| 이벤트              | 페이로드                                               | 발생 시점                                               |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | 워크스페이스가 생성될 때                                |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 에이전트가 실행을 마칠 때(성공 또는 실패)               |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 저장소가 등록될 때이며, 백그라운드 코드 인덱싱을 트리거합니다 |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 스킬이 설치되거나 업데이트될 때이며, 공급망 스캔 판정을 함께 전달합니다 |
 
-## PR and review events
+## PR과 리뷰 이벤트
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+첫 번째 블록은 PR 자체의 수명주기입니다. 두 번째는 **작성한 PR 감시**로, *내가* 연 PR에 대한 신호이며 각 신호는 `forUserId`를 함께 전달하므로 폴링이 브로드캐스트 대신 관련된 사람에게 이들을 전달할 수 있습니다.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| 이벤트                     | 페이로드                                                                 | 발생 시점                                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | 에이전트가 PR을 열 때                                                                                                               |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`             | PR이 병합/닫힘/열림/다시 열림/승인될 때                                                                                             |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR이 병합될 때 — 분석과 알림을 위해 유지되는, 병합만 다루는 좁은 신호입니다                                                         |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub이 서버 사용자에게 리뷰를 요청할 때(알림 폴링, `review_requested`)                                                            |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | PR에서 서버 사용자가 멘션될 때(알림 폴링, `mention`)                                                                                |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | 외부에서 추적되는(에이전트가 아닌) PR이 병합될 때이며, GitHub 알림 폴링이 감지합니다. `prMerged` 알림 범주에 매핑됩니다 |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | 폴링으로 발견된 비에이전트 PR — 파이프라인 전용(`external_pr_welcome`을 구동)이며, 알림을 발생시키지 않습니다                        |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | PR의 헤드 SHA가 바뀔 때 — 작성자가 푸시했습니다                                                       |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | 완료된 AI 리뷰가 자신이 검토한 PR을 더 이상 설명하지 못할 때입니다. 교체된 커밋에 대한 리뷰가 존재할 때만 발생하므로, 푸시마다 울리는 핑이 아니라 신호로 남습니다 |
 
-### The authored-PR watch
+### 작성한 PR 감시
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+여섯 이벤트 모두 `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`과 선택적 `forUserId`를 전달합니다.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| 이벤트                    | 추가 페이로드                                                                        | 발생 시점                                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | 내가 작성한 PR이 병합 가능해지거나, 더 이상 병합 가능하지 않게 될 때          |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | 리뷰어가 승인하거나, 변경을 요청하거나, 승인이 무효화될 때                    |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI가 실패로 돌아서거나, 복구될 때                                             |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | 누군가 PR 댓글이나 리뷰 댓글에서 나를 멘션할 때                     |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | 내가 참여한 리뷰 스레드에 누군가 답글을 달 때                                 |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | 내가 참여한 리뷰 스레드를 누군가 해결할 때                                    |
 
-## Messaging events
+## 메시징 이벤트
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| 이벤트                     | 페이로드                                                                                                                   | 발생 시점                                                                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | 새 메시지가 도착할 때                                                                                                                                                        |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | 스페이스가 생성될 때                                                                                                                                                                        |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | 스페이스가 삭제될 때                                                                                                                                                                        |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | 스페이스의 워크스페이스가 프로비저닝에 들어가거나, 단계(저장소 복제, PR 체크아웃, 에이전트 설정)에 도달하거나, 준비/실패 상태로 바뀔 때 — 채팅 브리지가 작업 카드에서 이 상황을 설명합니다 |
 
-## Ticketing events
+## 티켓팅 이벤트
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| 이벤트                 | 페이로드                                                                                                                     | 발생 시점                               |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | 티켓이 생성될 때                        |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | 티켓이 주체나 팀에 할당될 때            |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | 작업이 끝날 때(종료 상태)               |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | 에이전트가 실패할 때(종료 상태)         |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | 티켓이 취소될 때(종료 상태)             |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | 상태가 바뀔 때                          |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | 티켓이 재할당될 때                      |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | 제목, 설명, 우선순위가 바뀔 때          |
 
-## Task lifecycle events
+## 작업 수명주기 이벤트
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+디스패치된 에이전트 실행 하나를 실행 로그 id로 식별하는 통합 작업 수명주기 스트림입니다. 모든 이벤트는 `taskId`, 작업별로 단조 증가하는 `seq`, `workspaceId?`, `agentId?` 그리고 `phase`를 전달합니다. 아래 행은 추가 필드만 나열합니다.
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| 이벤트                      | 페이로드                      | 발생 시점                                                                                        |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | 작업이 실행을 위해 백엔드로 넘겨질 때                                                            |
+| `TaskRunning`               | —                             | 작업이 출력을 내기 시작할 때                                                                     |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | 작업이 보류될 때 — 다른 작업이 이 작업에 필요한 디스크 경로 잠금을 소유하고 있습니다            |
+| `TaskProgress`              | `note?`                       | 실행 중 진행 상황 체크포인트                                                                     |
+| `TaskMessage`               | `messageType`, `content`      | 스트리밍된 메시지(text/thinking/tool_use/tool_result/error)이며, `progress` 단계로 보고됩니다    |
+| `TaskCompleted`             | `summary?`                    | 작업이 성공적으로 끝났을 때                                                                      |
+| `TaskFailed`                | `errorMessage`                | 작업이 오류와 함께 끝났을 때                                                                     |
+| `TaskCancelled`             | —                             | 작업이 완료되기 전에 취소될 때                                                                   |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+`TaskPhase` 열거형에는 `queued` 멤버도 있지만, 대기 중 이벤트를 발행하는 곳은 없습니다. `TaskQueued` 클래스가 없습니다. 작업에서 처음으로 관찰 가능한 프레임은 `TaskDispatched`입니다.
 
-## Pipeline events
+## 파이프라인 이벤트
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| 이벤트                 | 페이로드                                      | 발생 시점                                                                   |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | 실행이 끝날 때                                                              |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | 사용자나 시스템이 실행을 취소할 때 — 오류가 아니라 의도된 중지입니다        |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | 실행이 실패할 때                                            |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+종료 전이만 발행됩니다. `PipelineRunStarted`도, 단계별 이벤트도 없습니다. 단계의 진행 상황은 버스를 통해서가 아니라 실행 자체의 행과 그 단계가 디스패치한 에이전트의 작업 수명주기 스트림을 통해 클라이언트에 도달합니다.
 
-## Observability events
+## 관측성 이벤트
 
-| Event                    | Payload                                                                                                  | Fired when                |
+| 이벤트                   | 페이로드                                                                                                 | 발생 시점                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 감사 추적 항목이 생성될 때 |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 지출이 임계값을 초과할 때 |
 
-## Identity and membership events
+## 신원과 멤버십 이벤트
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| 이벤트                       | 페이로드                        | 발생 시점                                                                                                 |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | 사용자가 워크스페이스에 참여할 때(초대 수락 또는 관리자 추가)                                             |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | 멤버가 제거될 때 — 해당 사용자의 워크스페이스 범위 라이브 세션은 접근 권한을 즉시 다시 확인해야 합니다    |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | 멤버의 역할이 바뀔 때                                                                                     |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+멤버십이 버스에서 신원 관련 표면의 전부입니다. 사용자 생성과 기기 해지도 일어나지만 도메인 이벤트로 발행되지는 않습니다. 해지는 버스를 거치지 않고 라이브 세션에 직접 적용됩니다.
 
-## Calendar and meeting events
+## 캘린더와 회의 이벤트
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| 이벤트                    | 페이로드                                                                               | 발생 시점                                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | 연결된 계정의 OAuth 갱신 토큰이 영구적으로 무효해질 때(연결 해제마다 한 번 발행됩니다)                    |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | 설정된 사전 알림 시간 안에 캘린더 이벤트가 시작될 때                                                        |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | 회의 녹화가 끝나 내장 `meeting_summary` 파이프라인을 트리거할 때                                            |
 
-## Rig events
+## 리그 이벤트
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| 이벤트              | 페이로드                                      | 발생 시점                                                                                                                        |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | 리그가 사라질 때, 종료 사유와 함께. 소비자는 `backendFailure`에만 반응합니다 — 다른 모든 사유는 요청된 것이거나 `RigReaped`가 동반됩니다 |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | 사람이 리그를 독점 제어하거나 되돌려줄 때(해제 시 `controller`는 null — 누가 놓았는지는 이벤트에 기록되지 않습니다)              |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | 시스템이 머신을 회수할 때: 유휴, TTL 또는 메모리 압박 축출(`idleTimeout`으로 보고됨)이며, 주도한 에이전트와 함께 전달됩니다      |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+리그가 **열리는 것**은 이벤트가 아닙니다. 부팅이 끝나면 리그의 행이 준비 상태로 바뀌고 아무것도 발행되지 않으므로, 구독할 `RigOpened`가 없습니다.
 
-## Subdomains with no events at all
+## 이벤트가 전혀 없는 하위 도메인
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+바깥에서 보면 이벤트 기반처럼 보이지만 그렇지 않은 하위 시스템이 여럿 있습니다. 훅을 찾아 나서기 전에 알아 둘 가치가 있는 설계 결정이라 여기에 나열합니다.
 
-| Subdomain           | How state moves instead                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| 하위 도메인      | 대신 상태가 움직이는 방식                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| 메모리           | `record_memory_fact`와 그 친구들이 쓰고 반환하며, 회수는 읽기만 합니다. 팩트나 충돌에 대해 발행하는 것은 없습니다 |
+| 오케스트레이션   | 제안, 그 승인, 생성된 파이프라인 실행은 모두 행과 RPC 호출입니다                                          |
+| 플랜 문서        | `submit_plan`이 수정본을 씁니다. 승인이 오케스트레이션을 구체화합니다. 어느 쪽도 공지되지 않습니다         |
+| 아티팩트         | `publish_artifact` / `revise_artifact`가 수정본을 직접 씁니다                                              |
+| 승인             | 에스컬레이션은 승인 워크플로 서비스 내부에서 처리됩니다                                                   |
+| 티켓 동기화      | 벤더 코디네이터가 위의 티켓 이벤트를 구독하며, 인바운드 웹훅은 직접 적용됩니다                            |
+| 캘린더 새로 고침 | 동기화가 이벤트를 upsert하고 클라이언트가 다시 읽습니다. 새로 고침 브로드캐스트는 없습니다                |
+| 워크트리 병합    | `worktree_merge_log`에 기록되고 그곳에서 읽힙니다                                                          |
 
-## Subscribers
+## 구독자
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+아래 구독자는 모두 `runCcServer`(또는 그것이 만드는 서비스) 안에서 생성됩니다. 클라이언트 측 구독자는 없습니다.
 
-| Subscriber                          | Events it consumes                                                                                   |
+| 구독자                              | 소비하는 이벤트                                                                                      |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| 시작용 평가 스위트 시딩(인라인)     | `WorkspaceCreated`                                                                                   |
+| 채팅 스페이스 프로비저닝(인라인)    | `SpaceCreated`                                                                                       |
+| `PipelineTriggerDispatcher`         | 모든 `DomainEvent`; 활성화된 각 트리거가 자신의 유형으로 필터링합니다                                |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`(`meeting_summary` 실행만)        |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — 주도 에이전트의 조종 레인에 평이한 안내를 주입합니다 |
+| `StaleReviewWatcher`                | `PrHeadChanged` — 교체된 커밋에 대해 완료된 리뷰가 있을 때만 `ReviewBecameStale`을 발행합니다        |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted` — 아웃바운드 PR 대화 답글                                                        |
+| `NotificationFeedRecorder`          | 아래 21개의 알림 클래스 이벤트                                                                       |
+| `RemoteEventForwarder`              | 위 21개에 더해 `TicketReassigned`와 모든 `TaskLifecycleEvent`를 전달합니다. 세 가지 멤버십 이벤트는 워크스페이스별 멤버십 캐시를 무효화할 뿐이며, 프레임으로 전달되지 않습니다 |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — 해당 사용자가 연결한 워크스페이스 구독을 제거합니다. 소켓은 열린 채로 남습니다 |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned`는 감사 및 알림 신호이자 파이프라인 트리거입니다. 에이전트에 할당하면 소유권이 기록될 뿐 실행은 시작되지 않습니다. 티켓 디스패처가 없습니다. 팀 할당(`assignedTeamId` 설정)은 예외입니다. `TeamRoutingService`가 팀 리더를 디스패치합니다.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler`는 선언되어 있지만 프로덕션 코드에서는 생성되지 않으므로 오늘날 아무것도 구독하지 않습니다. 클라이언트 측 `NotificationEventMapper`는 자체 테스트에서만 생성됩니다. 클라이언트/서버 분리 이전의 프로세스 내 경로가 남긴 잔재입니다. 라이브 토스트는 아래 와이어 프레임에서 옵니다.
 
-## Notification mapping
+## 알림 매핑
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+서버에서는 `NotificationFeedRecorder`와 `RemoteEventForwarder`가 이 이벤트들을 `notifications/*` 와이어 프레임(`notification_wire.dart`)으로 바꿉니다. 클라이언트에서는 `RpcNotificationMapper` → `mapNotificationFrame`이 프레임을 `AppNotification`으로 바꿉니다.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+알림 범주는 정확히 **16개**입니다. 여러 이벤트가 둘 이상의 와이어 메서드에 매핑되는데, 프레임은 전환(실패 대 복구)을 담고 범주는 질문(“CI가 무엇을 하고 있나?”)을 담기 때문입니다.
 
-| Category               | Source event              | Wire method                                                            |
+| 범주                   | 소스 이벤트               | 와이어 메서드                                                          |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,14 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+리그 인수 프레임은 조종권을 잡은 사람에게 다시 전달되지 않고, 해제는 필터링되지 않으며(누가 놓았는지는 이벤트에 기록되지 않습니다), `backendFailure` 종료만 `rig_closed` 프레임을 만듭니다 — 나머지 사유는 요청된 것이거나 이미 회수 프레임이 다룹니다.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+작성한 PR 관련 다섯 범주는 `forUserId`를 전달하므로, 워크스페이스의 모든 사람이 아니라 작성자에게 도달합니다.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder`는 추가로 `TicketReassigned`를 `notifications/ticket_reassigned`로, 모든 `TaskLifecycleEvent`를 `notifications/task_<phase>`로 전달합니다. 어느 것도 알림 범주에 매핑되지 않습니다 — 알림 센터가 아니라 라이브 UI를 구동합니다. 멤버십 이벤트는 프레임으로 전달되지 않습니다. 포워더의 캐시를 무효화하고, 세션 호스트가 제거된 멤버의 워크스페이스 구독을 끊습니다.
 
-## See also
+## 함께 보기
 
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/)
-- [Pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
-- [Notifications](/ko-KR/매뉴얼/사용-가이드/알림/)
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/)
+- [파이프라인 트리거](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
+- [알림](/ko-KR/매뉴얼/사용-가이드/알림/)

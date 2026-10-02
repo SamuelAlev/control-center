@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: 診斷代理
+description: 當代理不再產生執行時，依序排查執行日誌、配接器探測、伺服器狀態與主機診斷。
 slug: zh-HK/手冊/操作指南/診斷代理
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+本指南說明如何查明某個代理為何不再產生執行。
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+請由上而下排查：先看代理自身的執行，再看它的後端，接著是伺服器，最後是主機。
 
-## 1. Check the agent's run history
+## 1. 檢查代理的執行紀錄
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**設定 → 工作區 → 代理** → 選擇該代理 → **日誌**。
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+每筆執行都會顯示狀態徽章、時長（進行中時顯示「Running…」）、開始與完成時間、PID，以及它所使用的配接器。**檢視**會開啟該筆執行的原始事件串流。**停止**會終止正在執行的程序，並把該筆執行標記為「Killed by user」；頁首的 **終止執行中** 會對該代理所有仍在進行中的執行做同樣的事。
 
-Read it like this:
+可以這樣解讀：
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **完全沒有執行**——派發從未發生。編輯器中的提及由 `@` 加上單詞字元（字母、數字、底線）組成。解析方式是與代理名稱做完全相符或前綴比對，因此 `@code-reviewer` 會被解析成 `code`，仍可喚醒名為 `code-reviewer` 的代理。名稱中若有空格，就無法以單一詞元被提及。這時請前往第 2 步。
+- **一開始就報錯結束的執行**——開啟 **檢視**。啟動後端失敗會在這裡顯示為程序錯誤。
+- **卡在「Running…」的執行**——先停止它，再檢查該代理在 **設定** 分頁中的 **靜音逾時**。逾時未設定時，會採用各模式的預設值。
+- **已完成卻沒有可用輸出的執行**——對於未交出所聲明交付項目的執行，執行日誌的狀態仍會停留在 `completed`；可信的訊號是摘要文字，而不是徽章。
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+日誌分頁不會顯示成本。要查看支出，請使用 **可觀測性 → 洞察** 中按代理劃分的表格。
 
-## 2. Check the agent's backend
+## 2. 檢查代理的後端
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**設定 → 伺服器 → 模型供應商**（`/settings/server/providers`）。
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+**已偵測的執行器**清單會顯示每個配接器及其探測結果——已安裝的版本、「檢查中…」或「找不到」——以及解析出的路徑，和為已找到的 CLI 顯示的能力標籤。按一下頁首的 **重新整理** 即可重新探測。
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+探測是在託管 `cc_server` 的那部機器上執行，而不是在你正看著的這部機器上。如果你使用的是 Web 用戶端或已配對的裝置，「找不到」意味著伺服器主機上缺少該 CLI。
 
-Two things to confirm:
+有兩件事要確認：
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **該代理到底有沒有設定配接器。** 配接器為空的代理會被派發到 **Control Center (built-in)**，執行日誌會記錄 `cc-harness`，因此逐字稿會列明實際執行的是什麼。若連模型也沒有，它會向 Anthropic 要求其預設模型——除非你已連接 Anthropic 帳戶，否則會以 `No credential for provider "anthropic"` 失敗。預置的專家代理出廠時都沒有配接器。
+- **內建配接器有沒有模型。** 它的模型清單即時來自本頁下方已連接的供應商，因此沒有儲存憑證的供應商不會貢獻任何模型。
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+配接器目錄本身是固定的——無法註冊新的配接器。你在此可以逐個配接器更改的是它的啟動參數與環境變數。請注意，在解析憑證時，按配接器設定的環境變數覆寫會靜默地壓過已連接的供應商帳戶。
 
-## 3. Check the server
+## 3. 檢查伺服器
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**設定 → 伺服器 → 連線與狀態**（`/settings/server/connection`）會顯示此用戶端正在與哪部伺服器通訊，以及它報告了什麼。
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+對於無介面伺服器，`GET /healthz` 不需用戶端就能提供同樣的資訊。它按設計不要求驗證，並且對 CORS 開放：
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+它會傳回伺服器的狀態、以秒計的運作時間、即時連線數、繫結的連接埠、建置版本與 git SHA、工作區 schema 版本、RPC 目錄版本、伺服器 id、名稱與身分指紋、繫結是否不安全，以及一個帶有 `watching` / `indexing` / `pending` 計數的 `codeGraph` 區塊。當某個快取有過流量時，它也會包含一個 `caches` 區塊；示範伺服器會加上 `demo: true`。
 
-Two things worth knowing when a change "works in tests but not in the app":
+當某項改動「在測試裏行得通，在應用程式裏卻不行」時，有兩件事值得了解：
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- 桌面應用程式會優先啟動 **預先建置** 的 `cc_server` 二進位檔，而不是原始碼。新的 RPC 操作或 MCP 工具要等到二進位檔重新建置後才會出現，而當子程序的 git SHA 與應用程式的不一致時，開機日誌會記錄一則警告。
+- 若衍生出的伺服器未在 20 秒內印出就緒橫幅，桌面應用程式會將它終止，並退回錯誤畫面。
 
-## 4. Check the host
+## 4. 檢查主機
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**設定 → 伺服器 → 診斷與隱私**（`/settings/server/diagnostics`）是主機層級的頁面。它包含：
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **沙箱**——總開關、偵測到的後端、安裝提示，以及預設能力開關。只有偵測到的後端來自伺服器；請參閱下方的注意事項。這裡沒有重設控制項。
+- **語意搜尋**——本機嵌入模型的生命週期：已安裝、下載中並顯示百分比、未安裝，或安裝失敗。在它安裝之前，記憶與程式碼搜尋一直只靠關鍵字。
+- **系統行為**——代理執行時保持電腦喚醒。
+- **同步引擎**——工單、訊息與筆記的逐儲存區終止開關。它們是退回完整快照訂閱的緊急逃生出口；改動只影響新的訂閱，因此要重新載入後才會完全生效。
+- **日誌層級**——在重現失敗之前先把它調高。
+- **隱私**——原始 diff 內容可否轉送給代理的模型，以及是否傳送當機報告。
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[這一節報告的是主機，而其中的控制項位於用戶端]
+偵測與強制執行如今已經一致：凡偵測器回報有原生後端的主機，該主機上的代理執行確實會被包裹在其中。但偵測器是這一節裏唯一即時生效的東西。總開關、後端選擇器與預設能力開關都是儲存在你裝置上的偏好設定，伺服器一個都不會讀取——伺服器自己的開關是 `--sandbox`（預設 `on`，用 `off` 主動退出），而對於任何留在「使用工作區預設值」的代理，伺服器會回退到它保守的預設值：不推送 git、不使用 GitHub API、不下發工單金鑰，網絡開啟。
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+因此這裡的警告值得處理，不過它通常不是代理失敗的原因。要確認伺服器處於哪種狀態，請讀它的啟動日誌：它會印出 `agent sandbox ON` 並附上後端說明、`no OS-native agent sandbox on this host` 並附上安裝提示，或 `agent sandbox DISABLED by --sandbox off`。`GET /healthz` 不帶任何沙箱欄位。
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+在沒有後端的地方——Windows 一向如此，以及缺少 `bwrap` 與 `socat` 的 Linux 或 WSL2——執行**不會**被沙箱包裹，約束它們的是對話自身的檢出、決定哪些憑證會簽發進其中的能力、操作護欄、環境清理，以及它的模式所允許的工具集。
 :::
 
-## Common failures
+## 常見故障
 
-### The run never starts and the adapter shows "Not found"
+### 執行始終不開始，而配接器顯示「找不到」
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+請**在伺服器主機上**安裝該 CLI，然後在模型供應商頁面按一下 **重新整理**。或者把該代理切換到內建配接器——它不需要任何 CLI——並在同一頁面連接一個供應商。
 
-### The agent cannot push or open a pull request
+### 代理無法推送或建立 pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+它的能力就是那道關卡。開啟 **設定 → 工作區 → 代理** → 該代理 → **沙箱權限**，把開關打開，並啟用 **允許 git push** 和 **允許 GitHub API 呼叫**。把開關留在「使用工作區預設值」上，代理就一項都得不到。
 
-### Semantic search returns nothing useful
+### 語意搜尋找不出有用的結果
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+檢查 **設定 → 伺服器 → 診斷與隱私 → 語意搜尋**。在嵌入模型安裝之前，搜尋只靠關鍵字。在模型安裝之前寫入的資料列永遠不會被回填，因此即使日後安裝了，它們仍然只靠關鍵字。
 
-### The server will not boot at all
+### 伺服器完全無法啟動
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+原生程式庫是必需的，而且沒有降級模式。缺少某個 dylib 會令 `cc_server` 拒絕啟動，並在錯誤中指名缺失的那一個。請用 `scripts/natives/build_natives.sh` 暫存原生組件，然後重新建置伺服器二進位檔。
 
-### An action is silently denied
+### 某項操作被靜默拒絕
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+在未連接任何審批人的情況下，`prompt` 護欄決定會被拒絕，這是刻意如此。請在 **設定 → 工作區 → 代理權限** 下檢查該工作區的規則。
 
-## Related guides
+## 相關指南
 
-- [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/)
-- [Manage adapters and models](/zh-HK/手冊/操作指南/配接器/)
-- [Configure guardrails](/zh-HK/手冊/操作指南/設定護欄/)
-- [Run a headless server](/zh-HK/手冊/操作指南/執行無介面伺服器/)
+- [建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)
+- [管理配接器與模型](/zh-HK/手冊/操作指南/配接器/)
+- [設定護欄](/zh-HK/手冊/操作指南/設定護欄/)
+- [執行無介面伺服器](/zh-HK/手冊/操作指南/執行無介面伺服器/)
 
-## Related concepts
+## 相關概念
 
-- [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/)
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/)
+- [沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/)
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)

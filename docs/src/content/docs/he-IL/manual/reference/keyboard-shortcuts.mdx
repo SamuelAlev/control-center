@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: קיצורי מקלדת
+description: המרשם המלא של קיצורי המקלדת, לפי טווח, עם התנאים שבהם כל קיצור פועל.
 slug: he-IL/מדריך-למשתמש/עזר/קיצורי-מקלדת
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+קיצורי המקלדת מגיעים ממרשם `const` יחיד, `KeybindingRegistry` שב-`lib/core/constants/keybindings.dart`. הוא מכיל **48 צירופים**. המסך **הגדרות → אישי → קיצורי מקלדת** מציג את המרשם הזה כ**עזר לקריאה בלבד**: אין ממשק לשינוי הקצאות ואין קובץ קיצורי מקלדת של המשתמש.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+‏`Cmd` בהמשך הוא מקש הפקודה הראשי — ⌘ ב-macOS, ו-Ctrl ב-Windows וב-Linux. צירוף פועל רק כשהפקודה שלו רשומה למטפל במסך הנוכחי וסעיף ה-`when` שלו מתקיים; `!textInputFocus` פירושו שהמקש מועבר לשדה טקסט שבפוקוס במקום זאת.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+אין קיצור מקלדת לניווט במקשי ספרות. אל דואר נכנס, כרטיסים, בקשות משיכה וכל השאר מגיעים מסרגל הצד או מ-⌘K. גם לניטור אין קיצור.
 
-## Global (19)
+## גלובלי (19)
 
-Scope `global`, so they are live anywhere in the shell.
+טווח `global`, ולכן הם פעילים בכל מקום במעטפת האפליקציה.
 
-### System
+### מערכת
 
-| Shortcut                                    | Action                                           | Condition                                                  |
+| קיצור | פעולה | תנאי |
 | ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| `Cmd/Ctrl + K`                              | לוח פקודות                                       | —                                                          |
+| `Shift + /` (`?`)                           | גיליון קיצורי המקלדת                             | לא מקלידים בשדה                                            |
+| `Cmd/Ctrl + Z`                              | ביטול                                            | לא מקלידים בשדה (שדה שבפוקוס שומר על הביטול שלו)           |
+| `Cmd/Ctrl + Shift + Z`                      | ביצוע מחדש                                       | לא מקלידים בשדה                                            |
+| `Cmd/Ctrl + Shift + T`                      | החלפת ערכת נושא                                  | —                                                          |
+| `Cmd/Ctrl + ,`                              | פתיחת ההגדרות (נוחת על `/settings/you/appearance`) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | הפעלה וכיבוי של מצב ריכוז                        | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | פתיחה/סגירה של מחליף סביבות העבודה               | —                                                          |
+| `Cmd/Ctrl + ]`                              | סביבת העבודה הבאה                                | —                                                          |
+| `Cmd/Ctrl + [`                              | סביבת העבודה הקודמת                              | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | מעבר לסביבת עבודה 1–9                            | —                                                          |
 
-## Pull request list (3)
+## רשימת בקשות משיכה (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+טווח `/pull-requests`. כולם דורשים `route == '/pull-requests'` ואין שדה טקסט בפוקוס, ולכן הם אינם פועלים כשנתיב פרטי בקשת המשיכה פתוח מעל הרשימה.
 
-| Shortcut | Action           |
+| קיצור | פעולה |
 | -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| `R`      | רענון            |
+| `Enter`  | פתיחת PR         |
+| `F`      | פתיחת תפריט הסינון |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+‏`Enter` (`pr.list-open`) מוצהר במרשם ומופיע בעזר קיצורי המקלדת, אבל **מסך הרשימה אינו רושם לו מטפל**, ולכן הוא אינו פועל כרגע. `F` פותח את תפריט הסינון (`pr.list-open-filter`), ולא את החיפוש.
 
-## Pull request detail (2)
+## פרטי בקשת משיכה (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+טווח `/pull-requests/`. הרענון דורש שאין שדה טקסט בפוקוס. לסגירת הלשונית אין הגנת קלט טקסט (צירוף עם ⌘ הוא לעולם לא טקסט רגיל) ויש לה ביטוי רגולרי לנתיב, כך שהיא אינה פועלת ברשימה.
 
-| Shortcut       | Action    | Condition                          |
+| קיצור       | פעולה    | תנאי                              |
 | -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| `R`            | רענון     | לא מקלידים בשדה                    |
+| `Cmd/Ctrl + W` | סגירת לשונית | במיקום `/pull-requests/<…>`        |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+מעבר בין לשוניות (`1`/`2`/`3`), סימון קובץ כנצפה וכיווצו (`V`/`C`), רשימת הקבצים (`T`) וחיפוש ב-diff (`Cmd/Ctrl + F`) שייכים למטפל של מציג ה-diff עצמו — ראו [מקשי מציג ה-diff מחוץ למרשם](#מקשי-מציג-ה-diff-מחוץ-למרשם).
 
-## Inbox (1)
+## דואר נכנס (1)
 
-| Shortcut | Action           |
+| קיצור | פעולה |
 | -------- | ---------------- |
-| `F`      | Open filter menu |
+| `F`      | פתיחת תפריט הסינון |
 
-Requires `route == '/inbox'` and no focused text field.
+דורש `route == '/inbox'` ואין שדה טקסט בפוקוס.
 
-## GitHub user and team profiles (3)
+## פרופילים של משתמשים וצוותים ב-GitHub (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+טווח `/users/`. סעיף ה-`when` הוא ביטוי רגולרי כנגד `/users/<login>` **או** `/teams/<organization>/<slug>`, ובנוסף אין שדה טקסט בפוקוס.
 
-| Shortcut       | Action       |
+| קיצור       | פעולה       |
 | -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| `R`            | רענון        |
+| `/`            | מיקוד בחיפוש |
+| `Cmd/Ctrl + F` | מיקוד בחיפוש |
 
-## Spaces (8)
+## מרחבים (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+טווח `/spaces`. סעיפי ה-`when` משתמשים בביטוי רגולרי, ולכן הם פועלים גם ברשימת המרחבים (`/spaces`) וגם במרחב נבחר (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
+| קיצור               | פעולה                 | תנאי                 |
 | ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Enter`                | שליחת הודעה            | —                     |
+| `Cmd/Ctrl + N`         | מרחב חדש               | בנתיב `/spaces`       |
+| `J`                    | המרחב הבא              | לא מקלידים בשדה        |
+| `K`                    | המרחב הקודם            | לא מקלידים בשדה        |
+| `Cmd/Ctrl + Shift + D` | הכתבה במצב לחץ ודבר     | —                     |
+| `Cmd/Ctrl + T`         | פתיחת לשונית בעורך     | בנתיב `/spaces`       |
+| `Cmd/Ctrl + W`         | סגירת לשונית בעורך     | בנתיב `/spaces`       |
+| `Cmd/Ctrl + B`         | פתיחה/סגירה של סרגל הצד של העורך | בנתיב `/spaces`       |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+שליחה ב-Enter שייכת לשדה הטקסט של תיבת הכתיבה; ההכתבה במצב לחץ ודבר שייכת לכפתור המיקרופון של תיבת הכתיבה (מטפל מקלדת החומרה שלו). שניהם רשומים במרשם לצורך עזר ההגדרות.
 
-## Workspace picker (2)
+## בורר סביבות עבודה (2)
 
-Scope `/workspaces`, live only on the picker itself.
+טווח `/workspaces`, פעיל רק בבורר עצמו.
 
-| Shortcut       | Action                  |
+| קיצור       | פעולה                  |
 | -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| `Cmd/Ctrl + N` | סביבת עבודה חדשה        |
+| `Enter`        | פתיחת סביבת העבודה הנבחרת |
 
-`Enter` requires no focused text field.
+‏`Enter` דורש שאין שדה טקסט בפוקוס.
 
-## Settings (5)
+## הגדרות (5)
 
-| Shortcut       | Action                 | Screen                              |
+| קיצור       | פעולה                 | מסך                              |
 | -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| `J`            | עמוד ההגדרות הבא       | כל נתיב `/settings`, לא מקלידים     |
+| `K`            | עמוד ההגדרות הקודם     | כל נתיב `/settings`, לא מקלידים     |
+| `Cmd/Ctrl + N` | סוכן חדש               | הגדרות → סביבת עבודה → סוכנים       |
+| `Cmd/Ctrl + N` | הוספת מאגר             | הגדרות → סביבת עבודה → מאגרים       |
+| `R`            | סריקה מחדש אחר מתאמים  | הגדרות → שרת → ספקי מודלים          |
 
-## Newsfeed (5)
+## עדכוני חדשות (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+טווח `/newsfeed`. כולם דורשים `route == '/newsfeed'` ואין שדה טקסט בפוקוס.
 
-| Shortcut | Action           |
+| קיצור | פעולה |
 | -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| `J`      | הכתבה הבאה       |
+| `K`      | הכתבה הקודמת     |
+| `Enter`  | פתיחת הכתבה      |
+| `S`      | הוספה/הסרה של סימנייה |
+| `R`      | רענון הפידים     |
 
-## Diff viewer keys outside the registry
+## מקשי מציג ה-diff מחוץ למרשם
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+מציג ה-diff של בקשות משיכה מטפל באלה בעצמו (`PrDiffKeyboardHandler`). חיפוש, סימון כנצפה וכיווץ רשומים בהערות המרשם לצורך עזר ההגדרות בלבד — לא רשום להם מטפל במשגר, ולכן המשגר משאיר אותם לתצוגת ה-diff. הם אינם מופיעים כשורות נפרדות בעזר קיצורי המקלדת.
 
-| Shortcut        | Action                                               |
+| קיצור        | פעולה                                               |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | חיפוש ב-diff                                         |
+| `J` / `K`       | הקובץ הבא / הקודם                                    |
+| `V`             | סימון/ביטול הסימון של הקובץ שבפוקוס כנצפה           |
+| `C`             | כיווץ/פריסה של הקובץ שבפוקוס                         |
+| `T`             | הצגת רשימת הקבצים                                    |
+| `Enter`         | התאמת החיפוש הבאה (רק כשחיפוש ב-diff פתוח)          |
+| `Shift + Enter` | התאמת החיפוש הקודמת                                  |
+| `Escape`        | סגירת חיפוש ב-diff, או ניקוי בחירת הטקסט ב-diff     |
+| `Cmd/Ctrl + C`  | העתקת הבחירה ב-diff                                  |
 
-## Browser-reserved combinations
+## צירופים שמורים לדפדפן
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+בבנייה לווב, הדפדפן צורך חלק מצירופי המקלדת לפני שהעמוד רואה אותם, ולכן הצירופים המתאימים לא יכולים לפעול שם לעולם. בשולחן העבודה הם פועלים כרגיל. הם שמורים כשהם משולבים עם מקש הפקודה הראשי: `T`, `W`, `N` והספרות `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+זה חל על מעבר בין סביבות עבודה עם `Cmd/Ctrl + Alt + 1`–`9`, על `Cmd/Ctrl + N` (מרחב חדש, סביבת עבודה חדשה, סוכן חדש, הוספת מאגר) ועל `Cmd/Ctrl + T` / `Cmd/Ctrl + W` במרחבים ובפרטי בקשת משיכה.
 
-## See also
+## ראו גם
 
-- [Route map](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/)
-- [Focus mode](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-ריכוז/)
+- [מפת נתיבים](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/)
+- [מצב ריכוז](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מצב-ריכוז/)

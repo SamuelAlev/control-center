@@ -1,125 +1,127 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: ให้ทีมเข้าสู่ระบบด้วย SSO
+description: เชื่อมต่อ Okta (SAML) เข้ากับเซิร์ฟเวอร์ Control Center ของคุณ และทำการลงชื่อเข้าใช้ให้ครบวงจร
 slug: th-TH/คู่มือ/บทสอน/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะมี:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- การเชื่อมต่อ SAML ระหว่างเซิร์ฟเวอร์ Control Center ของคุณกับผู้ให้บริการ
+  ระบุตัวตน (เราใช้ Okta เป็นตัวอย่าง),
+- ผู้ใช้หนึ่งรายที่ถูกจัดสรรโดยอัตโนมัติเมื่อลงชื่อเข้าใช้ครั้งแรก และ
+- นโยบายสมาชิกภาพเวิร์กสเปซที่คุณเลือกไว้อย่างตั้งใจ
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+คุณต้องมีเซิร์ฟเวอร์ที่คุณดูแล (ในฐานะ**เจ้าของเซิร์ฟเวอร์** — ผู้ดำเนินการ
+ติดตั้ง) และแอปพลิเคชัน IdP ที่คุณกำหนดค่าได้ เผื่อเวลาไว้ 20 นาที
 
-## 1. Open the single sign-on settings
+## 1. เปิดการตั้งค่าการลงชื่อเข้าใช้ครั้งเดียว
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+ลงชื่อเข้าใช้ Control Center จากนั้นไปที่
+**การตั้งค่า → เซิร์ฟเวอร์ → ลงชื่อเข้าใช้ครั้งเดียว** หน้าจอนี้สลับไปมาระหว่าง
+**SAML** กับ **OpenID Connect** พร้อมการ์ด **การจัดหาผู้ใช้ (SCIM)**
+ให้อยู่ที่ SAML
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+ทุกอย่างบนหน้าจอนี้มีผลทั้งเซิร์ฟเวอร์: IdP ตัวเดียวเป็นผู้ยืนยันตัวตนของคน
+ทุกคนในทุกเวิร์กสเปซ จึงมีเพียงเจ้าของเซิร์ฟเวอร์เท่านั้นที่แก้ไขได้
 
-## 2. Paste the IdP metadata
+## 2. วาง metadata ของ IdP
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+ใน Okta ให้เปิดแท็บ **Sign On** ของแอปคุณ แล้วคัดลอก metadata XML (หรือ
+ดาวน์โหลดมาแล้ววางเนื้อหาของไฟล์) กลับมาที่ Control Center วางลงใน
+**IdP metadata XML** แล้วกด **ทดสอบการเชื่อมต่อ**
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+ทอสต์จะรายงานเอนด์พอยต์การลงชื่อเข้าใช้ของ IdP — เป็นหลักฐานว่า metadata
+ถูกแยกวิเคราะห์แล้ว ใบรับรองถูกอ่านแล้ว และเซิร์ฟเวอร์สร้างคำขอลงชื่อเข้าใช้
+จากมันได้ (การทดสอบนี้ทำทุกอย่างยกเว้นการไปกลับผ่านเบราว์เซอร์)
+หากล้มเหลว แสดงว่า XML นั้นไม่ใช่ `EntityDescriptor` ที่สมบูรณ์ (แท็บ SAML ใน
+Okta เรียกสิ่งนี้ว่า “Metadata URL” ให้เปิด URL นั้นแล้วคัดลอกสิ่งที่มันส่ง
+กลับมา) ปุ่มเดียวกันบน **OpenID Connect** จะตรวจเอกสาร discovery ของผู้ออก
+แทน หากต้องการตรวจจับใบรับรองที่ใกล้หมดอายุด้วย และดูว่า IdP รู้จัก
+Control Center หรือไม่ ให้ใช้
+[ตัวตรวจสอบในขั้นตอนที่ 6](#6-ตรวจสอบจากหน้านี้)
 
-## 3. Register Control Center at the IdP
+## 3. ลงทะเบียน Control Center ที่ IdP
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+กด **คัดลอก SP metadata** แล้วส่งให้ผู้ที่กำหนดค่าฝั่ง Okta (หรืออ่านค่าสอง
+ค่าที่ฝ่ายนั้นถามหา):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+URL เหล่านี้มาจาก origin ที่เบราว์เซอร์ของผู้ใช้เข้าถึงได้ หากเซิร์ฟเวอร์
+ทำงานอยู่หลังทันเนลหรือรีเวิร์สพร็อกซี ตรวจสอบให้ origin คงที่
+(การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ → แชร์เซิร์ฟเวอร์นี้ จะแสดง URL สาธารณะ) — หรือปักหมุด entity ID
+ไว้อย่างชัดเจนในช่อง **SP entity ID**
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[อยู่หลัง NAT?]
+การลงชื่อเข้าใช้ด้วย SAML **ไม่**จำเป็นต้องมี IP สาธารณะหรือโดเมน: IdP
+ไม่เคยเชื่อมต่อกับเซิร์ฟเวอร์ของคุณ — เบราว์เซอร์ของผู้ใช้เป็นตัวพาการไปกลับ
+ทั้งหมด ดังนั้น localhost, LAN, VPN, Tailscale หรือทันเนลก็ใช้ได้ทั้งนั้น
+มีสองสิ่งที่ต้องจำให้แม่น:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim)).
+- origin ที่เบราว์เซอร์ใช้ต้อง **ตรงกัน** กับ ACS URL / entity ID
+  ที่ลงทะเบียนไว้ที่ IdP (ปักหมุด entity ID หากผู้ใช้เข้าถึงเซิร์ฟเวอร์ผ่าน
+  มากกว่าหนึ่ง origin),
+- **การจัดสรรผู้ใช้ด้วย SCIM เป็นข้อยกเว้น** — IdP เรียกเซิร์ฟเวอร์ของคุณ
+  โดยตรง จึงต้องมีทันเนลหรือ URL สาธารณะ
+  ([จัดสรรผู้ใช้ด้วย SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. เลือกว่าการลงชื่อเข้าใช้จะให้สิทธิ์อะไร
 
-Two policies decide what a first login does:
+นโยบายสองข้อกำหนดว่าการลงชื่อเข้าใช้ครั้งแรกจะทำอะไร:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **เพิ่มผู้ใช้เข้าทุกเวิร์กสเปซเมื่อลงชื่อเข้าใช้ครั้งแรก** — เปิดไว้สำหรับ
+  การติดตั้งทีมเดียวที่ SSO เท่ากับความไว้ใจ ปิดเมื่อมีหลายทีมหรือหลายลูกค้า
+  ใช้เซิร์ฟเวอร์ร่วมกัน: ผู้มาใหม่แต่ละรายจะต้องได้รับคำเชิญเข้าสู่เวิร์กสเปซ
+  อย่างชัดเจน ซึ่งเป็นค่าเริ่มต้นที่ปลอดภัยกว่า
+- **จัดหาผู้ใช้ที่ไม่รู้จักเมื่อลงชื่อเข้าใช้ครั้งแรก** — เปิดเป็นค่าเริ่มต้น;
+  ปิดเพื่อปฏิเสธทุกคนที่ยังไม่มีบัญชีอยู่แล้ว
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+คุณอาจเลือกแมปแอตทริบิวต์ที่บรรจุชื่อกลุ่ม (ของ Okta ปกติคือ `groups`) และ
+แปลงกลุ่มเป็นบทบาทด้วยแมปนั้น — ตัวอย่างเช่น
+`{"platform-leads": "admin"}` SSO ไม่มีทางให้บทบาทเจ้าของได้
 
-## 5. Enable and take a login
+## 5. เปิดใช้งานและลองลงชื่อเข้าใช้
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+เปิด **ใช้ SAML สำหรับลงชื่อเข้าใช้** กด **บันทึกการเชื่อมต่อ** จากนั้นเปิด
+หน้าต่างเบราว์เซอร์แบบส่วนตัวไปที่ `https://<your-server>/saml/login`
+ลงชื่อเข้าใช้ที่ Okta แล้วคุณจะกลับมาที่ไคลเอนต์เว็บ — ลงชื่อเข้าใช้แล้ว
+โดยบัญชีของคุณถูกสร้างขึ้นและได้รับสมาชิกภาพตามนโยบายที่คุณเลือก
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+จุดเข้าเดียวกันจะปรากฏบนหน้าจอเชื่อมต่อของเว็บ (**ลงชื่อเข้าใช้ด้วย
+SAML**) ทันทีที่คุณพิมพ์ที่อยู่เซิร์ฟเวอร์ — ฟอร์มจะปรับตามสิ่งที่เซิร์ฟเวอร์
+เสนอ (OpenID Connect จะแสดง **ลงชื่อเข้าใช้ด้วย OpenID Connect**)
+ปุ่มนี้จะเปิดการลงชื่อเข้าใช้ใน **แท็บใหม่**; เมื่อการไปกลับเสร็จสิ้น
+แท็บที่รออยู่จะรับเซสชันนั้นโดยอัตโนมัติ หน้าจอตั้งค่าเซิร์ฟเวอร์บน
+เดสก์ท็อปก็ทำแบบเดียวกัน: พิมพ์ URL ของเซิร์ฟเวอร์ ปุ่ม **ลงชื่อเข้าใช้ด้วย
+SAML** จะปรากฏขึ้น เปิดเบราว์เซอร์ของคุณ และแอปจะลงชื่อเข้าใช้ให้เมื่อ
+การไปกลับเสร็จสิ้น
 
-## 6. Check it from this page
+## 6. ตรวจสอบจากหน้านี้
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+ก่อนที่คุณจะเริ่มใช้ SSO ทั่วทั้งองค์กร หรือเมื่อการลงชื่อเข้าใช้ล้มเหลว
+ให้ตรวจสอบส่วนต่าง ๆ ที่นี่ ตัวตรวจสอบทำงานทั้งหมดในเบราว์เซอร์ของคุณ:
+มันอ่าน metadata ที่คุณวางในแท็บนี้และใช้กฎเดียวกับเซิร์ฟเวอร์ เมื่อคุณระบุ
+ที่อยู่เซิร์ฟเวอร์ มันจะถามเซิร์ฟเวอร์นั้นด้วยว่าการลงชื่อเข้าใช้ด้วย SAML
+เปิดอยู่หรือไม่
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+มันจับสิ่งที่ **ทดสอบการเชื่อมต่อ** ในแอปมองไม่เห็น: ใบรับรองการลงนามที่
+ใกล้หมดอายุ, IdP ที่ยืนกรานให้คำขอต้องมีลายเซ็น และเมื่อใช้การลงชื่อเข้าใช้
+ทดสอบ ก็จะบอกว่า IdP รู้จัก Control Center หรือไม่
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## ขั้นต่อไป
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/th-TH/คู่มือ/วิธีทำ/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว).
+- ให้ IdP ควบคุมวงจรชีวิตด้วย:
+  [จัดสรรและถอนการจัดสรรผู้ใช้ด้วย SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim)
+- IdP ของคุณพูด OpenID Connect แทน SAML?
+  [เชื่อมต่อผู้ให้บริการ OpenID Connect](/th-TH/คู่มือ/วิธีทำ/sso-oidc)
+- อยากรู้ว่าการไปกลับผ่านเบราว์เซอร์ตรวจสอบอะไรจริง ๆ?
+  [การลงชื่อเข้าใช้ครั้งเดียวทำงานอย่างไร](/th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว)

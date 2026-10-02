@@ -2,6 +2,7 @@
 title: Search code with the code graph
 description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
 slug: en-GB/manual/guides/code-search
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
 This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
@@ -31,7 +32,7 @@ The graph is partitioned by workspace, repo and checkout: the linked checkout is
 
 Two throttles are worth knowing about, because they explain a wait that looks like a hang:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
+- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serialises two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
 - Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
 
 :::caution[A missing grammar stops the server, not the search]

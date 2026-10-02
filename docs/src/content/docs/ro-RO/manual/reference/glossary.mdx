@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: Glosar
+description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,82 +12,82 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['Agent', 'Un lucrător IA cu identitate, rol, skill-uri și capabilități. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.'],
+['Adaptor', 'Runner-ul care execută un tur de agent. Două sunt livrate: Control Center (built-in) — harness-ul în proces care vorbește cu furnizorii de modele — și Claude Code prin CLI-ul claude. Cursor, Codex și ceilalți furnizori de modele se atașează la adaptorul integrat, nu ca runneri separați.'],
+['Spațiu de lucru', 'Chiriașul de izolare de nivel superior. Grupează agenți, repo-uri, spații, tichete, memorie și pipeline-uri. Izolarea este structurală, nu convențională: fiecare spațiu de lucru are propriul fișier SQLite, așa că o citire între spații de lucru nu se compilează. Fiecare rută din aplicație este prefixată cu /workspaces/:workspaceId.'],
+['Forge', 'Un host de cod — GitHub, GitLab sau Bitbucket Cloud. O proprietate a fiecărui repo, citită din remote-ul origin la înregistrare. Un spațiu de lucru poate găzdui repo-uri pe toate cele trei.'],
+['Repo', 'Un depozit Git înregistrat într-un singur spațiu de lucru. Limitat la spațiul de lucru: același checkout înregistrat în două spații de lucru înseamnă două rânduri cu două id-uri, iar identitatea unui repo între spații de lucru se stabilește după calea din sistemul de fișiere, niciodată după id. Înregistrarea cere un arbore de lucru git al cărui remote origin indică spre un forge acceptat (GitHub, GitLab sau Bitbucket Cloud).'],
+['Repo izolat', 'Un worktree limitat la spațiul de lucru, derivat dintr-un repo înregistrat. Copy-on-write prin rift oriunde este livrat acel nativ; git worktree pe Windows. Provisionat per spațiu, așa că fiecare conversație din acel spațiu partajează un singur checkout; agenții nu modifică niciodată sursa.'],
+['Spațiu', 'Un container de colaborare limitat la spațiul de lucru, cu participanți umani și agenți, un Mode persistat, stare de provisionare și un SpaceKind (topic, agentPeer, system, pr sau slack) care decide cum este secționat, pus pe mut, marcat cu insignă și colectat de gunoi. Deține worktree-urile izolate pe care le partajează conversațiile lui (copy-on-write prin rift; git worktree pe Windows).'],
+['Conversație', 'Un flux de mesaje în interiorul unui Spațiu, cu id, istoric și context de rulare a agentului proprii. Conversațiile dintr-un spațiu sunt egale și plate — nu există un flux primar sau main. Fiecare se deschide ca filă de editor; starea de necitit a unui spațiu le agregă pe toate.'],
+['Fir', 'O Conversație al cărei anchorMessageId este setat: ancorată la un mesaj al unei conversații surori din același Spațiu, cu un context de agent nou, inițializat de acel mesaj de ancorare. Un singur nivel de adâncime — firele nu se ancorează niciodată în fire.'],
+['Tichet', 'Agregatul unității de muncă. Neutru față de furnizor: local implicit, cu adaptoare de sincronizare pentru Linear, GitHub Issues, Jira Cloud și ClickUp, deși nicio suprafață din aplicație nu creează o conexiune de sincronizare. Acceptă ierarhie, legături și delegare. Atribuirea către un agent consemnează proprietatea și nu trimite nimic; atribuirea către o echipă este excepția (TeamRoutingService îl trimite pe lider).'],
+['Pipeline', 'Un flux de lucru bazat pe DAG care înlănțuie pași (trimitere de agent, scripturi, condiții). Definit prin șabloane; executat sub formă de rulări.'],
+['Întâlnire', 'O sesiune de întâlnire înregistrată și transcrisă local. Capturează microfonul și audio-ul de sistem, transcrie pe dispozitiv cu un model ASR selectabil (Parakeet TDT v3 implicit; Parakeet TDT v2, Whisper large-v3-turbo și Whisper base.en sunt alternative), diarizează vorbitorii și rezumă în notițe, elemente de acțiune și decizii. Modelul ASR selectat este instalat forțat la pornire, iar operațiile de înregistrare devin active după o repornire. Limitat la spațiul de lucru.'],
+['CalendarEvent', 'O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată, o Întâlnire este o sesiune înregistrată.'],
+['CalendarAccount', 'Un cont Google conectat, per spațiu de lucru și e-mail. Tokenurile de reîmprospătare OAuth sunt stocate pe server ca chei google_* în fișierul secrets.json din directorul de date și nu ajung niciodată la un client; un indicator authExpiredAt declanșează bannerul de reconectare.'],
+['AgentRole', 'Rol enumerat (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determină persona, accesul la memorie și ierarhia.'],
+['AgentSkills', 'Set de identificatori de skill-uri, insensibil la majuscule, care injectează contextul relevant în prompturi în momentul trimiterii.'],
+['Sursă de skill-uri', 'Un depozit GitHub înregistrat per spațiu de lucru ca catalog de skill-uri. Considerat nefiabil prin construcție: metadatele depozitului sunt doar pentru afișare, iar fiecare instalare trece poarta de scanare cu refuz implicit înainte ca vreun conținut să ajungă pe disc sau într-un prompt.'],
+['skills-lock.json', 'Manifestul per spațiu de lucru al skill-urilor instalate: pentru fiecare, depozitul sursă, calea în depozit, commit-ul la care este fixat și un hash de conținut cumulat. Instalările, actualizările și dezinstalările îl țin la curent; verify_skills îl verifică față de disc.'],
+['AgentCapabilities', 'Patru indicatori (push către repo, API GitHub, tichete, egress de rețea) rezolvați per trimitere: implicitul agentului, apoi implicitul utilizatorului, cu o suprascriere per conversație. Aplicate prin absență, fiindcă o capabilitate dezactivată înseamnă că tokenul sau egress-ul pur și simplu nu este injectat niciodată.'],
+['Mode', 'chat, plan, review sau orchestrate. Stocat per spațiu, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise.'],
+['SandboxBackend', 'microvm (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), native (Seatbelt nativ pe macOS, bubblewrap pe Linux și WSL2) sau none. Detectat o singură dată la pornire; native înfășoară trimiterea agenților când este disponibil. Windows nu are backend nativ, iar Linux are nevoie de bwrap plus socat, așa că rulările de acolo rămân neînfășurate; --sandbox off renunță deliberat.'],
+['Stație', 'O mașină de unică folosință pe care un agent o conduce în timp real: un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și instrumentul agentului vizează o singură mașină.'],
+['Mediu izolat', 'Proprietatea de izolare mai puternică, disponibilă stațiilor sprijinite de VM: o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă, așa că nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail enclosureControl.'],
+['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.'],
+['WakeReason', 'Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.'],
+['SandboxPort', 'Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).'],
+['CredentialBrokerPort', 'Emite credențiale limitate și condiționate de capabilități pentru lansarea sandbox-ului și le revocă la demolarea lui.'],
+['GitRepoInspectorPort', 'Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.'],
+['EmbeddingPort', 'Produce vectori de embedding de text cu normă unitară pentru căutarea semantică.'],
+['NotificationPort', 'Afișează notificări native de desktop, respectând filtrarea pe categorii și rute.'],
+['TicketProviderPort', 'Graniță independentă de furnizor către un backend de tichete (creare, citire, listare, actualizare, tranziție, atribuire).'],
+['PipelineEnginePort', 'Pornește o rulare de pipeline dintr-un șablon, decuplând apelanții de motorul concret.'],
+['AgentDispatchService', 'Lansează rulări de agent: provisionează repo-uri izolate, construiește prompturi, creează jurnale de rulare, returnează fluxuri de evenimente live.'],
+['TicketWorkflowService', 'Motor de ciclu de viață al tichetelor, pur de domeniu, cu un punct unic de trecere pentru mutații cu concurență optimistă și cu impunerea izolării spațiilor de lucru. Graful de tranziții pe care îl impune leagă doar agenții și automatizarea; modificările din interfață făcute de utilizator trec force true și îl ocolesc.'],
+['PipelineEngine', 'Orchestrează execuția rulărilor: pornește rulări, programează pași, persistă starea, gestionează routere, îmbinări și continuarea la eșec, reia rulările în curs după repornire.'],
+['PipelineTriggerDispatcher', 'Se abonează la evenimente de domeniu și pornește automat rulările de pipeline corespunzătoare pentru trigger-ele activate.'],
+['MemoryAccessPolicy', 'Rezolvă și impune permisiunile de memorie ale rolului de agent pe domenii.'],
+['HarnessCostCalculator', 'Evaluează costul utilizării de tokeni a harness-ului integrat într-un RunCost, pe baza catalogului models.dev. Trimiterea persistă acel total în jurnalul rulării.'],
+['BudgetEnforcementService', 'Calculează cheltuiala lunară per agent și un blocaj pre-trimitere (checkInvocationBlock). Acel blocaj este consultat doar de reconciliatorii de recuperare (OrphanRunReaper, StrandedTicketReconciler), niciodată de o trimitere obișnuită.'],
+['BudgetGovernanceService', 'Evaluează cheltuiala lunară per agent după fiecare rulare: un prag soft înregistrează un incident de avertizare; epuizarea înregistrează un incident sever și comută ciclul de viață al agentului în paused.'],
+['DomainEventBus', 'Magistrală de publicare/abonare cu difuzare în proces, pentru comunicarea între funcționalități. Evenimentele sunt tipizate; abonații consumă fluxuri de tip on.'],
+['DomainEvent', 'Interfața de bază. Fiecare eveniment are occurredAt. Categorii principale: spațiu de lucru/agent, PR/revizuire, mesagerie, tichete, pipeline, întâlniri/calendar, identitate, stații, observabilitate.'],
+['Clean Architecture', 'Regula dependențelor: Presentation către Application/Providers către Domain, cu Infrastructure îndreptată spre interior. Domeniul nu are nicio importare din infrastructură.'],
+['Porturi și adaptoare', 'Domeniul definește interfețe abstracte (porturi); infrastructura oferă implementări concrete (adaptoare). Rădăcina de compunere le leagă.'],
+['Kernel partajat', 'Entități, obiecte-valoare, porturi și servicii din core/domain/, partajate de 3+ funcționalități.'],
+['Feature-first', 'Codul este organizat pe domenii de business (agenți, pipeline-uri, mesagerie), nu pe straturi tehnice.'],
+['Arhitectură cu client subțire', 'Niciun client nu deschide baza de date; un proces cc_server headless deține datele și le servește prin RPC pe WebSocket. Fiecare client (desktop, web, telefon) este un renderer peste acea singură conexiune RPC.'],
+['cc_server', 'Binarul de server headless (Dart pur, fără motor Flutter). Deține baza de date Drift/SQLite, servește repo-RPC prin WebSocket și rulează serviciile din fundal (pipeline-uri, MCP, reconciliatori).'],
+['ServerConnectionMode', 'Cum ajunge desktopul la serverul lui: local (pornește un cc_server pe această mașină) sau remote (conectează-te la unul de altundeva). Clientul web este mereu remote.'],
+['RemoteRpcClient', 'Clientul JSON-RPC independent de transport pe care îl folosește fiecare client subțire pentru a vorbi cu serverul, prin WSS, loopback sau releul intermediat.'],
+['Delimitare per apel pe spațiul de lucru', 'Serverul este fără stare: nu există o legătură de spațiu de lucru per sesiune, așa că mai mulți clienți de pe un server nu partajează niciodată un spațiu de lucru curent. Fiecare repo/call și sub/subscribe limitat la spațiul de lucru trebuie să poarte workspace_id în argumentele lui; un id lipsă sau neînregistrat este refuzat înainte de a se deschide vreo bază de date. Accesul este apoi filtrat după apartenența la spațiul de lucru și după rol, nu după sesiune.'],
+['cc_remote', 'Clientul subțire de telefon — o PWA Flutter web care controlează de la distanță flota prin releul intermediat, cu o politică de instrumente cu refuz implicit.'],
+['cc_signaling_server', 'Un broker releu WebSocket fără stare, care găzduiește camere cu acces pe bază de invitație. Un releu simplu: transmite doar cadre sigilate end-to-end, nu deține date de aplicație și nu vede niciodată PSK-ul de asociere.'],
+['Principal', 'O valoare sigilată care unifică oamenii și agenții într-o singură abstracție de actor. UserPrincipal(userId) sau AgentPrincipal(agentId). Fiecare mesaj, tichet, revizuire, plan și jurnal de rulare se atribuie printr-un Principal.'],
+['Utilizator', 'O identitate umană, stocată în global.db și deci globală între spațiile de lucru. Principalul care creează un spațiu de lucru devine proprietarul lui, marcat pe Workspace.ownerUserId cu un rând de apartenență cu rol de proprietar; ceilalți se alătură prin invitație sau SSO.'],
+['WorkspaceMember', 'Un rând de apartenență care leagă un Utilizator de un Spațiu de lucru la un WorkspaceRole. Apartenența — nu o cheie de asociere — este granița de acces.'],
+['WorkspaceRole', 'Rol de apartenență gradual: owner, admin, member, viewer sau guest. Punctul unic de trecere pentru operațiile pe repo derivă un prag minim de rol per tip de operație.'],
+['ParticipantPresence', 'Prezență efemeră pentru un Principal (stare, loc, cursor, tastare, starea live a agentului + costul de rulare). Niciodată persistată; găzduită pe server; filtrată după acordările per repo înainte de difuzare.'],
+['Mod urmărire', 'Dă clic pe un avatar ca să îi urmărești viewportul până când acționezi, apoi te detașezi. Funcționează pentru oameni și pentru agenți („urmărește un agent la lucru”).'],
+['Cadran de autonomie', 'Un control per spațiu și per agent — propose-only / act-with-approval / act-freely — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.'],
+['cc_worker', 'Un binar executant de flotă, headless, în Dart pur. Se asociază cu un cc_server, își declară capabilitățile, preia joburi închiriate, le execută și transmite înapoi evenimente. Nu deține nicio stare durabilă.'],
+['JobSpec', 'Specificația tipizată pentru tot ce este executabil (rulare de agent, pas de pipeline, index de cod, randare de referință, benchmark, lot de eval-uri): capabilitățile necesare, prioritatea, bugetul, spațiul de lucru.'],
+['ActionClass', 'Un set închis de 13 clase de efecte (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă allow / prompt / deny per domeniu de aplicare.'],
+['WriteLedger', 'Un registru de idempotență limitat la spațiul de lucru. Fiecare mutație poartă o cheie de idempotență per acțiune logică; o reluare returnează rezultatul original, identic octet cu octet. Face reconectarea și lucrul cu mai mulți clienți sigur prin construcție.'],
+['Cheie de idempotență', 'Un UUIDv7 generat de client, emis per acțiune logică (nu per încercare). Deduplică reîncercările între reconectări și clienți.'],
+['Inbox „Needs me”', 'O coadă transversală, cu o regulă strictă: un element apare doar dacă blochează ceva (un agent, o îmbinare, o sincronizare) sau cere explicit operatorul.'],
+['Plan Studio', 'Suprafața interactivă de planificare: o propunere de orchestrare sau un plan de un singur agent, redate ca DAG tipizat și editabil, cu estimări de cost, timp și risc per pas, versionare prin diff de plan și aprobare parțială.'],
+['Calculul revizuirii', 'Calcul de revizuire pe server pentru un PR: cohorte de fișiere derivate din graf, diagrame tipizate de parcurgere, diff-uri vizuale de interfață, diff-uri de contract OpenAPI, hartă a razei de impact și porți per axă, servite prin review_studio.* și incluse în verdictul din tab-ul Revizuire.'],
+['Spațiu de revizuire', "Singurul spațiu suport al unui PR (mod review, tip pr), creat idempotent și legat de PR printr-un ReviewSpaceAssociation. Fiecare recenzent își depune constatările acolo, ceea ce le face comparabile; worktree-ul lui izolat are PR-ul verificat la vârful lui."],
+['Nod de revizuire', 'Unitatea structurată a unei constatări din revizuirea IA: tip (bug, suggestion, recommendation, question, ticket), prioritate P0-P3, un triplu de triaj categorie/severitate/efort, o ancoră pe fișier și linie, o corecție sugerată opțională și un scor de încredere. Depus cu add_review_node; verdictul se calculează din noduri, nu din proză.'],
+['Consensus-ready', 'Starea unui nod de revizuire atinsă doar când un recenzent coleg confirmă o constatare — un agent nu se poate confirma singur. Butonul Publicare din tab-ul Revizuire trimite toate constatările deschise rămase; instrumentul MCP publish_review_to_github încă trimite implicit doar constatările confirmate de colegi.'],
+['Nivel de revizuire', 'Politică la nivel de spațiu de lucru (light, balanced, thorough) care reglează ce recenzenți sunt distribuiți (doar inginer; +qa+arhitect; +securitate+performanță) și unde apar constatările sub prag. Nu șterge niciodată o constatare.'],
+['Axă de revizuire', 'Una dintre cele cinci benzi de punctaj per revizuire: correctness, security și testGap provin din constatările recenzenților; visual și apiContract sunt deterministe. Axele cu poartă se includ în verdict și îl pot face doar mai sever — o poartă partial sau unavailable ține verdictul în loc să îl aprobe.'],
+['Verdict de revizuire', 'ship, hold sau block. Orice constatare P0 cu încredere >= 0,7 blochează; orice altă P0 sau orice P1 ține; în rest, ship. O axă cu poartă care eșuează forțează block și nu poate fi contrazisă la vot de constatări.'],
+['SessionRecording', 'Un flux de evenimente plus casete HTTP/LLM și I/O de instrumente, capturate pentru o singură rulare și asociate cu un AgentConfigHash.'],
+['Sesiune de referință', 'O SessionRecording validată, fixată per agent sau playbook.'],
 ];
 
 <StructuredData
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## Entități principale
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**Agent**: Un lucrător IA cu identitate, rol, skill-uri și capabilități. Aparține exact unui singur spațiu de lucru. Actorul principal al sistemului.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/).
+**Adaptor**: Runner-ul care execută un tur de agent. Două sunt livrate: **Control Center (built-in)** — harness-ul în proces care vorbește cu furnizorii de modele — și **Claude Code** prin `claude -p`. Cursor, Codex, Anthropic, OpenAI și restul sunt furnizori pe adaptorul integrat, nu CLI-uri separate. Vezi [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/).
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/ro-RO/manual/referinta/harta-de-rute/).
+**Spațiu de lucru**: Chiriașul de izolare de nivel superior. Grupează agenți, repo-uri, spații, tichete, memorie și pipeline-uri. Izolarea este structurală, nu convențională: fiecare spațiu de lucru are propriul fișier SQLite (`<dataDir>/<workspaceId>/workspace.db`), așa că o citire între spații de lucru nu se compilează. Fiecare rută din aplicație este prefixată cu `/workspaces/:workspaceId` — vezi [harta de rute](/ro-RO/manual/referinta/harta-de-rute/).
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
+**Forge**: Un host de cod — **GitHub**, **GitLab** sau **Bitbucket Cloud**. Forge-ul este o proprietate a fiecărui repo, citită din remote-ul `origin` la înregistrare, și selectează adaptorul de API și credențialul acelui repo. Un spațiu de lucru poate găzdui repo-uri pe toate cele trei; suprafețele de agregare (inbox-ul, coada de PR-uri) se distribuie către fiecare forge reprezentat și îmbină rezultatele, izolând eșecurile, astfel încât un forge inaccesibil nu le golește niciodată pe celelalte. Forge-urile diferă prin ce acceptă — vezi tabelul de capabilități din [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**Repo**: Un depozit Git înregistrat într-un singur spațiu de lucru. **Limitat la spațiul de lucru** — același checkout înregistrat în două spații de lucru înseamnă două rânduri independente cu două id-uri; identitatea unui repo între spații de lucru se stabilește după calea din sistemul de fișiere, niciodată după id. Înregistrarea cere un arbore de lucru git al cărui remote `origin` indică spre un forge acceptat. Fiecare repo poartă acel **forge** (`github` / `gitlab` / `bitbucket`), care selectează adaptorul de API și credențialul folosite pentru el.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**Repo izolat**: Un worktree limitat la spațiul de lucru, derivat dintr-un repo înregistrat. Copy-on-write prin `rift` oriunde este livrat acel nativ; `git worktree` pe Windows. Provisionat **per spațiu** — fiecare conversație din acel spațiu partajează un singur checkout — așa că agenții nu modifică niciodată sursa.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**Spațiu**: Un container de colaborare limitat la spațiul de lucru, cu participanți umani și agenți, un `Mode` persistat, stare de provisionare și un `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) care decide cum este secționat, pus pe mut, marcat cu insignă și colectat de gunoi. Deține worktree-urile izolate pe care le partajează conversațiile lui (copy-on-write prin `rift`; `git worktree` pe Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**Conversație**: Un flux de mesaje în interiorul unui Spațiu, cu id, istoric și context de rulare a agentului proprii. Conversațiile dintr-un spațiu sunt egale și plate — nu există un flux primar sau „main”. Fiecare se deschide ca filă de editor; starea de necitit a unui spațiu le agregă pe toate.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**Fir**: O Conversație al cărei `anchorMessageId` este setat: ancorată la un mesaj al unei conversații surori din același Spațiu, cu un context de agent nou, inițializat de acel mesaj de ancorare. Un singur nivel de adâncime — firele nu se ancorează niciodată în fire.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**Tichet**: Agregatul unității de muncă. Neutru față de furnizor: `local` implicit, cu adaptoare de sincronizare pentru Linear, GitHub Issues, Jira Cloud și ClickUp — deși nicio suprafață din aplicație nu creează o conexiune de sincronizare. Acceptă ierarhie, legături și delegare. Atribuirea către un agent consemnează proprietatea și nu trimite nimic; atribuirea către o echipă este excepția (`TeamRoutingService` îl trimite pe lider).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**Pipeline**: Un flux de lucru bazat pe DAG care înlănțuie pași (trimitere de agent, scripturi, condiții). Definit prin șabloane; executat sub formă de rulări.
 
-## Value objects
+## Obiecte-valoare
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: Rol enumerat (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determină persona, accesul la memorie și ierarhia.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: Set de identificatori de skill-uri, insensibil la majuscule, care injectează contextul relevant în prompturi în momentul trimiterii.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri/).
+**Sursă de skill-uri**: Un depozit GitHub înregistrat per spațiu de lucru ca catalog de skill-uri. Considerat nefiabil prin construcție: metadatele depozitului sunt doar pentru afișare, iar fiecare instalare trece poarta de scanare cu refuz implicit înainte ca vreun conținut să ajungă pe disc sau într-un prompt. Vezi [instalează și gestionează skill-uri](/ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri/).
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: Manifestul per spațiu de lucru al skill-urilor instalate: pentru fiecare, depozitul sursă, calea în depozit, commit-ul la care este fixat și un hash de conținut cumulat. Instalările, actualizările și dezinstalările îl țin la curent; `verify_skills` îl verifică față de disc.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: Patru indicatori (push către repo, API GitHub, tichete, egress de rețea) rezolvați per trimitere — implicitul agentului → implicitul utilizatorului, cu o suprascriere per conversație. Aplicate prin absență: o capabilitate dezactivată înseamnă că tokenul sau egress-ul pur și simplu nu este injectat niciodată.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Mode**: `chat`, `plan`, `review` sau `orchestrate`. Stocat **per spațiu**, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise. Compozitorul oferă doar `chat`, `plan` și `orchestrate`; `chat` este etichetat „Agent”.
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), `native` (Seatbelt pe macOS, bubblewrap pe Linux și WSL2) sau `none`. Detectat o singură dată la pornire; `native` este **aplicat la trimiterea agenților** când este disponibil, înfășurând CLI-ul Claude Code și instrumentul `bash` al harness-ului. Windows nu are backend nativ, iar Linux are nevoie de `bwrap` plus `socat`, așa că rulările de acolo rămân neînfășurate; `--sandbox off` renunță deliberat.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/ro-RO/manual/concepte/statii/).
+**Stație**: O mașină de unică folosință pe care un agent o conduce în timp real — un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și apelurile `browser_use` / `computer_use` / `mobile_use` / `ios_use` ale agentului vizează o singură mașină implicită. Vezi [Stații și medii izolate](/ro-RO/manual/concepte/statii/).
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**Mediu izolat**: Granița mai puternică a stațiilor sprijinite de VM — o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă și nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail `enclosureControl`.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.
 
-## Ports
+## Porturi
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: Emite credențiale limitate și condiționate de capabilități pentru lansarea sandbox-ului și le revocă la demolarea lui.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: Produce vectori de embedding de text cu normă unitară pentru căutarea semantică.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: Afișează notificări native de desktop, respectând filtrarea pe categorii și rute.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: Graniță independentă de furnizor către un backend de tichete (creare, citire, listare, actualizare, tranziție, atribuire).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: Pornește o rulare de pipeline dintr-un șablon, decuplând apelanții de motorul concret.
 
-## Domain services
+## Servicii de domeniu
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: Lansează rulări de agent: provisionează repo-uri izolate, construiește prompturi, creează jurnale de rulare, returnează fluxuri de evenimente live.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: Motor de ciclu de viață al tichetelor, pur de domeniu, cu un punct unic de trecere pentru mutații cu concurență optimistă și cu impunerea izolării spațiilor de lucru. Graful de tranziții pe care îl impune leagă doar agenții și automatizarea; modificările din interfață făcute de utilizator trec `force: true` și îl ocolesc. Nu există niciun dispecer de tichete pentru un agent desemnat — `AgentDispatchService` deține trimiterea, iar atribuirea unui tichet unui agent nu pornește nicio rulare. Atribuirea unui tichet unei echipe este excepția (`TeamRoutingService` îl trimite pe lider).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: Orchestrează execuția rulărilor: pornește rulări, programează pași, persistă starea, gestionează routere, îmbinări și continuarea la eșec, reia rulările în curs după repornire.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: Se abonează la evenimente de domeniu și pornește automat rulările de pipeline corespunzătoare pentru trigger-ele activate.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: Rezolvă și impune permisiunile de memorie ale rolului de agent pe domenii.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: Evaluează costul utilizării de tokeni a harness-ului integrat într-un `RunCost`, pe baza catalogului models.dev. Trimiterea persistă acel total în jurnalul rulării.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: Calculează cheltuiala lunară per agent și un blocaj pre-trimitere (`checkInvocationBlock`). Acel blocaj este consultat doar de reconciliatorii de recuperare (`OrphanRunReaper`, `StrandedTicketReconciler`), niciodată de o trimitere obișnuită a unui utilizator sau a unui agent.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: Evaluează cheltuiala lunară per agent după fiecare rulare — un prag soft înregistrează un incident de avertizare; epuizarea înregistrează un incident sever și comută ciclul de viață al agentului în `paused`.
 
-## Events
+## Evenimente
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: Magistrală de publicare/abonare cu difuzare în proces, pentru comunicarea între funcționalități. Evenimentele sunt tipizate; abonații consumă fluxuri `on<T>()`.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: Interfața de bază. Fiecare eveniment are `occurredAt`. Categorii principale: spațiu de lucru/agent, PR/revizuire, mesagerie, tichete, pipeline, întâlniri/calendar, identitate, stații, observabilitate.
 
-## Meetings and calendar
+## Întâlniri și calendar
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Întâlnire**: O sesiune de întâlnire înregistrată și transcrisă local. Capturează microfonul și audio-ul de sistem, transcrie pe dispozitiv cu un model ASR selectabil (Parakeet TDT v3 implicit; Parakeet TDT v2, Whisper large-v3-turbo și Whisper base.en sunt alternative), diarizează vorbitorii și rezumă în notițe, elemente de acțiune și decizii. Modelul ASR selectat este instalat forțat la pornire, iar operațiile de înregistrare devin active după o repornire. Limitat la spațiul de lucru; rămâne pe mașină.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: O fereastră transcrisă de audio, etichetată după vorbitor (`me`/`them`), cu o etichetă de diarizare și decalaje în milisecunde.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: Rezultate structurate extrase de pipeline-ul de rezumare și stocate ca rânduri distincte. Elementele de acțiune se pot lega de un tichet.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată; o Întâlnire este o sesiune înregistrată. Legate unu-la-unu printr-un `MeetingCalendarLink`.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: Un cont Google conectat, per spațiu de lucru și e-mail. Tokenurile de reîmprospătare OAuth sunt stocate pe server ca chei `google_*` în `<dataDir>/secrets.json` și nu ajung niciodată la un client; fluxul de cod de dispozitiv se încheie pe server. Un indicator `authExpiredAt` declanșează bannerul de reconectare.
 
-## Architecture terms
+## Termeni de arhitectură
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Clean Architecture**: Regula dependențelor: Presentation → Application/Providers → Domain ← Infrastructure. Domeniul nu are nicio importare din infrastructură.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**Porturi și adaptoare**: Domeniul definește interfețe abstracte (porturi); infrastructura oferă implementări concrete (adaptoare). Rădăcina de compunere le leagă.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**Kernel partajat**: Entități, obiecte-valoare, porturi și servicii din `core/domain/`, partajate de 3+ funcționalități.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**Feature-first**: Codul este organizat pe domenii de business (agenți, pipeline-uri, mesagerie), nu pe straturi tehnice.
 
-## Multiplayer, identity and velocity
+## Multiplayer, identitate și viteză
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Principal**: O valoare sigilată care unifică oamenii și agenții într-o singură abstracție de actor — `UserPrincipal(userId)` sau `AgentPrincipal(agentId)`. Fiecare mesaj, tichet, revizuire, plan și jurnal de rulare se atribuie printr-un Principal.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**Utilizator**: O identitate umană, stocată în `global.db` și deci globală între spațiile de lucru. Principalul care creează un spațiu de lucru devine **proprietarul** lui — marcat pe `Workspace.ownerUserId` cu un rând de apartenență cu rol de proprietar, în aceeași operațiune. Ceilalți se alătură prin invitație sau SSO.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: Un rând de apartenență care leagă un Utilizator de un Spațiu de lucru la un rol (`owner` / `admin` / `member` / `viewer` / `guest`). **Apartenența — nu o cheie de asociere — este granița de acces.** Acordările per repo împiedică apartenența să acorde mai multe privilegii decât forge-ul.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: Prezență efemeră pentru un Principal (stare, loc, cursor, tastare, starea live și costul de rulare ale unui agent). Niciodată persistată; găzduită pe server; filtrată după acordările per repo înainte de difuzare.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**Mod urmărire**: Dă clic pe un avatar ca să îi urmărești viewportul până când acționezi, apoi te detașezi. Funcționează pentru oameni și pentru agenți („urmărește un agent la lucru”).
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**Cadran de autonomie**: Un control per spațiu și per agent — `propose-only` / `act-with-approval` / `act-freely` — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Un set închis de 13 clase de efecte (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă `allow` / `prompt` / `deny` per domeniu de aplicare (space > agent > workspace > mode preset > built-in default).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **cheie de idempotență**: Fiecare mutație poartă o cheie de idempotență generată de client (UUIDv7, per acțiune logică). Registrul limitat la spațiul de lucru deduplică înainte de a rula handlerul; o reluare returnează rezultatul original, identic octet cu octet. Face reconectarea și lucrul cu mai mulți clienți sigur prin construcție.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**Inbox „Needs me”**: O coadă transversală, cu o regulă strictă — un element apare doar dacă _blochează_ ceva (un agent, o îmbinare, o sincronizare) sau cere explicit operatorul.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: Suprafața interactivă de planificare — planuri DAG tipizate și editabile, cu cost, timp și risc per pas, și aprobare parțială.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**Calculul revizuirii**: Calcul de revizuire pe server pentru un PR (cohorte derivate din graf, diagrame tipizate, diff-uri vizuale, diff-uri de contract API, porți pe mai multe axe) servit prin `review_studio.*` și inclus în tab-ul Revizuire.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**Spațiu de revizuire**: Singurul spațiu suport al unui PR (mod `review`, tip `pr`), creat idempotent și legat de PR printr-un `ReviewSpaceAssociation`. Fiecare recenzent își depune constatările acolo, ceea ce le face comparabile; worktree-ul lui izolat are PR-ul verificat la vârful lui.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**Nod de revizuire**: Unitatea structurată a unei constatări din revizuirea IA: tip (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), prioritate P0–P3, un triplu de triaj categorie/severitate/efort, o ancoră pe fișier și linie, o corecție sugerată opțională și un scor de încredere. Depus cu `add_review_node`; verdictul se calculează din noduri, nu din proză.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Consensus-ready**: Starea unui nod de revizuire atinsă doar când un recenzent coleg confirmă o constatare — un agent nu se poate confirma singur. Butonul **Publică pe GitHub** din tab-ul Revizuire trimite toate constatările deschise rămase (`selection: all_open`); instrumentul MCP `publish_review_to_github` încă trimite implicit doar constatările confirmate de colegi.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**Nivel de revizuire**: Politică la nivel de spațiu de lucru (`light`, `balanced`, `thorough`) care reglează ce recenzenți sunt distribuiți (doar inginer; +qa+arhitect; +securitate+performanță) și unde apar constatările sub prag. Nu șterge niciodată o constatare.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**Axă de revizuire**: Una dintre cele cinci benzi de punctaj per revizuire: `correctness`, `security` și `testGap` provin din constatările recenzenților; `visual` și `apiContract` sunt deterministe. Axele cu poartă se includ în verdict și îl pot face doar mai sever — o poartă `partial` sau `unavailable` ține verdictul în loc să îl aprobe.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**Verdict de revizuire**: `ship`, `hold` sau `block`. Orice constatare P0 cu încredere ≥ 0,7 blochează; orice altă P0 sau orice P1 ține; în rest, ship. O axă cu poartă care eșuează forțează block și nu poate fi contrazisă la vot de constatări.
 
-## Fleet and evals
+## Flotă și eval-uri
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: Un binar executant de flotă, headless, în Dart pur. Se asociază cu un `cc_server`, își declară capabilitățile gazdei, preia joburi închiriate, le execută și transmite înapoi evenimente de proces. Nu deține **nicio stare durabilă** — un server autoritar, N membre simple.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: Specificația tipizată pentru tot ce este executabil (rulare de agent, pas de pipeline, index de cod, randare de referință, benchmark, lot de eval-uri).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**Suită eval**: O definiție de evaluare limitată la spațiul de lucru (prompt, agent și mod țintă, evaluatori). Cinci suite de pornire sunt inserate la crearea spațiului de lucru; Observabilitate → Calitate le listează.
 
-## Deployment and clients
+## Implementare și clienți
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**Arhitectură cu client subțire**: Niciun client nu deschide baza de date; un proces `cc_server` headless deține datele și le servește prin RPC pe WebSocket. Fiecare client (desktop, web, telefon) este un renderer peste acea singură conexiune RPC.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: Binarul de server headless (Dart pur, fără motor Flutter). Deține baza de date Drift/SQLite, servește repo-RPC prin WebSocket și rulează serviciile din fundal (pipeline-uri, MCP, reconciliatori).
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: Cum ajunge desktopul la serverul lui — `local` (pornește un `cc_server` pe această mașină, implicit) sau `remote` (conectează-te la unul de altundeva). Clientul web este mereu `remote`.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: Clientul JSON-RPC independent de transport pe care îl folosește fiecare client subțire pentru a vorbi cu serverul — prin WSS, loopback sau releul intermediat.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**Delimitare per apel pe spațiul de lucru**: Serverul este fără stare — **nu** există o legătură de spațiu de lucru per sesiune, așa că mai mulți clienți de pe un server nu partajează niciodată un „spațiu de lucru curent”. Fiecare `repo/call` și `sub/subscribe` limitat la spațiul de lucru trebuie să poarte `workspace_id` în argumentele lui; un id lipsă sau neînregistrat este refuzat înainte de a se deschide vreo bază de date. Accesul este apoi filtrat după apartenența la spațiul de lucru și după rol, nu după sesiune.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: Clientul subțire de telefon — o PWA Flutter web care controlează de la distanță flota prin releul intermediat, cu o politică de instrumente cu refuz implicit.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: Un broker releu WebSocket fără stare, care găzduiește camere cu acces pe bază de invitație — un releu simplu: transmite doar cadre sigilate end-to-end, nu deține date de aplicație și nu vede niciodată PSK-ul de asociere.
 
-## See also
+## Vezi și
 
-- [Route map](/ro-RO/manual/referinta/harta-de-rute/)
-- [Architecture](/ro-RO/manual/concepte/arhitectura/)
-- [Workspaces](/ro-RO/manual/concepte/spatii-de-lucru/)
-- [Domain events](/ro-RO/manual/referinta/evenimente-de-domeniu/)
+- [Hartă de rute](/ro-RO/manual/referinta/harta-de-rute/)
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/)
+- [Spații de lucru](/ro-RO/manual/concepte/spatii-de-lucru/)
+- [Evenimente de domeniu](/ro-RO/manual/referinta/evenimente-de-domeniu/)

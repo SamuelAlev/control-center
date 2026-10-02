@@ -1,64 +1,66 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: Konzepte
+description: Wie Control Center funktioniert und warum es so gebaut ist — die Hintergrundlektüre zu den Anleitungen.
 slug: de-DE/handbuch/konzepte
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/de-DE/handbuch/anleitungen/); when you want to look
-something up, go to the [reference](/de-DE/handbuch/referenz/).
+Diese Seiten erklären, **wie Control Center funktioniert und warum**. Sie sind zum
+Verstehen da, nicht zum Tun: Keine Seite hier ist ein Ablauf, dem du folgen sollst.
+Wenn du eine konkrete Aufgabe erledigen willst, geh zu den
+[Anleitungen](/de-DE/handbuch/anleitungen/); wenn du etwas nachschlagen willst, geh zur
+[Referenz](/de-DE/handbuch/referenz/).
 
-Read them in any order. If you are new, the core model is the place to start.
+Lies sie in beliebiger Reihenfolge. Wenn du neu bist, fang beim Kernmodell an.
 
-## Core model
+## Kernmodell
 
-The four ideas everything else is built on.
+Die vier Ideen, auf denen alles andere aufbaut.
 
-- [Workspaces and isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/de-DE/handbuch/konzepte/agentenmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/) — what happens between your message and the agent's first token
-- [Modes](/de-DE/handbuch/konzepte/modi/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/de-DE/handbuch/konzepte/tool-kontext/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/de-DE/handbuch/konzepte/code-intelligenz/) — the code graph, language server, structural search and debugger
-- [Conversation history](/de-DE/handbuch/konzepte/unterhaltungsverlauf/) — persistence, compaction and forking a transcript
+- [Arbeitsbereiche und Isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/) — die Mandantengrenze und warum das Datenbanklayout sie durchsetzt, nicht die Sorgfalt der Abfragen
+- [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/) — woraus ein Agent besteht: Identität, Rolle, Skills, Befugnisse, Adapter und Modell
+- [Lebenszyklus der Agenten-Ausführung](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/) — was zwischen deiner Nachricht und dem ersten Token des Agenten passiert
+- [Modi](/de-DE/handbuch/konzepte/modi/) — wie `chat`, `plan`, `review` und `orchestrate` festlegen, was ein Agent tun darf
+- [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext/) — warum ein Agent nur einen Teil seiner Tools sieht, wie er an den Rest kommt und was den Prompt-Cache des Anbieters warm hält
+- [Code-Intelligenz](/de-DE/handbuch/konzepte/code-intelligenz/) — Code-Graph, Language Server, strukturelle Suche und Debugger
+- [Unterhaltungsverlauf](/de-DE/handbuch/konzepte/unterhaltungsverlauf/) — Persistenz, Verdichtung und das Verzweigen eines Transkripts
 
-## Safety and control
+## Sicherheit und Kontrolle
 
-What an agent is allowed to touch and who decides.
+Worauf ein Agent zugreifen darf und wer das entscheidet.
 
-- [Sandbox and security](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) — what actually constrains an agent run today
-- [Guardrails](/de-DE/handbuch/konzepte/schutzregeln/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/de-DE/handbuch/konzepte/autorisierung/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/de-DE/handbuch/konzepte/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) — was einen Agentenlauf heute tatsächlich eingrenzt
+- [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) — eine Policy-Engine für jede verändernde Aktion und wie eine Regel aufgelöst wird
+- [Autorisierung](/de-DE/handbuch/konzepte/autorisierung/) — Rollen, der Berechtigungskatalog und das Audit-Protokoll
+- [Rigs und Kapseln](/de-DE/handbuch/konzepte/rigs/) — warum Agenten Wegwerf-VMs bekommen statt deiner Maschine und wo die Grenze tatsächlich liegt
 
-## Directing the work
+## Arbeit steuern
 
-Turning intent into work that gets done.
+Aus einer Absicht wird Arbeit, die erledigt wird.
 
-- [Tickets and delegation](/de-DE/handbuch/konzepte/tickets/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/de-DE/handbuch/konzepte/pipelines/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/de-DE/handbuch/konzepte/orchestrierung/) — one goal, one approval, a generated pipeline
-- [AI review](/de-DE/handbuch/konzepte/ki-review/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/de-DE/handbuch/konzepte/pr-unterhaltungen/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/de-DE/handbuch/konzepte/gedaechtnis-und-wissen/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/de-DE/handbuch/konzepte/evals-und-qualitaet/) — eval suites and the Quality tab
+- [Tickets und Delegation](/de-DE/handbuch/konzepte/tickets/) — die anbieterneutrale Arbeitseinheit, die sich die ganze Flotte teilt
+- [Pipelines und Automatisierung](/de-DE/handbuch/konzepte/pipelines/) — DAG-Workflows, Trigger und fortsetzbare Läufe
+- [Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/) — ein Ziel, eine Freigabe, eine erzeugte Pipeline
+- [KI-Review](/de-DE/handbuch/konzepte/ki-review/) — wie aus einem PR ein geprüfter wird: Review-Bereiche, Peer-Konsens, Achsen und das Urteil Ship/Hold/Block
+- [PR-Unterhaltungen](/de-DE/handbuch/konzepte/pr-unterhaltungen/) — eine GitHub-Erwähnung oder das Label `ai-review` direkt aus der Forge beantworten
+- [Gedächtnis und Wissen](/de-DE/handbuch/konzepte/gedaechtnis-und-wissen/) — Fakten, Richtlinien und was ein Agent wissen darf
+- [Evals und Qualität](/de-DE/handbuch/konzepte/evals-und-qualitaet/) — Eval-Suites und der Tab Qualität
 
-## People and reach
+## Menschen und Reichweite
 
-Working with other humans and reaching the fleet from elsewhere.
+Mit anderen Menschen arbeiten und die Flotte von anderswo erreichen.
 
-- [Multiplayer and presence](/de-DE/handbuch/konzepte/multiplayer/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/de-DE/handbuch/konzepte/sso/) — SAML and OIDC logins
-- [Chat bridges](/de-DE/handbuch/konzepte/chat-bruecken/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/de-DE/handbuch/konzepte/fernsteuerung/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/de-DE/handbuch/konzepte/besprechungen/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/de-DE/handbuch/konzepte/kalender/) — Google Calendar sync and meeting alerts
+- [Multiplayer und Präsenz](/de-DE/handbuch/konzepte/multiplayer/) — Menschen und Agenten als gleichberechtigte Beteiligte und was den Zugang regelt
+- [Single Sign-on](/de-DE/handbuch/konzepte/sso/) — Anmeldungen über SAML und OIDC
+- [Chat-Brücken](/de-DE/handbuch/konzepte/chat-bruecken/) — warum die Slack-Brücke nach außen wählt und was eine Nachricht aus dem Chat berechtigt
+- [Fernsteuerung und Mobil](/de-DE/handbuch/konzepte/fernsteuerung/) — wie ein Smartphone deinen Server erreicht und welches Sicherheitsmodell diesen Weg umgibt
+- [Besprechungen und Transkription](/de-DE/handbuch/konzepte/besprechungen/) — Aufnahme auf dem Gerät, Transkription und Zusammenfassung
+- [Kalender und Terminplanung](/de-DE/handbuch/konzepte/kalender/) — Synchronisierung mit Google Calendar und Besprechungshinweise
 
-## Under the hood
+## Unter der Haube
 
-The shape of the system itself.
+Die Form des Systems selbst.
 
-- [Architecture](/de-DE/handbuch/konzepte/architektur/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/de-DE/handbuch/konzepte/bereitstellung/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/de-DE/handbuch/konzepte/domain-ereignisse/) — the in-process bus features talk over
+- [Architektur](/de-DE/handbuch/konzepte/architektur/) — Schichtung, der gemeinsame Kernel, Ports und Adapter
+- [Bereitstellung und Clients](/de-DE/handbuch/konzepte/bereitstellung/) — wie Desktop-, Web- und Smartphone-Clients zu einem Server stehen
+- [Domain-Ereignisse](/de-DE/handbuch/konzepte/domain-ereignisse/) — der prozessinterne Bus, über den die Features miteinander sprechen

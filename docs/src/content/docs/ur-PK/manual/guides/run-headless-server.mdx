@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: ہیڈلیس سرور چلائیں
+description: cc_server ہیڈلیس بائنری یا اُس کی Docker امیج چلائیں، ایک کلائنٹ کو اُس کے ساتھ پیئر کریں اور CLI فلیگ اور ماحول کی مکمل سطح سے اُسے کنفیگر کریں۔
 dateModified: 2026-09-10
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+`cc_server` کو کسی ایسی مشین پر چلائیں جو آن رہتی ہو، پھر اپنے ڈیسک ٹاپ، براؤزر
+یا فون سے اُس سے جڑیں۔ سرور ایک خالص Dart نیٹو بائنری ہے — کوئی Flutter انجن
+نہیں — لہٰذا یہ macOS، Linux یا Windows پر ہیڈلیس چلتا ہے۔ ڈیٹا بیس اُسی کے پاس
+ہوتا ہے، ایجنٹس وہی چلاتا ہے اور ہر بیرونی API کال وہی کرتا ہے؛ کلائنٹس صرف
+رینڈر کرتے ہیں۔
 
-## Run in Docker (prebuilt images)
+## Docker میں چلائیں (پہلے سے بنی امیجز)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+ہر ریلیز چار GHCR امیجز کا ایک خود میزبان اسٹیک شائع کرتی ہے — بیک اینڈ، دو
+اسٹیٹک تھن کلائنٹس اور اختیاری پیئرنگ ریلے — نیز عوامی ڈیمو ہوسٹ کے لیے ایک الگ
+`cc-server-demo` امیج۔ خود میزبان انسٹال کے لیے کسی سورس چیک آؤٹ کی ضرورت نہیں۔
+کوئی ورژن ٹیگ پن کریں (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) یا `latest` پر
+چلتے رہیں۔
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| امیج                                          | یہ کیا ہے                                       | شائع کرتا ہے   |
+| --------------------------------------------- | ----------------------------------------------- | -------------- |
+| `ghcr.io/samuelalev/cc-server`                | بیک اینڈ: ڈیٹا بیس، ایجنٹس، MCP، ویب ہکس        | `-p 9030:9030` |
+| `ghcr.io/samuelalev/cc-webapp`                | ویب کلائنٹ (اسٹیٹک nginx)                       | `-p 8080:8080` |
+| `ghcr.io/samuelalev/cc-remote`                | فون کمپینین PWA (اسٹیٹک nginx)                  | `-p 8081:8080` |
+| `ghcr.io/samuelalev/cc-signaling-server`      | WebRTC پیئرنگ ریلے (اختیاری)                    | `-p 8788:8788` |
 
-The whole stack as a compose file:
+پورا اسٹیک بطور compose فائل:
 
 ```yaml
 services:
@@ -51,91 +53,92 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+اِس میں سے کچھ بھی لوپ بیک سے آگے ظاہر کرنے سے پہلے جاننے کے قابل باتیں:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server` امیج `CC_SERVER_INSECURE=1` کے ساتھ آتی ہے** (شائع شدہ پورٹ کی
+  ٹریفک وصول کرنے کے لیے اُسے `0.0.0.0` بائنڈ کرنا ضروری ہے)، جو کسی بھروسے مند
+  نیٹ ورک پر TLS ختم کرنے والے ریورس پراکسی — Caddy، Traefik، nginx یا Cloudflare
+  Tunnel — کے پیچھے ہی محفوظ ہے۔ اِس کے بجائے پروسیس کے اندر TLS ختم کرنے کے لیے
+  کوئی سرٹیفکیٹ ماؤنٹ کریں اور `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` سیٹ
+  کریں (پھر `CC_SERVER_INSECURE` ہٹا دیں)۔ سب کچھ `docker run -e …` یا compose کے
+  `environment:` بلاک سے تبدیل کیا جا سکتا ہے۔
+- **`/data` ہی واحد حالت ہے۔** SQLite ڈیٹا بیسز، پیئر شدہ ڈیوائس کے راز، ڈاؤن لوڈ
+  شدہ ماڈلز اور میٹنگ آڈیو سب والیوم میں رہتے ہیں — اُس کا بیک اپ رکھیں تو کنٹینر
+  بے مصرف ہو جاتا ہے۔
+- **پہلے کنکشن سے قبل امیج کے اندر ہی سے کلائنٹ پیئر کریں**، جو کنٹینر میں
+  [مرحلہ 3](#مرحلہ-3-پہلے-اسٹارٹ-سے-قبل-کلائنٹ-پیئر-کریں) کے مساوی ہے:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **دونوں کلائنٹ امیجز اسٹیٹک nginx ہوسٹ ہیں** — رن ٹائم پر کنفیگر کرنے کے لیے
+  کچھ نہیں؛ ہر کلائنٹ کا کنیکٹ فارم آپ کا سرور URL، ڈیوائس id اور پیئرنگ کلید
+  لیتا ہے۔ سگنلنگ ریلے کو بھی صرف اپنا پورٹ درکار ہوتا ہے (`SIGNALING_HOST` /
+  `SIGNALING_PORT` تبدیل کیے جا سکتے ہیں)؛ یہ بے حالت ہے، کوئی راز نہیں رکھتا اور
+  ایک **فال بیک** ہے — فون لوپ بیک، LAN، ٹیل نیٹ یا براہِ راست `wss://` راستہ اُس
+  وقت استعمال کرتا ہے جب کوئی قابلِ رسائی ہو، اور ریلے پر صرف اُس وقت واپس گرتا
+  ہے جب کوئی نہ ہو۔ اگر آپ کے کلائنٹس ہمیشہ سرور تک براہِ راست پہنچتے ہیں تو
+  اِسے چھوڑ دیں۔
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+اِس گائیڈ کا باقی حصہ سرور کو سورس سے بناتا ہے؛ اُس میں بتائے گئے فلیگ اور رویّے
+وہی ہیں جنہیں امیج کے ماحول متغیرات کھلاتے ہیں۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart)۔ یہ ریپو اپنا SDK [fvm](https://fvm.app) سے پن کرتا ہے، لہٰذا ہر کمانڈ سے پہلے `fvm` لگائیں۔
+- یہ ریپوزٹری چیک آؤٹ شدہ ہو۔
+- وہ نیٹو ٹول چین جو اسٹیجنگ اسکرپٹ کو درکار ہے — Rust/`cargo` کے علاوہ `meson`، `ninja`، `pkg-config`، `git` اور ایک C++ کمپائلر۔ ہر بلڈ اسکرپٹ بتاتا ہے کہ اُسے کیا نہیں ملا اور اُسے کیسے انسٹال کرنا ہے۔
+- ایک قابلِ رسائی ہوسٹ: مقامی استعمال کے لیے لوپ بیک، یا ریموٹ کلائنٹس کے لیے TLS کے ساتھ LAN/عوامی پتہ۔
 
-## Step 1: Stage the native libraries
+## مرحلہ 1: نیٹو لائبریریاں اسٹیج کریں
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+نیٹوز **لازمی** ہیں — کوئی کم تر درجے کا موڈ نہیں۔ باقی سب سے پہلے انہیں ریپو
+روٹ سے بنائیں:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+یہ `rift`، `fff`، tree-sitter مع اُس کے گرامرز، `aec`، `lame`، `ccpty`،
+`cc_watcher`، `cc_inference` اور SAML نیٹو کو `build/natives/` میں بناتا ہے۔
+`cc_server` بلڈ ہُک جو کچھ وہاں اسٹیج ہوا ہو اُسے دوبارہ بنڈل میں منتقل کرتا ہے،
+لہٰذا یہ قدم چھوڑنے سے یا تو بلڈ بالکل ناکام ہو جاتا ہے یا — نیچے دیے گئے ایسکیپ
+ہیچ کے ساتھ — ایسی بائنری بنتی ہے جس کا بوٹ پری فلائٹ شروع ہونے سے انکار کرتا ہے
+اور گمشدہ لائبریری کا نام لیتا ہے۔
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[صرف کمپائل کے لیے ایسکیپ ہیچ]
+ریپو روٹ میں خالی `.cc_natives_allow_missing` فائل بنانے سے گمشدہ نیٹوز والی بلڈ
+ناکامی ایک وارننگ میں بدل جاتی ہے۔ یہ کسی تازہ کلون کے سنٹیکس چیک کے لیے ہے؛
+اِس طرح بنایا گیا سرور بوٹ نہیں ہو سکتا۔ یہ ایک **فائل** ہونی چاہیے — بلڈ ہُک
+رنر کالر کا ماحول آگے نہیں بھیجتا، لہٰذا ماحول متغیر نظر انداز ہو جاتا ہے۔
 :::
 
-## Step 2: Build the binary
+## مرحلہ 2: بائنری بنائیں
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+بنڈل بائنری کے ساتھ `libsqlite3` اور اسٹیج شدہ نیٹوز بھی بھیجتا ہے — نہ سسٹم
+SQLite درکار اور نہ Flutter انجن۔ ایگزیکیوٹیبل
+`./build/cli/<os_arch>/bundle/bin/cc_server` پر آتا ہے۔
 
-## Step 3: Pair a client before first start
+## مرحلہ 3: پہلے اسٹارٹ سے قبل کلائنٹ پیئر کریں
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+کسی تازہ ڈیٹا ڈائریکٹری میں نہ کوئی پیئر شدہ ڈیوائس ہوتی ہے اور نہ کوئی پری
+شیئرڈ کلید، لہٰذا کلائنٹ کے پیئرنگ کلید والے پرامپٹ کو ابھی پورا نہیں کیا جا
+سکتا۔ `pair` سب کمانڈ سے ایک بنا لیں۔ یہ `global.db` اور `secrets.json` براہِ
+راست لکھتا ہے؛ جو سرور پہلے سے اُسی ڈیٹا ڈائر کی خدمت کر رہا ہو وہ بغیر ری اسٹارٹ
+نئی ڈیوائس اُٹھا لیتا ہے:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+یہ تین قدریں پرنٹ کرتا ہے جنہیں کلائنٹ کے کنیکٹ فارم میں پیسٹ کیا جاتا ہے:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +147,45 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+کارآمد فلیگس: `--device` (ڈیفالٹ `web-client`؛ یہی id ڈیوائس ٹیئر بھی طے کرتی ہے
+— `desktop`، `ios`، `android`، باقی کچھ بھی ویب کلائنٹ ہے)، `--label` (ڈیفالٹ
+طور پر پلیٹ فارم کا نام اور اِس مشین کا ہوسٹ نیم)، `--host` (وہ ہوسٹ جو URL میں
+پرنٹ ہو، کیونکہ لوپ بیک کسی دوسری مشین سے قابلِ رسائی نہیں ہوتا) اور
+`--client-url`۔ `pair` دوبارہ چلانے سے اُس ڈیوائس کی کلید بدل جاتی ہے اور اُس کے
+لائیو سیشنز گر جاتے ہیں۔ پیئرنگ کبھی ورک اسپیس نہیں بناتی: جڑنے والا کلائنٹ اپنے
+آن بورڈنگ میں پہلے ورک اسپیس کا نام رکھتا اور اُسے بناتا ہے۔
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+`--client-url` کے ساتھ یہ ایک ایسا QR بھی پرنٹ کرتا ہے جسے ٹرمنل سے اسکین کیا جا
+سکتا ہے اور جو ویب کلائنٹ کو پہلے سے بھرا ہوا کھولتا ہے:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/).
+:::caution[یہ QR فون والا QR نہیں ہے]
+`--client-url` **ویب کلائنٹ** کے لیے لنک بناتا ہے — سرور URL، ڈیوائس id اور کلید
+URL فریگمنٹ میں۔ **Remote** فون ایپ ایک مختلف پے لوڈ کی توقع کرتی ہے (سرور کا
+مکمل کنکشن ڈسکرپٹر اور ایک میعاد)، جو کسی چلتے کلائنٹ میں
+**ترتیبات → آپ → آپ کی ڈیوائسز** سے جاری ہوتا ہے۔ دونوں ایک دوسرے کے متبادل نہیں۔
+دیکھیں [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)۔
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+`cc_server pair` سے جاری کردہ سند پر **کوئی میعاد ایکسپائری نہیں** ہوتی؛ ایپ میں
+جاری کردہ سند ہمیشہ 30 دن بعد ختم ہو جاتی ہے۔ CLI سے جاری کردہ ڈیوائس کو کام ختم
+ہونے پر **ترتیبات → آپ → آپ کی ڈیوائسز** سے منسوخ کر دیں۔
 
-## Step 4: Start the server
+## مرحلہ 4: سرور شروع کریں
 
-On loopback — the default and all you need for a client on the same machine:
+لوپ بیک پر — ڈیفالٹ، اور اُسی مشین پر موجود کلائنٹ کے لیے کافی:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+کسی دوسری مشین سے اُس تک پہنچنے کے لیے ہر انٹرفیس بائنڈ کریں۔ TLS کے بغیر غیر
+لوپ بیک بائنڈ **اسٹارٹ اپ پر مسترد** کر دیا جاتا ہے
+(`Refusing to bind non-loopback address … without TLS`)، لہٰذا کوئی سرٹیفکیٹ فراہم کریں:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +193,43 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+یا کسی بھروسے مند پرائیویٹ نیٹ ورک پر ریورس پراکسی میں TLS ختم کریں اور اُس کے
+پیچھے پلین ٹیکسٹ بائنڈ کو منتخب کریں:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+جب `--tls-cert` اور `--tls-key` دونوں سیٹ ہوں تو `--insecure` نظر انداز ہو جاتا
+ہے — TLS ہمیشہ جیتتا ہے۔ سرور پلین ٹیکسٹ حالت کو `GET /healthz` میں
+`insecure: true` کے طور پر بتاتا ہے اور کلائنٹس ایسے کنکشن پر غیر محفوظ کا نشان
+لگاتے ہیں۔
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+سرور `SIGINT`/`SIGTERM` تک چلتا ہے، پھر صاف طریقے سے بند ہو جاتا ہے۔
 
-## Step 5: Connect a client
+## مرحلہ 5: کلائنٹ جوڑیں
 
-Point a client at the server URL and pairing key from step 3:
+کلائنٹ کو مرحلہ 3 والے سرور URL اور پیئرنگ کلید کی طرف اشارہ کریں:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/).
+- **ڈیسک ٹاپ ایپ**: پہلی بار چلنے والی اسکرین (**Control Center کیسے چلے؟**) پر **اس ایپ میں چلائیں** کے بجائے کنیکٹ فیلڈز بھریں، یا سرور بعد میں **ترتیبات → سرور → کنکشن اور اسٹیٹس** سے شامل کریں۔ دیکھیں [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)۔
+- **ویب کلائنٹ**: [app.usectrl.dev](https://app.usectrl.dev) کھولیں (یا ویب بلڈ کی اپنی کاپی) اور سرور URL، ڈیوائس id اور پیئرنگ کلید درج کریں۔
+- **فون**: کسی چلتے کلائنٹ سے **Remote** ایپ پیئر کریں — دیکھیں [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)۔
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server کوئی ویب بنڈل پیش نہیں کرتا]
+اسٹینڈ اَلون `cc_server` کبھی ویب روٹ ماؤنٹ نہیں کرتا، لہٰذا `GET /` 404 واپس
+کرتا ہے۔ ویب کلائنٹ الگ سے میزبانی کیا جاتا ہے — `app.usectrl.dev` استعمال کریں،
+یا ویب بلڈ کی خود میزبانی کسی بھی اسٹیٹک HTTPS ہوسٹ پر کریں (اوپر دی گئی
+`cc-webapp` امیج بالکل یہی ہے)۔ لوپ بیک کے علاوہ کوئی بھی براؤزر اوریجن
+`--allowed-origins` میں ہونا چاہیے ورنہ `/rpc` تک WebSocket اَپ گریڈ مسترد ہو جاتا
+ہے؛ ڈیفالٹ فہرست `https://app.usectrl.dev` ہے اور `localhost` / `127.0.0.1`
+ہمیشہ اجازت یافتہ ہیں۔
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## مرحلہ 6: Google Calendar جوڑیں (اختیاری)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+بغیر کسی GUI کے ورک اسپیس کا کیلنڈر سنک کرنے کے لیے ڈیوائس کوڈ فلو استعمال
+کریں:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +237,65 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/).
+یہ ایک کوڈ اور ایک URL پرنٹ کرتا ہے جسے کسی دوسری ڈیوائس پر منظور کرنا ہوتا ہے،
+ریفریش ٹوکن سرور کی طرف محفوظ کرتا ہے اور خارج ہو جاتا ہے۔ سورس بلڈ کے ساتھ کوئی
+Google کلائنٹ نہیں آتا، لہٰذا id اور secret ماحول متغیرات لازمی ہیں — کوئی
+`--google-client-id` فلیگ نہیں ہے۔ دیکھیں [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)۔
 
-## Configuration
+## کنفیگریشن
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/).
+اوپر استعمال ہوئے فلیگس وہی ہیں جو پہلی سیٹ اپ کو درکار ہوتے ہیں۔ مکمل سطح — 23
+فلیگ اور ماحول متغیر کے جوڑے، چار سب کمانڈز اور ڈیٹا ڈائریکٹری کا لے آؤٹ —
+[`cc_server` CLI حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/) میں ہے۔
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[نامعلوم فلیگس خاموشی سے نظر انداز ہوتے ہیں]
+آرگیومنٹ پارسر ہاتھ سے لکھا گیا ہے اور جو کچھ وہ نہیں پہچانتا اُسے چھوڑ دیتا ہے،
+لہٰذا ایک ٹائپو (`--tls-key-file`، `--bindany`) کوئی خرابی پیدا نہیں کرتا — سرور
+بس ڈیفالٹ کے ساتھ شروع ہو جاتا ہے۔ جب کوئی فلیگ بے اثر لگے تو اسٹارٹ اپ لاگ کی
+لائنیں دیکھیں۔
 :::
 
-The four you are most likely to need:
+وہ چار جو آپ کو سب سے زیادہ درکار ہو سکتے ہیں:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| فلیگ           | ڈیفالٹ                               | مطلب                                                                                             |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | OS کی فی صارف ایپلیکیشن ڈیٹا ڈائر    | ڈیٹا بیسز، راز، ماڈلز اور کیش شدہ میڈیا                                                          |
+| `--port`       | `9030`                               | TCP پورٹ (`0` = عارضی)                                                                           |
+| `--bind`       | `loopback`                           | `loopback`، یا ہر انٹرفیس کے لیے `any` (TLS یا `--insecure` درکار)                               |
+| `--public-url` | بائنڈ سے اخذ کردہ                     | پیئر شدہ کلائنٹس کو بتایا جانے والا RPC URL۔ **پراکسی، NAT یا ٹنل کے پیچھے اِسے واضح طور پر سیٹ کریں** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+ڈیفالٹ ڈیٹا ڈائر macOS پر `~/Library/Application Support/control-center`،
+Windows پر `%APPDATA%\control-center` اور باقی جگہوں پر
+`$XDG_DATA_HOME/control-center` (ورنہ `~/.local/share/control-center`) ہوتا ہے۔
+cwd کے نسبتی `.cc_server` صرف اُس وقت استعمال ہوتا ہے جب کوئی ہوم یا ایپ ڈیٹا
+ڈائریکٹری حل نہ ہو۔
 
-## What the server serves
+## سرور کیا پیش کرتا ہے
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` پوری پروڈکٹ سطح ہے، کوئی ذیلی حصہ نہیں: repo-RPC ڈیٹا راستہ اور
+سبسکرپشنز، اُسی پورٹ پر `POST /mcp` اور `GET /sse` والا MCP ٹول اینڈ پوائنٹ،
+آنے والے ویب ہکس، میڈیا اور فونٹ پراکسیز، سنگل سائن اَن کال بیکس، فلیٹ لیز
+پروٹوکول، 30 منٹ کے شیڈول پر سرور کی طرف سے RSS فیچنگ اور ویکٹر سرچ
+(`sqlite_vector` ایکسٹینشن پروسیس-گلوبل آٹو-ایکسٹینشن کے طور پر رجسٹر ہوتی ہے
+اور صرف وہاں فل ٹیکسٹ سرچ پر اتر آتی ہے جہاں ایکسٹینشن دستیاب نہ ہو)۔
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+ڈسپیچر **بے حالت** ہے: فی سیشن کوئی ورک اسپیس بائنڈنگ نہیں۔ ورک اسپیس کے دائرے
+والی ہر کال اپنا `workspace_id` ساتھ رکھتی ہے اور رسائی کا فیصلہ کال کرنے والے
+کی ورک اسپیس رکنیت اور کردار سے ہوتا ہے — پیئرنگ کلید رکھنے سے نہیں۔
 
-Two things to know before you expose the port beyond loopback:
+پورٹ کو لوپ بیک سے آگے ظاہر کرنے سے پہلے دو باتیں جاننے کے قابل ہیں:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP ہوسٹ سے باہر بند ہو کر ناکام ہوتا ہے۔** بغیر ٹوکن والی MCP سطح صرف لوپ بیک کا جواب دیتی ہے۔ `any` بائنڈ کرنے سے یہ وسیع نہیں ہوتی — جب تک کوئی ٹوکن کنفیگر نہ کریں (`mcp.setToken`، یا **ترتیبات → سرور → MCP سرورز**) ہوسٹ سے باہر کی درخواست "MCP requires a bearer token to answer non-loopback clients" کے ساتھ مسترد ہو جاتی ہے۔
+- **`GET /healthz` جان بوجھ کر غیر توثیق شدہ ہے**، وائلڈ کارڈ CORS کے ساتھ، اور سرور کی id، نام، شناختی فنگر پرنٹ اور بلڈ ورژن شائع کرتا ہے۔ کلائنٹس کو سرور پن کرنے کے لیے فنگر پرنٹ درکار ہوتا ہے، لہٰذا یہ جان بوجھ کر ہے — مگر اِس کا مطلب یہ ہے کہ کوئی بھی قابلِ رسائی `cc_server` جو بھی پوچھے اُسے اتنا ظاہر کر دیتا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
-- [Run a fleet worker](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/)
-- [Connect a Google Calendar](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/)
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/)
+- [فلیٹ ورکر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/فلیٹ-ورکر-چلائیں/)
+- [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Deployment and clients](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
-- [Remote control and mobile](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)
+- [ڈیپلائمنٹ اور کلائنٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈیپلائمنٹ/)
+- [ریموٹ کنٹرول اور موبائل](/ur-PK/ہدایت-نامہ/تصورات/ریموٹ-کنٹرول/)

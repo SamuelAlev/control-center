@@ -1,180 +1,192 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Làm việc trong Plan Studio
+description: Xem xét, chỉnh sửa, ước tính, diff và phê duyệt một kế hoạch trong trình soạn thảo Plan Studio và chạy playbook có tham số.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/) and
-[Use plan mode](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/).
+Bài hướng dẫn này chỉ cho bạn cách làm việc với kế hoạch trong Plan Studio. Để
+hiểu điều phối và tài liệu kế hoạch là gì, xem
+[Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/) và
+[Dùng chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/).
 
-## Open a plan
+## Mở một kế hoạch
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Một kế hoạch thuộc về cuộc hội thoại đã tạo ra nó, nên đó là nơi bạn thường
+truy cập: hàng của kế hoạch trong cuộc hội thoại có hành động **Mở** và Plan
+Studio mở ra dưới dạng một tab trình soạn thảo bên cạnh cuộc hội thoại.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Không có mục "Kế hoạch" nào trong thanh bên]
+Đó là chủ ý, không phải sơ suất. Trung tâm tại
+`/workspaces/<workspace-id>/plans` chỉ là một liên kết sâu có thể định tuyến, nên
+hãy đánh dấu nó nếu bạn muốn có một danh sách thường trực.
 :::
 
-The hub lists three sections:
+Trung tâm liệt kê ba mục:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Kế hoạch đang hoạt động** — các điều phối, những cái đang đề xuất xếp
+  trước, kèm trạng thái, số bước và số bản sửa đổi.
+- **Tài liệu kế hoạch** — những kế hoạch do một agent đơn lẻ gửi bằng
+  `submit_plan` trong
+  [chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/), trong lúc chúng đang ở trạng thái đề xuất hoặc đã được phê duyệt.
+- **Playbook** — các mẫu kế hoạch có tham số đã lưu.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Nhấp vào một thẻ để mở nó trong Plan Studio. Tuyến là
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, trong đó `kind` là
+`orchestration` hoặc `document`, nên bạn cũng có thể tạo liên kết sâu tới một
+kế hoạch đơn lẻ.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Nếu bạn mở một **điều phối**, bạn có canvas có thể chỉnh sửa, dòng thời gian
+phiên bản và thanh phê duyệt. Nếu bạn mở một **tài liệu kế hoạch**, cùng một đồ
+thị đó sẽ hiển thị ở chế độ chỉ đọc — tài liệu kế hoạch do agent tạo ra; bạn xem
+xét, ước tính và phê duyệt hoặc từ chối chúng, và một tài liệu đã được phê
+duyệt sẽ hiển thị trạng thái chạy trực tiếp theo từng nút từ điều phối mà nó
+được biên dịch thành.
 
-## Edit the DAG
+## Chỉnh sửa DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Có thể chỉnh sửa một **điều phối** khi nó đang ở trạng thái `proposed`. Mọi
+thao tác chỉnh sửa trên canvas đều dùng bàn phím:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Nhấp vào canvas, rồi di chuyển lựa chọn bằng **các phím mũi tên**.
+2. Nhấn **n** để thêm một bước. Bước đó xuất hiện ở trạng thái được chọn với tên
+   "Bước mới"; hãy đổi tên nó trong trình kiểm tra ở bên phải.
+3. Nhấn **e** trên bước phải chạy trước, rồi nhấp vào bước phụ thuộc (hoặc chọn
+   nó và nhấn **Enter**) để nối một phụ thuộc. Nhấn **Esc** để bỏ một kết nối
+   đang chờ.
+4. Nhấn **x** để cắt phụ thuộc mới nhất của bước đang chọn, hoặc bật/tắt các
+   phụ thuộc chính xác trong trình chỉnh sửa phụ thuộc của trình kiểm tra.
+5. Nhấn **Delete** để xóa bước đang chọn; các tham chiếu tới nó sẽ bị gỡ khỏi
+   phần phụ thuộc của những bước còn lại.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Trong trình kiểm tra, bạn cũng có thể chỉnh sửa mô tả, vai trò và lược đồ đầu ra
+của bước. Các chỉnh sửa được tự động lưu thành một bản sửa đổi mới sau một
+khoảng dừng ngắn; một lỗi xác thực (hiển thị trên thanh phê duyệt) sẽ chặn việc
+lưu cho tới khi bạn sửa xong.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Chỉ các bước công việc mới chỉnh sửa được. Các nút cấu trúc — nghiên cứu, thảo
+luận và tổng hợp — là chỉ đọc, và bất kỳ bước nào có công việc đã chạy cũng vậy
+(nó được đánh dấu "đã chạy", vì chỉnh sửa nó sẽ rẽ nhánh kế hoạch).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Việc lưu mang tính đồng thời lạc quan trên bản sửa đổi mà bạn bắt đầu. Nếu bộ
+điều phối lập lại kế hoạch ngay bên dưới bạn, thao tác lưu của bạn bị từ chối
+với thông báo "kế hoạch đã thay đổi" thay vì được hợp nhất hay âm thầm ghi đè;
+hãy đọc lại bản sửa đổi hiện tại và làm lại chỉnh sửa. Những lần lập lại kế
+hoạch do agent khởi xướng cũng bị giới hạn tần suất ở mức một lần mỗi hai phút,
+nên trường hợp này hiếm khi xảy ra.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Canvas không hỗ trợ kéo để đổi vị trí: bố cục được tính từ cấu trúc phụ thuộc,
+nên "di chuyển" một bước nghĩa là nối lại các phụ thuộc của nó.
 :::
 
-## Read cost, time and risk estimates
+## Đọc các ước tính về chi phí, thời gian và rủi ro
 
-Press **Estimate** in the approval bar.
+Nhấn **Ước tính** trên thanh phê duyệt.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Mỗi bước trên canvas nhận một huy hiệu với khoảng chi phí và kích thước mẫu
+  đằng sau nó, hoặc "Chưa có lịch sử" khi vai trò của bước chưa từng chạy. Chọn
+  một bước để xem đầy đủ chi tiết trong trình kiểm tra: khoảng chi phí kèm kích
+  thước mẫu, một khoảng thời lượng và phạm vi ảnh hưởng (các tệp và ký hiệu) suy
+  ra từ xuất xứ của bước — hoặc "chưa rõ" khi bước không mang xuất xứ nào.
+- Thanh phê duyệt hiển thị tổng của kế hoạch: một khoảng chi phí tổng thể, một
+  khoảng thời lượng cho đường găng (các nhánh song song chồng lấn, nên đây không
+  phải là tổng) và trần ngân sách khi kế hoạch có đặt một mức.
+- Nếu chỉ một số bước có lịch sử, tổng số được đánh dấu là **một phần** và chỉ
+  bao gồm những bước ước tính được. Nếu mức cao nhất của ước tính vượt trần ngân
+  sách, tổng số chuyển sang màu đỏ kèm cảnh báo vượt ngân sách.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Các ước tính hoặc trung thực, hoặc không có: một bước mà vai trò chưa có lịch sử
+lần chạy hoàn tất sẽ báo kích thước mẫu bằng không và không có bất kỳ khoảng
+nào, đồng thời được hiển thị là chưa rõ thay vì đoán bừa. Hãy coi "Chưa có lịch
+sử" là "không ai biết", chứ không phải "rẻ".
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/) for controls that actually stop
-spending.
+Trần ngân sách là một phép so sánh hiển thị với ước tính này. Không có gì cưỡng
+chế nó khi kế hoạch đang chạy — xem
+[Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/) để biết
+những cơ chế thực sự chặn chi tiêu.
 
-## Diff a revision against an earlier proposal
+## So sánh một bản sửa đổi với đề xuất trước đó
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Mọi chỉnh sửa và mọi lần lập lại kế hoạch của bộ điều phối đều được ghi thêm vào
+một dòng thời gian bản sửa đổi chỉ ghi thêm, hiển thị trong bảng **Phiên bản** ở
+bên trái của một kế hoạch điều phối.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Nhấp vào một bản sửa đổi để so sánh nó với đề xuất hiện tại. Khi không chọn
+   gì, bảng sẽ so sánh bản sửa đổi trước đó với bản hiện tại.
+2. Đọc phần khác biệt ở nửa dưới của bảng: những bước được thêm, gỡ bỏ hoặc thay
+   đổi giữa hai bản sửa đổi.
+3. Nếu kế hoạch vẫn đang ở trạng thái `proposed`, nhấp vào biểu tượng tua lại
+   trên một bản sửa đổi để quay về bản đó. Việc tua lại lưu đề xuất đó thành một
+   bản sửa đổi **mới** — không mất gì cả.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+Cả `propose_orchestration` lẫn trình soạn thảo đều từ chối thay đổi khi kế hoạch
+không còn ở trạng thái `proposed`, nên một lần chạy đang diễn ra sẽ không tiếp
+nhận việc lập lại kế hoạch giữa chừng.
 
-## Approve, reject, or widen a plan
+## Phê duyệt, từ chối hoặc mở rộng một kế hoạch
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Trong ứng dụng, một kế hoạch đang đề xuất là một quyết định duy nhất, được đưa
+ra trọn vẹn: **Phê duyệt kế hoạch** hoặc **Từ chối** trên thanh phê duyệt. **Phê
+duyệt kế hoạch** luôn phê duyệt mọi bước — không có cách nào chọn một tập con
+trước. Việc phê duyệt bị chặn khi đề xuất có lỗi xác thực, và những lỗi này được
+hiển thị bên cạnh các nút.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Việc phê duyệt chỉ dành cho người vận hành. Không có công cụ MCP nào cho việc
+này, nên một agent có thể đề xuất và sửa đổi một kế hoạch nhưng không bao giờ
+phê duyệt được nó.
 
-Once an orchestration is executing, the bar changes:
+Khi một điều phối đang thực thi, thanh này thay đổi:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Nếu một bước dừng lại để hỏi giữa chừng, hãy chọn nó và nhấn **Tiếp tục nút**
+  để tiếp tục.
+- Nhấn **Phê duyệt mục đã chọn** để mở rộng một phê duyệt _một phần_ sang bước
+  đang chọn cùng mọi thứ mà nó phụ thuộc một cách bắc cầu (một bước không bao
+  giờ được phê duyệt mà thiếu các phụ thuộc của nó). Điều khiển này nằm trên
+  thanh thực thi của mọi điều phối; nó không làm gì khi kế hoạch đã được phê
+  duyệt trọn vẹn.
+- Nhấn **Hủy lần chạy** để dừng toàn bộ điều phối.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Những bước nằm ngoài một tập đã phê duyệt một phần sẽ hiển thị ở dạng bị hoãn và
+không chạy cho tới khi bạn mở rộng tập đó.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Phê duyệt một phần không thể phát sinh từ trong ứng dụng]
+Một phê duyệt một phần chỉ tồn tại khi có thứ gì đó gọi `orchestration.approve`
+qua RPC với một danh sách `approved_node_keys` tường minh. **Phê duyệt kế hoạch**
+trong ứng dụng luôn phê duyệt mọi bước. Tài liệu kế hoạch luôn được phê duyệt
+trọn vẹn trong mọi trường hợp, nên một tài liệu đang thực thi chỉ có **Hủy lần
+chạy** mà thôi.
 :::
 
-## Run a playbook with parameters
+## Chạy một playbook với tham số
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/) instead.
+Một playbook là một mẫu kế hoạch đã lưu với các chỗ giữ `{{param}}` có kiểu trong
+mục tiêu, tiêu đề bước, mô tả và prompt của nó. Việc thay thế là theo nghĩa đen
+— không có ngôn ngữ biểu thức; nếu cần logic, hãy dùng
+[quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/) thay thế.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Trong mục **Playbook** của trung tâm, nhấn **Chạy** trên playbook (hoặc mở
+   bảng lệnh ⌘K và chọn playbook ở đó).
+2. Điền các tham số. Tham số kiểu liệt kê hiển thị dưới dạng menu thả xuống;
+   tham số repo và agent nhận một tham chiếu repo hoặc agent; tham số tùy chọn
+   sẽ dùng giá trị mặc định của chúng.
+3. Chọn **phiếu neo** mà kế hoạch được đề xuất dựa trên đó, rồi xác nhận.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Chạy một playbook chỉ **đề xuất** một kế hoạch — điều phối được tạo ra sẽ mở
+trong Plan Studio ở trạng thái `proposed` và không có gì thực thi cho tới khi bạn
+phê duyệt nó ở đó. Để gỡ một playbook, nhấn biểu tượng thùng rác trên thẻ của
+nó.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/).
+Agent tạo và chạy playbook bằng các công cụ MCP `create_playbook` và
+`run_playbook`; xem [tham chiếu công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Use plan mode](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/): the engine view of an approved plan
+- [Dùng chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/): cách một agent tạo ra một tài liệu kế hoạch bằng `submit_plan`
+- [Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/): vòng đời phê duyệt một lần nhìn từ phía cuộc hội thoại
+- [Tạo mẫu quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/): khi bạn cần logic mà một playbook không thể diễn đạt
+- [Theo dõi lần chạy quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/): góc nhìn của engine về một kế hoạch đã được phê duyệt
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/)
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/)

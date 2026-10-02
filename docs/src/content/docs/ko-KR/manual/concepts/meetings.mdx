@@ -1,213 +1,206 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: 회의와 전사
+description: Control Center가 통화를 녹음하고 서버에서 전사와 화자 분리를 수행하는 방식, 그리고 호스트를 벗어나는 유일한 단계가 어디인지 설명합니다.
 slug: ko-KR/매뉴얼/개념/회의
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center는 통화를 녹음하고 요약, 액션 아이템, 결정 사항이 담긴 깔끔한
+정리본을 돌려줍니다. 음성 인식과 화자 분리는 여러분의 하드웨어에서 실행됩니다.
+Granola를 떠올리면 되지만, 이쪽은 셀프 호스팅이고 에이전트가 사는 바로 그
+워크스페이스에 연결되어 있습니다.
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[녹음에는 음성 모델과 서버 재시작이 필요합니다]
+녹음과 받아쓰기는 음성(ASR) 모델이 디스크에 있고 **그리고** 서버가 재시작된 뒤에
+시작됩니다. 일반 부팅은 선택된 모델(기본값 Parakeet TDT 0.6B v3)을 백그라운드에서
+강제 설치하지만, 서버는 부팅 초반에 음성 모델 경로를 단 한 번만 확인합니다. 그
+다운로드가 끝나기 몇 분 전입니다. 모델이 설치되었다고 보고된 뒤 `cc_server`를
+재시작하십시오. 다른 빌드를 고르려면 설정 → 서버 → 음성 및 미팅 모델을
+사용하십시오. 이 경우에도 재시작이 필요합니다.
 :::
 
-## What a meeting is
+## 회의란 무엇인가
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ko-KR/매뉴얼/개념/캘린더/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**회의**는 녹음되고 전사된 세션입니다. [캘린더
+이벤트](/ko-KR/매뉴얼/개념/캘린더/)와는 _같지 않습니다_. 이벤트는 Google에서
+동기화된 예정된 일정이고, 회의는 실제로 녹음한 대상입니다. 이벤트에서 녹음을
+시작할 수 있으므로 둘은 연결될 수 있지만, 서로 다른 레코드로 남습니다.
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+모든 회의는 Control Center의 다른 모든 것과 마찬가지로 워크스페이스 범위입니다.
+한 워크스페이스에서 녹음한 회의는 다른 워크스페이스에 나타나지 않습니다.
 
-## Where the work happens
+## 작업이 일어나는 곳
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+"온디바이스"라는 표현은 방향은 맞지만 명사가 틀렸습니다. 클라이언트는 오디오를
+캡처해 16 kHz PCM16 프레임을 **`cc_server`가 실행 중인 머신**으로 스트리밍합니다.
+나머지는 모두 그 호스트가 처리합니다. 채널별 WAV를
+`<dataDir>/meetings/<meetingId>/` 아래에 쓰고, 워커 아이솔레이트에서 전사하고,
+에코를 걸러 내고, 이후에 화자 분리를 수행합니다. 독립 실행형 데스크톱에서는 그
+호스트가 같은 머신입니다. 원격 서버를 가리키면 그렇지 않으므로, "노트북을 떠나는
+것은 없다"는 서버가 곧 여러분의 노트북일 때만 참입니다.
 
-There is one further exception and it is the important one.
+예외가 하나 더 있고, 그것이 중요한 예외입니다.
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[요약은 호스트를 떠납니다]
+트랜스크립트와 노트는 요약 에이전트가 구성된 모델 프로바이더로 전송됩니다.
+클라우드 프로바이더라면 전체 트랜스크립트가 그 프로바이더의 API로 간다는 뜻입니다.
+트랜스크립트가 호스트를 떠나면 안 된다면 요약 에이전트를 로컬
+엔드포인트(Ollama, LM Studio 또는 다른 로컬 서버)로 지정하십시오.
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+요약 이전의 모든 것, 즉 캡처, 전사, 에코 제거, 화자 분리, 음성지문 매칭은
+네트워크 호출 없이 서버에서 실행됩니다.
 
-## Which models ship
+## 어떤 모델이 기본 제공되는가
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+**임베딩, 화자 분리, 음성(ASR)** 모델은 최초 부팅 시 강제 설치되므로(데모에서는
+건너뜀) 설정을 방문하지 않아도 화자 분리와 녹음이 존재합니다. ASR은 여전히
+**선택 가능**합니다. 수백 메가바이트에 달하고, 선택 목록에 네 가지 빌드가
+있습니다. 음성 모델은 그 첫 다운로드 이후 한 번 더 재시작해야 합니다. 전사기가
+가져오기가 끝나기 전에 모델을 확정하기 때문입니다.
 
-The four picker entries, differing in size, language coverage and accuracy:
+크기, 언어 지원 범위, 정확도가 서로 다른 네 가지 선택 항목:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — 다국어, 권장 기본값(~600 MB)
+- Parakeet TDT 0.6B v2 — 영어(~480 MB)
+- Whisper large-v3-turbo — 다국어(~626 MB)
+- Whisper base.en — 영어 전용, 작은 역사적 기본값(~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+서버가 런타임에 가져오는 아티팩트는 모델뿐이며, 모든 네이티브 라이브러리는
+번들에 포함되어 있습니다.
 
-## How capture works
+## 캡처 방식
 
-A meeting records **two audio channels at once**:
+회의는 **두 개의 오디오 채널을 동시에** 녹음합니다:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **나("me")**: 여러분의 마이크.
+- **상대방("them")**: 회의의 오디오 출력으로, 드라이버 없이 동작하는 루프백으로
+  캡처합니다. macOS에서는 Core Audio 프로세스/장치 탭, Windows에서는 WASAPI
+  루프백, Linux에서는 PipeWire / PulseAudio 모니터입니다.
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+두 채널을 따로 캡처하기 때문에 트랜스크립트는 처음부터 화자가 지정되어 있습니다.
+여러분의 발언에는 `me`가, 통화에 있는 다른 모든 사람의 발언에는 `them`이
+태그됩니다.
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+여러분의 목소리는 시스템 출력에서 마이크로 새어 들어가며, 그대로 두면 두 번
+전사됩니다. 두 가지 필터가 이를 막습니다. 신호 수준의 **AEC3는 모든 원격 모드
+녹음에서 실행되며 필수**입니다. 네이티브 AEC 라이브러리를 로드할 수 없으면 에코가
+섞인 마이크를 조용히 스트리밍하는 대신 녹음 시작을 거부합니다. (대면 모드에는
+제거할 상대방 신호 기준이 없으므로 AEC는 그대로 통과시키기만 합니다.) 그 위에 모든
+플랫폼에서 호스트 측 텍스트 수준 에코 필터가 실행됩니다.
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+모든 OS 수준 마이크 처리는 의도적으로 비활성화되어 있습니다. macOS에서 플랫폼
+자체의 에코 제거나 자동 게인을 켜면 마이크가 Voice Processing I/O로 전환되는데, 이
+빌드에서는 마이크와 시스템 오디오 탭 _둘 다_ 죽었습니다.
 
-## Transcription and diarization
+## 전사와 화자 분리
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+녹음하는 동안 오디오는 UI 스레드 밖에서 **롤링 윈도** 단위로 디코딩됩니다. 윈도는
+뒤따르는 짧은 무음 구간이나 최대 윈도 길이에서 잘립니다. 각 윈도는 밀리초 오프셋이
+붙은 화자 태그 트랜스크립트 세그먼트가 됩니다.
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+RMS 임계값을 한 번도 넘지 않은 윈도는 **디코딩조차 되지 않고** 건너뜁니다. 음성
+모델이 무음을 환각된 비음성 토큰으로 만들어 내고 그 디코딩은 낭비되는 CPU이기
+때문입니다. 실제 결과는 이렇습니다. 계속 아주 조용한 화자는 트랜스크립트를 남기지
+않습니다. 누군가 빈 결과로 돌아오면 모델을 탓하기 전에 그 사람의 입력 레벨을
+확인하십시오.
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+녹음을 멈추면 **화자 분리**가 녹음 전체를 대상으로 오프라인으로 실행되어 원격
+채널을 이름을 바꿀 수 있는 개별 화자(`Person 1`, `Person 2`, …)로 나눕니다. 화자
+수는 여러분이 지정한 개수가 아니라 클러스터링 임계값에서 추론됩니다. 따라서 이는
+임계값이 만든 결과이며, 조용하거나 겹쳐 말하는 화자는 옆 화자와 합쳐질 수
+있습니다. 트랜스크립트는 `[mm:ss] SPEAKER: text` 줄로 렌더링됩니다.
 
-## Voice profiles
+## 음성 프로필
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+화자 이름을 바꾸면 트랜스크립트 하나에 이름표를 붙이는 것 이상을 합니다. Control
+Center는 화자의 음성지문을 **음성 프로필**로 저장해 이후 회의에서 그를 자동으로
+인식할 수 있습니다. 화자 분리된 화자의 이름을 지정하면 음성지문을 저장할지
+묻습니다. 저장하면 그 이름의 계속 갱신되는 중심값에 섞이고 새 화자와 코사인
+유사도로 대조되므로, 다음번에는 다시 이름을 붙이지 않아도 같은 사람이 자기 이름으로
+나타납니다.
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+음성 프로필은 워크스페이스 범위이며 그 경계를 넘지 않습니다. **설정 → 워크스페이스
+→ 회의**에서 관리합니다. 이전에 저장된 화자의 이름을 바꾸면 기존 이름의 등록이
+해제되고 새 이름을 등록할지 묻습니다. 프로필을 삭제하면 저장된 음성지문은
+제거되지만 지난 회의에 이미 적용된 이름은 그대로 남습니다.
 
-## The summary pipeline
+## 요약 파이프라인
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ko-KR/매뉴얼/개념/도메인-이벤트/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+녹음이 멈추면 서버가 `MeetingRecordingStopped`
+[도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/)를 게시합니다. 내장
+**`meeting_summary`** 파이프라인 템플릿이 그 이벤트로 트리거됩니다. 녹음기는 이를
+기다리지 않으며, 회의는 상태 수명주기를 거쳐 전이할 뿐입니다:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+요약 에이전트는 제목, 여러분이 실시간으로 남긴 대략적인 노트, 트랜스크립트를 받아
+**구조화된 JSON**을 돌려줍니다. 어떤 섹션을 쓸지는 워크스페이스의 **활성 회의 노트
+템플릿**(설정 → 워크스페이스 → 회의)이 결정합니다. 활성 템플릿은 새 요약과 다시
+실행한 요약 모두에 적용됩니다. 그다음 파이프라인의 저장 단계가 그 JSON을 개별 행에
+씁니다:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes`와 `summary` → 회의의 노트
+- 각 액션 아이템 → `MeetingActionItem` 행(콘텐츠, 담당자, 선택적 티켓 링크)
+- 각 결정 → `MeetingDecision` 행
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+액션 아이템과 결정은 자유 형식 마크다운에서 **절대** 파싱되지 않고, 에이전트의
+구조화된 배열에서만 나옵니다. 실행이 구조화된 출력을 내지 않으면 저장 단계를
+건너뛰고 원시 트랜스크립트를 폴백으로 보관하므로 기록을 잃지 않습니다. 파이프라인
+어디에서도 회의를 `done`으로 표시하지 않습니다. 실행의 종료 이벤트를 받아 그 일을
+하는 것은 단일 조정자이며, 덕분에 형제 단계가 실패해도 이미 끝난 것처럼 보이는
+절반만 기록된 회의가 방치되지 않습니다.
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ko-KR/매뉴얼/사용-가이드/mcp-서버/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[에이전트는 회의를 읽을 수 없습니다]
+회의나 캘린더 MCP 도구는 없습니다.
+[MCP](/ko-KR/매뉴얼/사용-가이드/mcp-서버/)로 연결된 에이전트는 회의를 나열하거나
+트랜스크립트를 읽거나 액션 아이템과 결정을 볼 수 없습니다. 그 데이터는 RPC를
+통해서만 사람 클라이언트에 도달합니다. 다만 결정은 `decisions` 도메인의 메모리
+팩트로 간접적으로 에이전트에 도달합니다.
 :::
 
-## Where meetings show up
+## 회의가 표시되는 곳
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| 표면                           | 표시 내용                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------- |
+| `/meetings`                    | 회의 목록과 액션 아이템·결정 사항 개수                                        |
+| `/meetings/record`             | 실시간 녹음 HUD: 한쪽에는 노트, 다른 쪽에는 스트리밍 트랜스크립트             |
+| `/meetings/:meetingId`         | 회의 상세: 노트, 트랜스크립트, 액션 아이템, 결정 사항 탭                      |
+| 설정 → 워크스페이스 → 회의     | 이 워크스페이스의 노트 템플릿과 저장된 음성 프로필                            |
 
-## Platform support
+## 플랫폼 지원
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+캡처는 세 데스크톱 플랫폼 모두에서 드라이버 없이 동작합니다(macOS의 Core Audio 탭,
+Windows의 WASAPI, Linux의 PipeWire).
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**웹 클라이언트도 녹음합니다.** 이 페이지의 나머지가 데스크톱을 전제로 해서 가리기
+쉬운 사실입니다. 브라우저는 `getUserMedia`로 마이크를, `getDisplayMedia`(화면
+공유)로 회의 오디오를 받아 16 kHz PCM16으로 다운샘플링한 뒤 같은 호스트로
+스트리밍합니다. 여기에는 세 가지 제약이 있습니다:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- 공유하는 화면에는 오디오 트랙이 **반드시** 있어야 합니다. Safari, Firefox,
+  macOS의 전체 화면 공유는 오디오를 제공하지 않으며 녹음이 시작을 거부합니다.
+- 네이티브 AEC3가 없습니다. 브라우저 자체 에코 제거를 마이크에 요청하고, 호스트 측
+  텍스트 에코 필터는 여전히 실행됩니다. HUD에는 마이크 PCM으로 구동되는 입력 레벨
+  미터가 표시됩니다.
+- 요약 다시 실행과 처리 취소는 데스크톱 전용입니다.
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+캘린더의 **녹음 시작 및 연결** 동작은 데스크톱 전용이며, 회의 화면 자체의 녹음
+흐름은 웹에서도 작동하는데도 웹에서는 그렇게 명확히 알립니다.
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[회의를 삭제해도 오디오는 남습니다]
+회의를 삭제하면 데이터베이스 행만 제거됩니다. 채널별로 보관되는 오디오 디렉터리
+`<dataDir>/meetings/<meetingId>/`는 절대 정리되지 않습니다. 이에 대한 보존 정책도,
+크기 상한도, GC 스윕도 없습니다. 그 디스크를 회수하는 것은 서버 호스트에서 수동으로
+해야 하는 작업입니다.
 :::
 
-## See also
+## 함께 보기
 
-- [Calendar and scheduling](/ko-KR/매뉴얼/개념/캘린더/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ko-KR/매뉴얼/개념/티켓/): link a meeting's action items to tickets
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ko-KR/매뉴얼/사용-가이드/회의-녹화/)
+- [캘린더와 일정](/ko-KR/매뉴얼/개념/캘린더/): 캘린더 이벤트에서 곧바로 회의 녹음
+- [파이프라인과 자동화](/ko-KR/매뉴얼/개념/파이프라인/): `meeting_summary`를 움직이는 엔진
+- [티켓과 위임](/ko-KR/매뉴얼/개념/티켓/): 회의의 액션 아이템을 티켓에 연결
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/): `MeetingRecordingStopped`와 `MeetingStartingSoon`
+- [회의 녹화 및 요약](/ko-KR/매뉴얼/사용-가이드/회의-녹화/)

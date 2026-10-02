@@ -1,149 +1,158 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Bildirimleri yapılandırma
+description: Kategorileri açıp kapatın, sessiz saatleri ve bir ses belirleyin; hangi bildirimlerin size nerede ulaştığını öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/bildirimler
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Bu kılavuz, bildirimleri nasıl yapılandıracağınızı ve her ayarın gerçekte neyi
+denetlediğini gösterir.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Bildirimler iki yüzeye ulaşır. **Bildirim merkezi** — başlık çubuğundaki zil —
+sunucuda her çalışma alanına özel kalıcı bir akışı okur. **İşletim sistemi
+bildirimleri** ise sunucudan itilen canlı çerçevelerle beslenen, yalnızca
+masaüstüne özel ayrı bir yoldur.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Web yapımı hiçbir işletim sistemi bildirimi göstermez]
+Toast hattı yalnızca masaüstü başlatıcısı tarafından kurulur. `app.usectrl.dev`
+üzerinde hiç işletim sistemi bildirimi, bildirim sesi ve ortam bildirimi yoktur
+— zil ve geçmişi yine de çalışır, çünkü sunucu akışını okurlar. Telefon
+istemcisinde hiçbir bildirim yüzeyi yoktur.
 :::
 
-## Turn categories on or off
+## Kategorileri açma veya kapatma
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. **Ayarlar → Siz → Bildirimler** bölümüne gidin
+2. **Bildirimleri etkinleştir** seçeneğini açık bırakın
+3. İstediğiniz kategorileri açıp kapatın. Tam olarak on altı kategori vardır:
 
-| Category                  | Fires when                                                                 |
+| Kategori                  | Ne zaman tetiklenir                                                        |
 | ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Ajan tamamlandı           | Bir ajan bir çalıştırmayı tamamladı                                        |
+| PR yayınlandı             | Bir ajan bir PR yayınladı                                                  |
+| PR birleştirildi          | Bir PR birleştirildi                                                       |
+| Yeni mesajlar             | Bakmadığınız bir alana bir mesaj geldi                                     |
+| Pull request'te bahsedildi | GitHub'ın bildirim anketi bir PR'da sizden bahsedildiğini gördü           |
+| İnceleme istendi          | Taslak olmayan bir PR için incelemeniz gerçekten istendi                   |
+| İnceleme güncel değil     | Zaten incelediğiniz bir pull request'e yeni commit'ler geldi                |
+| Birleştirmeye hazır       | Yazdığınız bir pull request birleştirilebilir hâle geldi ya da artık değil  |
+| İnceleme kararları        | Bir inceleyici onayladı, değişiklik istedi ya da bir onay iptal edildi     |
+| Kontroller                | Yazdığınız bir pull request'te CI başarısız oldu ya da toparlandı          |
+| İnceleme dizileri         | İçinde bulunduğunuz bir dizide biri yanıt yazdı veya diziyi çözümledi      |
+| Bilet atandı              | Bir bilet atandı                                                           |
+| Bilet durumu değişti      | Bir bilet durum değiştirdi                                                 |
+| Toplantı yakında başlıyor | Bir takvim toplantısı ön uyarı pencerenizin içinde                         |
+| Takvim bağlantısı kesildi | Bağlı bir takvimin OAuth token'ının süresi doldu                           |
+| Kabin güncellemeleri      | Bir kabin devralındı, geri alındı veya başarısız oldu                      |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Bu liste dışındaki hiçbir şey için bildirim gönderilemez veya filtrelenemez —
+“diğer her şey” diye bir kategori yoktur.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Bu tercihler kullanıcınızı cihazlar arasında izler, böylece bir telefon ile bir
+dizüstü uyum içinde kalır. Ses düzeyi bilinçli istisnadır ve cihaz başına kalır.
 
-## Set quiet hours
+## Sessiz saatleri ayarlama
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. Aynı sayfada **Quiet hours** seçeneğini açın
+2. Başlangıç ve bitiş saatini `HH:MM` biçiminde yazın (varsayılan aralık
+   22:00–08:00'dır)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+Sessiz saatler boyunca acil olmayan bildirimler düşürülür — kuyruğa alınıp
+sonradan yeniden oynatılmaz.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+İki kategori **acildir** ve her zaman teslim edilir; sessiz saatleri _ve_ odak
+modunu atlar: **Toplantı yakında başlıyor** ve **PR yayınlandı**. Yalnızca
+sonradan gördüğünüz bir toplantı uyarısı değersizdir, nedenimiz de bu.
 
-## Choose a sound
+## Bir ses seçme
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. **Bildirim sesi** bölümüne ilerleyin
+2. Paketle gelen on bir sesten birini ya da **Yok** seçeneğini seçin
+3. Test düğmesine basarak sesi dinleyin ve kaydırıcıyla ses düzeyini ayarlayın
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Sesi uygulamanın kendisi çalar; işletim sistemi bildirimi sessiz teslim edilir,
+böylece onu asla iki kez duymazsınız.
 
-## Set the meeting lead time
+## Toplantı ön uyarı süresini ayarlama
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. **Uyarı öncesi süre** bölümüne ilerleyin
+2. **5**, **10**, **15** veya **30** dakikadan birini seçin
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+**Toplantı yakında başlıyor** bildirimi, bir takvim etkinliğinden bu kadar önce
+tetiklenir. Varsayılan 5 dakikadır.
 
-## Know when a notification is suppressed
+## Bir bildirimin ne zaman bastırıldığını bilme
 
-A notification is dropped, silently, when any of these is true:
+Şu koşullardan herhangi biri doğruysa bildirim sessizce düşürülür:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Bildirimler genel olarak kapalı ya da ilgili kategori kapalı
+- Sizi götüreceği rotada zaten bulunuyorsunuz — ve bir mesaj için, o alanda zaten
+  bulunuyorsunuz
+- Odak modu etkin ve kategori acil değil
+- Sessiz saatler etkin ve kategori acil değil
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Bu denetimler işletim sistemi bildirimleri için geçerlidir. Kalıcı zil yine de
+olayı kaydeder.
 
-Two more suppressions live further upstream, in what the server sends at all:
+İki bastırma daha vardır ve daha yukarıda, sunucunun en başta ne gönderdiği
+noktasında işler:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- Başka bir **insandan** gelip sizden bahsedilmeyen bir mesaj asla bildirime
+  dönüşmez
+- Ajanlar arası alanlar kenar çubuğunda sessize alınmıştır, bu yüzden insan
+  okunmamış rozetini hiç artırmazlar
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Bir alanın içinde sessiz bir köşe yoktur: diziler dahil her konuşma eşit şekilde
+bildirir. Okundu durumu alan kapsamlıdır; bu nedenle okunmamış durum konuşma
+başına izlenmek yerine bir alanın konuşmaları genelinde toplanır.
 
-## Read and clear the notification centre
+## Bildirim merkezini okuma ve temizleme
 
-1. Click the bell in the title bar
+1. Başlık çubuğundaki zile tıklayın
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Açılır pencere son etkinliği gösterir ve her girdiyi konusuyla derin bağlantılar.
+Onu açmak her şeyi okundu olarak işaretlemez — üst bilgideki **Tümünü okundu
+olarak işaretle** seçeneğini kullanın ya da tek bir satırı işaretleyin. Okundu
+durumu kullanıcınızı cihazlar arasında izler.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Tümünü temizle bir silme değil, bir filigrandır]
+**Tümünü temizle**, daha eski her şeyi gizleyen kullanıcı başına bir filigran
+basar; satırlar yerinde kalır. Ayrıca her çalışma alanı yalnızca en yeni **200**
+akış satırını tutar ve yenileri geldikçe budanır; zil ise en yeni **50** satıra
+abone olur ve açılır pencere bunlardan en fazla **15**'ini listeler. Bunun
+ötesindeki geçmiş, okundu durumundan bağımsız olarak kaybolur.
 :::
 
-## Troubleshooting
+## Sorun giderme
 
-### No OS notifications on macOS
+### macOS'ta işletim sistemi bildirimi yok
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Uygulama başlatıldığında yetkilendirme yerel olarak istenir. Reddettiyseniz,
+Sistem Ayarları → Bildirimler altında Control Center'ı yeniden etkinleştirin;
+bunu yeniden tetikleyecek uygulama içi bir istem yoktur.
 
-### Nothing arrives on the web build
+### Web yapımında hiçbir şey ulaşmıyor
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Beklenen bir durum — web yapımında işletim sistemi bildirim hattı yoktur. Zili
+kullanın.
 
-### The bell badge shows zero but there is clearly new activity
+### Zil rozeti sıfır gösteriyor ama açıkça yeni etkinlik var
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Bağlandıktan sonra okundu işareti akışı çözümlenene kadar, yanıp sönen ve sonra
+boşalan bir rozetten kaçınmak için girdiler okundu olarak işlenir. İşaret
+yüklendiğinde bu durum oturur.
 
-### An agent's run finished but nothing pinged me
+### Bir ajanın çalıştırması bitti ama bana hiç bildirim gelmedi
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Olayın gerçekleştiği alanda zaten bulunmadığınızı denetleyin — etkin bir rota
+kendi işletim sistemi bildirimini bastırır.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Use focus mode and soundscapes](/tr-TR/kilavuz/nasil-yapilir/odak-modu/)
-- [Triage your inbox](/tr-TR/kilavuz/nasil-yapilir/gelen-kutusu-triyaji/)
-- [Curate your newsfeed](/tr-TR/kilavuz/nasil-yapilir/haber-akisi/)
+- [Odak modunu ve ses manzaralarını kullanma](/tr-TR/kilavuz/nasil-yapilir/odak-modu/)
+- [Gelen kutunuzu triyaj etme](/tr-TR/kilavuz/nasil-yapilir/gelen-kutusu-triyaji/)
+- [Haber akışınızı düzenleme](/tr-TR/kilavuz/nasil-yapilir/haber-akisi/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Domain events](/tr-TR/kilavuz/kavramlar/alan-olaylari/)
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/)

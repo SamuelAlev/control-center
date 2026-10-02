@@ -1,60 +1,67 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: Esegui il provisioning degli utenti con SCIM
+description: Consenti al tuo IdP di creare, aggiornare ed eseguire il deprovisioning degli account di Control Center automaticamente.
 slug: it-IT/manuale/guide/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+Usa questa guida quando vuoi il controllo del ciclo di vita: l'offboarding
+deve revocare l'accesso in modo automatico, non limitarsi a bloccare gli
+accessi futuri. SCIM è il protocollo push che gli IdP (Okta, Entra ID e
+altri) usano esattamente per questo.
 
-## Prerequisites
+## Prerequisiti
 
-- SSO already working (the [SSO tutorial](/it-IT/manuale/tutorial/sso) or the
-  [OIDC guide](/it-IT/manuale/guide/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO già funzionante (il [tutorial SSO](/it-IT/manuale/tutorial/sso) o la
+  [guida OIDC](/it-IT/manuale/guide/sso-oidc)),
+- **un server che l'IdP possa raggiungere via HTTPS** — le chiamate SCIM
+  provengono dall'IdP, non dal browser dell'utente. Usa il tunnel integrato
+  (Impostazioni → Server → Connessione e stato → Condividi questo server → Cloudflared/ngrok/Tailscale) oppure
+  un URL pubblico. Un server raggiungibile solo tramite il relay WebSocket
+  non può ricevere i push SCIM; lì il provisioning JIT funziona comunque,
+  questa guida no.
 
-## Steps
+## Passaggi
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. Apri **Impostazioni → Server → Accesso single sign-on** → la scheda
+   **Provisioning utenti (SCIM)**. La scheda mostra l'endpoint, ad es.
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+2. Premi **Genera token** (o **Rigenera token** se ne esiste già uno) — il
+   token bearer compare una sola volta in una finestra di dialogo e viene
+   copiato negli appunti. Conservalo nel tuo gestore di password; il server
+   ne mantiene solo una copia verificabile a tempo costante.
+3. Nelle impostazioni di provisioning del tuo IdP, attiva SCIM con:
+   - **URL di base**: l'endpoint qui sopra
+   - **Autenticazione**: `Authorization: Bearer <token>`
+   - **ID utente**: `userName` (email) oppure `externalId` — entrambi corrispondono
+4. Prova con un utente: invialo dal tuo IdP, verifica che compaia (la
+   create SCIM fissa l'`externalId` del provider sull'account, lo stesso
+   fissaggio che imposta il primo accesso SSO).
 
-## What deprovisioning does
+## Che cosa fa il deprovisioning
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+Quando l'IdP invia `active: false` (o `DELETE`), SCIM rifiuta l'operazione
+se l'account è **proprietario** di uno spazio di lavoro (trasferisci prima
+la proprietà). Negli altri casi:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. viene revocata prima ogni credenziale dei dispositivi — le sessioni
+   attive decadono entro pochi secondi,
+2. viene rimossa ogni appartenenza agli spazi di lavoro,
+3. l'account viene contrassegnato come disattivato (non potrà più accedere,
+   qualunque cosa dica in seguito l'IdP, finché non viene riattivato
+   esplicitamente).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+La riga dell'utente sopravvive: l'attribuzione su ticket, messaggi e commit
+è permanente. La riattivazione (SCIM `active: true`) ripristina l'accesso ma
+**non** le appartenenze: per quelle servono un nuovo invito o la policy di
+appartenenza automatica al momento dell'accesso.
 
-## Troubleshooting
+## Risoluzione dei problemi
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 a ogni chiamata**: il token è cambiato; rigeneralo e aggiorna l'IdP.
+- **L'endpoint non è raggiungibile**: il tunnel è inattivo oppure il server
+  è solo relay. SCIM richiede HTTPS diretto; il JIT continua a funzionare
+  in ogni caso.
+- **Errori di push dei gruppi (501)**: sono intenzionali: la mappatura
+  gruppo→ruolo avviene all'accesso a partire dagli attributi di gruppo
+  SAML/OIDC, non dai gruppi inviati.

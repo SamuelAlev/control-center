@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: 路由圖
+description: Control Center 註冊的每一條路由，以及其畫面和查詢參數。
 slug: zh-TW/手冊/參考/路由圖
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## 應用程式外殼
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+應用程式外殼（`ControlCenterLayout`）透過 `ShellRoute` 包住每一個工作區內的路由。**外殼內的每個目的地都帶有工作區前置字串——`/workspaces/:workspaceId/…`——而 URL 中的工作區 id 是作用中工作區的單一事實來源。** 只有情境之前的介面沒有前置字串：`/splash`、`/onboarding`、`/signed-out` 與單獨的 `/workspaces` 選擇器，這些全都是全螢幕且位於外殼之外。
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+這道閘門在**已登入的使用者**至少連接了一個託管平台、且至少存在一個工作區時即告完備。
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+憑證遺失與設定未完成是兩個不同的畫面，而區分依據是從呼叫者自己的 `identity.me` 讀出的 `users.onboarding_finished_at`——絕不是「工作區存在」，因為當有人被邀請進入一個自己從未建立的工作區時，這個判準馬上就錯了。在沒有連接任何託管平台的情況下，已完成入門引導的帳號會前往 `/signed-out` 重新驗證；尚未完成的則前往 `/onboarding`。當這個旗標仍未知時，守衛會停留在啟動畫面，而不去猜測，因為它永遠不會把使用者重新導向離開入門引導。
 
-## Unprefixed routes
+## 無前置字串的路由
 
-| Path                       | Screen                                           |
+| 路徑                       | 畫面                                           |
 | -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| `/splash`                  | 啟動畫面，負責解析入門引導閘門 |
+| `/onboarding`              | 連接託管平台、建立或加入工作區、沙箱、預設配接器，最後是語音。若帳號已屬於某個工作區，就會略過工作區步驟 |
+| `/signed-out`              | 重新驗證：設定所顯示的同一張託管平台連線卡片，但沒有步驟列，也沒有繼續按鈕——一旦有託管平台回報，路由器就會自行離開 |
+| `/workspaces`              | 工作區清單與選擇器                        |
+| `/workspaces/:workspaceId` | 重新導向至 `/workspaces/:workspaceId/inbox`    |
 
-## Workspace routes
+## 工作區路由
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+以下路徑省略 `/workspaces/:workspaceId` 前置字串。
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| 路徑                                    | 查詢參數                              | 畫面                                                                                                                                                                   |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | 統一收件匣：依審查生命週期分類的 PR，以及阻擋操作者的非 PR 工作。通過守衛後的著陸路由；單獨的 `/workspaces/:workspaceId` 會重新導向到此處 |
+| `/spaces`                               | —                                         | 空間介面，尚未選取空間                                                                                                                                         |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | 單一空間；`m` 會深層連結至某則訊息，並在開啟時被取用一次                                                                                                      |
+| `/tickets`                              | —                                         | 工單看板                                                                                                                                                             |
+| `/tickets/:ticketId`                    | —                                         | 工單主從檢視                                                                                                                                                     |
+| `/projects/:projectId`                  | —                                         | 專案總覽                                                                                                                                                         |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | PR 清單；`repo` 會在左側欄中選取該儲存庫                                                                                                                 |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | 撰寫新的 pull request；`space` 指名其隔離工作樹提供該分支的空間                                                                          |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR 詳細資料與差異檢視器；`comment` 是某一則留言的數字 REST id                                                                                              |
+| `/pipelines`                            | —                                         | 管線執行清單                                                                                                                                                        |
+| `/pipelines/run`                        | `?templateId=<id>`                        | 手動執行啟動器                                                                                                                                                      |
+| `/pipelines/:runId`                     | —                                         | 管線執行詳細資料（步驟時間軸）                                                                                                                                      |
+| `/plans`                                | —                                         | Plan Studio 中樞：進行中的計畫、計畫文件、playbook                                                                                                                 |
+| `/plans/:kind/:id`                      | —                                         | 單一計畫的 Plan Studio；`kind` 為 `orchestration` 或 `document`                                                                                                        |
+| `/meetings`                             | —                                         | 會議清單                                                                                                                                                            |
+| `/meetings/record`                      | —                                         | 即時會議錄製畫面                                                                                                                                            |
+| `/meetings/:meetingId`                  | —                                         | 會議詳細資料：筆記、逐字稿、行動項目、決議                                                                                                               |
+| `/calendar`                             | —                                         | 日曆：月、週與議程檢視                                                                                                                                   |
+| `/calendar/:eventId`                    | —                                         | 日曆活動詳細資料（同層路由；與日曆頁面共用相同的頁面索引鍵）                                                                                                      |
+| `/newsfeed`                             | —                                         | 新聞動態清單                                                                                                                                                            |
+| `/newsfeed/article/:articleId`          | —                                         | 文章閱讀器                                                                                                                                                           |
+| `/observability`                        | —                                         | 可觀測性中樞：疊在工作區執行日誌動態饋送上的用量、洞察、即時與品質分頁。預設為用量分頁                                                     |
+| `/users/:login`                         | —                                         | GitHub 使用者個人檔案                                                                                                                                                      |
+| `/teams/:organization/:slug`            | —                                         | GitHub 組織團隊個人檔案                                                                                                                                         |
+| `/api-keys`                             | —                                         | API 金鑰管理。**介面中沒有導覽入口**——只能透過 URL 存取                                                                                                |
+| `/settings/…`                           | —                                         | 設定畫面（見下文）                                                                                                                                                 |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+對話與討論串**沒有自己的路由**——討論串是 `/spaces/:spaceId` 內的對話，以編輯器分頁開啟，而不是以 URL 定址。
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**沒有 `/dashboard` 路由**，也沒有儀表板畫面。分析介面是 `/observability`，可從側邊欄頁尾進入。
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+**側邊欄沒有「計畫」項目**。Plan Studio 會從產生該計畫的那個對話中，由該計畫的那一列以編輯器分頁開啟；`/plans` 與 `/plans/:kind/:id` 是深層連結。
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` 與 `/pull-requests/compose` 在路由標題或麵包屑登錄中都沒有項目，因此兩者在視窗標題中都只顯示單純的應用程式名稱，也沒有麵包屑路徑。
 
-## Settings routes
+## 設定路由
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` 會重新導向至 `/settings/you/appearance`。側邊欄的設定按鈕與 `Cmd/Ctrl + ,` 都會前往 `/settings/you/appearance`。
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+設定路徑依**範圍**加上命名空間——`you/`、`workspace/`、`server/`——因為該分段說明了變更會影響到誰。有兩條路徑早於命名空間機制，在 URL 中不帶範圍：`/settings/memory` 與 `/settings/pipelines`。
 
-### You
+### 你
 
-| Path                          | Screen                                                                     |
+| 路徑                          | 畫面                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | 佈景主題、語言、排版、編輯器佈景主題（設定的預設頁）          |
+| `/settings/you/notifications` | 各事件的切換開關、勿擾時段                                             |
+| `/settings/you/keybindings`   | 鍵盤快捷鍵參考（唯讀）                                    |
+| `/settings/you/audio`         | 麥克風、聽寫、會議偵測與聲景輸出             |
+| `/settings/you/devices`       | 已配對的手機與遠端控制                                           |
+| `/settings/you/newsfeed`      | 動態來源管理：來源、重新整理、已讀狀態                              |
 
-### Workspace
+### 工作區
 
-| Path                               | Screen                                                                                              |
+| 路徑                               | 畫面                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | 在此工作區的個人資料與身分：名稱、git 作者、程式碼託管、日曆 |
+| `/settings/workspace/general`      | 名稱、標誌、機密 glob、審查並行度、分支命名、同步健康狀態、聊天橋接、危險區域 |
+| `/settings/workspace/meetings`     | 會議筆記範本與已儲存的語音設定檔                                                     |
+| `/settings/workspace/members`      | 名冊、邀請、稽核軌跡。稽核軌跡以選用的 `?cursor=` 分頁                     |
+| `/settings/workspace/repositories` | 在此工作區註冊的儲存庫                                                           |
+| `/settings/workspace/agents`       | 已註冊的代理身分                                                                         |
+| `/settings/workspace/skills`       | 技能設定                                                                                 |
+| `/settings/memory`                 | 工作區記憶：事實、政策、知識圖譜                                                  |
+| `/settings/workspace/permissions`  | 代理權限：護欄矩陣與假設情境探測器                                               |
+| `/settings/pipelines`              | 管線範本                                                                                 |
+| `/settings/pipelines/:templateId`  | 管線範本編輯器（拖放式畫布）                                                     |
 
-### Server
+### 伺服器
 
-| Path                           | Screen                                                                                |
+| 路徑                           | 畫面                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | 連線與狀態                                                                 |
+| `/settings/server/sso`         | 單一登入（SAML、OIDC、SCIM 佈建）                                        |
+| `/settings/server/providers`   | 模型供應商與配接器                                                          |
+| `/settings/server/mcp`         | 內建與外部的 MCP 伺服器                                                     |
+| `/settings/server/voice`       | 語音與會議模型（ASR、語者分離）                                           |
+| `/settings/server/rigs`        | 機台：此主機可開機的項目、基礎映像、自訂映像、執行中的機器           |
+| `/settings/server/sandbox`     | 沙箱可執行檔授權：代理可從你的儲存庫工作複本中執行的程式 |
+| `/settings/server/diagnostics` | 診斷與隱私：沙箱化、嵌入、同步引擎、日誌、當機報告 |
+| `/settings/server/backup`      | 備份與還原：安裝快照、各工作區匯出、匯入與刪除        |
+| `/settings/server/about`       | 關於與更新                                                                     |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`lib/features/settings/settings_nav.dart` 中的 `kSettingsNav` 是這份清單的單一事實來源。`settings_nav_test.dart` 會釘住唯一的 id、唯一的路由、扁平化後的 J/K 順序與這三個範圍。它不會走訪每一個已登錄的 `GoRoute`。
 
-## Route configuration
+## 路由設定
 
-| Concern             | File                                                    |
+| 項目             | 檔案                                                    |
 | ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| 路由器              | `lib/router/app_router.dart`                            |
+| 路由建構器      | `lib/router/routes.dart`                                |
+| 驗證守衛         | `lib/router/guards.dart`                                |
+| 入門引導閘門     | `lib/features/auth/providers/onboarding_providers.dart` |
+| 設定導覽          | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## 另請參閱
 
-- [Workspaces](/zh-TW/手冊/概念/工作區/)
-- [Architecture](/zh-TW/手冊/概念/架構/)
-- [Keyboard shortcuts](/zh-TW/手冊/參考/鍵盤快捷鍵/)
+- [工作區與隔離](/zh-TW/手冊/概念/工作區/)
+- [架構](/zh-TW/手冊/概念/架構/)
+- [鍵盤快捷鍵](/zh-TW/手冊/參考/鍵盤快捷鍵/)

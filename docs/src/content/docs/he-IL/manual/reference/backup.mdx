@@ -1,29 +1,30 @@
 ---
-title: Backup, export and import
-description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+title: גיבוי, ייצוא וייבוא
+description: מבנה תמונת המצב, המניפסט, כל פעולת גיבוי ונתיב העברה, ואילו קבצים בדיוק גיבוי כולל ושאינו כולל.
 slug: he-IL/מדריך-למשתמש/עזר/גיבוי
+sourceHash: 6e9b3801a734d67ad423ba22bc3ebf0a84ebe29b
 ---
 
-Everything Control Center can copy, hand over or adopt, and the exact shape of each
-artifact. To actually take a backup, see
-[Back up and restore](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/); for why persistence is
-split this way, see [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/).
+כל מה ש-Control Center יכול להעתיק, למסור או לאמץ, והצורה המדויקת של כל ארטיפקט.
+כדי ליצור גיבוי בפועל, ראו
+[גיבוי ושחזור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/); ולהסבר מדוע הנתונים נשמרים
+באופן מפוצל כזה, ראו [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/).
 
-## Artifacts
+## ארטיפקטים
 
-There are three database-copy artifacts, with different scopes and deletion policies.
+ישנם שלושה ארטיפקטים של העתקת מסד נתונים, עם היקפים ומדיניות מחיקה שונים.
 
-| Artifact                | Written by                   | Shape                                 | Covers                        |
+| ארטיפקט                | נכתב על ידי                   | צורה                                 | מכסה                        |
 | ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
-| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
-| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
-| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
+| **תמונת מצב של ההתקנה**    | `server.backupNow`           | **תיקייה** עם חותמת זמן           | כל מסד נתונים בהתקנה |
+| **גיבוי של סביבת עבודה**    | פייפליין `Workspace backup`  | תיקייה עם חותמת זמן ובה קובץ `.db` אחד  | מסד הנתונים של סביבת עבודה אחת      |
+| **ייצוא של סביבת עבודה**    | `workspace.export`           | **קובץ** `.db` בודד               | מסד הנתונים של סביבת עבודה אחת      |
 
-All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
-it takes a read transaction, produces a defragmented and transactionally consistent
-copy, and never requires stopping the server.
+כולם נכתבים עם `VACUUM INTO` של SQLite, שהוא בטוח מול מסד נתונים חי במצב WAL:
+הוא מבצע טרנזקציית קריאה, מפיק עותק מגובב ועקבי מבחינה טרנזקציונית, ולעולם אינו
+דורש לעצור את השרת.
 
-## Snapshot layout
+## מבנה תמונת המצב
 
 ```
 <dataDir>/backups/2026-07-28T09-12-33-000Z/
@@ -32,120 +33,117 @@ copy, and never requires stopping the server.
   <workspaceId>/workspace.db      one directory per workspace
 ```
 
-The layout mirrors the live data directory exactly, which is what makes restoring an
-install a copy back rather than a translation. The directory name is the UTC timestamp
-with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
-chronologically as a plain string.
+המבנה משקף בדיוק את ספריית הנתונים החיה, וזה מה שהופך שחזור התקנה להעתקה בחזרה
+ולא לתרגום. שם התיקייה הוא חותמת הזמן של UTC כשהתווים `:` ו-`.` הוחלפו ב-`-`,
+כך שהוא בטוח למערכת הקבצים ב-Windows וממוין כרונולוגית כמחרוזת רגילה.
 
-Scheduled workspace backups live separately at
+גיבויים מתוזמנים של סביבות עבודה יושבים בנפרד ב-
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
-The weekly pipeline's retention step removes only backups of its own workspace
-older than its configured age (30 days by default); manually created install
-snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+הם אינם כוללים מניפסט או `global.db` ואינם תמונות מצב של ההתקנה.
+שלב השימור של הפייפליין השבועי מסיר רק גיבויים של סביבת העבודה שלו עצמו הישנים
+מהגיל שהוגדר לו (30 ימים כברירת מחדל); תמונות מצב של ההתקנה שנוצרו ידנית לעולם
+אינן נמחקות בשלב הזה. `server.listBackups` מציג רק תמונות מצב של ההתקנה,
+כולל חלקיות.
 
 
 ### `manifest.json`
 
-| Field                      | Type            | Meaning                                                             |
+| שדה                      | סוג            | משמעות                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
-| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
-| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `version`                  | int             | גרסת מבנה המניפסט. כעת `1`                              |
+| `created_at`               | ISO-8601 UTC    | מתי נוצרה תמונת המצב                                         |
+| `global.file`              | string          | תמיד `global.db`                                                  |
+| `global.schema_version`    | int             | גרסת הסכימה של `GlobalDatabase` בעת הלכידה                     |
+| `global.bytes`             | int             | הגודל של `global.db` שנכתב                                     |
+| `workspace_schema_version` | int             | גרסת הסכימה של `WorkspaceDatabase` המשותפת לכל קובץ סביבת עבודה   |
+| `workspaces[]`             | array           | רשומה אחת לכל סביבת עבודה שנלכדה                                    |
+| `workspaces[].workspace_id`| string          | סביבת העבודה שהקובץ הזה מחזיק                                       |
+| `workspaces[].file`        | string          | נתיב יחסי לשורש תמונת המצב, `<workspaceId>/workspace.db`    |
+| `workspaces[].bytes`       | int             | הגודל של אותו קובץ                                                   |
+| `skipped_workspaces[]`     | array of string | סביבות עבודה שהגיבוי **לא** הצליח ללכוד                         |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+סביבת עבודה מדולגת כשהרישום שלה קיים אבל מעולם לא נכתב אליה (ולכן אין עדיין קובץ),
+או כשה-`VACUUM INTO` שלה נכשל. כך או כך, תמונת המצב עדיין מושלמת והמניפסט מציין
+מה חסר.
 
-### Completeness
+### שלמות
 
-`server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+`server.listBackups` מדווח על דגל `complete` לכל תמונת מצב. הוא שקרי כשהמניפסט חסר
+או שאינו ניתן לפענוח, כשחסר `global.db`, או כשהמניפסט מציין קובץ סביבת עבודה שאינו
+על הדיסק.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
-snapshot they believe they have. When the manifest is unreadable the listing falls back
-to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
-those remain individually adoptable through `workspace.import` even though the snapshot
-as a whole cannot restore an install.
+תמונת מצב חלקית עדיין מוצגת ברשימה, כי תמונת מצב שמפעיל אינו רואה היא תמונה שהוא
+מאמין שיש לו. כשאין אפשרות לקרוא את המניפסט, הרשימה נופלת חזרה אל המבנה עצמו
+ומדווחת על כל קובצי `<workspaceId>/workspace.db` שהיא מוצאת — אלה נשארים ניתנים
+לאימוץ בנפרד דרך `workspace.import`, אף שתמונת המצב כולה אינה יכולה לשחזר התקנה.
 
-## What a backup does not contain
+## מה גיבוי אינו כולל
 
-Both artifacts are **databases only**. A workspace directory holds more than its
-database, and none of the rest travels:
+שני הארטיפקטים הם **מסדי נתונים בלבד**. תיקיית סביבת עבודה מחזיקה יותר ממסד הנתונים
+שלה, ושום דבר מהשאר אינו נכלל:
 
-| Path                                | In a snapshot? | In a workspace export? |
+| נתיב                                | בתמונת מצב? | בייצוא של סביבת עבודה? |
 | ----------------------------------- | -------------- | ---------------------- |
-| `global.db`                         | Yes            | No                     |
-| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
-| `<workspaceId>/blobs/`              | No             | No                     |
-| `<workspaceId>/skills/`             | No             | No                     |
-| `<workspaceId>/agents/`             | No             | No                     |
-| `<workspaceId>/chat_credentials/`   | No             | No                     |
-| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
-| `<workspaceId>/pr_clones/`          | No             | No                     |
-| `secrets.json`                      | No             | No                     |
-| `models/`                           | No             | No                     |
-| `meetings/<meetingId>/`             | No             | No                     |
-| `rigs/`                             | No             | No                     |
+| `global.db`                         | כן            | לא                     |
+| `<workspaceId>/workspace.db`        | כן            | כן (הוא *הוא* הקובץ) |
+| `<workspaceId>/blobs/`              | לא             | לא                     |
+| `<workspaceId>/skills/`             | לא             | לא                     |
+| `<workspaceId>/agents/`             | לא             | לא                     |
+| `<workspaceId>/chat_credentials/`   | לא             | לא                     |
+| `<workspaceId>/spaces/<spaceId>/`   | לא             | לא                     |
+| `<workspaceId>/pr_clones/`          | לא             | לא                     |
+| `secrets.json`                      | לא             | לא                     |
+| `models/`                           | לא             | לא                     |
+| `meetings/<meetingId>/`             | לא             | לא                     |
+| `rigs/`                             | לא             | לא                     |
 
-Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
-database point at, `skills/` and `agents/` hold the files an agent runs with, and
-`secrets.json` holds every pairing key, provider credential and SSO setting on the
-install. See [Back up and restore](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/#copy-backups-off-the-machine)
-for covering the rest.
-:::note[Chat tokens deliberately stay behind]
-`chat_credentials/` sitting beside the database rather than inside it is why a workspace
-handed to somebody else carries no live bot tokens. See the
-[chat bridge reference](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/).
+חלק מזה חד־פעמי — `spaces/` מחזיק עצי עבודה בהעתקה בעת כתיבה שמסופקים מחדש
+מהמאגרים, `pr_clones/` הוא מטמון, `models/` מורד מחדש, `rigs/` הוא מצב מכונה.
+וחלק מזה אינו חד־פעמי: `blobs/` מחזיק תמונות שהודבקו ושורות במסד הנתונים מצביעות
+אליהן, `skills/` ו-`agents/` מחזיקים את הקבצים שאיתם סוכן רץ, ו-`secrets.json`
+מחזיק כל מפתח שיוך, פרטי גישה של ספק והגדרת SSO בהתקנה. ראו
+[גיבוי ושחזור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/#copy-backups-off-the-machine)
+לכיסוי השאר.
+:::note[אסימוני צ'אט נשארים מאחור במכוון]
+העובדה ש-`chat_credentials/` יושב לצד מסד הנתונים ולא בתוכו היא הסיבה שסביבת עבודה
+שנמסרת למישהו אחר אינה נושאת אסימוני בוט חיים. ראו את
+[עזר גשר הצ'אט](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/).
 :::
 
-## Operations
+## פעולות
 
-Install backup RPCs and workspace export/import are `fullClient`-only: a paired
-phone cannot trigger them. All are absent entirely — not refused, structurally
-missing — on a server with no backup port wired, such as the demo server.
+קריאות ה-RPC לגיבוי ההתקנה ולייצוא/ייבוא של סביבת עבודה זמינות ל-`fullClient` בלבד:
+טלפון משויך אינו יכול להפעיל אותן. כולן נעדרות לחלוטין — לא נדחות, אלא חסרות מבנית —
+בשרת שבו לא מחובר פורט גיבוי, כמו שרת ההדגמה.
 
-| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
+| פעולה                   | סוג   | היקף     | תפקיד מזערי | ארגומנטים     | מחזיר                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
-| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
-| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
+| `server.backupNow`   | שינוי | התקנה   | **בעלים** של ההתקנה | אין     | `{ok, path}`                  |
+| `server.listBackups` | קריאה   | התקנה   | **בעלים** של ההתקנה | אין     | `{backups: [...]}`            |
+| `server.deleteBackup` | שינוי | התקנה | **בעלים** של ההתקנה | `name` | `{ok}` |
+| `workspace.export`   | קריאה   | סביבת עבודה | `admin`      | אין          | `{ok, path}`                  |
+| `workspace.import`   | שינוי | סביבת עבודה | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | שינוי | התקנה*  | `owner`      | `id`          | שורת רישום מסומנת כמחוקה   |
 
-* `workspace.delete` is unscoped because the row it marks lives in the global
-registry; its handler checks the caller's membership of the named workspace
-and requires `owner`.
+* `workspace.delete` אינו מוגבל בהיקף כי השורה שהוא מסמן נמצאת ברישום הגלובלי;
+המטפל שלו בודק את החברות של הקורא בסביבת העבודה הנקובה ומצריך `owner`.
 
-`path` in every response is a path on the **server host**.
+`path` בכל תגובה הוא נתיב על **מארח השרת**.
 
-:::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
-install **owner** (`ServerAuthority.serverOwner`), the same gate as
-`GET /backup/snapshot`. A snapshot captures every workspace's database, so
-being an admin of one workspace is not enough to manage the others. Deletion
-accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+:::note[תמונת מצב של התקנה שלמה מוגנת בבעלים בשני המסלולים]
+`server.backupNow`, `server.listBackups` ו-`server.deleteBackup` דורשים את
+ה**בעלים** של ההתקנה (`ServerAuthority.serverOwner`), אותו שער בדיוק כמו
+`GET /backup/snapshot`. תמונת מצב לוכדת את מסד הנתונים של כל סביבת עבודה, ולכן
+היותכם מנהלים של סביבת עבודה אחת אינו מספיק כדי לנהל את האחרות. המחיקה מקבלת רק
+את שם תיקיית חותמת הזמן מהרשימה, ולא נתיב שרירותי בשרת, ומסירה את תמונת המצב כולה
+(כולל תמונות מצב חלקיות). ייצוא/ייבוא ברמת סביבת עבודה נשארים אצל מנהל/בעלים של
+סביבת העבודה, ולא אצל בעלים של ההתקנה.
 :::
 
-### `server.listBackups` response
+### התגובה של `server.listBackups`
 
-Newest first, sorted by directory name (which is the timestamp, so the order holds even
-for a snapshot whose manifest could not be read).
+החדשה ביותר תחילה, ממוין לפי שם התיקייה (שהוא חותמת הזמן, ולכן הסדר תקף גם לתמונת
+מצב שאי אפשר היה לקרוא את המניפסט שלה).
 
 ```json
 {
@@ -169,99 +167,95 @@ for a snapshot whose manifest could not be read).
 }
 ```
 
-`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
-the real size on disk of the whole directory, not the manifest's own sum — the question
-an operator pruning snapshots is asking is what the directory costs, not what the backup
-meant to write.
+`created_at` מושמט כשאי אפשר היה לקרוא את המניפסט. `bytes` ברמה העליונה הוא הגודל
+האמיתי בדיסק של התיקייה כולה, ולא הסכום של המניפסט עצמו — השאלה שמפעיל שמנקה
+תמונות מצב שואל היא כמה התיקייה עולה, ולא מה הגיבוי התכוון לכתוב.
 
-Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
-is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
-cannot drift into different treatments of the same file.
+כל `workspaces[].path` הוא בדיוק מה ש-`workspace.import` מקבל בתור `source_path`.
+זה מכוון: "שחזרו את סביבת העבודה הזו מתמונת המצב הזו" *הוא* פעולת הייבוא, ולכן
+השניים אינם יכולים להיפרד לטיפולים שונים באותו קובץ.
 
-### `workspace.import` validation
+### האימות של `workspace.import`
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+לפני שמשהו מוחלף, הקובץ המועמד נפתח לקריאה בלבד עם חיבור SQLite גולמי קצר־מועד
+ונקראת שורת ה-`workspace_meta` שלו.
 
-| Condition                                        | Result                                                          |
+| תנאי                                        | תוצאה                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| לא מסד נתונים קריא של SQLite, או שאין `workspace_meta` | נדחה. לא נוגעים בדבר                                |
+| מזהה סביבת העבודה הרשום ≠ היעד                | **מותר**, נרשם ביומן. כך משכפלים סביבת עבודה או משחזרים אותה תחת מזהה חדש |
+| מזהה ההתקנה הרשום ≠ ההתקנה הזו                | **מותר**, נרשם ביומן. המכשירים המשויכים ומזהי המשתמשים שלו שייכים לאותה התקנה ולא יפתרו כאן |
+| מזהה סביבת עבודה שגוי, או שהקובץ אינו קיים      | נדחה                                                         |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+עם הקבלה, מסד הנתונים של סביבת העבודה היעד נסגר ומוסר מהמנהל לפני שהקובץ מועתק
+עליו (חיבור drift פתוח מחזיק את הקובץ ואת ה-`-wal` שלו), ואז נפתח מחדש כדי
+ש-`beforeOpen` יתקין מחדש את טריגרי ה-FTS והסנכרון, ואינדקסי ה-FTS נבנים מחדש —
+טבלאות התוכן של קובץ מיובא מאוכלסות, אבל האינדקס שלו עשוי להיות מיושן.
 
-## Transfer routes
+## נתיבי העברה
 
-Every op above speaks in server-side paths, which is a complete answer only when the
-server is your own machine. These three carry the bytes, on the same PSK-signed lane the
-media proxy and blob store use. The caller signs a target string with its device
-pre-shared key and passes the signature as `s`.
+כל פעולה שלמעלה מדברת בנתיבים בצד השרת, וזו תשובה מלאה רק כשהשרת הוא המכונה שלכם.
+שלושת אלה מעבירים את הבתים, על אותו מסלול חתום ב-PSK שבו משתמשים פרוקסי המדיה
+ומאגר ה-blobs. הקורא חותם על מחרוזת יעד עם מפתח הצימוד של המכשיר שלו ומעביר את
+החתימה בתור `s`.
 
-| Route                   | Method | Query           | Signed target                  | Requires                |
+| נתיב                   | מתודה | שאילתה           | יעד חתום                  | דורש                |
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
-| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
-| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **מנהל** של סביבת עבודה   |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **בעלים** של ההתקנה     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **בעלים** של סביבת עבודה   |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` הוא מזהה סביבת עבודה, `n` הוא שם תיקייה של תמונת מצב, `d` הוא מזהה המכשיר
+הקורא, ו-`s` הוא החתימה. `n` נפתר מול רשימת הגיבויים ולא מצורף לשורש הגיבויים,
+ולכן לא ניתן לכוון את הנתיב לתיקייה שהרשימה לא הייתה מציגה.
 
-| Status | Cause                                                                              |
+| סטטוס | סיבה                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
-| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
-| `405`  | `/backup/restore` called with anything but `POST`                                   |
-| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
-| `500`  | The export or archive failed server-side                                            |
+| `400`  | פרמטר שאילתה נדרש חסר, או שגוף ההעלאה ריק                   |
+| `403`  | מכשיר לא מוכר או מבוטל, חתימה שגויה, או שלקורא חסר התפקיד              |
+| `404`  | אין פורט גיבוי במארח הזה, או שתמונת המצב/קובץ סביבת העבודה הנקוב אינו קיים    |
+| `405`  | `/backup/restore` נקרא עם כל דבר מלבד `POST`                                   |
+| `413`  | גוף ההעלאה עולה על 8 GiB, לפי content-length המוצהר או לפי הבתים שנקראו בפועל     |
+| `500`  | הייצוא או הארכיון נכשלו בצד השרת                                            |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+שתי ההורדות מגיבות ב-`Cache-Control: no-store` עם `Accept-Ranges: none`. כל בקשה
+מנפיקה עותק **חדש** ומוחקת אותו לאחר הזרמתו, ולכן תגובה שנשמרה במטמון או שחודשה
+הייתה מלחימה בתים משני ייצואים שונים לקובץ אחד שנראה תקין ואינו כזה.
 
-`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
-unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
-Entries are written in sorted order, so two archives of the same snapshot are the same
-archive.
+`/backup/snapshot` מחזיר `<name>.zip`, עם רשומות יחסיות לשורש תמונת המצב כך שפריסה
+משחזרת `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
+הרשומות נכתבות בסדר ממוין, ולכן שני ארכיונים של אותה תמונת מצב הם אותו ארכיון.
 
-`/backup/restore` streams the body straight to a staging file rather than buffering it,
-bounds it before and during the read, and deletes the staged file on **every** path out
-including a refusal.
+`/backup/restore` מזרים את הגוף ישירות לקובץ ביניים במקום לאגור אותו בזיכרון,
+מגביל אותו לפני הקריאה ובמהלכה, ומוחק את קובץ הביניים ב**כל** נתיב יציאה, כולל
+דחייה.
 
-:::caution[A relayed connection has no HTTP origin]
-The brokered relay carries RPC frames, not file transfers. Everything that speaks in
-server-side paths keeps working over it; the three transfer routes need a direct
-connection, and the UI disables them with a note rather than failing mid-download.
+:::caution[לחיבור דרך ממסר אין מקור HTTP]
+הממסר המתווך מעביר מסגרות RPC ולא העברות קבצים. כל מה שמדבר בנתיבים בצד השרת
+ממשיך לעבוד דרכו; שלושת נתיבי ההעברה דורשים חיבור ישיר, וה-UI משבית אותם עם הערה
+במקום להיכשל באמצע ההורדה.
 :::
 
-## Paths and limits
+## נתיבים ומגבלות
 
-| Thing                          | Value                                                        |
+| דבר                          | ערך                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
-| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
-| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
-| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
-| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
-| Snapshot archive name          | `<snapshot directory name>.zip`                              |
-| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| תמונות מצב                      | `<dataDir>/backups/<timestamp>/`                             |
+| גיבויים מתוזמנים של סביבות עבודה    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
+| ייצואים של סביבות עבודה              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| אחסון ביניים להעברות               | `<dataDir>/backups/transfer/` — שולחן עבודה, שמנוקה על ידי הנתיב שכותב אליו |
+| שם הארכיון של תמונת מצב          | `<snapshot directory name>.zip`                              |
+| תקרת ההעלאה                 | 8 GiB לכל `POST /backup/restore`                             |
+| שימור                      | תמונות מצב של ההתקנה: מחיקה ידנית. גיבויים של סביבות עבודה: פייפליין שבועי, ברירת מחדל של 30 ימים |
 
-The `exports/`, `transfer/`, and `workspace-backups/` directories are not
-install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+התיקיות `exports/`, `transfer/` ו-`workspace-backups/` אינן תמונות מצב של ההתקנה
+והן מוחרגות מ-`server.listBackups`. רק לתיקייה האחרונה יש שימור מתוזמן; מחיקת
+תמונת מצב של ההתקנה דורשת פעולה מפורשת של בעלי ההתקנה.
 
-## See also
+## ראו גם
 
-- [Back up and restore](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/) — the recipes these operations belong to
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) — why one workspace is one file
-- [`cc_server` CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/) — the data directory these paths sit in
-- [Route map](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/) — where the UI lives
-- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/) — the client/server split the paths follow
+- [גיבוי ושחזור](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/גיבוי-ושחזור/) — המתכונים שהפעולות האלה שייכות להם
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) — למה סביבת עבודה אחת היא קובץ אחד
+- [`cc_server` CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/) — ספריית הנתונים שהנתיבים האלה יושבים בה
+- [מפת נתיבים](/he-IL/מדריך-למשתמש/עזר/מפת-נתיבים/) — היכן שה-UI נמצא
+- [ארכיטקטורה](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/) — פיצול הלקוח/שרת שהנתיבים הולכים לפיו

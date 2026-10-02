@@ -1,156 +1,161 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Folosește spațiile
+description: Creează spații, setează-le modul, gestionează participanții și autonomia și deschide conversații și fire.
 slug: ro-RO/manual/ghiduri-practice/spatii
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Acest ghid îți arată cum să folosești spațiile. Un **spațiu** este suprafața de
+mesagerie din Control Center: o cameră limitată la spațiul de lucru, cu unul sau
+mai mulți participanți (tu și/sau agenți), care deține câte un worktree
+copy-on-write pentru fiecare repo pentru care a fost creat.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Camerele unu-la-unu și cele cu mai mulți agenți sunt tot spații, distinse doar
+prin numărul de participanți. Singura excepție sunt spațiile pe care agenții le
+deschid ca să vorbească între ei — vezi
+[Spații agent-la-agent](#spații-agent-la-agent) mai jos.
 
-## Create a space
+## Creează un spațiu
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Navighează la **Spații**
+2. Dă clic pe butonul **+** de lângă titlul Spații
+3. Dă-i un **nume** — obligatoriu. Un nume gol este refuzat; dialogul
+   rămâne deschis
+4. Opțional, adaugă agenți din spațiul de lucru
+5. Când spațiul de lucru are vreun repo, alege pentru care dintre ele
+   provisionează acest spațiu worktree-uri. Toate sunt selectate implicit;
+   deselectarea tuturor repo-urilor creează un spațiu cu nimic extras
+6. Confirmă
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Spațiile sunt limitate la spațiul de lucru: vezi doar agenți din spațiul de lucru
+curent, iar un spațiu nu expune niciodată date din alt spațiu de lucru.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
+Fiecare repo este extras la `repos/<name>/` în interiorul spațiului. Un repo care
+își livrează propriile skill-uri de agent le contribuie agentului care lucrează în
+el — câte un set de repo o dată, schimbându-se pe măsură ce agentul se mută. Din
+composer le poți atinge pe oricare cu `/skill:<repo>:<name>`. Vezi
+[Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Suprafața se află la `/workspaces/<id>/spaces`, iar un singur spațiu la
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Setează modul spațiului
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Un spațiu nou pornește în modul implicit. Schimbă-l din **lista derulantă de
+moduri** din extrema stângă a barei de instrumente a composerului — nu din
+dialogul de creare (care nu are câmp de mod) și nu din antetul spațiului.
 
-| Mode            | Effect                                                                                                |
+| Mod             | Efect                                                                                                 |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| **Agent**       | Acces complet. Modul implicit; `chat` la nivel intern, etichetat „Agent” în lista derulantă            |
+| **Plan**        | Doar citire și cercetare; livrabilul este un plan tipizat                                             |
+| **Orchestrează** | Doar citire și cercetare, plus un singur verb `propose_orchestration`; planul rulează doar după ce îl aprobi |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab comută între modul plan și modul agent fără să deschidă lista derulantă.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Un al patrulea mod, **revizuire**, există, dar nu este oferit în lista derulantă —
+este aplicat automat spațiilor de revizuire PR.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Modul este stocat pe spațiu, așa că același agent poate fi în modul plan într-un
+spațiu și în modul agent în altul. Fiecare conversație din interiorul unui spațiu
+împărtășește modul acelui spațiu.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Atenție la insigna de aplicare]
+O insignă apare lângă lista derulantă de moduri când agenții spațiului rulează pe un
+adaptor care nu poate impune modul pe care l-ai ales. Doar harness-ul încorporat
+Control Center filtrează suprafața de instrumente și pune o poartă în fața fiecărui
+apel; adaptoarele Claude Code și ACP primesc modul ca o cerere pe care executantul
+lor o poate onora sau nu. Absența unei insigne înseamnă „nu se afirmă nimic”, nu
+„verificat ca sigur”.
 :::
 
-See [Modes](/ro-RO/manual/concepte/moduri/) for the full model.
+Vezi [Moduri](/ro-RO/manual/concepte/moduri/) pentru modelul complet.
 
-## Manage participants and per-agent autonomy
+## Gestionează participanții și autonomia per agent
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Dă clic pe pictograma cu persoane din antetul spațiului pentru a deschide
+**Gestionează participanții**. Pentru fiecare agent aflat deja în spațiu poți:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Să-l elimini din spațiu
+- Să-i setezi **Autonomia** pentru acest spațiu: **Implicit**, **Doar propune**,
+  **Acționează cu aprobare** sau **Acționează liber**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Cadranul de autonomie este per (spațiu, agent), așa că un agent în care ai
+încredere într-o cameră poate fi ținut pe „doar propune” în alta.
 
-## React to a message
+## Reacționează la un mesaj
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Treci cu mouse-ul peste un mesaj și dă clic pe pictograma cu zâmbet pentru a
+deschide paleta de reacții. Este un set fix de șase: 👍 👎 🎉 ❤️ 👀 ✅. Nu există
+un selector liber de emoji — atingerea unui emoji îl comută pentru tine, iar
+pastilele agregate apar sub mesaj.
 
-## Open a conversation
+## Deschide o conversație
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Un spațiu găzduiește mai multe conversații simultan, iar acestea sunt egale, fără
+ierarhie — nu există una principală. Un spațiu păstrează mereu cel puțin o
+conversație activă: nu poți arhiva ultima conversație activă, iar deschiderea unui
+spațiu care nu are încă niciuna creează o conversație permanentă fără titlu.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Conversațiile apar ca file în editor și ca rânduri imbricate sub spațiu în bara
+laterală, odată ce sunt mai multe. **Conversație nouă** se află în meniul de file
+nou al editorului și creează o conversație fără titlu, fără nicio solicitare de
+titlu — modelul de titluri o denumește după primul mesaj. Folosește una pentru a
+rula muncă în paralel cu același agent și același worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Fiecare conversație își păstrează propriul istoric de mesaje și propriile sesiuni
+de agent, împărțind în schimb worktree-urile spațiului și modul acestuia.
+Închiderea unei file o ascunde; **Arhivează conversația** (rândul din bara
+laterală sau meniul contextual al filei de chat) arhivează doar acea conversație.
 
-## Start a thread
+## Pornește un fir
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Treci cu mouse-ul peste orice mesaj și alege **Pornește fir**. Asta deschide o
+conversație ancorată la acel mesaj: ancora alimentează contextul agentului noii
+conversații cu o singură linie, iar istoricul părintelui **nu** este copiat.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Odată ce un fir are răspunsuri, mesajul de care atârnă dezvoltă un rând dedesubt —
+chipurile celor care au vorbit, numărul de răspunsuri și când a sosit ultimul
+răspuns. Acel rând este calea de întoarcere: dacă dai clic pe el, se deschide (sau
+primește focus) fila firului. Este singura urmă pe care o lasă un fir în fluxul din
+care s-a ramificat, motiv pentru care există.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+Fila unui fir este intitulată `Thread: <name>` și poartă simbolul de ramură, așa
+că două file din același spațiu nu sunt niciodată confundate una cu alta.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Firele nu se imbrică niciodată — ancorarea la un mesaj care se află deja într-un
+fir este refuzată. Antetul conversației trimite înapoi la mesajul de ancoră.
+Ștergerea mesajului de ancoră șterge firul, iar arhivarea conversației părinte nu
+blochează firele ei existente.
 
-## Read state
+## Starea de citire
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Marcajele de citire sunt limitate la spațiu, nu la conversație: deschiderea oricărei
+conversații din spațiu marchează camera ca citită. Necititele se agregă în
+continuare pe toate conversațiile unui spațiu, inclusiv firele. Când conversațiile
+sunt listate sub spațiu, punctul de necitit stă pe conversația care are muncă
+nevăzută, nu pe rândul părinte.
 
-## Agent-to-agent spaces
+## Spații agent-la-agent
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Spațiile pe care agenții le deschid ca să vorbească între ei sunt grupate separat
+în bara laterală, sub **Agenți**, restrânse implicit și afișate estompat. Nu-ți
+cresc niciodată insigna de necitite — pălăvrăgeala agenților este discretă prin
+construcție, nu printr-o setare pe care trebuie să o găsești.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Tipul unui spațiu este una dintre cinci valori: `topic` (implicitul pentru orice
+creezi), `agentPeer`, `system` (gestionat de pipeline), `pr` (creat când o
+suprafață de PR are nevoie de o ancoră de worktree și ascuns din bara laterală
+până când are mesaje) și `slack` (creat de puntea de chat pentru un fir Slack sau
+un DM de bot și tratat ca o conversație umană obișnuită).
 
-## Related guides
+## Ghiduri conexe
 
-- [Chat with an agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
-- [@-mention agents](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/)
-- [Use plan mode](/ro-RO/manual/ghiduri-practice/modul-plan/)
+- [Discută cu un agent](/ro-RO/manual/ghiduri-practice/discuta-cu-agent/)
+- [Menționează agenți cu @](/ro-RO/manual/ghiduri-practice/mentioneaza-agenti/)
+- [Folosește modul plan](/ro-RO/manual/ghiduri-practice/modul-plan/)
 
-## Related concepts
+## Concepte conexe
 
-- [Modes](/ro-RO/manual/concepte/moduri/)
-- [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/): how a Slack thread becomes a space
+- [Moduri](/ro-RO/manual/concepte/moduri/)
+- [Punți de chat](/ro-RO/manual/concepte/punti-de-chat/): cum devine un fir Slack un spațiu

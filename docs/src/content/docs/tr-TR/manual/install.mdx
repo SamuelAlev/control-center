@@ -1,153 +1,270 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Kurulum
+description: Control Center'ı tarayıcıda kullanın ya da masaüstü uygulamasını kurun, bir ajan arka ucunu ayarlayın ve sunucusunun nerede çalışacağını seçin.
 slug: tr-TR/kilavuz/kurulum
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center iki şekilde çalışır: [app.usectrl.dev](https://app.usectrl.dev)
+adresinde indirilecek hiçbir şey olmadan bir **web uygulaması** olarak ya da
+kurduğunuz bir **masaüstü uygulaması** olarak. İkisi de aynı özelliklere sahip
+aynı uygulamadır. Tek fark, sunucunun nerede çalıştığıdır — ve web uygulaması
+sizin için bir sunucu çalıştıramaz.
 
-## Use it in your browser
+## Tarayıcınızda kullanın
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) bu uygulamanın tarayıcı için
+derlenmiş hâlidir. Kurulacak bir şey yok, güncellenecek bir şey yok. Açın ve
+bağlanın.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Bir tarayıcı sekmesinin yapamayacağı şey, sunucunun _kendisi_ olmaktır. Her
+istemci — masaüstü, web, telefon — veritabanına sahip olan ve işi yapan headless
+bir `cc_server` üzerinde ince bir katmandır; bu yüzden web uygulaması her zaman
+sizin çalıştırdığınız bir sunucuyla konuşur. Ona bir sunucu vermenin iki yolu
+vardır:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Kendi makinenizde bir sunucu.** `cc_server`'ı yerel olarak başlatın ve web
+uygulamasını `ws://localhost:9030` adresine yönlendirin. Tarayıcılar
+`localhost`'u güvenilir sayar, dolayısıyla bunun için sertifika da tünel de
+gerekmez. Web uygulamasını denemenin en hızlı yolu budur ve verileriniz
+makinenizden hiç ayrılmaz.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Başka bir makinede bir sunucu.** `app.usectrl.dev` HTTPS üzerinden sunulduğu
+için yerel olmayan bir sunucuya, tarayıcının zaten güvendiği bir sertifikayla
+`wss://` üzerinden erişilebilmesi gerekir. `cc_server` TLS olmadan loopback dışı
+bir adrese bağlanmayı reddeder, bu yüzden şunlardan birini seçin:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- ona doğrudan bir sertifika verin, `--tls-cert` ve `--tls-key` ile
+- onu TLS sonlandıran bir ters proxy'nin arkasına koyun ve `--insecure` ile
+  başlatın
+- sertifikayı sağlayan bir tünel ya da VPN üzerinden erişilebilir kılın —
+  Tailscale, cloudflared ya da benzeri. **Ayarlar → Sunucu → Bağlantı ve durum**
+  sayfasında, **Bu sunucuyu paylaş** altında yerleşik tünel katılımı bulunur.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Sunucu bir proxy, NAT ya da tünelin arkasında olduğunda, `--public-url` ayarını
+istemcilerin gerçekte araması gereken adrese ayarlayın. Varsayılanı yerel
+bağlanma adresidir; dolayısıyla bu ayar olmadan istemciler yanlış ana makineyi
+dener.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Web istemcisinin kendi kopyanızı mı barındırıyorsunuz?]
+`cc_server`, tarayıcı kaynaklarını yalnızca `--allowed-origins` listesindekiler
+kabul eder; bu listenin varsayılanı `https://app.usectrl.dev`'dur. Web
+derlemesini kendiniz barındırıyorsanız kendi kaynağınızı oraya ekleyin.
+Loopback ve yerel istemcilere, bu listeden bağımsız olarak her zaman izin
+verilir.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Birkaç şey masaüstüyle sınırlı kalır, çünkü yerel bir pencereye ya da makinenin
+kendi ses aygıtlarına ihtiyaç duyarlar: yüzen odak modu hapı, işletim sistemi
+bildirim baloncukları (uygulama içi bildirim merkezi her yerde çalışır), bir
+takvim etkinliğinden "kaydı başlat ve bağla" ve bir toplantı özetini yeniden
+çalıştırma. Geri kalan her şey — alanlar, ajanlar, pull request incelemesi,
+pipeline'lar, biletler, bellek ve toplantı kaydının kendisi — aynı şekilde
+davranır.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/). To host the server,
-follow [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/).
+Web uygulamasını bir sunucuya bağlamak için
+[Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/)
+sayfasını izleyin. Sunucuyu barındırmak için
+[Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+sayfasını izleyin.
 
-## Desktop system requirements
+## Masaüstü sistem gereksinimleri
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Gereksinim             | macOS                                                 | Windows     | Linux                                                      |
+| ---------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| İşletim sistemi sürümü | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ ya da glibc 2.35+ ve GTK 3 içeren başka bir dağıtım |
+| Mimari                 | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git                    | Gerekli                                               | Gerekli     | Gerekli                                                    |
+| Disk alanı             | Uygulama için ~200 MB, artı sunucunun veri dizini     | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Intel Mac'ler için hazır indirme yoktur. Bunun yerine
+[kaynaktan derleyin](#kaynaktan-derleme).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Sunucunun veri dizini, uygulamadan çok daha fazla yer kaplar. `cc_server` ilk
+başlatılışında cihaz üzerindeki modelleri zorla kurar — metin gömlemeleri
+(~90 MB), konuşmacı ayrıştırma (~35 MB) ve seçilen konuşma modeli (varsayılan
+olarak Parakeet TDT v3, ~600 MB; Whisper varyantları 198–626 MB) — gömülü bir
+code-server derlemesini de kurar ve her ajan konuşması, üzerinde çalıştığı
+depoların copy-on-write bir worktree'sini alır (Windows'ta düz
+`git worktree`). Konuşma isteğe bağlı değildir: ASR modeli olmadan toplantı ve
+dikte işlemleri sunulmaz. Konuşma modelinin ilk indirmesi, kayıt devreye
+girmeden önce yine bir yeniden başlatma gerektirir.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Masaüstü, sunucusunu işletim sisteminin kullanıcı başına uygulama destek
+dizinine yönlendirir. Elle başlatılan ve `--data-dir` verilmeyen bir `cc_server`
+varsayılan olarak `<application data>/control-center` dizinini kullanır —
+macOS'ta `~/Library/Application Support/control-center`, Windows'ta
+`%APPDATA%\control-center`, Linux'ta `$XDG_DATA_HOME/control-center` (ya da
+`~/.local/share/control-center`).
 
-## Download
+## İndirme
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Aşağıdaki her yapıt
+[GitHub Releases](https://github.com/SamuelAlev/control-center/releases)
+sayfasından gelir.
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+`Control-Center-<version>-arm64.dmg` dosyasını indirin, açın ve Control Center'ı
+Applications klasörüne sürükleyin. Derleme bir Developer ID ile imzalanmış ve
+Apple tarafından noterlenmiştir, bu yüzden normal şekilde açılır.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: kullanıcı başına bir yükleyici.
+- `Control-Center-<version>-windows-x64.zip`: taşınabilir bir zip.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows, alanların checkout'ları için `git worktree` kullanır (copy-on-write
+yoktur).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage güncelleme bilgisi taşır, bu yüzden
+[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) ya da
+appimaged onu yerinde en son sürüme getirebilir ve yalnızca değişenleri indirir.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+İkisi de Ubuntu 22.04 üzerinde derlenmiştir ve orada ya da daha yeni her şeyde
+çalışır (Debian 12, Fedora 36 ve sonrası): glibc 2.35'e ve GCC 12'nin
+libstdc++'ına bağlanır ve GTK 3'ü sistemden alır. Stok bir masaüstünde eksik
+olabilecek birkaç kitaplık beraberinde gelir, dolayısıyla başka hiçbir şey
+kurmak gerekmez. Ses — toplantı oynatımı, ses manzarası, rig sesi ve bildirim
+sesleri — sistemin libmpv'si üzerinden çalınır (Ubuntu 22.04'te `libmpv1`, daha
+yeni Ubuntu ve Debian'da `libmpv2`, Fedora'da `mpv-libs`); o olmadan uygulama bu
+denetimler gizli olarak başlar.
 
-### Standalone server
+### Tek başına sunucu
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/).
+Her sürüm, headless sunucuyu ayrıca tek başına da taşır —
+`cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`,
+`cc_server-<version>-windows-x64.zip` — GHCR'deki `cc-server`, `cc-webapp` ve
+`cc-remote` imajlarının yanı sıra. Bkz.
+[Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Linux arşivi Ubuntu 22.04 üzerinde derlenmiştir ve beraberindeki yerel
+kitaplıklar glibc 2.35 ile GCC 12'nin libstdc++'ına bağlanır, bu yüzden en az o
+kadar yeni bir ana makine gerektirir (Ubuntu 22.04, Debian 12, Fedora 36 ya da
+sonrası). Daha eski bir dağıtımda bunun yerine `cc-server` imajını çalıştırın —
+bir konteyner kendi userland'ini getirir, dolayısıyla sizin olması gereken tek
+şey çekirdektir.
 
-## Agent backend
+## Ajan arka ucu
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center, ajanları **adaptörler** aracılığıyla gönderir. İki tanedir,
+liste sabittir ve otomatik algılanırlar — bir yenisini kaydetmenin yolu yoktur.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+**Control Center (built-in)** adaptörü harici bir CLI gerektirmez: ajan döngüsü
+sunucunun içinde çalışır ve model sağlayıcılarıyla HTTP üzerinden konuşur, bu
+yüzden her zaman kullanılabilir. Bir sağlayıcıyı **Ayarlar → Sunucu → Model
+sağlayıcıları** altında bağlayın. OpenAI, Codex, Cursor ve Kimi Code tarayıcıda
+oturum açma sunar; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek,
+Mistral, xAI, z.ai ve Moonshot ise bir API anahtarı alır. Codex ile Cursor bu
+runner üzerinde sağlayıcıdır, ayrı CLI'ler değildir. z.ai kasıtlı olarak iki kez
+listelenir: **z.ai** kullandıkça öde esaslı açık platformdur ve hesap
+bakiyenizden faturalandırılır; **z.ai GLM Coding Plan** ise aboneliktir. Aynı
+hesap anahtarıdır, ancak z.ai planı farklı bir ana makineden sunar — kodlama
+planı anahtarını düz z.ai kutucuğuna yapıştırırsanız her istek
+`429 … "Insufficient balance or no resource package"` ile döner, çünkü planın
+harcayacak bir bakiyesi yoktur. Bir Claude Pro/Max aboneliği Anthropic API
+oturumu değildir; o plana bunun yerine Claude Code adaptörü üzerinden ulaşın. O
+sayfada _ekleyebileceğiniz_ şey bir **özel sağlayıcıdır** — **Özel sağlayıcılar
+→ Sağlayıcı ekle** altında OpenAI ya da Anthropic uyumlu herhangi bir uç nokta
+(Ollama, LM Studio, vLLM, özel bir kurulum).
 
-The other adapter wraps an external CLI:
+Diğer adaptör harici bir CLI'yi sarar:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Algılama, `cc_server`'ı çalıştıran makinenin `PATH`'ini yoklar — masaüstü kendi
+sunucusunu çalıştırıyorsa aynı makine, aksi halde uzak ana makine. Claude Code
+CLI'yi istemciye değil oraya kurun. O sayfadaki **Yenile** düğmesi yoklamayı
+yeniden çalıştırır.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
+Model listeleri her bağlı sağlayıcı tarafından canlı olarak sunulur;
+[models.dev](https://models.dev) yalnızca fiyat ve bağlam penceresi meta
+verilerini sağlar. Bkz.
+[Adaptörleri ve modelleri yönetme](/tr-TR/kilavuz/nasil-yapilir/adaptorler/).
 
-## GitHub authentication
+## GitHub kimlik doğrulaması
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Bir GitHub kimlik bilgisi **size aittir ve sunucuda yaşar**, kullanıcı
+kimliğinize göre anahtarlanır — istemci işletim sisteminin anahtarlığında
+değil. Oturum açtığınız her cihaz aynı kimlik bilgisini kullanır ve başka
+hiçbir üye onu okuyamaz.
 
-If the server has a GitHub App registered ([Create the GitHub App](/tr-TR/kilavuz/nasil-yapilir/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Sunucuda kayıtlı bir GitHub App varsa
+([GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)),
+**Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** size **GitHub
+ile oturum aç** seçeneğini sunar (sunucunun yürüttüğü bir cihaz akışı). Aksi
+halde kişisel bir erişim token'ı yapıştırın:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Classic: `repo` ve `read:org`
+- Fine-grained: **Contents** ve **Pull requests** (okuma ve yazma), **Checks**
+  ile **Actions** (okuma)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Bir tane
+[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+adresinde oluşturun. Sunucu, token'ı saklandığı hâliyle hesap adı için yoklar,
+böylece satır "… olarak oturum açıldı" diyebilir; başarısız bir yoklama token'ı
+yine de kaydeder ve bir yazım hatası ya da eksik kapsam sonradan başarısız bir
+istek olarak ortaya çıkar.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
+Onboarding'in ilk adımı bu bağlantıdır. Sonrasında aynı kart, onu
+değiştirdiğiniz ya da temizlediğiniz yerdir. GitLab ve Bitbucket aynı kartı
+kullanır; bkz.
+[Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
 
-## Choose where the server runs
+## Sunucunun nerede çalışacağını seçin
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/) explains what that split means for the desktop, web and phone.
+Control Center, veritabanına sahip olan ve tüm işi yapan headless bir `cc_server`
+süreci üzerinde ince bir istemcidir;
+[Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/) bu ayrımın masaüstü,
+web ve telefon için ne anlama geldiğini açıklar.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Masaüstü ilk açılışta şunu sorar: **"Control Center nasıl çalışsın?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/tr-TR/kilavuz/hizli-baslangic/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Bu uygulamada çalıştır**: masaüstü bu makinede bir `cc_server` başlatır ve
+  onu denetler, onunla loopback üzerinden konuşur. Yapılandırılacak başka bir
+  şey yoktur. [Hızlı başlangıç](/tr-TR/kilavuz/hizli-baslangic/) sayfasının
+  varsaydığı kurulum budur.
+- **Uzak bir örneğe bağlan**: masaüstünü başka bir yerde çalışan bir `cc_server`
+  sunucusuna WebSocket URL'si, bir cihaz kimliği ve ya bir eşleştirme anahtarı
+  ya da tek kullanımlık bir davet koduyla yönlendirin. Verilere o sunucu
+  sahiptir; bu masaüstü yalnızca onu çizer.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/).
+Sunucuları sonradan **Ayarlar → Sunucu → Bağlantı ve durum** altında ekleyebilir
+ya da değiştirebilirsiniz. Geçiş yapmak yerinde yeniden bağlanır — yeniden
+başlatma yoktur. Bir tarayıcı sunucu çalıştıramaz, bu yüzden web istemcisi her
+zaman uzaktır; bkz.
+[Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/).
 
-To host a server yourself, follow [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Bir sunucuyu kendiniz barındırmak için
+[Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/)
+sayfasını izleyin. İkili dosyayı derlemeyi, ilk başlatmadan önce bir eşleştirme
+anahtarı üretmeyi ve `--data-dir` / `--port` / `--bind` bayraklarını anlatır.
 
-## Verify your setup
+## Kurulumunuzu doğrulayın
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Ayarlar → Sunucu → Model sağlayıcıları** her iki adaptörü listeler.
+   "Control Center (built-in)" `built-in` sürümüyle bulundu olarak görünür;
+   Claude Code ise CLI'si sunucu ana makinesinin `PATH`'inde olduğunda bulundu
+   olarak görünür. Eksikse **Yenile**'ye basın.
+2. **Ayarlar → Çalışma alanı → Depolar** bu çalışma alanının depolarını listeler
+   ve **Depo ekle**, sunucu ana makinesinin klasörlerine göz atar.
+3. **Ayarlar → Çalışma alanı → Ajanlar** ilk çalışma alanınızın oluşturduğu beş
+   ajanı listeler. Her birinin çalışabilmesi için önce bir **Adaptör** ve bir
+   **Model** ayarlanmış olmalıdır.
+4. **Ayarlar → Sunucu → Tanılama ve gizlilik** bu ana makinenin sunduğu sandbox
+   arka uçlarını, gömme modelinin durumunu ve günlüklemeyi bildirir.
 
-## Build from source
+## Kaynaktan derleme
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Yerel kitaplıklar zorunludur ve düşürülmüş bir mod yoktur: eksik bir kitaplık
+yavaş bir yol değil, sert bir başlatma hatasıdır. Onları her şeyden önce
+hazırlayın. Her Flutter ve Dart komutu `fvm` üzerinden geçer, çünkü SDK sürümü
+depo tarafından sabitlenmiştir.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +276,26 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+macOS'ta güvenli depolama (GitHub, Linear ve Google oturum açma) uygulamanın bir
+Apple ekibi tarafından imzalanmasını gerektirir — ücretsiz bir Apple ID
+yeterlidir ve bu,
+[yerel geliştirme imzalaması](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos)
+altında açıklanan tek seferlik bir kurulumdur. O olmadan uygulama yine de açılır;
+yalnızca güvenli depolama kullanılamaz. Windows ve Linux imzalama gerektirmez.
 
-To build the headless server binary, stage the natives the same way first, then:
+Headless sunucu ikili dosyasını derlemek için önce yerel kitaplıkları aynı
+şekilde hazırlayın, sonra:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Derleme kancası, `build/natives/` içinde hâlihazırda ne varsa pakete kopyalar;
+bu yüzden yerel kitaplıkları hazırlamadan derlemek, içinde yerel kitaplık
+bulunmayan bir paket ve başlamayı reddeden bir sunucu üretir.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Web istemcisi için `scripts/build_web.sh` kullanın (telefon PWA'sı için
+`--target remote`). CI'ın çalıştırdığı şey budur: düz bir `flutter build web`,
+derleme kimliği damgasını, Web Worker yeniden üretimini, dağıtım bildirimini ve
+varlık bütçesi denetimini atlar.

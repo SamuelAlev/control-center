@@ -1,60 +1,55 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: 用 SCIM 预配用户
+description: 让你的 IdP 自动创建、更新和取消预配 Control Center 账户。
 slug: zh-CN/手册/操作指南/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+当你要掌握生命周期控制权时，请使用本指南——员工离职必须自动撤销访问权限，
+而不只是阻止其今后的登录。SCIM 正是 IdP（Okta、Entra ID 及其他）为此使用的
+推送协议。
 
-## Prerequisites
+## 前提条件
 
-- SSO already working (the [SSO tutorial](/zh-CN/手册/教程/sso) or the
-  [OIDC guide](/zh-CN/手册/操作指南/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO 已经可以正常工作（[SSO 教程](/zh-CN/手册/教程/sso) 或
+  [OIDC 指南](/zh-CN/手册/操作指南/sso-oidc)），
+- **一台 IdP 能通过 HTTPS 访问的服务器**——SCIM 调用来自 IdP，
+  而不是用户的浏览器。请使用内置隧道
+  （设置 → 服务器 → 连接与状态 → 共享此服务器 → Cloudflared/ngrok/Tailscale）或一个公共 URL。只能通过 WebSocket 中继
+  访问的服务器无法接收 SCIM 推送；在那里 JIT 预配仍然可用，但本指南不适用。
 
-## Steps
+## 步骤
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
-   `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
-   - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+1. 打开 **设置 → 服务器 → 单点登录** → **用户预配（SCIM）** 卡片。该卡片会显示
+   端点，例如 `https://<your-server>/scim/v2/Users`。
+2. 按 **生成 token**（如果已存在 token，则按 **重新生成 token**）——bearer
+   token 只会在对话框中显示一次，并会被复制到剪贴板。请把它保存到你的密码
+   管理器中；服务器只保留一份可进行常量时间验证的副本。
+3. 在你的 IdP 预配设置中，用以下内容启用 SCIM：
+   - **基础 URL**：上面的端点
+   - **身份验证**：`Authorization: Bearer <token>`
+   - **用户 ID**：`userName`（电子邮件）或 `externalId`——两者都能匹配
+4. 先用一个用户测试：从 IdP 推送该用户，确认其出现（SCIM 创建会把提供商的
+   `externalId` 固定到该账户上，与首次 SSO 登录所做的固定相同）。
 
-## What deprovisioning does
+## 取消预配会做什么
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+当 IdP 发送 `active: false`（或 `DELETE`）时，如果该账户是某个工作区的
+**所有者**，SCIM 会先拒绝（请先转移所有权）。否则：
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. 先撤销该账户的所有设备凭据——活动会话会在数秒内断开，
+2. 移除该账户在所有工作区中的成员资格，
+3. 把该账户标记为已停用（它再也无法登录，无论 IdP 之后说什么，直到被显式
+   重新激活为止）。
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+用户这一行本身会保留——工单、消息和提交上的归属是永久的。重新激活
+（SCIM `active: true`）会恢复登录，但**不会**恢复成员资格：那些需要新的邀请，
+或者登录时自动加入成员的策略。
 
-## Troubleshooting
+## 故障排查
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **每次调用都返回 401**——token 已更改；请重新生成并更新 IdP。
+- **端点无法访问**——隧道已断开，或者服务器只能经中继访问。SCIM 需要直连
+  HTTPS；JIT 则不受影响，仍可正常工作。
+- **推送组时报错（501）**——这是有意为之：组→角色映射在登录时依据 SAML/OIDC
+  的组属性完成，而不是依据推送的组。

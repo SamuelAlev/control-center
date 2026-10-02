@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Sneltoetsen
+description: Het volledige register van toetscombinaties, per scope, met de voorwaarden waaronder elke sneltoets afgaat.
 slug: nl-NL/handleiding/referentie/sneltoetsen
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Sneltoetsen komen uit één `const`-register, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Het bevat **48 bindings**. Instellingen → Jij → Sneltoetsen toont dat register als een **alleen-lezen naslagwerk**: er is geen UI om sneltoetsen opnieuw toe te wijzen, en er is geen bestand met gebruikerssneltoetsen.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+Hieronder is `Cmd` de primaire commandotoets — ⌘ op macOS, Ctrl op Windows en Linux. Een binding gaat alleen af wanneer het bijbehorende commando een geregistreerde handler heeft op het huidige scherm en de `when`-clausule ervan waar is; `!textInputFocus` betekent dat de toets in plaats daarvan wordt doorgegeven aan een tekstveld met focus.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Er is geen navigatiesneltoets met cijfertoetsen. Postvak in, tickets, pull requests en de rest bereik je via de zijbalk of ⌘K. Observability heeft ook geen sneltoets.
 
-## Global (19)
+## Globaal (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Scope `global`, dus ze zijn overal in de shell actief.
 
-### System
+### Systeem
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| Sneltoets                                   | Actie                                                         | Voorwaarde                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | Commandopalet                                                 | —                                                                                            |
+| `Shift + /` (`?`)                           | Sneltoetsenoverzicht                                          | Niet terwijl je in een veld typt                                                               |
+| `Cmd/Ctrl + Z`                              | Ongedaan maken                                                | Niet terwijl je in een veld typt (een veld met focus houdt zijn eigen ongedaanmaken bij)          |
+| `Cmd/Ctrl + Shift + Z`                      | Opnieuw                                                       | Niet terwijl je in een veld typt                                                               |
+| `Cmd/Ctrl + Shift + T`                      | Thema wisselen                                                | —                                                                                            |
+| `Cmd/Ctrl + ,`                              | Instellingen openen (komt uit op `/settings/you/appearance`)  | —                                                                                            |
+| `Cmd/Ctrl + Shift + Alt + F`                | Focusmodus wisselen                                           | —                                                                                            |
+| `Cmd/Ctrl + Shift + W`                      | Werkruimte-wisselaar wisselen                                 | —                                                                                            |
+| `Cmd/Ctrl + ]`                              | Volgende werkruimte                                           | —                                                                                            |
+| `Cmd/Ctrl + [`                              | Vorige werkruimte                                             | —                                                                                            |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Naar werkruimte 1–9 wisselen                                  | —                                                                                            |
 
-## Pull request list (3)
+## Pull request-lijst (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Scope `/pull-requests`. Ze vereisen allemaal `route == '/pull-requests'` en dat er geen tekstveld focus heeft, dus ze gaan niet af terwijl de PR-detailroute over de lijst heen openstaat.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Sneltoets | Actie            |
+| --------- | ---------------- |
+| `R`       | Vernieuwen       |
+| `Enter`   | PR openen        |
+| `F`       | Filtermenu openen |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) staat in het register en verschijnt in het sneltoetsenoverzicht, maar **het lijstscherm registreert er geen handler voor**, dus op dit moment gaat hij niet af. `F` opent het filtermenu (`pr.list-open-filter`), niet zoeken.
 
-## Pull request detail (2)
+## Pull request-detail (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Scope `/pull-requests/`. Vernieuwen vereist dat er geen tekstveld focus heeft. Tabblad sluiten heeft geen bescherming tegen tekstinvoer (een toetscombinatie met ⌘ is nooit platte tekst) en een routeregex, zodat hij niet afgaat in de lijst.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| Sneltoets      | Actie           | Voorwaarde                          |
+| -------------- | --------------- | ----------------------------------- |
+| `R`            | Vernieuwen      | Niet terwijl je in een veld typt      |
+| `Cmd/Ctrl + W` | Tabblad sluiten | Op een `/pull-requests/<…>`-locatie |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Tabbladen wisselen (`1`/`2`/`3`), een bestand als bekeken markeren of samenvouwen (`V`/`C`), de bestandenlijst (`T`) en zoeken in de diff (`Cmd/Ctrl + F`) vallen onder de eigen handler van de diff-viewer — zie [Sneltoetsen van de diff-viewer buiten het register](#sneltoetsen-van-de-diff-viewer-buiten-het-register).
 
-## Inbox (1)
+## Postvak in (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Sneltoets | Actie            |
+| --------- | ---------------- |
+| `F`       | Filtermenu openen |
 
-Requires `route == '/inbox'` and no focused text field.
+Vereist `route == '/inbox'` en dat er geen tekstveld focus heeft.
 
-## GitHub user and team profiles (3)
+## Profielen van GitHub-gebruikers en -teams (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Scope `/users/`. De `when`-clausule is een regex op `/users/<login>` **of** `/teams/<organization>/<slug>`, plus dat er geen tekstveld focus heeft.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Sneltoets      | Actie          |
+| -------------- | -------------- |
+| `R`            | Vernieuwen     |
+| `/`            | Zoeken focussen |
+| `Cmd/Ctrl + F` | Zoeken focussen |
 
-## Spaces (8)
+## Ruimtes (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Scope `/spaces`. De `when`-clausules gebruiken een regex, zodat ze zowel in de ruimtelijst (`/spaces`) als in een geselecteerde ruimte (`/spaces/<id>`) afgaan.
 
-| Shortcut               | Action                 | Condition             |
+| Sneltoets              | Actie                  | Voorwaarde            |
 | ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| `Enter`                | Bericht versturen      | —                     |
+| `Cmd/Ctrl + N`         | Nieuwe ruimte          | Op een `/spaces`-route |
+| `J`                    | Volgende ruimte        | Niet terwijl je in een veld typt |
+| `K`                    | Vorige ruimte          | Niet terwijl je in een veld typt |
+| `Cmd/Ctrl + Shift + D` | Druk om te spreken (dicteren) | —              |
+| `Cmd/Ctrl + T`         | Editortabblad openen   | Op een `/spaces`-route |
+| `Cmd/Ctrl + W`         | Editortabblad sluiten  | Op een `/spaces`-route |
+| `Cmd/Ctrl + B`         | Editor-zijbalk wisselen | Op een `/spaces`-route |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Verzenden met Enter valt onder het tekstveld van de composer; druk-om-te-spreken valt onder de microfoonknop van de composer (met een eigen handler voor een hardwaretoetsenbord). Beide staan in het register vermeld voor het instellingenoverzicht.
 
-## Workspace picker (2)
+## Werkruimtekiezer (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Scope `/workspaces`, alleen actief in de kiezer zelf.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Sneltoets      | Actie                       |
+| -------------- | --------------------------- |
+| `Cmd/Ctrl + N` | Nieuwe werkruimte           |
+| `Enter`        | Geselecteerde werkruimte openen |
 
-`Enter` requires no focused text field.
+`Enter` vereist dat er geen tekstveld focus heeft.
 
-## Settings (5)
+## Instellingen (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Sneltoets      | Actie                    | Scherm                              |
+| -------------- | ------------------------ | ----------------------------------- |
+| `J`            | Volgende instellingenpagina | Elke `/settings`-route, niet terwijl je typt |
+| `K`            | Vorige instellingenpagina | Elke `/settings`-route, niet terwijl je typt |
+| `Cmd/Ctrl + N` | Nieuwe agent             | Instellingen → Werkruimte → Agenten |
+| `Cmd/Ctrl + N` | Repository toevoegen     | Instellingen → Werkruimte → Repository's |
+| `R`            | Opnieuw scannen naar adapters | Instellingen → Server → Modelaanbieders |
 
-## Newsfeed (5)
+## Nieuwsfeed (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Scope `/newsfeed`. Ze vereisen allemaal `route == '/newsfeed'` en dat er geen tekstveld focus heeft.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Sneltoets | Actie               |
+| --------- | ------------------- |
+| `J`       | Volgend artikel     |
+| `K`       | Vorig artikel       |
+| `Enter`   | Artikel openen      |
+| `S`       | Bladwijzer aan- of uitzetten |
+| `R`       | Feeds vernieuwen    |
 
-## Diff viewer keys outside the registry
+## Sneltoetsen van de diff-viewer buiten het register
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+De PR-diff-viewer handelt deze zelf af (`PrDiffKeyboardHandler`). Zoeken/bekeken/samenvouwen staan alleen in de commentaren van het register vermeld voor het instellingenoverzicht — er is geen dispatcher-handler geregistreerd, dus de dispatcher laat ze aan de diff-weergave. Ze verschijnen niet als eigen rijen in het sneltoetsenoverzicht.
 
-| Shortcut        | Action                                               |
+| Sneltoets       | Actie                                                |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | Zoeken in diff                                       |
+| `J` / `K`       | Volgend / vorig bestand                              |
+| `V`             | Bekeken-markering aan- of uitzetten op het bestand met focus |
+| `C`             | Samenvouwen aan- of uitzetten op het bestand met focus |
+| `T`             | Bestandenlijst tonen                                 |
+| `Enter`         | Volgend zoekresultaat (alleen terwijl zoeken-in-diff open is) |
+| `Shift + Enter` | Vorig zoekresultaat                                  |
+| `Escape`        | Zoeken-in-diff sluiten, of de tekstselectie in de diff wissen |
+| `Cmd/Ctrl + C`  | De diff-selectie kopiëren                            |
 
-## Browser-reserved combinations
+## Door de browser gereserveerde combinaties
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+In de webbuild verbruikt de browser sommige acceleratoren voordat de pagina ze ziet, dus de bijbehorende bindings kunnen daar nooit afgaan. Op de desktop werken ze normaal. Gereserveerd in combinatie met de primaire commandotoets: `T`, `W`, `N` en de cijfers `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Dat geldt voor wisselen tussen werkruimtes met `Cmd/Ctrl + Alt + 1`–`9`, voor `Cmd/Ctrl + N` (nieuwe ruimte, nieuwe werkruimte, nieuwe agent, repository toevoegen) en voor `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in ruimtes en PR-detail.
 
-## See also
+## Zie ook
 
-- [Route map](/nl-NL/handleiding/referentie/routekaart/)
-- [Focus mode](/nl-NL/handleiding/gidsen/focusmodus/)
+- [Routekaart](/nl-NL/handleiding/referentie/routekaart/)
+- [Focusmodus](/nl-NL/handleiding/gidsen/focusmodus/)

@@ -1,162 +1,165 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: بیک اپ اور بحالی
+description: انسٹال کا اسنیپ شاٹ لیں، ایک ورک اسپیس کو مشینوں کے درمیان منتقل کریں، ایک ورک اسپیس یا سبھی بحال کریں، اور کاپیاں کہیں اور محفوظ رکھیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/).
+یہ گائیڈ اُن پانچ کاموں کا احاطہ کرتی ہے جو لوگ بیک اپ کے ساتھ واقعتاً کرتے ہیں: ایک
+لینا، اُسے جمع کرنا، ایک ورک اسپیس منتقل کرنا، ایک واپس رکھنا، اور کاپیاں مشین سے
+باہر رکھنا۔ ہر آرٹیفیکٹ اور عمل کی درست شکل کے لیے
+[بیک اپ حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/) دیکھیں۔
 
-Everything here lives at **Settings → Server → Backup & restore**.
+یہاں کا سب کچھ **ترتیبات → سرور → بیک اپ اور بحالی** پر رہتا ہے۔
 
-## Prerequisites
+## پیشگی شرائط
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- ایک **مکمل کلائنٹ** — ڈیسک ٹاپ یا ویب ایپ۔ ایک پیئر شدہ فون اِس میں سے کچھ بھی شروع نہیں کر سکتا، ڈیزائن کے مطابق۔
+- کسی **انسٹال اسنیپ شاٹ** کو لینے، فہرست بنانے، ڈاؤن لوڈ یا حذف کرنے کے لیے: انسٹال کا **مالک**۔
+- فی ورک اسپیس کارروائیوں کے لیے: ایکسپورٹ کے لیے اُس ورک اسپیس کا **ایڈمن**، امپورٹ یا حذف کے لیے **مالک**۔
+- ڈاؤن لوڈ اور اپ لوڈ کے لیے: سرور سے **براہِ راست** کنکشن۔ بروکر شدہ ریلے RPC فریم لے جاتا ہے، فائل ٹرانسفر نہیں، اور جب آپ اُس پر ہوں تو ٹرانسفر کنٹرولز ایک نوٹ کے ساتھ خود کو غیر فعال کر دیتے ہیں۔
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[انسٹال اسنیپ شاٹس دستی ہیں]
+**اب بیک اپ لیں** تب بھی پورے انسٹال کا اسنیپ شاٹ صرف درخواست پر بناتا ہے۔ بلٹ اِن
+**Workspace backup** پائپ لائن اِس کے بجائے ہفتے میں ایک بار ورک اسپیس کے ڈیٹا بیس کا
+بیک اپ لے سکتی ہے اور اُس ورک اسپیس کے 30 دن سے پرانے بیک اپس ہٹا سکتی ہے۔ یہ `global.db`،
+دوسرے ورک اسپیسز، یا ڈیٹا بیس کے ساتھ والی فائلیں کاپی نہیں کرتی۔ مشین سے باہر کی
+کاپیاں الگ رکھیں۔
 :::
 
-## What a backup covers
+## ایک بیک اپ کس چیز کا احاطہ کرتا ہے
 
-Both artifacts are **databases only**:
+دونوں آرٹیفیکٹس **صرف ڈیٹا بیس** ہیں:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- ایک **انسٹال اسنیپ شاٹ** ایک ٹائم اسٹیمپ والی ڈائریکٹری ہے: `manifest.json`، `global.db` اور فی ورک اسپیس ایک `<workspaceId>/workspace.db`۔
+- ایک **ورک اسپیس ایکسپورٹ** وہی واحد `workspace.db` فائل ہے۔
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+دونوں میں سے کوئی بھی ڈیٹا ڈائریکٹری کا باقی حصہ نہیں لے جاتا: `secrets.json` (پیئرنگ
+کلیدیں، فراہم کنندہ کریڈینشل، SSO)، کسی ورک اسپیس کے `blobs/` (پیغامات میں پیسٹ شدہ
+تصاویر)، `skills/`، `agents/`، `chat_credentials/`، ریکارڈ شدہ میٹنگ آڈیو یا رگ تصاویر۔
+اِس میں سے کچھ قابلِ ضیاع ہے اور کچھ نہیں — [مکمل جدول حوالہ میں ہے](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#what-a-backup-does-not-contain)،
+اور اِس کا احاطہ کرنا ہی [مشین سے باہر والے حصے](#بیک-اپس-مشین-سے-باہر-کاپی-کریں) کا مقصد ہے۔
 
-## Take a snapshot of the whole install
+## پورے انسٹال کا اسنیپ شاٹ لیں
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. **ترتیبات → سرور → بیک اپ اور بحالی** کھولیں۔
+2. **انسٹال اسنیپ شاٹس** کے تحت **اب بیک اپ لیں** دبائیں۔
+3. ٹوسٹ اُس ڈائریکٹری کا نام لیتا ہے جو سرور ہوسٹ پر لکھی گئی۔ نیا اسنیپ شاٹ فہرست کے اوپر ظاہر ہوتا ہے۔
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+سرور دورانِ عمل چلتا رہتا ہے۔ ہر فائل `VACUUM INTO` سے لکھی جاتی ہے، جو ایک فعال ڈیٹا
+بیس کے خلاف مطابقت رکھتی ہے، لہٰذا نہ کوئی مینٹیننس ونڈو درکار ہے اور نہ ایجنٹس روکنے
+کی ضرورت۔
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+فہرست کی ہر قطار ٹائم اسٹیمپ، ڈسک پر سائز، کتنے ورک اسپیسز کیپچر ہوئے، اور یہ کہ اسنیپ
+شاٹ **مکمل** ہے یا **نامکمل**، دکھاتی ہے۔ نامکمل کا مطلب ہے کہ مانی فیسٹ غائب ہے یا ایسی
+فائلوں کے نام لیتا ہے جو وہاں نہیں — کوئی ایسا بیک اپ جو کریش یا بھری ڈسک کی وجہ سے رک
+گیا۔ ایسے اسنیپ شاٹس جان بوجھ کر فہرست میں رہتے ہیں: جو اسنیپ شاٹ آپ دیکھ نہیں سکتے وہ
+وہی ہے جس کے بارے میں آپ سمجھتے ہیں کہ آپ کے پاس ہے۔ ایک نامکمل اسنیپ شاٹ پورا انسٹال
+بحال نہیں کر سکتا، مگر اُس میں موجود ورک اسپیس فائلیں پھر بھی ایک ایک کر کے اپنائی جا
+سکتی ہیں۔
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+ایک قطار یہ بھی کہہ سکتی ہے کہ **_n_ ورک اسپیسز کیپچر نہیں ہوئے**۔ یہ کوئی ایسا ورک
+اسپیس ہے جو رجسٹر ہے مگر اُس میں کبھی لکھا نہیں گیا (ابھی کوئی فائل نہیں)، یا وہ جس کی
+کاپی ناکام ہوئی — سرور لاگ دیکھیں۔
 
-## Schedule workspace backups and retention
+## ورک اسپیس بیک اپس اور رٹینشن شیڈول کریں
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+ورک اسپیس کے لیے **ترتیبات → پائپ لائنز → پائپ لائن ٹیمپلیٹس** کھولیں اور
+**Workspace backup** تلاش کریں۔ اُس کا فعال شیڈول ہر اتوار 03:00 UTC پر چلتا ہے:
+**Back up workspace**، جس کے بعد **Delete backups older than** (ڈیفالٹ میں 30 دن)۔ دوسرا
+نوڈ صرف بیک اپ کامیاب ہونے کے بعد چلتا ہے۔ آپ نوڈ پر رٹینشن کے دن بدل سکتے ہیں یا شیڈول
+غیر فعال کر سکتے ہیں۔ اگر شیڈول کے وقت سرور آف لائن ہو تو واپس آنے پر شیڈول ایک بار اپنی
+بھرپائی کرتا ہے، بجائے اِس کے کہ ہر ضائع شدہ ہفتہ دوبارہ چلائے۔
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+ورک اسپیس بیک اپس سرور پر
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` کے تحت رہتے ہیں۔
+رٹینشن نوڈ صرف اِس ورک اسپیس کے پرانے بیک اپس حذف کرتا ہے؛ یہ کبھی انسٹال اسنیپ شاٹس یا
+دوسرے ورک اسپیسز کے بیک اپس حذف نہیں کرتا۔ یہ فائلیں صرف ڈیٹا بیس پر مشتمل ہیں۔ مشین سے
+باہر رٹینشن کے لیے اِنہیں الگ کاپی کریں۔
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+یہ بیک اپس **انسٹال اسنیپ شاٹس** فہرست سے الگ ہیں۔ کوئی ایک بحال کرنے کے لیے بیک اپ کے
+سرور کی طرف کے `workspace.db` پاتھ کے ساتھ **ورک اسپیس ڈیٹا → درآمد** استعمال کریں۔
+درآمد اُس ورک اسپیس کا موجودہ ڈیٹا بیس بدل دیتا ہے، لہٰذا اگر بحالی واپس کرنے کی ضرورت
+پڑ سکتی ہو تو پہلے اُسے ایکسپورٹ کریں۔
 
-## Delete an install snapshot
+## انسٹال اسنیپ شاٹ حذف کریں
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+**انسٹال اسنیپ شاٹس** کے تحت اسنیپ شاٹ پھیلائیں، بشمول نامکمل، اور خطرے والے سیکشن میں
+**اسنیپ شاٹ حذف کریں** استعمال کریں۔ اُس کا نام کنفرم کریں۔ پوری اسنیپ شاٹ ڈائریکٹری
+سرور سے مستقل طور پر ہٹ جاتی ہے؛ اگر کاپی درکار ہو تو پہلے اُسے ڈاؤن لوڈ کریں۔ ورک اسپیس
+بیک اپ پائپ لائن اِن اسنیپ شاٹس کو کبھی حذف نہیں کرتی۔
 
-## Collect a copy on your own machine
+## اپنی مشین پر ایک کاپی جمع کریں
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+صفحہ جو پاتھ دکھاتا ہے وہ اُس مشین پر ہیں جو `cc_server` چلا رہی ہے۔ جب وہ مشین وہ نہ ہو
+جس پر آپ بیٹھے ہیں، تو **ڈاؤن لوڈ** بٹن استعمال کریں:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- **ورک اسپیس ڈیٹا** کے تحت ہر **ورک اسپیس** کے ساتھ → **ڈاؤن لوڈ**، ایک `.db` فائل کے لیے۔
+- **انسٹال اسنیپ شاٹس** کے تحت ہر **اسنیپ شاٹ** کے ساتھ → **ڈاؤن لوڈ**، پورے اسنیپ شاٹ کے `.zip` کے لیے۔
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+ڈیسک ٹاپ پر آپ چنتے ہیں کہ فائل کہاں اُترے اور ٹوسٹ اُس کا نام لیتا ہے؛ ویب پر یہ براؤزر
+کے ڈاؤن لوڈز میں جاتی ہے۔ دونوں صورتوں میں پیش رفت بائٹس میں بتائی جاتی ہے، کیونکہ یہ وہ
+دو پے لوڈ ہیں جو گیگا بائٹس تک پہنچتے ہیں۔
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+دونوں بٹن دبانے کے لمحے ایک تازہ کاپی بناتے ہیں، اُسے سٹریم کرتے ہیں، اور بعد میں سرور
+کی کاپی حذف کر دیتے ہیں — ڈاؤن لوڈ کا مطلب „ایکسپورٹ بٹن سے پہلے بنائی گئی فائل لے آنا“
+نہیں ہے۔
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+اسنیپ شاٹ آرکائیو unzip کرنے سے اسنیپ شاٹ کی ترتیب بالکل ویسی ہی بن جاتی ہے، اور یہی چیز
+اُس کی بحالی کو ایک واپسی کاپی بنا دیتی ہے۔
 
-## Move a workspace to another install
+## ورک اسپیس کو دوسرے انسٹال پر منتقل کریں
 
-One workspace is one database file, so handing it over is a file operation.
+ایک ورک اسپیس ایک ڈیٹا بیس فائل ہے، لہٰذا اُسے حوالے کرنا ایک فائل آپریشن ہے۔
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. **ماخذ** سرور پر، **ترتیبات → سرور → بیک اپ اور بحالی → ورک اسپیس ڈیٹا**، ورک اسپیس پھیلائیں اور **ڈاؤن لوڈ** دبائیں۔
+2. **منزل** سرور پر، وہ ورک اسپیس بنائیں (یا چنیں) جو اُسے وصول کرے گی۔
+3. اُس ورک اسپیس کو پھیلائیں، اور **اس ڈیوائس سے بحال کریں** کے تحت **فائل منتخب کریں اور اپ لوڈ کریں** دبائیں۔ جو `.db` آپ نے ڈاؤن لوڈ کی تھی اُسے چنیں۔
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+اگر دونوں سرور وہی مشین ہوں جس پر آپ بیٹھے ہیں، تو **سرور پر محفوظ کریں** کے ساتھ
+**درآمد** → **فائل منتخب کریں** بغیر چکر کے وہی کام کرتا ہے؛ درآمد ڈائیلاگ کے پاتھ سرور
+ہوسٹ پر حل ہوتے ہیں۔
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[درآمد سب کچھ بدل دیتا ہے]
+درآمد ٹارگٹ ورک اسپیس کا موجودہ سارا مواد اوور رائٹ کر دیتا ہے، اور اُسے واپس نہیں کیا جا
+سکتا۔ اگر ٹارگٹ میں کوئی ایسی چیز ہو جو آپ واپس چاہ سکتے ہوں تو پہلے اُسے ایکسپورٹ کریں۔
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+دو چیزیں رد کرنے کے بجائے اجازت یافتہ اور لاگ شدہ ہیں: ایسی فائل امپورٹ کرنا جس کا ریکارڈ
+شدہ ورک اسپیس id ٹارگٹ سے مختلف ہو (یہی طریقہ ہے کسی ورک اسپیس کی ڈپلیکیٹ بنانے یا اُسے
+نئی id کے تحت بحال کرنے کا)، اور کسی **مختلف انسٹال** سے فائل امپورٹ کرنا۔ دوسری صورت میں
+فائل کے پیئر شدہ ڈیوائسز اور یوزر id اُس انسٹال سے تعلق رکھتے ہیں جہاں سے وہ آیا اور اِس پر
+حل نہیں ہوں گے — ورک اسپیس کا اپنا ڈیٹا برقرار رہتا ہے، مگر اپنانے کے بعد ممبرشپ دوبارہ
+چیک کریں۔
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+چیٹ بوٹ ٹوکن ڈیٹا بیس کے ساتھ، اُس کے اندر نہیں رہتے، لہٰذا جو ورک اسپیس آپ کسی اور کو
+دیتے ہیں اُس میں کوئی فعال کریڈینشل نہیں ہوتا۔ وصول کرنے والا انسٹال اپنے والے دوبارہ جوڑ
+لیتا ہے۔
 
-## Restore one workspace from a snapshot
+## اسنیپ شاٹ سے ایک ورک اسپیس بحال کریں
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. **انسٹال اسنیپ شاٹس** کے تحت وہ اسنیپ شاٹ پھیلائیں جو آپ چاہتے ہیں۔
+2. ورک اسپیس کی قطار تلاش کریں اور **بحال کریں** دبائیں۔
+3. کنفرم کریں۔ اسنیپ شاٹ لیے جانے کے بعد سے اُس ورک اسپیس کا کیا ہوا سب کچھ ضائع ہو جاتا ہے۔
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+یہ وہی عمل ہے جو ایک امپورٹ ہے، جو اُس ورک اسپیس کی فائل کی اسنیپ شاٹ میں موجود کاپی پر
+لگایا گیا ہو — جان بوجھ کر، تاکہ کوئی دوسرا میکانزم نہ ہو جو اُسی فائل کے ساتھ مختلف سلوک
+کر سکے۔
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+ایک قطار یہ بھی کہہ سکتی ہے کہ **اب اس سرور پر نہیں**، اور **بحال کریں** غیر فعال ہوتا ہے:
+اسنیپ شاٹ میں کوئی ایسا ورک اسپیس ہے جو اِس انسٹال کے پاس اب نہیں۔ اُسے ہاتھ سے واپس
+لائیں — ایک ورک اسپیس بنائیں، پھر **ورک اسپیس ڈیٹا** کے تحت
+`<snapshot path>/<old workspace id>/workspace.db` سے اُس میں امپورٹ کریں۔ پھیلا ہوا اسنیپ
+شاٹ اپنا **سرور پر پاتھ** ایک کاپی فیلڈ میں دکھاتا ہے، اور قطار کا عنوان پرانی ورک اسپیس
+id ہوتا ہے، لہٰذا اُس پاتھ کے دونوں حصے آپ کے سامنے ہوتے ہیں۔
 
-## Restore a whole install
+## پورا انسٹال بحال کریں
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+اِس کے لیے کوئی بٹن نہیں، اور ہونا بھی نہیں چاہیے: یہ اُن ڈیٹا بیسز کو بدل دیتا ہے جو
+چلتا ہوا سرور کھولے ہوئے ہے۔
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **`cc_server` روکیں۔** اگر آپ ڈیسک ٹاپ ایپ اُس کے ایمبیڈڈ سرور کے ساتھ چلاتے ہیں تو ایپ بند کر دیں۔
+2. اسنیپ شاٹ کا مواد ڈیٹا ڈائریکٹری پر کاپی کریں۔ اسنیپ شاٹ کی ترتیب فعال والی کی عکاسی کرتی ہے، لہٰذا یہ ایک سادہ کاپی ہے:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +174,24 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. جو ڈیٹا بیسز آپ نے بدلے اُن کے ساتھ بیٹھی کوئی بھی `-wal` اور `-shm` فائلیں حذف کریں۔ وہ پرانی فائلوں سے تعلق رکھتی ہیں، اور بحال شدہ ڈیٹا بیس کے ساتھ کوئی پرانی فائل رہ جانا خرابی کا خطرہ ہے۔
+4. سرور دوبارہ شروع کریں۔
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+اسنیپ شاٹ میں کوئی `secrets.json` نہیں ہوتا، لہٰذا کسی **نئی** ہوسٹ پر بحال کیا گیا انسٹال
+اپنا ڈیٹا رکھتا ہے مگر اپنے کریڈینشل نہیں: پیئر شدہ ڈیوائسز، فراہم کنندہ ٹوکن اور SSO
+سیٹنگز دوبارہ قائم کرنی ہوں گی، یا جہاں بھی آپ نے وہ فائل رکھی تھی وہاں سے بحال کرنی ہوں
+گی۔ اُسی ہوسٹ پر بحالی، جہاں `secrets.json` کبھی ضائع نہیں ہوا، سب کچھ برقرار رکھتی ہے۔
 
-## Copy backups off the machine
+## بیک اپس مشین سے باہر کاپی کریں
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+جس ڈیٹا بیس کی اُس نے کاپی بنائی اُسی ڈسک پر موجود اسنیپ شاٹ آپ کو خراب امپورٹ سے بچاتا
+ہے، ڈسک سے نہیں۔ Control Center میں کچھ بھی کہیں کاپی نہیں بھیجتا، لہٰذا یہ حصہ آپ کا ہے۔
 
-### Sync the snapshots
+### اسنیپ شاٹس سنک کریں
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+اسنیپ شاٹس ایک بار لکھنے کے بعد ناقابلِ تبدیل ہوتے ہیں اور ٹائم اسٹیمپ سے نامزد ہوتے ہیں،
+لہٰذا کوئی بھی سنک ٹول اُنہیں بخوبی سنبھال لیتا ہے۔ `transfer/` کو خارج کریں، جو زیرِ عمل
+ڈاؤن لوڈز اور اپ لوڈز کا ورک بینچ ہے:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +208,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` آپ کی مقامی pruning کو ریموٹ پر بھی اتار دیتا ہے۔ اگر آپ چاہتے ہیں کہ ریموٹ
+اسنیپ شاٹس کو ہوسٹ سے زیادہ عرصہ رکھے تو اُسے چھوڑ دیں۔
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[فعال ڈیٹا بیسز کو کبھی براہِ راست سنک نہ کریں]
+جب سرور چل رہا ہو تو rsync، `aws s3 sync` یا کسی فائل لیول بیک اپ ایجنٹ کو `global.db`
+یا `<workspaceId>/workspace.db` کی طرف نہ لگائیں۔ فعال SQLite ڈیٹا بیس کے ساتھ ایک `-wal`
+سائیڈ کار ہوتا ہے، اور فائل بہ فائل کاپی دونوں کو مختلف لمحات پر پکڑ لیتی ہے — نتیجہ ایسی
+فائل ہوتی ہے جو اکثر کھلتی ہے مگر خاموشی سے حالیہ تحریریں گم ہوتی ہیں، یا بالکل ہی نہیں
+کھلتی۔ **اسنیپ شاٹ** کاپی کریں، جو ایک ریڈ ٹرانزیکشن کے تحت لکھا گیا تھا، یا نیچے کی طرح
+`VACUUM INTO` سے ایک بنائیں۔
 :::
 
-### Include what a snapshot leaves out
+### اسنیپ شاٹ جو چھوڑ دیتا ہے وہ بھی شامل کریں
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+انسٹال کو صرف اُس کے ڈیٹا کے بجائے دوبارہ تعمیر کر سکنے کے لیے، یہ بھی کاپی کریں۔ یہ عام
+فائلیں ہیں، سرور چلتے ہوئے کاپی کرنا محفوظ ہے:
 
 ```bash
 rsync -a \
@@ -234,20 +238,21 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` کا موڈ `0600` ہے اور اُس میں انسٹال کی ہر پیئرنگ کلید، فراہم کنندہ کریڈینشل
+اور SSO سیٹنگ ہوتی ہے۔ جہاں بھی یہ اُترے، وہاں اُسے کم از کم سرور ہوسٹ جیسی حفاظت ہونی
+چاہیے — rest میں encrypted، اور ایسی bucket نہیں جسے کوئی اور پڑھ سکے۔
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+`spaces/` (کاپی آن رائٹ ورک ٹریز، جو آپ کے ریپوز سے دوبارہ فراہم کیے جاتے ہیں)، `pr_clones/`
+(ایک کیش)، `models/` (دوبارہ ڈاؤن لوڈ شدہ)، `media_cache/` اور `rigs/` (مشین اسٹیٹ، اور
+بڑی) چھوڑ دیں۔ `meetings/` کے تحت ریکارڈ شدہ میٹنگ آڈیو شامل کرنے کے قابل ہے اگر آپ
+میٹنگز رکھتے ہیں۔
 
-### Schedule a whole-install snapshot outside the app
+### ایپ سے باہر پورے انسٹال کے اسنیپ شاٹ کا شیڈول بنائیں
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+بلٹ اِن پائپ لائن صرف ایک ورک اسپیس کا بیک اپ لیتی ہے۔ بغیر نگرانی **پورے انسٹال** کے اسنیپ
+شاٹ کے لیے کوئی CLI سب کمانڈ نہیں، اور اسنیپ شاٹ RPC کے لیے ایک پیئر شدہ مکمل کلائنٹ
+درکار ہے جو انسٹال کا مالک ہو۔ ایک ہوسٹ سائیڈ ٹائمر فعال ڈیٹا بیسز کے خلاف `VACUUM INTO`
+استعمال کر سکتا ہے:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +271,18 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+اِسے اُسی صارف کے طور پر چلائیں جو ڈیٹا ڈائریکٹری کا مالک ہے، cron یا systemd ٹائمر سے،
+اور بعد میں `DEST` کو ہوسٹ سے باہر سنک کریں۔ `VACUUM INTO` کے لیے SQLite 3.27 یا نیا درکار
+ہے۔
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+اِسے `<dataDir>/backups/` کے **باہر** لکھیں۔ وہاں ہاتھ سے بنی ڈائریکٹری میں کوئی
+`manifest.json` نہیں ہوتا، لہٰذا ایپ اُسے نامکمل اسنیپ شاٹ کے طور پر فہرست کرے گی اور
+فہرست وہ دیانتدار ریکارڈ ہونا چھوڑ دے گی جو خود سرور نے بنایا۔
 
-### Prune old whole-install snapshots
+### پرانے پورے انسٹال اسنیپ شاٹس ہٹائیں
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+آپ ایپ میں انفرادی انسٹال اسنیپ شاٹس حذف کر سکتے ہیں۔ ہوسٹ سائیڈ رٹینشن پالیسی کے لیے،
+ورک اسپیس بیک اپ ڈائریکٹری کو انسٹال اسنیپ شاٹس سے الگ رکھیں:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +290,49 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+`-exec` شامل کرنے سے پہلے `-print` والی run کی آؤٹ پٹ چیک کریں۔ ایک سے زیادہ رکھیں: جس
+ناکامی سے آپ بچ رہے ہیں وہ اکثر یہ ہوتی ہے کہ ”آخری بیک اپ میں بھی وہی مسئلہ ہے“۔
 
-## Check that a backup is good
+## جانچیں کہ بیک اپ درست ہے
 
-A backup nobody has restored is a hypothesis.
+جو بیک اپ کسی نے بحال نہ کیا ہو وہ محض ایک مفروضہ ہے۔
 
-Cheap check — the file opens and its pages are intact:
+سستا چیک — فائل کھلتی ہے اور اُس کے صفحات برقرار ہیں:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+اصل چیک — اُسے اپنائیں۔ نان پروڈکشن انسٹال پر ایک عارضی ورک اسپیس بنائیں، اُس میں ایک
+ورک اسپیس فائل امپورٹ کریں، اور دیکھیں کہ جتنے اسپیسز، ٹکٹس اور پیغامات آپ توقع کرتے ہیں
+وہ موجود ہیں۔ یہ وہی راستہ چلاتا ہے جو ایک حقیقی بحالی لیتی ہے، بشمول FTS ری بلڈ، اور یہ
+واحد چیک ہے جو بتاتا ہے کہ بیک اپ بحال ہو سکنے والا ہے، نہ کہ محض پڑھنے کے قابل۔
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+یہ ایک بار اُس وقت کریں جب آپ بیک اپس سیٹ اپ کریں، اور پھر جب بھی آپ اُن کے محفوظ ہونے کی
+جگہ بدلیں۔
 
-## Troubleshooting
+## مسائل کا حل
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| علامت                                                                  | وجہ اور حل                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| ڈاؤن لوڈ اور اپ لوڈ کنٹرولز ریلے کے بارے میں نوٹ کے ساتھ غیر فعال ہیں      | آپ بروکر شدہ ریلے کے ذریعے منسلک ہیں، جو کوئی فائل ٹرانسفر نہیں لے جاتا۔ براہِ راست منسلک ہوں                          |
+| ”سرور نے انکار کیا“                                                     | کردار۔ انسٹال اسنیپ شاٹ لینے یا فہرست بنانے کے لیے انسٹال کا آپریٹر چاہیے۔ ورک اسپیس ڈاؤن لوڈ کرنے کے لیے ایڈمن، ایک بحال کرنے کے لیے مالک، پورا اسنیپ شاٹ zip کے لیے انسٹال کا آپریٹر چاہیے |
+| ”اس سرور پر بیک اپ سطح نہیں“                                             | اِس ہوسٹ پر کوئی بیک اپ پورٹ وائرڈ نہیں — ایک ڈیمو سرور۔ آپریشنز رد کرنے کے بجائے غائب ہیں                          |
+| ”فائل سرور کی قبول حد سے بڑی ہے“                                         | اپ لوڈز کی حد 8 GiB ہے۔ فائل کو سرور ہوسٹ پر رکھیں اور اِس کے بجائے **درآمد** → **فائل منتخب کریں** استعمال کریں                 |
+| امپورٹ مسترد: یہ Control Center ورک اسپیس ڈیٹا بیس نہیں                   | فائل میں کوئی `workspace_meta` قطار نہیں — یہ ورک اسپیس ایکسپورٹ نہیں، یا کٹی ہوئی ہے۔ کچھ بھی نہیں بدلا گیا             |
+| ایک اسنیپ شاٹ **نامکمل** فہرست ہے                                         | اُس کا مانی فیسٹ غائب ہے یا غائب فائلوں کے نام لیتا ہے۔ ایک تازہ لیں؛ اُس دوران اُس سے انفرادی ورک اسپیس فائلیں اپنائیں |
+| ایک اسنیپ شاٹ کہتا ہے کہ ورک اسپیسز کیپچر نہیں ہوئے                        | اُن ورک اسپیسز میں کبھی لکھا ہی نہیں گیا، یا اُن کی کاپی ناکام ہوئی۔ سرور لاگ دیکھیں                                  |
+| بحال شدہ انسٹال میں کوئی کوڈ ہوسٹ یا SSO کریڈینشل نہیں                    | `secrets.json` کسی اسنیپ شاٹ میں نہیں ہوتا۔ اُسے جہاں رکھا تھا وہاں سے بحال کریں، یا فراہم کنندگان دوبارہ منسلک کر دیں                     |
+| بحال شدہ ورک اسپیس میں پیسٹ کی گئی تصاویر غائب ہیں                        | blobs ڈیٹا بیس کے ساتھ، اُس کے اندر نہیں رہتے۔ `<workspaceId>/blobs/` بھی ساتھ کاپی کریں                                     |
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a headless server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): where the data directory comes from
-- [Connect to a remote server](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): direct versus relayed connections
-- [Pair a device](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): the credential the transfer routes sign with
+- [ہیڈلیس سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ہیڈلیس-سرور-چلائیں/): ڈیٹا ڈائریکٹری کہاں سے آتی ہے
+- [ریموٹ سرور سے جڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریموٹ-سرور-سے-جڑیں/): براہِ راست بمقابلہ ریلے شدہ کنکشنز
+- [ڈیوائس پیئر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ڈیوائس-پیئر-کریں/): وہ کریڈینشل جس سے ٹرانسفر روٹس سائن کرتے ہیں
 
-## Related concepts and reference
+## متعلقہ تصورات اور حوالہ
 
-- [Backup, export and import](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/): every operation, route, field and limit
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): why one workspace is one file
-- [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/): the data directory layout
+- [بیک اپ، ایکسپورٹ اور امپورٹ](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/): ہر آپریشن، روٹ، فیلڈ اور حد
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): ایک ورک اسپیس ایک فائل کیوں ہے
+- [`cc_server` CLI](/ur-PK/ہدایت-نامہ/حوالہ/cc-server-cli/): ڈیٹا ڈائریکٹری کی ترتیب

@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: เวิร์กสเปซแรกของคุณ
+description: สร้างเวิร์กสเปซ ลงทะเบียนรีโปเข้าไป แล้วดูขอบเขตการแยกด้วยตัวคุณเอง
 slug: th-TH/คู่มือ/บทสอน/เวิร์กสเปซแรก
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## สิ่งที่คุณจะสร้าง
 
-By the end of this tutorial, you will have:
+เมื่อจบบทสอนนี้ คุณจะมี:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- เวิร์กสเปซที่ตั้งชื่อตามโปรเจกต์ของคุณ
+- รีโพสิทอรี Git ที่ลงทะเบียนเข้าไปแล้ว
+- เอเจนต์ที่ถูก seed ห้าตัว โดยตัวหนึ่งคุณตั้งค่าไว้จนรันได้
+- เวิร์กสเปซที่สองที่ว่างเปล่า ซึ่งพิสูจน์ขอบเขตการแยก
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+การเริ่มต้นใช้งานได้สร้างเวิร์กสเปซให้คุณแล้ว บทสอนนี้สร้างเวิร์กสเปซใหม่ขึ้นมาโดยเจตนา เพื่อให้คุณเห็นทุกส่วนของกระบวนการ
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+ก่อนเริ่ม เลือกเช็กเอาต์ Git ที่เข้าเงื่อนไขทั้งสามข้อนี้ — ขั้นตอนการลงทะเบียนจะปฏิเสธสิ่งอื่นใด:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- มันอยู่ภายใน git work tree
+- มันมี remote `origin`
+- remote นั้นชี้ไปที่ github.com, gitlab.com หรือ bitbucket.org
 
-## Step 1: Create a workspace
+## ขั้นตอนที่ 1: สร้างเวิร์กสเปซ
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. คลิกชิปเวิร์กสเปซบนแถบชื่อเรื่อง
+2. เลือก **เพิ่มเวิร์กสเปซ…**
+3. ใส่ชื่อที่ระบุโปรเจกต์ เช่น "api-service" หรือ "frontend-v2"
+4. เลือกโลโก้ได้ตามต้องการ
+5. คลิก **เพิ่มเวิร์กสเปซ**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center สลับไปยังเวิร์กสเปซใหม่และพาคุณไปยังกล่องขาเข้าของมัน (`/workspaces/<id>/inbox`)
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+เบื้องหลังนั้น เซิร์ฟเวอร์เผยแพร่เหตุการณ์ `WorkspaceCreated` และ seed เวิร์กสเปซด้วย:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **เอเจนต์ CEO** หนึ่งตัว ซึ่งมีเพอร์โซนาเป็นการประสานงานและการมอบหมาย
+- ผู้เชี่ยวชาญสี่ตัว — `qa`, `architect`, `engineer` และ `librarian` — แต่ละตัวมีคำสั่งและสกิลของตัวเอง
+- เทมเพลตไปป์ไลน์ในตัวและแถวทริกเกอร์ของมัน
 
-Every workspace you create gets all of this, not just the first one.
+ทุกเวิร์กสเปซที่คุณสร้างจะได้ทั้งหมดนี้ ไม่ใช่แค่เวิร์กสเปซแรก
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+ยืนยันได้ว่า: เปิด **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** ในรายชื่อมีเอเจนต์ห้าตัว แต่ละตัวมีวงแหวนสถานะกลวง
 
-## Step 2: Register a repository
+## ขั้นตอนที่ 2: ลงทะเบียนรีโพสิทอรี
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี**
+2. คลิก **เพิ่มรีโพสิทอรี**
+3. เรียกดูไปยังเช็กเอาต์ของคุณ ไดอะล็อกจะไล่ดูโฟลเดอร์บนเครื่องที่รัน `cc_server` — ไม่ใช่ไคลเอนต์ของคุณ — และอยู่ภายในรากที่เซิร์ฟเวอร์นั้นเปิดเผย (โฮมไดเรกทอรีของผู้ใช้เป็นค่าเริ่มต้น) เช็กเอาต์ git จะได้ไอคอนโฟลเดอร์ที่แตกต่างพร้อมกล่องทำเครื่องหมาย ส่วนโฟลเดอร์ธรรมดาไม่ได้ทั้งสองอย่าง จึงเลือกได้เฉพาะเช็กเอาต์
+4. ทำเครื่องหมายเช็กเอาต์หนึ่งรายการขึ้นไปแล้วลงทะเบียนทั้งชุด การเลือกจะคงอยู่ขณะที่คุณเรียกดูต่อไป คุณจึงรวบรวมได้หลายรายการในคราวเดียว และการเลือกที่ผิดหนึ่งรายการไม่เคยทำให้ส่วนที่เหลือหลุดไป
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center อ่าน remote `origin` ของแต่ละเช็กเอาต์ หา owner และรีโป แล้วสร้างแถวรีโป **ภายในเวิร์กสเปซนี้** ไม่มีขั้นตอนที่สองในการเชื่อมโยงมัน การลงทะเบียนคือสิ่งที่กำหนดขอบเขตของมัน
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+การลงทะเบียนเช็กเอาต์เดียวกันในเวิร์กสเปซอื่นในภายหลังจะสร้างแถวรีโปที่สองที่เป็นอิสระและมี id ของตัวเอง เมื่อข้ามเวิร์กสเปซ ตัวตนของเช็กเอาต์คือพาธในระบบไฟล์ของมัน ไม่ใช่ id ของมันเลย
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+ยืนยันได้ว่า: รีโปปรากฏในรายการพร้อม `owner/repo` และแบรนช์ปัจจุบันของมัน
 
-## Step 3: Make one agent runnable
+## ขั้นตอนที่ 3: ทำให้เอเจนต์ตัวหนึ่งรันได้
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+เอเจนต์ห้าตัวที่เวิร์กสเปซนี้เพิ่ง seed ไปนั้นไม่มีอะแดปเตอร์และไม่มีโมเดล การสั่งงานจะรันพวกมันบน **Control Center (built-in)** และเมื่อไม่ได้ตั้งโมเดล ก็จะขอค่าเริ่มต้นจาก Anthropic — พวกมันจึงทำงานได้เฉพาะเมื่อคุณเชื่อมต่อบัญชี Anthropic ไว้แล้ว และจะรันบนโมเดลที่คุณไม่ได้เลือกหากคุณเชื่อมต่อไว้ การเริ่มต้นใช้งานครั้งแรกจะประทับตัวเลือกของมันลงบนเอเจนต์ทุกตัวในเวิร์กสเปซแรกเพียงครั้งเดียว ส่วนเวิร์กสเปซที่คุณสร้างในภายหลังจะเริ่มต้นโดยที่ทั้งห้าตัวยังไม่ได้ตั้งค่า ตั้งสักตัวเดี๋ยวนี้
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. เปิด **การตั้งค่า → เวิร์กสเปซ → เอเจนต์**
+2. เลือก `engineer` ในรายชื่อ
+3. บนแท็บ **การตั้งค่า** ตั้ง **อะแดปเตอร์** เป็น `Control Center (built-in)` และเลือก **โมเดล** จากผู้ให้บริการที่คุณเชื่อมต่อไว้ภายใต้ การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล
+4. กด **บันทึกการเปลี่ยนแปลง**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+ยืนยันได้ว่า: เปิดเอเจนต์อีกครั้งแล้วทั้งสองฟิลด์ยังคงเก็บตัวเลือกของคุณไว้
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/) covers the rest of the form.
+เอเจนต์แต่ละตัวมีอะแดปเตอร์และโมเดลของตัวเอง ดังนั้นทำซ้ำกับเอเจนต์ตัวอื่นที่คุณตั้งใจจะใช้ [สร้างและกำหนดค่าเอเจนต์](/th-TH/คู่มือ/วิธีทำ/สร้างเอเจนต์/) ครอบคลุมส่วนที่เหลือของฟอร์ม
 
-## Step 4: See the isolation boundary
+## ขั้นตอนที่ 4: ดูขอบเขตการแยก
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+สร้างเวิร์กสเปซที่สองจากชิปบนแถบชื่อเรื่อง เช่นเดียวกับในขั้นตอนที่ 1 จากนั้นลองดูที่มัน:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี** ว่างเปล่า รีโปที่คุณลงทะเบียนเมื่อสักครู่ไม่อยู่ที่นั่น
+- **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** มีเอเจนต์ห้าตัว แต่เป็นแถวคนละชุด — อะแดปเตอร์ที่คุณตั้งในขั้นตอนที่ 3 หายไป
+- รายการสเปซ ตั๋วงาน และหน่วยความจำว่างเปล่าทั้งหมด
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+ไม่มีอะไรรั่วไหล เพราะไม่มีอะไรให้รั่วไหลจาก: แถวข้อมูลของแต่ละเวิร์กสเปซอยู่ในไฟล์ฐานข้อมูลของเวิร์กสเปซนั้นเอง การอ่านข้ามเวิร์กสเปซไม่ใช่คิวรีที่ถูกกรอง แต่เป็นคิวรีที่ไม่มีที่ให้รัน การลบเวิร์กสเปซคือการยกเลิกการเชื่อมโยงไฟล์หนึ่งไฟล์
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+สลับกลับได้ด้วยชิปบนแถบชื่อเรื่อง หรือเปิด **จัดการเวิร์กสเปซ** เพื่อดูพวกมันเคียงข้างกัน
 
-For the full model, read [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/).
+สำหรับโมเดลฉบับเต็ม อ่าน [เวิร์กสเปซและการแยกโดเมน](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/)
 
-## Recap
+## สรุป
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+คุณสร้างเวิร์กสเปซ เห็นมัน seed เอเจนต์ CEO หนึ่งตัวและผู้เชี่ยวชาญอีกสี่ตัว ลงทะเบียนรีโปเข้าไป ให้เอเจนต์ตัวหนึ่งมีอะแดปเตอร์และโมเดล และยืนยันว่าเวิร์กสเปซที่สองไม่ได้ใช้ร่วมกับอะไรเลย
 
-**Next:** [Dispatch your first agent](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) to put the workspace to work.
+**ถัดไป:** [สั่งงานเอเจนต์ตัวแรก](/th-TH/คู่มือ/บทสอน/เอเจนต์ตัวแรก/) เพื่อทำให้เวิร์กสเปซได้ทำงาน

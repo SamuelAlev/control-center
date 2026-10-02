@@ -1,98 +1,104 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: A csevegőbot testreszabása
+description: Nevezze át a botot, fogalmazza át, mit mond magáról, vagy módosítsa a slash-parancsát a Control Centerből.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Ez az útmutató bemutatja, hogyan alakíthatja át a szolgáltató oldali botalkalmazást anélkül, hogy elhagyná a Control Centert.
 
-## Prerequisites
+## Előfeltételek
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Az `owner` vagy `admin` szerepkör a munkaterületen
+- Egy **csatlakoztatott** szolgáltató. A **Bot testreszabása** sor csak akkor jelenik meg, ha a munkaterület csatlakoztatva van
+- Egy alkalmazás, amelyet a Control Center kezelni tud. A Slacknél ez azt jelenti, hogy a kapcsolat rendelkezik alkalmazáskonfigurációs refresh tokennel (`xoxe-…`); ha nem, a sor ezt jelzi, és letiltva marad
 
-## What you can change
+## Mit módosíthat
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Mező                       | Jelentés                                                                        | Korlát                                                     |
+| -------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Alkalmazás neve**        | Hogyan listázza a szolgáltató az alkalmazást                                     | 1–35 karakter                                              |
+| **Bot megjelenített neve** | Amit a tagok a `@` után beírnak                                                  | 1–80 karakter                                              |
+| **Leírás**                 | Egy sor, amelyet a szolgáltató megjelenít                                         | Legfeljebb 140 karakter                                    |
+| **Ügynök leírása**         | A bottal folytatott közvetlen üzenet felett jelenik meg                          | Legfeljebb 300 karakter                                    |
+| **Slash parancs**          | A parancs, amelyet a tagok meghívnak, a perjel nélkül                            | Kisbetűsítve, csak `a–z 0–9 _ -`, 32 karakternél levágva   |
+| **Közvetlen üzenetek**     | Azt szabályozza, hogy a bot biztosítja-e a közvetlen üzenetek és az ügynök élményét | Be vagy ki                                                 |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+A Control Center a szolgáltató meghívása előtt ellenőrzi a négy szöveges mezőt, így „the app name must be between 1 and 35 characters” üzenetet kap egy átláthatatlan `invalid_manifest` helyett, amely egy olyan szervertől érkezne, amelyet nem lát. A parancsot nem utasítja el, hanem normalizálja: a vezető perjelet eltávolítja, a többit kisbetűsíti, az `a–z 0–9 _ -` halmazon kívüli karaktereket eldobja, és üres eredmény esetén a `cc` értékre esik vissza.
 
-## Edit the bot
+## A bot szerkesztése
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+2. A szolgáltató blokkján kattintson a **Bot testreszabása** gombra
+3. A párbeszédablak az alkalmazás _aktuális_ értékeivel nyílik meg, amelyeket a szolgáltatótól olvas vissza — így abból indul ki, amit valaki a Slack saját felületén módosított
+4. Szerkessze, amire szüksége van, majd mentse
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Ezen aktuális értékek beolvasása tokenrotációt igényel a Slack oldalán, ezért a sor szándékos kattintás, nem pedig valami, amit az oldal betöltéskor magától elvégez.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Az írási művelet a módosításait az alkalmazás jelenlegi definíciójára rétegzi. Minden, amit a Control Center nem modellez — egy második, a Slackben hozzáadott slash-parancs, egy workflow-lépés, egy nem kapcsolódó beállítás — érintetlenül megmarad. A hatókörök és az események összefésülődnek, soha nem vonódnak ki.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Mentés után a Control Center újraolvassa a bot identitását, hogy a beállításokban szereplő név megegyezzen a csevegőalkalmazásban látható névvel.
 
-## Reinstall when permissions change
+## Újratelepítés, ha a jogosultságok megváltoznak
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Újratelepítés jogosultságváltozás után]
+A Slack azonnal alkalmazza az új alkalmazásdefiníciót, de a telepített
+engedélyezést úgy hagyja, ahogy volt. Ahhoz, hogy egy jogosultságváltozás
+életbe lépjen, telepítse újra az alkalmazást. A híd addig a korábbi
+engedélyezéssel fut tovább.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Ha egy mentés megváltoztatja a jogosultságokat, a párbeszédablak nyitva marad,
+és ezt írja: „A(z) Slack módosította az alkalmazás jogosultságait. Telepítse újra
+az alkalmazást, hogy érvényesüljenek.”, egy **Alkalmazás újratelepítése** gombbal,
+amely megnyitja a Slack adott alkalmazás csapatbeli telepítésére szolgáló oldalát.
+A Slackben ez a **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## A slash-parancs átnevezése
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Módosítsa a **Slash parancs** mezőt, majd mentse. A híd ezt követően azzal a paranccsal írja az utasításokat, amellyel utoljára meghívták, így a súgószöveg és az összekapcsolási utasítások követik az átnevezést, ahelyett hogy egy már nem létező parancsot neveznének meg.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Az átnevezés nem töri meg a meglévő, hídon átvezetett szálakat: a szálak a beszélgetéshez vannak rendelve, nem a parancshoz.
 
-## What Control Center will not change
+## Amit a Control Center nem fog megváltoztatni
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Szerkezeti beállítások.** A szállítást (Socket Mode), a szükséges hatóköröket és az eseményfeliratkozásokat nem kínáljuk fel, hanem kikényszerítjük. Egy alkalmazás, amelyet egy beállítási képernyőről el lehet hallgattatni, támogatási jegy, nem funkció
+- **A bot ikonja.** Csak a szolgáltató saját alkalmazásbeállításaiban módosítható, és a párbeszédablak ezt is írja
+- **A szolgáltató saját funkcióáttelepítései.** Egy alkalmazás, amely már a Slack régi assistant-formáján van, megtartja azt; ez a párbeszédablak egy leírást szerkeszt, nem telepít át egy alkalmazást
 
-## Troubleshooting
+## Hibaelhárítás
 
-### There is no Customize bot row at all
+### Egyáltalán nincs Bot testreszabása sor
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/).
+A munkaterület még nincs csatlakoztatva. A sor csak akkor jelenik meg, ha a
+szolgáltató blokkja élő kapcsolatot mutat. Lásd:
+[Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/).
 
-### The Customize bot row is disabled
+### A Bot testreszabása sor le van tiltva
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+A kapcsolat nem rendelkezik alkalmazáskezelési hitelesítő adattal — a sor
+alcíme ezt írja: „A Control Centernek alkalmazáskonfigurációs tokenre van
+szüksége a bot szerkesztéséhez. Csatlakozzon újra, és adjon meg egyet.” A
+Slacknél hozzon létre egy alkalmazáskonfigurációs tokenpárt az
+[api.slack.com/apps](https://api.slack.com/apps) oldalon, és csatlakozzon újra
+kitöltött refresh tokennel. Ez egy kézzel összeállított vagy a **Létrehozás a(z)
+Slack felületen** lehetőséggel létrehozott alkalmazásnál várható, mert a Slack
+soha nem jelenti, melyik alkalmazást hozta létre.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+A tárolt kapcsolat nem hordoz alkalmazásazonosítót — ez jellemzően egy olyan alkalmazás, amelyet kézzel kapcsoltak össze, mielőtt az azonosítót rögzítették volna. Csatlakoztassa újra a munkaterületet, vagy hozza létre az alkalmazást a Control Centerből.
 
-### The bot's new name has not appeared in chat
+### A bot új neve nem jelent meg a csevegésben
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+A szolgáltatók rövid ideig gyorsítótárazzák az alkalmazás metaadatait. Ha a név egy perc után is elavult, ellenőrizze, hogy a mentés kérte-e az alkalmazás újratelepítését.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
-- [Link your Slack account](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
-- [Chat bridge](/hu-HU/kezikonyv/referencia/csevegohid/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Slack-fiók összekapcsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa/)
+- [Csevegőhíd](/hu-HU/kezikonyv/referencia/csevegohid/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/)

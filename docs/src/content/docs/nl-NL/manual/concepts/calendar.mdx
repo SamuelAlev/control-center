@@ -1,128 +1,143 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Agenda en planning
+description: Hoe Control Center Google Calendar op de server synchroniseert, waarom aanmelden via een device-code verloopt en wat de alleen-lezenscope dekt.
 slug: nl-NL/handleiding/concepten/agenda
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/nl-NL/handleiding/concepten/vergaderingen/).
+Control Center maakt verbinding met Google Calendar, zodat je dag naast je fleet
+staat. Het synchroniseert je afspraken, toont ze in de weergaven maand, week, dag
+en agenda, waarschuwt je voordat een vergadering begint en maakt van elke
+afspraak een opgenomen, samengevatte
+[vergadering](/nl-NL/handleiding/concepten/vergaderingen/).
 
-## What it changes on Google
+## Wat het in Google verandert
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Bijna niets. De integratie haalt afspraken op en toont ze. Hij maakt, bewerkt of
+verwijdert geen afspraken en reageert niet op uitnodigingen. Elke
+device-codeverbinding, ingebouwd of met je eigen client, vraagt
+`calendar.readonly` plus `openid email` aan.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Afspraken worden gesynchroniseerd naar de eigen database van de werkruimte **op
+de server** (`<dataDir>/<workspaceId>/workspace.db`) en door elke client via RPC
+getoond. Geen enkele client bewaart een Google-referentie.
 
-## Per-workspace accounts
+## Accounts per werkruimte
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/nl-NL/handleiding/concepten/werkruimtes/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Agenda-accounts horen bij een werkruimte, net als alles in Control Center. Elke
+[werkruimte](/nl-NL/handleiding/concepten/werkruimtes/) verbindt zijn eigen
+Google-account (of meerdere), en de afspraken en tokens van de ene werkruimte
+zijn nooit zichtbaar vanuit een andere. Wissel je van werkruimte, dan wisselen
+ook de agenda's die je ziet.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Een werkruimte kan **meerdere** Google-accounts verbinden, bijvoorbeeld een
+werkaccount en een privéaccount, en hun afspraken worden in dezelfde weergaven
+samengevoegd.
 
-## Why sign-in is a device code
+## Waarom aanmelden via een device-code verloopt
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+De headless `cc_server` heeft geen browser om een OAuth-redirect op te vangen.
+Daarom gebruikt hij er ook geen: hij autoriseert met de
+**device-codetoekenning** (RFC 8628). De server toont een korte gebruikerscode en
+een Google-URL, jij keurt goed op een willekeurig apparaat met een browser en de
+server blijft pollen tot je dat doet. Een headless installatie kan juist een
+account verbinden omdat er geen redirect-endpoint te hosten is.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Wat je moet weten voordat je je eigen referenties meeneemt: het clienttype moet
+het "TV and Limited Input devices" van Google zijn. Google kent aan dat
+clienttype alleen een toegestane lijst met scopes toe, en een project waarin
+Calendar daarvoor niet is toegestaan mislukt met `invalid_scope` — dan heb je een
+loopback- of webclient nodig.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Tokens verlaten de server nooit. Ze worden weggeschreven naar `secrets.json` van
+de server in zijn gegevensmap, met de sleutel
+`google_google:<workspaceId>:<email>`, naast de databases en binnen dezelfde
+vertrouwensgrens van het hostbestandssysteem. De server vernieuwt de toegang
+automatisch en publiceert `CalendarAuthExpired` wanneer Google een account
+permanent ongeldig maakt (een ingetrokken of lang verlopen sessie); in plaats van
+stil te falen toont hij dan een banner **Opnieuw verbinden**.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+Een build vanaf de broncode bevat **geen** enkele Google-referentie — je levert
+je eigen client-id en secret aan. Officiële releasebuilds bevatten een
+niet-vertrouwelijke device-codeclient, zodat de verbindingsflow meteen werkt; de
+server bewaart alleen een markering die ernaar verwijst, nooit een kopie.
+`GOOGLE_OAUTH_CLIENT_ID` (en het bijbehorende secret) in de omgeving heeft altijd
+voorrang op het ingebouwde paar. Er is bewust geen `--google-client-id`-flag:
+onbekende flags worden genegeerd, en een secret op een commandoregel is leesbaar
+via `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/nl-NL/handleiding/gidsen/agenda-verbinden/).
+Zie [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
+als je je eigen Google-project wilt draaien.
 
-## Sync
+## Synchronisatie
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+De server haalt een rollend venster op van de afspraken van elk verbonden account
+— elke agenda van het account, niet alleen de primaire — **elke twee minuten**,
+en verder op verzoek (start, verbinden, handmatig verversen). Dat korte interval
+kost weinig omdat de ronde incrementeel is: elke agenda heeft zijn eigen
+synctoken, zodat een ongewijzigde agenda één vrijwel leeg antwoord kost in plaats
+van het opnieuw ophalen van een venster van vijf maanden.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Terugkerende afspraken worden aan de serverkant uitgevouwen, zodat geen enkele
+client ooit een herhalingsregel parseert. Navigeer je naar een maand buiten het
+huidige venster, dan wordt dat bereik pas op dat moment geladen. Verwijderde
+afspraken of afspraken die buiten het bereik zijn geraakt, worden bij de volgende
+synchronisatie opgeruimd.
 
-## Views
+## Weergaven
 
-| View       | What it shows                                         |
+| Weergave   | Wat het toont                                         |
 | ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| **Maand**  | Een volledig maandrooster (mogelijk gemaakt door het pakket `kalender`) |
+| **Week**   | De afspraken met tijdstip van één week in een tijdraster |
+| **Dag**    | De afspraken met tijdstip van één dag in een tijdraster |
+| **Agenda** | Een doorloopbare lijst met aankomende afspraken |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Open de agenda op `/calendar`; als je een afspraak selecteert, opent de
+detailweergave op `/calendar/:eventId`. De weergave die je kiest, wordt opgeslagen
+in de eigen voorkeuren van die client en volgt je dus niet naar een ander
+apparaat.
 
-## Meeting alerts
+## Meldingen voor vergaderingen
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/nl-NL/handleiding/concepten/domeingebeurtenissen/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Een planner die elke minuut draait, zoekt naar afspraken die binnen een
+instelbaar voorloopvenster beginnen en stuurt dan een melding **"Vergadering
+begint zo"** (een `MeetingStartingSoon`
+[domeingebeurtenis](/nl-NL/handleiding/concepten/domeingebeurtenissen/)). De
+melding bevat de deelname-URL als die er is, en als je erop klikt, opent de
+detailweergave van de afspraak. Meldingen worden ontdubbeld aan de hand van
+`alertedAt` van de afspraak, zodat dezelfde vergadering nooit twee keer meldt;
+ook een afspraak waarvan het begintijdstip voorbijging terwijl de app dicht was,
+wordt nooit opnieuw afgespeeld.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Twee beperkingen waar je snel over struikelt. De planner draait **aan de
+clientkant op de desktop** en alleen voor de werkruimte die je op dat moment open
+hebt — een werkruimte waarin je niet zit, geeft geen melding. En de webbuild heeft
+helemaal geen pijplijn voor OS-meldingen, dus daar komt ook niets vandaan.
 
-## Record and link
+## Opnemen en koppelen
 
-From a calendar event you can start a [meeting recording](/nl-NL/handleiding/concepten/vergaderingen/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Vanuit een agenda-afspraak kun je een
+[vergaderopname](/nl-NL/handleiding/concepten/vergaderingen/) starten,
+voorgevuld met de titel van de afspraak. Control Center bewaart een
+een-op-eenkoppeling tussen de opname en de afspraak, zodat de notities van de
+vergadering en de agenda-afspraak met elkaar verbonden blijven zonder dat het ene
+onderdeel van het andere afhankelijk is.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Opnemen en koppelen** is alleen op de desktop beschikbaar. In de webclient
+meldt de actie dat opnemen niet beschikbaar is — ook al werkt de opnameflow op
+het vergaderingscherm zelf wél in de browser.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agenten kunnen je agenda niet lezen]
+Er zijn geen agenda-MCP-tools. Een agent kan geen afspraken opsommen, de details
+van een afspraak lezen of namens jou RSVP'en; het `calendar.*`-oppervlak is
+alleen RPC voor menselijke clients.
 :::
 
-## See also
+## Zie ook
 
-- [Meetings and transcription](/nl-NL/handleiding/concepten/vergaderingen/): what happens after you start a recording
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/): why calendar accounts are per-workspace
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/nl-NL/handleiding/gidsen/agenda-verbinden/)
-- [Record and summarize a meeting](/nl-NL/handleiding/gidsen/vergadering-opnemen/)
+- [Vergaderingen en transcriptie](/nl-NL/handleiding/concepten/vergaderingen/): wat er gebeurt nadat je een opname start
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/): waarom agenda-accounts per werkruimte gelden
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): `MeetingStartingSoon` en `CalendarAuthExpired`
+- [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
+- [Een vergadering opnemen en samenvatten](/nl-NL/handleiding/gidsen/vergadering-opnemen/)

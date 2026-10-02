@@ -1,153 +1,169 @@
 ---
-title: Domain events
-description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+title: Eventos de dominio
+description: Por qué las funcionalidades se comunican mediante un bus de eventos en proceso en lugar de importarse entre sí, para qué sirve y para qué no el bus como fuente de verdad y qué eventos pueden impulsar realmente una automatización.
 slug: es-ES/manual/conceptos/eventos-de-dominio
+sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
 ---
 
-## What a domain event is
+## Qué es un evento de dominio
 
-Domain events are the decoupling mechanism that lets features communicate
-without direct dependencies. Instead of feature A calling feature B, feature A
-publishes an event and feature B subscribes to it.
+Los eventos de dominio son el mecanismo de desacoplamiento que permite que las
+funcionalidades se comuniquen sin depender directamente unas de otras. En lugar
+de que la funcionalidad A llame a la funcionalidad B, la funcionalidad A publica
+un evento y la funcionalidad B se suscribe a él.
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
-call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
-implements `DomainEvent` and carries `occurredAt`.
+El `DomainEventBus` es un bus de publicación/suscripción con difusión y en
+proceso. Quien publica llama a `publish(event)`; quien se suscribe consume un
+flujo tipado `on<T>()`. Todos los eventos implementan `DomainEvent` y llevan
+`occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber
-lives there. No client sees this bus. What a client sees is a curated subset the
-server re-emits as `notifications/*` JSON-RPC frames.
+**El bus se ejecuta dentro de `cc_server`.** Tanto quien publica como quien está
+suscrito en vivo residen ahí. Ningún cliente ve este bus. Lo que ve un cliente
+es un subconjunto seleccionado que el servidor reemite como tramas JSON-RPC
+`notifications/*`.
 
-## Why a bus at all
+## Por qué hace falta un bus
 
-Without events, every cross-feature reaction is an import. The notification path
-would have to import the agents feature, the pull-request feature, ticketing,
-and meetings just to know when to raise a toast — and each of those would then
-have to know that notifications exist. Ticketing would import pipelines so a
-completed ticket could advance a run. The dependency graph closes into a knot,
-and the shared kernel stops being shared.
+Sin eventos, cada reacción entre funcionalidades sería una importación. La ruta
+de notificaciones tendría que importar la funcionalidad de agentes, la de pull
+requests, la de tickets y la de reuniones solo para saber cuándo mostrar un
+aviso, y cada una de ellas tendría entonces que saber que existen las
+notificaciones. La de tickets importaría la de pipelines para que un ticket
+completado pudiera hacer avanzar una ejecución. El grafo de dependencias se
+cierra en un nudo y el kernel compartido deja de ser compartido.
 
-Publishing an event breaks that. The notification path subscribes to twenty-one
-event classes and imports none of the features that raise them. The pipeline
-trigger dispatcher subscribes to the whole bus and knows nothing about pull
-requests, tickets, or meetings. Observability aggregates run outcomes without
-reaching into dispatch.
+Publicar un evento rompe esa dinámica. La ruta de notificaciones se suscribe a
+veintiuna clases de evento y no importa ninguna de las funcionalidades que los
+emiten. El despachador de disparadores de pipeline se suscribe a todo el bus y
+no sabe nada de pull requests, tickets ni reuniones. La observabilidad agrega
+resultados de ejecuciones sin meterse en el despacho.
 
-The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+El coste es el de siempre: quien publica no puede saber si alguien está
+escuchando, y un suscriptor que nunca se instancia queda inerte en silencio.
+`TicketRemoteSyncHandler` es el ejemplo permanente: está declarado, tiene
+cobertura de tests y nunca se conecta en producción.
 
-## What the bus is not
+## Lo que el bus no es
 
-It is worth being precise about one thing the bus does _not_ own.
+Conviene ser precisos sobre una cosa que el bus _no_ posee.
 
-**The audit trail is not a projection of the event stream.** Every mutating RPC
-operation is audited by default — `RepoOp.audited` defaults to true and an
-operation opts out only by declaring `audited: false`, a deliberate act visible
-on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. There is no `DomainEventAuditBridge`.
-`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
-that is a separate feed from the RPC audit.
+**El registro de auditoría no es una proyección del flujo de eventos.** Toda
+operación RPC que muta estado se audita de forma predeterminada: `RepoOp.audited`
+vale true por omisión y una operación solo queda exenta si declara
+`audited: false`, un acto deliberado y visible en la propia operación. El
+despachador añade la fila de «quién hizo qué y desde dónde» justo después de una
+llamada correcta. No existe ningún `DomainEventAuditBridge`.
+`ActivityLogPersister` escribe filas de `activity_log` a partir de eventos
+`ActivityLogged`; ese es un flujo distinto del de la auditoría RPC.
 
-The event bus _is_ the transport for notifications and for automation. It is not
-the bookkeeping system of record.
+El bus de eventos _sí_ es el transporte de las notificaciones y de la
+automatización. No es el sistema de registro contable.
 
-## What the bus does drive
+## Lo que el bus sí impulsa
 
-- **Notifications.** Twenty-one event classes are turned into `notifications/*`
-  wire frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. A frame whose `workspace_id` names a
-  workspace the session user is not a member of is dropped on the server; the
-  client then filters the remainder to the workspace it is looking at.
-- **Event-driven automation.** Pipeline triggers subscribe to the bus and
-  auto-start matching pipelines (see below).
-- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents, the built-in pipeline templates, and the starter eval suites. A
-  completed agent run resumes a suspended pipeline step, closes a task, feeds
-  the goal supervisor, can wake a named checker, and can re-trigger a team
-  leader. A merged PR or a deleted space triggers worktree garbage collection.
-- **Cross-vendor sync.** Local ticket changes are pushed out to configured
-  vendors by a coordinator listening for five ticket events.
+- **Notificaciones.** El servidor convierte veintiuna clases de evento en tramas
+  `notifications/*`, las registra en un flujo duradero por espacio de trabajo y
+  las difunde a las sesiones conectadas. Una trama cuyo `workspace_id` indique
+  un espacio de trabajo del que el usuario de la sesión no es miembro se
+  descarta en el servidor; el cliente filtra después el resto según el espacio
+  de trabajo que esté viendo.
+- **Automatización basada en eventos.** Los disparadores de pipeline se suscriben
+  al bus e inician automáticamente los pipelines que coinciden (ver más abajo).
+- **Reacciones del ciclo de vida.** Al crear un espacio de trabajo se
+  aprovisionan sus agentes CEO y especialistas, las plantillas de pipeline
+  integradas y las suites de evaluación iniciales. Una ejecución de agente
+  completada reanuda un paso de pipeline suspendido, cierra una tarea, alimenta
+  al supervisor de objetivos, puede despertar a un verificador con nombre y
+  puede volver a activar a un líder de equipo. Una PR fusionada o un espacio
+  eliminado activa la recolección de basura de los worktrees.
+- **Sincronización entre proveedores.** Un coordinador que escucha cinco eventos
+  de tickets envía los cambios locales de tickets a los proveedores
+  configurados.
 
-## Event categories
+## Categorías de eventos
 
-Events span the whole product surface. At a high level:
+Los eventos abarcan toda la superficie del producto. A grandes rasgos:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
-- **Messaging** — messages, spaces and space provisioning progress
-- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
-- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — terminal run events only (completed, cancelled, failed)
-- **Observability** — activity-log entries and budget thresholds
-- **Identity and membership** — member added, removed, role changed
-- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
-- **Rigs** — take-over, reap and unexpected close
+- **Espacios de trabajo, agentes y repos** — creación de espacios de trabajo, finalización de ejecuciones, registro de repos, actualizaciones de skills
+- **Pull requests** — publicación, cambios de estado, fusiones, solicitudes de revisión, menciones, seguimiento de PRs propias, PRs detectadas externamente
+- **Mensajería** — mensajes, espacios y progreso de aprovisionamiento de espacios
+- **Tickets** — creación, asignación, reasignación, detalles, estado y los tres resultados terminales
+- **Tareas** — tramas secuenciadas del ciclo de vida para una ejecución despachada, para que los clientes puedan ordenarlas y eliminar duplicados
+- **Pipelines** — solo eventos terminales de ejecución (completado, cancelado, fallido)
+- **Observabilidad** — entradas del registro de actividad y umbrales de presupuesto
+- **Identidad y pertenencia** — miembro añadido, eliminado, rol cambiado
+- **Calendario y reuniones** — caducidad de la autenticación, inicio de reuniones y fin de grabaciones
+- **Rigs** — toma de control, recuperación y cierre inesperado
 
-Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
-calendar refresh, worktree merges, user creation, invites and device revocation
-are not domain events; see the reference.
+La memoria, la orquestación, los documentos de plan, los artefactos, las
+aprobaciones, la entrada de sincronización de tickets, la actualización del
+calendario, las fusiones de worktrees, la creación de usuarios, las invitaciones
+y la revocación de dispositivos no son eventos de dominio; consulta la
+referencia.
 
-For the complete catalog — all 53 concrete event classes, their payloads and
-the 24 subscribers that consume them — see the
-[Domain events reference](/es-ES/manual/referencia/eventos-de-dominio/). That page is the
-inventory; this one is the model.
+Para ver el catálogo completo —las 53 clases de evento concretas, sus cargas
+útiles y los 24 suscriptores que las consumen—, consulta la
+[referencia de eventos de dominio](/es-ES/manual/referencia/eventos-de-dominio/). Esa página es el
+inventario; esta es el modelo.
 
-## Live access control rides two different mechanisms
+## El control de acceso en vivo usa dos mecanismos distintos
 
-Membership and device events look symmetrical and are not, which matters if you
-are reasoning about how fast a revocation takes effect.
+Los eventos de pertenencia y los de dispositivos parecen simétricos y no lo son,
+algo que importa si analizas la rapidez con la que surte efecto una revocación.
 
-**Revoking a device does terminate its sessions.** The server watches the paired
-device table and drops any live session whose device left the active set, within
-seconds.
+**Revocar un dispositivo sí termina con sus sesiones.** El servidor vigila la
+tabla de dispositivos emparejados y descarta cualquier sesión activa cuyo
+dispositivo haya salido del conjunto activo, en cuestión de segundos.
 
-**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
-workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
-cache so further frames for that workspace are not pushed. What denies the next
-RPC is still the role gate, which re-resolves membership on **every** call — so
-their next request is refused with "Not a member of this workspace". The effect
-is immediate for anything they try to do; it just is not achieved by hanging up
-on them.
+**Eliminar a un miembro no cierra el socket.** `WorkspaceMemberRemoved` sí se
+consume: `LocalRpcServer` y `RemoteRelayHost` descartan las suscripciones a
+espacios de trabajo que ese usuario tenía enganchadas, y `RemoteEventForwarder`
+invalida su caché de pertenencia para que no se envíen más tramas de ese espacio
+de trabajo. Lo que deniega el siguiente RPC sigue siendo la comprobación de
+roles, que vuelve a resolver la pertenencia en **cada** llamada, así que su
+siguiente petición se rechaza con «Not a member of this workspace». El efecto es
+inmediato para cualquier cosa que intenten hacer; simplemente no se consigue
+colgándoles la conexión.
 
-## Pipeline triggers
+## Disparadores de pipeline
 
-Pipeline triggers subscribe to domain events and auto-start matching pipelines.
-`PipelineTriggerDispatcher` listens to the whole bus, then:
+Los disparadores de pipeline se suscriben a los eventos de dominio e inician
+automáticamente los pipelines que coinciden. `PipelineTriggerDispatcher` escucha
+todo el bus y, a continuación:
 
-1. Short-circuits unless the event type is one it knows how to map to a payload
-2. Looks up enabled triggers matching that event type, across every workspace
-3. Filters each to its own workspace and applies its payload match filter
-4. Starts a run for each trigger that survives
+1. Cortocircuita salvo que el tipo de evento sea uno que sabe convertir en una carga útil
+2. Busca, en todos los espacios de trabajo, los disparadores habilitados que coinciden con ese tipo de evento
+3. Filtra cada uno a su propio espacio de trabajo y aplica su filtro de coincidencia de carga útil
+4. Inicia una ejecución por cada disparador que sobrevive
 
-The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
-payload branches):
+La restricción importante es el paso 1. El bus transporta 53 tipos de evento; el
+selector para añadir un disparador solo inicia una ejecución con estos catorce
+(ramas de carga útil de `EventPayloadMapper`):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
 `PrMerged`, `MessageReceived`, `TicketAssigned`,
 `TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
-and `SpaceDeleted`. Nothing else can start a pipeline.
+y `SpaceDeleted`. Ningún otro evento puede iniciar un pipeline.
 
-## How a client sees any of this
+## Cómo ve un cliente todo esto
 
-`RemoteEventForwarder` translates the notification-class events into wire frames
-and pushes them over RPC to connected sessions, where a frame mapper turns them
-into in-app notifications. A thin client therefore sees a projection of the
-server's event stream without owning any execution — which is the whole point of
-the [thin-client split](/es-ES/manual/conceptos/arquitectura/).
+`RemoteEventForwarder` traduce los eventos de la clase de notificaciones a
+tramas y las envía por RPC a las sesiones conectadas, donde un mapeador de
+tramas las convierte en notificaciones dentro de la aplicación. Un cliente
+ligero ve, por tanto, una proyección del flujo de eventos del servidor sin ser
+responsable de ninguna ejecución, que es justo la razón de ser de la
+[separación de cliente ligero](/es-ES/manual/conceptos/arquitectura/).
 
-Not every pushed frame is a notification, though. The task-lifecycle stream and
-ticket reassignment are forwarded live to drive UI, but they are not recorded
-into the notification feed and raise no toast.
+No obstante, no todas las tramas enviadas son una notificación. El flujo del
+ciclo de vida de las tareas y la reasignación de tickets se reenvían en vivo
+para alimentar la interfaz, pero no se registran en el flujo de notificaciones
+ni muestran ningún aviso.
 
-## See also
+## Ver también
 
-- [Pipelines and automation](/es-ES/manual/conceptos/pipelines/): what a trigger starts
-- [Tickets and delegation](/es-ES/manual/conceptos/tickets/): assignment to an agent vs a team
-- [Architecture](/es-ES/manual/conceptos/arquitectura/): how events fit the dependency rule
-- [Domain events reference](/es-ES/manual/referencia/eventos-de-dominio/): the complete catalog and its subscribers
-- [Set up pipeline triggers](/es-ES/manual/guias/disparadores-de-pipeline/)
-- [Configure notifications](/es-ES/manual/guias/notificaciones/)
+- [Pipelines y automatización](/es-ES/manual/conceptos/pipelines/): qué inicia un disparador
+- [Tickets y delegación](/es-ES/manual/conceptos/tickets/): asignación a un agente frente a un equipo
+- [Arquitectura](/es-ES/manual/conceptos/arquitectura/): cómo encajan los eventos en la regla de dependencias
+- [Referencia de eventos de dominio](/es-ES/manual/referencia/eventos-de-dominio/): el catálogo completo y sus suscriptores
+- [Configurar disparadores de pipeline](/es-ES/manual/guias/disparadores-de-pipeline/)
+- [Configurar notificaciones](/es-ES/manual/guias/notificaciones/)

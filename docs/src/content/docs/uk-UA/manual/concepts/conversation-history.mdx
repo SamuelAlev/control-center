@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Історія розмов
+description: Як запуск зберігає, згортає, розгалужує та відновлює свій контекст — стратегії компакції, дерево сесій і що насправді означає «відновлення».
 slug: uk-UA/керівництво/поняття/історія-розмов
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Довга розмова рано чи пізно впирається в тверду стіну — контекстне вікно моделі. Усе на цій сторінці існує через цю стіну, а найцікавіше — це те, що викидається, що зберігається і що вдається повернути.
 
-## Four ways to reclaim context
+## Чотири способи повернути контекст
 
-They are not alternatives so much as a ladder, cheapest first.
+Це не стільки альтернативи, скільки драбина, від найдешевчого.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Механізм          | Вартість        | Зберігає                              | Втрачає                              |
+| ----------------- | --------------- | ------------------------------------- | ------------------------------------ |
+| **Елізія**        | Нічого          | Кожне слово наративу                  | Старіші буденні результати інструментів |
+| **Скидання зображень** | Нічого     | Текст навколо них                     | Старі знімки екрана                  |
+| **Знімки**        | Нічого          | Кожне слово, як пікселі               | Читабельність для моделі без зору    |
+| **Підсумок**      | Один виклик моделі | Наратив                            | Деталі, які він не вибрав            |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+Елізія та скидання зображень спрацьовують першими, бо вони безкоштовні й нічого не втрачають у тому сенсі, що важливий: вони відкидають обсяг, який ніхто не збирався перечитувати.
 
-### Why summarizing is the last resort
+### Чому підсумовування — останній засіб
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+Підсумок — єдиний із чотирьох, що **витрачає виклик моделі**, і єдиний, що **вирішує за вас**, що було важливим. І те, й те — справжні витрати. Виклик цікавіший, бо має значення, коли він відбувається.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+Компакція зазвичай запускається *заздалегідь*, до стіни, за порогом. Але вона також запускається **реактивно**, після того як сам провайдер відхиляє запит як завеликий — евристична оцінка недолічила те, що провайдер насправді виміряв. У такій ситуації компактор, що підсумовує, мусить зробити запит, щоб стиснути контекст, а запит, який він робить, — це саме той, що щойно переповнився.
 
-### Snapshots
+### Знімки
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+Компакція знімками відображає відкинуту історію на щільні сторінки піксельних глифів і повертає їх як зображення.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+В основі — особливість тарифікації: модель зі зором стягує плату за зображення за фіксованою ставкою або пропорційно до площі, і це не має нічого спільного з кількістю символів у ньому. Дванадцять тисяч символів відкинутої розмови коштують стільки ж текстових токенів, скільки важать дванадцять тисяч символів. Ті самі символи, відтворені на одній сторінці, коштують одне зображення.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Цінність цього підходу — не в дотепності, а в тому, що він потребує **жодного виклику моделі, жодного ключа й жодної мережі**. Це єдина стратегія, завжди доступна під час відновлення після переповнення.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+Форма відтворення — дослівний початок, середина у вигляді зображення, дослівний кінець. Початок — це завдання й обмеження, на які далі посилається все; кінець — там, де зараз робота. Середина — те, що перечитують найрідше і що коштує найдорожче.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Він деградує чесно]
+Модель без зору не може читати сторінки пікселів, а відтворення тексту, на який нікому подивитися, — це не деградована компакція, а видалена розмова. Тож вирішує здатність читача, і модель без зору завжди отримує підсумок.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[Форма сторінки підлаштована під API, а не під ваги]
+Gemini стягує фіксовану ставку за зображення, тож кожен зайвий символ на сторінці безкоштовний, і його сторінки найширші. OpenAI та Anthropic стягують за площею, тож більша сторінка нічого не дає. Деякі обробники зменшують роздільність після певного порогу, що тихо знищує 5-піксельні глифи, тож їхні сторінки тримаються нижче нього. Claude, якому слугує шлюз, тарифікується шлюзом, тож форма йде за ідентифікатором моделі, як його називає маршрут.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+Знімки щоразу відтворюються заново з **збереженого вихідного тексту**, а не з пікселів попереднього проходу. Кожне перезнімання зображення погіршує глифи на одне покоління за компакцію, доки їх не стане неможливо прочитати.
 
-## What a run actually resumes from
+## З чого насправді відновлюється запуск
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Історично кожен запуск harness починався з порожньої історії та відбудовував тяглість із блоку `<context>` у промпті — *підсумку* розмови, а не самої розмови. З цього випливали три речі:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **Відновлення було переказом.** Модель ніколи не бачила власних попередніх міркувань чи справжніх байтів, які повернули її інструменти, — лише їхній опис.
+- **Перемотування назад гинуло разом із процесом.** `checkpoint` — це індекс у живому списку повідомлень, тож перезапуск втрачав кожну мітку, яку встановила модель.
+- **Повтор не міг відрізнити «нічого повторювати» від «нічого не завантажено».** Після перезапуску невдалий хід у будь-якому разі зникає з живого стану.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Усі три виправляє збереження транскрипту. Він записується на кожній **межі ходу** й ніколи посеред ходу: історія, знята між викликом інструмента та його результатом, — така, якої не прийме жоден провайдер, тож збій у цю мить відновлює хід *до*, а не половинчастий хід, який неможливо відтворити.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+Відновлений запуск обрізається до найновіших повідомлень, з обрізанням на межі, яка не є осиротілим результатом інструмента — результат, чий виклик обрізано, є запитом, який провайдери відхиляють одразу, а транскрипт, який неможливо надіслати, гірший за короткий.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Де він зберігається]
+Один JSON-файл на кожну комбінацію розмови й агента, у власному каталозі робочого простору поряд із його базою даних. Два агенти в одній розмові мають дві історії: вони бачили різні результати інструментів і отримали різні системні промпти, тож об’єднання видало б кожному міркування іншого як власні.
 :::
 
-## The session tree
+## Дерево сесій
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Кожне повідомлення фіксує те, з якого воно продовжується, і кожна розмова називає свою поточну **вершину гілки**. Це одне рішення і є всією функцією.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Відгалуження нічого не записує.** Воно пересуває вказівник. Шлях, який ви залишили, усе ще там, тож повернення — це ще одне переміщення вказівника, а не відновлення — і редагування промпту, щоб запустити його знову, перестає коштувати вам відповіді, з якою ви порівнювали.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Без нього кожна форма повернення назад мусить ховати або видаляти повідомлення, а ховання — це брехня, яку наступний читач не розгледить.
 
-### Branch versus fork
+### Гілка проти форку
 
-|                | Branch              | Fork                        |
+|                | Гілка               | Форк                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Що відбувається | Вказівник пересувається | Шлях копіюється          |
+| Куди веде      | Та сама розмова     | Нова розмова                |
+| Вартість       | Нічого              | Одна копія гілки            |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+Форк копіює з **новими ідентифікаторами**, а не ділить рядки. Дві розмови, що ділили б рядки, показували б одна одній пізніші повідомлення, а це саме те, чого форк робити не повинен.
 
-### Rewind rides the same pointer
+### Перемотування назад їде тим самим вказівником
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+Пара `checkpoint` / `rewind` під час запуску позначає чисту межу ходу й повертається до неї після дослідження, зберігаючи дайджест. Оскільки контрольні точки зберігаються разом із транскриптом, мітка, яку модель встановила до перезапуску, усе ще веде туди, де її встановили. Контрольна точка, чия ціль не пережила обрізання, **відкидається**, а не затискається до найближчої — перемотування «до мітки» з приземленням деінде — це саме той збій, який мітка покликана відвернути.
 
-## Related
+## Пов’язане
 
-- [Branch a conversation](/uk-UA/керівництво/практичні-посібники/відгалузити-розмову/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/uk-UA/керівництво/поняття/контекст-інструментів/) — the other half of what fills a context window
-- [Slash commands](/uk-UA/керівництво/довідка/slash-команди/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Відгалузити розмову](/uk-UA/керівництво/практичні-посібники/відгалузити-розмову/) — навігатор деревом, форкування та експорт
+- [Контекст інструментів і кеш промптів](/uk-UA/керівництво/поняття/контекст-інструментів/) — друга половина того, що заповнює контекстне вікно
+- [Slash-команди](/uk-UA/керівництво/довідка/slash-команди/) — `/compact`, `/shake`, `/context`, `/tree`

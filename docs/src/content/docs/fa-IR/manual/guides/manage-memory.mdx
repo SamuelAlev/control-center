@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: مدیریت حافظهٔ فضای کاری
+description: واقعیت‌ها و سیاست‌هایی را که عامل‌ها در یک فضای کاری نوشته‌اند بازبینی، اصلاح و هرس کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-حافظه
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+این راهنما نشان می‌دهد چگونه با انبار دانش یک فضای کاری کار کنید.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+نکته‌ای که پیش از شروع باید بدانید: **رابط کاربری حافظه یک سطح بازبینی است، نه یک سطح نوشتن.** واقعیت‌ها و سیاست‌ها را عامل‌ها می‌نویسند — از طریق `propose_fact` و `propose_policy`، و برای جایگزینی آن‌ها `supersede_fact` و `supersede_policy`. `remember` یک آیتم لایهٔ داغِ محدود به نشست می‌نویسد که ممکن است `consolidate_memory` بعداً آن را به یک واقعیت ارتقا دهد. تصمیم‌های ضبط‌شدهٔ جلسه در دامنهٔ `decisions` برداشت می‌شوند؛ روی اجراهای تمام‌شدهٔ عامل هیچ برداشتی انجام نمی‌شود. کاری که شما اینجا می‌کنید این است: آنچه نوشته‌اند را بخوانید، اصلاحش کنید، غیرفعالش کنید یا حذفش کنید.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+حافظه در **تنظیمات → فضای کاری → حافظه** (`/workspaces/<id>/settings/memory`) قرار دارد. این یک مقصد سطح بالای نوار کناری نیست.
 
-## The three tabs
+## سه تب
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+این صفحه دقیقاً سه تب دارد. واقعیت‌ها و سیاست‌ها یک شمارندهٔ زنده نشان می‌دهند؛ گراف نشان نمی‌دهد:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **واقعیت‌ها** — هر واقعیت در فضای کاری، همراه با شمار آن‌هایی که منسوخ نشده‌اند
+- **سیاست‌ها** — قواعد هنجاری گروه‌بندی‌شده بر اساس دامنه، همراه با شمار موارد فعال
+- **گراف دانش** — یک بوم تعاملی از دامنه‌ها، موضوع‌ها، واقعیت‌ها و سیاست‌ها
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+دامنه‌ها چیزی نیستند که شما بسازید. یک دامنه وقتی به وجود می‌آید که یک عامل نخستین واقعیت یا سیاست را در آن بنویسد؛ هیچ کنترل ساخت دامنه‌ای در هیچ کجای رابط کاربری وجود ندارد.
 
-## Review and correct a fact
+## بازبینی و اصلاح یک واقعیت
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. تب **واقعیت‌ها** را باز کنید.
+2. از جعبهٔ جستجو برای باریک کردن فهرست استفاده کنید. این یک فیلتر زیررشته‌ای ساده روی دامنه، موضوع و محتوای هر واقعیت است — نه نمایهٔ کلیدواژه، نه رتبه‌بندی.
+3. از فیلتر محدوده استفاده کنید تا همهٔ محدوده‌ها، فقط واقعیت‌های سراسری فضای کاری، یا واقعیت‌های یک مخزن را نشان دهید.
+4. از کلید تغییر ترتیب برای مرتب‌سازی بر اساس تازگی یا اطمینان استفاده کنید.
+5. روی کنترل ویرایش یک واقعیت کلیک کنید.
 
-The edit dialog lets you change:
+دیالوگ ویرایش به شما اجازه می‌دهد این موارد را تغییر دهید:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **دامنه** — جابه‌جا کردن یک واقعیت میان دامنه‌ها
+- **موضوع** — برچسب کوتاه آن
+- **محتوا** — متن دانش
+- **اطمینان** — یک نوار لغزنده با گام‌های ۵٪
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+برای نوشتن آن، ذخیره کنید. دکمهٔ **افزودن واقعیت** وجود ندارد؛ این دیالوگ فقط روی یک ردیف موجود باز می‌شود.
 
-## See superseded facts
+## دیدن واقعیت‌های منسوخ
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+تب واقعیت‌ها یک کلید **نمایش منسوخ‌شده‌ها** دارد. واقعیت‌های منسوخ به‌طور پیش‌فرض پنهان‌اند و با همان کلید آشکار می‌شوند؛ اینجا جایی است که رد حسابرسی می‌ماند — منسوخ کردن هرگز حذف نمی‌کند.
 
-## Delete a fact
+## حذف یک واقعیت
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+از کنترل حذف یک واقعیت استفاده کنید و تأیید کنید. این یک حذف واقعی است، نه منسوخ کردن: از آن برای واقعیت‌هایی استفاده کنید که صرفاً ثبتشان اشتباه بوده است، و بگذارید عامل‌ها واقعیت‌هایی را منسوخ کنند که _محتوایشان_ از رده خارج شده است.
 
-## Manage policies
+## مدیریت سیاست‌ها
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+تب **سیاست‌ها** سیاست‌های فعال را بر اساس دامنه گروه‌بندی می‌کند و غیرفعال‌ها را به بخشی در انتها تنزل می‌دهد. برای هر سیاست می‌توانید:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- آن را **ویرایش** کنید
+- آن را **حذف** کنید
+- آن را **غیرفعال‌سازی** / **فعال‌سازی** کنید — گزینهٔ برگشت‌پذیر و معمولاً انتخاب درست. فقط سیاست‌های فعال به پرامپت عامل می‌رسند.
 
-As with facts, there is no create control.
+مانند واقعیت‌ها، هیچ کنترل ساخت‌وسازی وجود ندارد.
 
-## Explore the knowledge graph
+## کاوش در گراف دانش
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+تب **گراف دانش** دامنه‌ها، موضوع‌ها، واقعیت‌ها و سیاست‌ها را به‌شکل یک بومِ گره‌های قابل پیمایش می‌چیند — جابه‌جا کردن، بزرگ‌نمایی، کشیدن گره‌ها. لمس یک گره برگهٔ جزئیات آن را باز می‌کند و از همان‌جا همان دیالوگ‌های ویرایش در دسترس‌اند. این سریع‌ترین راه برای دیدن این است که کدام دامنه‌ها واقعاً پر شده‌اند.
 
-## Edit an agent's working memory
+## ویرایش حافظهٔ کاری یک عامل
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+حافظهٔ کاری یک دفترچهٔ یادداشت خصوصی برای هر عامل است که هنگام اعزام به پرامپت آن تزریق می‌شود. عامل‌ها خودشان آن را با `record_observation` و `update_my_notes` می‌نویسند، اما شما می‌توانید مستقیم بخوانید و ویرایشش کنید:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**تنظیمات → فضای کاری → عامل‌ها** → یک عامل را انتخاب کنید → تب **حافظه**.
 
-## Access grants
+## مجوزهای دسترسی
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+مجوزهای دسترسی حافظه، نقش یک عامل را به یک اجازه (`none`، `read`، `write`) در هر دامنه نگاشت می‌کنند. آن‌ها را با عملیات‌های `memory_access_grant.*` بنویسید.
 
-Two things to understand about how they resolve:
+دو نکته برای درک نحوهٔ حل‌شدن آن‌ها:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **خواندن‌ها در صورت شکست باز می‌مانند.** بدون هیچ ردیف مجوز برای یک جفت (نقش، دامنه)، اجازهٔ مؤثر `read` است. تنها نوشتنی که بدون `write` خطا می‌دهد `propose_policy` است. نوشتن واقعیت مشروط به مجوز نیست.
+- **مجوزها بر پایهٔ نقش عامل کلید می‌خورند.** ابزارهای پیشنهاددهنده در نبود `agent_role` آن را `general` می‌گیرند. مجوزی که برای نقش دیگری نوشته شده باشد آن عامل‌ها را مقید نمی‌کند؛ مجوز `general` مقید می‌کند.
 
-## Search is not the same everywhere
+## جستجو همه‌جا یکسان نیست
 
-Three different things are called "memory search" and they do not agree:
+سه چیز متفاوت «جستجوی حافظه» نامیده می‌شوند و با هم توافق ندارند:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| کجا                                 | چه می‌کند                                                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| جعبهٔ جستجوی تب واقعیت‌ها           | فیلتر زیررشته‌ای روی واقعیت‌هایی که پیش‌تر در کلاینت بارگذاری شده‌اند                                             |
+| عملیات RPC `memory_fact.search`      | فقط جستجوی کلیدواژه‌ای FTS5 — یک کلاینت نازک نمی‌تواند جاسازی پرس‌وجو را همراه بفرستد، پس جستجوی ترکیبی درون میزبان می‌ماند |
+| ابزار `search_memory` در سمت عامل   | `keyword`، `semantic` یا `hybrid` (پیش‌فرض). حالت ترکیبی چهار سیگنال را با هم می‌آمیزد: واژگانی، معنایی، زمانی و گرافی |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+پس یک عامل و صفحهٔ حافظه یک پرس‌وجوی یکسان را به یک شکل رتبه‌بندی نمی‌کنند. وقتی می‌خواهید بررسی کنید یک عامل واقعاً چه چیزی را می‌تواند به یاد بیاورد، از خود عامل بپرسید.
 
-## Embeddings
+## جاسازی‌ها
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+واقعیت‌ها **در زمان نوشتن** جاسازی می‌شوند و فقط وقتی که مدل جاسازی روی دستگاه نصب باشد. وضعیت آن را در **تنظیمات → سرور → تشخیص و حریم خصوصی → جستجوی معنایی** بررسی کنید. اگر بازخوانی معنایی می‌خواهید، مدل را پیش از آنکه عامل‌ها نوشتن حافظه را شروع کنند نصب کنید.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Use the MCP server](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [استفاده از سرور MCP(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/سرور-mcp/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Memory and knowledge](/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/)
-- [Workspaces and isolation](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
+- [حافظه و دانش(/fa-IR/راهنمای-کاربر/مفهومها/حافظه-و-دانش/)
+- [فضاهای کاری و ایزوله‌سازی(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)

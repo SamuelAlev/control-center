@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: שילחו את הסוכן הראשון
+description: צרו סוכן, תנו לו מרחב ומשימה וצפו בהרצה זורמת חזרה.
 slug: he-IL/מדריך-למשתמש/מדריכים/הסוכן-הראשון
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## מה תבנו
 
-By the end of this tutorial, you will have:
+בסוף המדריך הזה יהיו לכם:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- סוכן שיצרתם והגדרתם בעצמכם
+- מרחב שבו אתם והסוכן הזה משוחחים
+- ריצה אחת שהסתיימה, עם עבודה שנשמרה בקומיט בעץ עבודה מבודד ושורה ביומן הריצות של הסוכן
 
-Prerequisites: [Your first workspace](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/) completed, so this workspace has a repo registered and at least one model provider connected.
+דרישות מוקדמות: [סביבת העבודה הראשונה שלכם](/he-IL/מדריך-למשתמש/מדריכים/סביבת-העבודה-הראשונה/) הושלמה, כך שבסביבת העבודה הזו רשום מאגר ולפחות ספק מודלים אחד מחובר.
 
-## Step 1: Create an agent
+## שלב 1: צרו סוכן
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. עברו אל **הגדרות ← סביבת עבודה ← סוכנים**
+2. לחצו על **סוכן חדש**. סוכן בשם "סוכן ללא שם" נוצר מיד ונבחר בסגל — אין תיבת דו־שיח ליצירה ואין מה לאשר. אתם מגדירים אותו במקום.
+3. בלשונית **הגדרות**, מלאו:
+   - **שם**: משהו קצר וקליט, כמו `alice`. זה מה שאתם מקלידים אחרי `@`.
+   - **כותרת**: מה הוא עושה, למשל "מהנדס בקאנד"
+   - **מתאם**: `Control Center (built-in)`. בחרו בזה במכוון — רק מנגנון ההרצה המובנה יכול להיות מנווט תוך כדי ריצה ומושהה בגבול תור, והוא אינו דורש התקנת CLI במארח השרת.
+   - **מודל**: בחרו מהרשימה שהספק המחובר מגיש
+   - **מיומנויות**: הצמידו כל מיומנות שמתאימה, למשל `testing` או `architecture`
+4. לחצו על **שמור שינויים**
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[סוכן בלי מתאם רץ על הלולאה המובנית]
+כששדה המתאם אינו מוגדר, השליחה נופלת חזרה אל **Control Center (built-in)** — לולאת הסוכן שבתוך השרת, כך שאין מה להתקין במארח. הוא עדיין זקוק למודל: כשלא הוגדר מודל הוא מבקש מ-Anthropic את ברירת המחדל שלה, מה שעובד אם חיברתם חשבון Anthropic ואחרת נכשל עם `No credential for provider "anthropic"`. בכל זאת הגדירו את שניהם במפורש, אחרת תריצו על מודל שלא בחרתם.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**נקודת ביקורת.** שורת הסגל מציגה את שם הסוכן שלכם וטבעת סטטוס חלולה.
 
-## Step 2: Start a space
+## שלב 2: פתחו מרחב
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. בסרגל הצד, מצאו את הקטע **מרחבים** ולחצו על כפתור **+**
+2. תנו למרחב שם
+3. תחת **הוספת סוכנים**, בחרו את הסוכן שיצרתם זה עתה
+4. אם בסביבת העבודה יש מאגרים, בחרו על אילו מהם המרחב הזה יעבוד
+5. לחצו על **יצירה**
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+המרחב נפתח. ברקע Control Center מקצה עבור השיחה הזו עץ עבודה בהעתקה בעת כתיבה של המאגרים הנבחרים, על ענף משלו. הצ'ק־אאוט המקורי שלכם אינו משתנה לעולם.
 
-## Step 3: Send a task
+## שלב 3: שלחו משימה
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+הקלידו משימה אחת קטנה וקונקרטית נגד המאגר שרשמתם. משהו עם תוצאה שאפשר לבדוק עובד הכי טוב — הוסיפו בדיקה, תקנו אזהרת lint, שנו שם של סמל.
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+לחצו Enter. אין צורך לאזכר אף אחד ב־`@`: כשיש סוכן אחד במרחב, הודעה רגילה מעירה אותו. במרחב עם כמה סוכנים, `@name` בוחר אחד.
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center מרכיב את ההנחיה מהוראות הסוכן, הפרסונה, המיומנויות וההקשר של המרחב, ואז שולח את הריצה.
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**נקודת ביקורת.** כפתור השליחה בתיבת הכתיבה הופך לכפתור עצירה — סוכן עובד בשיחה הזו — ומתחיל להגיע טקסט.
 
-## Step 4: Watch it work
+## שלב 4: צפו בו עובד
 
-The conversation renders the run as it happens:
+השיחה מציגה את הריצה תוך כדי התרחשותה:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **חשיבה**, מוצגת בתוך השיחה בזמן שהסוכן חושב
+- **קריאות כלים**: קריאה וכתיבה של קבצים, חיפושים, פקודות מעטפת, כל אחת עם התוצאה שלה
+- **טקסט**: סיכומים, הסברים ושאלות אליכם
 
-If the agent asks something, answer in the conversation and it resumes.
+אם הסוכן שואל משהו, השיבו לו בשיחה והוא ממשיך.
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+למדדים של הריצה ולפקדי ההשהיה, ההמשך והעצירה שלה, מצאו את הסוכן הפעיל בקטע **סוכנים** שבלוח **כללי** של המרחב ובחרו **פתח פעילות**.
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+בחלונית הפעילות תג הסטטוס מציג **פועל**, ואחר כך **הצליחה** כשהריצה מסתיימת. ריצה שנתקעת או נכנסת ללולאה מציגה **חסום**; ריצה שנתקלה בשגיאה מציגה **נכשל**. במרשם הסוכנים טבעת הסגל חלולה לפני הריצה הראשונה ומלאה כשהסוכן שוב פנוי.
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
+מה שמגביל את הריצה: עץ עבודה משלו בהעתקה בעת כתיבה, פרטי גישה שמתווכים עבורה בעת ההפעלה ונשללים בעת הפירוק, סביבה מסוננת, משטח הכלים שהמצב שלה מתיר ומעקות הבטיחות של הפעולות. תופעות כמו דחיפת ענף או פתיחת בקשת משיכה מתוחמות בנפרד — ראו [מעקות בטיחות](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/).
 
-## Step 5: Check the result
+## שלב 5: בדקו את התוצאה
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. פתחו **הגדרות ← סביבת עבודה ← סוכנים** ובחרו את הסוכן שלכם
+2. פתחו את הלשונית **יומנים**
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**נקודת ביקורת.** שורת ריצה אחת, שמציגה את הסטטוס, משך הזמן, זמני ההתחלה והסיום והמתאם שעליו רצה.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+השינויים של הסוכן נשמרים בקומיט על הענף של השיחה, בעץ העבודה שלה. הקומיטים נכתבים על שם הסוכן, ואתם מזוכים בטריילר `Co-Authored-By:`.
 
-## Getting a pull request
+## השגת בקשת משיכה
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+שום דבר לא פותח בקשת משיכה מעצמו. אם אתם רוצים אחת, בקשו אותה באותה שיחה:
 
-> Push this branch and open a pull request against the default branch.
+> דחפו את הענף הזה ופתחו בקשת משיכה נגד ענף ברירת המחדל.
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+גם הדחיפה (`gitPush`) וגם יצירת ה-PR (`prCreate`) מוגדרות כברירת מחדל לבקש את אישורכם, אז צפו לאישור לפני כל אחת מהן. אם אין מאשר מחובר כשהבקשה עולה, הפעולה נדחית ולא מאושרת — מעקות הבטיחות נכשלים באופן סגור.
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+ה-PR נפתח תחת זהות ה-GitHub שהאסימון של הריצה השתמש בו — שלכם, אם שמרתם אסימון אישי — ולא תחת שמו של הסוכן. המחברוּת של הסוכן נראית בקומיטים.
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+אפשר גם לפתוח אותה בעצמכם: בלוח **בקרת מקור** של המרחב יש כפתור **יצירת בקשת משיכה** שנושא את הענף של השיחה אל מסך הכתיבה, ו**בקשות משיכה ← PR חדש** פותח את אותו מסך ריק. שם ממשיך המדריך הבא.
 
-## Recap
+## סיכום
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+יצרתם סוכן, הגדרתם את המתאם והמודל שלו, נתתם לו מרחב ומשימה וצפיתם בריצה אמיתית שמסתיימת בעץ עבודה מבודד בלי לגעת בצ'ק־אאוט שלכם.
 
-**Next:** [Review your first pull request](/he-IL/מדריך-למשתמש/מדריכים/בקשת-המשיכה-הראשונה/) to learn the review workflow.
+**הבא:** [סקרו את בקשת המשיכה הראשונה](/he-IL/מדריך-למשתמש/מדריכים/בקשת-המשיכה-הראשונה/) כדי ללמוד את זרימת הסקירה.
 
-For more on agents: [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/). For dispatch details: [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/).
+למידע נוסף על סוכנים: [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/). לפרטי השליחה: [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/).

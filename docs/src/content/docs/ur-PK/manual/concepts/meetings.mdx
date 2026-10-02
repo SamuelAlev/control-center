@@ -1,213 +1,214 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: میٹنگز اور ٹرانسکرپشن
+description: Control Center کسی کال کو کیسے ریکارڈ کرتا ہے، سرور پر اُسے ٹرانسکرائب اور ڈائرائز کیسے کرتا ہے، اور وہ واحد قدم کہاں ہے جو ہوسٹ سے باہر جاتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/میٹنگز
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center کسی کال کو ریکارڈ کر سکتا ہے اور آپ کو ایک صاف تحریر واپس دے سکتا ہے —
+ایک خلاصہ، ایکشن آئٹمز اور فیصلے — جس میں اسپیچ ریکگنیشن اور اسپیکر کی علیحدگی آپ
+کے اپنے ہارڈ ویئر پر چلتی ہے۔ Granola کا تصور کریں، مگر خود میزبان اور اُسی ورک اسپیس
+سے منسلک جس میں آپ کے ایجنٹ رہتے ہیں۔
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[ریکارڈنگ کے لیے وائس ماڈل اور سرور ری اسٹارٹ درکار ہے]
+ریکارڈنگ اور ڈکٹیشن اُس وقت شروع ہوتے ہیں جب اسپیچ (ASR) ماڈل ڈسک پر موجود ہو **اور**
+سرور ری اسٹارٹ ہو چکا ہو۔ ایک عام بوٹ پس منظر میں منتخب ماڈل (ڈیفالٹ کے طور پر
+Parakeet TDT 0.6B v3) زبردستی انسٹال کرتا ہے، لیکن سرور وائس ماڈل کے راستے بوٹ کے
+آغاز کے قریب بالکل ایک بار حل کرتا ہے — اُس ڈاؤن لوڈ کے مکمل ہونے سے کئی منٹ پہلے۔
+ماڈل کے انسٹال شدہ ہونے کی اطلاع ملنے کے بعد `cc_server` کو ری اسٹارٹ کریں۔ کوئی
+مختلف بلڈ چننے کے لیے ترتیبات → سرور → آواز اور میٹنگ ماڈلز استعمال کریں — اُس کے
+لیے بھی ری اسٹارٹ درکار ہے۔
 :::
 
-## What a meeting is
+## میٹنگ کیا ہوتی ہے
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**میٹنگ** ایک ریکارڈ شدہ، ٹرانسکرائب شدہ نشست ہوتی ہے۔ یہ _نہیں_ وہی چیز ہے جو
+[کیلنڈر ایونٹ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/) ہے: ایونٹ ایک شیڈول شدہ وعدہ ہوتا ہے
+جو Google سے سنک ہوتا ہے، جبکہ میٹنگ وہ چیز ہے جو آپ نے واقعی ریکارڈ کی۔ دونوں کو
+آپس میں لنک کیا جا سکتا ہے، کیونکہ آپ کسی ایونٹ سے ریکارڈنگ شروع کر سکتے ہیں، مگر وہ
+الگ الگ ریکارڈ رہتے ہیں۔
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+ہر میٹنگ ورک اسپیس تک محدود ہوتی ہے، بالکل Control Center کی باقی ہر چیز کی طرح۔
+ایک ورک اسپیس میں ریکارڈ ہونے والی میٹنگز کبھی دوسری میں ظاہر نہیں ہوتیں۔
 
-## Where the work happens
+## کام کہاں ہوتا ہے
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+”آن ڈیوائس“ درست فطری رجحان ہے مگر غلط لفظ۔ کلائنٹ آڈیو کیپچر کرتا ہے اور
+16 kHz PCM16 فریمز **`cc_server` چلانے والی مشین** کو اسٹریم کرتا ہے۔ وہ میزبان باقی
+سب کچھ کرتا ہے: یہ فی چینل WAVs `<dataDir>/meetings/<meetingId>/` کے تحت لکھتا ہے،
+ایک ورکر آئسولیٹ میں ٹرانسکرائب کرتا ہے، ایکو فلٹر کرتا ہے اور بعد ازاں ڈائرائز کرتا
+ہے۔ کسی اسٹینڈ الون ڈیسک ٹاپ پر وہ میزبان وہی مشین ہوتا ہے۔ ریموٹ سرور کی طرف اشارہ
+کرنے پر ایسا نہیں ہوتا — اس لیے ”میرے لیپ ٹاپ سے کچھ باہر نہیں جاتا“ صرف اُس وقت درست
+ہے جب سرور آپ کا لیپ ٹاپ ہو۔
 
-There is one further exception and it is the important one.
+ایک اور استثنا بھی ہے، اور وہی اہم ہے۔
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[خلاصہ ہوسٹ سے باہر جاتا ہے]
+ٹرانسکرپٹ اور آپ کے نوٹس اُس ماڈل فراہم کنندہ کو بھیجے جاتے ہیں جس کے خلاف خلاصہ
+بنانے والا ایجنٹ کنفیگر ہو۔ کسی بھی کلاؤڈ فراہم کنندہ کے لیے اِس کا مطلب ہے کہ پوری
+ٹرانسکرپٹ اُس فراہم کنندہ کے API پر جاتی ہے۔ اگر کسی ٹرانسکرپٹ کو ہوسٹ سے باہر نہیں
+جانا چاہیے تو خلاصہ بنانے والے ایجنٹ کو کسی مقامی اینڈ پوائنٹ (Ollama، LM Studio یا
+کوئی دوسرا مقامی سرور) کی طرف اشارہ کریں۔
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+خلاصے سے پہلے کا سب کچھ — کیپچر، ٹرانسکرپشن، ایکو کی منسوخی، ڈائرائزیشن، وائس پرنٹ
+کی مماثلت — سرور پر بغیر کسی نیٹ ورک کال کے چلتا ہے۔
 
-## Which models ship
+## کون سے ماڈلز شامل ہیں
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+**ایمبیڈنگ، ڈائرائزیشن اور اسپیچ (ASR)** ماڈلز پہلے بوٹ پر زبردستی انسٹال ہوتے ہیں
+(ڈیمو پر چھوڑ دیے جاتے ہیں)، اس لیے اسپیکر کی علیحدگی اور ریکارڈنگ بغیر ترتیبات میں
+جائے موجود ہوتے ہیں۔ ASR پھر بھی **قابلِ انتخاب** ہے — یہ کئی سو میگا بائٹس کا ہے،
+اور پکر میں چار بلڈز شامل ہیں۔ اُس پہلے ڈاؤن لوڈ کے بعد اسپیچ کو پھر بھی ایک ری اسٹارٹ
+درکار ہوتا ہے، کیونکہ ٹرانسکرائبر اپنا ماڈل حاصل کرنے کا عمل مکمل ہونے سے پہلے حل
+کر لیتا ہے۔
 
-The four picker entries, differing in size, language coverage and accuracy:
+پکر کی چار اندراجات، جو حجم، زبان کی کوریج اور درستگی میں مختلف ہیں:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — کثیراللسانی، تجویز کردہ ڈیفالٹ (~600 MB)
+- Parakeet TDT 0.6B v2 — انگریزی (~480 MB)
+- Whisper large-v3-turbo — کثیراللسانی (~626 MB)
+- Whisper base.en — صرف انگریزی، چھوٹا تاریخی ڈیفالٹ (~198 MB)
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+ماڈلز واحد چیزیں ہیں جو سرور رن ٹائم پر حاصل کرتا ہے؛ ہر نیٹو لائبریری بنڈل میں شامل
+ہوتی ہے۔
 
-## How capture works
+## کیپچر کیسے کام کرتا ہے
 
-A meeting records **two audio channels at once**:
+میٹنگ **بیک وقت دو آڈیو چینلز** ریکارڈ کرتی ہے:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **آپ ("me")**: آپ کا مائیکروفون۔
+- **وہ ("them")**: میٹنگ کی آڈیو آؤٹ پٹ، جو ڈرائیور سے پاک loopback کے ذریعے کیپچر
+  ہوتی ہے — macOS پر Core Audio process/device taps، Windows پر WASAPI loopback،
+  Linux پر PipeWire / PulseAudio monitor۔
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+چونکہ دونوں چینلز الگ الگ کیپچر ہوتے ہیں، ٹرانسکرپٹ شروع ہی سے اسپیکر سے منسوب ہوتی
+ہے: آپ کے الفاظ `me` کا ٹیگ رکھتے ہیں، اور کال میں موجود ہر شخص `them` کا۔
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+آپ کی اپنی آواز سسٹم آؤٹ پٹ سے رس کر واپس مائیکروفون میں آ جاتی ہے اور ورنہ دو بار
+ٹرانسکرائب ہوتی۔ دو فلٹر اُسے روکتے ہیں۔ سگنل کی سطح پر **AEC3 ہر ریموٹ موڈ
+ریکارڈنگ پر چلتا ہے اور لازمی ہے** — اگر نیٹو AEC لائبریری لوڈ نہ ہو سکے تو ریکارڈنگ
+خاموشی سے ایکو سے آلودہ مائیکروفون اسٹریم کرنے کے بجائے شروع ہونے سے انکار کر دیتی
+ہے۔ (اِن پرسن موڈ میں منسوخی کے لیے دور کا کوئی حوالہ نہیں ہوتا، اس لیے وہاں AEC
+بغیر تبدیلی گزر جاتا ہے۔) اُس کے علاوہ، ہوسٹ کی طرف سے متن کی سطح کا ایکو فلٹر ہر
+پلیٹ فارم پر چلتا ہے۔
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+OS کی سطح پر مائیکروفون کی تمام پروسیسنگ جان بوجھ کر غیر فعال رکھی جاتی ہے۔ macOS پر
+پلیٹ فارم کی اپنی ایکو منسوخی یا آٹو گین فعال کرنے سے مائیکروفون Voice Processing
+I/O پر چلا جاتا ہے، جس نے اِس بلڈ میں مائیکروفون _اور_ سسٹم آڈیو ٹیپ دونوں کو ختم کر
+دیا۔
 
-## Transcription and diarization
+## ٹرانسکرپشن اور ڈائرائزیشن
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+جب آپ ریکارڈ کرتے ہیں تو آڈیو **رولنگ ونڈوز** میں، UI تھریڈ سے ہٹ کر، ڈی کوڈ ہوتی ہے
+— ہر ونڈو کسی مختصر آخری خاموشی پر، یا زیادہ سے زیادہ ونڈو لمبائی پر کاٹی جاتی ہے۔
+ہر ونڈو ملی سیکنڈ آفسیٹس کے ساتھ اسپیکر کے ٹیگ والا ٹرانسکرپٹ سیگمنٹ بن جاتی ہے۔
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+جو ونڈوز کبھی RMS کی حد سے اوپر نہ اٹھیں وہ **بالکل بھی ڈی کوڈ کیے بغیر** چھوڑ دی
+جاتی ہیں، کیونکہ اسپیچ ماڈل خاموشی کو من گھڑت غیر اسپیچ ٹوکنز کے طور پر پیش کرتا ہے
+اور ڈی کوڈ ضائع شدہ CPU ہوتا ہے۔ عملی نتیجہ: مسلسل بہت مدھم بولنے والا اسپیکر کوئی
+ٹرانسکرپٹ نہیں دیتا۔ اگر کوئی خالی واپس آئے تو ماڈل کو قصوروار ٹھہرانے سے پہلے اُس
+کی ان پٹ لیول چیک کریں۔
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+آپ کے رکنے کے بعد، **ڈائرائزیشن** ریکارڈنگ پر آف لائن چلتی ہے اور ریموٹ چینل کو الگ
+الگ اسپیکرز (`Person 1`, `Person 2`, …) میں تقسیم کرتی ہے جنہیں آپ دوبارہ نام دے سکتے
+ہیں۔ اسپیکرز کی تعداد کسی کلوسٹرنگ حد سے اخذ کی جاتی ہے، نہ کہ آپ کی مقرر کردہ گنتی
+سے — اس لیے یہ ایک حد کا نتیجہ ہوتی ہے اور کوئی مدھم یا اوورلیپ کرنے والا اسپیکر پڑوسی
+میں ضم ہو سکتا ہے۔ ٹرانسکرپٹ `[mm:ss] SPEAKER: text` لائنوں کی صورت میں پیش کی جاتی
+ہے۔
 
-## Voice profiles
+## وائس پروفائلز
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+کسی اسپیکر کا نام بدلنا صرف ایک ٹرانسکرپٹ کو لیبل لگانے سے زیادہ کرتا ہے۔ Control
+Center اسپیکر کا وائس پرنٹ **وائس پروفائل** کے طور پر محفوظ کر سکتا ہے، تاکہ یہ آئندہ
+میٹنگز میں اُنہیں خودکار طور پر پہچان لے۔ جب آپ کسی ڈائرائز شدہ اسپیکر کو نام دیتے ہیں
+تو آپ سے پوچھا جاتا ہے کہ وائس پرنٹ محفوظ کرنا ہے یا نہیں؛ اگر آپ کریں تو یہ اُس نام
+کے لیے ایک جاری سینٹروائیڈ میں ملایا جاتا ہے اور نئے اسپیکرز سے کوسائن مماثلت کے
+ذریعے موازنہ ہوتا ہے، تاکہ وہی شخص اگلی بار آپ کے دوبارہ لیبل کیے بغیر اپنے نام کے
+ساتھ ظاہر ہو۔
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+وائس پروفائلز ورک اسپیس تک محدود ہوتی ہیں اور کبھی حد پار نہیں کرتیں۔ اُنہیں
+**ترتیبات → ورک اسپیس → میٹنگز** پر منظم کریں۔ کسی ایسے اسپیکر کا نام بدلنا جسے پہلے
+محفوظ کیا گیا تھا، پرانے نام کو اَن اِنرول کرتا ہے اور نیا نام اِنرول کرنے کی پیشکش
+کرتا ہے؛ کوئی پروفائل حذف کرنا محفوظ وائس پرنٹ ہٹا دیتا ہے مگر ماضی کی میٹنگز پر پہلے
+سے لاگو نام بغیر تبدیلی چھوڑ دیتا ہے۔
 
-## The summary pipeline
+## خلاصے کی پائپ لائن
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+جب ریکارڈنگ رکتی ہے تو سرور ایک `MeetingRecordingStopped`
+[ڈومین ایونٹ](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/) شائع کرتا ہے۔ بلٹ اِن
+**`meeting_summary`** پائپ لائن ٹیمپلیٹ اُسی ایونٹ سے ٹرگر ہوتا ہے۔ ریکارڈر اُس کا
+انتظار نہیں کرتا؛ میٹنگ محض اپنی اسٹیٹس لائف سائیکل سے گزرتی ہے:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+خلاصے والا ایجنٹ عنوان، آپ کے موٹے موٹے لائیو نوٹس اور ٹرانسکرپٹ وصول کرتا ہے اور
+**ساختی JSON** واپس کرتا ہے۔ یہ کون سے سیکشن لکھتا ہے، وہ ورک اسپیس کے **فعال میٹنگ
+نوٹ ٹیمپلیٹ** سے طے ہوتا ہے (ترتیبات → ورک اسپیس → میٹنگز)؛ فعال ٹیمپلیٹ نئے اور
+دوبارہ چلائے گئے خلاصوں پر لاگو ہوتا ہے۔ پھر پائپ لائن کے محفوظ کرنے والے قدم اُس JSON
+کو الگ الگ قطاروں میں لکھتے ہیں:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` اور `summary` → میٹنگ کے نوٹس
+- ہر ایکشن آئٹم → ایک `MeetingActionItem` قطار (مواد، ذمہ دار، اختیاری ٹکٹ لنک)
+- ہر فیصلہ → ایک `MeetingDecision` قطار
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+ایکشن آئٹمز اور فیصلے **کبھی** آزاد markdown سے پارس نہیں کیے جاتے، صرف ایجنٹ کے
+ساختی ایریز سے۔ اگر کوئی رن ساختی آؤٹ پٹ پیدا نہ کرے تو محفوظ کرنے والے قدم چھوڑ دیے
+جاتے ہیں اور خام ٹرانسکرپٹ بطور متبادل رکھی جاتی ہے، تاکہ ریکارڈ کبھی ضائع نہ ہو۔
+پائپ لائن میں کوئی چیز میٹنگ کو `done` نہیں کرتی — یہ کام ایک واحد ری کنسائلر رن کے
+ٹرمینل ایونٹ سے کرتا ہے، اس لیے کسی ہم رتبہ قدم کی ناکامی ایسی آدھی لکھی میٹنگ کو
+پھنس نہیں سکتی جو پہلے ہی مکمل دکھائی دے۔
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[ایجنٹس آپ کی میٹنگز نہیں پڑھ سکتے]
+میٹنگ یا کیلنڈر کے لیے کوئی MCP ٹولز نہیں ہیں۔
+[MCP](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/mcp-سرور/) کے ذریعے جڑا ایجنٹ میٹنگز کی فہرست
+نہیں بنا سکتا، ٹرانسکرپٹ نہیں پڑھ سکتا، اور نہ ایکشن آئٹمز اور فیصلے دیکھ سکتا ہے —
+یہ ڈیٹا صرف RPC کے ذریعے انسانی کلائنٹس تک پہنچتا ہے۔ فیصلے بالواسطہ طور پر ایجنٹس
+تک پہنچتے ہیں، `decisions` ڈومین میں میموری حقائق کے طور پر۔
 :::
 
-## Where meetings show up
+## میٹنگز کہاں ظاہر ہوتی ہیں
 
-| Surface                | What it shows                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| سطح                            | یہ کیا دکھاتا ہے                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `/meetings`                    | میٹنگز کی فہرست، ایکشن آئٹمز اور فیصلوں کی گنتی کے ساتھ                              |
+| `/meetings/record`             | لائیو ریکارڈنگ HUD: ایک طرف آپ کے نوٹس، دوسری طرف اسٹریم ہوتی ٹرانسکرپٹ              |
+| `/meetings/:meetingId`         | میٹنگ کی تفصیل: نوٹس، ٹرانسکرپٹ، ایکشن آئٹمز اور فیصلے ٹیبز                          |
+| ترتیبات → ورک اسپیس → میٹنگز   | اِس ورک اسپیس کے نوٹ ٹیمپلیٹس اور محفوظ شدہ وائس پروفائلز                            |
 
-## Platform support
+## پلیٹ فارم کی معاونت
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+تینوں ڈیسک ٹاپ پلیٹ فارمز پر کیپچر ڈرائیور سے پاک ہے (macOS پر Core Audio taps،
+Windows پر WASAPI، Linux پر PipeWire)۔
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**ویب کلائنٹ بھی ریکارڈ کرتا ہے**، جسے اِس صفحے کا باقی ڈیسک ٹاپ تناظر چھپا سکتا ہے:
+براؤزر آپ کا مائیکروفون `getUserMedia` کے ذریعے اور میٹنگ کی آڈیو `getDisplayMedia`
+(اسکرین شیئر) کے ذریعے لیتا ہے، 16 kHz PCM16 پر ڈاؤن سیمپل کرتا ہے اور اُسی میزبان کو
+اسٹریم کرتا ہے۔ وہاں تین احتیاطی باتیں لاگو ہوتی ہیں:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- شیئر کی گئی سطح پر آڈیو ٹریک **لازمی** ہے۔ Safari، Firefox اور macOS کی فل اسکرین
+  شیئرنگ کوئی آڈیو نہیں دیتیں اور ریکارڈنگ شروع ہونے سے انکار کر دیتی ہے۔
+- نیٹو AEC3 نہیں ہوتا۔ مائیکروفون پر براؤزر کی اپنی ایکو منسوخی طلب کی جاتی ہے؛ ہوسٹ
+  کی طرف کا متنی ایکو فلٹر پھر بھی چلتا ہے۔ HUD مائیکروفون کے PCM سے چلنے والا ان پٹ
+  لیول میٹر دکھاتا ہے۔
+- خلاصہ دوبارہ چلائیں اور پروسیسنگ منسوخ کرنا صرف ڈیسک ٹاپ پر ہے۔
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+کیلنڈر کا **ریکارڈنگ شروع کریں اور لنک کریں** عمل صرف ڈیسک ٹاپ پر ہے اور ویب پر یہ صاف
+بتا دیتا ہے، حالانکہ میٹنگز اسکرین کا اپنا ریکارڈ فلو وہاں کام کرتا ہے۔
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[میٹنگ حذف کرنا اُس کی آڈیو پیچھے چھوڑ دیتا ہے]
+کسی میٹنگ کو حذف کرنا صرف اُس کی ڈیٹا بیس قطاریں ہٹاتا ہے۔ محفوظ رکھی گئی فی چینل
+آڈیو ڈائریکٹری `<dataDir>/meetings/<meetingId>/` کبھی صاف نہیں کی جاتی — اُس کے لیے
+کوئی برقراری پالیسی، حجم کی حد یا GC صفائی نہیں ہے۔ اُس ڈسک کو واپس لینا سرور میزبان
+پر ایک دستی کام ہے۔
 :::
 
-## See also
+## مزید دیکھیں
 
-- [Calendar and scheduling](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): link a meeting's action items to tickets
-- [Domain events](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/)
+- [کیلنڈر اور شیڈولنگ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/): کسی کیلنڈر ایونٹ سے سیدھا میٹنگ ریکارڈ کریں
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/): `meeting_summary` کے پیچھے کا انجن
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): میٹنگ کے ایکشن آئٹمز کو ٹکٹس سے لنک کریں
+- [ڈومین ایونٹس](/ur-PK/ہدایت-نامہ/تصورات/ڈومین-ایونٹس/): `MeetingRecordingStopped` اور `MeetingStartingSoon`
+- [میٹنگ ریکارڈ اور خلاصہ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/میٹنگ-ریکارڈ-کریں/)

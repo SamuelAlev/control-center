@@ -1,156 +1,149 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: ใช้สเปซ
+description: สร้างสเปซ กำหนดโหมดของมัน จัดการผู้เข้าร่วมและความเป็นอิสระ แล้วเปิดการสนทนาและเธรด
 slug: th-TH/คู่มือ/วิธีทำ/สเปซ
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+คู่มือนี้แสดงวิธีใช้สเปซ **สเปซ** คือพื้นผิวการรับส่งข้อความใน Control Center:
+ห้องที่จำกัดขอบเขตตามเวิร์กสเปซ มีผู้เข้าร่วมหนึ่งคนขึ้นไป (คุณและ/หรือเอเจนต์)
+และถือครอง worktree แบบ copy-on-write หนึ่งชุดต่อหนึ่งรีโปที่มันถูกสร้างขึ้นมา
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+ห้องคุยตัวต่อตัวและห้องที่มีเอเจนต์หลายตัวก็เป็นแค่สเปซทั้งคู่ ต่างกันเพียงจำนวน
+ผู้เข้าร่วมที่มี ข้อยกเว้นเดียวคือสเปซที่เอเจนต์เปิดขึ้นเพื่อคุยกันเอง — ดู
+[สเปซระหว่างเอเจนต์](#สเปซระหว่างเอเจนต์) ด้านล่าง
 
-## Create a space
+## สร้างสเปซ
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. ไปที่ **สเปซ**
+2. คลิกปุ่ม **+** ข้างหัวข้อสเปซ
+3. ตั้ง **ชื่อ** ให้มัน — จำเป็นต้องระบุ หากปล่อยชื่อว่างจะถูกปฏิเสธ
+   ไดอะล็อกจะยังเปิดอยู่
+4. เพิ่มเอเจนต์จากเวิร์กสเปซก็ได้ตามต้องการ
+5. เมื่อเวิร์กสเปซมีรีโปอยู่ เลือกว่าสเปซนี้จะจัดเตรียม worktree ให้รีโปใดบ้าง
+   เริ่มต้นจะเลือกทั้งหมด การยกเลิกการเลือกรีโปทุกตัวจะสร้างสเปซที่ไม่มีอะไร
+   เช็กเอาต์ไว้
+6. ยืนยัน
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+สเปซจำกัดขอบเขตตามเวิร์กสเปซ: คุณจะเห็นเฉพาะเอเจนต์จากเวิร์กสเปซปัจจุบัน และ
+สเปซจะไม่แสดงข้อมูลจากเวิร์กสเปซอื่นเลย
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills).
+รีโปแต่ละตัวจะถูกเช็กเอาต์ไว้ที่ `repos/<name>/` ภายในสเปซ รีโปที่มาพร้อมสกิล
+เอเจนต์ของตัวเองจะมอบสกิลเหล่านั้นให้เอเจนต์ที่ทำงานอยู่ในรีโปนั้น — ทีละชุดของ
+รีโปเดียว สลับไปตามที่เอเจนต์ย้ายไปมา จากช่องเขียนข้อความคุณเข้าถึงสกิลใดก็ได้ด้วย
+`/skill:<repo>:<name>` ดู
+[สกิลที่จำกัดตามรีโป](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/#repo-scoped-skills)
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
-`/workspaces/<id>/spaces/<spaceId>`.
+พื้นผิวนี้อยู่ที่ `/workspaces/<id>/spaces` และสเปซเดี่ยวอยู่ที่
+`/workspaces/<id>/spaces/<spaceId>`
 
-## Set the space's mode
+## กำหนดโหมดของสเปซ
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+สเปซใหม่จะเริ่มต้นในโหมดเริ่มต้น เปลี่ยนได้จาก **ดรอปดาวน์โหมด** ที่ซ้ายสุดของ
+แถบเครื่องมือช่องเขียนข้อความ — ไม่ใช่จากไดอะล็อกสร้างสเปซ (ซึ่งไม่มีช่องโหมด)
+และไม่ใช่จากส่วนหัวของสเปซ
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| โหมด          | ผลที่ได้                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| **เอเจนต์**   | เข้าถึงเต็มรูปแบบ ค่าเริ่มต้น; `chat` ภายใน ใช้ป้าย “เอเจนต์” ในดรอปดาวน์                        |
+| **แผน**       | อ่านและค้นคว้าเท่านั้น; สิ่งที่ส่งมอบคือแผนที่มีชนิดข้อมูลกำกับ                                  |
+| **ประสานงาน** | อ่านและค้นคว้า บวกคำกริยา `propose_orchestration` เพียงคำเดียว; แผนจะรันหลังคุณอนุมัติแล้วเท่านั้น |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab สลับระหว่างโหมดแผนกับโหมดเอเจนต์โดยไม่ต้องเปิดดรอปดาวน์
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+มีโหมดที่สี่คือ **รีวิว** อยู่ด้วย แต่ไม่ถูกเสนอในดรอปดาวน์ — มันถูกนำไปใช้โดย
+อัตโนมัติกับสเปซรีวิว PR
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+โหมดถูกจัดเก็บไว้ที่สเปซ เอเจนต์ตัวเดียวกันจึงอยู่ในโหมดแผนในสเปซหนึ่งและโหมด
+เอเจนต์ในอีกสเปซหนึ่งได้พร้อมกัน การสนทนาทุกอันภายในสเปซใช้โหมดของสเปซนั้นร่วมกัน
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[ระวังป้ายการบังคับใช้]
+ป้ายจะปรากฏข้างดรอปดาวน์โหมดเมื่อเอเจนต์ของสเปซรันบนอะแดปเตอร์ที่บังคับใช้โหมดที่
+คุณเลือกไม่ได้ มีเพียงฮาร์เนสในตัวของ Control Center เท่านั้นที่กรองพื้นผิวเครื่องมือ
+และกั้นการเรียกทุกครั้ง; อะแดปเตอร์ Claude Code และ ACP ได้รับโหมดไปในฐานะคำขอที่
+ตัวรันของมันอาจทำตามหรือไม่ก็ได้ การไม่มีป้ายหมายถึง “ไม่มีการอ้างสิ่งใด” ไม่ใช่
+“ยืนยันแล้วว่าปลอดภัย”
 :::
 
-See [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/) for the full model.
+ดู [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/) สำหรับโมเดลฉบับเต็ม
 
-## Manage participants and per-agent autonomy
+## จัดการผู้เข้าร่วมและความเป็นอิสระรายเอเจนต์
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+คลิกไอคอนรูปคนในส่วนหัวของสเปซเพื่อเปิด **จัดการผู้เข้าร่วม** สำหรับเอเจนต์แต่ละตัว
+ที่มีอยู่ในสเปซแล้ว คุณสามารถ:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- นำมันออกจากสเปซ
+- ตั้ง **ความเป็นอิสระ** ของมันสำหรับสเปซนี้: **ค่าเริ่มต้น**, **เสนออย่างเดียว**,
+  **ทำเมื่อได้รับอนุมัติ** หรือ **ทำได้อย่างอิสระ**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+ปุ่มความเป็นอิสระเป็นราย (สเปซ, เอเจนต์) เอเจนต์ที่คุณไว้ใจในห้องหนึ่งจึงอาจถูก
+จำกัดให้เสนออย่างเดียวในอีกห้องหนึ่งได้
 
-## React to a message
+## ตอบกลับข้อความด้วยปฏิกิริยา
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+วางเมาส์บนข้อความแล้วคลิกไอคอนรอยยิ้มเพื่อเปิดพาเลตต์ปฏิกิริยา มันเป็นชุดตายตัว
+หกแบบ: 👍 👎 🎉 ❤️ 👀 ✅ ไม่มีตัวเลือกอีโมจิแบบอิสระ — การแตะหนึ่งครั้งจะสลับ
+ปฏิกิริยานั้นให้คุณ และชิปที่รวมแล้วจะปรากฏใต้ข้อความ
 
-## Open a conversation
+## เปิดการสนทนา
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+สเปซหนึ่งรองรับการสนทนาหลายอันพร้อมกัน และทั้งหมดเท่าเทียมกันแบบแบนราบ — ไม่มี
+อันใดเป็นอันหลัก สเปซจะเก็บการสนทนาที่ยังมีชีวิตอยู่ไว้อย่างน้อยหนึ่งอันเสมอ: คุณ
+เก็บถาวรอันสุดท้ายที่ยังใช้งานอยู่ไม่ได้ และการเปิดสเปซที่ยังไม่มีการสนทนาเลยจะ
+สร้างการสนทนาประจำที่ไม่มีชื่อขึ้นมา
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+การสนทนาจะปรากฏเป็นแท็บของตัวแก้ไข และเป็นแถวซ้อนอยู่ใต้สเปซในแถบข้างเมื่อมี
+มากกว่าหนึ่งอัน **การสนทนาใหม่** อยู่ในเมนูแท็บใหม่ของตัวแก้ไข และสร้างการสนทนาที่
+ไม่มีชื่อโดยไม่มีการถามชื่อ — โมเดลชื่อจะตั้งชื่อให้ตามข้อความแรก ใช้มันเพื่อทำงาน
+ขนานกับเอเจนต์และ worktree ชุดเดียวกัน
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+การสนทนาแต่ละอันเก็บประวัติข้อความและเซสชันเอเจนต์ของตัวเองไว้ ขณะที่ใช้ worktree
+ของสเปซและโหมดของสเปซร่วมกัน การปิดแท็บจะซ่อนมันไว้; **เก็บถาวรการสนทนา** (แถวใน
+แถบข้างหรือเมนูบริบทของแท็บแชท) จะเก็บถาวรเฉพาะการสนทนานั้น
 
-## Start a thread
+## เริ่มเธรด
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+วางเมาส์บนข้อความใดก็ได้แล้วเลือก **เริ่มเธรด** มันจะเปิดการสนทนาที่ผูกยึดกับ
+ข้อความนั้น: จุดยึดจะป้อนบริบทเอเจนต์ของการสนทนาใหม่ด้วยหนึ่งบรรทัด และประวัติของ
+บทสนทนาต้นทางจะ **ไม่** ถูกคัดลอกมา
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+เมื่อเธรดมีคำตอบแล้ว ข้อความที่มันเกาะอยู่จะมีแถวงอกขึ้นมาใต้มัน — ใบหน้าของผู้ที่ได้
+พูด จำนวนคำตอบ และเวลาที่คำตอบล่าสุดมาถึง แถวนั้นคือทางกลับเข้าไป: การคลิกมันจะเปิด
+(หรือโฟกัส) แท็บของเธรด มันเป็นร่องรอยเดียวที่เธรดทิ้งไว้ในสตรีมที่มันแยกออกมา
+จึงเป็นเหตุผลว่าทำไมมันถึงอยู่ตรงนั้นตั้งแต่แรก
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+แท็บของเธรดมีชื่อว่า `Thread: <name>` และมีสัญลักษณ์สาขาติดอยู่ จึงไม่มีทางที่แท็บ
+สองอันบนสเปซเดียวกันจะถูกเข้าใจผิดว่าเป็นอันเดียวกัน
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+เธรดไม่ซ้อนกันเด็ดขาด — การผูกยึดกับข้อความที่อยู่ในเธรดอยู่แล้วจะถูกปฏิเสธ ส่วนหัว
+ของการสนทนาจะลิงก์กลับไปยังข้อความจุดยึด การลบข้อความจุดยึดจะลบเธรดนั้น และการ
+เก็บถาวรบทสนทนาต้นทางไม่ขัดขวางเธรดที่มีอยู่แล้วของมัน
 
-## Read state
+## สถานะการอ่าน
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+เครื่องหมายว่าอ่านแล้วถูกจำกัดขอบเขตที่สเปซ ไม่ใช่ที่การสนทนา: การเปิดการสนทนาใดก็
+ได้ในสเปซจะล้างทั้งห้อง สถานะยังไม่อ่านยังคงรวมจากการสนทนาทุกอันของสเปซ รวมทั้ง
+เธรดด้วย เมื่อมีการแสดงรายการการสนทนาใต้สเปซ จุดยังไม่อ่านจะอยู่ที่การสนทนาที่ยัง
+มีงานที่ยังไม่เห็น ไม่ใช่ที่แถวแม่
 
-## Agent-to-agent spaces
+## สเปซระหว่างเอเจนต์
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+สเปซที่เอเจนต์เปิดขึ้นเพื่อคุยกันเองจะถูกแยกเป็นส่วนต่างหากในแถบข้างใต้ **เอเจนต์**
+ยุบไว้เป็นค่าเริ่มต้นและแสดงแบบจาง มันไม่เพิ่มป้ายยังไม่อ่านของคุณเลย — เสียงคุยของ
+เอเจนต์เงียบโดยตัวมันเอง ไม่ใช่เพราะการตั้งค่าที่คุณต้องไปหามาเปิด
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+ชนิดของสเปซมีได้ห้าค่า: `topic` (ค่าเริ่มต้นสำหรับทุกอย่างที่คุณสร้าง), `agentPeer`,
+`system` (จัดการโดยไปป์ไลน์), `pr` (สร้างเมื่อพื้นผิว PR ต้องมีจุดยึด worktree และ
+ถูกซ่อนจากแถบข้างจนกว่าจะมีข้อความ) และ `slack` (สร้างโดยสะพานแชทสำหรับเธรด Slack
+หรือ DM กับบอต และถูกปฏิบัติเหมือนการสนทนาของมนุษย์ทั่วไป)
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Chat with an agent](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
-- [@-mention agents](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/)
-- [Use plan mode](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
+- [แชทกับเอเจนต์](/th-TH/คู่มือ/วิธีทำ/แชทกับเอเจนต์/)
+- [@-mention เอเจนต์](/th-TH/คู่มือ/วิธีทำ/กล่าวถึงเอเจนต์/)
+- [ใช้โหมดแผน](/th-TH/คู่มือ/วิธีทำ/โหมดแผน/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/)
-- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/): how a Slack thread becomes a space
+- [โหมด](/th-TH/คู่มือ/แนวคิด/โหมด/)
+- [สะพานแชท](/th-TH/คู่มือ/แนวคิด/สะพานแชท/): เธรด Slack กลายเป็นสเปซได้อย่างไร

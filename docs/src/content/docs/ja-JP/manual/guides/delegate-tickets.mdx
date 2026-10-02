@@ -1,131 +1,134 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: エージェントに作業を委任
+description: 会話の中でチケットをエージェントに渡し、深さと循環のガードのもとでエージェント同士がサブタスクを委任できるようにします。
 slug: ja-JP/マニュアル/ハウツーガイド/チケット委任
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+このガイドでは、自分の手元にある作業をエージェントへ渡す方法と、エージェント
+同士が作業をやり取りするときに何が起こるかを扱います。
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[チケットをエージェントに割り当ててもディスパッチは行われません]
+エージェントの担当者向けのチケットディスパッチャーはありません。割り当ては所有権を
+記録するだけで、それ以上のことは何も起こりません — スペースは作成されず、ステータスも
+変わらず、エージェントも起動しません。例外は、**チーム**に割り当てられたチケットで、
+これはそのチームのリーダーを起こします。特定の担当者のエージェント作業は会話の中に
+あります。したがって、始める場所もそこです。
 :::
 
-## Hand a ticket to an agent
+## チケットをエージェントに渡す
 
-1. [Create the ticket](/ja-JP/マニュアル/ハウツーガイド/チケット管理/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [チケットを作成](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)します。作業の
+   よりどころとして十分に正確なタイトルと説明を付けます。
+2. その**担当者**をそのエージェントに設定し、所有権を記録に残します。
+3. スペースを開く（または作成し）、そのエージェントを @メンションします。
+4. メッセージ内で `#` メンションを使ってチケットを参照し（コンポーザーが
+   ワークスペースのチケットを自動補完します）、何をしてほしいかを伝えます。
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+エージェントは会話から作業を拾い上げます。その進捗はそのスペースに
+ストリーミングされます。
 
-## What the agent receives
+## エージェントが受け取るもの
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- あなたのメッセージ（タグ付けしたチケット参照を含む）。
+- 作業と報告を行うスペース。
+- ワークスペースのリンクされたリポジトリから作られた、隔離されたワークツリー。
+- スペースの**モード**。実行のツールサーフェスを左右するのはこれです。
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ja-JP/マニュアル/コンセプト/モード/).
+モードはチケットではなくスペースのプロパティです — チケットにモードはありません。
+したがって、同じエージェントが一方のスペースでは `chat`、もう一方では `plan` に
+いることがあります。コンポーザーのモードドロップダウン（**Agent**、**Plan**、
+**Orchestrate**）から選びます。`review` は PR レビューのスペースが設定するもので、
+選択できません。[モード](/ja-JP/マニュアル/コンセプト/モード/)を参照してください。
 
-## Require a structured result
+## 構造化された結果を要求する
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+出力コントラクトは、チケットではなくディスパッチで宣言されます:
+`expected_output_schema` と `output_contract_mode`（既定では strict）です。エージェントは
+`submit_output` を呼び出してこれを満たします。`submit_output` はペイロードをスキーマに
+対して検証し、適合しないものは拒否します。
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+承認された出力も、拒否も、どちらも**エージェントの実行ログ**に残ります。チケット
+自体のステータスはこれに影響されません — コントラクトに失敗しても、チケットは
+失敗しません。
 
-## Monitor progress
+## 進捗を監視する
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **スペース** — エージェントのライブアクティビティ。主要なビューです。
+- **チケット** — そのステータス。動かした人が設定したとおりになります。
+- **オブザーバビリティ → ライブ** (`/workspaces/<workspace-id>/observability`) —
+  ライブのエージェント名簿。
+- **オブザーバビリティ → インサイト** — 実行ログ。コストと所要時間付きです。
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+ダッシュボード画面はありません。ワークスペースの URL だけを開くと、受信トレイに
+リダイレクトされます。
 
-## Let agents delegate to each other
+## エージェント同士で委任できるようにする
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+部分問題にぶつかったエージェントは、`delegate_task` MCP ツールで委任します。これは
+別のエージェントに割り当てられた子チケットを作成し、`parent_ticket_id` を渡した
+場合は、ガードが見られるように連鎖を記録します。
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+チケッティングのチョークポイントでは、プロンプトの指示によってではなく、常に
+2 つの構造的ガードが実行されます:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **深さの上限** — 3 ホップより深い連鎖は拒否されます。
+- **循環検出** — すでに連鎖にいるエージェントへ戻るホップは拒否されます。
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+`from_agent_id` を渡すと、さらに 2 つのガードが実行されます（プロダクションは常に
+リゾルバーポートを供給します）:
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **自律性の上限** — スペース内での委任先の実効レベルが、委任元を超えてはなりません。
+- **予算のエンベロープ** — 委任は委任元の残りのハードストップ予算から引かれ、
+  それ以上を生み出すことはできません。ポリシーがない場合、または無制限の
+  ポリシーの場合は通過します。
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+拒否は声高です。ツールはガードの理由をそのまま返すため、委任したエージェントは
+理由を正確に把握できます。`delegatedByAgentId` フィールドは誰が委任したかを記録し、
+委任ツリーを形成します。
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` はすべてのガードをスキップします]
+古い `delegate_ticket` ツールは今も登録されており、`createTicket` を直接呼び出します —
+深さの上限も、循環のチェックも、自律性の上限も、予算のエンベロープもありません。
+`delegate_task` を優先してください。
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+この委任の深さの上限 3 は、内蔵ハーネスのサブエージェントのネスト上限 2 とは
+別の制限です — 一方はエージェント間のチケットを制限し、もう一方は 1 回の実行内の
+サブエージェントを制限します。
 
-## Put several agents on one ticket
+## 複数のエージェントを 1 つのチケットに割り当てる
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+チケットに**コラボレーター**として追加します（ロール: 担当者、コラボレーター、
+レビュアー）。これは名簿、つまり誰が関わっているかの記録であり、それ自体では
+何も付与しません。
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ja-JP/マニュアル/ハウツーガイド/スペース/).
+実際にエージェントを同じ会話に入れるには、スペースのヘッダーから参加者として
+追加します。そうすると、そこで互いに @メンションできるようになります。
+[スペース](/ja-JP/マニュアル/ハウツーガイド/スペース/)を参照してください。
 
-## Automated ticket creation
+## 自動でのチケット作成
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+パイプラインのパレットにチケットを作成するノードはないため、パイプラインで作業を
+割り当て済みチケットとして展開することはできません。
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/).
+存在する経路はオーケストレーションです。提案を承認するとプロジェクトとチームが
+作成され、提案のサブチケット DAG が**パイプラインテンプレート**にコンパイルされ
+（サブチケットごとに 1 つの `promptAgent` ステップで、それぞれが `Ticket` 行に
+なるわけではありません）、その実行が開始されます。
+[オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+を参照してください。
 
-## Related guides
+## 関連するガイド
 
-- [Create and manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
-- [Chat with an agent](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
-- [Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
-- [Organize work with projects](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)
-- [Ticket lifecycle reference](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/)
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
+- [エージェントとチャット](/ja-JP/マニュアル/ハウツーガイド/エージェントとチャット/)
+- [オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+- [プロジェクトで作業を整理](/ja-JP/マニュアル/ハウツーガイド/プロジェクト/)
+- [チケットのライフサイクル](/ja-JP/マニュアル/リファレンス/チケットライフサイクル/)
 
-## Related concepts
+## 関連するコンセプト
 
-- [Tickets](/ja-JP/マニュアル/コンセプト/チケット/)
-- [Dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
-- [Modes](/ja-JP/マニュアル/コンセプト/モード/)
+- [チケット](/ja-JP/マニュアル/コンセプト/チケット/)
+- [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)
+- [モード](/ja-JP/マニュアル/コンセプト/モード/)

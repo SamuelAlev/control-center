@@ -1,180 +1,203 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Εργασία στο Plan Studio
+description: Ελέγξτε, επεξεργαστείτε, εκτιμήστε, συγκρίνετε και εγκρίνετε ένα σχέδιο στον επεξεργαστή Plan Studio και εκτελέστε παραμετροποιημένα playbooks.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) and
-[Use plan mode](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/).
+Αυτός ο οδηγός δείχνει πώς να εργάζεστε με σχέδια στο Plan Studio. Για το τι
+είναι οι ενορχηστρώσεις και τα έγγραφα σχεδίων, δείτε
+[Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) και
+[Χρήση λειτουργίας σχεδίου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/).
 
-## Open a plan
+## Άνοιγμα σχεδίου
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Ένα σχέδιο ανήκει στη συνομιλία που το παρήγαγε, οπότε συνήθως το βρίσκετε
+εκεί: η γραμμή του σχεδίου στη συνομιλία έχει ενέργεια **Άνοιγμα** και το Plan
+Studio ανοίγει ως καρτέλα επεξεργαστή δίπλα στη συνομιλία.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Δεν υπάρχει στοιχείο «Σχέδια» στην πλαϊνή στήλη]
+Αυτό είναι σκόπιμο, όχι παράλειψη. Η κεντρική σελίδα στο
+`/workspaces/<workspace-id>/plans` είναι μόνο απευθείας σύνδεσμος με δική του
+διαδρομή, οπότε προσθέστε τη στους σελιδοδείκτες αν θέλετε έναν σταθερό
+κατάλογο.
 :::
 
-The hub lists three sections:
+Η κεντρική σελίδα παραθέτει τρεις ενότητες:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Ενεργά σχέδια** — ενορχηστρώσεις, πρώτα οι προτεινόμενες, με την κατάσταση,
+  τον αριθμό βημάτων και τον αριθμό αναθεώρησης.
+- **Έγγραφα σχεδίων** — σχέδια που υπέβαλε ένας μεμονωμένος πράκτορας με το
+  `submit_plan` στη
+  [λειτουργία σχεδίου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/),
+  όσο βρίσκονται σε κατάσταση προτεινόμενη ή εγκεκριμένη.
+- **Playbooks** — αποθηκευμένα, παραμετροποιημένα πρότυπα σχεδίων.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Πατήστε μια κάρτα για να την ανοίξετε στο Plan Studio. Η διαδρομή είναι
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, όπου `kind` είναι
+`orchestration` ή `document`, ώστε να μπορείτε να συνδέεστε απευθείας και σε
+ένα μεμονωμένο σχέδιο.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Αν ανοίξετε μια **ενορχήστρωση**, παίρνετε τον επεξεργάσιμο καμβά, το
+χρονολόγιο εκδόσεων και τη γραμμή έγκρισης. Αν ανοίξετε ένα **έγγραφο
+σχεδίου**, το ίδιο γράφημα αποδίδεται μόνο για ανάγνωση — τα έγγραφα σχεδίων
+συντάσσονται από πράκτορες· τα ελέγχετε, τα εκτιμάτε και τα εγκρίνετε ή τα
+απορρίπτετε, και ένα εγκεκριμένο έγγραφο δείχνει ζωντανή κατάσταση εκτέλεσης
+ανά κόμβο από την ενορχήστρωση στην οποία μεταγλωττίστηκε.
 
-## Edit the DAG
+## Επεξεργασία του DAG
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+Οι επεξεργασίες είναι δυνατές σε μια **ενορχήστρωση** όσο βρίσκεται σε
+κατάσταση `proposed`. Όλες οι επεξεργασίες στον καμβά γίνονται από το
+πληκτρολόγιο:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Πατήστε τον καμβά και μετά μετακινήστε την επιλογή με τα **πλήκτρα βέλους**.
+2. Πατήστε **n** για να προσθέσετε ένα βήμα. Εμφανίζεται επιλεγμένο ως «Νέο
+   βήμα»· μετονομάστε το στον επιθεωρητή στα δεξιά.
+3. Πατήστε **e** στο βήμα που πρέπει να εκτελεστεί πρώτο και μετά πατήστε το
+   εξαρτώμενο βήμα (ή επιλέξτε το και πατήστε **Enter**) για να συνδέσετε μια
+   εξάρτηση. Πατήστε **Esc** για να εγκαταλείψετε μια εκκρεμή σύνδεση.
+4. Πατήστε **x** για να κόψετε τη νεότερη εξάρτηση του επιλεγμένου βήματος ή να
+   εναλλάξετε ακριβείς εξαρτήσεις στον επεξεργαστή εξαρτήσεων του επιθεωρητή.
+5. Πατήστε **Delete** για να αφαιρέσετε το επιλεγμένο βήμα· οι αναφορές σε αυτό
+   αφαιρούνται από τις εξαρτήσεις των υπόλοιπων βημάτων.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Στον επιθεωρητή μπορείτε επίσης να επεξεργαστείτε την περιγραφή, τον ρόλο και
+το σχήμα εξόδου του βήματος. Οι επεξεργασίες αποθηκεύονται αυτόματα ως νέα
+αναθεώρηση μετά από μια σύντομη παύση· ένα σφάλμα επικύρωσης (εμφανίζεται στη
+γραμμή έγκρισης) μπλοκάρει την αποθήκευση μέχρι να το διορθώσετε.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Μόνο τα βήματα εργασίας είναι επεξεργάσιμα. Οι δομικοί κόμβοι — έρευνα, συζήτηση
+και σύνθεση — είναι μόνο για ανάγνωση, όπως και κάθε βήμα του οποίου η εργασία
+έχει ήδη εκτελεστεί (επισημαίνεται ως «έχει ήδη εκτελεστεί», επειδή η
+επεξεργασία του θα διακλάδωνε το σχέδιο).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+Η αποθήκευση είναι αισιόδοξα ταυτόχρονη πάνω στην αναθεώρηση από την οποία
+ξεκινήσατε. Αν ο ενορχηστρωτής επανασχεδιάσει κάτω από τα πόδια σας, η
+αποθήκευσή σας απορρίπτεται με «the plan moved on» αντί να συγχωνευτεί ή να
+πατηθεί σιωπηλά· ξαναδιαβάστε την τρέχουσα αναθεώρηση και επαναλάβετε την
+επεξεργασία σας. Οι επανασχεδιασμοί που ξεκινά πράκτορας είναι οι ίδιοι
+περιορισμένοι σε έναν κάθε δύο λεπτά, οπότε αυτό παραμένει σπάνιο.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+Ο καμβάς δεν έχει μετακίνηση με σύρσιμο: η διάταξη υπολογίζεται από τη δομή των
+εξαρτήσεων, οπότε η «μετακίνηση» ενός βήματος σημαίνει επανασύνδεση των
+εξαρτήσεών του.
 :::
 
-## Read cost, time and risk estimates
+## Διαβάστε τις εκτιμήσεις κόστους, χρόνου και κινδύνου
 
-Press **Estimate** in the approval bar.
+Πατήστε **Εκτίμηση** στη γραμμή έγκρισης.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- Κάθε βήμα στον καμβά παίρνει ένα σήμα με εύρος κόστους και το μέγεθος δείγματος
+  πίσω του ή «Δεν υπάρχει ακόμη ιστορικό» όταν ο ρόλος του βήματος δεν έχει
+  εκτελεστεί ποτέ. Επιλέξτε ένα βήμα για την πλήρη λεπτομέρεια στον επιθεωρητή:
+  εύρος κόστους με μέγεθος δείγματος, εύρος διάρκειας και ακτίνα επίδρασης
+  (αρχεία και σύμβολα) που προέρχεται από την προέλευση του βήματος — ή
+  «άγνωστο» όταν το βήμα δεν φέρει προέλευση.
+- Η γραμμή έγκρισης δείχνει το σύνολο του σχεδίου: ένα συνολικό εύρος κόστους,
+  ένα εύρος διάρκειας για την κρίσιμη διαδρομή (οι παράλληλοι κλάδοι
+  επικαλύπτονται, οπότε αυτό δεν είναι το άθροισμα) και το όριο προϋπολογισμού
+  όταν το σχέδιο ορίζει ένα.
+- Αν μόνο μερικά βήματα έχουν ιστορικό, το σύνολο επισημαίνεται ως **μερική** και
+  καλύπτει μόνο τα βήματα που μπορούν να εκτιμηθούν. Αν το πάνω άκρο της
+  εκτίμησης υπερβαίνει το όριο προϋπολογισμού, το σύνολο γίνεται κόκκινο με
+  προειδοποίηση υπέρβασης προϋπολογισμού.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+Οι εκτιμήσεις είναι ειλικρινείς ή απούσες: ένα βήμα του οποίου ο ρόλος δεν έχει
+ιστορικό ολοκληρωμένων εκτελέσεων αναφέρει μέγεθος δείγματος μηδέν χωρίς
+καθόλου εύρη και εμφανίζεται ως άγνωστο αντί να μαντευτεί. Αντιμετωπίστε το
+«Δεν υπάρχει ακόμη ιστορικό» ως «κανείς δεν ξέρει», όχι ως «φθηνό».
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/) for controls that actually stop
-spending.
+Το όριο προϋπολογισμού είναι μια σύγκριση προβολής με αυτή την εκτίμηση. Τίποτα
+δεν το επιβάλλει μόλις το σχέδιο εκτελείται — δείτε
+[Διαχείριση κόστους](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/) για
+ελέγχους που σταματούν πραγματικά τις δαπάνες.
 
-## Diff a revision against an earlier proposal
+## Σύγκριση αναθεώρησης με παλαιότερη πρόταση
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Κάθε επεξεργασία και κάθε επανασχεδιασμός από τον ενορχηστρωτή προσθέτει σε ένα
+χρονολόγιο αναθεωρήσεων μόνο-προσθήκης, που εμφανίζεται στον πίνακα **Εκδόσεις**
+στα αριστερά ενός σχεδίου ενορχήστρωσης.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Πατήστε μια αναθεώρηση για να τη συγκρίνετε με την τρέχουσα πρόταση. Χωρίς
+   επιλογή, ο πίνακας συγκρίνει την προηγούμενη αναθεώρηση με την τρέχουσα.
+2. Διαβάστε το diff στο κάτω μισό του πίνακα: βήματα που προστέθηκαν,
+   αφαιρέθηκαν ή άλλαξαν μεταξύ των δύο αναθεωρήσεων.
+3. Αν το σχέδιο είναι ακόμη `proposed`, πατήστε το εικονίδιο επαναφοράς σε μια
+   αναθεώρηση για να επιστρέψετε σε αυτήν. Η επαναφορά αποθηκεύει αυτή την
+   πρόταση ως **νέα** αναθεώρηση — τίποτα δεν χάνεται.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+Το `propose_orchestration` και ο επεξεργαστής απορρίπτουν και οι δύο αλλαγές
+μόλις το σχέδιο δεν είναι πλέον `proposed`, ώστε μια εκτέλεση σε εξέλιξη να μην
+υιοθετεί έναν επανασχεδιασμό στη μέση της εκτέλεσης.
 
-## Approve, reject, or widen a plan
+## Έγκριση, απόρριψη ή διεύρυνση σχεδίου
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Από την εφαρμογή, ένα προτεινόμενο σχέδιο είναι μία απόφαση, που λαμβάνεται στο
+σύνολό της: **Έγκριση σχεδίου** ή **Απόρριψη** στη γραμμή έγκρισης. Η **Έγκριση
+σχεδίου** εγκρίνει πάντα κάθε βήμα — δεν υπάρχει τρόπος να επιλέξετε πρώτα ένα
+υποσύνολο. Η έγκριση μπλοκάρεται όσο η πρόταση έχει σφάλματα επικύρωσης, τα
+οποία εμφανίζονται δίπλα στα κουμπιά.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+Η έγκριση είναι μόνο για τον χειριστή. Δεν υπάρχει εργαλείο MCP γι' αυτήν, οπότε
+ένας πράκτορας μπορεί να προτείνει και να αναθεωρήσει ένα σχέδιο, αλλά ποτέ να
+το εγκρίνει.
 
-Once an orchestration is executing, the bar changes:
+Μόλις μια ενορχήστρωση εκτελείται, η γραμμή αλλάζει:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Αν ένα βήμα σταμάτησε για να ρωτήσει στη μέση της εκτέλεσης, επιλέξτε το και
+  πατήστε **Συνέχεια κόμβου** για να το συνεχίσετε.
+- Πατήστε **Έγκριση επιλεγμένων** για να διευρύνετε μια _μερική_ έγκριση στο
+  επιλεγμένο βήμα συν όλα όσα εξαρτάται μεταβατικά (ένα βήμα δεν μπορεί ποτέ να
+  εγκριθεί χωρίς τις εξαρτήσεις του). Το στοιχείο ελέγχου βρίσκεται στη γραμμή
+  εκτέλεσης για κάθε ενορχήστρωση· δεν έχει κανένα αποτέλεσμα όταν το σχέδιο
+  εγκρίθηκε στο σύνολό του.
+- Πατήστε **Ακύρωση εκτέλεσης** για να σταματήσετε ολόκληρη την ενορχήστρωση.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+Τα βήματα εκτός ενός μερικά εγκεκριμένου συνόλου αποδίδονται ως αναβληθέντα και
+δεν εκτελούνται μέχρι να διευρύνετε το σύνολο.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Οι μερικές εγκρίσεις δεν μπορούν να προέλθουν από την εφαρμογή]
+Μια μερική έγκριση υπάρχει μόνο όταν κάτι κάλεσε το `orchestration.approve` μέσω
+RPC με ρητή λίστα `approved_node_keys`. Η **Έγκριση σχεδίου** στην εφαρμογή
+εγκρίνει πάντα κάθε βήμα. Τα έγγραφα σχεδίων εγκρίνονται στο σύνολό τους σε κάθε
+περίπτωση, οπότε ένα έγγραφο σε εκτέλεση προσφέρει μόνο **Ακύρωση εκτέλεσης**.
 :::
 
-## Run a playbook with parameters
+## Εκτέλεση playbook με παραμέτρους
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/) instead.
+Ένα playbook είναι ένα αποθηκευμένο πρότυπο σχεδίου με τυποποιημένα σύμβολα
+θέσης `{{param}}` στον στόχο, τους τίτλους βημάτων, τις περιγραφές και τις
+προτροπές του. Η αντικατάσταση είναι κυριολεκτική — δεν υπάρχει γλώσσα
+εκφράσεων· αν χρειάζεστε λογική, χρησιμοποιήστε ένα
+[pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/) αντ' αυτού.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. Στην ενότητα **Playbooks** της κεντρικής σελίδας, πατήστε **Εκτέλεση** στο
+   playbook (ή ανοίξτε την παλέτα ⌘K και επιλέξτε εκεί το playbook).
+2. Συμπληρώστε τις παραμέτρους. Οι παράμετροι απαρίθμησης αποδίδονται ως
+   αναπτυσσόμενα μενού· οι παράμετροι αποθετηρίου και πράκτορα δέχονται αναφορά
+   αποθετηρίου ή πράκτορα· οι προαιρετικές παράμετροι επιστρέφουν στην
+   προεπιλεγμένη τιμή τους.
+3. Επιλέξτε το **εισιτήριο άγκυρας** σε σχέση με το οποίο προτείνεται το σχέδιο
+   και μετά επιβεβαιώστε.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Η εκτέλεση ενός playbook μόνο **προτείνει** ένα σχέδιο — η ενορχήστρωση που
+δημιουργείται ανοίγει στο Plan Studio ως `proposed` και τίποτα δεν εκτελείται
+μέχρι να το εγκρίνετε εκεί. Για να αφαιρέσετε ένα playbook, πατήστε το εικονίδιο
+κάδου στην κάρτα του.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
+Οι πράκτορες δημιουργούν και εκτελούν playbooks με τα εργαλεία MCP
+`create_playbook` και `run_playbook`· δείτε την
+[αναφορά εργαλείων MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Use plan mode](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/): the engine view of an approved plan
+- [Χρήση λειτουργίας σχεδίου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/λειτουργία-σχεδίου/): πώς ένας πράκτορας παράγει ένα έγγραφο σχεδίου με το `submit_plan`
+- [Εκτέλεση ενορχήστρωσης](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης/): ο κύκλος ζωής μίας έγκρισης από την πλευρά της συνομιλίας
+- [Δημιουργία προτύπου pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/): όταν χρειάζεστε λογική που ένα playbook δεν μπορεί να εκφράσει
+- [Παρακολούθηση εκτελέσεων pipeline](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/): η προβολή του μηχανισμού για ένα εγκεκριμένο σχέδιο
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)
+- [Ενορχήστρωση](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)

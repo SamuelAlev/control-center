@@ -1,172 +1,188 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Csevegés ügynökkel
+description: Hozzon létre egy teret ügynökkel, adjon neki munkát, terelje futás közben, és állítsa le.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Ez az útmutató bemutatja, hogyan dolgozhat egy ügynökkel egy térben.
 
-## Create a space
+## Tér létrehozása
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Nyissa meg az oldalsávban a **Terek** pontot
+2. Kattintson a Terek címsor melletti **+** gombra
+3. Írjon be egy **nevet** — ez kötelező. Az üres nevet elutasítja a rendszer;
+   a párbeszédablak nyitva marad
+4. Ha szeretne, adjon hozzá ügynököket a munkaterületről
+5. Ha a munkaterületen van bármilyen repó, megjelenik egy repóválasztó. Kezdetben
+   minden repó ki van jelölve; szűkítse arra a repókra, amelyekhez ez a tér
+   worktree-ket provisionáljon (egyetlen repó kijelölésének megszüntetése is ide
+   tartozik)
+6. Erősítse meg
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+A Control Center megnyitja a teret, és a háttérben elkezd kijelölt repónként egy
+copy-on-write worktree-t provisionálni.
 
-## Send the first message
+## Az első üzenet elküldése
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Írja be az üzenetét a beviteli mezőbe, és nyomja le az Entert. Az ügynök elindul,
+és streamelni kezdi a válaszát.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Ha a tér még provisionálás alatt áll, az üzenete nem vész el, hanem várakozik —
+a beviteli mező megtartja, és automatikusan elküldi, amint a worktree-k
+elkészültek.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+Ahogy az ügynök dolgozik, látja beérkezni a kört: érvelési szegmensek,
+eszközhívások (fájlolvasások, írások, shell-parancsok) és a válasz szövege —
+mindez egyetlen ügynökkör-üzeneten belül.
 
-## Steer a running agent
+## Futó ügynök terelése
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+Amíg egy ügynök dolgozik, a sima beszélgetési szöveg **nem** állít sorba új kört.
+Várólistás irányítókártyává válik a beviteli mező feletti sávban, és a következő
+körhatáron bekerül a futó futtatásba. Nincs felugró értesítés — a visszajelzést
+maga a kártya adja.
 
-Three things change that behaviour:
+Három dolog változtat ezen a viselkedésen:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Az **@említést** tartalmazó üzenet mindig üzenetként megy el, soha nem
+  irányításként
+- A **slash-paranccsal** kezdődő üzenetet mindig az adott parancsként kezeli a
+  rendszer
+- A **mellékletet** tartalmazó üzenet mindig üzenetként megy el — az irányítási
+  várólista csak szöveget fogad
+- Ha minden élő futtatás már befejeződött, a szöveg átcsúszik, és rendes
+  üzenetként megy el
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Az irányításhoz a beépített harness kell]
+Egyedül a beépített Control Center harness szúr be futás közben. A Claude Code
+adapteren a szöveg továbbra is irányítókártyaként kerül a várólistára; amikor a
+futtatás véget ér, a még várólistán lévő tartalom rendes üzenetté alakul.
 :::
 
-## Approve a blocked action
+## Blokkolt művelet jóváhagyása
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+Amikor az ügynök olyan műveletbe ütközik, amelyet a korlátai kapuznak — egy
+destruktív parancsba vagy egy kiemelt jogosultságú eszközbe —, a szerver
+**blokkolja a futtatást**, és jóváhagyási kérést tesz közzé minden csatlakozott
+kliensnek. Ha éppen meg van nyitva az a beszélgetés, a kérés **a csevegésben**, a
+beviteli mező felett jelenik meg, ugyanolyan számozott opciós kártyaként, mint
+amilyet az `ask_user` használ (tiltás, jóváhagyás, és opcionálisan jóváhagyás
+nyolc órára). Nincs kihagyás: a blokkolt ügynök döntésre vár.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Ha az alkalmazás más részén jár, a felületen egy mindig felül lévő panel
+továbbra is felsorolja, mi vár döntésre, így anélkül oldhatja fel az ügynök
+blokkolását, hogy a teret keresgélnie kellene. Az átfedő panel abban a
+pillanatban elrejti a kérést, amikor az adott tér beszélgetése megjelenik a
+képernyőn, így soha nem válaszol ugyanarra a kérésre kétszer.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Nincs időtúllépés: a blokkolt ügynök addig vár, amíg valaki nem dönt. Ugyanez a
+kérés megjelenik a beérkezett üzenetek figyelmet igénylő sávjában és a telefonos
+kliensen is.
 
-## Answer an agent's question
+## Válasz egy ügynök kérdésére
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+Az ügynöknek, ha beállítást, hiányzó követelményt vagy valódi elágazást kell
+tisztáznia, **muszáj** meghívnia az `ask_user` eszközt. Ha a kérdést
+csevegőüzenetként írja meg, az lezárja a kört, és újra kell kérnie. Az eszköz
+számozott kártyát jelenít meg a beszélgetésben — opciók, opcionális szabad
+szöveg vagy mindkettő —, és a futtatás a válaszára vár.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Koppintson egyetlen opcióra az elküldéséhez (a végi szám fölévittel nyíllá
+változik). A több elem kijelölését és a beírt válaszokat a **Folytatás**
+(`⌘↵` / `Ctrl↵`) küldi el. A **Kihagyás** azt mondja az ügynöknek, hogy
+válasszon egy észszerű alapértelmezést, és ne kérdezzen újra.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+Ez külön mechanizmus a fenti jóváhagyási kártyától: a jóváhagyás a „megtehetem
+ezt?”, a kérdés pedig a „melyikre gondoltál?”. A kérdezés minden módban
+elérhető a beépített harnessen, a csak olvasható módokat is beleértve (nem
+módosít semmit), és szándékosan nincs jóváhagyási kérésbe csomagolva — egy
+párbeszédablak egy másik előtt zárt állapotban hibázna, ha nincs csatlakozva
+jóváhagyó. Egy olyan futtatás, amelynek nincs beszélgetése, ahová
+megjeleníthetné, egyszerűen nem kapja meg az eszközt.
 
-## Stop an agent
+## Ügynök leállítása
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Amíg futások vannak folyamatban, a beviteli mező küldés gombja **Leállítás**
+gombbá válik. Ürítse ki a beviteli mezőt, és nyomja meg — ezzel leállítja a
+beszélgetésben futó összes ügynököt.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+A tér fejlécében nincs leállításvezérlő, és billentyűparancs sincs hozzá. Ha több
+élő futás közül csak egyet szeretne leállítani, nyissa meg az adott futtatás
+tevékenységfülét — a fejléce futtatásra vonatkozó szüneteltetés/folytatás és
+leállítás vezérlőt tartalmaz (a leállítás megerősítést kér).
+A **Megfigyelhetőség → Élő** nézet a munkaterület minden futó ügynökét felsorolja
+ugyanezzel a vezérlővel.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+A leállított futtatás leállítottként van megjelölve. Küldjön új üzenetet az
+újbóli elindításhoz.
 
-## Use slash commands
+## Slash-parancsok használata
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Írjon be egy `/` karaktert a beviteli mezőbe a parancslista megjelenítéséhez. A
+beszélgetés viselkedését megváltoztató parancsok:
 
-| Command        | What it does                                                                                                                         |
+| Parancs        | Mit tesz                                                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | Tervmódba váltja a teret. Az önmagában álló `/plan` csak élesíti a módot; a `/plan <request>` élesíti, és a többit az üzeneteként küldi el |
+| `/goal <text>` | Rögzíti a beszélgetés munkacélját                                                                                                    |
+| `/loop <text>` | Addig iterál egy feladaton, amíg az be nem fejeződik                                                                                |
+| `/compact`     | Régebbi előzményeket horgonyzott összefoglalóba hajt össze, és a tömörített kontextuson folytatja                                    |
+| `/todo …`      | Megtekinti és szerkeszti a beszélgetés tartósított tennivalólistáját                                                                 |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+A készségek ugyanabban a listában, a saját `skill:` névterük alatt jelennek meg,
+így soha nem ütköznek a fenti parancsokkal — egy `plan` vagy `compact` nevű
+készség elérhető marad:
 
-| Command                     | What it runs                                                       |
+| Parancs                     | Mit futtat                                                         |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | Egy munkaterületre telepített vagy az ügynökhöz csatolt készség     |
+| `/skill:<repo>:<name>`      | A térben checkoutolt repók egyike által szállított készség          |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+A repókészségek a származási repójuk jelvényét viselik, mert egy név önmagában
+nem árulja el, melyik szolgáltatás konvencióit kódolja, és két repó is
+szállíthat egy-egy `testing` nevűt. A megtalálásukhoz nem kell begépelnie az
+előtagot: a csupasz készségnév beírása a névtérbe tartozó bejegyzésekre is
+illeszkedik.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+Az ügynök mindig csak annak a repónak a készségeit hordozza, amelyben éppen
+dolgozik — lásd a [Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills)
+szakaszt. A beviteli mező viszont nincs így leszűkítve: a megnevezésével
+bármelyik repó készségét meghívhatja.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+A `/compact` és a `/todo` parancsot a kliens fogja el, és soha nem
+perzisztálódnak üzenetként — egy `/compact` sor az átiratban egy körrel hátrébb
+tolná a következő tömörítés vágási pontját. A `/plan` a tér tárolt módját
+billenti át, nem szövegként utazik. Így a három közül egyik sem „az ügynöknek
+küldött üzenet”; ne számítson arra, hogy megjelennek az előzményekben.
 
-## Ask for a plan first
+## Először kérjen tervet
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/).
+Egy összetett változtatás előtt váltsa a teret tervmódba a `/plan` paranccsal, a
+beviteli mező eszköztárán lévő módválasztóval vagy a Shift+Tab
+billentyűkombinációval. Az ügynök ezután csak olvasható módon kutat, és egy
+típusos tervet ad át, amelyet jóváhagy, mielőtt bármilyen munka elindulna. Lásd
+a [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/) oldalt.
 
-## Reach an agent without a dedicated space
+## Ügynök elérése külön tér nélkül
 
-You do not need a space per agent. In any space:
+Nem kell ügynökönként külön tér. Bármelyik térben:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/) for how names are
-matched.
+Az említett ügynök bekerül a térbe, és az adott tér kontextusával indul el. A
+névillesztésről lásd az [Ügynökök @-említése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/)
+oldalt.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use spaces](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
-- [@-mention agents](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/)
-- [Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/)
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) to do the same from Slack
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
+- [Ügynökök @-említése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-emlitese/)
+- [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/) ugyanehhez Slackből
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/)
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/)

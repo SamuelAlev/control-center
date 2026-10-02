@@ -1,102 +1,106 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Deine erste Pipeline bauen
+description: Lege eine Pipeline-Vorlage an, konfiguriere ihren Schritt, lass manuelle Läufe zu und starte einen.
 slug: de-DE/handbuch/tutorials/erste-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Was du baust
 
-By the end of this tutorial, you will have:
+Am Ende dieser Anleitung hast du:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Eine gespeicherte Pipeline-Vorlage, die einen Agenten mit einem Prompt losschickt
+- Eingeschaltete manuelle Läufe, sodass du die Vorlage von Hand starten kannst
+- Einen abgeschlossenen Lauf, mit sichtbarer Eingabe und Ausgabe des Schritts
 
-Prerequisites: [Dispatch your first agent](/de-DE/handbuch/tutorials/erster-agent/) completed, so you have an agent with an adapter and a model.
+Voraussetzung: [Deinen ersten Agenten starten](/de-DE/handbuch/tutorials/erster-agent/) ist abgeschlossen, du hast also einen Agenten mit Adapter und Modell.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/de-DE/handbuch/konzepte/pipelines/); for the full step vocabulary, [Pipeline step kinds](/de-DE/handbuch/referenz/pipeline-schritte/).
+Eine Pipeline ist ein DAG aus Schritten. Vorlagen legen den Graphen fest, Läufe sind Ausführungen. Das Modell dahinter steht unter [Pipelines und Automatisierung](/de-DE/handbuch/konzepte/pipelines/), das vollständige Schrittvokabular unter [Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/).
 
-## Step 1: Create a template
+## Schritt 1: Eine Vorlage anlegen
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Geh zu **Einstellungen → Arbeitsbereich → Pipeline-Vorlagen**
+2. Klicke auf **Neue Vorlage**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Der Editor öffnet sich auf einem angelegten Gerüst namens **Neue Pipeline** (ID `pipeline_N`).
+Klicke in der Kopfzeile auf den Titel und benenne ihn um — für diese Anleitung
+passt `code_quality_check`. Einen Dialog für die ID gibt es nicht, und auch kein
+Beschreibungsfeld.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Die Zeichenfläche ist nicht leer. Eine neue Vorlage ist schon verdrahtet als
+**Trigger → Step → Endmarke**: „Step“ ist ein Prompt-Agenten-Knoten, und die
+Endmarke ist eine unsichtbare Sentinel, die der Editor auf jede erreichbare Senke
+neu verdrahtet.
 
-You configure the Step that is already there.
+Den **Step**, der schon da ist, konfigurierst du.
 
-## Step 2: Configure the step
+## Schritt 2: Den Schritt konfigurieren
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Klicke auf der Zeichenfläche auf den Knoten **Step**
+2. Setze im Panel **Knoten-Konfiguration** rechts:
+   - **Agent**: deinen Agenten aus der vorigen Anleitung
+   - **Prompt-Vorlage**: „Prüfe den Code auf dem aktuellen Branch auf Qualitätsprobleme. Liste auf, was du findest.“
+3. **Auslöser von** lässt du unverändert — der Knoten ist schon so verdrahtet, dass er nach Trigger feuert
 
-## Step 3: Save
+## Schritt 3: Speichern
 
-Press **Save** in the editor header.
+Klicke in der Kopfzeile des Editors auf **Speichern**.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Kontrollpunkt.** Die Beschriftung „Nicht gespeicherte Änderungen“ verschwindet.
 
-## Step 4: Allow manual runs
+## Schritt 4: Manuelle Läufe zulassen
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Klicke auf der Zeichenfläche auf die gestrichelte Kachel **Auslöser hinzufügen** (oder ziehe **Manueller Lauf**
+   aus dem Abschnitt **Auslöser** der Knotenbibliothek) und wähle **Manueller Lauf**.
+2. Wähle diesen Knoten. Schalte im Inspektor rechts **Aktiviert** ein —
+   „Auf der Ausführungsseite anzeigen und manuell starten.“
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Das ist nicht optional, und es ist leicht zu übersehen. Eine neue Vorlage wird mit **gar keiner Trigger-Zeile** angelegt, die Ausführungsseite führt sie also nicht auf und es gibt nichts zu starten, bis du das einschaltest. Der Schalter schreibt den Trigger sofort und wartet nicht auf ein weiteres Speichern.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Derselbe Schalter steckt hinter **Manuelle Ausführung** in der Kopfzeile des Editors, neben den deklarierten Eingaben der Vorlage.
 
-## Step 5: Run it
+## Schritt 5: Ausführen
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Klicke in der Seitenleiste auf **Pipelines**
+2. Klicke in der Kopfzeile auf **Pipeline ausführen**
+3. Wähle in der linken Leiste `code_quality_check`
+4. Klicke im Formular auf **Pipeline ausführen** — deine Vorlage deklariert keine Eingaben, es gibt also nichts auszufüllen
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Kontrollpunkt.** Ein Toast bestätigt, dass der Lauf gestartet ist, und Control Center öffnet die Detailseite des Laufs.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Die Engine legt den Laufdatensatz an, schließt den Trigger ab, plant den Schritt ein, schickt den Agenten los und schließt den Lauf ab, sobald der eingehende Zweig der Endmarke fertig ist.
 
-## Step 6: Inspect the result
+## Schritt 6: Das Ergebnis prüfen
 
-Click the step in the run to open its detail panel:
+Klicke im Lauf auf den Schritt, um sein Detailpanel zu öffnen:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Die Zeitstempel **Gestartet** und **Abgeschlossen** sowie die **Dauer**
+- **Eingabe**: der Zustand, der an den Schritt übergeben wurde
+- **Ausgabe**: was er erzeugt hat — hier die Antwort des Agenten
+- **Agent-Aktivität**, mit einem Link in die Unterhaltung, die der Schritt geführt hat
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Kontrollpunkt.** Der Schritt steht auf Completed, und seine Ausgabe enthält die Review des Agenten.
 
-## Adding more steps
+## Weitere Schritte hinzufügen
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Knoten fügst du hinzu, indem du einen Eintrag aus der Knotenbibliothek links auf
+die Zeichenfläche ziehst oder direkt hinter einem Knoten auf **Schritt hinzufügen** (`+`)
+drückst. Ziehe vom Ausgabeport eines Knotens auf einen anderen, um sie zu
+verbinden, oder wähle den neuen Knoten und tippe unter **Auslöser von** den
+vorgelagerten Schritt an.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Die Endmarke wird nicht gezeichnet und lässt sich nicht auswählen. Der Editor
+verdrahtet sie neu auf jede erreichbare Senke, sodass ein Knoten, den du hinter
+dem angelegten **Step** hinzufügst, trotzdem läuft.
 
-## Recap
+## Rückblick
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Du hast eine Vorlage angelegt, den Prompt-Agenten-Knoten konfiguriert, mit dem sie angelegt wurde, sie gespeichert, manuell ausführbar gemacht, einen Lauf gestartet und Eingabe sowie Ausgabe des Schritts gelesen.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipelines werden viel größer als das — bedingte Router, parallele Zweige, Join-Knoten, For-each-Fan-out, menschliche Freigabetore — die Form bleibt dieselbe: Schritte in einem DAG, die Zustand weiterreichen.
 
-**Next:** [Bridge Slack to your workspace](/de-DE/handbuch/tutorials/erste-chat-bruecke/), the last tutorial in this sequence.
+**Als Nächstes:** [Slack mit deinem Arbeitsbereich verbinden](/de-DE/handbuch/tutorials/erste-chat-bruecke/), die letzte Anleitung in dieser Reihe.
 
-- [Set up pipeline triggers](/de-DE/handbuch/anleitungen/pipeline-trigger/) to start pipelines from events or a schedule
-- [Pipelines and automation](/de-DE/handbuch/konzepte/pipelines/) for the model underneath
-- [Pipeline step kinds](/de-DE/handbuch/referenz/pipeline-schritte/) for every step type
+- [Pipeline-Trigger einrichten](/de-DE/handbuch/anleitungen/pipeline-trigger/), um Pipelines aus Ereignissen oder einem Zeitplan zu starten
+- [Pipelines und Automatisierung](/de-DE/handbuch/konzepte/pipelines/) für das Modell darunter
+- [Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/) für jede Schrittart

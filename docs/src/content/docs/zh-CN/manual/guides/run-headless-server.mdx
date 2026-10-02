@@ -1,31 +1,25 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: 运行无界面服务器
+description: 运行 cc_server 无界面二进制文件或其 Docker 镜像，将客户端与它配对，并用完整的 CLI 标志与环境变量对其进行配置。
 dateModified: 2026-09-10
 slug: zh-CN/手册/操作指南/运行无界面服务器
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+在一台常开的机器上运行 `cc_server`，然后从桌面端、浏览器或手机连接它。该服务器是纯 Dart 原生二进制文件——不含 Flutter 引擎——因此可在 macOS、Linux 或 Windows 上无界面运行。它掌控数据库、运行智能体，并发出所有外部 API 调用；客户端只负责渲染。
 
-## Run in Docker (prebuilt images)
+## 用 Docker 运行（预构建镜像）
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+每个版本都会发布一套自托管技术栈，共四个 GHCR 镜像——后端、两个静态瘦客户端以及可选的配对中继——外加一个用于公共演示主机的独立 `cc-server-demo` 镜像。自托管安装无需检出源代码。请固定版本标签（`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`），或跟随 `latest`。
 
-| Image                                             | What it is                                   | Publishes        |
+| 镜像                                             | 它是什么                                   | 发布端口        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| `ghcr.io/samuelalev/cc-server`                    | 后端：数据库、智能体、MCP、webhook | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Web 客户端（静态 nginx）                | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | 手机伴侣 PWA（静态 nginx）       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC 配对中继（可选）          | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+整个技术栈的 compose 文件如下：
 
 ```yaml
 services:
@@ -51,91 +45,68 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+在把其中任何一项暴露到回环之外以前，有几件事值得了解：
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server` 镜像自带 `CC_SERVER_INSECURE=1`**（它必须绑定 `0.0.0.0`
+  才能接收发布端口的流量），这只有在可信网络上、位于终止 TLS 的反向代理——Caddy、Traefik、nginx 或 Cloudflare Tunnel——之后才安全。若要在进程内终止 TLS，请挂载证书并设置 `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY`（然后取消设置
+  `CC_SERVER_INSECURE`）。这一切都可以用 `docker run -e …` 或 compose 的 `environment:` 块覆盖。
+- **`/data` 是唯一的状态。** SQLite 数据库、已配对设备的密钥、下载的模型和会议音频全都存放在该卷中——只要备份它，容器就可以随时丢弃。
+- **在首次连接之前，从镜像内部配对客户端**，这相当于容器版的[第 3 步](#第-3-步在首次启动前配对客户端)：
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **两个客户端镜像都是静态 nginx 主机**——运行时无需任何配置；各客户端的连接表单接受你的服务器 URL、设备 ID 和配对密钥。信令中继同样只需要它的端口
+  （`SIGNALING_HOST` / `SIGNALING_PORT` 可覆盖）；它无状态、不保存任何密钥，并且只是一条**兜底路径**——只要有可达的路径，手机就会使用回环、LAN、tailnet 或直连 `wss://`，只有在全部不可达时才回退到中继。如果你的客户端总能直连服务器，可以跳过它。
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+本指南余下的部分从源代码构建服务器；其中涉及的标志和行为，与镜像通过环境变量注入的是同一套。
 
-## Prerequisites
+## 前置条件
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart)。本仓库用 [fvm](https://fvm.app) 固定其 SDK 版本，因此请为每条命令加上 `fvm` 前缀。
+- 已检出本仓库。
+- 暂存脚本所需的原生工具链——Rust/`cargo`，以及 `meson`、`ninja`、`pkg-config`、`git` 和 C++ 编译器。每个构建脚本都会说明它找不到什么，以及如何安装。
+- 一台可访问的主机：本地使用用回环地址，远程客户端则用带 TLS 的 LAN/公网地址。
 
-## Step 1: Stage the native libraries
+## 第 1 步：暂存原生库
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+原生库是**必需的**——不存在降级模式。在做其他任何事情之前，请先从仓库根目录构建它们：
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+这会把 `rift`、`fff`、tree-sitter 及其语法、`aec`、`lame`、
+`ccpty`、`cc_watcher`、`cc_inference` 以及 SAML 原生库构建到
+`build/natives/` 中。`cc_server` 的构建
+钩子会把暂存在那里的内容重新写入 bundle，因此跳过这一步要么会直接导致构建失败，要么——借助下面的应急开关——产出一个二进制文件，其启动预检会拒绝启动并指出缺失的库。
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[仅用于编译的应急开关]
+在仓库根目录创建一个空的 `.cc_natives_allow_missing` 文件，会把缺少原生库导致的构建失败降级为警告。它用于对新克隆的仓库做语法检查；以这种方式构建出的服务器无法启动。它必须是一个**文件**——构建钩子运行器不会转发调用方的环境变量，因此环境变量会被忽略。
 :::
 
-## Step 2: Build the binary
+## 第 2 步：构建二进制文件
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+该 bundle 会把 `libsqlite3` 和已暂存的原生库与二进制文件一起打包——无需系统 SQLite，也无需 Flutter 引擎。可执行文件位于
+`./build/cli/<os_arch>/bundle/bin/cc_server`。
 
-## Step 3: Pair a client before first start
+## 第 3 步：在首次启动前配对客户端
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+全新的数据目录既没有已配对设备，也没有预共享密钥，因此客户端弹出的配对密钥输入框还无法满足。请用 `pair` 子命令生成一个。
+它会直接写入 `global.db` 和 `secrets.json`；已经在服务该数据目录的服务器无需重启即可识别到新设备：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+它会打印三个值，供你粘贴到客户端的连接表单中：
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +115,36 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+有用的标志：`--device`（默认 `web-client`；该 id 同时决定设备层级——`desktop`、`ios`、`android`，其他任何值都是 Web 客户端）、`--label`
+（默认为平台名称加上本机主机名）、`--host`（要打印在 URL 中的主机，因为回环地址无法从另一台机器访问）以及
+`--client-url`。重新运行 `pair` 会轮换该设备的密钥，并断开它的活动会话。配对永远不会创建工作区：连接方客户端的入门引导会命名并创建第一个工作区。
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+使用 `--client-url` 时，它还会打印一个可用终端扫描的二维码，打开时 Web 客户端已经填好：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/zh-CN/手册/操作指南/配对设备/).
+:::caution[这个二维码不是手机用的二维码]
+`--client-url` 构建的是给 **Web 客户端**用的链接——服务器 URL、设备 ID 和密钥都在 URL 片段中。而 **Remote** 手机应用期望的是另一种载荷
+（服务器的完整连接描述符外加一个到期时间），要在正在运行的客户端中从
+**设置 → 你 → 你的设备**生成。两者不能互换。参见[配对设备](/zh-CN/手册/操作指南/配对设备/)。
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+由 `cc_server pair` 生成的凭据**没有有效期**；而在应用中生成的凭据总是在 30 天后过期。用完之后，请从
+**设置 → 你 → 你的设备**中吊销 CLI 生成的设备。
 
-## Step 4: Start the server
+## 第 4 步：启动服务器
 
-On loopback — the default and all you need for a client on the same machine:
+在回环地址上——这是默认值，也是同一台机器上的客户端唯一需要的：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+若要从另一台机器访问它，请绑定所有网络接口。没有 TLS 的非回环绑定会在**启动时被拒绝**（`Refusing to bind non-loopback address …
+without TLS`），因此请提供证书：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +152,37 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+或者在可信的专用网络上由反向代理终止 TLS，并在其后面选择明文绑定：
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+当 `--tls-cert` 和 `--tls-key` 都已设置时，`--insecure` 会被忽略——TLS
+始终优先。服务器会在 `GET /healthz` 中以 `insecure: true` 公布明文状态，客户端会把这类连接标记为不安全。
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+服务器会一直运行，直到收到 `SIGINT`/`SIGTERM`，然后干净地关闭。
 
-## Step 5: Connect a client
+## 第 5 步：连接客户端
 
-Point a client at the server URL and pairing key from step 3:
+让客户端指向第 3 步中的服务器 URL 和配对密钥：
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/zh-CN/手册/操作指南/连接远程服务器/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/zh-CN/手册/操作指南/配对设备/).
+- **桌面应用**：在首次运行界面（**Control Center 应如何运行？**）中填写连接字段，而不是选择**在此应用中运行**，也可以稍后在 **设置 → 服务器 → 连接与状态**中添加该服务器。参见[连接到远程服务器](/zh-CN/手册/操作指南/连接远程服务器/)。
+- **Web 客户端**：打开 [app.usectrl.dev](https://app.usectrl.dev)（或你自己的 Web 构建副本），然后输入服务器 URL、设备 ID 和配对密钥。
+- **手机**：从正在运行的客户端中配对 **Remote** 应用——参见[配对设备](/zh-CN/手册/操作指南/配对设备/)。
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server 不提供 Web 资源包]
+独立运行的 `cc_server` 从不挂载 Web 根目录，因此 `GET /` 会返回 404。Web
+客户端是单独托管的——请使用 `app.usectrl.dev`，或自行把 Web 构建托管在任何静态 HTTPS 主机上（上面的 `cc-webapp` 镜像
+正是如此）。除回环以外的浏览器源必须出现在 `--allowed-origins` 中，否则到 `/rpc` 的 WebSocket 升级会被拒绝；默认
+列表为 `https://app.usectrl.dev`，而 `localhost` / `127.0.0.1`
+始终被允许。
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## 第 6 步：连接 Google Calendar（可选）
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+要在没有图形界面的情况下同步某个工作区的日历，请使用设备代码流程：
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +190,52 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/zh-CN/手册/操作指南/连接日历/).
+它会打印一个代码和一个 URL，供你在另一台设备上批准，把刷新令牌保存在服务器端，然后退出。从源代码构建的版本不自带 Google 客户端，因此必须提供 id 和 secret 这两个环境变量——不存在 `--google-client-id`
+标志。参见[连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)。
 
-## Configuration
+## 配置
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/zh-CN/手册/参考/cc-server-cli/).
+上面用到的标志是初次配置所需要的。完整的接口——23 对标志与环境变量、四个子命令以及数据目录布局——都在 [`cc_server` CLI 参考](/zh-CN/手册/参考/cc-server-cli/)中。
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[无法识别的标志会被静默忽略]
+参数解析器是手写的，会跳过它不认识的一切，因此拼写错误（`--tls-key-file`、`--bindany`）不会报错——服务器只是以默认值启动。当某个标志看起来没有生效时，请检查启动日志。
 :::
 
-The four you are most likely to need:
+你最有可能需要的是这四个：
 
-| Flag           | Default                              | Meaning                                                                                          |
+| 标志           | 默认值                              | 含义                                                                                          |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | 操作系统的每用户应用数据目录 | 数据库、密钥、模型和缓存的媒体                                                      |
+| `--port`       | `9030`                               | TCP 端口（`0` = 临时端口）                                                                       |
+| `--bind`       | `loopback`                           | `loopback`，或为所有网络接口指定 `any`（需要 TLS 或 `--insecure`）                             |
+| `--public-url` | 根据绑定推导                | 向已配对客户端公布的 RPC URL。**在代理、NAT 或隧道之后请显式设置此值** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+默认数据目录在 macOS 上是 `~/Library/Application Support/control-center`，
+在 Windows 上是 `%APPDATA%\control-center`，在其他系统上则是 `$XDG_DATA_HOME/control-center`（否则为
+`~/.local/share/control-center`）。只有在无法解析出主目录或应用数据目录时，才会使用相对于当前工作目录的 `.cc_server`。
 
-## What the server serves
+## 服务器提供哪些服务
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` 是完整的产品接口面，而不是一个子集：repo-RPC 数据通路与订阅、位于同一端口的 MCP 工具端点 `POST /mcp` 和 `GET /sse`、入站 webhook、媒体与字体代理、单点登录
+回调、机群租约协议、按 30 分钟调度在服务器端抓取 RSS，以及向量搜索（`sqlite_vector` 扩展被注册为
+进程级自动扩展，仅在该扩展不可用之处降级为全文搜索）。
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+调度器是**无状态的**：不存在按会话的工作区绑定。
+每一次限定工作区范围的调用都自带 `workspace_id`，访问权限由调用方的工作区成员资格和角色决定——而不是由是否持有配对密钥决定。
 
-Two things to know before you expose the port beyond loopback:
+在把端口暴露到回环之外以前，有两件事需要了解：
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP 在主机之外失败即关闭。** 没有令牌的 MCP 接口面只应答回环。绑定 `any` 并不会放宽这一点——在你配置令牌之前（`mcp.setToken`，或 **设置 → 服务器 → MCP 服务器**），来自主机之外的请求会被以 "MCP requires a bearer token to answer non-loopback clients" 拒绝。
+- **`GET /healthz` 按设计不需要认证**，带通配符 CORS，并公布服务器的 id、名称、身份指纹和构建版本。客户端需要该指纹来固定服务器，因此这是有意为之——但它确实意味着任何可达的 `cc_server` 都会向任何询问者披露这些信息。
 
-## Related guides
+## 相关指南
 
-- [Connect to a remote server](/zh-CN/手册/操作指南/连接远程服务器/)
-- [Pair a device](/zh-CN/手册/操作指南/配对设备/)
-- [Run a fleet worker](/zh-CN/手册/操作指南/运行机群工作进程/)
-- [Connect a Google Calendar](/zh-CN/手册/操作指南/连接日历/)
+- [连接到远程服务器](/zh-CN/手册/操作指南/连接远程服务器/)
+- [配对设备](/zh-CN/手册/操作指南/配对设备/)
+- [运行机群工作进程](/zh-CN/手册/操作指南/运行机群工作进程/)
+- [连接 Google Calendar](/zh-CN/手册/操作指南/连接日历/)
 
-## Related concepts
+## 相关概念
 
-- [Deployment and clients](/zh-CN/手册/概念/部署/)
-- [Remote control and mobile](/zh-CN/手册/概念/远程控制/)
+- [部署与客户端](/zh-CN/手册/概念/部署/)
+- [远程控制与移动端](/zh-CN/手册/概念/远程控制/)

@@ -2,6 +2,7 @@
 title: Slash commands
 description: Every command you can type in the composer, what it does and where it runs.
 slug: en-GB/manual/reference/slash-commands
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
 Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
@@ -24,7 +25,7 @@ Commands typed in a space's composer. They fall into three groups by where they 
 
 **Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgement, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
 
 `/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
 
@@ -54,7 +55,7 @@ Workers never outlive the mode — exiting kills every one of them.
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**Local → server.** Drops heavy content **without** summarising: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
 
 | Target        | Drops                             |
 | ------------- | --------------------------------- |

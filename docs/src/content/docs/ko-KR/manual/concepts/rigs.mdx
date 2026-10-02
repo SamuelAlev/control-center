@@ -1,241 +1,238 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: 리그와 인클로저
+description: 에이전트가 왜 여러분의 컴퓨터 대신 일회용 머신을 받는지 — 격리 경계, 디스플레이 레인, 자격 증명, 포트, 수명주기를 설명합니다.
 slug: ko-KR/매뉴얼/개념/리그
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/ko-KR/매뉴얼/사용-가이드/리그-사용/); for the exact
-verbs, ports and defaults, see the [rigs reference](/ko-KR/매뉴얼/레퍼런스/리그/).
+**리그**는 에이전트가 실시간으로 조작하는 일회용 머신입니다 — 브라우저,
+Linux 데스크톱, Android 에뮬레이터, iOS 시뮬레이터, 또는 인클로저 안의 터미널
+뒤에 있는 머신입니다. 대부분의 리그는 VM이며, 호스트가 관리하는 모바일
+시뮬레이터가 명시적인 예외입니다. 이 페이지에서는 각 경계와, 그 구성 요소가
+왜 이런 형태인지 설명합니다. 리그를 여는 방법은 [에이전트에 테스트용 머신
+제공](/ko-KR/매뉴얼/사용-가이드/리그-사용/)을, 정확한 동작, 포트, 기본값은
+[리그 레퍼런스](/ko-KR/매뉴얼/레퍼런스/리그/)를 참고하십시오.
 
-## Why a VM, not a sandbox
+## 샌드박스가 아니라 VM인 이유
 
-The [native sandbox](/ko-KR/매뉴얼/개념/샌드박스와-보안/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[네이티브 샌드박스](/ko-KR/매뉴얼/개념/샌드박스와-보안/)는 프로세스를
+네임스페이스 격리로 감쌉니다. 실재하는 격리이지만 커널을 공유하며, 격리하는
+대상은 *컴퓨터*가 아니라 *프로세스*입니다. 에이전트가 데스크톱 앱을 여기저기
+클릭하거나, 실제 브라우저에서 페이지를 렌더링하거나, 생각하고 싶지 않은
+`rm -rf` 실험을 돌려야 하는 순간, 정직한 경계는 머신입니다. 자체 커널, 자체
+디스크, 자체 네트워크 스택을 가진 머신입니다.
 
-The enclosed surfaces use two VM backends:
+인클로저로 감싸는 표면은 두 가지 VM 백엔드를 사용합니다:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- 터미널과 브라우저에는 **마이크로VM** — 다이제스트로 고정된 컨테이너
+  이미지에서 1초 미만의 하이퍼바이저 부팅.
+- 전체 Linux 데스크톱에는 **QEMU** — 마이크로VM에는 없는 디스플레이 장치가
+  필요합니다.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+모바일 표면은 호스트가 관리하며, 더 약한 경계라는 점을 분명히 밝힙니다:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android**는 ADB를 통해 Google의 에뮬레이터를 조작합니다.
+- **iOS**는 Mac 호스트에서 CoreSimulator 기기를 생성해 소유하고
+  WebDriverAgent를 통해 조작합니다. 기기와 그 데이터는 리그가 닫힐 때
+  삭제되지만, 네트워크는 호스트 Mac을 따릅니다.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+인클로저 리그는 읽기 전용 베이스 이미지 위의 일회용 오버레이에 기록하므로,
+한 리그가 다음 리그의 부팅 원본을 바꿀 수 없습니다. iOS 리그는 리그가 닫힐 때
+삭제되는 일회용 CoreSimulator 기기를 소유합니다. Android는 세션보다 오래 사는
+호스트 에뮬레이터에 붙습니다.
 
-## Deny-by-default egress
+## 이그레스는 기본적으로 거부됩니다
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+리그의 네트워크는 **아무것도 없는** 상태에서 시작합니다. 호스트는 게스트가
+우회할 수 없는 게이트를 통해 리그마다 허용됩니다. 즉, 머신이 나갈 수 있는
+유일한 경로는 시작 구성이 만들어 둔 경로뿐입니다. 인클로저 터미널에는 개발자
+기본값(패키지 레지스트리, forge, apt 미러)이 주어지고, 브라우저 리그는 제품
+사이트(`usectrl.dev`)를 허용하고 이그레스가 필요 없는 로컬 `file://` 페이지로
+부팅합니다. 그 외의 모든 것은 연결 시점에 거부됩니다.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android와 iOS는 이 게이트의 적용을 받지 않습니다. 호스트 에뮬레이터와
+시뮬레이터는 서버 호스트의 네트워킹을 사용하므로, UI와 기능 보고서는
+이그레스가 강제되지 않는다고 표시하며, 오해를 부르는 “제한 없이 다시 시작”
+컨트롤을 결코 제공하지 않습니다.
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+이그레스와 자격 증명은 같은 정책을 양쪽에서 본 것입니다. 자격 증명
+브로커(아래 참조)는 게스트가 도달할 수 없는 호스트를 위한 토큰을 발급하지
+않습니다.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+리그가 *읽는* 모든 것은 신뢰할 수 없는 것으로 취급합니다. 페이지 텍스트,
+DOM과 접근성 트리, UI 덤프, 콘솔 출력은 에이전트에게 돌아갈 때 상시 적용되는
+“이것은 데이터이며 지시가 아니다”라는 규칙으로 울타리를 두릅니다. 울타리는
+틀에 불과하고, 그 뒤의 강제 수단은 이그레스 게이트입니다.
 
-## Input goes through the hypervisor, capture through the guest
+## 입력은 하이퍼바이저를 거치고, 캡처는 게스트를 거칩니다
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+데스크톱 표면에서는 키보드와 포인터 이벤트를 *하이퍼바이저* 자신의 가상 입력
+장치가 주입합니다. 게스트는 입력을 합성할 수 있는 권한 있는 데몬을 결코
+실행하지 않으므로, 게스트 소프트웨어가 뚫려도 공격자에게 키보드를 쥐여주지
+않습니다. 캡처는 반대 방향으로, 게스트 안에서 권한 없이 도는 작은 에이전트를
+통해 흐릅니다. 프레임이 전선을 건너기 전에 게스트가 크기를 줄일 수 있기
+때문입니다.
 
-## Two display lanes
+## 두 개의 디스플레이 레인
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+지켜보는 사람과 조작하는 모델은 요구가 정반대이므로, 리그는 두 개의
+독립적인 스트림을 제공합니다:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **사람 레인**은 패널 크기에 맞춘 전체 해상도이며, 크기를 바꿀 때마다 다시
+  협상되고, 서버가 불투명한 바이트로 중계합니다. 서버는 프레임을 결코
+  디코딩하지 않는데, 요청 경로에 비디오 디코더가 있으면 RPC 응답이 막히기
+  때문입니다.
+- **에이전트 레인**은 모델이 다루기 좋은 크기로 제한된 축소 정지 이미지이며,
+  도구 결과마다 이미지 하나가 붙고, 압축 과정에서 오래된 프레임은 버려지되 그
+  텍스트 설명은 살아남습니다.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+어느 레인도 상대를 위해 타협하지 않습니다. 사람은 매끄러운 화면을, 모델은
+저렴한 화면을 얻습니다.
 
-## Take-over is a chokepoint, not a request
+## 테이크오버는 요청이 아니라 초크포인트입니다
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+배타적 제어는 모든 동작이 지나가는 단일 지점에서 강제되며, 모델에게 얌전히
+있으라고 부탁해서 되는 것이 아닙니다. 사람이 제어를 쥐고 있는 동안 서버는
+에이전트의 *변경* 동작을 거부합니다. 에이전트는 관찰 동작(스크린샷, 추출)은
+그대로 유지하므로 여러분이 무엇을 하는지 설명할 수 있고, 테이크오버 사실은
+스티어링 레인을 통해 통보받으며, 거부된 클릭을 통해 뒤늦게 알아내도록
+내버려지지 않습니다. 캔버스에서의 클릭과 입력은 다른 누구도 그 잠금을 쥐고
+있지 않을 때 — 또는 여러분이 쥐고 있을 때 — 작동하며, 상태 태그에는 **제어
+권한이 있습니다**가 표시됩니다. 여러분과 에이전트의 모든 입력 이벤트는 주체와
+단조 증가 시퀀스와 함께 리그별 감사 로그에 남으므로, 머신이 사라진 뒤에도
+“누가 그걸 클릭했나”에 답할 수 있습니다.
 
-## Content crosses the boundary; the machines stay separate
+## 콘텐츠는 경계를 넘고, 머신은 분리된 채로 남습니다
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+복사와 붙여넣기는 양방향으로 동작하며, 파일을 끌어 넣고 빼는 것도
+마찬가지입니다. 하지만 리그는 다른 컴퓨터이고, 이 설계는 결코 그 사실을 아닌
+척하지 않습니다.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**클립보드**는 요청이 있을 때만 옮겨지며, 계속 미러링되지 않습니다. 리그
+위에서 복사 단축키를 누르면 게스트에 복사하라고 전달되고, 게스트가
+클립보드에 올린 것 — 텍스트, 이미지, 파일 목록 — 을 가져와 여러분의
+클립보드에 놓습니다. 붙여넣기는 같은 내용을 반대 방향으로 보낸 뒤 게스트
+안에서 붙여넣기를 누릅니다. 백그라운드에서 동기화되는 것은 없습니다. 여러분의
+머신에서 복사한 비밀번호가 타이머가 울렸다는 이유로 VM 안에 조용히 도착하지
+않습니다.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+경계를 넘는 것은 사용자별·방향별로 독립적으로 게이트됩니다. 리그로의
+붙여넣기는 기본적으로 허용되고, 리그 밖으로의 복사는 먼저 확인을
+요청합니다(10분 허용, 또는 **설정 → 서버 → 리그 → 클립보드 접근**의 **항상
+허용**). 이것은 결코 워크스페이스 설정이 아닙니다. 한 구성원이 다른 구성원의
+클립보드에 동의할 수는 없습니다.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+macOS에서 경계를 넘는 단축키는 ⌘C/⌘V로 명확합니다. ⌃C는 게스트 셸에 원래의
+인터럽트로 계속 전달됩니다. Windows와 Linux에서는 두 단축키가 같은 키
+입력이므로 게스트는 이를 그대로 받고, 여러분의 클립보드는 게스트의 클립보드가
+실제로 바뀌었을 때만 덮어써집니다. 인터럽트는 인터럽트로 남습니다.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**끌어 넣은 파일**은 머신의 드롭 폴더로 복사된 뒤 머신에 제공됩니다. “제공”의
+의미는 정직하게 할 수 있는 일에 따라 다릅니다. 브라우저 페이지에서는 파일을
+놓은 지점에 *실제* 드롭 이벤트가 전달되므로 업로드 영역이 로컬 파일과 똑같이
+동작합니다. 데스크톱에서는 게스트 안에서 권한 있는 데몬을 실행하지 않고서는
+임의의 Linux 툴킷에 드래그를 합성할 수 없으므로 — 이 설계가 바로 그것을
+거부합니다 — 파일이 `~/Drops`에 들어가고 경로가 클립보드에 올라갑니다. 결과는
+어느 쪽이 일어났는지 알려주므로, 업로드 영역에 떨어뜨린 CSV가 단지 폴더 속
+파일일 뿐인데 업로드되었다고 보고되는 일은 없습니다. 인클로저 **터미널**에
+떨어뜨리면 파일이 복사되고 프롬프트에 게스트 경로가 입력되며, 이것이 셸이
+실제로 쓸 수 있는 형태입니다.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**끌어 낸 파일**은 데스크톱 표면에서 동작합니다. X11의 드래그 프로토콜은
+드래그가 진행 중일 때 페이로드를 읽을 수 있게 해줍니다. 게스트 안에서
+드래그를 시작해 캔버스 밖으로 끌고 나오면 파일이 여러분의 머신으로 가져와져
+OS에 실제 드래그로 전달됩니다. 게스트의 파일 관리자에서 파일을 복사한 뒤
+호스트에서 붙여넣는 것도 같은 방식으로 동작합니다. 브라우저 표면은
+의도적으로 이것을 제공하지 *않습니다*. 헤드리스 브라우저에는 읽을 드래그
+선택이 없고, 가장 가까운 신호인 페이지의 텍스트 선택은 드래그의 증거가 전혀
+아니므로, 그것에 따라 행동하면 평범한 클릭을 가로채게 됩니다.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+게스트에서 읽어낸 모든 것은 신뢰할 수 없는 콘텐츠로 남습니다. 클립보드
+텍스트는 페이지 추출과 같은 울타리 안에서 모델에 도달하고, 감사 로그에는
+붙여넣기가 일어났다는 사실과 그 분량만 기록되며, 그 내용은 결코 기록되지
+않습니다.
 
-## Credentials never live in the guest
+## 자격 증명은 게스트에 살지 않습니다
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push`는 인클로저 터미널에서 동작하지만, 게스트는 forge 토큰을 저장하지
+않습니다. 게스트가 가진 것은 VM마다 하나뿐인 비밀로, 그 유일한 권한은
+호스트가 통제하는 터널을 통해 호스트의 자격 증명 브로커에 *요청*하는
+것입니다. 작업마다 짧게 사는 저장소 범위 토큰을 받고, 요율이 제한되며,
+이그레스와 같은 호스트 허용 목록에 묶이고, 리그가 닫히는 순간 폐기됩니다.
+버리도록 만들어진 머신에는 훔칠 만한 것이 아무것도 없어야 합니다.
 
-## The worktree in a rig is a satellite
+## 리그의 워크트리는 위성입니다
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+리그가 여러분의 저장소를 실어 나를 때, 권위 있는 것은 호스트의 워크트리입니다.
+사본은 부팅 시 *동기화되어 들어가고*(`.env` 파일 같은 비밀은 제외), 커밋은
+여러분이 요청할 때만 돌아옵니다. `refs/rigs/<id>/*`로 가져올 뿐, 푸시하지도
+체크아웃하지도 않습니다. VM 안의 어떤 것도 여러분의 브랜치를 옮기거나 작업
+트리를 건드릴 수 없으며, 리그가 만들어낸 것을 병합하는 일은 언제나 호스트에서
+사람이 내리는 결정입니다.
 
-## Ports without holes
+## 구멍 없는 포트
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/ko-KR/매뉴얼/사용-가이드/vm-포트/).
+터미널 VM 안에서 시작한 개발 서버는 머신을 열어젖히지 않고도 접근할 수 있게
+됩니다 — 여러분의 머신에서, 브라우저 (VM)에서, 선택적으로 LAN에서, 선택적으로
+HTTPS가 붙은 개발 도메인 아래에서. 하이퍼바이저의 포트 맵은 부팅 시
+고정되므로, 이후의 모든 포워딩은 호스트가 통제하는 좁은 채널 두 개를 탑니다.
+하나는 미리 만들어진 인바운드 멀티플렉서로, 게스트가 실제로 리슨하지 않는
+대상에는 접속을 거부합니다. 다른 하나는 게스트가 시작한 연결을 위해 호스트가
+열어 두는 리버스 터널입니다. 개발 도메인 HTTPS는 서버에서 종료되며, 로컬에서
+발급한 인증 기관을 사용하고 그 키는 어떤 게스트에도 들어가지 않습니다.
+구체적인 방법은 [터미널에서 포트
+포워딩](/ko-KR/매뉴얼/사용-가이드/vm-포트/)에 있습니다.
 
-## Machines are bounded by construction
+## 머신은 구조적으로 제한됩니다
 
-A rig cannot become a pet:
+리그는 펫이 될 수 없습니다:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- 게스트가 연장할 수 없는 **강제 TTL**;
+- **유휴 사다리** — 유휴 시간이 지나면 파킹(vCPU 중지, RAM 상주), 그 두 배가
+  지나면 종료 — 이며, 열린 터미널이나 지켜보는 뷰어는 “사용 중”으로 칩니다;
+- 세션이 아니라 *상주 메가바이트*로 계산되는 **메모리 예산** — 파킹된 VM은
+  CPU는 반환하지만 RAM은 한 바이트도 놓지 않기 때문입니다. 가장 오래
+  사용되지 않은 머신부터 축출하며, 사람이 조작하거나 지켜보는 머신은 결코
+  축출하지 않습니다;
+- 서버 종료 시 정리하고, 다음 시작 시 소유권이 표시된 고아 머신을 쓸어
+  담으므로, 서버가 죽어도 아무에게도 응답하지 않는 하이퍼바이저가 남지
+  않습니다.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+첫 부팅에서는 머신의 고정된 이미지를 내려받고, 이후 서버가 백그라운드에서
+미리 풀어 둔 사본을 캐시합니다. 그래서 같은 종류의 머신은 이후 몇 초 만에
+부팅하고, 인클로저 터미널은 GitHub 호스팅 러너에 준하는 CLI 기본 환경 —
+컴파일러, Python, `jq`, 압축 도구 — 이 이미 설치된 상태로 뜹니다. 언어별
+툴캐시나 Docker가 아니라 이것입니다. 컴퓨터 이미지는 빌드 시점에 같은 CLI
+기본 환경을 XFCE와 브라우저들 옆에 구워 넣습니다.
 
-## Three browsers, not one
+## 하나가 아닌 세 개의 브라우저
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+“내 머신에서는 되는데”는 렌더링 엔진 하나에 대한 주장입니다. 그래서 브라우저
+리그는 “그 브라우저”가 아니라 **Chromium, Firefox, WebKit** 중 하나이며, 열 때
+선택하면 그 리그는 평생 그 엔진으로만 실행됩니다. 한 대화가 각 엔진을 하나씩
+가질 수 있습니다. *Firefox (VM)* 옆에 *Chromium (VM)*를 열면 머신 두 개가
+생기고, 둘 다 같은 페이지로 향하게 하는 것이 바로 비교입니다. WebKit은
+Linux에서 돌아가는 것 중 Safari에 가장 가깝습니다 — 같은 엔진 계보이므로
+Safari 사용자가 겪는 빈틈을 잡아냅니다.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+동작은 세 엔진 모두 동일하지만, 그 아래의 프로토콜은 다르며, 차이는 감추지
+않고 그대로 밝힙니다. Chromium은 DevTools Protocol을 사용하고 프레임을 *밀어*
+주므로, 페이지가 멈춰 있는 동안에는 라이브 뷰에 비용이 들지 않습니다.
+Firefox는 WebDriver BiDi를, WebKit은 고전적인 WebDriver를 사용하며 둘 다
+스크린캐스트가 없으므로 라이브 뷰가 폴링합니다. 초당 몇 프레임으로, 페이지를
+지켜보기에는 적합하지만 애니메이션을 보기에는 부족합니다. 엔진이 어떤 일을
+정말로 할 수 없을 때(Firefox에는 캐시를 우회하는 새로 고침이 없고, WebKit은
+페이지 로딩이 끝나기 전에 기록된 콘솔 출력을 볼 수 없습니다)에는, 조용히
+다른 일을 하는 대신 그렇다고 답합니다.
 
-## Where rigs live in the product
+## 제품에서 리그가 있는 자리
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/ko-KR/매뉴얼/개념/가드레일/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+리그는 의도적으로 전역 목적지가 **아닙니다**. 라이브 뷰는 작업이 벌어지는
+스페이스나 PR의 탭이며 그 대화에 범위가 묶입니다. 따라서 여러분의 탭과
+에이전트의 `browser_use` 호출은 *하나의* 머신(브라우저 표면에서는 엔진마다
+하나)을 가리킵니다. 리그가 애초에 부팅될 수 있는지는 호스트의 속성이므로,
+기능, 이미지, 워크스페이스별 사용자 지정 이미지, 실행 중인 머신 목록은
+**설정 → 서버 → 리그** 아래에 있습니다. 인클로저 조작은 그 자체로 하나의
+[가드레일 액션 클래스](/ko-KR/매뉴얼/개념/가드레일/)이므로,
+워크스페이스·에이전트·스페이스가 이를 허용하거나 승인을 요구하거나 아예
+거부할 수 있습니다. 읽기 전용 모드는 이를 일괄 거부합니다.

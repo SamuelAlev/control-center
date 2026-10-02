@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: ขั้นตอนไปป์ไลน์
+description: เอกสารอ้างอิงสำหรับชนิดของขั้นตอนไปป์ไลน์ คีย์บอดีของขั้นตอน การตั้งค่า และผลลัพธ์ของขั้นตอน
 slug: th-TH/คู่มือ/อ้างอิง/ขั้นตอนไปป์ไลน์
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+ขั้นตอนไปป์ไลน์หนึ่งขั้นมีสองแกนที่เป็นอิสระจากกัน:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **ชนิด** (`StepKind`) — เอนจิน _จัดตาราง_ ขั้นตอนสัมพันธ์กับทริกเกอร์ของมันอย่างไร
+- **คีย์บอดี** (`BuiltInBodyKeys`) — คลอเชอร์บอดีที่ลงทะเบียนไว้ตัวใดที่ _ลงมือทำงาน_ ของขั้นตอน
 
-## Step kinds
+## ชนิดของขั้นตอน
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+นิยามไว้ใน `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| ชนิด      | ความหมายของการจัดตาราง                                                                                                                                                                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trigger`  | จุดเริ่มต้นบังคับ — มีหนึ่งตัวพอดีต่อเทมเพลต และเป็นโหนดแรกเสมอ ตัวมันเองไม่ทำงานใด ๆ สิ่งที่ทำให้รันเริ่มขึ้น (ด้วยตนเอง / เหตุการณ์ / ตารางเวลา) ถูกติดตามแยกต่างหากเป็นแถว `PipelineTrigger` บอดีของมันคือ `pipeline.trigger` ที่ไม่ทำอะไร |
+| `listen`   | ทำงานเมื่อขั้นตอนต้นทางทั้งหมด (ใน `StepTrigger.sourceStepIds`) เสร็จสิ้น                                                                                                                                                                                 |
+| `join`     | ทำงานเมื่อขั้นตอนทั้งหมดใน `waitForStepIds` ไปถึงสถานะสิ้นสุด                                                                                                                                                                                              |
+| `router`   | การแยกสาขาตามเงื่อนไข — บอดีคืนค่า `StepResult.route(key)` ซึ่งจะทำให้เฉพาะเส้นเชื่อมปลายทางที่ `routeKey` ตรงกันทำงาน ส่วนสาขาที่ไม่ได้เลือกจะถูกทำเครื่องหมายว่าข้าม                                                                                    |
+| `forEach`  | ถูกจัดตารางเหมือน `listen` (ทำงานเมื่อ `sourceStepIds` ทั้งหมดเสร็จสิ้น) บอดี `flow.forEach` ที่ลงทะเบียนไว้คือตัวที่วนซ้ำ เอนจินไม่ได้สร้างขั้นตอนลูกหนึ่งตัวต่อหนึ่งรายการ                                                                              |
+| `terminal` | เครื่องหมายเฉพาะของตัวจัดตารางที่ไม่มีบอดี รันของไปป์ไลน์จะเสร็จสิ้นเมื่อขั้นตอน terminal ทำงานเสร็จ                                                                                                                                                       |
 
-## Step bodies
+## บอดีของขั้นตอน
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+คลอเชอร์บอดีที่ลงทะเบียนไว้โดยใช้ค่าคงที่ใน `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`) เป็นคีย์ มีทั้งหมด 25 ตัว ระบุไว้ทั้งหมดด้านล่าง การตั้งค่าจะอ่านจาก `PipelineNodeConfig` ของขั้นตอน (ดูด้านล่าง) เว้นแต่ระบุไว้เป็นอย่างอื่น ส่วน "คีย์สถานะ" จะอ่านจากสถานะของไปป์ไลน์ / เพย์โหลดของทริกเกอร์ตอนลงมือทำงาน
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+ขั้นตอนที่ `bodyKey` ไม่ได้ลงทะเบียนไว้จะสร้างคำเตือนตอนโหลดเทมเพลต แล้วไม่ทำงานเลย — มันไม่ได้ทำให้รันล้มเหลว ขั้นตอน `trigger` และ `terminal` ได้รับยกเว้นจากคำเตือนนั้น: ทริกเกอร์ยังรันบอดี `pipeline.trigger` ที่ไม่ทำอะไร ส่วนขั้นตอน `terminal` ไม่มีบอดี
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+บอดีที่ไม่ทำอะไรของโหนด `trigger` ที่บังคับ — เสร็จสิ้นทันทีเพื่อให้เอนจินกระจายต่อไปยังตัวฟังปลายทาง ไม่มีการตั้งค่า
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+ขั้นตอนเชลล์ที่ไม่มีเอเจนต์ (`bash -c`) ตัวยึดตำแหน่ง `{{key}}` ในสคริปต์จะถูกแทนที่จากสถานะและเพย์โหลดของทริกเกอร์ ด้วยค่าที่ escape อักขระพิเศษไว้แล้วสำหรับเชลล์
 
-| Config field | Description                                      |
+| เขตข้อมูลการตั้งค่า | คำอธิบาย                                      |
 | ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| `script`     | คำสั่งเชลล์ที่จะรัน (จำเป็น)              |
+| `outputKey`  | คีย์สถานะที่รับ stdout ที่ตัดช่องว่างหัวท้ายแล้วเมื่อออกด้วยรหัส 0 |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+รันโดยมี cwd เป็น `<cc_root>/pipelines/<pipelineRunId>/` (ใช้ร่วมกันโดยขั้นตอน bash ทั้งหมดในรันเดียว) และมี `GITHUB_TOKEN` ในสภาพแวดล้อม ยังเขียน `<stepId>_runDir` ลงในสถานะด้วย การออกด้วยรหัสที่ไม่ใช่ศูนย์ทำให้ขั้นตอนล้มเหลว พร้อมส่วนท้ายของ stderr
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+โหนดพรอมป์ต์และสั่งงานแบบทั่วไป: เรนเดอร์พรอมป์ต์ สั่งงานเอเจนต์เข้าสู่บทสนทนา แล้วระงับจนกว่ารันจะเสร็จสิ้น เพย์โหลด `submit_output` ของเอเจนต์จะถูกเก็บเข้าสู่สถานะใต้ `outputKey`
 
-| Config field       | Description                                                  |
+| เขตข้อมูลการตั้งค่า       | คำอธิบาย                                                  |
 | ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| `agentId`          | UUID ของเอเจนต์ที่ผูกกับเวิร์กสเปซที่จะสั่งงาน (จำเป็น)           |
+| `prompt`           | ข้อความคำสั่ง รองรับการแทนที่ `{{key}}` (จำเป็น) |
+| `outputKey`        | คีย์สถานะสำหรับเอาต์พุตที่เก็บมาได้                           |
+| `outputSchema`     | JSON Schema ที่เอาต์พุตต้องเป็นไปตามนั้น                          |
+| `label`            | ป้ายชื่อที่มนุษย์อ่านที่แสดงบนแคนวาส                              |
+| `extras.spaceId`   | บทสนทนาที่มีอยู่แล้วที่จะทำงานในนั้น (ค่าเริ่มต้น: บทสนทนาที่ซ่อนอยู่)     |
+| `extras.conversationTitle` | สตรีมที่มีชื่อภายในสเปซนั้น (ไม่บังคับ)             |
+| `extras.mode`      | อ่านที่โหนดที่ *เปิด* ห้อง (`messaging.createSpace`) ไม่ใช่ที่นี่ ค่าเริ่มต้น `review` |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+บอดีของ router — อ่าน `config.extras` ประเมินเงื่อนไข แล้วคืนค่า `StepResult.route(key)` เงื่อนไข **ไม่ใช่** นิพจน์ JavaScript มีรูปแบบการเขียนอยู่สามแบบ รองรับตามลำดับความสำคัญ:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **ทรีเพรดิเคต** (`extras.predicate`) — ทรีบูลีนที่เลือกเส้นทาง `"true"` / `"false"` แต่ละโหนดเป็นแมปที่มี `type`:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — เป็นจริงเมื่อมีพาธใด ๆ ที่ระบุอยู่บนดิสก์; `negate` กลับค่าเป็นตรงข้าม; `recursive` ค้นหาในไดเรกทอรีย่อยด้วย (ข้าม `.git`, `node_modules`, `build`, `.dart_tool`) พาธแบบสัมพัทธ์จะถูกตีความโดยอิงกับ `state[baseKey]` (ค่าเริ่มต้น `repo_local_path`) มิฉะนั้นอิงกับไดเรกทอรีเวิร์กสเปซของแต่ละรัน
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — ตัวดำเนินการ `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; อ่านสถานะของไปป์ไลน์ ไม่ใช่ระบบไฟล์
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — กลุ่มบูลีน
+  - `{"type": "not", "of": <predicate>}` — การนิเสธ
+- **สวิตช์** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; เลือกเส้นทางไปยังเคสแรกที่ค่าสถานะมีอยู่โดยไม่คำนึงถึงตัวพิมพ์เล็กใหญ่ มิฉะนั้นใช้ `default`
+- **การเปรียบเทียบ** (ระดับบนสุดแบบเดิม `extras.left` / `extras.op` / `extras.right`) — เทียบเท่าเพรดิเคต `comparison` เก็บไว้สำหรับเทมเพลตที่เขียนไว้ก่อนมีทรี
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+เส้นเชื่อมที่ออกจากโหนดมี `routeKey` ซึ่งต้องตรงกับคีย์ที่คืนมา
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+โพสต์ข้อค้นพบที่รวบรวมแล้วเป็นความคิดเห็นรีวิว PR ผ่านไคลเอนต์ PR ของ GitHub
 
-| State key                 | Description                                  |
+| คีย์สถานะ                 | คำอธิบาย                                  |
 | ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| `repo_full_name`          | `owner/repo` (จำเป็น)                      |
+| `pr_number`               | หมายเลข PR — int หรือสตริงตัวเลข (จำเป็น) |
+| `consolidated_findings`   | เนื้อความของความคิดเห็น (จำเป็น)                      |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+คืนค่า `StepResult.terminal` โดยมี `comment_review_id` และ `commented_at` อยู่ในสถานะ
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+โพสต์ข้อความไปยังสเปซข้อความผ่าน `MessagingPort`
 
-| State key   | Description                                       |
+| คีย์สถานะ   | คำอธิบาย                                       |
 | ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| `space_id`  | สเปซเป้าหมาย (จำเป็น)                           |
+| `content`   | เนื้อความของข้อความ อ่านจากสถานะตามตัวอักษร (จำเป็น) |
 
-Writes `posted_space_id` and `posted_at` to state.
+เขียน `posted_space_id` และ `posted_at` ลงในสถานะ
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+สั่งงานทั้งทีมแทนเอเจนต์ตัวเดียว แล้วระงับจนกว่ารันของสมาชิกจะเสร็จสิ้น
 
-| Config field                                | Description                                                                                         |
+| เขตข้อมูลการตั้งค่า                                | คำอธิบาย                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| `teamId`                                    | ทีมที่ผูกกับเวิร์กสเปซที่จะสั่งงาน (จำเป็น; ใช้ร่วมกับ `agentId` ไม่ได้)                     |
+| `prompt`                                    | ข้อความเป้าหมาย รองรับการแทนที่ `{{key}}` (จำเป็น)                                               |
+| `dispatchMode`                              | `allParallel` (ค่าเริ่มต้น — หนึ่งงานต่อสมาชิกหนึ่งคน) หรือ `manager` (สั่งงานเฉพาะหัวหน้าเพื่อประสานงาน) |
+| `outputKey`                                 | คีย์สถานะสำหรับเอาต์พุตของสมาชิกที่เก็บมาได้                                                          |
+| `outputSchema`, `label`, `extras.spaceId` | เช่นเดียวกับ `conversation.promptAgent`                                                                       |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+เกตการอนุมัติ สั่งงานเอเจนต์ผู้อนุมัติเข้าสู่บทสนทนา (โหมดรีวิว) ด้วยพรอมป์ต์ของเกตและสัญญาเอาต์พุต `{decision, reason}` แล้วระงับจนกว่าผู้อนุมัติจะส่งผ่าน `submit_output`
 
-| Config field                | Description                                                                    |
+| เขตข้อมูลการตั้งค่า                | คำอธิบาย                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| `agentId`                   | เอเจนต์ผู้อนุมัติ (จำเป็น)                                                  |
+| `prompt`                    | พรอมป์ต์ของเกต (ไม่บังคับ; ใช้ค่าเริ่มต้นเมื่อไม่ได้ระบุ)                          |
+| `outputKey`                 | คีย์สถานะสำหรับเพย์โหลด `{decision, reason}` ที่เก็บมาได้                       |
+| `outputSchema`              | มีค่าเริ่มต้นเป็นสคีมาการอนุมัติ (`decision`: `approved` / `rejected`, `reason`) |
+| `label`, `extras.spaceId` | เช่นเดียวกับ `conversation.promptAgent`                                                  |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+เกตจะดำเนินต่อไปได้ผ่าน `submit_output` เท่านั้น `BuiltInBodyKeys.humanGate` ไลบรารีชนิดโหนด และข้อความพรอมป์ต์ของเทมเพลตในตัวตัวหนึ่ง ต่างก็อ้างถึงเครื่องมือ MCP ชื่อ `approve_step` และ `reject_step`; **ไม่มีเครื่องมือทั้งสองตัวอยู่จริง** ในแพ็กเกจหรือรีจิสทรีใด ๆ
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+ลบ worktree แยกส่วนที่ตกค้าง เลือกโหมดของมันจากเพย์โหลดของทริกเกอร์ เคารพแฟล็ก `dryRun` ของรัน
 
-| State key                     | Description                                                                           |
+| คีย์สถานะ                     | คำอธิบาย                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| `ticket_id`                   | ปล่อย worktree ของตั๋วงานนั้น                                                       |
+| `repo_full_name` + `pr_number` | ปล่อย worktree ของตัวแก้ไข PR ที่เป็นชั่วคราว                                             |
+| `space_id`                    | รื้อ worktree และโฟลเดอร์ของการสนทนานั้น                                    |
+| (ไม่มีข้อใดข้างต้น)           | กวาดเวิร์กสเปซ: ไดเรกทอรีที่หายไป สเปซที่ตายแล้ว โฟลเดอร์การสนทนาที่ไม่มีเจ้าของ |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (ไม่บังคับ) จะได้รับสตริงสรุป
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+การแมป / กระจายงานเหนือคอลเลกชันในสถานะ: เรนเดอร์พรอมป์ต์หนึ่งครั้งต่อหนึ่งรายการ แล้วสั่งงานเอเจนต์ **หนึ่งครั้ง** ด้วยพรอมป์ต์เหล่านั้นที่ต่อกัน (คั่นด้วย `---`) และระงับจนกว่ารันนั้นจะเสร็จสิ้น คอลเลกชันว่างจะเสร็จสิ้นทันทีพร้อมรายการว่าง ไม่ใช่การสั่งงานแบบขนานหนึ่งครั้งต่อหนึ่งรายการ
 
-| Config field         | Description                                                     |
+| เขตข้อมูลการตั้งค่า         | คำอธิบาย                                                     |
 | -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| `agentId`            | เอเจนต์ที่จะสั่งงานต่อหนึ่งรายการ (จำเป็น)                           |
+| `prompt`             | พรอมป์ต์ต่อหนึ่งรายการ รองรับการแทนที่ `{{key}}` (จำเป็น)     |
+| `extras.iterableKey` | คีย์สถานะที่เก็บคอลเลกชัน (จำเป็น)                     |
+| `extras.itemKey`     | คีย์ที่รายการปัจจุบันถูกผูกไว้ในพรอมป์ต์ (ค่าเริ่มต้น `item`) |
+| `outputKey`          | คีย์สถานะสำหรับเอาต์พุตที่เก็บมาได้ (หนึ่งการสั่งงาน ไม่ใช่รายการ) |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+รันเทมเพลตไปป์ไลน์อื่นเป็นขั้นตอนย่อยที่ซ้อนอยู่ (ไปป์ไลน์ย่อยจะรันเป็นรันลูกโดยตั้งค่า `parentPipelineRunId` ไว้) ขั้นตอนจะระงับจนกว่ารันลูกจะไปถึงสถานะสิ้นสุด จากนั้นสถานะสุดท้ายของรันลูกจะถูกผสานไว้ใต้ `outputKey`
 
-| Config field        | Description                                                     |
+| เขตข้อมูลการตั้งค่า        | คำอธิบาย                                                     |
 | ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| `extras.templateId` | เทมเพลตลูกที่จะรัน (จำเป็น; ไปป์ไลน์เรียกตัวเองไม่ได้) |
+| `inputKeys`         | คีย์สถานะที่คัดลอกเข้าไปในเพย์โหลดของทริกเกอร์ของรันลูก              |
+| `outputKey`         | คีย์สถานะสำหรับสถานะสุดท้ายที่ผสานแล้วของรันลูก                    |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+การทำดัชนีด้วย tree-sitter แบบเบื้องหลัง: เดินไปทั่วรีโป แยกสัญลักษณ์/เส้นเชื่อมในไอโซเลตของวอร์กเกอร์ แล้วนำเข้าสู่กราฟโค้ดของเวิร์กสเปซ สตรีมความคืบหน้าเข้าไปในแถวของรันขั้นตอน; รองรับ dry-run tree-sitter และไวยากรณ์ของมันเป็นเนทีฟที่จำเป็น — dylib ที่หายไปหมายความว่าเซิร์ฟเวอร์ไม่เคยบูตขึ้น และไวยากรณ์ที่ resolve ไม่สำเร็จกลางรันจะทำให้ขั้นตอนล้มเหลวแทนที่จะข้ามไป
 
-| State key         | Description                           |
+| คีย์สถานะ         | คำอธิบาย                           |
 | ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| `repo_id`         | รีโปที่จะทำดัชนี (จำเป็น)              |
+| `repo_local_path` | พาธในเครื่องของเช็กเอาต์ (จำเป็น) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+การแยกผู้พูดแบบออฟไลน์ อ่านเสียงที่เก็บไว้ของการประชุม จัดกลุ่มเป็นผู้พูด (`Person 1`, `Person 2`, …) ติดป้ายกำกับใหม่ให้กับส่วนต่าง ๆ ของบันทึกถอดเสียง และเขียนทับสถานะ `transcript`; ยังปล่อย `diarization_spans` สำหรับขั้นตอน `meeting.updateTranscript` ที่รันขนานกันด้วย ส่งต่อบันทึกถอดเสียงไปโดยไม่เปลี่ยนแปลงเมื่อไม่มีเสียงที่ถูกเก็บไว้ หรือยังไม่ได้ติดตั้งโมเดล
 
-| State key     | Description                   |
+| คีย์สถานะ     | คำอธิบาย                   |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | การประชุมที่จะแยกผู้พูด (จำเป็น) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+บอดีที่บันทึกสรุปการประชุมแบบดีเทอร์มินิสติก แต่ละตัวอ่าน `meeting_id` และเพย์โหลด `meeting_outcome` แบบมีโครงสร้างของขั้นตอนเอเจนต์ (`{summary, enhancedNotes, actionItems[], decisions[]}`) จากสถานะ แล้วเขียนส่วนของตัวเองลงตารางของตัวเอง — บันทึก รายการงานที่ต้องทำ หรือการตัดสินใจ แถวที่บันทึกไว้ก่อนหน้าจะไม่ถูกล้างทิ้งเมื่อรันทำงานแบบลดระดับ
 
-### Other built-in bodies
+### บอดีในตัวอื่น ๆ
 
-| Body key                           | Description                                                                                                                                                                              |
+| คีย์บอดี                           | คำอธิบาย                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| `meeting.identifySpeakers`         | การรู้จำผู้พูดข้ามการประชุม: จับคู่ผู้พูดที่แยกได้กับโปรไฟล์เสียงที่บันทึกไว้ และนำการจับคู่ที่มั่นใจไปใช้โดยอัตโนมัติ ไม่ทำอะไรเมื่อไม่มีโปรไฟล์/เอ็มเบดดิง                         |
+| `meeting.updateTranscript`         | นำป้ายกำกับ `Person N` จาก `diarization_spans` ไปใช้ และผสานชิ้นส่วนรายหน้าต่างเป็นช่วงคำพูดรายผู้พูด จากนั้นบันทึกบันทึกถอดเสียงที่ทำความสะอาดแล้ว ไม่ทำอะไรเมื่อการแยกผู้พูดไม่ให้ผลลัพธ์ใด ๆ |
+| `meeting.assemblePlayback`         | ประกอบแทร็กเล่นกลับแบบผสมของการประชุมจากไฟล์ WAV รายช่องสัญญาณที่เก็บไว้ ไม่ทำอะไรเมื่อไม่มีเสียงที่ถูกเก็บไว้                                                                           |
+| `orchestration.markPhase`          | เมื่อสิ้นสุด DAG ของงาน เขียนสัญญาณความล้มเหลวให้กับตั๋วงานย่อยที่ไม่มีเอาต์พุต แล้วเปลี่ยนสถานะการประสานงานเป็น `synthesizing`                                                       |
+| `orchestration.persistDeliverable` | เขียนเอาต์พุตของการสังเคราะห์ลงในตั๋วงานแม่ ทำตั๋วงานนั้นให้เสร็จสิ้น โพสต์สิ่งที่ส่งมอบ แล้วทำเครื่องหมายการประสานงานเป็น `completed`                                                           |
+| `orchestration.awaitApproval`      | เกตการอนุมัติบางส่วน: เสร็จสิ้นทันทีเมื่อคีย์โหนดของขั้นตอนอยู่ในชุดที่อนุมัติแล้วของการประสานงาน มิฉะนั้นจะระงับจนกว่าการอนุมัติในภายหลังจะทำให้กลับมาทำงานต่อ นี่เป็นบอดีเดียวที่ตั้งค่า `extras.awaitApproval` ซึ่งยกเว้นมันจากหมดเวลา 24 ชั่วโมงของขั้นตอนที่ถูกระงับ |
+| `messaging.createSpace`            | เปิดบทสนทนาที่ส่วนที่เหลือของเทมเพลตทำงานอยู่ในนั้น เผยแพร่ไว้ใต้ `outputKey` ของขั้นตอน (เทมเพลตในตัวใช้ `pipeline_space_id`) รายการ `repoIds` ที่ว่างเปล่าจะไม่เช็กเอาต์อะไรเลย; `extras['allRepos']` จะเช็กเอาต์ทุกรีโปในเวิร์กสเปซ `extras['createConversation']` (ปิดไว้เป็นค่าเริ่มต้น) จะเปิดสตรีมที่มีชื่อด้วย ขั้นตอนเอเจนต์จะเข้าร่วมห้องและไม่เคยเปิดห้องเอง ดังนั้นการกระจายงานที่ไม่มีโหนดนี้จะล้มเหลวตอนสั่งงาน — และการต่อมันไว้ครั้งเดียวหมายความว่าการกระจายงานทั้งชุดใช้เช็กเอาต์ร่วมกันหนึ่งชุด แทนที่จะจัดเตรียมให้ทีละอัน |
+| `prReview.finalize`                | ขั้นตอนสุดท้ายของเทมเพลตรีวิว PR: จัดเรียงโหนดรีวิวที่สะสมไว้ลงในถังฉันทามติ แล้วคำนวณคำตัดสินต่อหนึ่ง PR                                                     |
+| `skills.analyze`                   | รันการสแกนซัพพลายเชนของสกิลบนสกิลที่ติดตั้งไว้ในเวิร์กสเปซ และบันทึกคำตัดสินของแต่ละรายการ                                                                                          |
 
-## Step results
+## ผลลัพธ์ของขั้นตอน
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+บอดีของขั้นตอนคืนค่า `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`) factory ทั้งหมดรับแมป `mutatedState` แบบไม่บังคับที่ผสานเข้าสู่สถานะของไปป์ไลน์ ยกเว้น `failed`
 
-| Factory                     | Signature                                                       | Description                                                               |
+| factory                     | ลายเซ็น                                                       | คำอธิบาย                                                               |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | เสร็จสิ้นตามปกติ; ตัวฟังปลายทางจะถูกประเมิน                     |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | เสร็จสิ้นของ router; เลือกสาขาปลายทางที่ `routeKey` ตรงกัน |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | หยุดชั่วคราวจนกว่าเหตุการณ์โดเมนชนิดที่ระบุจะทำงาน                            |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | หยุดชั่วคราวจนกว่างานทั้งหมดที่ระบุจะไปถึงสถานะสิ้นสุด                         |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | รันของไปป์ไลน์เสร็จสิ้นแล้ว — ไม่มีขั้นตอนอีกต่อไป                              |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | ขั้นตอนล้มเหลวพร้อมข้อความข้อผิดพลาด                                     |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+พฤติกรรมการลองใหม่สำหรับบอดีของโหนดที่ล้มเหลว (`PipelineNodeConfig.retryPolicy`; null ปิดการลองใหม่)
 
-| Field            | Type     | Description                                                                    |
+| เขตข้อมูล            | ชนิด     | คำอธิบาย                                                                    |
 | ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| `maxAttempts`    | `int`    | จำนวนครั้งที่ลองทั้งหมดรวมครั้งแรก (3 = ลอง 1 ครั้ง + ลองใหม่ 2 ครั้ง); ต้อง ≥ 1        |
+| `backoff`        | `String` | `linear` หรือ `exponential` (ค่าเริ่มต้น)                                            |
+| `initialDelayMs` | `int`    | การหน่วงก่อนการลองใหม่ครั้งแรก หน่วยเป็นมิลลิวินาที; การหน่วงครั้งต่อ ๆ ไปจะเพิ่มขึ้นตาม `backoff` |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+การตั้งค่าต่อโหนดที่พกอยู่ภายในนิยามของขั้นตอน (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`) ทั้งโหนดในตัวและโหนดที่กำหนดเองใช้รูปทรงเดียวกันนี้; แต่ละบอดีอ่านเฉพาะเขตข้อมูลที่มันสนใจ
 
-| Field            | Type                    | Description                                                                                                                           |
+| เขตข้อมูล            | ชนิด                    | คำอธิบาย                                                                                                                           |
 | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| `prompt`         | `String?`               | เทมเพลตพรอมป์ต์ที่แทนที่ด้วย `{{key}}`                                                                                           |
+| `script`         | `String?`               | บอดีสคริปต์ Bash ที่แทนที่ด้วย `{{key}}`                                                                                          |
+| `agentId`        | `String?`               | UUID ของเอเจนต์ที่ผูกกับเวิร์กสเปซที่จะสั่งงาน                                                                                               |
+| `inputKeys`      | `List<String>`          | คีย์สถานะที่โหนดนี้ใช้เป็นอินพุต                                                                                                |
+| `repoIds`        | `List<String>`          | รีโปที่โหนด `messaging.createSpace` เช็กเอาต์ (`<repoId>` หรือ `<repoId>@<branch>`) ว่างเปล่า = ไม่เอาเลย; `extras['allRepos']` = ทุกรีโปในเวิร์กสเปซ ถูกละเลยบนขั้นตอนเอเจนต์ |
+| `outputKey`      | `String?`               | คีย์สถานะที่เอาต์พุตของโหนดนี้ถูกเขียนไว้ใต้คีย์นั้น                                                                                         |
+| `label`          | `String?`               | ป้ายชื่อที่มนุษย์อ่านที่แสดงบนแคนวาส (ค่าเริ่มต้นคือ ID ของขั้นตอน)                                                                             |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (ชุดย่อย) ที่ค่าเอาต์พุตต้องเป็นไปตามนั้น                                                                                    |
+| `reducer`        | `String?`               | กลยุทธ์การผสานเมื่อสาขาที่รันขนานกันเขียน `outputKey` เดียวกัน: `append`, `mergeLists`, `mergeMaps`, `sum` หรือ `override` (ค่าเริ่มต้น) |
+| `retryPolicy`    | `StepRetryPolicy?`      | นโยบายการลองใหม่เมื่อบอดีล้มเหลว; null = ลองครั้งเดียว                                                                                   |
+| `continueOnFail` | `bool`                  | เมื่อเป็น true ความล้มเหลวระดับ terminal จะไม่ทำให้รันล้มเหลว; ข้อผิดพลาดจะถูกพักไว้ใต้ `state['_stepErrors'][stepId]`                        |
+| `timeoutMs`      | `int?`                  | หมดเวลาแบบนาฬิกาจริงสำหรับบอดีของโหนด หน่วยเป็นมิลลิวินาที; null = ไม่มีหมดเวลา                                                               |
+| `teamId`         | `String?`               | ทีมที่จะสั่งงาน (โหนด `team.dispatch`); ใช้ร่วมกับ `agentId` ไม่ได้                                                           |
+| `dispatchMode`   | `String?`               | โหมดการทำงานของทีม: `allParallel` หรือ `manager`                                                                                       |
+| `extras`         | `Map<String, dynamic>`  | การตั้งค่าที่เจาะจงต่อบอดีแบบอิสระ (เช่น `iterableKey`, `templateId`, ทรีเงื่อนไข)                                                    |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+แอกเซสเซอร์ที่ได้มา: `spaceId` (`extras['spaceId']` — บทสนทนาที่มีอยู่แล้วที่จะทำงานในนั้น), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan` อ่านที่โหนดที่เปิดสเปซ) และ `runWhen` (`extras['runWhen']` — ข้ามโหนดเมื่อเงื่อนไขไม่เป็นจริง)
 
-## See also
+## ดูเพิ่มเติม
 
-- [Pipelines](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)
-- [Create a pipeline](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)
-- [Pipeline triggers](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
-- [Run a pipeline](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)
+- [ไปป์ไลน์](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/)
+- [สร้างเทมเพลตไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/สร้างไปป์ไลน์/)
+- [ตั้งทริกเกอร์ไปป์ไลน์](/th-TH/คู่มือ/วิธีทำ/ทริกเกอร์ไปป์ไลน์/)
+- [รันไปป์ไลน์ด้วยตนเอง](/th-TH/คู่มือ/วิธีทำ/รันไปป์ไลน์/)

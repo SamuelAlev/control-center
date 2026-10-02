@@ -1,118 +1,126 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Ta opp og oppsummer et møte
+description: Ta opp en samtale, få et transkript og gjør det om til notater, tiltak og beslutninger.
 slug: nb-NO/handbok/slik-gjor-du/ta-opp-mote
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/nb-NO/handbok/konsepter/moter/) for how it works.
+Denne veiledningen viser deg hvordan du tar opp et møte og får et AI-generert
+referat. Se [Møter og transkripsjon](/nb-NO/handbok/konsepter/moter/) for
+hvordan det fungerer.
 
-## Before you start
+## Før du begynner
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Vent på talemodellen, og start serveren på nytt.** En vanlig oppstart
+  tvangsinstallerer den valgte ASR-modellen (Parakeet TDT 0.6B v3, den
+  flerspråklige standarden, rundt 600 MB) i bakgrunnen. Serveren løser opp
+  modellen **én gang ved oppstart**, så den første kjøringen har fortsatt ingen
+  opptaksoperasjoner før du starter på nytt. Uten en modell på disken mislykkes
+  opptaket med `Could not start recording on the host: …`. Vil du velge et annet
+  bygg, gå til **Innstillinger →
+  Server → Stemme- og møtemodeller** — det krever også en omstart.
+- Gi tilgang til **mikrofon** når operativsystemet spør ved første opptak.
+- På **macOS 14.4+** fanges systemlyd opp med Core Audio-prosesslyttere — ingen driver å installere, men operativsystemet spør en gang til om tillatelse til _lydopptak_. Det er ikke skjermopptak, og det tenner aldri indikatoren for skjermopptak. Nekter du, mislykkes starten med `System-audio capture permission denied.` Under macOS 14.4 finnes det ikke noe systemlydopptak.
+- På **Linux** må `parecord` (pulseaudio-utils) eller `pw-record` (pipewire) ligge på `PATH` — opptaket starter én av dem mot en PipeWire-/PulseAudio-monitorkilde. Uten noen av dem mislykkes starten med `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Hvor møtelyden din havner]
+Opptak, transkripsjon, ekkoutligning og talerdiarisering kjører alle
+på enheten, uten noe skykall — men «enheten» betyr **verten som kjører
+`cc_server`**, som er en annen maskin når du kjører serveren eksternt. Og det
+endelige referatet er en vanlig agentkjøring: pipelinen `meeting_summary` sender
+hele transkriptet og de grove notatene dine til den modellleverandøren den
+agenten bruker. Pek den agenten mot en lokal leverandør hvis transkriptet ikke må
+forlate maskinen.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Opptaksskjermen sier dette mens du tar opp, så avgjørelsen ligger foran deg før
+det finnes et transkript å sende.
 :::
 
-## Start a recording
+## Start et opptak
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Åpne **Møter** i sidepanelet.
+2. Klikk på **Ta opp møte**. HUD-en for det pågående opptaket åpnes på `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Opptaket starter umiddelbart og fanger opp mikrofonen din pluss systemets
+utgangslyd — de andre deltakerne. Det finnes ingen modusmelding og ingen velger
+for lydkilde: enkeltmikrofonmodus for fysiske møter finnes i API-et, men har
+ingen brukergrensesnitt i dag.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+I nettleseren fungerer den samme flyten, med én forskjell: «systemlyden» er en
+skjermdeling som må inneholde et lydspor. Del en nettleserfane (eller hele
+skjermen) og aktiver «Del fanelyd» / «Del systemlyd» i velgeren. Safari
+og Firefox og fullskjermdeling på macOS kan ofte ikke levere ett.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD-en viser en nivåmåler, medgått tid og et live transkript som bygger seg opp
+på den ene siden.
 
-## During the meeting
+## Under møtet
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Skriv grove notater** i notatpanelet. De lagres mens du skriver og overleveres til sammendragsagenten senere, så noter ned alt transkriptet kan overse.
+- **Velg notatmalen** i raden **Aktiv mal**. Den former sammendraget for dette møtet og lagres sammen med opptaket, så en senere ny kjøring gjenskaper malen du valgte her.
+- **Pause og fortsett** med pausekontrollen. Transkripsjonen stopper mens den er pauset, og timeren fryser.
+- Transkriptet strømmer inn med talermerking: ordene dine som **Deg**, alle andre i samtalen som **Andre** — helt til diariseringen deler Andre inn i `Person 1`, `Person 2`, … som du kan gi nye navn.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[En svært stille taler blir kanskje ikke transkribert]
+Transkripsjonen hopper over ethvert lydvindu som aldri kom over en
+stillhetsterskel, uten å dekode det i det hele tatt. Det hindrer en stille kanal
+fra å brenne CPU på hallusinerte ikke-tale-tokens, men det betyr også at en svak
+eller fjern taler kan gi ingen transkripsjon. Sjekk nivåmåleren tidlig i stedet
+for på slutten.
 :::
 
-## Stop and summarize
+## Stopp og oppsummer
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klikk på **Stopp og oppsummer**.
+2. Control Center tar deg rett til detaljvisningen for møtet, merket **Behandler**: diariseringen deler fjernkanalen inn i enkelttalere, og pipelinen `meeting_summary` genererer referatet.
+3. Møtet skifter til **Ferdig** når den pipelinen er ferdig. Du trenger ikke å vente på den — detaljvisningen oppdaterer seg selv.
 
-## Review the writeup
+## Gå gjennom referatet
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Møtedetaljene (`/meetings/:meetingId`) har fire faner:
 
-| Tab              | What's there                                                                    |
+| Fane             | Hva som finnes der                                                              |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **Notater**      | AI-sammendraget og de berikede notatene, bygget fra de grove notatene dine + transkriptet |
+| **Transkript**   | Det fulle talermerkede transkriptet med tidsstempler                            |
+| **Tiltak**       | Utpakkede gjøremål, hvert med en valgfri eier                                   |
+| **Beslutninger** | Beslutninger som ble fanget opp i løpet av samtalen                             |
 
-From here you can:
+Herfra kan du:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/nb-NO/handbok/slik-gjor-du/deleger-saker/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Gi talere nye navn**: endre `Person 1` til et ekte navn; det gjelder i hele transkriptet.
+- **Huke av tiltak** etter hvert som du fullfører dem.
+- **Opprett sak** fra et tiltak: dette oppretter en ny sak uten tildeling, med tittelen fra tiltaket, og lenker den tilbake til raden. Tildel den til en agent fra selve saken (se [Deleger arbeid til agenter](/nb-NO/handbok/slik-gjor-du/deleger-saker/)).
+- **Kjør sammendrag på nytt** for en fersk gjennomkjøring (for eksempel etter at du har gitt talere nye navn). Den gjenbruker malen som ble lagret da møtet ble tatt opp. Velg den aktive malen under **Innstillinger → Arbeidsområde → Møter**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Redigering av notater, tittelen, tiltak og beslutninger fungerer overalt.
+**Kjør sammendrag på nytt** og å avbryte et møte under behandling finnes **bare
+på skrivebordet** — i nettleseren gjør begge knappene ingenting.
 
-## Record straight from a calendar event
+## Ta opp direkte fra en kalenderhendelse
 
-If you've [connected a calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Hvis du har [koblet til en kalender](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/), kan du hoppe over
+den manuelle starten. Dette finnes **bare på skrivebordet**; nettklienten avviser
+det.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Åpne hendelsen fra **Kalender**.
+2. Klikk på **Start opptak og knytt**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Opptaket fylles med hendelsens tittel og kobles tilbake til den, slik at notatene
+og kalenderoppføringen holder seg koblet sammen.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Å slette et møte lar lyden bli liggende]
+Å slette et møte fjerner radene, men de innspilte WAV-filene under
+`<dataDir>/meetings/<meetingId>/` blir liggende på disken — det finnes ingen
+oppbevaringspolicy, ingen størrelsesgrense og ingen oppryddingssveip. Fjern den
+katalogen selv hvis lyden betyr noe.
 :::
 
-## Related guides
+## Relaterte veiledninger
 
-- [Connect a Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
-- [Delegate work to agents](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
+- [Koble til en Google Calendar](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/)
+- [Deleger arbeid til agenter](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Meetings and transcription](/nb-NO/handbok/konsepter/moter/)
+- [Møter og transkripsjon](/nb-NO/handbok/konsepter/moter/)

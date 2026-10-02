@@ -1,95 +1,106 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Connecter un fournisseur OpenID Connect
+description: Reliez n’importe quel émetteur OIDC — Pocket ID, Keycloak, Auth0, Zitadel — à la connexion à Control Center.
 slug: fr-CA/manuel/guides/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Utilisez ce guide lorsque votre fournisseur d’identité parle **OpenID Connect**
+plutôt que SAML. Tout émetteur certifié OIDC fait l’affaire — Pocket ID, Keycloak,
+Auth0, Zitadel, Google Workspace et les autres suivent tous les mêmes étapes ;
+seul l’endroit où votre fournisseur affiche les valeurs diffère.
 
-## Prerequisites
+## Prérequis
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- un fournisseur OIDC où vous pouvez créer un client — notez son **ID client**
+  et son **URL de l’émetteur** (la base sous laquelle se trouve le document
+  `.well-known/openid-configuration`), ainsi que son **secret client** lorsque
+  le client est de type confidentiel (les clients publics PKCE n’en ont pas),
+- un serveur Control Center que vous administrez (le **propriétaire du
+  serveur**).
 
-## Steps
+## Étapes
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Ouvrez **Paramètres → Serveur → Authentification unique** et basculez vers
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Remplissez l’**URL de l’émetteur**, l’**ID client** et le **Secret client
+   (facultatif)** lorsque le fournisseur en a émis un. Control Center découvre
+   les points de terminaison à partir du document de découverte standard de
+   l’émetteur — aucune configuration par fournisseur.
+3. Chez le fournisseur, enregistrez la redirection
+   `https://<your-server>/oidc/callback` sur ce client.
+4. Si vos groupes se trouvent sous un claim autre que `groups`, définissez le
+   nom du **Claim des groupes** ; associez des groupes à des rôles si vous le
+   souhaitez (l’authentification unique ne peut jamais accorder le rôle
+   propriétaire).
+5. Choisissez la politique d’adhésion (ajout automatique à tous les espaces de
+   travail, ou invitation requise pour chaque espace de travail), activez
+   **Utiliser OpenID Connect pour la connexion** et appuyez sur **Enregistrer
+   la connexion**.
+6. Appuyez sur **Tester la connexion** — le serveur récupère le document de
+   découverte de l’émetteur et confirme ses points de terminaison, de sorte
+   qu’un bandeau vert signifie que tout fonctionne, sauf l’aller-retour dans le
+   navigateur. Pour vérifier aussi l’enregistrement du client, utilisez le
+   [vérificateur ci-dessous](#vérifier-votre-configuration-à-partir-de-cette-page).
+7. Tentez une connexion : l’écran de connexion web affiche **Se connecter avec
+   OpenID Connect**, ou ouvrez `https://<your-server>/oidc/login` directement.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Les claims (courriel, nom, groupes) sont lus par votre serveur auprès du point de
+terminaison de jetons de l’émetteur, au moyen de TLS — le navigateur ne les
+fournit jamais, donc aucune vérification locale de signature JWT n’entre en jeu.
+Le client doit être autorisé à demander la portée `openid profile email`, soit
+exactement ce que Control Center demande.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Comme ce canal TLS est la seule chose qui authentifie les claims, l’URL de
+l’émetteur doit être en **https** — un émetteur en clair permettrait à n’importe
+quel attaquant placé sur le chemin de fabriquer des identités en masse. `http`
+n’est accepté que pour les émetteurs de bouclage (`localhost`, `127.0.0.1`,
+`::1`), pour le développement local.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Client public ou client confidentiel ?]
+La forme par défaut — et recommandée — est un **client public** qui utilise le
+flux de code d’autorisation avec **PKCE** (RFC 7636) : le vérificateur de code à
+usage unique que détient le serveur remplace le secret, et l’échange de jetons
+est lié à la demande d’autorisation qui l’a amorcé. Il n’y a aucun secret à
+laisser fuir, et un code d’autorisation volé est inutile sans le vérificateur.
+Certains fournisseurs appellent ce type de client « SPA » ou « native » au moment
+de le créer.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Si votre fournisseur a plutôt émis un client **confidentiel**, marquez le client
+comme public chez le fournisseur (PKCE reste actif dans les deux cas), ou collez
+le secret client dans le champ **Secret client (facultatif)** de la connexion. Le
+secret est conservé dans le fichier de secrets en 0600 du serveur (jamais dans la
+base de données), transmis au point de terminaison de jetons en tant que
+`client_secret_post` et jamais renvoyé par RPC ; laisser le champ vide à
+l’enregistrement conserve le secret déjà stocké. Quand une connexion échoue à
+l’échange de jetons, le journal du serveur nomme l’erreur du fournisseur
+(`invalid_client` signifie presque toujours que le secret est manquant ou
+erroné).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/fr-CA/manuel/guides/sso-scim).
+:::note[Joignabilité]
+La connexion elle-même passe par le navigateur : l’émetteur ne fait que
+rediriger le navigateur de l’utilisateur vers `/oidc/callback`, et votre serveur
+effectue un appel HTTPS sortant vers le point de terminaison de jetons — aucune
+connexion entrante de l’émetteur n’est nécessaire, donc un serveur derrière un
+NAT fonctionne tant que les navigateurs des utilisateurs peuvent l’atteindre
+(LAN, VPN, Tailscale ou un tunnel). **Le provisionnement SCIM fait exception** :
+l’IdP appelle votre serveur directement, ce qui exige un tunnel ou une URL
+publique — voir [provisionner des utilisateurs avec
+SCIM](/fr-CA/manuel/guides/sso-scim).
 :::
 
-## Check your configuration from this page
+## Vérifier votre configuration à partir de cette page
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Le vérificateur ci-dessous s’exécute dans votre navigateur. Il récupère
+directement le document de découverte de votre émetteur, de sorte que ce site ne
+le voit jamais, et applique les règles du serveur : un émetteur en https qui
+correspond au document, des points de terminaison sur l’origine propre de
+l’émetteur, PKCE S256 et la méthode d’authentification des jetons qu’exige votre
+type de client. Avec un ID client et l’adresse du serveur, il peut ouvrir une
+connexion d’essai qui montre si le client et son URI de redirection sont
+enregistrés. Il ne demande jamais le secret client.
 
 <SsoCheck kind="oidc" />

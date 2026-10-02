@@ -1,152 +1,157 @@
 ---
-title: Configure guardrails
-description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
+title: 가드레일 구성
+description: 에이전트 작업에 대한 허용, 먼저 묻기, 거부 규칙을 설정하고, 가정 시나리오 프로브로 테스트하고, 스페이스별 자율성을 조정합니다.
 slug: ko-KR/매뉴얼/사용-가이드/가드레일-구성
+sourceHash: 9cf658f58c5a751927b0d3184246baee1d7f5ebb
 ---
 
-This guide shows you how to configure guardrails: the rules that decide whether
-an agent's action runs, asks for approval first, or is refused.
+이 가이드에서는 가드레일을 구성하는 방법을 설명합니다. 가드레일은 에이전트의
+작업이 실행될지, 먼저 승인을 요청할지, 아니면 거부될지를 결정하는
+규칙입니다.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
-enforced server-side at the point the tool is called, never by an instruction in
-a prompt.
+가드레일은 모든 변경 도구가 선언하는 열세 개의 효과 클래스를 다룹니다.
+가드레일은 도구가 호출되는 지점에서 서버 측으로 적용되며, 프롬프트의 지시로
+적용되는 일은 결코 없습니다.
 
-## Set a decision for an action class
+## 작업 클래스에 대한 결정 설정
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
-   the agent), or **Space** (then choose the space)
-3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
-4. To drop a rule you set, press the reset button that appears at the end of that
-   row (**Clear to inherited**) — the decision falls back to the wider scope
+1. **설정 → 워크스페이스 → 에이전트 권한**으로 이동합니다.
+2. 세그먼트 컨트롤에서 범위를 선택합니다: **워크스페이스**, **에이전트**(이어서
+   에이전트 선택), **스페이스**(이어서 스페이스 선택).
+3. 작업 클래스 행에서 **허용**, **먼저 묻기**, **거부** 중 하나를 선택합니다.
+4. 설정한 규칙을 없애려면 해당 행 끝에 나타나는 초기화 버튼
+   (**상속값으로 초기화**)을 누릅니다 — 그러면 결정이 더 넓은 범위로
+   되돌아갑니다.
 
-Each row shows the effective decision as a status tag and a badge for where it
-came from: **This scope**, **Inherited** or **Built-in default**. The matrix
-resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
-what-if probe with a read-only mode selected to see that layer.
+각 행은 유효 결정을 상태 태그로, 그 출처를 배지로 보여 줍니다: **이 범위**,
+**상속됨**, **내장 기본값**. 이 매트릭스는 에이전트(`chat`) 모드에서
+판정되므로 **모드 프리셋**은 여기에 나타나지 않습니다 — 그 계층을 보려면
+읽기 전용 모드를 선택한 상태에서 가정 시나리오 프로브를 사용하세요.
 
-Writing a rule needs the `admin` role. Reading the matrix does not.
+규칙을 작성하려면 `admin` 역할이 필요합니다. 매트릭스를 읽는 데는 필요하지
+않습니다.
 
-Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
-the what-if probe below on `git push origin main`. The result reads `deny` with
-source `workspace`.
+점검: 워크스페이스 범위에서 **리모트에 푸시**를 **거부**로 설정한 다음,
+아래의 가정 시나리오 프로브를 `git push origin main`에 실행합니다. 결과는
+출처 `workspace`와 함께 `deny`로 표시됩니다.
 
-## Understand how a decision is resolved
+## 결정이 판정되는 방식 이해하기
 
-Resolution is **specificity first, then restrictiveness**:
+판정은 **구체성 우선, 그다음 제한성**입니다.
 
-1. **Space** rules, then **agent**, then **workspace**. The first scope with a
-   matching rule decides and resolution stops
-2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
-3. If the mode has nothing to say, the **built-in default** applies
+1. **스페이스** 규칙, 그다음 **에이전트**, 그다음 **워크스페이스** 순입니다.
+   일치하는 규칙이 있는 첫 번째 범위가 결정하며 판정은 거기서 멈춥니다.
+2. 일치하는 규칙이 없으면 **모드 프리셋**이 적용됩니다 — 읽기 전용 모드
+   (플랜, 리뷰, 오케스트레이트)는 열세 클래스 중 열한 개를 거부합니다.
+3. 모드가 아무것도 정하지 않으면 **내장 기본값**이 적용됩니다.
 
-Within a single scope, a command rule resolves by longest matching prefix and an
-equally specific conflict resolves **most restrictive** — deny beats ask first
-beats allow. An action that declares several classes resolves each one
-independently and then combines them most-restrictive.
+한 범위 안에서 명령 규칙은 가장 긴 일치 접두사로 판정되고, 똑같이 구체적인
+충돌은 **가장 제한적인 쪽**으로 판정됩니다 — 거부가 먼저 묻기를 이기고, 먼저
+묻기가 허용을 이깁니다. 여러 클래스를 선언한 작업은 각각을 독립적으로 판정한
+뒤 가장 제한적으로 결합합니다.
 
-:::caution[Allow does not beat deny]
-A narrower rule wins on specificity and a tie is broken by restrictiveness —
-so an **Allow** at the workspace scope does not override a **Deny** anywhere.
+:::caution[허용이 거부를 이기지 않습니다]
+더 좁은 규칙이 구체성으로 이기고, 동점은 제한성으로 갈립니다 — 따라서
+워크스페이스 범위의 **허용**은 어디에서도 **거부**를 재정의하지 못합니다.
 :::
 
-An **Ask first** decision surfaces one approval prompt covering every class that
-resolved to `prompt`. **With no approver connected it is denied**, for both shell
-commands and harness tool calls. That is deliberate: an ungated run is worse than
-a refused one.
+**먼저 묻기** 결정은 `prompt`로 판정된 모든 클래스를 아우르는 승인 프롬프트
+하나를 띄웁니다. **승인자가 연결되어 있지 않으면 거부됩니다** — 셸 명령과
+하네스 도구 호출 모두 그렇습니다. 이는 의도된 것입니다. 관문 없는 실행은
+거부된 실행보다 나쁩니다.
 
-### Action classes and built-in defaults
+### 작업 클래스와 내장 기본값
 
-| Action class                 | Built-in default |
-| ---------------------------- | ---------------- |
-| Delete a file                | Ask first        |
-| Write outside the worktree   | Allow            |
-| Create a commit              | Allow            |
-| Push to a remote             | Ask first        |
-| Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
-| Write to an external tracker | Ask first        |
-| Access the network           | Allow            |
-| Read a secret                | Allow            |
-| Install a package            | Allow            |
-| Run a process                | Allow            |
-| Change workspace structure   | Allow            |
-| Drive an enclosure (rig)     | Allow            |
+| 작업 클래스            | 내장 기본값 |
+| ---------------------- | ----------- |
+| 파일 삭제              | 먼저 묻기   |
+| 워크트리 밖에 쓰기     | 허용        |
+| 커밋 생성              | 허용        |
+| 리모트에 푸시          | 먼저 묻기   |
+| 풀 리퀘스트 열기       | 먼저 묻기   |
+| 리뷰 게시 또는 병합    | 먼저 묻기   |
+| 외부 트래커에 쓰기     | 먼저 묻기   |
+| 네트워크 접근          | 허용        |
+| 시크릿 읽기            | 허용        |
+| 패키지 설치            | 허용        |
+| 프로세스 실행          | 허용        |
+| 워크스페이스 구조 변경 | 허용        |
+| 인클로저(rig) 조작     | 허용        |
 
-The taxonomy is closed. A new tool that ships without declaring its classes fails
-a ratchet test in CI, so nothing arrives with a silently empty effect set.
+이 분류 체계는 닫혀 있습니다. 클래스를 선언하지 않고 출시된 새 도구는 CI의
+래칫 테스트를 통과하지 못하므로, 효과 집합이 조용히 비어 있는 채로 도착하는
+일은 없습니다.
 
-## Test a rule with the what-if probe
+## 가정 시나리오 프로브로 규칙 테스트
 
-Before changing a rule, check how the current policy already resolves it.
+규칙을 바꾸기 전에, 현재 정책이 그 규칙을 어떻게 판정하는지 확인하세요.
 
-1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
-3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
-   **Space** and **Mode**
-4. Read the result: the decision, the reason and **Source:**
+1. 같은 페이지에서 **어떻게 될까요?**까지 스크롤합니다.
+2. **작업**(열세 클래스 중 하나)을 선택합니다.
+3. 선택 사항으로 **명령**(예: `git push origin main`), **에이전트**,
+   **스페이스**, **모드**를 채웁니다.
+4. 결과를 확인합니다: 결정, 사유, 그리고 **출처:**
 
-The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+프로브는 적용 경로가 사용하는 것과 같은 판정기를 실제 규칙에 대해
+실행하므로 답이 정확합니다. 결과가 예상과 다르면 위 매트릭스에서 규칙을
+바꾸고 다시 프로브하세요.
 
-## Set a space's autonomy dial
+## 스페이스의 자율성 다이얼 설정
 
-The dial is per agent per space and it composes with the rules rather than
-replacing them.
+다이얼은 스페이스별·에이전트별로 적용되며, 규칙을 대체하지 않고 규칙과 함께
+작동합니다.
 
-1. Open the space
-2. Open **Manage participants** from the space header
-3. Under **Autonomy** on the agent's row, pick a level:
+1. 스페이스를 엽니다.
+2. 스페이스 헤더에서 **참가자 관리**를 엽니다.
+3. 에이전트 행의 **자율성** 아래에서 수준을 선택합니다.
 
-| Level                 | Effect                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Default**           | No space setting — behaves as **Act with approval**                                                 |
-| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
-| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
-| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+| 수준              | 효과                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| **기본값**        | 스페이스 설정 없음 — **승인 후 실행**으로 동작                                              |
+| **제안만**        | 관문이 걸린 모든 도구가 즉시 거부되며, 대신 그 작업을 제안하라는 메시지가 에이전트에 전달됨 |
+| **승인 후 실행**  | 위험한 작업이 실패 시 거부 방식의 승인 게이트에 걸림                                        |
+| **자유롭게 실행** | hard 거부로 판정되지 않은 모든 것을 사전 승인                                               |
 
-:::caution[Act freely swallows every prompt]
-Under **Act freely** an **Ask first** decision is granted without asking you.
-Only a `deny` — from a rule, from the mode preset, or from a built-in default —
-still blocks. Reach for it when you are watching the space, not as a default.
+:::caution[자유롭게 실행은 모든 프롬프트를 삼킵니다]
+**자유롭게 실행**에서는 **먼저 묻기** 결정이 여러분에게 묻지 않고
+승인됩니다. 규칙, 모드 프리셋, 내장 기본값에서 비롯된 `deny`만이 여전히
+막습니다. 기본값으로 두지 말고, 스페이스를 지켜보고 있을 때만 사용하세요.
 :::
 
-The dial only reaches the built-in harness. The Claude Code adapter runs its own
-tools outside this gate.
+다이얼은 내장 하네스에만 적용됩니다. Claude Code 어댑터는 자체 도구를 이
+관문 밖에서 실행합니다.
 
-## Know where guardrails do not reach
+## 가드레일이 닿지 않는 곳 알기
 
-The **Where rules are enforced** table at the bottom of the same page is the
-in-app version of this: per effect class, it says whether each runner catches it
-at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+같은 페이지 하단의 **규칙이 적용되는 위치** 표는 이 내용의 인앱 버전입니다.
+효과 클래스별로 각 러너가 이를 정책 관문에서 잡는지, 샌드박스에 맡기는지,
+아니면 전혀 가로챌 수 없는지를 알려 줍니다.
 
-- **The Claude Code adapter** is not gated on its own tool calls. Claude
-  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for that adapter
-  is the MCP tool surface it calls back into and the shell command Control
-  Center spawns to launch it.
-- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
-  and can never be denied — otherwise a mode would be structurally unable to
-  produce its only deliverable.
-- **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the Claude Code CLI and
-  the harness `bash` tool, so a rule you did not write still has an OS floor
-  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
-  and `socat` there is none either — there, guardrails plus the mode's tool
-  surface are the whole enforcement, not a second line of it. Check which case
-  you are in with
-  [Configure sandbox policies](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/).
+- **Claude Code 어댑터**는 자체 도구 호출에 관문이 걸리지 않습니다. Claude
+  Code는 `--dangerously-skip-permissions`로 실행되므로, 그 읽기, 쓰기, 편집,
+  bash 호출은 결코 가드를 거치지 않습니다. 그 어댑터에서 관문이 걸리는 것은
+  어댑터가 다시 호출하는 MCP 도구 표면과, Control Center가 어댑터를
+  실행하려고 생성하는 셸 명령입니다.
+- **모드 자체의 출력 동사**(`submit_plan`, `propose_orchestration`)는 고정되어
+  있으며 결코 거부될 수 없습니다 — 그렇지 않으면 모드가 구조적으로 유일한
+  산출물을 만들어 낼 수 없게 됩니다.
+- **샌드박스가 이 규칙을 뒷받침하는지는 호스트에 따라 다릅니다.** `cc_server`가
+  백엔드를 찾으면 Claude Code CLI와 하네스 `bash` 도구를 감싸므로, 여러분이
+  작성하지 않은 규칙에도 OS 하한이 깔립니다. **Windows에는 하한이 없고**,
+  `bwrap`과 `socat`이 없는 Linux나 WSL2에도 없습니다 — 그런 곳에서는
+  가드레일과 모드의 도구 표면이 적용 수단의 전부이며, 그 아래에 깔린 두 번째
+  방어선이 아닙니다. 어느 경우에 해당하는지는
+  [샌드박스 정책 구성](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)에서
+  확인하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Configure sandbox policies](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/)
+- [샌드박스 정책 구성](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)
 
-## Related concepts
+## 관련 개념
 
-- [Guardrails — one policy for every mutating action](/ko-KR/매뉴얼/개념/가드레일/)
-- [Modes](/ko-KR/매뉴얼/개념/모드/)
-- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/)
+- [가드레일 — 모든 변경 작업을 위한 단일 정책](/ko-KR/매뉴얼/개념/가드레일/)
+- [모드](/ko-KR/매뉴얼/개념/모드/)
+- [샌드박스와 보안](/ko-KR/매뉴얼/개념/샌드박스와-보안/)

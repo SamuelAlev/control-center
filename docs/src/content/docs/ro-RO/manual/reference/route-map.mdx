@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Hartă de rute
+description: Fiecare rută pe care o înregistrează Control Center, cu ecranul și parametrii ei de interogare.
 slug: ro-RO/manual/referinta/harta-de-rute
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Shell-ul aplicației
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+Shell-ul aplicației (`ControlCenterLayout`) învelește fiecare rută din interiorul unui spațiu de lucru printr-un `ShellRoute`. **Fiecare destinație din shell are prefixul spațiului de lucru — `/workspaces/:workspaceId/…` — iar id-ul spațiului de lucru din URL este singura sursă de adevăr pentru spațiul de lucru activ.** Doar suprafețele dinainte de context nu au prefix: `/splash`, `/onboarding`, `/signed-out` și selectorul simplu `/workspaces`, toate pe tot ecranul și în afara shell-ului.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+Poarta este completă atunci când cel puțin un forge este conectat **pentru utilizatorul autentificat** și există cel puțin un spațiu de lucru.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+O acreditare lipsă și o configurare lipsă sunt ecrane diferite, iar discriminatorul este `users.onboarding_finished_at`, citit din `identity.me` al apelantului — niciodată „există spații de lucru”, ceea ce este greșit din momentul în care cineva este invitat într-un spațiu de lucru pe care nu l-a creat. Fără niciun forge conectat, un cont care a trecut prin onboarding merge la `/signed-out` ca să se reautentifice; unul care nu a trecut merge la `/onboarding`. Cât timp indicatorul este încă necunoscut, garda ține splash-ul în loc să ghicească, pentru că nu redirecționează niciodată înapoi din onboarding.
 
-## Unprefixed routes
+## Rute fără prefix
 
-| Path                       | Screen                                           |
+| Cale                       | Ecran                                            |
 | -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| `/splash`                  | Splash-ul de pornire care rezolvă poarta de onboarding |
+| `/onboarding`              | Conectează un forge, creează sau alătură-te unui spațiu de lucru, sandbox, adaptor implicit, apoi voce. Pasul de spațiu de lucru este omis atunci când contul aparține deja unuia |
+| `/signed-out`              | Reautentificare: același card de conexiuni la forge pe care îl afișează Setări, fără bară de pași și fără buton de continuare — routerul pleacă singur odată ce un forge raportează |
+| `/workspaces`              | Lista și selectorul de spații de lucru           |
+| `/workspaces/:workspaceId` | Redirecționează către `/workspaces/:workspaceId/inbox` |
 
-## Workspace routes
+## Rute de spațiu de lucru
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Căile de mai jos omit prefixul `/workspaces/:workspaceId`.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| Cale                                    | Parametri de interogare                   | Ecran                                                                                                                                                                    |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | Inbox unificat: PR-uri clasificate după ciclul de viață al revizuirii, plus munca non-PR care îl blochează pe operator. Ruta pe care se aterizează după gardă; un `/workspaces/:workspaceId` simplu redirecționează aici |
+| `/spaces`                               | —                                         | Suprafața spațiilor, fără niciun spațiu selectat                                                                                                                         |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | Un singur spațiu; `m` face un link direct către un mesaj și este consumat o singură dată la deschidere                                                                    |
+| `/tickets`                              | —                                         | Panoul de tichete                                                                                                                                                        |
+| `/tickets/:ticketId`                    | —                                         | Tichet în vizualizare listă-detaliu                                                                                                                                      |
+| `/projects/:projectId`                  | —                                         | Prezentare generală a proiectului                                                                                                                                        |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | Lista de PR-uri; `repo` selectează acel repo în bara laterală din stânga                                                                                                 |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compune un pull request nou; `space` numește spațiul al cărui worktree izolat furnizează branch-ul                                                                       |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | Detaliul PR-ului cu vizualizator de diff; `comment` este id-ul numeric REST al unui comentariu                                                                            |
+| `/pipelines`                            | —                                         | Lista rulărilor de pipeline                                                                                                                                              |
+| `/pipelines/run`                        | `?templateId=<id>`                        | Lansator de rulări manuale                                                                                                                                               |
+| `/pipelines/:runId`                     | —                                         | Detaliul rulării de pipeline (cronologia pașilor)                                                                                                                        |
+| `/plans`                                | —                                         | Hub-ul Plan Studio: planuri active, documente de plan, playbook-uri                                                                                                      |
+| `/plans/:kind/:id`                      | —                                         | Plan Studio pentru un singur plan; `kind` este `orchestration` sau `document`                                                                                            |
+| `/meetings`                             | —                                         | Lista întâlnirilor                                                                                                                                                       |
+| `/meetings/record`                      | —                                         | Ecranul de înregistrare a întâlnirii în direct                                                                                                                           |
+| `/meetings/:meetingId`                  | —                                         | Detaliul întâlnirii: note, transcriere, acțiuni, decizii                                                                                                                 |
+| `/calendar`                             | —                                         | Calendar: vizualizările pe lună, pe săptămână și agendă                                                                                                                  |
+| `/calendar/:eventId`                    | —                                         | Detaliul evenimentului de calendar (rută soră; partajează cheia paginii de calendar)                                                                                     |
+| `/newsfeed`                             | —                                         | Lista fluxului de știri                                                                                                                                                  |
+| `/newsfeed/article/:articleId`          | —                                         | Cititor de articole                                                                                                                                                      |
+| `/observability`                        | —                                         | Hub-ul Observabilitate: filele Utilizare, Insights, Live și Calitate peste fluxul de jurnale de rulare al spațiului de lucru. Se deschide implicit pe fila Utilizare      |
+| `/users/:login`                         | —                                         | Profilul de utilizator GitHub                                                                                                                                            |
+| `/teams/:organization/:slug`            | —                                         | Profilul echipei unei organizații GitHub                                                                                                                                  |
+| `/api-keys`                             | —                                         | Gestionarea cheilor API. **Fără punct de intrare în navigație** — accesibilă doar prin URL                                                                                |
+| `/settings/…`                           | —                                         | Ecranele de setări (mai jos)                                                                                                                                             |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+Conversațiile și firele nu au **o rută proprie** — un fir este o conversație în interiorul `/spaces/:spaceId`, deschisă ca filă de editor, nu adresată prin URL.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+Nu există **nicio rută `/dashboard`** și niciun ecran de dashboard. Suprafața de analiză este `/observability`, accesată din subsolul barei laterale.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+Nu există **niciun element „Planuri” în bara laterală**. Plan Studio se deschide ca filă de editor din rândul planului, în conversația care l-a produs; `/plans` și `/plans/:kind/:id` sunt linkuri directe.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` și `/pull-requests/compose` nu au nicio intrare în registrele de titluri de rută sau de breadcrumb, așa că ambele afișează numele simplu al aplicației în titlul ferestrei și nicio urmă de breadcrumb.
 
-## Settings routes
+## Rute de setări
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` redirecționează către `/settings/you/appearance`. Atât butonul de setări din bara laterală, cât și `Cmd/Ctrl + ,` duc la `/settings/you/appearance`.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+Căile de setări sunt grupate pe **domenii de aplicare** — `you/`, `workspace/`, `server/` — pentru că segmentul arată pe cine afectează o modificare. Două căi preced această grupare și nu au domeniu de aplicare în URL: `/settings/memory` și `/settings/pipelines`.
 
-### You
+### Tu
 
-| Path                          | Screen                                                                     |
+| Cale                          | Ecran                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/appearance`    | Temă, limbă, tipografie, tema editorului (pagina de aterizare a setărilor) |
+| `/settings/you/notifications` | Comutatoare per eveniment, orele de liniște                                |
+| `/settings/you/keybindings`   | Referință de scurtături de tastatură (doar în citire)                      |
+| `/settings/you/audio`         | Microfon, dictare, detectarea întâlnirilor și ieșirea de peisaj sonor      |
+| `/settings/you/devices`       | Telefoane asociate și control remote                                       |
+| `/settings/you/newsfeed`      | Gestionarea fluxului: surse, reîmprospătare, stare de citire               |
 
-### Workspace
+### Spațiu de lucru
 
-| Path                               | Screen                                                                                              |
+| Cale                               | Ecran                                                                                               |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | Profilul și identitatea în acest spațiu de lucru: nume, autor git, găzduire de cod, calendar |
+| `/settings/workspace/general`      | Nume, logo, globuri de secrete, concurența revizuirilor, denumirea branch-urilor, sănătatea sincronizării, punți de chat, zona periculoasă |
+| `/settings/workspace/meetings`     | Șabloane de note de întâlnire și profiluri vocale salvate                                           |
+| `/settings/workspace/members`      | Lista membrilor, invitații, jurnal de audit. Jurnalul de audit se paginează cu `?cursor=` opțional   |
+| `/settings/workspace/repositories` | Repo-urile înregistrate în acest spațiu de lucru                                                    |
+| `/settings/workspace/agents`       | Identitățile de agent înregistrate                                                                  |
+| `/settings/workspace/skills`       | Configurarea skill-urilor                                                                           |
+| `/settings/memory`                 | Memoria spațiului de lucru: fapte, politici, graf de cunoștințe                                     |
+| `/settings/workspace/permissions`  | Permisiunile agenților: matricea de guardrail-uri și sonda „ce-ar fi dacă”                           |
+| `/settings/pipelines`              | Șabloane de pipeline                                                                                |
+| `/settings/pipelines/:templateId`  | Editorul de șabloane de pipeline (pânză cu tragere și plasare)                                      |
 
 ### Server
 
-| Path                           | Screen                                                                                |
+| Cale                           | Ecran                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | Conexiune și stare                                                                    |
+| `/settings/server/sso`         | Autentificare unică (SAML, OIDC, provisionare SCIM)                                   |
+| `/settings/server/providers`   | Provideri de modele și adaptoare                                                      |
+| `/settings/server/mcp`         | Servere MCP integrate și externe                                                      |
+| `/settings/server/voice`       | Modele vocale și de întâlniri (ASR, diarizare)                                        |
+| `/settings/server/rigs`        | Stații: ce poate porni această gazdă, imagini de bază, imagini personalizate, mașini în rulare |
+| `/settings/server/sandbox`     | Acordări de execuție în sandbox: programe pe care agenții le pot rula din copia lor de lucru a repo-urilor tale |
+| `/settings/server/diagnostics` | Diagnosticări și confidențialitate: sandbox, embedding, motor de sincronizare, jurnalizare, raportarea crash-urilor |
+| `/settings/server/backup`      | Backup și restaurare: snapshot-uri de instalare, export per spațiu de lucru, import și ștergere |
+| `/settings/server/about`       | Despre și actualizări                                                                 |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`kSettingsNav` din `lib/features/settings/settings_nav.dart` este singura sursă de adevăr pentru această listă. `settings_nav_test.dart` fixează id-uri unice, rute unice, ordinea aplatizată J/K și cele trei domenii de aplicare. Nu parcurge fiecare `GoRoute` înregistrat.
 
-## Route configuration
+## Configurarea rutelor
 
-| Concern             | File                                                    |
+| Aspect              | Fișier                                                  |
 | ------------------- | ------------------------------------------------------- |
 | Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Constructorii de rute | `lib/router/routes.dart`                              |
+| Gărzile de autentificare | `lib/router/guards.dart`                          |
+| Poarta de onboarding | `lib/features/auth/providers/onboarding_providers.dart` |
+| Navigarea în setări | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## Vezi și
 
-- [Workspaces](/ro-RO/manual/concepte/spatii-de-lucru/)
-- [Architecture](/ro-RO/manual/concepte/arhitectura/)
-- [Keyboard shortcuts](/ro-RO/manual/referinta/scurtaturi-de-tastatura/)
+- [Spații de lucru](/ro-RO/manual/concepte/spatii-de-lucru/)
+- [Arhitectură](/ro-RO/manual/concepte/arhitectura/)
+- [Scurtături de tastatură](/ro-RO/manual/referinta/scurtaturi-de-tastatura/)

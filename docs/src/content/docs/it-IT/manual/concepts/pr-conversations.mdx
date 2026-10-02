@@ -1,134 +1,151 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: Conversazioni sulle PR
+description: Come un commento a una PR GitHub diventa il turno di un agente senza webhook, cosa autorizza l'autore e a chi viene attribuito ciascun lato della conversazione.
 slug: it-IT/manuale/concetti/conversazioni-pr
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/it-IT/manuale/concetti/ponti-di-chat/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+Una pull request è già il luogo in cui avviene la conversazione sul codice. Le
+conversazioni sulle PR la rendono una superficie su uno spazio di lavoro di
+Control Center, allo stesso modo in cui un
+[ponte di chat](/it-IT/manuale/concetti/ponti-di-chat/) rende tale Slack:
+@menziona il bot della GitHub App del server su una PR, rispondi all'interno
+dei suoi thread di revisione oppure aggiungi l'etichetta `ai-review`, e il
+lavoro avviene nello spazio di revisione della PR — con la stessa attribuzione
+e gli stessi guardrail di qualsiasi cosa digitata nell'app. Anche un commento è
+vincolato all'appartenenza; l'etichetta no, perché non ha un autore. Le
+risposte del bot tornano su GitHub, nel canale in cui è stata posta la domanda.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+Tre decisioni danno forma alla funzionalità, e ciascuna è la stessa decisione
+che il ponte di chat ha preso per la chat, riformulata per una forge: **in
+quale direzione scorre la connessione**, **cosa autorizza un commento che
+arriva dall'esterno** e **a chi è attribuito ciascun lato**.
 
-## Polling is the transport
+## Il polling è il trasporto
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+L'unico canale push di GitHub per un'app è un webhook, e un webhook richiede un
+URL in ingresso — l'unica cosa che questa superficie non richiede mai, di
+proposito. La scoperta è quindi una scansione: all'incirca ogni minuto, una
+ricerca con alias per ogni installazione dell'app chiede a GitHub le PR che
+menzionano il bot (o il suo slug breve) e le PR aperte che portano l'etichetta
+di revisione, le PR che hanno già uno spazio di revisione vedono leggere i
+propri thread di commenti, e tutto viene confrontato per id del commento con
+quanto visto alla scansione precedente.
 
-The design consequences are worth naming:
+Vale la pena dare un nome alle conseguenze progettuali:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **La latenza è un intervallo di scansione, non un evento.** La conferma 👀
+  arriva entro circa un minuto. Nulla di urgente vi dipende.
+- **Esattamente una volta, per commento.** Gli id dei commenti sono unici in
+  tutto GitHub; ciascuno viene registrato nel momento in cui è classificato
+  come idoneo, prima che qualsiasi cosa agisca su di esso. Un crash può perdere
+  la gestione di un commento, ma non può mai attivarlo due volte.
+- **Il tempo offline viene recuperato, non riprodotto.** L'insieme degli
+  elementi visti è persistito, quindi un riavvio consegna ciò che è arrivato
+  mentre era inattivo. L'unica eccezione è la primissima scansione in assoluto:
+  senza alcuna memoria con cui confrontare, tutto ciò che è in sospeso viene
+  registrato in silenzio — un operatore che ha etichettato venti PR prima che
+  questo server esistesse non deve ritrovarsi con venti revisioni in esecuzione.
+- **L'etichetta è un insieme, non un evento.** La ricerca segnala la _presenza_
+  dell'etichetta, quindi una PR etichettata si attiva una volta sola, per
+  sempre. Riaggiungere un'etichetta dopo averla rimossa è invisibile alla
+  scansione; una menzione è la via per rieseguire.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+La ricerca viene eseguita una volta per account di installazione sul client di
+quel proprietario, perché un token di installazione vede solo i repository della
+propria installazione — un'unica credenziale a livello di server mancherebbe
+silenziosamente ogni PR sotto le altre installazioni dell'app.
 
-## Membership authorizes, not the comment
+## È l'appartenenza ad autorizzare, non il commento
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+Un commento a una PR arriva portando poco più del login di un autore — un'identità
+esterna non autenticata finché non viene dimostrato il contrario. Il bot la
+risolve rispetto a un indice inverso dei membri dello spazio di lavoro e dei
+loro account GitHub collegati, ricostruito con un TTL perché le persone accedono
+e vengono invitate mentre il server è in esecuzione.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+Negare in caso di dubbio somiglia a una scala, e ogni gradino risponde nel
+thread in cui ha rifiutato:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **Un login sconosciuto** — non collegato, o collegato da qualcuno che non è
+  membro di questo spazio di lavoro — riceve l'indicazione di accedere e di
+  assicurarsi di appartenervi
+- **Un membro in sola lettura** (`viewer` o `guest`) riceve l'indicazione che
+  il suo ruolo non può avviare lavoro
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+I due casi di login sconosciuto condividono una sola risposta: l'indice inverso
+restituisce solo un membro di _questo_ spazio di lavoro, quindi un account non
+collegato e un non membro collegato sono lo stesso mancato riscontro. Nessuno
+di essi procede. Un commento non viene mai attribuito a qualcuno che non lo ha
+inviato, e le parole di un estraneo non entrano mai in uno spazio di lavoro che
+non può vedere.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+L'etichetta `ai-review` non ha un autore da risolvere, quindi non risale questa
+scala. Aggiungerla avvia la revisione nello spazio di lavoro che ha già
+collegato il repository.
 
-## Two identities, on purpose
+## Due identità, di proposito
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+Ciascun lato della conversazione porta un'identità diversa, e la differenza è
+la funzionalità:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **Su GitHub, il bot è il server.** Ogni commento, reazione e risposta
+  pubblicati dal ponte viaggia sul token di installazione dell'app. Nessuno ha
+  cliccato nulla in un client, quindi nulla prende in prestito l'account di una
+  persona — la stessa regola che tiene i webhook e il polling lontani dalle
+  credenziali umane.
+- **Nello spazio, la domanda è tua.** Il messaggio è attribuito al membro in cui
+  l'autore si è risolto, e l'esecuzione dell'agente avviene per suo conto: i
+  commit lo vedono come coautore, e il selettore dell'autonomia e i guardrail
+  delle azioni dello spazio si applicano esattamente come a un messaggio
+  digitato nell'app. Le scritture sulla forge provenienti dall'esecuzione
+  escono comunque come l'app — la stessa regola del punto precedente — non sul
+  token personale del membro.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+Pubblicare i risultati della revisione di nuovo su GitHub resta una decisione
+di una persona, presa in Control Center. Una menzione può _avviare_ una
+revisione; solo un essere umano la pubblica.
 
-## The loop guard, and the short name
+## La protezione anti-loop e il nome breve
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+Tutto ciò che è stato creato da un account bot viene scartato prima che venga
+eseguito qualsiasi controllo — il nostro in particolare, e ogni suffisso
+`[bot]`, così nemmeno il bot di revisione di un'altra app può svegliare il
+nostro. Senza questo, le risposte stesse del bot arriverebbero come nuovi
+commenti e lo riattiverebbero all'infinito.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+Il suffisso `[bot]` è anche il motivo per cui esiste la forma breve. GitHub
+fissa il login di un account app a `<slug>[bot]`, non offre alcun completamento
+automatico per esso e non risolve mai `@slug` nell'app — quindi accettare lo
+slug nudo è una decisione del _nostro_ matcher, e scoprirlo richiede una corsia
+di ricerca sul commento in **testo** grezzo anziché l'indice delle menzioni di
+GitHub. Il costo viene dichiarato invece che nascosto: un utente umano che
+condivide lo slug dell'app si rivolge al bot con ogni menzione in forma breve
+di se stesso. Nomi di app distintivi rendono la collisione ipotetica.
 
-## What is deliberately not offered
+## Cosa non viene offerto di proposito
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **Nessuna pubblicazione automatica.** I risultati arrivano nello spazio di
+  revisione; pubblicare su GitHub è un'azione separata, umana
+- **Nessuna identità approssimativa.** L'autore si risolve in esattamente un
+  membro oppure viene rifiutato — non esiste un'attribuzione basata su
+  congetture
+- **Nessun webhook della GitHub App.** Questa superficie non ne registra mai
+  uno, quindi non c'è alcun URL in ingresso da esporre per i commenti delle PR.
+  Gli altri webhook del prodotto (pipeline, sincronizzazione dei ticket) sono
+  una configurazione separata e opzionale.
 
-## See also
+## Vedi anche
 
-- [Talk to Control Center from a GitHub PR](/it-IT/manuale/guide/conversazioni-pr-github/):
-  the how-to for all of this
-- [Chat bridges](/it-IT/manuale/concetti/ponti-di-chat/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/it-IT/manuale/guide/github-app/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/it-IT/manuale/concetti/multigiocatore/):
-  the principals and roles a login resolves through
-- [Guardrails](/it-IT/manuale/concetti/guardrail/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/it-IT/manuale/guide/revisione-ia/): the pipeline a mention
-  or label starts
+- [Parla con Control Center da una PR GitHub](/it-IT/manuale/guide/conversazioni-pr-github/):
+  la guida pratica per tutto questo
+- [Ponti di chat](/it-IT/manuale/concetti/ponti-di-chat/): le stesse tre decisioni,
+  prese per la chat
+- [Crea la GitHub App](/it-IT/manuale/guide/github-app/): da dove viene
+  l'identità del bot
+- [Multigiocatore — identità, appartenenza e presenza](/it-IT/manuale/concetti/multigiocatore/):
+  i principali e i ruoli attraverso cui si risolve un login
+- [Guardrail](/it-IT/manuale/concetti/guardrail/): cosa è consentito fare
+  all'agente che risponde
+- [Usa la revisione basata sull'IA](/it-IT/manuale/guide/revisione-ia/): la pipeline che una menzione
+  o un'etichetta avvia

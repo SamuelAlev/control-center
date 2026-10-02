@@ -1,193 +1,204 @@
 ---
 title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
+deretter miljøet, deretter standardverdien. Tredjepartslegitimasjon er
+unntaket — se nedenfor.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Ukjente flagg ignoreres i stillhet]
+Argumentparseren er håndskrevet og hopper over alt den ikke kjenner igjen, så en
+skrivefeil (`--tls-key-file`, `--bindany`) gir ingen feil — serveren starter bare
+med standardverdien. Sjekk linjene i oppstartsloggen når et flagg ser ut til å
+ikke ha noen effekt.
 :::
 
-## Core
+## Kjerne
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
-| --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| Flagg           | Miljøvariabel          | Standard                                                     | Betydning                                                                                                       |
+| --------------- | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | operativsystemets appdatamappe per bruker (se nedenfor)      | Databaser, hemmeligheter, modeller og hurtiglagret media                                                        |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                                       | TCP-port (`0` = flyktig)                                                                                        |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                                   | `loopback`, eller `any`/`all`/`0.0.0.0` for alle grensesnitt (krever TLS eller `--insecure`)                     |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | hjemmekatalogen til serverbrukeren                           | Kommaadskilte basiskataloger en klient kan bla i når den registrerer et repo. Å bla over en rot avvises         |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                                    | `debug`, `info`, `warning` eller `error`. Linjene for oppstart og klar skrives alltid ut                        |
+| `--server-name` | `CC_SERVER_NAME`       | vertsnavnet til maskinen                                     | Navnet som vises i velgere, oppdagelses- og paringsflater                                                       |
 
-## Reachability and TLS
+## Rekkevidde og TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
-| ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| Flagg               | Miljøvariabel               | Standard                      | Betydning                                                                                                                                                |
+| ------------------- | --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | ikke satt                     | PEM-sertifikatkjede. Betjener `wss://` i prosessen når den settes sammen med nøkkelen                                                                     |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | ikke satt                     | PEM-privatnøkkel som hører til sertifikatet                                                                                                              |
+| `--insecure`        | `CC_SERVER_INSECURE`        | av                            | Tillat en klartekstbinding utenfor loopback. Bare bak en TLS-terminerende proxy i et klarert nettverk; ignoreres når TLS er konfigurert                   |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | utledet fra bindingen         | RPC-URL-en denne serveren annonserer til parede klienter. **Angi den eksplisitt bak en proxy, NAT eller tunnel** — standardverdien er bare et anslag ut fra den lokale bindingen |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Kommaadskilte nettleseropphav som får kalle `/rpc` på tvers av opphav. Loopback og native klienter er alltid tillatt                                       |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | ikke satt                     | Opphavet til den hostede nettklienten som tilbakekallinger for enkel pålogging vender tilbake til                                                                            |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | Relémegleren denne serveren kobler seg til, slik at en telefon kan nå den uten en direkte vei                                                             |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN-annonsering: `auto` (bare når den er bundet utenfor loopback), `on`, `off`. Oppdagelse annonserer bare at serveren finnes — tilkobling krever fortsatt paring |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Administrert tunnel-leverandør: `off`, `cloudflared`, `ngrok`, `tailscale`. Eksponering mot internett er noe du velger selv                                 |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | løses opp fra `PATH`          | Eksplisitt sti til tunnelbinæren                                                                                                                        |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | ikke satt                     | Forventet SHA-256 for den binæren, verifisert før hver oppstart av den                                                                                   |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | tom                           | Kommaadskilte tilleggsargumenter til tunnelkjøringen                                                                                                     |
 
-## Indexing and third-party credentials
+## Indeksering og tredjepartslegitimasjon
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
-| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| Flagg                | Miljøvariabel                  | Standard                              | Betydning                                                                                                                       |
+| -------------------- | ------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`          | `CC_SERVER_SANDBOX`            | `on`                                  | Om agentkjøringer pakkes inn i vertens OS-native sandkasse når en finnes. En utmelding, ikke en aktivering — se nedenfor       |
+| `--code-index`       | `CC_SERVER_CODE_INDEX`         | `on`                                  | Kill-bryter i felt for indeksering av kodegrafen i bakgrunnen. `off` starter rent uten å bygge på nytt                        |
+| `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER`   | `15`                                  | Sekunder å vente med den første indeksgjennomgangen etter klar-banneret (begrenset til 0–300)                                 |
+| `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`      | `on`                                  | Om harnesskjøringer sender et lite fast verktøysett pluss en navneindeks, og laster resten ved første bruk. Se nedenfor       |
+| `--credential-gate`  | `CC_SERVER_CREDENTIAL_GATE`    | `900`                                 | Sekunder en kjøring parkeres og venter på at et menneske fikser en legitimasjon den ikke kan bruke (begrenset til 0–3600). Se nedenfor |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+En tom verdi for en legitimasjon leses som ikke satt, så den innebygde
+reserveverdien gjelder fortsatt. Et bygg fra kildekode har ingen innebygd
+legitimasjon i det hele tatt.
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar og Klipy-GIF-velgeren er **bare tilgjengelige via miljøet** — det
+finnes ikke noe `--google-client-id` / `--klipy-app-key`-flagg (ukjente flagg
+ignoreres). Sett `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` og
+`KLIPY_APP_KEY` i miljøet (eller i en `.env` ved siden av serveren). Tom verdi
+slår av funksjonen i stedet for å få oppstarten til å feile.
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+Serveren sonderer verten én gang ved oppstart og pakker agentens kommandokjøring
+inn i den OS-native sandkassen når en backend finnes: `sandbox-exec` (Seatbelt) på
+macOS, `bwrap` pluss `socat` på Linux og WSL2. Der ingen finnes — Windows, eller en
+Linux-vert som mangler disse verktøyene — faller kjøringene tilbake på
+miljøsanering, kommandopolicyen og tillatelsesreglene for handlinger, og
+oppstartsloggen sier hvilken tilstand som gjelder.
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` er kill-bryteren i felt for tilfellet sonderingen ikke kan se: en
+vert der selve sandkasseprofilen oppfører seg feil. Den krever ingen ny bygging,
+og serveren logger en advarsel så lenge prosessen lever, slik at tilstanden aldri
+er taus.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/nb-NO/handbok/konsepter/verktoykontekst).
+Kjøringer på det innebygde harnesset sender et lite fast sett med
+verktøydefinisjoner pluss en navneindeks over resten, som laster skjemaene sine
+første gang de brukes. Det kutter verktøyblokken med omtrent 78 % og holder det
+alltid synlige settet innenfor båndet der modeller velger verktøy pålitelig.
+Utsatte verktøy kan kalles ved navn hele tiden, og `search_tools` finner dem ut
+fra intensjon. Se [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` gjør hvert tillatt verktøy fast igjen og gir nøyaktig de
+samme forespørslene serveren sendte før utsettelsen fantes. Det er kill-bryteren
+for en modell som håndterer flaten med to nivåer dårlig — et flagg i stedet for en
+ny bygging. Det påvirker bare det innebygde harnesset; MCP-`tools/list` som
+eksterne klienter ser, er alltid hele katalogen.
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+En kjøring der leverandørlegitimasjonen mangler eller er brukt opp, blir
+**parkert** i stedet for å mislykkes: operatøren får en melding om å fikse den, og
+kjøringen fortsetter hvis de gjør det. Standardfristen er 900 sekunder
+(15 minutter), begrenset til 0–3600.
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+Fristen er med vilje mye lengre enn godkjenningsforespørselens: en godkjenning er
+en beslutning noen tar i løpet av sekunder, mens å fikse en legitimasjon betyr å
+åpne en terminal, logge inn og komme tilbake. Taket er det som hindrer en
+uovervåket kjøring — et pipeline-steg, en cron-utløser, en webhook — i å vente på
+noen som sover. Når den utløper, mislykkes kjøringen med meldingen den uansett
+ville ha mislykkes med.
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` er kill-bryteren: ingenting parkeres noensinne, og en dårlig
+legitimasjon avslutter turen nøyaktig som før porten fantes.
 
-## Subcommands
+## Underkommandoer
 
-| Command                                       | What it does                                                                                        |
+| Kommando                                      | Hva den gjør                                                                                        |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| `cc_server`                                   | Kjører serveren til `SIGINT`/`SIGTERM`                                                              |
+| `cc_server pair`                              | Provisionerer en enhet og skriver ut id-en og paringsnøkkelen dens. Trygt mot en datamappe en server allerede betjener — den kjørende serveren plukker opp enheten uten omstart |
+| `cc_server calendar connect --workspace <id>` | Kobler en Google-konto til et arbeidsområde via enhetskodeflyten og avslutter                        |
+| `cc_server update`                            | Ser etter, laster ned og verifiserer en nyere frittstående utgivelse                                 |
+| `cc_server --version`                         | Skriver ut byggeversjonen og git-SHA-en — den samme identiteten `/healthz` og RPC-håndtrykket annonserer |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| Flagg          | Standard                                                  | Betydning                                                                                                                                                            |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | Enhets-id-en. Plattformen utledes fra den, så `--device desktop` oppretter en skrivebordsrad og `--device ios`/`android` en telefonrad; alt annet behandles som web |
+| `--label`      | plattformnavnet pluss vertsnavnet til denne maskinen      | Visningsnavn i enhetslisten                                                                                                                                          |
+| `--host`       | `localhost`, eller `<this-host>` når den er bundet til alle grensesnitt | Verten som skal bygges inn i den utskrevne URL-en. Sett den til LAN-IP-en eller tunnelverten en klient faktisk vil kalle                                    |
+| `--client-url` | ikke satt                                                 | Opphavet til den hostede **nett**klienten. Legger til en skannerbar dyp lenke og terminal-QR                                                                          |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` godtar også kjerneflaggene `--data-dir`, `--port` og `--bind`: de velger
+datamappen som skal skrives, og former den utskrevne server-URL-en (`ws` på
+loopback, `wss` med `--bind any`). Å kjøre `pair` på nytt for samme `--device`
+roterer nøkkelen dens og dropper de aktive øktene til den enheten. En legitimasjon
+som utstedes her, har **ingen utløpsdato**, i motsetning til de 30 dagene en
+paring i appen setter.
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/).
+:::caution[QR-koden fra `--client-url` er ikke telefon-QR-koden]
+`pair --client-url` fyller ut tilkoblingsskjemaet til **nett**klienten (server-URL,
+enhets-id og nøkkel i URL-fragmentet). Telefonen parer med en annen nyttelast,
+utstedt fra paringspanelet i appen — serverens fulle tilkoblingsbeskrivelse pluss
+en utløpsdato. De to kan ikke byttes om — se [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/).
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` erstatter installasjonen; den avvises så lenge en server fortsatt svarer
+på den konfigurerte porten, med mindre du oppgir `--force`. `--allow-downgrade`
+tillater en eldre utgivelse.
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+Kommandoen nekter kontant, med en forklaring i stedet for en feil, for
+installasjoner den ikke eier:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| Miljø                              | Oppdages av                                 | Hva den sier                                                  |
+| ---------------------------------- | ------------------------------------------- | ------------------------------------------------------------- |
+| Skrivebordsappens innebygde server | `CC_EMBEDDED=1` eller `CC_BOOTSTRAP_DEVICE_ID` | Oppdater appen i stedet — installasjonsprogrammet bytter ut hele treet |
+| En kildekodeutsjekk kjørt med `dart run` | skriptstien slutter på `.dart`         | Oppdater den med git                                          |
+| Docker                             | containermarkører                           | Hent en nyere avbildning                                      |
 
-## Process lifecycle
+## Prosesslivssyklus
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` kjører til `SIGINT` / `SIGTERM`. Én ekstra miljøvariabel styrer dette,
+og den settes av skrivebordsappen og ikke av deg:
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| Variabel                | Effekt                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1` | Serveren avsluttes når foreldreprosessen gjør det, oppdaget ved at forelderen lukker skriveenden av stdin-røret sitt. Skrivebordsappen setter den for at en krasjet app aldri skal etterlate en foreldreløs server som holder datamappen |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+Sett den bare selv hvis du overvåker `cc_server` som en barneprosess og vil ha den
+samme garantien.
 
-## Data directory layout
+## Oppbygning av datamappen
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+Standard datamappe er `~/Library/Application Support/control-center` på macOS,
+`%APPDATA%\control-center` på Windows og `$XDG_DATA_HOME/control-center` (ellers
+`~/.local/share/control-center`) ellers. En `.cc_server` relativ til cwd brukes
+bare når verken hjemmemappen eller appdatamappen lar seg oppslå.
 
-| Path                              | Contents                                                                        |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| Sti                               | Innhold                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| `global.db`                       | Arbeidsområderegisteret, brukere, parede enheter, nyhetsstrømmen og flåtekøen    |
+| `<workspaceId>/workspace.db`      | Én database per arbeidsområde — agenter, områder, saker, minne, kodegrafen       |
+| `<workspaceId>/chat_credentials/` | Chatbot-tokener, som ren JSON, slik at de følger med arbeidsområdet              |
+| `secrets.json`                    | Paringsnøkler, leverandørappens identitet, tokener per bruker og Google-tokener, SSO (`0600`) |
+| `backups/<timestamp>/`            | Ett øyeblikksbilde av installasjonen — `manifest.json`, `global.db` og en kopi av hvert arbeidsområde |
+| `backups/exports/`                | Eksporter av enkeltarbeidsområder, `<workspaceId>-<timestamp>.db`                |
+| `backups/transfer/`               | Mellomlagring for ned- og opplasting av sikkerhetskopier; ryddes av ruten som skriver den |
+| `models/`                         | Innbyggings-, diariserings- og talemodeller på enheten                           |
+| `meetings/<meetingId>/`           | Lagret møtelyd                                                                   |
+| `rigs/images/`                    | Importerte diskavbildninger for stasjoner (QEMU-skrivebordsflaten)               |
+| `rigs/smolvm/<rigId>/`            | Kjøretidstilstand per stasjon for mikro-VM-er (meglerhemmeligheten, `0600`)      |
+| `rigs/smolvm-packs/`              | Forhåndsutpakkede maskinpakker — bufferen som gjør gjentatte stasjonsoppstarter raske |
+| `rigs/tls/`                       | Sertifikatmyndigheten for utviklingsdomenet til stasjons-HTTPS (nøkler `0600`)   |
+| `rigs/run/<rigId>/`               | QEMU-overlegg, startavbildninger og nøkler per VM (`0600`)                       |
 
-## See also
+## Se også
 
-- [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/) — the setup recipe these flags belong to
-- [Run a fleet worker](/nb-NO/handbok/slik-gjor-du/kjor-fleet-worker/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett/) — copying this directory somewhere safe
-- [Backup, export and import](/nb-NO/handbok/referanse/sikkerhetskopi/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/) — pointing a client at one
-- [Deployment and clients](/nb-NO/handbok/konsepter/drift/) — why the server owns everything
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/) — oppskriften disse flaggene hører til
+- [Kjør en flåteworker](/nb-NO/handbok/slik-gjor-du/kjor-fleet-worker/) — den separate `cc_worker`-binæren som registrerer seg hos denne serveren
+- [Sikkerhetskopier og gjenopprett](/nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett/) — å kopiere denne mappen et trygt sted
+- [Sikkerhetskopi, eksport og import](/nb-NO/handbok/referanse/sikkerhetskopi/) — oppbygningen av øyeblikksbilder og hver sikkerhetskopieringsoperasjon
+- [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/) — å peke en klient mot en
+- [Drift og klienter](/nb-NO/handbok/konsepter/drift/) — hvorfor serveren eier alt

@@ -1,134 +1,122 @@
 ---
-title: PR conversations
-description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+title: محادثات طلبات السحب
+description: كيف يتحوّل تعليق على طلب سحب في GitHub إلى دور محادثة للوكيل من غير خطاف ويب، وما الذي يجيز المؤلف، وإلى من يُنسَب كل طرف في المحادثة.
 slug: ar-SA/دليل-المستخدم/مفاهيم/محادثات-طلبات-السحب
+sourceHash: 5fac2c4dbf5719087c133e0787f8e0ee17051ce0
 ---
 
-A pull request is already where the conversation about code happens. PR
-conversations make it a surface on a Control Center workspace, the same way a
-[chat bridge](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/) makes Slack one: @mention the
-server's GitHub App bot on a PR, reply inside its review threads, or add the
-`ai-review` label, and the work happens in the PR's review space — under the
-same attribution and guardrails as anything typed in the app. A comment is
-also gated on membership; the label is not, because it has no author. The
-bot's answers come back on GitHub, in the lane the question was asked in.
+طلب السحب هو أصلًا المكان الذي يجري فيه الحديث عن الشفرة. محادثات طلبات
+السحب تجعله سطحًا على مساحة عمل في Control Center، بالطريقة نفسها التي يجعل
+بها [جسر الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/) من Slack سطحًا:
+الإشارة بـ @ إلى بوت تطبيق GitHub التابع للخادم على طلب السحب، أو الرد داخل
+سلاسل مراجعته، أو إضافة التسمية `ai-review`، فيجري العمل في مساحة مراجعة
+الطلب — بالإسناد والضوابط نفسها التي تحكم ما يُكتب في التطبيق. التعليق يمر
+ببوابة العضوية أيضًا، أما التسمية فلا، لأنها بلا مؤلف. تعود إجابات البوت إلى
+GitHub، في المسار الذي طُرح فيه السؤال.
 
-Three decisions shape the feature, and each is the same decision the chat
-bridge made for chat, restated for a forge: **which direction the connection
-runs**, **what authorizes a comment that arrives from outside** and **who each
-side is attributed to**.
+ثلاثة قرارات تشكّل الميزة، وكل منها القرار نفسه الذي اتخذه جسر الدردشة
+للدردشة، وقد أُعيدت صياغته لمضيف الشفرة: **أي اتجاه يسلك الاتصال**، **ما
+الذي يجيز تعليقًا يصل من الخارج**، و**إلى من يُنسَب كل طرف**.
 
-## Polling is the transport
+## الاستطلاع هو النقل
 
-GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this surface deliberately never requires. So
-discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for PRs that mention the bot (or its short slug) and
-for open PRs that carry the review label, PRs that already have a review space
-get their comment threads read, and everything is diffed by comment id against
-what was seen last sweep.
+قناة الدفع الوحيدة التي يتيحها GitHub لتطبيق هي خطاف ويب، وخطاف الويب يحتاج
+عنوان URL واردًا — وهو الشيء الوحيد الذي لا يطلبه هذا السطح عمدًا. فالاكتشاف
+مسح: كل دقيقة تقريبًا، يسأل بحث واحد بأسماء مستعارة لكل تثبيت للتطبيق
+GitHub عن طلبات السحب التي تذكر البوت (أو معرّفه القصير) وعن طلبات السحب
+المفتوحة التي تحمل تسمية المراجعة، وتُقرأ سلاسل تعليقات طلبات السحب التي لها
+مساحة مراجعة أصلًا، ويُحسَب الفرق بمعرّف التعليق مقابل ما شوهد في المسح
+السابق.
 
-The design consequences are worth naming:
+آثار هذا التصميم تستحق الذكر:
 
-- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
-  within about a minute. Nothing urgent rides on it.
-- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
-  recorded the moment it is classified as eligible, before anything acts on
-  it. A crash can lose a comment's handling, never double-fire it.
-- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
-  restart delivers what arrived while it was down. The one exception is the
-  first sweep ever: with no memory to diff against, everything outstanding is
-  recorded silently — an operator who labeled twenty PRs before this server
-  existed must not come back to twenty running reviews.
-- **The label is a set, not an event.** Search reports label _presence_, so a
-  labeled PR triggers once, ever. Re-adding a label after removing it is
-  invisible to the sweep; a mention is the re-run path.
+- **زمن الاستجابة فاصل مسح، لا حدث.** يصل إقرار 👀 خلال دقيقة تقريبًا. لا
+  يعتمد عليه شيء عاجل.
+- **مرة واحدة بالضبط، لكل تعليق.** معرّفات التعليقات فريدة في GitHub كله،
+  ويُسجَّل كل منها لحظة تصنيفه مؤهلًا، قبل أن يتصرف فيه شيء. يستطيع الانهيار
+  أن يفقد معالجة تعليق، ولا يطلقه مرتين.
+- **وقت التوقف يُلحَق، ولا يُعاد تشغيله.** تُحفَظ مجموعة ما شُوهد، فإعادة
+  التشغيل تسلّم ما وصل أثناء التوقف. الاستثناء الوحيد أول مسح على الإطلاق:
+  بلا ذاكرة يُقارَن بها، يُسجَّل كل معلّق في صمت — مشغّل وضع التسمية على
+  عشرين طلب سحب قبل وجود هذا الخادم يجب ألا يعود فيجد عشرين مراجعة تعمل.
+- **التسمية مجموعة، لا حدث.** يبلّغ البحث عن _وجود_ التسمية، فيُطلَق طلب
+  السحب الموسوم مرة واحدة، وإلى الأبد. إعادة إضافة التسمية بعد إزالتها غير
+  مرئية للمسح، والإشارة هي مسار إعادة التشغيل.
 
-The search runs once per installation account on that owner's own client,
-because an installation token only sees its own installation's repos — a
-single server-wide credential would quietly miss every PR under the app's
-other installations.
+يجري البحث مرة واحدة لكل حساب تثبيت، على عميل ذلك المالك نفسه، لأن رمز
+التثبيت لا يرى إلا مستودعات تثبيته — وبيانات اعتماد واحدة على نطاق الخادم
+تُفوّت في صمت كل طلب سحب تحت تثبيتات التطبيق الأخرى.
 
-## Membership authorizes, not the comment
+## العضوية هي التي تجيز، لا التعليق
 
-A PR comment arrives carrying little more than an author login — an
-unauthenticated external identity until proven. The bot resolves it against a
-reverse index of the workspace's members and their connected GitHub accounts,
-rebuilt on a TTL because people sign in and get invited while the server runs.
+يصل تعليق طلب السحب ولا يحمل تقريبًا إلا اسم دخول المؤلف — هوية خارجية غير
+مصادَق عليها إلى أن يُثبَت صاحبها. يحلّه البوت مقابل فهرس عكسي لأعضاء مساحة
+العمل وحسابات GitHub المربوطة بهم، ويُعاد بناء الفهرس بعد مهلة بقاء، لأن
+الناس يسجّلون الدخول ويُدعَون والخادم يعمل.
 
-Failing closed looks like a ladder, and every rung answers in the thread it
-refused in:
+يبدو الفشل المغلق سلّمًا، وكل درجة ترد في السلسلة التي رفضت فيها:
 
-- **An unknown login** — not linked, or linked by someone who is not a member
-  of this workspace — is told to sign in and make sure they belong
-- **A read-only member** (`viewer` or `guest`) is told their role cannot start
-  work
+- **اسم دخول غير معروف** — غير مربوط، أو مربوط بمن ليس عضوًا في مساحة العمل
+  هذه — يُطلَب منه تسجيل الدخول والتأكد من انتمائه
+- **عضو للقراءة فقط** (`viewer` أو `guest`) يُبلَّغ أن دوره لا يستطيع بدء
+  العمل
 
-The two unknown-login cases share one reply: the reverse index only returns a
-member of _this_ workspace, so an unlinked account and a linked non-member are
-the same miss. None of them proceed. A comment is never attributed to somebody
-who did not send it, and a stranger's words never enter a workspace they cannot
-see.
+حالتا اسم الدخول غير المعروف تشتركان في رد واحد: الفهرس العكسي لا يعيد إلا
+عضوًا في مساحة العمل _هذه_، فالحساب غير المربوط والحساب المربوط لغير عضو
+إخفاق واحد. لا يمضي أي منهما. لا يُنسَب تعليق إلى من لم يرسله، ولا تدخل
+كلمات غريب إلى مساحة عمل لا يستطيع رؤيتها.
 
-The `ai-review` label has no author to resolve, so it does not climb this
-ladder. Adding it starts the review in the workspace that already links the
-repository.
+تسمية `ai-review` بلا مؤلف يُحَل، فلا تصعد هذا السلّم. إضافتها تبدأ المراجعة
+في مساحة العمل التي تربط المستودع أصلًا.
 
-## Two identities, on purpose
+## هويتان، عن قصد
 
-Each side of the conversation carries a different identity, and the difference
-is the feature:
+يحمل كل طرف في المحادثة هوية مختلفة، والفرق هو الميزة:
 
-- **On GitHub, the bot is the server.** Every comment, reaction and reply the
-  bridge posts rides the app's installation token. Nobody clicked anything in
-  a client, so nothing borrows a person's account — the same rule that keeps
-  webhooks and polling off human credentials.
-- **In the space, the question is yours.** The message is attributed to the
-  member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
-  apply exactly as they do to a message typed in the app. Forge writes from
-  the run still go out as the app — the same rule as the bullet above — not
-  on the member's personal token.
+- **على GitHub، البوت هو الخادم.** كل تعليق وتفاعل ورد ينشره الجسر يُرسَل
+  برمز تثبيت التطبيق. لم ينقر أحد شيئًا في عميل، فلا يُستعار حساب شخص —
+  القاعدة نفسها التي تُبقي خطافات الويب والاستطلاع خارج بيانات اعتماد البشر.
+- **في المساحة، السؤال لك.** تُنسَب الرسالة إلى العضو الذي حُلّ إليه المؤلف،
+  ويُنفَّذ تشغيل الوكيل نيابة عنه: تُدرجه الالتزامات مؤلفًا مشاركًا، ويُطبَّق
+  مؤشر الاستقلالية في المساحة وضوابط الإجراءات كما يُطبَّقان على رسالة تُكتب
+  في التطبيق. ما يُكتَب على مضيف الشفرة من التشغيل يخرج بهوية التطبيق —
+  القاعدة نفسها في النقطة أعلاه — لا برمز العضو الشخصي.
 
-Publishing review findings back to GitHub remains a person's decision, made in
-Control Center. A mention can _start_ a review; only a human publishes one.
+يبقى نشر نتائج المراجعة إلى GitHub قرار إنسان، يُتَّخذ في Control Center.
+الإشارة تستطيع _بدء_ مراجعة، ولا ينشرها إلا إنسان.
 
-## The loop guard, and the short name
+## حارس الحلقة، والاسم القصير
 
-Everything authored by a bot account is dropped before any gate runs — ours
-specifically, and every `[bot]` suffix, so another app's review bot cannot
-wake ours either. Without this the bot's own answers would arrive as new
-comments and re-trigger it forever.
+يُسقَط كل ما كتبه حساب بوت قبل أن تعمل أي بوابة — بوتنا تحديدًا، وكل لاحقة
+`[bot]`، حتى لا يوقظ بوت مراجعة لتطبيق آخر بوتنا أيضًا. من غير هذا تصل
+إجابات البوت نفسه كتعليقات جديدة وتعيد تشغيله بلا نهاية.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+لاحقة `[bot]` هي أيضًا سبب الصيغة القصيرة. يثبّت GitHub اسم دخول حساب
+التطبيق عند `<slug>[bot]`، ولا يعرض له إكمالًا تلقائيًا، ولا يحل `@slug` إلى
+التطبيق أبدًا — فقبول المعرّف المجرّد قرار المطابق _لدينا_، واكتشافه يحتاج
+مسار بحث في **نص** التعليق الخام لا فهرس الإشارات لدى GitHub. تُذكَر الكلفة
+ولا تُلطَّف: مستخدم بشري معرّفه مطابق لمعرّف التطبيق يخاطب البوت كلما أشار
+إلى نفسه بالصيغة القصيرة. أسماء التطبيقات المميّزة تُبقي الاصطدام افتراضيًا.
 
-## What is deliberately not offered
+## ما لا يُقدَّم عمدًا
 
-- **No auto-publish.** Findings land in the review space; publishing to GitHub
-  is a separate, human action
-- **No fuzzy identity.** The author resolves to exactly one member or is
-  refused — there is no best-guess attribution
-- **No GitHub App webhook.** This surface never registers one, so there is no
-  inbound URL to expose for PR comments. Other product webhooks (pipelines,
-  ticket sync) are a separate, optional setup.
+- **لا نشر تلقائي.** تستقر النتائج في مساحة المراجعة، والنشر إلى GitHub
+  إجراء بشري منفصل
+- **لا هوية تقريبية.** يُحَل المؤلف إلى عضو واحد بالضبط أو يُرفَض — لا إسناد
+  بأقرب تخمين
+- **لا خطاف ويب لتطبيق GitHub.** هذا السطح لا يسجّل واحدًا قط، فلا عنوان URL
+  وارد يُكشَف لتعليقات طلبات السحب. خطافات الويب الأخرى في المنتج (خطوط
+  الأنابيب، ومزامنة التذاكر) إعداد منفصل واختياري.
 
-## See also
+## انظر أيضًا
 
-- [Talk to Control Center from a GitHub PR](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/):
-  the how-to for all of this
-- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/): the same three decisions,
-  made for chat
-- [Create the GitHub App](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): where the bot identity
-  comes from
-- [Multiplayer — identity, membership and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/):
-  the principals and roles a login resolves through
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): what the answering agent is
-  allowed to do
-- [Use AI-powered review](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/): the pipeline a mention
-  or label starts
+- [التحدث إلى Control Center من طلب سحب على GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/محادثات-طلبات-سحب-github/):
+  الدليل الإرشادي لكل هذا
+- [جسور الدردشة](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/): القرارات الثلاثة نفسها،
+  وقد اتُّخذت للدردشة
+- [إنشاء تطبيق GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تطبيق-github/): من أين تأتي هوية البوت
+- [تعدد اللاعبين — الهوية والعضوية والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/):
+  الفاعلون والأدوار التي يُحَل عبرها اسم الدخول
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): ما يُسمح للوكيل المجيب أن يفعله
+- [استخدام المراجعة المدعومة بالذكاء الاصطناعي](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مراجعة-بالذكاء-الاصطناعي/):
+  خط الأنابيب الذي تبدأه إشارة أو تسمية

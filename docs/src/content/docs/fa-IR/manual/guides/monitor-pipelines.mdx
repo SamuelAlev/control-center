@@ -1,150 +1,152 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: نظارت بر اجراهای پایپ‌لاین
+description: در صف اجراها کار کنید، آبشار و پنل گام یک اجرا را بخوانید و از یک گام ناموفق یا گیرکرده بازیابی کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/نظارت-بر-پایپلاینها
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/).
+این صفحه دربارهٔ همه چیز پس از شروع یک اجراست: پیدا کردنش، خواندن اینکه هر گام
+چه کرد و به راه افتادن دوبارهٔ یک اجرای ناموفق. برای شروع یکی،
+[اجرای دستی یک پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/)
+را ببینید.
 
-## Find a run
+## پیدا کردن یک اجرا
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. در نوار کناری فضای کاری روی **پایپ‌لاین‌ها** کلیک کنید. این صفحه صف اجراهای
+   فضای کاری است — همهٔ اجراها، تازه‌ترین اول.
+2. برای فیلتر کردن از نوار کناری سمت چپ استفاده کنید. دقیقاً سه فیلتر وجود دارد
+   که هر کدام شمارهٔ زنده‌ای دارند: **همه**، **در حال اجرا**، **ناموفق**.
+3. با <kbd>↑</kbd>/<kbd>↓</kbd> (یا <kbd>j</kbd>/<kbd>k</kbd>) در جدول حرکت
+   کنید و برای باز کردن اجرای برجسته <kbd>Enter</kbd> را بزنید. کلیک روی یک سطر
+   هم همین کار را می‌کند.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+هر سطر نمادی برای چگونگی شروع اجرا نشان می‌دهد (نماد پخش برای اجرای دستی؛ نماد
+فایل برای یک واچ گراف کد؛ در غیر این صورت تریگر خودکار). راهنمای ابزار نام تریگر
+را می‌گوید — **دستی**، **PR منتشر شد**، **تغییر فایل** و غیره — و برای یک اجرای
+واچ، اینکه کدام فایل‌ها تغییر کرده‌اند. سپس نام پایپ‌لاین، یک نشان وضعیت، مدت
+فعال (یا جایگاه در صف برای یک اجرای `queued`) و اینکه این تلاش چند وقت پیش شروع
+شده است. مدت فعال فاصله‌های بیکاری میان توقف و راه‌اندازی دوباره را کنار
+می‌گذارد، پس با زمان واقعیِ سپری‌شده یکی نیست.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+فیلتری برای اجراهای کامل‌شده، معلق یا لغوشده وجود ندارد؛ نه فیلتری برای هر قالب،
+نه پنجرهٔ زمانی و نه نمای تاریخچهٔ اجرای هر قالب. مقایسهٔ اجراهای یک قالب یعنی
+گشتن صف به دنبال نامش.
 
-## Read the run detail
+## خواندن جزئیات اجرا
 
-A run's page has three stacked parts.
+صفحهٔ یک اجرا سه بخش روی هم دارد.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**نوار فراداده** زمان شروع، مدت فعال، پیشرفت گام‌ها («۳ از ۷ گام»)، خلاصهٔ خطایی
+که گام شکسته و دلیل آن را نام می‌برد و کنش‌های **تلاش مجدد** و **حذف** را حمل
+می‌کند.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**آبشار زمان‌بندی** برای هر گام یک میله می‌دهد، همراه با مدت آن و — برای گام‌های
+عامل — هزینه‌اش به سنت. گامی که دوباره تلاش شده باشد، پسوند `×N` را بعد از مدت
+خود نشان می‌دهد؛ همان پسوند تنها جایی است که شمار تلاش‌ها پدیدار می‌شود.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**بوم گراف** قالب را با وضعیت زندهٔ هر گره رسم می‌کند. انتخاب یک گره، پنل گام آن
+را باز می‌کند.
 
-### Run and step statuses
+### وضعیت‌های اجرا و گام
 
-| Status        | Meaning                                           |
+| وضعیت        | معنا                                           |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **در انتظار**   | ساخته شده، هنوز شروع نشده                          |
+| **در صف**    | پذیرفته اما نگه داشته شده: سقف اجرای موازی این قالب پر است؛ هنوز سطری برای گام‌ها نیست |
+| **در حال اجرا**   | در حال اجراست                                         |
+| **معلق** | منتظر چیزی بیرونی است — طبیعی، نه گیرکرده |
+| **کامل‌شده** | با موفقیت تمام شد                             |
+| **ناموفق**    | با خطا پایان یافت                               |
+| **لغوشده** | به دست کاربر یا سیستم متوقف شد                |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+گام‌ها همان وضعیت‌ها را دارند منهای **در صف**، به‌علاوهٔ **ردشده** برای شاخه‌ای که
+یک router برنداشته است (و فرزندانش که اکنون دست‌نیافتنی‌اند).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**معلق** همان جایی است که یک گام عامل بیشتر عمرش را در آن می‌گذراند: یک عامل
+اعزام‌شده یا یک دروازهٔ تأیید، گام را تا رسیدن کارش نگه می‌دارد. دو پشتوانهٔ
+ایمنیِ موتور کل اجرا را ناموفق می‌کنند به‌جای ازسرگیری: گامی که بیش از ۲۴ ساعت
+معلق مانده باشد (`extras.awaitApproval` — یعنی بدنهٔ `orchestration.awaitApproval`
+— مستثناست؛ `human.gate` مستثنا نیست) و گامی که ایدِمپوتنت نیست و هنگام توقف سرور
+در میانهٔ کار بوده است.
 
-## Inspect a step
+## بررسی یک گام
 
-Select a node on the canvas. The step panel shows, in order:
+یک گره روی بوم انتخاب کنید. پنل گام به ترتیب این‌ها را نشان می‌دهد:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- یک کادر **خطا** وقتی گام ناموفق شده، یا یک کادر **ردشده** همراه با دلیلش وقتی
+  رد شده است.
+- **شروع‌شده**، **تمام‌شده** و مدت.
+- **شاخه** — اندیس شاخه، برای شاخه‌های موازی.
+- **نمایش گفتگو** — به گفتگویی می‌پرد که گام در آن اجرا شده است. گفتگوهای
+  پایپ‌لاین از نوار کناری پنهان‌اند، پس این تنها راه ورود است.
+- **ورودی** و **خروجی**، به‌صورت JSON تاشو.
+- **فعالیت عامل** — یک کاشی برای هر اجرای عاملی که گام اعزام کرده، با وضعیت،
+  خلاصه، مدت و هزینه‌اش.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+برای یک گام عامل، **خروجی** همان بار دادهٔ ساخت‌یافته‌ای است که عامل با
+`submit_output` فرستاده، نه متن آزادی که نوشته است. ردِّ استدلال در **فعالیت
+عامل** و در گفتگوی پشت **نمایش گفتگو** قرار دارد.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+برای یک گام bash، **خروجی** همان stdout پیرایش‌شده است که اسکریپت هنگام خروج با
+کد 0 نوشته است. خروج با کد غیرصفر گام را ناموفق می‌کند و انتهای stderr به‌عنوان
+پیام خطا می‌آید.
 
-## Recover a failed run
+## بازیابی یک اجرای ناموفق
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. خلاصهٔ خطا را روی نوار فراداده بخوانید؛ نام گام ناموفق را می‌گوید. کادر
+   **خطا** در پنل گام پیام را دارد.
+2. **ورودی** گام را بررسی کنید — کلید حالتِ گم‌شده یا غلط‌املاشده رایج‌ترین علت
+   است. یک گام عامل پرامپتی بی‌درنگ ناموفق می‌شود و نگه‌دارهای حل‌نشده را نام
+   می‌برد؛ یک گام bash آن‌ها را به‌صورت رشته‌های خالی جایگزین می‌کند و
+   به‌هرحال اجرا می‌شود، که معمولاً خودش را یک گام بعد نشان می‌دهد.
+3. برای یک گام عامل، **نمایش گفتگو** را باز کنید و بخوانید که عامل واقعاً چه
+   کرده است.
+4. روی نوار فراداده **تلاش مجدد** را بزنید. گام‌های کامل‌شده و ردشده
+   خروجی‌هایشان را نگه می‌دارند؛ هر چیز دیگری حذف و دوباره اجرا می‌شود و اجرا به
+   وضعیت در حال اجرا برمی‌گردد. ساعت مدت برای این تلاش از نو شروع می‌شود.
 
-Common causes worth checking first:
+علت‌های رایجی که ارزش دارد اول بررسی شوند:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **مهلت** — گام از **مهلت (ms)** خود فراتر رفته است. یادتان باشد این فیلد
+  میلی‌ثانیه است.
+- **خطای اسکریپت** — دستور bash با کد غیرصفر خارج شده، یا `bash` روی `PATH`
+  میزبان سرور نیست.
+- **اعتبارسنجی شِما** — بار دادهٔ `submit_output` عامل، شِمای خروجی گام را
+  برآورده نکرده است.
+- **نگه‌دار حل‌نشده** — یک `{{key}}` که یک گام عامل پرامپتی به آن ارجاع داده
+  بوده، هرگز بالادست نوشته نشده است. خطا هر کلید حل‌نشده را نام می‌برد.
+- **بدنهٔ ثبت‌نشده** — گامی که کلید بدنه‌اش ثبت نشده باشد، هنگام بارگذاری قالب
+  هشدار می‌دهد و بعد به‌سادگی هرگز اجرا نمی‌شود.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[تلاش مجدد فقط روی یک اجرای ناموفق یا لغوشده کار می‌کند]
+دکمهٔ **تلاش مجدد** فقط وقتی نشان داده می‌شود که اجرا `failed` یا `cancelled`
+باشد. موتور برای هر وضعیت دیگری بی‌درنگ برمی‌گردد.
 :::
 
-## Stop a step that is stuck
+## متوقف کردن گامی که گیر کرده است
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+گام در حال اجرا را انتخاب کنید و دکمهٔ **کشتن در حال اجرا** را در سرصفحهٔ پنل گام
+بزنید. این کار فرایند گام را می‌کشد، گام را ناموفق علامت می‌زند و بنابراین کل اجرا
+را ناموفق می‌کند — هر شاخهٔ خواهرِ باز همراه آن بسته می‌شود.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+در این صفحه هیچ کنترل لغو اجرا وجود ندارد. `pipeline.cancel` به‌عنوان یک عملیات
+RPC وجود دارد و موتور آن را پیاده کرده، اما هیچ‌چیز در رابط کاربری پایپ‌لاین‌ها آن
+را صدا نمی‌زند؛ **کشتن در حال اجرا** روی یک گام، یا **حذف** روی اجرا، تنها
+حرکت‌های توقفی در دسترس‌اند.
 
-## Track cost
+## پیگیری هزینه
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+هزینه به‌ازای هر گام گزارش می‌شود: در ستون سمت راست آبشار و روی هر کاشی زیر
+**فعالیت عامل**. در صفحهٔ جزئیات جمع کل اجرا وجود ندارد و در صف اجراها ستون
+هزینه‌ای نیست، پس مقایسهٔ هزینهٔ دو اجرا یعنی جمع زدن گام‌هایشان.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Run a pipeline manually](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/)
-- [Create a pipeline template](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/)
-- [Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
-- [Pipeline steps reference](/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/)
+- [اجرای دستی یک پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اجرای-پایپلاین/)
+- [ایجاد قالب پایپ‌لاین(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-پایپلاین/)
+- [مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
+- [انواع گام پایپ‌لاین(/fa-IR/راهنمای-کاربر/مرجع/گامهای-پایپلاین/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Pipelines](/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)
+- [پایپ‌لاین‌ها و خودکارسازی(/fa-IR/راهنمای-کاربر/مفهومها/پایپلاینها/)

@@ -1,34 +1,38 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Skonfiguruj integrację Linear
+description: Zapisz klucz API Linear na serwerze, aby agenci mogli wywoływać Linear, oraz wybierz Linear jako dostawcę zgłoszeń dla nowych zgłoszeń.
 slug: pl-PL/podrecznik/poradniki/integracja-linear
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/).
+Wklej klucz API Linear na serwerze, przypisany do swojego użytkownika — tak samo
+jak łączysz forge. Zgłoszenia, projekty, powiązania, współpracownicy, delegowanie
+i przypisywanie działają na własnej bazie danych Control Center i nie wymagają
+żadnej zewnętrznej usługi — zobacz
+[Twórz i zarządzaj zgłoszeniami](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/).
 
-## Store your Linear key
+## Zapisz klucz Linear
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**Klucz API zgłoszeń** znajduje się w **Ustawienia → Obszar roboczy → Ogólne**,
+na karcie **Zgłoszenia**. Przechowuje klucz na serwerze, przypisany do Twojego
+identyfikatora użytkownika. Własny klucz serwera do pracy bez udziału człowieka
+pochodzi ze zmiennej `LINEAR_API_KEY` lub z karty **Aplikacje dostawców** i jest
+wstrzykiwany jako `TICKETING_API_KEY` tylko wtedy, gdy ten agent ma uprawnienie
+**Zezwalaj na wywołania API zgłoszeń**.
 
-## Stamp new tickets as Linear
+## Oznaczaj nowe zgłoszenia jako Linear
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**Dostawca zgłoszeń** (pierwszy krok konfiguracji oraz
+`/workspaces/<workspaceId>/api-keys`) oferuje `local` i `linear`. Wybranie
+`linear` nadaje zgłoszeniom tworzonym od tego momentu znacznik
+`provider: linear`.
 
-## Related guides
+## Powiązane poradniki
 
-- [Create and manage tickets](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/)
-- [Set up GitHub integration](/pl-PL/podrecznik/poradniki/integracja-github/)
-- [Manage API keys](/pl-PL/podrecznik/poradniki/klucze-api/)
+- [Twórz i zarządzaj zgłoszeniami](/pl-PL/podrecznik/poradniki/zarzadzanie-zgloszeniami/)
+- [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
+- [Zarządzaj kluczami API](/pl-PL/podrecznik/poradniki/klucze-api/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Tickets and delegation](/pl-PL/podrecznik/koncepcje/zgloszenia/)
+- [Zgłoszenia i delegowanie](/pl-PL/podrecznik/koncepcje/zgloszenia/)

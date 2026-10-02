@@ -1,239 +1,261 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Drift og klienter
+description: Hvordan tynnklientarkitekturen i Control Center skiller en headless server fra skrivebords-, nett- og mobilklientene.
 slug: nb-NO/handbok/konsepter/drift
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center er ikke ett program. Det er en **tynnklientarkitektur**: en
+headless server som eier dataene dine, og et sett klienter som tegner et
+grensesnitt over én enkelt RPC-tilkobling til den. Å forstå denne delingen
+forklarer hvorfor noe kjører der det gjør, og hva hver klient kan og ikke kan
+nå.
 
-## The server owns the data
+## Serveren eier dataene
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/nb-NO/handbok/konsepter/arbeidsomrader/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+En prosess som heter **`cc_server`** holder databasene — en liten `global.db`
+for tilstand på tvers av hele serveren, pluss én SQLite-fil per
+[arbeidsområde](/nb-NO/handbok/konsepter/arbeidsomrader/), åpnet lat — og
+kjører det langvarige arbeidet: pipeline-motorer, avstemmere, MCP-verktøyflaten
+og orkestreringlytteren. Alt som må overleve et vindu, eller som to klienter
+skal se identisk, bor der.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Ingen klient åpner en databasefil selv. I stedet holder hver klient én
+**`RemoteRpcClient`** og utfører repo-operasjoner og abonnementer over den.
+Serveren autentiserer tilkoblingen mot en forhåndsdelt nøkkel for parede
+enheter — og slutter deretter å bry seg om tilkoblingen. **En økt er ikke
+bundet til et arbeidsområde.** Dispatcheren er tilstandsløs: hvert
+arbeidsområde-avgrensede kall bærer sin egen `workspace_id` i argumentene, og
+et kall som utelater det, avvises.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Det er med vilje, og det er det som lar to klienter på én server sitte i ulike
+arbeidsområder uten et serverlagret «gjeldende arbeidsområde» de kan være
+uenige om. Isolasjon håndheves i stedet per kall, i fire trinn:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. Operasjonen erklærer om den er arbeidsområde-avgrenset; er den det og ingen
+   `workspace_id` kom med, avvises kallet.
+2. Id-en som angis, må være et **registrert** arbeidsområde, sjekket før noe
+   åpner en database — ellers ville en ukjent id skape en tom
+   spøkelses-`workspace.db` ved hver forespørsel. En id som ikke finnes, er et
+   «ikke funnet».
+3. Kallers `WorkspaceRole` må oppfylle operasjonens minstekrav, utledet fra
+   typen: lesing krever gjest, endring krever medlem, destruktive operasjoner
+   krever admin.
+4. En operasjon som eksponerer repo-innhold, krever i tillegg en tilgang per
+   repo på nivået den erklærer — `none` / `read` / `review` / `write` — slik at
+   arbeidsområdemedlemskap aldri stilltiende gir flere rettigheter enn
+   kodeverten.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Setningen som betyr noe: **å ha en paringsnøkkel er ikke tilgangsgrensen;
+medlemskap er det.**
 
-## Why split it this way
+## Hvorfor dele det slik
 
-Three pressures pushed toward a server:
+Tre press førte mot en server:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Én kilde til sannhet.** En skrivebordsapp og en telefon, eller en bærbar
+   og en stasjonær, bør se samme flåtetilstand. Hvis hver av dem eide sin egen
+   database, ville de gli fra hverandre. Én server gjør at hver klient leser de
+   samme levende dataene.
+2. **Nettet kan ikke betjene seg selv.** En nettleser kan ikke starte en
+   delprosess eller åpne en lokal fil, så et nettbygg kan aldri eie databasen
+   eller kjøre en agent. Det må snakke med en server som gjør det. I stedet for
+   å bygge en andre datasti kun for nettet, ble skrivebordsappen ført inn på
+   den samme stien.
+3. **Headless drift.** En server du kan kjøre på en liten boks — tilgjengelig
+   fra en telefon på toget eller en nettleser hvor som helst — er nyttigere enn
+   et GUI du må la stå åpent.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Avveiningen er at serveren nå er en avhengighet: kjører den ikke, fungerer
+ingenting. Skrivebordsappens standardsvar på det er å **starte en selv**.
 
-## The clients
+## Klientene
 
-Five clients reach the server, each with a different shape and trust profile.
+Fem klienter når serveren, hver med en annen form og tillitsprofil.
 
-### Desktop app
+### Skrivebordsappen
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter-skrivebordsapplikasjonen (macOS, Windows, Linux) er fullklienten. Ved
+første oppstart spør den hvordan den skal kjøre, og husker deretter valget:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Lokal**: start og overvåk en `cc_server` på denne maskinen —
+  standardoppsettet, selvstendig og for én bruker. Skrivebordsappen starter
+  serveren, som eier databasen under app-support-roten og snakker med den over
+  loopback.
+- **Ekstern**: koble til en `cc_server` som kjører et annet sted, over en sikker
+  WebSocket. Dataene ligger på den serveren; denne skrivebordsappen er bare en
+  gjengiver.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+I begge tilfeller erstatter den resulterende RPC-klienten appens dataleverandør,
+slik at hele brukergrensesnittet — hver skjerm, hver funksjon — leser og skriver
+gjennom serveren. Skrivebordsappen tar aldri på databasefilen direkte.
 
-### Web client
+### Nettklienten
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Nettbygget er den samme Flutter-appen kompilert for å kjøre i en nettleser,
+hostet på [app.usectrl.dev](https://app.usectrl.dev), så det er ingenting å
+installere. En nettleser kan ikke starte en delprosess, så nettklienten er
+**alltid** ekstern: den ringer opp en `cc_server` over `wss://` og tegner hele
+skrivebordsgrensesnittet. Når den er tilkoblet, viser den de samme skjermene
+mot den samme flåten, fordi det er den samme koden over den samme RPC-en.
+Hullene er de få stedene som trenger en innebygd egenskap nettleseren ikke har —
+kvalitetslaget for møteopptak nedenfor er det viktigste, og varsler fra
+operativsystemet er et annet.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Dette er hvorfor «ingen nedlasting» og «ingen server» er to forskjellige
+påstander. Nettklienten fjerner installasjonen; den fjerner ikke serveren. Det
+den ringer opp, kan være en `cc_server` på den samme bærbare maskinen —
+`ws://localhost:9030`, som ikke trenger sertifikat fordi nettlesere regner
+loopback som pålitelig — eller en på en annen maskin, som må være tilgjengelig
+over `wss://` med et sertifikat nettleseren stoler på. `cc_server` nekter å
+binde en adresse utenfor loopback uten TLS, så en ekstern server betyr enten
+serverens eget sertifikat, en TLS-avsluttende proxy, eller en tunnel eller VPN
+som skaffer ett.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Selve nettpakken hostes separat fra serveren den snakker med. En frittstående
+`cc_server` betjener RPC-endepunktet, MCP-flaten og proksyene sine, men
+**ikke** en nettpakke — den statiske filstien finnes i serveren, men ingen
+webrot er konfigurert på den frittstående binærfilen, så den har ingenting å
+betjene på `/`. Den publiserte containeravbildningen `cc-webapp` er det som
+hoster nettpakken, og `scripts/build_web.sh` er det som bygger den. En server
+godtar bare nettleser-origins som står på `--allowed-origins`-listen, som
+standard er `https://app.usectrl.dev`, så egen hosting av nettpakken betyr å
+legge til dens origin.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Medier (avatarer, bilder i strømmen, PR-skjermbilder) går gjennom serverens
+proxy-endepunkt i stedet for å treffe oppstrømsverter direkte, slik at en
+nettleser aldri henter en vilkårlig origin. Den utrullede klienten setter en
+per-forespørsel Content-Security Policy ut fra en ikke-sensitiv
+informasjonskapsel, slik at bare origin til den tilkoblede serveren tillates.
 
-### Phone companion (cc_remote)
+### Telefonfølgesvenn (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**Remote**-appen er en egen, lettere klient — en Flutter-nett-PWA på
+[remote.usectrl.dev](https://remote.usectrl.dev/). Den er med vilje **ikke**
+hele appen. Den pares over et meglet WebSocket-relé med
+ende-til-ende-forsegling og snakker en overveiende lesende del av verktøyflaten:
+les saker, meldinger og nyhetsstrømmen; send et svar eller oppdater en sak.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/) for the full
-security model.
+En telefon er en **aktor med lavere privilegier** enn en lokal agent. En
+verktøypolicy med standardavvisning, en forhåndsdelt nøkkel som forsegler hver
+ramme, en øktkapabilitet som stenger privilegerte operasjoner (for eksempel
+parring) ute fra en følgesvennklient, sjekkene av rolle og repo-tilgang per kall
+beskrevet ovenfor, og hastighetsbegrensning hindrer at en godkjent (eller
+lekket) parring blir full fjernstyring. Se
+[Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/) for hele
+sikkerhetsmodellen.
 
-### MCP clients
+### MCP-klienter
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/nb-NO/handbok/slik-gjor-du/mcp-server/) and the
-[MCP tools reference](/nb-NO/handbok/referanse/mcp-verktoy/).
+Eksterne verktøy — editorer, andre agenter, CLI-er — som snakker Model Context
+Protocol, kobler til serverens MCP-flate og bruker det typede
+verktøyregisteret. Dette er den programmerbare integrasjonsveien; det er ikke et
+GUI. Se [Bruk MCP-serveren](/nb-NO/handbok/slik-gjor-du/mcp-server/) og
+[MCP-verktøyreferansen](/nb-NO/handbok/referanse/mcp-verktoy/).
 
-### Fleet executors (cc_worker)
+### Flåteutførere (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+En **`cc_worker`** er en headless ren Dart-binærfil som pares med en
+`cc_server`, erklærer vertens kapabiliteter og henter leide jobber for
+utførelse. Den strømmer prosesshendelser tilbake over den samme RPC-en og
+holder **ingen varig tilstand**: ingen database, ingen autentisering, ingen
+godkjenninger, ingen budsjetter — de forlater aldri `cc_server`. En worker er
+en lem, ikke en ekstra hjerne. Én autoritativ server, N dumme lemmer; det
+finnes ingen konsensus, ingen trafikk worker til worker.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Leaset utførelse er fortsatt bare lease-infrastruktur. `agentRun` er den eneste
+typen som kjører en ekte kommando (`CC_JOB_COMMAND`, eller en ekkoet prompt
+hvis ingen ble oppgitt). `pipelineStep`, `codeIndex`, `goldenRender`,
+`benchmark` og `evalBatch` utfører foreløpig en sondering med `git --version` /
+`rev-parse HEAD`, slik at strømmestien blir prøvd uten å late som om disse
+jobbene kjørte.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Det den annonserer, er operativsystemet, CPU-arkitektur, antall kjerner, RAM, om
+et Flutter-SDK er tilgjengelig, og hvilke sandkasse-backender verten har (ingen
+på Windows). En dedikert worker annonserer også alltid `alwaysOn` og
+`acceptsParallel`, og det er disse planleggeren legger til grunn når den
+plasserer etter strategien fest → foretrekk → fordel. Det finnes ingen GPU- eller
+ML-sondering.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+En enslig skrivebordsinstallasjon merker ingenting av dette, fordi vanlig
+utsending ikke går gjennom flåten i det hele tatt. Det _finnes_ en implisitt
+worker i prosessen, registrert for serververten, men det er en
+registreringssøm uten kjørere koblet til — en jobb som faktisk plasseres på den
+lokale workeren, mislykkes i stedet for å kjøre. I dag er det bare en ekte
+`cc_worker` som utfører leide jobber.
 
-## What runs where
+## Hva kjører hvor
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
+| Ansvarsområde                                  | Server (`cc_server`)       | Flåteutfører (`cc_worker`)   | Skrivebordsklient | Nett-/telefonklient              |
 | ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Databaser (Drift/SQLite)                       | eier dem                   | —                            | —              | —                                |
+| Autentisering, godkjenninger, budsjetter, identitet | eier dem               | —                            | —              | —                                |
+| Pipelines, avstemmere, orkestreringlytter      | kjører det                 | —                            | —              | —                                |
+| MCP-verktøyflate                               | betjener den               | —                            | —              | —                                |
+| Agentutførelse                                 | kjører det (eller leaser det ut) | utfører leide jobber   | —              | —                                |
+| UI-gjengivelse                                 | —                          | —                            | full           | full (nett) / mest lesing (telefon) |
+| Møteopptak (mikrofon + møtelyd)                | —                          | —                            | innebygd opptak | bare nett, via skjermdelingslyd  |
+| Kalender-OAuth (Google)                        | lagrer tokener             | —                            | —              | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/)
-for what bounds a run in each case.
+De to nivåene bruker ikke samme sandkasse. `cc_server` pakker kjøringene den
+utfører selv, inn i vertens OS-sandkasse der en backend finnes — Seatbelt på
+macOS, bubblewrap på Linux og WSL2 — og faller tilbake på de andre grensene på
+Windows eller uten `bwrap` og `socat`. **`cc_worker` bruker ingen sandkasse i
+det hele tatt.** Den annonserer en `sandbox`-kapabilitet, slik at serveren kan
+plassere jobber etter plattform, men ingenting i workeren tar den i bruk: en
+leaset jobb startes direkte, begrenset av miljøet til leasen og worktreet den
+fikk. Å lease ut arbeid flytter derfor utførelsen utenfor sandkassen, selv på
+en vert som har en. Se
+[Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for
+hva som begrenser en kjøring i hvert tilfelle.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Møteopptak skjer på en klient, fordi det trenger en mikrofon og møtets lyd — en
+server i et skap kan ikke ta opp samtalen din. Opptaket oppsummeres deretter av
+serverens pipeline, og notatene lagres der hver klient kan lese dem.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Nettklienten tar også opp, noe tabellens form kan skjule: den fanger
+mikrofonen pluss et lydspor for skjermdeling i nettleseren og strømmer 16 kHz
+PCM til serveren. Den _krever_ dette lydsporet, og feiler derfor eksplisitt der
+nettleseren ikke tilbyr ett. Det som virkelig bare finnes på
+skrivebordet, er kvalitetslaget rundt opptaket — ekkoutnulling på signalnivå
+via den innebygde prosessoren, inngangsnivåmåleren og advarselen om død
+mikrofon, å kjøre en oppsummering på nytt, å avbryte behandling og kalenderens
+handling for opptak og kobling.
 
-## Pairing and trust
+## Parring og tillit
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Hver klient beviser hvem den er med en **forhåndsdelt nøkkel** som legges inn én
+gang:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Skrivebordsappen i lokal modus genererer en fersk nøkkel ved hver oppstart og
+  gir den til den startede serveren via miljøet, slik at ingenting hemmelig
+  lagres på skrivebordet.
+- Eksterne klienter (ekstern skrivebordsapp, nett, telefon) bruker en nøkkel
+  utstedt av serverens `pair`-kommando og lagret i OS-nøkkelringen (eller
+  lokalt på telefonen).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+Tilbakekalling er **umiddelbar**, ikke utsatt. Serveren overvåker tabellen over
+parede enheter og avslutter enhver åpen økt der enheten har forlatt det aktive
+settet, innen sekunder — både på den direkte WebSocket-stien og på relé-stien.
+Du trenger ikke vente på at enheten kobler til på nytt for å kutte den.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Nøkkelen går aldri gjennom en URL som en statisk vert kan se. Når den kommer
+via en lenke — på telefonen eller i en nettleser — ligger den i
+**URL-fragmentet**, delen etter `#`, som nettleseren aldri sender til serveren
+som hoster siden. Det er invarianten som er verdt å huske, og den gjelder for
+begge. Nettklienten har to andre innganger: tilkoblingsskjemaet, der du limer
+inn en server og en nøkkel direkte, og en invitasjonskode, som den løser inn
+mot en legitimasjon utstedt bare for den nettleseren.
 
-## Related concepts
+## Relaterte konsepter
 
-- [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/nb-NO/handbok/konsepter/arkitektur/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/): the phone pairing and security model
+- [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/): hvorfor hvert RPC-kall bærer sin egen arbeidsområde-id, og hvordan databasedelingen gjør isolasjonen strukturell
+- [Arkitektur](/nb-NO/handbok/konsepter/arkitektur/): hvordan kodebasen er strukturert rundt serveren og klientene
+- [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/): parring av telefon og sikkerhetsmodellen
 
-## Related guides
+## Relaterte veiledninger
 
-- [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): start `cc_server` and pair a client
-- [Connect to a remote server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/): point the desktop or web client at a server elsewhere
-- [Pair a device](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/nb-NO/handbok/slik-gjor-du/kjor-fleet-worker/): add a `cc_worker` that pulls leased jobs
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): start `cc_server` og par en klient
+- [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/): pek skrivebords- eller nettklienten mot en server et annet sted
+- [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/): legg til en telefon, en ny nettleser eller en annen skrivebordsapp
+- [Kjør en flåteworker](/nb-NO/handbok/slik-gjor-du/kjor-fleet-worker/): legg til en `cc_worker` som henter leide jobber

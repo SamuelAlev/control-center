@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Utforska data i en persistent kernel
+description: Ge en agent en Python- eller JavaScript-tolk som behåller sina variabler mellan anrop, ritar diagram i chatten och kan anropa dina egna verktyg inifrån en cell.
 slug: sv-SE/handbok/how-to-guider/utforska-data-i-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Den här guiden visar hur du låter en agent läsa in något dyrt en gång och sedan ställa flera frågor till det, i stället för att betala för inläsningen vid varje fråga.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Verktyget `eval` kör en **persistent tolk**. Variabler, importer och inläst data överlever mellan anrop.
 
-## Why not just run a script
+## Varför inte bara köra ett skript
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+En engångskörning med `python -c` betalar för uppstarten vid varje fråga. Att läsa in en dataframe tar sekunder och hundra megabyte; att rita ett diagram av den tar millisekunder. När varje fråga kostar inläsningen ställer agenten färre frågor än den borde – och varje svar kommer tillbaka som text som den sedan måste parsa om.
 
-## Load once, then ask
+## Läs in en gång, fråga sedan
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Läs in `data/runs.csv` och berätta p95-varaktigheten per agent.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Det sista uttrycket skrivs ut på samma sätt som i en notebook, så `len(runs)` rapporterar antalet rader utan en `print`.
 
-Then, in a **separate call**:
+Sedan, i ett **separat anrop**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` är fortfarande inläst. En pandas-DataFrame kommer tillbaka renderad som en tabell i stället för som en repr.
 
-## Charts land in the chat
+## Diagram hamnar i chatten
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Figurer fångas efter cellen och returneras som bilder, som transkriptet renderar. Du ser diagrammet; det gör agenten också.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Figurer stängs efter att de har fångats. En figur som inte samlats in skulle ritas om och skickas igen även av *nästa* cell, så en session på fem celler skulle skicka det första diagrammet fem gånger.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Ingen Jupyter, ingen pip, inget installationssteg]
+Köraren är en vanlig `python3 -u` som talar ett radprotokoll över stdio. Den implementerar `display()`, utskick av MIME-buntar och figurinsamling själv, så den fungerar på vilken Python 3 som helst – även i en sandlåda, där installation är precis det som sandlådan finns för att förhindra.
 :::
 
-## The idioms you would type anyway
+## Idiomen du ändå skulle skriva
 
-These are rewritten into plain code rather than erroring:
+De här skrivs om till vanlig kod i stället för att ge fel:
 
-| You type    | What happens                                        |
+| Du skriver    | Vad som händer                                        |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | Kör pip och **rensar sedan modulcachen** så att nästa `import` ser den |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | En fångad subprocess                                |
+| `%%bash`    | Resten av cellen som ett skalskript                 |
+| `%%timeit`  | 1000 tidsmätta körningar                            |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Det är cacherensningen för `%pip` som spelar roll: att installera i en levande tolk gör ingenting för en modul som redan har importerats, så utan den är versionen du just installerade inte den som körs.
 
-## Calling your own tools from inside a cell
+## Anropa dina egna verktyg inifrån en cell
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` går in i agentens eget verktygsregister igen. Det innebär att en cell kan sprida ut arbetet över hundra filer, eller delegera via `task`, utan att modellen gör av med en tur per objekt.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Bryggan kringgår inte dina räcken]
+Ett bryggat anrop löses mot **samma** verktygsregister som ett anrop utfärdat av modellen, så `ActionClass`-policy, godkännandeförfrågningar och varje wrapper gäller på samma sätt. En brygga som nådde förbi registret skulle vara ett hål format precis som ”skriv en Python-one-liner”.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Ett bryggat anrop **pausar cellens tidsgräns** medan det pågår. Budgeten mäter inaktivitet, inte klocktid – en cell som sprider ut arbetet till subagenter och väntar i fyra minuter har inte hängt sig, och att döda den mitt i utspridningen skulle förlora hela kernelns tillstånd.
 
-## Starting over
+## Börja om
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Kastar bort tolken och startar en ny, ren. Allt som har lästs in är borta, vilket är själva poängen.
 
-## Where the kernel runs
+## Var kerneln körs
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+I samtalets **avskilda miljö** när det har en, annars på värden.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+En persistent tolk som drivs av en modell som läser ett ej betrott repo är precis vad körning enbart i avskild miljö finns till för: ett engångsanrop till `bash` tar åtminstone slut, medan en kernel är ett skal som minns.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/sv-SE/handbok/how-to-guider/anvand-stationer/).
+Den startar **inte** en avskild miljö för att komma dit – samma regel som hindrar en stationsflik från att starta automatiskt. Om du vill att kerneln ska köras avskilt öppnar du samtalets skal först. Se [Ge en agent en maskin att testa på](/sv-SE/handbok/how-to-guider/anvand-stationer/).
 
-## Limits
+## Gränser
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **En cell i taget per kernel.** Två celler som kapplöper i en och samma tolk är två halvor av två program som flätas samman i ett och samma namnutrymme.
+- **Utdata begränsas.** En cell i en utskriftsslinga trunkeras i stället för att tillåtas fylla kontextfönstret.
+- **Fyra bilder per cell.** En plottningsslinga kan skicka en figur per iteration, och varje bild är en stor fast kostnad i den begäran som bär den.
+- **Kerneln dör med körningen.** En kernel som fortfarande håller en dataframe efter att samtalet har avslutats är en läcka.
 
-## Related
+## Relaterat
 
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) — what "enclosed" means here
-- [Give an agent a machine to test on](/sv-SE/handbok/how-to-guider/anvand-stationer/) — opening the enclosure
-- [Built-in agent tools](/sv-SE/handbok/referens/agentverktyg/) — the arguments
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) – vad ”avskilt” betyder här
+- [Ge en agent en maskin att testa på](/sv-SE/handbok/how-to-guider/anvand-stationer/) – att öppna den avskilda miljön
+- [Inbyggda agentverktyg](/sv-SE/handbok/referens/agentverktyg/) – argumenten

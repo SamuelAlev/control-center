@@ -1,118 +1,120 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Nahrajte a shrňte schůzku
+description: Nahraj hovor, získej přepis a převeď ho na poznámky, akční položky a rozhodnutí.
 slug: cs-CZ/prirucka/navody/nahravani-schuzky
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/cs-CZ/prirucka/koncepty/schuzky/) for how it works.
+Tenhle návod ukáže, jak schůzku nahrát a získat zápis vygenerovaný AI.
+Jak to funguje, popisuje [Schůzky a přepis](/cs-CZ/prirucka/koncepty/schuzky/).
 
-## Before you start
+## Než začneš
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Počkej na model řeči a pak restartuj server.** Běžný start
+  na pozadí vynuceně nainstaluje vybraný model ASR (Parakeet TDT 0.6B v3,
+  vícejazyčný výchozí, asi 600 MB). Server si model vyřeší **jednou při
+  startu**, takže první běh pořád nemá nahrávací operace, dokud
+  nerestartuješ. Bez modelu na disku nahrávání selže s `Could not start recording on the host: …`. Jinou sestavu vybereš v **Nastavení →
+  Server → Hlasové a schůzkové modely** — i to chce restart.
+- Při prvním nahrávání povol **mikrofon**, až se na něj operační systém zeptá.
+- Na **macOS 14.4+** se systémový zvuk zachytává tapy procesů Core Audio — žádný ovladač se neinstaluje, ale systém se podruhé zeptá na oprávnění k _zachycení zvuku_. To není Nahrávání obrazovky a indikátor nahrávání obrazovky se nikdy nerozsvítí. Když ho odmítneš, start selže s `System-audio capture permission denied.` Pod macOS 14.4 zachycení systémového zvuku není.
+- Na **Linuxu** musí být na `PATH` buď `parecord` (pulseaudio-utils), nebo `pw-record` (pipewire) — záznam spustí jeden z nich proti monitorovacímu zdroji PipeWire/PulseAudio. Když není ani jeden, start selže s `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Kam jde zvuk schůzky]
+Záznam, přepis, potlačení ozvěny i diarizace řečníků běží na zařízení,
+bez volání do cloudu — jenže „zařízení“ znamená **hostitele cc_server**,
+což je jiný stroj, když server běží vzdáleně. A konečný zápis je obyčejný
+běh agenta: pipeline `meeting_summary` pošle celý přepis a tvoje hrubé
+poznámky poskytovateli modelu, kterého ten agent používá. Když přepis
+nesmí opustit stroj, namiř toho agenta na místního poskytovatele.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Obrazovka nahrávání to říká, dokud nahráváš, takže rozhodnutí máš před
+sebou dřív, než vznikne přepis k odeslání.
 :::
 
-## Start a recording
+## Spusť nahrávání
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. V postranním panelu otevři **Schůzky**.
+2. Klikni na **Nahrát schůzku**. HUD živého nahrávání se otevře na `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+Nahrávání začne hned a bere mikrofon i výstupní zvuk systému — ostatní
+účastníky. Žádný dotaz na režim ani výběr zdroje zvuku: režim osobní
+schůzky s jedním mikrofonem v API je, ale dnes nemá rozhraní.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+V prohlížeči funguje stejný postup, s jedním rozdílem: „systémový zvuk“
+je sdílení obrazovky, které musí obsahovat zvukovou stopu. Sdílej kartu
+prohlížeče (nebo celou obrazovku) a ve výběru zapni „Sdílet zvuk karty“ /
+„Sdílet systémový zvuk“. Safari, Firefox a sdílení celé obrazovky na macOS
+ji často dodat neumí.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+HUD ukazuje měřič úrovně, uplynulý čas a živý přepis, který se skládá
+na jedné straně.
 
-## During the meeting
+## Během schůzky
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Piš hrubé poznámky** v panelu poznámek. Ukládají se při psaní a později je dostane agent pro shrnutí, takže si poznamenej, co by přepis mohl minout.
+- **Vyber šablonu poznámek** v řádku **Aktivní šablona**. Určuje podobu shrnutí téhle schůzky a uloží se s nahrávkou, takže pozdější nové spuštění zopakuje šablonu, kterou jsi zvolil tady.
+- **Pozastav a pokračuj** ovládáním **Pozastavit**. Během pauzy se přepis zastaví a časovač zamrzne.
+- Přepis přichází se značkou řečníka: tvoje slova jako **Vy**, všichni na hovoru jako **Ostatní** — dokud diarizace nerozdělí Ostatní na `Person 1`, `Person 2`, …, které můžeš přejmenovat.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Velmi tichý řečník se nemusí přepsat]
+Přepis přeskočí každé zvukové okno, které nikdy nepřekročilo práh ticha,
+a vůbec ho nedekóduje. Tichý kanál tak nepálí CPU na halucinovaných
+tokenech, které nejsou řeč, ale taky to znamená, že slabý nebo vzdálený
+řečník nemusí v přepisu být. Měřič úrovně zkontroluj brzy, ne až na konci.
 :::
 
-## Stop and summarize
+## Zastav a shrň
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klikni na **Zastavit a shrnout**.
+2. Control Center tě vezme rovnou do detailu schůzky se stavem **Zpracování**: diarizace rozdělí vzdálený kanál na jednotlivé řečníky a pipeline `meeting_summary` vygeneruje zápis.
+3. Jakmile pipeline doběhne, schůzka přejde na **Hotovo**. Nemusíš na to čekat — detail se aktualizuje sám.
 
-## Review the writeup
+## Zkontroluj zápis
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+Detail schůzky (`/meetings/:meetingId`) má čtyři záložky:
 
-| Tab              | What's there                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| Záložka            | Co tam je                                                                    |
+| ------------------ | ---------------------------------------------------------------------------- |
+| **Poznámky**       | Shrnutí od AI a doplněné poznámky, sestavené z hrubých poznámek a přepisu   |
+| **Přepis**         | Celý přepis se značkami řečníků a časovými razítky                          |
+| **Akční položky** | Vytěžené úkoly, každý s volitelným vlastníkem                                |
+| **Rozhodnutí**     | Rozhodnutí zachycená během hovoru                                            |
 
-From here you can:
+Odtud můžeš:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/cs-CZ/prirucka/navody/delegovani-ticketu/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Přejmenovat řečníky**: změň `Person 1` na skutečné jméno; platí v celém přepisu.
+- **Odškrtávej akční položky**, jak je dokončuješ.
+- **Vytvořit ticket** z akční položky: založí nový, nepřiřazený ticket s názvem akční položky a propojí ho zpátky s řádkem. Přiřaď ho agentovi přímo z ticketu (viz [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)).
+- **Znovu spustit shrnutí** pro nový průchod (třeba po přejmenování řečníků). Použije znovu šablonu uloženou při nahrání schůzky. Aktivní šablonu vybereš v **Nastavení → Pracovní prostor → Schůzky**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Úpravy poznámek, názvu, akčních položek a rozhodnutí fungují všude.
+**Znovu spustit shrnutí** a zrušení schůzky ve stavu zpracování jsou
+**jen na desktopu** — v prohlížeči obě tlačítka nic neudělají.
 
-## Record straight from a calendar event
+## Nahraj rovnou z události v kalendáři
 
-If you've [connected a calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Když máš [připojený kalendář](/cs-CZ/prirucka/navody/pripojeni-kalendare/),
+ruční start můžeš přeskočit. Je to **jen na desktopu**; webový klient to odmítne.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Otevři událost v sekci **Kalendář**.
+2. Klikni na **Spustit nahrávání a propojit**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+Nahrávka dostane název události a propojí se s ní zpátky, takže poznámky
+a položka v kalendáři zůstanou spojené.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Smazání schůzky nesmaže její zvuk]
+Smazání schůzky odstraní její řádky, ale nahrané soubory WAV v
+`<dataDir>/meetings/<meetingId>/` zůstanou na disku — není politika
+uchovávání, strop velikosti ani úklidový průchod. Když na zvuku záleží,
+ten adresář smaž sám.
 :::
 
-## Related guides
+## Související návody
 
-- [Connect a Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
-- [Delegate work to agents](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Připojte Google Calendar](/cs-CZ/prirucka/navody/pripojeni-kalendare/)
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
 
-## Related concepts
+## Související koncepty
 
-- [Meetings and transcription](/cs-CZ/prirucka/koncepty/schuzky/)
+- [Schůzky a přepis](/cs-CZ/prirucka/koncepty/schuzky/)

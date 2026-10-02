@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Bắt đầu nhanh
+description: Cài đặt Control Center, cấu hình một agent và xem nó làm việc trên kho mã của bạn.
 slug: vi-VN/so-tay/bat-dau-nhanh
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Đây là con đường hoàn chỉnh ngắn nhất từ con số không tới một agent đang chạy trên chính mã của bạn. Hãy làm theo đúng thứ tự; mỗi bước đều phụ thuộc vào bước trước đó.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Bạn cần Git, một tài khoản GitHub và hoặc một tài khoản nhà cung cấp mô hình (Anthropic, OpenAI, Codex, Cursor, Kimi Code, hay bất kỳ nhà cung cấp nào có khóa API) hoặc Claude Code CLI đã được cài đặt sẵn. Mọi thứ còn lại sẽ được thiết lập trong quá trình làm.
 
-## Step 1: Install and launch
+## Bước 1: Cài đặt và khởi chạy
 
-Install Control Center as described in [Install](/vi-VN/so-tay/cai-dat/), then open it.
+Cài đặt Control Center như mô tả trong [Cài đặt](/vi-VN/so-tay/cai-dat/), rồi mở nó.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Ở lần khởi chạy đầu tiên, ứng dụng desktop hỏi **“Control Center nên chạy như thế nào?”**. Chọn **Chạy trong ứng dụng này**. Control Center khởi tạo một `cc_server` không giao diện trên máy này, thứ sở hữu dữ liệu của bạn và làm mọi công việc. Bạn không bao giờ nhìn thấy nó; thay vào đó, màn hình thiết lập ban đầu sẽ mở ra.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/vi-VN/so-tay/cai-dat/#use-it-in-your-browser) for the browser route.
+:::note[Không muốn cài đặt bất cứ thứ gì?]
+Ứng dụng tương tự cũng chạy trong trình duyệt tại [app.usectrl.dev](https://app.usectrl.dev) với
+đầy đủ tính năng như vậy. Tuy nhiên, một tab trình duyệt không thể lưu trữ máy chủ, nên bạn phải
+tự cung cấp một cái — chạy `cc_server` cục bộ và kết nối tới `ws://localhost:9030`, hoặc trỏ nó tới một máy chủ trên
+máy khác. Bản bắt đầu nhanh này đi theo con đường desktop vì nó không cần thiết lập máy chủ;
+xem [Cài đặt](/vi-VN/so-tay/cai-dat/#use-it-in-your-browser) để biết cách dùng trên trình duyệt.
 :::
 
-## Step 2: Work through onboarding
+## Bước 2: Đi qua quá trình thiết lập ban đầu
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Quá trình thiết lập ban đầu có năm bước và chúng chạy theo thứ tự — không thể nhảy bước.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Kết nối**: đăng nhập bằng GitHub hoặc dán một token truy cập cá nhân có `repo` và `read:org`. Thông tin xác thực được lưu trên máy chủ, gắn với tài khoản của bạn.
+2. **Không gian làm việc**: đặt tên cho không gian làm việc đầu tiên của bạn và tùy chọn chọn một logo. Việc tạo nó sẽ gieo tạo sẵn năm agent — một CEO cùng `qa`, `architect`, `engineer` và `librarian` — cùng các mẫu quy trình tích hợp sẵn.
+3. **Sandbox**: ghi lại tùy chọn sandbox. Dù chọn cách nào bạn cũng có thể tiếp tục.
+4. **Adapter**: chọn adapter và mô hình mà agent sẽ mặc định dùng. Chọn **Control Center (built-in)**, rồi dùng trình chọn nhà cung cấp hiện ra để đăng nhập vào một nhà cung cấp mô hình — danh sách mô hình vẫn trống cho tới khi có một nhà cung cấp được kết nối. Hoàn tất bước này cũng gán adapter và mô hình cho agent CEO của không gian làm việc.
+5. **Giọng nói (tùy chọn)**: cài một mô hình giọng nói chạy trên thiết bị để đọc chính tả, hoặc bỏ qua bước này.
 
-Control Center then opens your workspace inbox.
+Sau đó Control Center mở hộp thư của không gian làm việc.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
+:::note[Điều gì giới hạn một lượt chạy agent]
+Các lệnh của agent được bọc trong sandbox gốc của hệ điều hành máy chủ khi có sẵn một cái — Seatbelt trên macOS, bubblewrap trên Linux. Windows không có backend, nên các lượt chạy ở đó chỉ được giới hạn bởi những tầng khác: worktree riêng của cuộc hội thoại (`git worktree` trên Windows; copy-on-write ở mọi nơi `rift` được phát hành), thông tin xác thực do bộ môi giới cấp theo từng lần khởi chạy và bị thu hồi khi kết thúc cùng các rào chắn hành động. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 :::
 
-## Step 3: Add a repository
+## Bước 3: Thêm một kho mã
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Mở **Cài đặt → Không gian làm việc → Kho lưu trữ** và nhấp **Thêm kho lưu trữ**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+Hộp thoại duyệt các thư mục trên máy đang chạy máy chủ, chứ không phải trên máy khách của bạn, và nó chỉ ở trong những gốc mà máy chủ được cấu hình để mở ra (mặc định là thư mục home của người dùng máy chủ đó). Chỉ những bản checkout git mới có hộp kiểm. Hãy tích vào bản của bạn và đăng ký nó.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Một bản checkout chỉ được chấp nhận nếu nó nằm trong một worktree git, có remote `origin` và remote đó trỏ tới một forge được hỗ trợ — github.com, gitlab.com hoặc bitbucket.org. Mọi trường hợp khác đều bị từ chối kèm lý do.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Các kho mã thuộc phạm vi không gian làm việc: đăng ký một bản checkout ở đây sẽ đưa nó vào _không gian làm việc này_. Không có bước liên kết riêng.
 
-## Step 4: Give an agent an adapter and a model
+## Bước 4: Gán bộ điều hợp và mô hình cho một agent
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Mở **Cài đặt → Không gian làm việc → Agent**. Chọn agent `engineer` trong danh sách.
 
-On the **Settings** tab, set:
+Trên tab **Cài đặt**, đặt:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Bộ điều hợp**: `Control Center (built-in)`
+- **Mô hình**: chọn một cái từ nhà cung cấp bạn đã kết nối trong quá trình thiết lập ban đầu
 
-Press **Save changes**.
+Nhấn **Lưu thay đổi**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Trên thực tế, bước này không phải tùy chọn. Chỉ agent CEO kế thừa bộ điều hợp được chọn trong quá trình thiết lập ban đầu; bốn chuyên gia được tạo ra mà không có bộ điều hợp. Chúng quay về **Control Center (built-in)** với mô hình mặc định của Anthropic, nên chúng chỉ chạy nếu bạn đã kết nối một tài khoản Anthropic — và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối.
 
-## Step 5: Send the agent a task
+## Bước 5: Gửi cho agent một tác vụ
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Trong thanh bên, tìm mục **Không gian** và nhấp nút **+**.
+2. Đặt tên cho space, thêm agent `engineer` trong **Thêm agent** rồi tạo nó.
+3. Gõ một tác vụ cụ thể, nhỏ đối với kho mã bạn đã đăng ký và nhấn Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center cấp phát một worktree copy-on-write của các kho mã trong không gian làm việc cho cuộc hội thoại này, lắp ghép một prompt từ vai trò, persona, kỹ năng của agent cùng ngữ cảnh của space rồi điều phối lượt chạy. Bản checkout nguồn của bạn không bao giờ bị đụng tới.
 
-## Step 6: Watch it work
+## Bước 6: Xem nó làm việc
 
-You should see, in order:
+Bạn sẽ thấy, theo thứ tự:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Nút gửi của trình soạn biến thành nút dừng, vì một agent đang làm việc trong cuộc hội thoại này
+- Phần suy luận, các lệnh gọi công cụ và văn bản của agent truyền phát vào bản ghi hội thoại
+- Nút gửi trở lại khi lượt chạy kết thúc
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Sau đó mở **Cài đặt → Không gian làm việc → Agent**, chọn agent và kiểm tra tab **Nhật ký**: một hàng lượt chạy, kèm trạng thái, thời lượng, thời điểm bắt đầu và kết thúc cùng bộ điều hợp mà nó đã chạy trên đó.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Đó là vòng lặp. Mọi thứ khác trong Control Center — đánh giá pull request, quy trình, phiếu, cuộc họp, Slack — đều dựng trên nó.
 
-## Next steps
+## Các bước tiếp theo
 
-- [Your first workspace](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/vi-VN/so-tay/huong-dan/pr-dau-tien/): take an agent's branch through review and merge
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): what an agent is made of
-- [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/): the rest of the agent form
-- [Run an orchestration](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/): one goal, one approval, a generated pipeline
-- [Pair your phone](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): follow the fleet from anywhere
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/): how the desktop, web and phone clients relate to the server
+- [Không gian làm việc đầu tiên của bạn](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/): cùng nội dung nhưng chậm rãi hơn, kèm giải thích về mô hình cô lập
+- [Xem xét pull request đầu tiên](/vi-VN/so-tay/huong-dan/pr-dau-tien/): đưa nhánh của một agent đi qua bước xem xét và merge
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): một agent được cấu thành từ những gì
+- [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/): phần còn lại của biểu mẫu agent
+- [Chạy một điều phối](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi/): một mục tiêu, một lần phê duyệt, một quy trình được sinh ra
+- [Ghép nối điện thoại](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/): theo dõi đội máy từ bất cứ đâu
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/): các máy khách desktop, web và điện thoại liên hệ với máy chủ ra sao

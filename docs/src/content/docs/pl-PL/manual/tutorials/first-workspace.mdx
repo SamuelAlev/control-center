@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Twój pierwszy obszar roboczy
+description: Utwórz obszar roboczy, zarejestruj w nim repozytorium i sam sprawdź granicę izolacji.
 slug: pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Co zbudujesz
 
-By the end of this tutorial, you will have:
+Po ukończeniu tego samouczka będziesz mieć:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Obszar roboczy nazwany po Twoim projekcie
+- Repozytorium Git zarejestrowane w nim
+- Pięciu zasianych agentów, z których jednego skonfigurowałeś na tyle dobrze, by dał się uruchomić
+- Drugi, pusty obszar roboczy, który dowodzi granicy izolacji
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Onboarding utworzył już dla Ciebie obszar roboczy. Ten samouczek tworzy nowy celowo, żebyś zobaczył każdy etap tego procesu.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Zanim zaczniesz, wybierz kopię roboczą Git, która spełnia wszystkie trzy poniższe warunki — krok rejestracji odrzuca wszystko inne:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- znajduje się wewnątrz drzewa roboczego gita
+- ma zdalne repozytorium `origin`
+- to zdalne repozytorium wskazuje na github.com, gitlab.com lub bitbucket.org
 
-## Step 1: Create a workspace
+## Krok 1: Utwórz obszar roboczy
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Kliknij chip obszaru roboczego na pasku tytułu
+2. Wybierz **Dodaj obszar roboczy…**
+3. Wpisz nazwę identyfikującą projekt, na przykład „api-service” albo „frontend-v2”
+4. Opcjonalnie wybierz logo
+5. Kliknij **Dodaj obszar roboczy**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center przełącza się na nowy obszar roboczy i ląduje w jego skrzynce (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Za tym wszystkim serwer publikuje zdarzenie `WorkspaceCreated` i zasiewa obszar roboczy:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- **agentem CEO**, którego persona to koordynacja i delegowanie
+- czterema specjalistami — `qa`, `architect`, `engineer` i `librarian` — z których każdy ma własne instrukcje i skille
+- wbudowanymi szablonami potoków i ich wierszami wyzwalaczy
 
-Every workspace you create gets all of this, not just the first one.
+Każdy utworzony obszar roboczy dostaje to wszystko, nie tylko pierwszy.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Potwierdź to: otwórz **Ustawienia → Obszar roboczy → Agenci**. Na liście jest pięciu agentów, każdy z pustym pierścieniem statusu.
 
-## Step 2: Register a repository
+## Krok 2: Zarejestruj repozytorium
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Przejdź do **Ustawienia → Obszar roboczy → Repozytoria**
+2. Kliknij **Dodaj repozytorium**
+3. Przejdź do swojej kopii roboczej. Okno dialogowe przegląda foldery na maszynie, na której działa `cc_server` — a nie na Twoim kliencie — i nie wychodzi poza katalogi główne, które serwer ma skonfigurowane jako udostępnione (domyślnie katalog domowy jego użytkownika). Kopia robocza gita dostaje odrębną ikonę folderu i pole wyboru; zwykły folder nie dostaje ani jednej, ani drugiego, więc zaznaczyć można tylko kopie robocze.
+4. Zaznacz jedną lub więcej kopii roboczych i zarejestruj całą partię. Zaznaczenia przetrwają podczas nawigacji, więc możesz zebrać kilka w jednym przejściu, a jedno błędne wskazanie nigdy nie gubi pozostałych.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center odczytuje zdalne repozytorium `origin` każdej kopii roboczej, ustala właściciela i repozytorium i tworzy wiersz repozytorium **wewnątrz tego obszaru roboczego**. Nie ma drugiego kroku, który by je łączył: to rejestracja nadaje mu zasięg.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Zarejestrowanie tej samej kopii roboczej później w innym obszarze roboczym tworzy drugi, niezależny wiersz repozytorium z własnym identyfikatorem. Między obszarami roboczymi kopia robocza jest identyfikowana po swojej ścieżce w systemie plików, nigdy po identyfikatorze.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Potwierdź to: repozytorium pojawia się na liście ze swoim `owner/repo` i bieżącą gałęzią.
 
-## Step 3: Make one agent runnable
+## Krok 3: Uczyń jednego agenta uruchamialnym
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+Pięciu agentów, których ten obszar roboczy właśnie zasiał, nie ma adaptera ani modelu. Wysyłanie uruchamia ich na **Control Center (built-in)** i bez ustawionego modelu prosi Anthropic o jego domyślny — działają więc tylko wtedy, gdy masz połączone konto Anthropic, i na modelu, którego nie wybrałeś, jeśli je masz. Onboarding przy pierwszym uruchomieniu zapisuje swój wybór na każdym agencie w pierwszym obszarze roboczym, jednorazowo; obszar roboczy utworzony później startuje ze wszystkimi pięcioma bez ustawień. Ustaw jednego teraz.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Otwórz **Ustawienia → Obszar roboczy → Agenci**
+2. Wybierz `engineer` na liście
+3. Na karcie **Ustawienia** ustaw **Adapter** na `Control Center (built-in)` i wybierz **Model** u dostawcy, którego połączyłeś w **Ustawienia → Serwer → Dostawcy modeli**
+4. Naciśnij **Zapisz zmiany**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Potwierdź to: otwórz agenta ponownie, a oba pola zachowają Twoje wybory.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/pl-PL/podrecznik/poradniki/tworzenie-agenta/) covers the rest of the form.
+Każdy agent ma własny adapter i model, więc powtórz to dla każdego innego agenta, którego zamierzasz używać. [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/) opisuje resztę formularza.
 
-## Step 4: See the isolation boundary
+## Krok 4: Zobacz granicę izolacji
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Utwórz drugi obszar roboczy z chipu na pasku tytułu, dokładnie tak jak w kroku 1. Potem mu się przyjrzyj:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Ustawienia → Obszar roboczy → Repozytoria** jest puste. Repozytorium zarejestrowanego minutę temu tam nie ma.
+- **Ustawienia → Obszar roboczy → Agenci** zawiera pięciu agentów, ale to inne wiersze — adapter ustawiony w kroku 3 przepadł.
+- Lista przestrzeni, zgłoszenia i pamięć są puste.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Nic nie wyciekło, bo nie ma skąd wyciekać: wiersze każdego obszaru roboczego żyją w pliku bazy danych tego obszaru. Odczyt między obszarami roboczymi to nie zapytanie, które poddaje się filtrowaniu, lecz zapytanie, które nie ma gdzie się wykonać. Usunięcie obszaru roboczego to odłączenie pliku.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Przełącz się z powrotem chipem na pasku tytułu albo otwórz **Zarządzaj obszarami roboczymi**, aby zobaczyć je obok siebie.
 
-For the full model, read [Workspaces and isolation](/pl-PL/podrecznik/koncepcje/obszary-robocze/).
+Pełny model znajdziesz w sekcji [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/).
 
-## Recap
+## Podsumowanie
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Utworzyłeś obszar roboczy, zobaczyłeś, jak zasiewa CEO i czterech specjalistów, zarejestrowałeś w nim repozytorium, dałeś jednemu agentowi adapter i model i potwierdziłeś, że drugi obszar roboczy nie dzieli z nim niczego.
 
-**Next:** [Dispatch your first agent](/pl-PL/podrecznik/samouczki/pierwszy-agent/) to put the workspace to work.
+**Dalej:** [Wyślij pierwszego agenta](/pl-PL/podrecznik/samouczki/pierwszy-agent/), aby wziąć obszar roboczy do pracy.

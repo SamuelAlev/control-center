@@ -1,73 +1,74 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: הגדרת אינטגרציית Slack
+description: חברו אפליקציית Slack לסביבת עבודה של Control Center כדי שחברים יוכלו להניע סוכנים מ-Slack.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-slack
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+המדריך הזה מראה לכם איך לחבר את Slack לסביבת עבודה של Control Center, בין אם לתת ל-Control Center ליצור את האפליקציה ובין אם לבנות אותה בעצמכם.
 
-For a guided first run, see [Bridge Slack to your workspace](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/).
+להרצה ראשונה מודרכת, ראו [חברו את Slack לסביבת העבודה](/he-IL/מדריך-למשתמש/מדריכים/גשר-הצאט-הראשון/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack הוא ספק הצ'אט היחיד]
+הגשר נכתב בלי תלות בספק, מעצם הבנייה שלו — ממשק שמונע על ידי מתאר מעל
+מתאם אחד לכל ספק — אבל Slack הוא המתאם היחיד שקיים. אין מימוש של Discord,
+Telegram, Teams או Matrix.
 :::
 
-## Prerequisites
+## דרישות מקדימות
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- התפקיד `owner` או `admin` בסביבת העבודה ב-Control Center — חיבור אפליקציית צ'אט הוא שינוי בהגדרות סביבת העבודה
+- הרשאה ליצור ולהתקין אפליקציות בסביבת העבודה ב-Slack
+- שום דבר נגיש לציבור: החיבור יוצא החוצה (Socket Mode), ולכן השרת אינו זקוק לפורט נכנס, למנהרה או לדומיין
 
-## Three ways to get the app
+## שלוש דרכים להשיג את האפליקציה
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| מסלול              | אתם מספקים                              | Control Center עושה                                                                                                        |
+| ------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **מודרך**          | אסימון גישה של תצורת האפליקציה (`xoxe-…`) | יוצר את האפליקציה עם ההיקפים, האירועים, ה-Socket Mode ופקודת הסלאש הנכונים; ומעביר לכם את שני השלבים שאין להם API ב-Slack     |
+| **יצירה ב-Slack**  | כלום                                    | פותח את Slack עם אותה תצורה ממולאת מראש; אתם בוחרים סביבת עבודה ומאשרים                                                      |
+| **ביד**            | האסימונים של האפליקציה המוגמרת           | מאמת אותם ומתחבר                                                                                                           |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+המסלול המודרך הוא היחיד שמשאיר את האפליקציה גם _ניתנת לניהול_ מ-Control Center, וזה מה שמאפשר את [התאמת בוט הצ'אט](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/). אפליקציה שנוצרה ב**יצירה ב-Slack** יכולה להתקדם בהמשך לאפליקציה מנוהלת על ידי הדבקת אסימון תצורה בדיאלוג החיבור.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+בכוונה אין כפתור "התקינו את אפליקציית ה-Slack של Control Center". התקנה של אפליקציית Slack מופצת דורשת סוד לקוח משותף (ל-Slack אין PKCE), וה-Socket Mode מפזר את האירועים של אפליקציה באקראי בין החיבורים שלה — כך שאפליקציה משותפת אחת הייתה מעבירה את ההודעות של סביבת העבודה שלכם לשרתים של אנשים אחרים. לכן כל סביבת עבודה מחזיקה אפליקציה משלה, ושלושת המסלולים האלה עוסקים בכמה מעט עבודה זה עולה לכם.
 
-## Option A: let Control Center create the app
+## אפשרות א׳: לתת ל-Control Center ליצור את האפליקציה
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. הפיקו זוג אסימוני תצורה לאפליקציה ב-[api.slack.com/apps](https://api.slack.com/apps) והעתיקו את אסימון ה**רענון** (`xoxe-…`)
+2. ב-Control Center, עברו אל **הגדרות ← סביבת עבודה ← כללי** וגללו אל הכרטיס **גשרי צ'אט**
+3. בחסימת Slack, לחצו על **יצירת האפליקציה עבורי**
+4. הדביקו את האסימון, עדכנו את שם האפליקציה, שם הבוט, התיאורים ופקודת הסלאש, ואז לחצו על **יצירת אפליקציה**
+5. השלימו את שני השלבים שנותרו, שכל אחד מהם מוצג בדיאלוג כקישור אל Slack:
+   - **Basic Information → App-Level Tokens**: הפיקו אסימון עם ההיקף `connections:write` (`xapp-…`)
+   - **Install App**: התקינו בסביבת העבודה והעתיקו את **Bot User OAuth Token** (`xoxb-…`)
+6. לחצו על **הדבקת פרטי הגישה** והמשיכו אל [חיבור](#חיבור)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+אסימון התצורה מתחלף בכל שימוש. Control Center שומר את הערך המוחלף תוך כדי, כך שלעולם לא תצטרכו להדביק אותו שוב.
 
-## Option B: create it in Slack, pre-filled
+## אפשרות ב׳: ליצור אותה ב-Slack, ממולאת מראש
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+אותה אפליקציה, בלי אסימון תצורה — Slack מציג לכם את מסך היצירה שלו עצמו עם כל ה-manifest כבר ממולא.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. ב-Control Center, עברו אל **הגדרות ← סביבת עבודה ← כללי** וגללו אל הכרטיס **גשרי צ'אט**
+2. בחסימת Slack, לחצו על **יצירת האפליקציה עבורי**
+3. עדכנו את שם האפליקציה, שם הבוט, התיאורים ופקודת הסלאש — אלה עוברים יחד עם הקישור
+4. לחצו על **יצירה ב-Slack**. הדפדפן שלכם פותח את עמוד יצירת האפליקציה של Slack עם התצורה ממולאת מראש
+5. בחרו את סביבת העבודה ב-Slack ואשרו. ההיקפים, האירועים, ה-Socket Mode ופקודת הסלאש כבר נכונים
+6. חזרה ב-Control Center, השלימו את שני השלבים שנותרו שמוצגים בדיאלוג:
+   - **Basic Information → App-Level Tokens**: הפיקו אסימון עם ההיקף `connections:write` (`xapp-…`)
+   - **Install App**: התקינו בסביבת העבודה והעתיקו את **Bot User OAuth Token** (`xoxb-…`)
+7. לחצו על **הדבקת פרטי הגישה** והמשיכו אל [חיבור](#חיבור)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack אינו מדווח איזו אפליקציה הוא יצר, ולכן Control Center אינו לומד את מזהה האפליקציה והקישורים בשלב 6 מובילים לרשימת האפליקציות שלכם ולא ישירות אל אותה אפליקציה. **התאמת הבוט** דורשת אסימון תצורה.
 
-## Option C: build the app yourself
+## אפשרות ג׳: לבנות את האפליקציה בעצמכם
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+צרו אפליקציה ב-[api.slack.com/apps](https://api.slack.com/apps), ואז הגדירו אותה כך.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: הפעילו אותו והשאירו כל כתובת URL של בקשה ריקה. Slack דוחה manifest שמבקש גם Socket Mode וגם מסירה ב-webhook.
 
-**Bot token scopes** (OAuth & Permissions):
+**היקפי אסימון הבוט** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +82,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**מינויי אירועים** (אירועי בוט):
 
 ```text
 app_home_opened
@@ -91,134 +92,133 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` ו-`message.groups` הם מה שמאפשר ל_תשובה_ בתוך שרשור Slack שכבר מגושר לעבוד. בלעדיהם, רק האזכור הראשון מגיע.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**פקודת סלאש**: `/cc` (כל שם יעבוד — הגשר משתמש בפקודה שאיתה הופעל לאחרונה).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: הפעילו את לשונית ההודעות והשאירו אותה ניתנת לכתיבה, כדי שחברים יוכלו לשלוח הודעה ישירה לבוט.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**אסימונים**: הפיקו אסימון ברמת האפליקציה עם `connections:write`, ואז התקינו את האפליקציה והעתיקו את אסימון ה-OAuth של משתמש הבוט.
 
-## Connect
+## חיבור
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. עברו אל **הגדרות ← סביבת עבודה ← כללי** וגללו אל הכרטיס **גשרי צ'אט**
+2. בחסימת Slack, לחצו על **חיבור Slack**
+3. מלאו את השדות:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| שדה                                            | ערך     | היכן הוא נמצא ב-Slack                                      |
+| ---------------------------------------------- | ------- | ---------------------------------------------------------- |
+| **אסימון OAuth של משתמש הבוט**                 | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
+| **אסימון גישה ברמת האפליקציה**                 | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
+| **אסימון רענון של תצורת האפליקציה** (אופציונלי) | `xoxe-…` | זוג אסימוני התצורה של האפליקציה ב-api.slack.com/apps       |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+הקידומת של כל ערך נבדקת בשני הצדדים לפני ששולחים משהו, ולכן ערך שהודבק
+בתיבה הלא נכונה נדחה באותה הודעה בשני המקרים.
 
-4. Click **Connect**
+4. לחצו על **התחברות**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center מאמת את אסימון הבוט עם `auth.test` של Slack _לפני_ שהוא שומר משהו, כך ששגיאת הקלדה מדווחת לכם במקום להפוך ל-socket שפשוט לא עובד בשקט. את האסימון ברמת האפליקציה אפשר להוכיח רק בפתיחת ה-socket, ולכן אסימון שגוי מופיע רגע לאחר מכן כשגיאת חיבור על אותה שורה.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+בלי אסימון הרענון של תצורת האפליקציה (האופציונלי), החיבור עובד מצוין — רק לא תוכלו לערוך את הבוט מ-Control Center.
 
-## What connecting does
+## מה עושה החיבור
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- שומר את פרטי הגישה בתיקייה של סביבת העבודה עצמה, לצד מסד הנתונים שלה, בקריאה של הבעלים בלבד. הם לעולם אינם נוסעים חזרה אל לקוח
+- פותח חיבור Socket Mode אחד עבור סביבת העבודה הזו ומתחיל לקבל אזכורים, תשובות בשרשור Slack, הודעות ישירות ופקודות קו נטוי
+- מחמש מחדש כל שרשור Slack שגושר קודם, כך שחיבור מחדש ממשיך שיחות קיימות במקום לנטוש אותן
+- לא עולה דבר עבור סביבות עבודה בלי אפליקציית צ'אט: אין socket, אין טיימרים, אין תעבורה
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[היכן יושבים האסימונים ולמה לא במחזיק המפתחות]
+פרטי הגישה של הבוט הם קובץ JSON רגיל אחד לכל ספק בנתיב
+`<dataDir>/<workspaceId>/chat_credentials/`, שנכתב באופן אטומי ומוצר להרשאת
+בעלים בלבד. זה מכוון, לא מחדל: מחיקת סביבת עבודה מסירה את הקישור לתיקייה הזו
+כך שהאסימונים שלה הולכים איתה, ו-`workspace.export` וגיבויים מעתיקים
+`workspace.db` — לא את התיקייה — כך שסביבת עבודה שאתם מוסרים למישהו אחר אינה
+נושאת בתוכה אסימוני בוט חיים. התוצאה הנלווית היא ששחזור סביבת עבודה במקום אחר
+מחייב לחבר שם את Slack מחדש.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+הגישה לגשר היא **חברות** בסביבת העבודה, ולעולם לא החזקה באסימון. חשבון Slack
+חייב להיות מקושר למשתמש Control Center שהוא חבר עם תפקיד כתיבה. חיבור, ניתוק,
+הקמה מודרכת, קישור ההקמה והתאמת הבוט — כולם מוגבלים למנהלים.
 :::
 
-## Verify
+## אימות
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+שורת ה-Slack מציגה תג מצב: **פעיל**, **מתחבר…**, **שגיאת חיבור** (כשהשגיאה של Slack עצמו מוצגת לצידו), או **לא מחובר**. כדי לבדוק מקצה לקצה:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. ב-Slack, הזמינו את הבוט לערוץ: `/invite @your-bot-name`
+2. אזכרו אותו עם בקשה
+3. תשובה מופיעה בשרשור ב-Slack ומרחב תואם מופיע ב-Control Center
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/).
+כל חבר שרוצה להשתמש בגשר מקשר אחר כך את החשבון שלו — ראו [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/).
 
-## What a reply looks like in Slack
+## איך נראית תשובה ב-Slack
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+מעל המילים המוזרמות יושב כרטיס מקובץ אחד, עם שורה לכל שלב. ההקמה היא שורה אחת שכותרתה נעה מ-`Working on it…` אל `Cloning …` ואל `Starting the agent…`. החשיבה מוסיפה שורת `Thinking…`; כשהשלב הזה מסתיים, מחשבה קצרה יכולה להופיע עליה. כל כלי הוא שורה משלו (`Read lib/main.dart`). התשובה מגיעה כטקסט רגיל מתחת לכרטיס. הכרטיס הופך למושלם כשהתור מסתיים, ולשגיאה כשההרצה נכשלה, נקטעה, או הגיעה למגבלת התורות.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+הכרטיס מתחיל ברגע שהבוט מקבל את האזכור — `Working on it…` — כך ששרשור ה-Slack אינו שותק בזמן שסביבת העבודה עוד נבנית. האזכור הראשון שלכם בערוץ Slack יוצר את השיחה, וזו משכפלת את המאגרים שהסוכן עובד בהם, ולכן שורת ההקמה הזו מציגה אז `Cloning acme/widgets…`, אחר כך `Setting up Reviewer…`, אחר כך `Starting the agent…`, ואז שורת `Thinking…` ברגע שהסוכן באמת חושב. במאגר גדול ההקמה הראשונה הזו נמשכת זמן מה; הכרטיס הוא הדרך לדעת שהוא עובד ולא מתעלם מכם. אזכורים מאוחרים יותר באותו שרשור Slack עדיין נפתחים ב-`Working on it…`, ואז מדלגים על שלבי השכפול כי סביבת העבודה כבר קיימת.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+החשיבה כקיר של טקסט ופלט כלים אינם יוצאים לעולם מ-Control Center — המחשבה על שורת ה-`Thinking…` היא שורה קצרה, לא תמליל. **View in Control Center** על הכרטיס פותח את השיחה המלאה באפליקציית שולחן העבודה — הקישור מוביל לשרת ה-Control Center שלכם עצמכם, והוא מעביר את הדפדפן לאפליקציה.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+אם לא קורה דבר בלחיצה, ייתכן שהשרת ששלח את ההודעה אינו נגיש מהמכונה שלחצתם ממנה (למשל שרת שמוגבל ל-loopback שנלחץ מהטלפון), או ש-Control Center אינו רץ שם. שרת בלי כתובת נגישה שולח כרטיס בלי כפתור, ולא כרטיס שמוביל לשומקום.
 
-## Rotate a token
+## החלפת אסימון
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+הדביקו מחדש את הערך החדש בדיאלוג החיבור ולחצו על **התחברות**. חיבור מחליף כל חיבור שהיה פעיל עבור סביבת העבודה הזו, ולכן ה-socket מחובר מחדש עם פרטי הגישה החדשים.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+שני האסימונים הנדרשים חייבים להיות נוכחים בכל חיבור. אסימון הרענון של תצורת האפליקציה (האופציונלי) שומר על הערך השמור שלו כשאתם משאירים את התיבה ריקה, כך שהחלפת אסימון בוט אינה עולה לכם ביכולת לערוך את האפליקציה.
 
-## Disconnect
+## ניתוק
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+לחצו על **ניתוק** בשורת ה-Slack (מנהלים בלבד). ה-socket נסגר ופרטי הגישה נשכחים.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+קישורי מרחבים ומשתמשים שורדים בכוונה: חיבור מחדש של אותה אפליקציה משחזר כל שרשור Slack מגושר. אלה רשומות שמוגבלות לסביבת העבודה, כך שמחיקת סביבת העבודה מסירה אותן בכל מקרה.
 
-## Troubleshooting
+## פתרון תקלות
 
-### The row says "Connection error"
+### השורה מציגה "שגיאת חיבור"
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+קראו את השגיאה שמוצגת לצד התג. פרטי גישה שנדחו (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) הם סוף הדרך — הגשר מפסיק לנסות שוב וממתין לאסימונים חדשים, כי ניסיון חוזר אינסופי עם אסימון שבוטל רק יזכה אתכם בהגבלת קצב. הדביקו את האסימונים מחדש בדיאלוג החיבור.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+שגיאה מסוג `missing_scope` פירושה שהאפליקציה מותקנת עם פחות היקפים ממה שהגשר צריך. הוסיפו את ההיקף החסר, התקינו את האפליקציה מחדש ב-Slack, ואז התחברו מחדש.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+כל דבר חולף (socket שנפל, תקלה קלה ב-Slack) מתחבר מחדש מעצמו עם השהיה מעריכית שמוגבלת ל-30 שניות, וסבב החלפת ה-socket השגרתי של Slack אינו מחמיר את ההשהיה הזו.
 
-### The bot does not answer a mention
+### הבוט אינו עונה לאזכור
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **האם הבוט נמצא בערוץ?** Slack מעביר הודעות ערוץ רק לאפליקציות שהן חברות בו. הריצו `/invite @your-bot-name`
+- **האם אתם מקושרים?** חבר שאינו מקושר מקבל תשובה באותו שרשור Slack שמסבירה איך לקשר. ראו [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
+- **האם אתם חברים בסביבת העבודה עם תפקיד כתיבה?** ל-`viewer` או `guest` נאמר שהתפקיד שלו לקריאה בלבד. הגשר לעולם אינו מתחיל עבודה בשם מי שהוא אינו יכול לייחס
+- **האם יש בסביבת העבודה סוכנים?** בלי סוכנים, ההודעה נשמרת אבל אין מי שיענה עליה
 
-### It answers in a channel but ignores plain messages
+### הוא עונה בערוץ אבל מתעלם מהודעות רגילות
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+זה מכוון. מחוץ להודעה ישירה, הגשר פועל רק על הודעה שמאזכרת את הבוט, או על תשובה בתוך שרשור Slack שהוא כבר מחזיק בו. כל השאר הוא השיחה של אנשים אחרים.
 
-### Replies arrive as one big message instead of streaming
+### תשובות מגיעות כהודעה גדולה אחת במקום בזרימה
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+השורה מציגה "הזרמה חיה כבויה לאפליקציית ה-Slack הזו — תשובות מגיעות כהודעה אחת". התשובות המוזרמות של Slack דורשות את תכונת Agents & AI Apps בתוכנית בתשלום; כש-Slack מסרב לה, הגשר מפסיק לבקש אותה לשארית חיי החיבור הזה ומפרסם תשובות שלמות במקום. שום דבר אינו הולך לאיבוד — התמליל המלא תמיד נמצא ב-Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+הזרמה דורשת גם עוגן של שרשור ב-Slack, ולכן תשובה שאין לה שרשור Slack לגדול בו מפורסמת כשהיא שלמה. כרטיס המשימה מגיע בכל מקרה: בתשובה שלמה הוא נוסע על אותה הודעה, כשהוא כבר מוגמר.
 
-### The reply has no card above it
+### אין כרטיס מעל התשובה
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+כרטיסי המשימה של Slack הם חלק מאותו משטח חדש של Agents & AI Apps כמו ההזרמה, ו-Slack מסרב רק בזמן הקריאה. כשזה קורה, Control Center שומר על התשובה ומשליך את הכרטיס לשארית חיי החיבור הזה — תשובה בלי שורת מצב עדיפה על שורת מצב בלי תשובה.
 
-### "Control Center needs an app configuration token to edit the bot"
+### "Control Center זקוק לאסימון גישה לתצורת האפליקציה כדי לערוך את הבוט"
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+השורה **התאמת הבוט** מושבתת כי לחיבור אין אסימון גישה לתצורת האפליקציה. זה מצופה מאפליקציה שנעשתה ביד או דרך **יצירה ב-Slack** — Slack מעולם לא סיפר ל-Control Center איזו אפליקציה זו. הפיקו זוג אסימונים ב-api.slack.com/apps והתחברו מחדש כשאסימון הרענון מלא.
 
-### A long answer is cut off
+### תשובה ארוכה נחתכת
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack מגביל הודעה בודדת ל-40,000 תווים, ולכן הגשר חותך ב-39,000 ומוסיף הפניה ל-Control Center — תשובה מקוצרת עדיפה על תשובה ש-Slack דוחה על הסף. הטקסט המלא נמצא תמיד בתמליל המרחב.
 
-## Related guides
+## מדריכים קשורים
 
-- [Link your Slack account](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
-- [Customize the chat bot](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
-- [Chat bridge](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
+- [קישור חשבון Slack](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/קישור-חשבון-צאט/)
+- [התאמת בוט הצ'אט](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/התאמת-בוט-הצאט/)
+- [גשר צ'אט](/he-IL/מדריך-למשתמש/עזר/גשר-צאט/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)
+- [גשרי צ'אט](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/)

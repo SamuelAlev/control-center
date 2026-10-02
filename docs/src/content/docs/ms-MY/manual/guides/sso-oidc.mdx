@@ -1,95 +1,103 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Sambungkan pembekal OpenID Connect
+description: Sambungkan mana-mana penerbit OIDC — Pocket ID, Keycloak, Auth0, Zitadel — kepada log masuk Control Center.
 slug: ms-MY/manual-pengguna/panduan-cara/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Gunakan panduan ini apabila pembekal identiti anda menggunakan **OpenID
+Connect** dan bukan SAML. Mana-mana penerbit yang diperakui OIDC boleh
+digunakan — Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace dan
+sebagainya semuanya mengikut langkah yang sama; hanya tempat pembekal anda
+memaparkan nilai itu berbeza.
 
-## Prerequisites
+## Prasyarat
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- pembekal OIDC tempat anda boleh mencipta klien — catat **id klien** dan
+  **URL penerbit**nya (asas yang menempatkan dokumen
+  `.well-known/openid-configuration`), serta **rahsia klien**nya apabila klien
+  itu jenis sulit (klien PKCE awam tidak mempunyainya),
+- pelayan Control Center yang anda tadbir (**pemilik pelayan**).
 
-## Steps
+## Langkah
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. Buka **Tetapan → Pelayan → Daftar masuk tunggal** dan tukar kepada
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. Isi **URL penerbit**, **Client ID** dan **Rahsia klien (pilihan)** apabila
+   pembekal mengeluarkannya. Control Center menemui titik akhir daripada
+   dokumen penemuan standard penerbit — tiada konfigurasi mengikut pembekal.
+3. Di pihak pembekal, daftarkan ubah hala
+   `https://<your-server>/oidc/callback` pada klien itu.
+4. Jika kumpulan anda berada di bawah tuntutan selain `groups`, tetapkan nama
+   **Tuntutan kumpulan**; petakan kumpulan kepada peranan jika anda mahu (SSO
+   tidak pernah boleh memberikan peranan pemilik).
+5. Pilih polisi keahlian (tambah automatik ke setiap ruang kerja, atau
+   wajibkan jemputan bagi setiap ruang kerja), hidupkan **Gunakan OpenID
+   Connect untuk log masuk** dan tekan **Simpan sambungan**.
+6. Tekan **Uji sambungan** — pelayan mengambil dokumen penemuan penerbit dan
+   mengesahkan titik akhirnya, jadi toast hijau bermakna semuanya berfungsi
+   kecuali perjalanan pergi-balik penyemak imbas. Untuk menyemak pendaftaran
+   klien juga, gunakan
+   [pemeriksa di bawah](#semak-konfigurasi-anda-dari-halaman-ini).
+7. Lakukan satu log masuk: skrin sambungan web memaparkan **Log masuk dengan
+   OpenID Connect**, atau buka `https://<your-server>/oidc/login` secara
+   terus.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Tuntutan (e-mel, nama, kumpulan) dibaca daripada titik akhir token penerbit
+melalui TLS oleh pelayan anda — penyemak imbas tidak pernah membekalkannya,
+jadi tiada pengesahan tandatangan JWT setempat terlibat. Klien harus
+dibenarkan meminta skop `openid profile email`, iaitu tepat apa yang diminta
+oleh Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Oleh sebab saluran TLS itu satu-satunya perkara yang mengesahkan tuntutan,
+URL penerbit mesti **https** — penerbit teks biasa akan membenarkan mana-mana
+penyerang dalam laluan memalsukan identiti secara pukal. `http` diterima
+untuk penerbit loopback (`localhost`, `127.0.0.1`, `::1`) sahaja, untuk
+pembangunan setempat.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Klien awam atau klien sulit?]
+Bentuk lalai — dan disyorkan — ialah **klien awam** yang menggunakan aliran
+kod kebenaran dengan **PKCE** (RFC 7636): pengesah kod sekali guna yang
+dipegang oleh pelayan menggantikan rahsia itu dan pertukaran token terikat
+pada permintaan kebenaran yang memulakannya. Tiada rahsia untuk bocor dan
+kod kebenaran yang dicuri tidak berguna tanpa pengesah itu. Sesetengah
+pembekal menamakan jenis klien ini "SPA" atau "native" semasa anda
+menciptanya.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Jika pembekal anda mengeluarkan klien **sulit** sebaliknya, sama ada tandakan
+klien itu sebagai awam di pihak pembekal (PKCE kekal hidup dalam kedua-dua
+kes), atau tampalkan rahsia klien ke dalam medan **Rahsia klien (pilihan)**
+sambungan itu. Rahsia itu disimpan dalam fail rahsia 0600 pelayan (tidak
+pernah dalam pangkalan data), dihantar ke titik akhir token sebagai
+`client_secret_post` dan tidak pernah dikembalikan melalui RPC; membiarkan
+medan itu kosong semasa menyimpan mengekalkan rahsia yang tersimpan. Apabila
+log masuk gagal pada pertukaran token, log pelayan menamakan ralat pembekal
+itu sendiri (`invalid_client` hampir selalu bermakna rahsia itu hilang atau
+salah).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ms-MY/manual-pengguna/panduan-cara/sso-scim).
+:::note[Kebolehcapaian]
+Log masuk itu sendiri diperantarakan penyemak imbas: penerbit hanya mengubah
+hala penyemak imbas pengguna kembali ke `/oidc/callback` dan pelayan anda
+membuat panggilan HTTPS keluar ke titik akhir token — tiada sambungan masuk
+daripada penerbit diperlukan, jadi pelayan di belakang NAT berfungsi selagi
+penyemak imbas pengguna dapat mencapainya (LAN, VPN, Tailscale atau
+terowong). **Peruntukan SCIM ialah pengecualian**: IdP memanggil pelayan
+anda secara terus, yang memerlukan terowong atau URL awam — lihat
+[peruntukkan pengguna dengan SCIM](/ms-MY/manual-pengguna/panduan-cara/sso-scim).
 :::
 
-## Check your configuration from this page
+## Semak konfigurasi anda dari halaman ini
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Pemeriksa di bawah berjalan dalam penyemak imbas anda. Ia mengambil dokumen
+penemuan penerbit anda secara terus, jadi tapak ini tidak pernah melihatnya,
+dan menggunakan peraturan pelayan: penerbit https yang sepadan dengan dokumen
+itu, titik akhir pada asalan penerbit itu sendiri, PKCE S256 dan kaedah
+pengesahan token yang diperlukan oleh jenis klien anda. Dengan ID klien dan
+alamat pelayan, ia boleh membuka log masuk ujian yang menunjukkan sama ada
+klien itu dan URI ubah halanya didaftarkan. Ia tidak pernah meminta rahsia
+klien.
 
 <SsoCheck kind="oidc" />

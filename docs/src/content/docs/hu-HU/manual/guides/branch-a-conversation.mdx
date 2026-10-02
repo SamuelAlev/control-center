@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Beszélgetés elágaztatása
+description: Próbáljon ki egy másik megközelítést egy korábbi ponttól anélkül, hogy elveszítené a már meglévőt, majd ágaztasson el vagy exportáljon, amit meg szeretne tartani.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/beszelgetes-elagaztatasa
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Ez az útmutató megmutatja, hogyan térjen vissza egy beszélgetés egy korábbi pontjára, és vigye onnan máshová — közben megőrizve az elhagyott útvonalat.
 
-## The one thing worth knowing
+## Az egyetlen dolog, amit érdemes tudni
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Az elágaztatás nem ír semmit.** A beszélgetés üzenetek fája, a csúcsán egy mutatóval, és a visszalépés a mutatót mozgatja. Semmi nem törlődik, semmi nem rejtőzik el, és a visszaváltás is csupán egy újabb mutatómozgatás.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Ezért biztonságos itt egy prompt szerkesztése és újrafuttatása: a válasz, amelyhez hasonlított, még mindig ott van.
 
-## See the branches
+## Az ágak megtekintése
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+A navigátor minden üzenetet felsorol, minden elágazásnál behúzva, az aktuális útvonalat pedig **Ezen az ágon** jelöléssel látja el. Egy soha el nem ágazott beszélgetés ugyanúgy lapos listaként jelenik meg, mint mindig — a navigátor ránézésre semmibe sem kerül, amíg nincs mit navigálni.
 
-Each row offers two actions.
+Minden sor két műveletet kínál.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| Művelet                          | Hatás                                                     |
+| -------------------------------- | --------------------------------------------------------- |
+| **Folytatás innen**              | A mutatót mozgatja. A következő üzenete attól az üzenettől folytatódik. |
+| **Elágazás új beszélgetésbe**    | Az addig az üzenetig vezető útvonalat egy új beszélgetésbe másolja. |
 
-## Branch: try a different approach
+## Elágaztatás: próbáljon ki egy másik megközelítést
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Keresse meg azt az üzenetet, amelytől újra szeretne kezdeni — általában az utolsót, amellyel elégedett volt.
+3. **Folytatás innen.**
+4. Írja be az új promptot.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+A régi folytatás még mindig a fában van; a `/tree` mostantól két útvonalat mutat attól a ponttól, és szabadon válthat közöttük.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Az elhagyott útvonal még mindig ott van]
+Az elágaztatás nem rejt el és nem töröl semmit. A `/tree` minden útvonalat felsorol, az aktuálisat **Ezen az ágon** jelöléssel látja el, és ezzel válthat.
 :::
 
-## Fork: take it somewhere else
+## Elágazás: vigye máshová
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+Az elágazás az útvonalat egy **új beszélgetésbe** másolja ugyanabban a térben. Akkor használja, amikor a két irány továbbra is szétválik, és inkább egymás mellett szeretné látni őket, mint váltogatni.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+A másolat friss üzenetazonosítókat kap. Két beszélgetés, amely osztozna a sorokon, mutatná egymás későbbi üzeneteit — pontosan ezt hivatott megakadályozni az elágazás.
 
-## Revert versus branch
+## Visszavonás és elágaztatás
 
-They are different tools and the difference matters.
+Két különböző eszköz, és a különbség számít.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                     | Visszavonás                                        | Elágaztatás                      |
+| ------------------- | -------------------------------------------------- | -------------------------------- |
+| A későbbi üzenetek  | Elrejtve az átiratból                              | Továbbra is láthatók a `/tree`-ben |
+| A **worktree**      | Visszaáll a kör pillanatképére                     | Érintetlen marad                 |
+| Visszavonás         | A **Visszavonás visszavonása** visszaállítja a köteget | A mutató visszahelyezése         |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+A visszavonás akkor a választás, amikor az ügynök olyan *fájlokat* módosított, amelyeket vissza szeretne kapni. Az elágaztatás akkor, amikor a beszélgetés rossz irányba ment, de a fájlok rendben vannak.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+A visszavonás az ág csúcsát is mozgatja, így a következő üzenete a megfelelő helyről folytatódik, nem egy olyan farokból, amelyet már senki sem lát.
 
-## Take it out of the app
+## Vigye ki az alkalmazásból
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Egy **önálló HTML-fájlt** ír: a teljes beszélgetést összecsukható eszközkártyákkal, amelyek megmutatják, mit kapott és mit adott vissza az egyes hívások. Nincs stíluslap, nincs szkript, nincs képhoszt — működik pendrive-ról, és működni fog öt év múlva is.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Asztali alkalmazás:** `Documents/ControlCenter/exports/`, időbélyeggel ellátva, hogy egy második export ne írja felül az elsőt.
+- **Web:** a böngésző letöltése.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Az átiratot markdownként a vágólapra másolja, az eszközhívásokkal összecsukható blokkokban. Ezt érdemes egy hibajegybe beilleszteni.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+A gondolatmenet szándékosan marad ki: az a modell piszkozatfelülete, egy hibajelentést pedig ember olvas.
 
-## Related
+## Kapcsolódó
 
-- [Conversation history](/hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/hu-HU/kezikonyv/referencia/slash-parancsok/) — `/tree`, `/export`, `/dump`
+- [Beszélgetési előzmények](/hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek/) — miért egy mutatómozgatás a fa, és mit állít vissza valójában a folytatás
+- [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/) — `/tree`, `/export`, `/dump`

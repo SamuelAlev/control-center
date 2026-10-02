@@ -1,113 +1,73 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: オーケストレーション
+description: ひとつの「大きな依頼」が、一度承認するだけでチーム全体のプランになり、それを実行するパイプラインが生成されるまでの仕組みを説明します。
 slug: ja-JP/マニュアル/コンセプト/オーケストレーション
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+単一のエージェントは、ひとつのことなら得意です。しかし、それより大きな依頼もあります。「X の市場を調査してポジショニングドキュメントを書く」「この機能をエンドツーエンドでリリースする」「このモジュールを監査し、見つかった問題を修正する」。**オーケストレーション**は、Control Center がそうした依頼を扱う仕組みです。オーケストレーター（通常はあなたの CEO エージェント）がチーム全体のプランを提案し、あなたがそれを**一度**承認すると、決定論的なマテリアライザーが作業を行うパイプラインに変換します。
 
-It sits between the two existing ways of getting work done:
+これは、作業を進める既存の 2 つの方法の中間に位置します。
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/) |
-| Encode a process you already know, by hand        | A [pipeline template](/ja-JP/マニュアル/コンセプト/パイプライン/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| やりたいこと                               | 使うもの                                                      |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| 1 つのタスクを 1 つのエージェントに任せる  | [スペース内のメッセージ](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/) |
+| すでに知っているプロセスを手作業で定義する | [パイプラインテンプレート](/ja-JP/マニュアル/コンセプト/パイプライン/)        |
+| 目標を伝えて、プランはチームに考えさせる   | **オーケストレーション**                                      |
 
-## The shape of a proposal
+## 提案の形
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+オーケストレーターにゴールを与えると、構造化された
+**`OrchestrationProposal`** が返ってきます。自由形式の文章ではなく、アプリが検証して実行できる型付きのプランです。提案には次のものが含まれます。
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/ja-JP/マニュアル/コンセプト/チケット/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **ゴール**: 高レベルな依頼を言い換えたもの。
+- **ロール**: 作業を行う担当。各ロールは、あなたが選ぶ**既存のエージェント**か、
+  承認時にオーケストレーションが作成する**新規採用**のいずれかです。
+- **サブチケット**: 作業を [チケット](/ja-JP/マニュアル/コンセプト/チケット/) の DAG に分解したもの。
+- **調査** _（任意）_: 最初に実行され、以降のステップに引き継がれる調査フェーズ。
+- **ディスカッション** _（任意）_: 作業を始める前に各ロールが構造化された
+  立場を投稿する、回数に上限のあるラウンド。
+- **統合**: 成果物を生成する最終ステップ。
+- **予算**: 宣言されたコスト上限。
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[予算はあくまで目安です]
+提案のコスト上限は、プランの推定合計と比較され、承認する_前に_承認バーで予算超過のプランにフラグを立てます。実行が始まるとこれを読み取るものは何もないため、予算を超過したオーケストレーションを停止したり失敗させたりはしません。エージェント単位およびワークスペース単位の予算ポリシーは別の仕組みであり、実際に支出を一時停止するのはこちらです。
 :::
 
-## Where you review it
+## どこで確認するか
 
-Two surfaces show the same orchestration.
+同じオーケストレーションを表示するサーフェスは 2 つあります。
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**提案カード**は、プランを生成した会話の中にあります。ライフサイクル全体（提案中、実行中、完了）を通じて再描画される 1 つのメッセージで、そこに承認とキャンセルのアクションが付いています。
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** はエディターです。DAG キャンバス、ノードインスペクター、リビジョンと差分のドロワー、そして見積もりを表示する承認バーを備えています。このカードから直接、エディタータブとして開きます。サイドバーに「プラン」項目は意図的にありません。`/plans` と `/plans/:kind/:id` は共有用のディープリンクとして存在します。
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+承認は**オペレーター専用**です。そのための MCP ツールはありません。エージェントは提案（`propose_orchestration`）、プランの送信（`submit_plan`）、プレイブックのインスタンス化（`run_playbook`）を行えますが、承認できるのは人間だけです。さらに、エージェントが開始したリビジョンは 2 分間のクールダウンでレート制限されるため、再プランのループはフィードを溢れさせる代わりにまとめられます。
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+承認前に変更できるのは、ノードインスペクターが表示する範囲です。サブチケットのタイトル変更や書き換え、所有する**ロール**の変更、依存関係の付け替え、出力スキーマの編集、ノードの完全な削除ができます。構造ノード（調査、ディスカッション、統合）と、すでに実行されたノードは読み取り専用です。エディターからは、ロールを特定の名前付きエージェントに固定することも、予算を編集することもできません。
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+1 つのプランに対する 2 人の編集者は、マージではなく楽観的同時実行制御で解決されます。すべての編集は、それが基づいた `base_revision` を保持します。古いリビジョンに基づく編集は、他人の編集を黙って上書きするのではなく、「the plan moved on」として拒否されます。巻き戻しも削除ではありません。古い提案を新しいリビジョンとして追加するため、リビジョンのタイムラインは増える一方です。
 
-## Honest estimates, or none
+## 誠実な見積もり、なければ「なし」
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+承認バーの見積もりは、ロールごとの実際の完了済み実行履歴から、四分位範囲（p25〜p75）のバンドとして算出されます。コストの合計は見積もり可能なノードを**合計**したものです。所要時間は合計ではなく、DAG を通る**クリティカルパス**です（並列ブランチは重なります）。
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+**完了済み実行履歴がない**ロールのノードは、`sampleSize: 0` と null の範囲を報告します。これはまさにそのとおり、つまり不明として表示され、でっち上げの単一値として表示されることはありません。信頼できない見積もりは、見積もりがないよりも悪いからです。履歴があるノードとないノードが混在する場合、合計は部分的とマークされます。影響範囲は、ノードが `symbol` または `file` の由来参照を宣言している場合にのみ表示されます。それらがないノードは、文章から推測するのではなく「不明」のままです。
 
-## One approval, then deterministic execution
+## 承認は 1 回、その後は決定論的な実行
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/ja-JP/マニュアル/コンセプト/パイプライン/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+これが核心となる考え方です。**エージェントがプランを立て、決定論的な関数が実行します。**
+あなたが承認すると、LLM も I/O も持たない純粋関数である `OrchestrationMaterializer` が、提案を実際の[パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)に変換します。同じ提案と同じ解決済みロールが与えられれば、常に同じ DAG を生成します。これは重要です。生成されたパイプラインは、エンジンがすでに無償で提供しているすべてを継承するからです。再起動をまたぐ中断と再開、クラッシュからの復旧、実行ごとのコストとトークンの集計、そして実行詳細 UI です。
 
-Approval also creates the scaffolding the work needs:
+承認は、作業に必要なスキャフォールドも作成します。
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- 新規とマークされたロールを**採用**します（採用したエージェント id を記録するため、
+  承認途中でクラッシュしても重複採用なしで再開できます）
+- ロールをまとめる**チーム**
+- 親チケットを格納する**プロジェクト**
+- すべてを動かす**パイプラインのテンプレート + 実行**
 
-## The lifecycle
+## ライフサイクル
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +75,36 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
+| ステータス     | 意味                                                                             |
 | -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| `proposed`     | プランの準備が整い、最初の 1 回の承認を待っている                                 |
+| `approved`     | 承認済み。マテリアライズが進行中（採用、チーム、プロジェクト、パイプライン）     |
+| `executing`    | 生成されたパイプラインが実行中: サブチケット、ディスカッション、作業             |
+| `synthesizing` | サブチケットが完了し、統合ステップが成果物を生成している                         |
+| `completed`    | 完了: 親チケットが完了としてマークされ、成果物が共有スペースに投稿される         |
+| `failed`       | マテリアライズに失敗したか、生成されたパイプラインの実行が失敗した               |
+| `cancelled`    | キャンセルされた                                                                 |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+単調増加する**リビジョン**番号が、オーケストレーターがまだ `proposed` の間に提案を改訂するのにあわせてそれを追跡します。アプリは、あなたがどのリビジョンを承認したかを記録します。`propose_orchestration` は、ステータスが `proposed` でなくなると改訂を拒否します。
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+オーケストレーションは常に**親チケット**に対して開始され、1 つのディスカッション**スペース**を共有するため、取り組み全体が単一の作業項目まで追跡でき、チームは 1 つの部屋で会話します。
 
-## What happens when it finishes
+## 完了するとどうなるか
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+常駐リスナーが生成されたパイプラインを監視し、その終端状態をオーケストレーションと親チケットに反映します。そのため、完了と失敗は、あなたがすでに確認している場所に表示されます。オーケストレーション機能は独自の実行エンジンを必要としません。
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+オーケストレーションはいつでもキャンセルできます。キャンセルすると、進行中の作業は破棄されます。
 
 ::::note
-Orchestration builds on [pipelines](/ja-JP/マニュアル/コンセプト/パイプライン/) and
-[tickets](/ja-JP/マニュアル/コンセプト/チケット/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+オーケストレーションは[パイプライン](/ja-JP/マニュアル/コンセプト/パイプライン/)と
+[チケット](/ja-JP/マニュアル/コンセプト/チケット/)の上に成り立ちます。別個のランタイムではなく、
+それらの上に重なる計画と承認のレイヤーです。
 ::::
 
-## See also
+## 関連項目
 
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/): the parent ticket an orchestration is anchored on
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): the roles an orchestration fills or hires
-- [Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
-- [Work in Plan Studio](/ja-JP/マニュアル/ハウツーガイド/plan-studio/)
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/): マテリアライズされたオーケストレーションが実行されるエンジン
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/): オーケストレーションが固定される親チケット
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): オーケストレーションが満たす、または採用するロール
+- [オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+- [Plan Studio で作業する](/ja-JP/マニュアル/ハウツーガイド/plan-studio/)

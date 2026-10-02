@@ -1,34 +1,35 @@
 ---
-title: Set up Linear integration
-description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+title: Linear انضمام سیٹ کریں
+description: سرور پر ایک Linear API کلید محفوظ کریں تاکہ ایجنٹس Linear کو کال کر سکیں، اور نئے ٹکٹس کے لیے Linear کو ٹکٹنگ فراہم کنندہ کے طور پر منتخب کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام
+sourceHash: 53362cf2c41291b25b4672f5bc44abc437bb97a8
 ---
 
-Paste a Linear API key on the server against your user, the same way you connect
-a forge. Tickets, projects, links, collaborators, delegation and assignment all
-work against Control Center's own database with no external service required —
-see [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/).
+سرور پر اپنے صارف کے تحت ایک Linear API کلید پیسٹ کریں، بالکل اُسی طرح جیسے آپ کوئی
+forge جوڑتے ہیں۔ ٹکٹس، پروجیکٹس، لنکس، معاونین، تفویض اور اسائنمنٹ سب Control Center کے
+اپنے ڈیٹا بیس کے خلاف کام کرتے ہیں اور کسی بیرونی سروس کی ضرورت نہیں —
+دیکھیں [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)۔
 
-## Store your Linear key
+## اپنی Linear کلید محفوظ کریں
 
-**Ticketing API key** lives at **Settings → Workspace → General**, on the
-Ticketing card. It stores the key on the server against your user id. The
-server's own key for unattended work comes from `LINEAR_API_KEY` or the
-**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
-agent has the **Allow ticketing API calls** capability.
+**ٹکٹنگ API کلید** **ترتیبات → ورک اسپیس → عام** پر، **ٹکٹنگ** کارڈ میں رہتی ہے۔ یہ
+کلید سرور پر آپ کے صارف id کے تحت محفوظ کرتی ہے۔ بغیر کسی نگرانی کے کام کے لیے سرور کی
+اپنی کلید `LINEAR_API_KEY` یا **فراہم کنندہ ایپس** کارڈ سے آتی ہے، اور صرف اُس وقت
+`TICKETING_API_KEY` کے طور پر داخل کی جاتی ہے جب اُس ایجنٹ کے پاس
+**ٹکٹنگ API کالز کی اجازت دیں** کی قابلیت ہو۔
 
-## Stamp new tickets as Linear
+## نئے ٹکٹس پر Linear کی مہر لگائیں
 
-**Ticketing provider** (onboarding's first step, and
-`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
-`linear` stamps `provider: linear` on tickets you create from then on.
+**ٹکٹنگ فراہم کنندہ** (آن بورڈنگ کا پہلا قدم، اور
+`/workspaces/<workspaceId>/api-keys`) `local` اور `linear` پیش کرتا ہے۔ `linear` چننے پر
+اُس کے بعد آپ جو ٹکٹس بناتے ہیں اُن پر `provider: linear` کی مہر لگ جاتی ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
-- [Set up GitHub integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
-- [Manage API keys](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
+- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
+- [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)
+- [API کلیدیں منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)

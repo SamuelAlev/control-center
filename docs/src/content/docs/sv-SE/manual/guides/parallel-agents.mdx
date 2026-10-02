@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Kör agenter parallellt
+description: Skicka ut flera agenter samtidigt och se till att deras arbete inte krockar.
 slug: sv-SE/handbok/how-to-guider/parallella-agenter
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Den här guiden visar hur du kör flera agenter samtidigt utan att de skriver över varandra.
 
-## The unit of isolation is the space, not the agent
+## Isoleringsenheten är ytan, inte agenten
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+När arbete startar i en yta etablerar Control Center en copy-on-write-utcheckning per registrerat repo under ytans egen rot, på en gren som härleds från arbetsytans mall för grenamn. Varje agent i ytan får sedan en egen arbetskatalog i sitt överlägg — men överläggen **delar** ytans `repos/`-katalog.
 
-So:
+Alltså:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Två agenter i **olika ytor** arbetar i olika utcheckningar, på olika grenar. Det är riktig isolering.
+- Två agenter i **samma yta** arbetar i samma utcheckning, på samma gren. Deras överläggsvägar skiljer sig åt, så dispatchens sökvägslås (som bara serialiserar körningar när de begär exakt samma arbetskatalog) serialiserar dem inte heller. De kan skriva samma filer samtidigt.
 
-The rule that follows: **one space per parallel task.**
+Regeln som följer: **en yta per parallell uppgift.**
 
-## Run tasks in parallel — separate spaces
+## Kör uppgifter parallellt — separata ytor
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Öppna en yta med agent A och skicka en uppgift till den.
+2. Öppna en andra yta med agent B och skicka en annan uppgift till den.
+3. Båda skickas ut direkt, var och en i sin egen ytas utcheckning på sin egen gren.
 
-This is the recipe to use whenever the agents will be editing files.
+Använd det här receptet när agenterna ska redigera filer.
 
-## Work together in one space — several mentions
+## Samarbeta i en yta — flera omnämnanden
 
-In a single space, @-mention more than one agent:
+I en och samma yta kan du @-nämna fler än en agent:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Båda agenterna skickas ut parallellt och strömmar in i samma yta, märkta med avsändare. Eftersom de delar ytans utcheckning använder du det här för samarbete — en som skriver, en som läser, eller två agenter som resonerar om samma träd — inte för två oberoende redigeringar.
 
-## Fan out from a pipeline
+## Utskick från en pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Den inbyggda mallen `pr_review` är det medföljande exemplet på ett utskick: flera granskarnoder körs samtidigt från en enda trigger och en **Consolidate (join)**-nod samlar deras fynd i en rapport. Kör den från pipelines-skärmen så skickas varje granskare ut parallellt.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Pipelineeditorn döljer terminalmarkören och kopplar om den så att den väntar på varje aktiv mottagarnod när du lägger till eller ansluter ett steg, så grenar du ritar själv körs faktiskt.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Att tilldela ett ärende skickar inte ut något]
+Att tilldela en agent ett ärende registrerar ägarskap. Det finns ingen ärendedispatchare — `TicketAssigned` är en revisionssignal och inget arbete startar från den. Det enda undantaget är ett ärende som tilldelas ett _team_, vilket väcker teamets ledare.
 :::
 
-## Watch them run
+## Se dem köra
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observability → Live** (sidofältets sidfot → **Observability**, sedan fliken **Live**) visar arbetsytans agentlista och uppdateras varje sekund: status (körs / overksam / parkerad / avbruten), vad var och en gör, tokens och kostnad för dess senaste körning samt en kontroll för att avsluta en körande process. Att välja en rad fäster en panel med livetranskriptet.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Inställningar → Arbetsyta → Agenter** visar samma lista med en annan statusvokabulär där uppmärksamhet går först, härledd ur varje agents körningshistorik — körs, blockerad, misslyckades, overksam, aldrig körd — sorterad så att allt som kräver uppmärksamhet flyter uppåt. Varje agents flik **Loggar** innehåller dess egen körningshistorik.
 
-Both surfaces are scoped to the active workspace.
+Båda vyerna gäller bara den aktiva arbetsytan.
 
-## Handle conflicts
+## Hantera konflikter
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Mellan ytor ligger varje yta på sin egen gren, så en kollision visar sig som en vanlig Git-mergekonflikt när du slår ihop den andra pull requesten. Lös den som du skulle lösa vilken mergekonflikt som helst.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Inom en och samma yta finns ingen grengräns och inget lås: agenterna skriver samma filer live och den som förlorar skrivs helt enkelt över. Om du kommer på att du vill att två agenter ska redigera i en yta, dela upp arbetet i två ytor i stället.
 
-To reduce collisions either way:
+För att minska kollisioner i båda fallen:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/sv-SE/handbok/how-to-guider/sok-kod/).
-- Review and merge each agent's pull request promptly.
+- Ge varje agent ett eget område — olika filer, olika moduler.
+- Använd kodgrafen för att kontrollera vad en ändring rör innan du skickar ut. Se [Sök kod med kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/).
+- Granska och slå ihop varje agents pull request i tid.
 
-## Resource considerations
+## Resursöverväganden
 
-Each running agent costs:
+Varje körande agent kostar:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- En utcheckning per yta — försumbar på disken så länge copy-on-write är tillgängligt; på Windows en `git worktree`. Om filsystemet inte kan reflinka misslyckas etableringen i stället för att kopiera.
+- En process på servervärden
+- Modelltokens, som ackumuleras per agent
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/sv-SE/handbok/how-to-guider/hantera-kostnader/) for the two commands that do have one.
+Kostnaderna hamnar i **Observability → Insikter**. Observera att en vanlig interaktiv tur inte har någon utgiftsgräns; se [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/) för de två kommandon som har det.
 
-## Related guides
+## Relaterade guider
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Build an agent team](/sv-SE/handbok/how-to-guider/bygg-agentteam/)
-- [Manage costs](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
-- [Add repos to a workspace](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Bygg ett agentteam](/sv-SE/handbok/how-to-guider/bygg-agentteam/)
+- [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
+- [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)

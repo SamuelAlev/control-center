@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: کاوش داده در یک کرنل پایدار
+description: به یک عامل مفسر پایتون یا جاوااسکریپت بدهید که متغیرهایش را میان فراخوانی‌ها نگه دارد، نمودارها را در گفتگو رسم کند و بتواند از داخل یک سلول ابزارهای خودتان را صدا بزند.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/کاوش-داده-در-کرنل
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+این راهنما نشان می‌دهد چطور کاری کنید که یک عامل چیزی پرهزینه را یک بار بارگذاری کند و بعد چند پرسش را روی آن بپرسد، به‌جای اینکه هزینهٔ بارگذاری را برای هر پرسش بپردازد.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+ابزار `eval` یک **مفسر پایدار** را اجرا می‌کند. متغیرها، ماژول‌های واردشده و داده‌های بارگذاری‌شده میان فراخوانی‌ها باقی می‌مانند.
 
-## Why not just run a script
+## چرا فقط یک اسکریپت اجرا نکنیم
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+یک `python -c` یک‌باره، هزینهٔ راه‌اندازی را برای هر پرسش می‌پردازد. بارگذاری یک دیتافریم چند ثانیه و صد مگابایت هزینه دارد و رسم نمودارش میلی‌ثانیه. وقتی هر پرسش هزینهٔ بارگذاری را داشته باشد، عامل پرسش‌های کمتری از آنچه باید می‌پرسد — و هر پاسخ به‌صورت متنی برمی‌گردد که بعداً باید دوباره تجزیه شود.
 
-## Load once, then ask
+## یک بار بارگذاری کن، بعد بپرس
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> `data/runs.csv` را بارگذاری کن و مدت p95 را به تفکیک عامل به من بگو.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+آخرین عبارت همان‌طور که یک نوتبوک بازتاب می‌دهد، چاپ می‌شود؛ بنابراین `len(runs)` بدون `print` تعداد سطرها را گزارش می‌کند.
 
-Then, in a **separate call**:
+سپس، در یک **فراخوانی جداگانه**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` هنوز بارگذاری‌شده است. یک دیتافریم pandas به‌جای repr به‌صورت جدول بازگردانده می‌شود.
 
-## Charts land in the chat
+## نمودارها در گفتگو ظاهر می‌شوند
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+شکل‌ها پس از اجرای سلول ثبت و به‌صورت تصویر بازگردانده می‌شوند و رونوشت آن‌ها را نمایش می‌دهد. شما نمودار را می‌بینید؛ عامل هم می‌بیند.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+شکل‌ها پس از ثبت بسته می‌شوند. شکل جمع‌نشده‌ای دوباره رسم می‌شد و سلول *بعدی* هم آن را دوباره می‌فرستاد؛ بنابراین یک نشست پنج‌سلولی اولین نمودار را پنج بار منتشر می‌کرد.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[نه Jupyter، نه pip، نه مرحلهٔ نصب]
+مفسرِ اجراکننده همان `python3 -u` ساده است که یک پروتکل خطی روی stdio صحبت می‌کند. `display()`، ارسال بستهٔ MIME و ثبت شکل را خودش پیاده‌سازی می‌کند، بنابراین روی هر Python 3 کار می‌کند — از جمله داخل سندباکسی که نصب‌کردن دقیقاً همان چیزی است که آن سندباکس برای جلوگیری از آن وجود دارد.
 :::
 
-## The idioms you would type anyway
+## اصطلاحاتی که به‌هرحال تایپ می‌کردید
 
-These are rewritten into plain code rather than erroring:
+این‌ها به‌جای خطا دادن، به کد ساده بازنویسی می‌شوند:
 
-| You type    | What happens                                        |
+| چیزی که تایپ می‌کنید | اتفاقی که می‌افتد                                    |
 | ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%pip install x` | pip را اجرا می‌کند و سپس **کش ماژول را پاک می‌کند** تا `import` بعدی آن را ببیند |
 | `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| `!command`  | یک زیرفرایند ثبت‌شده                                |
+| `%%bash`    | بقیهٔ سلول به‌عنوان یک اسکریپت شل                    |
+| `%%timeit`  | ۱۰۰۰ اجرای زمان‌سنجی‌شده                             |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+پاک‌کردن کش `%pip` همان چیزی است که اهمیت دارد: نصب‌کردن در یک مفسر زنده برای ماژولی که قبلاً وارد شده هیچ کاری نمی‌کند؛ بنابراین بدون آن، نسخه‌ای که تازه نصب کرده‌اید همان نسخه‌ای نیست که اجرا می‌شود.
 
-## Calling your own tools from inside a cell
+## صدا زدن ابزارهای خودتان از داخل یک سلول
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` دوباره به رجیستری ابزارهای خودِ عامل وارد می‌شود. یعنی یک سلول می‌تواند روی صدها فایل پخش شود، یا کار را از طریق `task` واگذار کند، بدون اینکه مدل برای هر مورد یک نوبت صرف کند.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[پل از کنار گاردریل‌های شما نمی‌گذرد]
+یک فراخوانی پل‌شده در برابر **همان** رجیستری ابزاری حل می‌شود که فراخوانی صادرشده از مدل؛ بنابراین سیاست `ActionClass`، درخواست‌های تأیید و هر پوشش‌دهنده به‌شکل یکسان اعمال می‌شوند. پلی که از کنار رجیستری رد می‌شد، حفره‌ای دقیقاً به شکل «یک خط پایتون بنویس» می‌ساخت.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+یک فراخوانی پل‌شده تا وقتی در جریان است، **مهلت سلول را معلق می‌کند**. این بودجه عدم فعالیت را می‌سنجد، نه ساعت دیواری — سلولی که کار را به زیرعامل‌ها پخش می‌کند و چهار دقیقه منتظر می‌ماند معلق نیست، و کشتن آن در میانهٔ پخش، کل وضعیت کرنل را از دست می‌دهد.
 
-## Starting over
+## شروع از نو
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+مفسر را دور می‌ریزد و یکی تمیز شروع می‌کند. هر چیزی که بارگذاری شده از دست می‌رود، که همین هدف است.
 
-## Where the kernel runs
+## کرنل کجا اجرا می‌شود
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+اگر گفتگو **محفظه‌ای** داشته باشد، در آن؛ در غیر این صورت روی میزبان.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+یک مفسر پایدار که مدلی در حال خواندن یک مخزن نامعتبر آن را می‌راند، دقیقاً همان چیزی است که اجرای صرفاً در محفظه برای آن وجود دارد: یک فراخوانی `bash` یک‌باره دست‌کم پایان می‌یابد، در حالی که کرنل شلی است که به یاد می‌آورد.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/).
+برای رسیدن به آن، محفظه‌ای را **راه‌اندازی نمی‌کند** — همان قاعده‌ای که جلوی خودکار شروع شدن تب ریگ را می‌گیرد. اگر می‌خواهید کرنل در محفظه باشد، ابتدا شل گفتگو را باز کنید. به [به عامل ماشینی برای تست بدهید(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/) نگاه کنید.
 
-## Limits
+## محدودیت‌ها
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **هر کرنل در هر لحظه یک سلول.** دو سلول که در یک مفسر مسابقه بدهند، دو نیمه از دو برنامه‌اند که در یک فضای‌نام در هم بافته شده‌اند.
+- **خروجی سقف دارد.** سلولی که در حلقهٔ print است، به‌جای اینکه پنجرهٔ بافت را پر کند، بریده می‌شود.
+- **چهار تصویر در هر سلول.** یک حلقهٔ رسم می‌تواند در هر تکرار یک شکل منتشر کند، و هر تصویر در درخواستی که آن را حمل می‌کند یک هزینهٔ ثابت سنگین است.
+- **کرنل با پایان اجرا می‌میرد.** کرنلی که پس از پایان گفتگو هنوز دیتافریمی را نگه داشته باشد، یک نشت است.
 
-## Related
+## مرتبط
 
-- [Sandbox and security](/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) — what "enclosed" means here
-- [Give an agent a machine to test on](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/) — opening the enclosure
-- [Built-in agent tools](/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — the arguments
+- [سندباکس و امنیت(/fa-IR/راهنمای-کاربر/مفهومها/سندباکس-و-امنیت/) — اینکه «در محفظه بودن» در اینجا یعنی چه
+- [به عامل ماشینی برای تست بدهید(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/استفاده-از-ریگها/) — باز کردن محفظه
+- [ابزارهای داخلی عامل(/fa-IR/راهنمای-کاربر/مرجع/ابزارهای-عامل/) — آرگومان‌ها

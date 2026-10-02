@@ -1,128 +1,143 @@
 ---
-title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
+title: Calendar și programare
+description: Cum sincronizează Control Center Google Calendar pe server, de ce autentificarea este o autorizare prin cod de dispozitiv și ce acoperă domeniul de citire.
 slug: ro-RO/manual/concepte/calendar
+sourceHash: e0c5432fd6ab565c01b3e316d9ce4bdeb53f06bd
 ---
 
-Control Center connects to Google Calendar so your day sits alongside your
-fleet. It syncs your events, shows them in month, week, day and agenda views,
-warns you before a meeting starts and turns any event into a recorded,
-summarized [meeting](/ro-RO/manual/concepte/intalniri/).
+Control Center se conectează la Google Calendar, astfel încât ziua ta stă
+alături de flota ta. Îți sincronizează evenimentele, le afișează în vizualizările
+de lună, săptămână, zi și agendă, te avertizează înainte să înceapă o întâlnire
+și transformă orice eveniment într-o [întâlnire](/ro-RO/manual/concepte/intalniri/)
+înregistrată și rezumată.
 
-## What it changes on Google
+## Ce schimbă în Google
 
-Almost nothing. The integration pulls events in and renders them. It does not
-create, edit, delete, or respond to invitations. Every device-code connect,
-built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
+Aproape nimic. Integrarea preia evenimentele și le afișează. Nu creează, nu
+editează, nu șterge și nu răspunde la invitații. Fiecare conectare prin cod de
+dispozitiv, integrată sau cu acreditările tale, solicită `calendar.readonly`
+plus `openid email`.
 
-Events are synced into the workspace's own database **on the server**
-(`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
-No client holds a Google credential.
+Evenimentele sunt sincronizate în baza de date proprie a spațiului de lucru
+**pe server** (`<dataDir>/<workspaceId>/workspace.db`) și sunt afișate de fiecare
+client prin RPC. Niciun client nu deține o acreditare Google.
 
-## Per-workspace accounts
+## Conturi pe spațiu de lucru
 
-Calendar accounts are workspace-scoped, like everything else in Control Center.
-Each [workspace](/ro-RO/manual/concepte/spatii-de-lucru/) connects its own Google account
-(or several) and one workspace's events and tokens are never visible from
-another. Switching workspaces switches which calendars you see.
+Conturile de calendar aparțin spațiului de lucru, ca tot restul din Control
+Center. Fiecare [spațiu de lucru](/ro-RO/manual/concepte/spatii-de-lucru/) își
+conectează propriul cont Google (sau mai multe), iar evenimentele și tokenurile
+unui spațiu de lucru nu sunt niciodată vizibile din altul. Schimbarea spațiului
+de lucru schimbă și calendarele pe care le vezi.
 
-A workspace can connect **multiple** Google accounts, such as a work account and
-a personal one and their events are merged into the same views.
+Un spațiu de lucru poate conecta **mai multe** conturi Google, de exemplu un cont
+de serviciu și unul personal, iar evenimentele lor sunt comasate în aceleași
+vizualizări.
 
-## Why sign-in is a device code
+## De ce autentificarea este un cod de dispozitiv
 
-The headless `cc_server` has no browser to catch an OAuth redirect. So it does
-not use one: it authorizes with the **device-code grant** (RFC 8628). The server
-shows a short user code and a Google URL, you approve on any device that has a
-browser and the server polls until you do. A headless install can connect an
-account precisely because there is no redirect endpoint to host.
+`cc_server` rulează fără interfață grafică și nu are un browser care să
+intercepteze o redirecționare OAuth. Așa că nu folosește una: autorizează cu
+**autorizarea prin cod de dispozitiv** (RFC 8628). Serverul afișează un cod de
+utilizator scurt și un URL Google, tu aprobi de pe orice dispozitiv care are un
+browser, iar serverul așteaptă până aprobi. O instalare fără interfață grafică
+poate conecta un cont exact pentru că nu există niciun punct final de
+redirecționare de găzduit.
 
-The consequence to know before you bring your own credentials: the client type
-must be Google's "TV and Limited Input devices". Google only grants an
-allow-listed set of scopes to that client type and a project where Calendar is
-not permitted for it fails with `invalid_scope` — you would need a loopback or
-web client instead.
+Consecința pe care trebuie să o știi înainte să-ți aduci propriile acreditări:
+tipul de client trebuie să fie "TV and Limited Input devices" al Google. Google
+acordă acelui tip de client doar un set de domenii aflate pe o listă de
+permisiuni, iar un proiect în care Calendar nu este permis pentru el eșuează cu
+`invalid_scope` — ai avea nevoie în schimb de un client loopback sau web.
 
-Tokens never leave the server. They are written to the server's `secrets.json`
-in its data directory, keyed `google_google:<workspaceId>:<email>`, alongside
-the databases and under the same host-filesystem trust boundary. The server refreshes
-access automatically and, when Google permanently invalidates an account (a
-revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
-**reconnect** banner instead of failing silently.
+Tokenurile nu părăsesc niciodată serverul. Sunt scrise în `secrets.json` al
+serverului, în directorul lui de date, cu cheile
+`google_google:<workspaceId>:<email>`, alături de bazele de date și sub aceeași
+graniță de încredere a sistemului de fișiere al gazdei. Serverul reîmprospătează
+accesul automat și, când Google invalidează definitiv un cont (o sesiune
+revocată sau expirată de mult timp), publică `CalendarAuthExpired` și afișează un
+banner **Reconectează** în loc să eșueze în tăcere.
 
-A build from source ships **no** Google credentials at all — you supply your own
-client id and secret. Official release builds bake in a non-confidential
-device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
-secret) in the environment always takes precedence over the baked-in pair.
-There is deliberately no `--google-client-id` flag: unknown flags are ignored,
-and a secret on a command line is readable through `ps`.
+O construcție din surse nu include **nicio** acreditare Google — îți aduci
+propriul client id și propriul secret. Construcțiile oficiale de lansare includ
+un client de cod de dispozitiv neconfidențial, astfel încât fluxul de conectare
+funcționează imediat; serverul stochează doar un marcaj care îl referă, niciodată
+o copie. `GOOGLE_OAUTH_CLIENT_ID` (și secretul lui) din mediu are întotdeauna
+prioritate față de perechea inclusă. Nu există în mod deliberat un flag
+`--google-client-id`: flag-urile necunoscute sunt ignorate, iar un secret de pe
+linia de comandă poate fi citit prin `ps`.
 
-For running your own Google project, see
-[Connect a Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
+Pentru a rula propriul proiect Google, vezi
+[Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
 
-## Sync
+## Sincronizare
 
-The server pulls a rolling window of each connected account's events — every
-calendar on the account, not just the primary — **every two minutes**, plus on
-demand (start, connect, manual refresh). The short cadence is affordable because
-the sweep is incremental: each calendar carries its own sync token, so an
-unchanged calendar costs one near-empty response rather than re-fetching a
-five-month window.
+Serverul preia o fereastră glisantă cu evenimentele fiecărui cont conectat —
+toate calendarele contului, nu doar cel principal — **la fiecare două minute**,
+plus la cerere (pornire, conectare, reîmprospătare manuală). Cadența scurtă este
+accesibilă pentru că parcurgerea este incrementală: fiecare calendar are propriul
+token de sincronizare, așa că un calendar neschimbat costă un singur răspuns
+aproape gol, în loc să reia o fereastră de cinci luni.
 
-Recurring events are expanded server-side, so no client ever parses a recurrence
-rule. Navigating to a month outside the current window lazily loads that range.
-Deleted or moved-out-of-range events are reconciled away on the next sync.
+Evenimentele recurente sunt extinse pe server, astfel încât niciun client nu
+analizează vreodată o regulă de recurență. Navigarea la o lună din afara ferestrei
+curente încarcă acea zonă leneș. Evenimentele șterse sau mutate în afara
+intervalului sunt reconciliate la următoarea sincronizare.
 
-## Views
+## Vizualizări
 
-| View       | What it shows                                         |
-| ---------- | ----------------------------------------------------- |
-| **Month**  | A full month grid (powered by the `kalender` package) |
-| **Week**   | A week's timed events in a time-grid                  |
-| **Day**    | A single day's timed events in a time-grid            |
-| **Agenda** | A scrollable list of upcoming events                  |
+| Vizualizare  | Ce arată                                                    |
+| ------------ | ----------------------------------------------------------- |
+| **Lună**     | O grilă completă de lună (bazată pe pachetul `kalender`)     |
+| **Săptămână** | Evenimentele cronometrate ale unei săptămâni, într-o grilă de timp |
+| **Zi**       | Evenimentele cronometrate ale unei singure zile, într-o grilă de timp |
+| **Agendă**   | O listă derulabilă cu evenimentele viitoare                  |
 
-Open the calendar at `/calendar`; selecting an event opens its detail at
-`/calendar/:eventId`. The view you pick is stored in that client's own
-preferences, so it does not follow you to another device.
+Deschide calendarul la `/calendar`; selectarea unui eveniment îi deschide
+detaliile la `/calendar/:eventId`. Vizualizarea pe care o alegi este stocată în
+preferințele proprii ale clientului respectiv, așa că nu te urmărește pe alt
+dispozitiv.
 
-## Meeting alerts
+## Alerte de întâlnire
 
-A per-minute scheduler scans for events starting within a configurable lead
-window and fires a **"meeting starting soon"** notification (a
-`MeetingStartingSoon` [domain event](/ro-RO/manual/concepte/evenimente-de-domeniu/)). The
-notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
-same meeting never alerts twice, even across restarts and an event whose start
-passed while the app was closed never replays.
+Un planificator care rulează în fiecare minut caută evenimente ce încep în
+intervalul de preaviz configurabil și declanșează o notificare
+**„Întâlnirea începe curând"** (un
+[eveniment de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/)
+`MeetingStartingSoon`). Notificarea include URL-ul de conectare când există unul,
+iar clic pe ea deschide detaliile evenimentului. Alertele sunt deduplicate pe
+baza lui `alertedAt` al evenimentului, astfel încât aceeași întâlnire nu
+alertează niciodată de două ori, nici măcar după reporniri, iar un eveniment a
+cărui oră de începere a trecut cât aplicația era închisă nu se reia niciodată.
 
-Two limits are easy to trip over. The scheduler runs **client-side on the
-desktop** and only for the workspace you currently have open — a workspace you
-are not in raises no alert. And the web build has no OS-notification pipeline at
-all, so it raises none either.
+Două limite sunt ușor de încălcat. Planificatorul rulează **pe client, pe
+desktop**, și doar pentru spațiul de lucru pe care îl ai deschis — un spațiu de
+lucru în care nu ești nu declanșează nicio alertă. Iar construcția web nu are
+deloc o conductă de notificări ale sistemului de operare, așa că nu declanșează
+niciuna.
 
-## Record and link
+## Înregistrează și leagă
 
-From a calendar event you can start a [meeting recording](/ro-RO/manual/concepte/intalniri/)
-seeded with the event's title. Control Center stores a one-to-one link between
-the recording and the event, so the meeting's notes and the calendar entry stay
-connected without either feature depending on the other.
+Dintr-un eveniment de calendar poți porni o
+[înregistrare de întâlnire](/ro-RO/manual/concepte/intalniri/) care preia titlul
+evenimentului. Control Center stochează o legătură unu-la-unu între înregistrare
+și eveniment, astfel încât notele întâlnirii și intrarea din calendar rămân
+conectate fără ca vreuna dintre funcții să depindă de cealaltă.
 
-**Start recording & link** is desktop-only. On the web client the action
-reports that recording is unavailable — even though the meetings screen's own
-record flow does work in the browser.
+**Pornește înregistrarea și leagă** este doar pentru desktop. În clientul web,
+acțiunea raportează că înregistrarea nu este disponibilă — chiar dacă fluxul
+propriu de înregistrare al ecranului de întâlniri funcționează în browser.
 
-:::note[Agents cannot read your calendar]
-There are no calendar MCP tools. An agent cannot list events, read an event's
-details, or RSVP on your behalf; the `calendar.*` surface is RPC for human
-clients only.
+:::note[Agenții nu pot citi calendarul tău]
+Nu există instrumente MCP pentru calendar. Un agent nu poate lista evenimente,
+nu poate citi detaliile unui eveniment și nu poate confirma participarea în
+numele tău; suprafața `calendar.*` este RPC doar pentru clienții umani.
 :::
 
-## See also
+## Vezi și
 
-- [Meetings and transcription](/ro-RO/manual/concepte/intalniri/): what happens after you start a recording
-- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/): why calendar accounts are per-workspace
-- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/): `MeetingStartingSoon` and `CalendarAuthExpired`
-- [Connect a Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
-- [Record and summarize a meeting](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/)
+- [Întâlniri și transcriere](/ro-RO/manual/concepte/intalniri/): ce se întâmplă după ce pornești o înregistrare
+- [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/): de ce conturile de calendar sunt pe spațiu de lucru
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): `MeetingStartingSoon` și `CalendarAuthExpired`
+- [Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
+- [Înregistrează și rezumă o întâlnire](/ro-RO/manual/ghiduri-practice/inregistreaza-intalnire/)

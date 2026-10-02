@@ -1,236 +1,234 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: Doménové události
+description: Úplný katalog 53 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## Sběrnice událostí
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+`DomainEventBus` je broadcastová sběrnice publish/subscribe uvnitř procesu. Publikující volají `publish(event)`, odběratelé konzumují typovaný proud `on<T>()`. Každá událost implementuje `DomainEvent` a nese `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**Sběrnice běží uvnitř `cc_server`.** Každý publikující i každý živý odběratel žije tam. Žádný klient tuhle sběrnici nevidí. Server předává vybranou podmnožinu jako JSON-RPC rámce `notifications/*`, filtrované pro každého odběratele podle členství v pracovním prostoru.
 
-| Measure                                                     | Count                                       |
-| ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| Míra                                                        | Počet                                       |
+| ----------------------------------------------------------- | ------------------------------------------- |
+| Konkrétní třídy událostí                                    | 53                                          |
+| Zdrojové soubory (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)       |
+| Abstraktní báze, které se nikdy nepublikují přímo           | 1 (`TaskLifecycleEvent`, sealed hierarchie) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Každá událost v katalogu níže žije v tom jednom adresáři. Jinde se doménové události nedeklarují.
 
-## Workspace, agent and repo events
+## Události pracovního prostoru, agenta a repozitáře
 
-| Event               | Payload                                                | Fired when                                              |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| Událost             | Payload                                                | Kdy se spustí                                              |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| `WorkspaceCreated`  | `workspaceId`                                          | Vytvoří se pracovní prostor                                |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent dokončí běh (úspěch i selhání)                       |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Zaregistruje se repozitář a spustí se indexace kódu na pozadí |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Nainstaluje se nebo aktualizuje skill a nese verdikt skenu dodavatelského řetězce |
 
-## PR and review events
+## Události PR a kontroly
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+První blok je vlastní životní cyklus PR. Druhý je **sledování vlastních PR**: signály o PR, který *jsi* otevřel. Každý nese `forUserId`, aby je dotazování směrovalo k člověku, kterého se týkají, místo aby je rozesílalo všem.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
-| -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| Událost                    | Payload                                                                  | Kdy se spustí                                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent otevře PR                                                                                                                        |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR se sloučí, zavře, otevře, znovu otevře nebo schválí                                                                                 |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR se sloučí. Úzký signál jen pro sloučení, ponechaný pro analytiku a oznámení                                                         |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub žádá o kontrolu uživatele serveru (dotazování na oznámení, `review_requested`)                                                  |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Uživatel serveru je zmíněn na PR (dotazování na oznámení, `mention`)                                                                   |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | Sloučí se externě sledovaný PR (ne od agenta), zjištěný dotazováním na oznámení GitHubu; mapuje se na kategorii oznámení `prMerged` |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | PR bez agenta nalezený dotazováním. Jen pro pipeline (pohání `external_pr_welcome`), oznámení nezvedne                                 |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | Head SHA pull requestu se posunul. Autor pushnul                                                    |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | Hotová AI kontrola už nepopisuje PR, který kontrolovala. Spustí se jen tehdy, když pro nahrazený commit kontrola existuje, takže zůstane signálem, ne pingem na každý push |
 
-### The authored-PR watch
+### Sledování vlastních PR
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+Všech šest nese `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` a volitelné `forUserId`.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| Událost                   | Další payload                                                                  | Kdy se spustí                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                              | PR, který jsi napsal, se stal sloučitelným, nebo jím být přestal                |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                             | Recenzent schválil, požádal o změny, nebo mu schválení někdo zrušil             |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                             | CI přešlo do červené, nebo se zotavilo                                          |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Někdo tě zmínil v komentáři k PR nebo v komentáři kontroly         |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`       | Někdo odpověděl ve vlákně kontroly, ve kterém jsi                                |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                     | Někdo vyřešil vlákno kontroly, ve kterém jsi                                     |
 
-## Messaging events
+## Události zpráv
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| Událost                    | Payload                                                                                                                    | Kdy se spustí                                                                                                                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | Přijde nová zpráva                                                                                                                                                              |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Vytvoří se prostor                                                                                                                                                                             |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Prostor se smaže                                                                                                                                                                               |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | Pracovní prostor daného prostoru vstoupí do zřizování, dosáhne kroku (klonování repozitáře, checkout PR, nastavení agenta), nebo přepne na ready/failed. Chatový most to vypráví na kartě úkolu |
 
-## Ticketing events
+## Události ticketů
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| Událost                | Payload                                                                                                                      | Kdy se spustí                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Vytvoří se ticket                          |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket se přiřadí principálovi nebo týmu   |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | Práce skončí (konečný stav)                |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent selže (konečný stav)                 |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket se zruší (konečný stav)             |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Jakákoli změna stavu                       |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket se přeřadí                          |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Změní se název, popis nebo priorita        |
 
-## Task lifecycle events
+## Události životního cyklu úkolu
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+Jednotný proud životního cyklu úkolu: jeden odeslaný běh agenta, klíčovaný id svého run logu. Každá událost nese `taskId`, monotónní `seq` v rámci úkolu, `workspaceId?`, `agentId?` a `phase`. Řádky níže uvádějí jen další pole.
 
-| Event                       | Payload                       | Fired when                                                                                       |
-| --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| Událost                     | Payload                       | Kdy se spustí                                                                                       |
+| --------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| `TaskDispatched`            | —                             | Úkol se předá backendu k provedení                                                                  |
+| `TaskRunning`               | —                             | Úkol začne produkovat výstup                                                                        |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Úkol je odstavený. Jiný úkol drží zámek cesty na disku, který potřebuje                             |
+| `TaskProgress`              | `note?`                       | Kontrolní bod průběhu uprostřed běhu                                                                |
+| `TaskMessage`               | `messageType`, `content`      | Streamovaná zpráva (text/thinking/tool_use/tool_result/error); hlásí se ve fázi `progress`          |
+| `TaskCompleted`             | `summary?`                    | Úkol úspěšně skončí                                                                                 |
+| `TaskFailed`                | `errorMessage`                | Úkol skončí chybou                                                                                  |
+| `TaskCancelled`             | —                             | Úkol se zruší před dokončením                                                                       |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+Enum `TaskPhase` má i člen `queued`, ale nic nepublikuje událost ve frontě. Třída `TaskQueued` neexistuje. První pozorovatelný rámec úkolu je `TaskDispatched`.
 
-## Pipeline events
+## Události pipeline
 
-| Event                  | Payload                                       | Fired when                                                                  |
-| ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| Událost                | Payload                                       | Kdy se spustí                                                                  |
+| ---------------------- | --------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Běh skončí                                                                     |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Běh se zruší (uživatelem nebo systémem). Záměrné zastavení, ne chyba          |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Běh selže                                                       |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+Publikují se jen konečné přechody. `PipelineRunStarted` neexistuje a neexistuje ani událost na krok. Průběh kroku se ke klientům dostane přes vlastní řádky běhu a přes proud životního cyklu úkolu agenta, kterého krok odeslal, ne přes sběrnici.
 
-## Observability events
+## Události observabilty
 
-| Event                    | Payload                                                                                                  | Fired when                |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| Událost                  | Payload                                                                                                  | Kdy se spustí                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Vytvoří se záznam auditní stopy |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Útrata překročí práh         |
 
-## Identity and membership events
+## Události identity a členství
 
-| Event                        | Payload                         | Fired when                                                                                                |
-| ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| Událost                      | Payload                         | Kdy se spustí                                                                                                |
+| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | Uživatel vstoupí do pracovního prostoru (uplatnění pozvánky nebo přidání správcem)                          |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | Člen se odebere. Živé relace toho uživatele vázané na pracovní prostor musí hned znovu ověřit přístup       |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | Změní se role člena                                                                                          |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+Členství je celá identitní plocha na sběrnici. Vytvoření uživatele a odvolání zařízení se dějí, ale jako doménové události se nepublikují. Odvolání se vynucuje přímo proti živým relacím, ne přes sběrnici.
 
-## Calendar and meeting events
+## Události kalendáře a schůzek
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
-| ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| Událost                   | Payload                                                                                | Kdy se spustí                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | Obnovovací token OAuth připojeného účtu je trvale neplatný (publikuje se jednou na epizodu odpojení)          |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | Událost kalendáře začíná uvnitř nastaveného okna předstihu                                                     |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | Nahrávka schůzky skončí a spustí vestavěnou pipeline `meeting_summary`                                         |
 
-## Rig events
+## Události stanic
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
-| ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| Událost             | Payload                                       | Kdy se spustí                                                                                                                       |
+| ------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | Stanice zmizela a nese důvod zavření. Konzumenti reagují jen na `backendFailure`. Každý jiný důvod je vyžádaný, nebo ho doprovází `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | Člověk převzal výhradní řízení stanice, nebo ho vrátil (`controller` je při uvolnění null. Událost nezaznamenává, kdo pustil)      |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | Systém stroj vzal zpět: nečinnost, TTL, nebo vyklizení kvůli tlaku na paměť (hlášené jako `idleTimeout`), spolu s řídícím agentem  |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+Samotné **otevření** stanice není událost. Boot doběhne a řádek stanice přepne na ready. Nic se nepublikuje, takže neexistuje `RigOpened`, na které by šlo se přihlásit.
 
-## Subdomains with no events at all
+## Subdomény zcela bez událostí
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+Několik subsystémů vypadá zvenku jako řízených událostmi. Nejsou. Jsou tu proto, že jejich absence je rozhodnutí návrhu, které stojí za to znát, než půjdeš hledat hook:
 
-| Subdomain           | How state moves instead                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| Subdoména           | Jak se stav hýbe místo toho                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Paměť               | `record_memory_fact` a spol. zapíšou a vrátí se. Vyvolání jen čte. Na fakt ani na konflikt se nic nepublikuje |
+| Orchestrace         | Návrh, jeho schválení a vygenerovaný běh pipeline jsou řádky a volání RPC                                  |
+| Dokumenty plánu     | `submit_plan` zapíše revizi. Schválení zhmotní orchestraci. Ani jedno se neoznamuje                        |
+| Artefakty           | `publish_artifact` / `revise_artifact` zapisují revize přímo                                                |
+| Schválení           | Eskalaci řeší služba workflow schválení                                                                     |
+| Synchronizace ticketů | Koordinátor dodavatele se přihlásí k událostem ticketu výše. Příchozí webhooky se aplikují přímo         |
+| Obnovení kalendáře  | Synchronizace události upsertuje a klient si je znovu přečte. Broadcast obnovení neexistuje                |
+| Sloučení worktree   | Zapisuje se do `worktree_merge_log` a čte se odtud                                                         |
 
-## Subscribers
+## Odběratelé
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+Každý odběratel níže se konstruuje uvnitř `runCcServer` (nebo ve službě, kterou sestaví). Odběratel na straně klienta neexistuje.
 
-| Subscriber                          | Events it consumes                                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
-| `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
-| `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
-| `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
-| `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
-| `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
-| `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| Odběratel                            | Události, které konzumuje                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `WorkspaceSeeder`                    | `WorkspaceCreated`                                                                                          |
+| Osazení startovní sady evalů (přímo v kódu) | `WorkspaceCreated`                                                                                    |
+| Zřizování chatového prostoru (přímo v kódu) | `SpaceCreated`                                                                                       |
+| `PipelineTriggerDispatcher`          | Každá `DomainEvent`. Každý zapnutý spouštěč filtruje na svůj vlastní typ                                   |
+| `SubPipelineResumeListener`          | `PipelineRunCompleted`, `PipelineRunFailed`                                                                 |
+| `PipelineCostRollupListener`         | `AgentRunCompleted`                                                                                         |
+| `BudgetEvaluationListener`           | `AgentRunCompleted`                                                                                         |
+| `MeetingSummaryReconciler`           | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (jen běhy `meeting_summary`)            |
+| `PipelineStepResumeListener`         | `AgentRunCompleted`                                                                                         |
+| `AgentRunTaskCompleter`              | `AgentRunCompleted`                                                                                         |
+| `GoalSupervisor`                     | `AgentRunCompleted`                                                                                         |
+| `CheckerDispatchListener`            | `AgentRunCompleted`                                                                                         |
+| `TeamRoutingService`                 | `AgentRunCompleted`, `TicketAssigned`                                                                       |
+| `OrchestrationRunListener`           | `PipelineRunCancelled`, `PipelineRunFailed`                                                                 |
+| `MultiVendorTicketSyncCoordinator`   | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated`        |
+| `WorktreeGcListener`                 | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`                |
+| `ChatBridgeService`                  | `MessageReceived`, `SpaceProvisioningChanged`                                                               |
+| `ActivityLogPersister`               | `ActivityLogged`                                                                                            |
+| `RigEventListener`                   | `RigControlChanged`, `RigReaped`, `RigClosedEvent`. Vloží srozumitelnou zprávu do kanálu usměrnění řídícího agenta |
+| `StaleReviewWatcher`                 | `PrHeadChanged`. Publikuje `ReviewBecameStale` jen tehdy, když pro nahrazený commit existuje hotová kontrola |
+| `GitHubPrConversationBridge`         | `AgentRunCompleted`. Odchozí odpovědi v konverzaci PR                                                       |
+| `NotificationFeedRecorder`           | Jednadvacet událostí třídy oznámení níže                                                                    |
+| `RemoteEventForwarder`               | Těch jednadvacet plus `TicketReassigned` a každá `TaskLifecycleEvent`. Tři události členství jen zneplatní jeho cache členství po pracovních prostorech. Jako rámce se nepřeposílají |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved`. Zahodí připojené odběry pracovního prostoru toho uživatele. Soket zůstane otevřený |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned` je signál auditu i oznámení a zároveň spouštěč pipeline. Přiřazení agentovi zapíše vlastnictví a nespustí běh. Dispečer ticketů neexistuje. Výjimka je přiřazení týmu (nastavené `assignedTeamId`): `TeamRoutingService` odešle vedoucího týmu.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler` je deklarovaný, ale v produkčním kódu se nikdy nekonstruuje, takže dnes neodebírá nic. Klientský `NotificationEventMapper` se konstruuje jen ve vlastním testu. Je to zbytek cesty uvnitř procesu z doby před rozdělením klienta a serveru. Živé toasty přicházejí z rámců na drátě níže.
 
-## Notification mapping
+## Mapování oznámení
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+Na serveru z těchto událostí `NotificationFeedRecorder` a `RemoteEventForwarder` udělají rámce na drátě `notifications/*` (`notification_wire.dart`). Na klientovi z rámce `RpcNotificationMapper` → `mapNotificationFrame` udělá `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+Kategorií oznámení je přesně **šestnáct**. Několik událostí se mapuje na víc než jednu metodu na drátě, protože rámec nese hranu (selhání, nebo zotavení) a kategorie nese otázku („co dělá CI?“).
 
-| Category               | Source event              | Wire method                                                            |
-| ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
-| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
-| `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                        |
-| `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                  |
-| `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                           |
-| `prMerged`             | `PrMerged`                | `notifications/pr_merged`                                              |
-| `prMerged`             | `ExternalPrMerged`        | `notifications/external_pr_merged`                                     |
-| `prMentioned`          | `PrMentioned`             | `notifications/pr_mentioned`                                           |
-| `prMentioned`          | `PrCommentMentioned`      | `notifications/pr_comment_mentioned`                                   |
-| `reviewRequested`      | `PrReviewRequested`       | `notifications/pr_review_requested`                                    |
-| `reviewStale`          | `ReviewBecameStale`       | `notifications/review_stale`                                           |
-| `prMergeReadiness`     | `PrMergeReadinessChanged` | `notifications/pr_ready_to_merge` / `pr_merge_blocked`                 |
+| Kategorie              | Zdrojová událost          | Metoda na drátě                                                            |
+| ---------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `newMessage`           | `MessageReceived`         | `notifications/message_received`                                           |
+| `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                        |
+| `ticketAssigned`       | `TicketAssigned`          | `notifications/ticket_assigned`                                            |
+| `ticketStatusChanged`  | `TicketStatusChanged`     | `notifications/ticket_status_changed`                                      |
+| `pullRequestPublished` | `PullRequestPublished`    | `notifications/pr_published`                                               |
+| `prMerged`             | `PrMerged`                | `notifications/pr_merged`                                                  |
+| `prMerged`             | `ExternalPrMerged`        | `notifications/external_pr_merged`                                         |
+| `prMentioned`          | `PrMentioned`             | `notifications/pr_mentioned`                                               |
+| `prMentioned`          | `PrCommentMentioned`      | `notifications/pr_comment_mentioned`                                       |
+| `reviewRequested`      | `PrReviewRequested`       | `notifications/pr_review_requested`                                        |
+| `reviewStale`          | `ReviewBecameStale`       | `notifications/review_stale`                                               |
+| `prMergeReadiness`     | `PrMergeReadinessChanged` | `notifications/pr_ready_to_merge` / `pr_merge_blocked`                     |
 | `prReviewDecision`     | `PrReviewDecisionChanged` | `notifications/pr_approved` / `pr_changes_requested` / `pr_review_dismissed` |
-| `prChecksStatus`       | `PrChecksStatusChanged`   | `notifications/pr_checks_failed` / `pr_checks_recovered`               |
-| `prThreadActivity`     | `PrThreadReplied`         | `notifications/pr_thread_replied`                                      |
-| `prThreadActivity`     | `PrThreadResolved`        | `notifications/pr_thread_resolved`                                     |
-| `meetingStartsSoon`    | `MeetingStartingSoon`     | `notifications/meeting_starting_soon`                                  |
-| `calendarAuthExpired`  | `CalendarAuthExpired`     | `notifications/calendar_auth_expired`                                  |
-| `rigStatusChanged`     | `RigControlChanged`       | `notifications/rig_control_changed`                                    |
-| `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
-| `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
+| `prChecksStatus`       | `PrChecksStatusChanged`   | `notifications/pr_checks_failed` / `pr_checks_recovered`                   |
+| `prThreadActivity`     | `PrThreadReplied`         | `notifications/pr_thread_replied`                                          |
+| `prThreadActivity`     | `PrThreadResolved`        | `notifications/pr_thread_resolved`                                         |
+| `meetingStartsSoon`    | `MeetingStartingSoon`     | `notifications/meeting_starting_soon`                                      |
+| `calendarAuthExpired`  | `CalendarAuthExpired`     | `notifications/calendar_auth_expired`                                      |
+| `rigStatusChanged`     | `RigControlChanged`       | `notifications/rig_control_changed`                                        |
+| `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                                 |
+| `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                                 |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+Rámec převzetí stanice se nevrací tomu, kdo řízení převzal. Uvolnění se nefiltruje (událost nezaznamenává, kdo pustil) a jen zavření `backendFailure` vyrobí rámec `rig_closed`. Ostatní důvody jsou buď vyžádané, nebo je už pokrývá rámec reap.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+Pět kategorií vlastních PR nese `forUserId`, takže dorazí k autorovi, ne ke všem v pracovním prostoru.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder` navíc přeposílá `TicketReassigned` jako `notifications/ticket_reassigned` a každou `TaskLifecycleEvent` jako `notifications/task_<phase>`. Ani jedno se nemapuje na kategorii oznámení. Pohánějí živé rozhraní, ne centrum oznámení. Události členství se jako rámce nepřeposílají: zneplatní cache přeposílače a hostitelé relací zahodí odběry pracovního prostoru odebraného člena.
 
-## See also
+## Viz také
 
-- [Domain events](/cs-CZ/prirucka/koncepty/domenove-udalosti/)
-- [Pipeline triggers](/cs-CZ/prirucka/navody/spoustece-pipeline/)
-- [Notifications](/cs-CZ/prirucka/navody/oznameni/)
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/)
+- [Nastavte spouštěče pipeline](/cs-CZ/prirucka/navody/spoustece-pipeline/)
+- [Nastavte oznámení](/cs-CZ/prirucka/navody/oznameni/)

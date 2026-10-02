@@ -1,95 +1,95 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Länka ditt Slack-konto
+description: Bevisa att en Slack-identitet är din så att agenter agerar på dina meddelanden och ditt arbete tillskrivs dig.
 slug: sv-SE/handbok/how-to-guider/lanka-chattkonto
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Den här guiden visar hur du länkar din chattidentitet till din Control Center-användare och hur du avlänkar en.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Varje medlem gör det här en gång per chattleverantör. Det är åtskilt från att ansluta appen: anslutningen gör boten nåbar för hela arbetsytan, länken gör _dig_ igenkännbar inuti den.
 
-## Why linking is required
+## Varför länkning krävs
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+Bryggan vägrar agera för ett chattkonto som den inte kan lösa upp till en medlem i arbetsytan. Det är avsiktligt – utan en länk skulle varje meddelande från Slack behöva tillskrivas den som installerade appen, och revisionsspåret, hastighetsbegränsningarna per principal och ärendenas avsändare skulle alla peka ut fel person.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+En olänkad medlem som nämner boten får ett svar i den Slack-tråden som förklarar hur man länkar. Ingenting skickas vidare.
 
-## Link with a code
+## Länka med en kod
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Gå till **Inställningar → Arbetsyta → Profil och identitet** och rulla till kortet **Länkade chattkonton**
+2. Klicka på **Länka mitt Slack-konto** i Slack-blocket
+3. Kopiera kommandot som visas, till exempel:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. Skicka kommandot till boten i Slack – ett DM är den enklaste platsen
+5. Boten bekräftar med den Control Center-användare du nu är länkad till, och dialogen du lämnade öppen uppdateras med samma besked i samma stund – du behöver inte stänga den och titta efter
 
-The code:
+Koden:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Går bara att använda en gång och upphör att gälla **15 minuter** efter att den har skapats
+- Skapas alltid för _dig_, aldrig för en kollega
+- Ersätter varje kod du redan har, så att trycka på knappen igen ogiltigförklarar den föregående
+- Finns bara i minnet, så en serveromstart ogiltigförklarar utestående koder – tryck på knappen igen
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+En kod som är okänd, har gått ut eller skapades för en annan arbetsyta misslyckas på exakt samma sätt, utan att gå att skilja åt: "that code is not valid (or has expired)".
 
-## Automatic linking by email
+## Automatisk länkning via e-post
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Om din Slack-profil har en verifierad e-postadress som matchar en Control Center-användare som **redan är medlem i den här arbetsytan** länkar bryggan dig första gången du pratar med den. Ingen kod behövs.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Båda halvorna spelar roll: e-postmatchningen bevisar identitet, men bara medlemskap ger åtkomst, så en främling vars e-postadress råkar finnas på servern länkar till ingenting. Listan över länkade konton visar hur varje länk skapades (”matchad via e-post” eller ”länkad med en kod”).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Automatisk länkning kräver scopet `users:read.email`. Utan det avslöjar Slack inte adressen, och kodflödet är den enda vägen.
 
-## See who is linked
+## Se vem som är länkad
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+Listan är arbetsyteadministration, så den ligger på andra halvan av ytan:
+**Inställningar → Arbetsyta → Allmänt → Chattbryggor → Länkade konton**. Den
+listar varje länkad medlem i arbetsytan, med det Slack-konto var och en motsvarar
+och hur länken skapades.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+Ditt eget tillstånd finns på din profilsida: raden **Länka mitt Slack-konto** visar
+”Länkad till _ditt-slack-id_” när du är länkad och uppmanar dig att länka när du
+inte är det.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+Listan är en prenumeration i realtid, eftersom ändringen sker på andra sidan –
+du skriver koden i Slack, så ingen begäran från appen kan bära svaret tillbaka.
 
-## Unlink
+## Avlänka
 
-Click **Unlink** on a row in the workspace roster.
+Klicka på **Avlänka** på en rad i arbetsytans lista.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Vem som helst kan avlänka sig själv
+- Bara en admin kan avlänka en annan medlem
+- Avlänkning återkallar också en utestående länkkod för den medlemmen
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Efter avlänkning kan det Slack-kontot inte längre driva agenter förrän det länkar igen. Befintliga ytor, avskrifter och ärenden behåller sin ursprungliga tillskrivning – avlänkning är inte en återkallning av tidigare arbete.
 
-## Troubleshooting
+## Felsökning
 
-### The bot says I am not a member of this workspace
+### Boten säger att jag inte är medlem i den här arbetsytan
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/).
+Ditt Slack-konto är länkat till en Control Center-användare, men den användaren har inget medlemskap i den här arbetsytan. Be en admin bjuda in dig; se [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/).
 
-### The bot says my role is read-only
+### Boten säger att min roll är skrivskyddad
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+Rollerna `viewer` och `guest` kan inte starta arbete. En admin måste höja din roll till `member` eller högre.
 
-### The slash command is not recognized
+### Slash-kommandot känns inte igen
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Kontrollera att slash-kommandot finns i Slack och att du skickar det kommando som inställningsdialogen visade dig – en admin kan ha bytt namn på det, och då visar dialogen det aktuella namnet.
 
-## Related guides
+## Relaterade guider
 
-- [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/)
-- [Customize the chat bot](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
-- [Chat bridge](/sv-SE/handbok/referens/chattbrygga/)
+- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)
+- [Anpassa chattboten](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
+- [Chattbrygga](/sv-SE/handbok/referens/chattbrygga/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Chat bridges](/sv-SE/handbok/koncept/chattbryggor/)
-- [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/)
+- [Chattbryggor](/sv-SE/handbok/koncept/chattbryggor/)
+- [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/)

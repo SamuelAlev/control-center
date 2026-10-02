@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: 键盘快捷键
+description: 完整的按键绑定注册表：按作用域划分，并列出每个快捷键生效的条件。
 slug: zh-CN/手册/参考/键盘快捷键
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+快捷键来自唯一的 `const` 注册表——`lib/core/constants/keybindings.dart` 中的 `KeybindingRegistry`。它包含 **48 个绑定**。**设置 → 你 → 快捷键**会把该注册表渲染成一份**只读参考**：应用中没有重新绑定界面，也没有用户自定义快捷键的文件。
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+下文中的 `Cmd` 指主命令修饰键——macOS 上是 ⌘，Windows 和 Linux 上是 Ctrl。只有当某个命令在当前界面上注册了处理程序、并且该绑定的 `when` 子句成立时，绑定才会生效；`!textInputFocus` 表示按键会改为传递给获得焦点的文本输入框。
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+应用没有数字键导航快捷键。收件箱、工单、pull request 等都从侧边栏或 ⌘K 进入。可观测性也没有快捷键。
 
-## Global (19)
+## 全局（19）
 
-Scope `global`, so they are live anywhere in the shell.
+作用域为 `global`，因此它们在应用外壳的任何地方都生效。
 
-### System
+### 系统
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| 快捷键                                      | 操作                                             | 条件                                                   |
+| ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `Cmd/Ctrl + K`                              | 命令面板                                         | —                                                      |
+| `Shift + /` (`?`)                           | 键盘快捷键速查表                                 | 未在输入框中输入                                       |
+| `Cmd/Ctrl + Z`                              | 撤销                                             | 未在输入框中输入（获得焦点的输入框保留自己的撤销）     |
+| `Cmd/Ctrl + Shift + Z`                      | 重做                                             | 未在输入框中输入                                       |
+| `Cmd/Ctrl + Shift + T`                      | 切换主题                                         | —                                                      |
+| `Cmd/Ctrl + ,`                              | 打开设置（落在 `/settings/you/appearance` 上）   | —                                                      |
+| `Cmd/Ctrl + Shift + Alt + F`                | 切换专注模式                                     | —                                                      |
+| `Cmd/Ctrl + Shift + W`                      | 切换工作区切换器                                 | —                                                      |
+| `Cmd/Ctrl + ]`                              | 下一个工作区                                     | —                                                      |
+| `Cmd/Ctrl + [`                              | 上一个工作区                                     | —                                                      |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | 切换到工作区 1–9                                 | —                                                      |
 
-## Pull request list (3)
+## Pull request 列表（3）
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+作用域为 `/pull-requests`。它们都要求 `route == '/pull-requests'` 并且没有获得焦点的文本输入框，因此在列表之上打开 PR 详情路由时不会触发。
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| 快捷键  | 操作           |
+| ------- | -------------- |
+| `R`     | 刷新           |
+| `Enter` | 打开 PR        |
+| `F`     | 打开筛选菜单   |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter`（`pr.list-open`）已在注册表中声明，也会出现在快捷键参考上，但**列表界面并没有为它注册处理程序**，所以它目前不会触发。`F` 打开的是筛选菜单（`pr.list-open-filter`），而不是搜索。
 
-## Pull request detail (2)
+## Pull request 详情（2）
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+作用域为 `/pull-requests/`。刷新要求没有获得焦点的文本输入框。关闭标签页没有文本输入防护（带 ⌘ 修饰的组合键永远不是纯文本），但带有路由正则，因此不会在列表上触发。
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| 快捷键         | 操作       | 条件                               |
+| -------------- | ---------- | ---------------------------------- |
+| `R`            | 刷新       | 未在输入框中输入                   |
+| `Cmd/Ctrl + W` | 关闭标签页 | 位于 `/pull-requests/<…>` 位置     |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+标签页切换（`1`/`2`/`3`）、文件已查看/折叠（`V`/`C`）、文件列表（`T`）以及 diff 内查找（`Cmd/Ctrl + F`）都由 diff 查看器自己的处理程序负责——参见[注册表之外的 diff 查看器按键](#注册表之外的-diff-查看器按键)。
 
-## Inbox (1)
+## 收件箱（1）
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| 快捷键 | 操作           |
+| ------ | -------------- |
+| `F`    | 打开筛选菜单   |
 
-Requires `route == '/inbox'` and no focused text field.
+要求 `route == '/inbox'` 并且没有获得焦点的文本输入框。
 
-## GitHub user and team profiles (3)
+## GitHub 用户与团队资料（3）
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+作用域为 `/users/`。`when` 子句是对 `/users/<login>` **或** `/teams/<organization>/<slug>` 的正则匹配，并且要求没有获得焦点的文本输入框。
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| 快捷键         | 操作     |
+| -------------- | -------- |
+| `R`            | 刷新     |
+| `/`            | 聚焦搜索 |
+| `Cmd/Ctrl + F` | 聚焦搜索 |
 
-## Spaces (8)
+## 空间（8）
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+作用域为 `/spaces`。`when` 子句使用正则，因此在空间列表（`/spaces`）和选中的空间（`/spaces/<id>`）上都会触发。
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| 快捷键                 | 操作             | 条件             |
+| ---------------------- | ---------------- | ---------------- |
+| `Enter`                | 发送消息         | —                |
+| `Cmd/Ctrl + N`         | 新建空间         | 在 `/spaces` 路由上 |
+| `J`                    | 下一个空间       | 未在输入框中输入 |
+| `K`                    | 上一个空间       | 未在输入框中输入 |
+| `Cmd/Ctrl + Shift + D` | 按住说话听写     | —                |
+| `Cmd/Ctrl + T`         | 打开编辑器标签页 | 在 `/spaces` 路由上 |
+| `Cmd/Ctrl + W`         | 关闭编辑器标签页 | 在 `/spaces` 路由上 |
+| `Cmd/Ctrl + B`         | 切换编辑器侧边栏 | 在 `/spaces` 路由上 |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+回车发送由输入框负责；按住说话由输入框的麦克风按钮负责（它有自己独立的硬件键盘处理程序）。两者都列在注册表中，供设置参考使用。
 
-## Workspace picker (2)
+## 工作区选择器（2）
 
-Scope `/workspaces`, live only on the picker itself.
+作用域为 `/workspaces`，只在选择器本身上生效。
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| 快捷键         | 操作             |
+| -------------- | ---------------- |
+| `Cmd/Ctrl + N` | 新建工作区       |
+| `Enter`        | 打开所选工作区   |
 
-`Enter` requires no focused text field.
+`Enter` 要求没有获得焦点的文本输入框。
 
-## Settings (5)
+## 设置（5）
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| 快捷键         | 操作           | 界面                                |
+| -------------- | -------------- | ----------------------------------- |
+| `J`            | 下一个设置页   | 任意 `/settings` 路由，未在输入     |
+| `K`            | 上一个设置页   | 任意 `/settings` 路由，未在输入     |
+| `Cmd/Ctrl + N` | 新建智能体     | 设置 → 工作区 → 智能体              |
+| `Cmd/Ctrl + N` | 添加仓库       | 设置 → 工作区 → 仓库                |
+| `R`            | 重新扫描适配器 | 设置 → 服务器 → 模型提供商          |
 
-## Newsfeed (5)
+## 新闻流（5）
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+作用域为 `/newsfeed`。它们都要求 `route == '/newsfeed'` 并且没有获得焦点的文本输入框。
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| 快捷键 | 操作         |
+| ------ | ------------ |
+| `J`    | 下一篇文章   |
+| `K`    | 上一篇文章   |
+| `Enter` | 打开文章    |
+| `S`    | 切换书签     |
+| `R`    | 刷新订阅源   |
 
-## Diff viewer keys outside the registry
+## 注册表之外的 diff 查看器按键
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+PR diff 查看器自己处理这些按键（`PrDiffKeyboardHandler`）。搜索/已查看/折叠仅列在注册表的注释中，供设置参考使用——没有注册任何调度器处理程序，因此调度器会把它们留给 diff 视图。它们不会作为独立行出现在快捷键参考上。
 
-| Shortcut        | Action                                               |
+| 快捷键          | 操作                                                 |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | 在 diff 中搜索                                       |
+| `J` / `K`       | 下一个 / 上一个文件                                  |
+| `V`             | 切换聚焦文件的已查看状态                             |
+| `C`             | 切换聚焦文件的折叠状态                               |
+| `T`             | 显示文件列表                                         |
+| `Enter`         | 下一个搜索匹配项（仅在 diff 内查找打开时）           |
+| `Shift + Enter` | 上一个搜索匹配项                                     |
+| `Escape`        | 关闭 diff 内查找，或清除 diff 的文本选区             |
+| `Cmd/Ctrl + C`  | 复制 diff 选区                                       |
 
-## Browser-reserved combinations
+## 浏览器保留的组合键
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+在网页版构建中，浏览器会在页面看到某些加速键之前就将其截获，因此对应的绑定在那里永远不会触发。它们在桌面端可以正常使用。与主命令修饰键组合时会被浏览器保留的按键有：`T`、`W`、`N` 以及数字 `1`–`9`。
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+这涵盖了 `Cmd/Ctrl + Alt + 1`–`9` 的工作区切换、`Cmd/Ctrl + N`（新建空间、新建工作区、新建智能体、添加仓库），以及空间和 PR 详情中的 `Cmd/Ctrl + T` / `Cmd/Ctrl + W`。
 
-## See also
+## 另请参阅
 
-- [Route map](/zh-CN/手册/参考/路由图/)
-- [Focus mode](/zh-CN/手册/操作指南/专注模式/)
+- [路由图](/zh-CN/手册/参考/路由图/)
+- [专注模式](/zh-CN/手册/操作指南/专注模式/)

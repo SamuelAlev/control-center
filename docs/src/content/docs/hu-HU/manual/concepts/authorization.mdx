@@ -1,123 +1,136 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Jogosultság — ki mit tehet, és hogyan bizonyíthatja
+description: A Control Center szerepkörei mögötti engedélykatalógus, a manipulálást kimutató auditnapló, amelybe minden jogosultsági döntés bekerül, valamint a telepítésszintű vezérlők, amelyeket az üzemeltető rögzíthet.
 slug: hu-HU/kezikonyv/fogalmak/jogosultsag
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/).
+A Control Center két jogosultsági kérdésre ad választ, és ez a kettő valóban
+különbözik. A **„Meghívhatja ez a személy ezt a műveletet?”** az emberekről, a
+szerepekről és a repókról szól. A **„Kiválthatja ez az ügynök ezt a hatást?”** a
+műveletekről, az argumentumokról és a hatássugárról szól — ez utóbbi a
+[Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) témája.
 
-This page is the first question, plus the record both of them leave behind.
+Ez az oldal az első kérdéssel foglalkozik, valamint azzal a nyommal, amelyet
+mindkettő maga után hagy.
 
-## One decision point
+## Egyetlen döntési pont
 
-Every human-side authorization decision resolves through a single function:
+Minden emberi oldali jogosultsági döntés egyetlen függvényen keresztül oldódik
+meg:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Egy **engedély** `<domain>:<tier>` alakú — `tickets:write`,
+`members:administer`, `repos:read`. A katalógus **származtatott**, nem kézzel
+írt: magából a műveletfelületből számítjuk ki (a művelet nevének előtagja adja a
+domaint, a már érvényesített szerepminimum adja a szintet), így mind a ~550
+művelet rendelkezik engedéllyel anélkül, hogy bárkinek be kellene gépelnie egyet.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Ez a származtatás az a tulajdonság, amelyet érdemes megvédeni. Azt jelenti, hogy
+egy ÚJ művelet alapértelmezés szerint kapu mögé kerül — a kézzel annotált modell
+hibaesete az, hogy valaki elfelejti, és amit elfelejt, az épp a kapu. Egy racsnis
+teszt rögzíti a kapott domainhalmazt, így egy új előtag alá tartozó művelet
+hozzáadása emberi elnevezési döntés, nem baleset.
 
-The four tiers map exactly onto the built-in roles:
+A négy szint pontosan megfelel a beépített szerepeknek:
 
-| Tier | Role floor | Example |
+| Szint | Minimális szerep | Példa |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Vendég | `tickets:read` |
+| `write` | Tag | `tickets:write` |
+| `administer` | Admin | `members:administer` |
+| `own` | Tulajdonos | `workspace:own` |
 
-## Roles
+## Szerepek
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Öt beépített szerep — **Tulajdonos, Admin, Tag, Megtekintő, Vendég** — előbeállítás
+e katalógus felett. A tulajdonjog munkaterületenként egyetlen hely, amelyet
+kifejezetten a **Tulajdonjog átadása** funkcióval adnak át (a távozó tulajdonos
+egyébként eltávolíthatatlan: a SCIM-visszavonás minden munkaterület-tulajdonost
+megtagad — előbb adják át a tulajdonjogot).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Az egyéni szerepek kizárólag szűkítenek.** Az egyéni szerep megnevez egy
+alapszintű előbeállítást (`admin`, `member`, `viewer` vagy `guest` — soha nem
+`owner`), valamint egy abból ELVETT engedélykészletet — „admin, de nem kezelheti
+a tagokat”. Soha nem adhat többet az alapjánál, és éppen ez teszi biztonságossá
+a bevezetésüket egy meglévő telepítésbe: minden meglévő ellenőrzés érvényes felső
+korlát marad. A tagok `custom:<id>` formában birtokolják ezeket, és egy olyan
+régi kliens, amely nem érti ezt az értéket, a vendég szerepre esik vissza,
+ahelyett hogy találgatna.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+A szerepek alatt **repónkénti hozzáférések** állnak (`none` / `read` /
+`review` / `write`): a munkaterületi tagság soha nem biztosít csendben nagyobb
+jogosultságot, mint a kódhoszt. A kódot elérő felületek mindegyike ellenőrzi
+ezeket — azok is, amelyek oldalról érik el a kódot, például egy terminál vagy egy
+tér worktree-jére nyitott szerkesztő-munkamenet.
 
-## Server authority
+## Szerverhatáskör
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Egyes műveletek egyáltalán nem munkaterülethez kötődnek: telepítésszintű
+beállítások, SSO-konfiguráció, szolgáltatói hitelesítő adatok, modellek kezelése,
+a teljes telepítés mentései. Ezek **szerverhatáskört** deklarálnak, és mindenki
+számára elutasításra kerülnek, kivéve a telepítés üzemeltetőjét (a nyilvántartott
+szervertulajdonost). Szándékosan egyetlen üzemeltetői identitás és annak egyetlen
+definíciója létezik.
 
-## The audit trail
+## Az auditnapló
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Minden jogosultsági döntés — **az engedélyezés és az elutasítás is** — egy
+munkaterületenkénti, hash-láncolt auditnaplóba kerül.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+A csak elutasításokat tartalmazó napló megválaszolja, hogy „mit blokkoltunk?”,
+de azt nem, hogy „mit tett valójában ez az ügynök, és ki engedélyezte?”, pedig az
+incidensvizsgálat épp ezzel a kérdéssel kezdődik. Ezért minden bejegyzés rögzíti
+a teljes hozzárendelési láncot: a cselekvő szereplőt, az embert, akinek a
+nevében eljárt, a delegálást, amelyen keresztül érkezett, a műveletet és annak
+argumentumait (kivonat formájában), a döntést, valamint **a döntést meghozó
+szabályt**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+A bejegyzések láncot alkotnak: mindegyik hash-e lefedi az előzőét, így bármely
+sor szerkesztése, törlése vagy átrendezése megtöri az összes utána következő
+hash-t. A **Lánc ellenőrzése** újraszámítja a teljes láncot, és megnevezi az első
+láncszemet, amely nem állja meg a próbát. Az az auditnapló, amelyet nem lehet
+ellenőrizni, csak napló; amelyet újra lehet számítani, az bizonyíték.
 
-Two consequences worth knowing:
+Két következmény, amelyet érdemes ismerni:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Az auditnapló táblája **mentes az életkoron alapuló törlés alól**. A hash-lánc
+  nem csonkítható középen. A megőrzés exportálásból, majd csonkításból áll, és a
+  csonkítás olyan ellenőrzőpontot hagy hátra, amely az eltávolított szakasz záró
+  hash-ét hordozza, így a megmaradó rész továbbra is visszaigazolható egészen az
+  elejéig.
+- Az auditnapló a tevékenységi idővonal **mellett** helyezkedik el, nem afölött.
+  Az idővonal azt mutatja, amit az emberek tettek; ez pedig azt, amit engedélyeztek
+  és elutasítottak. Egy közös korrelációs azonosítóval ugyanaz a hívás
+  mindkettőben visszakereshető.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Újsorokkal tagolt JSON formátumban exportálható, és streamelhető SIEM-rendszerbe
+(Splunk, Elastic, Sentinel — HTTP-végpont bearer tokennel). A streamelés
+szándékosan nem garantált: egy elérhetetlen SIEM soha nem akadályozhatja meg egy
+ügynök eszközhívását, a tartós és ellenőrizhető másolat pedig így is a lemezen
+van.
 
-## Sessions
+## Munkamenetek
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Egy telepítés beállíthat **maximális munkamenet-élettartamot** és **inaktivitási
+időtúllépést**. Mindkettő azon az eszközhitelesítő-ellenőrzésen érvényesül,
+amelyen minden hitelesített útvonal átfut — az olyan munkamenet-korlát, amelyet a
+kliens figyelmen kívül hagyhat, egy kérdőívre ad választ, nem egy támadóra. Egy
+telepítés az SSO-t is megkövetelheti, ami letiltja az új eszközök kézi
+párosítását (kizárás elleni védelemmel: mindaddig megtagadja, amíg nem létezik
+működő SSO-kapcsolat).
 
-## What this is not
+## Mi ez nem
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Nem objektumszintű ACL-ek.** Szándékosan nincs jegyenkénti vagy üzenetenkénti
+  engedély. A repószintű elkülönítés az, amit a csapatok valóban kérnek, és
+  létezik; az objektumszintű megosztás kombinatorikus felület, amelyre itt nincs
+  bizonyított igény.
+- **Nem DSL-ben konfigurálható szabályzatmotor.** A szókészlet szándékosan zárt,
+  így a teljes szabályzat megjeleníthető, elmagyarázható és felsorolható.
+- **Nem érvényesül máshol, csak a szerveren.** A kliensoldali ellenőrzések csak
+  azt szolgálják, hogy ne kínáljunk fel olyan vezérlőt, amelyet úgyis
+  elutasítanak. A mérvadó döntés mindig a szerveré.

@@ -1,249 +1,262 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: چیٹ برجز
+description: Slack انضمام سننے کے بجائے باہر کیوں کال کرتا ہے، چیٹ سے آنے والے پیغام کو اصل میں کیا اجازت دیتا ہے اور ایک ہی برج کس طرح کسی بھی چیٹ پروڈکٹ کی خدمت کرتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/چیٹ-برجز
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+چیٹ برج کسی بیرونی چیٹ پروڈکٹ — آج کل Slack — کو Control Center کے ورک
+اسپیس میں داخل ہونے کا پہلی درجے کا ذریعہ بناتا ہے۔ بوٹ کا ذکر کریں تو ایجنٹ
+جاگ اُٹھتا ہے؛ Slack تھریڈ میں جواب دیں تو گفتگو جاری رہتی ہے؛ سلیش کمانڈ
+لکھیں تو ٹکٹ درج ہو جاتا ہے۔ اِس کے پیچھے وہی اسپیسز، ٹرانسکرپٹس، ٹکٹس اور
+انتساب ہوتے ہیں جو ڈیسک ٹاپ ایپ استعمال کرتی ہے۔ چیٹ ورک اسپیس پر ایک _سطح_
+ہے، اُس کی نقل نہیں۔
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**صرف Slack ہی واحد فراہم کنندہ ہے جو دستیاب ہے۔** پروڈکٹ میں کہیں بھی Discord،
+Telegram، Teams یا Matrix کا کوئی نفاذ نہیں ہے۔ یہ فیچر جان بوجھ کر فراہم
+کنندہ سے بے نیاز لکھا گیا ہے — دوسرا پروڈکٹ شامل کرنا ایک enum ویلیو، ایک
+اڈاپٹر اور ایک پلگ اِن کا کام ہے — مگر آج ”چیٹ“ سے مراد Slack ہے۔
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+اسے دو سطحیں محیط ہیں اور وہ مختلف لوگوں کی ہیں۔ ورک اسپیس کو Slack سے جوڑنا
+اور بوٹ کو حسب ضرورت بنانا ترتیبات → ورک اسپیس → عام کے تحت **ایڈمن**
+کارروائیاں ہیں۔ اپنے چیٹ اکاؤنٹ کو اپنی Control Center شناخت سے لنک کرنا
+ترتیبات → ورک اسپیس → پروفائل اور شناخت کے تحت **رکن** کی کارروائی ہے۔
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+تین فیصلے پورے فیچر کی تشکیل کرتے ہیں: **کنکشن کس سمت چلتا ہے**، **باہر سے
+آنے والے پیغام کو کیا اجازت دیتا ہے** اور **پروڈکٹ سے مخصوص علم کہاں رہنے کی
+اجازت رکھتا ہے**۔
 
-## Outbound by design
+## آؤٹ باؤنڈ بذریعہ ڈیزائن
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+برج کبھی فراہم کنندہ کے لیے سنتا نہیں۔ Slack تک رسائی **Socket Mode** کے ذریعے
+ہوتی ہے: سرور Slack سے ایک ساکٹ URL مانگتا ہے اور باہر کال کرتا ہے، پھر اُسی
+کنکشن پر ذکر، DMs اور سلیش کمانڈز وصول کرتا ہے۔
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+نتیجہ ہی اصل مقصد ہے۔ NAT کے پیچھے ایک لیپ ٹاپ، بغیر ڈومین کا گھریلو سرور،
+نیٹ ورکس کے درمیان منتقل ہونے والی مشین — یہ سب برج بغیر کسی اِن باؤنڈ پورٹ،
+بغیر ٹنل، بغیر TLS سرٹیفکیٹ اور بغیر کسی ایسے عوامی URL کے چلا سکتی ہیں جسے
+تبدیلی پر بدلنا پڑے۔ محفوظ کرنے کے لیے کوئی ویب ہک اینڈ پوائنٹ نہیں ہے
+کیونکہ کوئی ویب ہک اینڈ پوائنٹ ہے ہی نہیں۔ جب Control Center ایپ ڈیفینیشن
+ترتیب دیتا ہے تو وہ Socket Mode لازم ٹھہراتا ہے اور کسی بھی درخواست URL کو
+ہٹا دیتا ہے، کیونکہ دونوں کے لیے کنفیگر کی گئی ایپ ایسی ایپ ہوگی جو آدھی
+چلتی ہو۔
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+قیمت ایک کنکشن کو زندہ رکھنا ہے، اور یہ سرور کا کام ہے: دوبارہ کنیکٹ ہونا
+jitter کے ساتھ exponential backoff ہے جس کی حد 30 سیکنڈ ہے، فراہم کنندہ کی
+شروع کردہ ساکٹ روٹیشن اُس backoff کو بڑھائے بغیر دوبارہ کنیکٹ ہو جاتی ہے، اور
+_مسترد شدہ اسناد_ حتمی ہوتی ہیں — منسوخ شدہ ٹوکن کو ہمیشہ دوبارہ آزمانا صرف
+ایک rate limit ہی کمائے گا، چنانچہ برج رک جاتا ہے اور نئے ٹوکنز کا انتظار
+کرتا ہے جبکہ ترتیبات میں فراہم کنندہ کی اپنی غلطی لفظ بلفظ دکھاتا ہے۔
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+بغیر چیٹ ایپ والا ورک اسپیس بالکل مفت پڑتا ہے: نہ ساکٹ، نہ ٹائمر، نہ ٹریفک۔
+اور یہ سارا عمل سرور کے ready banner کے _بعد_ شروع ہوتا ہے، کیونکہ جواب دینے
+میں سست چیٹ ایپ کو کبھی بوٹ میں تاخیر نہیں کرنی چاہیے۔
 
-## Membership authorizes, not token possession
+## رکنیت اجازت دیتی ہے، ٹوکن کی ملکیت نہیں
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+جس شخص نے ایپ انسٹال کی وہ پیغام بھیجنے والا شخص نہیں ہے۔ چنانچہ کچھ بھی
+ہونے سے پہلے ہر اِن باؤنڈ ایونٹ ایک **پرنسپل** میں حل ہوتا ہے اور ناکامی کی
+صورت میں وضاحت کے ساتھ انکار کر دیتا ہے:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **غیر لنک شدہ چیٹ اکاؤنٹ** کو بتایا جاتا ہے کہ کیسے لنک کرنا ہے، اُسی Slack
+  تھریڈ میں جس میں اُس نے لکھا۔
+- **ایسا لنک شدہ اکاؤنٹ جس کا صارف اِس ورک اسپیس کا رکن نہیں**، اُسے کہا جاتا
+  ہے کہ ایڈمن سے دعوت مانگے۔
+- **ایک رکن جس کا کردار صرف پڑھنے کا ہو** (`viewer`, `guest`) کو بتایا جاتا ہے
+  کہ اُس کا کردار کام شروع نہیں کر سکتا۔
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/)
-for the membership model this leans on.
+اِن میں سے کوئی بھی آگے نہیں بڑھتا۔ چیٹ پیغام کبھی ایسے شخص سے منسوب نہیں
+ہوتا جس نے اُسے بھیجا نہ ہو — اور یہی چیز آڈٹ ٹریل، فی پرنسپل rate limits
+اور ٹکٹ رپورٹرز کو سچا رکھتی ہے۔ اِس رکنیت ماڈل کے لیے دیکھیں
+[ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/)۔
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+لنک کرنا شناخت کا تعین ہے، رسائی کا عطیہ **نہیں**۔ رکنیت ہر ایونٹ پر دوبارہ
+جانچی جاتی ہے، اس لیے کسی ایسے شخص سے تعلق رکھنے والا لنک جو بعد میں ہٹا دیا
+گیا ہو، اُس کے پرانے مراعات کے بجائے انکار میں حل ہوتا ہے۔ لنک قائم کرنے کے
+دو راستے ہیں: ایک مختصر مدت کا واحد استعمال کا کوڈ جو رکن چیٹ میں لکھتا ہے،
+یا فراہم کنندہ کے _تصدیق شدہ_ ای میل پر خودکار مماثلت — اور ای میل کا راستہ
+پھر بھی لازم ٹھہراتا ہے کہ مماثل صارف پہلے سے رکن ہو، چنانچہ ایسا اجنبی جس
+کا پتہ سرور پر محض موجود ہو، کسی چیز سے لنک نہیں ہوتا۔
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+کوڈز دانستہ طور پر میموری میں رکھے جاتے ہیں، 15 منٹ کے ”time to live“ کے
+ساتھ۔ کسی کو محفوظ کرنا ایسی چیز کے لیے ایک پائیدار، اسناد نما قطار بنا دیتا
+جو بھاپ بن جانے کے لیے ہے، اور سرور کا دوبارہ آغاز ہر بقایا کوڈ کو باطل کر
+دینا درست رویہ ہے، کوئی رجعت نہیں — رکن دوبارہ ”لنک“ دباتا ہے۔
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+انکار کا جواب **اُسی Slack تھریڈ میں** دیا جاتا ہے جسے پیغام نے کھولا، بطور
+حقیقی جواب۔ تھریڈ میں دیا گیا جواب اُس پیغام پر بیج لگاتا ہے جس کا وہ جواب
+ہے، اُس ایک شخص تک پہنچتا ہے جسے اُس کی ضرورت ہے، اور پھر بھی ”آپ لنک شدہ
+نہیں“ کو خود چینل سے باہر رکھتا ہے۔ پیغام بھیجنا بھی وہ واحد صلاحیت ہے جو ہر
+فراہم کنندہ کے پاس ہوتی ہے، اس لیے وضاحت کبھی کسی ایسے فیچر پر منحصر نہیں
+ہوتی جو ایپ کے پاس نہ ہو۔
 
-## Provenance and the echo problem
+## ماخذ اور ایکو کا مسئلہ
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+جو برج دونوں طرف آئینہ بناتا ہے وہ لامحدود لوپ میں پڑ جائے گا جب تک کوئی چیز
+دونوں سمتوں میں فرق نہ کرے۔ برج جو بھی پیغام اندر لاتا ہے اُس پر
+`metadata['chat']` کی مہر لگتی ہے — فراہم کنندہ، ٹیم، گفتگو، تھریڈ، پیغام اور
+بھیجنے والا۔ باہر جانے والا آئینہ ایسا کوئی بھی پیغام چھوڑ دیتا ہے جس پر یہ
+مہر ہو۔
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+یہی ایک قاعدہ دو طرفہ آئینہ بندی کو محفوظ بناتا ہے: Control Center میں ٹائپ
+کیا گیا انسانی پیغام لنک شدہ تھریڈ کی طرف منتقل کر دیا جاتا ہے (مصنف کے نام
+کے ساتھ سابقے کے طور پر)، جبکہ چیٹ _سے_ آنے والا پیغام وہیں رک جاتا ہے جہاں
+وہ داخل ہوا۔
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+باہر جانے والی چیز جان بوجھ کر تنگ ہے۔ ایجنٹ کا **جواب** عام چیٹ متن کے طور
+پر منتقل ہوتا ہے۔ ایک مختصر سوچ کارڈ کی `Thinking…` قطار پر ظاہر ہو سکتی ہے۔
+ٹول کا آؤٹ پٹ ڈفز کی دیوار ہوتا ہے اور Control Center میں ہی رہتا ہے، اور کٹے
+ہوئے جواب کا اشارہ بھی وہیں جاتا ہے۔
 
-## A card reports the work; the text is still the message
+## کارڈ کام کی رپورٹ دیتا ہے؛ متن پھر بھی پیغام ہے
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+جہاں فراہم کنندہ اُنہیں رینڈر کرتا ہے، ایک باری میں **ایک ٹاسک کارڈ** ہوتا
+ہے، جو جب تک باری چلتی ہے اپنی جگہ ترمیم ہوتا رہتا ہے اور اُس جواب کے اوپر
+بیٹھتا ہے جس کی وہ وضاحت کرتا ہے۔
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+کارڈ ایک گروہ بند پلان ہے، کوئی روندھا ہوا پیراگراف نہیں۔ Slack ایک ہی ٹاسک
+پر `details` اور `output` جوڑ دیتا ہے، اس لیے قطار کی تفصیلات ایک بار بھیجی
+جاتی ہیں (`Thinking…` پر سوچ) اور `output` کبھی اسٹریم نہیں ہوتا۔ سیٹ اپ ایک
+قطار ہے جس کا عنوان بدلا جاتا ہے (`Working on it…`, `Cloning …`)。 استدلال
+ایک `Thinking…` قطار شامل کرتا ہے۔ ہر ٹول اپنی الگ قطار ہے
+(`Read lib/main.dart`)。 جواب کارڈ کے نیچے عام متن ہے — Slack کا plan view
+اُسے بعد میں شامل ہونے والے مارک ڈاؤن سے پڑھتا ہے، نہ کہ کاموں میں ملی ہوئی
+کسی چنک سے۔ اِس کے علاوہ کچھ نہیں: نہ ٹول کا آؤٹ پٹ اور صرف ایک مختصر
+allow-list سے ایک ٹول آرگومنٹ، کیونکہ کسی نامعلوم ٹول کے آرگومنٹس پوری فائل
+کا باڈی ہو سکتے ہیں اور قطار ایک سطر ہوتی ہے۔
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+کارڈ اُس انتظار کو بھی ڈھانپتا ہے جو باری سے _پہلے_ ہوتا ہے۔ پہلا ذکر گفتگو
+بناتا ہے اور اُسے بنانا ہر اُس ریپو کو کلون کرتا ہے جس میں ایجنٹ کام کرے گا —
+جو ایک حقیقی ریپوزٹری پر کئی منٹ ہوتے ہیں جہاں ایجنٹ سے ابھی کچھ پوچھا بھی
+نہیں گیا ہوتا اور تھریڈ ایسا لگتا ہے جیسے بوٹ نے درخواست نظر انداز کر دی۔
+چنانچہ کارڈ اُسی لمحے کھل جاتا ہے جب ذکر قبول ہوتا ہے (`Working on it…`) اور
+پھر وہ سیٹ اپ قطار اُنہی الفاظ میں اپ ڈیٹ ہوتی ہے جو ڈیسک ٹاپ دکھاتا ہے —
+`Cloning acme/widgets…`, `Setting up
+Reviewer…`, `Starting the agent…` — پھر جیسے ہی ایجنٹ استدلال شروع کرتا ہے ایک
+`Thinking…` قطار، پھر ہر ٹول کے لیے ایک قطار۔ ایک کارڈ، ایک پیغام، ”میں نے سن
+لیا“ سے لے کر نیچے عام متن کے طور پر جواب تک۔ سیٹ اپ کی رپورٹ صرف وہاں دی
+جاتی ہے جہاں چیٹ میں کوئی اُس کا منتظر ہو: ایپ میں تیار کی جا رہی گفتگو، یا
+سرور بوٹ پر دوبارہ شروع کی گئی بے سہارا گفتگو، بغیر کسی کارڈ کے تیار ہوتی ہے۔
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+وہ واحد چیز اُٹھائے ہوئے ہے جو چیٹ قاری کو نہیں دے سکتی: جواب کے پیچھے والی
+گفتگو کا **View in Control Center** لنک۔ چیٹ پروڈکٹس لنک میں `http(s)` قبول
+کرتے ہیں اور کچھ نہیں، اس لیے بٹن ایک چھوٹے صفحے کی طرف اشارہ کرتا ہے جو یہ
+سرور پیش کرتا ہے، اور وہ صفحہ براؤزر کو ڈیسک ٹاپ ایپ کے `control-center://`
+لنک پر بھیج دیتا ہے۔ وہ صفحہ نہ کچھ پڑھتا ہے نہ کچھ حل کرتا ہے — اُس کے URL
+میں موجود ids صرف ایک ڈیپ لنک میں منتقل ہوتے ہیں اور کہیں نہیں — اور بغیر
+قابلِ رسائی عوامی URL والا سرور ٹوٹے بٹن کے بجائے محض بغیر بٹن کا کارڈ پیدا
+کرتا ہے۔
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+کارڈز بھی ہر اُس دوسری چیز کی طرح ایک صلاحیت ہیں۔ اُن کے بغیر فراہم کنندہ
+بالکل پہلے کی طرح برتاؤ کرتا ہے، صرف متن، اور کال کے وقت کوئی کارڈ مسترد کرنے
+والا فراہم کنندہ اپنی اسٹریم برقرار رکھتا ہے: جواب ہمیشہ اُس کارڈ سے اوپر
+رہتا ہے جو اُس کی وضاحت کرتا ہے۔ جب اسٹریمنگ مکمل طور پر بند ہو، تب مکمل کارڈ
+بھیجے گئے واحد پیغام کے ساتھ سوار ہو جاتا ہے۔ درج شدہ ٹکٹ کے ساتھ بھی ایسا
+ہی سلوک ہوتا ہے — `/cc ticket` کی تصدیق ایک مکمل کارڈ ہوتی ہے جس کے وجود کی
+وجہ ابھی بنائے گئے ٹکٹ کا لنک ہے۔
 
-## Capabilities are negotiated, then remembered
+## صلاحیتیں پہلے طے ہوتی ہیں، پھر یاد رکھی جاتی ہیں
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+چیٹ پروڈکٹس اِس میں مختلف ہیں کہ وہ کیا رینڈر کر سکتے ہیں، اس لیے برج سب سے
+بھرپور سطح کے مطابق لکھا گیا ہے — ایک جواب جو تھریڈ کے اندر زندہ بڑھتا ہے،
+ایک عارضی ”سوچ رہا ہے…“ اسٹیٹس، ایک عنوان والا تھریڈ، سلیش کمانڈ کا فوری
+جواب — اور ایک وقت میں ایک صلاحیت گھٹاتا جاتا ہے۔ جس فراہم کنندہ کے پاس اِن
+میں سے کچھ بھی نہ ہو وہ پھر بھی چلتا ہے؛ جوابات بس ایک پیغام کے طور پر آ
+جاتے ہیں۔
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+صلاحیت کا اعلان کرنا اُس کا وعدہ کرنا نہیں ہے۔ Slack کے اسٹریمنگ جوابات کو
+پیڈ پلان کا فیچر درکار ہوتا ہے اور Slack صرف کال کے وقت انکار کرتا ہے۔ مستقل
+قرار دیا گیا انکار **کنکشن کی پوری عمر** کے لیے یاد رکھا جاتا ہے: برج پوچھنا
+چھوڑ دیتا ہے اور اُس کے بعد مکمل جوابات بھیجتا ہے اور ترتیبات یہ صاف بتا
+دیتی ہیں، کیونکہ ”میرے جوابات اسٹریم ہونا بند ہو گئے“ کا جواب لاگ پڑھے بغیر
+ملنا چاہیے۔ اگر Slack کوئی ٹاسک کارڈ مسترد کرے تو اُنہیں بھی اِسی طرح گرا
+دیا جاتا ہے۔
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+ہر حد ریلے کے بجائے فراہم کنندہ کی ہوتی ہے: پیغام کی بالائی حد، اسٹریم چنک کی
+بالائی حد اور یہ کہ کسی اسٹریم کو تھریڈ اینکر درکار ہے یا نہیں — یہ سب اڈاپٹر
+بیان کرتا ہے، اور طویل جواب پیراگراف، سطر یا لفظ کی حد پر تقسیم ہوتا ہے، لفظ
+کے بیچ سے نہیں۔
 
-## One bridge, one adapter per product
+## ایک برج، ہر پروڈکٹ کے لیے ایک اڈاپٹر
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+ہر پروڈکٹ نما چیز ایک پورٹ کے پیچھے رہتی ہے۔ عمومی کور markdown، چیٹ
+گفتگوؤں، چیٹ تھریڈز اور ارکان کو جانتا ہے؛ وہ Slack envelopes، `mrkdwn` یا
+gateway intents کے بارے میں کچھ نہیں جانتا۔ تین ٹکڑے یہ کام کرتے ہیں:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **اڈاپٹر** ایک پروڈکٹ کو معمول پر لاتا ہے: اُس کی ٹرانسپورٹ، اُس کی API
+  کالیں، اُس کا متن کا کوڈیک اور اُس کے envelope کی نرالیاں۔ Slack کے قابلِ
+  ذکر ہیں — چینل کا ذکر دو بار آتا ہے (`app_mention` کے طور پر _اور_ `message`
+  کے طور پر) اور بیشتر میسج ذیلی اقسام نئی درخواستیں ہونے کے بجائے آرائش ہوتی
+  ہیں۔ دونوں اڈاپٹر میں حل ہو جاتے ہیں، اس لیے کور کبھی نہیں جان پاتا کہ Slack
+  دو بار ڈیلیور کرتا ہے۔
+- **ڈسکرپٹر** فراہم کنندہ کی عوامی شکل ہے: اُسے کون سی اسناد درکار ہیں، اُن
+  کے فارمیٹ کیا ہیں، کون سے URLs صارف کو اُنہیں ڈھونڈنے میں مدد دیتے ہیں، وہ
+  کیا کر سکتا ہے اور کیا اُس کی ایپ یہاں سے بنائی یا ترمیم کی جا سکتی ہے۔
+  ترتیبات کا کارڈ، کنیکٹ ڈائیلاگ اور آرگومنٹ کی توثیق سب اُسی سے _تولید_ ہوتے
+  ہیں — کلائنٹ واپس ایک فراہم کنندہ کے ساتھ فیلڈ id سے منسلک ایک نقشہ بھیجتا
+  ہے۔
+- **پلگ اِن** سرور کی طرف کی ترکیب ہے: اسناد کس طرح ایک تصدیق شدہ کنکشن بنتی
+  ہیں، اڈاپٹر کیسے بنتا ہے اور فراہم کنندہ کی طرف کی ایپ کیسے منظم ہوتی ہے۔
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+چنانچہ پروڈکٹ شامل کرنا ایک enum ویلیو، ایک اڈاپٹر اور ایک پلگ اِن ہے۔ نہ کوئی
+نیا RPC op، نہ اسکیما میں تبدیلی، نہ کلائنٹ میں تبدیلی — اور کلائنٹ سچا رہتا
+ہے، کیونکہ جس فیلڈ کا اُس نے کبھی نام نہ سنا ہو وہ پھر بھی اُس لیبل کے ساتھ
+رینڈر ہوتا ہے جو سرور نے دیا۔
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+دو تفصیلیں اِس تجرید کو اوپر کی طرف رسنے سے روکتی ہیں۔ وہ ایپ مینجمنٹ کے قدم
+جن کے لیے فراہم کنندہ کے پاس کوئی API نہیں (ٹوکن بنائیں، ایپ انسٹال کریں،
+اجازت کی تبدیلی کے بعد دوبارہ انسٹال کریں) **اپنے لنکس والے نامزد قدموں** کے
+طور پر واپس آتے ہیں، اس لیے سیٹ اپ مکمل کرنے کی اسکرین اُنہیں یہ جانے بغیر
+دکھا دیتی ہے کہ فراہم کنندہ کون سا ہے۔ اور برج جو بھی ہدایت لکھتا ہے وہ فراہم
+کنندہ کا نام اور وہ کمانڈ لکھتا ہے جو ایپ دراصل استعمال کرتی ہے، اس لیے بدلی
+ہوئی کمانڈ یا دوسرا فراہم کنندہ بغیر کسی نئی اسٹرنگ کے درست پڑھا جاتا ہے۔
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[اجازت کی تبدیلی کے بعد دوبارہ انسٹال کریں]
+بوٹ کا نام، وضاحت یا آئیکن تبدیل کرنا فوراً لاگو ہوتا ہے۔ **اجازتوں** کی
+تبدیلی دوبارہ انسٹال مانگتی ہے: Slack نیا manifest لاگو کرتا ہے مگر گرانٹ اُسی
+پر رکھتا ہے جو انسٹال ہوئی تھی۔ ترمیم باقی رہ گیا ایک قدم واپس دیتی ہے جس کے
+ساتھ Slack کے ”Reinstall to Workspace“ صفحے کا لنک ہوتا ہے۔
 :::
 
-## Where credentials live
+## اسناد کہاں رہتی ہیں
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+ورک اسپیس کے چیٹ ٹوکن اُسی ورک اسپیس کی **اپنی ڈائریکٹری میں، اُس کے ڈیٹا
+بیس کے پہلو میں** رہتے ہیں — سادہ JSON کے طور پر
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json` پر، ڈیٹا بیس میں
+نہیں اور دانستہ طور پر OS keychain میں بھی نہیں۔ دو نتائج بعد میں کھو جانا
+آسان ہے: ورک اسپیس حذف کرنے سے ڈائریکٹری اَن لنک ہو جاتی ہے اور اُس کے ٹوکن
+اُس کے ساتھ چلے جاتے ہیں، اور ورک اسپیس ایکسپورٹ یا بیک اپ کرنے پر
+`workspace.db` نقل ہوتی ہے، اس لیے کسی اور کو دیا گیا ورک اسپیس اپنے اندر
+زندہ بوٹ ٹوکن ساتھ نہیں لے جاتا۔ فائل سرور ہوسٹ کی فائل سسٹم اعتماد کی حد
+وراثت میں پاتی ہے — ڈائریکٹری تک پڑھنے کی رسائی رکھنے والا کوئی بھی بوٹ ٹوکن
+پڑھ سکتا ہے، جو وہی حد ہے جس کے پیچھے ڈیٹا بیس بھی ہیں۔
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+فی فراہم کنندہ ایک فائل، جوہری طور پر اور صرف مالک کے لیے لکھی جاتی ہے: منسوخ
+شدہ ایپ ایک فائل اَن لنک کرنے سے حذف ہو جاتی ہے اور خراب فائل سب کے بجائے ایک
+فراہم کنندہ کا نقصان کرتی ہے۔ اسناد کنیکٹ آپریشن کے ذریعے _اندر_ آتی ہیں اور
+کبھی واپس باہر نہیں آتیں — اسٹیٹس پڑھنے پر صرف کنکشن میٹا ڈیٹا کا جواب ملتا
+ہے۔
 
-## What is deliberately not offered
+## جو دانستہ طور پر پیش نہیں کیا جاتا
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **ایپ کی ساختی ترتیبات۔** ٹرانسپورٹ، scopes اور ایونٹ سبسکرپشنز لازم
+  ٹھہرائے جاتے ہیں، ظاہر نہیں کیے جاتے۔ ایسی ایپ جسے ترتیبات کی اسکرین سے
+  خاموشی میں کنفیگر کیا جا سکے وہ فیچر نہیں، سپورٹ ٹکٹ ہے۔
+- **گفتگو کے ساتھ سلیش کمانڈز۔** Slack کی سطح پیغامات، تھریڈ جوابات اور سلیش
+  کمانڈز ہیں۔
+- **دوسرا ماخذِ سچ۔** چیٹ وہ جگہ نہیں جہاں کام محفوظ ہوتا ہے۔ Slack تھریڈ ایک
+  اسپیس ہے، جواب ایک ٹرانسکرپٹ ہے، ٹکٹ ایک ٹکٹ ہے — سب ورک اسپیس میں، ہر
+  کلائنٹ سے قابلِ رسائی۔
 
-## See also
+## مزید دیکھیں
 
-- [Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): why links and credentials are per workspace
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): what wakes when a mention arrives
-- [Tickets and delegation](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): what `/cc ticket` files
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/)
-- [Set up Slack integration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
-- [Link your Slack account](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
-- [Customize the chat bot](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
-- [PR conversations](/ur-PK/ہدایت-نامہ/تصورات/pr-گفتگوئیں/): the same three decisions, made for a forge
+- [ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): وہ پرنسپلز اور کردار جن سے ہو کر برج حل ہوتا ہے
+- [ورک اسپیسز اور تنہائی](/ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز/): لنکس اور اسناد فی ورک اسپیس کیوں ہوتے ہیں
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): ذکر آنے پر کیا جاگ اُٹھتا ہے
+- [ٹکٹس اور تفویض](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/): `/cc ticket` کیا درج کرتا ہے
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): برج سرور اور کلائنٹس کے درمیان کہاں بیٹھتا ہے
+- [Slack کو اپنے ورک اسپیس سے جوڑیں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-چیٹ-برج/)
+- [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- [اپنا Slack اکاؤنٹ لنک کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-اکاؤنٹ-لنک-کریں/)
+- [چیٹ بوٹ حسب ضرورت بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/)
+- [PR گفتگوئیں](/ur-PK/ہدایت-نامہ/تصورات/pr-گفتگوئیں/): وہی تین فیصلے، ایک forge کے لیے

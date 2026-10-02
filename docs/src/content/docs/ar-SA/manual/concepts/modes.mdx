@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: الأوضاع
+description: لماذا الوضع خاصية للمساحة لا للوكيل، وما الذي يضمنه كل وضع من الأربعة، وأين يكون الضمان بنيويًا لا مجرد توجيه في المطالبة.
 slug: ar-SA/دليل-المستخدم/مفاهيم/أوضاع
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## ما الوضع
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+الوضع خاصية من خصائص **المساحة**، يُخزَّن عمودًا واحدًا في صفها. كل محادثة داخل المساحة تشترك فيه، والخيوط كذلك: يرث الخيط وضع مساحته كما تفعل أي محادثة أخرى. لذلك قد يكون الوكيل نفسه في أوضاع مختلفة، في مساحات مختلفة، في الوقت نفسه، وتبديل وضع المساحة يغيّر ما يجري في الجولة التالية من غير أن يمس الوكيل.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+هناك أربعة بالضبط: `chat` و`review` و`plan` و`orchestrate`. التعداد نفسه لا يحمل سياسة. كل ما يضمنه الوضع يُعلَن مرة واحدة في **ملف تعريف القدرات**، وتشتق منه كل طبقة فرض ما تفرضه:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **سطح الأدوات**: أي الأدوات توجد أصلًا في هذا الوضع، بمستوى موافقة أقصى، وقائمة سماح، وقائمة منع، ومجموعة أصناف أثر مرفوضة.
+2. **فعل الإخراج المطلوب**: ما يجب أن يستدعيه التشغيل ليُعدّ قد سلّم شيئًا.
+3. **أصناف الأثر المرفوضة**: ما ترفضه ضوابط الإجراء رفضًا مباشرًا.
+4. **وضعية شجرة العمل**: أتجوز الكتابة في شجرة العمل. يُفرض ذلك بنزع أدوات التعديل من السطح، وهذا ما يجعل القيد يصمد على كل مضيف. إذا كان للمضيف بيئة نظام تشغيل معزولة، تحدّد الوضعية نفسها قواعد الكتابة في نظام الملفات أيضًا، فيركّب وضع القراءة فقط شجرة العمل للقراءة فقط. هذه نسخة ثانية من الضمان، وليست النسخة التي تنجز العمل.
+5. **كتلة موجّه النظام**: تمهيد _مُولَّد_ للقدرات، يُشتق من قائمة الأدوات المتحققة فعلًا، ويُضاف إليه توجيه مكتوب باليد.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+تشتق كل طبقة فرض من هذا الملف الواحد، فلا يستطيع سطح الأدوات وضوابط الإجراء ووضعية شجرة العمل والمطالبة أن تختلف.
 
-## The four modes
+## الأوضاع الأربعة
 
-### Chat — displayed as "Agent"
+### الدردشة، وتُعرض باسم «الوكيل»
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+هو الوضع الافتراضي، والوحيد بلا قيود زائدة: سطح الأدوات كامل حتى مستوى التنفيذ، وشجرة عمل قابلة للكتابة، ولا أصناف أثر مرفوضة، ولا عقد إكمال. يُستخدم للتنفيذ وإصلاح الأخطاء والأسئلة عن الشفرة وكل عمل غير مخطط له.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+لاحظ التسمية: في حقل الكتابة يُعرض الوضع باسم **«الوكيل»** لا «دردشة».
 
-### Plan — read-only, one deliverable
+### التخطيط: قراءة فقط، وتسليم واحد
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+يجعل وضع التخطيط شجرة العمل للقراءة فقط، وينزع أدوات الكتابة من السطح بالكامل، فيصير القيد في البنية لا في التعليمات. يقرأ الوكيل ويبحث ويستقصي، ويسلّم شيئًا واحدًا بالضبط: استدعاء `submit_plan` يحمل مخطط تبعية مُنمَّطًا، فيه هدف وعُقد بمفاتيح وعناوين وأوصاف، ومفاتيح العُقد التي تعتمد عليها كل عقدة.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+تظهر الخطة صفًا مختصرًا في المحادثة، وتفتح استوديو الخطط في لسان إلى جوارها. الموافقة عليها تحوّل المخطط إلى تنسيق، وتشغّل العمل المولَّد، وتعيد مساحة التأليف إلى وضع الوكيل.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+إذا انتهى تشغيل في وضع التخطيط ولم يستدعِ `submit_plan` قط، تحقن الحلقة أولًا تنبيهًا يقول إن الخطة لا توجد حتى ينجح ذلك الاستدعاء. يُجيز التنبيه خروجًا صادقًا مفاده أن لا حاجة إلى خطة هنا، لأن وضع التخطيط إعداد للمساحة، والسؤال العادي داخله لا يفرض خطة صورية.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/).
+:::note[عقد لم يُستوفَ ليس تشغيلًا فاشلًا]
+التشغيل الذي ينتهي من غير خطته يُسجَّل مع ذلك بالحالة `completed`، فقد خرجت العملية بنظافة. تُقرأ الحقيقة من حيوية التشغيل (`empty`) وعائلة الخطأ (`silentRun`) وملخص يسمّي ما لم يُنتَج. انظر [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+هناك مخرج ثانٍ مستقل: `exit_plan_mode`. هو بوابة موافقة صارمة، لا فعل إخراج. الوكيل الذي يستدعيه بدل `submit_plan` لم يسلّم شيئًا. الاستدعاء الأول يفتح موافقة `plan_exit` دائمة ويعيد `pending`، وتبقى المساحة للقراءة فقط. تبقى الاستدعاءات التالية على `pending` ولا تفتح بوابة ثانية. لا ينقلب وضع المساحة إلى الدردشة إلا بعد منح الموافقة، وذلك في استدعاء لاحق. الرفض يتيح للوكيل فتح طلب جديد لخطة منقَّحة.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+للخروج من وضع التخطيط بنفسك، بدّل قائمة الوضع في حقل الكتابة (أو Shift+Tab). يُحسم `exit_plan_mode` بأداة MCP `decide_approval`. صفوف «موافقة الوكيل» في الوارد أمر مختلف: مطالبات تأكيد في كل جولة، من وكيل قيد التشغيل.
 
-### Review — read-only, no contract
+### المراجعة: قراءة فقط، وبلا عقد
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+وضع المراجعة لمراجعة طلبات السحب. يجعل شجرة العمل للقراءة فقط، ويضع سقف سطح الأدوات تحت مستوى التنفيذ، ويطبّق قائمة سماح منتقاة لأدوات المراجعة والتذاكر والتواصل. المساحة التي تُفتح لطلب سحب تُنشأ في وضع المراجعة تلقائيًا.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+مخرجات الوكيل نتائج منظَّمة، هي **عُقد مراجعة**، وعند إنهاء المراجعة **حكم**. تحمل العقدة نوعًا (`bug` أو `suggestion` أو `recommendation` أو `question` أو `ticket`)، وأولوية من P0 (تمنع الإصدار) إلى P3 (تحسين مرغوب)، وثقة يقدّرها الوكيل بنفسه، ومرساة اختيارية (ملف مع نطاق أسطر، وملاحظات المستودع كله بلا مرساة)، وحالة دورة حياة تنتقل من `open` إلى `consensusReady` متى أكّدها قرين، لا المؤلف. النتيجة التي تغيب أولويتها أو ثقتها، أو تخرج إحداهما عن المدى، تُسقَط عند حد القراءة حتى لا تلوّث الحكم.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+الحكم هو **Ship** أو **Hold** أو **Block**، ولا تجعله نتائج المحاور المطوية فيه إلا _أشد_: محور عليه بوابة وفشل يفرض `block`، ومحور عليه بوابة ولم يستطع العمل يفرض `hold` على الأقل. غياب الدليل لا يحوّل البوابة إلى خضراء.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+بخلاف التخطيط والتنسيق، لا تحمل المراجعة **عقد إكمال**. تتراكم النتائج عبر `add_review_node` وتنشرها `finalize_review`، ويجوز، عن حق، ألا تُستدعى أي منهما ولا مرة. فوكيل خط أنابيب في وضع المراجعة قد يكون هناك لينجز تذكرة.
 
-### Orchestrate — read-only, proposes a team
+### التنسيق: قراءة فقط، ويقترح فريقًا
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+يحوّل وضع التنسيق هدفًا واحدًا إلى خطة للفريق كله. هو مثل وضع التخطيط للقراءة فقط، ولا يستطيع كتابة الملفات. فوق سطح البحث يملك فعلًا مميّزًا واحدًا، `propose_orchestration`، يُصدر به اقتراحًا منظَّمًا: أدوارًا، وشجرة تذاكر فرعية، وخطوة تركيب، وميزانية. لا تسمّي المطالبة إلا أدوات السطح، فلا يصرف النموذج جولات في سرد توظيف أو عمل تذاكر لا يستطيع استدعاءه.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/).
+لا يُنفَّذ شيء من الاقتراح حتى توافق عليه. عند الموافقة يوظّف المُجسِّد الحتمي الوكلاء، وينشئ التذاكر ومشروعًا، ويشغّل خط أنابيب مولَّدًا. الموافقة للمشغّل وحده: لا توجد أداة MCP تنفّذها، فالوكيل يقترح ولا يوافق على خطته. إعادة الاقتراح بمبادرة الوكيل مقيّدة بفترة تهدئة من دقيقتين، فتُرفض إعادات التخطيط المتتالية ويُطلب منها أن تتجمّع في اقتراح واحد. انظر [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/).
 
-## Two rules worth knowing
+## قاعدتان يحسن معرفتهما
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**فعل الإخراج الخاص بالوضع لا يُرفض أبدًا.** `submit_plan` و`propose_orchestration` مثبَّتان في سطح الأدوات، وموافَق عليهما مسبقًا بما يتجاوز مرشّح الأدوات وبوابة الموافقة وضوابط الإجراء معًا، فلا يملك ضبط الاستقلالية في المساحة أن يُسكت ما يسلّمه الوضع. `ask_user` في الإطار المضمّن مثبَّت للسبب نفسه: فهو _وسيلة_ بلوغ التشغيل إلى المشغّل، ووضع بوابة عليه يُدخل التشغيل الذي يحتاج إلى سؤال في طريق مسدود. هو في مستوى القراءة، فيحتفظ به كل وضع للقراءة فقط، وهو معفى من غلاف الموافقة. مطالبة أمام مطالبة تفشل مغلقة إذا لم يكن هناك معتمِد متصل، وذلك يمنع الوكيل من فعل السؤال.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**أوضاع القراءة فقط لا تمنع الوصول إلى الشبكة ولا إلى الأسرار.** أصناف الأثر التي ترفضها المراجعة والتخطيط والتنسيق هي التي تغيّر العالم: حذف الملفات، والكتابة خارج شجرة العمل، والإيداع، والدفع، وإنشاء طلبات السحب ونشرها، وكتابات مزامنة المزوّد، وتثبيت الحزم، وإنشاء العمليات، وتعديل مساحة العمل، والتحكم في الحاوية المعزولة. يبقى خروج الشبكة والوصول إلى الأسرار على افتراضاتهما عن قصد، فالبحث هو غاية وضع القراءة فقط.
 
-## Choosing and changing a mode
+## اختيار الوضع وتغييره
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+تعرض قائمة الوضع في حقل الكتابة **ثلاثة** خيارات: الوكيل (دردشة)، وتخطيط، والتنسيق. `review` **لا يختاره المستخدم**. يضبطه النظام عند إنشاء مساحة مراجعة طلب سحب، وتضبطه خطوات خط الأنابيب.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+عقدة خط أنابيب **تفتح مساحة** تستطيع أن تثبّت وضع تلك الغرفة بمفتاح `extras['mode']` (`chat` أو `review` أو `plan`). المفتاح مطابقة تامة: أي إملاء آخر، بما في ذلك `orchestrate`، يُتجاهل في صمت، وتحصل الغرفة على افتراضي الجسم (`review` في جسم إنشاء المساحة). خطوة الوكيل تنضم إلى غرفة لم تنشئها، ولا تعيد منحها الأذونات.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+الحسم نفسه بسيط. يقرأ المُرسِل عمود `mode` في المساحة. أما الإرسال بلا مساحة فيُحسم إلى `chat`: إرسال لمرة واحدة، أو استدعاء من سطر الأوامر، أو معرّف مساحة من مساحة عمل أخرى، وهذا الأخير غير موجود أصلًا في ملف قاعدة بيانات مساحة العمل هذه. يسري تغيير الوضع من الجولة التالية.
 
-## Where the guarantee actually holds
+## أين يصمد الضمان فعلًا
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+يبني **الإطار المضمّن** سطح أدوات الوضع ويفرضه. هو النقل الوحيد الذي يجعل الأداة غير مرئية لا مرفوضة بعد ظهورها، ويضع بوابة على كل استدعاء قبل تشغيله، ويراقب عقد إكمال.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
+على نقل Claude Code يُمرَّر أي وضع غير الدردشة بالشكل `--permission-mode plan`. يلتزم Claude بذلك عرفًا، وتعمل أدوات القراءة والكتابة والتحرير والصدفة الخاصة به من غير رصد. لهذا النقل يبقى الوضع إرشادًا لا حدًا يفرضه Control Center. انظر [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+تقيّد قوائم السماح أدوات مستوى الكتابة فما فوق. مستوى القراءة في الإطار المضمّن يصل مع ذلك إلى أدوات لا تسمّيها أي قائمة. على Claude Code تُرفض الأداة التي تغفلها قائمة السماح، سواء أكانت لدى الخادم أم لم تكن.
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): where the mode is resolved and projected
-- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): which transports can enforce a mode
-- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/): what an approved orchestrate proposal does
-- [Use plan mode](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/): the practical walkthrough
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): أين يُحسم الوضع وتُشتق صورته
+- [نموذج الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/): أي نقل يستطيع فرض الوضع
+- [الضوابط](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/): سياسة أصناف الأثر التي يغذّيها الإعداد المسبق للوضع
+- [التنسيق](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/): ماذا يفعل اقتراح التنسيق بعد الموافقة
+- [استخدام وضع الخطة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/وضع-الخطة/): الشرح العملي

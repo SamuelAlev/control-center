@@ -1,172 +1,184 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Urus penyesuai dan model
+description: Sambungkan penyedia model, pilih model yang dijalankan oleh ejen dan semak CLI pelari ejen yang ada pada hos pelayan.
 slug: ms-MY/manual-pengguna/panduan-cara/penyesuai
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Panduan ini menunjukkan cara menyambungkan penyedia model dan memilih apa yang
+dijalankan oleh ejen.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Semua ini terletak pada satu halaman: **Tetapan → Pelayan → Penyedia model**.
+Entri sub-bar sisi berbunyi "Penyedia model"; tajuk halaman berbunyi "Penyesuai".
 
-## What an adapter is
+## Apa itu penyesuai
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+Penyesuai ialah _pelari_ yang melaksanakan giliran ejen. Terdapat dua dan
+senarainya tetap — anda tidak boleh menambah yang ketiga.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| Penyesuai                  | CLI      | Pengangkutan                                        |
+| -------------------------- | -------- | --------------------------------------------------- |
+| Control Center (built-in)  | tiada    | Gelung ejen dalam proses, bercakap dengan penyedia melalui HTTP |
+| Claude Code                | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI dan yang lain ialah **penyedia** pada penyesuai
+terbina, bukan CLI yang berasingan. Apa yang _boleh_ anda tambah ialah penyedia
+lain — mana-mana titik akhir yang serasi OpenAI atau Anthropic. Itulah bahagian
+seterusnya.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Pengesanan menyiasat pelayan, bukan mesin anda]
+Kad **Pelari dikesan** menyenaraikan apa yang `cc_server` jumpai pada `PATH`
+_hos pelayan_. Pada klien nipis atau web, itu mesin yang berbeza daripada mesin
+yang anda sedang lihat. Pasang CLI itu pada mesin yang menjalankan `cc_server`.
 :::
 
-## Connect a model provider
+## Sambungkan penyedia model
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Penyesuai terbina memerlukan sekurang-kurangnya satu penyedia yang disambungkan
+sebelum ia boleh berjalan. Empat belas disertakan dalam katalog.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Pergi ke **Tetapan → Pelayan → Penyedia model**
+2. Tatal ke **Penyedia & model**
+3. Cari penyedia anda dan sambungkannya:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Penyedia                                                                                                 | Cara menyambung                                                                                                               |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | Kunci API. Langganan Claude Pro/Max bukan log masuk API Anthropic — gunakan penyesuai Claude Code untuk pelan itu            |
+| OpenAI, Codex, Cursor                                                                                    | Log masuk OAuth penyemak imbas, atau kunci API. Codex ialah ChatGPT Plus/Pro melalui bahagian belakang Codex Responses, bukan spawn CLI |
+| Kimi Code                                                                                                | OAuth penyemak imbas sahaja — aliran kod peranti. Ia pelan kadar rata, jadi ia tiada harga per token                          |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | Kunci API                                                                                                                     |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Titik semak: lencana baris itu bertukar menjadi disambungkan dan apabila
+dikembangkan ia menyenaraikan model yang disajikan oleh penyedia itu, setiap satu
+dengan harga per juta token dan tetingkap konteksnya.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+Token OAuth disimpan dalam stor kelayakan pelayan sendiri dan diperbaharu sebelum
+tamat tempoh. Kelayakan penyedia adalah **global hos** — ia dikongsi oleh setiap
+ruang kerja dalam pemasangan itu, bukan diskop kepada satu.
 
-### Add a custom provider
+### Tambah penyedia tersuai
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Gunakan ini untuk Ollama, LM Studio, vLLM atau penerapan persendirian.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. Dalam **Penyedia & model**, di bawah **Penyedia tersuai**, tekan **Tambah penyedia**
+2. Isi **Nama**, pilih **Jenis API** (serasi OpenAI atau serasi Anthropic) dan
+   berikan **URL asas** (contohnya `http://localhost:11434/v1`)
+3. Tambah **Kunci API** jika titik akhir itu memerlukannya, kemudian tekan
+   **Tambah penyedia**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+Penyedia tersuai muncul dalam senarai yang sama, dengan butang padam yang tiada
+pada penyedia terbina yang lain.
 
-## Pick a model for an agent
+## Pilih model untuk ejen
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Pergi ke **Tetapan → Ruang kerja → Ejen** dan pilih ejen itu
+2. Pada tab **Tetapan**, pilih **penyesuai**
+3. Pilih **model** daripada menu lungsur di sebelahnya
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+Untuk penyesuai terbina, menu lungsur itu dibina secara langsung daripada katalog
+setiap penyedia yang disambungkan. Penyedia yang tiada kelayakan tersimpan
+menyumbang sifar model, sebab itulah menu lungsur yang kosong hampir selalu
+bermaksud "tiada apa yang disambungkan lagi" dan bukannya "tiada apa yang
+tersedia".
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev ialah pengayaan, bukan sumber id]
+Katalog [models.dev](https://models.dev) yang disertakan membekalkan harga dan
+tetingkap konteks untuk model yang sudah ada dalam senarai langsung. Ia tidak
+pernah menambah id model. Jika model yang anda jangkakan tiada, titik akhir
+penyedia itu tidak mengembalikannya.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Id model untuk penyesuai terbina dinyatakan sebagai `provider/model` dan mungkin
+membawa rantaian sandaran yang dipisahkan `|`. Di bawah sandaran, kos dikira
+berdasarkan model yang sebenarnya menyajikan giliran itu, bukan model yang anda
+minta.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[Ejen tanpa penyesuai berjalan pada gelung terbina]
+Setiap ruang kerja membenihkan lima ejen — seorang CEO serta `qa`, `architect`,
+`engineer` dan `librarian` — tanpa penyesuai dan tanpa model. Penghantaran jatuh
+kembali kepada **Control Center (built-in)**, bukan kepada tetapan **Pelari
+lalai** pada halaman ini, yang merupakan keutamaan klien yang tidak pernah
+dibaca oleh laluan penghantaran. Log larian merekodkan `cc-harness` bagi larian
+tersebut, jadi transkrip menamakan apa yang sebenarnya berjalan.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Dengan tiada model juga, gelung terbina meminta model lalai daripada Anthropic.
+Ejen yang dibiarkan tanpa tetapan sepenuhnya akan berjalan jika anda telah
+menyambungkan akaun Anthropic, dan jika tidak ia gagal dengan
+`No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+Menamatkan langkah penyesuai dalam pengenalan menampal semula **setiap** ejen
+yang masih tiada penyesuai atau model — CEO dan pakar, merentas setiap ruang
+kerja yang wujud pada masa itu — dengan pasangan yang anda pilih. Ruang kerja
+yang dicipta kemudian masih membenihkan kelima-limanya tanpa tetapan. Tetapkan
+penyesuai dan model secara eksplisit pada setiap ejen yang anda ingin gunakan.
 :::
 
-## Install a runner CLI
+## Pasang CLI pelari
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Penyesuai terbina tidak memerlukan pemasangan. Untuk Claude Code, pasang CLI-nya
+**pada hos pelayan** dengan pengurus pakej alat itu sendiri, contohnya:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Kemudian tekan **Muat semula** di bahagian atas halaman. Setiap baris yang
+dikesan menunjukkan versi dan laluan yang diselesaikan, serta cip sama ada ia
+menyokong modus JSON dan pemilihan model.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+CLI luaran menyimpan kelayakannya sendiri, dalam konfigurasinya sendiri, pada hos
+pelayan. Control Center tidak mengurusnya.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Argumen dan pemboleh ubah persekitaran penyesuai kekal pada peranti ini]
+Setiap baris penyesuai menawarkan medan **Argumen tambahan** dan dialog
+**Pemboleh ubah persekitaran**. Nilai tersebut disimpan pada peranti anda.
+Pelayan membaca argv pelancaran dan env daripada stor tetapannya sendiri.
+Letakkan kunci penyedia pada pelayan (OAuth atau medan kunci pada halaman
+Penyedia model), bukan dalam kedua-dua medan itu.
 :::
 
-## Restrict which providers a workspace may use
+## Hadkan penyedia yang boleh digunakan oleh sesuatu ruang kerja
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Tadbir urus penyedia adalah bagi setiap ruang kerja dan dinilai dengan padanan
+terakhir menang.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. Dalam **Penyedia & model**, matikan suis **Benarkan** pada baris penyedia
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Itu menulis kenyataan `deny` bagi penyedia tersebut dalam ruang kerja aktif dan
+modelnya terkeluar daripada katalog untuk ruang kerja itu. Menghidupkan suis
+semula membuang kenyataan itu.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-### A runner shows as not found
+### Pelari ditunjukkan sebagai tidak dijumpai
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Pastikan CLI itu ada pada `PATH` **hos pelayan**, bukan hanya `PATH` anda
+- Aplikasi desktop yang dilancarkan melalui GUI memulakan pelayannya dengan
+  `PATH` yang minimum; CLI yang dipasang di bawah laluan khusus shell mungkin
+  tidak kelihatan kepadanya
+- Tekan **Muat semula** selepas memasang
 
-### The model dropdown is empty
+### Menu lungsur model kosong
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Penyesuainya ialah penyesuai terbina dan tiada penyedia disambungkan —
+  sambungkan satu dalam **Penyedia & model**
+- Atau penyedia itu disambungkan tetapi ditolak oleh suis tadbir urus ruang kerja
+  ini
 
-### A model runs but the price shows as unknown
+### Model berjalan tetapi harga ditunjukkan sebagai tidak diketahui
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Senarai model langsung membawa id itu; harga dan konteks datang daripada
+models.dev. Model yang baharu sepenuhnya, atau model daripada penyedia tersuai,
+belum ada entri katalog.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [Manage API keys](/ms-MY/manual-pengguna/panduan-cara/kunci-api/)
-- [Diagnose an agent](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)
-- [Manage costs](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Urus kunci API](/ms-MY/manual-pengguna/panduan-cara/kunci-api/)
+- [Diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/)
+- [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [The agent model](/ms-MY/manual-pengguna/konsep/model-ejen/)
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/)
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)

@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: חיבור מארח קוד
+description: חברו GitHub, GitLab או Bitbucket כדי שמשטח בקשות המשיכה, רישום המאגרים והרצות הסוכנים יעבדו — סביבת עבודה אחת יכולה להשתמש בכל השלושה.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/חיבור-מארח-קוד
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center עובד עם שלושה מארחי קוד, המכונים **forges** בכל האפליקציה: **GitHub**, **GitLab** ו־**Bitbucket Cloud**. אף אחד מהם אינו ברירת המחדל. חברו אחד והכול עובד; חברו כמה, וסביבת עבודה אחת תוכל להחזיק בבת אחת מאגרים מכולם.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+ה־forge הוא מאפיין של כל **מאגר**, והוא נקרא מה־remote שלו בשם `origin` כשאתם רושמים אותו. לעולם אינכם בוחרים אותו בעצמכם, ואין הגדרה לפי סביבת עבודה שאפשר לטעות בה.
 
-## Connect a forge
+## חיבור forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. פתחו את **הגדרות ← סביבת עבודה ← פרופיל וזהות** (`/settings/workspace/profile`).
+2. אתרו את הכרטיס **אחסון קוד**. כל forge נתמך מופיע בו, מחובר או לא.
+3. לחצו על **כניסה עם …** אם השורה מציעה זאת, או על **הוספת אסימון גישה** והדביקו אחד.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**כניסה** מופיעה עבור forge שלשרת שלכם רשומה עבורו אפליקציה — נכון להיום זה GitHub, באמצעות device flow (ראו [יצירת GitHub App](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/github-app/)). כל השאר הוא אסימון מודבק, וזו האפשרות הגלויה והכנה ולא כפתור שאינו יכול להשלים את הפעולה.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+כך או כך, פרטי הגישה הם **שלכם וחיים על השרת**, והם מקושרים למזהה המשתמש שלכם: שום אסימון לא נשמר במחשב שאליו הקלדתם אותו, כל מכשיר שממנו תיכנסו משתמש באותו אסימון, ואף חבר אחר לא יכול לקרוא אותו. הוא נכנס לתוקף ב**בקשה הבאה** — אין מה להפעיל מחדש, וניתוק מפסיק את שליחתו מיד.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+כל שורה אומרת לכם מאין הגיעו פרטי הגישה שלה, כי זה ההבדל בין "האסימון שלי לא עובד" לבין "אסימון אחר עונה":
 
-| Subtitle                         | Meaning                                                            |
+| כותרת משנה                      | משמעות                                                             |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| `מחובר בתור octocat`             | פרטי הגישה שלכם משמשים                                              |
+| `מחובר בתור octocat · דרך האפליקציה של השרת הזה` | זהות האפליקציה של השרת עונה — לא ביצעתם כניסה |
+| `מחובר בתור octocat · ממשתני הסביבה` | משתנה סביבה של השרת עונה, ולא פרטי הגישה שלכם                 |
+| `לא מחובר`                       | אין לכם פרטי גישה ל־forge הזה                                       |
 
-### What token each forge wants
+### איזה אסימון כל forge רוצה
 
-| Forge         | Token                                                     | Where to create it                                        |
+| forge         | אסימון                                                    | היכן ליצור אותו                                           |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Classic: `repo` ו־`read:org`. Fine-grained: ‏Contents + Pull requests (קריאה/כתיבה), Checks + Actions (קריאה) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | אסימון גישה אישי עם `api`                                 | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | אסימון API של Atlassian, בתוספת כתובת האימייל של החשבון שלכם | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket מאמת באמצעות **כתובת האימייל של החשבון כשם המשתמש** ואת האסימון כסיסמה. הגדירו `BITBUCKET_EMAIL` בסביבת השרת כדי שהוא ידע עם איזה אימייל לשייך את האסימון.
 
-### Or use the environment
+### או להשתמש במשתני הסביבה
 
-For a headless or CI install, the server reads these:
+בהתקנה ללא ממשק או ב־CI, השרת קורא את אלה:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, ואז `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, ואז `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, ואז `BITBUCKET_TOKEN` (עם `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+אלה פרטי הגישה של **השרת**, לא שלכם, וההבחנה הזו קריטית: בקשה שנעשית בשמכם משתמשת בפרטי הגישה שלכם ותו לא, כך שהסביבה לעולם לא מחליפה אתכם בשקט. עבודה בלי אדם מאחוריה — webhooks, סקר בקשות משיכה, סנכרון כרטיסים — פותרת תחילה את זהות האפליקציה של השרת, אחר כך את פרטי הגישה של בעל השרת, ואז את הסביבה. הסדר קבוע, כך ש"נכנסתי ולא השתנה כלום" אינו תוצאה נתמכת.
 
-## You are a different person on each forge
+## אתם אדם אחר בכל forge
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+אותו אדם הוא `octocat` ב־GitHub ומשהו אחר לגמרי ב־GitLab. Control Center פותר את הזהות שלכם **לפי forge** ומשתמש בזהות הנכונה לכל מאגר, וזה מה שהופך את "ממתין לסקירה שלי", "נוצרו על ידיי" ו"אישרת את זה" לנכונים בסביבת עבודה משולבת.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+אם הזהות של forge לא נפתרה, המאגרים שלו לא תורמים דבר לדואר הנכנס במקום להתאים להכול. הדואר הנכנס אומר זאת במקום לטעון שאתם מעודכנים בהכול.
 
-## One inbox, every forge
+## דואר נכנס אחד, כל forge
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+הדואר הנכנס ותור בקשות המשיכה מתפרסים על פני כל forge המיוצג בסביבת העבודה וממזגים את התוצאות לזרם אחד — בקשת משיכה מ־GitHub ובקשת משיכה מ־Bitbucket יושבות זו לצד זו, מסודרות לפי זמן ולא מקובצות לפי ספק.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+כשלים מבודדים. forge שנפל, שמוגבל בקצב או שאינו מחובר לא תורם דבר ומשאיר את האחרים ללא פגע; הוא אף פעם לא מרוקן את כל הדואר הנכנס. המאגרים שלו ממשיכים להציג את המצב הידוע האחרון שלהם עד שהוא מתאושש.
 
-## What each forge can do
+## מה כל forge יכול לעשות
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+כל forge תומך בלולאה המרכזית: הצגה ופתיחה של בקשות משיכה, קריאת דיפים, תגובה בתוך השורה ומחוצה לה, סקירה, מיזוג וסגירה. מעבר לכך הם שונים באמת, ו־Control Center מסתיר את מה ש־forge לא יכול לעשות במקום להציג פקד שנכשל בשקט.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
+| יכולת                             | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| סקירות מרוכזות (ממתינות)          |   ✓    |   ✓    |     —     |
+| בקשת שינויים                      |   ✓    |   ✓    |     ✓     |
+| מצב "נצפה" לכל קובץ מסונכרן        |   ✓    |   —    |     —     |
+| תגובות אמוג'י                     |   ✓    |   ✓    |     —     |
+| סוקרים מצוות / מקבוצה             |   ✓    |   ✓    |     —     |
+| סוקרים מוצעים                     |   ✓    |   —    |     ✓     |
+| תוצאות CI בבקשת משיכה             |   ✓    |   ✓    |     ✓     |
+| צלילה לשלבים/לוגים של משימת CI    |   ✓    |   ✓    |     —     |
+| בקשות משיכה מוערמות               |   ✓    |   —    |     —     |
+| תבניות לתיאור בקשת משיכה          |   ✓    |   ✓    |     —     |
+| סקר התראות                        |   ✓    |   —    |     —     |
+| פרופילים עשירים של משתמשים        |   ✓    |   ✓    |     —     |
+| head ref של בקשת משיכה בצד השרת   |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+כשהיכולת חסרה, התכונה מתדרדרת בכנות:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **מצב נצפה** עדיין עובד, אבל רק במכשיר שבו הגדרתם אותו.
+- **סקירות מרוכזות** ב־Bitbucket מתפרסמות תגובה-תגובה, כך שסוקרים רואים אותן מגיעות בנפרד ולא בבת אחת.
+- **אין head ref לבקשת משיכה** ב־Bitbucket, ומשמעות הדבר שכשעושים checkout לבקשת משיכה מביאים את ענף המקור לפי שמו, וזה נכשל ברגע שהענף הזה נמחק.
 
-## Vocabulary
+## מינוח
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab מכנה בקשת משיכה **merge request**. Control Center אומר "בקשת משיכה" בכל המודל שלו, ומשתמש בשם העצם של כל forge במקום שבו הוא מדבר על אותו forge.
 
-## Troubleshooting
+## פתרון תקלות
 
-### The PR list is empty and says a forge is not connected
+### רשימת בקשות המשיכה ריקה ואומרת ש־forge לא מחובר
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+אין לכם פרטי גישה ל־forge הזה. היכנסו או הדביקו אסימון תחת **הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד**. המאגרים של forges אחרים אינם נפגעים.
 
-### I connected a forge but its repos still show nothing
+### חיברתי forge אבל המאגרים שלו עדיין לא מציגים כלום
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+בדקו את כותרת המשנה של השורה. אם כתוב בה "דרך האפליקציה של השרת הזה" או "ממשתני הסביבה", פרטי גישה אחרים עונים ולא אלה שציפיתם להם — פרטי הגישה שלכם גוברים בכל מה שאתם מבקשים, כך שאם כתוב אחרת, שלכם לא נשמרו.
 
-### A repo will not register
+### מאגר לא נרשם
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
+הרישום דורש את כל השלושה: הנתיב נמצא בתוך עץ עבודה של git, יש לו remote בשם `origin`, וה־remote הזה מצביע ל־github.com, ל־gitlab.com או ל־bitbucket.org. ראו [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/).
 
-### Everything stops working for a while after heavy use
+### הכול מפסיק לעבוד לזמן מה אחרי שימוש כבד
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+זהו מפסק הזרם של מגבלת הקצב. forge שמסמן את המגבלה הראשית שלו גורם ללקוח להיכשל בבקשות נוספות באופן מקומי, בלי קריאת רשת, עד שהחלון חולף — כך שסופת ניסיונות חוזרים לא יכולה להעמיק את המגבלה. כשלים חולפים מנוסים מחדש עם השהיה מדורגת אקספוננציאלית.
 
-## Related guides
+## מדריכים קשורים
 
-- [Add repos to a workspace](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
-- [Set up GitHub integration](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
-- [Review and merge a PR](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
-- [Triage the inbox](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)
+- [הוספת מאגרים לסביבת עבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הוספת-מאגרים/)
+- [הגדרת אינטגרציית GitHub](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אינטגרציית-github/)
+- [סקירה ומיזוג של בקשת משיכה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/סקירה-ומיזוג-pr/)
+- [טריאז' לדואר הנכנס](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/טריאז-דואר-נכנס/)

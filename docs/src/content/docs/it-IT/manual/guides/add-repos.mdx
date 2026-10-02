@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Aggiungi repo a uno spazio di lavoro
+description: Registra i checkout Git in uno spazio di lavoro così che gli agenti possano lavorarci.
 slug: it-IT/manuale/guide/aggiungi-repo
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Questa guida mostra come registrare un checkout Git in uno spazio di lavoro, reindicizzarlo e rimuoverlo di nuovo.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+I repo hanno **ambito di spazio di lavoro**. Non esiste un registro globale né un passaggio di collegamento: aggiungere un repo e inserirlo in uno spazio di lavoro sono lo stesso atto. Lo stesso checkout registrato in due spazi di lavoro diventa due righe indipendenti con due id diversi — tra spazi di lavoro, l'identità di un repo è il suo percorso nel file system, mai il suo id.
 
-## Before you start
+## Prima di iniziare
 
-A folder can only be registered if all three of these hold:
+Una cartella può essere registrata solo se valgono tutte e tre queste condizioni:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Si trova dentro un **work tree git**.
+2. Quel work tree ha un **remote `origin`**.
+3. Il remote `origin` punta a un **host di codice supportato**: github.com, gitlab.com o bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Qualunque altra cosa viene rifiutata al momento della registrazione con un messaggio esplicito: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." oppure "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Non esiste una modalità solo locale.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+L'host di codice viene letto dal remote e memorizzato sul repo — non lo scegli mai. Uno spazio di lavoro può contenere repo di tutti e tre contemporaneamente, e con ciascuno si comunica tramite la propria API con la propria credenziale. I namespace annidati di GitLab vengono preservati, quindi `gitlab.com/group/subgroup/project` viene registrato con proprietario `group/subgroup` e nome `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+La cartella deve inoltre trovarsi sulla macchina che ospita `cc_server`, dentro una delle directory `--repo-roots` di quel server. Questa lista di autorizzazione per impostazione predefinita è la home directory dell'utente del server, e la navigazione al di sopra di una root viene rifiutata.
 
-## Register a checkout
+## Registra un checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Apri **Impostazioni → Spazio di lavoro → Repository** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Fai clic su **Aggiungi repository**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+La finestra di dialogo è un browser navigabile sul file system **del server**, non sul tuo. Il flusso è lo stesso su desktop, web e telefono, perché un selettore di cartelle nativo sceglierebbe una cartella sulla macchina sbagliata.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Naviga tra le root configurate del server. Le cartelle che sono checkout git sono contrassegnate.
+4. Seleziona quante ne vuoi. La selezione resta valida mentre navighi, così puoi raccogliere checkout da più cartelle.
+5. Registrale in un unico batch.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Una selezione non riuscita non fa mai cadere il resto del batch — ottieni gli id che sono stati creati più un errore per percorso per ogni voce rifiutata. Registrare di nuovo un percorso già presente in questo spazio di lavoro restituisce il repo esistente invece di crearne un duplicato.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Ogni repo registrato compare nell'elenco con il suo `owner/name`, un badge che ne indica l'host di codice e il suo percorso sul server. I repo GitHub mostrano anche l'avatar del proprietario; gli altri host di codice non hanno un URL dell'avatar del proprietario ricavabile, quindi ripiegano sulle iniziali.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Il badge dell'host di codice conta in uno spazio di lavoro misto: due repo possono chiamarsi entrambi `acme/web` su host di codice diversi, e si comportano in modo diverso — cosa può fare una revisione e dove porta un link.
 
-## What happens next
+## Cosa succede dopo
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+La registrazione emette un evento `RepoAdded` con ambito su questo spazio di lavoro, che avvia la pipeline `index_code` per quel checkout. È questo che popola il grafo del codice, così la ricerca e l'analisi d'impatto hanno qualcosa con cui rispondere.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/it-IT/manuale/guide/cerca-codice/).
+Vengono indicizzati solo i file la cui lingua ha una grammatica distribuita (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB e Ada). Vedi [Cerca codice con il grafo del codice](/it-IT/manuale/guide/cerca-codice/).
 
-## Re-index a repo
+## Reindicizza un repo
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Ogni riga presenta un pulsante **Indicizza codice**. Fai clic per rieseguire l'indicizzatore per quel checkout; mentre è in esecuzione, il pulsante diventa un'indicazione di avanzamento che mostra i file completati sul totale, con un controllo per annullare. Al termine si assesta su una spunta con il numero di simboli, oppure su un avviso se l'esecuzione non è riuscita.
 
-## Reorder repos
+## Riordina i repo
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Trascina la maniglia su una riga. L'ordine che imposti è quello con cui vengono letti tutti gli elenchi dei repo nell'app.
 
-## Fix the GitHub link
+## Correggi il link GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+L'icona del link su una riga apre un editor per il proprietario GitHub e il nome della repository di quel repo — utile quando il remote è stato rinominato o trasferito.
 
-## Remove a repo
+## Rimuovi un repo
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Apri **Impostazioni → Spazio di lavoro → Repository**.
+2. Fai clic sull'icona del cestino sulla riga.
+3. Conferma «Rimuovere la repository dallo spazio di lavoro?»
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+La finestra di dialogo dice cosa fa: «_name_ sarà rimosso da questo spazio di lavoro. I file locali su disco non saranno modificati.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+La rimozione elimina la riga del repo da questo spazio di lavoro e cancella a cascata le sue righe del grafo del codice — simboli, archi, file e checkpoint di indicizzazione — oltre a ogni autorizzazione per membro su quel repo, ai suoi collegamenti spazio-repo e ai suoi record di checkout isolati. Lo stesso checkout registrato in un altro spazio di lavoro è una riga indipendente e non viene toccato. I worktree su disco a cui quei record puntavano non vengono smontati dall'eliminazione.
 
-## Related guides
+## Guide correlate
 
-- [Search code with the code graph](/it-IT/manuale/guide/cerca-codice/)
-- [Run agents in parallel](/it-IT/manuale/guide/agenti-in-parallelo/)
-- [Set up GitHub integration](/it-IT/manuale/guide/integrazione-github/)
-- [Your first workspace](/it-IT/manuale/tutorial/primo-spazio-di-lavoro/)
+- [Cerca codice con il grafo del codice](/it-IT/manuale/guide/cerca-codice/)
+- [Esegui agenti in parallelo](/it-IT/manuale/guide/agenti-in-parallelo/)
+- [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/)
+- [Il tuo primo spazio di lavoro](/it-IT/manuale/tutorial/primo-spazio-di-lavoro/)
 
-## Related concepts
+## Concetti correlati
 
-- [Workspaces and isolation](/it-IT/manuale/concetti/spazi-di-lavoro/)
+- [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/)

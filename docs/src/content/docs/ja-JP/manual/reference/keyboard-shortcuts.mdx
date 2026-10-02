@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: キーボードショートカット
+description: スコープ別のキーバインドレジストリの全体像と、各ショートカットが発火する条件。
 slug: ja-JP/マニュアル/リファレンス/キーボードショートカット
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+ショートカットは、`lib/core/constants/keybindings.dart` にある単一の `const` レジストリ、`KeybindingRegistry` から供給されます。このレジストリは **48 個のバインド** を保持しています。設定 → 自分 → キーバインド は、そのレジストリを **読み取り専用のリファレンス** として描画します。再割り当て用の UI はなく、ユーザーが用意するキーバインドファイルもありません。
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+以下の `Cmd` は主要なコマンド修飾キーです — macOS では ⌘、Windows と Linux では Ctrl です。バインドは、そのコマンドに現在の画面で登録されたハンドラーがあり、かつ `when` 句が成立する場合にのみ発火します。`!textInputFocus` は、そのキーが代わりにフォーカス中のテキストフィールドへそのまま渡されることを意味します。
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+数字キーによるナビゲーションのショートカットはありません。受信トレイ、チケット、プルリクエストなどへは、サイドバーまたは ⌘K から到達します。オブザーバビリティにもショートカットはありません。
 
-## Global (19)
+## グローバル (19)
 
-Scope `global`, so they are live anywhere in the shell.
+スコープは `global` で、シェル内のどこでも有効です。
 
-### System
+### システム
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| ショートカット                              | 操作                                                   | 条件                                                                              |
+| ------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | コマンドパレット                                       | —                                                                                 |
+| `Shift + /` (`?`)                           | キーボードショートカットのチートシート                 | フィールドに入力中でない                                                          |
+| `Cmd/Ctrl + Z`                              | 元に戻す                                               | フィールドに入力中でない（フォーカス中のフィールドは自前の取り消しを保持します）  |
+| `Cmd/Ctrl + Shift + Z`                      | やり直す                                               | フィールドに入力中でない                                                          |
+| `Cmd/Ctrl + Shift + T`                      | テーマを切り替え                                       | —                                                                                 |
+| `Cmd/Ctrl + ,`                              | 設定を開く（`/settings/you/appearance` に着地します）  | —                                                                                 |
+| `Cmd/Ctrl + Shift + Alt + F`                | フォーカスモードを切り替え                             | —                                                                                 |
+| `Cmd/Ctrl + Shift + W`                      | ワークスペーススイッチャーを切り替え                   | —                                                                                 |
+| `Cmd/Ctrl + ]`                              | 次のワークスペース                                     | —                                                                                 |
+| `Cmd/Ctrl + [`                              | 前のワークスペース                                     | —                                                                                 |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | ワークスペース 1–9 に切り替え                          | —                                                                                 |
 
-## Pull request list (3)
+## プルリクエスト一覧 (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+スコープは `/pull-requests` です。いずれも `route == '/pull-requests'` と、テキストフィールドがフォーカスされていないことを要件とするため、一覧の上に PR 詳細のルートが開いている間は発火しません。
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| ショートカット | 操作               |
+| -------------- | ------------------ |
+| `R`            | 更新               |
+| `Enter`        | PR を開く          |
+| `F`            | フィルターメニューを開く |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter`（`pr.list-open`）はレジストリで宣言され、キーバインドのリファレンスにも表示されますが、**一覧画面はこれに対するハンドラーを登録していません**。そのため現在は発火しません。`F` が開くのは検索ではなくフィルターメニュー（`pr.list-open-filter`）です。
 
-## Pull request detail (2)
+## プルリクエスト詳細 (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+スコープは `/pull-requests/` です。更新はテキストフィールドがフォーカスされていないことを要件とします。タブを閉じるほうにはテキスト入力のガードがなく（⌘ を伴うキー操作がプレーンテキストになることはありません）、一覧では発火しないようにルートの正規表現が付いています。
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| ショートカット | 操作       | 条件                               |
+| -------------- | ---------- | ---------------------------------- |
+| `R`            | 更新       | フィールドに入力中でない           |
+| `Cmd/Ctrl + W` | タブを閉じる | `/pull-requests/<…>` のロケーション上 |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+タブの切り替え（`1`/`2`/`3`）、ファイルの閲覧済み／折りたたみ（`V`/`C`）、ファイル一覧（`T`）、差分内検索（`Cmd/Ctrl + F`）は、差分ビューアー自身のハンドラーが担います — [レジストリ外の差分ビューアーキー](#レジストリ外の差分ビューアーキー) を参照してください。
 
-## Inbox (1)
+## 受信トレイ (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| ショートカット | 操作               |
+| -------------- | ------------------ |
+| `F`            | フィルターメニューを開く |
 
-Requires `route == '/inbox'` and no focused text field.
+`route == '/inbox'` と、テキストフィールドがフォーカスされていないことを要件とします。
 
-## GitHub user and team profiles (3)
+## GitHub ユーザーとチームのプロフィール (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+スコープは `/users/` です。`when` 句は `/users/<login>` **または** `/teams/<organization>/<slug>` に対する正規表現で、さらにテキストフィールドがフォーカスされていないことが条件です。
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| ショートカット | 操作           |
+| -------------- | -------------- |
+| `R`            | 更新           |
+| `/`            | 検索にフォーカス |
+| `Cmd/Ctrl + F` | 検索にフォーカス |
 
-## Spaces (8)
+## スペース (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+スコープは `/spaces` です。`when` 句が正規表現を使うため、スペース一覧（`/spaces`）と選択中のスペース（`/spaces/<id>`）の両方で発火します。
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| ショートカット         | 操作                   | 条件                   |
+| ---------------------- | ---------------------- | ---------------------- |
+| `Enter`                | メッセージを送信       | —                      |
+| `Cmd/Ctrl + N`         | 新しいスペース         | `/spaces` ルート上     |
+| `J`                    | 次のスペース           | フィールドに入力中でない |
+| `K`                    | 前のスペース           | フィールドに入力中でない |
+| `Cmd/Ctrl + Shift + D` | プッシュトゥトークのディクテーション | —       |
+| `Cmd/Ctrl + T`         | エディタータブを開く   | `/spaces` ルート上     |
+| `Cmd/Ctrl + W`         | エディタータブを閉じる | `/spaces` ルート上     |
+| `Cmd/Ctrl + B`         | エディターサイドバーを切り替え | `/spaces` ルート上 |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Enter による送信はコンポーザーのテキストフィールドが、プッシュトゥトークはコンポーザーのマイクボタン（独自のハードウェアキーボードハンドラー）が担います。どちらも設定のリファレンス用にレジストリへ掲載されています。
 
-## Workspace picker (2)
+## ワークスペースピッカー (2)
 
-Scope `/workspaces`, live only on the picker itself.
+スコープは `/workspaces` で、ピッカー自体でのみ有効です。
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| ショートカット | 操作                     |
+| -------------- | ------------------------ |
+| `Cmd/Ctrl + N` | 新しいワークスペース     |
+| `Enter`        | 選択中のワークスペースを開く |
 
-`Enter` requires no focused text field.
+`Enter` はテキストフィールドがフォーカスされていないことを要件とします。
 
-## Settings (5)
+## 設定 (5)
 
-| Shortcut       | Action                 | Screen                              |
+| ショートカット | 操作                   | 画面                                |
 | -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| `J`            | 次の設定ページ         | `/settings` 配下の任意のルート、入力中でない |
+| `K`            | 前の設定ページ         | `/settings` 配下の任意のルート、入力中でない |
+| `Cmd/Ctrl + N` | 新しいエージェント     | 設定 → ワークスペース → エージェント |
+| `Cmd/Ctrl + N` | リポジトリを追加       | 設定 → ワークスペース → リポジトリ   |
+| `R`            | アダプターを再スキャン | 設定 → サーバー → モデルプロバイダー |
 
-## Newsfeed (5)
+## ニュースフィード (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+スコープは `/newsfeed` です。いずれも `route == '/newsfeed'` と、テキストフィールドがフォーカスされていないことを要件とします。
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| ショートカット | 操作               |
+| -------------- | ------------------ |
+| `J`            | 次の記事           |
+| `K`            | 前の記事           |
+| `Enter`        | 記事を開く         |
+| `S`            | ブックマークを切り替え |
+| `R`            | フィードを更新     |
 
-## Diff viewer keys outside the registry
+## レジストリ外の差分ビューアーキー
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+PR の差分ビューアーはこれらを自前で処理します（`PrDiffKeyboardHandler`）。検索／閲覧済み／折りたたみは、設定のリファレンス用にレジストリのコメントへ記載されているだけです — ディスパッチャーのハンドラーは登録されていないため、ディスパッチャーはこれらを差分ビューに委ねます。これらはキーバインドのリファレンスに独立した行としては表示されません。
 
-| Shortcut        | Action                                               |
+| ショートカット  | 操作                                                 |
 | --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| `Cmd/Ctrl + F`  | 差分内を検索                                         |
+| `J` / `K`       | 次のファイル／前のファイル                           |
+| `V`             | フォーカス中のファイルの閲覧済みを切り替え           |
+| `C`             | フォーカス中のファイルの折りたたみを切り替え         |
+| `T`             | ファイルリストを表示                                 |
+| `Enter`         | 次の一致（差分内検索が開いている間のみ）             |
+| `Shift + Enter` | 前の一致                                             |
+| `Escape`        | 差分内検索を閉じる、または差分のテキスト選択を解除   |
+| `Cmd/Ctrl + C`  | 差分の選択範囲をコピー                               |
 
-## Browser-reserved combinations
+## ブラウザーが予約している組み合わせ
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+Web ビルドでは、ブラウザーが一部のアクセラレーターをページが受け取る前に消費するため、対応するバインドはそこで発火できません。デスクトップでは通常どおり動作します。主要なコマンド修飾キーと組み合わせたときに予約されるのは、`T`、`W`、`N` と数字の `1`–`9` です。
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+これが該当するのは、`Cmd/Ctrl + Alt + 1`–`9` のワークスペース切り替え、`Cmd/Ctrl + N`（新しいスペース、新しいワークスペース、新しいエージェント、リポジトリの追加）、およびスペースと PR 詳細における `Cmd/Ctrl + T` / `Cmd/Ctrl + W` です。
 
-## See also
+## 関連項目
 
-- [Route map](/ja-JP/マニュアル/リファレンス/ルートマップ/)
-- [Focus mode](/ja-JP/マニュアル/ハウツーガイド/フォーカスモード/)
+- [ルートマップ](/ja-JP/マニュアル/リファレンス/ルートマップ/)
+- [フォーカスモードとサウンドスケープ](/ja-JP/マニュアル/ハウツーガイド/フォーカスモード/)

@@ -1,98 +1,123 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Sohbet botunu özelleştirme
+description: Botu yeniden adlandırın, kendini nasıl tanıttığını değiştirin veya slash komutunu Control Center'dan değiştirin.
 slug: tr-TR/kilavuz/nasil-yapilir/sohbet-botunu-ozellestirme
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Bu kılavuz, Control Center'dan çıkmadan sağlayıcı tarafındaki bot uygulamasını
+nasıl yeniden biçimlendireceğinizi gösterir.
 
-## Prerequisites
+## Önkoşullar
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Çalışma alanında `owner` veya `admin` rolü
+- **Bağlı** bir sağlayıcı. **Botu özelleştir** satırı ancak çalışma alanı bağlandıktan sonra görünür
+- Control Center'ın yönetebileceği bir uygulama. Slack için bu, bağlantının bir uygulama yapılandırma yenileme token'ı (`xoxe-…`) tutması demektir; tutmuyorsa satır bunu söyler ve devre dışı kalır
 
-## What you can change
+## Değiştirebilecekleriniz
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Alan | Anlamı | Sınır |
+| --- | --- | --- |
+| **Uygulama adı** | Sağlayıcının uygulamayı nasıl listelediği | 1–35 karakter |
+| **Bot adı (üyelerin @ sonrasında yazdığı ad)** | Üyelerin `@` sonrasında yazdığı ad | 1–80 karakter |
+| **Kısa açıklama** | Sağlayıcının gösterdiği tek satır | 140 karakter veya daha az |
+| **Botun neler yapabileceğini söylediği metin** | Botla bir DM'in üstünde gösterilir | 300 karakter veya daha az |
+| **Slash komutu** | Üyelerin çağırdığı komut, eğik çizgi olmadan | Küçük harfe çevrilir, yalnızca `a–z 0–9 _ -`, 32 karakterde kesilir |
+| **Direkt mesajlar** | Botun DM/ajan deneyimini sunup sunmadığı | Açık veya kapalı |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center, sağlayıcıyı çağırmadan önce dört metin alanını doğrular; böylece
+göremediğiniz bir sunucudan gelen anlaşılmaz bir `invalid_manifest` yerine "the
+app name must be between 1 and 35 characters" mesajını görürsünüz. Komut
+reddedilmez, normalleştirilir: baştaki eğik çizgi kaldırılır, geri kalanı küçük
+harfe çevrilir, `a–z 0–9 _ -` dışındaki her şey atılır ve boş bir sonuç `cc`
+değerine düşer.
 
-## Edit the bot
+## Botu düzenleme
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+2. Sağlayıcı bloğunda **Botu özelleştir**'e tıklayın
+3. İletişim kutusu, uygulamanın sağlayıcıdan geri okunan _canlı_ değerleriyle açılır — yani başlangıç noktanız, birinin Slack'in kendi arayüzünde yaptığı değişikliktir
+4. Gereken değişiklikleri yapın ve kaydedin
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Bu canlı değerleri okumak, Slack tarafında bir token rotasyonuna mal olur; bu
+yüzden satır, sayfanın yüklenirken yaptığı bir şey değil, bilinçli bir
+tıklamadır.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Yazma işlemi, değişikliklerinizi uygulamanın mevcut tanımının üzerine bindirir.
+Control Center'ın modellemediği her şey — Slack'te eklediğiniz ikinci bir slash
+komutu, bir iş akışı adımı, ilgisiz bir ayar — olduğu gibi kalır. Kapsamlar ve
+olaylar birleştirilir, asla çıkarılmaz.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Kaydettikten sonra Control Center botun kimliğini yeniden okur; böylece
+ayarlardaki ad, sohbet uygulamasındaki adla eşleşir.
 
-## Reinstall when permissions change
+## İzinler değiştiğinde yeniden yükleme
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[İzin değişikliğinden sonra yeniden yükle]
+Slack yeni uygulama tanımını hemen uygular ama yüklü izni olduğu gibi korur. Bir
+izin değişikliğinin etkili olması için uygulamayı yeniden yükleyin. Siz bunu
+yapana kadar köprü önceki izinle çalışmaya devam eder.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Bir kayıt izinleri değiştirdiğinde iletişim kutusu açık kalır ve "Slack
+uygulamanın izinlerini değiştirdi. Etkili olması için uygulamayı yeniden yükle."
+mesajını gösterir; yanında da o uygulama için Slack'in takıma yükleme sayfasını
+açan bir **Uygulamayı yeniden yükle** düğmesi bulunur. Slack'te bu,
+**Install App → Reinstall to Workspace** karşılığıdır.
 
-## Rename the slash command
+## Slash komutunu yeniden adlandırma
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+**Slash komutu** alanını değiştirin ve kaydedin. Köprü bundan sonra talimatları,
+en son hangi komutla çağrıldıysa onu kullanarak yazar; böylece yardım metni ve
+bağlantı talimatları, artık var olmayan bir komutu adlandırmak yerine yeniden
+adlandırmayı izler.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Yeniden adlandırma, var olan köprülenmiş dizileri bozmaz: diziler komuta göre
+değil, konuşmaya göre anahtarlanır.
 
-## What Control Center will not change
+## Control Center'ın değiştirmeyeceği şeyler
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Yapısal ayarlar.** Taşıma (Socket Mode), gerekli kapsamlar ve olay abonelikleri dayatılır, sunulmaz. Bir ayarlar ekranından sessizliğe ayarlanabilen bir uygulama bir özellik değil, bir destek talebidir
+- **Botun simgesi.** Onu yalnızca sağlayıcının kendi uygulama ayarları değiştirebilir ve iletişim kutusu bunu söyler
+- **Sağlayıcının kendi özellik geçişleri.** Slack'in eski asistan biçiminde olan bir uygulama bu biçimi korur; bu iletişim kutusu bir açıklamayı düzenler, bir uygulamayı taşımaz
 
-## Troubleshooting
+## Sorun giderme
 
-### There is no Customize bot row at all
+### Hiç Botu özelleştir satırı yok
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/).
+Çalışma alanı henüz bağlı değil. Satır, ancak sağlayıcı bloğu canlı bir bağlantı
+gösterdiğinde görünür. Bkz.
+[Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/).
 
-### The Customize bot row is disabled
+### Botu özelleştir satırı devre dışı
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Bağlantıda uygulama yönetimi kimlik bilgisi yok — satırın alt başlığı "Control
+Center'ın botu düzenlemesi için bir uygulama yapılandırma jetonu gerekir.
+Yeniden bağlan ve bir jeton ekle." der. Slack için
+[api.slack.com/apps](https://api.slack.com/apps) adresinde bir uygulama
+yapılandırma token çifti oluşturun ve yenileme token'ını doldurarak yeniden
+bağlanın. Elle oluşturulmuş veya **Slack içinde oluştur** yoluyla yapılmış bir
+uygulama için bu beklenen bir durumdur; çünkü Slack hangi uygulamayı
+oluşturduğunu hiçbir zaman bildirmez.
 
 ### "Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Saklanan bağlantı hiçbir uygulama kimliği taşımıyor — tipik olarak, bir kimlik
+kaydedilmeden önce elle bağlanmış bir uygulama. Çalışma alanını yeniden bağlayın
+veya uygulamayı Control Center'dan oluşturun.
 
-### The bot's new name has not appeared in chat
+### Botun yeni adı sohbette görünmedi
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Sağlayıcılar uygulama meta verilerini kısa süreliğine önbelleğe alır. Ad bir
+dakika sonra hâlâ eskiyse, kaydetme işleminin sizden uygulamayı yeniden
+yüklemenizi isteyip istemediğini kontrol edin.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Set up Slack integration](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
-- [Link your Slack account](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
-- [Chat bridge](/tr-TR/kilavuz/referans/sohbet-koprusu/)
+- [Slack entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu/)
+- [Slack hesabınızı bağlama](/tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama/)
+- [Sohbet köprüsü](/tr-TR/kilavuz/referans/sohbet-koprusu/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Chat bridges](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)
+- [Sohbet köprüleri](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/)

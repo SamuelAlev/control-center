@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: 워크스페이스와 격리
+description: 워크스페이스가 엄격한 테넌트 경계인 이유, 데이터베이스 분리가 그 경계를 구조적으로 만드는 방식, 그리고 의도적으로 그 경계를 넘는 것이 무엇인지 설명합니다.
 slug: ko-KR/매뉴얼/개념/워크스페이스
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## 워크스페이스란 무엇인가요?
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+워크스페이스는 Control Center의 최상위 격리 테넌트입니다. 에이전트, 리포지토리, 스페이스, 티켓, 메모리, 파이프라인, 멤버를 하나의 바운디드 컨텍스트로 묶습니다. 워크스페이스 안에서 일어나는 모든 일은 그 안에 머뭅니다.
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+일반적인 워크스페이스는 프로젝트 하나 또는 코드베이스 하나에 대응합니다. "api-service", "frontend-v2", "infrastructure"를 위한 워크스페이스를 따로 둘 수 있습니다.
 
-## Workspace-scoped data
+## 워크스페이스 범위 데이터
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+워크스페이스의 행들은 그 워크스페이스 전용 SQLite 파일, `<dataDir>/<workspaceId>/workspace.db`에 있습니다. 각 워크스페이스가 파일 하나가 아니라 디렉터리를 받는 이유는 워크스페이스가 데이터베이스보다 많은 것을 쌓기 때문입니다 — 대화별 워크트리, 에이전트 및 스킬 파일, 챗봇 자격 증명 — 그리고 폴더를 주면 그 모든 것이 함께 살고 함께 삭제됩니다.
 
-| Entity                                              | Scope                                        |
+| 엔터티                                              | 범위                                        |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| 에이전트                                              | 정확히 하나의 워크스페이스에 속함              |
+| 리포지토리                                            | 하나의 워크스페이스에 등록됨(아래 참고)    |
+| 스페이스, 대화, 메시지                  | 워크스페이스 범위                             |
+| 티켓, 프로젝트, 플랜, 오케스트레이션            | 워크스페이스 범위                             |
+| 메모리 팩트, 정책, 도메인, 접근 권한 부여      | 워크스페이스 범위                             |
+| 파이프라인 실행, 템플릿, 트리거                  | 워크스페이스 범위                             |
+| 풀 리퀘스트 상태, 리뷰 스페이스, 리뷰 코호트   | 워크스페이스 범위                             |
+| 에이전트 실행 로그와 워킹 메모리                   | 워크스페이스 범위                             |
+| 멤버, 초대, 리포지토리별 권한 부여                   | 워크스페이스 범위                             |
+| 코드 그래프 심볼과 엣지                        | 워크스페이스 파일 안에서 `repoId`로 범위 지정 |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+이 행들 대부분은 `workspaceId` 컬럼을 가집니다. 별도의 데이터베이스 파일이 격리를 강제합니다. 아래의 격리 불변 조건을 참고하세요.
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## 리포지토리는 워크스페이스 범위이고, 워크스페이스 간 식별은 경로로 정해집니다
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+리포지토리 행은 그 워크스페이스 전용 데이터베이스 파일에 있습니다 — 파일이 _곧_ 범위이므로, 이 테이블에는 `workspaceId` 컬럼도 조인 테이블도 없습니다.
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+리포지토리 추가는 설정 → 워크스페이스 → 리포지토리에서 합니다. 같은 체크아웃을 두 워크스페이스에 등록하면 id가 각각 다른 독립적인 행 두 개가 만들어집니다. 워크스페이스를 _넘나드는_ 리포지토리 식별은 파일 시스템 경로(또는 GitHub 소유자/이름)로 정해지며, 결코 id로 정해지지 않습니다.
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+등록은 엄격합니다. 경로는 git 작업 트리 안에 있어야 하고, `origin` 리모트가 있어야 하며, 그 리모트가 지원되는 코드 호스트(github.com, gitlab.com 또는 bitbucket.org)를 가리켜야 합니다. 코드 호스트는 리모트에서 읽어 리포지토리에 저장하므로, 하나의 워크스페이스가 세 곳의 리포지토리를 모두 담을 수 있습니다. 그 밖의 경우는 거부합니다. 선택에 사용하는 폴더 브라우저는 **서버 호스트의** 파일 시스템을 나열하며, 서버의 `--repo-roots` 허용 목록(기본값은 서버 사용자의 홈 디렉터리)으로 제한됩니다.
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+워크스페이스에서 리포지토리를 제거하면 그 행을 곧바로 삭제하고, 그 코드 심볼, 엣지, 파일, 인덱스 체크포인트, 멤버별 권한 부여를 연쇄 삭제합니다. 디스크의 체크아웃은 건드리지 않습니다.
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+코드 그래프는 같은 파일에 `repoId`를 키로 두고 있습니다. 워크스페이스마다 같은 리포지토리를 서로 다른 브랜치에서 서로 다른 코드로 가질 수 있기 때문입니다.
 
-## The isolation invariant
+## 격리 불변 조건
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+워크스페이스를 넘나드는 데이터 유출은 버그로 취급합니다. 격리는 **구조적**이며, 여러 계층에서 강제됩니다:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **데이터베이스 계층.** 각 워크스페이스는 자체 SQLite 파일을 가지며, `WorkspaceDatabaseManager.of(workspaceId)`가 이를 내줍니다. 워크스페이스 데이터베이스는 `users`, `workspaces`, 또는 다른 워크스페이스의 테이블을 선언하지 않으므로, 워크스페이스를 넘나드는 읽기는 작성할 수 있는 버그가 아닙니다 — 컴파일되지 않습니다. 리포지토리는 DAO를 캐시해 두지 않고 호출마다 해석하며, 모든 리포지토리 메서드가 필수 `workspaceId`를 받으므로 워크스페이스를 추론하거나 기본값으로 둘 수 없습니다.
+- **워크스페이스 id는 경로 세그먼트입니다.** id가 디렉터리 이름이 되므로, 안전한 단일 세그먼트 패턴(영숫자로 시작하고 그다음 영숫자, 마침표, 밑줄, 하이픈, `..` 없음)과 일치해야 합니다. 제품 곳곳에서 id는 UUID입니다. 그 밖의 값은 정제되지 않고 예외를 던집니다 — 이것이 경로 순회 가드이며, 다른 사람이 고른 경로에 워크스페이스 데이터를 쓰는 대신 대놓고 실패합니다.
+- **심층 방어.** `workspaceId` 컬럼은 여전히 있고 여전히 기록됩니다. 파일 안에서는 중복이지만, 동기화 피드 트리거, FTS 인덱스, 기존 행 형태를 그대로 유지하고, 파일을 단독으로 검사할 때 파일이 스스로를 설명하게 합니다 — 내보내기와 가져오기가 바로 이것에 기댑니다.
+- **도메인 계층.** id로 엔터티를 변경하는 서비스는 진행하기 전에 단일 관문에서 `entity.workspaceId == workspaceId`를 검증하고, 불일치하면 `WorkspaceMismatchException`을 던집니다 — 잘못된 컨텍스트에서 도착한 id에 대한 대놓고 드러나는 실패입니다. 소리 내어 거부하는 것이 중요합니다. 조용한 무시는 버그를 숨기고, 그대로 진행하면 데이터가 유출됩니다.
+- **RPC 계층.** 리포지토리 RPC 디스패처가 관문입니다. 모든 워크스페이스 범위 연산은 자체 인자에 `workspace_id`를 담아야 합니다 — 유출될 만한 세션별 "현재 워크스페이스"가 없고, 알 수 없는 id는 무엇이든 데이터베이스를 열기 _전에_ 찾을 수 없음으로 거부되므로, 잘못된 id가 유령 `workspace.db`를 만들어 낼 수 없습니다. 진짜로 전역인 연산(뉴스피드, 플릿 큐)은 명시적으로 검토된 결정을 통해 자신이 범위 밖임을 선언합니다. MCP 도구도 같은 규칙을 따릅니다. 워크스페이스 범위 데이터를 건드리는 도구는 `workspace_id`가 필요합니다.
+- **워크스페이스 간 팬아웃은 열거할 수 있습니다.** 여러 워크스페이스에 대한 질문에 답하는 일은 데이터베이스 여러 개를 여는 일입니다. 그 팬아웃은 `CrossWorkspaceQueries`라는 헬퍼 하나에 국한되어, 정당하게 경계를 넘는 것들의 전체 목록이 문서 주석 뒤로 흩어지지 않고 한 파일의 호출 지점에 모입니다. 그 호출 지점은 서버 전체 집계, 시작 시 조정기, 보존 및 GC 스윕, 백업, 이벤트 라우터 — 그리고 아래의 멤버십 조회입니다.
+- **id만으로 하는 접근으로는 충분하지 않습니다.** UUID로 엔터티를 조회한다고 해서 그것이 호출자의 워크스페이스에 속한다는 증명이 되지는 않습니다. 파일 분리는 잘못된 파일을 도달할 수 없게 만들고, 도메인 계층 검증은 정당한 파일을 통해 들어온 잘못된 id를 잡아냅니다.
 
-## Membership, not the pairing key, is what grants access
+## 접근을 부여하는 것은 페어링 키가 아니라 멤버십입니다
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+기기 자격 증명을 쥐고 있는 것은 _기기_를 인증할 뿐입니다. 워크스페이스 내부의 어떤 것도 인가하지 않습니다. 모든 워크스페이스 범위 연산은 호출자의 멤버십 역할을 해석하고, 연산의 종류에서 도출한 하한을 강제합니다 — 읽기에는 `guest`, 변경에는 `member`, 파괴적 연산에는 `admin`이 필요합니다 — 그리고 리포지토리 콘텐츠를 노출하는 연산은 호출자의 리포지토리별 권한 부여를 추가로 확인합니다. 멤버십 없는 유효한 페어링 키는 `Not a member of this workspace`를 받습니다.
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+격리에 주는 결과는 깔끔합니다. 멤버십 행은 _워크스페이스 자신의_ 파일에 있으므로 "이 워크스페이스에는 누가 있나?"는 평범한 범위 읽기입니다. 반대 질문인 "나는 어느 워크스페이스에 속해 있나?"는 정의상 여러 파일에 흩어져 있으므로, 허용된 몇 안 되는 `CrossWorkspaceQueries` 팬아웃 중 하나이며, 워크스페이스가 아직 선택되지 않은 상태에서 워크스페이스 선택기가 실행하는 것입니다.
 
-See [Multiplayer](/ko-KR/매뉴얼/개념/멀티플레이어/) for the role ladder and repo grants.
+역할 체계와 리포지토리 권한 부여는 [멀티플레이어](/ko-KR/매뉴얼/개념/멀티플레이어/)를 참고하세요.
 
-## The global registry
+## 전역 레지스트리
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+모든 것이 워크스페이스 범위는 아닙니다. 두 번째 데이터베이스 `<dataDir>/global.db`에는 진짜로 서버 전체에 걸친 것들이 들어 있습니다:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **워크스페이스 레지스트리**: 전환기가 워크스페이스 파일을 하나도 열지 않고 모든 워크스페이스를 나열할 수 있게 하고 — 워크스페이스의 이름, 로고, 소유자, 수동 순서, 소프트 삭제 표시가 그 워크스페이스를 설명하는 파일 바깥에 있게 합니다;
+- **신원**: 사용자, 사용자 환경설정, 페어링된 기기입니다. 한 사람은 모든 워크스페이스에서 하나의 사용자이고, 페어링된 기기는 워크스페이스가 삭제되어도 살아남기 때문입니다;
+- **플릿 큐**(워커, 작업, 배치 로그)입니다. 그 스케줄러는 매 주기마다 큐 전체를 모든 워커와 대조합니다;
+- **뉴스피드**는 워크스페이스별이 아니라 사용자별입니다 — 피드를 추가하면 모든 워크스페이스로 따라옵니다;
+- **`workspace_routes`**, 시크릿이나 불투명한 id(초대 해시, 웹훅 토큰, 딥 링크)만 들고 오고 워크스페이스는 없는 진입점에 대해 "이 키는 어느 워크스페이스의 것인가?"에 답하는 인증 전 인덱스입니다. 여기서 못 찾으면 찾을 수 없음이며, 의도적으로 스캔 폴백이 없습니다;
+- **설치 전체 설정과 신원**: 설치 id, 호스트 수준 설정, SSO 연결, 관리형 동작 정책(워크스페이스 가드레일을 조일 수만 있는 설치 전체 제한)입니다.
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+부팅 시에는 이 파일만 엽니다. 워크스페이스 파일은 처음 접근할 때 지연해서 열리므로, 워크스페이스가 아무리 많은 기록을 쌓아도 시작 비용은 일정하게 유지되고, 파일별 `quick_check`는 준비 완료 배너로 가는 경로가 아니라 첫 사용 시점에 치릅니다.
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+워크스페이스 파일은 자기 식별용으로 단일 행 `workspace_meta`만 담습니다(자신의 id, 이를 만든 설치, 만들어질 당시의 스키마 버전, 시점). 워크스페이스를 설명하는 모든 정보는 레지스트리에 있습니다.
 
-## Creating a workspace
+## 워크스페이스 만들기
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+워크스페이스를 만드는 것은 레지스트리 행을 넣는 것보다 많은 일을 합니다. 한 번의 연산으로 서버는 만든 사용자를 `ownerUserId`로 기록하고, 그 사용자의 소유자 역할 멤버십을 기록하고, `WorkspaceCreated` 도메인 이벤트를 발행합니다. 그 이벤트의 리스너는 이어서 멱등하게, 백그라운드에서 다음을 시드합니다:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- **CEO 에이전트** 하나와 전문가 넷 — `qa`, `architect`, `engineer`, `librarian` — 이며, 전문가들은 CEO에게 보고합니다;
+- **내장 파이프라인 템플릿**과 그 트리거(이벤트 및 수동 트리거는 켜진 채로 제공되고, 예약 트리거는 매일 도는 워크트리 GC 스윕을 제외하면 옵트인입니다);
+- **시작용 평가 스위트**.
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/).
+이것은 첫 워크스페이스만이 아니라 _모든_ 워크스페이스에서 일어납니다. 시드된 에이전트는 어댑터 없이 만들어지므로, 설정 → 워크스페이스 → 에이전트에서 에이전트별로 어댑터와 모델을 설정할 때까지 **Control Center (built-in)** 에서 Anthropic의 기본 모델(`claude-opus-4-8`, 다른 모델을 고정하지 않는 경우)로 실행됩니다. [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)을 참고하세요.
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+소유자 멤버십 기록은 겉보기보다 중요합니다. 이것이 없으면 방금 만들어진 워크스페이스에는 멤버가 하나도 없고, 만든 사람이 다음에 하는 모든 워크스페이스 범위 호출이 거부됩니다.
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[에이전트는 워크스페이스를 만들 수 없습니다]
+`create_workspace` MCP 도구는 없습니다. 사람은 `workspace.create`(이름만 받는 관문) 또는 `workspace.upsert`(전체 레코드, 업데이트에도 사용)로 워크스페이스를 만듭니다. 둘 다 만든 사용자를 `owner`로 기록하고 `WorkspaceCreated`를 발행합니다.
 :::
 
-## Deleting, exporting, importing
+## 삭제, 내보내기, 가져오기
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+워크스페이스를 삭제하면 **레지스트리 행을 표시하고 디렉터리 연결을 끊습니다**. 워크스페이스는 모든 목록과 조회에서 사라집니다. 레지스트리 행은 (소프트 삭제된 채로) 남아서 백업과 유지보수가 그 id를 계속 알 수 있지만, `workspace.delete`는 `WorkspaceDatabaseManager.dropAndClose`를 통해 그 워크스페이스의 디렉터리 — 데이터베이스, 워크트리, 에이전트 파일 등 — 를 즉시 삭제합니다. 워크스페이스 **소유자**만 삭제할 수 있습니다.
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+워크스페이스 하나가 파일 하나이므로, 워크스페이스를 주고받는 일은 테이블별 덤프가 아니라 파일 연산입니다:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export`는 단일 `VACUUM INTO`입니다 — 서버가 계속 서비스하는 동안 읽기 트랜잭션 아래에서 찍는 일관되고 조각 모음된 스냅샷입니다.
+- `workspace.import`는 그런 파일을 받아들여 대상 워크스페이스가 현재 담고 있는 것을 대체합니다. 내장된 `workspace_meta` 덕분에 가져오기는 "내 파일을 다시 받아들인 것"과 "다른 설치에서 온 파일"을 구분합니다(후자도 허용되지만, 보이지 않게 넘어가지 않고 기록됩니다).
+- `server.backupNow`는 설치 전체를 타임스탬프가 붙은 디렉터리로 스냅샷합니다. 이 디렉터리는 실제 데이터 디렉터리를 그대로 비추며 — `manifest.json`, `global.db`, 워크스페이스마다 하나씩 있는 `<workspaceId>/workspace.db` — 따라서 복원은 이것을 되복사하는 일입니다.
+- `server.listBackups`는 그 디렉터리를 최신순으로 다시 읽으며, 각 스냅샷의 크기와 워크스페이스 목록을 보여 줍니다. 매니페스트가 없거나 없는 파일을 가리키는 스냅샷도 여전히 보고되며 불완전으로 표시됩니다 — 이를 숨기면 운영자가 갖지도 못한 백업을 가지고 있다고 믿게 됩니다.
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+백업 연산은 **설정 → 서버 → 백업 및 복원** 아래에 있습니다:
+**지금 백업**은 설치 스냅샷을 찍고, 목록은 어떤 스냅샷이 완전한지 보여 주며
+설치 소유자가 확인 후 하나를 삭제할 수 있게 하고, 각 워크스페이스는 내보내기와
+가져오기를 제공합니다. 내장 **Workspace backup** 파이프라인은 매주 한 번
+그 워크스페이스의 데이터베이스만 가져가며, 설정된 보존 기간보다 오래된 자체
+백업을 삭제합니다. 설치 스냅샷에서 워크스페이스를 복원하는 것은
+`workspace.import`를 스냅샷의 `<workspaceId>/workspace.db`로 지정하는 일이고,
+설치 전체를 복원하는 것은 여전히 서버를 멈춘 상태에서 스냅샷 디렉터리를
+되복사하는 일입니다.
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ko-KR/매뉴얼/레퍼런스/백업/#what-a-backup-does-not-contain) has the full table.
+이들 중 어느 것도 워크스페이스 디렉터리의 나머지를 실어 나르지 않습니다. 워크스페이스는 데이터베이스보다 많은 것을 쌓습니다 — 붙여넣은 이미지, 스킬 및 에이전트 파일, 채팅 자격 증명, 워크트리 — 그리고 내보내기와 가져오기는 **파일**을 옮기므로, 그 옆의 모든 것은 있던 자리에 남습니다. 이는 자격 증명에 대해서는 의도된 것이고 워크트리에 대해서는 버려도 되는 것이며, 나머지에 대해서는 기능이 아니라 알아 두어야 할 한계입니다. 전체 표는 [백업 레퍼런스](/ko-KR/매뉴얼/레퍼런스/백업/#what-a-backup-does-not-contain)에 있습니다.
 
-## Moving a backup between the server and your device
+## 서버와 기기 사이에서 백업 옮기기
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ko-KR/매뉴얼/레퍼런스/백업/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+위의 모든 연산은 **서버**의 경로로 말합니다. 이는 서버가 곧 자신의 머신일 때만 완전한 답입니다. 서명된 HTTP 라우트 세 개 — [`/backup/workspace`, `/backup/snapshot` 및 `/backup/restore`](/ko-KR/매뉴얼/레퍼런스/백업/#transfer-routes) — 가 다른 모든 토폴로지를 위한 바이트를 실어 나르며, 미디어 프록시와 이미지 저장소가 이미 사용하는 것과 같은 인증된 레인을 씁니다. 페이지에서 이것은 각 내보내기와 각 스냅샷 옆의 **다운로드** 버튼(내려받을 위치는 직접 고릅니다)과, 사용 중인 머신에 있는 파일로 복원하는 **파일 선택 후 업로드**입니다. 서버가 자신의 머신이 아닐 때 작동하는 쪽은 업로드입니다. `workspace.import`는 파일이 이미 호스트에 있어야 하고, 이것이 그 파일이 호스트에 도착하는 방법입니다.
 
-Three properties are worth knowing:
+알아 둘 만한 속성 세 가지가 있습니다:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **다운로드는 새 복사본을 만들어 내고 서버는 그중 아무것도 남기지 않습니다.** 다운로드는 "내보내기 버튼이 만든 파일을 가져오는 것"이 아닙니다 — 다시 내보내고, 그것을 스트리밍하고, 삭제합니다. 응답이 `no-store`에 `Accept-Ranges: none`인 것도 같은 이유입니다. 중단된 범위 요청은 서로 다른 두 내보내기를 이어 붙여, 멀쩡해 보이지만 그렇지 않은 파일 하나를 만들게 됩니다.
+- **업로드는 양쪽 끝에서 디스크로 스트리밍되고 결코 버퍼링되지 않으며**, 도중에 나가는 모든 경로에서(거부된 경우까지 포함해) 스테이징된 복사본을 삭제합니다. 워크스페이스 데이터베이스는 스크린샷이 아닙니다.
+- **릴레이 연결에는 HTTP 오리진이 없으므로**, 그곳에서는 전송 컨트롤이 비활성화되고 그 이유를 알려 주는 안내가 붙습니다. 서버 측 경로로 말하는 모든 것은 릴레이를 통해 계속 작동합니다. 직접 연결이 필요한 것은 바이트 레인뿐입니다.
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[어느 경로가 누구의 것인가]
+페이지가 *보여 주는* 경로 — 스냅샷 디렉터리, 내보내기가 쓴 파일, 가져오기가 읽는 원본 — 은 `cc_server`를 실행하는 머신에 있습니다. **다운로드**가 알려 주는 경로는 사용자가 앉아 있는 머신에 있습니다. 두 가지가 모두 존재하는 이유가 이 구분입니다. 첫 번째는 유지보수 스크립트나 ssh 세션이 필요로 하는 것이고, 두 번째는 백업을 챙기는 사람이 필요로 하는 것입니다.
 :::
 
-## Multiple workspaces
+## 여러 워크스페이스
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+워크스페이스 여러 개를 나란히 실행할 수 있습니다. 각각 독립적으로 동작합니다. 한 워크스페이스의 에이전트는 다른 워크스페이스의 에이전트에게 메시지를 보낼 수 없고, 다른 워크스페이스의 메모리를 읽을 수 없고, 그 티켓을 볼 수 없습니다. 에이전트 간 메시징의 수신자 해석은 정확하며 결코 워크스페이스를 넘지 않습니다.
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+워크스페이스 간 대시보드는 없습니다. `/workspaces/:workspaceId/observability`의 분석 화면은 최근 실행의 범위가 제한된 전역 피드를 구독하고 이를 곧바로 활성 워크스페이스로 좁히므로, 그곳에서 보는 것은 한 번에 워크스페이스 하나입니다. 사람이 실제로 만지는 유일한 다중 워크스페이스 표면은 워크스페이스 선택기와 전환기입니다.
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+알아 둘 만한 실용적인 한계가 하나 있습니다. 누군가 사용 중인 워크스페이스는 계속 열린 채로 있습니다 — LRU가 없습니다. 그런 워크스페이스가 32개를 넘으면 서버는 거부하지 않고 경고합니다. 열린 파일마다 백그라운드 아이솔레이트와 페이지 캐시를 들고 있기 때문입니다. 워크스페이스 간 팬아웃은 파일을 잠깐 열고, 다른 곳에서 그 파일을 차지하지 않았다면 나중에 닫습니다.
 
-## Related concepts
+## 관련 개념
 
-- [Multiplayer](/ko-KR/매뉴얼/개념/멀티플레이어/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): agents belong to exactly one workspace
-- [Memory and knowledge](/ko-KR/매뉴얼/개념/메모리와-지식/): memory is workspace-scoped
-- [Architecture](/ko-KR/매뉴얼/개념/아키텍처/): where the databases sit in the client/server split
-- [Back up and restore](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ko-KR/매뉴얼/레퍼런스/백업/): every operation, route, manifest field and limit
-- [Add repositories](/ko-KR/매뉴얼/사용-가이드/저장소-추가/): registering a checkout into a workspace
+- [멀티플레이어](/ko-KR/매뉴얼/개념/멀티플레이어/): 멤버십, 역할, 리포지토리 권한 부여 — 격리의 접근 측면
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 에이전트는 정확히 하나의 워크스페이스에 속합니다
+- [메모리와 지식](/ko-KR/매뉴얼/개념/메모리와-지식/): 메모리는 워크스페이스 범위입니다
+- [아키텍처](/ko-KR/매뉴얼/개념/아키텍처/): 클라이언트/서버 분할에서 데이터베이스가 어디에 있는지
+- [백업 및 복원](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/): 스냅샷 찍기, 워크스페이스 옮기기, 다른 곳에 사본 보관하기
+- [백업, 내보내기, 가져오기](/ko-KR/매뉴얼/레퍼런스/백업/): 모든 연산, 라우트, 매니페스트 필드, 한계
+- [저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/): 체크아웃을 워크스페이스에 등록하기

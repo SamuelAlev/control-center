@@ -1,73 +1,75 @@
 ---
-title: Set up Slack integration
-description: Connect a Slack app to a Control Center workspace so members can drive agents from Slack.
+title: Slack-Integration einrichten
+description: Verbinde eine Slack-App mit einem Arbeitsbereich von Control Center, damit Mitglieder Agenten aus Slack steuern können.
 slug: de-DE/handbuch/anleitungen/slack-integration
+sourceHash: f5665651b0bf7d4420aef321f88c59146ed6b1e9
 ---
 
-This guide shows you how to connect Slack to a Control Center workspace, either by letting Control Center create the app or by building it yourself.
+Diese Anleitung zeigt dir, wie du Slack mit einem Arbeitsbereich von Control Center verbindest, entweder indem Control Center die App anlegt oder indem du sie selbst baust.
 
-For a guided first run, see [Bridge Slack to your workspace](/de-DE/handbuch/tutorials/erste-chat-bruecke/).
+Für einen geführten ersten Durchlauf siehe [Slack mit deinem Arbeitsbereich verbinden](/de-DE/handbuch/tutorials/erste-chat-bruecke/).
 
-:::note[Slack is the only chat provider]
-The bridge is provider-blind by construction — a descriptor-driven UI over one
-adapter per provider — but Slack is the only adapter that exists. There is no
-Discord, Telegram, Teams or Matrix implementation.
+:::note[Slack ist der einzige Chat-Anbieter]
+Die Brücke ist von Grund auf anbieterneutral — eine Oberfläche, die der
+Deskriptor erzeugt, mit einem Adapter je Anbieter —, aber Slack ist der
+einzige Adapter, den es gibt. Eine Umsetzung für Discord, Telegram, Teams
+oder Matrix gibt es nicht.
 :::
 
-## Prerequisites
+## Voraussetzungen
 
-- The `owner` or `admin` role in the Control Center workspace — connecting a chat app is a workspace-settings change
-- Permission to create and install apps in the Slack workspace
-- Nothing publicly reachable: the connection is outbound (Socket Mode), so the server needs no inbound port, tunnel, or domain
+- Die Rolle `owner` oder `admin` im Arbeitsbereich von Control Center — eine Chat-App zu verbinden ändert die Einstellungen des Arbeitsbereichs
+- Die Berechtigung, im Slack-Workspace Apps anzulegen und zu installieren
+- Nichts muss öffentlich erreichbar sein: Die Verbindung geht nach außen (Socket Mode), der Server braucht also keinen eingehenden Port, keinen Tunnel und keine Domain
 
-## Three ways to get the app
+## Drei Wege zur App
 
-| Path                | You provide                           | Control Center does                                                                                                        |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | An app configuration token (`xoxe-…`) | Creates the app with the right scopes, events, Socket Mode and slash command; hands you the two steps Slack has no API for |
-| **Create in Slack** | Nothing                               | Opens Slack with the same configuration pre-filled; you pick a workspace and confirm                                       |
-| **By hand**         | The finished app's tokens             | Verifies them and connects                                                                                                 |
+| Weg                    | Du lieferst                              | Control Center erledigt                                                                                                      |
+| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Geführt**            | Ein App-Konfigurationstoken (`xoxe-…`)   | Legt die App mit den richtigen Scopes, Ereignissen, Socket Mode und dem Slash-Befehl an; gibt dir die beiden Schritte, für die Slack keine API hat |
+| **In Slack erstellen** | Nichts                                   | Öffnet Slack mit derselben schon ausgefüllten Konfiguration; du wählst einen Workspace und bestätigst                        |
+| **Von Hand**           | Die Tokens der fertigen App              | Prüft sie und verbindet                                                                                                      |
 
-The guided path is the only one that also leaves the app _manageable_ from Control Center, which is what enables [Customize the chat bot](/de-DE/handbuch/anleitungen/chatbot-anpassen/). A **Create in Slack** app can be promoted to a managed one later by pasting a configuration token in the connect dialog.
+Nur der geführte Weg lässt die App danach auch aus Control Center _verwaltbar_, und genau das schaltet [Den Chatbot anpassen](/de-DE/handbuch/anleitungen/chatbot-anpassen/) frei. Eine App über **In Slack erstellen** lässt sich später zu einer verwalteten machen, indem du im Verbindungsdialog ein Konfigurationstoken einfügst.
 
-There is deliberately no "install Control Center's Slack app" button. Installing a distributed Slack app requires a shared client secret (Slack has no PKCE) and Socket Mode distributes an app's events randomly across its connections — so one shared app would deliver your workspace's messages to other people's servers. Every workspace therefore owns its own app and these three paths are about how little work that costs you.
+Es gibt absichtlich keine Schaltfläche „Control Centers Slack-App installieren“. Eine verteilte Slack-App zu installieren braucht ein gemeinsames Client-Secret (Slack hat kein PKCE), und Socket Mode verteilt die Ereignisse einer App zufällig über ihre Verbindungen — eine gemeinsame App würde die Nachrichten deines Arbeitsbereichs also an die Server anderer Leute liefern. Jeder Arbeitsbereich besitzt deshalb seine eigene App, und bei den drei Wegen geht es darum, wie wenig Arbeit dich das kostet.
 
-## Option A: let Control Center create the app
+## Option A: Control Center die App anlegen lassen
 
-1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-3. On the Slack block, click **Create app for me**
-4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
-5. Follow the two remaining steps the dialog shows, each as a link into Slack:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-6. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Erzeuge auf [api.slack.com/apps](https://api.slack.com/apps) ein Paar App-Konfigurationstoken und kopiere das **Refresh-Token** (`xoxe-…`)
+2. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+3. Klicke im Slack-Block auf **App für mich erstellen**
+4. Füge das Token ein, passe App-Name, Bot-Name, Beschreibungen und Slash-Befehl an, und klicke auf **App erstellen**
+5. Folge den beiden restlichen Schritten, die der Dialog zeigt, jeder ein Link nach Slack:
+   - **Basic Information → App-Level Tokens**: erzeuge ein Token mit dem Scope `connections:write` (`xapp-…`)
+   - **Install App**: installiere die App im Workspace und kopiere das **Bot User OAuth Token** (`xoxb-…`)
+6. Klicke auf **Zugangsdaten einfügen** und weiter mit [Verbinden](#verbinden)
 
-The configuration token rotates on every use. Control Center stores the rotated value as it goes, so you never have to paste it again.
+Das Konfigurationstoken rotiert bei jeder Verwendung. Control Center speichert den rotierten Wert gleich mit, du musst es also nie wieder einfügen.
 
-## Option B: create it in Slack, pre-filled
+## Option B: in Slack anlegen, vorausgefüllt
 
-Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
+Dieselbe App, kein Konfigurationstoken — Slack öffnet dir seinen eigenen Erstellbildschirm, das Manifest ist schon ausgefüllt.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Create app for me**
-3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
-4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
-5. Pick the Slack workspace and confirm. The scopes, events, Socket Mode and slash command are already correct
-6. Back in Control Center, follow the two remaining steps the dialog shows:
-   - **Basic Information → App-Level Tokens**: generate a token with the `connections:write` scope (`xapp-…`)
-   - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
-7. Click **Paste the credentials** and continue with [Connect](#connect)
+1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+2. Klicke im Slack-Block auf **App für mich erstellen**
+3. Passe App-Name, Bot-Name, Beschreibungen und Slash-Befehl an — die gehen mit dem Link mit
+4. Klicke auf **In Slack erstellen**. Dein Browser öffnet die Erstellseite von Slack mit der vorausgefüllten Konfiguration
+5. Wähle den Slack-Workspace und bestätige. Scopes, Ereignisse, Socket Mode und Slash-Befehl stimmen schon
+6. Zurück in Control Center folgst du den beiden restlichen Schritten, die der Dialog zeigt:
+   - **Basic Information → App-Level Tokens**: erzeuge ein Token mit dem Scope `connections:write` (`xapp-…`)
+   - **Install App**: installiere die App im Workspace und kopiere das **Bot User OAuth Token** (`xoxb-…`)
+7. Klicke auf **Zugangsdaten einfügen** und weiter mit [Verbinden](#verbinden)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
+Slack meldet nicht, welche App es angelegt hat, Control Center erfährt die App-ID also nicht, und die Links in Schritt 6 führen zu deiner App-Liste, nicht direkt zu dieser App. **Bot anpassen** braucht ein Konfigurationstoken.
 
-## Option C: build the app yourself
+## Option C: die App selbst bauen
 
-Create an app at [api.slack.com/apps](https://api.slack.com/apps), then set it up as follows.
+Lege eine App auf [api.slack.com/apps](https://api.slack.com/apps) an und richte sie so ein.
 
-**Socket Mode**: enable it and leave every request URL empty. Slack refuses a manifest that asks for both Socket Mode and webhook delivery.
+**Socket Mode**: schalte ihn ein und lass jede Request URL leer. Slack lehnt ein Manifest ab, das Socket Mode und Webhook-Zustellung zugleich verlangt.
 
-**Bot token scopes** (OAuth & Permissions):
+**Bot Token Scopes** (OAuth & Permissions):
 
 ```text
 app_mentions:read
@@ -81,7 +83,7 @@ users:read
 users:read.email
 ```
 
-**Event subscriptions** (bot events):
+**Event Subscriptions** (Bot-Ereignisse):
 
 ```text
 app_home_opened
@@ -91,134 +93,137 @@ message.groups
 message.im
 ```
 
-`message.channels` and `message.groups` are what make a _reply_ inside an already-bridged Slack thread work. Without them, only the first mention ever arrives.
+`message.channels` und `message.groups` sorgen dafür, dass eine _Antwort_ in einem Slack-Thread ankommt, den die Brücke schon führt. Ohne sie trifft nur die erste Erwähnung ein.
 
-**Slash command**: `/cc` (any name works — the bridge uses whatever command it was last invoked with).
+**Slash-Befehl**: `/cc` (jeder Name geht — die Brücke nimmt den Befehl, mit dem sie zuletzt aufgerufen wurde).
 
-**App Home**: enable the Messages tab and leave it writable, so members can DM the bot.
+**App Home**: aktiviere den Tab **Messages** und lass ihn beschreibbar, damit Mitglieder dem Bot eine Direktnachricht schicken können.
 
-**Tokens**: generate an app-level token with `connections:write`, then install the app and copy the bot user OAuth token.
+**Tokens**: erzeuge ein App-Level-Token mit `connections:write`, installiere dann die App und kopiere das Bot User OAuth Token.
 
-## Connect
+## Verbinden
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the Slack block, click **Connect Slack**
-3. Fill in the fields:
+1. Geh zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+2. Klicke im Slack-Block auf **Slack verbinden**
+3. Fülle die Felder aus:
 
-| Field                                          | Value    | Where it lives in Slack                                    |
-| ---------------------------------------------- | -------- | ---------------------------------------------------------- |
-| **Bot user OAuth token**                       | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                 |
-| **App-level token**                            | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`) |
-| **App configuration refresh token** (optional) | `xoxe-…` | The app configuration token pair on api.slack.com/apps     |
+| Feld                                         | Wert     | Wo es in Slack liegt                                        |
+| -------------------------------------------- | -------- | ----------------------------------------------------------- |
+| **Bot-Token**                                | `xoxb-…` | OAuth & Permissions → Bot User OAuth Token                  |
+| **App-Token**                                | `xapp-…` | Basic Information → App-Level Tokens (`connections:write`)  |
+| **App-Konfigurationstoken** (optional)       | `xoxe-…` | Das Paar der App-Konfigurationstoken auf api.slack.com/apps |
 
-The prefix of each value is checked on both sides before anything is sent, so a
-value pasted into the wrong box is refused with the same sentence either way.
+Das Präfix jedes Werts wird auf beiden Seiten geprüft, bevor irgendetwas
+gesendet wird. Ein Wert im falschen Feld wird beiderseits mit demselben Satz
+abgelehnt.
 
-4. Click **Connect**
+4. Klicke auf **Slack verbinden**
 
-Control Center verifies the bot token with Slack's `auth.test` _before_ storing anything, so a typo is reported to you rather than becoming a socket that quietly never works. The app-level token can only be proven by opening the socket, so a bad one shows up a moment later as a connection error on the same row.
+Control Center prüft das Bot-Token mit Slacks `auth.test`, _bevor_ etwas gespeichert wird, sodass ein Tippfehler dir gemeldet wird, statt zu einem Socket zu werden, der still nie funktioniert. Das App-Level-Token lässt sich nur beweisen, indem der Socket aufgeht. Ein falsches erscheint deshalb einen Moment später als Verbindungsfehler in derselben Zeile.
 
-Without the optional app configuration token, the connection works fine — you just cannot edit the bot from Control Center.
+Ohne das optionale App-Konfigurationstoken funktioniert die Verbindung — den Bot kannst du dann nicht aus Control Center bearbeiten.
 
-## What connecting does
+## Was das Verbinden bewirkt
 
-- Stores the credentials in the workspace's own directory, beside its database, owner-readable only. They never travel back to a client
-- Opens one Socket Mode connection for this workspace and starts receiving mentions, Slack thread replies, DMs and slash commands
-- Re-arms every Slack thread that was bridged before, so a reconnect continues existing conversations instead of stranding them
-- Costs nothing for workspaces that have no chat app: no socket, no timers, no traffic
+- Speichert die Zugangsdaten im eigenen Verzeichnis des Arbeitsbereichs, neben seiner Datenbank, nur für den Eigentümer lesbar. An einen Client gehen sie nie zurück
+- Öffnet eine Socket-Mode-Verbindung für diesen Arbeitsbereich und empfängt Erwähnungen, Antworten in Slack-Threads, Direktnachrichten und Slash-Befehle
+- Nimmt jeden Slack-Thread, den die Brücke schon führte, wieder auf, sodass eine neue Verbindung bestehende Unterhaltungen fortsetzt, statt sie hängen zu lassen
+- Kostet nichts für Arbeitsbereiche ohne Chat-App: kein Socket, keine Timer, kein Verkehr
 
-:::note[Where the tokens live and why not the keychain]
-Bot credentials are one plain JSON file per provider at
-`<dataDir>/<workspaceId>/chat_credentials/`, written atomically and tightened to
-owner-only. That is deliberate, not an oversight: deleting a workspace unlinks
-that directory so its tokens go with it and `workspace.export` and backups copy
-`workspace.db` — not the directory — so a workspace you hand to someone else
-never carries live bot tokens inside it. The corollary is that restoring a
-workspace elsewhere means reconnecting Slack there.
+:::note[Wo die Tokens liegen, und warum nicht im Schlüsselbund]
+Die Bot-Zugangsdaten sind eine einfache JSON-Datei je Anbieter unter
+`<dataDir>/<workspaceId>/chat_credentials/`, atomar geschrieben und auf den
+Eigentümer eingeschränkt. Das ist Absicht, kein Versehen: Wird der
+Arbeitsbereich gelöscht, wird das Verzeichnis mit entfernt, die Tokens gehen
+also mit, und `workspace.export` sowie Sicherungen kopieren `workspace.db` —
+nicht das Verzeichnis —, sodass ein Arbeitsbereich, den du jemand anderem
+gibst, nie aktive Bot-Tokens in sich trägt. Die Folge: Einen Arbeitsbereich
+woanders wiederherzustellen heißt, Slack dort neu zu verbinden.
 
-Access to the bridge is workspace **membership**, never possession of a token. A
-Slack account has to be linked to a Control Center user who is a member with a
-writing role. Connect, disconnect, guided setup, the setup link and bot
-customization are all admin-gated.
+Zugang zur Brücke ist die **Mitgliedschaft** im Arbeitsbereich, nie der Besitz
+eines Tokens. Ein Slack-Konto muss mit einem Nutzer von Control Center
+verknüpft sein, der Mitglied mit einer schreibenden Rolle ist. Verbinden,
+Trennen, die geführte Einrichtung, der Einrichtungs-Link und die
+Bot-Anpassung sind Admin-Aktionen.
 :::
 
-## Verify
+## Prüfen
 
-The Slack row shows a status tag: **Live**, **Connecting…**, **Connection error** (with Slack's own error next to it), or **Not connected**. To check end to end:
+Die Slack-Zeile zeigt ein Status-Kennzeichen: **Live**, **Verbinden…**, **Verbindungsfehler** (daneben der Fehler von Slack selbst) oder **Nicht verbunden**. So prüfst du den Weg durch:
 
-1. In Slack, invite the bot to a channel: `/invite @your-bot-name`
-2. Mention it with a request
-3. A Slack thread reply appears and a matching space appears in Control Center
+1. Lade den Bot in Slack in einen Channel ein: `/invite @your-bot-name`
+2. Erwähne ihn mit einer Anfrage
+3. Eine Antwort im Slack-Thread erscheint, und in Control Center erscheint ein passender Bereich
 
-Every member who wants to use the bridge then links their own account — see [Link your Slack account](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/).
+Jedes Mitglied, das die Brücke nutzen will, verknüpft danach das eigene Konto — siehe [Dein Slack-Konto verknüpfen](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/).
 
-## What a reply looks like in Slack
+## Wie eine Antwort in Slack aussieht
 
-Above the streamed words sits one grouped card with a row per step. Setup is one row whose title moves from `Working on it…` to `Cloning …` to `Starting the agent…`. Reasoning adds a `Thinking…` row; when that step finishes, a short thought can appear on it. Each tool is its own row (`Read lib/main.dart`). The answer arrives as ordinary text under the card. The card turns complete when the turn finishes and errored when the run failed, was interrupted, or hit its turn limit.
+Über den gestreamten Worten sitzt eine gruppierte Karte mit einer Zeile je Schritt. Die Einrichtung ist eine Zeile, deren Titel von `Working on it…` über `Cloning …` zu `Starting the agent…` wechselt. Das Nachdenken fügt eine Zeile `Thinking…` an; ist der Schritt fertig, kann darauf ein kurzer Gedanke stehen. Jedes Tool ist eine eigene Zeile (`Read lib/main.dart`). Die Antwort kommt als gewöhnlicher Text unter der Karte. Die Karte gilt als abgeschlossen, wenn der Zug endet, und als fehlerhaft, wenn der Lauf fehlgeschlagen ist, unterbrochen wurde oder sein Zug-Limit erreicht hat.
 
-The card starts the moment the bot accepts the mention — `Working on it…` — so the Slack thread is not silent while the workspace is still being built. Your first mention in a Slack channel creates the conversation, which clones the repos the agent works in, so that setup row then reads `Cloning acme/widgets…`, then `Setting up Reviewer…`, then `Starting the agent…`, then a `Thinking…` row once the agent is actually reasoning. On a big repository that first setup takes a while; the card is how you can tell it is working rather than ignoring you. Later mentions in the same Slack thread still open with `Working on it…`, then skip the clone steps because the workspace is already there.
+Die Karte geht in dem Moment auf, in dem der Bot die Erwähnung annimmt — `Working on it…` —, damit der Slack-Thread nicht stumm bleibt, während der Bereich noch aufgebaut wird. Deine erste Erwähnung in einem Slack-Channel legt die Unterhaltung an, und dabei werden die Repos geklont, in denen der Agent arbeitet. Die Einrichtungszeile liest dann `Cloning acme/widgets…`, danach `Setting up Reviewer…`, dann `Starting the agent…`, und eine Zeile `Thinking…`, sobald der Agent wirklich nachdenkt. Bei einem großen Repository dauert diese erste Einrichtung eine Weile; an der Karte erkennst du, dass die Anfrage läuft und nicht liegen geblieben ist. Spätere Erwähnungen im selben Slack-Thread beginnen weiter mit `Working on it…` und überspringen die Klon-Schritte, weil der Bereich schon da ist.
 
-Reasoning as a wall of text and tool output, never leave Control Center — the thought on the `Thinking…` row is a short line, not a transcript. **View in Control Center** on the card opens the full conversation in the desktop app — the link goes to your own Control Center server, which hands the browser over to the app.
+Das Nachdenken als Textwand und die Ausgabe der Tools verlassen Control Center nie — der Gedanke auf der Zeile `Thinking…` ist eine kurze Zeile, kein Transkript. **View in Control Center** auf der Karte öffnet die ganze Unterhaltung in der Desktop-App — der Link geht an deinen eigenen Server von Control Center, und der übergibt den Browser an die App.
 
-If nothing happens when you click it, the server that sent the message is not reachable from the machine you clicked on (a loopback-only server clicked from a phone, for example), or Control Center is not running there. A server with no reachable address sends a card with no button rather than one that leads nowhere.
+Passiert beim Klick nichts, ist der Server, der die Nachricht geschickt hat, von dem Rechner aus nicht erreichbar, auf dem du geklickt hast (ein Server, der nur auf Loopback hört, angeklickt von einem Smartphone, zum Beispiel), oder Control Center läuft dort nicht. Ein Server ohne erreichbare Adresse schickt eine Karte ohne Schaltfläche, statt einer, die ins Leere führt.
 
-## Rotate a token
+## Ein Token rotieren
 
-Re-paste the new value in the connect dialog and click **Connect**. Connecting replaces whatever connection was running for this workspace, so the socket is re-dialed with the new credentials.
+Füge den neuen Wert im Verbindungsdialog neu ein und klicke auf **Slack verbinden**. Verbinden ersetzt die laufende Verbindung dieses Arbeitsbereichs, der Socket wird also mit den neuen Zugangsdaten neu aufgebaut.
 
-The two required tokens have to be present on every connect. The optional app configuration token keeps its stored value when you leave the box empty, so rotating a bot token never costs you the ability to edit the app.
+Die beiden Pflicht-Tokens müssen bei jedem Verbinden da sein. Das optionale App-Konfigurationstoken behält seinen gespeicherten Wert, wenn du das Feld leer lässt, das Rotieren eines Bot-Tokens kostet dich also nicht die Möglichkeit, die App zu bearbeiten.
 
-## Disconnect
+## Trennen
 
-Click **Disconnect** on the Slack row (admins only). The socket closes and the credentials are forgotten.
+Klicke in der Slack-Zeile auf **Trennen** (nur für Admins). Der Socket schließt sich, und die Zugangsdaten werden verworfen.
 
-Space and user links deliberately survive: reconnecting the same app restores every bridged Slack thread. They are workspace-scoped rows, so deleting the workspace removes them anyway.
+Verknüpfungen von Bereichen und Nutzern bleiben absichtlich erhalten: Dieselbe App neu zu verbinden stellt jeden angebundenen Slack-Thread wieder her. Es sind Zeilen des Arbeitsbereichs, das Löschen des Arbeitsbereichs entfernt sie also ohnehin.
 
-## Troubleshooting
+## Fehlersuche
 
-### The row says "Connection error"
+### Die Zeile zeigt „Verbindungsfehler“
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Lies den Fehler neben dem Kennzeichen. Ein abgelehntes Zugangsdatum (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) ist endgültig — die Brücke versucht es nicht weiter und wartet auf neue Tokens, denn ein widerrufenes Token endlos erneut zu versuchen bringt nur ein Rate-Limit. Füge die Tokens im Verbindungsdialog neu ein.
 
-A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
+Ein Fehler `missing_scope` heißt, die App ist mit weniger Scopes installiert, als die Brücke braucht. Ergänze den fehlenden Scope, installiere die App in Slack neu und verbinde dann erneut.
 
-Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with exponential backoff capped at 30 seconds and Slack's routine socket rotation does not escalate that backoff.
+Alles Vorübergehende (ein abgerissener Socket, eine kurze Störung bei Slack) verbindet sich von selbst neu, mit exponentiellem Backoff, gedeckelt bei 30 Sekunden, und die übliche Socket-Rotation von Slack setzt diesen Backoff nicht hoch.
 
-### The bot does not answer a mention
+### Der Bot antwortet nicht auf eine Erwähnung
 
-- **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/)
-- **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
-- **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
+- **Ist der Bot im Channel?** Slack liefert Channel-Nachrichten nur an Apps, die Mitglied sind. Führe `/invite @your-bot-name` aus
+- **Bist du verknüpft?** Ein nicht verknüpftes Mitglied bekommt in diesem Slack-Thread eine Antwort, die erklärt, wie die Verknüpfung geht. Siehe [Dein Slack-Konto verknüpfen](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/)
+- **Bist du Mitglied des Arbeitsbereichs mit einer schreibenden Rolle?** Einem `viewer` oder `guest` wird gesagt, die Rolle sei nur lesend. Die Brücke startet nie Arbeit für jemanden, den sie nicht zuordnen kann
+- **Hat der Arbeitsbereich Agenten?** Ohne Agenten wird die Nachricht gespeichert, aber niemand kann sie beantworten
 
-### It answers in a channel but ignores plain messages
+### Im Channel kommt eine Antwort, normale Nachrichten werden ignoriert
 
-That is intended. Outside a DM, the bridge only acts on a message that mentions the bot, or a reply inside a Slack thread it already owns. Everything else is other people's conversation.
+Das ist Absicht. Außerhalb einer Direktnachricht handelt die Brücke nur bei einer Nachricht, die den Bot erwähnt, oder bei einer Antwort in einem Slack-Thread, den sie schon führt. Alles andere ist das Gespräch anderer Leute.
 
-### Replies arrive as one big message instead of streaming
+### Antworten kommen als eine große Nachricht statt als Stream
 
-The row says "Live streaming is off for this Slack app — replies arrive as one message." Slack's streaming replies need the Agents & AI Apps feature on a paid plan; when Slack refuses it, the bridge stops asking for the rest of that connection's life and posts whole replies instead. Nothing is lost — the full transcript is always in Control Center.
+Die Zeile sagt „Live-Streaming ist für diese Slack-App aus — Antworten kommen als eine Nachricht.“ Die Streaming-Antworten von Slack brauchen die Funktion Agents & AI Apps in einem bezahlten Tarif; lehnt Slack sie ab, fragt die Brücke für den Rest der Lebensdauer dieser Verbindung nicht mehr an und postet stattdessen ganze Antworten. Verloren geht nichts — das volle Transkript liegt immer in Control Center.
 
-Streaming also needs a Slack thread anchor, so a reply that has no Slack thread to grow in is posted whole. The task card still arrives either way: on a whole reply it rides the same message, already complete.
+Streaming braucht außerdem einen Anker im Slack-Thread. Eine Antwort ohne Slack-Thread, in den sie hineinwachsen kann, wird im Ganzen gepostet. Die Aufgabenkarte kommt so oder so an: Bei einer ganzen Antwort sitzt sie in derselben Nachricht, schon abgeschlossen.
 
-### The reply has no card above it
+### Über der Antwort fehlt die Karte
 
-Slack's task cards are part of the same new Agents & AI Apps surface as streaming and Slack only refuses at call time. When it does, Control Center keeps the reply and drops the card for the rest of that connection's life — an answer without a status line beats a status line without an answer.
+Die Aufgabenkarten von Slack gehören zur selben neuen Oberfläche Agents & AI Apps wie das Streaming, und Slack lehnt erst beim Aufruf ab. Tut es das, behält Control Center die Antwort und lässt die Karte für den Rest der Lebensdauer dieser Verbindung weg — eine Antwort ohne Statuszeile ist besser als eine Statuszeile ohne Antwort.
 
-### "Control Center needs an app configuration token to edit the bot"
+### „Control Center braucht ein App-Konfigurationstoken, um den Bot zu bearbeiten“
 
-The **Customize bot** row is disabled because the connection has no app configuration token. This is expected for an app made by hand or through **Create in Slack** — Slack never told Control Center which app it is. Generate a token pair on api.slack.com/apps and reconnect with the refresh token filled in.
+Die Zeile **Bot anpassen** ist deaktiviert, weil die Verbindung kein App-Konfigurationstoken hat. Das ist bei einer von Hand gebauten App oder einer App über **In Slack erstellen** zu erwarten — Slack hat Control Center nie gesagt, welche App es ist. Erzeuge auf api.slack.com/apps ein Token-Paar und verbinde neu, mit ausgefülltem Refresh-Token.
 
-### A long answer is cut off
+### Eine lange Antwort ist abgeschnitten
 
-Slack caps a single message at 40,000 characters, so the bridge truncates at 39,000 and appends a pointer to Control Center — a shortened reply beats one Slack rejects outright. The full text is always in the space transcript.
+Slack deckelt eine einzelne Nachricht bei 40.000 Zeichen, die Brücke schneidet deshalb bei 39.000 ab und hängt einen Verweis auf Control Center an — eine gekürzte Antwort ist besser als eine, die Slack rundweg ablehnt. Der volle Text steht immer im Transkript des Bereichs.
 
-## Related guides
+## Verwandte Anleitungen
 
-- [Link your Slack account](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/)
-- [Customize the chat bot](/de-DE/handbuch/anleitungen/chatbot-anpassen/)
-- [Chat bridge](/de-DE/handbuch/referenz/chat-bruecke/)
+- [Dein Slack-Konto verknüpfen](/de-DE/handbuch/anleitungen/chat-konto-verknuepfen/)
+- [Den Chatbot anpassen](/de-DE/handbuch/anleitungen/chatbot-anpassen/)
+- [Chat-Brücke](/de-DE/handbuch/referenz/chat-bruecke/)
 
-## Related concepts
+## Verwandte Konzepte
 
-- [Chat bridges](/de-DE/handbuch/konzepte/chat-bruecken/)
+- [Chat-Brücken](/de-DE/handbuch/konzepte/chat-bruecken/)

@@ -1,172 +1,183 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Chatta med en agent
+description: Skapa en yta med en agent, skicka arbete till den, styr den mitt i en körning och stoppa den.
 slug: sv-SE/handbok/how-to-guider/chatta-med-agent
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Den här guiden visar hur du arbetar med en agent i en yta.
 
-## Create a space
+## Skapa en yta
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Gå till **Ytor** i sidofältet
+2. Klicka på **+**-knappen bredvid rubriken Ytor
+3. Skriv ett **namn** — det är obligatoriskt. Ett tomt namn avvisas;
+   dialogen stannar kvar
+4. Lägg eventuellt till agenter från arbetsytan
+5. Om arbetsytan har något repo visas en repoväljare. Den börjar med alla
+   repon valda; begränsa den (även genom att avmarkera ett enskilt repo) till
+   de repon som ytan ska etablera worktrees för
+6. Bekräfta
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+Control Center öppnar ytan och börjar i bakgrunden etablera en
+copy-on-write-worktree per valt repo.
 
-## Send the first message
+## Skicka det första meddelandet
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Skriv ditt meddelande i meddelandefältet och tryck på Enter. Agenten dispatcheras
+och börjar strömma sitt svar.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Om ytan fortfarande etableras parkeras ditt meddelande i stället för att gå
+förlorat — meddelandefältet håller kvar det och skickar det automatiskt så snart
+worktreearna är klara.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+Medan agenten arbetar ser du dess tur strömma in: resonemangssegment,
+verktygsanrop (filläsningar, skrivningar, shell-kommandon) och svarstext, allt i
+ett och samma meddelande för agentturen.
 
-## Steer a running agent
+## Styr en körande agent
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+Medan en agent arbetar köar vanlig konversationstext **inte** en ny tur. Den blir
+ett köat styrningskort i remsan ovanför meddelandefältet och injiceras i den
+pågående körningen vid nästa turbrytpunkt. Det visas ingen toast — kortet är
+återkopplingen.
 
-Three things change that behaviour:
+Tre saker ändrar det beteendet:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Ett meddelande som innehåller ett **@-omnämnande** skickas alltid som ett
+  meddelande, aldrig som styrning
+- Ett meddelande som börjar med ett **slash-kommando** hanteras alltid som det
+  kommandot
+- Ett meddelande med en **bilaga** skickas alltid som ett meddelande —
+  styrningskön är enbart text
+- Om varje aktiv körning redan har avslutats faller texten igenom och skickas som
+  ett vanligt meddelande
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Styrning kräver den inbyggda harnessen]
+Bara den inbyggda harnessen i Control Center injicerar mitt i en körning. På
+Claude Code-adaptern köas texten fortfarande som ett styrningskort; när körningen
+tar slut omvandlas allt som fortfarande är köat till ett vanligt meddelande.
 :::
 
-## Approve a blocked action
+## Godkänn en blockerad åtgärd
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+När en agent stöter på en åtgärd som dess räcken grindar — ett destruktivt
+kommando, ett privilegierat verktyg — **blockerar servern körningen** och
+publicerar en godkännandebegäran till varje ansluten klient. Om du har det
+samtalet öppet visas begäran **i chatten**, ovanför meddelandefältet, som samma
+kort med numrerade alternativ som används för `ask_user` (neka, godkänn och
+eventuellt godkänn i åtta timmar). Det går inte att hoppa över: en blockerad
+agent väntar på ett beslut.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Om du är någon annanstans i appen visar en panel som alltid ligger överst i
+skalet fortfarande vad som väntar, så att du kan avblockera agenten utan att leta
+efter ytan. Överlägget döljer en begäran i samma stund som ytans samtal visas på
+skärmen, så du svarar aldrig på samma fråga två gånger.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Det finns ingen tidsgräns: en blockerad agent väntar tills någon fattar ett
+beslut. Samma begäran visas också i inkorgens uppmärksamhetsrad och i
+telefonklienten.
 
-## Answer an agent's question
+## Svara på en agents fråga
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+En agent som behöver en preferens, ett saknat krav eller en verklig förgrening
+**måste** anropa `ask_user`. Att skriva frågan som ett chattmeddelande avslutar
+turen och du måste skicka en ny prompt. Verktyget renderar ett kort med numrerade
+alternativ i samtalet — alternativ, valfri fritext eller båda — och körningen
+väntar på ditt svar.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Tryck på ett enskilt alternativ för att skicka det (siffran i slutet blir en pil
+när du för muspekaren över den). Flerval och skrivna svar använder **Fortsätt**
+(`⌘↵` / `Ctrl↵`). **Hoppa över** säger åt agenten att välja en rimlig standard
+och inte fråga igen.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+Det är en separat mekanism från godkännandekortet ovan: ett godkännande är ”får
+jag göra det här?”, en fråga är ”vilket av dessa menade du?”. Att ställa frågor
+är tillgängligt i den inbyggda harnessen i alla lägen, även de skrivskyddade
+(det ändrar ingenting), och det är avsiktligt inte inlindat i en
+godkännandeprompt — en dialog framför en dialog skulle misslyckas stängt utan en
+ansluten godkännare. En körning utan samtal att rendera i får helt enkelt inte
+verktyget.
 
-## Stop an agent
+## Stoppa en agent
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Medan körningar är aktiva blir skicka-knappen i meddelandefältet en
+**stoppa**-knapp. Töm meddelandefältet och tryck på den — det stoppar varje agent
+som kör i det samtalet.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+Det finns ingen stoppkontroll i ytans rubrik och ingen tangentbordsgenväg för
+det. För att stoppa bara en körning när flera är aktiva öppnar du den körningens
+aktivitetsflik — dess rubrik har en körningsspecifik pausa/återuppta och stoppa
+(stoppet ber dig bekräfta). **Observability → Live** listar varje körande agent i
+arbetsytan med samma kontroll.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+En stoppad körning markeras som stoppad. Skicka ett nytt meddelande för att
+dispatchera igen.
 
-## Use slash commands
+## Använd slash-kommandon
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Skriv `/` i meddelandefältet för att se kommandolistan. De som ändrar hur
+samtalet beter sig:
 
-| Command        | What it does                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| Kommando       | Vad det gör                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `/plan`        | Växlar ytan till planläge. Ett bart `/plan` aktiverar bara läget; `/plan <request>` aktiverar det och skickar resten som ditt meddelande |
+| `/goal <text>` | Registrerar samtalets arbetsmål                                                                                                  |
+| `/loop <text>` | Itererar över en uppgift tills den är klar                                                                                       |
+| `/compact`     | Fogar samman äldre historik till en förankrad sammanfattning och fortsätter på den komprimerade kontexten                        |
+| `/todo …`      | Visar och redigerar samtalets sparade att-göra-lista                                                                             |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+Skills visas i samma lista under sin egen namnrymd `skill:`, så de krockar aldrig
+med kommandona ovan — en skill som heter `plan` eller `compact` går fortfarande
+att nå:
 
-| Command                     | What it runs                                                       |
-| --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| Kommando                | Vad det kör                                                     |
+| ----------------------- | --------------------------------------------------------------- |
+| `/skill:<name>`         | En skill som är installerad i arbetsytan eller kopplad till agenten |
+| `/skill:<repo>:<name>`  | En skill som levereras av ett av repona som är utcheckade i ytan |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+Repo-skills märks med repot de kommer från, eftersom ett namn i sig inte säger
+vilken tjänsts konventioner den kodar och två repon kan leverera varsin
+`testing`. Du behöver inte skriva prefixet för att hitta en: att skriva det bara
+skillnamnet matchar även de namnrymdsförsedda posterna.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+En agent bär bara skills från det repo den för närvarande arbetar i —
+se [Reposcopade skills](/sv-SE/handbok/koncept/agentmodell/#repo-scoped-skills).
+Meddelandefältet är inte avgränsat på det sättet: du kan anropa vilket repos
+skill som helst genom att namnge den.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` och `/todo` fångas upp av klienten och sparas aldrig som meddelanden —
+en `/compact`-rad i transkriptet skulle flytta nästa komprimeringssnitt en tur
+bakåt. `/plan` växlar ytans sparade läge i stället för att färdas som text. Så
+ingen av de tre är ”ett meddelande du skickar till agenten”; förvänta dig inte
+att se dem i historiken.
 
-## Ask for a plan first
+## Be om en plan först
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/sv-SE/handbok/how-to-guider/planlage/).
+Innan en komplex ändring växlar du ytan till planläge med `/plan`, lägeslistan i
+meddelandefältets verktygsrad eller Shift+Tab. Agenten undersöker då skrivskyddat
+och levererar en typad plan som du godkänner innan något arbete börjar. Se
+[Använd planläge](/sv-SE/handbok/how-to-guider/planlage/).
 
-## Reach an agent without a dedicated space
+## Nå en agent utan en dedikerad yta
 
-You do not need a space per agent. In any space:
+Du behöver inte en yta per agent. I vilken yta som helst:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/sv-SE/handbok/how-to-guider/namna-agenter/) for how names are
-matched.
+Den omnämnda agenten läggs till i ytan och dispatcheras med ytans kontext. Se
+[@-nämn agenter](/sv-SE/handbok/how-to-guider/namna-agenter/) för hur namn
+matchas.
 
-## Related guides
+## Relaterade guider
 
-- [Use spaces](/sv-SE/handbok/how-to-guider/ytor/)
-- [@-mention agents](/sv-SE/handbok/how-to-guider/namna-agenter/)
-- [Use plan mode](/sv-SE/handbok/how-to-guider/planlage/)
-- [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/) to do the same from Slack
+- [Använd ytor](/sv-SE/handbok/how-to-guider/ytor/)
+- [@-nämn agenter](/sv-SE/handbok/how-to-guider/namna-agenter/)
+- [Använd planläge](/sv-SE/handbok/how-to-guider/planlage/)
+- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/) för att göra samma sak från Slack
 
-## Related concepts
+## Relaterade koncept
 
-- [Modes](/sv-SE/handbok/koncept/lagen/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)

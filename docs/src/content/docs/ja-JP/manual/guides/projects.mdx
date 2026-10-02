@@ -1,94 +1,98 @@
 ---
-title: Organize work with projects
-description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+title: プロジェクトで作業を整理
+description: サイドバーからチケットをプロジェクトにまとめ、進捗を追跡し、完了したプロジェクトをアーカイブします。
 slug: ja-JP/マニュアル/ハウツーガイド/プロジェクト
+sourceHash: 394b9c3be7489ad1a8ad1dd2d5d1156952e7e7d0
 ---
 
-A project is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only — they never sync to an external provider such
-as Linear.
+プロジェクトは、共通の目標に向けたチケットをワークスペース単位でまとめたものです。
+プロジェクトは Control Center 専用です — Linear のような外部プロバイダーに
+同期されることはありません。
 
-## Create a project
+## プロジェクトを作成する
 
-1. Expand the **Tickets** group in the workspace sidebar. It lists
-   **All tickets**, one row per non-archived project, then **New project**.
-2. Click **New project**.
-3. Fill in **Project name**, an optional **Description** and pick a **Color**.
-4. Press **Create project**.
+1. ワークスペースのサイドバーで**チケット**グループを展開します。ここには
+   **すべてのチケット**、アーカイブされていないプロジェクトごとの行、そして
+   **新規プロジェクト**が並びます。
+2. **新規プロジェクト**をクリックします。
+3. **プロジェクト名**、任意の**説明**を入力し、**色**を選択します。
+4. **プロジェクトを作成**を押します。
 
-You land on the new project's overview and the project appears as a sidebar
-row under **Tickets**.
+新しいプロジェクトの概要が表示され、プロジェクトは**チケット**の下の
+サイドバーの行として表示されます。
 
-## Add tickets to a project
+## チケットをプロジェクトに追加する
 
-Project is a single-ticket field, set in either of two places:
+プロジェクトはチケット単位のフィールドで、次の 2 か所のいずれかで設定します:
 
-- Open the ticket and set **Project** in its properties rail.
-- Right-click the ticket in the list and use the **Project** submenu.
+- チケットを開き、そのプロパティパネルで**プロジェクト**を設定します。
+- リスト内のチケットを右クリックし、**プロジェクト**サブメニューを使います。
 
-The properties-rail picker also offers **New project**, so you can file a ticket
-into a project you create on the spot. **No project** clears the field.
+プロパティパネルのピッカーにも**新規プロジェクト**があるため、その場で作成した
+プロジェクトにチケットを登録できます。**プロジェクトなし**はフィールドを
+クリアします。
 
-A ticket belongs to at most one project.
+チケットは最大 1 つのプロジェクトに属します。
 
-:::note[Project is not a bulk action]
-The floating bar that appears when you select several tickets covers status,
-priority, assignee, labels and delete. It has no project chip, so filing many
-tickets means doing them one at a time.
+:::note[プロジェクトは一括操作ではありません]
+複数のチケットを選択したときに表示されるフローティングバーが扱うのは、
+ステータス、優先度、担当者、ラベル、削除です。プロジェクトのチップはないため、
+多数のチケットをまとめて整理するには 1 件ずつ行う必要があります。
 :::
 
-You can also start from the project: **New ticket** on the project overview
-creates a ticket and files it there.
+プロジェクト側から始めることもできます。プロジェクトの概要にある
+**新規チケット**は、チケットを作成してそのプロジェクトに登録します。
 
-## Read project progress
+## プロジェクトの進捗を確認する
 
-Open a project from its sidebar row, or go to
-`/workspaces/<workspace-id>/projects/<project-id>`.
+サイドバーの行からプロジェクトを開くか、
+`/workspaces/<workspace-id>/projects/<project-id>` に移動します。
 
-The overview shows the project's glyph and name, a status badge, the
-description and a done-of-total progress bar. Below that, the project's
-tickets are grouped by status.
+概要には、プロジェクトのグリフと名前、ステータスバッジ、説明、および
+全体に対する完了数のプログレスバーが表示されます。その下には、プロジェクトの
+チケットがステータス別にグループ化されて表示されます。
 
-It does not aggregate anything else — there is no assignee breakdown and no
-priority distribution. For those, filter the main ticket list instead.
+ほかの集計は行われません — 担当者別の内訳も、優先度の分布もありません。
+それらが必要な場合は、代わりにメインのチケットリストをフィルタリングしてください。
 
-## Change project status
+## プロジェクトのステータスを変更する
 
-Projects have three states:
+プロジェクトには 3 つの状態があります:
 
-| Status        | Meaning              |
-| ------------- | -------------------- |
-| **Active**    | Work is ongoing      |
-| **Completed** | All work is done     |
-| **Archived**  | Historical reference |
+| ステータス       | 意味                     |
+| ---------------- | ------------------------ |
+| **アクティブ**   | 作業が進行中です         |
+| **完了**         | すべての作業が終わっています |
+| **アーカイブ済み** | 履歴として参照するための状態です |
 
-Use the **⋯** menu on the project header. It offers **Edit project**,
-**Mark completed** / **Mark active**, **Archive** / **Restore** and
-**Delete project**.
+プロジェクトヘッダーの**⋯**メニューを使います。ここには**プロジェクトを編集**、
+**完了にする**／**アクティブにする**、**アーカイブ**／**復元**、
+**プロジェクトを削除**があります。
 
-Archiving hides the project from the sidebar list and from the ticket pickers.
-It is reversible — **Restore** puts the project back to active — but the project
-is only reachable by URL while archived.
+アーカイブすると、プロジェクトはサイドバーのリストとチケットのピッカーから
+非表示になります。これは元に戻せます — **復元**でプロジェクトはアクティブに
+戻ります — ただし、アーカイブ中は URL でしかプロジェクトにアクセスできません。
 
-## Projects created for you
+## 自動で作成されるプロジェクト
 
-Approving an orchestration creates a project and files the parent ticket
-under it, alongside anything you filed by hand. Generated work items are
-pipeline steps, not ticket rows, so they do not appear on the project board.
-That is the only automated path: no pipeline node creates tickets, so a
-pipeline cannot populate a project. See
-[Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/).
+オーケストレーションを承認すると、プロジェクトが作成され、手動で登録した
+ものと並んで、親チケットがその下に登録されます。生成された作業項目は
+チケットの行ではなくパイプラインステップであるため、プロジェクトボードには
+表示されません。自動化された経路はこれだけです。パイプラインのどのノードも
+チケットを作成しないため、パイプラインがプロジェクトを埋めることはありません。
+詳しくは[オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+を参照してください。
 
-:::note[Projects are an operator surface]
-Create, list, update and delete projects in the app. Agents do not have
-project tools.
+:::note[プロジェクトはオペレーター用のサーフェスです]
+プロジェクトの作成、一覧表示、更新、削除はアプリで行います。エージェントに
+プロジェクト用のツールはありません。
 
-## Related guides
+## 関連ガイド
 
-- [Create and manage tickets](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
-- [Delegate work to agents](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
-- [Run an orchestration](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
+- [チケットの作成と管理](/ja-JP/マニュアル/ハウツーガイド/チケット管理/)
+- [エージェントに作業を委任](/ja-JP/マニュアル/ハウツーガイド/チケット委任/)
+- [オーケストレーションを実行](/ja-JP/マニュアル/ハウツーガイド/オーケストレーション実行/)
 
-## Related concepts
+## 関連コンセプト
 
-- [Tickets](/ja-JP/マニュアル/コンセプト/チケット/)
+- [チケット](/ja-JP/マニュアル/コンセプト/チケット/)

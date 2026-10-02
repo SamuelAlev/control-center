@@ -1,213 +1,123 @@
 ---
-title: Meetings and transcription
-description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+title: ミーティングと文字起こし
+description: Control Center が通話を録音し、サーバー上で文字起こしと話者分離を行う仕組みと、ホストの外に出る唯一のステップがどこにあるのかを説明します。
 slug: ja-JP/マニュアル/コンセプト/ミーティング
+sourceHash: f2aede57711269ce16308a8eb3c8ac3d53001927
 ---
 
-Control Center can record a call and hand you back a clean writeup — a summary,
-action items and decisions — with speech recognition and speaker separation
-running on your own hardware. Think Granola, but self-hosted and wired into the
-same workspace your agents live in.
+Control Center は通話を録音し、要約・アクションアイテム・決定事項からなる整理された記録として返します。音声認識と話者分離は自分のハードウェア上で動作します。Granola を想像してください。ただしセルフホストで、エージェントが住むのと同じワークスペースにつながっています。
 
-:::caution[Recording needs a voice model and a server restart]
-Recording and dictation start after a speech (ASR) model is on disk **and** the
-server has been restarted. A normal boot force-installs the selected model
-(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
-voice-model paths exactly once near the start of boot — minutes before that
-download can finish. After the model reports installed, restart `cc_server`.
-To pick a different build, use Settings → Server → Voice & meeting models —
-that also needs a restart.
+:::caution[録音には音声モデルとサーバーの再起動が必要です]
+録音とディクテーションは、音声（ASR）モデルがディスク上にあり、**かつ**サーバーが再起動された後に開始します。通常の起動では、選択されたモデル（既定では Parakeet TDT 0.6B v3）がバックグラウンドで強制インストールされますが、サーバーが音声モデルのパスを解決するのは起動開始時点の 1 回だけで、そのダウンロードが完了するより何分も前です。モデルがインストール済みと報告されたら、`cc_server` を再起動してください。別のビルドを選ぶには、設定 → サーバー → 音声と会議のモデル を使用します。これにも再起動が必要です。
 :::
 
-## What a meeting is
+## ミーティングとは
 
-A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
-[calendar event](/ja-JP/マニュアル/コンセプト/カレンダー/): an event is a scheduled commitment
-synced from Google, while a meeting is something you actually recorded. The two
-can be linked, since you can start a recording from an event, but they stay
-distinct records.
+**ミーティング**とは、録音され、文字起こしされたセッションです。[カレンダーの予定](/ja-JP/マニュアル/コンセプト/カレンダー/)とは_別物_です。予定は Google から同期されたスケジュール上の約束であり、ミーティングは実際に録音したものです。予定から録音を開始できるため両者はリンクできますが、記録としては別々のままです。
 
-Every meeting is workspace-scoped, like everything else in Control Center.
-Meetings recorded in one workspace never surface in another.
+すべてのミーティングは、Control Center の他のすべてと同様にワークスペース単位です。あるワークスペースで録音されたミーティングが別のワークスペースに現れることはありません。
 
-## Where the work happens
+## 処理が行われる場所
 
-"On-device" is the right instinct but the wrong noun. The client captures audio
-and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
-host does everything else: it writes the per-channel WAVs under
-`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
-echo and diarizes after the fact. On a standalone desktop that host is the same
-machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
-is only true when the server is your laptop.
+「オンデバイス」という直感は正しいのですが、名詞が適切ではありません。クライアントが音声をキャプチャし、16 kHz PCM16 のフレームを **`cc_server` が動作しているマシン** へストリーミングします。その他の処理はすべてこのホストが行います。チャンネルごとの WAV を `<dataDir>/meetings/<meetingId>/` に書き出し、ワーカーアイソレート内で文字起こしし、エコーを除去し、事後に話者分離します。スタンドアロンのデスクトップでは、このホストは同じマシンです。リモートサーバーを指している場合は同じではありません。つまり「自分のノート PC から何も出ていかない」が成り立つのは、サーバーが自分のノート PC である場合だけです。
 
-There is one further exception and it is the important one.
+さらに例外が 1 つあり、それが重要なものです。
 
-:::caution[The summary leaves the host]
-The transcript and your notes are sent to whatever model provider the
-summarizing agent is configured against. For any cloud provider that means the
-full transcript goes to that provider's API. If a transcript must not leave the
-host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
-another local server).
+:::caution[要約はホストの外に出ます]
+文字起こしとあなたのメモは、要約エージェントが設定されているモデルプロバイダーに送信されます。クラウドプロバイダーの場合、それは文字起こし全体がそのプロバイダーの API に送られることを意味します。文字起こしをホストの外に出してはならない場合は、要約エージェントをローカルエンドポイント（Ollama、LM Studio、その他のローカルサーバー）に向けてください。
 :::
 
-Everything before the summary — capture, transcription, echo cancellation,
-diarization, voiceprint matching — runs on the server with no network call.
+要約より前のすべて、つまりキャプチャ、文字起こし、エコーキャンセル、話者分離、声紋照合は、ネットワーク呼び出しなしでサーバー上で実行されます。
 
-## Which models ship
+## 同梱されるモデル
 
-The **embedding, diarization and speech (ASR)** models are force-installed on
-first boot (skipped on a demo), so speaker separation and recording exist
-without a settings visit. ASR is still **selectable** — it is several hundred
-megabytes, and four builds ship in the picker. Speech still needs one restart
-after that first download, because the transcriber resolves its model before
-the fetch can finish.
+**埋め込み、話者分離、音声（ASR）**の各モデルは初回起動時に強制インストールされる（デモではスキップされます）ため、設定画面を開かなくても話者分離と録音を利用できます。ASR は引き続き**選択可能**です。数百メガバイトあり、ピッカーには 4 つのビルドが用意されています。音声モデルは初回ダウンロード後に 1 回の再起動が必要です。文字起こし機能がモデルを解決するのが、取得が完了するより前だからです。
 
-The four picker entries, differing in size, language coverage and accuracy:
+サイズ、言語カバレッジ、精度が異なるピッカーの 4 つのエントリ:
 
-- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
-- Parakeet TDT 0.6B v2 — English (~480 MB)
-- Whisper large-v3-turbo — multilingual (~626 MB)
-- Whisper base.en — English-only, the small historical default (~198 MB)
+- Parakeet TDT 0.6B v3 — 多言語対応、推奨の既定（約 600 MB）
+- Parakeet TDT 0.6B v2 — 英語（約 480 MB）
+- Whisper large-v3-turbo — 多言語対応（約 626 MB）
+- Whisper base.en — 英語のみ、従来の小さな既定（約 198 MB）
 
-Models are the only artifacts the server fetches at runtime; every native
-library ships in the bundle.
+実行時にサーバーが取得するのはモデルだけです。ネイティブライブラリはすべてバンドルに同梱されています。
 
-## How capture works
+## キャプチャの仕組み
 
-A meeting records **two audio channels at once**:
+ミーティングは**2 つのオーディオチャンネルを同時に**録音します:
 
-- **You ("me")**: your microphone.
-- **Them ("them")**: the meeting's audio output, captured by a driver-free
-  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
-  Windows, a PipeWire / PulseAudio monitor on Linux.
+- **あなた（「me」）**: 自分のマイク。
+- **相手（「them」）**: ミーティングの音声出力。ドライバー不要のループバックでキャプチャします。macOS では Core Audio のプロセス/デバイスタップ、Windows では WASAPI ループバック、Linux では PipeWire / PulseAudio のモニターです。
 
-Because the two channels are captured separately, the transcript is
-speaker-attributed from the start: your words are tagged `me`, everyone on the
-call is tagged `them`.
+2 つのチャンネルを別々にキャプチャするため、文字起こしは最初から話者ごとに割り当てられます。あなたの発言には `me`、通話の参加者全員には `them` が付きます。
 
-Your own voice bleeds from the system output back into the mic and would
-otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
-on every remote-mode recording and is required** — if the native AEC library
-cannot load, the recording refuses to start rather than silently streaming an
-echo-polluted mic. (In-person mode has no far-end reference to cancel against,
-so AEC is an identity passthrough there.) On top of it, a host-side text-level
-echo filter runs on every platform.
+自分の声はシステム出力からマイクに回り込み、そのままだと二重に文字起こしされます。これを防ぐのが 2 つのフィルターです。信号レベルの **AEC3 はすべてのリモートモードの録音で実行され、必須です**。ネイティブの AEC ライブラリを読み込めない場合、エコーが混入したマイクを黙ってストリーミングするのではなく、録音の開始を拒否します。（対面モードには打ち消す相手側の参照がないため、AEC は恒等パススルーになります。）さらにその上で、ホスト側のテキストレベルのエコーフィルターがすべてのプラットフォームで実行されます。
 
-All OS-level microphone processing is deliberately disabled. Enabling the
-platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
-Processing I/O, which in this build killed both the mic _and_ the system-audio
-tap.
+OS レベルのマイク処理は意図的にすべて無効化されています。macOS でプラットフォーム自身のエコーキャンセルや自動ゲインを有効にすると、マイクが Voice Processing I/O に切り替わり、このビルドではマイク_と_システムオーディオタップの両方が使えなくなりました。
 
-## Transcription and diarization
+## 文字起こしと話者分離
 
-While you record, audio is decoded in **rolling windows** — cut on a short
-trailing silence, or at a maximum window length — off the UI thread. Each window
-becomes a speaker-tagged transcript segment with millisecond offsets.
+録音中、音声は UI スレッドの外で**ローリングウィンドウ**単位にデコードされます。短い末尾の無音で区切られるか、最大ウィンドウ長で区切られます。各ウィンドウは、ミリ秒単位のオフセットを持つ話者タグ付きの文字起こしセグメントになります。
 
-Windows that never rose above an RMS threshold are skipped **without being
-decoded at all**, because a speech model renders silence as hallucinated
-non-speech tokens and the decode is wasted CPU. The practical consequence: a
-consistently very quiet speaker produces no transcript. If someone comes back
-empty, check their input level before blaming the model.
+RMS しきい値を一度も超えなかったウィンドウは、**まったくデコードされずに**スキップされます。音声モデルは無音を幻覚的な非音声トークンとして出力し、そのデコードは無駄な CPU 消費になるためです。実際に何が起こるかというと、非常に小さな声の話者は文字起こしが一切生成されません。誰かの発言が空で返ってきたら、モデルのせいにする前にその人の入力レベルを確認してください。
 
-After you stop, **diarization** runs offline over the recording and splits the
-remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
-rename. The number of speakers is inferred from a clustering threshold, not from
-a count you set — so it is a threshold artifact and a quiet or overlapping
-speaker can be merged into a neighbour. The transcript is rendered as
-`[mm:ss] SPEAKER: text` lines.
+録音を停止した後、**話者分離**が録音全体に対してオフラインで実行され、リモートチャンネルを個々の話者（`Person 1`、`Person 2`、…）に分割します。話者には名前を付けられます。話者の数は自分で設定した数ではなく、クラスタリングのしきい値から推定されます。つまりしきい値が生む結果であり、声が小さかったり発言が重なったりした話者は隣の話者に統合されることがあります。文字起こしは `[mm:ss] SPEAKER: text` という行として表示されます。
 
-## Voice profiles
+## 音声プロファイル
 
-Renaming a speaker does more than label one transcript. Control Center can save
-the speaker's voiceprint as a **voice profile**, so it recognizes them
-automatically in future meetings. When you name a diarized speaker, you're asked
-whether to save the voiceprint; if you do, it's blended into a running centroid
-for that name and matched against new speakers by cosine similarity, so the same
-person shows up with their name next time without you relabeling them.
+話者の名前を変えることは、1 つの文字起こしにラベルを付けるだけにとどまりません。Control Center は話者の声紋を**音声プロファイル**として保存できるため、今後のミーティングでその人を自動的に認識します。話者分離された話者に名前を付けると、声紋を保存するかどうかを尋ねられます。保存すると、その名前の実行中のセントロイドにブレンドされ、新しい話者とコサイン類似度で照合されるため、次回は名前を付け直さなくても同じ人物がその名前で現れます。
 
-Voice profiles are workspace-scoped and never cross the boundary. Manage them
-at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
-saved un-enrolls the old name and offers to enroll the new one; deleting a
-profile removes the stored voiceprint but leaves any names already applied to
-past meetings intact.
+音声プロファイルはワークスペース単位で、境界を越えることはありません。**設定 → ワークスペース → ミーティング**で管理します。以前に保存された話者の名前を変えると、古い名前の登録が解除され、新しい名前を登録するかどうかを尋ねられます。プロファイルを削除すると保存済みの声紋は削除されますが、過去のミーティングに適用済みの名前はそのまま残ります。
 
-## The summary pipeline
+## 要約パイプライン
 
-When a recording stops, the server publishes a `MeetingRecordingStopped`
-[domain event](/ja-JP/マニュアル/コンセプト/ドメインイベント/). The built-in
-**`meeting_summary`** pipeline template is triggered by that event. The recorder
-doesn't wait on it; the meeting simply transitions through its status lifecycle:
+録音が停止すると、サーバーは `MeetingRecordingStopped` [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/)を発行します。組み込みの **`meeting_summary`** パイプラインテンプレートがこのイベントでトリガーされます。レコーダーはこれを待ちません。ミーティングは単にステータスのライフサイクルを遷移していきます:
 
 ```
 recording → processing → done
 ```
 
-The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. Which sections it writes is shaped by the
-workspace's **active meeting-note template** (Settings → Workspace → Meetings);
-the active template applies to new and re-run summaries. The pipeline's persist
-steps then write that JSON to discrete rows:
+要約エージェントは、タイトル、録音中に書いた大まかなメモ、文字起こしを受け取り、**構造化 JSON** を返します。どのセクションを書くかは、ワークスペースの**有効な会議メモのテンプレート**（設定 → ワークスペース → ミーティング）によって決まります。有効なテンプレートは、新規と再実行の要約の両方に適用されます。その後、パイプラインの永続化ステップがその JSON を個別の行に書き込みます:
 
-- `enhancedNotes` and `summary` → the meeting's notes
-- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
-- each decision → a `MeetingDecision` row
+- `enhancedNotes` と `summary` → ミーティングのメモ
+- 各アクションアイテム → `MeetingActionItem` 行（content、owner、任意のチケットリンク）
+- 各決定事項 → `MeetingDecision` 行
 
-Action items and decisions are **never** parsed out of free-form markdown, only
-from the agent's structured arrays. If a run produces no structured output, the
-persist steps are skipped and the raw transcript is kept as a fallback, so you
-never lose the record. Nothing in the pipeline marks the meeting `done` — a
-single reconciler does that from the run's terminal event, so a sibling step
-failing cannot strand a half-written meeting that already looks finished.
+アクションアイテムと決定事項が自由形式の markdown から解析されることは**決してなく**、エージェントの構造化配列からのみ取り出されます。実行が構造化出力を生成しなかった場合、永続化ステップはスキップされ、生の文字起こしがフォールバックとして保持されるため、記録を失うことはありません。パイプライン内の何もミーティングを `done` にしません。実行の終端イベントから単一のリコンサイラーがそれを行います。そのため、兄弟ステップが失敗しても、すでに完成して見える半分だけ書かれたミーティングが取り残されることはありません。
 
-:::note[Agents cannot read your meetings]
-There are no meeting or calendar MCP tools. An agent connected over
-[MCP](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/) cannot list meetings, read a transcript, or
-see action items and decisions — that data reaches human clients over RPC only.
-Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::note[エージェントはあなたのミーティングを読めません]
+ミーティングやカレンダーの MCP ツールはありません。[MCP](/ja-JP/マニュアル/ハウツーガイド/mcp-サーバー/) 経由で接続されたエージェントは、ミーティングを一覧したり、文字起こしを読んだり、アクションアイテムや決定事項を見たりできません。これらのデータは人間のクライアントに RPC 経由でのみ届きます。決定事項は `decisions` ドメインのメモリファクトとして、間接的にエージェントに届きます。
 :::
 
-## Where meetings show up
+## ミーティングが表示される場所
 
-| Surface                | What it shows                                                                         |
+| サーフェス             | 表示内容                                                                              |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `/meetings`            | The list of meetings, with action-item and decision counts                            |
-| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
-| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
-| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
+| `/meetings`            | ミーティングの一覧。アクションアイテムと決定事項の件数付き                            |
+| `/meetings/record`     | 録音中のライブ HUD。片側に自分のメモ、もう片側にストリーミングされる文字起こし        |
+| `/meetings/:meetingId` | ミーティングの詳細。メモ、文字起こし、アクションアイテム、決定事項のタブ              |
+| 設定 → ワークスペース → ミーティング | このワークスペースの会議メモのテンプレートと保存済みの音声プロファイル     |
 
-## Platform support
+## プラットフォーム対応
 
-Capture is driver-free on all three desktop platforms (Core Audio taps on
-macOS, WASAPI on Windows, PipeWire on Linux).
+キャプチャは 3 つのデスクトッププラットフォームすべてでドライバー不要です（macOS では Core Audio タップ、Windows では WASAPI、Linux では PipeWire）。
 
-**The web client records too**, which the rest of this page's desktop framing
-can hide: the browser takes your mic through `getUserMedia` and the meeting
-audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
-streams to the same host. Three caveats apply there:
+**Web クライアントも録音します**。このページの残りの部分がデスクトップ前提で書かれていると、この点は見えにくくなります。ブラウザーは `getUserMedia` でマイクを、`getDisplayMedia`（画面共有）でミーティングの音声を取得し、16 kHz PCM16 にダウンサンプリングして同じホストにストリーミングします。ここには 3 つの注意点があります:
 
-- The shared surface **must** carry an audio track. Safari, Firefox and macOS
-  full-screen sharing yield none and the recording refuses to start.
-- There is no native AEC3. The browser's own echo cancellation is requested on
-  the mic; the host-side text echo filter still runs. The HUD shows an input
-  level meter driven from the mic PCM.
-- Re-run summary and cancel processing are desktop-only.
+- 共有するサーフェスはオーディオトラックを**必ず**含んでいる必要があります。Safari、Firefox、macOS の全画面共有ではオーディオトラックが得られず、録音の開始が拒否されます。
+- ネイティブの AEC3 はありません。マイクにはブラウザー自身のエコーキャンセルが要求され、ホスト側のテキストエコーフィルターは引き続き実行されます。HUD には、マイクの PCM から駆動される入力レベルメーターが表示されます。
+- 要約の再実行と処理のキャンセルはデスクトップ専用です。
 
-The calendar's **Start recording & link** action is desktop-only and reports
-that plainly on web, even though the meetings screen's own record flow works
-there.
+カレンダーの**録音を開始してリンク**操作はデスクトップ専用で、Web ではその旨をはっきりと報告します。ただし、ミーティング画面自体の録音フローは Web でも機能します。
 
-:::caution[Deleting a meeting leaves its audio behind]
-Deleting a meeting removes its database rows only. The retained per-channel
-audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
-no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
-manual job on the server host.
+:::caution[ミーティングを削除しても音声は残ります]
+ミーティングを削除しても、削除されるのはデータベースの行だけです。保持されたチャンネルごとの音声ディレクトリ `<dataDir>/meetings/<meetingId>/` がクリーンアップされることはありません。保持ポリシー、サイズ上限、GC スイープのいずれも存在しません。そのディスクを解放するのは、サーバーホスト上での手作業になります。
 :::
 
-## See also
+## 関連項目
 
-- [Calendar and scheduling](/ja-JP/マニュアル/コンセプト/カレンダー/): record a meeting straight from a calendar event
-- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/): the engine behind `meeting_summary`
-- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/): link a meeting's action items to tickets
-- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/): `MeetingRecordingStopped` and `MeetingStartingSoon`
-- [Record and summarize a meeting](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/)
+- [カレンダーとスケジュール](/ja-JP/マニュアル/コンセプト/カレンダー/): カレンダーの予定から直接ミーティングを録音する
+- [パイプラインと自動化](/ja-JP/マニュアル/コンセプト/パイプライン/): `meeting_summary` を支えるエンジン
+- [チケットと委任](/ja-JP/マニュアル/コンセプト/チケット/): ミーティングのアクションアイテムをチケットにリンクする
+- [ドメインイベント](/ja-JP/マニュアル/コンセプト/ドメインイベント/): `MeetingRecordingStopped` と `MeetingStartingSoon`
+- [ミーティングを録画して要約](/ja-JP/マニュアル/ハウツーガイド/ミーティング録画/)

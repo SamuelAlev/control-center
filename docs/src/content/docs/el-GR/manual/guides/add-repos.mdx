@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Προσθήκη αποθετηρίων σε χώρο εργασίας
+description: Καταχωρίστε Git checkouts σε έναν χώρο εργασίας, ώστε οι πράκτορες να μπορούν να εργάζονται πάνω τους.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προσθήκη-αποθετηρίων
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Αυτός ο οδηγός δείχνει πώς να καταχωρίσετε ένα Git checkout σε έναν χώρο εργασίας, να το ευρετηριάσετε ξανά και να το αφαιρέσετε.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Τα αποθετήρια έχουν **εμβέλεια χώρου εργασίας**. Δεν υπάρχει καθολικό μητρώο ούτε βήμα σύνδεσης: η προσθήκη ενός αποθετηρίου και η τοποθέτησή του σε έναν χώρο εργασίας είναι η ίδια ενέργεια. Το ίδιο checkout που καταχωρίζεται σε δύο χώρους εργασίας γίνεται δύο ανεξάρτητες γραμμές με δύο διαφορετικά αναγνωριστικά — μεταξύ χώρων εργασίας, η ταυτότητα ενός αποθετηρίου είναι η διαδρομή του στο σύστημα αρχείων, ποτέ το αναγνωριστικό του.
 
-## Before you start
+## Πριν ξεκινήσετε
 
-A folder can only be registered if all three of these hold:
+Ένας φάκελος μπορεί να καταχωριστεί μόνο αν ισχύουν και τα τρία παρακάτω:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Βρίσκεται μέσα σε ένα **δέντρο εργασίας git**.
+2. Αυτό το δέντρο εργασίας έχει ένα **απομακρυσμένο `origin`**.
+3. Το απομακρυσμένο `origin` δείχνει σε ένα **υποστηριζόμενο forge**: github.com, gitlab.com ή bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Οτιδήποτε άλλο απορρίπτεται τη στιγμή της καταχώρισης με ρητό μήνυμα: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository." ή "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". Δεν υπάρχει λειτουργία μόνο τοπικά.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Το forge διαβάζεται από το απομακρυσμένο και αποθηκεύεται στο αποθετήριο — δεν το επιλέγετε ποτέ εσείς. Ένας χώρος εργασίας μπορεί να περιέχει αποθετήρια και από τα τρία ταυτόχρονα, και σε καθένα από αυτά γίνεται επικοινωνία μέσω του δικού του API με το δικό του διαπιστευτήριο. Οι ένθετοι χώροι ονομάτων του GitLab διατηρούνται, οπότε το `gitlab.com/group/subgroup/project` καταχωρίζεται με ιδιοκτήτη `group/subgroup` και όνομα `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Ο φάκελος πρέπει επίσης να βρίσκεται στο μηχάνημα που φιλοξενεί το `cc_server`, μέσα σε έναν από τους καταλόγους `--repo-roots` αυτού του διακομιστή. Αυτή η λίστα επιτρεπόμενων έχει ως προεπιλογή τον αρχικό κατάλογο του χρήστη του διακομιστή και η περιήγηση πάνω από μια ρίζα απορρίπτεται.
 
-## Register a checkout
+## Καταχώριση ενός checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Ανοίξτε **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Κάντε κλικ στο **Προσθήκη αποθετηρίου**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Το παράθυρο διαλόγου είναι ένα πρόγραμμα περιήγησης με δυνατότητα πλοήγησης στο σύστημα αρχείων **του διακομιστή**, όχι στο δικό σας. Η ροή είναι ίδια σε υπολογιστή, web και τηλέφωνο, επειδή ένας ενσωματωμένος επιλογέας φακέλου θα διάλεγε έναν φάκελο στο λάθος μηχάνημα.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Περιηγηθείτε στις ρυθμισμένες ρίζες του διακομιστή. Οι φάκελοι που είναι git checkouts επισημαίνονται.
+4. Επιλέξτε όσους θέλετε. Η επιλογή διατηρείται καθώς περιηγείστε, ώστε να μπορείτε να συγκεντρώσετε checkouts από πολλούς φακέλους.
+5. Καταχωρίστε τα σε μία παρτίδα.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Μια αποτυχημένη επιλογή δεν απορρίπτει ποτέ την υπόλοιπη παρτίδα — παίρνετε τα αναγνωριστικά που δημιουργήθηκαν συν ένα σφάλμα ανά διαδρομή για κάθε μία που απορρίφθηκε. Η εκ νέου καταχώριση μιας διαδρομής που υπάρχει ήδη σε αυτόν τον χώρο εργασίας επιστρέφει το υπάρχον αποθετήριο αντί να δημιουργήσει διπλότυπο.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Κάθε καταχωρισμένο αποθετήριο εμφανίζεται στη λίστα με το `owner/name` του, ένα σήμα με το forge του και τη διαδρομή του στον διακομιστή. Τα αποθετήρια GitHub εμφανίζουν επίσης το avatar του ιδιοκτήτη· τα άλλα forge δεν έχουν μαντεύσιμο URL avatar ιδιοκτήτη, οπότε καταλήγουν στα αρχικά.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Το σήμα του forge έχει σημασία σε έναν μικτό χώρο εργασίας: δύο αποθετήρια μπορούν να λέγονται και τα δύο `acme/web` σε διαφορετικά forge, και συμπεριφέρονται διαφορετικά — τι μπορεί να κάνει ένας έλεγχος και πού καταλήγει ένας σύνδεσμος.
 
-## What happens next
+## Τι συμβαίνει μετά
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Η καταχώριση εκπέμπει ένα συμβάν `RepoAdded` με εμβέλεια αυτού του χώρου εργασίας, το οποίο ξεκινά το pipeline `index_code` για αυτό το checkout. Αυτό είναι που τροφοδοτεί το γράφημα κώδικα, ώστε η αναζήτηση και η ανάλυση επιπτώσεων να έχουν κάτι να απαντήσουν.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/).
+Ευρετηριάζονται μόνο τα αρχεία των οποίων η γλώσσα έχει γραμματική που διανέμεται (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB και Ada). Δείτε [Αναζήτηση κώδικα με το γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/).
 
-## Re-index a repo
+## Επανευρετηρίαση ενός αποθετηρίου
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Κάθε γραμμή φέρει ένα κουμπί **Ευρετηρίαση κώδικα**. Κάντε κλικ για να εκτελέσετε ξανά τον ευρετηριαστή για αυτό το checkout· όσο εκτελείται, το κουμπί γίνεται ένδειξη προόδου που δείχνει τα αρχεία που ολοκληρώθηκαν προς το σύνολο, μαζί με έλεγχο ακύρωσης. Όταν τελειώσει, καταλήγει σε ένα σημάδι ελέγχου με τον αριθμό των συμβόλων ή σε μια προειδοποίηση αν η εκτέλεση απέτυχε.
 
-## Reorder repos
+## Αναδιάταξη αποθετηρίων
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Σύρετε τη λαβή σε μια γραμμή. Η σειρά που ορίζετε είναι η σειρά με την οποία διαβάζεται κάθε λίστα αποθετηρίων στην εφαρμογή.
 
-## Fix the GitHub link
+## Διόρθωση του συνδέσμου GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Το εικονίδιο συνδέσμου σε μια γραμμή ανοίγει ένα πρόγραμμα επεξεργασίας για τον ιδιοκτήτη και το όνομα αποθετηρίου στο GitHub — χρήσιμο όταν το απομακρυσμένο μετονομάστηκε ή μεταφέρθηκε.
 
-## Remove a repo
+## Αφαίρεση αποθετηρίου
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Ανοίξτε **Ρυθμίσεις → Χώρος εργασίας → Αποθετήρια**.
+2. Κάντε κλικ στο εικονίδιο κάδου απορριμμάτων στη γραμμή.
+3. Επιβεβαιώστε «Αφαίρεση αποθετηρίου από τον χώρο εργασίας;».
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Το παράθυρο διαλόγου λέει τι κάνει: «_name_ θα αφαιρεθεί από αυτόν τον χώρο εργασίας. Τα τοπικά αρχεία στον δίσκο δεν θίγονται.»
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Η αφαίρεση διαγράφει τη γραμμή του αποθετηρίου από αυτόν τον χώρο εργασίας και καταρρίπτει αλυσιδωτά τις γραμμές του γραφήματος κώδικα — σύμβολα, ακμές, αρχεία και σημεία ελέγχου ευρετηρίου — καθώς και κάθε παραχώρηση αποθετηρίου ανά μέλος πάνω του, τους συνδέσμους χώρου-αποθετηρίου του και τις εγγραφές απομονωμένου checkout του. Το ίδιο checkout που έχει καταχωριστεί σε άλλον χώρο εργασίας είναι ανεξάρτητη γραμμή και δεν επηρεάζεται. Τα worktrees στον δίσκο στα οποία έδειχναν αυτές οι εγγραφές δεν καταστρέφονται από τη διαγραφή.
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Search code with the code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/)
-- [Run agents in parallel](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
-- [Set up GitHub integration](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
-- [Your first workspace](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-χώρος-εργασίας/)
+- [Αναζήτηση κώδικα με το γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/)
+- [Εκτέλεση πρακτόρων παράλληλα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παράλληλοι-πράκτορες/)
+- [Ρύθμιση ενσωμάτωσης GitHub](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ενσωμάτωση-github/)
+- [Ο πρώτος σας χώρος εργασίας](/el-GR/εγχειρίδιο/οδηγοί/πρώτος-χώρος-εργασίας/)
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/)

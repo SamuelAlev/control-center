@@ -1,111 +1,112 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: 에이전트 구성
+description: 에이전트 엔터티의 모든 필드와 에이전트가 사용하는 열거형입니다.
 slug: ko-KR/매뉴얼/레퍼런스/에이전트-구성
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/).
+이 레퍼런스는 에이전트 엔터티의 모든 필드와, 에이전트가 사용하는 열거형 및 플래그를 나열합니다. 앱에서 에이전트를 만들거나 편집하는 단계별 안내는 [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)을 참고하세요.
 
-## Agent entity fields
+## 에이전트 엔터티 필드
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| 필드                    | 타입                   | 필수 | 설명                                                                                                                                                                                                |
+| ----------------------- | ---------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | 예   | 고유한 에이전트 식별자                                                                                                                                                                              |
+| `name`                  | `String`               | 예   | @멘션에 쓰이는 짧은 식별자                                                                                                                                                                          |
+| `title`                 | `String`               | 예   | 사람이 읽을 수 있는 역할 직함                                                                                                                                                                       |
+| `agentMdPath`           | `String`               | 예   | 에이전트의 `.md` 정의 파일에 대한 절대 경로                                                                                                                                                          |
+| `workspaceId`           | `String`               | 예   | 소유 워크스페이스(널 불가)                                                                                                                                                                          |
+| `reportsTo`             | `String?`              | 아니요 | 상위 에이전트 ID                                                                                                                                                                                   |
+| `skills`                | `AgentSkills`          | 예   | 스킬 식별자 집합                                                                                                                                                                                    |
+| `persona`               | `String?`              | 아니요 | 자유 형식의 행동 지침                                                                                                                                                                              |
+| `systemPrompt`          | `String?`              | 아니요 | 기본 시스템 프롬프트를 재정의합니다                                                                                                                                                                 |
+| `adapterId`             | `String?`              | 아니요 | 추론 어댑터 id                                                                                                                                                                                     |
+| `modelId`               | `String?`              | 아니요 | 어댑터 내의 모델 id                                                                                                                                                                                |
+| `strictMode`            | `bool`                 | 아니요 | 기본값 `false`. 행과 에이전트의 `AGENTS.md`에 기록됩니다                                                                                                                                            |
+| `effort`                | `String?`              | 아니요 | 추론 수준 id(예: `'low'`, `'xhigh'`), 선택한 모델의 `thinkingLevels`에서 가져옵니다                                                                                                                |
+| `contextSize`           | `int?`                 | 아니요 | 최대 컨텍스트 창 크기                                                                                                                                                                              |
+| `role`                  | `AgentRole?`           | 아니요 | 에이전트 역할                                                                                                                                                                                      |
+| `capabilities`          | `AgentCapabilities?`   | 아니요 | 에이전트별 기능 기본값입니다. null이면 디스패치 시점에 사용자 수준 기본값이 적용되며, 대화가 이를 다시 재정의할 수 있습니다                                                                          |
+| `monthlyBudgetCents`    | `int`                  | 아니요 | 월 지출 상한(센트 단위, 기본값 `0`은 무제한)                                                                                                                                                        |
+| `silenceTimeoutMinutes` | `int?`                 | 아니요 | 무응답 감시(silence timeout) 재정의(분 단위)입니다. null이거나 1–240 범위여야 합니다(생성자에서 강제)                                                                                               |
+| `maxConcurrentTasks`    | `int`                  | 아니요 | 기본값 `1`. 프레즌스 모델이 보고하는 용량 수치입니다(실행 중 및 대기 중 개수를 이 값과 비교합니다)                                                                                                  |
+| `visibility`            | `AgentVisibility`      | 아니요 | 기본값 `workspace`                                                                                                                                                                                 |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | 아니요 | 거버넌스 상태(기본값 `active`)입니다. 예산 강제 중지가 기록하며, 조직도와 프레즌스 로스터에 렌더링됩니다. `paused` 에이전트의 작업도 디스패치는 여전히 받습니다                                       |
+| `budgetPolicyId`        | `String?`              | 아니요 | 공유 예산 정책 id입니다. null이면 `monthlyBudgetCents`가 직접 적용됩니다                                                                                                                            |
+| `runtimeProfileId`      | `String?`              | 아니요 | 사용자 지정 런타임 프로필 id                                                                                                                                                                       |
+| `createdAt`             | `DateTime`             | 예   | 생성 타임스탬프                                                                                                                                                                                    |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`name`과 `title`은 모두 비어 있으면 안 됩니다(생성자에서 강제). `monthlyBudgetCents`의
+기본값 `0`은 무제한을 뜻합니다. 상한은 `agents.upsert`로 기록합니다.
 
-## AgentRole enum
+## AgentRole 열거형
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| 역할       | 레이블   | 설명              |
+| ---------- | -------- | ----------------- |
+| `ceo`      | CEO      | 조정과 위임       |
+| `coder`    | Coder    | 코드 구현         |
+| `reviewer` | Reviewer | PR 리뷰와 분석    |
+| `qa`       | QA       | 테스트와 품질 보증 |
+| `designer` | Designer | UI/UX 구현        |
+| `security` | Security | 보안 리뷰와 감사  |
+| `devops`   | DevOps   | 인프라와 배포     |
+| `pm`       | PM       | 제품 관리         |
+| `general`  | General  | 유연한 다목적     |
 
-## AgentVisibility enum
+## AgentVisibility 열거형
 
-| Value       | Description                                             |
+| 값          | 설명                                                    |
 | ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| `workspace` | 기본값입니다. 알 수 없거나 null인 저장 값은 이 값으로 파싱됩니다 |
+| `private`   | 만든 사용자에게만 비공개                                |
 
-## AgentLifecycleStatus enum
+## AgentLifecycleStatus 열거형
 
-| Value      | Description                                                                           |
+| 값         | 설명                                                                                  |
 | ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| `active`   | 기본값입니다. `isDispatchable`은 이 값에서만 true입니다                               |
+| `paused`   | 예산 강제 중지가 설정합니다. 프레즌스 로스터에 표시되며, 디스패치는 여전히 작업을 받습니다 |
+| `archived` | 은퇴 처리되어 활성 로스터에서 숨겨집니다                                              |
 
-## AgentCapabilities flags
+## AgentCapabilities 플래그
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+디스패치마다 해석됩니다. 에이전트 기본값을 쓰고, null이면 사용자 수준 기본값으로 폴백하며, 그 위에 대화별 재정의가 적용됩니다. 강제 방식은 부재입니다. 비활성화된 기능이 다루는 것은 자격 증명 브로커가 아예 발급하거나 주입하지 않습니다.
 
-| Flag               | Type   | Default | Description                                                                              |
+| 플래그             | 타입   | 기본값  | 설명                                                                                     |
 | ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| `canPushToRepo`    | `bool` | `false` | 원격으로 커밋을 푸시합니다. `canCallGitHubApi`와 함께 GitHub 토큰 주입을 게이트합니다    |
+| `canCallGitHubApi` | `bool` | `false` | api.github.com을 호출합니다. `GH_TOKEN` 주입과 GitHub 이그레스 도메인을 게이트합니다     |
+| `canCallTicketing` | `bool` | `false` | 티켓팅 공급자 API를 호출합니다. 공급자 API 키 주입과 해당 이그레스 도메인을 게이트합니다 |
+| `canAccessNetwork` | `bool` | `true`  | 임의의 아웃바운드 이그레스입니다. 하네스의 `web_fetch`와 `web_search` 도구도 게이트합니다 |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+`AgentCapabilities.safeDefault`는 네 가지 모두 생성자 기본값입니다. `legacyDefault`(네 가지 모두 true)는 기능이 존재하기 전에 만들어진 대화를 백필한 마이그레이션에서만 사용됩니다. 형식이 잘못되었거나 빈 저장 블롭은 `safeDefault`로 파싱되며, 레거시 키 `canCallLinear`는 `canCallTicketing`으로 읽습니다.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+스킬 식별자의 불변이며 대소문자를 구분하지 않는 집합입니다. 디스패치 시점에 이 슬러그들이 에이전트 오버레이의 스킬 링크로 동기화되며, 그러면 하네스가 링크된 스킬의 프런트매터를 프롬프트에 자동 로드합니다.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState(파생)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+저장되지 않습니다. 값은 일곱 개입니다. 선언 순서가 우선순위 순서이며(`sortPriority`, 테스트로 고정됨), 로스터가 정렬하는 순서이기도 합니다:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| 상태        | `sortPriority` | 조건                                                                                                     |
+| ----------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | 실행 로그 중 상태가 `running`인 것이 있습니다                                                            |
+| `blocked`   | 1              | 최신 실행의 활성 상태가 `blocked`, `stalled`, `looping` 중 하나입니다                                    |
+| `failed`    | 2              | 최신 실행의 상태가 `error`이거나, 활성 상태가 `failed` 또는 `dead`입니다                                 |
+| `queued`    | 3              | 실행이 디스패치되었지만 실행 중이 아닙니다. 같은 에이전트의 다른 실행 뒤에 대기 중이거나, 기록되었지만 아직 시작되지 않았습니다 |
+| `succeeded` | 4              | 실행이 성공적으로 끝났습니다                                                                             |
+| `idle`      | 5              | 에이전트가 이전에 실행된 적이 있고 진행 중인 작업이 없습니다                                             |
+| `neverRun`  | 6              | 실행 로그가 없습니다                                                                                     |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+`queued`와 `succeeded`는 **실행 단위 전용**입니다. 에이전트의 로스터 상태를 계산하는 `deriveAgentLiveState`는 이 둘을 결코 만들어 내지 않습니다. 이 함수는 `neverRun`, `running`, `failed`, `blocked`, `idle` 중 하나를 반환합니다.
 
-## See also
+## 함께 보기
 
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/)
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)

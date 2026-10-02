@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: 你的第一個工作區
+description: 建立一個工作區、把程式庫註冊到其中，並親自看看隔離邊界。
 slug: zh-HK/手冊/教學/第一個工作區
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## 你將會建立甚麼
 
-By the end of this tutorial, you will have:
+完成本教學後，你將會擁有：
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- 一個以你的項目命名的工作區
+- 一個註冊到其中的 Git 程式庫
+- 五個預置代理，其中一個已設定到足以執行
+- 第二個空白工作區，用來證明隔離邊界
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+新手導引已經為你建立了一個工作區。本教學刻意建立一個全新的工作區，讓你看到過程中的每一個部分。
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+開始之前，請挑選一個同時符合以下三項的 Git 檢出——註冊步驟會拒絕其他任何情況：
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- 它位於一個 git 工作樹內
+- 它設有一個 `origin` 遠端
+- 該遠端指向 github.com、gitlab.com 或 bitbucket.org
 
-## Step 1: Create a workspace
+## 第 1 步：建立工作區
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. 按一下標題列中的工作區晶片
+2. 選擇 **新增工作區…**
+3. 輸入一個能識別該項目的名稱，例如「api-service」或「frontend-v2」
+4. 可選擇挑一個標誌
+5. 按一下 **新增工作區**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center 會切換到新的工作區，並停在它的收件箱（`/workspaces/<id>/inbox`）。
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+在這背後，伺服器會發佈 `WorkspaceCreated` 事件，並為該工作區預置：
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- 一個 **CEO 代理**，其人設是協調與委派
+- 四名專才——`qa`、`architect`、`engineer` 和 `librarian`——各自帶有自己的指示與技能
+- 內建管線範本及其觸發器資料列
 
-Every workspace you create gets all of this, not just the first one.
+你建立的每一個工作區都會得到這一切，不只是第一個。
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+**檢查點。**開啟 **設定 → 工作區 → 代理**。名冊中有五個代理，每個都帶有一個空心狀態環。
 
-## Step 2: Register a repository
+## 第 2 步：註冊程式庫
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. 前往 **設定 → 工作區 → 程式庫**
+2. 按一下 **新增程式庫**
+3. 瀏覽至你的檢出。該對話框瀏覽的是執行 `cc_server` 的那部機器上的資料夾——而不是你的用戶端——並只停留在該伺服器所暴露的根目錄之內（預設為其使用者的主目錄）。git 檢出會取得一個專屬的資料夾圖示和一個核取方塊；普通資料夾兩者都沒有，因此只有檢出才能被選取。
+4. 勾選一個或多個檢出，並註冊這一批。選取狀態會在你瀏覽期間一直保留，因此你可以一次收集多個，而一個錯誤的選取永遠不會拖垮其餘的。
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center 會讀取每個檢出的 `origin` 遠端，解析出所有者和程式庫，並**在這個工作區之內**建立程式庫資料列。沒有第二步需要連結它：註冊本身就是界定其範圍的動作。
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+日後把同一個檢出註冊到另一個工作區，會建立第二筆獨立、帶有自己 id 的程式庫資料列。跨工作區而言，檢出的身分是它的檔案系統路徑，永遠不是它的 id。
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+**檢查點。**程式庫會出現在清單中，附有它的 `owner/repo` 和目前分支。
 
-## Step 3: Make one agent runnable
+## 第 3 步：讓一個代理可供執行
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+這個工作區剛剛預置的五個代理既沒有配接器，也沒有模型。派發會讓它們在 **Control Center (built-in)** 上執行，而在未設定模型的情況下，會向 Anthropic 索取它的預設模型——因此它們只在你已連接 Anthropic 帳戶時才會運作，而若你已連接，用的也是你沒有挑選過的模型。首次執行的新手導引會把它所做的選擇套用到第一個工作區的每一個代理上，僅此一次；你在那之後建立的工作區，五個代理一開始全部未設定。現在就設定其中一個。
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. 開啟 **設定 → 工作區 → 代理**
+2. 在名冊中選取 `engineer`
+3. 在 **設定** 分頁上，把 **配接器** 設為 `Control Center (built-in)`，並從你已在設定 → 伺服器 → 模型供應商 下連接的供應商中挑選一個 **模型**
+4. 按下 **儲存變更**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+**檢查點。**重新開啟該代理，這兩個欄位會保留你的選擇。
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/zh-HK/手冊/操作指南/建立代理/) covers the rest of the form.
+每個代理都帶有自己的配接器和模型，因此請對任何其他你打算使用的代理重複此步驟。[建立並設定代理](/zh-HK/手冊/操作指南/建立代理/) 涵蓋表單其餘的部分。
 
-## Step 4: See the isolation boundary
+## 第 4 步：看到隔離邊界
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+從標題列晶片建立第二個工作區，做法與第 1 步完全相同。然後看看它：
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **設定 → 工作區 → 程式庫** 是空的。你一分鐘前註冊的程式庫不在那裏。
+- **設定 → 工作區 → 代理** 有五個代理，但它們是不同的資料列——你在第 3 步設定的配接器不見了。
+- 空間清單、工單和記憶全部都是空的。
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+沒有任何東西外洩，因為根本沒有東西可以外洩：每個工作區的資料列都放在該工作區自己的資料庫檔案中。跨工作區的讀取不是一道會被篩選的查詢，而是一道無處可執行的查詢。刪除工作區就是解除一個檔案的連結。
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+用標題列晶片切換回去，或開啟 **管理工作區** 並排查看它們。
 
-For the full model, read [Workspaces and isolation](/zh-HK/手冊/概念/工作區/).
+完整的模型請參閱[工作區與隔離](/zh-HK/手冊/概念/工作區/)。
 
-## Recap
+## 回顧
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+你建立了一個工作區，看着它預置一位 CEO 和四名專才，把一個程式庫註冊到其中，為一個代理設定配接器和模型，並確認第二個工作區完全不會共用其中任何一項。
 
-**Next:** [Dispatch your first agent](/zh-HK/手冊/教學/第一個代理/) to put the workspace to work.
+**下一步：**[派發你的第一個代理](/zh-HK/手冊/教學/第一個代理/)，讓這個工作區開始工作。

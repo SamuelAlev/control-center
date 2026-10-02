@@ -1,172 +1,187 @@
 ---
-title: Chat with an agent
-description: Create a space with an agent, send it work, steer it mid-run and stop it.
+title: Conversar com um agente
+description: Crie um espaço com um agente, envie trabalho a ele, oriente-o durante a execução e pare-o.
 slug: pt-BR/manual/guias/conversar-com-agente
+sourceHash: 0dbc01158345074d818cec6084501abc03323fea
 ---
 
-This guide shows you how to work with an agent in a space.
+Este guia mostra como trabalhar com um agente em um espaço.
 
-## Create a space
+## Criar um espaço
 
-1. Navigate to **Spaces** in the sidebar
-2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. An empty name is refused;
-   the dialog stays open
-4. Optionally add agents from the workspace
-5. If the workspace has any repo, a repo picker appears. It starts with every
-   repo selected; narrow it (including deselecting a single repo) to the repos
-   this space should provision worktrees for
-6. Confirm
+1. Navegue até **Espaços** na barra lateral
+2. Clique no botão **+** ao lado do título Espaços
+3. Digite um **nome** — isso é obrigatório. Um nome vazio é recusado;
+   a caixa de diálogo permanece aberta
+4. Opcionalmente, adicione agentes do espaço de trabalho
+5. Se o espaço de trabalho tiver algum repo, aparece um seletor de repos. Ele
+   começa com todos os repos selecionados; restrinja-o (inclusive desmarcando um
+   único repo) aos repos para os quais este espaço deve provisionar worktrees
+6. Confirme
 
-Control Center opens the space and starts provisioning a copy-on-write worktree
-per selected repo in the background.
+O Control Center abre o espaço e começa a provisionar em segundo plano uma
+worktree copy-on-write para cada repo selecionado.
 
-## Send the first message
+## Enviar a primeira mensagem
 
-Type your message in the composer and press Enter. The agent dispatches and starts
-streaming its response.
+Digite sua mensagem no composer e pressione Enter. O agente é despachado e começa
+a transmitir a resposta em fluxo.
 
-If the space is still provisioning, your message is parked rather than lost —
-the composer holds it and sends it automatically once the worktrees are ready.
+Se o espaço ainda estiver sendo provisionado, sua mensagem fica em espera em vez
+de se perder — o composer a guarda e a envia automaticamente assim que as
+worktrees estiverem prontas.
 
-As the agent works you see its turn stream in: reasoning segments, tool calls
-(file reads, writes, shell commands) and answer text, all inside one agent-turn
-message.
+À medida que o agente trabalha, você vê a rodada dele chegar em fluxo: segmentos
+de raciocínio, chamadas de ferramentas (leituras e gravações de arquivos,
+comandos de shell) e o texto da resposta, tudo dentro de uma única mensagem de
+rodada do agente.
 
-## Steer a running agent
+## Orientar um agente em execução
 
-While an agent is working, plain conversational text does **not** queue a new turn.
-It becomes a queued steering card in the strip above the composer and is injected
-into the live run at the next turn boundary. There is no toast — the card is the
-feedback.
+Enquanto um agente está trabalhando, texto de conversa comum **não** enfileira uma
+nova rodada. Ele se torna um cartão de orientação na fila, na faixa acima do
+composer, e é injetado na execução ao vivo no próximo limite de rodada. Não há
+toast nenhum — o cartão é o feedback.
 
-Three things change that behaviour:
+Três coisas mudam esse comportamento:
 
-- A message containing an **@mention** is always sent as a message, never as
-  steering
-- A message starting with a **slash command** is always handled as that command
-- A message with an **attachment** is always sent as a message — the steering
-  queue is text-only
-- If every live run has already finished, the text falls through and is sent as a
-  normal message
+- Uma mensagem que contém uma **@menção** é sempre enviada como mensagem, nunca
+  como orientação
+- Uma mensagem que começa com um **comando slash** é sempre tratada como esse
+  comando
+- Uma mensagem com um **anexo** é sempre enviada como mensagem — a fila de
+  orientação é somente texto
+- Se toda execução ao vivo já tiver terminado, o texto passa adiante e é enviado
+  como uma mensagem normal
 
-:::note[Steering needs the built-in harness]
-Only the built-in Control Center harness injects mid-run. On the Claude Code
-adapter the text is still queued as a steering card; when the run ends, anything
-still queued is converted to a normal message.
+:::note[Orientar exige o harness integrado]
+Somente o harness integrado do Control Center injeta no meio da execução. No
+adaptador Claude Code, o texto continua enfileirado como um cartão de orientação;
+quando a execução termina, o que ainda estiver na fila é convertido em uma
+mensagem normal.
 :::
 
-## Approve a blocked action
+## Aprovar uma ação bloqueada
 
-When an agent hits an action its guardrails gate — a destructive command, a
-privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. If you have that conversation open, the request
-appears **in the chat**, above the composer, as the same numbered-option card
-used for `ask_user` (deny, approve, and optionally approve for eight hours).
-There is no skip: a blocked agent is waiting on a decision.
+Quando um agente chega a uma ação que os guardrails dele barram — um comando
+destrutivo, uma ferramenta privilegiada —, o servidor **bloqueia a execução** e
+publica uma solicitação de aprovação para todos os clientes conectados. Se você
+tiver essa conversa aberta, a solicitação aparece **no chat**, acima do composer,
+como o mesmo cartão de opções numeradas usado pelo `ask_user` (negar, aprovar e,
+opcionalmente, aprovar por oito horas). Não há como pular: um agente bloqueado
+está esperando uma decisão.
 
-If you are somewhere else in the app, an always-on-top panel in the shell still
-lists what is waiting, so you can unblock the agent without hunting for the
-space. The overlay hides a request the moment that space's conversation is on
-screen, so you never answer the same prompt twice.
+Se você estiver em outro lugar do app, um painel sempre no topo, no shell,
+continua listando o que está esperando, para que você desbloqueie o agente sem
+ficar caçando o espaço. O overlay esconde uma solicitação no momento em que a
+conversa daquele espaço está na tela, para que você nunca responda ao mesmo
+pedido duas vezes.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+Não há tempo limite: um agente bloqueado espera até que alguém decida. A mesma
+solicitação também aparece na faixa de atenção da caixa de entrada e no cliente
+de celular.
 
-## Answer an agent's question
+## Responder à pergunta de um agente
 
-An agent that needs a preference, a missing requirement, or a genuine fork
-**must** call `ask_user`. Writing the question as a chat message ends the turn
-and you have to re-prompt. The tool renders a numbered card in the conversation
-— options, optional free text, or both — and the run waits on your answer.
+Um agente que precisa de uma preferência, de um requisito que falta ou de uma
+bifurcação real **deve** chamar `ask_user`. Escrever a pergunta como mensagem de
+chat encerra a rodada e você tem de pedir de novo. A ferramenta renderiza um
+cartão numerado na conversa — opções, texto livre opcional, ou ambos — e a
+execução espera pela sua resposta.
 
-Tap a single option to send it (the trailing number becomes an arrow on hover).
-Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
-tells the agent to pick a reasonable default and not ask again.
+Toque em uma única opção para enviá-la (o número ao final vira uma seta ao passar
+o mouse). Seleções múltiplas e respostas digitadas usam **Continuar** (`⌘↵` /
+`Ctrl↵`). **Pular** diz ao agente para escolher um padrão razoável e não
+perguntar de novo.
 
-It is a separate mechanism from the approval card above: an approval is "may I
-do this?", a question is "which of these did you mean?". Asking is available on
-the built-in harness in every mode, including the read-only ones (it mutates
-nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
-front of a dialog would fail closed with no approver connected. A run with no
-conversation to render into simply does not get the tool.
+É um mecanismo separado do cartão de aprovação acima: uma aprovação é "posso
+fazer isto?", uma pergunta é "qual destes você quis dizer?". Perguntar está
+disponível no harness integrado em todos os modos, incluindo os somente leitura
+(isso não altera nada), e de propósito não é envolvida em um prompt de aprovação
+— uma caixa de diálogo na frente de outra falharia fechada sem nenhum aprovador
+conectado. Uma execução que não tem uma conversa onde renderizar simplesmente
+não recebe a ferramenta.
 
-## Stop an agent
+## Parar um agente
 
-While runs are live, the composer's send button becomes a **stop** button. Clear
-the composer and press it — this stops every agent running in that conversation.
+Enquanto há execuções ao vivo, o botão de enviar do composer vira um botão
+**Parar**. Limpe o composer e pressione-o — isso para todos os agentes em
+execução naquela conversa.
 
-There is no stop control in the space header and no keyboard shortcut for it. To
-stop just one run when several are live, open that run's activity tab — its header
-carries a run-scoped pause/resume and stop (the stop asks you to confirm).
-**Observability → Live** lists every running agent in the workspace with the same
-control.
+Não há controle de parada no cabeçalho do espaço nem atalho de teclado para isso.
+Para parar apenas uma execução quando várias estão ao vivo, abra a aba de
+atividade dessa execução — o cabeçalho dela traz pausar/retomar e parar com
+escopo de execução (o parar pede confirmação). **Observabilidade → Ao vivo**
+lista todo agente em execução no espaço de trabalho com o mesmo controle.
 
-A stopped run is marked as stopped. Send a new message to dispatch again.
+Uma execução parada é marcada como parada. Envie uma nova mensagem para despachar
+de novo.
 
-## Use slash commands
+## Usar comandos slash
 
-Type `/` in the composer to see the command list. The ones that change how the
-conversation behaves:
+Digite `/` no composer para ver a lista de comandos. Os que mudam o comportamento
+da conversa:
 
-| Command        | What it does                                                                                                                         |
+| Comando        | O que faz                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
-| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
-| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+| `/plan`        | Coloca o espaço em modo plano. Um `/plan` sozinho apenas arma o modo; `/plan <request>` arma o modo e envia o resto como sua mensagem |
+| `/goal <text>` | Registra a meta de trabalho da conversa                                                                                              |
+| `/loop <text>` | Itera sobre uma tarefa até que ela esteja completa                                                                                   |
+| `/compact`     | Dobra o histórico mais antigo em um resumo ancorado e continua no contexto compactado                                                |
+| `/todo …`      | Visualiza e edita a lista de todos persistida desta conversa                                                                         |
 
-Skills appear in the same list under their own `skill:` namespace, so they never
-collide with the commands above — a skill named `plan` or `compact` stays
-reachable:
+As skills aparecem na mesma lista sob o próprio namespace `skill:`, então nunca
+colidem com os comandos acima — uma skill chamada `plan` ou `compact` continua
+alcançável:
 
-| Command                     | What it runs                                                       |
+| Comando                     | O que executa                                                      |
 | --------------------------- | ------------------------------------------------------------------ |
-| `/skill:<name>`             | A skill installed in the workspace, or attached to the agent        |
-| `/skill:<repo>:<name>`      | A skill shipped by one of the repos checked out in this space       |
+| `/skill:<name>`             | Uma skill instalada no espaço de trabalho ou anexada ao agente      |
+| `/skill:<repo>:<name>`      | Uma skill fornecida por um dos repos com checkout neste espaço      |
 
-Repo skills are badged with the repo they came from, because a name alone does
-not say which service's conventions it encodes and two repos may each ship a
-`testing`. You do not have to type the prefix to find one: typing the bare skill
-name matches the namespaced entries too.
+Skills de repo recebem um selo com o repo de origem, porque um nome sozinho não
+diz as convenções de qual serviço ela codifica e dois repos podem cada um trazer
+um `testing`. Você não precisa digitar o prefixo para encontrar uma: digitar o
+nome puro da skill também casa com as entradas com namespace.
 
-An agent only ever carries the skills of the repo it is currently working in —
-see [Repo-scoped skills](/pt-BR/manual/conceitos/modelo-de-agentes/#repo-scoped-skills). The
-composer is not scoped that way: you can invoke any repo's skill by naming it.
+Um agente só carrega as skills do repo em que está trabalhando no momento —
+consulte [Skills com escopo de repo](/pt-BR/manual/conceitos/modelo-de-agentes/#repo-scoped-skills). O
+composer não tem esse escopo: você pode invocar a skill de qualquer repo
+nomeando-a.
 
-`/compact` and `/todo` are intercepted by the client and never persisted as
-messages — a `/compact` line in the transcript would push the next compaction's cut
-one turn back. `/plan` flips the space's stored mode rather than travelling as
-text. So none of the three is "a message you send the agent"; do not expect to see
-them in the history.
+`/compact` e `/todo` são interceptados pelo cliente e nunca persistidos como
+mensagens — uma linha `/compact` na transcrição empurraria o corte da próxima
+compactação uma rodada para trás. `/plan` alterna o modo armazenado do espaço em
+vez de trafegar como texto. Então nenhum dos três é "uma mensagem que você envia
+ao agente"; não espere vê-los no histórico.
 
-## Ask for a plan first
+## Pedir um plano primeiro
 
-Before a complex change, switch the space to plan mode with `/plan`, the mode
-dropdown on the composer toolbar, or Shift+Tab. The agent then researches
-read-only and delivers a typed plan you approve before any work starts. See
-[Use plan mode](/pt-BR/manual/guias/modo-plano/).
+Antes de uma mudança complexa, coloque o espaço em modo plano com `/plan`, a
+lista suspensa de modo na barra de ferramentas do composer, ou Shift+Tab. O
+agente então pesquisa em somente leitura e entrega um plano tipado que você
+aprova antes de qualquer trabalho começar. Consulte
+[Usar o modo plano](/pt-BR/manual/guias/modo-plano/).
 
-## Reach an agent without a dedicated space
+## Alcançar um agente sem um espaço dedicado
 
-You do not need a space per agent. In any space:
+Você não precisa de um espaço por agente. Em qualquer espaço:
 
 ```
 @alice can you look at the failing tests in src/auth_test.dart?
 ```
 
-The mentioned agent is added to the space and dispatched with that space's
-context. See [@-mention agents](/pt-BR/manual/guias/mencionar-agentes/) for how names are
-matched.
+O agente mencionado é adicionado ao espaço e despachado com o contexto daquele
+espaço. Consulte [Mencionar agentes com @](/pt-BR/manual/guias/mencionar-agentes/) para saber como os
+nomes são correspondidos.
 
-## Related guides
+## Guias relacionados
 
-- [Use spaces](/pt-BR/manual/guias/espacos/)
-- [@-mention agents](/pt-BR/manual/guias/mencionar-agentes/)
-- [Use plan mode](/pt-BR/manual/guias/modo-plano/)
-- [Set up Slack integration](/pt-BR/manual/guias/integracao-slack/) to do the same from Slack
+- [Usar espaços](/pt-BR/manual/guias/espacos/)
+- [Mencionar agentes com @](/pt-BR/manual/guias/mencionar-agentes/)
+- [Usar o modo plano](/pt-BR/manual/guias/modo-plano/)
+- [Configurar a integração com o Slack](/pt-BR/manual/guias/integracao-slack/) para fazer o mesmo a partir do Slack
 
-## Related concepts
+## Conceitos relacionados
 
-- [Modes](/pt-BR/manual/conceitos/modos/)
+- [Modos](/pt-BR/manual/conceitos/modos/)

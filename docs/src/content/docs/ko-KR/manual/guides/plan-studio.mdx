@@ -1,180 +1,183 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Plan Studio에서 작업
+description: Plan Studio 편집기에서 플랜을 검토·편집·추정·비교하고 승인하는 방법과 매개변수화된 플레이북을 실행하는 방법을 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/) and
-[Use plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/).
+이 가이드에서는 Plan Studio에서 플랜을 다루는 방법을 설명합니다.
+오케스트레이션과 플랜 문서가 무엇인지는
+[오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/)과
+[플랜 모드 사용](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)을 참고하세요.
 
-## Open a plan
+## 플랜 열기
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+플랜은 플랜을 만들어 낸 대화에 속하므로, 보통은 그 대화에서 접근합니다.
+대화에 있는 플랜 행에 **열기** 액션이 있고, Plan Studio는 대화 옆의 편집기
+탭으로 열립니다.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note["플랜" 사이드바 항목은 없습니다]
+이것은 실수가 아니라 의도된 것입니다.
+`/workspaces/<workspace-id>/plans`의 허브는 라우팅 가능한 딥 링크일 뿐이므로,
+상시 목록이 필요하면 북마크해 두세요.
 :::
 
-The hub lists three sections:
+허브에는 세 개의 섹션이 있습니다:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **활성 플랜** — 오케스트레이션으로, 제안된 것이 먼저 오며 상태, 단계 수,
+  리비전 번호가 함께 표시됩니다.
+- **플랜 문서** — 에이전트 하나가
+  [플랜 모드](/ko-KR/매뉴얼/사용-가이드/플랜-모드/)에서 `submit_plan`으로 제출한
+  플랜으로, 제안됨 또는 승인됨 상태인 동안 표시됩니다.
+- **플레이북** — 저장된, 매개변수화된 플랜 템플릿입니다.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+카드를 클릭하면 Plan Studio에서 열립니다. 경로는
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`이며, `kind`는
+`orchestration` 또는 `document`이므로 단일 플랜에도 딥 링크할 수 있습니다.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+**오케스트레이션**을 열었다면 편집 가능한 캔버스, 버전 타임라인, 승인 바가
+표시됩니다. **플랜 문서**를 열었다면 같은 그래프가 읽기 전용으로
+렌더링됩니다. 플랜 문서는 에이전트가 작성한 것이므로, 여러분은 검토하고
+추정한 뒤 승인하거나 거부합니다. 승인된 문서는 자신이 컴파일된
+오케스트레이션의 노드별 실행 상태를 실시간으로 보여 줍니다.
 
-## Edit the DAG
+## DAG 편집
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+**오케스트레이션**이 `proposed` 상태인 동안에는 편집할 수 있습니다. 모든
+캔버스 편집은 키보드로 조작합니다:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. 캔버스를 클릭한 다음 **화살표 키**로 선택 항목을 이동합니다.
+2. **n**을 눌러 단계를 추가합니다. "새 단계"라는 이름으로 선택된 채
+   나타나며, 오른쪽 인스펙터에서 이름을 바꿀 수 있습니다.
+3. 먼저 실행되어야 하는 단계에서 **e**를 누른 다음, 의존하는 단계를
+   클릭(또는 선택하고 **Enter** 누르기)하여 의존성을 연결합니다. **Esc**를
+   누르면 연결 대기 중인 작업을 취소합니다.
+4. **x**를 누르면 선택한 단계의 가장 최근 의존성이 끊기고, 인스펙터의
+   의존성 편집기에서 정확한 의존성을 토글할 수도 있습니다.
+5. **Delete**를 누르면 선택한 단계가 제거되며, 남은 단계의 의존성에서 그
+   단계에 대한 참조도 제거됩니다.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+인스펙터에서는 단계의 설명, 역할, 출력 스키마도 편집할 수 있습니다. 편집
+내용은 잠시 멈추면 새 리비전으로 자동 저장되며, (승인 바에 표시되는) 검증
+오류가 있으면 이를 해결할 때까지 저장이 차단됩니다.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+편집할 수 있는 것은 작업 단계뿐입니다. 구조 노드(리서치, 토론, 종합)는 읽기
+전용이며, 이미 작업이 실행된 단계도 마찬가지입니다. 이러한 단계에는 "이미
+실행됨" 표시가 붙는데, 편집하면 플랜이 분기되기 때문입니다.
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+저장은 여러분이 시작한 리비전을 기준으로 한 낙관적 동시성 방식입니다.
+오케스트레이터가 그 아래에서 재계획하면, 저장은 병합되거나 조용히
+덮어써지는 대신 "the plan moved on"과 함께 거부됩니다. 현재 리비전을 다시
+읽고 편집을 다시 하세요. 에이전트가 시작한 재계획은 그 자체로 2분에 한 번만
+허용되도록 속도가 제한되므로, 이런 일은 드물게 발생합니다.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+캔버스에는 끌어서 위치를 바꾸는 기능이 없습니다. 레이아웃은 의존성 구조에서
+계산되므로, 단계를 "옮긴다"는 것은 곧 그 의존성을 다시 연결한다는 뜻입니다.
 :::
 
-## Read cost, time and risk estimates
+## 비용, 시간, 위험 추정치 읽기
 
-Press **Estimate** in the approval bar.
+승인 바에서 **추정**을 누릅니다.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- 캔버스의 각 단계에는 비용 범위와 그 근거가 된 표본 크기가 담긴 배지가
+  붙거나, 그 단계의 역할이 한 번도 실행된 적이 없으면 "아직 기록이
+  없습니다"가 표시됩니다. 단계를 선택하면 인스펙터에서 전체 세부 정보를 볼
+  수 있습니다. 즉 표본 크기와 함께 비용 범위, 소요 시간 범위, 단계의
+  출처에서 도출한 영향 범위(파일과 심볼)가 표시되며, 단계에 출처가 없으면
+  "알 수 없음"으로 표시됩니다.
+- 승인 바에는 플랜 총계가 표시됩니다. 즉 전체 비용 범위, 임계 경로의 소요
+  시간 범위(병렬 분기가 겹치므로 단순 합이 아닙니다), 그리고 플랜이 예산
+  상한을 설정한 경우 그 상한입니다.
+- 일부 단계에만 기록이 있으면 총계에 **부분** 표시가 붙고 추정 가능한 단계만
+  포함합니다. 추정치의 상한이 예산 상한을 넘으면 총계가 빨간색으로 바뀌고
+  예산 초과 경고가 표시됩니다.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+추정치는 정직하거나 아예 없습니다. 역할에 완료된 실행 이력이 없는 단계는
+표본 크기가 0이고 범위가 전혀 없으며, 추측하는 대신 알 수 없음으로
+표시됩니다. "아직 기록이 없습니다"를 "아무도 모른다"는 뜻으로 받아들이고
+"저렴하다"는 뜻으로 해석하지 마세요.
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/ko-KR/매뉴얼/사용-가이드/비용-관리/) for controls that actually stop
-spending.
+예산 상한은 이 추정치와 비교해 표시만 하는 값입니다. 플랜이 실행되기
+시작하면 이를 강제하는 것은 아무것도 없습니다. 실제로 지출을 멈추는 제어
+방법은 [비용 관리](/ko-KR/매뉴얼/사용-가이드/비용-관리/)를 참고하세요.
 
-## Diff a revision against an earlier proposal
+## 리비전을 이전 제안과 diff하기
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+모든 편집과 오케스트레이터의 모든 재계획은 덧붙이기만 하는 리비전
+타임라인에 추가되며, 이 타임라인은 오케스트레이션 플랜 왼쪽의 **버전**
+패널에 표시됩니다.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. 리비전을 클릭하면 현재 제안과 비교(diff)합니다. 아무것도 선택하지 않으면
+   패널은 이전 리비전과 현재 리비전을 비교합니다.
+2. 패널 아래쪽에서 diff를 확인합니다. 두 리비전 사이에서 추가, 제거, 변경된
+   단계를 보여 줍니다.
+3. 플랜이 아직 `proposed`이면 리비전의 되감기 아이콘을 클릭해 그 리비전으로
+   돌아갑니다. 되감기는 그 제안을 **새** 리비전으로 저장하므로 아무것도
+   사라지지 않습니다.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+플랜이 더 이상 `proposed`가 아니면 `propose_orchestration`과 편집기 모두
+변경을 거부하므로, 실행 중인 작업이 실행 도중의 재계획을 반영하지 않습니다.
 
-## Approve, reject, or widen a plan
+## 플랜 승인, 거부, 확대
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+앱에서 제안된 플랜은 한 번에 통째로 내리는 하나의 결정입니다. 승인 바의
+**플랜 승인** 또는 **거부**입니다. **플랜 승인**은 항상 모든 단계를
+승인하며, 먼저 일부를 선택하는 방법은 없습니다. 제안에 검증 오류가 있으면
+승인이 차단되며, 오류는 버튼 옆에 표시됩니다.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+승인은 운영자만 할 수 있습니다. 이를 위한 MCP 도구가 없으므로, 에이전트는
+플랜을 제안하고 수정할 수 있지만 승인은 절대 할 수 없습니다.
 
-Once an orchestration is executing, the bar changes:
+오케스트레이션이 실행되기 시작하면 바가 바뀝니다:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- 단계가 실행 도중 질문을 위해 멈췄다면, 그 단계를 선택하고 **노드 계속**을
+  눌러 재개합니다.
+- **선택 항목 승인**을 누르면 _부분_ 승인을 선택한 단계와 그것이 전이적으로
+  의존하는 모든 단계까지 확대합니다(단계는 의존성 없이 승인될 수 없습니다).
+  이 컨트롤은 모든 오케스트레이션의 실행 바에 있으며, 플랜이 통째로 승인된
+  경우에는 아무 동작도 하지 않습니다.
+- **실행 중단**을 누르면 오케스트레이션 전체를 중지합니다.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+부분 승인 집합 밖의 단계는 보류로 렌더링되며, 집합을 확대할 때까지
+실행되지 않습니다.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[부분 승인은 앱에서 시작될 수 없습니다]
+부분 승인은 무언가가 명시적인 `approved_node_keys` 목록과 함께 RPC로
+`orchestration.approve`를 호출했을 때만 존재합니다. 앱의 **플랜 승인**은
+항상 모든 단계를 승인합니다. 플랜 문서는 모든 경우에 통째로 승인되므로,
+실행 중인 문서는 **실행 중단**만 제공합니다.
 :::
 
-## Run a playbook with parameters
+## 매개변수를 사용해 플레이북 실행
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/) instead.
+플레이북은 목표, 단계 제목, 설명, 프롬프트에 타입이 지정된 `{{param}}`
+자리 표시자가 들어 있는, 저장된 플랜 템플릿입니다. 치환은 문자 그대로
+이루어지며 표현식 언어는 없습니다. 로직이 필요하면 대신
+[파이프라인](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/)을 사용하세요.
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. 허브의 **플레이북** 섹션에서 플레이북의 **실행**을 누릅니다(또는 ⌘K
+   팔레트를 열고 거기서 플레이북을 선택합니다).
+2. 매개변수를 입력합니다. 열거형 매개변수는 드롭다운으로 렌더링되고, 저장소
+   및 에이전트 매개변수는 저장소나 에이전트 참조를 받으며, 선택적
+   매개변수는 기본값으로 대체됩니다.
+3. 플랜이 기준으로 제안될 **앵커 티켓**을 선택한 다음 확인합니다.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+플레이북을 실행하면 플랜을 **제안**할 뿐입니다. 인스턴스화된 오케스트레이션이
+Plan Studio에서 `proposed`로 열리고, 거기서 승인할 때까지 아무것도
+실행되지 않습니다. 플레이북을 삭제하려면 카드의 휴지통 아이콘을 누릅니다.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/ko-KR/매뉴얼/레퍼런스/mcp-도구/).
+에이전트는 `create_playbook` 및 `run_playbook` MCP 도구로 플레이북을 만들고
+실행합니다. 자세한 내용은
+[MCP 도구 레퍼런스](/ko-KR/매뉴얼/레퍼런스/mcp-도구/)를 참고하세요.
 
-## Related guides
+## 관련 가이드
 
-- [Use plan mode](/ko-KR/매뉴얼/사용-가이드/플랜-모드/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/ko-KR/매뉴얼/사용-가이드/파이프라인-모니터링/): the engine view of an approved plan
+- [플랜 모드 사용](/ko-KR/매뉴얼/사용-가이드/플랜-모드/): 에이전트가 `submit_plan`으로 플랜 문서를 만드는 방법
+- [오케스트레이션 실행](/ko-KR/매뉴얼/사용-가이드/오케스트레이션-실행/): 대화 쪽에서 보는 한 번만 승인하는 수명주기
+- [파이프라인 템플릿 만들기](/ko-KR/매뉴얼/사용-가이드/파이프라인-만들기/): 플레이북으로 표현할 수 없는 로직이 필요할 때
+- [파이프라인 실행 모니터링](/ko-KR/매뉴얼/사용-가이드/파이프라인-모니터링/): 승인된 플랜을 보는 엔진 관점
 
-## Related concepts
+## 관련 개념
 
-- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/)
+- [오케스트레이션](/ko-KR/매뉴얼/개념/오케스트레이션/)

@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: اتصال میزبان کد
+description: GitHub، GitLab یا Bitbucket را متصل کنید تا سطح PR، ثبت مخزن و اجرای عامل‌ها کار کنند — یک فضای کاری می‌تواند هر سه را با هم به کار ببرد.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-میزبان-کد
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center با سه میزبان کد کار می‌کند که در سراسر برنامه **forge** نامیده می‌شوند: **GitHub**، **GitLab** و **Bitbucket Cloud**. هیچ‌کدام پیش‌فرض نیست. یکی را متصل کنید و همه‌چیز کار می‌کند؛ چند تا را متصل کنید و یک فضای کاری می‌تواند مخزن‌های همهٔ آن‌ها را هم‌زمان در خود جای دهد.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+میزبان کد ویژگی هر **مخزن** است و هنگام ثبت آن، از ریموت `origin` آن خوانده می‌شود. هرگز آن را انتخاب نمی‌کنید و هیچ تنظیمی در سطح فضای کاری نیست که بتوانید اشتباه کنید.
 
-## Connect a forge
+## اتصال یک میزبان کد
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. **تنظیمات → فضای کاری → نمایه و هویت** را باز کنید (`/settings/workspace/profile`).
+2. کارت **میزبانی کد** را پیدا کنید. هر میزبان کد پشتیبانی‌شده در آن فهرست شده است، متصل یا نامتصل.
+3. اگر آن ردیف چنین گزینه‌ای دارد، **ورود با …** را بزنید، وگرنه **افزودن توکن** را بزنید و یکی را جای‌گذاری کنید.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**ورود** برای میزبانی نمایش داده می‌شود که سرور شما برایش برنامه‌ای ثبت کرده است — امروز این میزبان GitHub است، از طریق جریان دستگاه (به [ایجاد GitHub App(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/github-app/) نگاه کنید). هر چیز دیگری یک توکن جای‌گذاری‌شده است، که همان گزینهٔ صادقانه است، نه دکمه‌ای که نمی‌تواند به سرانجام برسد.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+در هر دو حالت، اعتبارنامه **از شماست و روی سرور می‌ماند** و با شناسهٔ کاربری شما کلید می‌خورد: هیچ توکنی روی دستگاهی که آن را در آن وارد کرده‌اید ذخیره نمی‌شود، هر دستگاهی که از آن وارد می‌شوید از همان یکی استفاده می‌کند و هیچ عضو دیگری نمی‌تواند آن را بخواند. از **درخواست بعدی** اثر می‌کند — چیزی برای راه‌اندازی مجدد نیست و قطع اتصال، ارسال آن را بلافاصله متوقف می‌کند.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+هر ردیف می‌گوید اعتبارنامه‌اش از کجا آمده است، چون همین تفاوت میان «توکن من کار نمی‌کند» و «توکن دیگری پاسخ می‌دهد» است:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| زیرنویس                                                    | معنا                                                                    |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `وارد شده به‌عنوان octocat`                                  | اعتبارنامهٔ خودتان به کار می‌رود                                          |
+| `وارد شده به‌عنوان octocat · از طریق برنامهٔ این سرور`        | هویت برنامهٔ سرور پاسخ می‌دهد — شما وارد نشده‌اید                          |
+| `وارد شده به‌عنوان octocat · از محیط`                        | یک متغیر محیطی سرور پاسخ می‌دهد، نه اعتبارنامهٔ شما                        |
+| `متصل نیست`                                                  | برای این میزبان کد اعتبارنامه‌ای ندارید                                    |
 
-### What token each forge wants
+### هر میزبان کد چه توکنی می‌خواهد
 
-| Forge         | Token                                                     | Where to create it                                        |
-| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| میزبان کد     | توکن                                                                                                              | کجا آن را بسازید                                      |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **GitHub**    | Classic: `repo` و `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read)         | github.com → Settings → Developer settings → Tokens    |
+| **GitLab**    | یک توکن دسترسی شخصی با `api`                                                                                       | gitlab.com → User settings → Access tokens             |
+| **Bitbucket** | یک توکن API از Atlassian، به‌همراه ایمیل حساب شما                                                                  | id.atlassian.com → Security → API tokens               |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket با **ایمیل حساب شما به‌عنوان نام کاربری** و توکن به‌عنوان گذرواژه احراز هویت می‌کند. `BITBUCKET_EMAIL` را در محیط سرور تنظیم کنید تا بداند کدام ایمیل را با توکن جفت کند.
 
-### Or use the environment
+### یا از متغیرهای محیطی استفاده کنید
 
-For a headless or CI install, the server reads these:
+برای نصب بدون رابط یا CI، سرور این‌ها را می‌خواند:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`، سپس `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`، سپس `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`، سپس `BITBUCKET_TOKEN` (به‌همراه `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+این‌ها اعتبارنامهٔ **سرور**اند، نه شما؛ و این تفاوت تعیین‌کننده است: درخواستی که به نیابت از شما فرستاده می‌شود فقط از اعتبارنامهٔ خود شما استفاده می‌کند و از چیز دیگری نه، پس محیط هرگز بی‌صدا جای شما را نمی‌گیرد. کاری که هیچ انسانی پشت آن نیست — وبهوک‌ها، نظرسنجی PR، همگام‌سازی تیکت — نخست هویت برنامهٔ سرور را حل می‌کند، سپس اعتبارنامهٔ مالک سرور را، و بعد محیط را. این ترتیب ثابت است تا «وارد شدم و هیچ‌چیز عوض نشد» هرگز نتیجهٔ پشتیبانی‌شده‌ای نباشد.
 
-## You are a different person on each forge
+## روی هر میزبان کد، شما آدم دیگری هستید
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+همان انسان روی GitHub `octocat` است و روی GitLab چیزی کاملاً دیگر. Control Center هویت شما را **به تفکیک هر میزبان کد** حل می‌کند و برای هر مخزن همان درست را به کار می‌برد؛ همین است که «نیاز به بازبینی من» را، «ساختهٔ من» را و «شما این را تأیید کردید» را در یک فضای کاری مخلوط درست می‌کند.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+اگر هویت یک میزبان کد حل نشده باشد، مخزن‌هایش به‌جای اینکه با همه‌چیز مطابقت کنند، هیچ چیزی به صندوق ورودی نمی‌دهند. صندوق ورودی همین را می‌گوید، نه اینکه ادعا کند همه‌چیز را رسیدگی کرده‌اید.
 
-## One inbox, every forge
+## یک صندوق ورودی، همهٔ میزبان‌های کد
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+صندوق ورودی و صف PR روی هر میزبانی که در فضای کاری حاضر است پخش می‌شوند و نتایج را در یک جریان یکی می‌کنند — یک pull request از GitHub و یک pull request از Bitbucket کنار هم می‌نشینند، به ترتیب زمان، نه گروه‌بندی‌شده بر پایهٔ فروشنده.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+خطاها جدا از هم‌اند. میزبانی که از کار افتاده، با محدودیت نرخ محدود شده یا متصل نشده باشد هیچ چیزی نمی‌دهد و بقیه را دست‌نخورده می‌گذارد؛ هرگز کل صندوق ورودی را خالی نمی‌کند. مخزن‌های خودش تا زمانی که بهبود یابد، آخرین وضعیت شناخته‌شده‌شان را نشان می‌دهند.
 
-## What each forge can do
+## هر میزبان کد چه کارهایی می‌تواند بکند
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+هر میزبان کدی از حلقهٔ اصلی پشتیبانی می‌کند: فهرست‌کردن و باز کردن pull requestها، خواندن diffها، نظر دادن به‌صورت درون‌خطی و در سطح بالا، بازبینی، ادغام و بستن. فراتر از آن، آن‌ها واقعاً با هم تفاوت دارند و Control Center آنچه را یک میزبان کد نمی‌تواند انجام دهد پنهان می‌کند، نه اینکه کنترلی نشان دهد که بی‌صدا شکست می‌خورد.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| توانایی                                | GitHub | GitLab | Bitbucket |
+| -------------------------------------- | :----: | :----: | :-------: |
+| بازبینی‌های دسته‌ای (در انتظار)          |   ✓    |   ✓    |     —     |
+| درخواست تغییر                          |   ✓    |   ✓    |     ✓     |
+| وضعیت «دیده‌شده» به تفکیک فایل، همگام‌شده |   ✓    |   —    |     —     |
+| واکنش‌های ایموجی                        |   ✓    |   ✓    |     —     |
+| بازبین‌های تیم / گروه                    |   ✓    |   ✓    |     —     |
+| بازبین‌های پیشنهادی                      |   ✓    |   —    |     ✓     |
+| نتایج CI روی یک PR                     |   ✓    |   ✓    |     ✓     |
+| کندوکاو در گام‌ها/لاگ‌های یک کار CI       |   ✓    |   ✓    |     —     |
+| pull requestهای پشته‌ای                  |   ✓    |   —    |     —     |
+| قالب‌های توضیح PR                        |   ✓    |   ✓    |     —     |
+| نظرسنجی اعلان‌ها                         |   ✓    |   —    |     —     |
+| نمایه‌های کاربری غنی                     |   ✓    |   ✓    |     —     |
+| ارجاع head برای PR در سمت سرور          |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+آن‌جا که توانایی‌ای وجود ندارد، قابلیت صادقانه تنزل می‌کند:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **وضعیت دیده‌شده** همچنان کار می‌کند، اما فقط روی دستگاهی که آن را رویش تنظیم کرده‌اید.
+- **بازبینی‌های دسته‌ای** در Bitbucket نظر به نظر ارسال می‌شوند، پس بازبین‌ها آن‌ها را یکی‌یکی می‌بینند، نه یک‌جا.
+- **نبود ارجاع head برای PR** در Bitbucket یعنی چک‌اوت کردن یک pull request شاخهٔ مبدأ آن را با نام می‌گیرد، که پس از حذف آن شاخه شکست می‌خورد.
 
-## Vocabulary
+## واژگان
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab به یک pull request می‌گوید **merge request**. Control Center در سراسر مدل خودش «pull request» می‌گوید و آن‌جا که دربارهٔ خود یک میزبان کد حرف می‌زند، از اسم خود همان میزبان استفاده می‌کند.
 
-## Troubleshooting
+## عیب‌یابی
 
-### The PR list is empty and says a forge is not connected
+### فهرست PR خالی است و می‌گوید یک میزبان کد متصل نیست
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+برای آن میزبان کد اعتبارنامه‌ای ندارید. در **تنظیمات → فضای کاری → نمایه و هویت → میزبانی کد** وارد شوید یا توکنی جای‌گذاری کنید. مخزن‌های دیگر میزبان‌ها دست‌نخورده می‌مانند.
 
-### I connected a forge but its repos still show nothing
+### یک میزبان کد را متصل کردم اما مخزن‌هایش هنوز چیزی نشان نمی‌دهند
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+زیرنویس آن ردیف را بررسی کنید. اگر «از طریق برنامهٔ این سرور» یا «از محیط» نوشته باشد، اعتبارنامه‌ای غیر از آنچه انتظار داشتید پاسخ می‌دهد — اعتبارنامهٔ خودتان برای هر چیزی که بخواهید برنده است، پس اگر جز این نوشته باشد، مال شما ذخیره نشده است.
 
-### A repo will not register
+### یک مخزن ثبت نمی‌شود
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/).
+ثبت به هر سه مورد نیاز دارد: مسیر داخل یک worktree گیت باشد، ریموت `origin` داشته باشد و آن ریموت به github.com، gitlab.com یا bitbucket.org اشاره کند. [افزودن مخزن به فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/) را ببینید.
 
-### Everything stops working for a while after heavy use
+### پس از استفادهٔ سنگین، همه‌چیز مدتی از کار می‌افتد
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+این همان قطع‌کنندهٔ مدار محدودیت نرخ است. میزبانی که محدودیت اصلی‌اش را اعلام کند باعث می‌شود کلاینت درخواست‌های بعدی را محلی و بدون تماس شبکه‌ای رد کند تا آن بازه بگذرد — پس طوفان تلاش‌های مجدد نمی‌تواند محدودیت را عمیق‌تر کند. خطاهای گذرا با عقب‌نشینی نمایی دوباره تلاش می‌شوند.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Add repos to a workspace](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
-- [Set up GitHub integration](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
-- [Review and merge a PR](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
-- [Triage the inbox](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)
+- [افزودن مخزن به فضای کاری(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/افزودن-مخزن/)
+- [راه‌اندازی یکپارچه‌سازی GitHub(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/یکپارچهسازی-github/)
+- [بازبینی و ادغام یک PR(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/بازبینی-و-ادغام-pr/)
+- [تریاژ صندوق ورودی(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/تریاژ-صندوق-ورودی/)

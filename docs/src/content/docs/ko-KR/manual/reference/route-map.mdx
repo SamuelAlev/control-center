@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: 라우트 맵
+description: Control Center가 등록하는 모든 라우트를 화면 및 쿼리 매개변수와 함께 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/라우트-맵
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## 앱 셸
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+앱 셸(`ControlCenterLayout`)은 `ShellRoute`를 통해 워크스페이스 안의 모든 라우트를 감쌉니다. **셸 안에 있는 모든 목적지는 `/workspaces/:workspaceId/…` 형태로 워크스페이스 접두사가 붙으며, URL의 워크스페이스 id가 활성 워크스페이스에 대한 단일 진실 공급원입니다.** 접두사가 없는 것은 컨텍스트 이전 표면뿐입니다. `/splash`, `/onboarding`, `/signed-out` 그리고 접두사 없는 `/workspaces` 선택기이며, 모두 셸 밖의 전체 화면입니다.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+게이트는 **로그인한 사용자에게** forge가 하나 이상 연결되어 있고 워크스페이스가 하나 이상 존재할 때 완료됩니다.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+자격 증명이 없는 경우와 설정이 없는 경우는 서로 다른 화면이며, 이를 가르는 기준은 호출자 자신의 `identity.me`에서 읽은 `users.onboarding_finished_at`입니다 — "워크스페이스가 존재함"은 아닙니다. 누군가 자신이 만들지 않은 워크스페이스에 초대되는 순간 그것은 틀린 판단이 되기 때문입니다. forge가 연결되어 있지 않으면, 온보딩을 마친 계정은 다시 인증하러 `/signed-out`으로 가고 마치지 않은 계정은 `/onboarding`으로 갑니다. 플래그를 아직 알 수 없는 동안에는 가드가 추측하는 대신 스플래시를 붙잡고 있는데, 온보딩 밖으로 다시 리디렉션하는 일은 결코 없기 때문입니다.
 
-## Unprefixed routes
+## 접두사 없는 라우트
 
-| Path                       | Screen                                           |
+| 경로                       | 화면                                             |
 | -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| `/splash`                  | 온보딩 게이트를 판정하는 시작 스플래시           |
+| `/onboarding`              | forge 연결, 워크스페이스 생성 또는 참여, 샌드박스, 기본 어댑터, 마지막으로 음성. 계정이 이미 워크스페이스에 속해 있으면 워크스페이스 단계는 생략됩니다 |
+| `/signed-out`              | 다시 인증합니다. 설정이 렌더링하는 것과 같은 코드 호스팅 카드가 표시되며, 단계 표시줄도 계속 버튼도 없습니다 — forge가 응답하면 라우터가 스스로 빠져나갑니다 |
+| `/workspaces`              | 워크스페이스 목록 및 선택기                      |
+| `/workspaces/:workspaceId` | `/workspaces/:workspaceId/inbox`로 리디렉션합니다 |
 
-## Workspace routes
+## 워크스페이스 라우트
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+아래 경로는 `/workspaces/:workspaceId` 접두사를 생략합니다.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
+| 경로                                    | 쿼리 매개변수                             | 화면                                                                                                                                                                     |
 | --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| `/inbox`                                | —                                         | 통합 받은편지함: 리뷰 수명주기로 분류된 PR과 운영자를 막고 있는 비 PR 작업을 함께 보여 줍니다. 가드 이후의 진입 라우트이며, 접두사만 있는 `/workspaces/:workspaceId`는 여기로 리디렉션합니다 |
+| `/spaces`                               | —                                         | 스페이스 표면, 선택된 스페이스 없음                                                                                                                                      |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | 스페이스 하나. `m`은 메시지로 딥 링크하며, 열 때 한 번 소비됩니다                                                                                                         |
+| `/tickets`                              | —                                         | 티켓 보드                                                                                                                                                                |
+| `/tickets/:ticketId`                    | —                                         | 티켓 마스터-디테일                                                                                                                                                       |
+| `/projects/:projectId`                  | —                                         | 프로젝트 개요                                                                                                                                                            |
+| `/pull-requests`                        | `?repo=<owner/name>`                      | PR 목록. `repo`는 왼쪽 레일에서 해당 리포지토리를 선택합니다                                                                                                              |
+| `/pull-requests/compose`                | `?space=<spaceId>`                        | 새 풀 리퀘스트 작성. `space`는 격리된 워크트리가 브랜치를 제공하는 스페이스를 지정합니다                                                                                  |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | diff 뷰어가 있는 PR 상세. `comment`는 댓글 하나의 숫자 REST id입니다                                                                                                      |
+| `/pipelines`                            | —                                         | 파이프라인 실행 목록                                                                                                                                                     |
+| `/pipelines/run`                        | `?templateId=<id>`                        | 수동 실행 런처                                                                                                                                                           |
+| `/pipelines/:runId`                     | —                                         | 파이프라인 실행 상세(단계 타임라인)                                                                                                                                      |
+| `/plans`                                | —                                         | Plan Studio 허브: 활성 플랜, 플랜 문서, 플레이북                                                                                                                          |
+| `/plans/:kind/:id`                      | —                                         | 플랜 하나를 위한 Plan Studio. `kind`는 `orchestration` 또는 `document`입니다                                                                                              |
+| `/meetings`                             | —                                         | 회의 목록                                                                                                                                                                |
+| `/meetings/record`                      | —                                         | 실시간 회의 녹음 화면                                                                                                                                                    |
+| `/meetings/:meetingId`                  | —                                         | 회의 상세: 노트, 트랜스크립트, 액션 아이템, 결정 사항                                                                                                                     |
+| `/calendar`                             | —                                         | 캘린더: 월, 주, 일정 보기                                                                                                                                                |
+| `/calendar/:eventId`                    | —                                         | 캘린더 이벤트 상세(형제 라우트이며 캘린더 페이지 키를 공유합니다)                                                                                                         |
+| `/newsfeed`                             | —                                         | 뉴스피드 목록                                                                                                                                                            |
+| `/newsfeed/article/:articleId`          | —                                         | 기사 리더                                                                                                                                                                |
+| `/observability`                        | —                                         | 옵저버빌리티 허브: 워크스페이스 실행 로그 피드 위에 사용량, 인사이트, 실시간, 품질 탭이 있습니다. 기본값은 사용량 탭입니다                                                |
+| `/users/:login`                         | —                                         | GitHub 사용자 프로필                                                                                                                                                     |
+| `/teams/:organization/:slug`            | —                                         | GitHub 조직 팀 프로필                                                                                                                                                    |
+| `/api-keys`                             | —                                         | API 키 관리. **탐색 진입점이 없습니다** — URL로만 접근할 수 있습니다                                                                                                      |
+| `/settings/…`                           | —                                         | 설정 화면(아래)                                                                                                                                                          |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+대화와 스레드는 **자체 라우트가 없습니다** — 스레드는 `/spaces/:spaceId` 안의 대화이며, URL로 주소를 지정하는 대신 편집기 탭으로 열립니다.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**`/dashboard` 라우트는 없으며** 대시보드 화면도 없습니다. 분석 표면은 `/observability`이며, 사이드바 하단에서 들어갑니다.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+사이드바에 **"플랜" 항목은 없습니다**. Plan Studio는 플랜을 만들어 낸 대화에서 그 플랜의 행으로부터 편집기 탭으로 열립니다. `/plans`와 `/plans/:kind/:id`는 딥 링크입니다.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability`와 `/pull-requests/compose`는 라우트 제목 또는 브레드크럼 레지스트리에 항목이 없으므로, 둘 다 창 제목에 앱 이름만 표시하고 브레드크럼 경로도 표시하지 않습니다.
 
-## Settings routes
+## 설정 라우트
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings`는 `/settings/you/appearance`로 리디렉션합니다. 사이드바의 설정 버튼과 `Cmd/Ctrl + ,`는 둘 다 `/settings/you/appearance`로 이동합니다.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+설정 경로는 **범위**별로 네임스페이스가 나뉘며 — `you/`, `workspace/`, `server/` — 이 세그먼트가 변경이 누구에게 영향을 주는지 나타냅니다. 두 경로는 네임스페이스 도입 이전의 것으로 URL에 범위가 붙지 않습니다: `/settings/memory`와 `/settings/pipelines`.
 
-### You
+### 나
 
-| Path                          | Screen                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| 경로                          | 화면                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `/settings/you/appearance`    | 테마, 언어, 타이포그래피, 편집기 테마(설정의 기본 화면)                  |
+| `/settings/you/notifications` | 이벤트별 토글, 방해 금지 시간                                            |
+| `/settings/you/keybindings`   | 키보드 단축키 레퍼런스(읽기 전용)                                        |
+| `/settings/you/audio`         | 마이크, 받아쓰기, 회의 감지, 사운드스케이프 출력                         |
+| `/settings/you/devices`       | 페어링된 휴대폰과 원격 제어                                              |
+| `/settings/you/newsfeed`      | 피드 관리: 소스, 새로고침, 읽음 상태                                     |
 
-### Workspace
+### 워크스페이스
 
-| Path                               | Screen                                                                                              |
+| 경로                               | 화면                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| `/settings/workspace/profile`      | 이 워크스페이스의 프로필과 신원: 이름, git 작성자, 코드 호스팅, 캘린더 |
+| `/settings/workspace/general`      | 이름, 로고, 시크릿 글롭, 리뷰 동시성, 브랜치 이름 지정, 동기화 상태, 채팅 브리지, 위험 영역 |
+| `/settings/workspace/meetings`     | 회의 노트 템플릿과 저장된 음성 프로필                                                               |
+| `/settings/workspace/members`      | 멤버 명단, 초대, 감사 기록. 감사 기록은 선택적 `?cursor=`로 페이지를 나눕니다                        |
+| `/settings/workspace/repositories` | 이 워크스페이스에 등록된 리포지토리                                                                 |
+| `/settings/workspace/agents`       | 등록된 에이전트 아이덴티티                                                                          |
+| `/settings/workspace/skills`       | 스킬 구성                                                                                           |
+| `/settings/memory`                 | 워크스페이스 메모리: 팩트, 정책, 지식 그래프                                                        |
+| `/settings/workspace/permissions`  | 에이전트 권한: 가드레일 매트릭스와 가정 시나리오 프로브                                             |
+| `/settings/pipelines`              | 파이프라인 템플릿                                                                                   |
+| `/settings/pipelines/:templateId`  | 파이프라인 템플릿 편집기(드래그 앤 드롭 캔버스)                                                     |
 
-### Server
+### 서버
 
-| Path                           | Screen                                                                                |
+| 경로                           | 화면                                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| `/settings/server/connection`  | 연결 및 상태                                                                          |
+| `/settings/server/sso`         | 싱글 사인온(SAML, OIDC, SCIM 프로비저닝)                                              |
+| `/settings/server/providers`   | 모델 제공업체와 어댑터                                                                |
+| `/settings/server/mcp`         | 내장 및 외부 MCP 서버                                                                 |
+| `/settings/server/voice`       | 음성 및 회의 모델(ASR, 화자 분리)                                                     |
+| `/settings/server/rigs`        | 리그: 이 호스트가 부팅할 수 있는 것, 베이스 이미지, 사용자 지정 이미지, 실행 중인 머신 |
+| `/settings/server/sandbox`     | 샌드박스 실행 권한: 에이전트가 여러분의 리포지토리 작업 복사본에서 실행할 수 있는 프로그램 |
+| `/settings/server/diagnostics` | 진단 및 개인정보 보호: 샌드박싱, 임베딩, 동기화 엔진, 로깅, 충돌 보고                 |
+| `/settings/server/backup`      | 백업 및 복원: 설치 스냅샷, 워크스페이스별 내보내기, 가져오기 및 삭제                  |
+| `/settings/server/about`       | 정보 및 업데이트                                                                      |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`lib/features/settings/settings_nav.dart`의 `kSettingsNav`가 이 목록의 단일 진실 공급원입니다. `settings_nav_test.dart`는 고유 id, 고유 라우트, 평탄화된 J/K 순서, 그리고 세 범위를 고정합니다. 등록된 모든 `GoRoute`를 순회하지는 않습니다.
 
-## Route configuration
+## 라우트 구성
 
-| Concern             | File                                                    |
-| ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| 항목        | 파일                                                    |
+| ----------- | ------------------------------------------------------- |
+| 라우터      | `lib/router/app_router.dart`                            |
+| 라우트 빌더 | `lib/router/routes.dart`                                |
+| 인증 가드   | `lib/router/guards.dart`                                |
+| 온보딩 게이트 | `lib/features/auth/providers/onboarding_providers.dart` |
+| 설정 탐색   | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## 관련 항목
 
-- [Workspaces](/ko-KR/매뉴얼/개념/워크스페이스/)
-- [Architecture](/ko-KR/매뉴얼/개념/아키텍처/)
-- [Keyboard shortcuts](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)
+- [워크스페이스](/ko-KR/매뉴얼/개념/워크스페이스/)
+- [아키텍처](/ko-KR/매뉴얼/개념/아키텍처/)
+- [키보드 단축키](/ko-KR/매뉴얼/레퍼런스/키보드-단축키/)

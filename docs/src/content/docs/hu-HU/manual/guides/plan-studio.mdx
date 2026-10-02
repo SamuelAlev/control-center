@@ -1,180 +1,197 @@
 ---
-title: Work in Plan Studio
-description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+title: Munka a Plan Studióban
+description: Terv átnézése, szerkesztése, becslése, diffelése és jóváhagyása a Plan Studio szerkesztőjében, valamint paraméterezett playbookok futtatása.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio
+sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
 ---
 
-This guide shows you how to work with plans in Plan Studio. For what
-orchestrations and plan documents are, see
-[Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/) and
-[Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/).
+Ez az útmutató bemutatja, hogyan dolgozhat a tervekkel a Plan Studióban. Arról,
+hogy mi az az orchestráció és a tervdokumentum, lásd:
+[Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/) és
+[Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/).
 
-## Open a plan
+## Terv megnyitása
 
-A plan belongs to the conversation that produced it, so that is where you
-normally reach it: the plan's row in the conversation has an **Open** action and
-Plan Studio opens as an editor tab beside the conversation.
+Egy terv ahhoz a beszélgetéshez tartozik, amely létrehozta, így általában ott
+érhető el: a terv sorának a beszélgetésben van egy **Megnyitás** művelete, és a
+Plan Studio a beszélgetés melletti szerkesztőfülként nyílik meg.
 
-:::note[There is no "Plans" sidebar entry]
-That is deliberate, not an oversight. The hub at
-`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
-if you want a standing list.
+:::note[Nincs „Tervek” bejegyzés az oldalsávban]
+Ez szándékos, nem figyelmetlenség. A
+`/workspaces/<workspace-id>/plans` címen elérhető központ csak útvonalazható
+mélyhivatkozásként létezik, ezért tegye könyvjelzőbe, ha állandó listát szeretne.
 :::
 
-The hub lists three sections:
+A központ három szakaszt sorol fel:
 
-- **Active plans** — orchestrations, proposed first, with their status, step
-  count and revision number.
-- **Plan documents** — plans a single agent submitted with `submit_plan` in
-  [plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/), while they are proposed or approved.
-- **Playbooks** — saved, parameterized plan templates.
+- **Aktív tervek** — orchestrációk, elöl a javasoltak, az állapotukkal, a
+  lépésszámmal és a revíziószámmal.
+- **Tervdokumentumok** — olyan tervek, amelyeket egyetlen ügynök nyújtott be a
+  `submit_plan` hívással [tervmódban](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/), amíg javasolt vagy jóváhagyott állapotban vannak.
+- **Playbookok** — mentett, paraméterezett tervsablonok.
 
-Click a card to open it in Plan Studio. The route is
-`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
-`orchestration` or `document`, so you can deep-link a single plan too.
+Kattintson egy kártyára, hogy megnyissa a Plan Studióban. Az útvonal
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, ahol a `kind` értéke
+`orchestration` vagy `document`, így egyetlen tervet is mélyhivatkozhat.
 
-If you opened an **orchestration**, you get the editable canvas, the version
-timeline and the approval bar. If you opened a **plan document**, the same
-graph renders read-only — plan documents are agent-authored; you review,
-estimate and approve or reject them and an approved document shows live
-per-node run state from the orchestration it compiled into.
+Ha **orchestrációt** nyitott meg, a szerkeszthető vásznat, a verzióidővonalat és
+a jóváhagyási sávot kapja. Ha **tervdokumentumot** nyitott meg, ugyanaz a gráf
+csak olvashatóként jelenik meg — a tervdokumentumokat ügynök írja; Ön átnézi,
+megbecsüli, majd jóváhagyja vagy elutasítja őket, a jóváhagyott dokumentum pedig
+az élő, csomópontonkénti futási állapotot mutatja abból az orchestrációból,
+amelybe lefordult.
 
-## Edit the DAG
+## A DAG szerkesztése
 
-Edits are possible on an **orchestration** while it is `proposed`. All canvas
-edits are keyboard-driven:
+A szerkesztés **orchestráció** esetén lehetséges, amíg az `proposed` állapotban
+van. A vászon minden szerkesztése billentyűzetről vezérelhető:
 
-1. Click the canvas, then move the selection with the **arrow keys**.
-2. Press **n** to add a step. It appears selected as "New step"; rename it in
-   the inspector on the right.
-3. Press **e** on the step that must run first, then click the dependent step
-   (or select it and press **Enter**) to connect a dependency. Press **Esc**
-   to abandon a pending connection.
-4. Press **x** to cut the selected step's newest dependency, or toggle exact
-   dependencies in the inspector's dependency editor.
-5. Press **Delete** to remove the selected step; references to it are removed
-   from the remaining steps' dependencies.
+1. Kattintson a vászonra, majd mozgassa a kijelölést a **nyílbillentyűkkel**.
+2. Nyomja meg az **n** billentyűt egy lépés hozzáadásához. „Új lépés” néven,
+   kijelölve jelenik meg; nevezze át a jobb oldali ellenőrző panelen.
+3. Nyomja meg az **e** billentyűt azon a lépésen, amelynek előbb kell futnia,
+   majd kattintson a tőle függő lépésre (vagy jelölje ki, és nyomjon **Enter**-t)
+   egy függőség összekapcsolásához. Egy függőben lévő kapcsolat elvetéséhez
+   nyomja meg az **Esc** billentyűt.
+4. Nyomja meg az **x** billentyűt a kijelölt lépés legújabb függőségének
+   elvágásához, vagy a pontos függőségeket az ellenőrző panel
+   függőségszerkesztőjében kapcsolhatja be és ki.
+5. Nyomja meg a **Delete** billentyűt a kijelölt lépés eltávolításához; a rá
+   mutató hivatkozások eltűnnek a megmaradó lépések függőségei közül.
 
-In the inspector you can also edit the step's description, role and output
-schema. Edits save automatically as a new revision after a short pause; a
-validation error (shown in the approval bar) blocks the save until you fix it.
+Az ellenőrző panelen a lépés leírását, szerepét és kimeneti sémáját is
+szerkesztheti. A szerkesztések rövid szünet után automatikusan új revízióként
+mentődnek; egy érvényesítési hiba (amely a jóváhagyási sávban látható) blokkolja
+a mentést, amíg ki nem javítja.
 
-Only work steps are editable. Structural nodes — research, discussion and
-synthesis — are read-only and so is any step whose work has already run (it is
-marked "already executed", because editing it would fork the plan).
+Csak a munkalépések szerkeszthetők. A strukturális csomópontok — kutatás,
+megbeszélés és szintézis — csak olvashatók, és az is minden olyan lépés, amelynek
+a munkája már lefutott („már végrehajtva” jelölést kap, mert a szerkesztése
+elágaztatná a tervet).
 
-Saving is optimistically concurrent on the revision you started from. If the
-orchestrator replans underneath you, your save is refused with "the plan moved
-on" rather than merged or silently clobbered; re-read the current revision and
-redo your edit. Agent-initiated replans are themselves rate-limited to one
-every two minutes, so this stays rare.
+A mentés optimista párhuzamossággal történik arra a revízióra, amelyből kiindult.
+Ha az orchestrátor Ön alatt újratervezi a tervet, a mentést „a terv továbblépett”
+üzenettel utasítja el, nem fésüli össze és nem írja felül csendben; olvassa be
+újra az aktuális revíziót, és végezze el újra a szerkesztést. Az ügynök által
+kezdeményezett újratervezések maguk is kettő percenként egyre vannak
+korlátozva, így ez ritka marad.
 
 :::note
-The canvas has no drag-to-reposition: the layout is computed from the
-dependency structure, so "moving" a step means rewiring its dependencies.
+A vásznon nincs húzással átpozicionálás: az elrendezés a függőségi szerkezetből
+számolódik, így egy lépés „mozgatása” a függőségeinek átkötését jelenti.
 :::
 
-## Read cost, time and risk estimates
+## Költség-, idő- és kockázatbecslések olvasása
 
-Press **Estimate** in the approval bar.
+Nyomja meg a **Becslés** gombot a jóváhagyási sávban.
 
-- Each step on the canvas gets a badge with a cost range and the sample size
-  behind it, or "No history yet" when the step's role has never run. Select a
-  step for the full detail in the inspector: cost range with sample size, a
-  duration range and a blast radius (files and symbols) derived from the
-  step's provenance — or "unknown" when the step carries no provenance.
-- The approval bar shows the plan total: an overall cost range, a duration
-  range for the critical path (parallel branches overlap, so this is not the
-  sum) and the budget ceiling when the plan sets one.
-- If only some steps have history, the total is marked **partial** and covers
-  only the estimable steps. If the estimate's high end exceeds the budget
-  ceiling, the total turns red with an over-budget warning.
+- A vásznon minden lépés kap egy jelvényt a költségtartománnyal és a mögötte álló
+  mintamérettel, vagy a „Még nincs előzmény” feliratot, ha a lépés szerepe még
+  soha nem futott. Jelöljön ki egy lépést a részletes adatokért az ellenőrző
+  panelen: költségtartomány a mintamérettel, időtartamtartomány és egy hatósugár
+  (fájlok és szimbólumok), amely a lépés származásából következik — vagy
+  „ismeretlen”, ha a lépéshez nem tartozik származás.
+- A jóváhagyási sáv a terv összesítését mutatja: egy általános költségtartományt,
+  a kritikus út időtartamtartományát (a párhuzamos ágak átfedik egymást, így ez
+  nem az összeg) és a költségkeretet, ha a terv meghatároz egyet.
+- Ha csak néhány lépéshez van előzmény, az összesítés **részleges** jelölést kap,
+  és csak a becsülhető lépéseket fedi le. Ha a becslés felső vége meghaladja a
+  költségkeretet, az összesítés pirosra vált, egy kerettúllépési
+  figyelmeztetéssel.
 
-Estimates are honest or absent: a step whose role has no completed-run history
-reports a sample size of zero with no ranges at all and is shown as unknown
-rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+A becslések vagy őszinték, vagy hiányoznak: egy olyan lépés, amelynek szerepéhez
+nincs lefutott futtatási előzmény, nulla mintaméretet jelent, tartományok nélkül,
+és ismeretlenként jelenik meg, nem tippként. A „Még nincs előzmény” feliratot
+tekintse úgy, hogy „senki sem tudja”, és ne úgy, hogy „olcsó”.
 
-The budget ceiling is a display comparison against this estimate. Nothing
-enforces it once the plan is running — see
-[Manage costs](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/) for controls that actually stop
-spending.
+A költségkeret a becsléssel való megjelenítési összehasonlítás. Amint a terv fut,
+semmi sem kényszeríti ki — a kiadásokat ténylegesen leállító szabályozásért lásd:
+[Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/).
 
-## Diff a revision against an earlier proposal
+## Egy revízió összevetése egy korábbi javaslattal
 
-Every edit and every replan by the orchestrator appends to an append-only
-revision timeline, shown in the **Versions** panel on the left of an
-orchestration plan.
+Minden szerkesztés és az orchestrátor minden újratervezése egy csak
+hozzáfűzhető revízióidővonalhoz fűződik hozzá, amely egy orchestrációs terv bal
+oldalán, a **Verziók** panelen látható.
 
-1. Click a revision to diff it against the current proposal. With no
-   selection, the panel diffs the previous revision against the current one.
-2. Read the diff in the lower half of the panel: steps added, removed, or
-   changed between the two revisions.
-3. If the plan is still `proposed`, click the rewind icon on a revision to go
-   back to it. Rewinding saves that proposal as a **new** revision — nothing
-   is lost.
+1. Kattintson egy revízióra, hogy összevesse az aktuális javaslattal. Kijelölés
+   nélkül a panel az előző revíziót veti össze az aktuálissal.
+2. Olvassa el a diffet a panel alsó felében: a két revízió között hozzáadott,
+   eltávolított vagy módosított lépések.
+3. Ha a terv még `proposed` állapotban van, kattintson egy revízió
+   visszatekerés ikonjára, hogy visszatérjen hozzá. A visszatekerés **új**
+   revízióként menti azt a javaslatot — semmi sem vész el.
 
-`propose_orchestration` and the editor both refuse changes once the plan is
-no longer `proposed`, so an in-flight run does not pick up a mid-execution
-replan.
+A `propose_orchestration` és a szerkesztő is elutasítja a változtatásokat, ha a
+terv már nem `proposed`, így egy folyamatban lévő futtatás nem vesz fel egy
+végrehajtás közbeni újratervezést.
 
-## Approve, reject, or widen a plan
+## Terv jóváhagyása, elutasítása vagy kiterjesztése
 
-From the app a proposed plan is one decision, taken whole: **Approve plan** or
-**Reject** in the approval bar. **Approve plan** always approves every step —
-there is no way to select a subset first. Approval is blocked while the
-proposal has validation errors, which are shown next to the buttons.
+Az alkalmazásban egy javasolt terv egyetlen, egészében meghozott döntés: **Terv
+jóváhagyása** vagy **Elutasítás** a jóváhagyási sávban. A **Terv jóváhagyása**
+mindig minden lépést jóváhagy — nincs mód előbb egy részhalmaz kijelölésére. A
+jóváhagyás blokkolva van, amíg a javaslatnak érvényesítési hibái vannak,
+amelyek a gombok mellett jelennek meg.
 
-Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+A jóváhagyás csak operátorok számára érhető el. Nincs hozzá MCP-eszköz, így az
+ügynök javasolhat és módosíthat egy tervet, de soha nem hagyhatja jóvá.
 
-Once an orchestration is executing, the bar changes:
+Amint egy orchestráció végrehajtás alatt áll, a sáv megváltozik:
 
-- If a step stopped to ask mid-run, select it and press **Continue node** to
-  resume it.
-- Press **Approve selected** to widen a _partial_ approval to the selected
-  step plus everything it transitively depends on (a step can never be
-  approved without its dependencies). The control is on the executing bar
-  for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Ha egy lépés futás közben megállt, hogy kérdezzen, jelölje ki, és nyomja meg a
+  **Csomópont folytatása** gombot a folytatásához.
+- Nyomja meg a **Kijelöltek jóváhagyása** gombot, hogy egy _részleges_
+  jóváhagyást kiterjesszen a kijelölt lépésre és mindenre, amitől az tranzitívan
+  függ (egy lépés soha nem hagyható jóvá a függőségei nélkül). A vezérlő minden
+  orchestráció végrehajtó sávján megtalálható; nem csinál semmit, ha a tervet
+  egészében hagyták jóvá.
+- Nyomja meg a **Futtatás megszakítása** gombot a teljes orchestráció
+  leállításához.
 
-Steps outside a partial approved set render as deferred and do not run until
-you widen the set.
+A részlegesen jóváhagyott halmazon kívüli lépések elhalasztottként jelennek meg,
+és nem futnak, amíg ki nem terjeszti a halmazt.
 
-:::note[Partial approvals cannot originate in the app]
-A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
-app always approves every step. Plan documents are approved whole in every
-case, so an executing document offers **Cancel run** only.
+:::note[Részleges jóváhagyás nem indulhat ki az alkalmazásból]
+Részleges jóváhagyás csak akkor létezik, ha valami RPC-n meghívta az
+`orchestration.approve` műveletet egy explicit `approved_node_keys` listával. Az
+alkalmazás **Terv jóváhagyása** gombja mindig minden lépést jóváhagy. A
+tervdokumentumokat minden esetben egészében hagyják jóvá, így egy futó dokumentum
+csak a **Futtatás megszakítása** lehetőséget kínálja.
 :::
 
-## Run a playbook with parameters
+## Playbook futtatása paraméterekkel
 
-A playbook is a saved plan template with typed `{{param}}` placeholders in its
-goal, step titles, descriptions and prompts. Substitution is literal — there
-is no expression language; if you need logic, use a
-[pipeline](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/) instead.
+A playbook egy mentett tervsablon, típusos `{{param}}` helyőrzőkkel a céljában,
+a lépéscímeiben, a leírásaiban és a promptjaiban. A helyettesítés szó szerinti —
+nincs kifejezésnyelv; ha logikára van szüksége, használjon helyette
+[pipeline-t](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/).
 
-1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
-   the ⌘K palette and pick the playbook there).
-2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
-   and agent parameters take a repo or agent reference; optional parameters
-   fall back to their default.
-3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+1. A központ **Playbookok** szakaszában nyomja meg a playbook **Futtatás**
+   gombját (vagy nyissa meg a ⌘K palettát, és válassza ki ott a playbookot).
+2. Töltse ki a paramétereket. A felsorolás típusú paraméterek legördülő menüként
+   jelennek meg; a repó- és ügynökparaméterek egy repó- vagy ügynökhivatkozást
+   vesznek fel; az opcionális paraméterek az alapértelmezett értékükre esnek
+   vissza.
+3. Válassza ki a **horgonyjegyet**, amelyhez a tervet javasolja, majd erősítse
+   meg.
 
-Running a playbook only **proposes** a plan — the instantiated orchestration
-opens in Plan Studio as `proposed` and nothing executes until you approve it
-there. To remove a playbook, press the trash icon on its card.
+Egy playbook futtatása csak **javasol** egy tervet — a példányosított
+orchestráció `proposed` állapotban nyílik meg a Plan Studióban, és semmi sem fut,
+amíg ott jóvá nem hagyja. Egy playbook eltávolításához nyomja meg a kártyáján a
+kuka ikont.
 
-Agents create and run playbooks with the `create_playbook` and `run_playbook`
-MCP tools; see the [MCP tools reference](/hu-HU/kezikonyv/referencia/mcp-eszkozok/).
+Az ügynökök a `create_playbook` és `run_playbook` MCP-eszközökkel hoznak létre és
+futtatnak playbookokat; lásd az
+[MCP-eszközök referenciáját](/hu-HU/kezikonyv/referencia/mcp-eszkozok/).
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/): how an agent produces a plan document with `submit_plan`
-- [Run an orchestration](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/): the approve-once lifecycle from the conversation side
-- [Create a pipeline template](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/): when you need logic a playbook cannot express
-- [Monitor pipeline runs](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/): the engine view of an approved plan
+- [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/): hogyan készít az ügynök tervdokumentumot a `submit_plan` hívással
+- [Orchestráció futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa/): az egyszeri jóváhagyás életciklusa a beszélgetés oldaláról
+- [Pipeline-sablon létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-letrehozasa/): amikor olyan logikára van szüksége, amit egy playbook nem tud kifejezni
+- [Pipeline-futtatások figyelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese/): egy jóváhagyott terv motoroldali nézete
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/)
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/)

@@ -1,126 +1,132 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: آرکیسٹریشن چلائیں
+description: کسی آرکیسٹریٹر سے پلان مانگیں، Plan Studio میں اس کا جائزہ لیں اور ترمیم کریں، اسے ایک بار منظور کریں اور ایک تیار شدہ پائپ لائن کو کام کرنے دیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/) for how it works.
+یہ گائیڈ دکھاتی ہے کہ ایک بڑے مقصد کو کیسے پوری ٹیم کے ایسے پلان میں بدلا جائے جو
+خود چلتا ہو۔ یہ کیسے کام کرتا ہے، [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)
+میں دیکھیں۔
 
-## When to use an orchestration
+## آرکیسٹریشن کب استعمال کریں
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/); for a process you can spell out by
-hand, build a [pipeline template](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/).
+جب درخواست ایک ایجنٹ سے بڑی ہو اور آپ کو عین مراحل پہلے سے معلوم نہ ہوں تو
+آرکیسٹریشن کا رخ کریں۔ کسی واحد کام کے لیے کسی
+[اسپیس](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/) میں ایجنٹ کو پیغام بھیجیں؛
+اور جس عمل کو آپ خود تفصیل سے لکھ سکتے ہیں، اس کے لیے
+[پائپ لائن ٹیمپلیٹ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/) بنائیں۔
 
-## Step 1: Ask for the plan
+## مرحلہ 1: پلان مانگیں
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. ایک اسپیس اور ایک **اینکر ٹکٹ** کھولیں (یا بنائیں)۔ ہر تجویز کے لیے ایک اینکر
+   ٹکٹ لازمی ہے (`propose_orchestration` ایک `ticket_id` لیتا ہے)؛ مشترکہ اسپیس اسی
+   ٹکٹ سے آتی ہے۔
+2. اختیاری طور پر کمپوزر کا موڈ ڈراپ ڈاؤن **آرکیسٹریٹ** پر کر دیں۔ یہ موڈ ایجنٹ کو
+   پڑھنے اور تجویز دینے تک محدود کر دیتا ہے — میموری، کوڈ گراف، ریپو اور ٹکٹ ریڈز،
+   `propose_orchestration` اور پلے بک ٹولز — چنانچہ وہ منصوبہ بندی کے بجائے کوڈ لکھنے
+   میں نہیں لگ سکتا۔
+3. اپنے آرکیسٹریٹر کا @-ذکر کریں (عام طور پر CEO ایجنٹ) اور مقصد سادہ الفاظ میں
+   بیان کریں:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo آف لائن-فرسٹ میٹنگ ریکارڈر کے لیے مسابقتی منظرنامے کی تحقیق کریں
+> اور ایک صفحے کی پوزیشننگ دستاویز لکھیں۔
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+آرکیسٹریٹر اسپیس میں ایک منظم **تجویز** کارڈ کے ساتھ جواب دیتا ہے: اسے جن کرداروں
+کی ضرورت ہے، ذیلی ٹکٹس میں تقسیم شدہ کام، ایک اختیاری تحقیقی اور گفتگوئی مرحلہ، ایک
+ترکیبی قدم جو حتمی نتیجہ تیار کرتا ہے، اور ایک بجٹ۔
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+چونکہ تجویز ایک ٹائپ شدہ آبجیکٹ ہے، اس لیے کچھ بھی چلنے سے پہلے ایپ اس کی تصدیق
+کرتی ہے (درست کردار، اعلان شدہ آؤٹ پٹ اسکیماز، بغیر سائیکل کا DAG)۔ جو تجویز تصدیق
+میں ناکام ہو، اسے منظور نہیں کیا جا سکتا۔
 
-## Step 2: Review and edit the proposal
+## مرحلہ 2: تجویز کا جائزہ لیں اور ترمیم کریں
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+گفتگو کے اندر کا کارڈ تین ایکشن پیش کرتا ہے: **پلان منظور کریں**، **مسترد کریں** اور
+**کھولیں** — جو پلان کو Plan Studio میں ایک ایڈیٹر ٹیب کے طور پر کھولتا ہے۔ خود کارڈ
+میں ترمیم نہیں کی جا سکتی۔
 
-To change anything, press **Open** and work in the right-hand inspector:
+کچھ بھی بدلنے کے لیے **کھولیں** دبائیں اور دائیں جانب والے انسپکٹر میں کام کریں:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- کسی بھی کام والے قدم کا **عنوان**، **تفصیل**، **کردار**، **انحصارات** اور
+  **آؤٹ پٹ اسکیما**۔ یہاں کردار سے مراد یہ ہے کہ پلان کی موجودہ کردار کلیدوں میں سے
+  کون اس قدم کا مالک ہے — آپ انسپکٹر سے کسی کردار کو کسی نامزد ایجنٹ سے نہیں جوڑ
+  سکتے اور نہ بھرتی فہرست میں ترمیم کر سکتے ہیں، اور آپ بجٹ میں بھی ترمیم نہیں کر
+  سکتے۔
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+دو چیزیں صرف پڑھنے کے لیے ہیں: ساختی نوڈز (تحقیق، گفتگو، ترکیب) اور وہ کوئی بھی نوڈ
+جس کا کام پہلے ہی چل چکا ہو۔ ترمیم صرف اُس وقت ممکن ہے جب آرکیسٹریشن ابھی `proposed`
+ہو۔
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/) for the full editor.
+منظوری دینے سے پہلے لاگت، دورانیہ اور اثر کے دائرے کی حدود کے لیے منظوری بار میں
+**تخمینہ** دبائیں۔ مکمل ایڈیٹر کے لیے
+[Plan Studio میں کام کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/) دیکھیں۔
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/).
+:::note[بجٹ خرچ کی حد نہیں ہے]
+تجویز کے بجٹ کا موازنہ منظوری بار میں دیے گئے _تخمینے_ سے کیا جاتا ہے: جب تخمینے کی
+بالائی حد اس سے بڑھ جائے تو کل رقم سرخ ہو کر بجٹ سے تجاوز کی وارننگ دکھاتی ہے۔ پلان
+کے عمل درآمد کے دوران کوئی چیز خرچ کی جانچ نہیں کرتی، اس لیے یہ کسی رن کو نہ روکے گی
+نہ ناکام بنائے گی۔ خرچ کو واقعی روکنے کے لیے فی ایجنٹ بجٹ پالیسیاں استعمال کریں —
+[اخراجات منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/) دیکھیں۔
 :::
 
-## Step 3: Approve
+## مرحلہ 3: منظوری دیں
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+پلان کی منظوری دیں — گفتگو کے کارڈ سے یا Plan Studio کی منظوری بار سے۔ **یہ واحد
+فیصلہ ہے جو آپ کرتے ہیں۔** منظوری دینا صرف آپریٹر کا کام ہے — اس کے لیے کوئی MCP ٹول
+نہیں ہے، چنانچہ کوئی ایجنٹ تجویز دے سکتا ہے اور نظرثانی کر سکتا ہے، مگر اپنے ہی پلان
+کی منظوری کبھی نہیں دے سکتا۔
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) and creates the
-scaffolding:
+اس کے بعد ایک متعیّن میٹیریئلائزر (ایک خالص فنکشن، کوئی LLM نہیں) تجویز کو ایک حقیقی
+[پائپ لائن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/) میں بدل دیتا ہے اور بنیادی ڈھانچہ
+بنا دیتا ہے:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- کسی بھی نئے کردار کی بھرتی کرتا ہے (اور بھرتی شدہ ایجنٹ آئی ڈیز ریکارڈ کرتا ہے تاکہ
+  منظوری کے دوران کریش ہونے پر دہری بھرتیوں کے بغیر دوبارہ آغاز ہو سکے)
+- کرداروں کو ایک **ٹیم** میں یکجا کرتا ہے
+- ایک **پروجیکٹ** بناتا ہے اور پیرنٹ ٹکٹ اس کے تحت درج کرتا ہے
+- وہ **پائپ لائن رن** شروع کرتا ہے جو یہ سب چلاتا ہے
 
-The status moves to `approved`, then `executing`.
+حالت `approved` اور پھر `executing` ہو جاتی ہے۔
 
-## Step 4: Watch it run
+## مرحلہ 4: اسے چلتے ہوئے دیکھیں
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+ذیلی ٹکٹس پائپ لائن قدموں کے طور پر چلتے ہیں؛ اگر آپ نے گفتگو کا دور فعال کیا ہو تو
+ہر کردار پہلے ایک موقف پیش کرتا ہے۔ پیش رفت وہیں ظاہر ہوتی ہے جہاں آپ پہلے ہی دیکھتے
+ہیں:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
-- the **project** the parent ticket was filed under
+- وہ **پیرنٹ ٹکٹ** جس پر آرکیسٹریشن لنگر انداز تھی
+- وہ مشترکہ **اسپیس** جس میں ٹیم بات کرتی ہے، جہاں پلان کی قطار ہر نوڈ کی حالت کا
+  سراغ رکھتی ہے
+- **پائپ لائن رن** کی تفصیل، اپنے معمول کے واٹر فال اور فی قدم لاگت کے ساتھ —
+  [پائپ لائن رنز کی نگرانی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/)
+  دیکھیں
+- وہ **پروجیکٹ** جس کے تحت پیرنٹ ٹکٹ درج کیا گیا
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+ذیلی ٹکٹس مکمل ہونے پر حالت `synthesizing` ہو جاتی ہے اور ترکیبی قدم حتمی نتیجہ تیار
+کرتا ہے۔ یہ متن مشترکہ اسپیس میں پوسٹ کیا جاتا ہے اور پیرنٹ ٹکٹ مکمل قرار دیا جاتا
+ہے، اور پھر حالت `completed` ہو جاتی ہے۔
 
-## Stop it early
+## اسے جلد روکیں
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+گفتگو کے اندر والے کارڈ پر **آرکیسٹریشن منسوخ کریں** دبائیں، یا Plan Studio کی منظوری
+بار میں **رن منسوخ کریں**۔ منسوخی جاری کام کو ختم کر دیتی ہے۔
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+آرکیسٹریشن اُس وقت ناکام ہوتی ہے جب میٹیریلیزیشن ناکام ہو، یا جب اس کا تیار شدہ
+پائپ لائن رن ناکام ہو (تحقیق، گفتگو، ترکیب، یا persist — یہ قدم ناکامی پر جاری نہیں
+رہتے)۔ تیار شدہ **کام** والے قدم ہمیشہ ناکامی پر جاری رہتے ہیں، چنانچہ ایک ناکام ذیلی
+ٹکٹ رن کو ناکام نہیں کرتا۔ بجٹ سے تجاوز کی کوئی ناکامی کی راہ نہیں ہے اور نہ ہی
+“ہر ذیلی ٹکٹ ناکام” کی کوئی حد۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Work in Plan Studio](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/): where the parent ticket is filed
-- [Monitor pipeline runs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/): the roles an orchestration fills or hires
+- [Plan Studio میں کام کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/plan-studio/): پلان میں ترمیم، تخمینہ، ڈف اور منظوری
+- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/): وہ پیرنٹ ٹکٹ جس پر آرکیسٹریشن لنگر انداز ہوتی ہے
+- [پروجیکٹس سے کام منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/): جہاں پیرنٹ ٹکٹ درج کیا جاتا ہے
+- [پائپ لائن رنز کی نگرانی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی/): انجن میں میٹیریلیزڈ آرکیسٹریشن کیسی دکھتی ہے
+- [ایک ایجنٹ ٹیم بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹیم-بنائیں/): وہ کردار جو آرکیسٹریشن پُر کرتی ہے یا بھرتی کرتی ہے
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Orchestration](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [آرکیسٹریشن](/ur-PK/ہدایت-نامہ/تصورات/آرکیسٹریشن/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)

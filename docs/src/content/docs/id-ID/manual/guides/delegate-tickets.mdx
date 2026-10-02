@@ -1,131 +1,142 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: Delegasikan pekerjaan ke agen
+description: Serahkan tiket kepada agen di dalam sebuah percakapan dan biarkan para agen saling mendelegasikan sub-tugas di bawah pagar kedalaman dan siklus.
 slug: id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+Panduan ini membahas cara memindahkan pekerjaan dari piring Anda ke agen, dan
+apa yang terjadi ketika para agen saling mengoper pekerjaan.
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[Menetapkan tiket kepada agen tidak mengirimkannya]
+Tidak ada dispatcher tiket untuk penerima tugas berupa agen. Penetapan hanya
+mencatat kepemilikan dan tidak lebih — tidak ada space yang dibuat, tidak ada
+status yang berubah, tidak ada agen yang dimulai. Pengecualiannya adalah tiket
+yang ditetapkan ke sebuah **tim**, yang membangunkan pemimpin tim tersebut.
+Pekerjaan agen untuk penerima tugas tertentu berlangsung di percakapan, jadi di
+sanalah Anda memulainya.
 :::
 
-## Hand a ticket to an agent
+## Serahkan tiket kepada agen
 
-1. [Create the ticket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [Buat tiketnya](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/) dengan judul dan
+   deskripsi yang cukup tepat untuk dijadikan dasar bekerja.
+2. Tetapkan **Penerima tugas**-nya ke agen tersebut, agar kepemilikannya
+   tercatat.
+3. Buka (atau buat) sebuah space dan @-mention agen tersebut.
+4. Rujuk tiket itu dengan mention `#` di pesan Anda — penyusun pesan melengkapi
+   tiket ruang kerja secara otomatis — dan sebutkan apa yang ingin Anda
+   kerjakan.
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+Agen mengambil pekerjaan itu dari percakapan. Kemajuannya dialirkan ke space
+tersebut.
 
-## What the agent receives
+## Apa yang diterima agen
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- Pesan Anda, termasuk rujukan tiket yang Anda tandai.
+- Space untuk bekerja dan melapor.
+- Worktree terisolasi dari repo yang tertaut ke ruang kerja.
+- **Mode** space tersebut, yang mengatur permukaan alat run itu.
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/id-ID/panduan-pengguna/konsep/mode/).
+Mode adalah properti space, bukan properti tiket — tiket tidak punya
+mode. Karena itu, satu agen dapat berada dalam mode `chat` di satu space dan
+`plan` di space lain. Pilih mode dari dropdown mode di penyusun pesan
+(**Agent**, **Plan**, atau **Orchestrate**); `review` ditetapkan oleh space
+tinjauan PR dan tidak dapat dipilih.
+Lihat [Mode](/id-ID/panduan-pengguna/konsep/mode/).
 
-## Require a structured result
+## Wajibkan hasil terstruktur
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+Kontrak keluaran dideklarasikan pada pengiriman, bukan pada tiket:
+`expected_output_schema` plus `output_contract_mode` (secara default strict).
+Agen memenuhinya dengan memanggil `submit_output`, yang memvalidasi payload
+terhadap skema dan menolak payload yang tidak sesuai.
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+Baik keluaran yang diterima maupun setiap penolakan tercatat di **log eksekusi
+agen**. Status tiket itu sendiri tidak tersentuh oleh hal ini — kontrak yang
+gagal tidak menggagalkan tiketnya.
 
-## Monitor progress
+## Pantau kemajuan
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **Space** — aktivitas agen secara langsung, tampilan utama.
+- **Tiket** — statusnya, sesuai yang ditetapkan oleh siapa pun yang
+  memindahkannya.
+- **Observabilitas → Langsung** (`/workspaces/<workspace-id>/observability`) —
+  daftar agen secara langsung.
+- **Observabilitas → Wawasan** — log eksekusi, beserta biaya dan durasinya.
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+Tidak ada layar dasbor; URL ruang kerja tanpa apa pun akan mengalihkan ke
+Kotak masuk.
 
-## Let agents delegate to each other
+## Biarkan agen saling mendelegasikan
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+Agen yang menemui sub-masalah akan mendelegasikan dengan alat MCP
+`delegate_task`. Alat itu membuat tiket anak yang ditetapkan ke agen lain dan —
+ketika Anda memberikan `parent_ticket_id` — mencatat rantainya agar pagar
+pengaman dapat melihatnya.
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+Dua pagar struktural selalu berjalan di titik penyempitan tiket, tidak pernah
+melalui instruksi prompt:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **Batas kedalaman** — rantai yang lebih dalam dari 3 hop ditolak.
+- **Deteksi siklus** — hop kembali ke agen yang sudah ada di rantai ditolak.
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+Ketika Anda memberikan `from_agent_id`, dua pagar lagi berjalan (produksi selalu
+menyediakan port resolver):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **Plafon otonomi** — tingkat efektif penerima delegasi di space tidak boleh
+  melebihi tingkat pemberi delegasi.
+- **Amplop anggaran** — delegasi membebankan sisa anggaran hard-stop milik
+  pemberi delegasi dan tidak dapat mencetak anggaran baru. Tanpa kebijakan,
+  atau dengan kebijakan tanpa batas, akan lolos.
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+Penolakan bersifat terang-terangan: alat mengembalikan alasan pagar tersebut apa
+adanya, sehingga agen yang mendelegasikan melihat persis alasannya. Kolom
+`delegatedByAgentId` mencatat siapa yang mendelegasikan, membentuk pohon
+delegasi.
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` melewati semua pagar]
+Alat `delegate_ticket` yang lebih lama masih terdaftar dan memanggil
+`createTicket` secara langsung — tanpa batas kedalaman, tanpa pemeriksaan
+siklus, tanpa plafon otonomi, tanpa amplop anggaran. Utamakan `delegate_task`.
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+Batas kedalaman delegasi sebesar 3 ini adalah batas yang berbeda dari batas
+penyarangan subagen sebesar 2 pada harness bawaan — yang satu membatasi tiket
+antaragensi, yang lain membatasi subagen di dalam satu run.
 
-## Put several agents on one ticket
+## Tempatkan beberapa agen pada satu tiket
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+Tambahkan mereka sebagai **kolaborator** pada tiket (peran: penerima tugas,
+kolaborator, peninjau). Itu hanyalah daftar nama — catatan siapa saja yang
+terlibat — dan tidak memberi kuasa apa pun dengan sendirinya.
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/id-ID/panduan-pengguna/panduan-praktis/space/).
+Untuk benar-benar menempatkan para agen dalam percakapan yang sama, tambahkan
+mereka sebagai peserta dari header space. Mereka kemudian dapat saling
+@-mention di sana. Lihat
+[Space](/id-ID/panduan-pengguna/panduan-praktis/space/).
 
-## Automated ticket creation
+## Pembuatan tiket otomatis
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+Tidak ada node di palet pipeline yang membuat tiket, sehingga pipeline tidak
+dapat menyebarkan pekerjaan sebagai tiket yang ditetapkan.
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/).
+Jalur yang ada adalah orkestrasi: menyetujui proposal akan membuat proyek dan
+tim, mengompilasi DAG sub-tiket proposal menjadi **templat pipeline** (satu
+langkah `promptAgent` per sub-tiket, bukan satu baris `Ticket` untuk
+masing-masing) lalu menjalankan run tersebut. Lihat
+[Jalankan orkestrasi](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/).
 
-## Related guides
+## Panduan terkait
 
-- [Create and manage tickets](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/)
-- [Chat with an agent](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
-- [Run an orchestration](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/)
-- [Organize work with projects](/id-ID/panduan-pengguna/panduan-praktis/proyek/)
-- [Ticket lifecycle reference](/id-ID/panduan-pengguna/referensi/siklus-hidup-tiket/)
+- [Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/)
+- [Chat dengan agen](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/)
+- [Jalankan orkestrasi](/id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi/)
+- [Atur pekerjaan dengan proyek](/id-ID/panduan-pengguna/panduan-praktis/proyek/)
+- [Referensi siklus hidup tiket](/id-ID/panduan-pengguna/referensi/siklus-hidup-tiket/)
 
-## Related concepts
+## Konsep terkait
 
-- [Tickets](/id-ID/panduan-pengguna/konsep/tiket/)
-- [Dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
+- [Tiket](/id-ID/panduan-pengguna/konsep/tiket/)
+- [Siklus hidup pengiriman](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)

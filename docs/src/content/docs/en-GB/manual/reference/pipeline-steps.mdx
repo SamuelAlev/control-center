@@ -2,6 +2,7 @@
 title: Pipeline steps
 description: Reference for pipeline step kinds, step body keys, their configuration and step results.
 slug: en-GB/manual/reference/pipeline-steps
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
 A pipeline step has two independent axes:
@@ -123,7 +124,7 @@ The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+Removes stale isolated worktrees; picks its mode from the trigger payload. Honours the run's `dryRun` flag.
 
 | State key                     | Description                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
@@ -167,11 +168,11 @@ Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker 
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Offline speaker diarisation. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
 
 | State key     | Description                   |
 | ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| `meeting_id`  | Meeting to diarise (required) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
@@ -181,8 +182,8 @@ Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the ag
 
 | Body key                           | Description                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
+| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarised speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
+| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarisation produced nothing. |
 | `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
 | `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
 | `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |

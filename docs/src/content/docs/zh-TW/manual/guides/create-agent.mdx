@@ -1,109 +1,110 @@
 ---
-title: Create and configure an agent
-description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+title: 建立並設定代理
+description: 將代理加入工作區，為它設定配接器、模型、技能與權限，並確認它能實際執行。
 slug: zh-TW/手冊/操作指南/建立代理
+sourceHash: cb172f91e7bb5030c96bd9ac7180bec5a289dd40
 ---
 
-This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+本指南說明如何將代理加入工作區，並持續設定到它真的能執行為止。
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+每個工作區建立時都會預置五個代理——一位 CEO 加上 `qa`、`architect`、`engineer` 與 `librarian`——因此你通常在還沒設定任何代理之前就已經有代理可用。以下步驟對預置代理與新建代理同樣適用。
 
-## Before you start
+## 開始之前
 
-- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
-- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+- 你已位於某個工作區內。整個介面位於 **設定 → 工作區 → 代理**（`/settings/workspace/agents`）。
+- 代理需要一個後端。你可以為內建執行環境在 **設定 → 伺服器 → 模型供應商** 連接供應商，或在裝載 `cc_server` 的機器上安裝 Claude Code CLI。
+- 如果你希望代理具備技能，請先在 **設定 → 工作區 → 技能** 安裝它們。代理表單只能切換工作區中已存在的技能。
 
-## Add the agent
+## 新增代理
 
-1. Open **Settings → Workspace → Agents**.
-2. Click **New agent**.
+1. 開啟 **設定 → 工作區 → 代理**。
+2. 點擊 **新增代理**。
 
-There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+這裡不會出現對話框，也沒有角色選擇器。系統會立即建立一個名為「未命名代理」的代理，並在右側的詳細資料窗格中選取它。
 
-You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+此時你應該會在左側名冊中看到「未命名代理」，其詳細資料窗格已開啟 **設定** 分頁，且 **名稱** 欄位中包含「未命名代理」。
 
-## Name it
+## 為它命名
 
-- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
-- **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
+- **名稱** — 用於 @提及的簡短識別碼，例如 `alice`。提及解析會比對 `@` 後接的文字字元，因此含有連字號、句點或空格的名稱永遠無法被提及。
+- **標題** — 人類可讀的標籤，例如「資深程式設計師」。
+- **系統提示** — 選用的額外指示，會以「代理指示」區段注入；它們不會取代組裝後提示的其餘部分。
 
-Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+點擊表單底部的 **儲存變更**。本頁的每個欄位都由這一個按鈕儲存。
 
-## Give it an adapter and a model
+## 為它設定配接器與模型
 
-The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
+**配接器** 下拉式選單會列出伺服器主機上實際具備的執行器。內建配接器一律會被找到（它就是伺服器本身）。Claude Code 只在那台主機上偵測到它的 CLI 時才會出現：
 
-| Adapter                   | Backend                                     |
-| ------------------------- | ------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI |
-| Claude Code               | `claude -p --output-format stream-json`     |
+| 配接器                    | 後端                                          |
+| ------------------------- | --------------------------------------------- |
+| Control Center (built-in) | 行程內的代理迴圈 — 不需要外部 CLI             |
+| Claude Code               | `claude -p --output-format stream-json`       |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
+只有內建配接器會強制執行模式、操控、暫停/繼續、完成契約與子代理。Claude Code 這些全都沒有。Cursor、Codex 與其他模型供應商都掛接在內建配接器上，而不是獨立的執行器。
 
-:::note[An empty adapter means the built-in loop]
-An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::note[配接器留空代表使用內建迴圈]
+配接器未設定的代理會派送至 **Control Center (built-in)**，也就是伺服器內部的迴圈，因此主機上完全不必安裝任何東西。若模型也未設定，它會向 Anthropic 要求預設模型，所以完全未設定的代理只有在你自己連接 Anthropic 帳戶時才能執行。預置的專家代理出廠時兩者都沒有；對於任何打算使用的代理，請把兩者都設好。
 :::
 
-The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+**模型** 下拉式選單由你所選的配接器決定。對內建配接器而言，清單即時來自你在 **設定 → 伺服器 → 模型供應商** 已連接的供應商，因此沒有儲存憑證的供應商會貢獻零個模型。
 
-## Add skills
+## 新增技能
 
-**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+**技能** 是涵蓋此工作區中已安裝技能包的晶片選擇器。點按晶片即可切換；勾號圖示會標示已選取的項目。如果工作區沒有任何技能，該欄位會顯示「No skills available. Create skills in Settings → Skills first.」
 
-You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/zh-TW/手冊/概念/代理模型/#repo-scoped-skills).
+你無法在這裡挑選儲存庫自帶的技能。帶有技能的儲存庫（放在 `.agents/skills/`、`.claude/skills/` 或 `.opencode/skills/`）會自動把它們貢獻給在該儲存庫中工作的任何代理，並在代理移到另一個儲存庫時換掉——參見[儲存庫範圍技能](/zh-TW/手冊/概念/代理模型/#repo-scoped-skills)。
 
-## Set the reporting line and persona
+## 設定回報關係與人設
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
-- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+- **直屬主管** — 依名稱挑選另一位代理。這會建立頁首 **組織圖** 按鈕所顯示的回報樹。它不是團隊領導者委派時所用的名冊——那名冊來自團隊的成員及其技能。
+- **人設** — 塑造語氣與行為的自由文字，例如：「偏好簡單、易讀的解法。為所有新程式碼撰寫測試。」
 
-## Tune the run
+## 調整執行參數
 
-- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
-- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
-- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+- **推理力度** — 選項來自所選模型自己公布的等級：Low / Medium / High，OpenAI 風格的模型另有 Extra High，Claude 風格的模型另有 Extra High + Max。當所選模型未宣告任何思考等級時，此欄位會完全隱藏，並採用模型本身的預設值。
+- **上下文視窗大小** — 每次更換模型時會依模型的上下文視窗預先填入，並有一鍵晶片可選模型預設值、200k、500k 與 1M。你在選定模型之後輸入的值會生效，直到下次更換模型為止。
+- **靜音逾時（分鐘）** — 超過這段時間沒有輸出就終止執行。留空則使用各模式的預設值。
 
-## Grant permissions
+## 授予權限
 
-**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+**沙箱權限** 一開始是「使用工作區預設值」。開啟開關即可為此代理個別設定，然後切換：
 
-- **Allow git push** — injects the GitHub token the agent needs to push
-- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
-- **Allow ticketing API calls** — injects the ticketing provider key
-- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+- **允許 git push** — 注入代理推送所需的 GitHub 權杖
+- **允許 GitHub API 呼叫** — 讓代理讀取 PR、issue 與儲存庫中繼資料
+- **允許工單 API 呼叫** — 注入工單供應商的金鑰
+- **允許一般網路存取** — 同時啟用內建執行環境的 `web_fetch` 與 `web_search` 工具
 
-Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+執行啟動時，憑證仲介會檢查每一個開關：某項能力若為關閉，就代表對應的權杖永遠不會被簽發到該次執行的環境中。
 
-:::caution[Workspace default means the server's conservative set]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[工作區預設值代表伺服器端的保守組合]
+留在「使用工作區預設值」的代理，執行時 git push、GitHub API 與工單全都 **關閉**，而網路 **開啟**。設定 → 伺服器 → 診斷與隱私 底下顯示的能力預設值是用戶端偏好設定。若你希望代理推送或開啟 PR，請開啟開關並明確授予這些能力。
 
-These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/) for the full set of boundaries.
+這些能力管制的是憑證與執行環境工具，與作業系統沙箱是不同的一層。主機上若存在沙箱，`cc_server` 會把代理執行包裝在其中——Windows 沒有原生後端，Linux 與 WSL2 則需要 `bwrap` 與 `socat`。完整的界線集合請參見[沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)。
 :::
 
-## Verify it runs
+## 驗證它能執行
 
-1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
-2. Open a space with the agent and send it a message, or @-mention it in an existing space.
-3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+1. 開啟 **設定 → 伺服器 → 模型供應商**，確認你選擇的配接器回報的是已安裝版本，而不是「找不到」。點擊 **重新整理** 可重新探測——探測是在裝載 `cc_server` 的機器上執行，而不是在你正在檢視的這台機器上。
+2. 開啟一個含有該代理的空間並傳訊息給它，或在既有空間中 @提及它。
+3. 回到 **設定 → 工作區 → 代理**，選取該代理並開啟它的 **日誌** 分頁。應該會出現一次執行，帶有狀態徽章、執行時間長度、開始時間，以及它使用的配接器。**檢視** 會開啟該次執行的事件串流。
 
-If no run appears at all, work through [Run agent diagnostics](/zh-TW/手冊/操作指南/診斷代理/).
+如果完全沒有出現任何執行，請依[診斷代理](/zh-TW/手冊/操作指南/診斷代理/)逐步排查。
 
-## Delete an agent
+## 刪除代理
 
-Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
+在名冊中選取它。在 **設定** 分頁中，捲到表單底部的 **危險區域**，然後點擊 **刪除**。
 
-## Related guides
+## 相關指南
 
-- [Run agents in parallel](/zh-TW/手冊/操作指南/並行代理/)
-- [Build an agent team](/zh-TW/手冊/操作指南/組成代理團隊/)
-- [Manage adapters and models](/zh-TW/手冊/操作指南/配接器/)
-- [Run agent diagnostics](/zh-TW/手冊/操作指南/診斷代理/)
-- [Agent configuration reference](/zh-TW/手冊/參考/代理設定/)
+- [並行執行代理](/zh-TW/手冊/操作指南/並行代理/)
+- [組成代理團隊](/zh-TW/手冊/操作指南/組成代理團隊/)
+- [管理配接器與模型](/zh-TW/手冊/操作指南/配接器/)
+- [診斷代理](/zh-TW/手冊/操作指南/診斷代理/)
+- [代理設定參考](/zh-TW/手冊/參考/代理設定/)
 
-## Related concepts
+## 相關概念
 
-- [The agent model](/zh-TW/手冊/概念/代理模型/)
-- [Modes](/zh-TW/手冊/概念/模式/)
-- [Sandbox and security](/zh-TW/手冊/概念/沙箱與資安/)
+- [代理模型](/zh-TW/手冊/概念/代理模型/)
+- [模式](/zh-TW/手冊/概念/模式/)
+- [沙箱與資安](/zh-TW/手冊/概念/沙箱與資安/)

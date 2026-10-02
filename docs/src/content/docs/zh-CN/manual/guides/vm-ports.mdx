@@ -1,137 +1,78 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: 从终端转发端口
+description: 从你的机器、从浏览器（VM）、从 Android、在你的局域网上，或经由带 HTTPS 的开发域名，访问在终端（VM）或宿主机 shell 中启动的开发服务器。
 slug: zh-CN/手册/操作指南/vm-端口
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+你在会话的终端里启动的服务器，只会发布给**该空间**。端口面板会发现在该空间中由本应用启动的监听进程，把它们映射出来，并为每一个你可能想访问它们的位置给出一个地址。两个空间可以都监听 `5173`；它们的端口映射绝不会混在一起。
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+这里的一切都不会让机器对外开放：每条通路都由服务器在收到请求时创建，并随终端或机台一同消失。
 
-## See what is listening
+## 查看有哪些端口在监听
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. 打开会话的**终端（VM）**或宿主机 shell（在空间里或 PR 页面上）。
+2. 启动你的服务器——`pnpm dev`、`python -m http.server 8000`，什么都行。
+3. 几秒之内，终端右上角的**插头图标**上就会多出一个小圆点。点击它。
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+面板会以 `3000 → 3000` 的形式列出每个正在监听的端口及其所属进程：左边是进程绑定的端口，右边是它在本机应答的端口（只要该端口在你的机器上是空闲的，两边就是同一个数字）。每一行还会标明桌面端的 `localhost`、浏览器（VM）和 Android 是否能访问到它。
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+端口发现是被圈定的：终端（VM）是在该客户机内部进行轮询的，宿主机 shell 则是从该会话的 PTY 进程树进行轮询的。其他空间，以及你 Mac 上的其他进程，都不会被列出。
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+**此**终端中新出现的端口会被自动转发。如果你只想要自己手动添加的那些，可以在同一个面板中关闭**自动转发端口**。
 
-## Reach it from this computer
+## 从本机访问它
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+使用该行上的**复制本地 URL**——`http://localhost:3000`。转发只监听回环地址，因此你网络上的其他任何东西都看不到它。
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+如果两个空间都暴露客户机的 `5173`，而你的机器上已经占用了 `127.0.0.1:5173`，那么第二个空间会保留客户机的 `5173`，并获得一个临时本地端口。复制 URL 用的是右边那个数字。
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+在宿主机 shell 上，进程本来就在你的机器上。映射到相同的本地端口是空操作；选择一个**不同的**本地端口，则会把一个回环代理绑定到你选定的那个端口上。
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host`（或绑定 `0.0.0.0`）**并不能**让隔离的浏览器（VM）访问到 Mac 上的服务器。客户机有自己的回环地址；只有当浏览器标签页位于**同一个空间**时，服务器才会向该客户机植入一条隧道。
 
-## Reach it from the Browser (VM)
+## 从浏览器（VM）访问它
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+在**同一个会话**中打开隔离浏览器。输入 `localhost:<left-hand port>`——也就是进程绑定的那个数字。做过重映射（`5173 → 3000`）后，在该浏览器里用右侧的数字同样可以访问，所以复制 URL 在那里也能用。智能体的 `browser_use` 可以导航到其中任意一个。空间 A 里的服务器绝不会在空间 B 的浏览器中以 `localhost:5173` 出现。
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+请使用 `localhost`，不要用局域网 IP，也不要用 `--host`。客户机有自己的回环地址；隧道在那里同时监听 IPv4 和 IPv6。
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+一次打开大量连接的页面（几十个资源、一个实时重载套接字）共用同一条隧道。浏览器（VM）会把它们多路复用到同一个常驻 exec 上，因此一阵突发请求不会为每个连接生成一个进程，也不会超时变成一片白屏。
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+在同一个空间内，对于同一个端口号，终端（VM）的转发优先于宿主机 shell。跨空间则没有优先级——它们是各自独立的映射。
 
-## Reach it from Android
+## 从 Android 访问它
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+打开该空间的 **Android** 标签页。模拟器的 `localhost:<port>` 随后会被反向转发到该空间发布的端口（`adb reverse`）。一个模拟器在设备范围内是全局的：挂接空间 B 会把 `:5173` 重新指向 B，并丢弃 A 的那条。关闭标签页后，该机台植入的这些反向转发会被移除。
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS 模拟器本来就在 Mac 上——不需要反向转发。实体 iPhone 仍然需要局域网共享。
 
-## Share it on your network
+## 在你的局域网中共享它
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → 在局域网共享**会把该端口发布在 `<server-ip>:<random port>`——用于在手机上打开页面，或者当服务器运行在另一台机器上时。
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- 局域网端口始终由操作系统分配，绝不会是客户机的端口号，因此对外暴露的是一个刻意选定、可见的地址，而不是一个可以猜到的地址。
+- 在你打开它之前，它始终保持私有（仅回环），而 **⋯ → 仅本机**会把它从网络上撤下来。
 
-## Give it a name — with HTTPS
+## 给它起个名字——带 HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → 设置浏览器域名（.test）**会为该端口分配一个开发域名，例如 `myapp.test`。在浏览器（VM）里，`https://myapp.test` 随后就能加载你的服务器，并带有一把有效的锁形图标——这对任何在具名来源或安全上下文下行为不同的东西都很有用（cookie、service worker、OAuth 回调）。
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- 域名必须以 `.test` 或 `.localhost` 结尾——这两个是保留给开发的顶级域名，因此开发用名称绝不会遮蔽真实站点。
+- 域**名**在服务器上是唯一的，端口**号**则不是。两个空间可以都用 `5173`，但不能都占用 `myapp.test`。
+- 证书由你的服务器在首次需要时铸造的本地证书颁发机构签发。它的密钥存放在服务器的数据目录下，绝不进入任何客户机；隔离浏览器只信任这一把密钥，因此对真实互联网的 TLS 仍会正常校验。
+- 该域名**只在浏览器（VM）内部**解析。你在宿主机上的浏览器则改用 `localhost:<port>`。
+- 直接用 `http://myapp.test` 也可以。
 
-## Forward a port by hand
+## 手动转发端口
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+面板底部的**添加端口**可以在有任何东西监听之前（或者无论是否有东西监听）就先把一个端口映射出来。手动转发会在你的服务器重启期间保留它的地址——在那之前该行显示为*未监听*——而自动转发会在其端口消失时一并消失。在宿主机 shell 上，你还可以设置一个不同的本地端口。
 
-## How it stays contained
+## 如何保持隔离
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/zh-CN/手册/概念/机台/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/zh-CN/手册/参考/机台/#ports-and-dev-domains).
+端口以工作区和空间为键。虚拟机管理程序自身的端口映射在机器启动时就已固定，因此终端（VM）只能借助两条由服务器掌控的狭窄通道：一条预先创建好的、通往客户机的入站通路，它拒绝连向客户机并未真正监听的任何端口；以及服务器为浏览器（VM）和 Android 保持打开的反向隧道。宿主机 shell 绝不会扫描整台机器。客户机里绝不会出现任何不是服务器放在那里的监听者，而一切都会随终端或机台一起拆除。设计思路见[机台与隔离舱](/zh-CN/手册/概念/机台/#ports-without-holes)；确切的保留端口和域名规则见[机台参考](/zh-CN/手册/参考/机台/#ports-and-dev-domains)。
 
-## Related
+## 相关
 
-- [Give an agent a machine to test on](/zh-CN/手册/操作指南/使用机台/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/zh-CN/手册/参考/机台/) — reserved ports, dev TLDs,
-  defaults
+- [给智能体一台用于测试的机器](/zh-CN/手册/操作指南/使用机台/)——打开、观察和接管机台
+- [机台参考](/zh-CN/手册/参考/机台/)——保留端口、开发顶级域名、默认值

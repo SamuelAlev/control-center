@@ -1,104 +1,106 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: Довідка з конфігурації SSO
+description: Усі параметри, кінцеві точки, операції та коди помилок єдиного входу.
 slug: uk-UA/керівництво/довідка/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+Усе, що можна налаштувати для єдиного входу, — в одному місці. Значення
+зберігаються в рядках `sso_connections` бази `global.db` (за задумом — на
+весь сервер) і редагуються через **Налаштування → Сервер → Єдиний вхід** або
+RPC-операції `sso.*`. Збережений рядок — єдине джерело істини: шляху через
+змінні середовища `CC_SAML_*` / `CC_OIDC_*` немає (з’єднання, яке могло б
+надходити з двох місць, — це з’єднання, з яким екран налаштувань може
+розійтися).
 
-## Connection fields
+## Поля з’єднання
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| Поле                   | Застосовується до | Типово          | Значення                                                                                                                                            |
+| ---------------------- | ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | обидва            | вимк.           | входи можуть використовувати це з’єднання                                                                                                           |
+| `idpMetadataXml`       | SAML              | —               | XML `EntityDescriptor` вашого IdP (потрібно, щоб увімкнути)                                                                                         |
+| `spEntityId`           | SAML              | `<origin>/saml` | наш entity ID, зафіксований на випадок зміни джерела                                                                                                |
+| `emailAttribute`       | SAML              | `email`         | атрибут з адресою електронної пошти; запасний варіант — NameID у формі адреси                                                                       |
+| `displayNameAttribute` | SAML              | `displayName`   | атрибут відображуваного імені                                                                                                                       |
+| `groupsAttribute`      | SAML              | `groups`        | атрибут назв груп                                                                                                                                   |
+| `clockSkewSeconds`     | SAML              | 90              | допуск на розбіжність під час перевірки часу життя                                                                                                  |
+| `allowIdpInitiated`    | SAML              | вимк.           | приймати незапрошені відповіді Response (без `InResponseTo`)                                                                                        |
+| `wantResponseSigned`   | SAML              | вимк.           | вимагати підпис у корені Response (підписи Assertion обов’язкові завжди)                                                                            |
+| `issuer`               | OIDC              | —               | базова URL-адреса видавця (потрібно, щоб увімкнути)                                                                                                 |
+| `clientId`             | OIDC              | —               | ідентифікатор публічного клієнта (потрібно, щоб увімкнути)                                                                                          |
+| `clientSecret`         | OIDC              | —               | лише для конфіденційних клієнтів; зберігається у файлі секретів із правами 0600, ніколи не в базі даних — через RPC доступний лише для запису (`sso.getConfig` повідомляє `clientSecretPresent`) |
+| `groupsClaim`          | OIDC              | `groups`        | клейм із назвами груп                                                                                                                               |
+| `defaultRole`          | обидва            | `member`        | роль, коли жодна група не зіставлена, — ніколи `owner`                                                                                              |
+| `groupRoleMap`         | обидва            | `{}`            | група → роль; зіставлення з роллю owner відхиляються під час збереження                                                                                   |
+| `autoMember`           | обидва            | увімк.          | автоматично додавати користувачів до кожного робочого простору під час першого входу                                                                |
+| `allowJit`             | обидва            | увімк.          | створювати невідомих користувачів під час входу                                                                                                     |
 
-## Process configuration
+## Конфігурація процесу
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+З’єднання SSO не заповнюються із середовища. Єдиний прапорець процесу, що
+залишився, стосується **передавання браузеру**, а не рядка з’єднання:
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| Змінна / прапорець                               | Значення                                                                                                                                                              |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | джерело, на яке SSO-зворотні виклики перекидають браузер (облікові дані їдуть у фрагменті URL). Якщо не задано, передавання залишається в межах того самого джерела.   |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+Сама URL-адреса видавця має бути `https` (`http` приймають лише для видавців
+на loopback: `localhost`, `127.0.0.1` і `::1`).
 
-## HTTP endpoints
+## HTTP-кінцеві точки
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| Кінцева точка                                    | Автентифікація      | Призначення                                                                                                                                                                                                     |
 | ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| `GET /saml/login?relay=…`                        | немає (перенаправлення) | розпочати вхід, ініційований SP; `relay=desktop` передає керування застосунку, `relay=web-popup` надсилає postMessage вкладці підключення, що очікує (вона оголошує свій `client_origin`, який беруть до уваги, лише якщо йому довіряє список дозволених джерел) |
+| `POST /saml/acs`                                 | немає (POST від IdP) | споживач твердження — перевіряє, створює користувача, випускає облікові дані                                                                                                                                     |
+| `GET /saml/metadata`                             | немає                | наш SP `EntityDescriptor`                                                                                                                                                                                       |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | немає                | обмін OIDC; `relay=desktop` передає керування застосунку, `relay=web-popup` — вкладці підключення, що очікує (та сама умовність `client_origin`)                                                                |
+| `GET /auth/providers`                            | немає, CORS `*`      | проба екрана підключення: запропоновані з’єднання SSO (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                    |
+| `/scim/v2/Users…`                                | Bearer (токен SCIM)  | Users: створення/отримання/список+фільтр/PUT/PATCH/DELETE                                                                                                                                                       |
+| `/scim/v2/Groups`                                | Bearer               | лише читання; push груп за задумом відповідає 501                                                                                                                                                               |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer               | документ можливостей                                                                                                                                                                                            |
 
-## RPC ops
+## RPC-операції
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+Усі операції `sso.*` мають область сервера й доступні лише **власнику
+сервера** (операторові інсталяції, `ServerAuthority.serverOwner`). Володіння
+робочим простором цього не дає; саме лише парування ніколи їх не надає.
 
-| Op                        | Purpose                                                                                                                                                       |
+| Операція                  | Призначення                                                                                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | збережене з’єднання для певного типу                                                                                                                          |
+| `sso.saveConfig`          | перевірити, зберегти й застосувати на льоту                                                                                                                    |
+| `sso.status`              | прапорці «увімкнено/налаштовано», наявність токена SCIM, канонічне джерело                                                                                    |
+| `sso.testConnection`      | перевірити з’єднання без обміну через браузер (SAML: розбір метаданих + побудова AuthnRequest; OIDC: виявлення видавця), з необов’язковими незбереженими значеннями з екрана |
+| `sso.spMetadata`          | випустити SP `EntityDescriptor` для джерела                                                                                                                   |
+| `sso.setPairingEnabled`   | дозволити/заборонити ручне парування (коди запрошень, ключі парування); відмова вимкнути його, поки немає жодного робочого з’єднання SSO, захищає від блокування доступу |
+| `sso.sessionPolicy`       | прочитати максимальний вік облікових даних пристрою та час простою для інсталяції (у хвилинах; `0` = не задано)                                                |
+| `sso.setSessionPolicy`    | задати ці межі; застосовуються під час перевірки пристрою, клієнтам не повідомляються                                                                          |
+| `sso.scimRegenerateToken` | згенерувати й повернути bearer-токен SCIM (один раз)                                                                                                          |
 
-## Validation error codes
+## Коди помилок перевірки
 
-`cc_saml_verify_response` failures carry a stable code:
+Невдачі `cc_saml_verify_response` супроводжуються стабільним кодом:
 
-| Code                   | Meaning                                                                          |
+| Код                    | Значення                                                                          |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | підпис відсутній/недовірений/підроблений або заборонений алгоритм/перетворення    |
+| `expired`              | поза межами `NotBefore`/`NotOnOrAfter` (за межами розбіжності)                    |
+| `audience`             | обмеження аудиторії не вказує на нас                                              |
+| `destination`          | призначення відповіді — не наш ACS                                                |
+| `request_match`        | `InResponseTo` не збігається із запитом, що очікує, або відповідь незапрошена, коли це заборонено |
+| `issuer`               | видавець — не налаштований IdP                                                    |
+| `recipient`            | одержувач підтвердження суб’єкта — не наш ACS                                     |
+| `malformed`            | збій на рівні XML/схеми                                                          |
+| `status`               | статус, повідомлений IdP, — не Success                                            |
+| `invalid` / `internal` | усе інше / збій на стику                                                          |
 
-## Database surfaces
+## Поверхні бази даних
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections` (global.db) — один рядок на тип, ЗА ЗАДУМОМ НАСКРІЗНИЙ ДЛЯ
+  ВСІХ РОБОЧИХ ПРОСТОРІВ.
+- `users.sso_subject` + `users.sso_issuer` — закріплення суб’єкта провайдера,
+  унікальне для `(issuer, subject)` через частковий індекс.
+- `users.deactivated_at` — позначка деактивації SCIM.
+- Bearer-токен SCIM і секрет клієнта OIDC зберігаються у файлі секретів із
+  правами 0600, ніколи не в базі даних.

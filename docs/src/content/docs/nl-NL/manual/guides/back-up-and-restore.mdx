@@ -1,162 +1,170 @@
 ---
-title: Back up and restore
-description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+title: Back-uppen en herstellen
+description: Maak een momentopname van de installatie, verplaats een werkruimte tussen machines, herstel één werkruimte of allemaal, en bewaar kopieën ergens anders.
 slug: nl-NL/handleiding/gidsen/back-uppen-en-herstellen
+sourceHash: 138d58bb935019bb36955007472c61051e0cc39e
 ---
 
-This guide covers the five things people actually do with backups: take one, collect it,
-move a workspace, put one back, and keep copies off the machine. For the exact shape of
-every artifact and operation, see the
-[backup reference](/nl-NL/handleiding/referentie/backup/).
+Deze handleiding behandelt de vijf dingen die mensen daadwerkelijk met back-ups doen:
+er een maken, hem ophalen, een werkruimte verplaatsen, er een terugzetten en kopieën
+buiten de machine bewaren. Voor de exacte vorm van elk artefact en elke handeling, zie de
+[back-upreferentie](/nl-NL/handleiding/referentie/backup/).
 
-Everything here lives at **Settings → Server → Backup & restore**.
+Alles hier staat onder **Instellingen → Server → Back-up en herstel**.
 
-## Prerequisites
+## Vereisten
 
-- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
-- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+- Een **volledige client** — de desktop- of webapp. Een gekoppelde telefoon kan dit allemaal niet starten, en dat is bewust.
+- Voor het maken, opvragen, downloaden of verwijderen van een **momentopname van de installatie**: de **eigenaar** van de installatie.
+- Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren, **eigenaar** om te importeren of te verwijderen.
+- Voor downloads en uploads: een **rechtstreekse** verbinding met de server. De relay die dit bemiddelt, vervoert RPC-frames, geen bestandsoverdrachten, en de overdrachtsknoppen schakelen zichzelf uit met een melding zodra je via een relay verbonden bent.
 
-:::caution[Install snapshots are manual]
-**Back up now** still creates a whole-install snapshot only on request. The built-in
-**Workspace backup** pipeline can instead take a workspace database backup once a week
-and remove that workspace's backups older than 30 days. It does not copy `global.db`,
-other workspaces, or files beside the database. Keep off-machine copies separately.
+:::caution[Momentopnamen van de installatie zijn handmatig]
+**Nu back-uppen** maakt nog steeds alleen op verzoek een momentopname van de hele
+installatie. De ingebouwde pipeline **Workspace backup** kan in plaats daarvan wekelijks
+een back-up van de werkruimtedatabase maken en de back-ups van die werkruimte verwijderen
+die ouder zijn dan 30 dagen. Hij kopieert `global.db`, andere werkruimtes of bestanden
+naast de database niet mee. Bewaar kopieën buiten de machine apart.
 :::
 
-## What a backup covers
+## Wat een back-up omvat
 
-Both artifacts are **databases only**:
+Beide artefacten zijn **alleen databases**:
 
-- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
-- A **workspace export** is that single `workspace.db` file.
+- Een **momentopname van de installatie** is een map met tijdstempel: `manifest.json`, `global.db` en per werkruimte één `<workspaceId>/workspace.db`.
+- Een **werkruimte-export** is dat ene bestand `workspace.db`.
 
-Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
-`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
-disposable and some of it is not — the
-[full table is in the reference](/nl-NL/handleiding/referentie/backup/#what-a-backup-does-not-contain),
-and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+Geen van beide bevat de rest van de gegevensmap: `secrets.json` (koppelingssleutels,
+inloggegevens van aanbieders, SSO), de `blobs/` van een werkruimte (afbeeldingen die in
+berichten zijn geplakt), `skills/`, `agents/`, `chat_credentials/`, opgenomen
+vergaderaudio of rig-afbeeldingen. Sommige daarvan kun je missen, andere niet — de
+[volledige tabel staat in de referentie](/nl-NL/handleiding/referentie/backup/#what-a-backup-does-not-contain),
+en dat afdekken is waar de [sectie buiten de machine](#back-ups-buiten-de-machine-kopiëren) voor dient.
 
-## Take a snapshot of the whole install
+## Een momentopname van de hele installatie maken
 
-1. Open **Settings → Server → Backup & restore**.
-2. Under **Install snapshots**, press **Back up now**.
-3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+1. Open **Instellingen → Server → Back-up en herstel**.
+2. Druk onder **Momentopnamen van de installatie** op **Nu back-uppen**.
+3. De melding noemt de map die is weggeschreven, op de serverhost. De nieuwe momentopname staat bovenaan de lijst.
 
-The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
-consistent against a live database, so there is no maintenance window and no need to stop
-agents.
+De server blijft de hele tijd draaien. Elk bestand wordt geschreven met `VACUUM INTO`,
+wat consistent is tegen een live database, dus er is geen onderhoudsvenster en je hoeft
+geen agenten te stoppen.
 
-Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+Elke rij in de lijst toont het tijdstempel, de grootte op schijf, hoeveel werkruimtes er
+zijn vastgelegd en of de momentopname **Volledig** of **Onvolledig** is. Onvolledig
+betekent dat het manifest ontbreekt of bestanden noemt die er niet zijn — een back-up die
+is onderbroken door een crash of een volle schijf. Die blijven bewust in de lijst staan:
+een momentopname die je niet ziet, is er een waarvan je denkt dat je hem hebt. Een
+onvolledige momentopname kan de hele installatie niet herstellen, maar de
+werkruimtebestanden die er wel in zitten kun je nog steeds één voor één overnemen.
 
-A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+Een rij kan ook **_n_ werkruimtes niet vastgelegd** zeggen. Dat is een werkruimte die wel
+geregistreerd is maar nooit beschreven (er is nog geen bestand), of een waarvan de kopie
+is mislukt — kijk in het serverlog.
 
-## Schedule workspace backups and retention
+## Back-ups van werkruimtes en bewaring plannen
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
-**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
-**Back up workspace**, followed by **Delete backups older than** (30 days by
-default). The second node runs only after the backup succeeds. You can change
-the retention days on the node or disable the schedule. If the server is offline
-at the scheduled time, the schedule catches up once when it comes back, rather
-than replaying every missed week.
+Open **Instellingen → Pipelines → Pipelinesjablonen** voor de werkruimte en zoek
+**Workspace backup**. Het ingeschakelde schema draait elke zondag om 03:00 UTC:
+**Back up workspace**, gevolgd door **Delete backups older than** (standaard 30 dagen).
+De tweede node draait pas nadat de back-up is gelukt. Je kunt de bewaartermijn in dagen
+op de node aanpassen of het schema uitschakelen. Is de server op het geplande tijdstip
+offline, dan haalt het schema het één keer in zodra hij terug is, in plaats van elke
+gemiste week opnieuw af te spelen.
 
-Workspace backups live on the server under
-`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
-node deletes only old backups for this workspace; it never deletes install snapshots
-or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+Back-ups van werkruimtes staan op de server onder
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. De bewaarnode
+verwijdert alleen oude back-ups van deze werkruimte; hij verwijdert nooit momentopnamen
+van de installatie of back-ups van andere werkruimtes. Deze bestanden bevatten alleen de
+database. Kopieer ze apart als je ze buiten de machine wilt bewaren.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+Deze back-ups staan los van de lijst **Momentopnamen van de installatie**. Gebruik om er
+een te herstellen **Werkruimtegegevens → Importeren** met het serverpad van de
+`workspace.db` van de back-up. Importeren vervangt de huidige database van die
+werkruimte, dus exporteer die eerst als je het herstellen misschien ongedaan wilt maken.
 
-## Delete an install snapshot
+## Een momentopname van de installatie verwijderen
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
-and use **Delete snapshot** in the danger section. Confirm its name. The entire
-snapshot directory is permanently removed from the server; download it first if
-you need a copy. A workspace backup pipeline never deletes these snapshots.
+Klap onder **Momentopnamen van de installatie** de momentopname uit, ook een
+onvolledige, en gebruik **Momentopname verwijderen** in de gevarenzone. Bevestig de naam.
+De hele map van de momentopname wordt definitief van de server verwijderd; download hem
+eerst als je een kopie nodig hebt. Een pipeline voor werkruimteback-ups verwijdert deze
+momentopnamen nooit.
 
-## Collect a copy on your own machine
+## Een kopie op je eigen machine ophalen
 
-The paths the page shows are on the machine running `cc_server`. When that is not the
-machine you are sitting at, use the **Download** buttons:
+De paden die de pagina toont, staan op de machine waarop `cc_server` draait. Als dat niet
+de machine is waar je achter zit, gebruik dan de knoppen **Downloaden**:
 
-- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
-- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Naast elke **werkruimte** onder **Werkruimtegegevens** → **Downloaden**, voor één `.db`-bestand.
+- Naast elke **momentopname** onder **Momentopnamen van de installatie** → **Downloaden**, voor de hele momentopname als `.zip`.
 
-On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+Op de desktop kies je waar het bestand terechtkomt en noemt de melding het pad; op het web
+gaat het naar de downloads van de browser. In beide gevallen melden ze de voortgang in
+bytes, want dit zijn de twee payloads die in de gigabytes kunnen lopen.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+Beide maken op het moment dat je op de knop drukt een verse kopie, streamen die en
+verwijderen daarna de kopie op de server — een download is niet “het bestand ophalen dat
+de exportknop eerder heeft gemaakt”.
 
-Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
-restoring it a copy back.
+Het uitpakken van een archief van een momentopname herstelt de indeling van de
+momentopname exact, en dat is wat herstellen een kwestie van terugkopiëren maakt.
 
-## Move a workspace to another install
+## Een werkruimte naar een andere installatie verplaatsen
 
-One workspace is one database file, so handing it over is a file operation.
+Eén werkruimte is één databasebestand, dus het overdragen is een bestandsbewerking.
 
-1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
-2. On the **destination** server, create (or pick) the workspace that will receive it.
-3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+1. Op de **bron**server: **Instellingen → Server → Back-up en herstel → Werkruimtegegevens**, klap de werkruimte uit en druk op **Downloaden**.
+2. Maak op de **doel**server de werkruimte aan die hem ontvangt (of kies er een).
+3. Klap die werkruimte uit en druk onder **Herstellen vanaf dit apparaat** op **Bestand kiezen en uploaden**. Kies de `.db` die je hebt gedownload.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Staan beide servers op de machine waar je achter zit, dan doen **Op server opslaan** plus
+**Importeren** → **Bestand kiezen** hetzelfde zonder de omweg; de paden in het
+importdialoogvenster worden opgelost op de serverhost.
 
-:::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+:::caution[Importeren vervangt alles]
+Importeren overschrijft alles wat de doelwerkruimte nu bevat, en dat kan niet ongedaan
+worden gemaakt. Exporteer de doelwerkruimte eerst als er iets in staat dat je misschien
+terug wilt.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+Twee dingen zijn toegestaan en worden gelogd in plaats van geweigerd: een bestand
+importeren waarvan het vastgelegde werkruimte-id afwijkt van het doel (zo dupliceer je
+een werkruimte of herstel je hem onder een nieuw id), en een bestand importeren uit een
+**andere installatie**. In het tweede geval horen de gekoppelde apparaten en
+gebruikers-id's van het bestand bij de installatie waar het vandaan komt en werken ze hier
+niet — de eigen gegevens van de werkruimte zijn intact, maar controleer het lidmaatschap
+opnieuw nadat je hem hebt overgenomen.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Tokens van chatbots staan naast de database, niet erin, dus een werkruimte die je aan
+iemand anders geeft, bevat geen actieve inloggegevens. De ontvangende installatie verbindt
+zijn eigen tokens opnieuw.
 
-## Restore one workspace from a snapshot
+## Eén werkruimte uit een momentopname herstellen
 
-1. Under **Install snapshots**, expand the snapshot you want.
-2. Find the workspace's row and press **Restore**.
-3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+1. Klap onder **Momentopnamen van de installatie** de momentopname uit die je wilt.
+2. Zoek de rij van de werkruimte en druk op **Herstellen**.
+3. Bevestig. Alles wat die werkruimte heeft gedaan sinds de momentopname is gemaakt, gaat verloren.
 
-This is the same operation as an import, pointed at the snapshot's copy of that
-workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+Dit is dezelfde handeling als een import, gericht op de kopie van dat werkruimtebestand in
+de momentopname — bewust, zodat er geen tweede mechanisme is dat hetzelfde bestand anders
+zou kunnen behandelen.
 
-A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
-**Path on the server** in a copy field, and the row's title is the old workspace id, so
-you have both halves of that path in front of you.
+Een rij kan **Staat niet meer op deze server** zeggen, met **Herstellen** uitgeschakeld:
+de momentopname bevat een werkruimte die deze installatie niet meer heeft. Haal hem
+handmatig terug — maak een werkruimte aan en importeer daaronder onder
+**Werkruimtegegevens** uit `<snapshot path>/<old workspace id>/workspace.db`. De
+uitgeklapte momentopname toont zijn eigen **Pad op de server** in een kopieerveld, en de
+titel van de rij is het oude werkruimte-id, dus je hebt beide helften van dat pad voor je.
 
-## Restore a whole install
+## Een hele installatie herstellen
 
-There is no button for this, and there should not be: it replaces the databases the
-running server is holding open.
+Hiervoor is geen knop, en die hoort er ook niet te zijn: hij vervangt de databases die de
+draaiende server openhoudt.
 
-1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
-2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+1. **Stop `cc_server`.** Als je de desktopapp met de ingebouwde server draait, sluit dan de app af.
+2. Kopieer de inhoud van de momentopname over de gegevensmap. De indeling van de momentopname weerspiegelt de live-indeling, dus dit is een gewone kopie:
 
    ```bash
    # macOS default; see the CLI reference for other platforms
@@ -171,23 +179,26 @@ running server is holding open.
    done
    ```
 
-3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
-4. Start the server again.
+3. Verwijder alle `-wal`- en `-shm`-bestanden naast de databases die je hebt vervangen. Ze horen bij de oude bestanden, en een verouderd bestand naast een herstelde database is een risico op corruptie.
+4. Start de server opnieuw.
 
-The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
-its data but not its credentials: paired devices, provider tokens and SSO settings have to
-be re-established, or restored from wherever you kept that file. Restoring onto the same
-host, where `secrets.json` was never lost, keeps everything.
+De momentopname bevat geen `secrets.json`, dus een installatie die op een **nieuwe** host
+wordt hersteld, behoudt zijn gegevens maar niet zijn inloggegevens: gekoppelde apparaten,
+tokens van aanbieders en SSO-instellingen moeten opnieuw worden ingesteld, of hersteld
+vanaf de plek waar je dat bestand hebt bewaard. Herstellen op dezelfde host, waar
+`secrets.json` nooit verloren is gegaan, behoudt alles.
 
-## Copy backups off the machine
+## Back-ups buiten de machine kopiëren
 
-A snapshot on the same disk as the database it copied protects you from a bad import, not
-from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+Een momentopname op dezelfde schijf als de database die hij heeft gekopieerd, beschermt je
+tegen een slechte import, niet tegen de schijf. Niets in Control Center stuurt ergens een
+kopie naartoe, dus dit deel is aan jou.
 
-### Sync the snapshots
+### De momentopnamen synchroniseren
 
-Snapshots are immutable once written and named by timestamp, so any sync tool handles
-them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+Momentopnamen zijn onveranderlijk zodra ze zijn geschreven en hebben een tijdstempel als
+naam, dus elk synchronisatieprogramma gaat er goed mee om. Sluit `transfer/` uit, dat een
+werkbank is voor lopende downloads en uploads:
 
 ```bash
 DATA_DIR="$HOME/Library/Application Support/control-center"
@@ -204,22 +215,22 @@ aws s3 sync --exclude 'transfer/*' \
 restic backup --exclude 'transfer' "$DATA_DIR/backups"
 ```
 
-`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
-keep snapshots longer than the host does.
+`--delete` spiegelt je lokale opruiming naar de externe locatie. Laat het weg als je wilt
+dat de externe locatie momentopnamen langer bewaart dan de host.
 
-:::danger[Never sync the live databases directly]
-Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
-`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
-`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
-result is a file that often opens and is silently missing recent writes, or does not open
-at all. Copy the **snapshot**, which was written under a read transaction, or take one
-with `VACUUM INTO` as below.
+:::danger[Synchroniseer de live databases nooit rechtstreeks]
+Wijs rsync, `aws s3 sync` of een back-upagent op bestandsniveau niet naar `global.db` of
+`<workspaceId>/workspace.db` terwijl de server draait. Een live SQLite-database heeft een
+`-wal`-begeleidingsbestand, en een kopie die bestand voor bestand gaat, legt de twee op
+verschillende momenten vast — het resultaat is een bestand dat vaak opent en stilzwijgend
+recente schrijfacties mist, of helemaal niet opent. Kopieer de **momentopname**, die onder
+een leestransactie is geschreven, of maak er een met `VACUUM INTO` zoals hieronder.
 :::
 
-### Include what a snapshot leaves out
+### Meenemen wat een momentopname weglaat
 
-To be able to rebuild the install rather than just its data, copy these too. They are
-ordinary files, safe to copy while the server runs:
+Om de installatie te kunnen herbouwen en niet alleen de gegevens, kopieer je deze ook mee.
+Het zijn gewone bestanden, veilig om te kopiëren terwijl de server draait:
 
 ```bash
 rsync -a \
@@ -234,20 +245,22 @@ rsync -a --relative \
   backup-host:/srv/control-center-backups/workspace-files/
 ```
 
-`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
-on the install. Wherever it lands must be at least as protected as the server host —
-encrypted at rest, and not a bucket anyone else can read.
+`secrets.json` staat op `0600` en bevat elke koppelingssleutel, elk inloggegeven van een
+aanbieder en elke SSO-instelling van de installatie. Waar het ook terechtkomt, moet het
+minstens zo goed beschermd zijn als de serverhost — versleuteld in rust, en niet in een
+bucket die anderen kunnen lezen.
 
-Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
-(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
-large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+Sla `spaces/` over (copy-on-write-worktrees, opnieuw ingericht vanuit je repo's),
+`pr_clones/` (een cache), `models/` (opnieuw gedownload), `media_cache/` en `rigs/`
+(machinestatus, en groot). Opgenomen vergaderaudio onder `meetings/` is het meenemen waard
+als je vergaderingen bewaart.
 
-### Schedule a whole-install snapshot outside the app
+### Een momentopname van de hele installatie buiten de app plannen
 
-The built-in pipeline backs up only one workspace. For an unattended **whole-install**
-snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
-client that is the install owner. A host-side timer can use `VACUUM INTO` against
-the live databases:
+De ingebouwde pipeline maakt maar van één werkruimte een back-up. Voor een onbeheerde
+momentopname van de **hele installatie** is er geen CLI-subcommando, en de snapshot-RPC
+vereist een gekoppelde volledige client die de eigenaar van de installatie is. Een timer
+op de host kan `VACUUM INTO` gebruiken op de live databases:
 
 ```bash
 #!/usr/bin/env bash
@@ -266,17 +279,19 @@ for db in "$DATA_DIR"/*/workspace.db; do
 done
 ```
 
-Run it as the same user that owns the data directory, from cron or a systemd timer, and
-sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+Voer het uit als dezelfde gebruiker die eigenaar is van de gegevensmap, vanuit cron of een
+systemd-timer, en synchroniseer `DEST` daarna van de host af. `VACUUM INTO` vereist SQLite
+3.27 of nieuwer.
 
-Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
-stop being an honest record of what the server itself produced.
+Schrijf het **buiten** `<dataDir>/backups/`. Een zelfgemaakte map daar heeft geen
+`manifest.json`, dus de app zou hem als een onvolledige momentopname weergeven en de
+lijst zou ophouden een eerlijk overzicht te zijn van wat de server zelf heeft gemaakt.
 
-### Prune old whole-install snapshots
+### Oude momentopnamen van de hele installatie opruimen
 
-You can delete individual install snapshots in the app. For a host-side retention
-policy, keep the workspace backup directory separate from the install snapshots:
+Je kunt afzonderlijke momentopnamen van de installatie in de app verwijderen. Houd voor
+een bewaarbeleid op de host de map met werkruimteback-ups gescheiden van de momentopnamen
+van de installatie:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
@@ -284,49 +299,51 @@ find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
   -mtime +30 -exec rm -rf {} +
 ```
 
-Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
-you are protecting against is often "the last backup also has the problem".
+Controleer de uitvoer van een run met `-print` voordat je `-exec` toevoegt. Bewaar er meer
+dan één: het falen waartegen je je beschermt, is vaak “de laatste back-up heeft ook het
+probleem”.
 
-## Check that a backup is good
+## Controleren of een back-up goed is
 
-A backup nobody has restored is a hypothesis.
+Een back-up die niemand heeft hersteld, is een hypothese.
 
-Cheap check — the file opens and its pages are intact:
+Goedkope controle — het bestand opent en de pagina's zijn intact:
 
 ```bash
 sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
 ```
 
-Real check — adopt it. Create a scratch workspace on a non-production install, import a
-workspace file into it, and look at whether the spaces, tickets and messages you expect
-are there. That exercises the same path a real restore takes, including the FTS rebuild,
-and it is the only check that tells you the backup is restorable rather than merely
-readable.
+Echte controle — neem hem over. Maak een wegwerpwerkruimte aan op een
+niet-productie-installatie, importeer een werkruimtebestand erin en kijk of de ruimtes,
+tickets en berichten die je verwacht er zijn. Dat doorloopt hetzelfde pad als een echte
+herstelactie, inclusief de FTS-herbouw, en het is de enige controle die je vertelt dat de
+back-up te herstellen is en niet alleen leesbaar.
 
-Do this once when you set backups up, and again whenever you change where they are stored.
+Doe dit één keer wanneer je back-ups opzet, en opnieuw telkens wanneer je wijzigt waar ze
+worden bewaard.
 
-## Troubleshooting
+## Problemen oplossen
 
-| Symptom                                                                  | Cause and fix                                                                                                            |
+| Symptoom                                                                  | Oorzaak en oplossing                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
-| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
-| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+| Download- en uploadknoppen zijn uitgeschakeld met een melding over een relay | Je bent verbonden via de relay, die geen bestandsoverdrachten vervoert. Verbind rechtstreeks                          |
+| “De server weigerde”                                                     | Rol. Een momentopname van de installatie maken of opvragen vereist de beheerder van de installatie. Een werkruimte downloaden vereist beheerder, er een herstellen vereist eigenaar, een zip van een hele momentopname vereist de beheerder van de installatie |
+| “Deze server heeft geen back-upoppervlak”                                | Op de host is geen back-uppoort aangesloten — een demoserver. De handelingen ontbreken in plaats van dat ze worden geweigerd                          |
+| “Het bestand is groter dan de server accepteert”                         | Uploads zijn beperkt tot 8 GiB. Zet het bestand op de serverhost en gebruik in plaats daarvan **Importeren** → **Bestand kiezen**                 |
+| Import geweigerd: geen werkruimtedatabase van Control Center             | Het bestand heeft geen rij `workspace_meta` — het is geen werkruimte-export, of het is afgekapt. Er is niets vervangen             |
+| Een momentopname staat als **Onvolledig** in de lijst                    | Het manifest ontbreekt of noemt bestanden die er niet zijn. Maak een nieuwe; neem ondertussen afzonderlijke werkruimtebestanden eruit over |
+| Een momentopname meldt dat werkruimtes niet zijn vastgelegd              | Die werkruimtes zijn nooit beschreven, of hun kopie is mislukt. Kijk in het serverlog                                  |
+| Een herstelde installatie heeft geen forge- of SSO-inloggegevens         | `secrets.json` zit niet in een momentopname. Herstel het vanaf de plek waar je het hebt bewaard, of verbind de aanbieders opnieuw                     |
+| Een herstelde werkruimte mist geplakte afbeeldingen                      | Blobs staan naast de database, niet erin. Kopieer `<workspaceId>/blobs/` ook mee                                     |
 
-## Related guides
+## Gerelateerde handleidingen
 
-- [Run a headless server](/nl-NL/handleiding/gidsen/headless-server-draaien/): where the data directory comes from
-- [Connect to a remote server](/nl-NL/handleiding/gidsen/externe-server-verbinden/): direct versus relayed connections
-- [Pair a device](/nl-NL/handleiding/gidsen/apparaat-koppelen/): the credential the transfer routes sign with
+- [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/): waar de gegevensmap vandaan komt
+- [Verbinden met een externe server](/nl-NL/handleiding/gidsen/externe-server-verbinden/): rechtstreekse verbindingen versus verbindingen via een relay
+- [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/): het inloggegeven waarmee de overdrachtsroutes ondertekenen
 
-## Related concepts and reference
+## Gerelateerde concepten en referentie
 
-- [Backup, export and import](/nl-NL/handleiding/referentie/backup/): every operation, route, field and limit
-- [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/): why one workspace is one file
-- [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/): the data directory layout
+- [Backup, export en import](/nl-NL/handleiding/referentie/backup/): elke handeling, route, veld en limiet
+- [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/): waarom één werkruimte één bestand is
+- [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/): de indeling van de gegevensmap

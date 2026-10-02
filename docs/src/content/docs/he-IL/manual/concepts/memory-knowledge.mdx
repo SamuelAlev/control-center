@@ -1,199 +1,185 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: זיכרון וידע
+description: איך Control Center מאחסן ידע של סוכנים, מה באמת מגיע להנחיה של הסוכן ולמה קריאות מהזיכרון הן כשל פתוח.
 slug: he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## למה נועד הזיכרון
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+בלי זיכרון, כל שיחה עם סוכן מתחילה מאפס: אותה מוסכמה צריכה להיות מוסברת
+מחדש, אותה החלטה נדונה מחדש, אותו מבוי סתום נחקר מחדש. הזיכרון הוא המאגר
+ברמת סביבת העבודה ששורד הרצות, והוא קיים כדי שידע שאחד הסוכנים הפיק יהיה
+ניתן למציאה בידי סוכן אחר, מאוחר יותר.
 
-It has three layers and they answer different questions:
+יש לו שלוש שכבות, והן עונות על שאלות שונות:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **עובדות** — מה נכון (מוסכמה, תוצאה, החלטה).
+2. **מדיניות** — מה הסוכנים חייבים לעשות בקשר לזה (כלל נורמטיבי).
+3. **זיכרון עבודה** — מה סוכן אחד היה באמצעו.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+ההבחנה חשובה מפני שהן מגיעות לסוכן בדרכים שונות. עובדות מחפשים. מדיניות
+נדחפת. זיכרון עבודה הוא פרטי.
 
-## Facts
+## עובדות
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` הוא יחידת ידע המשויכת לסביבת עבודה ולתחום.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| מאפיין                                     | מהו                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `domain`                                   | תחום הידע ("conventions", "decisions", "codebase")                        |
+| `topic`                                    | תווית נושא קצרה                                                           |
+| `content`                                  | טקסט הידע                                                                 |
+| `confidence`                               | 0.0–1.0, מאותחל מהמקור ועולה עם אזכור חוזר                                |
+| `memoryType`                               | סוג העובדה — מניע את עקומת הדעיכה הזמנית שלה                              |
+| `veracity`                                 | כיצד נודעה — מזריע את הביטחון וקובע את גודל התוספת בכל אזכור חוזר         |
+| `sourceObservationIds`                     | אילו תצפיות הובילו אליה                                                   |
+| `supersededBy`                             | העובדה החדשה שהחליפה אותה, אם יש                                          |
+| `validUntil`, `recallCount`, `mentionCount` | אותות תפוגה ושימוש שנעשה בהם בשליפה                                        |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+שתי השורות האחרונות הן אלה שאנשים מפספסים, והן מה שקובע _איזו_ עובדה תצוף.
+`memoryType` נושא פרמטרי דעיכת Weibull לכל סוג, כך שהתחייבות תחומה בזמן דועכת
+מהר בעוד עובדת פרופיל יציבה אינה דועכת. `veracity` מתעד את המקור — נאמרה בידי
+אדם (משקל 1.0), הוסקה בידי סוכן (0.7), הופקה בידי כלי (0.5), יובאה (0.6) —
+והמשקל הזה מזריע את ביטחון הפתיחה של העובדה.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+עובדות לעולם אינן נערכות במקום כשסותרות אותן. כתיבת עובדה מפעילה זיהוי
+התנגשויות מול עובדות באותו תחום ובאותו נושא ומחליפה את המפסידה, תוך רישום שורת
+התנגשות. שובל הביקורת הוא העיקר: תמיד אפשר לראות מה האמינו קודם ומה החליף את
+זה.
 
-## Policies
+## מדיניות
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` הוא כלל נורמטיבי שנגזר מעובדות, משויך לסביבת עבודה ולתחום, עם
+דגל פעיל ו-`requiredRole` אופציונלי.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+כל מדיניות **פעילה** בסביבת העבודה מוזרקת ל**כל** שליחה, בלי סינון — אין
+סינון לפי תחום, תפקיד, משימה או מרחב. כדאי לדעת זאת לפני שכותבים את המדיניות
+העשרים, כי מדיניות מתחרה על אותו חלון הקשר כמו המשימה. זו גם הסיבה ש-
+`requiredRole` במדיניות הוא מייעץ: הוא מתאר למי מיועד הכלל, אבל אינו מונע
+מהכלל להגיע לכל האחרים.
 
-## Domains
+## תחומים
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` מקבץ עובדות ומדיניות בתוך סביבת עבודה. תחומים נותנים לידע מבנה
+ארגוני והם היחידה שכנגדה נכתבות הענקות גישה — אבל ראו את האזהרה שלהלן לפני
+שאתם מתייחסים לתחום כאל גבול סודיות.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+תחום הוא או ברמת סביבת העבודה כולה (`architecture`) או משויך למאגר אחד
+(`repo:<slug>/architecture`). אותו שם בשני ההיקפים הוא שני מאגרים בלתי
+תלויים: עובדה שנכונה לגבי בסיס קוד אחד אינה דורסת את זו שברמת סביבת העבודה.
+`search_memory` והפתיח של השליחה מדרגים זיכרון המשויך למאגר ראשון כשהסוכן עובד
+במאגר הזה; הם אינם מסננים החוצה את השאר. העבירו `repo` ל-`propose_fact` /
+`propose_policy` / `search_memory` כדי לכתוב או לחזק את ההיקף הזה.
 
-## Access control is fail-open for reads
+## בקרת הגישה היא כשל פתוח בקריאות
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` ממפה תפקיד סוכן ותחום לאחת משלוש רמות הרשאה:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| הרשאה  | משמעות                                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------- |
+| `none` | אין גישה                                                                                            |
+| `read` | אפשר לחפש ולשלוף עובדות                                                                             |
+| `write` | נדרשת ב-`propose_policy`. כתיבת עובדות (`propose_fact`, `supersede_fact`) אינה מותנית בהענקת גישה    |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[הענקת גישה חסרה משמעה קריאה, לא סירוב]
+כשאין שורת הענקת גישה עבור צמד `(role, domain)`, ההרשאה האפקטיבית היא
+**`read`**. קריאות הן כשל פתוח מעצם התכנון. הכתיבה היחידה שזורקת שגיאה היא
+`propose_policy` בלי הרשאת `write` (`InsufficientMemoryPermission`). הצבת תוכן
+רגיש בתחום זיכרון אינה מגבילה מי יכול לקרוא אותו, אלא אם כתבתם במפורש הענקת
+`none` לכל תפקיד שלא אמור לראות אותו.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+כמו כן, אין היום שום ממשק להענקות בשום מקום במוצר. מסך הזיכרון כולל את
+הלשוניות עובדות, כללי מדיניות וגרף ידע ושום דבר אחר; הענקות נגישות רק דרך
+פעולות ה-RPC של `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+האסימטריה — רכה בקריאות, נוקשה בכתיבת מדיניות — היא החלפה מכוונת. הזיכרון מועיל
+ביותר כשהוא זורם, וסירוב קריאה מייצר סוכן שיודע פחות בשקט במקום סוכן שמדווח על
+בעיה. לעומת זאת, סירוב כתיבת מדיניות הוא קולני וניתן לתיקון, ולכן שם יושבת
+האכיפה. תחום חדש שנוצר מזריע `write` לכל תפקיד; הידוקו לאחר מכן הוא עריכה
+ב-RPC בלבד, כי אין ממשק להענקות.
 
-## Working memory
+## זיכרון עבודה
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+לכל סוכן יש `AgentWorkingMemory`: פנקס רשימות בטקסט חופשי שממופתח לפי סביבת
+עבודה וסוכן. הוא נשמר בין הרצות, פרטי לאותו סוכן, ומוזרק להנחיה שלו בכל שליחה.
+שם חי "הייתי באמצע רפקטורינג של האימות" — המצב ששווה לשאת להרצה הבאה אבל לא
+שווה לקדם לעובדה עמידה.
 
-## What actually reaches an agent's prompt
+## מה באמת מגיע להנחיה של הסוכן
 
-At dispatch, the memory preamble is assembled from exactly three things:
+בעת השליחה, הפתיח של הזיכרון מורכב משלושה דברים בדיוק:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **כל מדיניות פעילה בסביבת העבודה**, כשורות `- [domain] rule`.
+- **זיכרון העבודה של הסוכן עצמו**, מילה במילה.
+- **רשימה קצרה של עובדות שהותאמו לפי מילות מפתח** למשימה הזו — חמש לכל היותר,
+  בתקציב של כ-1,200 תווים, ורק כאשר תיאור המשימה באורך של 20 תווים לפחות.
+  משימות קצרות יותר לא מקבלות עובדות בכלל.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+הרשימה הקצרה מבוססת FTS/מילות מפתח בלבד והיא מוגבלת בכוונה. הטמעת שאילתה היא
+איטית ונתיב השליחה הוא המקום היחיד שבו השהיה נראית מיד, ולכן הנתיב הסמנטי האיטי
+מוחזק ממנו החוצה במכוון. הפתיח נחתם בהוראה לסוכן לאמת פריטים נושאי משקל עם
+`search_memory`, ושם חי מודל השליפה המלא.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+בנתיב הזה לא מתייעצים עם הענקות גישה. מה שהרשימה הקצרה מוצאת הוא מה שהסוכן
+רואה.
 
-## Recall: one query, four voices
+## שליפה: שאילתה אחת, ארבעה קולות
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+לכלי `search_memory` הפונה לסוכן יש שלושה מצבים, והם באמת חיפושים שונים:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — FTS5 בלבד.
+- **`semantic`** — תוצאות BM25 ווקטוריות ממוזגות במיזוג דירוגים הופכי.
+- **`hybrid`** (ברירת המחדל) — שליפה פוליפונית: ארבעה קולות מדורגים שממוזגים
+  יחד ואז מגוונים.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+ארבעת הקולות הם לקסיקלי (FTS), סמנטי (KNN וקטורי), זמני (עובדות פעילות אחרונות)
+וגרף — הליכה של שתי קפיצות על קצוות אפיזודיים מנקודות הזרע הלקסיקליות
+והסמנטיות החזקות ביותר. קול הגרף הוא הסיבה לכך שקצוות אפיזודיים קיימים בכלל:
+הוא מציף את העובדה ש*מקושרת ל*תשובה שלכם בלי להתאים לאף אחת מהמילים שלכם.
+הקולות נשקלים לפי כוונת שאילתה מסווגת (לסמנטי המשקל הגדול ביותר כברירת מחדל,
+אחריו גרף ולקסיקלי, ואז עדכניות), הניקוד של כל מועמד מוכפל בדעיכת ה-Weibull
+שלו, וקבוצת התוצאות מגוונת לפי MMR כך שחמש חזרות של עובדה אחת לא ידחקו ארבע
+עובדות שונות.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[השליפה הסמנטית שותקת עד להתקנת המודל]
+קול הווקטור תורם רק לאחר שמודל ההטמעה שעל המכשיר הורד. עד אז השליפה ההיברידית
+רצה עם שלושה קולות ואין השלמה רטרואקטיבית — עובדות שנכתבו לפני התקנת המודל לא
+מקבלות וקטורים לעולם. נתיב הווקטור מדרדר עוד יותר, לסריקה ב-Dart על ההטמעות
+הארוזות, אם הרחבת הווקטור של SQLite עצמה לא נטענת; השליפה עדיין עונה, רק לאט
+יותר.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+חיפוש הזיכרון בשולחן העבודה ובווב הוא נתיב נפרד ופשוט יותר: פעולת ה-RPC
+`memory_fact.search` היא **FTS5 בלבד**, כי לקוח דק אינו יכול לשלוח הטמעת שאילתה
+והנתיב ההיברידי נשאר פנימי למארח. לכן הדירוג שאתם רואים בדפדפן הזיכרון אינו
+הדירוג שסוכן מקבל מ-`search_memory`. זה צפוי, ולא תקלה, אבל זה כן אומר
+ש"חיפשתי ולא מצאתי" בממשק אינו ראיה שהסוכן לא ימצא.
 
-## Where memory lives and who writes it
+## היכן הזיכרון חי ומי כותב אותו
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+דפדפן הזיכרון נמצא ב**הגדרות ← סביבת עבודה ← זיכרון**
+(`/workspaces/<id>/settings/memory`), עם הלשוניות עובדות, כללי מדיניות וגרף
+ידע.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+יש שם אסימטריה שמפתיעה אנשים: **אפשר לערוך ולמחוק זיכרון, אבל אי אפשר ליצור
+אותו.** לא ללשונית עובדות ולא ללשונית כללי מדיניות יש אמצעי הוספה. הכתיבה היא
+בצד הסוכן, דרך `propose_fact` ו-`propose_policy` (`supersede_fact` /
+`supersede_policy` כדי להחליפן). `remember` כותב פריט בשכבה החמה שתחום לסשן,
+ש-`consolidate_memory` עשוי לקדם בהמשך לעובדה; `record_observation`
+ו-`update_my_notes` כותבים את הפנקס הפרטי שמוזרק בשליחה. הדפדפן הוא משטח סקירה
+ותיקון, לא משטח כתיבה — כך שאם אתם רוצים עובדה בזיכרון, הדרך להכניס אותה לשם
+היא לספר לסוכן.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+שתי פעולות תחזוקה מופעלות אף הן בידי הסוכן ולא לפי תזמון: `consolidate_memory`
+מאחד ומגזם עובדות שנצברו, ו-`harmonize_memory` מיישב אמונות שהתפצלו בין סוכנים.
+`list_memory_conflicts` מציג מה שזיהוי ההתנגשויות כבר רשם. שום דבר לא מריץ אותן
+עבורכם לפי טיימר. החלטות מפגישות נאספות אל תחום `decisions` כאשר שלב שמירת
+פגישה רושם אותן; זה אינו טיימר על הרצות סוכן שהושלמו.
 
-## Related concepts
+## מושגים קשורים
 
-- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): roles are what grants are written against
-- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-זיכרון/): working with memory in practice
+- [מודל הסוכן](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/): תפקידים הם מה שכנגדו נכתבות הענקות גישה
+- [סביבות עבודה ובידוד](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/): הזיכרון משויך לסביבת עבודה וחי בקובץ מסד הנתונים של אותה סביבה
+- [ניהול זיכרון סביבת העבודה](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/ניהול-זיכרון/): עבודה עם זיכרון בפועל

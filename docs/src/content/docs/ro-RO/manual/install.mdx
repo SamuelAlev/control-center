@@ -1,153 +1,159 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Instalare
+description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center rulează în două moduri: ca **aplicație web** la
+[app.usectrl.dev](https://app.usectrl.dev), fără nimic de descărcat, sau ca **aplicație
+desktop** pe care o instalezi. Sunt aceeași aplicație, cu aceleași funcții. Singura
+diferență este unde rulează serverul — iar aplicația web nu poate rula unul pentru tine.
 
-## Use it in your browser
+## Folosește-o în browser
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) este această aplicație compilată pentru browser.
+Nimic de instalat, nimic de actualizat. Deschide-o și conectează-te.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Ce nu poate face un tab de browser este să _fie_ serverul. Fiecare client — desktop, web,
+telefon — este un renderizator subțire peste un `cc_server` headless care deține baza de
+date și face treaba, așa că aplicația web vorbește întotdeauna cu un server pe care îl
+rulezi tu. Două moduri de a-i da unul:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Un server pe propria mașină.** Pornește `cc_server` local și îndreaptă aplicația web
+spre `ws://localhost:9030`. Browserele tratează `localhost` ca fiind de încredere, așa că
+nu e nevoie de certificat și nici de tunel. Este cea mai rapidă cale de a încerca
+aplicația web, iar datele tale nu părăsesc niciodată mașina.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Un server pe altă mașină.** Deoarece `app.usectrl.dev` este servit prin HTTPS, un server
+non-local trebuie să fie accesibil prin `wss://` cu un certificat în care browserul are
+deja încredere. `cc_server` refuză să asocieze o adresă non-loopback fără TLS, așa că
+alege una dintre variante:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- îi dai direct un certificat, cu `--tls-cert` și `--tls-key`
+- îl pui în spatele unui proxy invers care termină TLS și îl pornești cu `--insecure`
+- îl expui printr-un tunel sau VPN care furnizează certificatul — Tailscale,
+  cloudflared sau similar. **Setări → Server → Conexiune și stare** are
+  opt-in-ul pentru tunelul integrat, sub **Partajează acest server**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Ori de câte ori serverul stă în spatele unui proxy, NAT sau tunel, setează `--public-url`
+la adresa pe care clienții ar trebui să o acceseze efectiv. Valoarea implicită este
+asocierea locală, așa că fără ea clienții încearcă gazda greșită.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Găzduiești propria copie a clientului web?]
+`cc_server` acceptă originile de browser doar dacă se află în lista sa `--allowed-origins`,
+care implicit conține `https://app.usectrl.dev`. Adaugă acolo propria origine dacă îți
+găzduiești singur buildul web. Clienții de loopback și cei nativi sunt întotdeauna
+acceptați, indiferent de acea listă.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Câteva lucruri rămân doar pentru desktop, pentru că au nevoie de o fereastră nativă sau
+de dispozitivele audio ale mașinii: pastila flotantă din modul focus, notificările de
+sistem sub formă de toast (centrul de notificări din aplicație funcționează peste tot),
+„Pornește înregistrarea și leagă” dintr-un eveniment de calendar și rerularea unui rezumat
+de întâlnire. Tot restul — spații, agenți, revizuirea pull request-urilor, pipeline-uri,
+tichete, memorie și înregistrarea întâlnirilor în sine — se comportă la fel.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/). To host the server,
-follow [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
+Pentru a conecta aplicația web la un server, urmează
+[Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/). Pentru a găzdui serverul,
+urmează [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
 
-## Desktop system requirements
+## Cerințe de sistem pentru desktop
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Cerință      | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Versiune de sistem | macOS 13+ (Ventura)                             | Windows 10+ | Ubuntu 22.04+ sau altă distribuție cu glibc 2.35+ și GTK 3 |
+| Arhitectură  | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Necesar                                               | Necesar     | Necesar                                                    |
+| Spațiu pe disc | ~200 MB pentru aplicație, plus directorul de date al serverului | ~200 MB | ~200 MB                                        |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Macurile Intel nu au nicio descărcare precompilată. În schimb,
+[construiește din sursă](#construiește-din-sursă).
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Directorul de date al serverului depășește cu mult aplicația. La prima pornire, `cc_server` instalează forțat modelele de pe dispozitiv — embeddinguri de text (~90 MB), diarizarea vorbitorilor (~35 MB) și modelul de voce selectat (Parakeet TDT v3 implicit, ~600 MB; variantele Whisper 198–626 MB) — plus un build code-server integrat, iar fiecare conversație de agent primește un worktree copy-on-write al repo-urilor pe care lucrează (`git worktree` simplu pe Windows). Vocea nu este opțională: fără modelul ASR, operațiile de întâlniri și de dictare nu sunt servite. Prima descărcare a modelului de voce mai are nevoie de o repornire înainte ca înregistrarea să devină disponibilă.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Aplicația desktop își îndreaptă serverul spre directorul de suport pentru aplicații per utilizator al sistemului. Un `cc_server` pornit manual, fără `--data-dir`, folosește implicit `<application data>/control-center` — `~/Library/Application Support/control-center` pe macOS, `%APPDATA%\control-center` pe Windows, `$XDG_DATA_HOME/control-center` (sau `~/.local/share/control-center`) pe Linux.
 
-## Download
+## Descărcare
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Fiecare artefact de mai jos provine din [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Descarcă `Control-Center-<version>-arm64.dmg`, deschide-l și trage Control Center în dosarul Applications. Buildul este semnat cu un Developer ID și notarizat de Apple, așa că se deschide normal.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: un instalator per utilizator.
+- `Control-Center-<version>-windows-x64.zip`: un zip portabil.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows folosește `git worktree` pentru check-out-urile spațiilor (fără copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage-ul conține informații de actualizare, așa că [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) sau appimaged îl pot aduce pe loc la ultima versiune, descărcând doar ce s-a schimbat.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Ambele sunt construite pe Ubuntu 22.04 și rulează pe el sau pe ceva mai nou (Debian 12, Fedora 36 și versiunile ulterioare): se leagă la glibc 2.35 și la libstdc++ din GCC 12 și preiau GTK 3 din sistem. Puținele biblioteci care pot lipsi de pe un desktop obișnuit călătoresc în interiorul lor, așa că nu mai trebuie instalat nimic altceva. Sunetul — redarea întâlnirilor, peisajul sonor, audio-ul din stații și sunetele de notificare — redă prin libmpv-ul sistemului (`libmpv1` pe Ubuntu 22.04, `libmpv2` pe Ubuntu și Debian mai noi, `mpv-libs` pe Fedora); fără el, aplicația pornește cu acele controale ascunse.
 
-### Standalone server
+### Server autonom
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
+Fiecare versiune include și serverul headless separat — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alături de imaginile `cc-server`, `cc-webapp` și `cc-remote` de pe GHCR. Vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Arhiva Linux este construită pe Ubuntu 22.04, iar bibliotecile native incluse se leagă la glibc 2.35 și la libstdc++ din GCC 12, așa că are nevoie de o gazdă cel puțin la fel de nouă (Ubuntu 22.04, Debian 12, Fedora 36 sau mai nou). Pe o distribuție mai veche, rulează în schimb imaginea `cc-server` — un container își aduce propriul userland, așa că doar kernelul trebuie să fie al tău.
 
-## Agent backend
+## Backend de agenți
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center trimite agenții prin **adaptoare**. Există două, lista este fixă și sunt detectate automat — nu există nicio modalitate de a înregistra altul.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Adaptorul **Control Center (built-in)** nu are nevoie de niciun CLI extern: bucla agentului rulează în interiorul serverului și comunică cu providerii de modele prin HTTP, așa că este mereu disponibil. Conectează un provider în **Setări → Server → Provideri de modele**. OpenAI, Codex, Cursor și Kimi Code oferă autentificare în browser; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai și Moonshot cer o cheie API. Codex și Cursor sunt provideri pe acest runner, nu CLI-uri separate. z.ai apare de două ori intenționat: **z.ai** este platforma deschisă cu plată pe măsură ce consumi, facturată din soldul contului tău, în timp ce **z.ai GLM Coding Plan** este abonamentul. Este aceeași cheie de cont, dar z.ai servește planul de pe alt host — lipește o cheie de plan de programare în cardul simplu z.ai și fiecare cerere întoarce `429 … "Insufficient balance or no resource package"`, pentru că planul nu are sold de cheltuit. Un abonament Claude Pro/Max nu este o autentificare în API-ul Anthropic; ajunge la acel plan prin adaptorul Claude Code. Ce _poți_ adăuga pe acea pagină este un **provider personalizat** — orice endpoint compatibil OpenAI sau Anthropic (Ollama, LM Studio, vLLM, o implementare privată) sub **Provideri personalizați → Adaugă provider**.
 
-The other adapter wraps an external CLI:
+Celălalt adaptor împachetează un CLI extern:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Detectarea sondează `PATH`-ul mașinii care rulează `cc_server` — aceeași mașină când desktopul își rulează propriul server, altfel gazda remote. Instalează CLI-ul Claude Code acolo, nu pe client. Butonul **Reîmprospătează** de pe acea pagină reia sondarea.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/ro-RO/manual/ghiduri-practice/adaptoare/).
+Listele de modele sunt servite live de fiecare provider conectat; [models.dev](https://models.dev) furnizează doar metadate despre preț și fereastra de context. Vezi [Gestionează adaptoarele și modelele](/ro-RO/manual/ghiduri-practice/adaptoare/).
 
-## GitHub authentication
+## Autentificare GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+O acreditare GitHub este **a ta și trăiește pe server**, indexată după id-ul tău de utilizator — nu în keychainul sistemului de operare al clientului. Fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi.
 
-If the server has a GitHub App registered ([Create the GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Dacă serverul are înregistrată o GitHub App ([Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)), **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** oferă **Autentifică-te cu GitHub** (un device flow rulat de server). În caz contrar, lipește un token de acces personal:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Clasic: `repo` și `read:org`
+- Cu granularitate fină: **Contents** și **Pull requests** (citire și scriere), **Checks** și **Actions** (citire)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Creează unul la [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Serverul sondează tokenul pentru numele de cont în momentul în care este salvat, așa că rândul poate afișa „autentificat ca …”; o sondare eșuată salvează totuși tokenul, iar o greșeală de tastare sau un scope lipsă se manifestă mai târziu ca o cerere eșuată.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
+Primul pas al onboardingului este această conexiune. După aceea, același card este locul unde o înlocuiești sau o ștergi. GitLab și Bitbucket folosesc același card; vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
-## Choose where the server runs
+## Alege unde rulează serverul
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/ro-RO/manual/concepte/implementare/) explains what that split means for the desktop, web and phone.
+Control Center este un client subțire peste un proces `cc_server` headless care deține baza de date și face toată treaba; [Implementare și clienți](/ro-RO/manual/concepte/implementare/) explică ce înseamnă această separare pentru desktop, web și telefon.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+La prima lansare, desktopul întreabă **„Cum ar trebui să ruleze Control Center?”**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/ro-RO/manual/pornire-rapida/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Rulează în această aplicație**: desktopul pornește și supraveghează un `cc_server` pe această mașină și comunică cu el prin loopback. Nimic altceva de configurat. Aceasta este configurația pe care o presupune [pornirea rapidă](/ro-RO/manual/pornire-rapida/).
+- **Conectează-te la o instanță remote**: îndreaptă desktopul spre un `cc_server` care rulează în altă parte, cu URL-ul său WebSocket, un id de dispozitiv și fie o cheie de asociere, fie un cod de invitație de unică folosință. Acel server deține datele; acest desktop doar le afișează.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/).
+Adaugă sau comută servere mai târziu în **Setări → Server → Conexiune și stare**. Comutarea se reconectează pe loc — fără repornire. Un browser nu poate rula un server, așa că clientul web este întotdeauna remote; vezi [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/).
 
-To host a server yourself, follow [Run a headless server](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Pentru a găzdui singur un server, urmează [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/). Acesta acoperă construirea binarului, generarea unei chei de asociere înainte de prima pornire și flagurile `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Verifică-ți configurarea
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Setări → Server → Provideri de modele** listează ambele adaptoare. „Control Center (built-in)” apare ca găsit, cu versiunea `built-in`; Claude Code apare ca găsit dacă CLI-ul său se află în `PATH`-ul gazdei serverului. Apasă **Reîmprospătează** dacă lipsește.
+2. **Setări → Spațiu de lucru → Depozite** listează repo-urile acestui spațiu de lucru, iar **Adaugă depozit** răsfoiește folderele gazdei serverului.
+3. **Setări → Spațiu de lucru → Agenți** listează cei cinci agenți creați implicit în primul tău spațiu de lucru. Fiecare are nevoie de un **Adaptor** și de un **Model** setate înainte de a putea rula.
+4. **Setări → Server → Diagnosticări și confidențialitate** raportează backend-urile sandbox oferite de această gazdă, starea modelului de embedding și jurnalizarea.
 
-## Build from source
+## Construiește din sursă
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Bibliotecile native sunt obligatorii și nu există un mod degradat: una lipsă este o eroare fatală la pornire, nu o cale mai lentă. Pregătește-le înainte de orice altceva. Fiecare comandă Flutter și Dart trece prin `fvm`, pentru că versiunea SDK-ului este fixată de repo.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +165,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Pe macOS, stocarea securizată (autentificarea GitHub, Linear și Google) are nevoie ca aplicația să fie semnată de o echipă Apple — un Apple ID gratuit este suficient, iar configurarea se face o singură dată, conform [semnării pentru dezvoltare locală](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Fără ea, aplicația tot pornește; doar stocarea securizată nu este disponibilă. Windows și Linux nu au nevoie de semnare.
 
-To build the headless server binary, stage the natives the same way first, then:
+Pentru a construi binarul serverului headless, pregătește întâi bibliotecile native în același mod, apoi:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Hook-ul de build copiază tot ce se află deja în `build/natives/` în pachet, așa că dacă construiești înainte de a pregăti bibliotecile obții un pachet fără native și un server care refuză să pornească.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Pentru clientul web folosește `scripts/build_web.sh` (`--target remote` pentru PWA-ul de telefon). Este ceea ce rulează CI: un simplu `flutter build web` sare peste ștampila de identitate a buildului, regenerarea Web Worker, manifestul de deploy și verificarea bugetului de asseturi.

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: 비용 관리
+description: 에이전트가 무엇에 얼마를 쓰는지 확인하고, 자율 실행에 상한을 걸고, 토큰 사용을 줄이는 방법입니다.
 slug: ko-KR/매뉴얼/사용-가이드/비용-관리
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+이 가이드에서는 에이전트 실행에 드는 비용을 확인하는 방법과 자율 실행에 상한을 거는 방법을 설명합니다.
 
-## How costs are recorded
+## 비용이 기록되는 방식
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+모든 에이전트 실행은 입력 토큰, 출력 토큰, 추론 토큰, 캐시 읽기 및 캐시 쓰기 토큰, 센트 단위의 추정 비용, 그리고 자신이 생성한 서브에이전트의 비용을 담은 실행 로그를 기록합니다.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+가격 정보는 models.dev 카탈로그에서 가져오며, 이 카탈로그는 모델 목록에 가격과 컨텍스트 창을 덧붙이는 용도로만 사용됩니다 — 모델 id의 원천으로는 결코 쓰이지 않습니다. 카탈로그가 가격을 매길 수 없는 모델은 **$0**으로 기록되고, 비용이 0인 실행은 **사용량 및 비용** 요약에서 제외됩니다. 따라서 로컬 Ollama 모델은 지출이 전혀 표시되지 않지만, 토큰 수는 여전히 기록됩니다. 정액제 요금제(kimi-code, Claude 구독)는 카탈로그가 서빙된 모델의 가격을 갖고 있지 않을 때에만 마찬가지입니다. 가격이 있으면 어쨌든 그 요율로 실행 비용이 추정됩니다. 폴백 체인에서는 요청한 모델이 아니라 실제로 실행을 처리한 모델을 기준으로 비용이 매겨집니다.
 
-## See what you are spending
+## 지출 확인
 
-### Observability → Insights
+### 옵저버빌리티 → 인사이트
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+사이드바 하단 → **옵저버빌리티**에서 들어갑니다. 처음에는 **사용량** 탭이 열립니다(누적 토큰 합계). 비용을 다루는 주 화면은 **인사이트** — 두 번째 탭 — 으로 전환하면 나옵니다:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- 기간 선택기: 최근 24시간, 최근 7일, 최근 30일 또는 전체 기간
+- 에이전트, 모델, 상태, 역할에 대한 패싯 필터를 해제 가능한 칩으로 제공
+- KPI 스트립: 총 실행, 총 비용, 오류율, 캐시율, 초당 토큰, 평균 지연 시간, 첫 토큰까지 시간이며, 각각 이전 기간 대비 변화가 함께 표시됩니다("전체 기간"에서는 숨겨짐)
+- 활동 및 비용 차트, 그리고 지출을 메인 에이전트, 그 서브에이전트, 어드바이저로 나눈 **역할별 비용** 분석
+- 비용순으로 정렬된 에이전트별 표로, 상위 10개가 표시되며 전체 표시 토글이 있습니다. 행을 탭하면 다른 모든 화면이 그 에이전트로 필터링됩니다
+- 상세 실행 로그로, 선택한 실행의 트랜스크립트 드로어를 엽니다
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note["전체 기간"은 전체 기간이 아닙니다]
+실행 피드는 모든 워크스페이스에 걸쳐 가장 최근 실행 로그 2000개를 구독한 뒤 활성 워크스페이스로 필터링합니다. 워크스페이스가 많고 바쁜 서버에서는 조용한 워크스페이스의 오래된 기록이 이 범위 밖으로 밀려납니다.
 :::
 
-### Settings → Server → Model providers
+### 설정 → 서버 → 모델 제공업체
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+이 페이지의 **사용량 및 비용** 카드는 최근 7일간 관측된 지출을 하나의 달러 금액으로 보여 주며, 프로바이더별 분석과 함께, 프로바이더가 공개하는 경우 다음 할당량 구간이 재설정되기까지 남은 시간도 표시합니다.
 
-### A single agent's runs
+### 단일 에이전트의 실행
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**설정 → 워크스페이스 → 에이전트** → 에이전트 선택 → **로그**에는 상태, 소요 시간, 시작 및 완료 시각, PID, 어댑터와 함께 실행 목록이 나옵니다. 이 탭은 비용을 **표시하지 않습니다** — 비용은 옵저버빌리티 → 인사이트의 에이전트별 표를 사용하세요.
 
-## Cap an autonomous run
+## 자율 실행에 상한 걸기
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+스페이스 컴포저에 입력하는 두 가지 슬래시 명령만 지출 상한이 있는 실행입니다:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- `/goal` 또는 `/loop` 실행의 각 구간은 비용이 매겨진 지출이 **500센트($5.00)**에 도달하면 멈춥니다. 그 80% 지점에서 루프는 먼저 모델을 마무리하고 깔끔하게 인계하도록 스티어링하므로, 작업 도중에 죽지 않습니다.
+- 지속 목표 전체에는 `--budget <dollars>`를 전달하지 않는 한 **5000센트($50.00)** 상한이 적용됩니다. 감독자가 목표의 _남은_ 예산을 각 구간에 이어 주므로, 명시한 예산을 한 구간만큼 초과하는 일은 결코 없습니다.
+- `--days N`은 실제 시간 기준 마감을 추가하고, `--max N`은 실행 횟수 상한을 추가합니다. 둘 다 선택 사항이며, 이것들이 없으면 목표는 비용으로만 제한됩니다.
+- 상한에 도달한 목표는 `budgetExhausted`에서 멈추며, 예산을 올려야만 다시 시작할 수 있습니다.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+상한은 가격을 기준으로 하므로, 카탈로그가 가격을 매길 수 없는 모델은 결코 그 상한에 도달하지 않습니다. 그런 실행은 대신 둠 루프 반복 가드, 세 번 연속 실패 후 감독자의 포기, 그리고 사용자로 인해 제한됩니다.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+스페이스의 메시지, @멘션, 파이프라인 단계에는 지출 상한이 없습니다. 실행은 모델이 멈추거나, 사용자가 중지하거나, 둠 루프 가드가 방향을 바꿀 때 끝납니다.
 
-## Cut token use
+## 토큰 사용 줄이기
 
-### Compact a long conversation
+### 긴 대화 압축
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+스페이스 컴포저에 `/compact`를 입력합니다. 이 명령은 클라이언트 측에서 가로채므로 트랜스크립트에 결코 남지 않습니다. 서버는 오래된 기록을 고정 요약으로 접어 넣고, 대화는 압축된 컨텍스트 위에서 계속됩니다.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+압축은 에이전트가 턴을 진행 중이거나 접을 만큼 오래된 내용이 없을 때 거부됩니다. 내장 하네스는 기록이 모델의 컨텍스트 창에 가까워지면 스스로도 압축합니다.
 
-### Choose the effort level deliberately
+### 추론 강도를 의도적으로 선택
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+에이전트의 **추론 강도**(설정 → 워크스페이스 → 에이전트)는 선택한 모델이 공개하는 수준을 제시합니다. 수준이 높을수록 추론 토큰을 더 많이 씁니다. 최상위 수준은 그것이 필요한 작업에 남겨 두세요.
 
-### Choose the model per agent
+### 에이전트별 모델 선택
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+모델은 에이전트별 필드이므로, 포매팅이나 분류를 맡은 에이전트는 저렴한 모델로, 아키텍처 에이전트는 비싼 모델로 실행할 수 있습니다. 옵저버빌리티 → 인사이트의 에이전트별 표를 모델로 필터링하면 어떤 조합이 실제로 비용을 쓰고 있는지 알 수 있습니다.
 
-### Look for runs with outsized token counts
+### 토큰 수가 유난히 큰 실행 찾기
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+인사이트 실행 로그(필터링된 최신 실행 50개)와 이상해 보이는 항목의 트랜스크립트 드로어를 열어 보세요. 흔한 원인은 지나치게 긴 시스템 프롬프트나 페르소나, 압축했어야 할 컨텍스트, 여러 개의 작은 작업으로 나눴어야 할 작업입니다.
 
-## What happens if a budget is set out of band
+## 예산을 정규 경로 밖에서 설정하면 어떻게 되는가
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+참고로, `monthlyBudgetCents`나 예산 정책을 에이전트 행에 직접 기록하면 다음과 같습니다:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- 예산은 디스패치 전이 아니라 실행이 완료된 **후에** 평가됩니다. 실행 완료 리스너가 에이전트의 월 누적 지출을 상한과 비교합니다.
+- 소프트 임계값(기본값 80%)을 넘으면 경고 인시던트가 기록되고, 파이프라인 트리거를 걸 수 있는 `BudgetThresholdCrossed` 이벤트가 발행됩니다.
+- 예산을 모두 소진하면 심각 인시던트가 기록되고, 같은 이벤트가 발행되며, 에이전트의 수명주기 상태가 `paused`로 바뀝니다.
+- 디스패치 전 차단은 존재하지만 복구를 예약할 때 고아 실행 수거기와 고립 티켓 조정기만 참조합니다 — 일반 디스패치는 결코 여기에 도달하지 않고, 디스패치 경로의 어떤 것도 일시 중지 상태를 확인하지 않습니다. 유일하게 보이는 신호는 조직도의 수명주기 배지입니다.
 
-## Related guides
+## 관련 가이드
 
-- [Create and configure an agent](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
-- [Manage adapters and models](/ko-KR/매뉴얼/사용-가이드/어댑터/)
-- [Run agent diagnostics](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
-- [Agent configuration reference](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/)
+- [에이전트 생성 및 구성](/ko-KR/매뉴얼/사용-가이드/에이전트-생성/)
+- [어댑터와 모델 관리](/ko-KR/매뉴얼/사용-가이드/어댑터/)
+- [에이전트 진단](/ko-KR/매뉴얼/사용-가이드/에이전트-진단/)
+- [에이전트 구성 레퍼런스](/ko-KR/매뉴얼/레퍼런스/에이전트-구성/)
 
-## Related concepts
+## 관련 개념
 
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/)
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/)

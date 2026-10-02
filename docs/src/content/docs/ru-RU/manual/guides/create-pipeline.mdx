@@ -1,241 +1,262 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Создать шаблон конвейера
+description: Создайте шаблон DAG-рабочего процесса в редакторе конвейеров — добавьте узлы, соедините их, объявите входные данные и сделайте шаблон запускаемым.
 slug: ru-RU/руководство/практические-руководства/создать-конвейер
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Шаблоны конвейеров создаются в настройках рабочего пространства. Пункт
+**Конвейеры** в боковой панели рабочего пространства — это _очередь запусков_, а
+не список шаблонов: в нём нет действия «создать шаблон».
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ru-RU/руководство/справка/шаги-конвейера/).
+Что означает каждый вид шага, ключ тела и поле конфигурации, смотрите в
+[справочнике по шагам конвейера](/ru-RU/руководство/справка/шаги-конвейера/).
 
-## Create a template
+## Создать шаблон
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Перейдите в **Настройки → Рабочее пространство → Шаблоны конвейеров**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Нажмите **Новый шаблон**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Диалога для идентификатора нет. Редактор сразу открывается на заготовке с
+именем **Новый конвейер** и автоматически выделенным идентификатором
+(`pipeline_1`, затем `pipeline_2`, …). Чтобы переименовать её, нажмите на её
+название в заголовке редактора.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Холст не пуст: на нём есть входной узел **Trigger**, один узел промпт-агента с
+меткой **Step** и терминальный сторожевой элемент, завершающий запуск.
+Сторожевой элемент не рисуется. Редактор переподключает этот скрытый терминал к
+каждому достижимому стоку, поэтому работа, прикреплённая после **Step**, всё
+равно выполняется.
 
-## Add nodes
+## Добавить узлы
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Боковая панель **Библиотека узлов** постоянно находится слева от редактора.
+Отфильтруйте её в поле **Поиск узлов** и перетащите элемент на холст — узел
+встанет там, где вы его отпустите, без входящей связи.
 
-| Palette node                    | Step kind | What it does                                                                         |
+| Узел палитры                    | Вид шага  | Что делает                                                                           |
 | ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| **Bash script**                 | listen    | Запускает shell-скрипт с подстановкой `{{state}}`; агент не запускается              |
+| **Open conversation**           | listen    | Открывает единственное видимое пространство запуска и его checkout; агентские узлы присоединяются к этой комнате |
+| **Clone PR branch**             | listen    | Определяет head-ветку PR через `gh pr view` и клонирует её в каталог запуска         |
+| **Post PR comment**             | listen    | Публикует сводные результаты проверки в PR как комментарий ревью GitHub              |
+| **Reviewer (prompt)**           | listen    | Запускает специализированного агента-ревьюера; приостанавливается, пока агент не отправит результат |
+| **Consolidate (join)**          | join      | Ждёт несколько вышестоящих ветвей, затем просит агента объединить их результаты      |
+| **Custom prompt**               | listen    | Обобщённый узел на основе промпта, работающий через тело `promptAgent`                |
+| **Post to space**               | listen    | Отправляет сообщение в пространство обмена сообщениями                               |
+| **Condition / switch (router)** | router    | Разветвляет поток по значению состояния                                              |
+| **If file exists (router)**     | router    | Направляет `"true"`, если путь существует в клоне, иначе `"false"`                   |
+| **Any file exists (OR router)** | router    | Направляет `"true"`, если существует любой из перечисленных путей                    |
+| **All conditions (AND router)** | router    | Направляет `"true"`, только если существуют все перечисленные пути                   |
+| **Team dispatch**               | listen    | Запускает целую команду и приостанавливается до её завершения                        |
+| **Approval gate**               | listen    | Приостанавливается в ожидании решения об одобрении                                   |
+| **For each (map)**              | forEach   | Формирует промпт для каждого элемента, затем один раз запускает агента с объединёнными промптами |
+| **Call sub-pipeline**           | listen    | Выполняет другой шаблон как вложенный шаг                                            |
+| **Clean up worktrees**          | listen    | Удаляет устаревшие изолированные рабочие деревья; детерминированно, агент не запускается |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Библиотека группирует их в разделы **Поток и логика**, **Ревью PR**, **Агенты**,
+**Сообщения** и **Код**. Группы Demo нет.
 
-## Wire nodes together
+## Соединить узлы
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+У каждого рабочего узла на правом краю есть круглый **порт выхода**. Перетащите
+из этого порта на другой узел, чтобы соединить их. Стартовые триггеры устроены
+так же: у каждого свой порт, поэтому провод от **Расписание** не выходит также и
+из **Ручной запуск**. Нажмите **Добавить шаг** (`+`) сразу после узла, чтобы
+вставить после него тип. Наведите курсор на середину существующего ребра и
+нажмите ×, чтобы разорвать связь.
 
-Connections are also edited from the node that _receives_ them:
+Связи можно редактировать и со стороны узла, который их _принимает_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Выберите нижестоящий узел. Справа откроется панель его настроек.
+2. Прокрутите до **Triggers from** и нажмите чип каждого вышестоящего узла, к
+   которому этот узел должен прислушиваться. Нажатие на выбранный чип удаляет
+   связь.
+3. Если вышестоящий узел — маршрутизатор, под чипами появляется блок
+   **Ключи маршрута** с полем **Ключ маршрута от &lt;node&gt;** на каждое ребро
+   маршрутизатора. Введите ключ, по которому срабатывает это ребро, — `true` или
+   `false` для маршрутизаторов «файл существует», либо имя варианта для
+   переключателя.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Каждый узел-триггер — точка входа. Узел может слушать несколько вышестоящих
+узлов (fan-in) и питать несколько нижестоящих (fan-out), но граф должен
+оставаться ациклическим: ничто в редакторе не мешает вам замкнуть цикл, поэтому
+проверяйте работу сами.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Терминальный сторожевой элемент отфильтрован с холста, поэтому его нельзя
+выбрать. При каждом изменении графа редактор переподключает его к каждому
+достижимому стоку, поэтому работа, прикреплённая после предзаполненного
+**Step**, всё равно выполняется. Пустой граф (триггер без рабочих наследников)
+указывает сам триггер, чтобы запуск сразу завершался.
 
-## Configure a node
+## Настроить узел
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Выберите узел, чтобы открыть панель его настроек. Набор полей зависит от тела
+узла.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+У каждого узла есть **Метка**, **Входные ключи** (ключи состояния через запятую,
+читаемые во время выполнения), а под **Дополнительно** — **Редьюсер**,
+**Таймаут (мс)**, **Число повторов**, **Продолжить при ошибке шага** и **Схема
+выхода (JSON)**. Узлы видов listen и join могут также переключать **Тип** между
+этими двумя.
 
-### Open conversation
+### Открыть разговор
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Добавляет выбор **Репозитории для клонирования** (какие репозитории рабочего
+пространства извлекать; пусто означает ни одного), поле **Название
+пространства** и флажок **Открыть в нём разговор**. Когда флажок включён, поле
+**Название разговора** задаёт поток, с которого открывается комната. Агентские
+узлы присоединяются к этой комнате и не открывают собственную.
 
-### Prompt agent
+### Промпт-агент
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Добавляет **Агент** (какого агента запускать), **Шаблон промпта** (используйте
+`{{key}}`, чтобы сослаться на входные данные или результаты вышестоящих шагов)
+и **Ключ выхода**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Таймаут (мс)** задаётся в _миллисекундах_, а не в секундах: `900000` — это
+15 минут. Значение `900` даёт шагу 0,9 секунды.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Режим разговора, в котором работает узел промпт-агента, не имеет поля в
+редакторе на агентском узле. Он передаётся в `extras['mode']` (`chat`, `plan`
+или `review`) на узле **Open conversation**, создавшем комнату (по умолчанию
+`review`). Если задать его на агентском шаге, он игнорируется. Ключ сопоставляется
+точно: любое другое написание молча игнорируется.
 
-### Bash script
+### Скрипт bash
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Добавляет **Скрипт bash**. Полей рабочего каталога и переменных окружения нет,
+потому что ни то, ни другое не настраивается:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Все шаги bash одного запуска используют общий рабочий каталог
+  `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` подставляется из хранилища учётных данных, поэтому `gh` и
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` работают без настройки.
+- Скрипт запускается как буквально указанный исполняемый файл `bash`, поэтому
+  `bash` должен быть в `PATH` на хосте сервера. Это важно учитывать в Windows.
 
-### Router
+### Маршрутизатор
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Маршрутизатор вычисляет условие и возвращает ключ маршрута; движок активирует
+только то исходящее ребро, чей ключ маршрута совпал, а остальные ветви помечает
+пропущенными.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+При выборе маршрутизатора поле **Ключ выхода** заменяется редактором условий.
+Выберите один из четырёх режимов:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Файл(ы) существуют — любой** — направляет `"true"`, когда существует любой
+  из перечисленных путей.
+- **Файлы существуют — все** — направляет `"true"`, только когда существуют все
+  перечисленные пути.
+- **Сравнение** — сравнивает значение состояния с литералом.
+- **Переключить** — направляет по значению ключа состояния, с вариантом по
+  умолчанию.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Затем задайте соответствующие ключи маршрута на исходящих рёбрах (см.
+[Соединить узлы](#соединить-узлы)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ru-RU/руководство/справка/шаги-конвейера/).
+Логические группы `and` / `or` / `not` поддерживаются телом, но их нельзя
+собрать из этой формы — нужно написанное вручную дерево предикатов в
+`extras.predicate`. Полный словарь предикатов и операторов приведён в
+[справочнике по шагам конвейера](/ru-RU/руководство/справка/шаги-конвейера/).
 
-### Join
+### Объединение
 
-No configuration of its own: it waits for all of its upstream steps.
+Собственной конфигурации нет: он ждёт все свои вышестоящие шаги.
 
-### Approval gate
+### Шлюз подтверждения
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Шлюз запускает агента-утверждающего в скрытый разговор с промптом шлюза и
+приостанавливается. Утверждающий выясняет ваше решение в разговоре и отправляет
+его через `submit_output` в виде `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Решение попадает под ключ выхода (по умолчанию
+`approval_decision`), поэтому нижестоящий маршрутизатор-переключатель может по
+нему ветвиться.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Укажите в **Агент** утверждающего, а в **Шаблон промпта** — вопрос шлюза. Шлюз
+разрешается через `submit_output` в виде `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Узлы **Reviewer (prompt)** отправляют результат так же.
 
-### Team dispatch
+### Диспетчеризация команды
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Добавляет **ID команды** и **Режим диспетчеризации**. В списке ровно два режима:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — по одной задаче на участника, приостанавливается до завершения
+  всех.
+- `manager` — запускает лидера, который делегирует.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Любое другое сохранённое значение ведёт себя как `allParallel`. Установите
+**Редьюсер** в `append`, чтобы собрать результат каждого участника в список под
+ключом выхода.
 
-### For each and Call sub-pipeline
+### Для каждого и вызов подконвейера
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** по умолчанию проходит по ключу состояния `items` (`extras.iterableKey`
+/ `extras.itemKey` на узле). Он формирует свой промпт отдельно для каждого
+элемента (`{{item}}` по умолчанию) и запускает агента **один раз** с
+объединёнными промптами. Пустая коллекция завершается сразу с пустым списком.
+Это не отдельный параллельный запуск на каждый элемент.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** приостанавливается, пока дочерний запуск не достигнет
+терминального состояния, а затем объединяет конечное состояние дочернего запуска
+под ключом выхода (по умолчанию `subflow_result`). Укажите дочерний шаблон через
+`extras.templateId`. Шаблон не может вызывать сам себя; неудачный или отменённый
+дочерний запуск проваливает родительский шаг, и тогда вступают в силу политика
+повторов и продолжения при ошибке этого шага.
 
-## Declare inputs and allow manual runs
+## Объявить входные данные и разрешить ручные запуски
 
-Both live behind **Manual run** in the editor header.
+И то, и другое находится за пунктом **Ручной запуск** в заголовке редактора.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Нажмите **Ручной запуск**.
+2. Включите **Разрешить ручной запуск**. Этот переключатель сохраняется сразу —
+   он создаёт (или удаляет) строку триггера `manual`, благодаря которой шаблон
+   появляется в окне запуска.
+3. Задайте **Макс. параллельных запусков**, если нужен предел (пусто — без
+   ограничений). Лишние запуски ждут в состоянии `queued`, пока не освободится
+   слот.
+4. Нажмите **Добавить поле** для каждого поля формы, которое должен собирать
+   ручной запуск:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Поле                          | Описание                                                       |
+| ----------------------------- | -------------------------------------------------------------- |
+| **Ключ**                      | Ключ состояния, под которым хранится значение; ссылайтесь на него как `{{key}}` |
+| **Подпись**                   | Отображаемая подпись (по умолчанию — ключ)                     |
+| **Тип**                       | Текст, Многострочный текст, Число, Переключатель, Список, Репозиторий |
+| **Варианты (через запятую)**  | Варианты через запятую, только для типа «Список»               |
+| **Значение по умолчанию**     | Предзаполненное значение                                       |
+| **Заполнитель**               | Подсказка внутри пустого поля                                  |
+| **Текст справки**             | Вспомогательный текст под полем                                |
+| **Обязательное**              | Блокирует ли форма запуска отправку при пустом значении         |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Поле **Репозиторий** показывает выбор репозиториев рабочего пространства и
+записывает в полезную нагрузку запуска `repo_id`, `repo_local_path`,
+`repo_full_name`, а если у репозитория есть GitHub-remote, то ещё и `repo_owner`
+и `repo_name`.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Нажмите **Сохранить** в диалоге. Изменения полей входят в черновик и
+   сохраняются, когда вы сохраняете шаблон.
 
-## Save and enable
+## Сохранить и включить
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/).
+1. Нажмите **Сохранить** в заголовке редактора. До этого в заголовке
+   отображается «Несохранённые изменения».
+2. Вернитесь в **Настройки → Рабочее пространство → Шаблоны конвейеров** и
+   убедитесь, что переключатель в строке шаблона включён. Движок отказывается
+   запускать отключённый шаблон, и отключённый шаблон никогда не появляется в
+   окне запуска.
+3. Чтобы он запускался автоматически, перетащите триггер из библиотеки узлов на
+   холст — см.
+   [Настроить триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/).
 
-## Related guides
+## Связанные руководства
 
-- [Run a pipeline manually](/ru-RU/руководство/практические-руководства/запустить-конвейер/)
-- [Set up pipeline triggers](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
-- [Monitor pipeline runs](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
-- [Pipeline steps reference](/ru-RU/руководство/справка/шаги-конвейера/)
+- [Запустить конвейер вручную](/ru-RU/руководство/практические-руководства/запустить-конвейер/)
+- [Настроить триггеры конвейера](/ru-RU/руководство/практические-руководства/триггеры-конвейера/)
+- [Мониторить запуски конвейеров](/ru-RU/руководство/практические-руководства/мониторить-конвейеры/)
+- [Типы шагов конвейера](/ru-RU/руководство/справка/шаги-конвейера/)
 
-## Related concepts
+## Связанные понятия
 
-- [Pipelines](/ru-RU/руководство/понятия/конвейеры/)
+- [Конвейеры и автоматизация](/ru-RU/руководство/понятия/конвейеры/)

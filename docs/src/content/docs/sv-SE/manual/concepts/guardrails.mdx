@@ -1,248 +1,254 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: Räcken – en policy för varje muterande åtgärd
+description: Varför Control Center leder varje sidoeffekt från en agent genom en enda motor för tillåt/fråga/neka, hur ActionClass-taxonomin medvetet hålls liten och vad autonomireglaget verkligen ändrar.
 slug: sv-SE/handbok/koncept/racken
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Agenter i Control Center kan ta bort filer, pusha grenar, publicera pull
+requests och anropa externa API:er. Var och en av dessa är ett eget _slag_ av
+risk, och länge hade bara en av dem – skalkommandon – en policy. Räckena finns
+för att svara på en och samma fråga för varje muterande åtgärd en agent kan
+utföra, oavsett vilken körare eller vilket verktyg som föreslår den: **är det
+här tillåtet, kräver det ett godkännande, eller nekas det?**
 
-## One engine, every chokepoint
+## En motor, alla kontrollpunkter
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+Det finns exakt en policymotor. Den tillfrågas vid varje punkt där en åtgärd kan
+lämna systemet: den inbyggda harnessens verktygsregister, MCP-dispatcherns grind
+på serversidan och mutationer i repo-operationer. En regel som skrivs en gång
+gäller därför både den inbyggda körningen och externa agent-CLI:er – det finns
+ingen andra, tystare väg runt den. Den äldre kommandopolicyn för enbart bash
+fungerar fortfarande: en regel kan matcha ett kommandoprefix i stället för en
+åtgärdsklass, och de två formerna samsas i samma regellager.
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/sv-SE/handbok/koncept/sandlada-och-sakerhet/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+Motorn är dock ingen ersättning för OS-sandlådan, och sandlådan är ingen
+ersättning för motorn. De svarar på olika frågor: räckena avgör om ett anrop som
+Control Center kan se alls får ske, medan sandlådan begränsar var den
+resulterande processen kan nå. `cc_server` tillämpar sandlådan där värden
+erbjuder en backend – men [Windows erbjuder ingen och Linux kräver `bwrap` och `socat`](/sv-SE/handbok/koncept/sandlada-och-sakerhet/). På
+sådana värdar är räckena det yttersta verkställighetslagret i stället för en
+policy ovanpå ett golv, vilket är värt att veta när du bestämmer hur tillåtande
+du vill vara.
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: en medvetet sluten taxonomi
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+Varje muterande verktyg deklarerar vilka **ActionClasses** det tillhör, ur en
+sluten uppsättning på tretton effektklasser. Fem av dem frågar först som
+standard; resten tillåter, och det är en regel som ändrar på det.
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| Klass                      | Inbyggd standard | Vad den omfattar                                                  |
+| -------------------------- | ---------------- | ----------------------------------------------------------------- |
+| `fileDelete`               | **Fråga först**  | Ta bort en fil (en raderande skrivning, `rm`)                     |
+| `gitPush`                  | **Fråga först**  | Pusha till en git-remote                                          |
+| `prCreate`                 | **Fråga först**  | Skapa en pull request                                             |
+| `prPublish`                | **Fråga först**  | Publicera en granskning eller slå ihop en PR                      |
+| `vendorSyncWrite`          | **Fråga först**  | Skriva till ett externt ärendesystem (Linear, Jira, GitHub-synk)  |
+| `fileWriteOutsideWorktree` | tillåt           | Skriva en fil utanför den isolerade worktreen                     |
+| `gitCommit`                | tillåt           | Skapa en commit                                                   |
+| `networkEgress`            | tillåt           | Nätverksutgång (hämta från webben, godtycklig HTTP)               |
+| `secretAccess`             | tillåt           | Läsa en hemlighet eller autentiseringsuppgift                     |
+| `packageInstall`           | tillåt           | Installera ett paket (npm, pip, pub, brew)                        |
+| `processSpawn`             | tillåt           | Starta en process (shell och allt som går via shell)              |
+| `workspaceMutation`        | tillåt           | Ändra arbetsytans struktur (repos, ytor, agenter)                 |
+| `enclosureControl`         | tillåt           | Styra en avskild miljö (station): starta en VM, skicka in indata  |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+De åtta klasser som tillåter som standard valdes utifrån antagandet att
+sandlådegolvet ligger under dem. Det stämmer där värden erbjuder en backend, och
+det stämmer inte på Windows eller på en Linux-maskin som saknar `bwrap` och
+`socat` – så om du vill att `fileWriteOutsideWorktree` eller `packageInstall`
+ska gå genom en grind där, är det en regel du själv måste skriva.
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+Uppsättningen är sluten med avsikt. Ett nytt muterande verktyg som inte
+deklarerar någon klass faller i spärrtestet, så taxonomin kan bara växa genom
+ett uttryckligt, genomtänkt beslut – "taxonomispridning är döden för den här
+funktionen". Tretton klasser räcker för att uttrycka de policyer folk faktiskt
+skriver (pusha aldrig utan att fråga, radera aldrig utanför en worktree, tillåt
+alltid läsning) och är få nog för att inställningsgränssnittet ska förbli
+begripligt.
 
-## Rules and scope resolution
+## Regler och omfångsuppslagning
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+En regel mappar `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Omfång ligger inuti varandra, från mest till minst specifikt:
 
-**space > agent > workspace > mode preset > built-in default**
+**yta > agent > arbetsyta > lägesförinställning > inbyggd standard**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+Uppslagningen sker **med specificitet först**: det första omfånget med en
+matchande regel avgör, och uppslagningen stannar där. Mest restriktiv används
+bara som utslagsregel – mellan två lika specifika regler inom ett omfång och när
+flera klasser som en enda åtgärd deklarerar kombineras. Inom ett omfång matchar
+en kommandoregel på det längsta kommandoprefixet. Tillåt vinner aldrig över neka
+någonstans.
 
-Two decisions carry hard guarantees:
+Två beslut har hårda garantier:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **Frågor stänger vid fel.** En `prompt` utan ansluten godkännare löses till
+  _nekad_. En obesvarad fråga är aldrig ett ja.
+- **Mest restriktiv kombination.** En åtgärd som spänner över flera klasser
+  kombinerar dem så restriktivt som möjligt; när flera klasser frågar först
+  listar en enda bekräftelse dem alla.
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+Det finns medvetet ingen spärr per tur. Varje verktygsanrop löser upp policyn på
+nytt från grunden, så upprepade frågor för samma åtgärd begränsas av operatörens
+eget "kom ihåg det här beslutet" i stället för av något som gäller per tur.
 
-## Argument-level rules
+## Regler på argumentnivå
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+En regel kan begränsa ARGUMENTEN i en åtgärd, inte bara verbet. "Får pusha" och
+"får pusha till `feature/*`" är olika påståenden, och bara det andra är en
+kontroll – en behörighetsgrind som bara auktoriserar verbet ligger bakom de
+flesta publicerade agentincidenter.
 
-A constraint may name:
+En begränsning kan namnge:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **sökvägar** – globmönster (`repos/**`, `!**/.env`)
+- **refs** – git-refar, med `!` som negering (`['**', '!main']` läses som "vilken
+  gren som helst utom main")
+- **värdar** – nätverksdestinationer, med jokertecken för underdomäner (`*.internal`)
+- **kommandon** – kommandoprefix, matchade på en ordgräns
+- **tak** – `maxCount` / `maxCents`, så att "radera upp till 50 filer" går att
+  uttrycka
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+Tre egenskaper följer av att grammatiken hålls sluten och utan loopar, och alla
+tre är själva poängen: varje regel kan skrivas ut som en mening du kan läsa
+tillbaka, varje avslag kan namnge den begränsning som matchade, och hela policyn
+kan räknas upp – du kan se vad en agent får göra *innan* den kör.
 
-Three rules that matter:
+Tre regler som spelar roll:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- En **begränsad regel är mer specifik** än en obegränsad regel i samma omfång,
+  så "neka push till `main`" slår "tillåt push" utan att någon behöver tänka på
+  ordningen.
+- En **restriktiv** regel (neka / fråga först) gäller när begäran rör *något*
+  värde som regeln namnger; en **tillåtande** regel (tillåt) gäller bara när
+  begäran ligger *helt och hållet* inom den. Om båda lästes på samma sätt skulle
+  en agent kunna tvätta en förbjuden sökväg genom att lägga en oskyldig bredvid.
+- En regel som namnger en aspekt som begäran inte säger något om tillämpas
+  varken eller hoppas över: den **eskalerar till ett godkännande**. Att tyst
+  hoppa över skulle göra varje regel för skyddade grenar verkningslös mot ett
+  verktyg som inte rapporterar sin ref; att tyst neka skulle avvisa varje push
+  som extraheraren inte kan beskriva. Utan ansluten godkännare omvandlar den
+  befintliga regeln om stängning vid fel eskaleringen till ett avslag.
 
-## What a command rule can and cannot catch
+## Vad en kommandoregel kan och inte kan fånga
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+En `commandPrefix`-regel matchar på en ordgräns: `git push` täcker
+`git push origin main` och inte `git pushx`. Den **normaliserar** inte skalet.
+`git  push` (två mellanslag), `cd sub && git push` och
+`GIT_DIR=… git push` är alla olika strängar, och ingen av dem matchar en regel
+om `git push`.
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+Det är en verklig gräns, och den sägs rakt ut i stället för att slätas över:
+kommandoregler är en bekvämlighet för operatören för att forma en agents vanliga
+beteende, **inte** en gräns mot en fientlig agent. Gränserna är effektklasserna
+(som ett verktyg deklarerar och inte kan skriva om), lägets kommandonät under
+regellagret och OS-sandlådan under båda. En kommandoregel som löses till `allow`
+luckrar aldrig upp någon av dem – kommandonätet körs efteråt och dess `deny` är
+slutgiltigt.
 
-## Standing approvals
+## Stående godkännanden
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Att svara på en fråga med "kom ihåg det här" skriver en riktig policyregel:
+avgränsad till ett omfång (yta / agent / arbetsyta), **argumentbegränsad** (att
+godkänna en push till `feature/login` ger `feature/**`, inte `main`) och
+**självåterkallande** efter en uttrycklig TTL. Att säga ja de närmaste timmarna
+är inte samma sak som att tyst skriva om din permanenta policy, och reglerna den
+skriver hamnar i samma regellager med ursprunget `remembered` och ett
+utgångsdatum, så de kan återkallas i förtid.
 
-## Enforcement levels
+## Verkställighetsnivåer
 
-Each rule carries one:
+Varje regel har en:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **rådgivande** – tillåt, men registrera att regeln matchade. Det här är
+  införandevägen: rulla ut en strikt regel i rådgivande läge, läs
+  granskningskedjan i en vecka för att se exakt vad den *skulle* ha blockerat
+  och skärp den sedan. Utan den här nivån slås strikta policyer aldrig på.
+- **mjuk** – neka, men kan åsidosättas av någon med behörigheten att
+  åsidosätta, med en registrerad motivering. Själva åsidosättandet är en
+  granskningsbar händelse.
+- **hård** (standard) – neka. Inget åsidosätter den.
 
-## The managed tier
+## Den hanterade nivån
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+En installationsoperatör kan låsa policy som ingen arbetsytas administratör kan
+lätta på. Hanterade regler ligger på serversidan och slås samman **så
+restriktivt som möjligt** med varje arbetsytas egen kedja – de är inte ett
+omfång i toppen av kedjan, för en hanterad `allow` i toppen skulle låta
+installationen åsidosätta en arbetsytas neka, vilket är motsatsen till vad en
+åtstramning är till för. En hanterad regel kan därför bara strama åt.
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+Att sätta `CC_SERVER_MANAGED_POLICY` till en JSON-fil går helt före de lagrade
+reglerna, vilket är det som låter en operatör låsa en hållning som inget
+admin-gränssnitt kan ändra – svaret på "kan jag hindra mina utvecklare från att
+stänga av säkerhetskontrollerna?".
 
-## The autonomy dial is a profile, not a parallel system
+## Autonomireglaget är en profil, inte ett parallellt system
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+Autonomireglaget per yta är en namngiven profil ovanpå samma regellager, inte en
+andra mekanism. Dess tre inställningar lagras och skickas som `proposeOnly`,
+`actWithApproval` och `actFreely` (formerna med bindestreck är bara UI-text, och
+`autonomy.setForSpace` avvisar allt annat). Lämnas det oanvänt beter det sig som
+`actWithApproval`.
 
-What each one does to a resolved decision:
+Vad var och en gör med ett upplöst beslut:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** nekar varje grindat verktyg direkt. Agenten kan fortfarande
+  resonera och svara; den kan bara inte agera, och dess meddelande säger varför.
+- **`actWithApproval`** (och oanvänt) är godkännandegrinden som stänger vid fel,
+  som beskrivs ovan.
+- **`actFreely`** förhandsgodkänner allt som inte löstes till ett hårt `deny`.
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+Den sista förtjänar att sägas rakt ut i stället för att lindas in: under
+`actFreely` eskaleras inte ett `prompt`-beslut till en godkännare – det tillåts
+och ingen tillfrågas. Bara en uttrycklig `deny`-regel överlever reglaget. Så
+`actFreely` är en medveten gåva av autonomi, inte en bekvämlighetsinställning,
+och regeln om stängning vid fel skyddar precis det fall där den spelar roll
+(`actWithApproval`, standard).
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+Delegering mellan agenter bevakas vid kontrollpunkten `delegate_task` av alla
+fyra vakter: en djupgräns (standard 3), cykeldetektering, ett **autonomitak** (en
+delegerad kan aldrig agera med mer autonomi än sin delegerare – privilegier kan
+inte tvättas genom att skicka arbete till en friare agent) och en **budgetram**
+(delegering debiterar delegerarens återstående budget och kan inte skapa mer).
+Var och en avvisas högt och tydligt, med vaktens skäl återgivet ordagrant till
+agenten.
 
-## The adapter honesty matrix
+## Adapternas ärlighetsmatris
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+Det är inte alla körare som låter Control Center fånga upp varje åtgärd. Externa
+agent-CLI:er kör vissa verktyg internt i den egna processen, där ingen grind kan
+sitta. I stället för att låtsas något annat bär varje adapter en **ärlighetsmatris**:
+per adapter, huruvida Control Center filtrerar verktygsytan, fångar upp
+verktygsanrop, observerar slutförandekontraktet, kan se körarens inbyggda
+verktyg och huruvida verktyg som körs i processen omfattas av en sandlådeprofil.
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+Två poster är värda att läsa innan du litar på en konfiguration. Den inbyggda
+harnessen deklarerar att dess filverktyg i processen **inte** omfattas av
+sandlådan – verktygsytan och den här policymotorn är den enda filsystemgräns den
+har. Claude Code deklarerar att dess egna verktygsanrop **inte** går att fånga
+upp, eftersom den startas med `--dangerously-skip-permissions`; Control Center
+ser bara dess `mcp__*`-anrop, och dess egna läs-, skriv-, redigerings- och
+shellverktyg körs osedda.
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+Inställningsskärmen visar den här matrisen, för det enda oförlåtliga
+misslyckandet för ett räckessystem är att påstå en täckning som inte finns.
 
-## Probing policy before it bites
+## Prova policyn innan den biter
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+Räckena finns under **Inställningar → Arbetsyta → Agentbehörigheter**
+(`/workspaces/<id>/settings/workspace/permissions`). Skärmen har policymatrisen
+där regler skrivs, policymallar, en tänk-om-probe, auktoriseringsgranskningskedjan
+och adapternas ärlighetsmatris.
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+Proben tar en åtgärdsklass (eller ett kommando) och ett omfång och visar vilken
+regel som avgjorde och varför. Eftersom uppslagningen är ren och deterministisk –
+samma åtgärd, samma omfång, samma beslut – är probens svar det svar agenten
+kommer att få.
 
-## Related concepts
+## Relaterade koncept
 
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/sv-SE/handbok/how-to-guider/konfigurera-racken/): writing and testing rules in practice
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): vad som faktiskt begränsar en agentkörning och hur långt OS-golvet under den här motorn når
+- [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/): ytor, principaler och var autonomireglaget finns
+- [Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/): att skriva och testa regler i praktiken

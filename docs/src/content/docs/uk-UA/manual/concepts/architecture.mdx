@@ -1,37 +1,38 @@
 ---
-title: Architecture
-description: How Control Center is structured with a thin-client server model, feature-first Clean Architecture and ports and adapters.
+title: "Архітектура"
+description: "Як Control Center структуровано: модель тонкого клієнта із сервером, Clean Architecture з первинністю фіч і патерн «порти та адаптери»."
 dateModified: 2026-09-19
 slug: uk-UA/керівництво/поняття/архітектура
+sourceHash: 8431b56a5245d312fe8d63c003d9fece3a3a2164
 ---
 
-## Overview
+## Огляд
 
-Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+Control Center дотримується Clean Architecture з первинністю фіч (feature-first) і патерном «порти та адаптери». Кодову базу організовано навколо бізнес-доменів (фіч), а суворі правила залежностей перевіряє автоматизований тест архітектури.
 
-## A thin client over a headless server
+## Тонкий клієнт поверх headless-сервера
 
-Control Center is a **thin-client architecture**. No client opens the database — a headless **`cc_server`** process owns the data (a small `global.db` plus one SQLite file per workspace, opened lazily) and serves it over WebSocket RPC. The desktop app, the web build and the phone companion are all renderers over that one RPC connection.
+Control Center має **архітектуру тонкого клієнта**. Жоден клієнт не відкриває базу даних — дані належать headless-процесу **`cc_server`** (невелика база `global.db` плюс один файл SQLite на робочий простір, що відкривається ліниво), і він віддає їх через WebSocket RPC. Десктопний застосунок, вебзбірка та застосунок-компаньйон для телефона — усі вони лише рендерери поверх цього єдиного RPC-з’єднання.
 
-The desktop chooses how it reaches its server on first launch: **local** (it spawns a `cc_server` on this machine and talks over loopback — the default) or **remote** (it dials a `cc_server` elsewhere over a secure WebSocket). The web client is always remote. The boot resolver (`bootstrap/server_backend.dart`) picks the path before Riverpod exists, then overrides `rpcClientProvider` with the connected client — so every feature reads and writes through the server rather than a local database.
+Під час першого запуску десктоп обирає, як він з’єднується зі своїм сервером: **локально** (він запускає `cc_server` на цій машині та спілкується через loopback — типовий варіант) або **віддалено** (він під’єднується до `cc_server` деінде через захищене WebSocket-з’єднання). Вебклієнт завжди працює віддалено. Розв’язувач завантаження (`bootstrap/server_backend.dart`) обирає шлях ще до появи Riverpod, а потім перевизначає `rpcClientProvider` під’єднаним клієнтом — тож кожна фіча читає й записує через сервер, а не через локальну базу даних.
 
-The RPC layer itself is **stateless**: a session is authenticated, but it is not bound to a workspace. Every workspace-scoped call carries its own `workspace_id` in its arguments and the dispatcher refuses such a call without one. That is what lets two clients on one server hold different active workspaces without a server-held "current workspace" to disagree about — and it means isolation is enforced per call, not per connection.
+Сам шар RPC є **безстановим**: сесія проходить автентифікацію, але не прив’язана до робочого простору. Кожен виклик у межах робочого простору передає власний `workspace_id` у своїх аргументах, і диспетчер відхиляє такий виклик без нього. Саме це дає змогу двом клієнтам на одному сервері тримати різні активні робочі простори без серверного «поточного робочого простору», щодо якого вони могли б розійтися, — і означає, що ізоляція забезпечується на рівні виклику, а не з’єднання.
 
-This is a single resolved-lockfile **Dart workspace** of twenty-one members — fifteen packages plus six apps — with the desktop+web app (`control_center`) as the workspace root. The six apps are the headless server binary (`cc_server`), the headless fleet executor (`cc_worker`), the phone PWA (`cc_remote`), the WebSocket relay broker (`cc_signaling_server`), the Widgetbook gallery (`cc_gallery`) and the public demo host (`cc_demo_server`). The fifteen packages are `cc_ui` (design system), `cc_domain` (pure-Dart shared kernel: entities, value objects, ports, events and every feature's domain layer), `cc_harness` (the built-in agent kernel: a pure-Dart agent loop — messages, provider port, tools, compaction, steering, hooks, subagents — with no `dart:io` and no other `cc_*` dependency), `cc_harness_runtime` (the built-in harness runtime adapter: VM-only streaming providers, OAuth/PKCE credential brokering, credential stores and the generic tool set — runs agents with no external CLI installed), `cc_rpc` (client transports), `cc_host` (server kernel), `cc_data` (remote repositories), `cc_persistence` (server-side DB), `cc_server_core` (app-server composition + identity/presence/fleet/evals runtime), `cc_infra` (VM-only adapters), `cc_mcp` (MCP tools), `cc_mcp_client` (client for external MCP servers, bridging their tools into the local registry), `cc_markdown` (in-repo markdown engine), `cc_natives` (FFI leaf) and `system_audio_capture`. See [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/) for the full client matrix and what runs where.
+Це **Dart-воркспейс** з єдиним зафіксованим lockfile, що налічує двадцять одного члена — п’ятнадцять пакетів і шість застосунків, — а коренем воркспейсу є застосунок для десктопа й вебу (`control_center`). Шість застосунків — це бінарник headless-сервера (`cc_server`), headless-виконавець флоту (`cc_worker`), PWA для телефона (`cc_remote`), брокер-ретранслятор WebSocket (`cc_signaling_server`), галерея Widgetbook (`cc_gallery`) і хост публічної демонстрації (`cc_demo_server`). П’ятнадцять пакетів — це `cc_ui` (система дизайну), `cc_domain` (спільне ядро на чистому Dart: сутності, об’єкти-значення, порти, події та доменний шар кожної фічі), `cc_harness` (вбудоване ядро агента: цикл агента на чистому Dart — повідомлення, порт провайдера, інструменти, компакція, керування, хуки, субагенти — без `dart:io` і без жодної іншої залежності `cc_*`), `cc_harness_runtime` (адаптер середовища виконання вбудованого harness: потокові провайдери лише для VM, брокеринг облікових даних OAuth/PKCE, сховища облікових даних і загальний набір інструментів — запускає агентів без установленого зовнішнього CLI), `cc_rpc` (транспорти клієнта), `cc_host` (ядро сервера), `cc_data` (віддалені репозиторії), `cc_persistence` (серверна БД), `cc_server_core` (композиція застосунку й сервера + середовище виконання ідентичності/присутності/флоту/eval), `cc_infra` (адаптери лише для VM), `cc_mcp` (інструменти MCP), `cc_mcp_client` (клієнт для зовнішніх MCP-серверів, який приєднує їхні інструменти до локального реєстру), `cc_markdown` (рушій markdown у репозиторії), `cc_natives` (листовий пакет FFI) і `system_audio_capture`. Про повну матрицю клієнтів і те, що де працює, див. [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/).
 
-## Dependency rule
+## Правило залежностей
 
 ```
 Presentation → Application/Providers → Domain ← Infrastructure
 ```
 
-- **Domain layer**: pure Dart entities, value objects, repository interfaces, ports and domain services. Zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+- **Доменний шар**: сутності, об’єкти-значення, інтерфейси репозиторіїв, порти й доменні сервіси на чистому Dart. Жодних імпортів з інфраструктури (ані dio, ані drift, ані мережевих моделей).
+- **Шар представлення**: екрани, віджети, нотифікатори. Без прямого доступу до drift, DAO чи шару даних; усе проходить через провайдери Riverpod → репозиторії.
+- **Інфраструктурний шар**: конкретні реалізації доменних портів та інтерфейсів репозиторіїв. Залежить від домену й ніколи навпаки.
 
-## Feature structure
+## Структура фічі
 
-The full feature shape is:
+Повна структура фічі така:
 
 ```
 feature_name/
@@ -41,105 +42,105 @@ feature_name/
 └── providers/     # Riverpod providers
 ```
 
-Very few features under `lib/features/` actually carry all four and the gaps are informative rather than accidental. The shared kernel absorbed every feature's `domain/` into `cc_domain` and the thin client holds no repository implementations, so most features under `lib/` are `presentation/` plus `providers/` and nothing else. A `data/` or `domain/` directory that survives in the client marks something genuinely client-side.
+Дуже мало фіч під `lib/features/` справді мають усі чотири каталоги, і ці прогалини радше інформативні, ніж випадкові. Спільне ядро поглинуло `domain/` кожної фічі в `cc_domain`, а тонкий клієнт не містить реалізацій репозиторіїв, тож більшість фіч під `lib/` — це `presentation/` плюс `providers/` і більше нічого. Каталог `data/` або `domain/`, що залишився в клієнті, позначає щось справді клієнтське.
 
-Two named exceptions are worth knowing:
+Варто знати про два винятки з назвами:
 
-- **`mcp`** is providers-only. Its settings and status UI lives under `settings/` and the tool surface itself is a package (`cc_mcp`), not a feature folder.
-- **`orchestration`** and **`plan_studio`** carry only `presentation/` and `providers/`.
+- **`mcp`** містить лише провайдери. Його інтерфейс налаштувань і статусу живе під `settings/`, а сам набір інструментів — це пакет (`cc_mcp`), а не тека фічі.
+- **`orchestration`** і **`plan_studio`** містять лише `presentation/` і `providers/`.
 
-The **`guardrails`** feature puts its domain layer in `cc_domain/features/guardrails/` rather than the root app, because the server enforces it: a rule maps an `ActionClass` (or a shell `commandPrefix`) to a decision — `allow`, `prompt`, or `deny` — at a scope, rules are stored per workspace and every governed agent action resolves through the policy chain before it runs. Resolution walks `space > agent > workspace > mode preset > built-in default` and **the first scope with a matching rule decides**; most-restrictive is only a tie-break within one scope and for combining the several classes one action declares. The operator-facing surface is Settings → Workspace → Agent permissions, at `/workspaces/<id>/settings/workspace/permissions`. See [Guardrails](/uk-UA/керівництво/поняття/обмеження/) for the model.
+Фіча **`guardrails`** виносить свій доменний шар у `cc_domain/features/guardrails/`, а не в кореневий застосунок, бо його забезпечує сервер: правило зіставляє `ActionClass` (або shell-`commandPrefix`) із рішенням — `allow`, `prompt` чи `deny` — у певній області застосування, правила зберігаються для кожного робочого простору, і кожна підконтрольна дія агента перед запуском розв’язується через ланцюжок політик. Розв’язання проходить шлях `space > agent > workspace > mode preset > built-in default`, і **вирішує перша область застосування з відповідним правилом**; найсуворіше правило лише розв’язує нічию в межах однієї області та потрібне для об’єднання кількох класів, які оголошує одна дія. Інтерфейс для оператора — Налаштування → Робочий простір → Дозволи агента, за шляхом `/workspaces/<id>/settings/workspace/permissions`. Модель описано в розділі [Обмеження](/uk-UA/керівництво/поняття/обмеження/).
 
-## Shared kernel
+## Спільне ядро
 
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features. It is pure Dart with zero infrastructure dependencies, which is what lets both the Flutter client and the Flutter-free server binary import the same definitions:
+`packages/cc_domain/lib/core/domain/` містить сутності та репозиторії, спільні для трьох і більше фіч. Це чистий Dart без жодних інфраструктурних залежностей — саме завдяки цьому і Flutter-клієнт, і серверний бінарник без Flutter можуть імпортувати ті самі визначення:
 
-- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
-- Identity & multiplayer: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
-- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
-- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
-- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
-- `DomainEventBus` + event types (workspace/agent, PR/review, messaging, ticketing, pipeline, orchestration, memory, calendar/meetings, identity & membership, observability)
+- Основні сутності: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`
+- Ідентичність і спільна робота: `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceMember`, `WorkspaceRole`
+- Сутності пам’яті: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Спільні об’єкти-значення: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Спільні порти: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Доменні сервіси: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- `DomainEventBus` + типи подій (робочий простір/агент, PR/перевірка, повідомлення, тікети, конвеєр, оркестрація, пам’ять, календар/зустрічі, ідентичність і членство, спостережуваність)
 
-## Identity & multiplayer
+## Ідентичність і спільна робота
 
-Control Center is multi-user: humans and agents are co-equal actors unified by a `Principal`. A workspace member is a `User` bound to a `Workspace` at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Membership is the access boundary** — not a pairing key — and per-repo grants keep workspace membership from out-privileging the forge. The first user minted on a fresh server owns the install; others join by invite or OIDC. Creating a workspace stamps that user as `owner`.
+Control Center — багатокористувацька система: люди й агенти є рівноправними дійовими особами, об’єднаними через `Principal`. Учасник робочого простору — це `User`, прив’язаний до `Workspace` у межах `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`). **Межа доступу — це членство**, а не ключ прив’язки, і дозволи на рівні репозиторію не дають членству в робочому просторі перевищити права хоста коду. Перший користувач, створений на чистому сервері, володіє інсталяцією; інші приєднуються за запрошенням або через OIDC. Створення робочого простору позначає цього користувача як `owner`.
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW)**, not a CRDT. Presence (who's here, where they are, cursors, typing, an agent's live status and running cost) is a separate **ephemeral lane that is never persisted**; durable state rides an optimistic-mutation + server-rebase + LWW backbone. Humans and agents share one roster. With a single human operator the presence lane idles and no roster chrome appears — multiplayer costs the solo user nothing.
+Спільна робота в реальному часі — це **авторитетний сервер + last-writer-wins (LWW) для кожного поля**, а не CRDT. Присутність (хто тут, де саме, курсори, набір тексту, поточний статус агента й поточні витрати) — це окрема **ефемерна смуга, яка ніколи не зберігається**; довготривалий стан тримається на основі оптимістичних змін + повторного узгодження на сервері + LWW. Люди й агенти поділяють один реєстр. Коли оператор лише один, смуга присутності простоює і жодних елементів інтерфейсу реєстру не з’являється — спільна робота нічого не коштує користувачу-одинаку.
 
-## Ports and adapters
+## Порти та адаптери
 
-Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure. Because the headless server owns the data and must build Flutter-free, nearly every adapter is VM-only and lives in `packages/cc_infra/lib/src/`, organized by concern:
+Порти — це абстрактні інтерфейси в доменному шарі. Адаптери — конкретні реалізації в інфраструктурі. Оскільки headless-сервер володіє даними й має збиратися без Flutter, майже кожен адаптер призначений лише для VM і лежить у `packages/cc_infra/lib/src/`, згрупований за призначенням:
 
-| Port                   | Adapter location                                                                                            |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`)                                              |
-| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`)             |
-| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`)                                                         |
-| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`)                                                    |
-| `NotificationPort`     | `lib/core/notifications/` (client-side: renders server events locally)                                      |
-| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`)     |
-| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp and GitHub Issues are ticket-sync adapters in `cc_infra/lib/src/tickets/sync/`; local tickets live in the workspace database with no `TicketProviderPort`. |
-| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (a pure-Dart domain service — it needs no infrastructure) |
+| Порт                   | Розташування адаптера |
+| ---------------------- | --------------------- |
+| `SandboxPort`          | `cc_infra/lib/src/sandboxing/` (`native_sandbox_adapter.dart`) |
+| `CredentialBrokerPort` | `cc_infra/lib/src/sandboxing/` (`env_credential_broker.dart`, `github_fine_grained_broker.dart`) |
+| `GitRepoInspectorPort` | `cc_infra/lib/src/git/` (`git_repo_inspector.dart`) |
+| `EmbeddingPort`        | `cc_infra/lib/src/embedding/` (`embedding_service.dart`) |
+| `NotificationPort`     | `lib/core/notifications/` (на боці клієнта: локально рендерить серверні події) |
+| `AgentBackend`         | `cc_infra/lib/src/dispatch/backends/` (`acp_backend.dart`, `harness_backend.dart`, `cli_backends.dart`) |
+| `TicketProviderPort`   | `cc_infra/lib/src/tickets/linear/` (`LinearTicketAdapter`). Jira, ClickUp і GitHub Issues — це адаптери синхронізації тікетів у `cc_infra/lib/src/tickets/sync/`; локальні тікети живуть у базі даних робочого простору без `TicketProviderPort`. |
+| `PipelineEnginePort`   | `cc_domain` `features/pipelines/domain/services/` (доменний сервіс на чистому Dart — інфраструктура йому не потрібна) |
 
-The app composition root (`di/providers.dart`) binds client-side ports to implementations via Riverpod providers; the server composes its adapters in `cc_server_core`.
+Корінь композиції застосунку (`di/providers.dart`) зв’язує клієнтські порти з реалізаціями через провайдери Riverpod; сервер збирає свої адаптери в `cc_server_core`.
 
-## State management
+## Керування станом
 
-**Riverpod** for all client state:
+**Riverpod** для всього стану клієнта:
 
-- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
-- `FutureProvider<T>` for async data
-- Lists and live rows arrive over RPC subscriptions as `AsyncValue<List<T>>` — the server uses Drift `.watch()` internally; no client opens Drift
-- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+- `Notifier<T>` і `AsyncNotifier<T>` для змінюваного стану
+- `FutureProvider<T>` для асинхронних даних
+- Списки та живі рядки надходять через RPC-підписки як `AsyncValue<List<T>>` — усередині сервер використовує Drift `.watch()`; жоден клієнт не відкриває Drift
+- Інструменти MCP отримують залежності як типізовані параметри конструктора, ніколи не `Ref`
 
-## Database
+## База даних
 
-**Drift** (SQLite), split into two databases, both in `cc_persistence`:
+**Drift** (SQLite), розділений на дві бази даних, обидві в `cc_persistence`:
 
-- **`GlobalDatabase`** (`<dataDir>/global.db`) — a short list of genuinely server-wide tables: the workspace registry, users/preferences/paired devices, SSO connections, install-wide server settings, managed action policies (an install-wide clamp that can only tighten workspace guardrails), the per-user newsfeed, the fleet queue (workers/jobs/placement log), the pre-auth `workspace_routes` index and install metadata. Boot opens only this file, so startup cost stays flat no matter how much history the workspaces accumulate. Adding a table here is an isolation decision a ratchet test forces you to argue for.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — one _directory_ per workspace, holding one SQLite file plus everything else that belongs only to that workspace, so a conversation's worktrees and agent files sit beside the database and are deleted with it. Nearly everything lives here: agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, repos. Files open lazily on first touch through `WorkspaceDatabaseManager.of(workspaceId)` and pay their own `quick_check`, FTS/trigger install and `vector_init` then.
+- **`GlobalDatabase`** (`<dataDir>/global.db`) — короткий список таблиць, справді спільних для всього сервера: реєстр робочих просторів, користувачі/налаштування/прив’язані пристрої, підключення SSO, серверні налаштування всієї інсталяції, керовані політики дій (затискач на рівні інсталяції, який може лише посилювати обмеження робочих просторів), стрічка новин для кожного користувача, черга флоту (воркери/завдання/журнал розміщення), індекс `workspace_routes` до автентифікації та метадані інсталяції. Завантаження відкриває лише цей файл, тож витрати на запуск залишаються незмінними, скільки б історії не накопичили робочі простори. Додавання таблиці сюди — це рішення про ізоляцію, яке ratchet-тест змушує вас обґрунтувати.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — один _каталог_ на робочий простір, що містить один файл SQLite та все інше, що належить лише цьому робочому простору, тож worktree розмови й файли агентів лежать поряд із базою даних і видаляються разом із нею. Тут живе майже все: агенти, простори, тікети, пам’ять, конвеєри, зустрічі, граф коду, перевірки, репозиторії. Файли відкриваються ліниво при першому зверненні через `WorkspaceDatabaseManager.of(workspaceId)` і тоді ж виконують власні `quick_check`, встановлення FTS/тригерів та `vector_init`.
 
-Both halves started from a squashed v1 baseline — `onCreate` builds the current schema — with migration steps appended only when a deployed database has to be carried forward.
+Обидві половини починалися зі зведеної базової версії v1 — `onCreate` будує поточну схему — а кроки міграції додаються лише тоді, коли розгорнуту базу даних треба перенести далі.
 
-Because one workspace is one file, exporting a workspace is a single `VACUUM INTO` statement (`workspace.export`), not a table-by-table dump; `workspace.import` adopts such a file and uses the embedded `workspace_meta` to tell its own file re-adopted from one that came from another install.
+Оскільки один робочий простір — це один файл, експорт робочого простору є одним виразом `VACUUM INTO` (`workspace.export`), а не дампом таблиця за таблицею; `workspace.import` приймає такий файл і за вбудованим `workspace_meta` розрізняє повторно прийнятий власний файл від файла з іншої інсталяції.
 
-Both databases are owned by `cc_persistence` and opened only by `cc_server`; no client opens a DB — every client reads/writes over RPC. Tables are defined in `packages/cc_persistence/lib/database/tables/`, DAOs in `.../daos/`; domain entities are pure Dart, separate from Drift table classes, with mapping in the data layers. FTS5 handles full-text search and `sqlite_vector` embeddings, both server-only; both databases run `PRAGMA foreign_keys=ON` in WAL journal mode.
+Обидві бази даних належать `cc_persistence`, і відкриває їх лише `cc_server`; жоден клієнт не відкриває БД — кожен клієнт читає й записує через RPC. Таблиці визначено в `packages/cc_persistence/lib/database/tables/`, DAO — у `.../daos/`; доменні сутності — це чистий Dart, окремо від класів таблиць Drift, а зіставлення відбувається в шарах даних. FTS5 відповідає за повнотекстовий пошук, а `sqlite_vector` — за ембеддинги; і те, й інше працює лише на сервері. Обидві бази даних працюють із `PRAGMA foreign_keys=ON` у режимі журналу WAL.
 
-## Routing
+## Маршрутизація
 
-**go_router**, with one fact that governs the rest: **every in-app destination is workspace-prefixed** as `/workspaces/:workspaceId/…`. The workspace id in the URL is the single source of truth for the active workspace — `activeWorkspaceIdProvider` is driven from the route, not the other way round — which is why reading workspace-scoped data outside a prefixed route has nowhere to get its id from.
+**go_router**, і одна особливість визначає все інше: **кожен внутрішній маршрут застосунку має префікс робочого простору** у вигляді `/workspaces/:workspaceId/…`. Ідентифікатор робочого простору в URL — єдине джерело істини для активного робочого простору: `activeWorkspaceIdProvider` керується маршрутом, а не навпаки, — саме тому читання даних у межах робочого простору поза маршрутом із префіксом не має звідки взяти його ідентифікатор.
 
-- Route builder _functions_ in `router/routes.dart`, each taking the workspace id as its first argument, not string constants
-- Four pre-context routes are unprefixed: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker)
-- `ShellRoute` wraps the app shell; those four surfaces render full-screen outside it
-- Auth guard: incomplete setup goes to `/onboarding`; a completed setup whose forge credential is gone goes to `/signed-out`. Complete means at least one forge is connected for the signed-in user and at least one workspace exists — not GitHub specifically, and the `gh` CLI is not an authentication method
-- Onboarding gate in `features/auth/providers/`
+- Функції-_білдери_ маршрутів у `router/routes.dart`, кожна бере ідентифікатор робочого простору як перший аргумент, а не рядкові константи
+- Чотири маршрути до контексту не мають префікса: `/splash`, `/onboarding`, `/signed-out` і `/workspaces` (засіб вибору)
+- `ShellRoute` обгортає оболонку застосунку; ці чотири екрани рендеряться на весь екран поза нею
+- Вартовий автентифікації: незавершене налаштування веде на `/onboarding`; завершене налаштування, у якого зникли облікові дані хоста коду, веде на `/signed-out`. Завершене означає, що для користувача, який увійшов, підключено щонайменше один хост коду і існує щонайменше один робочий простір — не обов’язково саме GitHub, і CLI `gh` не є способом автентифікації
+- Шлюз онбордингу в `features/auth/providers/`
 
-## Networking (server-side)
+## Мережа (на боці сервера)
 
-All external HTTP lives in the server. Clients never dial GitHub, Linear or Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint rather than from the upstream origin.
+Увесь зовнішній HTTP живе на сервері. Клієнти ніколи не звертаються до GitHub, Linear чи Google напряму — вони викликають RPC-операції сервера, і навіть віддалені медіа завантажуються через серверну кінцеву точку `/proxy/media`, а не з початкового джерела.
 
-- **dio** clients in `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` and `GoogleCalendarApiClient`
-- Auth token injection via interceptors, including a per-account Google OAuth interceptor in `cc_server_core` that refreshes tokens on 401
-- All errors mapped through `packages/cc_infra/lib/src/network/error_mapper.dart` → typed `AppException` subclasses defined in `cc_domain`
+- Клієнти **dio** в `packages/cc_infra/lib/src/`: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient` і `GoogleCalendarApiClient`
+- Вставлення токенів автентифікації через перехоплювачі, зокрема перехоплювач Google OAuth для кожного облікового запису в `cc_server_core`, який оновлює токени при 401
+- Усі помилки проходять через `packages/cc_infra/lib/src/network/error_mapper.dart` → типізовані підкласи `AppException`, визначені в `cc_domain`
 
-## Security
+## Безпека
 
-The server holds the credentials that matter: GitHub and ticketing tokens for agent launches, LLM provider keys and OAuth tokens all live under the server data dir or its environment. What the client keychain still holds is its own device credential and the pairing key for a remote server.
+Сервер зберігає облікові дані, які мають значення: токени GitHub і тікет-систем для запусків агентів, ключі провайдерів LLM і токени OAuth живуть у каталозі даних сервера або в його середовищі. У ланцюжку ключів клієнта залишаються лише його власні облікові дані пристрою та ключ прив’язки до віддаленого сервера.
 
-- Secrets in `flutter_secure_storage` (macOS keychain, Windows credential manager, Linux libsecret) — the client's device credential and remote pairing keys, not provider tokens
-- `shared_preferences` for non-sensitive preferences only (theme, font, layout)
-- Leftover provider secrets from older installs are handed to the server once by `features/auth/providers/credential_migration.dart`, then deleted from the client keychain
+- Секрети у `flutter_secure_storage` (ланцюжок ключів macOS, диспетчер облікових даних Windows, libsecret у Linux) — облікові дані пристрою клієнта та ключі прив’язки до віддаленого сервера, а не токени провайдерів
+- `shared_preferences` лише для нечутливих налаштувань (тема, шрифт, компонування)
+- Секрети провайдерів, що залишилися від старіших інсталяцій, `features/auth/providers/credential_migration.dart` один раз передає серверу, а потім видаляє з ланцюжка ключів клієнта
 
-## Architecture enforcement
+## Дотримання архітектури
 
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`, which fails if dependency rules are violated.
+Обмеження архітектури перевіряє `test/core/architecture_constraints_test.dart`; він падає, якщо правила залежностей порушено.
 
-## Related concepts
+## Пов’язані поняття
 
-- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/): how isolation is enforced
-- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): the dispatch flow
-- [Domain events](/uk-UA/керівництво/поняття/доменні-події/): cross-feature communication
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/): the thin-client server model and the client matrix
+- [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/): як забезпечується ізоляція
+- [Життєвий цикл запуску агента](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/): перебіг запуску
+- [Доменні події](/uk-UA/керівництво/поняття/доменні-події/): комунікація між фічами
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/): модель тонкого клієнта із сервером і матриця клієнтів

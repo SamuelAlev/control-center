@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Uruchamiaj agentów równolegle
+description: Wyślij kilku agentów naraz i zadbaj, aby ich praca na siebie nie nachodziła.
 slug: pl-PL/podrecznik/poradniki/agenci-rownolegle
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Ten poradnik pokazuje, jak uruchomić kilku agentów jednocześnie, aby nie nadpisywali nawzajem swojej pracy.
 
-## The unit of isolation is the space, not the agent
+## Jednostką izolacji jest przestrzeń, a nie agent
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Gdy w przestrzeni rozpoczyna się praca, Control Center przygotowuje jedną kopię roboczą copy-on-write na każde zarejestrowane repozytorium, w katalogu głównym samej przestrzeni, na gałęzi wywiedzionej z szablonu nazwy gałęzi obszaru roboczego. Każdy agent w przestrzeni dostaje następnie własny nakładkowy katalog roboczy — ale nakładki **współdzielą** katalog `repos/` tej przestrzeni.
 
-So:
+A zatem:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Dwaj agenci w **różnych przestrzeniach** pracują w różnych kopiach roboczych, na różnych gałęziach. To prawdziwa izolacja.
+- Dwaj agenci w **tej samej przestrzeni** pracują w tej samej kopii roboczej, na tej samej gałęzi. Ich ścieżki nakładek się różnią, więc blokada ścieżki wysyłania (która szereguje uruchomienia tylko wtedy, gdy żądają identycznego katalogu roboczego) też ich nie szereguje. Mogą zapisywać te same pliki w tym samym czasie.
 
-The rule that follows: **one space per parallel task.**
+Wniosek z tego jest taki: **jedna przestrzeń na równoległe zadanie.**
 
-## Run tasks in parallel — separate spaces
+## Uruchamiaj zadania równolegle — osobne przestrzenie
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Otwórz przestrzeń z agentem A i wyślij mu zadanie.
+2. Otwórz drugą przestrzeń z agentem B i wyślij mu inne zadanie.
+3. Obaj zostają wysłani natychmiast, każdy we własnej kopii roboczej przestrzeni, na własnej gałęzi.
 
-This is the recipe to use whenever the agents will be editing files.
+Po ten przepis sięgaj zawsze wtedy, gdy agenci będą edytować pliki.
 
-## Work together in one space — several mentions
+## Współpracuj w jednej przestrzeni — kilka wzmianek
 
-In a single space, @-mention more than one agent:
+W jednej przestrzeni oznacz przez @ więcej niż jednego agenta:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Obaj agenci zostają wysłani równolegle i strumieniują do tej samej przestrzeni, z oznaczeniem nadawcy. Ponieważ współdzielą kopię roboczą przestrzeni, używaj tego do współpracy — jeden pisze, drugi czyta albo dwaj agenci rozumują o tym samym drzewie — a nie do dwóch niezależnych edycji.
 
-## Fan out from a pipeline
+## Rozgałęzianie z potoku
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Wbudowany szablon `pr_review` to dostarczany przykład rozgałęzienia: kilka węzłów recenzentów uruchamia się współbieżnie z jednego wyzwalacza, a węzeł **Consolidate (join)** składa ich ustalenia w jeden raport. Uruchom go z ekranu potoków, a każdy recenzent zostanie wysłany równolegle.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Edytor potoków ukrywa wartownika końcowego i przepina go tak, aby czekał na każde aktywne ujście, gdy dodasz lub połączysz krok — dzięki temu narysowane przez Ciebie gałęzie faktycznie się uruchamiają.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Przypisanie zgłoszenia niczego nie wysyła]
+Przypisanie zgłoszenia do agenta rejestruje tylko własność. Nie ma żadnego dyspozytora zgłoszeń — `TicketAssigned` jest sygnałem audytowym i nie rozpoczyna się od niego żadna praca. Jedynym wyjątkiem jest zgłoszenie przypisane do _zespołu_, które budzi lidera tego zespołu.
 :::
 
-## Watch them run
+## Obserwuj ich pracę
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Obserwowalność → Na żywo** (stopka paska bocznego → Obserwowalność, a następnie karta Na żywo) pokazuje listę agentów tego obszaru roboczego, odświeżaną co sekundę: status (W trakcie / Bezczynny / Zaparkowany / Przerwany), co robi każdy z nich, tokeny i koszt jego ostatniego uruchomienia oraz kontrolkę zatrzymania działającego procesu. Wybranie wiersza przypina panel transkryptu na żywo.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Ustawienia → Obszar roboczy → Agenci** pokazuje tę samą listę, ale z innym zestawem statusów, nastawionym na to, co wymaga uwagi, wywiedzionym z historii uruchomień każdego agenta — Działa, Zablokowany, Niepowodzenie, Bezczynny, Brak uruchomień — posortowaną tak, aby wszystko, co wymaga uwagi, trafiało na górę. Karta **Logi** każdego agenta zawiera jego własną historię uruchomień.
 
-Both surfaces are scoped to the active workspace.
+Oba widoki są ograniczone do aktywnego obszaru roboczego.
 
-## Handle conflicts
+## Obsługa konfliktów
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+W przypadku różnych przestrzeni każda z nich jest na własnej gałęzi, więc kolizja ujawnia się jako zwykły konflikt scalania Git przy scalaniu drugiego pull requesta. Rozwiąż go tak, jak każdy inny konflikt scalania.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+W obrębie jednej przestrzeni nie ma granicy gałęzi ani blokady: agenci zapisują te same pliki na żywo, a przegrany jest po prostu nadpisywany. Jeśli zdarzy Ci się chcieć, aby dwaj agenci edytowali w jednej przestrzeni, rozbij pracę na dwie przestrzenie.
 
-To reduce collisions either way:
+Aby zmniejszyć liczbę kolizji w obu przypadkach:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/).
-- Review and merge each agent's pull request promptly.
+- Daj każdemu agentowi odrębny zakres — inne pliki, inne moduły.
+- Przed wysłaniem sprawdź w grafie kodu, czego dotyczy zmiana. Zobacz [Szukaj kodu w grafie kodu](/pl-PL/podrecznik/poradniki/wyszukiwanie-kodu/).
+- Niezwłocznie recenzuj i scalaj pull request każdego agenta.
 
-## Resource considerations
+## Względy dotyczące zasobów
 
-Each running agent costs:
+Każdy działający agent kosztuje:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Kopię roboczą przestrzeni — znikomą na dysku, dopóki dostępny jest copy-on-write; w Windows `git worktree`. System plików, który nie potrafi reflink, kończy przygotowanie niepowodzeniem, zamiast kopiować.
+- Proces na hoście serwera
+- Tokeny modelu, które narastają z każdym agentem
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/) for the two commands that do have one.
+Koszty trafiają do **Obserwowalność → Analizy**. Zauważ, że zwykła interaktywna tura nie ma limitu wydatków; dwa polecenia, które go mają, opisano w [Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/).
 
-## Related guides
+## Powiązane poradniki
 
-- [Create and configure an agent](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
-- [Build an agent team](/pl-PL/podrecznik/poradniki/budowanie-zespolu-agentow/)
-- [Manage costs](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/)
-- [Add repos to a workspace](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)
+- [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/)
+- [Zbuduj zespół agentów](/pl-PL/podrecznik/poradniki/budowanie-zespolu-agentow/)
+- [Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/)
+- [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Agent dispatch lifecycle](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/)
-- [Sandbox and security](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/)
+- [Cykl życia wysyłania agentów](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/)
+- [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/)

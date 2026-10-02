@@ -1,156 +1,157 @@
 ---
-title: Slash commands
-description: Every command you can type in the composer, what it does and where it runs.
+title: سلیش کمانڈز
+description: ہر وہ کمانڈ جو آپ کمپوزر میں ٹائپ کر سکتے ہیں، وہ کیا کرتی ہے اور کہاں چلتی ہے۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/سلیش-کمانڈز
+sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
 ---
 
-Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+اسپیس کے کمپوزر میں ٹائپ کی جانے والی کمانڈز۔ یہ اثر ڈالنے کی جگہ کے لحاظ سے تین گروہوں میں بٹی ہیں، اور یہ فرق اہم ہے: **مقامی** کمانڈ پیغام کے طور پر کبھی سفر نہیں کرتی، چنانچہ وہ نہ ٹرانسکرپٹ میں آتی ہے اور نہ کسی ایجنٹ تک پہنچتی ہے۔
 
-| Where it runs | What that means                                                                    |
+| یہ کہاں چلتی ہے | اس کا مطلب                                                                          |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
-| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
-| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+| **مقامی**     | کلائنٹ میں نمٹایا جاتا ہے (یا کلائنٹ سے شروع کردہ کسی سرور آپریشن میں)۔ کمانڈ پیغام کے طور پر کبھی سفر نہیں کرتی، اس لیے کوئی ایجنٹ اسے نہیں دیکھتا۔ |
+| **سائیڈ**      | گفتگو کے بارے میں ایک سرور سائیڈ ماڈل کال۔ گفتگو تبدیل نہیں ہوتی۔                    |
+| **ڈسپیچ**     | اُس رن کے لیے موڈ یا ہدایت مقرر کرتی ہے جو پیغام شروع کرتا ہے۔                       |
 
 ---
 
-## Directing a run
+## کسی رن کی ہدایت
 
 ### `/plan`
 
-**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
+**مقامی → ڈسپیچ۔** گفتگو پر پلان موڈ تیار کرتی ہے: ایک مکمل ریڈ اونلی ورک ٹری اور `read` تک محدود ٹول سطح۔ ایجنٹ کا ڈیلیوریبل ایک پلان ہوتا ہے، کوئی ترمیم نہیں۔ اکیلا `/plan` صرف موڈ پلٹ دیتا ہے اور پیغام کے طور پر کبھی سفر نہیں کرتا؛ پرامپٹ کے ساتھ، باقی سطر ہی وہ چیز ہے جو رن شروع کرتی ہے۔
 
 ### `/goal <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**ڈسپیچ۔** ایک خودمختار مقصد شروع کرتی ہے جسے گول سپروائزر سیگمنٹس اور دوبارہ شروع ہونے کے دوران دوبارہ ڈسپیچ کرتا رہتا ہے۔
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+پہلے متن کے ساتھ `/goal` ٹائپ کرنے سے **مقصد کا انٹرویو** کھلتا ہے — ایک مختصر دور جو اُس وقت تک مسودہ قبول کرنے سے انکار کرتا ہے جب تک اُس میں یہ پانچوں چیزیں نہ آ جائیں: کامیابی کے ایسے معیار جنہیں کوئی جائزہ لینے والا بغیر رائے کے طے کر سکے، ایک عین تصدیقی کمانڈ، کوششوں کی حد، دائرہ کار کی حدیں، اور رکنے کی شرائط۔ ہر مرحلہ *چھوڑیں اور جیسا لکھا ہے چلائیں* پیش کرتا ہے: انٹرویو ایک ڈیفالٹ ہے، کوئی دروازہ نہیں۔
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+`/goal pause`، `/goal resume` اور `/goal drop` سلیش کمانڈز نہیں ہیں۔ توقف، جاری رکھنا اور روکنا سائیڈبار میں گفتگو کی گول فہرست پر ہوتے ہیں۔ مقصد پر ہی شروع کرنے والے فلیگس `--budget <dollars>`، `--max <N>` (رن بجٹ) اور `--days <N>` (آخری تاریخ) ہیں۔ جو گول اپنی لاگت کی حد چھُو لے، وہ صرف اُسی حد کو بڑھا کر ہی جاری ہو سکتا ہے، اور یہ اُسی سائیڈبار کنٹرول سے ہوتا ہے۔
 
-:::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
+:::note[یہ روکتا آخر کیوں ہے]
+خودمختار گول واحد جگہ ہے جہاں مبہم بریف واقعی مہنگا پڑتا ہے۔ رن گھنٹوں ایک ایسے مقصد پر کام کرتا رہتا ہے جس کا «مکمل» کسی نے متعین ہی نہیں کیا، اور پھر اپنی ہی شرائط پر کامیابی کی رپورٹ دیتا ہے۔ پانچ سوال اُس رات بھر کے رن سے سستے پڑتے ہیں جو تب ختم ہو جب اُسے ختم ہونے کا دل چاہے۔
 :::
 
 ### `/loop [budget] [task]`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**ڈسپیچ۔** مکمل ہونے تک تکراری طور پر کام کرتی ہے۔ ایک حد قبول کرتی ہے: `/loop 10`، `/loop 30m`، `/loop 1h30m`، `/loop 10 minutes fix the tests`۔
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+ایسا ٹوکن جو *دکھنے* میں حد لگے (کسی ہندسے یا علامت سے شروع ہو) مگر پارس نہ ہو سکے، ایک سخت خرابی ہے۔ نثر تو نثر ہی ہے، چنانچہ `/loop keep going until the tests pass` ایک غیر محدود لوپ ہے جس میں اِن لائن پرامپٹ شامل ہے، نہ کہ کوئی غلط پارس۔
 
 ### `/vibe [task]`
 
-**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پس-منظر-ورکرز-کی-ہدایت/).
+**ڈسپیچ۔** سیشن کو ایک **ہدایت کار** میں بدل دیتی ہے: اس کے اپنے ٹولز `read` کے علاوہ پانچ ورکر افعال تک رہ جاتے ہیں، اور ترمیم کا کام پس منظر کے ورکرز کرتے ہیں۔ دیکھیں [پس منظر کے ورکرز کی ہدایت](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پس-منظر-ورکرز-کی-ہدایت/)۔
 
-Workers never outlive the mode — exiting kills every one of them.
+کوئی ورکر موڈ سے زیادہ زندہ نہیں رہتا — باہر نکلنے پر اُن سب کو روک دیا جاتا ہے۔
 
 ---
 
-## Managing context
+## کانٹیکسٹ کا انتظام
 
 ### `/compact`
 
-**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
+**مقامی → سرور۔** پرانی تاریخ کو ایک اینکر شدہ خلاصے میں سمیٹتی ہے اور کمپیکٹ شدہ کانٹیکسٹ پر جاری رکھتی ہے۔ ماڈل کے سامنے کوئی آرگیومنٹ نہیں: کمانڈ پیغام کے طور پر کبھی سفر نہیں کرتی، اور کمپیکشن دور کوئی فوکس اشارہ نہیں لیتا۔
 
 ### `/shake [target]`
 
-**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+**مقامی → سرور۔** بھاری مواد **خلاصہ کیے بغیر** گرا دیتی ہے: کوئی ماڈل کال نہیں، ہر لفظ برقرار، اور صرف وہ بھاری حصہ خالی کیا جاتا ہے جسے دوبارہ پڑھنے والا کوئی نہیں تھا۔
 
-| Target        | Drops                             |
+| ہدف           | کیا گرا دیتا ہے                    |
 | ------------- | --------------------------------- |
-| `tool_output` | Uneventful older tool results (default) |
-| `images`      | Old screenshots, keeping their text |
-| `all`         | Both                              |
+| `tool_output` | غیر اہم پرانے ٹول نتائج (ڈیفالٹ)   |
+| `images`      | پرانے اسکرین شاٹس، اُن کا متن رکھتے ہوئے |
+| `all`         | دونوں                             |
 
-This is the escape hatch for "my context is fat but I do not want a summary".
+یہ اُس «میرا کانٹیکسٹ بھرا ہوا ہے مگر مجھے خلاصہ نہیں چاہیے» صورت کا بچاؤ راستہ ہے۔
 
 ### `/context [agent]`
 
-**Local.** Opens the context explorer for this conversation's agent in a tab of
-its own: every segment and part of its context window — system prompt, skills,
-context files, tool schemas, history and images — with what each is costing and
-the verbatim content behind it.
+**مقامی۔** اس گفتگو کے ایجنٹ کا کانٹیکسٹ ایکسپلورر اُس کے اپنے ٹیب میں
+کھولتی ہے: اُس کی کانٹیکسٹ ونڈو کا ہر سیگمنٹ اور حصہ — سسٹم پرامپٹ، مہارتیں،
+کانٹیکسٹ فائلیں، ٹول اسکیما، تاریخ اور تصاویر — ساتھ میں یہ کہ ہر ایک پر کیا لاگت
+پڑ رہی ہے، اور اُس کے پیچھے لفظ بہ لفظ مواد۔
 
-The tab is keyed on the (space, agent) pair, so running it twice refocuses one
-tab rather than stacking copies of the same breakdown.
+ٹیب (اسپیس، ایجنٹ) جوڑے پر کلید شدہ ہوتا ہے، چنانچہ اسے دو بار چلانے سے وہی ایک
+ٹیب دوبارہ فوکس ہوتا ہے، اُسی بریک ڈاؤن کی کاپیاں اوپر تلے نہیں جمع ہوتیں۔
 
-In a space with **more than one agent**, a bare `/context` opens the window the
-header's context meter is reading — whichever agent last worked here, which is
-the one whose message is at the bottom of the trail — and the tab is labelled
-`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
-resolves exactly, never fuzzily: two agents hold two different windows, so a
-near-miss that opened the other one would be a plausible-looking answer to a
-question you did not ask.
+ایسے اسپیس میں جس میں **ایک سے زیادہ ایجنٹ** ہوں، اکیلا `/context` وہی ونڈو کھولتی
+ہے جو ہیڈر کا کانٹیکسٹ میٹر پڑھ رہا ہوتا ہے — یعنی وہ ایجنٹ جو یہاں سب سے آخر میں
+کام کر چکا، جس کا پیغام ٹریل کے نیچے ہوتا ہے — اور ٹیب پر `Context · <name>` لکھا
+ہوتا ہے تاکہ معلوم رہے کہ یہ کس کا ہے۔ دوسرے پر جانے کے لیے نام دیں: `/context qa` (`@` اختیاری ہے)۔ ٹائپ کیا گیا نام
+بالکل درست طور پر حل ہوتا ہے، کبھی دھندلے انداز میں نہیں: دو ایجنٹ دو مختلف ونڈوز
+رکھتے ہیں، چنانچہ قریب قریب مماثلت جو دوسرے کی ونڈو کھول دے، اُس سوال کا معقول
+دکھنے والا جواب بن جاتی ہے جو آپ نے پوچھا ہی نہیں تھا۔
 
-The same explorer is behind the context meter chip in the space header, which
-follows that same agent — the command and the chip can never disagree about
-what "the context" means here.
+یہی ایکسپلورر اسپیس ہیڈر میں کانٹیکسٹ میٹر چپ کے پیچھے بھی ہے، جو اُسی ایجنٹ کی
+پیروی کرتی ہے — کمانڈ اور چپ اس پر کبھی اختلاف نہیں کر سکتے کہ یہاں «کانٹیکسٹ» سے
+مراد کیا ہے۔
 
 ---
 
-## Asking about the conversation
+## گفتگو کے بارے میں پوچھنا
 
-These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+یہ ایک ماڈل کال خرچ کرتی ہیں اور **گفتگو کبھی تبدیل نہیں کرتیں**۔ ایجنٹ کی اگلی حقیقی باری بالکل وہی دیکھتی ہے جو اُسے بہرحال دکھائی دیتا، اور پوچھنے کی پوری قدر یہی ہے۔
 
 ### `/handoff [focus]`
 
-**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+**سائیڈ۔** اُس کے لیے ہینڈ آف دستاویز لکھتی ہے جو یہ کام ٹھنڈے ہاتھوں اُٹھائے: کام کیا ہے، کیا سیکھا گیا، اور کیا باقی ہے۔
 
 ### `/btw <question>`
 
-**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+**سائیڈ۔** اب تک کے کام کے بارے میں کوئی سوال جواب دیتی ہے، بغیر سوال یا جواب ٹرانسکرپٹ میں شامل کیے۔
 
-:::note[Two commands, one implementation]
-Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::note[دو کمانڈز، ایک عمل درآمد]
+دونوں ایک ہی ڈھانچے کی ہیں — گفتگو کو جیسے ہے ویسے لے لو، اُس پر ایک سوال پوچھو، اور دونوں طرف سے کچھ محفوظ نہ کرو۔ ایک ہی بار نافذ کی گئی ہیں تاکہ وہ «اب تک کا کانٹیکسٹ» کے دو مختلف تصورات میں نہ بٹ جائیں۔
 :::
 
 ---
 
-## Navigating and exporting
+## نیویگیشن اور ایکسپورٹ
 
 ### `/tree`
 
-**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گفتگو-کی-شاخ/).
+**مقامی۔** شاخ نیویگیٹر کھولتی ہے: گفتگو کہاں شاخوں میں بٹی، اب کون سے راستے پر ہے، اور جسے آپ نے چھوڑا اُس تک کیسے واپس جانا ہے۔ دیکھیں [گفتگو کی شاخ](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گفتگو-کی-شاخ/)۔
 
 ### `/export`
 
-**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+**مقامی۔** گفتگو کو ایک خود مکمل HTML فائل میں لکھتی ہے — سمیٹنے کے قابل ٹول کارڈز، کوئی اسٹائل شیٹ نہیں، کوئی اسکرپٹ نہیں، کوئی امیج ہوسٹ نہیں۔ ڈیسک ٹاپ پر `Documents/ControlCenter/exports/` میں آتی ہے اور ویب پر ڈاؤن لوڈ ہو جاتی ہے۔
 
 ### `/dump`
 
-**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+**مقامی۔** ٹرانسکرپٹ کو کلپ بورڈ پر markdown کے طور پر کاپی کرتی ہے، ٹول کالز سمیٹنے کے قابل بلاکس میں۔ استدلال جان بوجھ کر خارج رکھا جاتا ہے: بگ رپورٹ میں پیسٹ کیا گیا ٹرانسکرپٹ ایک انسان پڑھتا ہے۔
 
 ---
 
-## Everything else
+## باقی سب
 
 ### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
+**مقامی۔** گفتگو کی محفوظ چیک لسٹ دیکھتی اور ترمیم کرتی ہے۔ اکیلا `/todo` ایڈیٹر کھولتا ہے۔ ذیلی کمانڈز: `append`، `start`، `done`، `drop` (متبادل `rm`)، `edit`، `copy`، `export`، `import`۔
 
 ### `/skill:<name> [args]`
 
-**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+**ڈسپیچ۔** کوئی انسٹال شدہ مہارت لاگو کرتی ہے۔ مہارتیں اپنے `skill:` پریفکس کے تحت رہتی ہیں تاکہ وہ بلٹ اِن کمانڈز کے ساتھ کوئی نام فضا سانجھی نہ کریں — ورنہ `plan` نامی مہارت ہمیشہ کے لیے ناقابلِ رسائی رہ جاتی۔
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**ڈسپیچ۔** ریپو میں `.agents/commands`، `.agent/commands`، `.claude/commands`، `.codex/commands` یا `.opencode/commands` کے تحت کوئی بھی مارک ڈاؤن فائل۔ نیسٹڈ `foo/bar.md` بھی `foo:bar` کے طور پر قابلِ رسائی ہوتی ہے۔
 
-Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
+ٹیمپلیٹنگ: `$1`، `$@`، `$@[start:length]` اور `$ARGUMENTS`۔ فرنٹ میٹر `description` سیٹ کر سکتا ہے (کمپوزر آٹو کمپلیٹ)۔ `allowed-tools` اور `model` فائل سے پارس تو کیے جاتے ہیں، مگر صارف کمانڈ کی موجودہ صورت میں صرف آرگیومنٹس باڈی میں بدلے جاتے ہیں — وہ رن کے ماڈل یا ٹول سطح کو تبدیل نہیں کرتے۔
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+صارف کی لکھی کمانڈ اُسی نام کی مہارت پر بھاری پڑتی ہے — یہ ایسا شارٹ کٹ ہے جسے کسی انسان نے دانستہ، آرگیومنٹس کے ساتھ چلایا ہو۔
 
 ---
 
-## Magic keywords
+## جادوئی کلیدی الفاظ
 
-Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+کمانڈز نہیں ہیں۔ پرامپٹ میں کہیں بھی تنہا کھڑا چھوٹے حروف والا لفظ اُس باری کے لیے ایک پوشیدہ ہدایت جوڑ دیتا ہے۔
 
-| Word          | Effect                                                             |
+| لفظ          | اثر                                                                |
 | ------------- | ------------------------------------------------------------------ |
-| `ultrathink`  | Maximum reasoning effort for the turn                              |
-| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+| `ultrathink`  | اُس باری کے لیے زیادہ سے زیادہ ریزننگ زور                          |
+| `orchestrate` | آزاد کام متوازی طور پر تفویض کریں اور ہر مرحلے کی تصدیق کریں        |
 
-The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+مماثل کرنے والا جان بوجھ کر حدود کے بارے میں سخت ہے۔ `orchestrate,` مماثل ہوتا ہے؛ `orchestrated`، `orchestrate.ts`، `foo::orchestrate` اور `orchestrate()` نہیں، اور پہلے فینس شدہ کوڈ بلاکس، اِن لائن اسپینز اور XML سیکشنز ماسک کر دیے جاتے ہیں۔ ایسا نہ ہو تو اسٹیک ٹریس پیسٹ کرنے سے ایجنٹ کے برتاؤ ہی بدل جائیں۔
 
 ---

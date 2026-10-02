@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Je eerste werkruimte
+description: Maak een werkruimte aan, registreer er een repo in en bekijk de isolatiegrens zelf.
 slug: nl-NL/handleiding/zelfstudies/eerste-werkruimte
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Wat je gaat bouwen
 
-By the end of this tutorial, you will have:
+Aan het eind van deze zelfstudie heb je:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Een werkruimte die vernoemd is naar je project
+- Een Git-repository die erin geregistreerd is
+- Vijf geseede agenten, waarvan je er één goed genoeg hebt geconfigureerd om te draaien
+- Een tweede, lege werkruimte die de isolatiegrens bewijst
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+De onboarding heeft al een werkruimte voor je aangemaakt. Deze zelfstudie maakt bewust een nieuwe aan, zodat je elk onderdeel van het proces ziet.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Kies voordat je begint een Git-checkout die aan alle drie deze voorwaarden voldoet — de registratiestap weigert al het andere:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- hij bevindt zich in een git-worktree
+- hij heeft een `origin`-remote
+- die remote wijst naar github.com, gitlab.com of bitbucket.org
 
-## Step 1: Create a workspace
+## Stap 1: Een werkruimte aanmaken
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Klik op de werkruimtechip in de titelbalk
+2. Kies **Werkruimte toevoegen…**
+3. Voer een naam in die het project identificeert, zoals “api-service” of “frontend-v2”
+4. Kies eventueel een logo
+5. Klik op **Werkruimte toevoegen**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center schakelt over naar de nieuwe werkruimte en komt uit op het postvak in (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Daarachter publiceert de server een `WorkspaceCreated`-gebeurtenis en zaait de werkruimte met:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- een **CEO-agent**, met als persona coördinatie en delegatie
+- vier specialisten — `qa`, `architect`, `engineer` en `librarian` — elk met eigen instructies en skills
+- de ingebouwde pipelinesjablonen en hun triggerrijen
 
-Every workspace you create gets all of this, not just the first one.
+Elke werkruimte die je aanmaakt krijgt dit allemaal, niet alleen de eerste.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Controleer het: open **Instellingen → Werkruimte → Agenten**. Er staan vijf agenten in de agentenlijst, elk met een holle statusring.
 
-## Step 2: Register a repository
+## Stap 2: Een repository registreren
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Ga naar **Instellingen → Werkruimte → Repository's**
+2. Klik op **Repository toevoegen**
+3. Blader naar je checkout. Het dialoogvenster loopt door de mappen op de machine waarop `cc_server` draait — niet je client — en blijft binnen de roots die die server beschikbaar stelt (standaard de homedirectory van zijn gebruiker). Een git-checkout krijgt een apart mappictogram en een selectievakje; een gewone map krijgt geen van beide, dus alleen checkouts kunnen worden geselecteerd.
+4. Vink een of meer checkouts aan en registreer de batch. Je selectie blijft behouden terwijl je navigeert, zodat je er meerdere in één keer kunt verzamelen en één verkeerde keuze de rest nooit laat vallen.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center leest de `origin`-remote van elke checkout, bepaalt eigenaar en repo en maakt de repo-rij **binnen deze werkruimte** aan. Er is geen tweede stap om hem te koppelen: registratie is wat hem scope geeft.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Als je dezelfde checkout later in een andere werkruimte registreert, ontstaat een tweede, onafhankelijke repo-rij met een eigen id. Over werkruimtes heen wordt een checkout geïdentificeerd aan de hand van zijn bestandssysteempad, nooit aan de hand van zijn id.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Controleer het: de repo verschijnt in de lijst met zijn `owner/repo` en huidige branch.
 
-## Step 3: Make one agent runnable
+## Stap 3: Maak één agent draaibaar
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+De vijf agenten die deze werkruimte net heeft geseed, hebben geen adapter en geen model. Dispatch draait ze op **Control Center (built-in)** en vraagt, als er geen model is ingesteld, Anthropic om het standaardmodel — ze werken dus alleen als je een Anthropic-account hebt verbonden, en dan op een model dat je niet zelf hebt gekozen. De onboarding bij de eerste start stempelt zijn keuze één keer op elke agent in de eerste werkruimte; een werkruimte die je daarna aanmaakt, begint met alle vijf oningesteld. Stel er nu één in.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Open **Instellingen → Werkruimte → Agenten**
+2. Selecteer `engineer` in de agentenlijst
+3. Stel op het tabblad **Instellingen** **Adapter** in op `Control Center (built-in)` en kies een **Model** bij een provider die je hebt verbonden onder Instellingen → Server → Modelaanbieders
+4. Klik op **Wijzigingen opslaan**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Controleer het: open de agent opnieuw en de twee velden bevatten je keuzes.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/) covers the rest of the form.
+Elke agent heeft zijn eigen adapter en model, dus herhaal dit voor elke andere agent die je wilt gebruiken. [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/) behandelt de rest van het formulier.
 
-## Step 4: See the isolation boundary
+## Stap 4: Bekijk de isolatiegrens
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Maak vanuit de chip in de titelbalk een tweede werkruimte aan, precies zoals in stap 1. Bekijk hem daarna:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Instellingen → Werkruimte → Repository's** is leeg. De repo die je een minuut geleden hebt geregistreerd staat er niet.
+- **Instellingen → Werkruimte → Agenten** bevat vijf agenten, maar het zijn andere rijen — de adapter die je in stap 3 hebt ingesteld is verdwenen.
+- De ruimtelijst, tickets en het geheugen zijn allemaal leeg.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Er is niets gelekt, want er is niets om uit te lekken: de rijen van elke werkruimte staan in het eigen databasebestand van die werkruimte. Een cross-workspace-leesopdracht is geen query die wordt gefilterd, maar een query die nergens kan draaien. Een werkruimte verwijderen is een bestand ontkoppelen.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Schakel terug met de chip in de titelbalk, of open **Werkruimtes beheren** om ze naast elkaar te zien.
 
-For the full model, read [Workspaces and isolation](/nl-NL/handleiding/concepten/werkruimtes/).
+Lees [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/) voor het volledige model.
 
-## Recap
+## Samenvatting
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Je hebt een werkruimte aangemaakt, hem een CEO en vier specialisten zien seeden, er een repo in geregistreerd, één agent een adapter en een model gegeven en bevestigd dat een tweede werkruimte daar niets van deelt.
 
-**Next:** [Dispatch your first agent](/nl-NL/handleiding/zelfstudies/eerste-agent/) to put the workspace to work.
+**Volgende:** [Je eerste agent starten](/nl-NL/handleiding/zelfstudies/eerste-agent/) om de werkruimte aan het werk te zetten.

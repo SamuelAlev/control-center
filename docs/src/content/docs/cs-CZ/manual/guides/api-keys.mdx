@@ -1,115 +1,118 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Spravujte API klíče
+description: Kde který přihlašovací údaj leží, u tvého účtu na serveru, u serveru samotného nebo u externího CLI, a jak ho nastavit, obměnit a odebrat.
 slug: cs-CZ/prirucka/navody/api-klice
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Tenhle návod ukazuje, kde leží každý přihlašovací údaj, který Control Center
+používá, a jak ho změnit.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Na stroji, na kterém píšeš, se neukládá nic.** Každý přihlašovací údaj leží
+na serveru. Který z nich odpoví na daný požadavek, záleží na tom, jestli za ním
+stojí člověk.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
+| Přihlašovací údaj                    | Uložení                                                   | Kdo ho používá                                                  |
 | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Tvůj údaj k forge / ticketům         | Soubor tajemství serveru s právy 0600, klíčovaný tvým id uživatele | Všechno, o co požádáš: plocha PR, tvoje běhy agentů, tvoje obrázky |
+| Identita aplikace serveru            | Tentýž soubor, plus `server_settings` pro netajné hodnoty | Práce, o kterou nikdo nepožádal: webhooky, dotazování na PR, synchronizace ticketů |
+| Klíče poskytovatelů modelů a tokeny OAuth | Vlastní úložiště přihlašovacích údajů serveru        | Vestavěný adaptér, pro každý pracovní prostor na instalaci       |
+| Tokeny bota Slack                    | `<dataDir>/<workspaceId>/chat_credentials/` na serveru    | Chatový most toho pracovního prostoru                            |
+| Přihlašovací údaje externího CLI     | To, co používá dané CLI                                   | Claude Code, na hostiteli serveru                                |
 
-## Two GitHub credentials, and they answer different questions
+## Dva přihlašovací údaje GitHubu a každý odpovídá na jinou otázku
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Tvůj**, z přihlášení (device flow) nebo z vloženého tokenu. Ten použije každý
+  požadavek *tvým jménem*, takže komentář odeslaný za tebe nese tvoje jméno.
+  Jiný člen ho nepřečte a připojí si vlastní
+- **Serverový**, z GitHub App, kterou zaregistroval operátor. Odpovídá na
+  všechno, u čeho není volající, takže přístup k forge nezmizí, když někdo
+  odejde nebo obmění token
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/)
-and [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/).
+Tvůj nastavíš na kartě **Hostování kódu** v **Nastavení → Pracovní prostor →
+Profil a identita**; serverový v **Aplikace poskytovatelů** v **Nastavení →
+Server → Jednotné přihlášení**. Viz
+[Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/) a
+[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Je tu i obrazovka jen přes URL]
+`/workspaces/<workspaceId>/api-keys` vykreslí tytéž dvě karty jako první krok
+onboardingu. **V navigaci uživatelského rozhraní nikde položku nemá**; dostaneš
+se na ni jen zadáním URL. Použij Nastavení → Pracovní prostor → Profil a identita.
 :::
 
-## Set model provider keys
+## Nastav klíče poskytovatelů modelů
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Vestavěný adaptér se u poskytovatelů ověřuje sám a ty přihlašovací údaje leží
+na serveru.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Jdi do **Nastavení → Server → Poskytovatelé modelů**
+2. Sjeď k **Poskytovatelé a modely**
+3. Připoj poskytovatele: OAuth v prohlížeči u OpenAI, Codex, Cursor a Kimi Code;
+   API klíč u Anthropic a ostatních
 
-See [Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/) for the full list and
-for adding a custom endpoint.
+Celý seznam a přidání vlastního endpointu jsou v
+[Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/).
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Tyhle přihlašovací údaje platí **pro celého hostitele**: jeden klíč obslouží
+každý pracovní prostor na instalaci. Tokeny OAuth se obnoví dřív, než vyprší.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+CLI externích adaptérů si drží vlastní přihlašovací údaje ve vlastní konfiguraci
+na hostiteli serveru. Control Center je nespravuje. Claude Code ověř tak, jak
+říká jeho dokumentace, na stroji, kde běží `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/).
+Dialog **Proměnné prostředí** u jednotlivých adaptérů vypadá jako místo, kam
+klíč pro některé z nich vložíš, ale není. Zapisuje na tvoje zařízení, server
+čte vlastní kopii a nic ty dvě nespojuje. Viz
+[Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/).
 
-## Connect a ticketing vendor
+## Připoj ticketovací službu
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Karta **Ticketing** v **Nastavení → Pracovní prostor → Obecné** drží obě
+poloviny jednoho rozhodnutí: ve které službě tickety žijí a jaký přihlašovací
+údaj k ní patří. Když zvolíš **Místní**, řádek s údajem zmizí. Místní tickety
+žijí v databázi tohoto serveru a není k čemu se ověřovat.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/cs-CZ/prirucka/navody/integrace-linear/).
+Tvůj klíč leží na serveru u tvého id uživatele, stejně jako ten k forge. Server
+si vlastní klíč Linear drží zvlášť (**Aplikace poskytovatelů**). Na něm běží
+synchronizace ticketů, když o ni nikdo nepožádal. Klíč, který agent dostane, se
+vloží jen tehdy, když má schopnost **Povolit volání ticketing API**. Viz
+[Nastavte integraci Linear](/cs-CZ/prirucka/navody/integrace-linear/).
 
-## Rotate or revoke
+## Obměň nebo odvolej
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
+- **Tvůj přihlašovací údaj GitHubu**: stiskni **Odpojit**, pak se přihlas znovu
+  nebo vlož nový token. Starý odvolej na GitHubu
+- **Aplikace serveru**: na stránce aplikace na GitHubu vygeneruj nový soukromý
+  klíč nebo client secret, vlož ho do **Aplikace poskytovatelů** a stiskni
+  **Test**
+- **Poskytovatel modelu**: na jeho řádku se odhlas (OAuth) nebo klíč odeber,
+  pak se připoj znovu
+- **Slack**: tokeny vlož znovu v dialogu připojení. Viz
+  [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
 
-## Troubleshooting
+## Řešení problémů
 
-### The PR list is empty but my token works in `curl`
+### Seznam PR je prázdný, ale token mi v `curl` funguje
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Podívej se na podtitul řádku **Hostování kódu**. Když jmenuje jiný zdroj
+(„přes aplikaci tohoto serveru“, „z prostředí“), přihlašovací údaj, který
+zkoušíš, není ten, který odpovídá. Tvůj se neuložil.
 
-### The token is accepted but later requests fail
+### Token projde, ale pozdější požadavky selžou
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Token se ověřuje tak, jak je uložený, takže řádek pojmenuje účet za ním, ale
+jen účet, ne scopes. Token s příliš úzkými scopes se připojí a pak selžou
+jednotlivé požadavky. Zkontroluj scopes a platnost:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Související návody
 
-- [Set up GitHub integration](/cs-CZ/prirucka/navody/integrace-github/)
-- [Create the GitHub App](/cs-CZ/prirucka/navody/github-app/)
-- [Manage adapters and models](/cs-CZ/prirucka/navody/adaptery/)
-- [Set up Slack integration](/cs-CZ/prirucka/navody/integrace-slack/)
-- [Set up Linear integration](/cs-CZ/prirucka/navody/integrace-linear/)
+- [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)
+- [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/)
+- [Spravujte adaptéry a modely](/cs-CZ/prirucka/navody/adaptery/)
+- [Nastavte integraci Slack](/cs-CZ/prirucka/navody/integrace-slack/)
+- [Nastavte integraci Linear](/cs-CZ/prirucka/navody/integrace-linear/)

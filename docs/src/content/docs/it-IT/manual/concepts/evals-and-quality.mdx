@@ -1,33 +1,37 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Eval e qualità
+description: Le eval suite, il set di partenza inizializzato in ogni spazio di lavoro e dove compaiono in Osservabilità.
 slug: it-IT/manuale/concetti/eval-e-qualita
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+Una **eval suite** è la definizione, con ambito ristretto allo spazio di lavoro,
+di un'attività da eseguire su un agente: un prompt, un agente di destinazione e
+una modalità, un setup opzionale, una fixture opzionale con uno SHA fissato e un
+elenco di grader. I grader sono deterministici in primo luogo; un giudice con
+rubrica LLM copre ciò che quei controlli non riescono a esprimere.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+Cinque eval suite iniziali vengono create quando si crea uno spazio di lavoro.
+Coprono le proposte di orchestrazione, una revisione che individua un bug
+introdotto appositamente, la modalità piano che resta in sola lettura, la
+modalità piano che produce un piano e il ciclo di andata e ritorno di un ticket.
+L'inizializzazione ascolta `WorkspaceCreated` (`workspace.upsert` o
+`workspace.create`), salta un nome già esistente e non popola retroattivamente
+gli spazi di lavoro più vecchi.
 
-## Where they appear
+## Dove compaiono
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Osservabilità → Qualità** (`/workspaces/<id>/observability`) elenca ogni suite
+dello spazio di lavoro.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Puoi creare, elencare, modificare ed eliminare le suite tramite
+`evals.upsertSuite`, `evals.deleteSuite` e `evals.watchSuites`. La scheda
+Qualità è l'elenco; quelle operazioni sono l'editor.
 
-## Related concepts
+## Concetti correlati
 
-- [The agent model](/it-IT/manuale/concetti/modello-agenti/): the configuration a suite
-  pins
-- [Guardrails](/it-IT/manuale/concetti/guardrail/): the autonomy dial
-- [Manage costs and budgets](/it-IT/manuale/guide/gestisci-costi/): spend recorded
-  alongside a run
+- [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/): la
+  configurazione che una suite fissa
+- [Guardrail](/it-IT/manuale/concetti/guardrail/): il selettore dell'autonomia
+- [Gestisci i costi e i budget](/it-IT/manuale/guide/gestisci-costi/): la spesa
+  registrata insieme a un'esecuzione

@@ -1,95 +1,98 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: OpenID Connect فراہم کنندہ جوڑیں
+description: کسی بھی OIDC جاری کنندہ — Pocket ID، Keycloak، Auth0، Zitadel — کو Control Center کے سائن اِن سے جوڑیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+جب آپ کا شناخت فراہم کنندہ SAML کے بجائے **OpenID Connect** بولتا ہو تو یہ گائیڈ
+استعمال کریں۔ کوئی بھی OIDC-سرٹیفائیڈ جاری کنندہ کام کرتا ہے — Pocket ID،
+Keycloak، Auth0، Zitadel، Google Workspace اور اُن جیسے سب ایک ہی مراحل پر چلتے
+ہیں؛ فرق صرف یہ ہے کہ آپ کا فراہم کنندہ یہ اقدار کہاں دکھاتا ہے۔
 
-## Prerequisites
+## پیشگی تقاضے
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- ایک OIDC فراہم کنندہ جہاں آپ کلائنٹ بنا سکیں — اُس کا **client id** اور اُس کا
+  **issuer URL** نوٹ کر لیں (وہ بنیادی پتہ جس کے تحت
+  `.well-known/openid-configuration` دستاویز رہتی ہے)، نیز اُس کا
+  **client secret** بھی جب کلائنٹ خفیہ قسم کا ہو (پبلک
+  PKCE کلائنٹس کے پاس کوئی نہیں ہوتا)،
+- ایک Control Center سرور جس کے آپ منتظم ہوں (یعنی **سرور مالک**)۔
 
-## Steps
+## مراحل
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. **ترتیبات → سرور → سنگل سائن آن** کھولیں اور
+   **OpenID Connect** پر سوئچ کریں۔
+2. **Issuer URL** اور **Client ID** بھریں، اور **Client
+   secret (اختیاری)** بھی جب فراہم کنندہ نے ایک جاری کیا ہو۔ Control Center
+   اینڈ پوائنٹس جاری کنندہ کی معیاری discovery دستاویز سے خود ڈھونڈ لیتا ہے —
+   فی فراہم کنندہ کوئی کنفیگریشن نہیں۔
+3. فراہم کنندہ پر، اُس کلائنٹ کے لیے redirect
+   `https://<your-server>/oidc/callback` رجسٹر کریں۔
+4. اگر آپ کے گروپس `groups` کے علاوہ کسی اور کلیم کے تحت آتے ہیں تو
+   **Groups claim** کا نام سیٹ کریں؛ چاہیں تو گروپس کو کرداروں سے میپ کریں
+   (SSO کبھی مالک کا کردار نہیں دے سکتا)۔
+5. رکنیت کی پالیسی چنیں (ہر ورک اسپیس میں خودکار شمولیت، یا فی ورک اسپیس
+   دعوتیں لازمی)، **سائن اِن کے لیے OpenID Connect استعمال کریں** آن کریں اور
+   **کنکشن محفوظ کریں** دبائیں۔
+6. **کنکشن ٹیسٹ کریں** دبائیں — سرور جاری کنندہ کی discovery دستاویز لاتا ہے
+   اور اُس کے اینڈ پوائنٹس کی تصدیق کرتا ہے، اس لیے سبز ٹوسٹ کا مطلب ہے کہ
+   براؤزر کے راؤنڈ ٹرپ کے سوا سب کچھ کام کر رہا ہے۔ کلائنٹ کی رجسٹریشن بھی
+   جانچنی ہو تو [نیچے دیا گیا چیکر](#اسی-صفحے-سے-اپنی-کنفیگریشن-جانچیں)
+   استعمال کریں۔
+7. ایک لاگ اِن آزمائیں: ویب کنیکٹ اسکرین **OpenID Connect سے سائن اِن**
+   دکھاتی ہے، یا `https://<your-server>/oidc/login` براہِ راست کھولیں۔
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+کلیمز (ای میل، نام، گروپس) آپ کا سرور جاری کنندہ کے ٹوکن اینڈ پوائنٹ سے TLS کے
+اوپر پڑھتا ہے — براؤزر انہیں کبھی فراہم نہیں کرتا، چنانچہ کوئی مقامی JWT دستخط
+کی تصدیق درکار نہیں ہوتی۔ کلائنٹ کو `openid profile email` اسکوپ مانگنے کی
+اجازت ہونی چاہیے، جو بالکل وہی ہے جو Control Center مانگتا ہے۔
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+چونکہ کلیمز کی تصدیق کرنے والی واحد چیز وہی TLS چینل ہے، اس لیے جاری کنندہ کا URL
+لازماً **https** ہونا چاہیے — سادہ متن والا جاری کنندہ ہر راستے میں بیٹھے حملہ
+آور کو بڑے پیمانے پر شناختیں جعل کرنے دیتا ہے۔ `http` صرف لوپ بیک جاری
+کنندگان (`localhost`، `127.0.0.1`، `::1`) کے لیے، مقامی ڈیولپمنٹ کے لیے قبول
+کیا جاتا ہے۔
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[پبلک کلائنٹ یا خفیہ کلائنٹ؟]
+ڈیفالٹ — اور تجویز کردہ — صورت ایک **پبلک کلائنٹ** ہے جو **PKCE** (RFC 7636)
+کے ساتھ authorization code فلو استعمال کرتا ہے: سرور کے پاس رکھا ایک بار استعمال
+ہونے والا code verifier سیکرٹ کی جگہ لے لیتا ہے اور ٹوکن ایکسچینج اُسی
+authorization درخواست سے بندھا ہوتا ہے جس نے اسے شروع کیا۔ لیک ہونے کے لیے کوئی
+سیکرٹ نہیں ہوتا اور چرایا گیا authorization code code verifier کے بغیر بیکار ہے۔
+کچھ فراہم کنندگان اسے بناتے وقت "SPA" یا "native" کلائنٹ قسم کہتے ہیں۔
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+اگر آپ کے فراہم کنندہ نے اس کے بجائے **خفیہ** کلائنٹ جاری کیا ہو تو یا فراہم
+کنندہ پر کلائنٹ کو پبلک نشان زد کریں (PKCE دونوں صورتوں میں چلتا رہتا ہے)، یا
+کلائنٹ سیکرٹ کو کنکشن کے **Client secret (اختیاری)** فیلڈ میں چسپاں کر دیں۔
+سیکرٹ سرور کی 0600 سیکرٹس فائل میں محفوظ ہوتا ہے (ڈیٹا بیس میں کبھی نہیں)،
+ٹوکن اینڈ پوائنٹ کو `client_secret_post` کے طور پر بھیجا جاتا ہے اور RPC پر کبھی
+واپس نہیں آتا؛ محفوظ کرتے وقت فیلڈ خالی چھوڑنے سے محفوظ سیکرٹ برقرار رہتا ہے۔ جب
+ٹوکن ایکسچینج پر کوئی لاگ اِن ناکام ہو تو سرور کا لاگ فراہم کنندہ کی اپنی غلطی کا
+نام لے کر بتاتا ہے (`invalid_client` کا مطلب تقریباً ہمیشہ یہی ہوتا ہے کہ سیکرٹ
+غائب ہے یا غلط ہے)۔
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim).
+:::note[رسائی]
+لاگ اِن خود براؤزر کے ذریعے ہوتا ہے: جاری کنندہ صرف صارف کے براؤزر کو واپس
+`/oidc/callback` پر بھیجتا ہے اور آپ کا سرور ٹوکن اینڈ پوائنٹ کو ایک آؤٹ باؤنڈ
+HTTPS کال کرتا ہے — جاری کنندہ سے کوئی اِن باؤنڈ کنکشن درکار نہیں، اس لیے NAT کے
+پیچھے موجود سرور بھی کام کرتا ہے جب تک صارفین کے براؤزر اُس تک پہنچ سکیں (LAN،
+VPN، Tailscale، یا کوئی ٹنل)۔ **SCIM پروویژنگ استثنا ہے**: IdP آپ کے سرور کو
+براہِ راست کال کرتا ہے، جس کے لیے ٹنل یا عوامی URL درکار ہوتا ہے —
+[SCIM سے صارفین فراہم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/sso-scim) دیکھیں۔
 :::
 
-## Check your configuration from this page
+## اسی صفحے سے اپنی کنفیگریشن جانچیں
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+نیچے دیا گیا چیکر آپ کے براؤزر میں چلتا ہے۔ یہ آپ کے جاری کنندہ کی discovery
+دستاویز براہِ راست لاتا ہے، اس لیے یہ سائٹ اُسے کبھی نہیں دیکھتی، اور سرور کے
+قواعد لاگو کرتا ہے: ایسا https جاری کنندہ جو دستاویز سے مطابقت رکھتا ہو، جاری
+کنندہ کے اپنے اوریجن پر اینڈ پوائنٹس، PKCE S256 اور وہ ٹوکن توثیق کا طریقہ جو
+آپ کے کلائنٹ کی قسم کو درکار ہے۔ کلائنٹ ID اور سرور کے پتے کے ساتھ یہ ایک
+آزمائشی سائن اِن کھول سکتا ہے جو دکھاتا ہے کہ کلائنٹ اور اُس کا redirect URI
+رجسٹر ہیں یا نہیں۔ یہ کبھی کلائنٹ سیکرٹ نہیں مانگتا۔
 
 <SsoCheck kind="oidc" />

@@ -1,96 +1,103 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Ghép nối thiết bị
+description: Ghép nối điện thoại (hoặc trình duyệt hay máy tính thứ hai) với máy chủ Control Center của bạn để theo dõi đội máy từ xa.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/) for how the link
-works and its security model.
+Hướng dẫn này chỉ cho bạn cách ghép nối một chiếc điện thoại với Control Center,
+để bạn có thể đọc tin nhắn và phiếu rồi trả lời từ bất cứ đâu. Cùng quy trình đó
+cũng ghép nối một trình duyệt hoặc ứng dụng máy tính thứ hai. Xem
+[Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/) để biết
+liên kết hoạt động ra sao và mô hình bảo mật của nó.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Một máy khách máy tính để bàn hoặc máy khách web đã kết nối tới máy chủ của bạn và một không gian làm việc đã được thiết lập. Các thao tác ghép nối yêu cầu máy khách đầy đủ, nên một điện thoại đã ghép nối không bao giờ có thể ghép nối — hay thu hồi — một thiết bị khác.
+- Máy chủ phải truy cập được từ thiết bị bạn đang ghép nối. Trong cùng một mạng thì mọi thứ tự nhiên hoạt động; ở xa hơn thì relay được môi giới sẽ chở lưu lượng. Nếu bảng ghép nối trả lời **Không thể truy cập** thay vì một mã QR hay thông tin xác thực, hãy công bố một đường dẫn trước — tùy chọn bật tunnel tại **Cài đặt → Máy chủ → Kết nối & trạng thái** (**Chia sẻ máy chủ này**), hoặc `--public-url` của máy chủ (xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/)).
+- Với điện thoại: không cần cài đặt gì. Mã QR mở ứng dụng web **Remote** (mặc định là [remote.usectrl.dev](https://remote.usectrl.dev/)).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Tự lưu trữ.** Remote và bộ môi giới relay đều là mã nguồn mở trong kho mã này:
+ứng dụng điện thoại (`apps/cc_remote`, một PWA web Flutter mà bạn có thể triển
+khai lên Cloudflare Pages qua `wrangler.jsonc` của nó, lên image nginx
+`docker/cc_remote`, hoặc lên bất kỳ host tĩnh nào có HTTPS — service worker và
+IndexedDB bị ràng buộc bởi ngữ cảnh bảo mật) và relay
+(`apps/cc_signaling_server`, một binary Dart phi trạng thái duy nhất, không giữ
+dữ liệu ứng dụng nào và không bao giờ thấy bí mật ghép nối — nó chỉ chuyển tiếp
+các khung niêm phong đầu-cuối). Xem README của chúng để biết các bước build và
+chạy.
 
-## Step 1: Open the pairing panel
+## Bước 1: Mở bảng ghép nối
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Mở **Cài đặt → Bạn → Thiết bị của bạn**. Mục **Thiết bị của bạn** liệt kê các
+máy khách đã ghép nối với tài khoản của bạn trên máy chủ này. (Chủ sở hữu máy chủ
+thấy mọi thiết bị trên máy chủ; những người khác chỉ thấy thiết bị của chính họ.)
 
-## Step 2: Pair a new client
+## Bước 2: Ghép nối máy khách mới
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Nhấp vào **Ghép nối máy khách mới** ở đầu trang, đặt cho nó một nhãn (ví dụ:
+"Điện thoại của tôi"), chọn loại — **Trình duyệt web**, **Ứng dụng máy tính**
+hoặc **Điện thoại** — rồi nhấp vào **Ghép nối**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Với **điện thoại**, một mã QR hiện ra. Hãy quét nó bằng camera của điện thoại, hoặc sao chép liên kết và mở trong bất kỳ trình duyệt nào. Nó trỏ ứng dụng Remote tới máy chủ của bạn và mang theo thông tin xác thực.
+- Với **trình duyệt** hoặc **máy tính**, hãy sao chép liên kết được hiển thị (hoặc id thiết bị và khóa ghép nối) vào máy khách mới. Liên kết một chạm chỉ được cung cấp khi bạn ghép nối từ máy khách web, vì một binary máy tính để bàn không có web origin để dựng liên kết đó.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Mã QR của điện thoại và liên kết mà `cc_server pair --client-url` in ra trên CLI
+là **những payload khác nhau và không thể thay thế cho nhau**: liên kết CLI điền
+vào biểu mẫu kết nối của máy khách web, còn mã QR này mang bản mô tả kết nối đầy
+đủ và dấu vân tay danh tính của máy chủ cho PWA Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Về phía điện thoại, việc mở một liên kết ghép nối không ghép nối một cách âm
+thầm. Remote hiển thị tên quảng bá của máy chủ và yêu cầu bạn xác nhận trước khi
+lưu bất cứ thứ gì, nên một liên kết giả mạo không thể chiếm quyền ứng dụng để trỏ
+sang máy chủ của người khác.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[Mã QR được quét là cấp quyền truy cập ngay lập tức]
+Không có bước chờ rồi phê duyệt: một thiết bị đã được cấp thì hoạt động ngay từ
+lúc nó được tạo và cổng kết nối chỉ kiểm tra rằng thông tin xác thực còn hoạt
+động và chưa hết hạn. Hãy đối xử với mã QR và khóa ghép nối như mật khẩu và thu
+hồi bất cứ thứ gì bạn không có ý định trao ra.
 :::
 
-## Manage paired devices
+## Quản lý thiết bị đã ghép nối
 
-From **Settings → You → Your devices** you can:
+Từ **Cài đặt → Bạn → Thiết bị của bạn**, bạn có thể:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Đổi tên** một thiết bị
+- **Thu hồi** một thiết bị bạn không còn tin tưởng. Việc thu hồi hủy thông tin xác thực của nó và ngắt phiên đang hoạt động trong vòng vài giây, nên nó hỏng theo hướng đóng khi kết nối lại
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Thu hồi là lựa chọn đúng cho một chiếc điện thoại bị mất hoặc đã thay thế. Xét từ
+phía thiết bị, nó diễn ra tức thì và không thể đảo ngược.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Thông tin xác thực được cấp từ bảng ghép nối này có giới hạn thời gian: chúng hết
+hạn 30 ngày sau khi được phát hành và cổng kết nối đánh trượt chúng theo hướng
+đóng sau đó. Một thông tin xác thực được cấp bằng `cc_server pair` trên dòng lệnh
+**không có ngày hết hạn nào cả** — hãy thu hồi nó bằng tay khi chiếc máy mà nó
+phục vụ đã ngừng sử dụng.
 
-## Switch workspaces from the phone
+## Chuyển không gian làm việc từ điện thoại
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Một chiếc điện thoại đã ghép nối có thể chuyển đổi giữa các không gian làm việc
+độc lập với máy tính để bàn. Điện thoại gửi không gian làm việc kèm theo mỗi lời
+gọi và máy chủ kiểm tra tư cách thành viên cùng vai trò của bạn trong không gian
+làm việc đó ở từng lời gọi — nên điện thoại chỉ với tới những không gian làm việc
+mà bạn là thành viên và việc chuyển đổi ở đó không bao giờ làm thay đổi những gì
+máy tính để bàn hiển thị.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Phiên trên điện thoại còn bị giới hạn vào một danh sách cho phép nhỏ gồm các công
+cụ nặng về đọc: nó có thể liệt kê và đọc phiếu, agent, space, tin nhắn và bài
+viết bảng tin, và nó có thể cập nhật hoặc giao một phiếu, gửi một tin nhắn trong
+một space và đánh dấu một bài viết đã đọc hoặc đã lưu. Bất cứ thứ gì nằm ngoài
+tập hợp đó đều bị từ chối trước khi tới bộ điều phối của máy chủ.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run a headless server](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): make the server reachable in the first place
-- [Connect to a remote server](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/): point a full client at it
-- [Use spaces](/vi-VN/so-tay/huong-dan-thuc-hanh/space/): what you'll mostly do from the phone
-- [Create and manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/): triage from the road
+- [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/): làm cho máy chủ có thể truy cập được ngay từ đầu
+- [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/): trỏ một máy khách đầy đủ tới đó
+- [Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/): điều bạn sẽ chủ yếu làm từ điện thoại
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/): phân loại công việc khi đang trên đường
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Remote control and mobile](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)
-- [Deployment and clients](/vi-VN/so-tay/khai-niem/trien-khai/)
+- [Điều khiển từ xa và di động](/vi-VN/so-tay/khai-niem/dieu-khien-tu-xa/)
+- [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/)

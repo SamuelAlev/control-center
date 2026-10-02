@@ -1,37 +1,39 @@
 ---
-title: Repo scripts
-description: Per-repository setup and archive scripts that run against a space's worktree.
+title: Scripturi de repo
+description: Scripturi de setup și de arhivare per depozit, care rulează pe worktree-ul unui spațiu.
 slug: ro-RO/manual/ghiduri-practice/scripturi-repo
+sourceHash: 1bea64b6af2f8d7d344f8a2ea45ee9d621ef5afa
 ---
 
-Repo scripts are shell scripts you configure per repository (Settings →
-Repositories → the terminal icon on a repo's row) that Control Center's server
-runs against **a space's worktree** of that repo — the isolated checkout under
-`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/` where agents work.
+Scripturile de repo sunt scripturi shell pe care le configurezi per depozit
+(Setări → Depozite → pictograma de terminal din rândul unui depozit) și pe care
+serverul Control Center le rulează pe **worktree-ul unui spațiu** al acelui
+depozit — copia de lucru izolată din
+`<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`, unde lucrează agenții.
 
-There are two kinds:
+Există două tipuri:
 
-| Script | When it runs | Use it for |
+| Script | Când rulează | Pentru ce îl folosești |
 | --- | --- | --- |
-| **Setup** | Right after a worktree is provisioned for a space | Installing dependencies, generating files, copying `.env` |
-| **Archive** | Just before a worktree is destroyed or garbage-collected | Cleaning up resources outside the worktree (docker networks, tunnels, external state) |
+| **Setup** | Imediat după ce un worktree este provisionat pentru un spațiu | Instalarea dependențelor, generarea fișierelor, copierea `.env` |
+| **Arhivare** | Chiar înainte ca un worktree să fie distrus sau colectat de gunoi | Curățarea resurselor din afara worktree-ului (rețele Docker, tuneluri, stare externă) |
 
-## Where scripts run
+## Unde rulează scripturile
 
-Both scripts run via `bash -lc` (a login shell, so Homebrew/nvm-installed
-tools are on `PATH`) with the **worktree as the working directory**, and these
-environment variables set:
+Ambele scripturi rulează prin `bash -lc` (un shell de login, astfel încât
+instrumentele instalate prin Homebrew/nvm să fie pe `PATH`), cu **worktree-ul ca
+director de lucru**, și cu aceste variabile de mediu setate:
 
-| Variable | Value |
+| Variabilă | Valoare |
 | --- | --- |
-| `CC_WORKSPACE_PATH` | The worktree (the script's cwd) |
-| `CC_ROOT_PATH` | The registered source repo — your own checkout |
-| `CC_SPACE_ID` | The space the worktree belongs to |
-| `CC_SPACE_NAME` | The space's display name |
-| `CC_REPO_NAME` | The repo's display name |
+| `CC_WORKSPACE_PATH` | Worktree-ul (directorul de lucru al scriptului) |
+| `CC_ROOT_PATH` | Depozitul sursă înregistrat — propriul tău checkout |
+| `CC_SPACE_ID` | Spațiul căruia îi aparține worktree-ul |
+| `CC_SPACE_NAME` | Numele afișat al spațiului |
+| `CC_REPO_NAME` | Numele afișat al depozitului |
 
-For example, a setup script that installs dependencies and brings in the
-repo's gitignored `.env`:
+De exemplu, un script de setup care instalează dependențele și aduce `.env`-ul
+ignorat de git al depozitului:
 
 ```bash
 pnpm install
@@ -39,28 +41,33 @@ cp "$CC_ROOT_PATH/.env" .env
 pnpm run build
 ```
 
-## Failure behavior
+## Comportamentul la eșec
 
-- A **setup** script that exits non-zero (or exceeds its 5-minute timeout)
-  fails the space's provisioning: the space shows the failed state with a
-  retry, and the run's output tail is recorded. A retry provisions from a
-  clean worktree and runs the script again — write setup scripts so a re-run
-  after a partial install works (package managers already behave this way).
-- An **archive** script is best-effort: a failure (or its 2-minute timeout)
-  is recorded but **never blocks deletion**. Archive runs on GC paths with no
-  one to answer a prompt (space deleted, PR merged, scheduled cleanup).
+- Un script de **setup** care se încheie cu un cod de ieșire diferit de zero
+  (sau care depășește timeout-ul său de 5 minute) face ca provisionarea
+  spațiului să eșueze: spațiul afișează starea de eșec însoțită de o
+  reîncercare, iar finalul ieșirii rulării este înregistrat. O reîncercare
+  provisionează dintr-un worktree curat și rulează din nou scriptul — scrie
+  scripturile de setup astfel încât o rerulare după o instalare parțială să
+  funcționeze (managerii de pachete se comportă deja astfel).
+- Un script de **arhivare** se execută fără garanții de succes: un eșec (sau
+  timeout-ul său de 2 minute) este înregistrat, dar **nu blochează niciodată
+  ștergerea**. Arhivarea rulează pe căi de GC pe care nu există nimeni care să
+  răspundă la o solicitare (spațiu șters, PR fuzionat, curățare programată).
 
-Setup runs only on a **fresh** worktree: re-dispatching agents into a warm
-space reuses the existing checkout and does not re-pay the install.
+Setup-ul rulează doar pe un worktree **proaspăt**: retrimiterea agenților
+într-un spațiu deja încălzit refolosește checkout-ul existent și nu plătește din
+nou instalarea.
 
-## Run history
+## Istoricul rulărilor
 
-Every execution is recorded with its status, duration, exit code and a bounded
-output tail, visible in the same settings dialog under "Recent runs" (the
-`repos.watchScriptRuns` subscription streams it live).
+Fiecare execuție este înregistrată cu starea, durata, codul de ieșire și un
+final limitat al ieșirii, vizibile în același dialog de setări, la „Rulări
+recente” (abonamentul `repos.watchScriptRuns` le transmite în direct).
 
-## Permissions
+## Permisiuni
 
-Scripts are shell the **server** executes, so writing them is restricted to
-workspace admins and guarded by the `processSpawn` action class — the same
-guardrail net that gates every other process-spawning operation.
+Scripturile sunt shell pe care **serverul** îl execută, așa că scrierea lor este
+restricționată la administratorii spațiului de lucru și protejată de clasa de
+acțiune `processSpawn` — aceeași rețea de guardrail-uri care filtrează orice
+altă operațiune care pornește un proces.

@@ -1,172 +1,175 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: اڈاپٹرز اور ماڈلز منظم کریں
+description: ماڈل فراہم کنندگان جوڑیں، ایجنٹ جس ماڈل پر چلتا ہے وہ منتخب کریں اور دیکھیں کہ سرور ہوسٹ پر کون سے ایجنٹ رنر CLI موجود ہیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+یہ گائیڈ دکھاتی ہے کہ ماڈل فراہم کنندگان کیسے جوڑیں اور چنیں کہ ایجنٹ کس پر
+چلے۔
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+یہ سب کچھ ایک ہی صفحے پر ہے: **ترتیبات → سرور → ماڈل فراہم کنندگان**۔ ذیلی
+سائیڈ بار کا اندراج "ماڈل فراہم کنندگان" پڑھا جاتا ہے؛ صفحے کا عنوان "اڈاپٹرز"
+پڑھا جاتا ہے۔
 
-## What an adapter is
+## اڈاپٹر کیا ہے
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+اڈاپٹر وہ _رنر_ ہے جو ایک ایجنٹ باری چلاتا ہے۔ یہ دو ہیں اور فہرست مقرر ہے —
+تیسرا شامل نہیں کیا جا سکتا۔
 
-| Adapter                   | CLI      | Transport                                           |
+| اڈاپٹر                    | CLI      | ٹرانسپورٹ                                          |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (built-in) | کوئی نہیں | پراسیس کے اندر ایجنٹ لوپ، فراہم کنندگان سے HTTP کے ذریعے بات کرتا ہے |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor، Codex، Anthropic، OpenAI اور باقی سب بلٹ اِن اڈاپٹر پر **فراہم کنندگان**
+ہیں، الگ CLIs نہیں۔ جو آپ _شامل_ کر سکتے ہیں وہ ایک اور فراہم کنندہ ہے — کوئی بھی
+OpenAI- یا Anthropic-مطابق اینڈ پوائنٹ۔ یہی اگلا حصہ ہے۔
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[دریافت آپ کی مشین نہیں، سرور کی جانچ کرتی ہے]
+**دریافت شدہ رنرز** کارڈ وہ فہرست دکھاتا ہے جو `cc_server` نے _سرور ہوسٹ کے_
+`PATH` پر پایا۔ تھن یا ویب کلائنٹ پر یہ اُس مشین سے مختلف ہوتی ہے جسے آپ دیکھ
+رہے ہیں۔ CLI اُس مشین پر انسٹال کریں جو `cc_server` چلاتی ہے۔
 :::
 
-## Connect a model provider
+## ماڈل فراہم کنندہ جوڑیں
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+بلٹ اِن اڈاپٹر کو چلنے سے پہلے کم از کم ایک منسلک فراہم کنندہ درکار ہے۔ کیٹلاگ
+میں چودہ شامل ہیں۔
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. **ترتیبات → سرور → ماڈل فراہم کنندگان** پر جائیں
+2. **فراہم کنندگان اور ماڈلز** تک اسکرول کریں
+3. اپنا فراہم کنندہ ڈھونڈیں اور اسے جوڑیں:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| فراہم کنندہ                                                                                              | کیسے جوڑیں                                                                                                                    |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API کلید۔ Claude Pro/Max سبسکرپشن Anthropic API لاگ اِن نہیں ہے — اُس پلان کے لیے Claude Code اڈاپٹر استعمال کریں              |
+| OpenAI, Codex, Cursor                                                                                    | براؤزر OAuth لاگ اِن، یا API کلید۔ Codex، Codex Responses بیک اینڈ کے ذریعے ChatGPT Plus/Pro ہے، CLI اسپان نہیں                |
+| Kimi Code                                                                                                | صرف براؤزر OAuth — ڈیوائس کوڈ فلو۔ یہ فلیٹ ریٹ پلان ہے، اس لیے اس کی فی ٹوکن کوئی قیمت نہیں                                  |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API کلید                                                                                                                       |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+تصدیق: قطار کا بیج منسلک میں بدل جاتا ہے اور اسے پھیلانے پر اُس فراہم کنندہ کے پیش
+کردہ ماڈلز کی فہرست آتی ہے، ہر ایک کے ساتھ فی ملین ٹوکن قیمت اور کانٹیکسٹ ونڈو۔
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth ٹوکن سرور کے اپنے اسناد کے ذخیرے میں جاتے ہیں اور میعاد ختم ہونے سے پہلے
+تازہ کر دیے جاتے ہیں۔ فراہم کنندہ کے اسناد **ہوسٹ گلوبل** ہوتے ہیں — انسٹال کی
+ہر ورک اسپیس انہیں شیئر کرتی ہے، کسی ایک تک محدود نہیں۔
 
-### Add a custom provider
+### حسبِ ضرورت فراہم کنندہ شامل کریں
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+یہ Ollama، LM Studio، vLLM یا کسی نجی ڈیپلائمنٹ کے لیے استعمال کریں۔
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. **فراہم کنندگان اور ماڈلز** میں، **حسبِ ضرورت فراہم کنندگان** کے تحت،
+   **فراہم کنندہ شامل کریں** دبائیں
+2. ایک **نام** بھریں، **API قسم** چنیں (OpenAI-مطابق یا
+   Anthropic-مطابق) اور **بیس URL** دیں (مثلاً
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. اگر اینڈ پوائنٹ کو ضرورت ہو تو ایک **API کلید** شامل کریں، پھر **فراہم کنندہ شامل کریں** دبائیں
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+حسبِ ضرورت فراہم کنندہ اُسی فہرست میں ظاہر ہوتا ہے، ایک حذف بٹن کے ساتھ جو اس کے
+بلٹ اِن ہم منصبوں کے پاس نہیں ہوتا۔
 
-## Pick a model for an agent
+## ایجنٹ کے لیے ماڈل منتخب کریں
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. **ترتیبات → ورک اسپیس → ایجنٹس** پر جائیں اور ایجنٹ منتخب کریں
+2. **ترتیبات** ٹیب پر، **اڈاپٹر** چنیں
+3. اس کے ساتھ والے ڈراپ ڈاؤن سے **ماڈل** چنیں
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+بلٹ اِن اڈاپٹر کے لیے ڈراپ ڈاؤن ہر منسلک فراہم کنندہ کے اپنے کیٹلاگ سے لائیو تیار
+ہوتا ہے۔ جس فراہم کنندہ کا کوئی محفوظ اسناد نہ ہو وہ صفر ماڈلز ڈالتا ہے، اسی لیے
+خالی ڈراپ ڈاؤن کا مطلب تقریباً ہمیشہ "ابھی کچھ منسلک نہیں" ہوتا ہے، نہ کہ "کچھ
+دستیاب نہیں"۔
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev صرف افزودگی ہے، ids کا ماخذ ہرگز نہیں]
+بنڈل شدہ [models.dev](https://models.dev) کیٹلاگ اُس ماڈل کے لیے قیمت اور
+کانٹیکسٹ ونڈو فراہم کرتا ہے جو پہلے سے لائیو فہرست میں موجود ہو۔ یہ کبھی کوئی
+ماڈل id شامل نہیں کرتا۔ اگر کوئی متوقع ماڈل غائب ہو تو فراہم کنندہ کا اینڈ پوائنٹ
+اسے واپس نہیں کر رہا۔
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+بلٹ اِن اڈاپٹر کے ماڈل ids اہل `provider/model` ہوتے ہیں اور `|` سے الگ فال بیک
+زنجیر رکھ سکتے ہیں۔ فال بیک کی صورت میں لاگت اُس ماڈل کے حساب سے لگائی جاتی ہے
+جس نے واقعی باری سر کی، نہ کہ اُس کے جس کی آپ نے مانگ کی۔
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[بغیر اڈاپٹر والا ایجنٹ بلٹ اِن لوپ پر چلتا ہے]
+ہر ورک اسپیس پانچ ایجنٹ سیڈ کرتی ہے — ایک CEO کے ساتھ `qa`، `architect`، `engineer` اور
+`librarian` — بغیر اڈاپٹر اور بغیر ماڈل کے۔ ڈسپیچ
+**Control Center (built-in)** پر واپس آتا ہے، اس صفحے کی **ڈیفالٹ رنرز** ترتیب پر
+نہیں، جو ایک کلائنٹ طرفہ ترجیح ہے جسے ڈسپیچ راستہ کبھی نہیں پڑھتا۔ رن لاگ اُن
+رنز کے لیے `cc-harness` درج کرتا ہے، چنانچہ ٹرانسکرپٹ بتاتا ہے کہ واقعی کیا چلا۔
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+ماڈل بھی نہ ہونے پر بلٹ اِن لوپ Anthropic سے اس کا ڈیفالٹ ماڈل مانگتا ہے۔ اس لیے
+مکمل طور پر غیر سیٹ چھوڑا گیا ایجنٹ تب چلتا ہے جب آپ نے Anthropic اکاؤنٹ جوڑا ہو،
+ورنہ `No credential for provider "anthropic"` کے ساتھ ناکام ہوتا ہے۔
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+آن بورڈنگ کا اڈاپٹر قدم مکمل کرنے پر آپ کا چنا ہوا جوڑا **ہر** اُس ایجنٹ پر بعد
+ازاں لاگو ہوتا ہے جس میں ابھی تک اڈاپٹر یا ماڈل نہ ہو — CEO اور ماہرین، اُس وقت
+موجود ہر ورک اسپیس میں۔ بعد میں بننے والی ورک اسپیسز پھر بھی پانچوں کو غیر سیٹ سیڈ
+کرتی ہیں۔ جس بھی ایجنٹ کو آپ استعمال کرنے کا ارادہ رکھتے ہیں، اس پر اڈاپٹر اور
+ماڈل واضح طور پر سیٹ کریں۔
 :::
 
-## Install a runner CLI
+## رنر CLI انسٹال کریں
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+بلٹ اِن اڈاپٹر کو کسی انسٹالیشن کی ضرورت نہیں۔ Claude Code کے لیے اس کا
+CLI **سرور ہوسٹ پر** اُس ٹول کے اپنے پیکیج مینیجر سے انسٹال کریں، مثلاً:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+پھر صفحے کے اوپری حصے میں **تازہ کریں** دبائیں۔ ہر دریافت شدہ قطار حل شدہ ورژن
+اور پاتھ دکھاتی ہے، نیز چپس کہ آیا یہ JSON موڈ اور ماڈل انتخاب کی حمایت کرتا ہے۔
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+بیرونی CLI اپنے اسناد اپنی کنفیگریشن میں، سرور ہوسٹ پر رکھتا ہے۔ Control Center
+انہیں منظم نہیں کرتا۔
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[اڈاپٹر کے آرگومنٹس اور ماحول کے ویری ایبلز اسی ڈیوائس پر رہتے ہیں]
+ہر اڈاپٹر قطار ایک **آرگومنٹس** فیلڈ اور ایک **ماحول کے ویری ایبلز** ڈائیلاگ پیش
+کرتی ہے۔ وہ اقدار آپ کے ڈیوائس پر محفوظ ہوتی ہیں۔ سرور لانچ argv
+اور env اپنے سیٹنگز اسٹور سے پڑھتا ہے۔ فراہم کنندہ کی کلیدیں سرور پر رکھیں (OAuth یا
+ماڈل فراہم کنندگان صفحے کا کلید فیلڈ)، اُن دو فیلڈز میں نہیں۔
 :::
 
-## Restrict which providers a workspace may use
+## محدود کریں کہ ورک اسپیس کون سے فراہم کنندگان استعمال کر سکتی ہے
 
-Provider governance is per workspace and is evaluated last-match-wins.
+فراہم کنندہ گورننس فی ورک اسپیس ہے اور آخری مطابقت غالب آنے کے اصول پر لاگو ہوتی
+ہے۔
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. **فراہم کنندگان اور ماڈلز** میں، کسی فراہم کنندہ قطار کا **اجازت دیں** سوئچ بند کریں
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+یہ فعال ورک اسپیس میں اُس فراہم کنندہ کے لیے ایک `deny` بیان لکھتا ہے اور اس کے
+ماڈلز اُس ورک اسپیس کے کیٹلاگ سے نکل جاتے ہیں۔ سوئچ دوبارہ آن کرنے سے بیان ہٹ
+جاتا ہے۔
 
-## Troubleshooting
+## خرابیوں کا ازالہ
 
-### A runner shows as not found
+### کوئی رنر نہیں ملا دکھاتا ہے
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- جانچیں کہ CLI **سرور ہوسٹ کے** `PATH` پر ہے، صرف آپ کے نہیں
+- GUI سے لانچ ہونے والی ڈیسک ٹاپ ایپ اپنا سرور کم سے کم `PATH` کے ساتھ اسپان کرتی
+  ہے؛ صرف شیل والے پاتھ میں انسٹال CLI اسے نظر نہ آئے
+- انسٹال کرنے کے بعد **تازہ کریں** دبائیں
 
-### The model dropdown is empty
+### ماڈل ڈراپ ڈاؤن خالی ہے
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- اڈاپٹر بلٹ اِن والا ہے اور کوئی فراہم کنندہ منسلک نہیں — **فراہم کنندگان اور ماڈلز**
+  میں ایک جوڑیں
+- یا فراہم کنندہ منسلک ہے مگر اِس ورک اسپیس کا گورننس سوئچ اسے منع کرتا ہے
 
-### A model runs but the price shows as unknown
+### ماڈل چلتا ہے مگر قیمت نامعلوم دکھتی ہے
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+لائیو ماڈل فہرست id رکھتی ہے؛ قیمت اور کانٹیکسٹ models.dev سے آتے ہیں۔ بالکل نئے
+ماڈل، یا حسبِ ضرورت فراہم کنندہ والے ماڈل کا ابھی کوئی کیٹلاگ اندراج نہیں ہوتا۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and configure an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
-- [Manage API keys](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
-- [Diagnose an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
-- [Manage costs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
+- [ایجنٹ بنائیں اور کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-بنائیں/)
+- [API کلیدیں منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/api-کلیدیں/)
+- [ایجنٹ کی تشخیص کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-کی-تشخیص/)
+- [اخراجات منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
-- [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)
+- [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)

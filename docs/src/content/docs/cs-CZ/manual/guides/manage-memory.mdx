@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Spravujte paměť pracovního prostoru
+description: Zkontroluj, oprav a prořež fakta a politiky, které agenti zapsali do pracovního prostoru.
 slug: cs-CZ/prirucka/navody/sprava-pameti
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Tenhle návod ukazuje, jak pracovat se znalostním úložištěm pracovního prostoru.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Než začneš, tohle je podstatné: **rozhraní paměti je ke kontrole, ne k psaní.** Fakta a politiky zapisují agenti, přes `propose_fact` a `propose_policy`. `supersede_fact` a `supersede_policy` je nahrazují. `remember` zapíše položku horké vrstvy vázanou na relaci a `consolidate_memory` ji může později povýšit na fakt. Rozhodnutí ze zaznamenaných schůzek se sklízejí do domény `decisions`. Dokončené běhy agentů se nesklízejí. Tady čteš, co zapsali, opravíš to, deaktivuješ, nebo smažeš.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Paměť najdeš v **Nastavení → Pracovní prostor → Paměť** (`/workspaces/<id>/settings/memory`). V postranním panelu to není položka na nejvyšší úrovni.
 
-## The three tabs
+## Tři karty
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Stránka má přesně tři karty. **Fakta** a **Politiky** ukazují aktuální počet, graf ne:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fakta** – každý fakt v pracovním prostoru a počet těch, které nejsou nahrazené
+- **Politiky** – normativní pravidla seskupená podle domény a počet aktivních
+- **Graf znalostí** – interaktivní plátno domén, témat, fakt a politik
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domény nezakládáš. Doména vznikne, když do ní agent zapíše první fakt nebo první politiku. V rozhraní nikde není ovládání, kterým bys doménu založil.
 
-## Review and correct a fact
+## Zkontroluj a oprav fakt
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Otevři kartu **Fakta**.
+2. Vyhledávacím polem seznam zúžíš. Je to obyčejný filtr podřetězce přes doménu, téma a obsah každého faktu. Žádný index klíčových slov, žádné řazení podle relevance.
+3. Filtr rozsahu přepneš na **Všechny rozsahy**, jen na **Celý pracovní prostor**, nebo na fakta jednoho repozitáře.
+4. Řazení přepneš mezi **Nedávné** a **Jistota**.
+5. Klepni na **Upravit** u faktu.
 
-The edit dialog lets you change:
+V dialogu úpravy změníš:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Doména** – přesun faktu mezi doménami
+- **Téma** – jeho krátký štítek
+- **Obsah** – text znalosti
+- **Jistota** – posuvník v krocích po 5 %
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+**Uložit** to zapíše zpátky. Ovládání pro přidání tu není a dialog se otevře jen nad existujícím řádkem.
 
-## See superseded facts
+## Podívej se na nahrazená fakta
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Na kartě Fakta je přepínač **Zobrazit nahrazené**. Nahrazená fakta jsou ve výchozím stavu skrytá a ten přepínač je odhalí. Tam je auditní stopa, protože nahrazení nikdy nemaže.
 
-## Delete a fact
+## Smaž fakt
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Klepni na **Smazat** u faktu a potvrď. Tohle je skutečné smazání, ne nahrazení. Použij ho u faktů, které se neměly vůbec zaznamenat, a nech agenty nahradit fakta, jejichž _obsah_ se posunul.
 
-## Manage policies
+## Spravuj politiky
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Karta **Politiky** seskupuje aktivní politiky podle domény a neaktivní odsouvá do závěrečné sekce. U každé politiky můžeš:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Upravit** ji
+- **Smazat** ji
+- **Deaktivovat** / **Aktivovat** ji – vratná volba a obvykle ta správná. Do promptů agentů se dostanou jen aktivní politiky.
 
-As with facts, there is no create control.
+Stejně jako u fakt tu není ovládání pro vytvoření.
 
-## Explore the knowledge graph
+## Prozkoumej graf znalostí
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Karta **Graf znalostí** rozloží domény, témata, fakta a politiky na plátno uzlů, po kterém se pohybuješ: posun, přiblížení, tažení uzlů. Klepnutí na uzel otevře jeho detail a z něj se dostaneš ke stejným dialogům úpravy. Je to nejrychlejší způsob, jak vidět, které domény jsou opravdu naplněné.
 
-## Edit an agent's working memory
+## Uprav pracovní paměť agenta
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Pracovní paměť je soukromý zápisník jednoho agenta a při odeslání se mu vloží do promptu. Agenti si ji zapisují sami přes `record_observation` a `update_my_notes`, ale můžeš ji číst a upravovat přímo:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Nastavení → Pracovní prostor → Agenti** → vyber agenta → karta **Paměť**.
 
-## Access grants
+## Přístupové granty
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Přístupové granty paměti mapují roli agenta na oprávnění (`none`, `read`, `write`) pro každou doménu. Zapisuješ je operacemi `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Dvě věci k tomu, jak se vyhodnocují:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Čtení je ve výchozím stavu otevřené.** Když pro dvojici (role, domain) neexistuje řádek grantu, účinné oprávnění je `read`. Jediný zápis, který bez `write` vyhodí výjimku, je `propose_policy`. Zápisy fakt na grant vázané nejsou.
+- **Grant se váže na roli agenta.** Nástroje pro návrh dosadí chybějící `agent_role` hodnotou `general`. Grant zapsaný pro jinou roli se na ty agenty nevztahuje. Grant `general` ano.
 
-## Search is not the same everywhere
+## Hledání není všude stejné
 
-Three different things are called "memory search" and they do not agree:
+Tři různé věci se jmenují „hledání v paměti“ a neshodují se:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Kde                                      | Co dělá                                                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Vyhledávací pole na kartě Fakta          | Filtr podřetězce přes fakta, která už má klient načtená                                                                         |
+| RPC operace `memory_fact.search`         | Jen hledání klíčových slov přes FTS5. Tenký klient neumí poslat embedding dotazu, takže hybridní hledání zůstává uvnitř hostitele |
+| Nástroj `search_memory` na straně agenta | `keyword`, `semantic` nebo `hybrid` (výchozí). Hybrid slučuje čtyři hlasy: lexikální, sémantický, časový a grafový               |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+Agent a stránka **Paměť** tedy stejný dotaz neseřadí stejně. Když ověřuješ, co agent skutečně dokáže vyvolat, zeptej se agenta.
 
-## Embeddings
+## Embeddingy
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Fakta dostanou embedding **při zápisu** a jen tehdy, když je nainstalovaný embeddingový model na zařízení. Stav zkontroluješ v **Nastavení → Server → Diagnostika a soukromí → Sémantické vyhledávání**. Chceš-li sémantické vyvolání, nainstaluj model dřív, než agenti začnou paměť zapisovat.
 
-## Related guides
+## Související návody
 
-- [Create and configure an agent](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
-- [Use the MCP server](/cs-CZ/prirucka/navody/mcp-server/)
+- [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/)
+- [Používejte MCP server](/cs-CZ/prirucka/navody/mcp-server/)
 
-## Related concepts
+## Související koncepty
 
-- [Memory and knowledge](/cs-CZ/prirucka/koncepty/pamet-a-znalosti/)
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/)
+- [Paměť a znalosti](/cs-CZ/prirucka/koncepty/pamet-a-znalosti/)
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/)

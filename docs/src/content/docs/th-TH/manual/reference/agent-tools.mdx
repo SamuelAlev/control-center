@@ -1,213 +1,214 @@
 ---
-title: Built-in agent tools
-description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+title: เครื่องมือเอเจนต์ในตัว
+description: พื้นผิวเครื่องมือที่ฮาร์เนสในตัวมอบให้เอเจนต์ — เซิร์ฟเวอร์ภาษา การค้นหาเชิงโครงสร้าง ดีบักเกอร์ เคอร์เนล และการควบคุมวอร์กเกอร์ — พร้อมทุกการทำงานและอาร์กิวเมนต์ของมัน
 slug: th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์
+sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+เหล่านี้คือเครื่องมือที่**ผูกกับเซิร์ฟเวอร์**ซึ่งรันไทม์เอเจนต์ในตัวลงทะเบียนไว้โดยตรง — เซิร์ฟเวอร์ภาษา การค้นหาเชิงโครงสร้าง ดีบักเกอร์ เคอร์เนล คำถาม และการควบคุมวอร์กเกอร์ — ต่างจาก[เครื่องมือ MCP](/th-TH/คู่มือ/อ้างอิง/เครื่องมือ-mcp/)ที่มันเชื่อมเข้ามา และต่างจากเครื่องมือไฟล์ การค้นหา และเชลล์ทั่วไปจากรันไทม์ของฮาร์เนส พวกมันไม่ได้อยู่บนทะเบียน MCP: ไคลเอนต์ MCP ภายนอกจะมองไม่เห็น เพราะแต่ละตัวผูกกับทรัพยากรฝั่งเซิร์ฟเวอร์ที่มีชีวิต — โปรเซสเซิร์ฟเวอร์ภาษา อะแดปเตอร์ดีบัก อินเทอร์พรีเตอร์ — ซึ่งเป็นของรันหนึ่งครั้ง
 
-Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
+เครื่องมือทุกตัวที่นี่จะถูกลงทะเบียนก็ต่อเมื่อทรัพยากรที่รองรับมันถูกต่อไว้สำหรับรันนั้น — ผู้ดูแลเซิร์ฟเวอร์ภาษาหรือดีบัก พาร์เซอร์ tree-sitter โรงงานเคอร์เนล พอร์ตคำถาม รายชื่อวอร์กเกอร์ vibe การตรวจหาว่ามีเซิร์ฟเวอร์ภาษาหรืออะแดปเตอร์ดีบักสำหรับ*เช็กเอาต์นี้*หรือไม่เป็นการตรวจแยกต่างหากที่เกิดทีหลัง (`status` / `adapters`): เครื่องมือเหล่านี้ยังคงอยู่บนพื้นผิวเพื่อให้เอเจนต์ถามได้ว่าทำไมถึงใช้งานอะไรไม่ได้ แทนที่จะเดา
 
-## Approval tiers
+## ระดับการอนุมัติ
 
-Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+เครื่องมือแต่ละตัวประกาศระดับหนึ่ง และระดับนั้นเป็นตัวตัดสินว่า**พื้นผิวใดเห็นมัน** — ไม่ใช่แค่ว่ามันจะขึ้นพรอมป์ต์หรือไม่ โหมดแผนและเอเจนต์ย่อยแบบอ่านอย่างเดียวถูกกำกัดไว้ที่ `read` เครื่องมือระดับ `write` หรือ `exec` จึงหายไปจากสคีมาของพวกมันทั้งหมด
 
-| Tier    | Meaning                                | Tools here                                         |
-| ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
-| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
-| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+| ระดับ   | ความหมาย                     | เครื่องมือที่นี่                                     |
+| ------- | ---------------------------- | -------------------------------------------------- |
+| `read`  | ไม่มีผลข้างเคียง               | `lsp`, `ast_grep`, `ask_user` และ `vibe_*` ทั้งห้าตัว |
+| `write` | เปลี่ยนแปลงไฟล์                | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | เริ่มหรือควบคุมโปรเซส           | `debug`, `eval`                                    |
 
 ---
 
-## `lsp` — language-server queries
+## `lsp` — คำค้นเซิร์ฟเวอร์ภาษา
 
-Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
+ลงทะเบียนเมื่อการรันมีผู้ดูแลเซิร์ฟเวอร์ภาษาและไดเรกทอรีทำงาน ว่าเซิร์ฟเวอร์จะตอบได้จริงหรือไม่นั้นถูกตรวจตอนเรียกใช้ เป็น**ส่วนตัดกัน**: ต้องมีมาร์กเกอร์ที่ราก *และ*ต้องค้นหาไบนารีของเซิร์ฟเวอร์เจอ อย่างใดอย่างหนึ่งเพียงอย่างเดียวแปลว่าไม่มีเซิร์ฟเวอร์เริ่มทำงาน — `status` บอกไว้เช่นนั้น — แทนที่จะเดาเงียบ ๆ
 
-Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+ตำแหน่งถูกระบุด้วย `line` บวกกับสตริงย่อยใน `symbol` ไม่ใช่ด้วยคอลัมน์ โมเดลที่ถูกขอให้หาคอลัมน์จะเดา และการเดาผิดจะไปลงที่สัญลักษณ์อีกตัวบนบรรทัดเดียวกัน — คำตอบที่ดูเหมือนถูกแต่พูดถึงคนละเรื่อง การละ `symbol` ในการกระทำเชิงนำทางถือเป็นข้อผิดพลาด ไม่ใช่การเดาว่าเป็นคอลัมน์แรก
 
-| Action            | Arguments                        | Returns                                    |
+| การกระทำ          | อาร์กิวเมนต์                       | สิ่งที่คืนกลับ                                  |
 | ----------------- | -------------------------------- | ------------------------------------------ |
-| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
-| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
-| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
-| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
-| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
-| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
-| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
-| `status`          | —                                | Which servers are running, and for which roots |
-| `reload`          | —                                | Restarts the server for this root          |
+| `diagnostics`     | `file` (หรือ `"*"`)              | ข้อผิดพลาดและคำเตือน; `"*"` รันตัวตรวจสอบของโปรเจกต์แทน |
+| `definition`      | `file`, `line`, `symbol`         | ตำแหน่งที่สัญลักษณ์ถูกประกาศ                  |
+| `type_definition` | `file`, `line`, `symbol`         | ตำแหน่งที่ไทป์ของมันถูกประกาศ                 |
+| `implementation`  | `file`, `line`, `symbol`         | การนำไปใช้จริง                              |
+| `references`      | `file`, `line`, `symbol`         | ทุกจุดที่ถูกใช้ จำกัดที่ 50                   |
+| `hover`           | `file`, `line`, `symbol`         | ลายเซ็นและคอมเมนต์เอกสาร                     |
+| `symbols`         | `query` หรือ `file`              | ค้นหาในเวิร์กสเปซด้วย `query` (จำกัดที่ 100); สัญลักษณ์ในเอกสารด้วย `file` (จำกัดที่ 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | การแก้แบบด่วนที่เซิร์ฟเวอร์เสนอ                |
+| `status`          | —                                | เซิร์ฟเวอร์ตัวใดกำลังทำงาน และสำหรับรากใด        |
+| `reload`          | —                                | รีสตาร์ตเซิร์ฟเวอร์สำหรับรากนี้                 |
 
-### Diagnostics on write
+### ผลวินิจฉัยเมื่อเขียน
 
-The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+ผลตอบแทนไม่ใช่ตัวเครื่องมือ `write`, `edit` และ `apply_patch` ถูก**ห่อไว้**: หลังการเขียน ไฟล์จะถูกซิงก์และบันทึกผ่านเซิร์ฟเวอร์ภาษา และมีเพียงผลวินิจฉัยที่**เพิ่งเกิดขึ้นใหม่**เท่านั้นที่ถูกพับรวมเข้าไปในผลลัพธ์ของเครื่องมือ เอเจนต์จึงรู้ว่าตัวเองทำให้บิลด์พังในจังหวะที่มันพัง โดยไม่ต้องนึกขึ้นมาได้ว่าต้องถาม
 
-Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+ผลวินิจฉัยที่ถูกแจ้งไปแล้วจะถูกระงับด้วยทะเบียนต่อการรันหนึ่งชุดที่ยึดความรุนแรง รหัส และข้อความเป็นคีย์ — ตำแหน่งถูกตัดออกอย่างจงใจ ผลวินิจฉัยที่แค่เลื่อนลงมาสี่บรรทัดจึงไม่ถูกแจ้งซ้ำว่าเป็นของใหม่
 
-## `lsp_rename` — project-wide rename
+## `lsp_rename` — เปลี่ยนชื่อทั้งโปรเจกต์
 
-A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+เครื่องมือแยกต่างหากระดับ `write` ด้วยเหตุผลเดียวเท่านั้น: ระดับเป็นตัวตัดสินการมองเห็น การพับการเปลี่ยนชื่อเข้าไปใน `lsp` จะหมายถึงการมอบความสามารถในการเขียนรีโปใหม่ให้กับตัวสำรวจแบบอ่านอย่างเดียว หรือไม่ก็เอา `hover` ทุกครั้งไปไว้หลังพรอมป์ต์ขออนุมัติ
 
-| Argument | Meaning                                    |
+| อาร์กิวเมนต์ | ความหมาย                                |
 | -------- | ------------------------------------------ |
-| `file`   | Where the symbol is                        |
-| `line`   | 1-indexed line                             |
-| `symbol` | Substring identifying it on that line      |
-| `new_name` | What to call it                          |
+| `file`   | ตำแหน่งที่สัญลักษณ์อยู่                       |
+| `line`   | บรรทัดที่นับจาก 1                            |
+| `symbol` | สตริงย่อยที่ระบุตัวมันบนบรรทัดนั้น             |
+| `new_name` | ชื่อที่จะเรียกมัน                          |
 
 ---
 
-## `ast_grep` — structural search
+## `ast_grep` — การค้นหาเชิงโครงสร้าง
 
-Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+หาโค้ดด้วย**รูปร่าง**แทนที่จะด้วยข้อความ `$NAME` จับคู่กับโหนดใดก็ได้ `$$$NAME` จับคู่กับโหนดพี่น้องที่ต่อเนื่องกัน และ `$_` เป็นไวลด์การ์ดที่ไม่ผูกอะไรเลย
 
-The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+คุณสมบัติที่ทำให้มันเป็นตัวจับคู่แทนที่จะเป็นรีจิกซ์ที่เพิ่มขั้นตอนเข้ามา: เมทาวาริเอเบิลที่ซ้ำกันในแพตเทิร์นเดียวต้องจับข้อความเดียวกัน
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+จะจับคู่กับโค้ดป้องกันที่ dispose สิ่งที่มันเพิ่งตรวจสอบ และจะ**ไม่**จับคู่กับอันที่ dispose อย่างอื่น
 
-| Argument      | Meaning                                                     |
+| อาร์กิวเมนต์    | ความหมาย                                                     |
 | ------------- | ----------------------------------------------------------- |
-| `pattern`     | A code fragment with metavariables                          |
-| `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
-| `max_results` | Default 50                                                  |
+| `pattern`     | เศษโค้ดที่มีเมทาวาริเอเบิล                                     |
+| `path`        | ไฟล์หรือไดเรกทอรีที่จะค้นหา; ค่าเริ่มต้นคือทั้งเวิร์กสเปซ        |
+| `language`    | id ของไวยากรณ์ที่จัดส่งมา (`dart`, `python`, `rust`, `c`, …) จะถูกอนุมานเมื่อ `path` ชี้ไปที่ไฟล์ |
+| `max_results` | ค่าเริ่มต้น 50                                               |
 
-:::note[The pattern is parsed by the same grammar as the file]
-So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::note[แพตเทิร์นถูกแยกวิเคราะห์ด้วยไวยากรณ์เดียวกับไฟล์]
+ดังนั้น `dispose(x)` จึงจับคู่กับการเรียกได้ไม่ว่าจะเว้นวรรค ห่อ หรือคอมเมนต์ไว้อย่างไร — และไม่เคยจับคู่ตัวอักษรชุดเดียวกันที่อยู่ในสตริงลิเทอรัลหรือคอมเมนต์เลย
 :::
 
-:::caution[A fragment is parsed in a scaffold, not bare]
-`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::caution[เศษโค้ดถูกแยกวิเคราะห์ในโครงร่าง ไม่ใช่แบบเปล่า]
+`dispose(x)` ที่แยกวิเคราะห์ที่ระดับบนสุดของ Dart คือ**ลายเซ็นฟังก์ชัน**ที่ถูกต้อง ตัวคอมไพล์แพตเทิร์นจะไล่ลองบันไดของบริบท (คำสั่ง นิพจน์ สมาชิกคลาส การประกาศ) และใช้บริบทแรกที่ยอมรับเศษโค้ดนั้น แพตเทิร์นที่ไม่มีบริบทใดยอมรับจะถูกรายงานว่าแยกวิเคราะห์ไม่ได้ แทนที่จะถูกค้นหาแล้วเงียบ ๆ ว่าไม่พบ
 :::
 
-## `ast_edit` — structural rewrite, staged
+## `ast_edit` — เขียนใหม่เชิงโครงสร้าง แบบพักไว้
 
-Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+การจับคู่แบบเดียวกัน บวกกับเทมเพลต `rewrite` ที่เมทาวาริเอเบิลถูกแทนกลับเข้าไป **ไม่มีอะไรถูกเขียนลงไป** การเปลี่ยนแปลงถูกพักไว้ และผลลัพธ์ระบุ `edit_id`
 
 ```
 ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
 → (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
 ```
 
-| Argument   | Meaning                                             |
+| อาร์กิวเมนต์ | ความหมาย                                             |
 | ---------- | --------------------------------------------------- |
-| `pattern`  | What to match                                       |
-| `rewrite`  | What to put there, with `$NAME` substituted         |
-| `path`     | Scope; defaults to the whole workspace              |
-| `language` | Language id                                         |
+| `pattern`  | สิ่งที่จะจับคู่                                       |
+| `rewrite`  | สิ่งที่จะใส่แทน โดยมี `$NAME` ถูกแทนที่                 |
+| `path`     | ขอบเขต; ค่าเริ่มต้นคือทั้งเวิร์กสเปซ                   |
+| `language` | id ของภาษา                                          |
 
-## `resolve` — commit or discard a staged change
+## `resolve` — คอมมิตหรือทิ้งการเปลี่ยนแปลงที่พักไว้
 
-| Argument  | Meaning                          |
+| อาร์กิวเมนต์ | ความหมาย                          |
 | --------- | -------------------------------- |
-| `edit_id` | From the `(proposed)` result     |
-| `action`  | `accept` or `discard`            |
+| `edit_id` | จากผลลัพธ์ `(proposed)`            |
+| `action`  | `accept` หรือ `discard`           |
 
-Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+ทุกไฟล์จะถูกตรวจเทียบกับเนื้อหาที่บันทึกไว้ตอนพักการเปลี่ยนแปลง และความไม่ตรงกัน**แม้แต่จุดเดียว**จะปฏิเสธการเปลี่ยนแปลงทั้งชุด การเขียนใหม่เชิงโครงสร้างที่ลงไปเพียงบางส่วนจะทิ้งทรีที่คอมไพล์ไม่ผ่านทั้งรูปร่างเดิมและรูปร่างใหม่
 
 ---
 
-## `debug` — drive a debugger
+## `debug` — ขับเคลื่อนดีบักเกอร์
 
-Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+ลงทะเบียนเมื่อการรันมีผู้ดูแลเซสชันดีบัก ไดเรกทอรีทำงาน และ id ของบทสนทนา ว่าอะแดปเตอร์จะเริ่มทำงานได้จริงหรือไม่นั้นถูกตรวจตอนเรียกใช้ ด้วยกฎส่วนตัดกันเดียวกับเซิร์ฟเวอร์ภาษา (มาร์กเกอร์ที่ราก *และ*ไบนารี) ระดับ `exec`; ไม่ปลอดภัยเมื่อรันขนานกัน (เซสชันคือสถานะที่อยู่ข้ามการเรียก ดังนั้น `continue` ที่แซง `stack` จะอ่านเฟรมที่ขยับไปแล้ว)
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+หนึ่งเซสชันต่อหนึ่งบทสนทนา พร้อม TTL แบบตายตัว (30 นาที) `launch` ครั้งที่สองจะถูกปฏิเสธแทนที่จะไปแทนที่ครั้งแรกอย่างเงียบ ๆ
 
-| Op            | Arguments                     | Notes                                          |
+| อ็อป          | อาร์กิวเมนต์                   | หมายเหตุ                                        |
 | ------------- | ----------------------------- | ---------------------------------------------- |
-| `adapters`    | —                             | Which adapters are usable here, and why not     |
-| `status`      | —                             | Whether a session is running, and where it stopped |
-| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
-| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
-| `continue`    | `thread_id?`                  | Runs until the next stop                        |
-| `pause`       | `thread_id?`                  | Stops it where it is                            |
-| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
-| `threads`     | —                             | Thread ids and names                            |
-| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
-| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
-| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
-| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
-| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
-| `terminate`   | —                             | Ends the session and kills the adapter          |
+| `adapters`    | —                             | อะแดปเตอร์ตัวใดใช้ได้ที่นี่ และทำไมถึงไม่          |
+| `status`      | —                             | มีเซสชันกำลังทำงานอยู่หรือไม่ และมันหยุดอยู่ที่ไหน  |
+| `breakpoints` | `file`, `lines[]`             | `lines` ว่างเปล่าจะล้างไฟล์ ตั้งไว้**ก่อน**เปิดโปรแกรมได้ |
+| `launch`      | `program`, `args[]`           | เปิดโปรแกรมโดยหยุดที่เบรกพอยต์ของคุณ             |
+| `attach`      | `port`                        | เชื่อมต่อกับโปรแกรมที่กำลังรันอยู่แล้ว            |
+| `continue`    | `thread_id?`                  | รันไปจนถึงจุดหยุดถัดไป                          |
+| `pause`       | `thread_id?`                  | หยุดมันตรงที่มันอยู่                             |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | เดินไปหนึ่งขั้น                    |
+| `threads`     | —                             | id และชื่อของเธรด                              |
+| `stack`       | `thread_id?`                  | เฟรม จำกัดที่ 30                                |
+| `scopes`      | `frame_id`                    | สโคปบนเฟรมหนึ่ง แต่ละอันมี `reference`           |
+| `variables`   | `reference`                   | สมาชิกลูก จำกัดที่ 50 ค่าจำกัดที่ 400 ตัวอักษร       |
+| `evaluate`    | `expression`, `frame_id?`     | ประเมินในสโคปของเฟรมนั้นเอง                      |
+| `output`      | —                             | stdout/stderr ของโปรแกรมที่ถูกดีบัก แบบมีขอบเขต   |
+| `terminate`   | —                             | จบเซสชันและฆ่าอะแดปเตอร์                        |
 
-### Adapters
+### อะแดปเตอร์
 
-| Id        | Command                    | Root markers                                    |
+| Id        | คำสั่ง                     | มาร์กเกอร์ที่ราก                                 |
 | --------- | -------------------------- | ----------------------------------------------- |
 | `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
 | `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` เลือก `.venv/bin` หรือ `venv/bin` ภายในโปรเจกต์เหนือ `$PATH`: ไพทอนที่มาจาก `$PATH` เป็นคนละสภาพแวดล้อม และการแอตแทชจากตัวที่ผิดจะล้มเหลวในลักษณะที่อ่านดูเหมือนโค้ดพัง
 
 ---
 
-## `eval` — persistent interpreters
+## `eval` — อินเทอร์พรีเตอร์แบบถาวร
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+เซลล์ Python หรือ JavaScript ที่ตัวแปร อิมพอร์ต และข้อมูลที่โหลดไว้อยู่ต่อระหว่างการเรียก ระดับ `exec`; ไม่ปลอดภัยเมื่อรันขนานกัน
 
-| Argument      | Meaning                                          |
+| อาร์กิวเมนต์    | ความหมาย                                        |
 | ------------- | ------------------------------------------------ |
-| `code`        | The cell                                         |
-| `description` | Required. 5–10 words for the transcript label    |
-| `language`    | `python` (default) or `javascript`               |
-| `reset`       | Discard the interpreter and start clean first    |
+| `code`        | เซลล์                                            |
+| `description` | จำเป็น 5–10 คำสำหรับป้ายในทรานสคริปต์               |
+| `language`    | `python` (ค่าเริ่มต้น) หรือ `javascript`           |
+| `reset`       | ทิ้งอินเทอร์พรีเตอร์และเริ่มใหม่ที่สะอาดก่อน        |
 
-- The last expression is echoed the way a notebook does.
-- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
-- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+- นิพจน์สุดท้ายจะถูกสะท้อนกลับแบบที่โน้ตบุ๊กทำ
+- `display()` ทำงาน ดาต้าเฟรมของ pandas เรนเดอร์เป็นตาราง และภาพของ matplotlib กลับมาเป็น**รูปภาพที่ทรานสคริปต์แสดง**
+- สำนวนของ IPython ที่คนพิมพ์กันโดยไม่ทันคิด — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — ถูกเขียนใหม่เป็นโค้ดธรรมดา `%pip` ยังไล่ `sys.modules` ออกด้วย `import` ครั้งถัดไปจึงเห็นสิ่งที่เพิ่งติดตั้งไป
 
-### Calling your own tools from inside a cell
+### เรียกเครื่องมือของคุณเองจากในเซลล์
 
 ```python
 contents = tool("read", {"path": "lib/auth.dart"})
 ```
 
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+สะพานนี้**กลับเข้าสู่ทะเบียนเครื่องมือของฮาร์เนส** กฎคุม การอนุมัติ และตัวห่อทุกตัวจึงมีผลเหมือนกับการเรียกที่โมเดลออกเองเป๊ะ ๆ มันวิ่งบนไปป์ของเคอร์เนลเองแทนที่จะเป็นซ็อกเก็ตลูปแบ็ก: ไม่มีพอร์ต ไม่มีความลับ ไม่มีกฎการเชื่อมต่อขาออก
 
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+การหมดเวลาของเซลล์เป็นงบ*ความไม่มีการใช้งาน* (ค่าเริ่มต้น 5 นาที) และมันถูก**ระงับ**ขณะมีการเรียกผ่านสะพานค้างอยู่ เซลล์ที่กระจายงานไปยังเอเจนต์ย่อยจึงไม่ถูกฆ่ากลางการกระจายงาน
 
-:::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::note[เคอร์เนลรันที่ไหน]
+ในเอนโคลเจอร์ของบทสนทนาเมื่อมี ไม่งั้นอยู่บนโฮสต์ มันไม่บูตเอนโคลเจอร์เพื่อไปให้ถึงตรงนั้น — กฎเดียวกับที่หยุดแท็บริกไม่ให้สตาร์ตอัตโนมัติ
 :::
 
 ---
 
-## `ask_user` — ask the human a question
+## `ask_user` — ถามคำถามกับมนุษย์
 
-`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
+ระดับ `read` **วิธีเดียว**ที่การรันจะถามผู้ปฏิบัติงานได้ มันเรนเดอร์การ์ดแบบมีหมายเลขในบทสนทนาและบล็อกรอจนกว่าจะมีคนตอบ ข้าม หรือคำถามหมดเวลา ห้ามเขียนคำถามเป็นข้อความแชทเด็ดขาด — นั่นจะจบเทิร์น
 
-| Argument       | Meaning                                    |
+| อาร์กิวเมนต์     | ความหมาย                                    |
 | -------------- | ------------------------------------------ |
-| `question`     | What to ask                                |
-| `context`      | Optional: why you are asking and what hangs on the answer |
-| `options[]`    | Choices, each `{label, description?}`      |
-| `allow_free_text` | Whether a typed answer is accepted       |
-| `multi_select` | Whether several options may be chosen      |
+| `question`     | สิ่งที่จะถาม                                |
+| `context`      | ไม่บังคับ: ทำไมคุณถึงถาม และอะไรขึ้นอยู่กับคำตอบ |
+| `options[]`    | ตัวเลือก แต่ละอันเป็น `{label, description?}` |
+| `allow_free_text` | รับคำตอบที่พิมพ์เองหรือไม่                 |
+| `multi_select` | เลือกได้หลายตัวเลือกหรือไม่                  |
 
-A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
+การข้ามถือว่าสำเร็จ: ไปต่อบนสมมติฐานที่ระบุไว้และอย่าถามอีก การหมดเวลาเป็นข้อผิดพลาดที่มีคำสั่งเดียวกัน พรอมป์ต์ขออนุญาต (“ฉันทำสิ่งนี้ได้ไหม?”) เป็นด่านแยกต่างหากและเรนเดอร์เป็นการ์ดแบบเดียวกันในบทสนทนา
 
-Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+ลงทะเบียนเมื่อมีทั้งพอร์ตคำถามและสเปซเป้าหมายเท่านั้น หากไม่มีมนุษย์เชื่อมต่ออยู่ การเรียกจะ**ล้มเหลว**แทนที่จะบล็อกไปตลอด — ท่าทีล้มเหลวแบบปิดเดียวกับที่ `prompt` ของกฎคุมใช้เมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่
 
 ---
 
-## `vibe_*` — directing background workers
+## `vibe_*` — กำกับวอร์กเกอร์พื้นหลัง
 
-Registered only while [vibe mode](/th-TH/คู่มือ/วิธีทำ/กำกับวอร์กเกอร์พื้นหลัง/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+ลงทะเบียนเฉพาะขณะ[โหมด vibe](/th-TH/คู่มือ/วิธีทำ/กำกับวอร์กเกอร์พื้นหลัง/)เปิดอยู่ ทั้งห้าตัวเป็นระดับ `read`: ด่านควรอยู่ที่เครื่องมือของวอร์กเกอร์ ซึ่งการแก้ไขเกิดขึ้นจริงตรงนั้น
 
-| Tool         | Arguments                                | Notes                                       |
+| เครื่องมือ   | อาร์กิวเมนต์                            | หมายเหตุ                                    |
 | ------------ | ---------------------------------------- | ------------------------------------------- |
-| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
-| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
-| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
-| `vibe_kill`  | `worker_id`                              | Stops it                                    |
-| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | คืนค่าทันที; วอร์กเกอร์ทำงานต่อไป              |
+| `vibe_send`  | `worker_id`, `message`                   | ต่อท้ายบรีฟแล้วรันใหม่                        |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | บล็อกรอจนกว่ามันจะจบ                          |
+| `vibe_kill`  | `worker_id`                              | หยุดมัน                                      |
+| `vibe_list`  | —                                        | ระดับ สถานะ เวลาที่ผ่านไป และผลลัพธ์ล่าสุด       |
 
-`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).
+`tier` คือ `fast` (งานเชิงกลไกที่มีสเปกชัดเจน) หรือ `good` (การออกแบบ การใช้ดุลพินิจ หรือการรีวิวผลลัพธ์ของวอร์กเกอร์ระดับ `fast`)

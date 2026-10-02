@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Ditt første arbeidsområde
+description: Opprett et arbeidsområde, registrer en repo i det og se isolasjonsgrensen med egne øyne.
 slug: nb-NO/handbok/veiledninger/forste-arbeidsomrade
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Dette skal du bygge
 
-By the end of this tutorial, you will have:
+Når du er ferdig med denne veiledningen, har du:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Et arbeidsområde oppkalt etter prosjektet ditt
+- En Git-repo registrert i det
+- Fem seedede agenter, hvorav du har konfigurert én godt nok til å kjøre
+- Et andre, tomt arbeidsområde som beviser isolasjonsgrensen
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Onboarding opprettet allerede et arbeidsområde for deg. Denne veiledningen oppretter et helt nytt med vilje, slik at du ser hver del av prosessen.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Før du begynner: velg en Git-utsjekking som oppfyller alle tre kravene nedenfor – registreringstrinnet avviser alt annet:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- den ligger inne i et git-worktre
+- den har en `origin`-remote
+- den remoten peker på github.com, gitlab.com eller bitbucket.org
 
-## Step 1: Create a workspace
+## Steg 1: Opprett et arbeidsområde
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Klikk på arbeidsområde-brikken i tittellinjen
+2. Velg **Legg til arbeidsområde…**
+3. Skriv inn et navn som identifiserer prosjektet, som «api-service» eller «frontend-v2»
+4. Velg eventuelt en logo
+5. Klikk **Legg til arbeidsområde**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center bytter til det nye arbeidsområdet og lander på innboksen (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Bak kulissene publiserer serveren en `WorkspaceCreated`-hendelse og seeder arbeidsområdet med:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- en **CEO-agent**, hvis persona er koordinering og delegering
+- fire spesialister – `qa`, `architect`, `engineer` og `librarian` – hver med sine egne instruksjoner og skills
+- de innebygde pipeline-malene og utløserradene deres
 
-Every workspace you create gets all of this, not just the first one.
+Hvert arbeidsområde du oppretter, får alt dette – ikke bare det første.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Bekreft det: åpne **Innstillinger → Arbeidsområde → Agenter**. Det står fem agenter i agentlisten, hver med en hul statusring.
 
-## Step 2: Register a repository
+## Steg 2: Registrer en repo
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Gå til **Innstillinger → Arbeidsområde → Arkiv**
+2. Klikk **Legg til arkiv**
+3. Bla til utsjekkingen din. Dialogen går gjennom mappene på maskinen som kjører `cc_server` – ikke klienten din – og holder seg innenfor røttene serveren eksponerer (hjemmekatalogen til brukeren dens som standard). En git-utsjekking får et eget mappeikon og en avmerkingsboks; en vanlig mappe får ingen av delene, så bare utsjekkinger kan velges.
+4. Merk av én eller flere utsjekkinger og registrer bunken. Valgene overlever mens du navigerer, så du kan samle flere i én omgang, og ett dårlig valg fjerner aldri resten.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center leser `origin`-remoten til hver utsjekking, løser opp eier og repo og oppretter repo-raden **inne i dette arbeidsområdet**. Det finnes ikke noe annet steg for å koble den: registreringen er det som gir den omfang.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Registrerer du den samme utsjekkingen i et annet arbeidsområde senere, opprettes en andre, uavhengig repo-rad med sin egen id. På tvers av arbeidsområder identifiseres en utsjekking av filsystemstien sin, aldri av id-en.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Bekreft det: repoet dukker opp i listen med `owner/repo` og gjeldende gren.
 
-## Step 3: Make one agent runnable
+## Steg 3: Gjør én agent kjørbar
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+De fem agentene som nettopp ble seedet i dette arbeidsområdet, har verken adapter eller modell. Utsendingen kjører dem på **Control Center (built-in)** og spør, når ingen modell er satt, Anthropic om standardmodellen deres – så de virker bare hvis du har koblet til en Anthropic-konto, og på en modell du ikke selv har valgt hvis du har det. Onboarding ved første kjøring fester valget sitt til hver agent i det første arbeidsområdet, én gang; et arbeidsområde du oppretter etterpå, starter med alle fem usatte. Sett én nå.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Åpne **Innstillinger → Arbeidsområde → Agenter**
+2. Velg `engineer` i agentlisten
+3. På fanen **Innstillinger** setter du **Adapter** til `Control Center (built-in)` og velger en **Modell** fra en leverandør du har koblet til under Innstillinger → Server → Modellleverandører
+4. Trykk **Lagre endringer**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Bekreft det: åpne agenten på nytt, og de to feltene holder valgene dine.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/) covers the rest of the form.
+Hver agent har sin egen adapter og modell, så gjenta dette for enhver annen agent du har tenkt å bruke. [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/) dekker resten av skjemaet.
 
-## Step 4: See the isolation boundary
+## Steg 4: Se isolasjonsgrensen
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Opprett et andre arbeidsområde fra brikken i tittellinjen, akkurat som i steg 1. Se deretter på det:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Innstillinger → Arbeidsområde → Arkiv** er tomt. Repoet du registrerte for et minutt siden, er ikke der.
+- **Innstillinger → Arbeidsområde → Agenter** har fem agenter, men de er andre rader – adapteren du satte i steg 3, er borte.
+- Områdelisten, sakene og minnet er alle tomme.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Ingenting lakk, fordi det ikke er noe å lekke fra: radene til hvert arbeidsområde ligger i arbeidsområdets egen databasefil. En lesing på tvers av arbeidsområder er ikke et oppslag som blir filtrert – det er et oppslag som ikke har noe sted å kjøre. Å slette et arbeidsområde er å fjerne koblingen til en fil.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Bytt tilbake med brikken i tittellinjen, eller åpne **Administrer arbeidsområder** for å se dem side om side.
 
-For the full model, read [Workspaces and isolation](/nb-NO/handbok/konsepter/arbeidsomrader/).
+For hele modellen kan du lese [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/).
 
-## Recap
+## Oppsummering
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Du opprettet et arbeidsområde, så det seede en CEO og fire spesialister, registrerte en repo i det, ga én agent en adapter og en modell og bekreftet at et andre arbeidsområde ikke deler noe av det.
 
-**Next:** [Dispatch your first agent](/nb-NO/handbok/veiledninger/forste-agent/) to put the workspace to work.
+**Neste:** [Send ut din første agent](/nb-NO/handbok/veiledninger/forste-agent/) for å sette arbeidsområdet i arbeid.

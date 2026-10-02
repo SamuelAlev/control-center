@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: Förgrena ett samtal
+description: Prova ett annat angreppssätt från en tidigare punkt utan att förlora det du redan har, och gör sedan en fork eller exporterar det du vill behålla.
 slug: sv-SE/handbok/how-to-guider/forgrena-samtal
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+Den här guiden visar hur du går tillbaka till en tidigare punkt i ett samtal och tar det någon annanstans — utan att förlora sökvägen du lämnade.
 
-## The one thing worth knowing
+## Det enda du behöver veta
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**Förgrening skriver ingenting.** Ett samtal är ett träd av meddelanden med en pekare vid spetsen, och att gå tillbaka flyttar pekaren. Ingenting raderas, ingenting döljs, och att byta tillbaka är ännu en pekarflytt.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+Det är därför det är säkert att redigera en prompt och köra om här: svaret du jämförde med finns fortfarande kvar.
 
-## See the branches
+## Se grenarna
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+Navigatorn listar varje meddelande, med indrag vid varje förgrening, och markerar den aktuella sökvägen som **På den här grenen**. Ett samtal som aldrig förgrenades visas som den platta lista det alltid har varit — navigatorn kostar ingenting att titta på förrän det finns något att navigera.
 
-Each row offers two actions.
+Varje rad erbjuder två åtgärder.
 
-| Action                          | Effect                                                    |
+| Åtgärd                          | Effekt                                                    |
 | ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| **Fortsätt härifrån**           | Flyttar pekaren. Ditt nästa meddelande fortsätter från det meddelandet. |
+| **Förgrena till ett nytt samtal** | Kopierar sökvägen fram till det meddelandet till ett nytt samtal. |
 
-## Branch: try a different approach
+## Gren: prova ett annat angreppssätt
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. Hitta meddelandet du vill börja om från — oftast det sista du var nöjd med.
+3. **Fortsätt härifrån.**
+4. Skriv den nya prompten.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+Den gamla fortsättningen finns fortfarande kvar i trädet; `/tree` visar nu två sökvägar från den punkten, och du kan växla fritt mellan dem.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[Sökvägen du lämnade finns kvar]
+Förgrening döljer eller raderar ingenting. `/tree` listar varje sökväg, markerar den aktuella som **På den här grenen** och är så du byter.
 :::
 
-## Fork: take it somewhere else
+## Fork: ta det någon annanstans
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+En fork kopierar sökvägen till ett **nytt samtal** i samma yta. Använd den när de två riktningarna kommer att fortsätta gå isär och du vill ha dem sida vid sida i stället för att växla.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+Kopian har nya meddelande-id:n. Två samtal som delar rader skulle visa varandras senare meddelanden, vilket är precis vad en fork ska förhindra.
 
-## Revert versus branch
+## Återställning kontra gren
 
-They are different tools and the difference matters.
+De är olika verktyg och skillnaden spelar roll.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+|                     | Återställning                                       | Gren                            |
+| ------------------- | --------------------------------------------------- | ------------------------------- |
+| De senare meddelandena | Dolda i transkriptet                             | Fortfarande synliga i `/tree`    |
+| **worktree**        | Rullas tillbaka till den turens ögonblicksbild       | Orörd                            |
+| Ångra               | **Ångra återställning** återställer batchen          | Flytta tillbaka pekaren          |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+Återställning är vad du vill ha när agenten ändrade *filer* som du vill ha tillbaka. Gren är vad du vill ha när samtalet gick fel väg men filerna är i ordning.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+En återställning flyttar också grenspetsen, så att ditt nästa meddelande fortsätter från rätt ställe i stället för från en svans som ingen kan se längre.
 
-## Take it out of the app
+## Ta ut det ur appen
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+Skriver en **fristående HTML-fil**: hela samtalet med ihopfällbara verktygskort som visar vad varje anrop fick och vad det returnerade. Ingen stilmall, inget skript, ingen extern bildhost — den fungerar från ett USB-minne och den fungerar fortfarande om fem år.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **Skrivbord:** `Documents/ControlCenter/exports/`, tidsstämplad så att en andra export inte skriver över den första.
+- **Webb:** en nedladdning i webbläsaren.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+Kopierar transkriptet till urklipp som markdown, med verktygsanrop i ihopfällbara block. Det här är den du klistrar in i ett issue.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+Resonemanget utelämnas medvetet: det är modellens kladdutrymme, och en felrapport läses av en människa.
 
-## Related
+## Relaterat
 
-- [Conversation history](/sv-SE/handbok/koncept/samtalshistorik/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/sv-SE/handbok/referens/slash-kommandon/) — `/tree`, `/export`, `/dump`
+- [Samtalshistorik](/sv-SE/handbok/koncept/samtalshistorik/) — varför trädet är en pekarflytt och vad återupptagning faktiskt återställer
+- [Slash-kommandon](/sv-SE/handbok/referens/slash-kommandon/) — `/tree`, `/export`, `/dump`

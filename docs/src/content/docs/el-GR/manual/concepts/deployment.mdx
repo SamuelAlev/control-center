@@ -1,239 +1,275 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Ανάπτυξη και πελάτες
+description: Πώς η αρχιτεκτονική λεπτού πελάτη του Control Center διαχωρίζει έναν headless διακομιστή από τους πελάτες του για υπολογιστή, web και κινητό.
 slug: el-GR/εγχειρίδιο/έννοιες/ανάπτυξη
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Το Control Center δεν είναι ένα πρόγραμμα. Είναι μια **αρχιτεκτονική λεπτού
+πελάτη**: ένας headless διακομιστής που κατέχει τα δεδομένα σας και ένα σύνολο
+πελατών που αποδίδουν μια διεπαφή πάνω από μία σύνδεση RPC προς αυτόν. Η
+κατανόηση αυτού του διαχωρισμού εξηγεί γιατί κάποια πράγματα τρέχουν εκεί που
+τρέχουν και τι μπορεί και τι δεν μπορεί να προσεγγίσει ο κάθε πελάτης.
 
-## The server owns the data
+## Ο διακομιστής κατέχει τα δεδομένα
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+Μια διεργασία που ονομάζεται **`cc_server`** κρατά τις βάσεις δεδομένων — μια
+μικρή `global.db` για κατάσταση σε επίπεδο διακομιστή συν ένα αρχείο SQLite ανά
+[χώρο εργασίας](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/), που ανοίγονται με
+τεμπελιά — και εκτελεί τη μακρόβια εργασία: μηχανές pipeline, reconcilers, την
+επιφάνεια εργαλείων MCP και τον ακροατή ενορχήστρωσης. Ό,τι πρέπει να επιβιώσει
+πέρα από ένα παράθυρο, ή που δύο πελάτες πρέπει να το βλέπουν πανομοιότυπο, ζει
+εκεί.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Κανένας πελάτης δεν ανοίγει ο ίδιος ένα αρχείο βάσης δεδομένων. Αντ' αυτού, κάθε
+πελάτης κρατά ένα **`RemoteRpcClient`** και εκδίδει λειτουργίες αποθετηρίου και
+συνδρομές μέσω αυτού. Ο διακομιστής ταυτοποιεί τη σύνδεση με ένα προκοινόχρηστο
+κλειδί συζευγμένης συσκευής — και μετά σταματά να ασχολείται με τη σύνδεση. **Μια
+συνεδρία δεν είναι δεσμευμένη σε έναν χώρο εργασίας.** Ο dispatcher είναι χωρίς
+κατάσταση: κάθε κλήση με εμβέλεια χώρου εργασίας μεταφέρει το δικό της
+`workspace_id` στα ορίσματά της και μια κλήση που το παραλείπει απορρίπτεται.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Αυτό είναι σκόπιμο και είναι αυτό που επιτρέπει σε δύο πελάτες σε έναν διακομιστή
+να βρίσκονται σε διαφορετικούς χώρους εργασίας χωρίς έναν «τρέχοντα χώρο
+εργασίας» που κρατά ο διακομιστής και για τον οποίο θα διαφωνούσαν. Η απομόνωση
+επιβάλλεται αντ' αυτού ανά κλήση, σε τέσσερα βήματα:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. Η πράξη δηλώνει αν έχει εμβέλεια χώρου εργασίας· αν έχει και δεν έφτασε
+   `workspace_id`, η κλήση απορρίπτεται.
+2. Το αναφερόμενο id πρέπει να είναι ένας **καταχωρισμένος** χώρος εργασίας, κάτι
+   που ελέγχεται πριν ανοίξει οτιδήποτε βάση δεδομένων — διαφορετικά ένα άγνωστο
+   id θα υλοποιούσε ένα άδειο φάντασμα `workspace.db` σε κάθε αίτημα. Μια αστοχία
+   σημαίνει «δεν βρέθηκε».
+3. Το `WorkspaceRole` του καλούντος πρέπει να καλύπτει το ελάχιστο επίπεδο της
+   πράξης, που προκύπτει από το είδος της: η ανάγνωση απαιτεί guest, η μεταβολή
+   απαιτεί member, η καταστροφική ενέργεια απαιτεί admin.
+4. Μια πράξη που εκθέτει περιεχόμενο αποθετηρίου απαιτεί επιπλέον εκχώρηση ανά
+   αποθετήριο στο επίπεδο που δηλώνει — `none` / `read` / `review` / `write` — ώστε
+   η συμμετοχή στον χώρο εργασίας να μην υπερβαίνει ποτέ σιωπηρά τα προνόμια του
+   forge.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Η πρόταση που έχει σημασία: **η κατοχή κλειδιού σύζευξης δεν είναι το όριο
+πρόσβασης· η συμμετοχή είναι.**
 
-## Why split it this way
+## Γιατί έγινε έτσι ο διαχωρισμός
 
-Three pressures pushed toward a server:
+Τρεις πιέσεις οδήγησαν προς έναν διακομιστή:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Μία πηγή αλήθειας.** Ένας υπολογιστής και ένα τηλέφωνο, ή ένας φορητός και
+   ένας σταθερός, πρέπει να βλέπουν την ίδια κατάσταση του στόλου. Αν το καθένα
+   είχε τη δική του βάση δεδομένων, θα αποκλίνανε. Ένας μόνο διακομιστής σημαίνει
+   ότι κάθε πελάτης διαβάζει τα ίδια ζωντανά δεδομένα.
+2. **Το web δεν μπορεί να αυτοεξυπηρετηθεί.** Ένα πρόγραμμα περιήγησης δεν μπορεί
+   να εκκινήσει υποδιεργασία ή να ανοίξει τοπικό αρχείο, οπότε μια έκδοση web δεν
+   μπορεί ποτέ να κατέχει τη βάση δεδομένων ή να εκτελέσει πράκτορα. Πρέπει να
+   μιλά σε έναν διακομιστή που το κάνει. Αντί να χτιστεί ένα δεύτερο, αποκλειστικά
+   web μονοπάτι δεδομένων, ο υπολογιστής μεταφέρθηκε στο ίδιο μονοπάτι.
+3. **Headless λειτουργία.** Ένας διακομιστής που μπορείτε να τρέξετε σε ένα μικρό
+   μηχάνημα — προσβάσιμος από ένα τηλέφωνο στο τρένο ή από ένα πρόγραμμα
+   περιήγησης οπουδήποτε — είναι πιο χρήσιμος από ένα GUI που πρέπει να αφήσετε
+   ανοιχτό.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Το τίμημα είναι ότι ο διακομιστής είναι πλέον εξάρτηση: αν δεν τρέχει, τίποτα δεν
+λειτουργεί. Η προεπιλεγμένη απάντηση του υπολογιστή σε αυτό είναι να **εκκινήσει
+ο ίδιος έναν**.
 
-## The clients
+## Οι πελάτες
 
-Five clients reach the server, each with a different shape and trust profile.
+Πέντε πελάτες προσεγγίζουν τον διακομιστή, ο καθένας με διαφορετική μορφή και
+προφίλ εμπιστοσύνης.
 
-### Desktop app
+### Εφαρμογή υπολογιστή
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Η εφαρμογή Flutter για υπολογιστή (macOS, Windows, Linux) είναι ο πλήρης πελάτης.
+Στην πρώτη εκκίνηση ρωτά πώς πρέπει να λειτουργήσει και μετά θυμάται την επιλογή:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Τοπικά**: εκκινεί και επιτηρεί έναν `cc_server` σε αυτό το μηχάνημα — η
+  προεπιλεγμένη, αυτοτελής ρύθμιση για έναν χρήστη. Ο υπολογιστής εκκινεί τον
+  διακομιστή, ο οποίος κατέχει τη βάση δεδομένων κάτω από τη ρίζα app-support και
+  μιλά μαζί του μέσω loopback.
+- **Απομακρυσμένα**: συνδέεται σε έναν `cc_server` που τρέχει αλλού μέσω ασφαλούς
+  WebSocket. Τα δεδομένα ζουν σε εκείνον τον διακομιστή· αυτός ο υπολογιστής είναι
+  απλώς αποδότης.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+Και στις δύο περιπτώσεις, ο πελάτης RPC που προκύπτει αντικαθιστά τον πάροχο
+δεδομένων της εφαρμογής, οπότε ολόκληρη η διεπαφή — κάθε οθόνη, κάθε λειτουργία —
+διαβάζει και γράφει μέσω του διακομιστή. Ο υπολογιστής δεν αγγίζει ποτέ απευθείας
+το αρχείο της βάσης δεδομένων.
 
-### Web client
+### Πελάτης web
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Η έκδοση web είναι η ίδια εφαρμογή Flutter μεταγλωττισμένη ώστε να τρέχει σε
+πρόγραμμα περιήγησης, φιλοξενείται στο [app.usectrl.dev](https://app.usectrl.dev)
+ώστε να μην υπάρχει τίποτα να εγκαταστήσετε. Ένα πρόγραμμα περιήγησης δεν μπορεί
+να εκκινήσει υποδιεργασία, οπότε ο πελάτης web είναι **πάντα** απομακρυσμένος:
+καλεί έναν `cc_server` μέσω `wss://` και αποδίδει την πλήρη διεπαφή του
+υπολογιστή. Μόλις συνδεθεί, δείχνει τις ίδιες οθόνες απέναντι στον ίδιο στόλο,
+επειδή είναι ο ίδιος κώδικας πάνω από το ίδιο RPC. Τα κενά είναι οι λίγες θέσεις
+που χρειάζονται μια εγγενή δυνατότητα που δεν έχει το πρόγραμμα περιήγησης — το
+επίπεδο ποιότητας της καταγραφής σύσκεψης πιο κάτω είναι το κύριο και οι
+ειδοποιήσεις του λειτουργικού συστήματος είναι ένα άλλο.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Γι' αυτό το «χωρίς λήψη» και το «χωρίς διακομιστή» είναι διαφορετικοί ισχυρισμοί.
+Ο πελάτης web αφαιρεί την εγκατάσταση· δεν αφαιρεί τον διακομιστή. Αυτό που
+καλεί μπορεί να είναι ένας `cc_server` στον ίδιο φορητό υπολογιστή —
+`ws://localhost:9030`, που δεν χρειάζεται πιστοποιητικό επειδή τα προγράμματα
+περιήγησης θεωρούν το loopback αξιόπιστο — ή ένας σε άλλο μηχάνημα, ο οποίος
+πρέπει να είναι προσβάσιμος μέσω `wss://` με πιστοποιητικό που εμπιστεύεται το
+πρόγραμμα περιήγησης. Ο `cc_server` αρνείται να δεσμεύσει διεύθυνση εκτός
+loopback χωρίς TLS, οπότε ένας απομακρυσμένος διακομιστής σημαίνει είτε δικό του
+πιστοποιητικό, είτε proxy τερματισμού TLS, είτε σήραγγα ή VPN που παρέχει ένα.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Το ίδιο το bundle φιλοξενείται χωριστά από τον διακομιστή με τον οποίο μιλά. Ένας
+αυτόνομος `cc_server` εξυπηρετεί το τελικό σημείο RPC, την επιφάνεια MCP και τα
+proxy της, αλλά **όχι** ένα bundle web — η διαδρομή στατικών αρχείων υπάρχει στον
+διακομιστή αλλά καμία ρίζα web δεν έχει ρυθμιστεί στο αυτόνομο εκτελέσιμο, οπότε
+δεν έχει τίποτα να εξυπηρετήσει στο `/`. Το δημοσιευμένο image container
+`cc-webapp` είναι αυτό που φιλοξενεί το bundle και το `scripts/build_web.sh` είναι
+αυτό που το χτίζει. Ένας διακομιστής δέχεται προελεύσεις προγράμματος περιήγησης
+μόνο από τη λίστα `--allowed-origins`, που έχει ως προεπιλογή το
+`https://app.usectrl.dev`, οπότε η αυτοφιλοξενία του bundle σημαίνει προσθήκη της
+προέλευσής του.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Τα πολυμέσα (άβαταρ, εικόνες ροής, στιγμιότυπα PR) δρομολογούνται μέσω του τελικού
+σημείου proxy του διακομιστή αντί να χτυπούν απευθείας ανάντη hosts, ώστε ένα
+πρόγραμμα περιήγησης να μην ανακτά ποτέ αυθαίρετη προέλευση. Ο αναπτυγμένος
+πελάτης αποτυπώνει μια πολιτική Content-Security ανά αίτημα από ένα μη ευαίσθητο
+cookie, ώστε να επιτρέπεται μόνο η προέλευση του συνδεδεμένου διακομιστή.
 
-### Phone companion (cc_remote)
+### Σύντροφος τηλεφώνου (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+Η εφαρμογή **Remote** είναι ένας ξεχωριστός, ελαφρύτερος πελάτης — μια PWA Flutter
+web στο [remote.usectrl.dev](https://remote.usectrl.dev/). Δεν είναι σκόπιμα η
+πλήρης εφαρμογή. Συζεύγνυται μέσω ενός διαμεσολαβημένου αναμεταδότη WebSocket,
+σφραγισμένου από άκρο σε άκρο, και μιλά ένα κυρίως αναγνωστικό τμήμα της
+επιφάνειας εργαλείων: ανάγνωση εισιτηρίων, μηνυμάτων και ροής ειδήσεων· αποστολή
+απάντησης ή ενημέρωση εισιτηρίου.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) for the full
-security model.
+Ένα τηλέφωνο είναι ένα **υποκείμενο με χαμηλότερα προνόμια** από έναν τοπικό
+πράκτορα. Μια πολιτική εργαλείων «άρνηση εξ ορισμού», ένα προκοινόχρηστο κλειδί
+που σφραγίζει κάθε πλαίσιο, μια δυνατότητα συνεδρίας που αποκλείει προνομιούχες
+πράξεις (τη σύζευξη, για παράδειγμα) από έναν πελάτη-σύντροφο, οι έλεγχοι ρόλου
+και εκχώρησης αποθετηρίου ανά κλήση παραπάνω και ο περιορισμός ρυθμού εμποδίζουν
+μια εγκεκριμένη (ή διερρηγμένη) σύζευξη να γίνει πλήρης απομακρυσμένος έλεγχος.
+Δείτε τον [Απομακρυσμένο έλεγχο και το κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/)
+για το πλήρες μοντέλο ασφαλείας.
 
-### MCP clients
+### Πελάτες MCP
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/) and the
-[MCP tools reference](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
+Εξωτερικά εργαλεία — editors, άλλοι πράκτορες, CLI — που μιλούν το Model Context
+Protocol συνδέονται στην επιφάνεια MCP του διακομιστή και καταναλώνουν το
+τυποποιημένο μητρώο εργαλείων. Αυτό είναι το μονοπάτι προγραμματιστικής
+ενσωμάτωσης· δεν είναι GUI. Δείτε τη
+[Χρήση του διακομιστή MCP](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διακομιστής-mcp/) και την
+[Αναφορά εργαλείων MCP](/el-GR/εγχειρίδιο/αναφορά/εργαλεία-mcp/).
 
-### Fleet executors (cc_worker)
+### Εκτελεστές στόλου (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+Ένας **`cc_worker`** είναι ένα headless εκτελέσιμο σε καθαρή Dart που συζεύγνυται
+με έναν `cc_server`, δηλώνει τις δυνατότητες του ξενιστή του και τραβά μισθωμένες
+εργασίες για εκτέλεση. Ρέει γεγονότα διεργασίας πίσω μέσω του ίδιου RPC και δεν
+κρατά **καμία μόνιμη κατάσταση**: χωρίς βάση δεδομένων, χωρίς ταυτοποίηση, χωρίς
+εγκρίσεις, χωρίς προϋπολογισμούς — αυτά δεν φεύγουν ποτέ από τον `cc_server`. Ένας
+εργάτης είναι ένα άκρο, όχι δεύτερος εγκέφαλος. Ένας διακομιστής με την αυθεντία,
+N χαζά άκρα· δεν υπάρχει συναίνεση, δεν υπάρχει κίνηση μεταξύ εργατών.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Η μισθωμένη εκτέλεση είναι ακόμη υδραυλικά μίσθωσης. Το `agentRun` είναι ο μόνος
+τύπος που εκτελεί πραγματική εντολή (`CC_JOB_COMMAND`, ή μια προτροπή που
+επαναλαμβάνεται αν δεν δόθηκε καμία). Τα `pipelineStep`, `codeIndex`,
+`goldenRender`, `benchmark` και `evalBatch` αυτή τη στιγμή δοκιμάζουν με
+`git --version` / `rev-parse HEAD`, ώστε να ασκείται το μονοπάτι ροής χωρίς να
+παριστάνεται ότι εκτελέστηκαν αυτές οι εργασίες.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Αυτό που διαφημίζει είναι το λειτουργικό σύστημα, την αρχιτεκτονική CPU, τον αριθμό
+πυρήνων, τη RAM, αν είναι προσβάσιμο ένα Flutter SDK και ποια υποσυστήματα sandbox
+έχει ο ξενιστής (κανένα στα Windows). Ένας αποκλειστικός εργάτης διαφημίζει
+επίσης πάντα τα `alwaysOn` και `acceptsParallel`, στα οποία βασίζει την τοποθέτηση
+ο χρονοπρογραμματιστής pin → prefer → spill. Δεν υπάρχει ανίχνευση GPU ή ML.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Ένας μεμονωμένος υπολογιστής δεν παρατηρεί τίποτα από αυτά, επειδή η συνήθης
+αποστολή δεν περνά καθόλου από τον στόλο. Υπάρχει _πράγματι_ ένας σιωπηρός
+εργάτης εντός διεργασίας, καταχωρισμένος για τον ξενιστή του διακομιστή, αλλά
+είναι μια ραφή καταχώρισης χωρίς εκτελεστές συνδεδεμένους σε αυτή — μια εργασία
+που όντως τοποθετείται στον τοπικό εργάτη αποτυγχάνει αντί να εκτελεστεί. Σήμερα,
+μόνο ένας πραγματικός `cc_worker` εκτελεί μισθωμένες εργασίες.
 
-## What runs where
+## Τι τρέχει πού
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
+| Θέμα                                           | Διακομιστής (`cc_server`) | Εκτελεστής στόλου (`cc_worker`) | Πελάτης υπολογιστή | Πελάτης web / τηλεφώνου          |
 | ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Βάσεις δεδομένων (Drift/SQLite)                | τις κατέχει                | —                            | —              | —                                |
+| Ταυτοποίηση, εγκρίσεις, προϋπολογισμοί, ταυτότητα | τα κατέχει              | —                            | —              | —                                |
+| Pipeline, reconcilers, ακροατής ενορχήστρωσης  | τα εκτελεί                 | —                            | —              | —                                |
+| Επιφάνεια εργαλείων MCP                        | την εξυπηρετεί             | —                            | —              | —                                |
+| Εκτέλεση πρακτόρων                             | την εκτελεί (ή τη μισθώνει προς τα έξω) | εκτελεί μισθωμένες εργασίες | —        | —                                |
+| Απόδοση διεπαφής                               | —                          | —                            | πλήρης         | πλήρης (web) / κυρίως ανάγνωση (τηλέφωνο) |
+| Καταγραφή σύσκεψης (μικρόφωνο + ήχος σύσκεψης)  | —                          | —                            | εγγενής καταγραφή | μόνο web, μέσω ήχου κοινής χρήσης οθόνης |
+| OAuth ημερολογίου (Google)                     | αποθηκεύει tokens          | —                            | —              | —                                |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/)
-for what bounds a run in each case.
+Τα δύο επίπεδα δεν εφαρμόζουν sandbox με τον ίδιο τρόπο. Ο `cc_server` τυλίγει τις
+εκτελέσεις που εκτελεί ο ίδιος στο sandbox του λειτουργικού συστήματος του ξενιστή
+όπου υπάρχει υποσύστημα — Seatbelt στο macOS, bubblewrap στο Linux και το WSL2 —
+και καταφεύγει στα άλλα όρια στα Windows ή χωρίς τα `bwrap` και `socat`. **Ο
+`cc_worker` δεν εφαρμόζει καθόλου sandbox.** Διαφημίζει μια δυνατότητα `sandbox`,
+ώστε ο διακομιστής να τοποθετεί εργασίες ανά πλατφόρμα, αλλά τίποτα στον εργάτη
+δεν εφαρμόζει κάποιο: μια μισθωμένη εργασία εκκινείται απευθείας, περιορισμένη από
+το περιβάλλον της μίσθωσης και το worktree που της δόθηκε. Η μίσθωση εργασίας προς
+τα έξω μετακινεί επομένως την εκτέλεση έξω από το sandbox, ακόμη και σε ξενιστή
+που διαθέτει ένα. Δείτε το
+[Sandbox και ασφάλεια](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) για το τι
+περιορίζει μια εκτέλεση σε κάθε περίπτωση.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Η καταγραφή σύσκεψης γίνεται σε έναν πελάτη, επειδή χρειάζεται μικρόφωνο και τον
+ήχο της σύσκεψης — ένας διακομιστής σε μια ντουλάπα δεν μπορεί να ηχογραφήσει την
+κλήση σας. Η ηχογράφηση συνοψίζεται μετά από το pipeline του διακομιστή και οι
+σημειώσεις αποθηκεύονται εκεί όπου κάθε πελάτης μπορεί να τις διαβάσει.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Ο πελάτης web καταγράφει επίσης, κάτι που η μορφή του πίνακα μπορεί να επισκιάσει:
+συλλαμβάνει το μικρόφωνο συν ένα κομμάτι ήχου κοινής χρήσης οθόνης στο πρόγραμμα
+περιήγησης και ρέει PCM 16 kHz προς τον διακομιστή. Απαιτεί _υποχρεωτικά_ αυτό το
+κομμάτι ήχου, οπότε αποτυγχάνει ρητά όπου το πρόγραμμα περιήγησης δεν παρέχει ένα.
+Αυτό που είναι πραγματικά μόνο για υπολογιστή είναι το επίπεδο ποιότητας γύρω από
+την καταγραφή — ακύρωση ηχούς σε επίπεδο σήματος μέσω του εγγενούς επεξεργαστή, ο
+μετρητής στάθμης εισόδου και η προειδοποίηση σίγασης μικροφώνου, η επανεκτέλεση
+σύνοψης, η ακύρωση επεξεργασίας και η δράση «Εγγραφή και σύνδεση» του ημερολογίου.
 
-## Pairing and trust
+## Σύζευξη και εμπιστοσύνη
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Κάθε πελάτης αποδεικνύει την ταυτότητά του με ένα **προκοινόχρηστο κλειδί** που
+παρέχεται μία φορά:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Ο υπολογιστής σε τοπική λειτουργία δημιουργεί ένα νέο κλειδί σε κάθε εκκίνηση
+  και το παραδίδει στον εκκινημένο διακομιστή μέσω περιβάλλοντος, ώστε τίποτα
+  μυστικό να μην αποθηκεύεται μόνιμα στον υπολογιστή.
+- Οι απομακρυσμένοι πελάτες (υπολογιστής σε απομακρυσμένη λειτουργία, web,
+  τηλέφωνο) χρησιμοποιούν ένα κλειδί που παράγεται από την εντολή `pair` του
+  διακομιστή και αποθηκεύεται στην κλειδοθήκη του λειτουργικού συστήματος (ή, στο
+  τηλέφωνο, τοπικά).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+Η ανάκληση είναι **ζωντανή**, όχι οκνηρή. Ο διακομιστής παρακολουθεί τον πίνακα
+συζευγμένων συσκευών του και απορρίπτει κάθε ανοιχτή συνεδρία της οποίας η συσκευή
+έχει φύγει από το ενεργό σύνολο, μέσα σε δευτερόλεπτα — στο άμεσο μονοπάτι
+WebSocket και στο μονοπάτι του αναμεταδότη το ίδιο. Δεν χρειάζεται να περιμένετε
+να επανασυνδεθεί η συσκευή για να την αποκόψετε.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Το κλειδί δεν ταξιδεύει ποτέ μέσα από ένα URL που μπορεί να δει ένας στατικός
+ξενιστής. Όταν φτάνει μέσω συνδέσμου — στο τηλέφωνο ή σε ένα πρόγραμμα περιήγησης
+— ταξιδεύει στο **τμήμα URL (fragment)**, το μέρος μετά το `#`, που το πρόγραμμα
+περιήγησης δεν στέλνει ποτέ στον διακομιστή που φιλοξενεί τη σελίδα. Αυτή είναι η
+αναλλοίωτη συνθήκη που αξίζει να θυμάστε και ισχύει και για τα δύο. Ο πελάτης web
+έχει δύο άλλα σημεία εισόδου: τη φόρμα σύνδεσης, όπου επικολλάτε απευθείας έναν
+διακομιστή και ένα κλειδί, και έναν κωδικό πρόσκλησης, τον οποίο εξαργυρώνει για
+ένα διαπιστευτήριο που παράγεται αποκλειστικά για αυτό το πρόγραμμα περιήγησης.
 
-## Related concepts
+## Σχετικές έννοιες
 
-- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/): the phone pairing and security model
+- [Χώροι εργασίας και απομόνωση](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/): γιατί κάθε κλήση RPC μεταφέρει το δικό της workspace id και πώς ο διαχωρισμός της βάσης δεδομένων κάνει την απομόνωση δομική
+- [Αρχιτεκτονική](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/): πώς ο κώδικας είναι δομημένος γύρω από τον διακομιστή και τους πελάτες του
+- [Απομακρυσμένος έλεγχος και κινητό](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/): το μοντέλο σύζευξης τηλεφώνου και ασφάλειας
 
-## Related guides
+## Σχετικοί οδηγοί
 
-- [Run a headless server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): start `cc_server` and pair a client
-- [Connect to a remote server](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/): point the desktop or web client at a server elsewhere
-- [Pair a device](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/): add a `cc_worker` that pulls leased jobs
+- [Εκτέλεση headless διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-headless-διακομιστή/): ξεκινήστε έναν `cc_server` και συζεύξτε έναν πελάτη
+- [Σύνδεση σε απομακρυσμένο διακομιστή](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύνδεση-σε-απομακρυσμένο-διακομιστή/): κατευθύνετε τον πελάτη υπολογιστή ή web σε έναν διακομιστή αλλού
+- [Σύζευξη συσκευής](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/σύζευξη-συσκευής/): προσθέστε ένα τηλέφωνο, ένα δεύτερο πρόγραμμα περιήγησης ή έναν άλλο υπολογιστή
+- [Εκτέλεση εργάτη στόλου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-εργάτη-στόλου/): προσθέστε έναν `cc_worker` που τραβά μισθωμένες εργασίες

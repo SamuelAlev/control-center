@@ -1,102 +1,106 @@
 ---
-title: Build your first pipeline
-description: Create a pipeline template, configure its step, allow manual runs and start one.
+title: Construiește primul pipeline
+description: Creează un șablon de pipeline, configurează-i pasul, permite rulările manuale și pornește una.
 slug: ro-RO/manual/tutoriale/primul-pipeline
+sourceHash: 242b89933f53d247be8ed31007e625df4a043d73
 ---
 
-## What you will build
+## Ce vei construi
 
-By the end of this tutorial, you will have:
+La finalul acestui tutorial, vei avea:
 
-- A saved pipeline template that dispatches an agent with a prompt
-- Manual runs enabled on it, so it can be started by hand
-- One completed run, with the step's input and output visible
+- Un șablon de pipeline salvat care trimite un agent cu un prompt
+- Rulări manuale activate pe el, ca să poată fi pornit manual
+- O rulare finalizată, cu intrarea și ieșirea pasului vizibile
 
-Prerequisites: [Dispatch your first agent](/ro-RO/manual/tutoriale/primul-agent/) completed, so you have an agent with an adapter and a model.
+Cerințe preliminare: [Trimite primul agent](/ro-RO/manual/tutoriale/primul-agent/) finalizat, astfel încât să ai un agent cu un adaptor și un model.
 
-A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/); for the full step vocabulary, [Pipeline step kinds](/ro-RO/manual/referinta/pasi-pipeline/).
+Un pipeline este un DAG de pași. Șabloanele definesc graful; rulările sunt execuții. Pentru modelul din spate, citește [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/); pentru vocabularul complet al pașilor, [Tipuri de pași din pipeline](/ro-RO/manual/referinta/pasi-pipeline/).
 
-## Step 1: Create a template
+## Pasul 1: Creează un șablon
 
-1. Go to **Settings → Workspace → Pipeline templates**
-2. Click **New template**
+1. Mergi la **Setări → Spațiu de lucru → Șabloane pipeline**
+2. Apasă **Șablon nou**
 
-The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
-Click the title in the header and rename it — for this tutorial,
-`code_quality_check` is a good name. There is no id dialog and no description
-field.
+Editorul se deschide pe un schelet precompletat numit **Pipeline nou** (id `pipeline_N`).
+Fă clic pe titlul din antet și redenumește-l — pentru acest tutorial,
+`code_quality_check` este un nume bun. Nu există niciun dialog pentru id și
+niciun câmp de descriere.
 
-The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
-terminal**, where "Step" is a prompt-agent node and the terminal is an
-invisible sentinel that the editor rewires to every reachable sink.
+Pânza nu este goală. Un șablon nou vine deja cablat ca **Trigger → Step →
+terminal**, unde „Step” este un nod de agent cu prompt, iar terminalul este o
+sentinelă invizibilă pe care editorul o recablează către fiecare destinație
+accesibilă.
 
-You configure the Step that is already there.
+Configurezi nodul **Step** care este deja acolo.
 
-## Step 2: Configure the step
+## Pasul 2: Configurează pasul
 
-1. Click the **Step** node on the canvas
-2. In the **Node config** panel on the right, set:
-   - **Agent**: your agent from the previous tutorial
-   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
-3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+1. Fă clic pe nodul **Step** de pe pânză
+2. În panoul **Configurare nod** din dreapta, setează:
+   - **Agent**: agentul tău din tutorialul anterior
+   - **Șablon de prompt**: „Revizuiește codul de pe ramura curentă pentru probleme de calitate. Listează ce găsești.”
+3. Lasă **Declanșatoare de la** așa cum este — nodul este deja cablat ca să se declanșeze după Trigger
 
-## Step 3: Save
+## Pasul 3: Salvează
 
-Press **Save** in the editor header.
+Apasă **Salvează** în antetul editorului.
 
-**Checkpoint.** The "Unsaved changes" caption clears.
+**Punct de control.** Textul „Modificări nesalvate” dispare.
 
-## Step 4: Allow manual runs
+## Pasul 4: Permite rulările manuale
 
-1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
-   from the Triggers section of the node library) and pick **Manual run**.
-2. Select that node. In the inspector on the right, turn on **Enabled** —
-   "Show on the run page and start by hand."
+1. Fă clic pe plăcuța cu linie punctată **Adaugă un declanșator** de pe pânză
+   (sau trage **Rulare manuală** din secțiunea Declanșatori a bibliotecii de
+   noduri) și alege **Rulare manuală**.
+2. Selectează acel nod. În inspectorul din dreapta, activează **Activat** —
+   „Afișează pe pagina de rulare și pornește manual.”
 
-This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+Acest lucru nu este opțional și este ușor de ratat. Un șablon nou este creat **fără niciun rând de declanșator**, așa că până nu activezi asta, pagina de rulare nu îl listează și nu există nimic de pornit. Comutatorul scrie declanșatorul imediat; nu așteaptă o altă salvare.
 
-The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+Același comutator se află în spatele butonului **Rulare manuală** din antetul editorului, unde stă alături de intrările declarate ale șablonului.
 
-## Step 5: Run it
+## Pasul 5: Rulează-l
 
-1. Click **Pipelines** in the sidebar
-2. Click **Run pipeline** in the header
-3. Pick `code_quality_check` in the left rail
-4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+1. Fă clic pe **Pipeline-uri** în bara laterală
+2. Fă clic pe **Rulează pipeline** în antet
+3. Alege `code_quality_check` în șina din stânga
+4. Fă clic pe **Rulează pipeline** în formular — șablonul tău nu declară nicio intrare, așa că nu este nimic de completat
 
-**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+**Punct de control.** O notificare confirmă că rularea a pornit, iar Control Center deschide detaliile rulării.
 
-The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+Motorul creează înregistrarea rulării, finalizează declanșatorul, planifică pasul, trimite agentul și încheie rularea când se termină ramura de intrare a terminalului.
 
-## Step 6: Inspect the result
+## Pasul 6: Inspectează rezultatul
 
-Click the step in the run to open its detail panel:
+Fă clic pe pasul din rulare ca să-i deschizi panoul de detalii:
 
-- **Started** and **Finished** timestamps and **Duration**
-- **Input**: the state passed into the step
-- **Output**: what it produced — here, the agent's response
-- **Agent activity**, with a link through to the conversation the step drove
+- Marcaje temporale **Pornit** și **Terminat**, plus **Durată**
+- **Intrare**: starea transmisă în pas
+- **Ieșire**: ce a produs — aici, răspunsul agentului
+- **Activitate agent**, cu un link către conversația pe care a condus-o pasul
 
-**Checkpoint.** The step reads completed and its output holds the agent's review.
+**Punct de control.** Pasul apare ca finalizat, iar ieșirea lui conține revizuirea agentului.
 
-## Adding more steps
+## Adaugă mai mulți pași
 
-Nodes are added by dragging an entry from the node library on the left onto
-the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
-node's output port onto another node to connect them, or select the new node
-and tick its upstream step under **Triggers from**.
+Nodurile se adaugă trăgând o intrare din biblioteca de noduri din stânga pe
+pânză, sau apăsând **Adaugă pas** (`+`) imediat după un nod. Trage de la portul
+de ieșire al unui nod pe alt nod ca să le conectezi, sau selectează nodul nou și
+bifează pasul lui din amonte la **Declanșatoare de la**.
 
-The terminal node is not drawn and cannot be selected. The editor rewires it
-to every reachable sink, so a node you add after the seeded Step still runs.
+Nodul terminal nu este desenat și nu poate fi selectat. Editorul îl recablează
+către fiecare destinație accesibilă, așa că un nod adăugat după **Step**-ul
+precompletat rulează oricum.
 
-## Recap
+## Recapitulare
 
-You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+Ai creat un șablon, ai configurat nodul de agent cu prompt cu care a fost precompletat, l-ai salvat, l-ai făcut să poată rula manual, ai pornit o rulare și ai citit intrarea și ieșirea pasului.
 
-Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+Pipeline-urile devin mult mai mari decât atât — rutere condiționale, ramuri paralele, noduri de îmbinare, fan-out de tip for-each, porți umane — dar forma nu se schimbă niciodată: pași într-un DAG, care transmit stare.
 
-**Next:** [Bridge Slack to your workspace](/ro-RO/manual/tutoriale/prima-punte-de-chat/), the last tutorial in this sequence.
+**În continuare:** [Conectează Slack la spațiul tău de lucru](/ro-RO/manual/tutoriale/prima-punte-de-chat/), ultimul tutorial din această serie.
 
-- [Set up pipeline triggers](/ro-RO/manual/ghiduri-practice/triggere-pipeline/) to start pipelines from events or a schedule
-- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/) for the model underneath
-- [Pipeline step kinds](/ro-RO/manual/referinta/pasi-pipeline/) for every step type
+- [Configurează trigger-ele pipeline-urilor](/ro-RO/manual/ghiduri-practice/triggere-pipeline/) ca să pornești pipeline-uri din evenimente sau după un program
+- [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/) pentru modelul din spate
+- [Tipuri de pași din pipeline](/ro-RO/manual/referinta/pasi-pipeline/) pentru fiecare tip de pas

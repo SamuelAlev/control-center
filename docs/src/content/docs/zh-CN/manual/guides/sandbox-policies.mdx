@@ -1,193 +1,179 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: 配置沙盒策略
+description: 什么在约束一次智能体运行，如何判断操作系统沙盒是否在包裹它，以及服务器实际会读取哪些能力设置。
 slug: zh-CN/手册/操作指南/沙盒策略
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+一次智能体运行是否被沙盒包裹，是在服务器启动时决定的（`--sandbox`）。
+**设置 → 服务器 → 诊断与隐私** 下的 **启用沙盒** 开关、**后端** 选择器，
+以及 **默认能力 · 新空间** 开关，都是存储在你设备上的偏好设置。
+**沙箱** 卡片的主机探测报告的，只是服务器主机能够包裹什么。
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+有两个控件能触达一次运行，本指南两个都会讲：下面按智能体生效的
+**沙箱权限**，以及服务器自己的 `--sandbox` 标志。
 
-## What constrains an agent run
+## 什么在约束一次智能体运行
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+有六样东西在约束智能体。第一样是操作系统沙盒，也是唯一有条件的一样——
+另外五样在每台主机上都成立。
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| 边界         | 它的作用                                                                                                                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 操作系统沙盒 | macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap。包裹 Claude Code CLI、ACP 适配器和运行器的 `bash` 工具。**在 Windows 上、以及在缺少 `bwrap` 和 `socat` 的 Linux 上缺席** |
+| 它自己的工作树 | 每段对话都会得到一个写时复制检出。原始检出会作为拒绝写入路径并入这次运行，真正强制执行它的是沙盒                                                                   |
+| 代理签发的凭据 | 凭据代理会依据智能体的能力为每次运行签发一份环境，并在拆除时撤销它。没有能力，环境里就不会有令牌                                                                    |
+| 操作护栏     | 每个会改变状态的工具都会声明自己的效果类别，护栏会在调用运行前解析它们。没有连接任何批准者时，`prompt` 会被拒绝                                                     |
+| 环境净化     | ACP 和运行器的 `bash` 工具会得到一个过滤后的环境。经由 `NoSandboxAdapter` 的 Claude Code 会继承宿主机环境                                                          |
+| 模式的工具面 | 只读模式会直接移除会改动工作树的工具，并钉住该模式自己的输出动词，使它仍然能够交付                                                                                 |
 
-Three things stay weaker than they look:
+有三件事比它们看上去更弱：
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- 只有 **内置运行器** 会强制执行工具闸门、完成契约和结构性模式规则。
+  Claude Code 适配器不会。尤其是 Claude Code 以
+  `--dangerously-skip-permissions` 启动，因为非交互式的
+  `claude -p` 否则会永远阻塞在它自己的提示上——所以 Claude 自己的
+  read、write、edit 和 bash 调用既不会被 Control Center 看到，也不会被它门控。
+  沙盒开启的地方，它就是这些调用周围的边界。
+- 运行器的进程内文件工具（read、write、edit、apply patch、search、
+  find、search_files）运行在服务器进程内部，因此没有任何沙盒配置档约束它们。
+  只有 `bash` 工具会走受沙盒包裹的命令运行器。这些工具的边界是它们自身的
+  路径限制加上操作护栏。
+- 在没有后端的主机上，第一行完全不适用。ACP 和运行器的 `bash` 工具会回退到
+  环境净化加上命令策略；Claude Code 则经由 `NoSandboxAdapter` 继承宿主机环境。
+  服务器会在启动日志里说明这一点。在下面检查你自己的情况。
 
-## Set an agent's capabilities
+## 设置智能体的能力
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+这是服务器会读取的唯一一个能力控件。它按智能体生效，决定凭据代理会把什么
+放进该智能体的环境里。
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. 打开 **设置 → 工作区 → 智能体**
+2. 在列表中选择该智能体
+3. 在 **设置** 标签页上滚动到 **沙箱权限**
+4. 打开开关——该行的说明文字会从 **使用工作区默认值** 改变
+5. 设置这四个开关：
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| 开关                             | 它门控什么                                                                                                                                                                                                                                       |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **允许 git push**                | 关闭它时，这次运行会得到 `GIT_ASKPASS=/usr/bin/false` 和 `GIT_TERMINAL_PROMPT=0`，因此推送无法提示输入凭据                                                                                                                              |
+| **允许调用 GitHub API**          | 与 **允许 git push** 一起，门控凭据代理是否把 GitHub 令牌以 `GH_TOKEN` / `GITHUB_TOKEN` 的形式注入                                                                                                                                    |
+| **允许工单 API 调用**            | 门控凭据代理是否注入 `TICKETING_API_KEY`                                                                                                                                                                                             |
+| **允许常规网络访问**             | 在沙盒开启的地方，这是一道真正的出站闸门：关闭时这次运行的允许列表为空，每一个出站请求都会在代理处被拒绝。在没有后端的地方，它会被记录到这次运行上，但拦不住派生进程所做的任何事                                                       |
 
-6. Save
+6. 保存
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+检查点：重新打开该智能体，开关仍然开着，你设置的开关也还在——保存下来的
+能力集会经由服务器往返一次，而没有能力集的智能体会回退到保守默认值
+（推送关闭、GitHub API 关闭、工单关闭、网络开启）。
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[两个会咬人的地方]
+该行的说明文字说 **使用工作区默认值**，但服务器并不读取任何工作区级的能力
+设置。开关关闭的智能体会得到内置的保守默认值。
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+另外，这次运行的 GitHub 凭据永远只是凭据代理的——一个作用域限定到仓库的
+GitHub App 安装令牌，或环境 PAT 回退——绝不是发起请求的成员自己存储的令牌。
+传入 `actingUserId` 是为了让凭据代理能够对一位既不是所有者、又没有连接
+GitHub 的成员*扣留*服务器 PAT；它并不会把一个个人令牌叠加到一项已关闭的
+能力之上。在没有操作系统沙盒的主机上，不要把 **允许调用 GitHub API** 当作
+硬性的出站边界：派生出的进程仍然能访问网络。
 :::
 
-## Check whether your agent runs are sandboxed
+## 检查你的智能体运行是否被沙盒包裹
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+有两件事决定它，而且两件都在服务器上：主机是否提供后端，以及 `--sandbox`
+是否开启。按这个顺序检查它们。
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. 打开 **设置 → 服务器 → 诊断与隐私**
+2. 查看 **沙箱** 卡片。**主机** 一项指的是运行 `cc_server` 的那台机器，
+   而不是你正在看的这台机器。**后端** 字段会列出 **原生沙盒**
+   （macOS 上的 Seatbelt，Linux 和 WSL2 上的 bubblewrap）或 **无隔离**。
+   **生效中** 一项是本设备的偏好，而不是服务器实际使用的包裹。
+3. 查看服务器的启动日志。它只会打印下面三行中的一行：
+   - `agent sandbox ON` 加上后端说明——运行会被包裹
+   - `no OS-native agent sandbox on this host` 加上可用的安装提示——运行不会被包裹
+   - `agent sandbox DISABLED by --sandbox off`——一次刻意的退出
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` 不会报告沙盒状态，因此启动日志才是检查手段。
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+要有意关闭沙盒——存在这个开关，正是因为有些主机上的配置档会出问题——
+请用 `--sandbox off` 启动服务器，或者设置 `CC_SERVER_SANDBOX=off`。
+默认值是 `on`，而 `on` 的含义是“主机有后端就用一个”，绝不是“必须有一个”。
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+有两种情况永远不会得到原生沙盒的包裹。在 **Windows** 上，原生探测始终报告
+不可用，也没有东西可安装——智能体派发会使用 `none`。`microvm` 后端是另一
+回事（交互式终端和隔离舱），并按它自己的运行时进行探测门控。在
+**Linux 和 WSL2** 上，`bwrap` 和 `socat` 都必须位于 `PATH` 中；缺少它们时，
+探测会报告不可用，并指出缺失的软件包。
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+在安装了 bubblewrap 的 Linux/WSL2 上，对于智能体之后创建的文件，标准策略的
+密钥文件 glob 无法强制执行。这样的原生运行现在会失败，而不是静默忽略这些
+规则。因此，启动探测通过并不能保证 Linux 上的派发一定能启动。
+`--sandbox off` 是一次刻意的无约束退出，而不是替代性的安全边界。
 
-## Know what a mode already forbids
+## 了解模式已经禁止了什么
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+模式按空间存储，并作为 **模式预设** 层输入护栏解析器。四种模式中有三种是
+只读的，而只读模式会直接拒绝十一种效果类别：
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| 模式                 | 工作树   | 被预设拒绝的                                                                                                                                                                                    |
+| -------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent**（`chat`）  | 可写     | 无——适用内置默认值                                                                                                                                                                     |
+| **Plan**             | 只读     | 删除文件、写入工作树之外、创建提交、推送到远程仓库、创建 PR、发布或合并、写入外部跟踪器、安装软件包、运行进程、更改工作区结构、启动或操控隔离舱                          |
+| **Review**           | 只读     | 同样这十一种。不能由用户选择——输入框只提供 Agent、Plan 和 Orchestrate                                                                                                        |
+| **Orchestrate**      | 只读     | 同样这十一种                                                                                                                                                                          |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+网络访问和密钥访问被只读模式刻意地_不_拒绝：研究正是只读模式的全部意义。
 
-## Require approval before an action runs
+## 在操作运行前要求批准
 
-Approval is a guardrail decision, not a sandbox setting.
+批准是一项护栏决定，而不是沙盒设置。
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. 打开 **设置 → 工作区 → 智能体权限**
+2. 在工作区、智能体或空间作用域下，把该操作类别设为 **先询问**
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/zh-CN/手册/操作指南/配置护栏/) for the full
-resolution order.
+一个 **先询问** 决定会打断这次运行并向你询问。在没有连接任何批准者时，它
+会失效即拒绝，该操作会被拒绝。完整的解析顺序见
+[配置护栏](/zh-CN/手册/操作指南/配置护栏/)。
 
-## Troubleshooting
+## 故障排查
 
-### An agent cannot push and I never denied it
+### 智能体无法推送，而我从未拒绝过它
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+检查该智能体的 **沙箱权限**。没有自定义能力集的智能体会得到保守默认值，
+其中 **允许 git push** 是关闭的——因此凭据代理不会注入 GitHub 令牌，
+git 也就无从完成身份验证。
 
-### The Sandboxing card reports no native sandbox
+### “沙箱”卡片报告没有原生沙盒
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/zh-CN/手册/操作指南/配置护栏/).
+那么该主机上的智能体运行就不会被 Seatbelt 或 bubblewrap 包裹，剩下那些
+边界就是你全部的依靠。在 Linux 和 WSL2 上，安装两个缺失的工具——
+`sudo apt-get install bubblewrap socat`——并重启服务器；启动日志随后应当
+显示沙盒已开启。在 Windows 上，没有原生后端可安装，因此请改为收紧护栏：
+参见[配置护栏](/zh-CN/手册/操作指南/配置护栏/)。
 
-### An agent reached a file outside its worktree
+### 智能体触及了工作树之外的文件
 
-Which tool reached it decides whether this is expected.
+是哪个工具触及了它，决定了这是否在意料之中。
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+运行器的进程内文件工具（read、write、edit、apply patch、search、find、
+search_files）运行在服务器进程中，因此没有任何沙盒配置档适用于它们——
+它们的边界是自身路径限制加上护栏。在存在后端的地方，`bash` 命令或
+Claude Code CLI _会_ 被包裹，而无论哪种模式，你已注册的检出在那层包裹里
+都是拒绝写入的，包括它们经符号链接解析后的写法（在 macOS 上，经由 `/tmp`
+或 `/var/folders` 抵达的路径会解析到 `/private` 之下，现在两种写法都会被
+拒绝）。在没有后端的主机上，这些都不适用。无论哪种情况，护栏都能直接拒绝
+**写入工作树之外**。
 
-## Related guides
+## 相关指南
 
-- [Configure guardrails](/zh-CN/手册/操作指南/配置护栏/)
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Diagnose an agent](/zh-CN/手册/操作指南/诊断智能体/)
-- [Sandbox backends](/zh-CN/手册/参考/沙盒后端/)
-- [cc_server CLI](/zh-CN/手册/参考/cc-server-cli/): the `--sandbox` flag
+- [配置护栏](/zh-CN/手册/操作指南/配置护栏/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [诊断智能体](/zh-CN/手册/操作指南/诊断智能体/)
+- [沙盒后端](/zh-CN/手册/参考/沙盒后端/)
+- [cc_server CLI](/zh-CN/手册/参考/cc-server-cli/)：`--sandbox` 标志
 
-## Related concepts
+## 相关概念
 
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/)
-- [Modes](/zh-CN/手册/概念/模式/)
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)
+- [模式](/zh-CN/手册/概念/模式/)

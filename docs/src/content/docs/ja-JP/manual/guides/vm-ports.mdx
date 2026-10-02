@@ -1,137 +1,142 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: ターミナルからポートを転送
+description: ターミナル（VM）またはホストシェルで起動した開発サーバーに、自分のマシンから、ブラウザ（VM）から、Android から、ネットワーク経由で、あるいは HTTPS 付きの開発ドメインの下から到達する方法。
 slug: ja-JP/マニュアル/ハウツーガイド/vm-ポート
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+会話のターミナルで起動したサーバーは、**そのスペース** にだけ公開されます。ポートパネルは、このアプリがそこで起動したリスナーを検出してマッピングし、到達したいあらゆる場所から使えるアドレスを提示します。2 つのスペースがどちらも `5173` をリッスンしていても、それぞれのマッピングが混ざることはありません。
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+ここでの操作がマシンを開放することはありません。すべての経路はリクエストに応じてサーバーが作成し、ターミナルまたはリグとともに消えます。
 
-## See what is listening
+## 何がリッスンしているかを確認する
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. 会話の **ターミナル（VM）** またはホストシェル（スペース内または PR ページ上）を開きます。
+2. サーバーを起動します — `pnpm dev`、`python -m http.server 8000`、何でもかまいません。
+3. 数秒以内に、ターミナル右上隅の **プラグアイコン** にドットが付きます。
+   クリックします。
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+パネルには、リッスンしているすべてのポートが、それを所有するプロセスとともに
+`3000 → 3000` の形式で一覧表示されます。左がプロセスがバインドしたポート、
+右がローカルで応答するポートです（マシン上で空いていれば同じ番号になります）。
+各行には、デスクトップの `localhost`、ブラウザ（VM）、Android から到達できる
+かどうかも表示されます。
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+検出は閉じた範囲で行われます。ターミナル（VM）はそのゲスト内でポーリングされ、
+ホストシェルはそのセッションの PTY プロセスツリーからポーリングされます。
+他のスペースや、あなたの Mac 上の他のプロセスは一覧に含まれません。
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+**この** ターミナルで新しく開いたポートは自動的に転送されます。自分で追加した
+ポートだけを使いたい場合は、同じパネルで **ポートを自動転送** をオフにします。
 
-## Reach it from this computer
+## このコンピュータから到達する
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+行の **ローカル URL をコピー** を使います — `http://localhost:3000`。転送は
+ループバック上だけでリッスンするため、あなたのネットワーク上の他のものからは
+見えません。
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+2 つのスペースがどちらもゲストの `5173` を公開していて、あなたのマシンがすでに
+`127.0.0.1:5173` を保持している場合、2 つ目のスペースはゲストの `5173` を保った
+まま、一時的なローカルポートを取得します。URL のコピーには右側の番号が使われます。
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+ホストシェルでは、プロセスはすでにあなたのマシン上にあります。同じローカル
+ポートをマッピングしても何も起こりません。**別の** ローカルポートを選ぶと、
+選んだポートにループバックプロキシがバインドされます。
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host`（または `0.0.0.0` へのバインド）を使っても、エンクロージャー内の
+ブラウザ（VM）が Mac 上のサーバーに到達できるように **なるわけではありません**。
+ゲストには独自のループバックがあり、ブラウザタブが **同じスペース** にあるとき、
+サーバーがそのゲストへトンネルを張ります。
 
-## Reach it from the Browser (VM)
+## ブラウザ（VM）から到達する
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+**同じ会話** でエンクロージャーのブラウザを開きます。`localhost:<左側のポート>`
+と入力します — プロセスがバインドした番号です。リマップ（`5173 → 3000`）の場合も
+そのブラウザでは右側の番号で応答するため、URL のコピーもそこでは機能します。
+エージェントの `browser_use` はどちらへもナビゲートできます。スペース A の
+サーバーが、スペース B のブラウザに `localhost:5173` として現れることは決して
+ありません。
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+LAN IP や `--host` ではなく、`localhost` を使ってください。ゲストには独自の
+ループバックがあり、トンネルはそこで IPv4 と IPv6 の両方をリッスンします。
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+一度に多数の接続を開くページ（数十のアセット、ライブリロードソケット）は、
+その同じトンネルを共有します。ブラウザ（VM）はそれらを 1 つの永続的な exec に
+多重化するため、大量のフェッチが接続ごとに 1 プロセスを起動することはなく、
+真っ白なページとしてタイムアウトすることもありません。
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+1 つのスペース内では、同じ番号に対してターミナル（VM）の転送がホストシェルより
+優先されます。スペース間には優先順位はありません — それぞれ別のマップです。
 
-## Reach it from Android
+## Android から到達する
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+そのスペースの **Android** タブを開きます。エミュレータの `localhost:<port>` が、
+このスペースの公開ポートにリバースされます（`adb reverse`）。1 つのエミュレータは
+デバイス全体で共通です。スペース B をアタッチすると `:5173` が B に付け替えられ、
+A のものは失われます。タブを閉じると、このリグが張ったリバースは削除されます。
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS シミュレータはすでに Mac そのものです — リバースは不要です。物理的な
+iPhone には引き続き LAN 共有が必要です。
 
-## Share it on your network
+## ネットワークで共有する
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → ローカルネットワークで共有** は、ポートを
+`<server-ip>:<random port>` で公開します — スマートフォンでページを開くときや、
+サーバーが別のマシンで動いているときに便利です。
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- LAN ポートは常に OS が割り当てるもので、ゲストの番号になることはないため、
+  公開されるのは推測可能な番号ではなく、意図的で目に見えるアドレスになります。
+- 切り替えるまでは非公開（ループバックのみ）のままで、**⋯ → ローカルのみ** で
+  ネットワークから外せます。
 
-## Give it a name — with HTTPS
+## 名前を付ける — HTTPS 付きで
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → ブラウザのドメインを設定（.test）** は、ポートに `myapp.test` のような
+開発ドメインを割り当てます。ブラウザ（VM）内では、`https://myapp.test` が有効な
+鍵アイコン付きであなたのサーバーを読み込みます — 名前付きオリジンやセキュア
+コンテキストで挙動が変わるもの（Cookie、Service Worker、OAuth コールバック）に
+便利です。
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- ドメインは `.test` または `.localhost` で終わる必要があります — 開発用に予約
+  された 2 つの TLD なので、開発用の名前が本物のサイトを覆い隠すことは決して
+  ありません。
+- ドメイン **名** はサーバー上で一意ですが、ポート **番号** はそうではありません。
+  2 つのスペースがどちらも `5173` を使うことはあっても、両方が `myapp.test` を
+  要求することはできません。
+- 証明書は、初めて必要になったときにあなたのサーバー上で発行されるローカル認証局
+  から提供されます。その鍵はサーバーのデータディレクトリの下にあり、どのゲストにも
+  入りません。エンクロージャーのブラウザはまさにその 1 つの鍵だけを信頼するため、
+  実際のインターネットへの TLS は通常どおり検証されます。
+- ドメインは **ブラウザ（VM）内でのみ** 解決されます。ホスト上のあなた自身の
+  ブラウザは、代わりに `localhost:<port>` を使います。
+- プレーンな `http://myapp.test` も機能します。
 
-## Forward a port by hand
+## 手動でポートを転送する
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+パネル下部の **ポートを追加** は、何かがリッスンする前（またはリッスンしている
+かどうかに関係なく）にポートをマッピングします。手動転送はサーバーが再起動して
+いる間もアドレスを保ちます — サーバーが戻るまで、その行は *未リッスン* と表示
+されます — 一方、自動転送はポートが消えるとともになくなります。ホストシェルでは、
+別のローカルポートも設定できます。
 
-## How it stays contained
+## どのように閉じた範囲を保つか
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/ja-JP/マニュアル/リファレンス/リグ/#ports-and-dev-domains).
+ポートはワークスペースとスペースでキー付けされます。ハイパーバイザー自身の
+ポートマップはマシンの起動時に固定されるため、ターミナル（VM）はサーバーが
+制御する 2 つの狭いチャネルに乗ります。1 つはゲストへの事前作成された受信用の
+レーンで、ゲストが実際にリッスンしていないポートへの接続を拒否します。もう 1 つは、
+サーバーがブラウザ（VM）と Android のために開いたままにするリバーストンネルです。
+ホストシェルがマシン全体をスキャンすることはありません。サーバーが置いていない
+リスナーがゲスト内に作成されることは一切なく、すべてはターミナルまたは
+リグとともに破棄されます。設計は
+[リグとエンクロージャー](/ja-JP/マニュアル/コンセプト/リグ/#ports-without-holes)
+で説明しています。予約ポートとドメインの正確なルールは
+[リグのリファレンス](/ja-JP/マニュアル/リファレンス/リグ/#ports-and-dev-domains)
+にあります。
 
-## Related
+## 関連
 
-- [Give an agent a machine to test on](/ja-JP/マニュアル/ハウツーガイド/リグの利用/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/ja-JP/マニュアル/リファレンス/リグ/) — reserved ports, dev TLDs,
-  defaults
+- [エージェントにテスト用マシンを渡す](/ja-JP/マニュアル/ハウツーガイド/リグの利用/) — リグを開き、
+  見守り、引き継ぐ
+- [リグのリファレンス](/ja-JP/マニュアル/リファレンス/リグ/) — 予約ポート、開発 TLD、
+  デフォルト

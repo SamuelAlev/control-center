@@ -1,172 +1,185 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: Hantera adapters och modeller
+description: Anslut modellleverantörer, välj vilken modell en agent körs på och se vilka CLI-verktyg för agentkörare som finns på servervärden.
 slug: sv-SE/handbok/how-to-guider/adapters
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+Den här guiden visar hur du ansluter modellleverantörer och väljer vad en agent
+körs på.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+Allt här finns på en och samma sida: **Inställningar → Server →
+Modellleverantörer**. Posten i undersidomenyn heter "Modellleverantörer"; sidans
+rubrik lyder "Adaptrar".
 
-## What an adapter is
+## Vad en adapter är
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+En adapter är den _körare_ som utför en agenttur. Det finns två och listan är
+fast — du kan inte lägga till en tredje.
 
 | Adapter                   | CLI      | Transport                                           |
 | ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Control Center (inbyggd)  | ingen    | Agentloop i processen, pratar med leverantörer över HTTP |
 | Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor, Codex, Anthropic, OpenAI och alla de andra är **leverantörer** på den
+inbyggda adaptern, inte separata CLI:n. Det du _kan_ lägga till är en till
+leverantör — vilken OpenAI- eller Anthropic-kompatibel endpoint som helst. Det
+är nästa avsnitt.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[Detekteringen söker av servern, inte din maskin]
+Kortet **Upptäckta körare** listar vad `cc_server` hittade på _servervärdens_
+`PATH`. På en tunn klient eller webbklient är det en annan maskin än den du
+tittar på. Installera CLI:t på den maskin som kör `cc_server`.
 :::
 
-## Connect a model provider
+## Anslut en modellleverantör
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+Den inbyggda adaptern behöver minst en ansluten leverantör innan den kan köra.
+Fjorton levereras i katalogen.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. Gå till **Inställningar → Server → Modellleverantörer**
+2. Bläddra till **Leverantörer och modeller**
+3. Hitta din leverantör och anslut den:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
+| Leverantör                                                                                               | Så ansluter du                                                                                                                |
 | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| Anthropic                                                                                                | API-nyckel. Ett Claude Pro/Max-abonnemang är inte en Anthropic API-inloggning — använd Claude Code-adaptern för den planen  |
+| OpenAI, Codex, Cursor                                                                                    | Inloggning med OAuth i webbläsaren, eller en API-nyckel. Codex är ChatGPT Plus/Pro via Codex Responses-backenden, inte en CLI-start |
+| Kimi Code                                                                                                | Endast OAuth i webbläsaren — ett device code-flöde. Det är en plan med fast pris, så den har inget pris per token           |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API-nyckel                                                                                                                    |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+Kontrollpunkt: radens etikett ändras till ansluten och när du fäller ut den
+listar den modellerna som leverantören tillhandahåller, var och en med sitt pris
+per miljon tokens och sitt kontextfönster.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+OAuth-tokens hamnar i serverns egen lagring av inloggningsuppgifter och förnyas
+innan de går ut. Leverantörernas inloggningsuppgifter är **globala per värd** —
+de delas av varje arbetsyta i installationen och är inte knutna till en.
 
-### Add a custom provider
+### Lägg till en egen leverantör
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+Använd det här för Ollama, LM Studio, vLLM eller en privat driftsättning.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
+1. I **Leverantörer och modeller**, under **Egna leverantörer**, trycker du på
+   **Lägg till leverantör**
+2. Fyll i ett **namn**, välj **API-typ** (OpenAI-kompatibel eller
+   Anthropic-kompatibel) och ange **bas-URL:en** (till exempel
    `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+3. Lägg till en **API-nyckel** om endpointen behöver en, och tryck sedan på
+   **Lägg till leverantör**
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+En egen leverantör visas i samma lista, med en borttagningsknapp som dess
+inbyggda syskon inte har.
 
-## Pick a model for an agent
+## Välj en modell för en agent
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. Gå till **Inställningar → Arbetsyta → Agenter** och välj agenten
+2. På fliken **Inställningar**, välj **adaptern**
+3. Välj **modellen** i listrutan bredvid
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+För den inbyggda adaptern byggs listrutan i realtid från varje ansluten
+leverantörs egen katalog. En leverantör utan lagrade inloggningsuppgifter bidrar
+med noll modeller, och det är därför en tom listruta nästan alltid betyder
+"inget anslutet ännu" snarare än "inget tillgängligt".
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev är berikning, aldrig en källa till id:n]
+Den medföljande katalogen [models.dev](https://models.dev) bidrar med pris och
+kontextfönster för en modell som redan finns i den aktuella listan. Den lägger
+aldrig till ett modell-id. Om en modell du förväntar dig saknas är det
+leverantörens endpoint som inte returnerar den.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+Modell-id:n för den inbyggda adaptern är kvalificerade `provider/model` och kan
+bära en fallback-kedja separerad med `|`. Vid en fallback prissätts kostnaden mot
+den modell som faktiskt betjänade turen, inte den du bad om.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[En agent utan adapter körs på den inbyggda loopen]
+Varje arbetsyta seedar fem agenter — en CEO plus `qa`, `architect`, `engineer`
+och `librarian` — utan adapter och utan modell. Dispatchen faller tillbaka på
+**Control Center (inbyggd)**, inte på inställningen **Standardkörare** på den här
+sidan, som är en klientinställning som dispatchvägen aldrig läser. Körningsloggen
+registrerar `cc-harness` för de körningarna, så transkriptet namnger vad som
+faktiskt kördes.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+Om inte heller en modell är satt frågar den inbyggda loopen Anthropic efter dess
+standardmodell. En agent som lämnas helt oinställd körs därför om du har anslutit
+ett Anthropic-konto, och misslyckas annars med
+`No credential for provider "anthropic"`.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+När du slutför onboardingens adaptersteg uppdateras i efterhand **varje** agent
+som fortfarande saknar adapter eller modell — CEO och specialister, i varje
+arbetsyta som finns i det ögonblicket — med det par du valde. Arbetsytor som
+skapas senare seedar fortfarande alla fem oinställda. Ange adapter och modell
+uttryckligen på varje agent du tänker använda.
 :::
 
-## Install a runner CLI
+## Installera ett körar-CLI
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+Den inbyggda adaptern kräver ingen installation. För Claude Code installerar du
+dess CLI **på servervärden** med verktygets egen pakethanterare, till exempel:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+Tryck sedan på **Uppdatera** högst upp på sidan. Varje upptäckt rad visar den
+upplösta versionen och sökvägen, plus taggar för om den stöder JSON-läge och
+modellval.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Ett externt CLI behåller sina egna inloggningsuppgifter, i sin egen
+konfiguration, på servervärden. Control Center hanterar dem inte.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[Adaptrars argument och miljövariabler stannar på den här enheten]
+Varje adapterrad har ett fält för **extra argument** och en dialogruta för
+**miljövariabler**. De värdena lagras på din enhet. Servern läser start-argv och
+miljövariabler från sin egen inställningslagring. Lägg leverantörsnycklarna på
+servern (OAuth eller nyckelfältet på sidan Modellleverantörer), inte i de två
+fälten.
 :::
 
-## Restrict which providers a workspace may use
+## Begränsa vilka leverantörer en arbetsyta får använda
 
-Provider governance is per workspace and is evaluated last-match-wins.
+Leverantörsstyrningen är per arbetsyta och utvärderas enligt principen att den
+sista matchningen vinner.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. I **Leverantörer och modeller**, slå av **Tillåt**-reglaget på en
+   leverantörsrad
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+Det skriver ett `deny`-uttryck för den leverantören i den aktiva arbetsytan och
+dess modeller faller bort ur katalogen för den arbetsytan. Slår du på reglaget
+igen tas uttrycket bort.
 
-## Troubleshooting
+## Felsökning
 
-### A runner shows as not found
+### En körare visas som inte hittad
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- Kontrollera att CLI:t finns i **servervärdens** `PATH`, inte bara i din
+- En skrivbordsapp som startas från ett GUI startar sin server med en minimal
+  `PATH`; ett CLI som installerats under en sökväg som bara skalet känner till
+  kan vara osynligt för den
+- Tryck på **Uppdatera** efter installationen
 
-### The model dropdown is empty
+### Listrutan för modeller är tom
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- Adaptern är den inbyggda och ingen leverantör är ansluten — anslut en i
+  **Leverantörer och modeller**
+- Eller så är leverantören ansluten men nekad av arbetsytans styrningsreglage
 
-### A model runs but the price shows as unknown
+### En modell körs men priset visas som okänt
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+Den aktuella modellistan bär id:t; pris och kontext kommer från models.dev. En
+helt ny modell, eller en från en egen leverantör, har ingen post i katalogen
+ännu.
 
-## Related guides
+## Relaterade guider
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Manage API keys](/sv-SE/handbok/how-to-guider/api-nycklar/)
-- [Diagnose an agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
-- [Manage costs](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Hantera API-nycklar](/sv-SE/handbok/how-to-guider/api-nycklar/)
+- [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
+- [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
 
-## Related concepts
+## Relaterade koncept
 
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/)
-- [Agent dispatch lifecycle](/sv-SE/handbok/koncept/livscykel-agentdispatch/)
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/)
+- [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/)

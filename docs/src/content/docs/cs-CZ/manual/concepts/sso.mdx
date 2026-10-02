@@ -1,19 +1,20 @@
 ---
-title: Single sign-on
-description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+title: Jednotné přihlášení
+description: Jak přihlášení přes SAML a OIDC funguje, co ověřuje a jak účty zůstávají v bezpečí.
 slug: cs-CZ/prirucka/koncepty/jednotne-prihlaseni
+sourceHash: e10e061f2b2af924537bba637128b7c94d4c05c1
 ---
 
-Single sign-on lets an external identity provider (IdP) decide who may sign
-in to your Control Center server. Two protocols are supported — SAML 2.0
-and OpenID Connect — and both land in the same place: a freshly minted
-device credential that is indistinguishable from an invite or QR pairing
-everywhere downstream.
+Jednotné přihlášení nechá externího poskytovatele identity (IdP) rozhodnout,
+kdo se smí přihlásit k tvému serveru Control Center. Podporované protokoly
+jsou dva — SAML 2.0 a OpenID Connect — a oba skončí na stejném místě:
+čerstvě vystavený přihlašovací údaj zařízení, který je ve všech navazujících
+vrstvách k nerozeznání od pozvánky nebo párování přes QR.
 
-## The shape of a login
+## Jak přihlášení vypadá
 
-SAML logins are **browser-mediated**. The IdP never opens a connection to
-your server; the user's browser carries everything:
+Přihlášení přes SAML **zprostředkovává prohlížeč**. IdP se k tvému serveru
+nikdy sám nepřipojí; všechno nese prohlížeč uživatele:
 
 ```
 browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
@@ -26,80 +27,78 @@ browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
                                   fragment (never a query parameter)
 ```
 
-Because the browser is the courier, **a server behind NAT works fine** for
-logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
-user's browser must reach the ACS URL. The WebSocket relay used by
-phone remote control cannot carry the HTTP round-trip, which is why SSO
-entry points always target the server's HTTP origin.
+Protože kurýrem je prohlížeč, **server za NAT na přihlášení stačí**:
+localhost, LAN, Tailscale, VPN i tunel poslouží a stačí, aby prohlížeč
+uživatele dosáhl na ACS URL. WebSocket relé, které používá vzdálené ovládání
+z telefonu, HTTP cestu tam a zpět unést neumí, a proto vstupní body SSO vždy
+míří na HTTP origin serveru.
 
-OpenID Connect follows the same shape with an authorization-code + PKCE
-round-trip; claims are read from the issuer's token endpoint over TLS, so
-the browser never supplies identity data at all.
+OpenID Connect má stejný tvar, s oběhem authorization-code + PKCE. Claimy se
+čtou z token endpointu vydavatele přes TLS, takže údaje o identitě prohlížeč
+vůbec nedodává.
 
-## The adapters
+## Adaptéry
 
-Control Center splits the responsibility deliberately:
+Control Center tu odpovědnost schválně dělí:
 
-| Piece                         | Where                              | Owns                                                                                                                                       |
+| Součást                       | Kde                                | Má na starosti                                                                                                                             |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
-| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
-| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
-| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
-| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, live re-apply, the SCIM token                                                                                   |
+| nativní `cc_saml`             | `packages/cc_natives/native/saml/` | ověření XML-DSig, kanonikalizace, validace profilu SAML — předané připnutému crate `saml` v čistém Rustu za bezstavovým C ABI               |
+| `SamlService` / `OidcService` | `cc_server_core`                   | stav přihlášení (sledování čekajících požadavků, deduplikace přehrání), páčky politiky ověření, sdílené volání provisioningu                 |
+| `SsoProvisioner`              | `cc_server_core`                   | najde nebo založí uživatele, připne subjekt poskytovatele, udělí členství podle politiky automatického členství                            |
+| `ScimService`                 | `cc_server_core`                   | plocha SCIM 2.0, na kterou IdP tlačí (životní cyklus provisioningu a deprovisioningu)                                                      |
+| `SsoSettingsService`          | `cc_server_core`                   | uložené řádky připojení, živé opětovné uplatnění, token SCIM                                                                               |
 
-There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
-XML-DSig/canonicalization is exactly where signature-wrapping
-vulnerabilities live, so a missing `cc_saml` library refuses both SAML
-login and server boot. The native is stateless by design — cross-request
-state lives in the Dart services, single-use and short-lived.
+Schválně tu **není kryptografický fallback pro SAML v čistém Dartu**: ručně
+psané XML-DSig a kanonikalizace jsou přesně to místo, kde žijí zranitelnosti
+obalení podpisu, a chybějící knihovna `cc_saml` proto odmítne přihlášení přes
+SAML i start serveru. Nativní kód je schválně bezstavový — stav napříč
+požadavky žije ve službách v Dartu, jednorázově a krátce.
 
-## What a login verifies
+## Co přihlášení ověřuje
 
-Inside the verified native and the service, in order:
+V ověřeném nativním kódu a ve službě, v tomhle pořadí:
 
-1. the assertion's **signature** (always required; the response envelope's
-   is optional per configuration) — structurally resistant to
-   signature-wrapping because the validated payload is bound to the
-   verified element,
-2. the **issuer** matches the configured IdP,
-3. the **audience** names this service provider,
-4. the **destination** is our ACS URL,
-5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
-   IdP-initiated responses are off by default),
-6. the **lifetime** windows hold within the clock skew (default 90s) and
-7. the **assertion id** was never seen before (replay cache).
+1. **podpis** assertion (vždy povinný; podpis obálky odpovědi je podle
+   konfigurace volitelný) — strukturálně odolný proti obalení podpisu,
+   protože ověřený obsah je vázaný na ověřený element,
+2. **vydavatel** se shoduje s nakonfigurovaným IdP,
+3. **audience** jmenuje tohoto poskytovatele služeb,
+4. **cíl** je naše ACS URL,
+5. `InResponseTo` se shoduje s čekajícím AuthnRequest, který jsme vydali
+   (nevyžádané, IdP-iniciované odpovědi jsou ve výchozím stavu vypnuté),
+6. okna **životnosti** drží v rámci odchylky hodin (výchozích 90 s) a
+7. **id assertion** se tu ještě neobjevilo (cache proti přehrání).
 
-Failures come back as typed codes — signature, expired, audience,
-destination, issuer, request-match — and the endpoints answer with generic
-errors, so an attacker learns nothing about why a forgery failed.
+Selhání se vracejí jako typované kódy — signature, expired, audience,
+destination, issuer, request-match — a endpointy odpovídají obecnou chybou,
+takže útočník se nedozví, proč padělek selhal.
 
-## Accounts and subject pinning
+## Účty a připnutí subjektu
 
-The first SSO login pins the provider's immutable subject (`issuer` plus
-SAML NameID / OIDC `sub`, or SCIM externalId) onto the account. From then
-on, the subject — not the email — identifies the login. If someone else
-later presents the same email from the same or another IdP, the pinned
-account refuses them. This is what stops a recycled email at a provider from
-becoming an account takeover.
+První přihlášení přes SSO připne neměnný subjekt poskytovatele (`issuer`
+plus SAML NameID / OIDC `sub`, nebo SCIM externalId) k účtu. Od té chvíle
+přihlášení určuje subjekt, ne e-mail. Když později někdo jiný předloží stejný
+e-mail od téhož nebo od jiného IdP, připnutý účet ho odmítne. Recyklovaný
+e-mail u poskytovatele se tak nestane převzetím účtu.
 
-## Provisioning and deprovisioning
+## Provisioning a deprovisioning
 
-JIT provisioning happens at login (`SsoProvisioner`). SCIM is a separate
-push surface (`ScimService`) that pins the same subject on the user row;
-it does not grant workspace memberships. Deprovisioning — SCIM
-`active: false` or `DELETE` — refuses if the account is a workspace owner
-(transfer first). Otherwise it revokes every device credential first
-(sessions drop within seconds through the device watch), removes every
-workspace membership and stamps the account deactivated. The user row
-survives: attribution is permanent. Reactivation restores login but never
-re-grants memberships.
+JIT provisioning proběhne při přihlášení (`SsoProvisioner`). SCIM je
+samostatná plocha, na kterou IdP tlačí (`ScimService`): připne k řádku
+uživatele stejný subjekt a členství v pracovních prostorech neuděluje.
+Deprovisioning — SCIM `active: false` nebo `DELETE` — účet odmítne, když je
+vlastník pracovního prostoru (vlastnictví nejdřív předej). Jinak nejdřív
+odvolá každý přihlašovací údaj zařízení (relace spadnou během sekund přes
+sledování zařízení), odebere každé členství v pracovním prostoru a účet
+označí jako deaktivovaný. Řádek uživatele zůstane: atribuce je trvalá.
+Reaktivace obnoví přihlášení a členství znovu neudělí.
 
-## What stays out
+## Co zůstává mimo
 
-- **Group→role mapping happens at login** from the SAML attributes / OIDC
-  claims — pushed SCIM groups are not stored.
-- **The owner role is unreachable from SSO** — neither as a default role nor
-  through a group mapping.
-- The WebSocket relay is never an SSO channel; phones that reach the server
-  only through the relay cannot complete a browser round-trip against it.
+- **Mapování skupina→role proběhne při přihlášení** z atributů SAML a claimů
+  OIDC — skupiny natlačené přes SCIM se neukládají.
+- **Role vlastníka je ze SSO nedosažitelná** — ani jako výchozí role, ani
+  přes mapování skupin.
+- WebSocket relé nikdy není kanál SSO. Telefon, který se k serveru dostane
+  jen přes relé, proti němu cestu prohlížeče tam a zpět nedokončí.

@@ -1,239 +1,244 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Nasazení a klienti
+description: Jak architektura tenkého klienta v Control Center odděluje server bez rozhraní od klientů na počítači, webu a v telefonu.
 slug: cs-CZ/prirucka/koncepty/nasazeni
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center není jeden program. Je to **architektura tenkého klienta**:
+server bez rozhraní, který vlastní tvoje data, a sada klientů, kteří přes jedno
+spojení RPC kreslí rozhraní. Tohle rozdělení vysvětluje, proč některé věci
+běží tam, kde běží, a na co který klient dosáhne a na co ne.
 
-## The server owns the data
+## Server vlastní data
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/cs-CZ/prirucka/koncepty/pracovni-prostory/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+Proces jménem **`cc_server`** drží databáze — malý `global.db` pro stav celého
+serveru plus jeden soubor SQLite na každý
+[pracovní prostor](/cs-CZ/prirucka/koncepty/pracovni-prostory/), otevřený až
+ve chvíli, kdy je potřeba — a spouští dlouho žijící práci: enginy pipeline,
+reconcilery, plochu nástrojů MCP a posluchače orchestrace. Všechno, co má
+přežít okno, nebo co mají dva klienti vidět stejně, žije tam.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Žádný klient neotevírá databázový soubor sám. Každý místo toho drží jednoho
+**`RemoteRpcClient`** a přes něj posílá operace nad repozitáři a odběry.
+Server spojení ověří proti předem sdílenému klíči spárovaného zařízení a pak
+už ho spojení nezajímá. **Relace není vázaná na pracovní prostor.** Dispečer
+je bezstavový: každé volání vázané na pracovní prostor nese ve svých
+argumentech vlastní `workspace_id` a volání, které ho vynechá, se odmítne.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Je to schválně. Díky tomu můžou dva klienti na jednom serveru sedět v různých
+pracovních prostorech a nemají serverem držený „aktuální pracovní prostor“,
+o kterém by se mohli rozejít. Izolace se místo toho vynucuje u každého
+volání, ve čtyřech krocích:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. Operace deklaruje, jestli je vázaná na pracovní prostor; když je a
+   nedorazilo `workspace_id`, volání se odmítne.
+2. Uvedené id musí být **registrovaný** pracovní prostor a kontrola proběhne
+   dřív, než cokoli otevře databázi. Jinak by neznámé id při každém požadavku
+   vytvořilo prázdný přízrak `workspace.db`. Chybějící id je nenalezeno.
+3. `WorkspaceRole` volajícího musí splnit spodní hranici operace, odvozenou
+   od jejího druhu: čtení vyžaduje roli Host, změna roli Člen, destruktivní
+   operace roli Admin.
+4. Operace, která odhaluje obsah repozitáře, navíc vyžaduje oprávnění k danému
+   repozitáři na úrovni, kterou deklaruje — `none` / `read` / `review` / `write` —
+   aby členství v pracovním prostoru nikdy tiše nepřekonalo oprávnění forge.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Věta, na které záleží: **držet párovací klíč není hranice přístupu; tou je
+členství.**
 
-## Why split it this way
+## Proč to tak rozdělit
 
-Three pressures pushed toward a server:
+K serveru vedly tři tlaky:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Jeden zdroj pravdy.** Desktop a telefon, nebo notebook a desktop, mají
+   vidět stejný stav flotily. Kdyby každý vlastnil vlastní databázi, rozešly
+   by se. Jeden server znamená, že každý klient čte tatáž živá data.
+2. **Web se neobslouží sám.** Prohlížeč neumí spustit podproces ani otevřít
+   místní soubor, takže webové sestavení nikdy nemůže vlastnit databázi ani
+   spustit agenta. Musí mluvit se serverem, který to umí. Místo druhé, čistě
+   webové datové cesty se na stejnou cestu dostal i desktop.
+3. **Provoz bez rozhraní.** Server, který spustíš na malém stroji a dosáhneš
+   na něj z telefonu ve vlaku nebo z prohlížeče kdekoli, je užitečnější než
+   grafické rozhraní, které musíš nechat otevřené.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Daní za to je, že server je teď závislost: když neběží, nefunguje nic.
+Výchozí odpověď desktopu je **spustit ho sám**.
 
-## The clients
+## Klienti
 
-Five clients reach the server, each with a different shape and trust profile.
+Na server dosáhne pět klientů, každý s jiným tvarem a profilem důvěry.
 
-### Desktop app
+### Aplikace pro počítač
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Desktopová aplikace ve Flutteru (macOS, Windows, Linux) je plný klient. Při
+prvním spuštění se zeptá, jak má běžet, a volbu si pak pamatuje:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Místní**: spustí a hlídá `cc_server` na tomhle stroji. Výchozí, samostatné
+  nastavení pro jednoho uživatele. Desktop server spustí, ten vlastní databázi
+  pod kořenem podpory aplikace a mluví s ním přes loopback.
+- **Vzdálené**: připojí se k `cc_server`, který běží jinde, přes zabezpečený
+  WebSocket. Data žijí na tom serveru; tenhle desktop jen vykresluje.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+V obou případech výsledný klient RPC přepíše poskytovatele dat aplikace, takže
+celé rozhraní — každá obrazovka, každá funkce — čte a zapisuje přes server.
+Desktop se databázového souboru přímo nikdy nedotkne.
 
-### Web client
+### Webový klient
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Webové sestavení je ta samá aplikace ve Flutteru, přeložená pro prohlížeč a
+hostovaná na [app.usectrl.dev](https://app.usectrl.dev), takže není co
+instalovat. Prohlížeč neumí spustit podproces, takže webový klient je
+**vždy** vzdálený: naváže `cc_server` přes `wss://` a vykreslí plné desktopové
+rozhraní. Po připojení ukazuje tytéž obrazovky nad toutéž flotilou, protože je
+to tentýž kód nad týmž RPC. Mezery jsou ta hrstka míst, která potřebují
+nativní schopnost, kterou prohlížeč nemá. Hlavní je vrstva kvality záznamu
+schůzky níže, další jsou oznámení operačního systému.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+Proto jsou „bez stahování“ a „bez serveru“ různá tvrzení. Webový klient
+odstraňuje instalaci, server ne. Kam se připojuje, může být `cc_server` na
+tom samém notebooku — `ws://localhost:9030`, který nepotřebuje certifikát,
+protože prohlížeče berou loopback jako důvěryhodný — nebo server na jiném
+stroji, který musí být dostupný přes `wss://` s certifikátem, jemuž prohlížeč
+důvěřuje. `cc_server` odmítne naslouchat na adrese mimo loopback bez TLS, takže
+vzdálený server znamená vlastní certifikát, proxy, která TLS ukončuje, nebo
+tunel či VPN, která ho dodá.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Samotný balík je hostovaný odděleně od serveru, se kterým mluví. Samostatný
+`cc_server` obsluhuje koncový bod RPC, plochu MCP a své proxy, ale **ne**
+webový balík. Cesta ke statickým souborům na serveru existuje, ale na
+samostatném binárním souboru není nastavený webový kořen, takže na `/` nemá co
+servírovat. Publikovaný obraz kontejneru `cc-webapp` balík hostuje a
+`scripts/build_web.sh` ho sestavuje. Server přijímá originy prohlížeče jen ze
+seznamu `--allowed-origins`, který má výchozí hodnotu
+`https://app.usectrl.dev`, takže vlastní hostování balíku znamená přidat jeho
+origin.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Média (avatary, obrázky kanálu, snímky PR) jdou přes proxy koncový bod
+serveru, ne přímo na upstream hostitele, takže prohlížeč nikdy nenačítá
+libovolný origin. Nasazený klient nastaví pro každý požadavek Content-Security
+Policy z necitlivé cookie, takže je povolený jen origin připojeného serveru.
 
-### Phone companion (cc_remote)
+### Telefonní společník (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+Aplikace **Remote** je samostatný, lehčí klient — webová PWA ve Flutteru na
+[remote.usectrl.dev](https://remote.usectrl.dev/). Schválně to **není** plná
+aplikace. Páruje se přes zprostředkované WebSocket relé zapečetěné od konce ke
+konci a mluví převážně čtecím výřezem plochy nástrojů: čte tickety, zprávy a
+kanál novinek; pošle odpověď nebo aktualizuje ticket.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/) for the full
-security model.
+Telefon je **subjekt s nižšími oprávněními** než místní agent. Politika
+nástrojů s výchozím zákazem, předem sdílený klíč, který zapečeťuje každý
+rámec, schopnost relace, která zamkne privilegované operace (třeba párování)
+mimo doprovodného klienta, kontroly role a oprávnění k repozitáři u každého
+volání výše a omezování četnosti brání tomu, aby schválené (nebo uniklé)
+párování znamenalo plné vzdálené ovládání. Viz
+[Vzdálené ovládání a mobil](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/)
+pro celý model zabezpečení.
 
-### MCP clients
+### Klienti MCP
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/cs-CZ/prirucka/navody/mcp-server/) and the
-[MCP tools reference](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
+Externí nástroje — editory, jiní agenti, CLI — které mluví Model Context
+Protocol, se připojí k ploše MCP serveru a berou typovaný registr nástrojů.
+Tohle je programová integrační cesta; není to grafické rozhraní. Viz
+[Používejte MCP server](/cs-CZ/prirucka/navody/mcp-server/) a
+[Nástroje MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/).
 
-### Fleet executors (cc_worker)
+### Workeři flotily (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+**`cc_worker`** je binární soubor v čistém Dartu bez rozhraní, který se spáruje
+s `cc_server`, ohlásí schopnosti hostitele a stahuje zapůjčené úlohy
+k provedení. Události procesu streamuje zpátky po tom samém RPC a **nedrží
+trvalý stav**: žádnou databázi, žádnou autentizaci, žádná schválení, žádné
+rozpočty. To všechno zůstává v `cc_server`. Worker je končetina, ne druhý
+mozek. Jeden autoritativní server, N hloupých končetin; žádný konsenzus,
+žádný provoz mezi workery.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Zapůjčené provádění je pořád jen rozvod zapůjčení. `agentRun` je jediný druh,
+který spustí skutečný příkaz (`CC_JOB_COMMAND`, nebo ozvěnu promptu, když
+žádný nebyl dodaný). `pipelineStep`, `codeIndex`, `goldenRender`, `benchmark`
+a `evalBatch` teď sondí přes `git --version` / `rev-parse HEAD`, aby se
+procvičila streamovací cesta a nepředstíralo se, že ty úlohy opravdu běžely.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Co ohlašuje, je operační systém, architektura CPU, počet jader, RAM, jestli je
+dosažitelný Flutter SDK a které backendy sandboxu hostitel má (na Windows
+žádný). Vyhrazený worker navíc vždy ohlašuje `alwaysOn` a `acceptsParallel`,
+a právě podle toho plánovač připnout → upřednostnit → přelít umisťuje úlohy.
+Sonda GPU ani ML tu není.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Samotný desktop si toho nevšimne, protože běžné odeslání flotilou vůbec
+neprochází. Implicitní worker v procesu pro hostitele serveru _existuje_, ale
+je to jen registrační spoj bez napojených vykonavatelů. Úloha, která se na
+místního workera opravdu umístí, selže, místo aby se provedla. Dnes zapůjčené
+úlohy provádí jen skutečný `cc_worker`.
 
-## What runs where
+## Co kde běží
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Oblast                                         | Server (`cc_server`)          | Worker flotily (`cc_worker`) | Desktopový klient | Webový / telefonní klient                    |
+| ---------------------------------------------- | ----------------------------- | ---------------------------- | ----------------- | -------------------------------------------- |
+| Databáze (Drift/SQLite)                        | vlastní je                    | —                            | —                 | —                                            |
+| Autentizace, schválení, rozpočty, identita     | vlastní je                    | —                            | —                 | —                                            |
+| Pipeline, reconcilery, posluchač orchestrace   | spouští je                    | —                            | —                 | —                                            |
+| Plocha nástrojů MCP                            | obsluhuje ji                  | —                            | —                 | —                                            |
+| Provádění agentů                               | spouští ho (nebo ho zapůjčí)  | provádí zapůjčené úlohy      | —                 | —                                            |
+| Vykreslování rozhraní                          | —                             | —                            | plné              | plné (web) / převážně čtení (telefon)        |
+| Záznam schůzky (mikrofon + zvuk schůzky)       | —                             | —                            | nativní záznam    | jen web, přes zvuk sdílení obrazovky         |
+| OAuth kalendáře (Google)                       | ukládá tokeny                 | —                            | —                 | —                                            |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
-for what bounds a run in each case.
+Obě vrstvy sandbox nepoužívají stejně. `cc_server` obalí běhy, které provádí
+sám, sandboxem operačního systému hostitele, kde backend existuje — Seatbelt
+na macOS, bubblewrap na Linuxu a WSL2 — a na Windows nebo bez `bwrap` a
+`socat` spadne na ostatní hranice. **`cc_worker` sandbox nepoužívá vůbec.**
+Ohlašuje schopnost `sandbox`, aby server uměl umisťovat úlohy podle platformy,
+ale ve workeru se žádný neaplikuje: zapůjčená úloha se spustí přímo,
+ohraničená prostředím zapůjčení a worktree, který dostala. Zapůjčit práci ven
+tedy přesune provádění mimo sandbox i na hostiteli, který ho má. Viz
+[Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/)
+pro to, co běh v každém případě ohraničuje.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Záznam schůzky probíhá na klientovi, protože potřebuje mikrofon a zvuk
+schůzky. Server ve skříni ti hovor nenahraje. Nahrávku pak shrne pipeline
+serveru a poznámky se uloží tam, kde je přečte každý klient.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Nahrává i webový klient, což tvar tabulky může zakrýt: v prohlížeči bere
+mikrofon plus zvukovou stopu sdílení obrazovky a streamuje 16 kHz PCM na
+server. Tu zvukovou stopu _vyžaduje_, takže tam, kde ji prohlížeč nedá, selže
+explicitně. Co je opravdu jen na desktopu, je vrstva kvality kolem záznamu:
+potlačení ozvěny na úrovni signálu nativním procesorem, měřič úrovně vstupu a
+upozornění na mrtvý mikrofon, opětovné spuštění souhrnu, zrušení zpracování a
+akce kalendáře nahrát a propojit.
 
-## Pairing and trust
+## Párování a důvěra
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Každý klient prokáže, kdo je, **předem sdíleným klíčem** zřízeným jednou:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Desktop v místním režimu vygeneruje při každém startu čerstvý klíč a předá
+  ho spuštěnému serveru přes prostředí, takže na desktopu nezůstane nic
+  tajného.
+- Vzdálení klienti (desktop na dálku, web, telefon) použijí klíč, který vydá
+  příkaz `pair` na serveru, a uloží ho do systémové klíčenky (na telefonu
+  místně).
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+Odvolání je **okamžité**, ne odložené. Server sleduje tabulku spárovaných
+zařízení a do několika sekund shodí každou otevřenou relaci, jejíž zařízení
+opustilo aktivní množinu, na přímé cestě WebSocket i na cestě relé. Nemusíš
+čekat, až se zařízení znovu připojí, abys ho odřízl.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Klíč nikdy neputuje URL, kterou statický hostitel uvidí. Když přijde odkazem,
+na telefonu nebo v prohlížeči, veze se ve **fragmentu URL**, v části za `#`,
+kterou prohlížeč nikdy nepošle serveru hostujícímu stránku. To je invariant,
+který stojí za zapamatování, a platí pro obojí. Webový klient má dva další
+vstupy: formulář připojení, kam vložíš server a klíč přímo, a kód pozvánky,
+který vymění za pověření vydané jen pro ten prohlížeč.
 
-## Related concepts
+## Související koncepty
 
-- [Workspaces and isolation](/cs-CZ/prirucka/koncepty/pracovni-prostory/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/cs-CZ/prirucka/koncepty/architektura/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/): the phone pairing and security model
+- [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/): proč každé volání RPC nese vlastní id pracovního prostoru a jak rozdělení databází dělá izolaci strukturální
+- [Architektura](/cs-CZ/prirucka/koncepty/architektura/): jak je kódová báze uspořádaná kolem serveru a jeho klientů
+- [Vzdálené ovládání a mobil](/cs-CZ/prirucka/koncepty/vzdalene-ovladani/): párování telefonu a model zabezpečení
 
-## Related guides
+## Související návody
 
-- [Run a headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): start `cc_server` and pair a client
-- [Connect to a remote server](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/): point the desktop or web client at a server elsewhere
-- [Pair a device](/cs-CZ/prirucka/navody/parovani-zarizeni/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/cs-CZ/prirucka/navody/spusteni-workeru-flotily/): add a `cc_worker` that pulls leased jobs
+- [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/): spusť `cc_server` a spáruj klienta
+- [Připojte se ke vzdálenému serveru](/cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru/): namiř desktop nebo webového klienta na server jinde
+- [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/): přidej telefon, druhý prohlížeč nebo další desktop
+- [Spusťte worker flotily](/cs-CZ/prirucka/navody/spusteni-workeru-flotily/): přidej `cc_worker`, který stahuje zapůjčené úlohy

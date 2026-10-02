@@ -1,115 +1,116 @@
 ---
-title: Connect a code host
-description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+title: Anslut en kodvärd
+description: Anslut GitHub, GitLab eller Bitbucket så att PR-ytan, reporegistreringen och agentkörningar fungerar — en arbetsyta kan använda alla tre.
 slug: sv-SE/handbok/how-to-guider/anslut-kodvard
+sourceHash: 11e5f877ee16265989b93667fb330567fd9112bd
 ---
 
-Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+Control Center arbetar med tre kodvärdar — så kallar appen dem genomgående: **GitHub**, **GitLab** och **Bitbucket Cloud**. Ingen av dem är standard. Anslut en och allt fungerar; anslut flera och en och samma arbetsyta kan hålla repos från alla tre samtidigt.
 
-The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+Kodvärden är en egenskap hos varje **repo** och läses från dess `origin`-remote när du registrerar det. Du väljer aldrig någon själv, och det finns ingen inställning per arbetsyta som kan bli fel.
 
-## Connect a forge
+## Anslut en kodvärd
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
-2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
-3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+1. Öppna **Inställningar → Arbetsyta → Profil och identitet** (`/settings/workspace/profile`).
+2. Hitta kortet **Kodvärd**. Varje kodvärd som stöds listas, ansluten eller inte.
+3. Tryck **Logga in med …** om raden erbjuder det, eller **Lägg till token** och klistra in en.
 
-**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/sv-SE/handbok/how-to-guider/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+**Logga in** visas för en kodvärd som din server har en registrerad app för — i dag gäller det GitHub, via ett enhetsflöde (se [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)). Allt annat är en inklistrad token, vilket är den ärliga lösningen i stället för en knapp som inte går att slutföra.
 
-Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+Hur som helst är inloggningsuppgiften **din och ligger på servern**, knuten till ditt användar-id: ingen token lagras på maskinen du skrev in den på, varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den. Den börjar gälla vid **nästa begäran** — det finns inget att starta om, och kopplar du från slutar den skickas omedelbart.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+Varje rad berättar varifrån dess inloggningsuppgift kommer, för det är skillnaden mellan ”min token fungerar inte” och ”en annan token svarar”:
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
-| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
-| `Not connected`                  | You have no credential for this forge                               |
+| Undertext                                     | Betydelse                                                             |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| `Inloggad som octocat`                        | Din egen inloggningsuppgift används                                   |
+| `Inloggad som octocat · via den här serverns app` | Serverns appidentitet svarar — du är inte inloggad                 |
+| `Inloggad som octocat · från miljön`          | En miljövariabel på servern svarar, inte din inloggningsuppgift       |
+| `Inte ansluten`                               | Du har ingen inloggningsuppgift för den här kodvärden                 |
 
-### What token each forge wants
+### Vilken token varje kodvärd vill ha
 
-| Forge         | Token                                                     | Where to create it                                        |
+| Kodvärd       | Token                                                     | Var du skapar den                                         |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
-| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+| **GitHub**    | Classic: `repo` och `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
+| **GitLab**    | En personlig åtkomsttoken med `api`                       | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | En Atlassian-API-token plus din kontos e-postadress       | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket autentiserar med din **kontos e-postadress som användarnamn** och token som lösenord. Ange `BITBUCKET_EMAIL` i serverns miljö så att den vet vilken e-postadress som ska paras ihop med token.
 
-### Or use the environment
+### Eller använd miljön
 
-For a headless or CI install, the server reads these:
+Vid en headless- eller CI-installation läser servern dessa:
 
-- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
-- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitHub** — `GITHUB_TOKEN`, sedan `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, sedan `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, sedan `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
 
-These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+Det här är **serverns** inloggningsuppgift, inte din, och skillnaden är avgörande: en begäran som görs för din räkning använder din inloggningsuppgift och inget annat, så miljön kliver aldrig tyst in i ditt ställe. Arbete utan en människa bakom sig — webhooks, PR-pollning, ärendesynk — löser först serverns appidentitet, sedan serverägarens inloggningsuppgift och sist miljön. Ordningen är fast, så att ”jag loggade in och inget ändrades” aldrig är ett resultat som stöds.
 
-## You are a different person on each forge
+## Du är en annan person på varje kodvärd
 
-The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+Samma människa är `octocat` på GitHub och något helt annat på GitLab. Control Center löser din identitet **per kodvärd** och använder rätt identitet för varje repo, och det är vad som gör ”behöver min granskning”, ”skapad av mig” och ”du godkände det här” korrekt i en blandad arbetsyta.
 
-If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+Om en kodvärds identitet inte har lösts upp bidrar dess repos inte med något till inkorgen i stället för att matcha allt. Inkorgen säger det i stället för att påstå att du är ikapp.
 
-## One inbox, every forge
+## En inkorg, alla kodvärdar
 
-The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+Inkorgen och PR-kön frågar ut varje kodvärd som finns i arbetsytan och slår samman resultaten till en enda ström — en pull request från GitHub och en från Bitbucket ligger sida vid sida, sorterade efter tid i stället för grupperade efter leverantör.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Fel isoleras. En kodvärd som ligger nere, har nått sin hastighetsgräns eller inte är ansluten bidrar inte med något och lämnar de andra orörda; den tömmer aldrig hela inkorgen. Dess egna repos fortsätter visa sitt senast kända tillstånd tills den är tillbaka.
 
-## What each forge can do
+## Vad varje kodvärd kan göra
 
-Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+Varje kodvärd stöder kärnloopen: lista och öppna pull requests, läsa diffs, kommentera inline och på översta nivån, granska, slå ihop och stänga. Utöver det skiljer de sig verkligen åt, och Control Center döljer det en kodvärd inte kan i stället för att visa en kontroll som misslyckas tyst.
 
-| Capability                        | GitHub | GitLab | Bitbucket |
-| --------------------------------- | :----: | :----: | :-------: |
-| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
-| Request changes                   |   ✓    |   ✓    |     ✓     |
-| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
-| Emoji reactions                   |   ✓    |   ✓    |     —     |
-| Team / group reviewers            |   ✓    |   ✓    |     —     |
-| Suggested reviewers               |   ✓    |   —    |     ✓     |
-| CI results on a PR                |   ✓    |   ✓    |     ✓     |
-| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
-| Stacked pull requests             |   ✓    |   —    |     —     |
-| PR description templates          |   ✓    |   ✓    |     —     |
-| Notification polling              |   ✓    |   —    |     —     |
-| Rich user profiles                |   ✓    |   ✓    |     —     |
-| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+| Förmåga                            | GitHub | GitLab | Bitbucket |
+| ---------------------------------- | :----: | :----: | :-------: |
+| Batchade (väntande) granskningar   |   ✓    |   ✓    |     —     |
+| Begär ändringar                    |   ✓    |   ✓    |     ✓     |
+| ”Visad”-status per fil, synkroniserad |   ✓    |   —    |     —     |
+| Emoji-reaktioner                   |   ✓    |   ✓    |     —     |
+| Team-/gruppgranskare               |   ✓    |   ✓    |     —     |
+| Föreslagna granskare               |   ✓    |   —    |     ✓     |
+| CI-resultat på en PR               |   ✓    |   ✓    |     ✓     |
+| Steg och loggar för ett CI-jobb    |   ✓    |   ✓    |     —     |
+| Staplade pull requests             |   ✓    |   —    |     —     |
+| Mallar för PR-beskrivning          |   ✓    |   ✓    |     —     |
+| Pollning av aviseringar            |   ✓    |   —    |     —     |
+| Utökade användarprofiler           |   ✓    |   ✓    |     —     |
+| PR-head-ref på serversidan         |   ✓    |   ✓    |     —     |
 
-Where a capability is missing the feature degrades honestly:
+Där en förmåga saknas degraderar funktionen ärligt:
 
-- **Viewed state** still works, but only on the device you set it on.
-- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
-- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+- **”Visad”-status** fungerar fortfarande, men bara på den enhet du ställde in den på.
+- **Batchade granskningar** på Bitbucket publiceras kommentar för kommentar, så granskare ser dem komma in en och en i stället för alla på en gång.
+- **Ingen PR-head-ref** på Bitbucket innebär att en utcheckning av en pull request hämtar dess källgren via namn, vilket misslyckas så snart grenen har tagits bort.
 
-## Vocabulary
+## Terminologi
 
-GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+GitLab kallar en pull request för en **merge request**. Control Center säger ”pull request” i hela sin egen modell och använder varje kodvärds eget ord när den talar om just den kodvärden.
 
-## Troubleshooting
+## Felsökning
 
-### The PR list is empty and says a forge is not connected
+### PR-listan är tom och säger att en kodvärd inte är ansluten
 
-You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+Du har ingen inloggningsuppgift för den kodvärden. Logga in eller klistra in en token under **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**. Andra kodvärdars repos påverkas inte.
 
-### I connected a forge but its repos still show nothing
+### Jag anslöt en kodvärd men dess repos visar fortfarande inget
 
-Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+Kontrollera radens undertext. Om det står ”via den här serverns app” eller ”från miljön” svarar en annan inloggningsuppgift än den du förväntade dig — din egen inloggningsuppgift vinner för allt du begär, så står det något annat sparades inte din.
 
-### A repo will not register
+### Ett repo går inte att registrera
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+Registreringen kräver alla tre: sökvägen ligger i ett git-arbetsträd, den har en `origin`-remote, och den remoten pekar på github.com, gitlab.com eller bitbucket.org. Se [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
 
-### Everything stops working for a while after heavy use
+### Allt slutar fungera en stund efter hård användning
 
-That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+Det är brytaren för hastighetsgränsen. När en kodvärd signalerar sin primära gräns låter klienten ytterligare begäranden misslyckas lokalt, utan nätverksanrop, tills fönstret har passerat — så en storm av återförsök kan inte fördjupa gränsen. Tillfälliga fel görs om med exponentiell backoff.
 
-## Related guides
+## Relaterade guider
 
-- [Add repos to a workspace](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
-- [Set up GitHub integration](/sv-SE/handbok/how-to-guider/github-integration/)
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Triage the inbox](/sv-SE/handbok/how-to-guider/triagea-inkorg/)
+- [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/)
+- [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Triagea din inkorg](/sv-SE/handbok/how-to-guider/triagea-inkorg/)

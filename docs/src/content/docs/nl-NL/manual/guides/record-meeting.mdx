@@ -1,118 +1,127 @@
 ---
-title: Record and summarize a meeting
-description: Record a call, get a transcript and turn it into notes, action items and decisions.
+title: Een vergadering opnemen en samenvatten
+description: Neem een gesprek op, krijg een transcript en zet het om in notities, actiepunten en beslissingen.
 slug: nl-NL/handleiding/gidsen/vergadering-opnemen
+sourceHash: dc56291bdeef589236a4b210170956e66b4f3f71
 ---
 
-This guide shows you how to record a meeting and get an AI-generated writeup.
-See [Meetings and transcription](/nl-NL/handleiding/concepten/vergaderingen/) for how it works.
+Deze gids laat zien hoe je een vergadering opneemt en een door AI gegenereerd
+verslag krijgt. Zie [Vergaderingen en transcriptie](/nl-NL/handleiding/concepten/vergaderingen/) voor hoe het werkt.
 
-## Before you start
+## Voordat je begint
 
-- **Wait for the speech model, then restart the server.** A normal boot
-  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
-  default, about 600 MB) in the background. The server resolves the model
-  **once at boot**, so the first run still has no recording ops until you
-  restart. Without a model on disk, recording fails with `Could not start
-  recording on the host: …`. To pick a different build, go to **Settings →
-  Server → Voice & meeting models** — that also needs a restart.
-- Grant **microphone** permission when your OS asks on the first record.
-- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
-- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+- **Wacht op het spraakmodel en herstart daarna de server.** Een normale boot
+  force-installeert het geselecteerde ASR-model (Parakeet TDT 0.6B v3, de
+  meertalige standaard, ongeveer 600 MB) op de achtergrond. De server bepaalt het
+  model **één keer bij de boot**, dus de eerste run heeft nog geen
+  opnamebewerkingen tot je opnieuw start. Zonder model op schijf mislukt de
+  opname met `Could not start recording on the host: …`. Wil je een andere build
+  kiezen, ga dan naar **Instellingen → Server → Spraak- en vergadermodellen** —
+  dat vereist ook een herstart.
+- Geef toestemming voor de **microfoon** wanneer je besturingssysteem daar bij de eerste opname om vraagt.
+- Op **macOS 14.4+** wordt systeemaudio vastgelegd met Core Audio-proces-taps — geen driver om te installeren, maar het besturingssysteem vraagt een tweede keer om toestemming voor het _vastleggen van audio_. Dat is niet Schermopname en het laat nooit het indicatorlampje voor schermopname branden. Weiger je het, dan mislukt de start met `System-audio capture permission denied.` Onder macOS 14.4 is er geen systeemaudiovastlegging.
+- Op **Linux** moeten `parecord` (pulseaudio-utils) of `pw-record` (pipewire) op het `PATH` staan — de opname start een van beide tegen een PipeWire-/PulseAudio-monitorbron. Zonder een van beide mislukt de start met `No system-audio capture tool found`.
 
-:::caution[Where your meeting audio goes]
-Capture, transcription, echo cancellation and speaker diarization all run
-on-device, with no cloud call — but "device" means the **cc_server host**, which
-is a different machine when you run the server remotely. And the final writeup is
-an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
-and your rough notes to whatever model provider that agent uses. Point that agent
-at a local provider if the transcript must not leave the machine.
+:::caution[Waar je vergaderaudio naartoe gaat]
+Het vastleggen, transcriberen, echo-onderdrukken en sprekersscheiden gebeurt
+allemaal op het apparaat zelf, zonder cloudaanroep — maar “apparaat” betekent de
+**cc_server-host**, en dat is een andere machine wanneer je de server op afstand
+draait. En het uiteindelijke verslag is een gewone agentrun: de pipeline
+`meeting_summary` stuurt het volledige transcript en je ruwe notities naar welke
+modelaanbieder die agent ook gebruikt. Wijs die agent naar een lokale aanbieder
+als het transcript de machine niet mag verlaten.
 
-The recording screen states this while you record, so the decision is in front of
-you before there is a transcript to send.
+Het opnamescherm vermeldt dit terwijl je opneemt, zodat de beslissing voor je
+ligt voordat er een transcript te versturen valt.
 :::
 
-## Start a recording
+## Een opname starten
 
-1. Open **Meetings** in the sidebar.
-2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+1. Open **Vergaderingen** in de zijbalk.
+2. Klik op **Vergadering opnemen**. De live-opname-HUD opent op `/meetings/record`.
 
-Recording starts immediately and captures your microphone plus the system output
-audio — the other participants. There is no mode prompt and no audio-source
-picker: the in-person single-mic mode exists in the API but has no UI today.
+De opname start onmiddellijk en legt je microfoon vast plus de
+systeemuitvoeraudio — de andere deelnemers. Er is geen modusvraag en geen
+audiobronkiezer: de modus voor een fysieke vergadering met één microfoon bestaat
+in de API, maar heeft vandaag geen UI.
 
-In the browser, the same flow works, with one difference: the "system audio" is a
-screenshare that must include an audio track. Share a browser tab (or your whole
-screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
-and Firefox and full-screen sharing on macOS, often cannot supply one.
+In de browser werkt dezelfde flow, met één verschil: de “systeemaudio” is een
+schermdeling die een audiotrack moet bevatten. Deel een browsertabblad (of je
+hele scherm) en schakel “Share tab audio” / “Share system audio” in de kiezer
+in. Safari en Firefox en schermdeling op volledig scherm in macOS kunnen er
+vaak geen leveren.
 
-The HUD shows a level meter, the elapsed time and a live transcript building up
-on one side.
+De HUD toont een niveaumeter, de verstreken tijd en een live transcript dat zich
+aan één kant opbouwt.
 
-## During the meeting
+## Tijdens de vergadering
 
-- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
-- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
-- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
-- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+- **Maak ruwe notities** in het notitiepaneel. Ze worden opgeslagen terwijl je typt en later aan de samenvattingsagent gegeven, dus noteer alles wat het transcript zou kunnen missen.
+- **Kies het notitiesjabloon** in de rij **Actief sjabloon**. Het bepaalt de vorm van de samenvatting van deze vergadering en wordt samen met de opname vastgelegd, dus een latere herrun reproduceert het sjabloon dat je hier hebt gekozen.
+- **Pauzeer en hervat** met de pauzebediening. Tijdens een pauze stopt de transcriptie en bevriest de timer.
+- Het transcript komt binnen met sprekerlabels: jouw woorden als **Jij**, iedereen in het gesprek als **Anderen** — tot de sprekersscheiding Anderen opsplitst in `Person 1`, `Person 2`, … die je kunt hernoemen.
 
-:::note[A very quiet speaker may not be transcribed]
-Transcription skips any audio window that never rose above a silence threshold,
-without decoding it at all. That keeps a quiet channel from burning CPU on
-hallucinated non-speech tokens, but it also means a faint or distant speaker can
-produce no transcript. Check the level meter early rather than at the end.
+:::note[Een zeer stille spreker wordt mogelijk niet getranscribeerd]
+De transcriptie slaat elk audiovenster over dat nooit boven een stiltedrempel
+uitkwam, zonder het überhaupt te decoderen. Dat voorkomt dat een stil kanaal
+CPU verbrandt aan gehallucineerde non-speech-tokens, maar het betekent ook dat
+een zwakke of verre spreker geen transcript kan opleveren. Controleer de
+niveaumeter vroeg in plaats van aan het einde.
 :::
 
-## Stop and summarize
+## Stoppen en samenvatten
 
-1. Click **Stop & summarize**.
-2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
-3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+1. Klik op **Stoppen en samenvatten**.
+2. Control Center brengt je rechtstreeks naar de detailweergave van de vergadering, gemarkeerd als **Verwerken**: de sprekersscheiding splitst het externe kanaal op in afzonderlijke sprekers en de pipeline `meeting_summary` genereert het verslag.
+3. De vergadering springt op **Klaar** zodra die pipeline klaar is. Je hoeft er niet op te wachten — de detailweergave werkt zichzelf bij.
 
-## Review the writeup
+## Het verslag bekijken
 
-The meeting detail (`/meetings/:meetingId`) has four tabs:
+De vergaderdetails (`/meetings/:meetingId`) hebben vier tabbladen:
 
-| Tab              | What's there                                                                    |
+| Tabblad         | Wat er staat                                                                    |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
-| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
-| **Action items** | Extracted to-dos, each with an optional owner                                   |
-| **Decisions**    | Decisions captured during the call                                              |
+| **Notities**     | De AI-samenvatting en verrijkte notities, opgebouwd uit je ruwe notities + het transcript |
+| **Transcript**   | Het volledige transcript met sprekerlabels en tijdstempels                      |
+| **Actiepunten**  | Geëxtraheerde to-do's, elk met een optionele eigenaar                           |
+| **Beslissingen** | Beslissingen die tijdens het gesprek zijn vastgelegd                            |
 
-From here you can:
+Vanaf hier kun je:
 
-- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
-- **Check off action items** as you complete them.
-- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/nl-NL/handleiding/gidsen/tickets-delegeren/)).
-- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded. Pick the active template at **Settings → Workspace → Meetings**.
+- **Sprekers hernoemen**: verander `Person 1` in een echte naam; dat geldt voor het hele transcript.
+- **Actiepunten afvinken** terwijl je ze afrondt.
+- **Ticket aanmaken** vanuit een actiepunt: hiermee maak je een nieuw, niet-toegewezen ticket aan met het actiepunt als titel, en dat wordt teruggekoppeld aan de rij. Wijs het toe aan een agent vanuit het ticket zelf (zie [Werk delegeren aan agenten](/nl-NL/handleiding/gidsen/tickets-delegeren/)).
+- **Samenvatting opnieuw maken** voor een nieuwe ronde (bijvoorbeeld na het hernoemen van sprekers). Hierbij wordt het sjabloon hergebruikt dat is vastgelegd toen de vergadering werd opgenomen. Kies het actieve sjabloon bij **Instellingen → Werkruimte → Vergaderingen**.
 
-Editing notes, the title, action items and decisions works everywhere.
-**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
-the browser both buttons do nothing.
+Notities, de titel, actiepunten en beslissingen bewerken werkt overal.
+**Samenvatting opnieuw maken** en het annuleren van een vergadering die wordt
+verwerkt zijn **alleen op de desktop beschikbaar** — in de browser doen beide
+knoppen niets.
 
-## Record straight from a calendar event
+## Rechtstreeks opnemen vanuit een agenda-afspraak
 
-If you've [connected a calendar](/nl-NL/handleiding/gidsen/agenda-verbinden/), you can skip
-the manual start. This is **desktop-only**; the web client refuses it.
+Als je [een agenda hebt verbonden](/nl-NL/handleiding/gidsen/agenda-verbinden/), kun je
+de handmatige start overslaan. Dit is **alleen op de desktop beschikbaar**; de
+webclient weigert het.
 
-1. Open the event from **Calendar**.
-2. Click **Start recording & link**.
+1. Open de afspraak vanuit **Agenda**.
+2. Klik op **Opnemen en koppelen**.
 
-The recording is seeded with the event's title and linked back to it, so the
-notes and the calendar entry stay connected.
+De opname wordt gevuld met de titel van de afspraak en eraan teruggekoppeld,
+zodat de notities en de agenda-afspraak met elkaar verbonden blijven.
 
-:::note[Deleting a meeting does not delete its audio]
-Deleting a meeting removes its rows, but the recorded WAV files under
-`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
-size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::note[Een vergadering verwijderen verwijdert de audio niet]
+Het verwijderen van een vergadering haalt de rijen weg, maar de opgenomen
+WAV-bestanden onder `<dataDir>/meetings/<meetingId>/` blijven op schijf staan —
+er is geen retentiebeleid, groottelimiet of opruimsweep. Verwijder die map zelf
+als de audio belangrijk is.
 :::
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Connect a Google Calendar](/nl-NL/handleiding/gidsen/agenda-verbinden/)
-- [Delegate work to agents](/nl-NL/handleiding/gidsen/tickets-delegeren/)
+- [Een Google Calendar verbinden](/nl-NL/handleiding/gidsen/agenda-verbinden/)
+- [Werk delegeren aan agenten](/nl-NL/handleiding/gidsen/tickets-delegeren/)
 
-## Related concepts
+## Gerelateerde concepten
 
-- [Meetings and transcription](/nl-NL/handleiding/concepten/vergaderingen/)
+- [Vergaderingen en transcriptie](/nl-NL/handleiding/concepten/vergaderingen/)

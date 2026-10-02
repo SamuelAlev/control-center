@@ -1,109 +1,112 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Під’єднатися до віддаленого сервера
+description: Спрямуйте настільний застосунок або вебклієнт на cc_server, що працює деінде, і перемикайтеся між серверами без перезапуску.
 slug: uk-UA/керівництво/практичні-посібники/підключитися-до-віддаленого-сервера
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Кожен клієнт — це рендерер над `cc_server`, який володіє даними. Настільний
+застосунок може запустити сервер у собі; вебзастосунок на [app.usectrl.dev](https://app.usectrl.dev)
+не може, бо вкладка браузера не здатна розмістити сервер. Так чи інакше, цей
+посібник спрямовує клієнт на сервер, що працює деінде — невелика машинка,
+хмарна VM, збірковий сервер.
 
-## Prerequisites
+## Передумови
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- Працюючий `cc_server`. Якщо його немає, дивіться [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/).
+- Або три значення спарювання, які видав сервер — **URL сервера** (`ws://…/rpc` або `wss://…/rpc`), **ідентифікатор пристрою** та **ключ спарювання** — **або** одноразовий **код запрошення** від адміністратора робочого простору. Активація запрошення створює вашого користувача, фіксує ваше членство й видає облікові дані цього клієнта, тож вам ніколи не доведеться мати справу з ідентифікатором пристрою чи ключем.
 
-### Make sure the server is reachable
+### Переконайтеся, що сервер доступний
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Локальному серверу нічого не потрібно: `ws://localhost:9030/rpc` працює і з
+настільного застосунку, і з браузера, бо браузери вважають loopback довіреним
+джерелом.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Сервер на іншій машині — інша річ. `app.usectrl.dev` обслуговується через HTTPS,
+тож браузер відкриє сокет `wss://` лише із сертифікатом, якому вже довіряє, — а
+`cc_server` узагалі відмовляється прив’язуватися до не-loopback адреси без TLS.
+Дайте йому щось одне з цього:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- сертифікат напряму, за допомогою `--tls-cert` і `--tls-key`
+- зворотний проксі, що завершує TLS, попереду, а сервер запущено з `--insecure` (відкритий текст за проксі, лише в довіреній мережі)
+- тунель або VPN, який надає сертифікат — Tailscale, cloudflared чи подібний. У **Налаштування → Сервер → Підключення та стан** є вбудована опція тунелю в розділі **Надати доступ до цього сервера**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Два параметри на боці сервера легко пропустити. За проксі, NAT або тунелем
+задайте `--public-url` як адресу, до якої клієнти насправді мають підключатися — він
+типово дорівнює локальній прив’язці, тож без нього клієнти звертаються не до того
+хоста. А якщо ви розміщуєте власну копію вебзбірки, додайте її origin до
+`--allowed-origins`, який типово дозволяє лише `https://app.usectrl.dev`; loopback
+і нативні клієнти дозволені завжди.
 
-## Connect the desktop app
+## Під’єднайте настільний застосунок
 
-On a fresh install:
+У разі свіжого встановлення:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Запустіть Control Center. Екран першого запуску запитує **Як має працювати Control Center?**
+2. Замість **Запустити в цій програмі** заповніть поля підключення: URL сервера та або код запрошення, або ідентифікатор пристрою з ключем спарювання.
+3. Натисніть **Підключитись**. Control Center звертається до сервера й відкриває вхідні робочого простору.
 
-On a desktop that already runs its own server:
+На настільному застосунку, який уже запускає власний сервер:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Відкрийте **Налаштування → Сервер → Підключення та стан**.
+2. Натисніть **Додати сервер**. Введіть URL сервера (`wss://host:9030/rpc`) та або код запрошення, або ідентифікатор пристрою з ключем спарювання. Кнопка-суфікс у полі URL знаходить екземпляри `cc_server` у вашій локальній мережі чи tailnet.
+3. Натисніть **Підключитись**, а потім **Перемкнути** у рядку нового сервера.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Перемикання відбувається наживо: застосунок на місці перебудовується навколо нової
+сесії, без перезапуску. Якщо підключення не вдалося, ви залишаєтеся на поточному
+сервері й бачите помилку. У рядку сервера, на якому ви перебуваєте, немає дії
+**Перемкнути**; локальний сервер — перший рядок, позначений **Запускати в цьому застосунку**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Після перемикання настільний застосунок не володіє жодною базою даних. Кожен екран
+читає й записує через віддалений сервер по WebSocket.
 
-## Connect the web client
+## Під’єднайте вебклієнт
 
-The web build is always remote.
+Вебзбірка завжди віддалена.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Відкрийте [app.usectrl.dev](https://app.usectrl.dev) або власну копію вебзбірки.
+2. Введіть URL сервера та або код запрошення, або ідентифікатор пристрою з ключем спарювання.
+3. Клієнт звертається до сервера й відтворює той самий інтерфейс, що й настільний застосунок.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Якщо в URL є глибоке посилання для спарювання, поля вже заповнені. Ключ спарювання
+передається у **фрагменті** URL, який браузери ніколи не надсилають серверу, що
+обслуговує сторінку, тож статичний хостинг його не бачить.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Медіа та безпека]
+Медіа (аватари, зображення стрічки, скриншоти PR) проходить через підключений
+сервер, тож браузер ніколи не звертається до вихідного хоста напряму.
+Content-Security Policy для кожного запиту, сформована з нечутливого cookie,
+дозволяє лише origin підключеного сервера.
 :::
 
-### What the browser does not do
+### Чого браузер не робить
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Вебклієнт читає й записує той самий сервер, що й настільний застосунок, але деякі
+поверхні потребують нативного вікна або власних пристроїв машини:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- немає системних спливаючих сповіщень, звуків сповіщень чи фонової стрічки банерів (центр сповіщень у застосунку все одно працює)
+- немає пошуку серверів у локальній мережі чи tailnet у діалозі **Додати сервер**
+- немає вбудованого читача статей — статті стрічки новин відкриваються в новій вкладці
+- не можна перезапустити підсумок зустрічі й не можна скасувати той, що обробляється
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Дві речі поводяться інакше, а не бувають відсутні. **Запис** зустрічі працює в
+браузері, захоплюючи ваш мікрофон і демонстрацію екрана зі звуковою доріжкою.
+**Відкрити в IDE** теж працює, але просить сервер запустити редактор на дисплеї
+_сервера_, тож проти headless-хоста без редакторів ця кнопка ховається.
 
-## Troubleshooting
+## Усунення несправностей
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/).
+- **Час очікування з’єднання вичерпано**: сервер має бути доступним із клієнта. Перевірте прив’язку (`--bind any`), що порт відкритий і що `--public-url` указує на адресу, до якої клієнт справді може підключитися. У відкритому інтернеті TLS обов’язковий — прив’язка до не-loopback адреси у відкритому тексті відхиляється під час запуску, якщо сервер не запущено з `--insecure` за проксі.
+- **Браузер відмовляється підключатися, але нативний клієнт працює**: origin браузера відсутній у списку `--allowed-origins` сервера. Типово дозволено лише `https://app.usectrl.dev` (плюс loopback).
+- **Ключ спарювання відхилено**: повторно виконайте `cc_server pair` на сервері, щоб змінити ключ того пристрою, а потім введіть новий. Відкликаний пристрій виявляє, що його облікові дані зникли, і закривається безпечно; відкликання розриває активну сесію за лічені секунди.
+- **Неправильний робочий простір**: робочий простір є частиною URL (`/workspaces/:workspaceId/…`) і передається з кожним викликом, тож перемикання робочих просторів в одному клієнті змінює лише ваш власний вигляд. Ви можете дістатися лише тих робочих просторів, членом яких є — усе інше відхиляється з повідомленням «Not a member of this workspace». Дивіться [Робочі простори та ізоляція](/uk-UA/керівництво/поняття/робочі-простори/).
 
-## Related guides
+## Пов’язані посібники
 
-- [Run a headless server](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/)
-- [Pair a device](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): the phone relay path
+- [Запустити headless-сервер](/uk-UA/керівництво/практичні-посібники/запустити-headless-сервер/)
+- [Прив’язати пристрій](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): шлях через реле для телефона
 
-## Related concepts
+## Пов’язані поняття
 
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/)
-- [Remote control and mobile](/uk-UA/керівництво/поняття/віддалене-керування/)
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/)
+- [Віддалене керування та мобільний клієнт](/uk-UA/керівництво/поняття/віддалене-керування/)

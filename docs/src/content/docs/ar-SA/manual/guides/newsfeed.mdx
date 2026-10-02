@@ -1,130 +1,134 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: تنظيم موجز الأخبار
+description: أضف موجزات RSS/Atom وأدرها، واقرأ المقالات مع حظر المحتوى، واعلم أن موجزاتك تتبعك في كل مساحة عمل.
 dateModified: 2026-09-19
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/موجز-الأخبار
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+يبيّن هذا الدليل كيف تشكّل موجز الأخبار: المصادر التي يجلب منها، وكيف
+تُقرأ المقالات، وما الذي يفعله حظر المحتوى.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[موجز الأخبار لكل مستخدم، لا لمساحة العمل]
+الموجزات والمقالات تخص المستخدم الذي سجّل دخوله: قائمة موجزاتك وحالة
+القراءة والإشارات المرجعية تتبعك إلى كل مساحة عمل وإلى كل جهاز تسجّل
+الدخول منه، ولا يراها مستخدم آخر. تعيش الموجزات في قاعدة البيانات العامة
+للخادم، لذا يحمل عنوان `/newsfeed` معرّف مساحة عمل فقط لأن كل مسار داخل
+التطبيق يفعل ذلك.
 :::
 
-## Read articles
+## قراءة المقالات
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. انقر **موجز الأخبار** في الشريط الجانبي
+2. بدّل بين **الكل** و**غير المقروءة** و**المحفوظة** بشرائح شريط الأدوات
+3. ضيّق القائمة بمربع البحث أو منتقي المصدر
+4. بدّل بين شبكة المجلّة والقائمة الكثيفة بأزرار التخطيط
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+فتح مقال يعلّمه مقروءًا. استخدم **وضع علامة مقروء على الكل** في ترويسة
+الصفحة — لا يظهر إلا ما دام شيء غير مقروء — لتصفية المتراكم دفعة واحدة،
+وعنصر الإشارة المرجعية على البطاقة لحفظ مقال إلى وقت لاحق.
 
-The layout choice persists across launches.
+يبقى اختيار التخطيط محفوظًا بين مرات التشغيل.
 
-## Add a feed
+## إضافة موجز
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. افتح **الإعدادات ← أنت ← موجز الأخبار** (أيقونة الإعدادات في ترويسة
+   موجز الأخبار تنقلك إلى هناك مباشرة)
+2. اضغط **إضافة موجز**
+3. املأ **الاسم** و**عنوان URL للموجز** (RSS أو Atom)
+4. إن شئت، وسّع **متقدم** واضبط **User-Agent** مخصصًا — بعض الناشرين
+   يقدّمون استجابة مختلفة للعميل الافتراضي
+5. اضغط **إضافة موجز**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+نقطة التحقق: يظهر الموجز في قائمة **الموجزات** وتصل مقالاته بعد الجلب
+الأول. يُرفض عنوان URL المشترك فيه أصلًا بالرسالة «يوجد موجز بعنوان URL
+هذا بالفعل.»
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+يُزرع أربعة عشر موجزًا لكل مستخدم عند أول استخدام: Control Center،
+وThe Verge، وTechCrunch، وHacker News، وByteByteGo، وProduct Hunt،
+وTLDR AI، وImport AI، وThe Pragmatic Engineer، وMartin Fowler،
+وWill Larson's Irrational Exuberance، وThe Engineering Manager،
+وLea Verou، وCSS-Tricks.
 
-## Manage feeds
+## إدارة الموجزات
 
-Each row in the **Feeds** list gives you three controls:
+يمنح كل صف في قائمة **الموجزات** ثلاثة عناصر تحكم:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| عنصر التحكم | الأثر |
+| --- | --- |
+| المفتاح | تعطيل الموجز. الصف المعطّل باهت ولا يُجلب بعد ذلك |
+| أيقونة التحديث | جلب هذا الموجز الآن |
+| أيقونة سلة المهملات | حذف الموجز، بعد تأكيد |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**تحديث الكل** في أعلى القائمة يجلب كل موجز مفعّل.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+يعرض العنوان الفرعي للموجز وصفه والمدة منذ جلبه؛ والموجز الذي فشل
+يعرض الخطأ مكان ذلك، بلون التحذير.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+لا توجد وسيلة تعديل — لتغيير اسم الموجز أو عنوان URL أو User-Agent،
+احذفه ثم أضفه من جديد.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+يجري الجلب كله على الخادم: مرة لكل مستخدم عند الإقلاع (وعند أول استخدام
+للحسابات التي تُنشأ لاحقًا)، ثم كل 30 دقيقة.
 
-## Block ads and trackers in the reader
+## حظر الإعلانات والمتتبعات في القارئ
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. في الإعدادات ← أنت ← موجز الأخبار، ابحث عن **تفضيلات القراءة**
+2. أبقِ **فتح المقالات داخل التطبيق** مفعّلًا لاستخدام القارئ المضمّن، أو
+   أطفئه لتسليم المقالات إلى متصفح النظام
+3. أبقِ **حظر الإعلانات والمتتبعات ولافتات ملفات تعريف الارتباط** مفعّلًا
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+الحظر مفعّل افتراضيًا. القارئ المضمّن على macOS وWindows فقط: في نسخة
+الويب وعلى Linux يكون متصفح النظام _هو_ القارئ، وتُفتح المقالة هناك (في
+لسان جديد على الويب). على الويب يُخفى مفتاح الحظر وبطاقة **قوائم التصفية**
+وبطاقة **المواقع الموثوقة**.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+قارئ التطبيق لا يعيد تنسيق المقالة. يعرض صفحة الناشر في عرض ويب مضمّن،
+ويكبت الإعلانات والمتتبعات ولافتات ملفات تعريف الارتباط بقوائم تصفية
+مخزّنة مؤقتًا.
 
-### Check or update the filter lists
+### التحقق من قوائم التصفية أو تحديثها
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+تعرض بطاقة **قوائم التصفية** عدد قواعد إخفاء ملفات تعريف الارتباط وقواعد
+إخفاء الإعلانات وقواعد حظر الشبكة المحمّلة، ومعلمات التتبع التي تنزعها،
+ووقت آخر تحديث للقوائم. اضغط **التحقق من التحديثات** لتحديثها.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+المصادر هي EasyList، وi-dont-care-about-cookies، وFanboy Cookiemonster،
+وعدة قوائم من uBlock Origin، وقائمة معلمات التتبع في uBO. إلى أن ينجح
+التنزيل، تسمّي البطاقة القوائم إعدادات افتراضية مضمّنة لم تُحدَّث قط —
+تبقى أعداد قواعد الإعلانات وملفات تعريف الارتباط والشبكة عند الصفر، ويظل
+نزع معلمات التتبع يستخدم مجموعة افتراضية مضمّنة.
 
-### Allowlist a site
+### إدراج موقع في قائمة السماح
 
-Some sites break under blocking.
+تتعطل بعض المواقع تحت الحظر.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. في الإعدادات ← أنت ← موجز الأخبار، انتقل إلى **المواقع الموثوقة**
+2. اضغط **إضافة موقع موثوق** وأدخل النطاق
 
-Blocking is skipped there.
+يُتخطى الحظر هناك.
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### A feed I added shows up in another workspace
+### يظهر موجز أضفته في مساحة عمل أخرى
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+هذا متوقع. موجز الأخبار لكل مستخدم لا لكل مساحة عمل — تتبعك موجزاتك
+أينما كنت مسجّل الدخول. انظر التنبيه في أعلى الصفحة.
 
-### A feed row shows an error instead of a description
+### يعرض صف موجز خطأ بدلًا من الوصف
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+فشل آخر جلب، ويعرض الصف السبب حرفيًا. اضغط أيقونة التحديث لإعادة
+المحاولة، وتأكد أن العنوان ما يزال يقدّم RSS أو Atom. الناشر الذي يرفض
+العملاء غير المعروفين قد يحتاج User-Agent مخصصًا، وهذا يعني حذف الموجز
+وإضافته من جديد.
 
-### An article page renders badly
+### تُعرض صفحة مقال بشكل سيئ
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+أطفئ **حظر الإعلانات والمتتبعات ولافتات ملفات تعريف الارتباط** لذلك
+النطاق عبر **المواقع الموثوقة**، أو أطفئ **فتح المقالات داخل التطبيق**
+واقرأها في متصفحك.
 
-## Related guides
+## أدلة ذات صلة
 
-- [Configure notifications](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إشعارات/)
-- [Triage your inbox](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)
+- [تهيئة الإشعارات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إشعارات/)
+- [فرز الوارد](/ar-SA/دليل-المستخدم/أدلة-إرشادية/فرز-الوارد/)

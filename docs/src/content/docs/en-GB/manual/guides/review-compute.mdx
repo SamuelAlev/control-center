@@ -2,10 +2,11 @@
 title: Review compute (cohorts, axes and deterministic diffs)
 description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
 slug: en-GB/manual/guides/review-compute
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
 The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
+then the artefact it published, with the actions on it. One tab with two states,
 because they are the same thing at two times. It is not a default tab: a PR has
 no review until someone asks for one, so **Ask AI** is what opens it.
 
@@ -18,11 +19,11 @@ tab.
 
 On the Review tab:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
+- The consolidating agent publishes an ordinary conversation artefact with
+  `publish_artifact`, so the tab renders it through the same artefact viewer a
+  chat bubble opens — there is no review-shaped copy of the artefact system.
 - Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
+  artefact rather than a dashboard header.
 - A stale banner appears when the PR head moved past the review.
 
 See [Use AI-powered review](/en-GB/manual/guides/ai-review/) for the flow and

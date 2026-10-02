@@ -1,132 +1,147 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Υπολογισμός ελέγχου (κοόρτες, άξονες και ντετερμινιστικά diffs)
+description: Τι παράγει στην πλευρά του διακομιστή το πέρασμα υπολογισμού ελέγχου — κοόρτες, diffs συμβολαίου API και οπτικά diffs, πύλες ανά άξονα — και πώς αυτά ενσωματώνονται στην καρτέλα Ανασκόπηση.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Η καρτέλα **Ανασκόπηση** ενός PR είναι η ζωντανή πρόοδος του pipeline ελέγχου
+όσο αυτό εργάζεται και, μετά, το τεχνούργημα που δημοσίευσε, μαζί με τις ενέργειες
+που φέρει. Μία καρτέλα με δύο καταστάσεις, γιατί είναι το ίδιο πράγμα σε δύο
+χρονικές στιγμές. Δεν είναι προεπιλεγμένη καρτέλα: ένα PR δεν έχει ανασκόπηση
+μέχρι κάποιος να τη ζητήσει, οπότε η **Ερώτηση AI** είναι αυτό που την ανοίγει.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+Πίσω από αυτή την καρτέλα, το `cc_server` χτίζει κοόρτες αρχείων, εκτελεί τους
+ντετερμινιστικούς άξονες και τους σερβίρει μέσω των λειτουργιών RPC
+`review_studio.*` (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`,
+`dependencyDiffs`, `setContractDecision`, `approveVisual`, `compute` και τα δίδυμα
+`watch*` τους). Μια αποθηκευμένη διάταξη που εξακολουθεί να ονομάζει
+`pr.reviewStudio` ανοίγει αυτή την ίδια καρτέλα **Ανασκόπηση**.
 
-On the Review tab:
+Στην καρτέλα **Ανασκόπηση**:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Ο πράκτορας ενοποίησης δημοσιεύει ένα συνηθισμένο τεχνούργημα συνομιλίας με
+  `publish_artifact`, οπότε η καρτέλα το αποδίδει μέσω του ίδιου προβολέα
+  τεχνουργημάτων που ανοίγει μια φυσαλίδα συνομιλίας — δεν υπάρχει αντίγραφο του
+  συστήματος τεχνουργημάτων ειδικά για ανασκοπήσεις.
+- Τα ευρήματα βρίσκονται σε μια πλαϊνή στήλη δίπλα του, και η ετυμηγορία κάθεται
+  σε μια λεπτή μπάρα πάνω από το τεχνούργημα αντί σε κεφαλίδα ταμπλό.
+- Ένα πανό παρωχημένης ανασκόπησης εμφανίζεται όταν το head του PR έχει
+  προχωρήσει πέρα από την ανασκόπηση.
 
-See [Use AI-powered review](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/) for the flow and
-[Review and merge a PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/) for acting on it.
+Δείτε [Χρήση ελέγχου με AI](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/) για τη ροή και
+[Έλεγχος και συγχώνευση PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/) για το πώς να ενεργήσετε με βάση αυτήν.
 
-## Cohorts
+## Κοόρτες
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Οι κοόρτες ομαδοποιούν τα αλλαγμένα αρχεία του PR σε κάδους που προκύπτουν από το
+περιεχόμενο: αρχεία που ανήκουν μαζί κατά τη σημασία τους, καταταγμένα κατά
+επίπτωση ώστε η πιο ριψοκίνδυνη ομάδα να διαβάζεται πρώτη. Υπολογίζονται ξανά σε
+κάθε αλλαγή του head SHA και αντικαθίστανται ολόκληρες· κάθε κοόρτα έχει ένα
+κλειδί σταθερό μεταξύ των push, οπότε μια σύνοψη και η πρόοδος του ελέγχου
+επιβιώνουν από ένα rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Αν το αποθετήριο δεν έχει ευρετήριο κώδικα, οι κοόρτες καταφεύγουν σε ομαδοποίηση
+κατά διαδρομή. Για να ευρετηριάσετε ένα αποθετήριο, χρησιμοποιήστε **Ρυθμίσεις →
+Χώρος εργασίας → Αποθετήρια** — κάθε γραμμή αποθετηρίου φέρει μια ενέργεια
+**Ευρετηρίαση κώδικα** που εκτελεί το pipeline `index_code` και αναφέρει την
+πρόοδο επί τόπου.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+Το γράφημα κώδικα αναλύει μόνο γλώσσες με ενσωματωμένη γραμματική (Dart, JS/TS,
+PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
+MATLAB, Ada). Ένα αποθετήριο σε οποιαδήποτε άλλη γλώσσα δεν μπορεί ποτέ να παράξει
+σημασιολογικές κοόρτες, όσο συχνά κι αν το ευρετηριάσετε.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Ένας πράκτορας μπορεί να καταγράψει μια σύνοψη markdown για μια κοόρτα με το
+`set_cohort_summary` και να επισυνάψει ένα δομημένο διάγραμμα περιήγησης με το
+`add_review_diagram` — ένα τυποποιημένο αντικείμενο ακολουθίας, συσχέτισης
+οντοτήτων ή μηχανής καταστάσεων, ποτέ κείμενο mermaid. Κάθε ακμή διασταυρώνεται με
+το πραγματικό γράφημα κώδικα, και μια ακμή που το γράφημα δεν μπορεί να
+επιβεβαιώσει σημειώνεται ως ανεπιβεβαίωτη αντί να σχεδιαστεί ως γεγονός.
 
-## The API-contract axis
+## Ο άξονας του συμβολαίου API
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Ο άξονας συμβολαίου συγκρίνει με diff μόνο **ρητά** αρχεία προδιαγραφών.
+Αντιστοιχίζει τα έξι προεπιλεγμένα ονόματα — `openapi.yaml`, `openapi.yml`,
+`openapi.json`, `swagger.yaml`, `swagger.yml`, `swagger.json` — καθώς και κάθε
+αλλαγμένο αρχείο του οποίου το όνομα περιέχει `openapi` ή `swagger` και τελειώνει
+σε `.yaml`, `.yml` ή `.json`. Ένα συμβόλαιο που συνάγεται από κώδικα handler είναι
+εκτός πεδίου, και τα σχήματα GraphQL δεν συγκρίνονται με diff.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Κάθε αλλαγή ταξινομείται — προσθήκες, αφαιρέσεις και τροποποιήσεις endpoint,
+παραμέτρου, σχήματος και απόκρισης — και φέρει μια σοβαρότητα: **breaking**
+(αφαιρεμένο endpoint ή παράμετρος, αυστηρότερος τύπος, νέα υποχρεωτική
+παράμετρος), μη breaking (προσθετική) ή ενημερωτική. Μια απορριφθείσα αλλαγή
+αποτυγχάνει την πύλη συμβολαίου, όπως και μια αλλαγή breaking που μένει χωρίς
+απόφαση· μια breaking αλλαγή που εγκρίθηκε προειδοποιεί· αν δεν υπάρχουν breaking
+αλλαγές, περνά. Ένα diff με σήμανση **derived (advisory)** δεν λειτουργεί ποτέ ως
+πύλη.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Η έγκριση ή η απόρριψη μιας αλλαγής γίνεται με το `review_studio.setContractDecision`.
 
-## The visual axis
+## Ο οπτικός άξονας
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Αν το PR αλλάζει στοιχεία UI σε ένα αποθετήριο Flutter με εφαρμογή Widgetbook, το
+πέρασμα υπολογισμού αποδίδει τα αλλαγμένα στοιχεία πριν και μετά μέσω ενός headless
+περάσματος golden με `flutter test` στα worktree base και head του PR και μετά
+συγκρίνει τα pixel.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Αυτό απαιτεί Flutter SDK στον κεντρικό υπολογιστή του διακομιστή]
+Ο διακομιστής σε καθαρό Dart δεν μπορεί να αποδώσει widget Flutter εντός της
+διεργασίας, οπότε καλεί το `flutter test` ως εξωτερική διεργασία. Το SDK πρέπει να
+είναι εγκατεστημένο στη μηχανή που εκτελεί το `cc_server` — όχι στον πελάτη σας.
+Χωρίς αυτό, ο άξονας αναφέρει **unavailable** με αιτία «no Flutter SDK on host».
+Δεν αναφέρει ποτέ ένα πέρασμα που δεν κέρδισε.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Τα στιγμιότυπα με σήμανση **changed** ή **removed** κρατούν την οπτική πύλη μέχρι
+να εγκριθούν· τα στιγμιότυπα **unchanged**, **added** και **approved** την αίρουν.
+Η μη διαθεσιμότητα έχει μία από τέσσερις αιτίες: «no Flutter SDK on host», «no
+Widgetbook app in repo», «no golden-testable use-cases» ή «golden harness error».
 
-Approving an intended change is `review_studio.approveVisual`.
+Η έγκριση μιας σκόπιμης αλλαγής γίνεται με το `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Οι άξονες και η ετυμηγορία
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Άξονας        | Καθοδηγείται από               |
+| ------------- | ------------------------------ |
+| Ορθότητα      | Πράκτορες ελέγχου (token)      |
+| Ασφάλεια      | Πράκτορες ελέγχου (token)      |
+| Χάσμα δοκιμών | Πράκτορες ελέγχου (token)      |
+| Οπτικός       | Ντετερμινιστικός (golden harness) |
+| Συμβόλαιο API | Ντετερμινιστικός (diff προδιαγραφών) |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+Οι τρεις άξονες token καταγράφονται όταν ένας επικεφαλής πράκτορας καλεί το
+`finalize_review`· τους δύο ντετερμινιστικούς άξονες τους καταγράφει το πέρασμα
+υπολογισμού.
 
-Each axis reports one of:
+Κάθε άξονας αναφέρει μία από τις εξής καταστάσεις:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Κατάσταση       | Σημασία                                                 |
+| --------------- | ------------------------------------------------------- |
+| **Pass**        | Εκτελέστηκε, δεν βρέθηκε κάτι που να εμποδίζει          |
+| **Warn**        | Εκτελέστηκε, μη εμποδιστικές επιφυλάξεις                |
+| **Fail**        | Εκτελέστηκε, βρέθηκε εμποδιστικό πρόβλημα               |
+| **Partial**     | Εκτελέστηκε αλλά δεν ολοκληρώθηκε· τα αποτελέσματα είναι ελλιπή |
+| **Unavailable** | Δεν μπόρεσε να εκτελεστεί καθόλου                       |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Μόνο τα **pass** και **warn** αίρουν έναν άξονα με πύλη. Τα **partial** και
+**unavailable** διαφέρουν σκόπιμα από το **fail** και κανένα από τα δύο δεν αίρει
+πύλη.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Οι άξονες ενσωματώνονται στην ετυμηγορία **Ship**, **Hold** ή **Block** και
+μπορούν μόνο να την κάνουν _πιο_ αυστηρή — δεν υποβιβάζεται ποτέ. Ένας άξονας με
+πύλη που **αποτυγχάνει** επιβάλλει **Block**· ένας που είναι **partial** ή
+**unavailable** επιβάλλει τουλάχιστον **Hold**. Έτσι, ένας εμποδιστικός άξονας που
+δεν μπόρεσε να εκτελεστεί _κρατά_ την ετυμηγορία: η απουσία τεκμηρίων δεν κάνει
+ποτέ πράσινη μια πύλη.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Η ετυμηγορία στην καρτέλα **Ανασκόπηση** είναι αυτή που ανάρτησε το
+`finalize_review`.
 
-## Related guides
+## Σχετικοί οδηγοί πρακτικής
 
-- [Use AI-powered review](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/)
-- [Dispatch reviewer agents](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/)
-- [Review and merge a PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
-- [Search code with the code graph](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/)
+- [Χρήση ελέγχου με AI](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-με-ai/)
+- [Αποστολή πρακτόρων ελέγχου](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αποστολή-πρακτόρων-ελέγχου/)
+- [Έλεγχος και συγχώνευση PR](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έλεγχος-και-συγχώνευση-pr/)
+- [Αναζήτηση κώδικα με το γράφημα κώδικα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/αναζήτηση-κώδικα/)

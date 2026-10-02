@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: รีแฟกเตอร์โค้ดเชิงโครงสร้าง
+description: ให้เอเจนต์ค้นหาและเขียนโค้ดใหม่ตามรูปร่างแทนที่จะตามข้อความ และรีวิวการเปลี่ยนแปลงก่อนที่มันจะลงจริง
 slug: th-TH/คู่มือ/วิธีทำ/รีแฟกเตอร์เชิงโครงสร้าง
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+คู่มือนี้แสดงวิธีทำให้เอเจนต์ลงมือเปลี่ยนแปลงแบบกลไกในวงกว้าง — โค้ดมอด การโยกย้าย API แบบยกชุด แพตเทิร์นที่คุณอยากให้หายไป — ด้วยการค้นหาและเขียนใหม่เชิงโครงสร้าง โดยพักการเปลี่ยนแปลงไว้ให้รีวิวก่อนที่อะไรจะถูกเขียนลงไป
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` จับคู่โค้ดตาม**รูปร่าง** `ast_edit` เขียนมันใหม่ `resolve` คอมมิตหรือทิ้ง
 
-## Before you start
+## ก่อนเริ่ม
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+เครื่องมือเชิงโครงสร้างครอบคลุมภาษาที่กราฟโค้ดแยกวิเคราะห์: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB และ Ada เครื่องมือเหล่านี้ต้องมีไวยากรณ์ tree-sitter เตรียมไว้พร้อม ซึ่งในบิลด์ที่จัดส่งมาก็มีเสมอ — ไวยากรณ์ที่หายไปจะทำให้เซิร์ฟเวอร์หยุด ไม่ใช่ทำให้การค้นหาด้อยลง
 
-## Find the shape first
+## หารูปร่างก่อน
 
-Never rewrite something you have not looked at. Ask the agent to search:
+อย่าเขียนอะไรที่คุณยังไม่ได้ดูมันก่อน ขอให้เอเจนต์ค้นหา:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> หาทุกจุดที่เราเรียก `dispose()` บนค่าที่เป็น null ได้ ซึ่งเราเพิ่งตรวจว่าไม่เป็น null
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+ผลลัพธ์คือ `file:line` พร้อมซอร์สที่จับคู่ได้ของแต่ละจุด
 
-### What the pattern syntax buys you
+### สิ่งที่ไวยากรณ์แพตเทิร์นให้คุณ
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| โทเคน     | จับคู่กับ                                          |
+| --------- | ------------------------------------------------- |
+| `$NAME`   | โหนดเดียวใด ๆ และถูกจับเก็บไว้                        |
+| `$$$NAME` | โหนดพี่น้องที่ต่อเนื่องกันชุดใดก็ได้ — อาร์กิวเมนต์ คำสั่ง |
+| `$_`      | อะไรก็ได้ และถูกจับเก็บโดยไม่มีชื่อ                    |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+ข้อที่สำคัญคือ **`$NAME` ที่ซ้ำกันต้องจับข้อความเดียวกัน**
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+หาโค้ดป้องกันที่ dispose สิ่งที่มันเพิ่งตรวจสอบเจอ แต่จะ**ไม่**หา `if (a != null) b.dispose()` เจอ — ซึ่งปกติแล้วคือบั๊กที่คุณกำลังตามหาอยู่พอดี ไม่มีการค้นหาเชิงข้อความใดที่แสดงออกมาแบบนั้นได้
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[มันจับคู่ภายในสตริงหรือคอมเมนต์ไม่ได้]
+แพตเทิร์นถูกแยกวิเคราะห์ด้วยไวยากรณ์เดียวกับไฟล์ ดังนั้น `dispose(x)` ที่เขียนไว้ในคอมเมนต์เอกสารหรือสตริงลิเทอรัลจึงไม่ใช่การเรียก และจะไม่ถูกจับคู่ นั่นคือเหตุผลทั้งหมดที่ต้องเอื้อมไปใช้ตัวนี้แทน `grep`
 :::
 
-### When the pattern finds nothing
+### เมื่อแพตเทิร์นไม่เจออะไรเลย
 
-Two things to try, in order:
+สองอย่างที่ลองได้ เรียงตามลำดับ:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **ทำมันให้เล็กลง** ใช้ `foo($X)` ก่อน `if (a) { foo($X); }` แพตเทิร์นที่ไม่ใช่โค้ดที่ถูกต้องในตัวเองมักไม่ใช่โครงสร้างที่คุณตั้งใจ
+2. **ระบุชื่อภาษา** `language:` จะถูกอนุมานก็ต่อเมื่อ `path` ชี้ไปที่ไฟล์เดียว
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+แพตเทิร์นที่ไม่มีบริบทการแยกวิเคราะห์ใดยอมรับ จะถูกรายงานว่าแยกวิเคราะห์ไม่ได้ — เครื่องมือจะบอกเช่นนั้น แทนที่จะรายงานว่า "ไม่พบรายการที่ตรงกัน" สำหรับสิ่งที่ไม่เคยถูกอ่านในแบบที่มันดูเหมือนเลย
 
-## Rewrite, and look before it lands
+## เขียนใหม่ แล้วดูให้ดีก่อนมันลงจริง
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+ผลลัพธ์คือ**ข้อเสนอ**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+ยังไม่มีอะไรอยู่บนดิสก์ อ่านรายการ ตรวจดูสักสองสามจุดที่การค้นหารายงาน แล้ว:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+หรือ
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[การคอมมิตเป็นแบบทั้งหมดหรือไม่เอาเลย]
+ทุกไฟล์จะถูกตรวจเทียบกับเนื้อหาที่บันทึกไว้ตอนพักการเปลี่ยนแปลง หากไฟล์ใดไฟล์หนึ่งในนั้นขยับ — เอเจนต์แก้ด้วยมือ ฟอร์แมตเตอร์รัน หรือรอบวินิจฉัยเขียนมันใหม่ — การเปลี่ยนแปลง**ทั้งหมด**จะถูกปฏิเสธและทิ้งไป การเขียนใหม่เชิงโครงสร้างที่ลงไปเพียงบางส่วนจะทิ้งทรีที่คอมไพล์ไม่ผ่านทั้งรูปร่างเดิมและรูปร่างใหม่
 
-Re-run the tool against the current files; do not retry the stale id.
+รันเครื่องมือซ้ำกับไฟล์ปัจจุบัน อย่าลองใช้ id ที่ล้าสมัยซ้ำ
 :::
 
-## Check your work with the compiler
+## ตรวจงานของคุณด้วยคอมไพเลอร์
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+ประเด็นของการทำแบบเชิงโครงสร้างคือมันกว้าง และการเปลี่ยนแปลงที่กว้างก็คือจุดที่การเขียนใหม่ที่ดูสมเหตุสมผลทำไทป์พังพอดี ขอผลวินิจฉัยหลัง resolve:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` รันตัวตรวจสอบของโปรเจกต์เอง (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) แทนที่จะเป็นการค้นต่อไฟล์ — เป็นรูปคำถามที่ถูกต้องหลังการเปลี่ยนแปลงที่แตะไปสี่สิบไฟล์
 
-## Worked example: migrating a call
+## ตัวอย่างลงมือทำ: การย้ายการเรียก
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+สมมติว่า `log(msg, level)` กำลังกลายเป็น `log(level: level, message: msg)`
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+ดูผลที่เจอ ถ้าบางอันเป็น `log` แบบสองอาร์กิวเมนต์ที่*ต่างกัน* ให้ทำให้แพตเทิร์นแคบลงโดยจำกัด `path` ไว้ที่ไดเรกทอรีที่เป็นเจ้าของตัวที่คุณหมายถึง แทนที่จะพยายามอธิบายความต่างนั้นในแพตเทิร์น
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+จากนั้น `resolve` แล้วต่อด้วย `lsp(action: "diagnostics", file: "*")`
 
-## When to use something else
+## เมื่อใดควรใช้เครื่องมืออื่น
 
-| Situation                                 | Better tool                          |
-| ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| สถานการณ์                            | เครื่องมือที่เหมาะกว่า                              |
+| ------------------------------------ | ------------------------------------------------- |
+| การเปลี่ยนชื่อสัญลักษณ์                 | `lsp_rename` — มันตามการอ้างอิง ไม่ใช่รูปร่าง           |
+| การหาสตริง คอมเมนต์ หรือชื่อไฟล์          | `search` (เนื้อหา) / `search_files` (ชื่อ)         |
+| "ถ้าฉันเปลี่ยนตรงนี้ อะไรจะพัง"           | [กราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/)            |
+| ภาษาที่ไวยากรณ์ยังไม่ครอบคลุม            | `search` บวกกับ `edit`                             |
 
-## Related
+## ที่เกี่ยวข้อง
 
-- [Code intelligence](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — the full argument list
-- [Search code with the code graph](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) — the symbol and impact side
+- [ความฉลาดของโค้ด](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — ทำไมการจับคู่เชิงโครงสร้างจึงไม่ใช่รีจิกซ์ที่เพิ่มขั้นตอนเข้ามา
+- [เครื่องมือเอเจนต์ในตัว](/th-TH/คู่มือ/อ้างอิง/เครื่องมือเอเจนต์/) — รายการอาร์กิวเมนต์ทั้งหมด
+- [ค้นหาโค้ดด้วยกราฟโค้ด](/th-TH/คู่มือ/วิธีทำ/ค้นหาโค้ด/) — ด้านสัญลักษณ์และผลกระทบ

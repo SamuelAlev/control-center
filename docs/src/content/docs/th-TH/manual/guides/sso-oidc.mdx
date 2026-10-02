@@ -1,95 +1,93 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: เชื่อมต่อผู้ให้บริการ OpenID Connect
+description: เชื่อมต่อผู้ออก OIDC รายใดก็ได้ — Pocket ID, Keycloak, Auth0, Zitadel — เข้ากับการลงชื่อเข้าใช้ของ Control Center
 slug: th-TH/คู่มือ/วิธีทำ/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+ใช้คู่มือนี้เมื่อผู้ให้บริการตัวตนของคุณพูด **OpenID Connect** แทน SAML ผู้ออกที่ผ่านการรับรอง OIDC รายใดก็ใช้ได้ — Pocket ID, Keycloak, Auth0, Zitadel, Google Workspace และรายอื่น ๆ ล้วนทำตามขั้นตอนเดียวกัน ต่างกันแค่จุดที่ผู้ให้บริการของคุณแสดงค่าเหล่านั้น
 
-## Prerequisites
+## สิ่งที่ต้องมีก่อน
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- ผู้ให้บริการ OIDC ที่คุณสร้างไคลเอนต์ได้ — จด **client id** และ **URL ผู้ออก** ของมันไว้
+  (base ที่เอกสาร `.well-known/openid-configuration` อาศัยอยู่) รวมทั้ง
+  **client secret** ของมันเมื่อไคลเอนต์เป็นแบบ confidential
+  (ไคลเอนต์ PKCE สาธารณะไม่มี secret),
+- เซิร์ฟเวอร์ Control Center ที่คุณดูแล (ในฐานะ**เจ้าของเซิร์ฟเวอร์**)
 
-## Steps
+## ขั้นตอน
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. เปิด **การตั้งค่า → เซิร์ฟเวอร์ → ลงชื่อเข้าใช้ครั้งเดียว** แล้วสลับไปที่
+   **OpenID Connect**
+2. กรอก **URL ผู้ออก** และ **Client ID** รวมทั้ง **Client
+   secret (ไม่บังคับ)** เมื่อผู้ให้บริการออกให้ Control Center จะค้นหาเอนด์พอยต์จาก
+   เอกสาร discovery มาตรฐานของผู้ออกเอง — ไม่ต้องตั้งค่าเฉพาะผู้ให้บริการแต่ละราย
+3. ที่ฝั่งผู้ให้บริการ ให้ลงทะเบียน redirect
+   `https://<your-server>/oidc/callback` กับไคลเอนต์นั้น
+4. หากกลุ่มของคุณอยู่ใน claim อื่นที่ไม่ใช่ `groups` ให้ตั้งชื่อ
+   **เคลมกลุ่ม** และแมปกลุ่มเป็นบทบาทได้หากต้องการ (SSO ไม่มีทาง
+   ให้บทบาทเจ้าของได้)
+5. เลือกนโยบายสมาชิก (เพิ่มเข้าทุกเวิร์กสเปซอัตโนมัติ หรือบังคับให้เชิญ
+   เป็นรายเวิร์กสเปซ) เปิด **ใช้ OpenID Connect สำหรับลงชื่อเข้าใช้** แล้ว
+   กด **บันทึกการเชื่อมต่อ**
+6. กด **ทดสอบการเชื่อมต่อ** — เซิร์ฟเวอร์จะดึงเอกสาร discovery
+   ของผู้ออกและยืนยันเอนด์พอยต์ของมัน ดังนั้นทอสต์สีเขียวหมายความว่าทุกอย่าง
+   ยกเว้นการไปกลับผ่านเบราว์เซอร์ทำงานได้ หากต้องการตรวจการลงทะเบียน
+   ไคลเอนต์ด้วย ให้ใช้[ตัวตรวจสอบด้านล่าง](#ตรวจสอบการกำหนดค่าของคุณจากหน้านี้)
+7. ลองลงชื่อเข้าใช้ดู: หน้าจอเชื่อมต่อบนเว็บจะแสดง **ลงชื่อเข้าใช้ด้วย OpenID
+   Connect** หรือเปิด `https://<your-server>/oidc/login` โดยตรง
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claims (อีเมล ชื่อ กลุ่ม) ถูกอ่านจาก token endpoint ของผู้ออกผ่าน
+TLS โดยเซิร์ฟเวอร์ของคุณ — เบราว์เซอร์ไม่เคยเป็นผู้ส่งค่าเหล่านี้ จึงไม่มีการ
+ตรวจสอบลายเซ็น JWT ในเครื่องเข้ามาเกี่ยวข้อง ไคลเอนต์ควรได้รับอนุญาตให้ร้องขอ
+scope `openid profile email` ซึ่งเป็นสิ่งที่ Control Center ขอพอดี
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+เนื่องจากช่องทาง TLS นั้นเป็นสิ่งเดียวที่ยืนยันความถูกต้องของ claims
+URL ผู้ออกจึงต้องเป็น **https** — ผู้ออกที่เป็น plaintext จะเปิดทางให้
+ผู้โจมตีบนเส้นทางปลอมแปลงตัวตนได้ทั้งหมด ระบบยอมรับ `http`
+เฉพาะกับผู้ออกแบบ loopback (`localhost`, `127.0.0.1`, `::1`) เท่านั้น
+สำหรับการพัฒนาภายในเครื่อง
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[ไคลเอนต์สาธารณะหรือไคลเอนต์ confidential?]
+รูปแบบเริ่มต้น — และที่แนะนำ — คือ **ไคลเอนต์สาธารณะ** ที่ใช้
+authorization code flow ร่วมกับ **PKCE** (RFC 7636): code
+verifier แบบใช้ครั้งเดียวที่เซิร์ฟเวอร์ถืออยู่จะทำหน้าที่แทน secret และ
+การแลกเปลี่ยนโทเคนจะผูกกับคำขออนุญาตที่เริ่มกระบวนการนั้น ไม่มี secret
+ให้รั่วไหล และ authorization code ที่ถูกขโมยไปก็ไร้ประโยชน์หากไม่มี
+verifier ผู้ให้บริการบางรายเรียกชนิดไคลเอนต์นี้ว่า “SPA” หรือ “native”
+ตอนที่คุณสร้างมัน
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+หากผู้ให้บริการของคุณออกไคลเอนต์แบบ **confidential** มาแทน ให้ทำเครื่องหมาย
+ไคลเอนต์เป็นสาธารณะที่ฝั่งผู้ให้บริการ (ไม่ว่าทางไหน PKCE ก็ยังทำงานอยู่) หรือ
+วาง client secret ลงในช่อง **Client secret (ไม่บังคับ)** ของการเชื่อมต่อ
+secret ถูกเก็บในไฟล์ secrets สิทธิ์ 0600 ของเซิร์ฟเวอร์ (ไม่ใช่ฐานข้อมูล
+เด็ดขาด) ส่งไปยัง token endpoint เป็น `client_secret_post` และไม่ถูกส่งกลับ
+ผ่าน RPC เลย การเว้นช่องนี้ว่างไว้ตอนบันทึกจะคง secret ที่เก็บไว้เดิม
+เมื่อการลงชื่อเข้าใช้ล้มเหลวที่ขั้นตอนแลกเปลี่ยนโทเคน ล็อกของเซิร์ฟเวอร์
+จะระบุข้อผิดพลาดจากผู้ให้บริการเอง (`invalid_client` เกือบทุกครั้ง
+หมายความว่า secret หายไปหรือไม่ถูกต้อง)
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim).
+:::note[การเข้าถึงได้]
+การลงชื่อเข้าใช้เองดำเนินการผ่านเบราว์เซอร์: ผู้ออกเพียงเปลี่ยนเส้นทาง
+เบราว์เซอร์ของผู้ใช้กลับมาที่ `/oidc/callback` และเซิร์ฟเวอร์ของคุณเรียก
+HTTPS ขาออกไปยัง token endpoint เท่านั้น — ไม่ต้องมีการเชื่อมต่อขาเข้าจาก
+ผู้ออก เซิร์ฟเวอร์ที่อยู่หลัง NAT จึงใช้งานได้ตราบใดที่เบราว์เซอร์ของผู้ใช้เข้าถึง
+มันได้ (LAN, VPN, Tailscale หรือทันเนล) **การจัดสรรผู้ใช้ด้วย SCIM เป็น
+ข้อยกเว้น**: IdP เรียกเซิร์ฟเวอร์ของคุณโดยตรง ซึ่งต้องใช้ทันเนลหรือ
+URL สาธารณะ — ดู[จัดสรรผู้ใช้ด้วย SCIM](/th-TH/คู่มือ/วิธีทำ/sso-scim)
 :::
 
-## Check your configuration from this page
+## ตรวจสอบการกำหนดค่าของคุณจากหน้านี้
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+ตัวตรวจสอบด้านล่างทำงานในเบราว์เซอร์ของคุณ มันดึงเอกสาร discovery
+ของผู้ออกของคุณโดยตรง เว็บไซต์นี้จึงไม่เคยเห็นมัน และนำกฎของเซิร์ฟเวอร์มา
+ปรับใช้: ผู้ออกที่เป็น https ซึ่งตรงกับเอกสาร เอนด์พอยต์บน origin
+ของผู้ออกเอง PKCE S256 และวิธีตรวจสอบสิทธิ์โทเคนที่ชนิดไคลเอนต์ของคุณต้องใช้
+เมื่อมี client ID และที่อยู่เซิร์ฟเวอร์ มันจะเปิดการลงชื่อเข้าใช้ทดสอบที่บอกว่า
+ไคลเอนต์และ redirect URI ของมันลงทะเบียนไว้แล้วหรือไม่ มันไม่เคยขอ
+client secret
 
 <SsoCheck kind="oidc" />

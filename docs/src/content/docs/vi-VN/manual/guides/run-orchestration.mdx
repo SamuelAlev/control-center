@@ -1,126 +1,136 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Chạy một điều phối
+description: Hỏi agent điều phối để lấy một kế hoạch, xem xét và chỉnh sửa nó trong Plan Studio, phê duyệt một lần rồi để một quy trình đã sinh làm nốt công việc.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/) for how it works.
+Hướng dẫn này chỉ cho bạn cách biến một mục tiêu lớn thành một kế hoạch cho cả
+nhóm tự vận hành. Xem [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/) để hiểu
+cách nó hoạt động.
 
-## When to use an orchestration
+## Khi nào nên dùng điều phối
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/); for a process you can spell out by
-hand, build a [pipeline template](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/).
+Hãy dùng điều phối khi yêu cầu lớn hơn một agent và bạn chưa biết chính xác các
+bước. Với một tác vụ đơn lẻ, hãy nhắn cho một agent trong một
+[space](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/); với một quy trình bạn có thể tự
+viết ra bằng tay, hãy dựng một [mẫu quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/).
 
-## Step 1: Ask for the plan
+## Bước 1: Yêu cầu kế hoạch
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Mở (hoặc tạo) một space và một **phiếu neo**. Mọi đề xuất đều cần một phiếu
+   như vậy (`propose_orchestration` nhận `ticket_id`); space dùng chung được lấy
+   từ phiếu đó.
+2. Tùy chọn, chuyển hộp chọn chế độ của trình soạn sang **Điều phối**. Chế độ
+   đó thu hẹp agent vào việc đọc và đề xuất — bộ nhớ, đồ thị mã, việc đọc repo và
+   phiếu, `propose_orchestration` cùng các công cụ playbook — nên nó không thể
+   bắt đầu viết mã thay vì lập kế hoạch.
+3. @-mention agent điều phối của bạn (thường là agent CEO) và nêu mục tiêu bằng
+   ngôn ngữ thường ngày:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Nghiên cứu bối cảnh cạnh tranh cho một ứng dụng ghi cuộc họp ưu tiên
+> ngoại tuyến và viết một tài liệu định vị dài một trang.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Agent điều phối trả lời bằng một thẻ **đề xuất** có cấu trúc trong space: các
+vai trò cần thiết, công việc được chia thành các phiếu con, một giai đoạn nghiên
+cứu và thảo luận tùy chọn, một bước tổng hợp tạo ra kết quả bàn giao và một
+ngân sách.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Vì đề xuất là một đối tượng có kiểu, ứng dụng kiểm tra tính hợp lệ của nó (các
+vai trò đúng dạng, lược đồ đầu ra được khai báo, một DAG không có chu trình)
+trước khi bất cứ thứ gì chạy. Một đề xuất không vượt qua kiểm tra hợp lệ thì
+không thể được phê duyệt.
 
-## Step 2: Review and edit the proposal
+## Bước 2: Xem xét và chỉnh sửa đề xuất
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Thẻ trong cuộc hội thoại đưa ra ba hành động: **Duyệt kế hoạch**, **Từ chối**
+và **Mở** — nút Mở sẽ mở kế hoạch trong Plan Studio dưới dạng một tab trình
+chỉnh sửa. Bản thân thẻ thì không thể chỉnh sửa.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Để thay đổi bất cứ điều gì, hãy nhấn **Mở** và làm việc trong trình kiểm tra
+bên phải:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Tiêu đề**, **mô tả**, **vai trò**, **phụ thuộc** và **lược đồ đầu ra** của
+  bất kỳ bước công việc nào. Vai trò ở đây nghĩa là bước đó thuộc về khóa vai
+  trò nào trong số các khóa vai trò đã có của kế hoạch — bạn không thể ghim một
+  vai trò vào một agent có tên hay sửa danh sách tuyển dụng từ trình kiểm tra,
+  và bạn cũng không thể sửa ngân sách.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Hai thứ ở dạng chỉ đọc: các nút cấu trúc (nghiên cứu, thảo luận, tổng hợp) và
+bất kỳ nút nào có công việc đã chạy. Chỉ có thể chỉnh sửa khi điều phối vẫn
+đang ở trạng thái `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/) for the full editor.
+Nhấn **Ước tính** trên thanh phê duyệt để xem khoảng chi phí, thời lượng và
+phạm vi ảnh hưởng trước khi bạn chốt. Xem
+[Làm việc trong Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/) để biết đầy đủ về trình chỉnh sửa.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/).
+:::note[Ngân sách không phải là giới hạn chi tiêu]
+Ngân sách của một đề xuất được so với _ước tính_ trên thanh phê duyệt: khi mức
+cao nhất của ước tính vượt quá ngân sách, tổng số chuyển đỏ kèm cảnh báo vượt
+ngân sách. Không có gì kiểm tra chi tiêu trong khi kế hoạch thực thi, nên nó sẽ
+không dừng hay làm thất bại một lần chạy. Muốn thực sự dừng chi tiêu, hãy dùng
+chính sách ngân sách theo từng agent — xem
+[Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/).
 :::
 
-## Step 3: Approve
+## Bước 3: Phê duyệt
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Hãy phê duyệt kế hoạch, từ thẻ trong cuộc hội thoại hoặc từ thanh phê duyệt của
+Plan Studio. **Đây là quyết định duy nhất bạn đưa ra.** Việc phê duyệt chỉ dành
+cho người vận hành — không có công cụ MCP nào cho việc đó, nên một agent có thể
+đề xuất và sửa đổi nhưng không bao giờ tự phê duyệt kế hoạch của mình.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/vi-VN/so-tay/khai-niem/quy-trinh/) and creates the
-scaffolding:
+Từ đây, một bộ hiện thực hóa tất định (một hàm thuần túy, không dùng LLM) biến
+đề xuất thành một [quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/) thật và tạo bộ
+khung:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- tuyển bất kỳ vai trò mới nào (và ghi lại id của các agent được tuyển để một sự
+  cố giữa chừng lúc phê duyệt có thể chạy tiếp mà không tuyển trùng)
+- gom các vai trò vào một **nhóm**
+- tạo một **dự án** và xếp phiếu cha vào dự án đó
+- khởi chạy **lần chạy quy trình** điều khiển tất cả
 
-The status moves to `approved`, then `executing`.
+Trạng thái chuyển sang `approved`, rồi `executing`.
 
-## Step 4: Watch it run
+## Bước 4: Theo dõi khi nó chạy
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Các phiếu con thực thi dưới dạng các bước quy trình; nếu bạn đã bật một vòng
+thảo luận, mỗi vai trò đăng quan điểm của mình trước. Tiến độ hiện ra ở những
+nơi bạn vẫn thường xem:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
-- the **project** the parent ticket was filed under
+- **phiếu cha** mà điều phối được neo vào
+- **space** dùng chung nơi nhóm trao đổi, với hàng của kế hoạch theo dõi trạng
+  thái của từng nút
+- chi tiết **lần chạy quy trình**, với biểu đồ thác nước quen thuộc và chi phí
+  theo từng bước — xem
+  [Theo dõi lần chạy quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/)
+- **dự án** mà phiếu cha được xếp vào
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Khi các phiếu con hoàn tất, trạng thái chuyển sang `synthesizing` và bước tổng
+hợp tạo ra kết quả bàn giao. Văn bản đó được đăng trong space dùng chung và
+phiếu cha được đánh dấu hoàn tất, rồi trạng thái chuyển sang `completed`.
 
-## Stop it early
+## Dừng sớm
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Nhấn **Hủy điều phối** trên thẻ trong cuộc hội thoại, hoặc **Hủy lần chạy**
+trên thanh phê duyệt của Plan Studio. Việc hủy sẽ dỡ bỏ công việc đang chạy.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Một điều phối thất bại khi bước hiện thực hóa thất bại, hoặc khi lần chạy quy
+trình đã sinh của nó thất bại (nghiên cứu, thảo luận, tổng hợp hoặc persist —
+những bước này không tiếp tục khi thất bại). Các bước **công việc** đã sinh thì
+luôn tiếp tục khi thất bại, nên một phiếu con thất bại không làm cả lần chạy
+thất bại. Không có nhánh thất bại do vượt ngân sách và không có ngưỡng "mọi
+phiếu con đều thất bại".
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Work in Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/): where the parent ticket is filed
-- [Monitor pipeline runs](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/): the roles an orchestration fills or hires
+- [Làm việc trong Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/): chỉnh sửa, ước tính, xem diff và phê duyệt kế hoạch
+- [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-phieu/): phiếu cha mà một điều phối được neo vào
+- [Tổ chức công việc bằng dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/): nơi phiếu cha được xếp vào
+- [Theo dõi lần chạy quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh/): một điều phối đã được hiện thực hóa trông thế nào trong bộ máy
+- [Xây dựng một nhóm agent](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/): các vai trò mà một điều phối lấp đầy hoặc tuyển mới
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Orchestration](/vi-VN/so-tay/khai-niem/dieu-phoi/)
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
+- [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/)
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)

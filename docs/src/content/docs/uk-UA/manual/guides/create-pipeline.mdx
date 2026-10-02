@@ -1,241 +1,261 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: Створити шаблон конвеєра
+description: Створіть шаблон DAG-робочого процесу в редакторі конвеєрів — додайте вузли, з’єднайте їх, оголосіть входи та зробіть його придатним до запуску.
 slug: uk-UA/керівництво/практичні-посібники/створити-конвеєр
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+Шаблони конвеєрів створюють у налаштуваннях робочого простору. Пункт
+**Конвеєри** на бічній панелі робочого простору — це _черга запусків_, а не
+список шаблонів: у ньому немає дії «створити шаблон».
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/uk-UA/керівництво/довідка/кроки-конвеєра/).
+Що означає кожен тип кроку, ключ тіла та поле конфігурації, дивіться в
+[довідці з кроків конвеєра](/uk-UA/керівництво/довідка/кроки-конвеєра/).
 
-## Create a template
+## Створити шаблон
 
-1. Go to **Settings → Workspace → Pipeline templates**
+1. Перейдіть до **Налаштування → Робочий простір → Шаблони конвеєрів**
    (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+2. Натисніть **Новий шаблон**.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+Діалогу з ідентифікатором немає. Редактор відкривається одразу з підготовленим
+каркасом під назвою **Новий конвеєр** і з автоматично виділеним ідентифікатором
+(`pipeline_1`, далі `pipeline_2`, …). Натисніть заголовок у верхній частині, щоб
+перейменувати його.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+Полотно не порожнє: вузол входу **Trigger**, один вузол промпт-агента з міткою
+**Step** і термінальний сторожовий елемент, який завершує запуск. Сторожовий
+елемент не відображається. Редактор перепідключає цей прихований термінал до
+кожного досяжного стоку, тож робота, приєднана після **Step**, усе одно
+виконується.
 
-## Add nodes
+## Додати вузли
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+Бічна панель **Бібліотека вузлів** постійно розташована ліворуч від редактора.
+Відфільтруйте її полем **Пошук вузлів** і перетягніть елемент на полотно —
+вузол опиниться там, де ви його відпустите, без вхідного з’єднання.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| Вузол палітри                   | Тип кроку | Що робить                                                                              |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen    | Запускає shell-скрипт із підстановкою `{{state}}`; агент не запускається                |
+| **Open conversation**           | listen    | Відкриває єдиний видимий простір запуску та його checkout; вузли агентів приєднуються до цієї кімнати |
+| **Clone PR branch**             | listen    | Визначає головну гілку PR через `gh pr view` і клонує її до каталогу запуску            |
+| **Post PR comment**             | listen    | Публікує зведені знахідки в PR як коментар рев’ю GitHub                                 |
+| **Reviewer (prompt)**           | listen    | Запускає спеціалізованого агента-рев’юера; призупиняється, доки агент не надішле свій результат |
+| **Consolidate (join)**          | join      | Чекає на кілька гілок вище за потоком, потім просить агента звести їхні виводи           |
+| **Custom prompt**               | listen    | Загальний вузол на основі промпту, що працює через тіло `promptAgent`                    |
+| **Post to space**               | listen    | Надсилає повідомлення до простору обміну повідомленнями                                 |
+| **Condition / switch (router)** | router    | Розгалужує потік за значенням стану                                                     |
+| **If file exists (router)**     | router    | Спрямовує `"true"`, якщо шлях існує в клоні, інакше `"false"`                            |
+| **Any file exists (OR router)** | router    | Спрямовує `"true"`, якщо існує будь-який із перелічених шляхів                           |
+| **All conditions (AND router)** | router    | Спрямовує `"true"` лише коли існують усі перелічені шляхи                                |
+| **Team dispatch**               | listen    | Запускає цілу команду й призупиняється до її завершення                                  |
+| **Approval gate**               | listen    | Призупиняється в очікуванні рішення про схвалення                                       |
+| **For each (map)**              | forEach   | Формує промпт для кожного елемента, потім один раз запускає агента з цими промптами, зчепленими разом |
+| **Call sub-pipeline**           | listen    | Виконує інший шаблон як вкладений крок                                                  |
+| **Clean up worktrees**          | listen    | Видаляє застарілі ізольовані worktree; детерміновано, агент не запускається             |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+Бібліотека групує їх у розділи **Потік і логіка**, **Перегляд PR**, **Агенти**,
+**Повідомлення** та **Код**. Групи Demo немає.
 
-## Wire nodes together
+## З’єднати вузли
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+Кожен робочий вузол має на правому краї круглий **порт виводу**. Перетягніть із
+цього порту на інший вузол, щоб з’єднати їх. Стартові тригери влаштовані так
+само: кожен має власний порт, тож з’єднання від **Розклад** не виходить також і
+з **Ручний запуск**. Натисніть **Додати крок** (`+`) одразу після вузла, щоб
+вставити після нього тип. Наведіть курсор на середину наявного ребра й натисніть
+×, щоб роз’єднати.
 
-Connections are also edited from the node that _receives_ them:
+З’єднання також редагують із вузла, який їх _отримує_:
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. Виберіть вузол нижче за потоком. Праворуч відкриється його панель
+   конфігурації.
+2. Прокрутіть до **Triggers from** і торкніться чипа кожного вузла вище за
+   потоком, який цей вузол має слухати. Дотик до вибраного чипа видаляє
+   з’єднання.
+3. Якщо вузол вище за потоком — це маршрутизатор, під чипами з’являється блок
+   **Ключі маршруту** з полем **Ключ маршруту від &lt;node&gt;** для кожного
+   ребра маршрутизатора. Введіть ключ, за яким спрацьовує це ребро — `true` або
+   `false` для маршрутизаторів перевірки наявності файлів, або назву варіанта
+   для перемикача.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+Кожен вузол-тригер є точкою входу. Вузол може слухати кілька вузлів вище за
+потоком (збіжність) і живити кілька вузлів нижче за потоком (розгалуження), а
+граф має залишатися ациклічним — ніщо в редакторі не заважає вам з’єднати цикл,
+тож перевіряйте свою роботу.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+Термінальний сторожовий елемент відфільтровано з полотна, тож його не можна
+вибрати. Редактор перепідключає його до кожного досяжного стоку щоразу, коли
+граф змінюється, тож робота, приєднана після підготовленого **Step**, усе одно
+виконується. Порожній граф (тригер без наступників-робіт) перелічує сам тригер,
+тож запуск завершується негайно.
 
-## Configure a node
+## Налаштувати вузол
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+Виберіть вузол, щоб відкрити його панель конфігурації. Які поля з’являться,
+залежить від тіла вузла.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+Кожен вузол має **Мітку**, **Ключі входу** (ключі стану через кому, які
+читаються під час виконання) і, у розділі **Додатково**, **Редюсер**,
+**Таймаут (мс)**, **Спроби повтору**, **Продовжити, якщо цей крок не вдався** та
+**Схему виводу**. Вузли listen і join також можуть перемикати свій **Тип** між
+цими двома.
 
-### Open conversation
+### Відкрити розмову
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+Додає вибір **області репозиторіїв** (які репозиторії робочого простору
+отримати; порожньо — жодного), поле **Назва простору** та прапорець **Відкрити
+розмову**. Коли цей прапорець увімкнено, поле **Назва розмови** задає стрім, із
+яким відкривається кімната. Вузли агентів приєднуються до цієї кімнати — вони не
+відкривають власної.
 
-### Prompt agent
+### Промпт-агент
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+Додає **Агент** (якого агента запускати), **Промпт** (використовуйте `{{key}}`,
+щоб посилатися на входи або виводи вище за потоком) і **Ключ виходу**.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**Таймаут (мс)** задається в _мілісекундах_, а не в секундах — `900000` — це 15
+хвилин. Якщо ввести `900`, крок отримає 0,9 секунди.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+Режим розмови, у якому працює вузол промпт-агента, не має поля в редакторі на
+вузлі агента. Він передається через `extras['mode']` (`chat`, `plan` або
+`review`) на вузлі **Відкрити розмову**, який створив кімнату (типово `review`).
+Якщо задати його на кроці агента, його проігнорують. Ключ зіставляється точно:
+будь-яке інше написання мовчки ігнорується.
 
-### Bash script
+### Bash-скрипт
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+Додає **Скрипт**. Полів робочого каталогу чи середовища немає, бо ні те, ні те не
+налаштовується:
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- Кожен крок bash у запуску має спільний поточний каталог
+  `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` підставляється зі сховища облікових даних, тож `gh` і
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` працюють без налаштування.
+- Скрипт запускається як буквальний виконуваний файл `bash`, тож `bash` має бути
+  в `PATH` хоста сервера. Це актуально для Windows.
 
-### Router
+### Маршрутизатор
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+Маршрутизатор обчислює умову й повертає ключ маршруту; рушій запускає лише те
+ребро нижче за потоком, чий ключ маршруту збігається, а інші гілки позначає як
+пропущені.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+Вибір маршрутизатора замінює поле **Ключ виходу** редактором умови. Виберіть один
+із чотирьох режимів:
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **Файл(и) існують — будь-який** — спрямовує `"true"`, якщо існує будь-який із
+  перелічених шляхів.
+- **Файли існують — усі** — спрямовує `"true"` лише коли існують усі перелічені
+  шляхи.
+- **Порівняння** — порівнює значення стану з літералом.
+- **Перемикач** — спрямовує за значенням ключа стану, з варіантом за
+  замовчуванням.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+Потім задайте відповідні ключі маршруту на вихідних ребрах (див.
+[З’єднати вузли](#зєднати-вузли)).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/uk-UA/керівництво/довідка/кроки-конвеєра/).
+Логічні групи `and` / `or` / `not` підтримуються тілом, але створити їх із цієї
+форми не можна — для них потрібне написане вручну дерево предикатів у
+`extras.predicate`. Повний словник предикатів та операторів наведено в
+[довідці з кроків конвеєра](/uk-UA/керівництво/довідка/кроки-конвеєра/).
 
-### Join
+### Об’єднання
 
-No configuration of its own: it waits for all of its upstream steps.
+Власної конфігурації не має: чекає на всі свої кроки вище за потоком.
 
-### Approval gate
+### Шлюз схвалення
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+Шлюз запускає агента-затверджувача в приховану розмову з промптом шлюзу й
+призупиняється. Затверджувач запитує ваше рішення в розмові та надсилає його
+через `submit_output` у вигляді `{ "decision": "approved" | "rejected", "reason": "..." }`.
+Рішення потрапляє під ключ виходу (типово `approval_decision`), тож
+перемикач-маршрутизатор нижче за потоком може розгалузитися за ним.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+Укажіть у полі **Агент** затверджувача, а в полі **Промпт** — питання шлюзу. Шлюз
+завершується через `submit_output` у вигляді `{ "decision": "approved" | "rejected",
+"reason": "..." }`. Вузли Reviewer (prompt) надсилають результат так само.
 
-### Team dispatch
+### Диспетчеризація команди
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+Додає **ID команди** та **Режим диспетчеризації**. Вибір пропонує рівно два
+режими:
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — одне завдання на учасника, призупиняється, доки всі не
+  завершаться.
+- `manager` — запускає лідера, який делегує.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+Будь-яке інше збережене значення поводиться як `allParallel`. Установіть
+**Редюсер** на `append`, щоб зібрати результат кожного учасника в список під
+ключем виходу.
 
-### For each and Call sub-pipeline
+### For each і Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each** типово перебирає ключ стану `items` (`extras.iterableKey` /
+`extras.itemKey` на вузлі). Він формує свій промпт один раз на елемент (типово
+`{{item}}`) і запускає агента **один раз** із цими промптами, зчепленими разом.
+Порожня колекція завершується негайно з порожнім списком. Це не один паралельний
+запуск на кожен елемент.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline** призупиняється, доки дочірній запуск не досягне кінцевого
+стану, потім об’єднує фінальний стан дочірнього запуску під ключем виходу
+(типово `subflow_result`). Укажіть дочірній шаблон через `extras.templateId`.
+Шаблон не може викликати сам себе; невдалий або скасований дочірній запуск
+провалює батьківський крок, який потім застосовує політику повторних спроб і
+продовження після невдачі цього кроку.
 
-## Declare inputs and allow manual runs
+## Оголосити входи й дозволити ручні запуски
 
-Both live behind **Manual run** in the editor header.
+Обидва розташовані за кнопкою **Ручний запуск** у верхній частині редактора.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. Натисніть **Ручний запуск**.
+2. Увімкніть **Дозволити ручний запуск**. Цей перемикач зберігається негайно —
+   він створює (або видаляє) рядок тригера `manual`, завдяки якому шаблон
+   з’являється в селекторі запуску.
+3. Задайте **Макс. паралельних запусків**, якщо потрібне обмеження (залиште
+   порожнім для необмеженої кількості). Зайві запуски чекають у стані `queued`,
+   доки не звільниться місце.
+4. Натискайте **Додати вхід** для кожного поля форми, яке має збирати ручний
+   запуск:
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| Поле                        | Опис                                                       |
+| --------------------------- | ---------------------------------------------------------- |
+| **Ключ**                    | Ключ стану, під яким зберігається значення; посилайтеся на нього як `{{key}}` |
+| **Мітка**                   | Відображувана мітка (типово — ключ)                        |
+| **Тип**                     | Текст, Багаторядковий текст, Число, Перемикач, Список, Репозиторій |
+| **Варіанти**                | Варіанти через кому, лише для Списку                       |
+| **Значення за замовчуванням** | Попередньо заповнене значення                            |
+| **Підказка**                | Текст-підказка всередині порожнього поля                   |
+| **Текст довідки**           | Допоміжний текст під полем                                 |
+| **Обов’язкове**             | Чи блокує форма запуску порожнє значення                   |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+Вхід типу **Репозиторій** показує вибір із репозиторіїв робочого простору й
+заповнює `repo_id`, `repo_local_path`, `repo_full_name`, а коли репозиторій має
+GitHub-remote — `repo_owner` і `repo_name` у корисному навантаженні запуску.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. Натисніть **Зберегти** в діалозі. Зміни входів додаються до чернетки; вони
+   зберігаються, коли ви зберігаєте шаблон.
 
-## Save and enable
+## Зберегти й увімкнути
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/).
+1. Натисніть **Зберегти** у верхній частині редактора. Доти там показується
+   «Незбережені зміни».
+2. Поверніться до **Налаштування → Робочий простір → Шаблони конвеєрів** і
+   переконайтеся, що перемикач у рядку шаблону увімкнено. Рушій відмовляється
+   запускати вимкнений шаблон, і вимкнений шаблон ніколи не з’являється в
+   селекторі запуску.
+3. Щоб запускати його автоматично, перетягніть тригер із бібліотеки вузлів на
+   полотно — див.
+   [Налаштувати тригери конвеєра](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/).
 
-## Related guides
+## Пов’язані посібники
 
-- [Run a pipeline manually](/uk-UA/керівництво/практичні-посібники/запустити-конвеєр/)
-- [Set up pipeline triggers](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
-- [Monitor pipeline runs](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
-- [Pipeline steps reference](/uk-UA/керівництво/довідка/кроки-конвеєра/)
+- [Запустити конвеєр вручну](/uk-UA/керівництво/практичні-посібники/запустити-конвеєр/)
+- [Налаштувати тригери конвеєра](/uk-UA/керівництво/практичні-посібники/тригери-конвеєра/)
+- [Моніторити запуски конвеєрів](/uk-UA/керівництво/практичні-посібники/моніторити-конвеєри/)
+- [Довідка з кроків конвеєра](/uk-UA/керівництво/довідка/кроки-конвеєра/)
 
-## Related concepts
+## Пов’язані поняття
 
-- [Pipelines](/uk-UA/керівництво/поняття/конвеєри/)
+- [Конвеєри](/uk-UA/керівництво/поняття/конвеєри/)

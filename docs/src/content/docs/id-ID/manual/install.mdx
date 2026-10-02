@@ -1,153 +1,159 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: Instal
+description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
+[app.usectrl.dev](https://app.usectrl.dev), tanpa apa pun yang perlu diunduh, atau sebagai
+**aplikasi desktop** yang Anda instal. Keduanya adalah aplikasi yang sama dengan fitur
+yang sama. Satu-satunya perbedaan adalah tempat server berjalan — dan aplikasi web tidak
+dapat menjalankan server untuk Anda.
 
-## Use it in your browser
+## Gunakan di peramban Anda
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) adalah aplikasi ini yang dikompilasi untuk
+peramban. Tidak ada yang perlu diinstal, tidak ada yang perlu diperbarui. Buka dan
+hubungkan.
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+Yang tidak dapat dilakukan tab peramban adalah _menjadi_ server itu sendiri. Setiap
+klien — desktop, web, ponsel — adalah perender tipis di atas `cc_server` headless yang
+memiliki basis data dan mengerjakan pekerjaannya, sehingga aplikasi web selalu berbicara
+dengan server yang Anda jalankan. Ada dua cara menyediakannya:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**Server di mesin Anda sendiri.** Jalankan `cc_server` secara lokal dan arahkan aplikasi
+web ke `ws://localhost:9030`. Peramban menganggap `localhost` dapat dipercaya, jadi ini
+tidak memerlukan sertifikat maupun tunnel. Ini cara tercepat untuk mencoba aplikasi web,
+dan data Anda tidak pernah meninggalkan mesin Anda.
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**Server di mesin lain.** Karena `app.usectrl.dev` disajikan melalui HTTPS, server
+non-lokal harus dapat dijangkau melalui `wss://` dengan sertifikat yang sudah dipercayai
+peramban. `cc_server` menolak mengikat alamat non-loopback tanpa TLS, jadi pilih salah
+satu dari:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- berikan sertifikat secara langsung, dengan `--tls-cert` dan `--tls-key`
+- tempatkan di belakang proxy terbalik yang menterminasi TLS dan jalankan dengan `--insecure`
+- ekspos melalui tunnel atau VPN yang menyediakan sertifikatnya — Tailscale,
+  cloudflared, atau serupa. **Pengaturan → Server → Koneksi & status** memiliki
+  opsi ikut serta tunnel bawaan di bawah **Bagikan server ini**.
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+Setiap kali server berada di belakang proxy, NAT, atau tunnel, setel `--public-url` ke
+alamat yang sebenarnya harus dihubungi klien. Bawaannya adalah pengikatan lokal, jadi
+tanpanya klien akan mencoba host yang salah.
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[Menghosting salinan klien web Anda sendiri?]
+`cc_server` hanya menerima origin peramban yang ada di daftar `--allowed-origins`-nya, yang bawaannya
+`https://app.usectrl.dev`. Tambahkan origin Anda sendiri ke sana jika Anda menghosting sendiri build web-nya.
+Klien loopback dan native selalu diizinkan terlepas dari daftar itu.
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+Beberapa hal tetap hanya ada di desktop, karena memerlukan jendela native atau perangkat
+audio mesin itu sendiri: pil mode fokus yang melayang, toast notifikasi OS (pusat
+notifikasi dalam aplikasi berfungsi di mana saja), "Mulai rekaman & tautkan" dari
+peristiwa kalender, dan menjalankan ulang ringkasan rapat. Semua hal lainnya — space,
+agen, tinjauan pull request, pipeline, tiket, memori, dan perekaman rapat itu sendiri —
+berperilaku sama.
 
-To connect the web app to a server, follow
-[Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/). To host the server,
-follow [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
+Untuk menghubungkan aplikasi web ke server, ikuti
+[Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/). Untuk menghosting server,
+ikuti [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
 
-## Desktop system requirements
+## Persyaratan sistem desktop
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| Persyaratan  | macOS                                                 | Windows     | Linux                                                      |
 | ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| Versi OS     | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ atau distro lain dengan glibc 2.35+ dan GTK 3 |
+| Arsitektur   | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Wajib                                                 | Wajib       | Wajib                                                      |
+| Ruang disk   | ~200 MB untuk aplikasi, plus direktori data server    | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Mac Intel tidak memiliki unduhan siap pakai. [Bangun dari sumber](#bangun-dari-sumber) sebagai gantinya.
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+Direktori data server lebih besar daripada aplikasinya. Saat pertama kali dijalankan, `cc_server` memasang paksa model di perangkat — embedding teks (~90 MB), diarisasi pembicara (~35 MB), dan model suara yang dipilih (Parakeet TDT v3 secara default, ~600 MB; varian Whisper 198–626 MB) — plus build code-server yang disematkan, dan setiap percakapan agen mendapatkan worktree copy-on-write dari repo yang dikerjakannya (`git worktree` biasa di Windows). Suara bukan opsional: tanpa model ASR, operasi rapat dan dikte tidak dilayani. Unduhan pertama model suara tetap memerlukan satu kali mulai ulang sebelum perekaman menyala.
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+Aplikasi desktop mengarahkan server-nya ke direktori pendukung aplikasi per pengguna OS. `cc_server` yang dijalankan secara manual tanpa `--data-dir` menggunakan bawaan `<application data>/control-center` — `~/Library/Application Support/control-center` di macOS, `%APPDATA%\control-center` di Windows, `$XDG_DATA_HOME/control-center` (atau `~/.local/share/control-center`) di Linux.
 
-## Download
+## Unduhan
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+Setiap artefak di bawah ini berasal dari [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+Unduh `Control-Center-<version>-arm64.dmg`, buka, lalu seret Control Center ke Applications. Build-nya ditandatangani dengan Developer ID dan dinotarisasi oleh Apple, sehingga terbuka seperti biasa.
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: penginstal per pengguna.
+- `Control-Center-<version>-windows-x64.zip`: zip portabel.
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows menggunakan `git worktree` untuk checkout space (tanpa copy-on-write).
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage membawa informasi pembaruan, sehingga [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) atau appimaged dapat memperbaruinya ke rilis terbaru di tempat, hanya mengunduh yang berubah.
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+Keduanya dibangun di Ubuntu 22.04 dan berjalan di versi itu atau yang lebih baru (Debian 12, Fedora 36 dan setelahnya): keduanya menautkan glibc 2.35 dan libstdc++ dari GCC 12 serta mengambil GTK 3 dari sistem. Beberapa pustaka yang mungkin tidak dimiliki desktop standar ikut dibawa di dalamnya, jadi tidak ada lagi yang perlu diinstal. Suara — pemutaran rapat, soundscape, audio rig, dan bunyi notifikasi — diputar melalui libmpv sistem (`libmpv1` di Ubuntu 22.04, `libmpv2` di Ubuntu dan Debian yang lebih baru, `mpv-libs` di Fedora); tanpanya, aplikasi dimulai dengan kontrol tersebut disembunyikan.
 
-### Standalone server
+### Server mandiri
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
+Setiap rilis juga membawa server headless secara terpisah — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — bersama image `cc-server`, `cc-webapp`, dan `cc-remote` di GHCR. Lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+Arsip Linux dibangun di Ubuntu 22.04 dan pustaka native yang dibundel menautkan glibc 2.35 dan libstdc++ dari GCC 12, sehingga memerlukan host yang setidaknya sebaru itu (Ubuntu 22.04, Debian 12, Fedora 36 atau lebih baru). Pada distribusi yang lebih lama, jalankan image `cc-server` sebagai gantinya — kontainer membawa userland-nya sendiri, jadi hanya kernel yang perlu milik Anda.
 
-## Agent backend
+## Backend agen
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center mengirim agen melalui **adapter**. Ada dua, daftarnya tetap, dan keduanya terdeteksi secara otomatis — tidak ada cara untuk mendaftarkan adapter lain.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+Adapter **Control Center (built-in)** tidak memerlukan CLI eksternal: loop agen berjalan di dalam server dan berbicara dengan penyedia model melalui HTTP, sehingga selalu tersedia. Hubungkan penyedia di **Pengaturan → Server → Penyedia model**. OpenAI, Codex, Cursor, dan Kimi Code menawarkan login lewat peramban; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, dan Moonshot memerlukan kunci API. Codex dan Cursor adalah penyedia pada runner ini, bukan CLI terpisah. z.ai tercantum dua kali dengan sengaja: **z.ai** adalah platform terbuka bayar sesuai pemakaian yang ditagihkan ke saldo akun Anda, sedangkan **z.ai GLM Coding Plan** adalah langganannya. Ini kunci akun yang sama, tetapi z.ai melayani paket tersebut dari host yang berbeda — tempelkan kunci paket coding ke ubin z.ai biasa dan setiap permintaan kembali dengan `429 … "Insufficient balance or no resource package"`, karena paket itu tidak punya saldo untuk dibelanjakan. Langganan Claude Pro/Max bukanlah login API Anthropic; jangkau paket itu melalui adapter Claude Code sebagai gantinya. Yang _dapat_ Anda tambahkan di halaman itu adalah **penyedia kustom** — endpoint apa pun yang kompatibel dengan OpenAI atau Anthropic (Ollama, LM Studio, vLLM, deployment pribadi) di bawah **Penyedia kustom → Tambah penyedia**.
 
-The other adapter wraps an external CLI:
+Adapter lainnya membungkus CLI eksternal:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+Deteksi memeriksa `PATH` mesin yang menjalankan `cc_server` — mesin yang sama saat desktop menjalankan servernya sendiri, host jarak jauh jika tidak. Instal CLI Claude Code di sana, bukan di klien. Tombol **Segarkan** di halaman itu menjalankan ulang pemeriksaan.
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/id-ID/panduan-pengguna/panduan-praktis/adapter/).
+Daftar model dilayani secara langsung oleh setiap penyedia yang terhubung; [models.dev](https://models.dev) hanya memasok metadata harga dan jendela konteks. Lihat [Kelola adapter dan model](/id-ID/panduan-pengguna/panduan-praktis/adapter/).
 
-## GitHub authentication
+## Autentikasi GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+Kredensial GitHub adalah **milik Anda dan tersimpan di server**, dikunci berdasarkan id pengguna Anda — bukan di keychain OS klien. Setiap perangkat yang Anda gunakan untuk masuk memakai kredensial yang sama, dan tidak ada anggota lain yang dapat membacanya.
 
-If the server has a GitHub App registered ([Create the GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+Jika server memiliki GitHub App yang terdaftar ([Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)), **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** menawarkan **Masuk dengan GitHub** (alur perangkat yang dijalankan server). Jika tidak, tempelkan token akses pribadi:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Klasik: `repo` dan `read:org`
+- Berbutir halus: **Contents** dan **Pull requests** (read and write), **Checks** dan **Actions** (read)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+Buat satu di [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). Server memeriksa token untuk mendapatkan nama akun saat disimpan, sehingga barisnya dapat menampilkan "Masuk sebagai …"; pemeriksaan yang gagal tetap menyimpan token, dan salah ketik atau cakupan yang kurang akan muncul sebagai permintaan yang gagal di kemudian hari.
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
+Langkah pertama onboarding adalah koneksi ini. Setelah itu, kartu yang sama menjadi tempat Anda mengganti atau menghapusnya. GitLab dan Bitbucket menggunakan kartu yang sama; lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
 
-## Choose where the server runs
+## Pilih tempat server berjalan
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/) explains what that split means for the desktop, web and phone.
+Control Center adalah klien tipis di atas proses `cc_server` headless yang memiliki basis data dan mengerjakan semua pekerjaan; [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) menjelaskan arti pemisahan itu bagi desktop, web, dan ponsel.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+Saat pertama kali diluncurkan, aplikasi desktop menanyakan **"Bagaimana Control Center harus dijalankan?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/id-ID/panduan-pengguna/mulai-cepat/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Jalankan di aplikasi ini**: desktop memunculkan dan mengawasi `cc_server` di mesin ini serta berbicara dengannya melalui loopback. Tidak ada lagi yang perlu dikonfigurasi. Inilah penyiapan yang diasumsikan [mulai cepat](/id-ID/panduan-pengguna/mulai-cepat/).
+- **Hubungkan ke instans jarak jauh**: arahkan desktop ke `cc_server` yang berjalan di tempat lain dengan URL WebSocket-nya, id perangkat, dan kunci pairing atau kode undangan sekali pakai. Server itulah yang memiliki data; desktop ini hanya menampilkannya.
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/).
+Tambahkan atau alihkan server nanti di **Pengaturan → Server → Koneksi & status**. Pengalihan akan terhubung kembali di tempat — tanpa mulai ulang. Peramban tidak dapat menjalankan server, jadi klien web selalu jarak jauh; lihat [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/).
 
-To host a server yourself, follow [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+Untuk menghosting server sendiri, ikuti [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/). Panduan itu mencakup pembangunan biner, pembuatan kunci pairing sebelum mulai pertama kali, dan flag `--data-dir` / `--port` / `--bind`.
 
-## Verify your setup
+## Verifikasi penyiapan Anda
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **Pengaturan → Server → Penyedia model** mencantumkan kedua adapter. "Control Center (built-in)" terbaca sebagai ditemukan dengan versi `built-in`; Claude Code terbaca sebagai ditemukan jika CLI-nya ada di `PATH` host server. Tekan **Segarkan** jika tidak ada.
+2. **Pengaturan → Ruang kerja → Repositori** mencantumkan repo ruang kerja ini, dan **Tambah repositori** menelusuri folder di host server.
+3. **Pengaturan → Ruang kerja → Agen** mencantumkan lima agen yang disemai ruang kerja pertama Anda. Masing-masing memerlukan **Adapter** dan **Model** yang disetel sebelum dapat berjalan.
+4. **Pengaturan → Server → Diagnostik & privasi** melaporkan backend sandbox yang ditawarkan host ini, status model embedding, dan logging.
 
-## Build from source
+## Bangun dari sumber
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+Pustaka native wajib ada dan tidak ada mode terdegradasi: pustaka yang hilang menyebabkan kegagalan boot yang keras, bukan jalur yang lebih lambat. Siapkan pustaka itu sebelum hal lainnya. Setiap perintah Flutter dan Dart dijalankan melalui `fvm`, karena versi SDK dipatok oleh repo.
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +165,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+Di macOS, penyimpanan aman (login GitHub, Linear, dan Google) memerlukan aplikasi yang ditandatangani oleh tim Apple — Apple ID gratis sudah cukup, dan ini penyiapan satu kali yang dijelaskan di [penandatanganan pengembangan lokal](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Tanpanya, aplikasi tetap diluncurkan; hanya penyimpanan aman yang tidak tersedia. Windows dan Linux tidak memerlukan penandatanganan.
 
-To build the headless server binary, stage the natives the same way first, then:
+Untuk membangun biner server headless, siapkan pustaka native dengan cara yang sama terlebih dahulu, lalu:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+Hook build menyalin apa pun yang sudah ada di `build/natives/` ke dalam bundel, jadi membangun sebelum menyiapkan pustaka akan menghasilkan bundel tanpa pustaka native dan server yang menolak untuk mulai.
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+Untuk klien web, gunakan `scripts/build_web.sh` (`--target remote` untuk PWA ponsel). Inilah yang dijalankan CI: `flutter build web` biasa melewati stempel identitas build, regenerasi Web Worker, manifes deployment, dan pemeriksaan anggaran aset.

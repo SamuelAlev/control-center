@@ -1,153 +1,156 @@
 ---
-title: Install
-description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+title: ติดตั้ง
+description: ใช้ Control Center ในเบราว์เซอร์หรือติดตั้งแอปเดสก์ท็อป ตั้งค่าแบ็กเอนด์ของเอเจนต์ และเลือกตำแหน่งที่เซิร์ฟเวอร์ทำงาน
 slug: th-TH/คู่มือ/ติดตั้ง
+sourceHash: 61fade1417802e204ccd815be10778a417836e89
 ---
 
-Control Center runs two ways: as a **web app** at
-[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
-app** you install. They are the same application with the same features. The only
-difference is where the server runs — and the web app cannot run one for you.
+Control Center ทำงานได้สองแบบ: เป็น **แอปเว็บ** ที่
+[app.usectrl.dev](https://app.usectrl.dev) ซึ่งไม่ต้องดาวน์โหลดอะไรเลย หรือเป็น **แอปเดสก์ท็อป**
+ที่คุณติดตั้ง ทั้งสองเป็นแอปพลิเคชันเดียวกันที่มีฟีเจอร์เหมือนกัน ต่างกันแค่
+ตำแหน่งที่เซิร์ฟเวอร์ทำงาน — และแอปเว็บไม่สามารถรันเซิร์ฟเวอร์ให้คุณได้
 
-## Use it in your browser
+## ใช้ในเบราว์เซอร์ของคุณ
 
-[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
-Nothing to install, nothing to update. Open it and connect.
+[app.usectrl.dev](https://app.usectrl.dev) คือแอปพลิเคชันนี้ที่คอมไพล์สำหรับเบราว์เซอร์
+ไม่ต้องติดตั้ง ไม่ต้องอัปเดต เปิดขึ้นมาแล้วเชื่อมต่อได้เลย
 
-What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
-a thin renderer over a headless `cc_server` that owns the database and does the work, so
-the web app always talks to a server you run. Two ways to give it one:
+สิ่งที่แท็บเบราว์เซอร์ทำไม่ได้คือ _เป็น_ เซิร์ฟเวอร์เอง ไคลเอนต์ทุกตัว — เดสก์ท็อป เว็บ มือถือ —
+เป็นเพียงตัวแสดงผลแบบบางบน `cc_server` แบบไม่มีส่วนติดต่อที่เป็นเจ้าของฐานข้อมูลและทำงานทั้งหมด
+ดังนั้นแอปเว็บจึงคุยกับเซิร์ฟเวอร์ที่คุณรันเองเสมอ มีสองวิธีในการจัดหาเซิร์ฟเวอร์ให้มัน:
 
-**A server on your own machine.** Start `cc_server` locally and point the web app at
-`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
-certificate and no tunnel. It is the quickest way to try the web app and your data never
-leaves your machine.
+**เซิร์ฟเวอร์บนเครื่องของคุณเอง** เริ่ม `cc_server` ในเครื่องแล้วชี้แอปเว็บไปที่
+`ws://localhost:9030` เบราว์เซอร์ถือว่า `localhost` เชื่อถือได้ จึงไม่ต้องใช้
+ใบรับรองหรือทันเนลใด ๆ นี่เป็นวิธีที่เร็วที่สุดในการลองแอปเว็บ และข้อมูลของคุณ
+จะไม่ออกจากเครื่องเลย
 
-**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
-non-local server has to be reachable over `wss://` with a certificate the browser already
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+**เซิร์ฟเวอร์บนเครื่องอื่น** เนื่องจาก `app.usectrl.dev` ให้บริการผ่าน HTTPS
+เซิร์ฟเวอร์ที่ไม่ใช่ในเครื่องจึงต้องเข้าถึงได้ผ่าน `wss://` ด้วยใบรับรองที่เบราว์เซอร์
+เชื่อถืออยู่แล้ว `cc_server` จะปฏิเสธการผูกกับแอดเดรสที่ไม่ใช่ลูปแบ็กหากไม่มี TLS
+ดังนั้นเลือกอย่างใดอย่างหนึ่ง:
 
-- give it a certificate directly, with `--tls-cert` and `--tls-key`
-- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
-- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Connection & status** has the
-  built-in tunnel opt-in under **Share this server**.
+- มอบใบรับรองให้โดยตรง ด้วย `--tls-cert` และ `--tls-key`
+- วางไว้หลังรีเวิร์สพร็อกซีที่ยุติ TLS แล้วเริ่มด้วย `--insecure`
+- เปิดให้เข้าถึงผ่านทันเนลหรือ VPN ที่จัดหาใบรับรองให้ — Tailscale,
+  cloudflared หรืออื่น ๆ ที่คล้ายกัน **การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ**
+  มีตัวเลือกเปิดใช้ทันเนลในตัวอยู่ภายใต้ **แชร์เซิร์ฟเวอร์นี้**
 
-Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
-address clients should actually dial. It defaults to the local bind, so without it
-clients try the wrong host.
+เมื่อใดก็ตามที่เซิร์ฟเวอร์อยู่หลังพร็อกซี NAT หรือทันเนล ให้ตั้ง `--public-url` เป็น
+แอดเดรสที่ไคลเอนต์ควรเรียกใช้จริง ค่าเริ่มต้นคือการผูกในเครื่อง ดังนั้นหากไม่ตั้ง
+ไคลเอนต์จะพยายามเชื่อมต่อกับโฮสต์ที่ผิด
 
-:::note[Hosting your own copy of the web client?]
-`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
-to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
-Loopback and native clients are always allowed regardless of that list.
+:::note[โฮสต์สำเนาเว็บไคลเอนต์ของคุณเองใช่ไหม?]
+`cc_server` ยอมรับเฉพาะออริจินของเบราว์เซอร์ที่อยู่ในรายการ `--allowed-origins` เท่านั้น
+ซึ่งค่าเริ่มต้นคือ `https://app.usectrl.dev` เพิ่มออริจินของคุณเองในรายการนั้นหาก
+คุณโฮสต์บิลด์เว็บเอง ไคลเอนต์แบบลูปแบ็กและไคลเอนต์เนทีฟได้รับอนุญาตเสมอโดยไม่สนใจ
+รายการดังกล่าว
 :::
 
-A few things stay desktop-only, because they need a native window or the machine's own
-audio devices: the floating focus-mode pill, OS notification toasts (the in-app
-notification centre works everywhere), "start recording & link" from a calendar event,
-and re-running a meeting summary. Everything else — spaces, agents, pull-request
-review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+มีบางอย่างที่เป็นเฉพาะเดสก์ท็อป เพราะต้องใช้หน้าต่างเนทีฟหรืออุปกรณ์เสียงของเครื่องเอง:
+ปิลล์ลอยของโหมดโฟกัส การแจ้งเตือนแบบทอสต์ของระบบปฏิบัติการ (ศูนย์การแจ้งเตือน
+ในแอปใช้ได้ทุกที่) "เริ่มบันทึกและลิงก์" จากเหตุการณ์ในปฏิทิน
+และการรันสรุปการประชุมซ้ำ ส่วนอย่างอื่นทั้งหมด — สเปซ เอเจนต์ การรีวิว Pull request
+ไปป์ไลน์ ตั๋วงาน หน่วยความจำ และการบันทึกการประชุมเอง — ทำงานเหมือนกัน
 
-To connect the web app to a server, follow
-[Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/). To host the server,
-follow [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/).
+หากต้องการเชื่อมต่อแอปเว็บกับเซิร์ฟเวอร์ ให้ทำตาม
+[เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/) หากต้องการโฮสต์เซิร์ฟเวอร์
+ให้ทำตาม [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
 
-## Desktop system requirements
+## ความต้องการของระบบสำหรับเดสก์ท็อป
 
-| Requirement  | macOS                                                 | Windows     | Linux                                                      |
-| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
-| Git          | Required                                              | Required    | Required                                                   |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
+| ความต้องการ          | macOS                                                 | Windows     | Linux                                                      |
+| -------------------- | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| เวอร์ชันระบบปฏิบัติการ | macOS 13+ (Ventura)                                 | Windows 10+ | Ubuntu 22.04+ หรือดิสโทรอื่นที่มี glibc 2.35+ และ GTK 3    |
+| สถาปัตยกรรม          | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git                  | จำเป็น                                                | จำเป็น      | จำเป็น                                                     |
+| พื้นที่ดิสก์          | ~200 MB สำหรับแอป บวกไดเรกทอรีข้อมูลของเซิร์ฟเวอร์     | ~200 MB     | ~200 MB                                                    |
 
-Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+Mac ที่ใช้ Intel ไม่มีไฟล์ให้ดาวน์โหลดสำเร็จรูป ให้[สร้างจากซอร์สโค้ด](#สร้างจากซอร์สโค้ด)แทน
 
-The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
+ไดเรกทอรีข้อมูลของเซิร์ฟเวอร์จะโตเกินกว่าแอป เมื่อเริ่มทำงานครั้งแรก `cc_server` จะติดตั้งโมเดลบนอุปกรณ์แบบบังคับ — การฝังเวกเตอร์ข้อความ (~90 MB) การแยกผู้พูด (~35 MB) และโมเดลเสียงพูดที่เลือกไว้ (ค่าเริ่มต้นคือ Parakeet TDT v3 ~600 MB; Whisper รุ่นต่าง ๆ 198–626 MB) — พร้อมกับบิลด์ code-server ที่ฝังมาให้ และทุกการสนทนาของเอเจนต์จะได้ worktree แบบ copy-on-write ของรีโพที่มันทำงานด้วย (บน Windows ใช้ `git worktree` ธรรมดา) เสียงพูดไม่ใช่ตัวเลือกเสริม: หากไม่มีโมเดล ASR การประชุมและการป้อนข้อความด้วยเสียงจะไม่ถูกให้บริการ การดาวน์โหลดโมเดลเสียงพูดครั้งแรกยังต้องรีสตาร์ตหนึ่งครั้งก่อนที่การบันทึกจะพร้อมใช้งาน
 
-The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+เดสก์ท็อปชี้เซิร์ฟเวอร์ของตนไปที่ไดเรกทอรี application support ประจำผู้ใช้ของระบบปฏิบัติการ `cc_server` ที่เริ่มด้วยมือโดยไม่มี `--data-dir` จะใช้ค่าเริ่มต้นเป็น `<application data>/control-center` — `~/Library/Application Support/control-center` บน macOS, `%APPDATA%\control-center` บน Windows, `$XDG_DATA_HOME/control-center` (หรือ `~/.local/share/control-center`) บน Linux
 
-## Download
+## ดาวน์โหลด
 
-Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+ไฟล์ทั้งหมดด้านล่างมาจาก [GitHub Releases](https://github.com/SamuelAlev/control-center/releases)
 
 ### macOS (Apple Silicon)
 
-Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+ดาวน์โหลด `Control-Center-<version>-arm64.dmg` เปิดขึ้นมา แล้วลาก Control Center ไปยัง Applications บิลด์นี้ลงชื่อด้วย Developer ID และผ่านการ notarize จาก Apple จึงเปิดได้ตามปกติ
 
 ### Windows (x64)
 
-- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable zip.
+- `Control-Center-<version>-x64-setup.exe`: ตัวติดตั้งแบบต่อผู้ใช้
+- `Control-Center-<version>-windows-x64.zip`: ไฟล์ zip แบบพกพา
 
-Windows uses `git worktree` for space checkouts (no copy-on-write).
+Windows ใช้ `git worktree` สำหรับการเช็กเอาต์ของสเปซ (ไม่มี copy-on-write)
 
 ### Linux (x86_64)
 
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
-The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+AppImage มีข้อมูลการอัปเดตในตัว ดังนั้น [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) หรือ appimaged จึงอัปเดตมันขึ้นเป็นรีลีสล่าสุดได้ทันที โดยดาวน์โหลดเฉพาะส่วนที่เปลี่ยนแปลง
 
-Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+ทั้งสองสร้างบน Ubuntu 22.04 และรันได้บนระบบนั้นหรือใหม่กว่า (Debian 12, Fedora 36 และใหม่กว่า): ลิงก์กับ glibc 2.35 และ libstdc++ ของ GCC 12 และดึง GTK 3 จากระบบ ไลบรารีไม่กี่ตัวที่เดสก์ท็อปมาตรฐานอาจไม่มีจะถูกพกมาในไฟล์เอง จึงไม่ต้องติดตั้งอะไรเพิ่ม เสียง — การเล่นการประชุม ซาวด์สเคป เสียงของริก และเสียงแจ้งเตือน — เล่นผ่าน libmpv ของระบบ (`libmpv1` บน Ubuntu 22.04, `libmpv2` บน Ubuntu และ Debian ที่ใหม่กว่า, `mpv-libs` บน Fedora) หากไม่มี แอปจะเริ่มทำงานโดยซ่อนตัวควบคุมเหล่านั้นไว้
 
-### Standalone server
+### เซิร์ฟเวอร์แบบสแตนด์อโลน
 
-Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/).
+แต่ละรีลีสยังมีเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อแยกต่างหาก — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — พร้อมกับอิมเมจ `cc-server`, `cc-webapp` และ `cc-remote` บน GHCR ดู[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)
 
-The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+ไฟล์ archive สำหรับ Linux สร้างบน Ubuntu 22.04 และไลบรารีเนทีฟที่มาด้วยลิงก์กับ glibc 2.35 และ libstdc++ ของ GCC 12 จึงต้องใช้โฮสต์ที่ใหม่พอ ๆ กันเป็นอย่างน้อย (Ubuntu 22.04, Debian 12, Fedora 36 หรือใหม่กว่า) บนดิสทริบิวชันที่เก่ากว่า ให้รันอิมเมจ `cc-server` แทน — คอนเทนเนอร์นำ userland ของตัวเองมาด้วย จึงต้องเป็นเคอร์เนลของคุณเท่านั้น
 
-## Agent backend
+## แบ็กเอนด์ของเอเจนต์
 
-Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center ส่งงานเอเจนต์ผ่าน **อะแดปเตอร์** มีอยู่สองตัว รายการนี้ตายตัว และถูกตรวจจับโดยอัตโนมัติ — ไม่มีวิธีลงทะเบียนเพิ่มอีกราย
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+อะแดปเตอร์ **Control Center (built-in)** ไม่ต้องใช้ CLI ภายนอก: ลูปของเอเจนต์ทำงานอยู่ภายในเซิร์ฟเวอร์และสื่อสารกับผู้ให้บริการโมเดลผ่าน HTTP จึงพร้อมใช้งานเสมอ เชื่อมต่อผู้ให้บริการได้ที่ **การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล** OpenAI, Codex, Cursor และ Kimi Code มีการลงชื่อเข้าใช้ผ่านเบราว์เซอร์ ส่วน Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai และ Moonshot ใช้คีย์ API Codex และ Cursor เป็นผู้ให้บริการบนตัวรันนี้ ไม่ใช่ CLI แยกต่างหาก z.ai ถูกแสดงสองครั้งโดยตั้งใจ: **z.ai** คือแพลตฟอร์มเปิดแบบจ่ายตามการใช้งาน ซึ่งคิดเงินจากยอดคงเหลือในบัญชีของคุณ ส่วน **z.ai GLM Coding Plan** คือแบบสมัครสมาชิก ใช้คีย์บัญชีเดียวกัน แต่ z.ai ให้บริการแพ็กเกจนี้จากโฮสต์อื่น — หากวางคีย์ของแพ็กเกจ coding plan ลงในไทล์ z.ai ธรรมดา ทุกคำขอจะตอบกลับ `429 … "Insufficient balance or no resource package"` เพราะแพ็กเกจไม่มียอดคงเหลือให้ใช้ การสมัครสมาชิก Claude Pro/Max ไม่ใช่การลงชื่อเข้าใช้ API ของ Anthropic ให้เข้าถึงแพ็กเกจนั้นผ่านอะแดปเตอร์ Claude Code แทน สิ่งที่คุณ _เพิ่มได้_ ในหน้านั้นคือ **ผู้ให้บริการที่กำหนดเอง** — ปลายทางใดก็ตามที่เข้ากันได้กับ OpenAI หรือ Anthropic (Ollama, LM Studio, vLLM หรือการติดตั้งใช้งานส่วนตัว) ภายใต้ **ผู้ให้บริการที่กำหนดเอง → เพิ่มผู้ให้บริการ**
 
-The other adapter wraps an external CLI:
+อะแดปเตอร์อีกตัวห่อหุ้ม CLI ภายนอก:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
+การตรวจจับจะตรวจสอบ `PATH` ของเครื่องที่รัน `cc_server` — เครื่องเดียวกันเมื่อเดสก์ท็อปรันเซิร์ฟเวอร์ของตัวเอง หรือโฮสต์ระยะไกลในกรณีอื่น ติดตั้ง Claude Code CLI ที่นั่น ไม่ใช่บนไคลเอนต์ ปุ่ม **รีเฟรช** ในหน้านั้นจะรันการตรวจจับซ้ำ
 
-Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/).
+รายการโมเดลถูกให้บริการแบบสดโดยผู้ให้บริการแต่ละรายที่เชื่อมต่ออยู่ ส่วน [models.dev](https://models.dev) ให้เฉพาะข้อมูลเมตาของราคาและหน้าต่างบริบท ดู[จัดการอะแดปเตอร์และโมเดล](/th-TH/คู่มือ/วิธีทำ/อะแดปเตอร์/)
 
-## GitHub authentication
+## การตรวจสอบสิทธิ์ GitHub
 
-A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
+ข้อมูลรับรอง GitHub **เป็นของคุณและอยู่บนเซิร์ฟเวอร์** ผูกกับ ID ผู้ใช้ของคุณ — ไม่ได้อยู่ในคีย์เชนของระบบปฏิบัติการฝั่งไคลเอนต์ ทุกอุปกรณ์ที่คุณลงชื่อเข้าใช้จะใช้ข้อมูลเดียวกัน และสมาชิกคนอื่นอ่านไม่ได้
 
-If the server has a GitHub App registered ([Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
+หากเซิร์ฟเวอร์ลงทะเบียน GitHub App ไว้ ([สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)) **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด** จะมี **ลงชื่อเข้าใช้ด้วย GitHub** (device flow ที่เซิร์ฟเวอร์รันให้) มิฉะนั้นให้วางโทเค็นการเข้าถึงส่วนบุคคล:
 
-- Classic: `repo` and `read:org`
-- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
+- Classic: `repo` และ `read:org`
+- Fine-grained: **Contents** และ **Pull requests** (read and write), **Checks** และ **Actions** (read)
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
+สร้างได้ที่ [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) เซิร์ฟเวอร์จะตรวจสอบโทเค็นเพื่อดูชื่อบัญชีตอนที่บันทึก ดังนั้นแถวนั้นจึงอาจแสดงว่า "ลงชื่อเข้าใช้ในชื่อ …" แม้การตรวจสอบจะล้มเหลวก็ยังบันทึกโทเค็นไว้ และการพิมพ์ผิดหรือการขาดสโคปจะปรากฏเป็นคำขอที่ล้มเหลวในภายหลัง
 
-Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/).
+ขั้นตอนแรกของการเริ่มต้นใช้งานคือการเชื่อมต่อนี้ หลังจากนั้นการ์ดเดียวกันนี้คือที่ที่คุณเปลี่ยนหรือล้างมัน GitLab และ Bitbucket ใช้การ์ดเดียวกัน ดู[เชื่อมต่อโฮสต์โค้ด](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/)
 
-## Choose where the server runs
+## เลือกตำแหน่งที่เซิร์ฟเวอร์ทำงาน
 
-Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) explains what that split means for the desktop, web and phone.
+Control Center เป็นไคลเอนต์แบบบางบนโปรเซส `cc_server` แบบไม่มีส่วนติดต่อที่เป็นเจ้าของฐานข้อมูลและทำงานทั้งหมด [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) อธิบายความหมายของการแยกส่วนนี้สำหรับเดสก์ท็อป เว็บ และมือถือ
 
-On first launch the desktop asks **"How should Control Center run?"**:
+เมื่อเปิดครั้งแรก เดสก์ท็อปจะถามว่า **"Control Center ควรรันอย่างไร?"**:
 
-- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **รันในแอปนี้**: เดสก์ท็อปจะสปอว์นและดูแล `cc_server` บนเครื่องนี้ แล้วสื่อสารกับมันผ่านลูปแบ็ก ไม่ต้องตั้งค่าอย่างอื่น นี่คือการตั้งค่าที่[เริ่มอย่างรวดเร็ว](/th-TH/คู่มือ/เริ่มอย่างรวดเร็ว/)สมมติไว้
+- **เชื่อมต่ออินสแตนซ์ระยะไกล**: ชี้เดสก์ท็อปไปที่ `cc_server` ที่รันอยู่ที่อื่น พร้อม URL ของ WebSocket, ID อุปกรณ์ และคีย์จับคู่หรือรหัสเชิญแบบใช้ครั้งเดียว เซิร์ฟเวอร์นั้นเป็นเจ้าของข้อมูล เดสก์ท็อปนี้เพียงแสดงผลเท่านั้น
 
-Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/).
+เพิ่มหรือสลับเซิร์ฟเวอร์ภายหลังได้ที่ **การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ** การสลับจะเชื่อมต่อใหม่ทันทีโดยไม่ต้องรีสตาร์ต เบราว์เซอร์ไม่สามารถรันเซิร์ฟเวอร์ได้ เว็บไคลเอนต์จึงเป็นระยะไกลเสมอ ดู[เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/)
 
-To host a server yourself, follow [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+หากต้องการโฮสต์เซิร์ฟเวอร์เอง ให้ทำตาม[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/) ซึ่งครอบคลุมการบิลด์ไบนารี การสร้างคีย์จับคู่ก่อนเริ่มครั้งแรก และแฟล็ก `--data-dir` / `--port` / `--bind`
 
-## Verify your setup
+## ตรวจสอบการตั้งค่าของคุณ
 
-1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
-4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+1. **การตั้งค่า → เซิร์ฟเวอร์ → ผู้ให้บริการโมเดล** แสดงอะแดปเตอร์ทั้งสองตัว "Control Center (built-in)" จะแสดงว่าพร้อมใช้ที่เวอร์ชัน `built-in` ส่วน Claude Code จะแสดงว่าพร้อมใช้หาก CLI ของมันอยู่ใน `PATH` ของโฮสต์เซิร์ฟเวอร์ กด **รีเฟรช** หากไม่พบ
+2. **การตั้งค่า → เวิร์กสเปซ → รีโพสิทอรี** แสดงรายการรีโพของเวิร์กสเปซนี้ และ **เพิ่มรีโพสิทอรี** ใช้เรียกดูโฟลเดอร์ของโฮสต์เซิร์ฟเวอร์
+3. **การตั้งค่า → เวิร์กสเปซ → เอเจนต์** แสดงเอเจนต์ห้าตัวที่เวิร์กสเปซแรกของคุณซีดไว้ แต่ละตัวต้องตั้ง **อะแดปเตอร์** และ **โมเดล** ก่อนจึงจะรันได้
+4. **การตั้งค่า → เซิร์ฟเวอร์ → การวินิจฉัยและความเป็นส่วนตัว** รายงานแบ็กเอนด์แซนด์บ็อกซ์ที่โฮสต์นี้มีให้ สถานะของโมเดลฝังเวกเตอร์ และการบันทึกล็อก
 
-## Build from source
+## สร้างจากซอร์สโค้ด
 
-Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+ไลบรารีเนทีฟเป็นสิ่ง**จำเป็น**และไม่มีโหมดลดความสามารถ: หากขาดตัวใดตัวหนึ่งจะเริ่มทำงานไม่สำเร็จแบบเด็ดขาด ไม่ใช่แค่ช้าลง ให้จัดเตรียมมันไว้ก่อนสิ่งอื่นใด คำสั่ง Flutter และ Dart ทุกคำสั่งต้องผ่าน `fvm` เพราะเวอร์ชัน SDK ถูกตรึงไว้โดยรีโป
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -159,15 +162,15 @@ fvm flutter gen-l10n
 fvm flutter run -d macos  # or -d windows, -d linux
 ```
 
-On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+บน macOS พื้นที่จัดเก็บที่ปลอดภัย (การลงชื่อเข้าใช้ GitHub, Linear และ Google) ต้องให้แอปถูกเซ็นโดยทีม Apple — ใช้ Apple ID ฟรีก็เพียงพอ และเป็นการตั้งค่าครั้งเดียวที่อธิบายไว้ใน[การเซ็นสำหรับการพัฒนาในเครื่อง](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos) หากไม่มี แอปก็ยังเปิดได้ เพียงแต่พื้นที่จัดเก็บที่ปลอดภัยจะใช้งานไม่ได้ Windows และ Linux ไม่ต้องเซ็น
 
-To build the headless server binary, stage the natives the same way first, then:
+หากต้องการบิลด์ไบนารีของเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ ให้จัดเตรียมเนทีฟด้วยวิธีเดียวกันก่อน แล้วจึง:
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+ฮุกบิลด์จะคัดลอกสิ่งที่อยู่ใน `build/natives/` แล้วเข้าไปในบันเดิล ดังนั้นการบิลด์ก่อนจัดเตรียมเนทีฟจะได้บันเดิลที่ไม่มีเนทีฟและเซิร์ฟเวอร์ที่ปฏิเสธการเริ่มทำงาน
 
-For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+สำหรับเว็บไคลเอนต์ให้ใช้ `scripts/build_web.sh` (`--target remote` สำหรับ PWA บนโทรศัพท์) นี่คือสิ่งที่ CI รัน: การใช้ `flutter build web` เปล่า ๆ จะข้ามการประทับ build identity การสร้าง Web Worker ใหม่ deploy manifest และการตรวจสอบงบประมาณแอสเซ็ต

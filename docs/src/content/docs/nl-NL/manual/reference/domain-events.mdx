@@ -1,174 +1,175 @@
 ---
-title: Domain events
-description: Complete catalog of the 53 domain events, their payloads and the server-side subscribers that consume them.
+title: Domeingebeurtenissen
+description: Volledige catalogus van de 53 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
 slug: nl-NL/handleiding/referentie/domeingebeurtenissen
+sourceHash: a7ee9337d861d5a1a55ef8877d72210959910585
 ---
 
-## Event bus
+## Gebeurtenissenbus
 
-The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event implements `DomainEvent` and carries `occurredAt`.
+De `DomainEventBus` is een broadcast-publish/subscribe-bus die binnen één proces draait. Uitgevers roepen `publish(event)` aan; abonnees consumeren een getypeerde `on<T>()`-stream. Elke gebeurtenis implementeert `DomainEvent` en draagt `occurredAt`.
 
-**The bus runs inside `cc_server`.** Every publisher and every live subscriber lives there. No client sees this bus — the server forwards a curated subset as `notifications/*` JSON-RPC frames, filtered per subscriber by workspace membership.
+**De bus draait in `cc_server`.** Elke uitgever en elke actieve abonnee leeft daar. Geen enkele client ziet deze bus — de server stuurt een zorgvuldig samengestelde subset door als `notifications/*` JSON-RPC-frames, per abonnee gefilterd op werkruimtelidmaatschap.
 
-| Measure                                                     | Count                                       |
+| Onderdeel                                                   | Aantal                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Concrete event classes                                      | 53                                          |
-| Source files (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
-| Abstract bases that are never published directly            | 1 (`TaskLifecycleEvent`, a sealed hierarchy) |
+| Concrete gebeurtenisklassen                                 | 53                                          |
+| Bronbestanden (`packages/cc_domain/lib/core/domain/events/`) | 14 (plus `domain_event_bus.dart`)           |
+| Abstracte bases die nooit rechtstreeks worden gepubliceerd  | 1 (`TaskLifecycleEvent`, een sealed hiërarchie) |
 
-Every event in the catalog below lives in that one directory; there are no domain events declared elsewhere.
+Elke gebeurtenis in de catalogus hieronder woont in die ene map; er zijn nergens anders domeingebeurtenissen gedeclareerd.
 
-## Workspace, agent and repo events
+## Gebeurtenissen rond werkruimtes, agenten en repo's
 
-| Event               | Payload                                                | Fired when                                              |
+| Gebeurtenis         | Payload                                                | Wordt gepubliceerd wanneer                               |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
-| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
-| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
+| `WorkspaceCreated`  | `workspaceId`                                          | Werkruimte wordt aangemaakt                             |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent rondt een run af (geslaagd of mislukt)            |
+| `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Een repo wordt geregistreerd; start code-indexering op de achtergrond |
+| `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Een skill wordt geïnstalleerd of bijgewerkt, met het oordeel van de toeleveringsketenscan erbij |
 
-## PR and review events
+## PR- en reviewgebeurtenissen
 
-The first block is the PR's own lifecycle. The second is the **authored-PR watch**: signals about a PR *you* opened, each carrying `forUserId` so the poll can route them to the person they concern rather than broadcasting.
+Het eerste blok is de eigen levenscyclus van de PR. Het tweede is de **bewaking van eigen PR's**: signalen over een PR die *jij* hebt geopend, elk met `forUserId`, zodat de poll ze naar de persoon in kwestie kan sturen in plaats van ze breed uit te zenden.
 
-| Event                      | Payload                                                                  | Fired when                                                                                                                          |
+| Gebeurtenis                | Payload                                                                  | Wordt gepubliceerd wanneer                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opens a PR                                                                                                                    |
-| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR merged/closed/opened/reopened/approved                                                                                           |
-| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR is merged — a narrow merge-only signal kept for analytics/notifications                                                          |
-| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub asks for the server user's review (notifications poll, `review_requested`)                                                   |
-| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | Server user is mentioned on a PR (notifications poll, `mention`)                                                                    |
-| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | An externally tracked (non-agent) PR merged, detected by the GitHub notification poll; maps to the `prMerged` notification category |
-| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification                               |
-| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | The PR's head SHA moved — the author pushed                                                       |
-| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | A finished AI review no longer describes the PR it reviewed. Only fires when a review exists for the replaced commit, so it stays a signal rather than a per-push ping |
+| `PullRequestPublished`     | `prId`, `workspaceId`, `repoOwner`, `repoName`                           | Agent opent een PR                                                                                                                  |
+| `PullRequestStatusChanged` | `status`, `workspaceId`, `prId?`, `repoFullName?`, `prNumber?`           | PR wordt samengevoegd/gesloten/geopend/heropend/goedgekeurd                                                                         |
+| `PrMerged`                 | `prId`, `workspaceId`, `agentId`                                         | PR wordt samengevoegd — een smal signaal dat alleen merges betreft, bewaard voor analytics/meldingen                                |
+| `PrReviewRequested`        | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | GitHub vraagt om een review van de servergebruiker (meldingenpoll, `review_requested`)                                              |
+| `PrMentioned`              | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`            | De servergebruiker wordt vermeld bij een PR (meldingenpoll, `mention`)                                                              |
+| `ExternalPrMerged`         | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `mergedByLogin?` | Een extern gevolgde (niet-agent-)PR wordt samengevoegd, gedetecteerd door de GitHub-meldingenpoll; komt overeen met de meldingscategorie `prMerged` |
+| `ExternalPrDetected`       | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Niet-agent-PR gevonden via polling — alleen voor pipelines (stuurt `external_pr_welcome` aan), levert geen melding op                 |
+| `PrHeadChanged`            | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `previousHeadSha`, `headSha`, `workspaceId` | De head-SHA van de PR is verschoven — de auteur heeft gepusht                                      |
+| `ReviewBecameStale`        | `workspaceId`, `spaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `reviewedHeadSha`, `headSha` | Een afgeronde AI-review beschrijft de PR die hij heeft gereviewd niet meer. Gaat alleen af wanneer er een review bestaat voor de vervangen commit, zodat het een signaal blijft in plaats van een ping bij elke push |
 
-### The authored-PR watch
+### De bewaking van eigen PR's
 
-All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and an optional `forUserId`.
+Alle zes dragen `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` en een optionele `forUserId` mee.
 
-| Event                     | Additional payload                                                                  | Fired when                                                                    |
+| Gebeurtenis               | Aanvullende payload                                                                 | Wordt gepubliceerd wanneer                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | A PR you authored became mergeable, or stopped being                          |
-| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | A reviewer approved, requested changes, or had an approval dismissed          |
-| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI went red, or recovered                                                     |
-| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
-| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
-| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+| `PrMergeReadinessChanged` | `ready`, `reason`                                                                    | Een PR van jou werd samenvoegbaar, of is dat niet meer                        |
+| `PrReviewDecisionChanged` | `decision`, `reviewersRemaining`, `approverLogin?`                                   | Een reviewer keurde goed, vroeg wijzigingen of zag een goedkeuring ingetrokken worden |
+| `PrChecksStatusChanged`   | `failing`, `failingCheckName?`, `failingCheckUrl?`                                   | CI werd rood, of herstelde                                                    |
+| `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Iemand vermeldde je in een PR-opmerking of reviewopmerking                |
+| `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Iemand antwoordde in een reviewthread waarin je zit                           |
+| `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Iemand markeerde een reviewthread waarin je zit als opgelost                  |
 
-## Messaging events
+## Berichtengebeurtenissen
 
-| Event                      | Payload                                                                                                                    | Fired when                                                                                                                                                                                  |
+| Gebeurtenis                | Payload                                                                                                                    | Wordt gepubliceerd wanneer                                                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | New message arrives                                                                                                                                                          |
-| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Space is created                                                                                                                                                                            |
-| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Space is deleted                                                                                                                                                                            |
-| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | The space's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `MessageReceived`          | `spaceId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?`, `senderUserId?` | Er komt een nieuw bericht binnen                                                                                                                                          |
+| `SpaceCreated`             | `spaceId`, `workspaceId`                                                                                                   | Ruimte wordt aangemaakt                                                                                                                                                                      |
+| `SpaceDeleted`             | `spaceId`, `workspaceId`                                                                                                   | Ruimte wordt verwijderd                                                                                                                                                                      |
+| `SpaceProvisioningChanged` | `workspaceId`, `spaceId`, `status`, `step?`                                                                                | De werkruimte die bij de ruimte hoort gaat provisioneren, bereikt een stap (een repo klonen, een PR uitchecken, een agent opzetten) of klapt om naar gereed/mislukt — de chatbrug vertelt dat op zijn taakkaart |
 
-## Ticketing events
+## Ticketgebeurtenissen
 
-| Event                  | Payload                                                                                                                      | Fired when                              |
+| Gebeurtenis            | Payload                                                                                                                      | Wordt gepubliceerd wanneer               |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket is created                       |
-| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team   |
-| `TicketCompleted`      | `ticketId`                                                                                                                   | Work finishes (terminal)                |
-| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent fails (terminal)                  |
-| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket cancelled (terminal)             |
-| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Any status change                       |
-| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket reassigned                       |
-| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Title, description, or priority changes |
+| `TicketCreated`        | `ticketId`, `workspaceId`                                                                                                    | Ticket wordt aangemaakt                  |
+| `TicketAssigned`       | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket toegewezen aan een principaal of team |
+| `TicketCompleted`      | `ticketId`                                                                                                                   | Het werk is klaar (eindtoestand)         |
+| `TicketFailed`         | `ticketId`, `errorMessage`                                                                                                   | Agent mislukt (eindtoestand)             |
+| `TicketCancelled`      | `ticketId`                                                                                                                   | Ticket geannuleerd (eindtoestand)        |
+| `TicketStatusChanged`  | `ticketId`, `workspaceId`, `from`, `to`                                                                                      | Elke statuswijziging                     |
+| `TicketReassigned`     | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?`                                                                      | Ticket opnieuw toegewezen                |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId`                                                                                                    | Titel, beschrijving of prioriteit verandert |
 
-## Task lifecycle events
+## Gebeurtenissen in de taaklevenscyclus
 
-The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?` and a `phase`; the rows below list only the additional fields.
+De uniforme stream van de taaklevenscyclus — één gedispatchte agentrun, gesleuteld op het id van zijn runlog. Elke gebeurtenis draagt `taskId`, een monotone `seq` per taak, `workspaceId?`, `agentId?` en een `phase`; de rijen hieronder vermelden alleen de extra velden.
 
-| Event                       | Payload                       | Fired when                                                                                       |
+| Gebeurtenis                 | Payload                       | Wordt gepubliceerd wanneer                                                                       |
 | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `TaskDispatched`            | —                             | Task handed to a backend for execution                                                           |
-| `TaskRunning`               | —                             | Task started producing output                                                                    |
-| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs                                   |
-| `TaskProgress`              | `note?`                       | Mid-run progress checkpoint                                                                      |
-| `TaskMessage`               | `messageType`, `content`      | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
-| `TaskCompleted`             | `summary?`                    | Task finished successfully                                                                       |
-| `TaskFailed`                | `errorMessage`                | Task finished with an error                                                                      |
-| `TaskCancelled`             | —                             | Task cancelled before completion                                                                 |
+| `TaskDispatched`            | —                             | Taak wordt aan een backend overgedragen voor uitvoering                                          |
+| `TaskRunning`               | —                             | Taak begon uitvoer te produceren                                                                 |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Taak wordt geparkeerd — een andere taak bezit het padslot op schijf dat hij nodig heeft         |
+| `TaskProgress`              | `note?`                       | Voortgangscontrolepunt halverwege de run                                                         |
+| `TaskMessage`               | `messageType`, `content`      | Gestreamd bericht (text/thinking/tool_use/tool_result/error); gerapporteerd onder de fase `progress` |
+| `TaskCompleted`             | `summary?`                    | Taak is geslaagd                                                                                 |
+| `TaskFailed`                | `errorMessage`                | Taak is met een fout afgerond                                                                    |
+| `TaskCancelled`             | —                             | Taak geannuleerd voordat hij klaar was                                                           |
 
-The `TaskPhase` enum also has a `queued` member, but nothing publishes a queued event — there is no `TaskQueued` class. A task's first observable frame is `TaskDispatched`.
+De enum `TaskPhase` heeft ook een lid `queued`, maar niets publiceert een queued-gebeurtenis — er is geen klasse `TaskQueued`. Het eerste waarneembare frame van een taak is `TaskDispatched`.
 
-## Pipeline events
+## Pipelinegebeurtenissen
 
-| Event                  | Payload                                       | Fired when                                                                  |
+| Gebeurtenis            | Payload                                       | Wordt gepubliceerd wanneer                                                  |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run finishes                                                                |
-| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run cancelled (by the user or the system) — a deliberate stop, not an error |
-| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run fails                                                    |
+| `PipelineRunCompleted` | `workspaceId`, `pipelineRunId`, `templateId`  | Run is klaar                                                                |
+| `PipelineRunCancelled` | `workspaceId`, `pipelineRunId`, `templateId`  | Run geannuleerd (door de gebruiker of het systeem) — een bewuste stop, geen fout |
+| `PipelineRunFailed`    | `workspaceId`, `pipelineRunId`, `templateId`, `errorMessage` | Run mislukt                                                 |
 
-Only terminal transitions are published. There is no `PipelineRunStarted` and no per-step event: a step's progress reaches clients through the run's own rows and the task-lifecycle stream of whatever agent it dispatched, not through the bus.
+Alleen eindovergangen worden gepubliceerd. Er is geen `PipelineRunStarted` en geen gebeurtenis per stap: de voortgang van een stap bereikt clients via de eigen rijen van de run en de stream van de taaklevenscyclus van de agent die hij heeft gedispatcht, niet via de bus.
 
-## Observability events
+## Observability-gebeurtenissen
 
-| Event                    | Payload                                                                                                  | Fired when                |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| Gebeurtenis              | Payload                                                                                                  | Wordt gepubliceerd wanneer    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Er wordt een regel in het auditspoor aangemaakt |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Uitgaven overschrijden de drempel |
 
-## Identity and membership events
+## Gebeurtenissen rond identiteit en lidmaatschap
 
-| Event                        | Payload                         | Fired when                                                                                                |
+| Gebeurtenis                  | Payload                         | Wordt gepubliceerd wanneer                                                                                |
 | ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add)                                                 |
-| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
-| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes                                                                                   |
+| `WorkspaceMemberAdded`       | `workspaceId`, `userId`, `role` | Een gebruiker komt bij een werkruimte (uitnodiging inwisselen of toevoegen door een beheerder)            |
+| `WorkspaceMemberRemoved`     | `workspaceId`, `userId`         | Een lid wordt verwijderd — actieve sessies van die gebruiker binnen de werkruimte moeten de toegang onmiddellijk opnieuw controleren |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | De rol van een lid verandert                                                                               |
 
-Membership is the whole identity surface on the bus. User creation and device revocation happen, but they are not published as domain events — revocation is enforced directly against live sessions rather than routed through the bus.
+Lidmaatschap is het hele identiteitsoppervlak op de bus. Het aanmaken van gebruikers en het intrekken van apparaten gebeuren wel, maar ze worden niet als domeingebeurtenissen gepubliceerd — intrekking wordt rechtstreeks tegen actieve sessies afgedwongen in plaats van via de bus te lopen.
 
-## Calendar and meeting events
+## Agenda- en vergadergebeurtenissen
 
-| Event                     | Payload                                                                                | Fired when                                                                                                  |
+| Gebeurtenis               | Payload                                                                                | Wordt gepubliceerd wanneer                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
-| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | A calendar event is starting within the configured lead window                                              |
-| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline                           |
+| `CalendarAuthExpired`     | `workspaceId`, `accountEmail`                                                          | De OAuth-refresh token van een gekoppeld account is permanent ongeldig (één keer gepubliceerd per verbreking) |
+| `MeetingStartingSoon`     | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl?`                          | Een agenda-afspraak begint binnen het geconfigureerde voorloopvenster                                       |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | Een vergaderopname is klaar en start de ingebouwde pipeline `meeting_summary`                                |
 
-## Rig events
+## Riggebeurtenissen
 
-| Event               | Payload                                       | Fired when                                                                                                                       |
+| Gebeurtenis         | Payload                                       | Wordt gepubliceerd wanneer                                                                                                       |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | A rig went away, with its close reason; consumers act only on `backendFailure` — every other reason is requested or accompanied by a `RigReaped` |
-| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | A human took exclusive control of a rig or handed it back (`controller` null on release — the event does not record who let go)  |
-| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | The system reclaimed a machine: idle, TTL, or memory-pressure eviction (reported as `idleTimeout`), with the driving agent       |
+| `RigClosedEvent`    | `workspaceId`, `rigId`, `reason`              | Een rig is verdwenen, met zijn sluitingsreden; consumenten reageren alleen op `backendFailure` — elke andere reden is aangevraagd of gaat gepaard met een `RigReaped` |
+| `RigControlChanged` | `workspaceId`, `rigId`, `controller?`         | Een mens nam de exclusieve controle over een rig over of gaf die terug (`controller` is null bij vrijgave — de gebeurtenis legt niet vast wie heeft losgelaten) |
+| `RigReaped`         | `workspaceId`, `rigId`, `reason`, `agentId?`  | Het systeem heeft een machine teruggeëist: idle, TTL of geheugendrukevictie (gerapporteerd als `idleTimeout`), met de aansturende agent |
 
-A rig **opening** is not an event. The boot completes and the rig's row flips to ready; nothing is published, so there is no `RigOpened` to subscribe to.
+Een rig die **opent** is geen gebeurtenis. De boot rondt af en de rij van de rig klapt om naar gereed; er wordt niets gepubliceerd, dus er is geen `RigOpened` om je op te abonneren.
 
-## Subdomains with no events at all
+## Subdomeinen zonder enige gebeurtenis
 
-Several subsystems that look event-driven from the outside are not. They are listed here because their absence is a design decision worth knowing before you go looking for a hook:
+Verschillende subsystemen die van buitenaf gebeurtenisgestuurd lijken, zijn dat niet. Ze staan hier omdat hun afwezigheid een ontwerpbeslissing is die je wilt kennen voordat je op zoek gaat naar een hook:
 
-| Subdomain           | How state moves instead                                                                                 |
+| Subdomein           | Hoe de status wél verandert                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
-| Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
-| Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
-| Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
-| Approvals           | Escalation is handled inside the approval workflow service                                              |
-| Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
-| Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
+| Geheugen            | `record_memory_fact` en vrienden schrijven en geven terug; recall leest. Niets publiceert bij een feit of conflict |
+| Orkestratie         | Het voorstel, de goedkeuring ervan en de gegenereerde pipelinerun zijn rijen en RPC-aanroepen           |
+| Plandocumenten      | `submit_plan` schrijft een revisie; goedkeuring materialiseert een orkestratie. Geen van beide wordt aangekondigd |
+| Artefacten          | `publish_artifact` / `revise_artifact` schrijven revisies rechtstreeks                                  |
+| Goedkeuringen       | Escalatie wordt binnen de goedkeuringsworkflowservice afgehandeld                                       |
+| Ticketsynchronisatie | De leverancierscoördinator abonneert zich op de ticketgebeurtenissen hierboven; inkomende webhooks worden rechtstreeks toegepast |
+| Agendaverversing    | Een sync upsert afspraken en de client leest opnieuw; er is geen verversingsbroadcast                   |
+| Worktreemerges      | Vastgelegd in `worktree_merge_log` en daarvandaan gelezen                                               |
 
-## Subscribers
+## Abonnees
 
-Every subscriber below is constructed inside `runCcServer` (or a service it builds). There is no client-side subscriber.
+Elke abonnee hieronder wordt geconstrueerd in `runCcServer` (of in een service die het opbouwt). Er is geen abonnee aan de clientkant.
 
-| Subscriber                          | Events it consumes                                                                                   |
+| Abonnee                             | Gebeurtenissen die hij consumeert                                                                     |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `WorkspaceSeeder`                   | `WorkspaceCreated`                                                                                   |
-| Starter eval-suite seeding (inline) | `WorkspaceCreated`                                                                                   |
-| Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
-| `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
+| Seeden van starter-evalsuites (inline) | `WorkspaceCreated`                                                                                |
+| Provisioneren van chatruimtes (inline) | `SpaceCreated`                                                                                    |
+| `PipelineTriggerDispatcher`         | Elke `DomainEvent`; elke ingeschakelde trigger filtert op zijn eigen type                            |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
 | `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
 | `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
-| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
+| `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (alleen runs van `meeting_summary`) |
 | `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
 | `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
 | `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
@@ -179,24 +180,24 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
 | `ChatBridgeService`                 | `MessageReceived`, `SpaceProvisioningChanged`                                                        |
 | `ActivityLogPersister`              | `ActivityLogged`                                                                                     |
-| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injects a plain-language notice onto the driving agent's steering lane |
-| `StaleReviewWatcher`                | `PrHeadChanged` — publishes `ReviewBecameStale` only when a finished review exists for the replaced commit |
-| `GitHubPrConversationBridge`        | `AgentRunCompleted` — outbound PR-conversation replies                                               |
-| `NotificationFeedRecorder`          | The twenty-one notification-class events below                                                        |
-| `RemoteEventForwarder`              | Those twenty-one plus `TicketReassigned` and every `TaskLifecycleEvent`. The three membership events only invalidate its per-workspace membership cache; they are not forwarded as frames |
-| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — drops that user's attached workspace subscriptions; the socket stays open |
+| `RigEventListener`                  | `RigControlChanged`, `RigReaped`, `RigClosedEvent` — injecteert een bericht in gewone taal op de stuurbaan van de aansturende agent |
+| `StaleReviewWatcher`                | `PrHeadChanged` — publiceert `ReviewBecameStale` alleen wanneer er een afgeronde review bestaat voor de vervangen commit |
+| `GitHubPrConversationBridge`        | `AgentRunCompleted` — uitgaande antwoorden in PR-gesprekken                                          |
+| `NotificationFeedRecorder`          | De eenentwintig gebeurtenissen van de meldingsklasse hieronder                                       |
+| `RemoteEventForwarder`              | Die eenentwintig plus `TicketReassigned` en elke `TaskLifecycleEvent`. De drie lidmaatschapsgebeurtenissen maken alleen de lidmaatschapscache per werkruimte ongeldig; ze worden niet als frames doorgestuurd |
+| `LocalRpcServer` / `RemoteRelayHost` | `WorkspaceMemberRemoved` — laat de gekoppelde werkruimte-abonnementen van die gebruiker vallen; de socket blijft open |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
+`TicketAssigned` is een audit- en meldingssignaal en een pipelinetrigger. Toewijzing aan een agent legt eigenaarschap vast en start geen run — er is geen ticketdispatcher. Toewijzing aan een team (`assignedTeamId` ingesteld) is de uitzondering: `TeamRoutingService` dispatcht de teamleider.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+`TicketRemoteSyncHandler` is gedeclareerd maar wordt nooit geconstrueerd in productiecode, dus hij abonneert zich vandaag op niets. De client-side `NotificationEventMapper` wordt alleen in zijn eigen test geconstrueerd — het is het overblijfsel van het in-process-pad van vóór de client/server-splitsing. Live toasts komen uit de wire frames hieronder.
 
-## Notification mapping
+## Meldingstoewijzing
 
-On the server, `NotificationFeedRecorder` and `RemoteEventForwarder` turn these events into `notifications/*` wire frames (`notification_wire.dart`). On the client, `RpcNotificationMapper` → `mapNotificationFrame` turns a frame into an `AppNotification`.
+Op de server zetten `NotificationFeedRecorder` en `RemoteEventForwarder` deze gebeurtenissen om in `notifications/*` wire frames (`notification_wire.dart`). Op de client zet `RpcNotificationMapper` → `mapNotificationFrame` een frame om in een `AppNotification`.
 
-There are exactly **sixteen** notification categories. Several events map to more than one wire method, because the frame carries the edge (failed versus recovered) while the category carries the question ("what is CI doing?").
+Er zijn precies **zestien** meldingscategorieën. Verschillende gebeurtenissen komen overeen met meer dan één wire-methode, omdat het frame de overgang draagt (mislukt versus hersteld) terwijl de categorie de vraag draagt ("wat doet CI?").
 
-| Category               | Source event              | Wire method                                                            |
+| Categorie              | Brongebeurtenis           | Wire-methode                                                           |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------ |
 | `newMessage`           | `MessageReceived`         | `notifications/message_received`                                       |
 | `agentRunCompleted`    | `AgentRunCompleted`       | `notifications/agent_run_completed`                                    |
@@ -220,17 +221,17 @@ There are exactly **sixteen** notification categories. Several events map to mor
 | `rigStatusChanged`     | `RigReaped`               | `notifications/rig_reaped`                                             |
 | `rigStatusChanged`     | `RigClosedEvent`          | `notifications/rig_closed`                                             |
 
-The rig take-over frame is not delivered back to whoever took the wheel, a
-release is unfiltered (the event does not record who let go), and only a
-`backendFailure` close produces a `rig_closed` frame — the other reasons are
-either requested or already covered by the reap frame.
+Het frame voor rig-overname wordt niet terugbezorgd aan wie het stuur overnam, een
+vrijgave wordt niet gefilterd (de gebeurtenis legt niet vast wie heeft losgelaten), en alleen een
+sluiting met `backendFailure` levert een `rig_closed`-frame op — de andere redenen zijn
+aangevraagd of al gedekt door het reap-frame.
 
-The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+De vijf categorieën voor eigen PR's dragen `forUserId` mee, zodat ze de auteur bereiken in plaats van iedereen in de werkruimte.
 
-`RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
+`RemoteEventForwarder` stuurt daarnaast `TicketReassigned` door als `notifications/ticket_reassigned` en elke `TaskLifecycleEvent` als `notifications/task_<phase>`. Geen van beide komt overeen met een meldingscategorie — ze sturen live UI aan, niet het meldingencentrum. Lidmaatschapsgebeurtenissen worden niet als frames doorgestuurd: ze maken de cache van de forwarder ongeldig, en de sessiehosts laten de werkruimte-abonnementen van het verwijderde lid vallen.
 
-## See also
+## Zie ook
 
-- [Domain events](/nl-NL/handleiding/concepten/domeingebeurtenissen/)
-- [Pipeline triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/)
-- [Notifications](/nl-NL/handleiding/gidsen/meldingen/)
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/)
+- [Pipeline-triggers](/nl-NL/handleiding/gidsen/pipeline-triggers/)
+- [Meldingen](/nl-NL/handleiding/gidsen/meldingen/)

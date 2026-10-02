@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: אבחון סוכן
+description: עברו צעד-צעד על יומן ההרצות, בדיקת המתאם, מצב השרת ואבחון המארח כשסוכן מפסיק להפיק הרצות.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+מדריך זה מראה כיצד לגלות מדוע סוכן אינו מפיק הרצות.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+עבדו מלמעלה למטה: תחילה ההרצות של הסוכן עצמו, אחר כך הבקאנד שלו, אחר כך השרת, ולבסוף המארח.
 
-## 1. Check the agent's run history
+## 1. בדקו את היסטוריית ההרצות של הסוכן
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**הגדרות ← סביבת עבודה ← סוכנים** ← בחרו את הסוכן ← **יומנים**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+כל הרצה מציגה תג סטטוס, משך ("פועל…" בזמן שהיא מתבצעת), את זמני ההתחלה והסיום שלה, את ה-PID שלה ואת המתאם שבו השתמשה. **הצגה** פותחת את זרם האירועים הגולמי של אותה הרצה. **עצור** הורג תהליך פעיל ומסמן את ההרצה כ"Killed by user"; **עצור הרצות פעילות** בראש העמוד עושה את אותו הדבר לכל הרצה פעילה של אותו סוכן.
 
-Read it like this:
+קראו זאת כך:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **אין הרצות כלל** — השליחה מעולם לא התרחשה. אזכורים בתיבת הכתיבה הם `@` ואחריו תווי מילה (אותיות, ספרות וקו תחתון). ההתאמה היא התאמה מדויקת או התאמת קידומת של שם הסוכן, ולכן `@code-reviewer` מפוענח כ-`code` ועדיין יכול להעיר סוכן בשם `code-reviewer`. שם שמכיל רווח אינו יכול להיות מוזכר כאסימון אחד. אחר כך עברו לשלב 2.
+- **הרצה שהסתיימה מיד בשגיאה** — פתחו את **הצגה**. כשל בהפעלת הבקאנד מופיע כאן כשגיאת תהליך.
+- **הרצה שנתקעה על "פועל…"** — עצרו אותה, ואז בדקו את **זמן קצוב לשקט** של הסוכן בלשונית ההגדרות. זמן קצוב שלא הוגדר משתמש בברירת המחדל של המצב.
+- **הרצה שהסתיימה בלי פלט שימושי** — הסטטוס ביומן ההרצות נשאר `completed` עבור הרצה שהסתיימה בלי התוצר המוצהר שלה; הסימן האמין הוא טקסט הסיכום, ולא התג.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+לשונית **יומנים** אינה מציגה עלות. לצורך ההוצאות, השתמשו בטבלה לפי סוכן ב**ניטור ← תובנות**.
 
-## 2. Check the agent's backend
+## 2. בדקו את הבקאנד של הסוכן
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**הגדרות ← שרת ← ספקי מודלים** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+רשימת **מריצים שזוהו** מציגה כל מתאם עם תוצאת הבדיקה שלו — גרסה מותקנת, "בודק…" או "לא נמצא" — וכן את הנתיב שנפתר ואת תגי היכולת עבור CLI שנמצא. לחצו על **רענן** בראש העמוד כדי לבדוק מחדש.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+הבדיקה רצה על המכונה שמארחת את `cc_server`, ולא על המכונה שאתם מסתכלים עליה. אם אתם בלקוח ה-web או במכשיר משויך, "לא נמצא" פירושו שה-CLI חסר במארח השרת.
 
-Two things to confirm:
+שני דברים שיש לוודא:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **שלסוכן בכלל מוגדר מתאם.** סוכן עם מתאם ריק נשלח אל **Control Center (מובנה)**, ויומן ההרצות רושם `cc-harness`, כך שהתמלול מציין מה רץ בפועל. אם גם אין מודל, הוא מבקש מ-Anthropic את מודל ברירת המחדל שלה — בקשה שנכשלת עם `No credential for provider "anthropic"` אלא אם חיברתם חשבון Anthropic. המומחים הנזרעים מגיעים בלי מתאם.
+- **שלמתאם המובנה יש מודל.** רשימת המודלים שלו נבנית בזמן אמת מהספקים המחוברים בהמשך אותו עמוד, ולכן ספק בלי פרטי גישה שמורים אינו תורם אף מודל.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+קטלוג המתאמים עצמו קבוע — אין דרך לרשום מתאם חדש. מה שכן ניתן לשנות כאן לכל מתאם הוא ארגומנטי ההפעלה ומשתני הסביבה שלו. שימו לב שעקיפת משתני סביבה ברמת המתאם מנצחת בשקט חשבון ספק מחובר כשנפתרים פרטי גישה.
 
-## 3. Check the server
+## 3. בדקו את השרת
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**הגדרות ← שרת ← חיבור וסטטוס** (`/settings/server/connection`) מציג לאיזה שרת הלקוח הזה מדבר ומה הוא מדווח.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+עבור שרת ללא ממשק, `GET /healthz` הוא אותו מידע בלי לקוח. הוא אינו דורש אימות ופתוח ל-CORS במכוון:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+הוא מחזיר את הסטטוס של השרת, זמן פעילות בשניות, מספר חיבורים פעילים, את הפורט הכרוך, גרסת בנייה ו-git SHA, גרסת סכימה של סביבת העבודה, גרסת קטלוג RPC, מזהה השרת, שמו וטביעת האצבע של זהותו, אם הכריכה אינה מאובטחת, ובלוק `codeGraph` עם מוני `watching` / `indexing` / `pending`. כשמטמון כבר ראה תעבורה הוא כולל גם בלוק `caches`; שרת הדגמה מוסיף `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+שני דברים שכדאי לדעת כששינוי "עובד בבדיקות אבל לא באפליקציה":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- האפליקציה השולחנית מפעילה קובץ הפעלה **בנוי מראש** של `cc_server` לפני שהיא בוחרת בקוד המקור. פעולת RPC חדשה או כלי MCP חדש לא יופיעו עד שקובץ ההפעלה ייבנה מחדש, ויומן האתחול רושם אזהרה כשגרסת ה-git SHA של תהליך הבן שונה מזו של האפליקציה.
+- האפליקציה השולחנית הורגת שרת שהופעל ולא הדפיס את הודעת המוכנות שלו בתוך 20 שניות, ועוברת למסך שגיאה.
 
-## 4. Check the host
+## 4. בדקו את המארח
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**הגדרות ← שרת ← אבחון ופרטיות** (`/settings/server/diagnostics`) הוא העמוד ברמת המארח. הוא כולל:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **ארגז חול** — המתג הראשי, הבקאנד שזוהה, רמז התקנה ומתגי היכולת המוגדרים כברירת מחדל. רק הבקאנד שזוהה מגיע מהשרת; ראו את אזהרת הזהירות שלמטה. אין פקד איפוס.
+- **חיפוש סמנטי** — מחזור החיים של מודל ההטמעה שעל המכשיר: מותקן, בהורדה עם אחוזים, לא מותקן, או שגיאת התקנה. עד שהוא מותקן, החיפוש בזיכרון ובקוד נשאר מבוסס מילות מפתח בלבד.
+- **התנהגות המערכת** — להשאיר את המחשב ער בזמן שסוכנים פועלים.
+- **מנוע סנכרון** — מפסקי חירום לפי מאגר עבור כרטיסים, הודעות והערות. אלה פתחי מילוט לשעת חירום בחזרה למנויי תמונת מצב מלאה; שינוי משפיע רק על מינויים חדשים, ולכן הוא נכנס לתוקף מלא רק לאחר טעינה מחדש.
+- **רמת יומן** — העלו אותה לפני שחזור של כשל.
+- **פרטיות** — אם תוכן diff גולמי עשוי להיות מועבר למודל של הסוכן ואם נשלחים דוחות קריסה.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[הקטע הזה מדווח על המארח, והפקדים שלו בצד הלקוח]
+הזיהוי והאכיפה מסכימים כעת: במקום שהגלאי מדווח על בקאנד מקורי, הרצות סוכנים במארח הזה אכן נעטפות בו. אבל הגלאי הוא הדבר החי היחיד בקטע הזה. המתג הראשי, בורר הבקאנד ומתגי היכולת המוגדרים כברירת מחדל הם העדפות שנשמרות במכשיר שלכם, והשרת אינו קורא אף אחת מהן — המתג של השרת עצמו הוא `--sandbox` (`on` כברירת מחדל, `off` כדי לבטל), וכל סוכן שנשאר על "שימוש בברירת המחדל של סביבת העבודה" מקבל מהשרת את ברירת המחדל השמרנית שלו: בלי git push, בלי GitHub API, בלי מפתח כרטוס, עם רשת.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+אזהרה כאן אכן שווה התייחסות, אבל היא בדרך כלל אינה הסיבה לכך שסוכן נכשל. כדי לוודא באיזה מצב נמצא השרת, קראו את יומן האתחול שלו: הוא מדפיס `agent sandbox ON` עם הערת הבקאנד, `no OS-native agent sandbox on this host` עם רמז התקנה, או `agent sandbox DISABLED by --sandbox off`. ‏`GET /healthz` אינו נושא שדה של ארגז חול.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+במקום שאין בקאנד — Windows תמיד, ו-Linux או WSL2 בלי `bwrap` ו-`socat` — ההרצות **אינן** עטופות בארגז חול, ומה שמגביל אותן הוא הצ׳קאאוט של השיחה עצמה, דגלי היכולת שקובעים אילו פרטי גישה מונפקים לתוכו, מעקות הבטיחות של הפעולות, חיטוי הסביבה ומשטח הכלים שהמצב מתיר.
 :::
 
-## Common failures
+## כשלים נפוצים
 
-### The run never starts and the adapter shows "Not found"
+### ההרצה לא מתחילה והמתאם מוצג כ"לא נמצא"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+התקינו את ה-CLI **במארח השרת**, ואז לחצו על **רענן** בעמוד ספקי המודלים. לחלופין, העבירו את הסוכן למתאם המובנה, שאינו זקוק ל-CLI, וחברו ספק באותו עמוד.
 
-### The agent cannot push or open a pull request
+### הסוכן אינו יכול לדחוף או לפתוח בקשת משיכה
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+דגלי היכולת שלו הם השער. פתחו **הגדרות ← סביבת עבודה ← סוכנים** ← הסוכן ← **הרשאות ארגז חול**, הפעילו את המתג והדליקו את **אפשר git push** ואת **אפשר קריאות ל־API של GitHub**. השארת המתג על "שימוש בברירת המחדל של סביבת העבודה" אינה נותנת לסוכן אף אחד מהם.
 
-### Semantic search returns nothing useful
+### החיפוש הסמנטי לא מחזיר דבר שימושי
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+בדקו את **הגדרות ← שרת ← אבחון ופרטיות ← חיפוש סמנטי**. עד שמודל ההטמעה מותקן, החיפוש מבוסס מילות מפתח בלבד. רשומות שנכתבו לפני התקנת המודל אינן משלימות רטרואקטיבית, ולכן הן נשארות מבוססות מילות מפתח גם לאחר מכן.
 
-### The server will not boot at all
+### השרת כלל אינו עולה
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+נדרשות ספריות מקוריות ואין מצב מוגבל. ספריית dylib חסרה גורמת ל-`cc_server` לסרב לעלות ולציין את הקובץ הבעייתי בשגיאה. הכינו את הספריות המקוריות עם `scripts/natives/build_natives.sh` ובנו מחדש את קובץ ההפעלה של השרת.
 
-### An action is silently denied
+### פעולה נדחית בשקט
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+החלטת מעקה בטיחות מסוג `prompt` בלי מאשר מחובר מוכרעת כדחייה, במכוון. בדקו את הכללים של סביבת העבודה תחת **הגדרות ← סביבת עבודה ← הרשאות סוכנים**.
 
-## Related guides
+## מדריכים קשורים
 
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [Manage adapters and models](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
-- [Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/)
-- [Run a headless server](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [ניהול מתאמים ומודלים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מתאמים/)
+- [הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/)
+- [הפעלת שרת ללא ממשק](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הפעלת-שרת-ללא-ממשק/)
 
-## Related concepts
+## מושגים קשורים
 
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
-- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [מחזור חיי שליחת סוכן](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/)

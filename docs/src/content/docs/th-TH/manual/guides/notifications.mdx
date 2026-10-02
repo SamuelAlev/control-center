@@ -1,149 +1,148 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: ตั้งค่าการแจ้งเตือน
+description: เปิดหรือปิดหมวดหมู่ ตั้งค่า Quiet hours และเสียง และรู้ว่าการแจ้งเตือนใดไปถึงคุณที่ไหน
 slug: th-TH/คู่มือ/วิธีทำ/การแจ้งเตือน
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+คู่มือนี้แสดงวิธีตั้งค่าการแจ้งเตือน และการตั้งค่าแต่ละอย่างควบคุมอะไรจริง ๆ
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+การแจ้งเตือนมาถึงบนสองพื้นผิว **ศูนย์การแจ้งเตือน** — ระฆังบนแถบชื่อเรื่อง — อ่าน
+ฟีดถาวรต่อเวิร์กสเปซจากเซิร์ฟเวอร์ ส่วน **ทอสต์ของระบบปฏิบัติการ** เป็นเส้นทางแยก
+ที่ใช้เฉพาะเดสก์ท็อป ป้อนด้วยเฟรมสดที่เซิร์ฟเวอร์ผลักมา
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[บิลด์เว็บไม่แสดงการแจ้งเตือนของระบบปฏิบัติการ]
+ไปป์ไลน์ทอสต์ถูกสร้างขึ้นโดยเดสก์ท็อปบูตสแตรปเท่านั้น บน `app.usectrl.dev` ไม่มี
+ทอสต์ของระบบปฏิบัติการ ไม่มีเสียงแจ้งเตือน และไม่มีแบนเนอร์แวดล้อม — ระฆังและ
+ประวัติของมันยังทำงานได้ เพราะอ่านฟีดจากเซิร์ฟเวอร์ ไคลเอนต์บนมือถือไม่มีการ
+แจ้งเตือนใด ๆ เลย
 :::
 
-## Turn categories on or off
+## เปิดหรือปิดหมวดหมู่
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. ไปที่ **การตั้งค่า → คุณ → การแจ้งเตือน**
+2. ปล่อยให้ **เปิดการแจ้งเตือน** เปิดอยู่
+3. สลับหมวดหมู่ที่คุณต้องการ มีทั้งหมดสิบหกหมวดหมู่พอดี:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| หมวดหมู่                     | แจ้งเตือนเมื่อ                                                                |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| เอเจนต์เสร็จแล้ว             | เอเจนต์รันหนึ่งรอบเสร็จแล้ว                                                  |
+| PR ถูกเผยแพร่แล้ว            | เอเจนต์เผยแพร่ PR                                                            |
+| PR ถูกรวมแล้ว                | PR ถูกรวม                                                                   |
+| ข้อความใหม่                  | มีข้อความเข้ามาในสเปซที่คุณไม่ได้กำลังดูอยู่                                   |
+| ถูกกล่าวถึงใน pull request   | การตรวจสอบการแจ้งเตือนของ GitHub พบว่าคุณถูกกล่าวถึงบน PR                     |
+| ขอรีวิว                      | มีการขอรีวิวจากคุณจริง ๆ บน PR ที่ไม่ใช่ฉบับร่าง                               |
+| รีวิวล้าสมัย                  | มีคอมมิตใหม่เข้ามาใน pull request ที่คุณรีวิวไปแล้ว                          |
+| พร้อมรวม                     | pull request ที่คุณเป็นผู้เขียนกลายเป็นรวมได้ หรือเลิกเป็นเช่นนั้น             |
+| ผลการรีวิว                   | ผู้รีวิวอนุมัติ ขอให้แก้ไข หรือการอนุมัติถูกเพิกถอน                            |
+| การตรวจ                      | CI ล้มเหลวบน pull request ที่คุณเป็นผู้เขียน หรือกลับมาผ่าน                   |
+| เธรดรีวิว                    | มีคนตอบกลับในเธรดที่คุณอยู่หรือปิดเธรดนั้น                                     |
+| มอบหมายตั๋วงานแล้ว           | มีการมอบหมายตั๋วงาน                                                          |
+| สถานะตั๋วงานเปลี่ยน          | ตั๋วงานเปลี่ยนสถานะ                                                          |
+| การประชุมกำลังจะเริ่ม        | การประชุมในปฏิทินอยู่ในช่วงเวลาล่วงหน้าที่คุณตั้งไว้                           |
+| ปฏิทินถูกตัดการเชื่อมต่อ     | โทเค็น OAuth ของปฏิทินที่เชื่อมต่อหมดอายุ                                     |
+| อัปเดตเอนโคลเจอร์             | เอนโคลเจอร์ถูกเข้ายึด ถูกเรียกคืน หรือล้มเหลว                                  |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+สิ่งที่อยู่นอกเหนือรายการนี้ไม่สามารถแจ้งเตือนหรือกรองได้ — ไม่มีหมวดหมู่
+“ทุกอย่างอื่น”
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+การตั้งค่าเหล่านี้ติดตามผู้ใช้ของคุณข้ามอุปกรณ์ โทรศัพท์กับแล็ปท็อปจึงสอดคล้องกัน
+ส่วนระดับเสียงเป็นข้อยกเว้นโดยเจตนา และแยกตามอุปกรณ์
 
-## Set quiet hours
+## ตั้งค่า Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. บนหน้าเดียวกัน เปิด **Quiet hours**
+2. พิมพ์เวลาเริ่มและเวลาสิ้นสุดในรูปแบบ `HH:MM` (ช่วงเริ่มต้นคือ 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+ในช่วง Quiet hours การแจ้งเตือนที่ไม่เร่งด่วนจะถูกทิ้ง — ไม่ถูกจัดคิวแล้วเล่นซ้ำ
+ภายหลัง
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+มีสองหมวดหมู่ที่เป็น **เรื่องด่วน** และส่งถึงเสมอ โดยข้าม Quiet hours _และ_
+โหมดโฟกัส: **การประชุมกำลังจะเริ่ม** และ **PR ถูกเผยแพร่แล้ว** การเตือนการประชุมที่
+คุณเห็นหลังจากนั้นไปแล้วก็ไร้ค่า นี่คือเหตุผล
 
-## Choose a sound
+## เลือกเสียง
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. เลื่อนไปที่ **เสียงแจ้งเตือน**
+2. เลือกหนึ่งในสิบเอ็ดเสียงที่มาพร้อมแอป หรือ **ไม่มี**
+3. กดปุ่มทดสอบเพื่อฟังเสียง แล้วตั้งระดับเสียงด้วยแถบเลื่อน
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+แอปเล่นเสียงเอง ส่วนการแจ้งเตือนของระบบปฏิบัติการถูกส่งแบบเงียบ คุณจึงไม่ต้องได้ยิน
+ซ้ำสองครั้ง
 
-## Set the meeting lead time
+## ตั้งเวลาล่วงหน้าก่อนการประชุม
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. เลื่อนไปที่ **เวลาก่อนแจ้งเตือน**
+2. เลือก **5**, **10**, **15** หรือ **30** นาที
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+นี่คือระยะเวลาล่วงหน้าก่อนเหตุการณ์ในปฏิทินที่การแจ้งเตือน **การประชุมกำลังจะเริ่ม**
+จะทำงาน ค่าเริ่มต้นคือ 5 นาที
 
-## Know when a notification is suppressed
+## รู้ว่าเมื่อใดการแจ้งเตือนถูกระงับ
 
-A notification is dropped, silently, when any of these is true:
+การแจ้งเตือนจะถูกทิ้งอย่างเงียบ ๆ เมื่อข้อใดข้อหนึ่งต่อไปนี้เป็นจริง:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- การแจ้งเตือนถูกปิดทั้งหมด หรือหมวดหมู่ของมันถูกปิด
+- คุณอยู่ในเส้นทางที่มันจะพาคุณไปอยู่แล้ว — และสำหรับข้อความ คุณอยู่ในสเปซนั้นอยู่แล้ว
+- โหมดโฟกัสทำงานอยู่และหมวดหมู่นั้นไม่ใช่เรื่องด่วน
+- Quiet hours ทำงานอยู่และหมวดหมู่นั้นไม่ใช่เรื่องด่วน
 
-Those checks apply to OS toasts. The durable bell still records the event.
+การตรวจสอบเหล่านั้นใช้กับทอสต์ของระบบปฏิบัติการ ส่วนระฆังแบบถาวรยังคงบันทึก
+เหตุการณ์ไว้
 
-Two more suppressions live further upstream, in what the server sends at all:
+มีการระงับอีกสองกรณีที่อยู่ต้นทางยิ่งกว่า ในสิ่งที่เซิร์ฟเวอร์ส่งมาเลย:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- ข้อความที่ไม่ได้กล่าวถึงคุณจาก **มนุษย์** คนอื่นจะไม่กลายเป็นการแจ้งเตือน
+- สเปซระหว่างเอเจนต์กับเอเจนต์ถูกปิดเสียงในแถบข้าง จึงไม่ทำให้ป้ายข้อความยังไม่ได้
+  อ่านเพิ่มขึ้นเลย
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+ภายในสเปซไม่มีมุมที่เงียบ: ทุกการสนทนาแจ้งเตือนเท่ากัน รวมถึงเธรดด้วย สถานะการอ่าน
+ผูกกับสเปซ ความยังไม่ได้อ่านจึงรวมกันข้ามการสนทนาต่าง ๆ ในสเปซ แทนที่จะติดตามแยก
+ทีละการสนทนา
 
-## Read and clear the notification centre
+## อ่านและล้างศูนย์การแจ้งเตือน
 
-1. Click the bell in the title bar
+1. คลิกระฆังบนแถบชื่อเรื่อง
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+ป๊อปโอเวอร์แสดงกิจกรรมล่าสุด โดยลิงก์เจาะลึกแต่ละรายการไปยังสิ่งที่รายการนั้น
+เกี่ยวกับ การเปิดมัน **ไม่** ทำเครื่องหมายว่าอ่านแล้วทั้งหมด — ใช้ **ทำเครื่องหมาย
+ทั้งหมดว่าอ่านแล้ว** ในส่วนหัว หรือทำเครื่องหมายทีละแถว สถานะการอ่านติดตามผู้ใช้ของ
+คุณข้ามอุปกรณ์
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[ล้างทั้งหมดเป็นการประทับลายน้ำ ไม่ใช่การลบ]
+**ล้างทั้งหมด** ประทับลายน้ำต่อผู้ใช้ที่ซ่อนทุกอย่างที่เก่ากว่า ส่วนแถวยังคงอยู่
+แยกจากกัน แต่ละเวิร์กสเปซเก็บเฉพาะ **200** แถวล่าสุดของฟีด โดยตัดทิ้งเมื่อมีแถวใหม่
+เข้ามา ขณะที่ระฆังสมัครรับ **50** แถวใหม่สุด และป๊อปโอเวอร์แสดงได้ถึง **15** แถวจาก
+เหล่านั้น ประวัติที่เกินกว่านั้นหายไปแล้วไม่ว่าสถานะการอ่านจะเป็นอย่างไร
 :::
 
-## Troubleshooting
+## การแก้ไขปัญหา
 
-### No OS notifications on macOS
+### ไม่มีการแจ้งเตือนของระบบปฏิบัติการบน macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+ระบบขอสิทธิ์โดยตรงเมื่อแอปเปิดขึ้น หากคุณปฏิเสธไปแล้ว ให้เปิดใช้งาน Control Center
+อีกครั้งที่ การตั้งค่าระบบ → การแจ้งเตือน ไม่มีพรอมป์ต์ในแอปให้เรียกขอใหม่
 
-### Nothing arrives on the web build
+### บนบิลด์เว็บไม่มีอะไรมาถึง
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+เป็นไปตามที่คาดไว้ — บิลด์เว็บไม่มีไปป์ไลน์การแจ้งเตือนของระบบปฏิบัติการ ให้ใช้ระฆัง
 
-### The bell badge shows zero but there is clearly new activity
+### ป้ายบนระฆังแสดงศูนย์แต่มีกิจกรรมใหม่ชัดเจน
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+จนกว่าสตรีมเครื่องหมายการอ่านจะพร้อมหลังเชื่อมต่อ รายการจะแสดงเป็นอ่านแล้วเพื่อ
+หลีกเลี่ยงป้ายที่กะพริบแล้วว่างเปล่า มันจะเข้าที่เมื่อโหลดเครื่องหมายเสร็จ
 
-### An agent's run finished but nothing pinged me
+### การรันของเอเจนต์เสร็จแล้วแต่ไม่มีอะไรแจ้งเตือนฉัน
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+ตรวจสอบว่าคุณไม่ได้อยู่ในสเปซที่มันเกิดขึ้นอยู่แล้ว — เส้นทางที่ใช้งานอยู่จะระงับ
+ทอสต์ของระบบปฏิบัติการของตัวเอง
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Use focus mode and soundscapes](/th-TH/คู่มือ/วิธีทำ/โหมดโฟกัส/)
-- [Triage your inbox](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)
-- [Curate your newsfeed](/th-TH/คู่มือ/วิธีทำ/ฟีดข่าว/)
+- [ใช้โหมดโฟกัสและซาวด์สเคป](/th-TH/คู่มือ/วิธีทำ/โหมดโฟกัส/)
+- [คัดแยกกล่องขาเข้า](/th-TH/คู่มือ/วิธีทำ/คัดแยกกล่องขาเข้า/)
+- [จัดฟีดข่าวของคุณ](/th-TH/คู่มือ/วิธีทำ/ฟีดข่าว/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/)

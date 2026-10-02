@@ -1,123 +1,137 @@
 ---
-title: Authorization — who may do what, and how you prove it
-description: The permission catalog behind Control Center's roles, the tamper-evident audit trail every authorization decision lands in, and the install-wide controls an operator can pin.
+title: Kebenaran — siapa boleh buat apa, dan bagaimana anda membuktikannya
+description: Katalog keizinan di sebalik peranan Control Center, jejak audit yang mengesan pengusikan bagi setiap keputusan kebenaran, dan kawalan seluruh pemasangan yang boleh dipasak oleh operator.
 slug: ms-MY/manual-pengguna/konsep/kebenaran
+sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
 ---
 
-Control Center answers two authorization questions, and they are genuinely
-different. **"May this person call this operation?"** is about humans, roles
-and repositories. **"May this agent cause this effect?"** is about actions,
-arguments and blast radius — that one is [Guardrails](/ms-MY/manual-pengguna/konsep/guardrail/).
+Control Center menjawab dua soalan kebenaran, dan kedua-duanya memang
+berbeza. **"Bolehkah orang ini memanggil operasi ini?"** adalah tentang
+manusia, peranan dan repositori. **"Bolehkah ejen ini menyebabkan kesan
+ini?"** adalah tentang tindakan, argumen dan julat kesan — yang itu
+[Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/).
 
-This page is the first question, plus the record both of them leave behind.
+Halaman ini membincangkan soalan pertama, serta rekod yang ditinggalkan oleh
+kedua-duanya.
 
-## One decision point
+## Satu titik keputusan
 
-Every human-side authorization decision resolves through a single function:
+Setiap keputusan kebenaran di sisi manusia diselesaikan melalui satu fungsi:
 
 ```
 can(principal, permission, resource) → allow | deny + why
 ```
 
-A **permission** is `<domain>:<tier>` — `tickets:write`,
-`members:administer`, `repos:read`. The catalog is **derived**, not
-hand-written: it is computed from the operation surface itself (the op's name
-prefix gives the domain, the role floor it already enforces gives the tier),
-so all ~550 operations carry a permission without anyone typing one.
+Satu **keizinan** ialah `<domain>:<tier>` — `tickets:write`,
+`members:administer`, `repos:read`. Katalog ini **terbitan**, bukan ditulis
+tangan: ia dikira daripada permukaan operasi itu sendiri (awalan nama op
+memberikan domain, paras peranan yang sudah dikuatkuasakannya memberikan
+peringkat), jadi kesemua ~550 operasi membawa satu keizinan tanpa sesiapa
+menaipnya.
 
-That derivation is the property worth protecting. It means a NEW operation is
-gated by default — the failure mode of a hand-annotated model is that
-somebody forgets, and the thing they forget is the gate. A ratchet test pins
-the resulting domain set, so adding an operation under a new prefix is a
-naming decision a human makes rather than an accident.
+Terbitan itulah sifat yang berharga untuk dilindungi. Ia bermakna operasi
+BAHARU berpagar secara lalai — mod kegagalan model beranotasi tangan ialah
+seseorang terlupa, dan perkara yang dilupakan itu ialah pagar. Ujian pengunci
+menyematkan set domain yang terhasil, jadi menambah operasi di bawah awalan
+baharu menjadi keputusan penamaan yang dibuat oleh manusia, bukan kemalangan.
 
-The four tiers map exactly onto the built-in roles:
+Empat peringkat itu sepadan tepat dengan peranan terbina dalam:
 
-| Tier | Role floor | Example |
+| Peringkat | Paras peranan | Contoh |
 |---|---|---|
-| `read` | guest | `tickets:read` |
-| `write` | member | `tickets:write` |
-| `administer` | admin | `members:administer` |
-| `own` | owner | `workspace:own` |
+| `read` | Tetamu | `tickets:read` |
+| `write` | Ahli | `tickets:write` |
+| `administer` | Pentadbir | `members:administer` |
+| `own` | Pemilik | `workspace:own` |
 
-## Roles
+## Peranan
 
-Five built-in roles — **owner, admin, member, viewer, guest** — are presets
-over that catalog. Ownership is a single seat per workspace, handed over
-explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses any workspace owner — transfer
-first).
+Lima peranan terbina dalam — **Pemilik, Pentadbir, Ahli, Pemapar, Tetamu** —
+ialah praset bagi katalog tersebut. Pemilikan ialah satu tempat sahaja bagi
+setiap ruang kerja, diserahkan secara eksplisit melalui **Pindahkan
+pemilikan** (pemilik yang pergi tidak boleh dibuang selain itu: nyahperuntukan
+SCIM menolak mana-mana pemilik ruang kerja — pindahkan dahulu).
 
-**Custom roles are subtractive.** A custom role names a base preset (`admin`,
-`member`, `viewer` or `guest` — never `owner`) and a set of permissions
-REMOVED from it — "admin, but cannot manage members". It can never grant more
-than its base, which is what makes them safe to introduce into an existing
-install: every existing check remains a sound upper bound. Members hold them
-as `custom:<id>`, and a client too old to understand that value falls back
-to guest rather than guessing.
+**Peranan tersuai hanya mengurangkan.** Satu peranan tersuai menamakan praset
+asas (`admin`, `member`, `viewer` atau `guest` — tidak pernah `owner`) dan satu
+set keizinan yang DIBUANG daripadanya — "admin, tetapi tidak boleh mengurus
+ahli". Ia tidak boleh memberikan lebih daripada asasnya, dan itulah yang
+menjadikannya selamat diperkenalkan ke dalam pemasangan sedia ada: setiap
+semakan sedia ada kekal sebagai sempadan atas yang sah. Ahli memegangnya
+sebagai `custom:<id>`, dan klien yang versinya terlalu lama untuk memahami
+nilai itu kembali kepada Tetamu dan tidak meneka.
 
-Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
-surface that exposes code checks them — including the ones that reach code
-sideways, like a terminal or an editor session opened on a space's worktree.
+Di bawah peranan terletak **pemberian setiap repositori** (`none` / `read` /
+`review` / `write`): keahlian ruang kerja tidak pernah secara senyap memberi
+keistimewaan melebihi hos kod. Setiap permukaan yang mendedahkan kod
+menyemaknya — termasuk yang mencapai kod secara menyamping, seperti terminal
+atau sesi editor yang dibuka pada worktree sesuatu ruang.
 
-## Server authority
+## Autoriti pelayan
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+Sesetengah operasi langsung bukan tentang ruang kerja: tetapan seluruh
+pemasangan, konfigurasi SSO, kelayakan penyedia, pengurusan model, sandaran
+seluruh pemasangan. Operasi itu mengisytiharkan **autoriti pelayan** dan
+ditolak untuk semua orang kecuali operator pemasangan tersebut (pemilik
+pelayan yang direkodkan). Sengaja hanya wujud satu identiti operator dan satu
+takrifan bagi identiti itu.
 
-## The audit trail
+## Jejak audit
 
-Every authorization decision — **allow and deny** — is appended to a
-per-workspace, hash-chained audit trail.
+Setiap keputusan kebenaran — **dibenarkan dan ditolak** — ditambahkan pada
+jejak audit berantai hash bagi setiap ruang kerja.
 
-A deny-only log answers "what did we block?" but not "what did this agent
-actually do, and who authorized it?", which is the question an incident review
-starts from. So each entry records the full attribution chain: the acting
-principal, the human it acted on behalf of, the delegation it arrived through,
-the action and its arguments (as a digest), the decision, and **the rule that
-decided**.
+Log yang merekodkan penolakan sahaja menjawab "apa yang kami sekat?" tetapi
+bukan "apa yang ejen ini sebenarnya lakukan, dan siapa yang memberikannya
+kebenaran?", iaitu soalan yang menjadi titik mula semakan insiden. Jadi
+setiap entri merekodkan rantaian atribusi penuh: prinsipal yang bertindak,
+manusia yang diwakilinya, perwakilan yang melaluinya ia sampai, tindakan dan
+argumennya (sebagai ringkasan), keputusan itu, dan **peraturan yang membuat
+keputusan**.
 
-Entries are chained: each one's hash covers the previous one's, so editing,
-deleting or reordering any row breaks every hash after it. **Verify chain**
-re-derives the whole thing and names the first link that does not hold. An
-audit log you cannot check is a log; one you can re-derive is evidence.
+Entri dirantai: hash setiap entri merangkumi hash entri sebelumnya, jadi
+mengedit, memadam atau menyusun semula mana-mana baris memecahkan setiap hash
+selepasnya. **Sahkan rantai** menerbitkan semula keseluruhan rantaian itu dan
+menamakan pautan pertama yang tidak bertahan. Log audit yang tidak boleh anda
+semak hanyalah log; yang boleh anda terbitkan semula ialah bukti.
 
-Two consequences worth knowing:
+Dua akibat yang wajar diketahui:
 
-- The audit table is **exempt from age-based pruning**. A hash chain cannot
-  be trimmed from the middle. Retention is export-then-truncate, and the
-  truncation leaves a checkpoint carrying the removed segment's terminal
-  hash, so what survives still verifies back to the beginning.
-- It sits **beside** the activity timeline, not on top of it. The timeline is
-  what people did; this is what was authorized and refused. A shared
-  correlation id reads one call across both.
+- Jadual audit **dikecualikan daripada pemangkasan berdasarkan usia**. Rantaian
+  hash tidak boleh dipangkas dari tengahnya. Pengekalan dilakukan dengan
+  eksport dahulu, kemudian potong; pemotongan itu meninggalkan titik
+  pemeriksaan yang membawa hash terminal segmen yang dibuang, jadi apa yang
+  terselamat masih boleh disahkan kembali ke permulaan.
+- Ia terletak **di sisi** garis masa aktiviti, bukan di atasnya. Garis masa
+  ialah apa yang orang lakukan; ini ialah apa yang diberikan kebenaran dan
+  ditolak. Id korelasi yang dikongsi membaca satu panggilan merentas
+  kedua-duanya.
 
-It exports as newline-delimited JSON and can stream to a SIEM (Splunk,
-Elastic, Sentinel — an HTTP endpoint with a bearer token). Streaming is
-best-effort by design: a SIEM being down must never block an agent's tool
-call, and the durable, verifiable copy is on disk either way.
+Ia dieksport sebagai JSON yang dipisahkan baris baharu dan boleh distrim ke
+SIEM (Splunk, Elastic, Sentinel — titik akhir HTTP dengan token pembawa).
+Penstriman bersifat usaha terbaik mengikut reka bentuk: SIEM yang tidak
+berfungsi tidak boleh sesekali menyekat panggilan alat ejen, dan salinan tahan
+lama yang boleh disahkan tetap ada pada cakera dalam apa jua keadaan.
 
-## Sessions
+## Sesi
 
-An install can set a **maximum session age** and an **idle timeout**. Both are
-enforced at the device-credential check every authenticated lane funnels
-through — a session bound a client could ignore answers a questionnaire, not
-an attacker. An install can also require SSO, which disables manual pairing
-for new devices (with a lockout guard: it refuses while no working SSO
-connection exists).
+Sesuatu pemasangan boleh menetapkan **usia sesi maksimum** dan **tamat masa
+melahu**. Kedua-duanya dikuatkuasakan pada pemeriksaan kelayakan peranti yang
+dilalui oleh setiap lorong yang disahkan — sesi yang terikat pada klien dan
+boleh diabaikan hanya menjawab soal selidik, bukan penyerang. Sesuatu
+pemasangan juga boleh mewajibkan SSO, yang melumpuhkan penggandingan manual
+untuk peranti baharu (dengan pelindung penguncian: ia menolak selagi tiada
+sambungan SSO yang berfungsi).
 
-## What this is not
+## Apa yang bukan
 
-- **Not per-object ACLs.** There is no per-ticket or per-message permission,
-  deliberately. Repository-level separation is what teams actually ask for
-  and it exists; per-object sharing is a combinatorial surface with no
-  demonstrated demand here.
-- **Not a policy engine you configure in a DSL.** The vocabulary is closed on
-  purpose, so the whole policy can be rendered, explained and enumerated.
-- **Not enforced anywhere but the server.** Client-side checks exist only to
-  avoid offering a control that will be refused. The authoritative decision
-  is always the server's.
+- **Bukan ACL setiap objek.** Tiada keizinan setiap tiket atau setiap mesej,
+  secara sengaja. Pengasingan pada peringkat repositori ialah apa yang pasukan
+  sebenarnya minta, dan ia sudah wujud; perkongsian setiap objek ialah
+  permukaan gabungan tanpa permintaan yang terbukti di sini.
+- **Bukan enjin polisi yang anda konfigur dalam DSL.** Perbendaharaan katanya
+  ditutup secara sengaja, jadi keseluruhan polisi boleh dipaparkan, dijelaskan
+  dan disenaraikan.
+- **Tidak dikuatkuasakan di mana-mana selain pelayan.** Semakan di sisi klien
+  wujud hanya untuk mengelakkan daripada menawarkan kawalan yang akan ditolak.
+  Keputusan muktamad sentiasa milik pelayan.

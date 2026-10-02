@@ -1,126 +1,135 @@
 ---
-title: Run an orchestration
-description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+title: Jalankan orkestrasi
+description: Minta rencana kepada orkestrator, tinjau dan edit rencana itu di Plan Studio, setujui sekali, lalu biarkan pipeline yang dihasilkan mengerjakan pekerjaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi
+sourceHash: 086301be6c1957f6336294720967813c3050ed25
 ---
 
-This guide shows you how to turn one big goal into a whole-team plan that runs
-itself. See [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/) for how it works.
+Panduan ini menunjukkan cara mengubah satu tujuan besar menjadi rencana seluruh
+tim yang berjalan sendiri. Lihat [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/) untuk cara kerjanya.
 
-## When to use an orchestration
+## Kapan menggunakan orkestrasi
 
-Reach for an orchestration when the ask is bigger than one agent and you don't
-already know the exact steps. For a single task, message an agent in a
-[space](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/); for a process you can spell out by
-hand, build a [pipeline template](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/).
+Gunakan orkestrasi saat permintaannya lebih besar daripada satu agen dan Anda
+belum tahu langkah persisnya. Untuk satu tugas, kirim pesan ke agen di sebuah
+[space](/id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen/); untuk proses yang bisa Anda susun
+sendiri secara manual, buat [templat pipeline](/id-ID/panduan-pengguna/panduan-praktis/buat-pipeline/).
 
-## Step 1: Ask for the plan
+## Langkah 1: Minta rencananya
 
-1. Open (or create) a space and an **anchor ticket**. Every proposal requires
-   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
-   that ticket.
-2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
-   narrows the agent to reading and proposing — memory, the code graph, repo and
-   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
-   start writing code instead of planning.
-3. @-mention your orchestrator (usually the CEO agent) and state the goal in
-   plain language:
+1. Buka (atau buat) sebuah space dan sebuah **tiket jangkar**. Setiap proposal
+   memerlukannya (`propose_orchestration` menerima `ticket_id`); space bersama
+   berasal dari tiket itu.
+2. Secara opsional, alihkan dropdown mode komposer ke **Orkestrasi**. Mode itu
+   mempersempit agen ke membaca dan mengusulkan — memori, graf kode, pembacaan
+   repo dan tiket, `propose_orchestration`, dan alat playbook — sehingga agen
+   tidak bisa mulai menulis kode alih-alih merencanakan.
+3. @-mention orkestrator Anda (biasanya agen CEO) dan nyatakan tujuannya dengan
+   bahasa sehari-hari:
 
-> @ceo Research the competitive landscape for an offline-first meeting recorder
-> and write a one-page positioning doc.
+> @ceo Teliti lanskap persaingan untuk perekam rapat offline-first dan tulis
+> dokumen positioning satu halaman.
 
-The orchestrator answers with a structured **proposal** card in the space: the
-roles it needs, the work broken into sub-tickets, an optional research and
-discussion phase, a synthesis step that produces the deliverable and a budget.
+Orkestrator menjawab dengan kartu **proposal** yang terstruktur di space itu:
+peran yang dibutuhkannya, pekerjaan yang dipecah menjadi sub-tiket, fase riset
+dan diskusi opsional, langkah sintesis yang menghasilkan hasil kerja, dan
+anggaran.
 
-Because the proposal is a typed object, the app validates it (well-formed roles,
-declared output schemas, a DAG with no cycles) before anything runs. A proposal
-that fails validation cannot be approved.
+Karena proposal adalah objek bertipe, aplikasi memvalidasinya (peran yang
+tertata, skema output yang dideklarasikan, DAG tanpa siklus) sebelum apa pun
+berjalan. Proposal yang gagal divalidasi tidak dapat disetujui.
 
-## Step 2: Review and edit the proposal
+## Langkah 2: Tinjau dan edit proposal
 
-The in-chat card offers three actions: **Approve plan**, **Reject** and
-**Open** — which opens the plan in Plan Studio as an editor tab. The card
-itself cannot be edited.
+Kartu di dalam chat menawarkan tiga tindakan: **Setujui rencana**, **Tolak**,
+dan **Buka** — yang membuka rencana itu di Plan Studio sebagai tab editor.
+Kartunya sendiri tidak dapat diedit.
 
-To change anything, press **Open** and work in the right-hand inspector:
+Untuk mengubah apa pun, tekan **Buka** dan bekerja di inspector sisi kanan:
 
-- **Title**, **description**, **role**, **dependencies** and **output schema**
-  of any work step. Role here means which of the plan's existing role keys
-  owns the step — you cannot pin a role to a named agent or edit the hire
-  list from the inspector, and you cannot edit the budget.
+- **Judul**, **deskripsi**, **peran**, **dependensi**, dan **skema output** dari
+  setiap langkah kerja. Peran di sini berarti kunci peran yang sudah ada di
+  rencana yang memiliki langkah tersebut — Anda tidak dapat menyematkan peran
+  ke agen bernama tertentu atau mengedit daftar rekrut dari inspector, dan Anda
+  tidak dapat mengedit anggaran.
 
-Two things are read-only: structural nodes (research, discussion, synthesis) and
-any node whose work has already run. Editing is possible only while the
-orchestration is still `proposed`.
+Ada dua hal yang bersifat hanya baca: node struktural (riset, diskusi, sintesis)
+dan node mana pun yang pekerjaannya sudah dijalankan. Pengeditan hanya mungkin
+selama orkestrasi masih `proposed`.
 
-Press **Estimate** in the approval bar for cost, duration and blast-radius
-ranges before you commit. See
-[Work in Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/) for the full editor.
+Tekan **Estimasi** di bilah persetujuan untuk melihat rentang biaya, durasi, dan
+radius dampak sebelum Anda menyetujuinya. Lihat
+[Bekerja di Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/) untuk editor lengkapnya.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/).
+:::note[Anggaran bukan batas belanja]
+Anggaran sebuah proposal dibandingkan dengan _estimasi_ di bilah persetujuan:
+saat ujung atas estimasi melebihi anggaran itu, totalnya berubah merah dengan
+peringatan melebihi anggaran. Tidak ada yang memeriksa pengeluaran selama
+rencana dieksekusi, jadi hal itu tidak akan menghentikan atau menggagalkan
+eksekusi. Untuk penghentian pengeluaran yang sesungguhnya, gunakan kebijakan
+anggaran per agen — lihat
+[Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/).
 :::
 
-## Step 3: Approve
+## Langkah 3: Setujui
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Setujui rencana itu, dari kartu di chat atau dari bilah persetujuan Plan Studio.
+**Inilah satu-satunya keputusan yang Anda buat.** Persetujuan hanya dapat
+dilakukan operator — tidak ada alat MCP untuk itu, sehingga agen dapat
+mengusulkan dan merevisi tetapi tidak pernah menyetujui rencananya sendiri.
 
-From here a deterministic materializer (a pure function, no LLM) turns the
-proposal into a real [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) and creates the
-scaffolding:
+Dari sini, materializer deterministik (fungsi murni, tanpa LLM) mengubah
+proposal menjadi [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) sungguhan dan membuat
+perancahnya:
 
-- hires any new roles (and records the hired agent ids so a crash mid-approval
-  can resume without duplicate hires)
-- groups the roles into a **team**
-- creates a **project** and files the parent ticket under it
-- starts the **pipeline run** that drives it all
+- merekrut setiap peran baru (dan mencatat id agen yang direkrut sehingga crash
+  di tengah persetujuan dapat dilanjutkan tanpa rekrutan ganda)
+- mengelompokkan peran-peran itu ke dalam sebuah **tim**
+- membuat sebuah **proyek** dan mencatat tiket induk di bawahnya
+- memulai **eksekusi pipeline** yang menggerakkan semuanya
 
-The status moves to `approved`, then `executing`.
+Status berpindah ke `approved`, lalu `executing`.
 
-## Step 4: Watch it run
+## Langkah 4: Awasi jalannya
 
-The sub-tickets execute as pipeline steps; if you enabled a discussion round,
-each role posts a position first. Progress surfaces where you already look:
+Sub-tiket dieksekusi sebagai langkah pipeline; jika Anda mengaktifkan putaran
+diskusi, setiap peran memposting posisinya lebih dulu. Kemajuan muncul di tempat
+yang sudah biasa Anda lihat:
 
-- the **parent ticket** the orchestration was anchored on
-- the shared **space** the team talks in, where the plan's row tracks each
-  node's state
-- the **pipeline run** detail, with its usual waterfall and per-step cost — see
-  [Monitor pipeline runs](/id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline/)
-- the **project** the parent ticket was filed under
+- **tiket induk** tempat orkestrasi dijangkarkan
+- **space** bersama tempat tim berbicara, tempat baris rencananya melacak status
+  tiap node
+- detail **eksekusi pipeline**, dengan linimasa dan biaya per langkahnya seperti
+  biasa — lihat
+  [Pantau eksekusi pipeline](/id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline/)
+- **proyek** tempat tiket induk dicatat di bawahnya
 
-Once the sub-tickets are done, the status moves to `synthesizing` and the
-synthesis step produces the deliverable. That text is posted in the shared
-space and the parent ticket is marked complete, then `completed`.
+Begitu sub-tiket selesai, status berpindah ke `synthesizing` dan langkah
+sintesis menghasilkan hasil kerja. Teks itu diposting di space bersama dan tiket
+induk ditandai selesai, lalu `completed`.
 
-## Stop it early
+## Hentikan lebih awal
 
-Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
-Studio's approval bar. Cancellation tears down the in-flight work.
+Tekan **Batalkan orkestrasi** pada kartu di chat, atau **Batalkan eksekusi** di
+bilah persetujuan Plan Studio. Pembatalan membongkar pekerjaan yang sedang
+berjalan.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+Orkestrasi gagal ketika materialisasi gagal, atau ketika eksekusi pipeline yang
+dihasilkannya gagal (riset, diskusi, sintesis, atau persist — langkah-langkah
+itu tidak dilanjutkan saat gagal). Langkah **kerja** yang dihasilkan selalu
+dilanjutkan saat gagal, sehingga satu sub-tiket yang gagal tidak menggagalkan
+eksekusi. Tidak ada jalur kegagalan karena anggaran terlampaui dan tidak ada
+ambang "setiap sub-tiket gagal".
 
-## Related guides
+## Panduan terkait
 
-- [Work in Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/): edit, estimate, diff and approve the plan
-- [Create and manage tickets](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/): the parent ticket an orchestration is anchored on
-- [Organize work with projects](/id-ID/panduan-pengguna/panduan-praktis/proyek/): where the parent ticket is filed
-- [Monitor pipeline runs](/id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline/): what a materialized orchestration looks like in the engine
-- [Build an agent team](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/): the roles an orchestration fills or hires
+- [Bekerja di Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/): edit, estimasi, diff, dan setujui rencana
+- [Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/): tiket induk tempat orkestrasi dijangkarkan
+- [Atur pekerjaan dengan proyek](/id-ID/panduan-pengguna/panduan-praktis/proyek/): tempat tiket induk dicatat
+- [Pantau eksekusi pipeline](/id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline/): seperti apa orkestrasi yang sudah dimaterialisasi di mesin
+- [Bangun tim agen](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/): peran yang diisi atau direkrut oleh orkestrasi
 
-## Related concepts
+## Konsep terkait
 
-- [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/)
-- [Modes](/id-ID/panduan-pengguna/konsep/mode/)
+- [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/)
+- [Mode](/id-ID/panduan-pengguna/konsep/mode/)

@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: مدیریت هزینه‌ها
+description: ببینید عامل‌هایتان چه خرج می‌کنند، سقف یک اجرای خودمختار را تعیین کنید و مصرف توکن را کاهش دهید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+این راهنما نشان می‌دهد چگونه ببینید اجراهای عامل‌ها چقدر هزینه دارند و چگونه یک اجرای خودمختار را سقف بزنید.
 
-## How costs are recorded
+## هزینه‌ها چگونه ثبت می‌شوند
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+هر اجرای عامل یک گزارش اجرا می‌نویسد که توکن‌های ورودی، توکن‌های خروجی، توکن‌های استدلال، توکن‌های خواندن کش و نوشتن کش، هزینه‌ای تخمینی به سنت و هزینهٔ هر زیرعاملی را که فراخوانی کرده، حمل می‌کند.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+قیمت‌گذاری از فهرست models.dev می‌آید که تنها برای غنی‌سازی فهرست مدل‌ها با قیمت و پنجرهٔ بافت استفاده می‌شود — هرگز به‌عنوان منبع شناسه‌های مدل. مدلی که فهرست نمی‌تواند قیمت‌گذاری کند **۰ دلار** ثبت می‌کند و اجراهای بی‌هزینه از خلاصهٔ **مصرف و هزینه** بیرون گذاشته می‌شوند. بنابراین یک مدل محلی Ollama اصلاً هیچ خرجی نشان نمی‌دهد، هرچند شمار توکن‌هایش همچنان ثبت می‌شود. یک طرح نرخ ثابت (kimi-code، اشتراک Claude) تنها زمانی همین‌طور است که فهرست برای مدل ارائه‌شده قیمتی نداشته باشد؛ اگر داشته باشد، اجرا به‌هرحال با همان نرخ‌ها تخمین زده می‌شود. در یک زنجیرهٔ جایگزینی، اجرا بر اساس مدلی قیمت‌گذاری می‌شود که واقعاً آن را ارائه کرده، نه مدلی که درخواست شده بود.
 
-## See what you are spending
+## ببینید چه چیزی خرج می‌کنید
 
-### Observability → Insights
+### مشاهده‌پذیری → بینش‌ها
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+از پاورقی نوار کناری → **مشاهده‌پذیری** به آن برسید. نخست زبانهٔ **مصرف** باز می‌شود (مجموع توکن‌های کل عمر)؛ برای سطح اصلی هزینه به **بینش‌ها** — زبانهٔ دوم — بروید:
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- یک انتخابگر بازهٔ زمانی: ۲۴ ساعت گذشته، ۷ روز گذشته، ۳۰ روز گذشته، یا همهٔ زمان
+- فیلترهای چندوجهی روی عامل، مدل، وضعیت و نقش، به‌شکل چیپ‌های قابل‌بستن
+- یک نوار شاخص‌های کلیدی (KPI): کل اجراها، کل هزینه، نرخ خطا، نرخ کش، توکن / ثانیه، میانگین تأخیر و زمان تا اولین توکن، هرکدام با تغییری نسبت به دورهٔ قبل (در «همهٔ زمان» پنهان است)
+- نمودارهای فعالیت و هزینه، به‌علاوهٔ تفکیک **هزینه بر اساس نقش** که خرج را میان عامل اصلی، زیرعامل‌هایش و مشاورش تقسیم می‌کند
+- جدولی به‌ازای هر عامل، مرتب‌شده بر اساس هزینه، ده مورد نخست با کلیدی برای نمایش همه. با زدن یک ردیف، همهٔ سطوح دیگر به همان عامل فیلتر می‌شوند
+- گزارش اجرای ریزدانه، که برای اجرای انتخاب‌شده یک کشوی رونوشت را می‌گشاید
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[«همهٔ زمان» همهٔ زمان نیست]
+خوراک اجراها به ۲۰۰۰ گزارش اجرای تازه‌ترین در سراسر همهٔ فضاهای کاری مشترک می‌شود و سپس به فضای کاری فعال فیلتر می‌شود. روی یک سرور شلوغ با چند فضای کاری، تاریخ قدیمی‌تر یک فضای کاری کم‌کار از این پنجره بیرون می‌افتد.
 :::
 
-### Settings → Server → Model providers
+### تنظیمات → سرور → ارائه‌دهندگان مدل
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+کارت **مصرف و هزینه** در این صفحه، هفت روز گذشتهٔ خرج مشاهده‌شده را به‌شکل یک رقم دلاری واحد نشان می‌دهد، همراه با تفکیکی به‌ازای هر ارائه‌دهنده و، هرگاه ارائه‌دهنده‌ای آن را منتشر کرده باشد، زمان باقی‌مانده تا بازنشانی پنجرهٔ سهمیهٔ بعدی.
 
-### A single agent's runs
+### اجراهای یک عامل
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**تنظیمات → فضای کاری → عامل‌ها** → یک عامل را انتخاب کنید → **گزارش‌ها** اجراهای آن را با وضعیت، مدت، زمان‌های شروع و پایان، PID و آداپتور فهرست می‌کند. این زبانه هزینه را نشان **نمی‌دهد** — برای آن از جدول به‌ازای هر عامل در مشاهده‌پذیری → بینش‌ها استفاده کنید.
 
-## Cap an autonomous run
+## سقف‌گذاری یک اجرای خودمختار
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+دو دستور اسلش، که در ویرایشگر پیام یک فضا تایپ می‌شوند، تنها اجراهایی هستند که سقف خرج دارند:
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- هر بخش از یک اجرای `/goal` یا `/loop` وقتی می‌ایستد که خرج قیمت‌گذاری‌شدهٔ آن به **۵۰۰ سنت (۵.۰۰ دلار)** برسد. در ۸۰٪ آن، حلقه نخست مدل را هدایت می‌کند تا کار را جمع کند و یک تحویل تمیز به‌جا بگذارد، تا در میانهٔ کار نمیرد.
+- سقف یک هدف پایدارِ کامل **۵۰۰۰ سنت (۵۰.۰۰ دلار)** است، مگر اینکه `--budget <dollars>` را بدهید. سرپرست بودجهٔ _باقی‌ماندهٔ_ هدف را به هر بخش می‌رساند، بنابراین یک بودجهٔ صریح هرگز با یک بخش کامل از حد فراتر نمی‌رود.
+- `--days N` یک مهلت زمانی واقعی و `--max N` یک سقف شمار اجراها را اضافه می‌کند. هر دو اختیاری‌اند؛ بدون آن‌ها هدف تنها با هزینه محدود می‌شود.
+- هدفی که به دیوارش برسد، در `budgetExhausted` می‌ایستد و تنها با بالا بردن بودجه می‌توان آن را از سر گرفت.
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+چون سقف قیمت‌گذاری‌شده است، مدلی که فهرست نمی‌تواند قیمت‌گذاری کند هرگز به آن نمی‌رسد. به‌جایش چنین اجرایی با نگهبان تکرار حلقهٔ مرگ، تسلیم‌شدن سرپرست پس از سه شکست پیاپی و شما محدود می‌شود.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+یک پیام در یک فضا، یک منشن @، یا یک گام پایپ‌لاین هیچ سقف خرجی ندارند. اجرا وقتی پایان می‌یابد که مدل بایستد، شما متوقفش کنید، یا نگهبان حلقهٔ مرگ هدایتش کند.
 
-## Cut token use
+## کاهش مصرف توکن
 
-### Compact a long conversation
+### فشرده‌سازی یک گفتگوی طولانی
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+در ویرایشگر پیام فضا `/compact` را تایپ کنید. این دستور سمت کارخواه گرفته می‌شود و هرگز به رونوشت نمی‌رسد؛ سرور تاریخ قدیمی‌تر را در یک خلاصهٔ لنگرشده می‌گنجاند و گفتگو روی بافت فشرده‌شده ادامه می‌یابد.
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+فشرده‌سازی وقتی عاملی در میانهٔ نوبت است و وقتی چیزی به‌قدر کافی قدیمی برای گنجاندن نیست، رد می‌شود. هارنس داخلی هم خودبه‌خود فشرده‌سازی می‌کند، وقتی تاریخ به پنجرهٔ بافت مدل نزدیک می‌شود.
 
-### Choose the effort level deliberately
+### سطح تلاش را آگاهانه انتخاب کنید
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+**تلاش استدلال** یک عامل (تنظیمات → فضای کاری → عامل‌ها) هر سطحی را که مدل انتخاب‌شده منتشر می‌کند ارائه می‌دهد. سطح‌های بالاتر توکن‌های استدلال بیشتری خرج می‌کنند. سطح‌های بالا را برای کاری نگه دارید که به آن‌ها نیاز دارد.
 
-### Choose the model per agent
+### مدل را به‌ازای هر عامل انتخاب کنید
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+مدل فیلدی به‌ازای هر عامل است، بنابراین یک عامل قالب‌بندی یا تریاژ می‌تواند روی مدلی ارزان اجرا شود، در حالی که یک عامل معماری روی مدلی گران اجرا می‌شود. جدول به‌ازای هر عامل در مشاهده‌پذیری → بینش‌ها را بر اساس مدل فیلتر کنید تا ببینید کدام جفت واقعاً برایتان خرج می‌تراشد.
 
-### Look for runs with outsized token counts
+### دنبال اجراهایی با شمار توکن بی‌تناسب بگردید
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+گزارش اجرای بینش‌ها (۵۰ اجرای فیلترشدهٔ تازه‌ترین) و کشوی رونوشت را روی هر چیز غیرعادی باز کنید. علت‌های رایج عبارت‌اند از یک پرامپت سیستمی یا پرسونای بیش‌ازحد طولانی، بافتی که باید فشرده می‌شد، و کاری که باید به چند کار کوچک‌تر تقسیم می‌شد.
 
-## What happens if a budget is set out of band
+## اگر بودجه‌ای خارج از مسیر معمول تنظیم شود چه رخ می‌دهد
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+برای کامل بودن، اگر `monthlyBudgetCents` یا یک سیاست بودجه مستقیماً در سطر یک عامل نوشته شود:
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- بودجه‌ها **پس از** کامل شدن اجرا ارزیابی می‌شوند، نه پیش از اعزام. شنونده‌ای روی کامل شدن اجرا، خرج عامل از ابتدای ماه را با سقفش مقایسه می‌کند.
+- عبور از آستانهٔ نرم (به‌طور پیش‌فرض ۸۰٪) یک رخداد هشدار ثبت می‌کند و رویداد `BudgetThresholdCrossed` را منتشر می‌کند که می‌توانید یک تریگر پایپ‌لاین به آن آویزان کنید.
+- تمام‌کردن بودجه یک رخداد سخت ثبت می‌کند، همان رویداد را منتشر می‌کند و وضعیت چرخهٔ عمر عامل را به `paused` برمی‌گرداند.
+- بلوک پیش از اعزام وجود دارد، اما تنها دروگر اجراهای یتیم و آشتی‌گر تیکت‌های سرگردان هنگام زمان‌بندی بازیابی به آن رجوع می‌کنند — یک اعزام معمولی هرگز به آن نمی‌رسد و هیچ‌چیز در مسیر اعزام وضعیت `paused` را بررسی نمی‌کند. تنها نشانهٔ قابل‌مشاهده، نشان چرخهٔ عمر در نمودار سازمانی است.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
-- [Run agent diagnostics](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
-- [Agent configuration reference](/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [مدیریت آداپتورها و مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/)
+- [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
+- [پیکربندی عامل(/fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)

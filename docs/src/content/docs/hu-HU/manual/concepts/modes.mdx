@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: Módok
+description: Miért a tér, és nem az ügynök hordozza a módot; mit garantál a négy mód mindegyike; és hol strukturális ez a garancia, nem csupán a promptban előírt.
 slug: hu-HU/kezikonyv/fogalmak/modok
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## Mi a mód
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+A mód egy **tér** tulajdonsága, amelyet a tér sorában egyetlen oszlop tárol. A téren belül minden beszélgetés osztozik rajta, az üzenetszálakkal együtt — a szál ugyanúgy örökli a tere módját, mint bármely más beszélgetés. Ugyanaz az ügynök ezért egyidejűleg különböző módokban lehet különböző terekben, és a tér módjának átváltása a következő körtől kezdve megváltoztatja, hogy mi történik, anélkül hogy az ügynökhöz hozzányúlna.
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+Pontosan négy van belőlük: `chat`, `review`, `plan`, `orchestrate`. Maga az enum nem hordoz szabályzatot. Minden, amit egy mód garantál, egyszer van deklarálva, egy **képességprofilban**, amelyből minden érvényesítési réteg kivetít:
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **Eszközfelület** — egyáltalán mely eszközök léteznek abban a módban, maximális jóváhagyási szintként, engedélyezési listaként, tiltólistaként és a megtagadott hatásfajták halmazaként kifejezve.
+2. **Kötelező kimeneti ige** — mit kell a futtatásnak meghívnia ahhoz, hogy bármit is leszállítottnak lehessen tekinteni.
+3. **Megtagadott hatásfajták** — amit a műveletőr azonnal elutasít.
+4. **Worktree-állapot** — írható-e a worktree. Ez úgy érvényesül, hogy a módosító eszközöket kivonja a felületből, és ez az, amitől minden hoszton fennáll. Ahol a hoszton van operációs rendszer szintű homokozó, ugyanez az állapot alakítja ki a fájlrendszer írási szabályait is — egy csak olvasható mód csak olvashatóként csatolja a worktree-t —, de ez a garancia második példánya, nem az, amelyik a munkát végzi.
+5. **Rendszerprompt-blokk** — a ténylegesen materializált eszközlistából származtatott _generált_ képességbevezető, valamint kézzel írt útmutatás.
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+Minden érvényesítési réteg ebből az egyetlen profilból vetít ki, így az eszközfelület, a műveletőr, a worktree-állapot és a prompt nem mondhat ellent egymásnak.
 
-## The four modes
+## A négy mód
 
-### Chat — displayed as "Agent"
+### Csevegés — „Ügynök” néven jelenik meg
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+Az alapértelmezett, és az egyetlen mód, amelyhez nem tartozik külön megkötés: a teljes eszközfelület a végrehajtási szintig, írható worktree, nincsenek megtagadott hatásfajták, és nincs teljesítési szerződés. Használja implementáláshoz, hibajavításhoz, a kódbázissal kapcsolatos kérdésekhez és bármi ad hoc feladathoz.
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+Figyelje meg a címkét: az üzenetszerkesztőben a mód **„Ügynök”** néven jelenik meg, nem pedig „Csevegés” néven.
 
-### Plan — read-only, one deliverable
+### Terv — csak olvasható, egyetlen leszállítandó
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+A terv mód csak olvashatóvá teszi a worktree-t, és az íróeszközöket teljesen kivonja a felületből, így a korlátozás strukturális, nem pedig előírt. Az ügynök olvas, keres és kutat, és pontosan egy dolgot szállít le: egy `submit_plan` hívást, amely típusos függőségi gráfot hordoz — egy célt, valamint kulcsokkal, címekkel és leírásokkal ellátott csomópontokat, és mindegyiknél azoknak a csomópontoknak a kulcsait, amelyektől függ.
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+A terv egy tömör sorban jelenik meg a beszélgetésben, és mellette egy lapon megnyitja a Plan Studiót. Jóváhagyása orchestrációvá fordítja a gráfot, lefuttatja a generált munkát, és a tervet készítő teret visszaváltja ügynökmódba.
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+Ha egy terv módban futó futtatás úgy ér véget, hogy soha nem hívta meg a `submit_plan`-t, a ciklus először beszúr egy ösztönzést, amely szerint a terv addig nem létezik, amíg ez a hívás nem sikerül. Az ösztönzés kifejezetten engedélyezi az őszinte „itt nincs szükség tervre” kimenetet, mivel a terv mód egy tér beállítása, és egy benne feltett egyszerű kérdésnek nem szabad hamis tervet kikényszerítenie.
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).
+:::note[A be nem tartott szerződés nem sikertelen futtatás]
+A terv nélkül befejeződő futtatás továbbra is `completed` állapotban kerül rögzítésre — a folyamat tisztán lépett ki. Az igazság a futtatás élőségén (`empty`), a hibacsaládján (`silentRun`) és egy összefoglalón múlik, amely megnevezi, mi nem készült el. Lásd: [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/).
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+Van egy második, külön kivezető út is: az `exit_plan_mode`. Ez kemény jóváhagyási kapu, nem kimeneti ige — az az ügynök, amelyik ezt hívja meg a `submit_plan` helyett, semmit nem szállított le. Az első hívás megnyit egy tartós `plan_exit` jóváhagyást, és `pending` értékkel tér vissza, a tér pedig csak olvasható marad; az ismételt hívások `pending` állapotban maradnak, és nem nyitnak második kaput. Csak a jóváhagyás megadása után váltja át egy későbbi hívás a teret csevegésre. Elutasítás esetén az ügynök új kérést nyithat egy módosított tervhez.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+Ha saját maga szeretne kilépni a terv módból, váltson az üzenetszerkesztő legördülő menüjében (vagy nyomjon Shift+Tab-ot). Az `exit_plan_mode`-ról a `decide_approval` MCP-eszköz dönt. A Beérkezett „ügynök jóváhagyása” sorai más dolgot jelentenek: egy futó ügynök körönkénti megerősítést kérő promptjai.
 
-### Review — read-only, no contract
+### Átnézés — csak olvasható, szerződés nélkül
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+Az átnézés mód a PR-átnézéshez való. Csak olvashatóvá teszi a worktree-t, a végrehajtási szint alá szorítja az eszközfelületet, és egy válogatott engedélyezési listát alkalmaz az átnézési, jegykezelési és kommunikációs eszközökre. Egy pull requesthez megnyitott tér automatikusan átnézés módban jön létre.
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+Az ügynök kimenete strukturált megállapítások — **átnézési csomópontok** —, és amikor egy átnézés lezárul, egy **ítélet**. Egy csomópont hordoz egy fajtát (`bug`, `suggestion`, `recommendation`, `question` vagy `ticket`), egy prioritást P0-tól (blokkolja a kiadást) P3-ig (hasznos, de nem kötelező), egy önértékelt bizonyosságot, egy opcionális horgonyt (fájl és egy sorintervallum; a tároló szintű megjegyzéseknek nincs) és egy életciklus-állapotot, amely `open` állapotból `consensusReady` állapotba lép, amint egy társ — soha nem a szerző — megerősíti. Az a megállapítás, amelynek a prioritása vagy a bizonyossága hiányzik, vagy tartományon kívül esik, az olvasási határon kiesik, és nem szennyezi az ítéletet.
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+Az ítélet ship, hold vagy block, és a belefoglalt, tengelyenkénti eredmények csak _szigorúbbá_ tehetik: egy megbukott kapuzott tengely `block`-ot kényszerít ki, egy lefutni képtelen kapuzott tengely pedig legalább `hold`-ot. A bizonyíték hiánya soha nem zöldít ki egy kaput.
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+A tervvel és az orchestrálással ellentétben az átnézés **nem jár teljesítési szerződéssel**. A megállapítások az `add_review_node` hívásain keresztül gyűlnek, és a `finalize_review` teszi közzé őket, és mindkettőt jogszerűen meg lehet hívni nullaszor is — előfordulhat, hogy egy átnézés módban futó pipeline-ügynök valójában egy jegy teljesítése miatt van ott.
 
-### Orchestrate — read-only, proposes a team
+### Orchestrálás — csak olvasható, csapatot javasol
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+Az orchestrálás mód egyetlen célból egész csapatra szóló tervet készít. A terv módhoz hasonlóan csak olvasható, és nem tud fájlokat írni; a kutatási felület tetején egyetlen kiváltságos igéje van, a `propose_orchestration`, amely strukturált javaslatot bocsát ki: szerepköröket, alticket-fát, egy szintézislépést és egy költségkeretet. A prompt csak a felületen lévő eszközöket nevezi meg, így a modell nem pazarol köröket arra, hogy olyan toborzásról vagy jegymunkáról meséljen, amelyeket nem tud meghívni.
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/).
+A javaslatban semmi sem fut le, amíg Ön jóvá nem hagyja. Jóváhagyáskor egy determinisztikus materializáló felveszi az ügynököket, létrehozza a jegyeket és egy projektet, majd lefuttat egy generált pipeline-t. A jóváhagyás kizárólag kezelői hatáskör: nincs hozzá MCP-eszköz, így egy ügynök javasolhat, de a saját tervét soha nem hagyhatja jóvá. Az ügynök által kezdeményezett újbóli javaslatokat egy kétperces várakozási idő korlátozza, ezért az egymást követő újratervezések elutasításra kerülnek, és összevonásra szólítják fel őket. Lásd: [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/).
 
-## Two rules worth knowing
+## Két szabály, amit érdemes tudni
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**Egy mód saját kimeneti igéjét soha nem lehet megtagadni.** A `submit_plan` és a `propose_orchestration` be van ékelve az eszközfelületbe, és előzetesen jóvá van hagyva úgy, hogy megelőzi egyaránt az eszközszűrőt, a jóváhagyási kaput és a műveletőrt, így a térenkénti autonómiacsúszka nem hallgattathatja el egy mód leszállítandóját. A harness `ask_user` eszköze ugyanezen okból van beékelve: _ez_ az, ahogyan egy futtatás eléri a kezelőt, így a kapuzása holtpontra vinné azt a futtatást, amelynek kérdeznie kell valamit. Olvasási szintű, ezért minden csak olvasható mód megtartja, és mentesül a jóváhagyási burkoló alól — egy prompt egy másik prompt előtt zárt állapotban hibázik, ha nincs csatlakoztatva jóváhagyó, ami megvonná az ügynöktől a kérés aktusát.
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**A csak olvasható módok nem tagadják meg a hálózati hozzáférést vagy a titkokat.** Azok a hatásfajták, amelyeket az átnézés, a terv és az orchestrálás megtagad, azok, amelyek megváltoztatják a világot: fájltörlés, a worktree-n kívüli írás, commitok, pushek, PR létrehozása és közzététele, külső követőbe történő szinkronírás, csomagtelepítés, folyamatindítás, munkaterület-módosítás és elszigetelt környezet vezérlése. A hálózati kimenő forgalom és a titkokhoz való hozzáférés szándékosan az alapértelmezésükön marad — a kutatás egy csak olvasható mód teljes lényege.
 
-## Choosing and changing a mode
+## A mód kiválasztása és megváltoztatása
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+Az üzenetszerkesztő módválasztója **három** lehetőséget kínál: Ügynök (csevegés), Terv és Orchestrálás. A `review` **nem választható ki a felhasználó által** — azt a rendszer állítja be, amikor egy PR-átnézési tér létrejön, valamint a pipeline-lépések.
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+Egy pipeline-csomópont, amely **teret nyit**, rögzítheti az adott szoba módját egy `extras['mode']` kulccsal (`chat`, `review` vagy `plan`). A kulcs pontos egyezést vár: minden más írásmódot — az `orchestrate`-et is beleértve — csendben figyelmen kívül hagy, és a szoba a törzs alapértelmezését kapja (`review` a térlétrehozó törzsön). Egy ügynöklépés olyan szobába lép be, amelyet nem ő hozott létre, és nem állítja át annak jogosultságait.
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+Maga a feloldás egyszerű. A dispatcher a tér `mode` oszlopát olvassa; egy tér nélküli indítás — egyszeri futtatás, CLI-hívás, vagy egy másik munkaterületről származó tér-azonosító, amely egyszerűen nincs benne ennek a munkaterületnek az adatbázisfájljában — `chat` értékre oldódik fel. A mód megváltoztatása a következő körtől lép életbe.
 
-## Where the guarantee actually holds
+## Hol áll fenn valójában a garancia
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+Egy mód eszközfelületét a **beépített harness** építi fel és érvényesíti. Ez az egyetlen transzport, amely egy eszközt láthatatlanná tud tenni a puszta megtagadás helyett, minden hívást meg tud kapuzni a lefutása előtt, és meg tud figyelni egy teljesítési szerződést.
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
+A Claude Code transzporton egy nem csevegés mód `--permission-mode plan` formában kerül átadásra. A Claude ezt konvenció szerint betartja; a saját olvasó-, író-, szerkesztő- és shell-eszközei láthatatlanul futnak. Ennél a transzportnál a mód útmutatás, nem a Control Center határa — lásd: [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/).
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+Az engedélyezési listák az írási szintű és annál magasabb szintű eszközöket korlátozzák. A beépített harness olvasási szintje továbbra is eléri azokat az eszközöket, amelyeket egyetlen lista sem nevez meg; a Claude Code-on egy, az engedélyezési listából kimaradt eszköz elutasításra kerül, akár rendelkezik vele a szerver, akár nem.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): where the mode is resolved and projected
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): which transports can enforce a mode
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/): what an approved orchestrate proposal does
-- [Use plan mode](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/): the practical walkthrough
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): ahol a mód feloldódik és kivetítődik
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): mely transzportok tudnak módot érvényesíteni
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): a hatásfajta-szabályzat, amelyet egy mód készlete táplál
+- [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/): mit tesz egy jóváhagyott orchestrálási javaslat
+- [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/): a gyakorlati végigvezetés

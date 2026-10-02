@@ -1,131 +1,93 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: 將工作委派給代理
+description: 在對話中把工單交給代理，並讓代理在深度與循環護欄下互相委派子任務。
 slug: zh-TW/手冊/操作指南/委派工單
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+本指南說明如何把工作從你手上交出去、交給代理，以及代理彼此傳遞工作時會發生什麼事。
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[把工單指派給代理並不會派送]
+代理負責人沒有工單派送器。指派只記錄擁有權，僅此而已——不會建立空間、不會變更狀態，也不會啟動代理。例外是將工單指派給**團隊**，這會喚醒該團隊的隊長。指定負責人的代理工作存在於對話中，因此你得從那裡開始。
 :::
 
-## Hand a ticket to an agent
+## 把工單交給代理
 
-1. [Create the ticket](/zh-TW/手冊/操作指南/管理工單/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [建立工單](/zh-TW/手冊/操作指南/管理工單/)，並填寫足夠精確、可供依循的標題與描述。
+2. 將其**負責人**設為該代理，讓擁有權留下紀錄。
+3. 開啟（或建立）一個空間，並 @提及該代理。
+4. 在訊息中以 `#` 提及來引用該工單——輸入區會自動完成工作區的工單——並說明你想完成什麼。
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+代理會從對話中接起這項工作。它的進度會串流到該空間。
 
-## What the agent receives
+## 代理會收到什麼
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- 你的訊息，包括你標記的工單引用。
+- 用來工作和回報的空間。
+- 從工作區已連結的儲存庫取得的隔離工作樹。
+- 該空間的**模式**，這正是決定該次執行工具介面的依據。
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/zh-TW/手冊/概念/模式/).
+模式是空間的屬性，而不是工單的屬性——工單沒有模式。因此同一個代理可以在一個空間中處於 `chat`，在另一個空間中處於 `plan`。請從輸入區的模式下拉式選單選擇（**Agent**、**Plan** 或 **Orchestrate**）；`review` 是由 PR 審查空間設定的，無法選取。請參閱[模式](/zh-TW/手冊/概念/模式/)。
 
-## Require a structured result
+## 要求結構化的結果
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+輸出契約是在派送上宣告的，而不是在工單上：`expected_output_schema` 加上 `output_contract_mode`（預設為嚴格）。代理藉由呼叫 `submit_output` 來滿足它，該呼叫會依綱要驗證承載內容，並拒絕不符者。
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+獲接受的輸出與任何拒絕都會記在**代理執行紀錄**上。工單本身的狀態不受此影響——契約失敗並不會讓工單失敗。
 
-## Monitor progress
+## 監控進度
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **空間**——即時代理活動，主要的檢視畫面。
+- **工單**——其狀態，由移動它的人設定。
+- **可觀測性 → 即時**（`/workspaces/<workspace-id>/observability`）——即時代理名冊。
+- **可觀測性 → 洞察**——執行紀錄，包含成本與持續時間。
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+沒有儀表板畫面；單純的工作區 URL 會重新導向到收件匣。
 
-## Let agents delegate to each other
+## 讓代理互相委派
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+遇到子問題的代理會使用 `delegate_task` MCP 工具進行委派。它會建立一張指派給另一個代理的子工單，並且——當你傳入 `parent_ticket_id` 時——記錄該鏈結，讓護欄能看到它。
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+兩道結構性護欄一律會在工單關卡執行，絕不靠提示指令：
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **深度上限**——深度超過 3 跳的鏈結會遭到拒絕。
+- **循環偵測**——跳回鏈結中已存在的代理會遭到拒絕。
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+當你傳入 `from_agent_id` 時，會再執行兩道護欄（正式環境一律會提供解析器埠）：
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **自主程度上限**——被委派者在該空間中的有效層級不得超過委派者。
+- **預算額度**——委派會計入委派者剩餘的硬性停止預算，且無法再增發。沒有原則，或採無限制的原則，都會通過。
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+拒絕會明確發聲：工具會原封不動地回傳護欄的原因，因此發起委派的代理會看到確切原因。`delegatedByAgentId` 欄位會記錄是誰委派的，形成一棵委派樹。
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` 會略過每一道護欄]
+較舊的 `delegate_ticket` 工具仍註冊在案，並直接呼叫 `createTicket`——沒有深度上限、沒有循環檢查、沒有自主程度上限、沒有預算額度。請優先使用 `delegate_task`。
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+這個委派深度上限 3，與內建執行框架的子代理巢狀上限 2 是不同的限制——一個限制的是代理之間的工單，另一個限制的是單次執行內的子代理。
 
-## Put several agents on one ticket
+## 讓多個代理處理同一張工單
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+將它們新增為工單上的**協作者**（角色：負責人、協作者、審查者）。那只是一份名冊——一份記錄誰參與其中的紀錄——本身不會授予任何權限。
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/zh-TW/手冊/操作指南/空間/).
+若要真正把代理放進同一個對話中，請從空間標頭將它們新增為參與者。它們接著就能在那裡互相 @提及。請參閱[空間](/zh-TW/手冊/操作指南/空間/)。
 
-## Automated ticket creation
+## 自動建立工單
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+管線面板中沒有任何節點會建立工單，因此管線無法把工作展開成已指派的工單。
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/zh-TW/手冊/操作指南/執行編排/).
+確實存在的途徑是編排：核准提案會建立專案與團隊，將提案的子工單 DAG 編譯成一份**管線範本**（每張子工單一個 `promptAgent` 步驟，而不是各建立一列 `Ticket`），並啟動該次執行。請參閱[執行編排](/zh-TW/手冊/操作指南/執行編排/)。
 
-## Related guides
+## 相關指南
 
-- [Create and manage tickets](/zh-TW/手冊/操作指南/管理工單/)
-- [Chat with an agent](/zh-TW/手冊/操作指南/與代理聊天/)
-- [Run an orchestration](/zh-TW/手冊/操作指南/執行編排/)
-- [Organize work with projects](/zh-TW/手冊/操作指南/專案/)
-- [Ticket lifecycle reference](/zh-TW/手冊/參考/工單生命週期/)
+- [建立與管理工單](/zh-TW/手冊/操作指南/管理工單/)
+- [與代理聊天](/zh-TW/手冊/操作指南/與代理聊天/)
+- [執行編排](/zh-TW/手冊/操作指南/執行編排/)
+- [用專案組織工作](/zh-TW/手冊/操作指南/專案/)
+- [工單生命週期參考](/zh-TW/手冊/參考/工單生命週期/)
 
-## Related concepts
+## 相關概念
 
-- [Tickets](/zh-TW/手冊/概念/工單/)
-- [Dispatch lifecycle](/zh-TW/手冊/概念/派送生命週期/)
-- [Modes](/zh-TW/手冊/概念/模式/)
+- [工單](/zh-TW/手冊/概念/工單/)
+- [派送生命週期](/zh-TW/手冊/概念/派送生命週期/)
+- [模式](/zh-TW/手冊/概念/模式/)

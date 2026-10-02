@@ -1,137 +1,155 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Προώθηση θυρών από τερματικό
+description: Φτάσε σε έναν διακομιστή ανάπτυξης που ξεκίνησε σε Τερματικό (VM) ή σε κέλυφος ξενιστή — από τη μηχανή σου, από τον Περιηγητή (VM), από το Android, στο δίκτυό σου ή κάτω από τομέα ανάπτυξης με HTTPS.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/προώθηση-θυρών
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Ένας διακομιστής που ξεκινάς στο τερματικό μιας συνομιλίας δημοσιεύεται μόνο για **αυτόν τον χώρο**. Ο πίνακας θυρών εντοπίζει τις θύρες ακρόασης που ξεκίνησε αυτή η εφαρμογή εκεί, τις αντιστοιχίζει και σου δίνει μια διεύθυνση για κάθε σημείο από το οποίο μπορεί να θέλεις να τις προσεγγίσεις. Δύο χώροι μπορούν να ακούν και οι δύο στη `5173`· οι χάρτες τους δεν αναμειγνύονται ποτέ.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Τίποτα εδώ δεν ανοίγει τη μηχανή προς τα έξω: κάθε διαδρομή δημιουργείται από τον διακομιστή, κατ' αίτηση, και πεθαίνει μαζί με το τερματικό ή τον σταθμό.
 
-## See what is listening
+## Τι ακούει
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Άνοιξε το **Τερματικό (VM)** της συνομιλίας ή ένα κέλυφος ξενιστή (σε έναν χώρο ή σε μια σελίδα PR).
+2. Ξεκίνα τον διακομιστή σου — `pnpm dev`, `python -m http.server 8000`, ό,τι θέλεις.
+3. Μέσα σε λίγα δευτερόλεπτα, το **εικονίδιο βύσματος** στην επάνω δεξιά γωνία
+   του τερματικού αποκτά μια κουκκίδα. Κάνε κλικ πάνω του.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Ο πίνακας παραθέτει κάθε θύρα ακρόασης μαζί με τη διεργασία που την κατέχει, ως
+`3000 → 3000`: στα αριστερά η θύρα όπου έδεσε η διεργασία, στα δεξιά η θύρα
+στην οποία απαντά τοπικά (ο ίδιος αριθμός όποτε ήταν ελεύθερη στη μηχανή σου).
+Κάθε γραμμή λέει επίσης αν μπορούν να τη φτάσουν το `localhost` της επιφάνειας
+εργασίας, ο Περιηγητής (VM) και το Android.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Η ανακάλυψη είναι περιορισμένη: ένα Τερματικό (VM) ελέγχεται μέσα σε εκείνο το
+φιλοξενούμενο· ένα κέλυφος ξενιστή ελέγχεται από το δέντρο διεργασιών PTY
+εκείνης της συνεδρίας. Άλλοι χώροι, και άλλες διεργασίες στον Mac σου, δεν
+καταγράφονται.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+Οι νέες θύρες σε **αυτό** το τερματικό προωθούνται αυτόματα. Απενεργοποίησε την
+**Αυτόματη προώθηση θυρών** στον ίδιο πίνακα αν θέλεις μόνο όσες προσθέτεις
+εσύ.
 
-## Reach it from this computer
+## Πρόσβαση από αυτόν τον υπολογιστή
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Χρησιμοποίησε την **Αντιγραφή τοπικού URL** στη γραμμή — `http://localhost:3000`.
+Η προώθηση ακούει μόνο στη διεπαφή loopback, οπότε τίποτα άλλο στο δίκτυό σου
+δεν μπορεί να τη δει.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+Αν δύο χώροι εκθέτουν και οι δύο τη θύρα `5173` του φιλοξενούμενου και η μηχανή
+σου κατέχει ήδη τη `127.0.0.1:5173`, ο δεύτερος χώρος κρατά τη `5173` του
+φιλοξενούμενου και παίρνει μια εφήμερη τοπική θύρα. Η Αντιγραφή τοπικού URL
+χρησιμοποιεί τον αριθμό στα δεξιά.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Σε ένα κέλυφος ξενιστή, η διεργασία βρίσκεται ήδη στη μηχανή σου. Η
+αντιστοίχιση της ίδιας τοπικής θύρας δεν έχει αποτέλεσμα· η επιλογή μιας
+**διαφορετικής** τοπικής θύρας δένει έναν proxy loopback σε αυτήν που διάλεξες.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+Το `--host` (ή το δέσιμο στη `0.0.0.0`) **δεν** κάνει έναν περίκλειστο
+Περιηγητή (VM) ικανό να φτάσει έναν διακομιστή στον Mac. Το φιλοξενούμενο έχει
+το δικό του loopback· ο διακομιστής φυτεύει μια σήραγγα μέσα σε εκείνο το
+φιλοξενούμενο όταν η καρτέλα του Περιηγητή βρίσκεται στον **ίδιο χώρο**.
 
-## Reach it from the Browser (VM)
+## Πρόσβαση από τον Περιηγητή (VM)
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Άνοιξε τον περίκλειστο περιηγητή στην **ίδια συνομιλία**. Πληκτρολόγησε
+`localhost:<left-hand port>` — τον αριθμό όπου έδεσε η διεργασία. Μια
+επαναντιστοίχιση (`5173 → 3000`) απαντά επίσης στον δεξιό αριθμό μέσα σε αυτόν
+τον περιηγητή, οπότε η Αντιγραφή τοπικού URL λειτουργεί και εκεί. Το
+`browser_use` ενός πράκτορα μπορεί να πλοηγηθεί σε οποιοδήποτε από τα δύο. Ένας
+διακομιστής στον Χώρο Α δεν εμφανίζεται ποτέ ως `localhost:5173` στον περιηγητή
+του Χώρου Β.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Χρησιμοποίησε `localhost`, όχι διεύθυνση IP του LAN και όχι `--host`. Το
+φιλοξενούμενο έχει το δικό του loopback· η σήραγγα ακούει εκεί και σε IPv4 και
+σε IPv6.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Οι σελίδες που ανοίγουν πολλές συνδέσεις ταυτόχρονα (δεκάδες πόροι, ένα socket
+ζωντανής επαναφόρτωσης) μοιράζονται την ίδια σήραγγα. Ο Περιηγητής (VM) τις
+πολυπλέκει σε ένα μόνιμο exec, οπότε ένας καταιγισμός αιτημάτων δεν είναι μια
+εκκίνηση διεργασίας ανά σύνδεση και δεν καταλήγει σε λευκή σελίδα λόγω λήξης
+του χρόνου αναμονής.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Μέσα σε έναν χώρο, μια προώθηση του Τερματικού (VM) υπερισχύει ενός κελύφους
+ξενιστή στον ίδιο αριθμό. Μεταξύ χώρων δεν υπάρχει προτεραιότητα — είναι
+ξεχωριστοί χάρτες.
 
-## Reach it from Android
+## Πρόσβαση από το Android
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+Άνοιξε την καρτέλα **Android** αυτού του χώρου. Το `localhost:<port>` του
+εξομοιωτή αντιστρέφεται τότε στη δημοσιευμένη θύρα αυτού του χώρου
+(`adb reverse`). Ένας εξομοιωτής είναι καθολικός για τη συσκευή: η σύνδεση του Χώρου
+Β ανακατευθύνει το `:5173` στον Β και ρίχνει αυτό του Α. Κλείσε την καρτέλα και
+οι αντιστροφές που φύτεψε αυτός ο σταθμός αφαιρούνται.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+Ο Προσομοιωτής iOS είναι ήδη ο Mac — καμία αντιστροφή. Ένα φυσικό iPhone
+εξακολουθεί να χρειάζεται κοινή χρήση στο LAN.
 
-## Share it on your network
+## Κοινή χρήση στο δίκτυό σου
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+Η διαδρομή **⋯ → Κοινή χρήση στο τοπικό δίκτυο** δημοσιεύει τη θύρα στη
+διεύθυνση `<server-ip>:<random port>` — χρήσιμη για να ανοίξεις τη σελίδα στο
+τηλέφωνό σου ή όταν ο διακομιστής εκτελείται σε άλλη μηχανή.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- Η θύρα LAN εκχωρείται πάντα από το λειτουργικό σύστημα, ποτέ δεν είναι ο
+  αριθμός του φιλοξενούμενου, οπότε η έκθεση είναι μια σκόπιμη, ορατή διεύθυνση
+  και όχι μια διεύθυνση που μπορεί να μαντέψει κανείς.
+- Παραμένει ιδιωτική (μόνο loopback) μέχρι να την ενεργοποιήσεις, και η διαδρομή
+  **⋯ → Μόνο τοπικά** την αφαιρεί ξανά από το δίκτυο.
 
-## Give it a name — with HTTPS
+## Δώσε της όνομα — με HTTPS
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+Η διαδρομή **⋯ → Ορισμός τομέα περιηγητή (.test)** εκχωρεί στη θύρα έναν τομέα
+ανάπτυξης, όπως `myapp.test`. Μέσα στον Περιηγητή (VM), το
+`https://myapp.test` φορτώνει τότε τον διακομιστή σου με έγκυρο λουκέτο —
+χρήσιμο για οτιδήποτε συμπεριφέρεται διαφορετικά σε ένα επώνυμο origin ή σε
+ασφαλές πλαίσιο (cookies, service workers, callbacks OAuth).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Οι τομείς πρέπει να τελειώνουν σε `.test` ή `.localhost` — τους δύο TLD που
+  είναι δεσμευμένοι για ανάπτυξη, ώστε ένα όνομα ανάπτυξης να μην μπορεί ποτέ να
+  επισκιάσει έναν πραγματικό ιστότοπο.
+- Τα **ονόματα** τομέων είναι μοναδικά στον διακομιστή· οι **αριθμοί** θυρών δεν
+  είναι. Δύο χώροι μπορούν να χρησιμοποιούν και οι δύο τη `5173`, αλλά δεν
+  μπορούν να διεκδικήσουν και οι δύο το `myapp.test`.
+- Το πιστοποιητικό προέρχεται από μια τοπική αρχή έκδοσης πιστοποιητικών που
+  παράγεται στον διακομιστή σου την πρώτη φορά που χρειάζεται. Τα κλειδιά της
+  φιλοξενούνται στον κατάλογο δεδομένων του διακομιστή και δεν μπαίνουν ποτέ σε
+  κανένα φιλοξενούμενο· ο περίκλειστος περιηγητής εμπιστεύεται ακριβώς αυτό το
+  ένα κλειδί, οπότε το TLS προς το πραγματικό διαδίκτυο εξακολουθεί να
+  επικυρώνεται κανονικά.
+- Ο τομέας επιλύεται **μόνο μέσα στον Περιηγητή (VM)**. Ο δικός σου περιηγητής
+  στον ξενιστή χρησιμοποιεί αντ' αυτού `localhost:<port>`.
+- Το απλό `http://myapp.test` λειτουργεί επίσης.
 
-## Forward a port by hand
+## Χειροκίνητη προώθηση θύρας
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+Η **Προσθήκη θύρας** στο κάτω μέρος του πίνακα αντιστοιχίζει μια θύρα πριν (ή
+ανεξάρτητα από το αν) ακούει κάτι σε αυτήν. Μια χειροκίνητη προώθηση διατηρεί τη
+διεύθυνσή της όσο ο διακομιστής σου επανεκκινείται — η γραμμή δείχνει *δεν
+ακούει* μέχρι να επανέλθει — ενώ οι αυτόματες προωθήσεις εξαφανίζονται όταν
+εξαφανιστεί η θύρα τους. Σε ένα κέλυφος ξενιστή μπορείς επίσης να ορίσεις
+διαφορετική τοπική θύρα.
 
-## How it stays contained
+## Πώς παραμένει περιορισμένο
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/#ports-and-dev-domains).
+Οι θύρες κλειδώνονται ανά χώρο εργασίας και ανά χώρο. Ο ίδιος ο χάρτης θυρών
+του υπερεπόπτη είναι σταθερός όταν εκκινεί μια μηχανή, οπότε ένα Τερματικό (VM)
+ταξιδεύει σε δύο στενά κανάλια που ελέγχει ο διακομιστής: ένα προδημιουργημένο
+κανάλι εισερχόμενων προς το φιλοξενούμενο που αρνείται να συνδεθεί σε
+οποιαδήποτε θύρα δεν ακούει στην πραγματικότητα το φιλοξενούμενο, και
+αντίστροφες σήραγγες που ο διακομιστής κρατά ανοιχτές για τον Περιηγητή (VM)
+και το Android. Ένα κέλυφος ξενιστή δεν σαρώνει ποτέ ολόκληρη τη μηχανή.
+Κανένας ακροατής δεν δημιουργείται ποτέ μέσα σε ένα φιλοξενούμενο που δεν έβαλε
+εκεί ο διακομιστής, και τα πάντα καταστρέφονται μαζί με το τερματικό ή τον
+σταθμό. Ο σχεδιασμός εξηγείται στο
+[Σταθμοί και περιβλήματα](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/#ports-without-holes)·
+οι ακριβείς δεσμευμένες θύρες και οι κανόνες τομέων βρίσκονται στην
+[αναφορά σταθμών](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/#ports-and-dev-domains).
 
-## Related
+## Σχετικά
 
-- [Give an agent a machine to test on](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/) — reserved ports, dev TLDs,
-  defaults
+- [Δώσε σε έναν πράκτορα μηχανή για δοκιμές](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/χρήση-σταθμών/) — άνοιγμα,
+  παρακολούθηση και ανάληψη ελέγχου σταθμών
+- [Αναφορά σταθμών](/el-GR/εγχειρίδιο/αναφορά/σταθμοί/) — δεσμευμένες θύρες, TLD ανάπτυξης,
+  προεπιλογές

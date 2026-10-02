@@ -1,149 +1,123 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: 配置通知
+description: 打开或关闭各类通知，设置 Quiet hours 和提示音，并了解哪些通知会在何处送达你。
 slug: zh-CN/手册/操作指南/通知
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+本指南介绍如何配置通知，以及每一项设置实际控制的是什么。
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+通知经由两个界面送达。**通知中心**——标题栏里的铃铛——读取服务器上按工作区划分的持久信息流。**操作系统 Toast** 则是一条独立的、仅限桌面的路径，由服务器推送的实时帧供给。
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Web 构建不显示操作系统通知]
+Toast 管线只由桌面端启动流程构建。在 `app.usectrl.dev` 上既没有操作系统 Toast，也没有通知声音和环境横幅——铃铛及其历史仍然可用，因为它们读取的是服务器信息流。手机客户端则完全没有通知界面。
 :::
 
-## Turn categories on or off
+## 打开或关闭各类别
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. 前往 **设置 → 你 → 通知**
+2. 保持 **启用通知** 处于开启状态
+3. 切换你想要的类别。一共恰好十六个：
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| 类别                       | 触发时机                                                                   |
+| -------------------------- | -------------------------------------------------------------------------- |
+| 智能体已完成               | 智能体完成了一次运行                                                       |
+| PR 已发布                  | 智能体发布了一个 PR                                                        |
+| PR 已合并                  | 一个 PR 被合并                                                             |
+| 新消息                     | 你当前没有查看的空间里收到了消息                                           |
+| 在 pull request 中被提及   | GitHub 的通知轮询发现你在某个 PR 中被提及                                  |
+| 请求评审                   | 有非草稿 PR 实际请求你评审                                                 |
+| 评审已过期                 | 你已评审过的 pull request 上有了新提交                                     |
+| 可合并                     | 你创建的 pull request 变为可合并，或不再可合并                             |
+| 评审决定                   | 评审者批准、请求变更，或批准被驳回                                         |
+| 检查                       | 你创建的 pull request 上 CI 失败或恢复                                     |
+| 评审讨论串                 | 你所在的讨论串里有人回复或解决了该讨论串                                   |
+| 工单已分配                 | 有工单被分配                                                               |
+| 工单状态已更改             | 有工单更改了状态                                                           |
+| 会议即将开始               | 日历会议已进入你的提前提醒窗口                                             |
+| 日历已断开连接             | 已连接日历的 OAuth 令牌已过期                                              |
+| 隔离舱动态                 | 隔离舱被接管、回收或发生故障                                               |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+不在此列表中的任何内容都无法通知或筛选——并不存在“其他全部”类别。
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+这些偏好设置跟随你的用户跨设备同步，因此手机和笔记本电脑保持一致。音量是有意保留的例外，按设备分别设置。
 
-## Set quiet hours
+## 设置 Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. 在同一页面上打开 **Quiet hours**
+2. 以 `HH:MM` 格式输入开始和结束时间（默认时间段为 22:00–08:00）
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+在 Quiet hours 期间，非紧急通知会被丢弃——不会排队留待稍后补发。
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+有两个类别属于**紧急**，始终送达，会绕过 Quiet hours _和_ 专注模式：**会议即将开始** 和 **PR 已发布**。一场事后才看到的会议提醒毫无价值，这就是原因。
 
-## Choose a sound
+## 选择提示音
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. 滚动到 **通知声音**
+2. 从十一种内置声音中挑选一种，或选择 **无**
+3. 按下测试按钮试听，并用滑块调节音量
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+声音由应用自己播放；操作系统通知则静默送达，因此你不会听到两次。
 
-## Set the meeting lead time
+## 设置会议提前提醒时间
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. 滚动到 **提醒提前量**
+2. 选择 **5**、**10**、**15** 或 **30** 分钟
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+这就是 **会议即将开始** 通知在日历事件之前多久触发。默认为 5 分钟。
 
-## Know when a notification is suppressed
+## 了解通知何时会被抑制
 
-A notification is dropped, silently, when any of these is true:
+只要满足下列任一条件，通知就会被静默丢弃：
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- 通知已被全局关闭，或该类别已被关闭
+- 你已经处于它会带你前往的路由上——若是消息，则已身处该空间
+- 专注模式已启用，且该类别不属于紧急
+- Quiet hours 已启用，且该类别不属于紧急
 
-Those checks apply to OS toasts. The durable bell still records the event.
+这些检查适用于操作系统 Toast。持久的铃铛仍会记录该事件。
 
-Two more suppressions live further upstream, in what the server sends at all:
+还有两处抑制位于更上游，也就是决定服务器究竟发送什么：
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- 来自其他**人类**、未提及你的消息永远不会变成通知
+- 智能体与智能体之间的空间在侧边栏中被静音，因此永远不会增加人类的未读徽标
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+在一个空间内没有安静的角落：每段对话都一视同仁地发出通知，讨论串也不例外。已读状态以空间为范围，因此未读数是跨空间内所有对话汇总的，而不是按对话分别跟踪。
 
-## Read and clear the notification centre
+## 查看并清空通知中心
 
-1. Click the bell in the title bar
+1. 点击标题栏中的铃铛
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+弹出面板会显示最近的活动，每个条目都深链到它所涉及的对象。打开它**不会**把所有内容标为已读——请使用顶部栏中的 **全部标为已读**，或单独标记某一条。已读状态跟随你的用户跨设备同步。
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[全部清除是水位线，而不是删除]
+**全部清除**会按用户打上一个水位线标记，隐藏所有更早的内容；这些条目仍然保留。另外，每个工作区只保留最近的 **200** 条信息流记录，随着新条目到达而不断裁剪；而铃铛订阅最新的 **50** 条，弹出面板最多列出其中的 **15** 条。超过这个范围的历史记录无论是否已读都会消失。
 :::
 
-## Troubleshooting
+## 故障排查
 
-### No OS notifications on macOS
+### macOS 上收不到操作系统通知
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+应用启动时会以原生方式请求授权。如果你拒绝了，请在系统设置 → 通知中重新启用 Control Center；应用内没有再次触发该请求的提示。
 
-### Nothing arrives on the web build
+### Web 构建上什么都收不到
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+属于预期行为——Web 构建没有操作系统通知管线。请使用铃铛。
 
-### The bell badge shows zero but there is clearly new activity
+### 铃铛徽标显示为零，但明显有新的活动
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+在连接后已读标记流解析完成之前，条目会按已读渲染，以避免徽标先闪现随即清空。标记加载完成后就会稳定下来。
 
-### An agent's run finished but nothing pinged me
+### 智能体的运行已完成，但没有通知我
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+检查你是否已经身处该运行所在的空间——处于活动路由会抑制它自身的操作系统 Toast。
 
-## Related guides
+## 相关指南
 
-- [Use focus mode and soundscapes](/zh-CN/手册/操作指南/专注模式/)
-- [Triage your inbox](/zh-CN/手册/操作指南/分拣收件箱/)
-- [Curate your newsfeed](/zh-CN/手册/操作指南/新闻流/)
+- [使用专注模式与声景](/zh-CN/手册/操作指南/专注模式/)
+- [分拣收件箱](/zh-CN/手册/操作指南/分拣收件箱/)
+- [整理你的新闻流](/zh-CN/手册/操作指南/新闻流/)
 
-## Related concepts
+## 相关概念
 
-- [Domain events](/zh-CN/手册/概念/领域事件/)
+- [领域事件](/zh-CN/手册/概念/领域事件/)

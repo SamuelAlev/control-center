@@ -1,54 +1,56 @@
 ---
-title: Introduction
-description: Control Center is the cockpit for multi-agent software development.
+title: Wprowadzenie
+description: Control Center to kokpit do wieloagentowego tworzenia oprogramowania.
 slug: pl-PL/podrecznik
+sourceHash: 77561c3d61668603e953379e85b192b9b5440635
 ---
 
 import { LinkButton, LinkCard } from '@astrojs/starlight/components';
 
-Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+Control Center daje Ci dowodzenie nad flotą agentów AI piszących kod. Uruchamiaj agentów, obserwuj ich pracę w czasie rzeczywistym, recenzuj ich pull requesty i zarządzaj repozytoriami, obszarami roboczymi oraz integracjami — z natywnej aplikacji desktopowej, przeglądarki albo telefonu.
 
 <div className="docs-start not-content">
-  <LinkButton href="/pl-PL/podrecznik/szybki-start/" icon="right-arrow">Quick start</LinkButton>
-  <LinkButton href="/pl-PL/podrecznik/instalacja/" variant="minimal" icon="download">Install Control Center</LinkButton>
+  <LinkButton href="/pl-PL/podrecznik/szybki-start/" icon="right-arrow">Szybki start</LinkButton>
+  <LinkButton href="/pl-PL/podrecznik/instalacja/" variant="minimal" icon="download">Zainstaluj Control Center</LinkButton>
 </div>
 
-## What you can do
+## Co możesz robić
 
-- **Message agents**: spaces are the primary way to drive the fleet. @-mention an agent and it dispatches into its own copy-on-write worktree, so several can code and review in parallel without touching your checkout
-- **Orchestrate the big asks**: give the orchestrator a goal, approve the whole-team plan it proposes once and a generated [pipeline](/pl-PL/podrecznik/koncepcje/potoki/) runs it
-- **Review and merge PRs** with a built-in diff viewer, inline comments and AI-powered review
-- **Hand agents disposable machines**: a [rig](/pl-PL/podrecznik/poradniki/uzywanie-rigow/) is a throwaway VM — a browser, a desktop, a phone, or an enclosed terminal — the agent drives while you watch live and can take over; dev servers inside are forwarded to `localhost`, the agent's browser and `https://myapp.test`
-- **Automate workflows** with DAG-based pipelines triggered by events or schedules
-- **Manage knowledge** with workspace-scoped memory, facts and policies
-- **Track work** with vendor-agnostic tickets, projects and delegation
-- **Record meetings** with on-device capture, transcription and diarization, then summarized into notes, action items and decisions
-- **See your day** with Google Calendar sync, RSVP, meeting alerts and record-and-link
-- **Follow the fleet from your phone**: pair a device with your server and read messages, reply and triage tickets. The phone takes the best path it can reach — loopback, LAN, tailnet, or TLS — and falls back to an end-to-end-sealed relay that forwards frames it cannot read
-- **Drive agents from Slack**: bridge a workspace to a chat app and mention the bot, reply in a Slack thread, or file a ticket with a slash command — over an outbound connection, so no public endpoint is needed
-- **Integrate** with GitHub, Linear, Slack, Google Calendar and over 100 MCP tools
+- **Wysyłaj wiadomości agentom**: przestrzenie to podstawowy sposób kierowania flotą. Wspomnij agenta przez @, a zostanie wysłany do własnego worktree copy-on-write, dzięki czemu kilku może pisać kod i recenzować równolegle, nie ruszając Twojego checkoutu
+- **Orkiestruj duże zadania**: podaj orkiestratorowi cel, zatwierdź raz proponowany przez niego plan całego zespołu, a wygenerowany [potok](/pl-PL/podrecznik/koncepcje/potoki/) go wykona
+- **Recenzuj i scalaj PR-y** dzięki wbudowanemu podglądowi diffów, komentarzom w linii i recenzji opartej na AI
+- **Daj agentom jednorazowe maszyny**: [rig](/pl-PL/podrecznik/poradniki/uzywanie-rigow/) to jednorazowa VM — przeglądarka, pulpit, telefon albo odizolowany terminal — którą agent steruje, gdy Ty patrzysz na żywo i możesz przejąć stery; serwery deweloperskie działające w jej wnętrzu są przekierowywane na `localhost`, przeglądarkę agenta i `https://myapp.test`
+- **Automatyzuj przepływy pracy** potokami opartymi na DAG, uruchamianymi przez zdarzenia lub harmonogramy
+- **Zarządzaj wiedzą** dzięki pamięci, faktom i politykom w zakresie obszaru roboczego
+- **Śledź pracę** za pomocą niezależnych od dostawcy zgłoszeń, projektów i delegowania
+- **Nagrywaj spotkania** dzięki przechwytywaniu na urządzeniu, transkrypcji i diaryzacji, a następnie streszczaniu do notatek, działań i decyzji
+- **Zobacz swój dzień** dzięki synchronizacji z Google Calendar, RSVP, alertom o spotkaniach oraz nagrywaniu i łączeniu
+- **Śledź flotę z telefonu**: sparuj urządzenie z serwerem, a potem czytaj wiadomości, odpowiadaj i przeglądaj zgłoszenia. Telefon wybiera najlepszą osiągalną ścieżkę — loopback, sieć LAN, tailnet albo TLS — i w razie potrzeby przechodzi na relay z szyfrowaniem end-to-end, który przekazuje ramki, których nie może odczytać
+- **Kieruj agentami ze Slacka**: mostkuj obszar roboczy z aplikacją czatu i wspomnij bota, odpowiedz w wątku Slacka albo utwórz zgłoszenie poleceniem slash — przez połączenie wychodzące, więc publiczny endpoint nie jest potrzebny
+- **Integruj się** z GitHub, Linear, Slack, Google Calendar i ponad 100 narzędziami MCP
 
-## You do not have to install it
+## Nie musisz tego instalować
 
-The same application runs in your browser at
-[app.usectrl.dev](https://app.usectrl.dev), with the same features.
+Ta sama aplikacja działa w przeglądarce pod adresem
+[app.usectrl.dev](https://app.usectrl.dev), z tymi samymi funkcjami.
 
-Every client — desktop, web and phone — is a thin renderer over a headless server that
-owns your data and does the work. The desktop can spawn that server for you; a browser
-tab cannot, so the web app connects to one you run. That server can sit on your own
-machine (`ws://localhost:9030`, no certificate needed) or on a remote host reachable over
-TLS, a VPN, or a tunnel.
+Każdy klient — desktopowy, webowy i telefon — to cienki renderer nad serwerem headless, który
+jest właścicielem Twoich danych i wykonuje pracę. Desktop może uruchomić ten serwer za
+Ciebie; karta przeglądarki nie może, więc aplikacja webowa łączy się z serwerem, który sam
+uruchomisz. Ten serwer może działać na Twoim komputerze
+(`ws://localhost:9030`, bez potrzeby certyfikatu) albo na zdalnym hoście osiągalnym przez
+TLS, VPN lub tunel.
 
-See [Install](/pl-PL/podrecznik/instalacja/#use-it-in-your-browser) for the browser route and
-[Deployment and clients](/pl-PL/podrecznik/koncepcje/wdrazanie/) for how the three clients relate.
+Zobacz [Instalacja](/pl-PL/podrecznik/instalacja/#use-it-in-your-browser), aby poznać wariant przeglądarkowy, oraz
+[Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/), aby dowiedzieć się, jak współgrają ze sobą te trzy klienty.
 
-## Next steps
+## Następne kroki
 
 <div className="docs-pathways not-content">
-  <LinkCard title="Install" href="/pl-PL/podrecznik/instalacja/" description="Downloads, system requirements and where the server runs." />
-  <LinkCard title="Quick start" href="/pl-PL/podrecznik/szybki-start/" description="The shortest complete path to an agent working on your repo." />
-  <LinkCard title="Tutorials" href="/pl-PL/podrecznik/samouczki/" description="Longer lessons, in order, starting with your first workspace." />
-  <LinkCard title="Guides" href="/pl-PL/podrecznik/poradniki/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
-  <LinkCard title="Concepts" href="/pl-PL/podrecznik/koncepcje/" description="Why the product works the way it does, starting with deployment and clients." />
-  <LinkCard title="Reference" href="/pl-PL/podrecznik/dokumentacja-referencyjna/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+  <LinkCard title="Instalacja" href="/pl-PL/podrecznik/instalacja/" description="Pliki do pobrania, wymagania systemowe i miejsce działania serwera." />
+  <LinkCard title="Szybki start" href="/pl-PL/podrecznik/szybki-start/" description="Najkrótsza kompletna droga do agenta pracującego nad Twoim repozytorium." />
+  <LinkCard title="Samouczki" href="/pl-PL/podrecznik/samouczki/" description="Dłuższe lekcje w kolejności, zaczynając od Twojego pierwszego obszaru roboczego." />
+  <LinkCard title="Poradniki" href="/pl-PL/podrecznik/poradniki/" description="Przepisy na jedno zadanie naraz: dodawanie repozytoriów, konfigurowanie guardraili albo parowanie telefonu." />
+  <LinkCard title="Koncepcje" href="/pl-PL/podrecznik/koncepcje/" description="Dlaczego produkt działa tak, jak działa — zaczynając od wdrażania i klientów." />
+  <LinkCard title="Dokumentacja referencyjna" href="/pl-PL/podrecznik/dokumentacja-referencyjna/" description="Pełne tabele tras, narzędzi MCP, skrótów klawiszowych i zdarzeń domenowych." />
 </div>

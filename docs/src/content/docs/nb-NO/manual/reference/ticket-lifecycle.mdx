@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Livssyklus for saker
+description: Saksfelt, statuser, overganger, relasjoner og knutepunktet for endringer.
 slug: nb-NO/handbok/referanse/livssyklus-for-saker
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Saksstatuser
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Status       | Lagringsstreng | Beskrivelse                                        |
+| ------------ | -------------- | -------------------------------------------------- |
+| `backlog`    | `backlog`      | Fanget opp, ennå ikke prioritert inn i den aktive køen |
+| `open`       | `open`         | Prioritert og klar til å arbeides med, ikke startet |
+| `inProgress` | `inProgress`   | Arbeides aktivt med                                |
+| `blocked`    | `blocked`      | Startet, men blokkert av noe eksternt              |
+| `inReview`   | `inReview`     | Arbeidet er ferdig, venter på gjennomgang          |
+| `done`       | `done`         | Fullført med suksess (sluttilstand)                |
+| `failed`     | `failed`       | Fullført med feil (sluttilstand)                   |
+| `cancelled`  | `cancelled`    | Avbrutt (sluttilstand)                             |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Statusverdier lagres i camelCase (`inProgress`, `inReview`), aldri `in_progress`. En lagret nullverdi tolkes som `open`; en ukjent verdi kaster feil i stedet for å tvinges.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` godtar aliaser som agenter oppgir, og ser bort fra store og små bokstaver og `-` / `_` / mellomrom:
 
-| Status       | Accepted aliases                              |
+| Status       | Godtatte aliaser                              |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Statusoverganger
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,158 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Denne grafen binder bare agenter og automatisering.** `TicketWorkflowService.transitionStatus` kontrollerer den når `force` er usann — MCP-verktøyene og avstemmerne. En ulovlig overgang der logges og ignoreres. Enhver brukerstyrt statusendring i brukergrensesnittet sender `force: true` og omgår grafen helt, så et menneske kan flytte en sak til hvilken som helst status velgeren lister opp (alle statuser unntatt `failed`), inkludert å gjenåpne en sluttilstand. Agenter markerer `failed` med `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+En status kan alltid gå over til seg selv. Sluttilstander har ingen utgående kanter.
 
-| From         | Allowed targets                                      |
+| Fra          | Tillatte mål                                         |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (sluttilstand)                                     |
+| `failed`     | — (sluttilstand)                                     |
+| `cancelled`  | — (sluttilstand)                                     |
 
-## Ticket priorities
+## Saksprioriteter
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Lagres som et heltall på Linears opprinnelige 0–4-skala. En ukjent verdi tolkes som `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Prioritet | Lagret som |
+| --------- | ---------- |
+| `none`    | `0`        |
+| `urgent`  | `1`        |
+| `high`    | `2`        |
+| `medium`  | `3`        |
+| `low`     | `4`        |
 
-## Ticket providers
+## Saksleverandører
 
-An unknown or null stored value parses to `local`.
+En ukjent verdi eller en lagret nullverdi tolkes som `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Leverandør | Status                                                  |
+| ---------- | ------------------------------------------------------- |
+| `local`    | Lagres helt i arbeidsområdets database; standardvalget  |
+| `linear`   | Eies eksternt, speiles lokalt                           |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Synkroniseringsadaptere ligger under `packages/cc_infra/lib/src/tickets/sync/` for Linear, GitHub Issues, Jira Cloud og ClickUp. GitHub Issues er bare en
+synkroniseringsadapter-leverandør (`vendorId: github`) — det er ikke en
+`TicketProvider`-verdi, så en hentet GitHub-sak lagres med
+`originKind: externalSync` og standardverdien `provider: local`. Tilordningen av
+leverandører ligger på `ticket_sync_links`.
 
-## Ticket origin
+## Saksopphav
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` skriver `manual`. En leverandørhenting skriver `externalSync`. Delegerte barnesaker forblir `manual`.
 
-| Value          | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| Verdi          | Betydning                                                     |
+| -------------- | ------------------------------------------------------------- |
+| `manual`       | Standard i `createTicket` (rader fra mennesker, agenter og delegeringer) |
+| `externalSync` | Settes av `TicketSyncEngine` ved en leverandørhenting          |
 
-## Ticket fields
+## Saksfelt
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Aggregatet dekker to forhold på én rad. **Speilet** (leverandør, nøkler, tittel, beskrivelse, prioritet, etiketter, statuser, tidsstempler) er en hurtigbuffer for en ekstern leverandør og skrives i sin helhet på nytt ved en oppdatering. **Overlegget** (tildeling, delegering, område, overordnet, prosjekt, koblede PR-er) finnes bare i Control Center, og en oppdatering rører det aldri.
 
-| Field                    | Type                       | Description                                                                                |
+| Felt                     | Type                       | Beskrivelse                                                                                |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Arbeidsområdet den tilhører                                                                |
+| `provider`               | `TicketProvider`           | Backend som eier de kanoniske dataene (standard `local`)                                   |
+| `externalKey`            | `String?`                  | Leverandørens egen nøkkel (f.eks. `LIN-123`). Lokal `createTicket` skriver en *egen* UUID her, ikke radens `id` |
+| `url`                    | `String?`                  | Nettadresse hos den eksterne leverandøren                                                  |
+| `title`                  | `String`                   | Kort sammendrag; kan ikke være tomt                                                        |
+| `description`            | `String?`                  | Lengre markdown-tekst                                                                      |
+| `priority`               | `TicketPriority`           | Standard `none`                                                                            |
+| `labels`                 | `List<String>`             | Frie etiketter                                                                             |
+| `status`                 | `TicketStatus`             | Kanonisk normalisert status                                                                |
+| `rawStatus`              | `String?`                  | Den eksterne leverandørens opprinnelige tilstandsnavn, beholdt for tapsfri visning         |
+| `externalSyncedAt`       | `DateTime?`                | Siste synkronisering på tvers av leverandører; null til den første. Tilordningen per leverandør ligger i `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Overordnet i treet for delegering og nedbrytning                                           |
+| `projectId`              | `String?`                  | Prosjektet den tilhører; sendes aldri til en ekstern leverandør                            |
+| `assignedAgentId`        | `String?`                  | Id-en til den tildelte principalen (bare metadata — en tildeling sender ikke ut noe)       |
+| `assigneeType`           | `PrincipalType`            | Hva slags principal `assignedAgentId` navngir — `user` eller `agent` (standard `agent`)    |
+| `createdByType`          | `PrincipalType?`           | Typen principal som opprettet saken (`user` eller `agent`); null for eldre rader og systemrader |
+| `createdById`            | `String?`                  | Id-en til principalen som opprettet saken                                                  |
+| `assignedTeamId`         | `String?`                  | Tildelt team (bare metadata)                                                               |
+| `delegatedByAgentId`     | `String?`                  | Agenten som delegerte denne saken                                                          |
+| `delegationDepth`        | `int`                      | Dybde i delegeringskjeden; roten er `0`, kontrolleres mot grensen for maksimal dybde       |
+| `delegationRootTicketId` | `String?`                  | Roten i delegeringskjeden; null for en rotsak                                              |
+| `spaceId`                | `String?`                  | Samtalen saken ble skilt ut fra, eller området til agenten som delegerte                   |
+| `errorMessage`           | `String?`                  | Settes når `status` er `failed`                                                            |
+| `linkedPrIds`            | `List<String>`             | Node-id-er for PR-ene denne saken er koblet til                                            |
+| `metadata`               | `Map<String, dynamic>`     | Fri beholder                                                                               |
+| `createdAt`              | `DateTime`                 | Opprettelsestidspunkt                                                                      |
+| `startedAt`              | `DateTime?`                | Når arbeidet startet                                                                       |
+| `blockedAt`              | `DateTime?`                | Når saken ble blokkert                                                                     |
+| `cancelledAt`            | `DateTime?`                | Når saken ble avbrutt                                                                      |
+| `completedAt`            | `DateTime?`                | Når saken ble fullført med suksess                                                         |
+| `finishedAt`             | `DateTime?`                | Når saken nådde en sluttilstand                                                            |
+| `updatedAt`              | `DateTime`                 | Siste endring (speiloppdatering eller overleggsendring)                                    |
+| `version`                | `int`                      | Teller for optimistisk samtidighet, økes ved hver endring                                  |
+| `originKind`             | `TicketOriginKind`         | Hvordan saken ble opprettet (standard `manual`)                                            |
+| `collaborators`          | `List<TicketCollaborator>` | Fylles ut av repositoriet ved behov                                                        |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Avledet: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` og `displayKey` (`externalKey ?? id` — lokale saker viser derfor den separate UUID-en fra opprettelsen, ikke radens `id`).
 
-## Ticket relations
+## Saksrelasjoner
 
-Stored edges are directional rows in `ticket_links`:
+Lagrede kanter er retningsbestemte rader i `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
+| Type          | Lagringsstreng | Betydning                       |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | Kilden blokkerer målet          |
+| `relatesTo`   | `relates_to`   | Symmetrisk relasjon             |
+| `duplicateOf` | `duplicate_of` | Kilden er en duplikat av målet  |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Vokabularet som brukergrensesnittet og `ticket_relation` bruker, er `TicketRelationKind`, avledet fra en lagret kant pluss hvilket endepunkt subjektet sitter på:
 
-| Kind           | Derived from                                         |
+| Type           | Avledet fra                                          |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | En `blocks`-rad der subjektet er målet               |
+| `blocking`     | En `blocks`-rad der subjektet er kilden              |
+| `relatedTo`    | En `relates_to`-rad (symmetrisk)                     |
+| `duplicateOf`  | En `duplicate_of`-rad der subjektet er kilden        |
+| `duplicatedBy` | En `duplicate_of`-rad der subjektet er målet         |
+| `subIssueOf`   | `tickets.parent_ticket_id` på subjektet              |
+| `parentOf`     | `tickets.parent_ticket_id` på den andre saken        |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Koblinger for overordnet og undersak er **ikke** `ticket_links`-rader — de ligger på `tickets.parent_ticket_id`.
 
-## Domain events
+## Domenehendelser
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Disse åtte klassene ligger i `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Det finnes ingen `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` eller `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
+| Hendelse                  | Utløses når                                        |
 | ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| `TicketCreated`           | En sak opprettes                                   |
+| `TicketAssigned`          | En sak tildeles en principal eller et team          |
+| `TicketCompleted`         | Arbeidet fullføres med suksess                     |
+| `TicketFailed`            | Arbeidet mislykkes                                 |
+| `TicketCancelled`         | En sak avbrytes                                    |
+| `TicketStatusChanged`     | Enhver statusendring                               |
+| `TicketReassigned`        | En sak tildeles på nytt                            |
+| `TicketDetailsUpdated`    | Tittel, beskrivelse, prioritet eller etiketter endres |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` er et revisjons- og varslingssignal og en pipeline-utløser. Tildeling til en agent starter ingen kjøring — det finnes ingen utsender for saker som overvåker `assignedAgentId`. Tildeling til et team er unntaket: `TeamRoutingService` sender ut teamlederen. Å legge til en samarbeidspartner skriver en rad og publiserer ingenting. En leverandørwebhook brukes gjennom `TicketSyncEngine` uten en domenehendelse.
 
-## Mutation chokepoint
+## Knutepunktet for endringer
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` eier enhver endring.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Mekanisme               | Detaljer                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ett enkelt knutepunkt   | Alle endringer går gjennom `_mutate`, som laster raden og kaller `_assertWorkspace` før den brukes                                                |
+| Arbeidsområdeisolasjon  | `_assertWorkspace` kaster `WorkspaceMismatchException` når den lastede radens `workspaceId` ikke samsvarer med den kallendes                       |
+| Optimistisk samtidighet | `_mutate` skriver med `expectedVersion` satt til `version`-en den nettopp leste, og prøver på nytt ved `ConcurrencyConflictException` ved å lese fersk tilstand på nytt |
+| Eksklusivt krav         | `tryCheckout` / `releaseCheckout`; en andre agent som gjør krav på en utsjekket sak, får en `CheckoutConflictException`                            |
+| Overgangsvakt           | `canTransitionTo`, brukes bare når `force` er usann                                                                                               |
 
-## See also
+## Se også
 
-- [Tickets](/nb-NO/handbok/konsepter/saker/)
-- [Manage tickets](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
-- [Delegate tickets](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
-- [Domain events](/nb-NO/handbok/referanse/domenehendelser/)
+- [Saker og delegering](/nb-NO/handbok/konsepter/saker/)
+- [Opprett og administrer saker](/nb-NO/handbok/slik-gjor-du/administrer-saker/)
+- [Deleger arbeid til agenter](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
+- [Domenehendelser](/nb-NO/handbok/referanse/domenehendelser/)

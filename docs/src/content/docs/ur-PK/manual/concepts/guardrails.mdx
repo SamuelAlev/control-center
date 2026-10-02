@@ -1,248 +1,255 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: گارڈریلز — ہر تبدیلی لانے والے ایکشن کے لیے ایک پالیسی
+description: Control Center ہر ایجنٹ کے ضمنی اثر کو ایک ہی اجازت/پوچھیں/منع انجن سے کیوں گزارتا ہے، ActionClass کی درجہ بندی جان بوجھ کر چھوٹی کیوں رہتی ہے اور خود مختاری ڈائل واقعی کیا بدلتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/گارڈریلز
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center میں ایجنٹ فائلیں حذف کر سکتے ہیں، برانچیں پش کر سکتے ہیں، pull
+requests شائع کر سکتے ہیں اور بیرونی APIs کال کر سکتے ہیں۔ اِن میں سے ہر ایک
+خطرے کی ایک مختلف _قسم_ ہے، اور ایک طویل عرصے تک اِن میں سے صرف ایک —
+shell کمانڈز — کے پاس پالیسی تھی۔ گارڈریلز کا مقصد ایک سوال کا یکساں جواب دینا
+ہے، ایجنٹ کے ہر تبدیلی لانے والے ایکشن کے لیے، چاہے اسے کوئی بھی رن ٹائم یا
+ٹول تجویز کرے: **کیا اِس کی اجازت ہے، کیا اِس کے لیے منظوری درکار ہے، یا اِس
+سے منع ہے؟**
 
-## One engine, every chokepoint
+## ایک انجن، ہر چوک پوائنٹ
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+پالیسی انجن صرف ایک ہے۔ ہر اُس مقام پر اِسی سے رجوع کیا جاتا ہے جہاں سے کوئی
+ایکشن نظام سے باہر جا سکتا ہے: بلٹ اِن ہارنس کی ٹول رجسٹری، سرور سائیڈ MCP
+ڈسپیچر گیٹ اور repo-op تبدیلیاں۔ چنانچہ ایک بار لکھا گیا قاعدہ بلٹ اِن رن ٹائم
+اور بیرونی ایجنٹ CLIs دونوں پر یکساں لاگو ہوتا ہے — اِس سے بچنے کا کوئی دوسرا،
+خاموش راستہ نہیں ہے۔ پرانی صرف-bash والی کمانڈ پالیسی اب بھی کام کرتی ہے: کوئی
+قاعدہ ایکشن کلاس کے بجائے کمانڈ پریفکس سے میچ کر سکتا ہے اور دونوں شکلیں ایک
+ہی اسٹور میں ساتھ رہتی ہیں۔
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+تاہم، یہ انجن OS سینڈ باکس کا متبادل نہیں ہے، اور سینڈ باکس اِس کا متبادل نہیں۔
+یہ دونوں الگ سوالوں کے جواب دیتے ہیں: گارڈریلز فیصلہ کرتے ہیں کہ کوئی ایسی کال
+جسے Control Center دیکھ سکتا ہے، ہونے دی جائے گی یا نہیں، جبکہ سینڈ باکس حد
+مقرر کرتا ہے کہ نتیجے میں بننے والا پراسیس کہاں تک پہنچ سکتا ہے۔ `cc_server`
+سینڈ باکس وہاں لاگو کرتا ہے جہاں ہوسٹ کوئی بیک اینڈ پیش کرتا ہے — مگر
+[Windows کوئی نہیں دیتا اور Linux کو `bwrap` اور `socat` درکار ہیں](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/)۔
+اُن ہوسٹس پر گارڈریلز نفاذ کی سب سے بیرونی تہہ ہوتے ہیں، نہ کہ کسی فرش کے اوپر
+بیٹھی پالیسی، اور جب آپ فیصلہ کریں کہ کتنی ڈھیل دینی ہے تو یہ جاننا مفید ہے۔
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: جان بوجھ کر بند درجہ بندی
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+ہر تبدیلی لانے والا ٹول بتاتا ہے کہ وہ کن **ActionClasses** سے تعلق رکھتا ہے،
+تیرہ اثر کلاسوں کے ایک بند مجموعے میں سے۔ اِن میں سے پانچ ڈیفالٹ میں پوچھتے
+ہیں؛ باقی اجازت دیتے ہیں اور اِسے بدلنے کا ذریعہ کوئی قاعدہ ہے۔
 
-| Class                      | Built-in default | What it covers                                                   |
+| کلاس                      | بلٹ اِن ڈیفالٹ | یہ کیا کور کرتی ہے                                                     |
 | -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| `fileDelete`               | **پوچھیں**       | فائل حذف کرنا (حذف کی شکل کا عمل، `rm`)                          |
+| `gitPush`                  | **پوچھیں**       | git ریموٹ پر پش کرنا                                              |
+| `prCreate`                 | **پوچھیں**       | pull request بنانا                                               |
+| `prPublish`                | **پوچھیں**       | ریویو شائع کرنا، PR مرج کرنا                                     |
+| `vendorSyncWrite`          | **پوچھیں**       | بیرونی ٹکٹ وینڈر پر لکھنا (Linear، Jira، GitHub sync)            |
+| `fileWriteOutsideWorktree` | اجازت            | الگ تھلگ worktree سے باہر فائل لکھنا                             |
+| `gitCommit`                | اجازت            | git کمیٹ بنانا                                                   |
+| `networkEgress`            | اجازت            | نیٹ ورک ایگریس (ویب فیچ، صریح HTTP)                              |
+| `secretAccess`             | اجازت            | راز یا کریڈینشل پڑھنا                                            |
+| `packageInstall`           | اجازت            | پیکیج انسٹال کرنا (npm، pip، pub، brew)                          |
+| `processSpawn`             | اجازت            | پراسیس اسپان کرنا (shell اور ہر وہ چیز جو shell کو کال کرتی ہے)  |
+| `workspaceMutation`        | اجازت            | ورک اسپیس کا ڈھانچہ بدلنا (ریپوز، اسپیسز، ایجنٹس)                |
+| `enclosureControl`         | اجازت            | انکلوژر (رگ) چلانا: VM بوٹ کرنا، اسے اِن پٹ بھیجنا              |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+ڈیفالٹ میں اجازت دینے والی آٹھ کلاسیں اِس مفروضے پر چنی گئیں کہ اُن کے نیچے
+سینڈ باکس فلور لاگو ہے۔ یہ وہاں لاگو ہے جہاں ہوسٹ کوئی بیک اینڈ پیش کرتا ہے، اور
+Windows پر یا اُس Linux باکس پر لاگو نہیں جس میں `bwrap` اور `socat` نہ ہوں — تو
+اگر آپ وہاں `fileWriteOutsideWorktree` یا `packageInstall` کو گیٹ کرنا چاہتے
+ہیں، تو وہ قاعدہ آپ کو خود لکھنا ہوگا۔
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+یہ مجموعہ جان بوجھ کر بند رکھا گیا ہے۔ کوئی نیا تبدیلی لانے والا ٹول جو کوئی
+کلاس ظاہر نہ کرے، ریچٹ ٹیسٹ میں ناکام ہو جاتا ہے، چنانچہ درجہ بندی صرف کسی
+واضح، دلیل کے ساتھ کیے گئے فیصلے سے ہی بڑھ سکتی ہے — “درجہ بندی کی بے ہنگم
+افزائش اِس فیچر کی موت ہے۔” تیرہ کلاسیں اُن پالیسیوں کے اظہار کے لیے کافی ہیں
+جو لوگ واقعی لکھتے ہیں (پوچھے بغیر کبھی پش نہ کریں، worktree سے باہر کبھی حذف
+نہ کریں، ریڈز کو ہمیشہ اجازت دیں) اور اِتنی کم ہیں کہ ترتیبات کا UI سمجھ میں
+آتا رہے۔
 
-## Rules and scope resolution
+## قواعد اور دائرے کا تعین
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+ایک قاعدہ `(scope, ActionClass | command prefix) → allow | prompt | deny` کو
+نقش کرتا ہے۔ دائرے سب سے زیادہ مخصوص سے کم ترین مخصوص تک اندر اندر ہوتے ہیں:
 
-**space > agent > workspace > mode preset > built-in default**
+**اسپیس > ایجنٹ > ورک اسپیس > موڈ پری سیٹ > بلٹ اِن ڈیفالٹ**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+تعین **پہلے مخصوصیت** کی بنیاد پر ہوتا ہے: جس پہلے دائرے میں کوئی مماثل قاعدہ
+ملے وہی فیصلہ کرتا ہے اور تعین وہیں رک جاتا ہے۔ سب سے زیادہ پابند صرف برابری
+کا فیصلہ ہے — جب ایک ہی دائرے میں دو یکساں مخصوص قواعد ہوں اور جب ایک ایکشن کی
+ظاہر کردہ کئی کلاسوں کو ملایا جا رہا ہو۔ ایک دائرے کے اندر، کمانڈ قاعدہ سب سے
+طویل کمانڈ پریفکس پر میچ کرتا ہے۔ اجازت کہیں بھی منع پر غالب نہیں آتی۔
 
-Two decisions carry hard guarantees:
+دو فیصلے سخت ضمانتیں رکھتے ہیں:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **ناکامی پر بند پرامپٹس۔** کوئی منظور کنندہ منسلک نہ ہو تو `prompt` کا نتیجہ
+  _منع_ ہوتا ہے۔ جس سوال کا جواب نہ دیا جائے وہ کبھی ہاں نہیں ہوتا۔
+- **سب سے زیادہ پابند امتزاج۔** کئی کلاسوں میں پھیلا کوئی ایکشن اُنہیں سب سے
+  زیادہ پابند انداز میں ملاتا ہے؛ جب کئی کلاسیں پوچھنے کا تقاضا کریں تو ایک
+  ہی تصدیق اُن سب کی فہرست دے دیتی ہے۔
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+جان بوجھ کر کوئی فی ٹرن لاٹچ نہیں ہے۔ ہر ٹول کال پالیسی کو شروع سے دوبارہ حل
+کرتی ہے، چنانچہ ایک ہی ایکشن کے لیے بار بار پوچھنا آپریٹر کے اپنے “یہ فیصلہ یاد
+رکھیں” سے محدود رہتا ہے، نہ کہ ٹرن کے دائرے میں محدود کسی چیز سے۔
 
-## Argument-level rules
+## دلائل کی سطح کے قواعد
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+ایک قاعدہ کسی ایکشن کے دلائل کو محدود کر سکتا ہے، نہ صرف اس کے فعل کو۔ “پش کر
+سکتا ہے” اور “`feature/*` پر پش کر سکتا ہے” دو الگ دعوے ہیں، اور صرف دوسرا ایک
+کنٹرول ہے — ایسا صلاحیت گیٹ جو صرف فعل کو اجازت دے، زیادہ تر شائع شدہ ایجنٹ
+واقعات کی جڑ میں ہوتا ہے۔
 
-A constraint may name:
+ایک پابندی اِن کا نام لے سکتی ہے:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **پاتھز** — glob پیٹرنز (`repos/**`, `!**/.env`)
+- **ریفز** — git ریفز، `!` نفی کے ساتھ (`['**', '!main']` کا مطلب ہے “main کے
+  علاوہ کوئی بھی برانچ”)
+- **ہوسٹس** — نیٹ ورک منزلیں، سب ڈومین وائلڈ کارڈز کے ساتھ (`*.internal`)
+- **کمانڈز** — کمانڈ پریفکس، لفظ کی حد پر میچ
+- **حدیں** — `maxCount` / `maxCents`، چنانچہ “زیادہ سے زیادہ 50 فائلیں حذف
+  کریں” کا اظہار ممکن ہے
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+گرامر کو بند اور بغیر لوپ رکھنے سے تین خصوصیات برآمد ہوتی ہیں، اور تینوں اصل
+مقصد ہیں: ہر قاعدہ ایسے جملے کی شکل میں ڈھلتا ہے جسے آپ واپس پڑھ سکیں، ہر انکار
+اُس پابندی کا نام لے سکتا ہے جو میچ ہوئی، اور پوری پالیسی گنوائی جا سکتی ہے —
+آپ دیکھ سکتے ہیں کہ ایجنٹ چلنے سے *پہلے* کیا کر سکتا ہے۔
 
-Three rules that matter:
+تین قواعد جو اہم ہیں:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- ایک **محدود قاعدہ** اسی دائرے میں غیر محدود قاعدے سے **زیادہ مخصوص** ہوتا
+  ہے، چنانچہ “`main` پر پش سے منع کریں” بغیر کسی ترتیب کے سوچے “پش کی اجازت
+  دیں” پر غالب آ جاتا ہے۔
+- ایک **پابند** قاعدہ (منع / پوچھیں) اُس وقت لاگو ہوتا ہے جب درخواست اُس کی
+  بیان کردہ *کسی بھی* قدر کو چھوئے؛ اور ایک **کھلا** قاعدہ (اجازت) صرف اُس وقت
+  لاگو ہوتا ہے جب درخواست *مکمل طور پر* اُس کے اندر ہو۔ دونوں کو ایک ہی طرح
+  پڑھنے سے ایجنٹ کسی ممنوع راستے کو اُس کے ساتھ کوئی بے گناہ راستہ ملا کر دھو
+  سکتا۔
+- کوئی قاعدہ جو ایسے پہلو کا نام لے جس کے بارے میں درخواست کچھ نہ کہے، نہ لاگو
+  ہوتا ہے نہ نظر انداز: وہ **منظوری تک بڑھ جاتا ہے**۔ خاموشی سے نظر انداز کرنا
+  ہر محفوظ برانچ کے قاعدے کو ایسے ٹول کے سامنے بے اثر کر دیتا جو اپنا ref نہ
+  بتاتا ہو؛ اور خاموشی سے انکار کرنا ہر اُس پش سے انکار کر دیتا جسے ایکسٹریکٹر
+  بیان نہ کر سکے۔ کوئی منظور کنندہ منسلک نہ ہو تو موجودہ ناکامی پر بند قاعدہ
+  اُس بڑھت کو انکار میں بدل دیتا ہے۔
 
-## What a command rule can and cannot catch
+## کمانڈ قاعدہ کیا پکڑ سکتا ہے اور کیا نہیں
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+ایک `commandPrefix` قاعدہ لفظ کی حد پر میچ کرتا ہے: `git push` تو
+`git push origin main` کو کور کرتا ہے مگر `git pushx` کو نہیں۔ یہ shell کو
+**نارملائز نہیں** کرتا۔ `git  push` (دو اسپیس)، `cd sub && git push` اور
+`GIT_DIR=… git push` سب الگ الگ اسٹرنگز ہیں اور اِن میں سے کوئی بھی `git push`
+سے متعلق قاعدے پر میچ نہیں کرتا۔
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+یہ ایک حقیقی حد ہے اور اِسے چھپانے کے بجائے واضح کیا گیا ہے: کمانڈ قواعد عام
+ایجنٹ رویے کو تراشنے کے لیے آپریٹر کی سہولت ہیں، **نہ** کہ کسی مخالفانہ رویے
+کے خلاف سرحد۔ سرحدیں یہ ہیں: اثر کلاسیں (جن کا اعلان ٹول کرتا ہے اور اُن کی
+ہجے دوبارہ نہیں بدل سکتا)، پالیسی اسٹور کے نیچے موجود موڈ کمانڈ نیٹ، اور اُن
+دونوں کے نیچے OS سینڈ باکس۔ جو کمانڈ قاعدہ `allow` پر حل ہو، وہ اُن دونوں میں
+سے کسی کو بھی ڈھیلا نہیں کرتا — موڈ نیٹ بعد میں چلتا ہے اور اس کا `deny` حتمی
+ہے۔
 
-## Standing approvals
+## مستقل منظوریاں
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+کسی پرامپٹ کا جواب “یہ یاد رکھیں” سے دینے پر ایک حقیقی پالیسی قاعدہ لکھا جاتا
+ہے: دائروں میں بندھا (اسپیس / ایجنٹ / ورک اسپیس)، **دلائل سے محدود**
+(`feature/login` پر پش کی منظوری `feature/**` دیتی ہے، `main` نہیں) اور واضح TTL
+پر **خود منسوخ ہونے والا**۔ اگلے چند گھنٹوں کے لیے ہاں کہنا اپنی مستقل پالیسی
+کو خاموشی سے دوبارہ لکھنے کے برابر نہیں، اور اِس سے لکھے گئے قواعد اُسی اسٹور
+میں ماخذ `remembered` اور ایک میعادِ ختم کے ساتھ جاتے ہیں، اس لیے اُنہیں وقت سے
+پہلے منسوخ کیا جا سکتا ہے۔
 
-## Enforcement levels
+## نفاذ کی سطحیں
 
-Each rule carries one:
+ہر قاعدہ اِن میں سے ایک اٹھاتا ہے:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **مشورتی** — اجازت دیں، مگر ریکارڈ کریں کہ قاعدہ میچ ہوا۔ یہی اپنانے کا راستہ
+  ہے: کسی سخت قاعدے کو مشورتی موڈ میں لگائیں، ایک ہفتہ آڈٹ ٹریل پڑھیں تاکہ
+  عین معلوم ہو کہ وہ کس چیز کو *روکتا*، پھر اُسے ترقی دیں۔ اِس درجے کے بغیر
+  سخت پالیسیاں کبھی فعال نہیں ہوتیں۔
+- **نرم** — منع کریں، مگر جس کے پاس اوور رائیڈ کی اجازت ہو وہ اِسے اوور رائیڈ کر
+  سکتا ہے، ایک ریکارڈ شدہ جواز کے ساتھ۔ اوور رائیڈ بذات خود ایک آڈٹ شدہ واقعہ
+  ہے۔
+- **سخت** (ڈیفالٹ) — منع کریں۔ اسے کوئی چیز اوور رائیڈ نہیں کر سکتی۔
 
-## The managed tier
+## مینجڈ ٹیئر
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+انسٹال آپریٹر ایسی پالیسی پن کر سکتا ہے جسے کوئی ورک اسپیس ایڈمن ڈھیلا نہ کر
+سکے۔ مینجڈ قواعد سرور سائیڈ رہتے ہیں اور ہر ورک اسپیس کی اپنی چین کے ساتھ **سب
+سے زیادہ پابند** انداز میں مرج کیے جاتے ہیں — یہ اُس چین کے سرے پر کوئی دائرہ
+نہیں ہیں، کیونکہ چین کے سرے پر کوئی مینجڈ `allow` انسٹال کو ورک اسپیس کے انکار
+پر غالب آنے دے گا، جو کلیمپ کے مقصد کے عین خلاف ہے۔ لہٰذا ایک مینجڈ قاعدہ کبھی
+صرف سخت ہی کر سکتا ہے۔
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+`CC_SERVER_MANAGED_POLICY` کو کسی JSON فائل پر سیٹ کرنا ذخیرہ شدہ قواعد سے مکمل
+طور پر بالاتر ہے، اور یہی چیز آپریٹر کو ایسا رویہ پن کرنے دیتی ہے جسے کوئی ایڈمن
+UI پلٹ نہ سکے — یعنی اِس سوال کا جواب: “کیا میں اپنے ڈیویلپرز کو حفاظتی کنٹرول
+بند کرنے سے روک سکتا ہوں؟”۔
 
-## The autonomy dial is a profile, not a parallel system
+## خود مختاری ڈائل ایک پروفائل ہے، الگ متوازی نظام نہیں
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+فی اسپیس خود مختاری ڈائل اِسی پالیسی اسٹور کے اوپر ایک نامزد پروفائل ہے، کوئی
+دوسرا طریقہ کار نہیں۔ اس کی تین سیٹنگز `proposeOnly`، `actWithApproval` اور
+`actFreely` کے طور پر محفوظ اور بھیجی جاتی ہیں (ہائفن والی شکلیں صرف UI کے متن
+کے لیے ہیں اور `autonomy.setForSpace` اِن کے علاوہ کچھ قبول نہیں کرتا)۔ اسے غیر
+مقرر چھوڑنا `actWithApproval` جیسا رویہ دیتا ہے۔
 
-What each one does to a resolved decision:
+حل شدہ فیصلے پر ہر ایک کیا کرتا ہے:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** ہر گیٹڈ ٹول کو یکسر منع کر دیتا ہے۔ ایجنٹ پھر بھی سوچ اور
+  جواب دے سکتا ہے؛ بس عمل نہیں کر سکتا اور اس کا پیغام وجہ بتا دیتا ہے۔
+- **`actWithApproval`** (اور غیر مقرر) وہی ناکامی پر بند منظوری گیٹ ہے جو اوپر
+  بیان ہوا۔
+- **`actFreely`** اُس ہر چیز کو پیشگی منظوری دیتا ہے جو سخت `deny` پر حل نہ ہوئی
+  ہو۔
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+آخری بات کو نرم کرنے کے بجائے صاف صاف کہنا چاہیے: `actFreely` کے تحت `prompt`
+فیصلہ **نہیں** کسی منظور کنندہ تک بڑھایا جاتا — اُسے اجازت مل جاتی ہے اور کسی سے
+پوچھا نہیں جاتا۔ ڈائل سے صرف کوئی واضح `deny` قاعدہ ہی بچ نکلتا ہے۔ چنانچہ
+`actFreely` خود مختاری کا جان بوجھ کر دیا گیا تحفہ ہے، سہولت کی کوئی سیٹنگ نہیں،
+اور ناکامی پر بند قاعدہ عین اُسی صورت کی حفاظت کرتا ہے جہاں اُس کی اہمیت ہوتی ہے
+(`actWithApproval`، یعنی ڈیفالٹ)۔
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+ایجنٹس کے درمیان تفویض کی حفاظت `delegate_task` چوک پوائنٹ پر چاروں گارڈز کرتے
+ہیں: گہرائی کی حد (ڈیفالٹ 3)، سائیکل کی نشان دہی، ایک **خود مختاری کی بالائی
+حد** (کوئی تفویض شدہ ایجنٹ کبھی اپنے تفویض کرنے والے سے زیادہ خود مختاری سے عمل
+نہیں کر سکتا — کام کسی زیادہ آزاد ایجنٹ کے حوالے کر کے مراعات کو دھویا نہیں جا
+سکتا) اور ایک **بجٹ لفافہ** (تفویض، تفویض کرنے والے کے باقی بجٹ سے بل بناتی ہے
+اور مزید نہیں بنا سکتی)۔ ہر ایک کو بلند آواز میں مسترد کیا جاتا ہے، اور گارڈ کی
+وجہ ایجنٹ کو لفظ بہ لفظ واپس دی جاتی ہے۔
 
-## The adapter honesty matrix
+## اڈاپٹر کی ایمانداری میٹرکس
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+ہر رن ٹائم Control Center کو ہر ایکشن روکنے نہیں دیتا۔ بیرونی ایجنٹ CLIs کچھ
+ٹولز مقامی طور پر، اِن پراسیس چلاتے ہیں، جہاں کوئی گیٹ بیٹھ نہیں سکتا۔ اِس کے
+برعکس دکھاوے کے بجائے، ہر اڈاپٹر ایک **ایمانداری میٹرکس** ساتھ لے کر چلتا ہے:
+فی اڈاپٹر یہ کہ آیا Control Center ٹول سطح کو فلٹر کرتا ہے، ٹول کالز روکتا ہے،
+کمپلیشن کنٹریکٹ کا مشاہدہ کرتا ہے، رنر کے مقامی ٹولز دیکھ سکتا ہے اور آیا اِن
+پراسیس ٹولز کسی سینڈ باکس پروفائل میں آتے ہیں۔
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+کسی کنفیگریشن پر بھروسا کرنے سے پہلے دو اندراجات پڑھنے کے قابل ہیں۔ بلٹ اِن
+ہارنس ظاہر کرتا ہے کہ اس کے اِن پراسیس فائل ٹولز سینڈ باکس میں **نہیں** ہیں —
+ٹول سطح اور یہ پالیسی انجن ہی واحد فائل سسٹم سرحد ہیں جو اُس کے پاس ہیں۔ Claude
+Code ظاہر کرتا ہے کہ اس کی اپنی ٹول کالز **روکی نہیں جا سکتیں**، کیونکہ اُسے
+`--dangerously-skip-permissions` کے ساتھ لانچ کیا جاتا ہے؛ Control Center صرف اس
+کی `mcp__*` کالز دیکھتا ہے اور اس کے اپنے read، write، edit اور shell ٹولز نظر
+نہ آتے ہوئے چلتے ہیں۔
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+ترتیبات کی سکرین یہ میٹرکس دکھاتی ہے، کیونکہ گارڈریل نظام کے لیے واحد ناقابلِ
+معافی ناکامی ایسی کوریج کا دعویٰ ہے جو موجود نہ ہو۔
 
-## Probing policy before it bites
+## پالیسی کو کاٹنے سے پہلے جانچنا
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+گارڈریلز **ترتیبات → ورک اسپیس → ایجنٹ اجازتیں**
+(`/workspaces/<id>/settings/workspace/permissions`) پر رہتے ہیں۔ اِس سکرین پر وہ
+پالیسی میٹرکس ہے جہاں قواعد لکھے جاتے ہیں، پالیسی ٹیمپلیٹس، ایک اگر؟ پروب،
+اجازت کا آڈٹ ٹریل اور اڈاپٹر کی ایمانداری میٹرکس۔
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+پروب ایک ایکشن کلاس (یا کوئی کمانڈ) اور ایک دائرہ لیتا ہے اور دکھاتا ہے کہ کس
+قاعدے نے فیصلہ کیا اور کیوں۔ چونکہ تعین خالص اور قطعی ہے — وہی ایکشن، وہی دائرہ،
+وہی فیصلہ — پروب کا جواب وہی جواب ہوتا ہے جو ایجنٹ کو ملے گا۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Sandbox and security](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/): writing and testing rules in practice
+- [سینڈ باکس اور سیکیورٹی](/ur-PK/ہدایت-نامہ/تصورات/سینڈ-باکس-سیکیورٹی/): ایجنٹ رن کو اصل میں کیا محدود کرتا ہے اور اِس انجن کے نیچے OS فرش کہاں تک پہنچتا ہے
+- [ملٹی پلیئر — شناخت، رکنیت اور موجودگی](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): اسپیسز، پرنسپلز اور خود مختاری ڈائل کہاں رہتا ہے
+- [گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/): عملی طور پر قواعد لکھنا اور آزمانا

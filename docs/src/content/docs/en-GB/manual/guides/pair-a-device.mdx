@@ -2,6 +2,7 @@
 title: Pair a device
 description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
 slug: en-GB/manual/guides/pair-a-device
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
 This guide shows you how to pair a phone with Control Center, so you can read
@@ -33,11 +34,11 @@ device on the server; everyone else sees only their own.)
 ## Step 2: Pair a new client
 
 Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
+phone"), choose the type — **Web browser**, **Desktop app**, or **Phone** — and
 click **Pair**.
 
 - For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- For a **browser** or **desktop**, copy the link shown (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
 
 The phone QR and the link `cc_server pair --client-url` prints on the CLI are
 **different payloads and are not interchangeable**: the CLI link fills in the web
@@ -62,8 +63,8 @@ From **Settings → You → Your devices** you can:
 - **Rename** a device
 - **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Revoking is the right course of action for a lost or replaced phone. It is
+immediate and irreversible from the device's perspective.
 
 Credentials minted from this panel are time-boxed: they expire 30 days after they
 are issued and the connect gate fails them closed after that. A credential
@@ -88,7 +89,7 @@ the server's dispatcher.
 - [Run a headless server](/en-GB/manual/guides/run-headless-server/): make the server reachable in the first place
 - [Connect to a remote server](/en-GB/manual/guides/connect-remote-server/): point a full client at it
 - [Use spaces](/en-GB/manual/guides/spaces/): what you'll mostly do from the phone
-- [Create and manage tickets](/en-GB/manual/guides/manage-tickets/): triage from the road
+- [Create and manage tickets](/en-GB/manual/guides/manage-tickets/): triage on the road
 
 ## Related concepts
 

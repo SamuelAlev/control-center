@@ -1,150 +1,154 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: پائپ لائن رنز کی نگرانی کریں
+description: رنز کی قطار پر کام کریں، کسی رن کا واٹر فال اور قدم پینل پڑھیں اور کسی ناکام یا اٹکے ہوئے قدم سے بحالی کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائنز-کی-نگرانی
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/).
+یہ صفحہ اُس ہر چیز کے لیے ہے جو رن شروع ہونے کے بعد آتی ہے: اُسے ڈھونڈنا، یہ
+پڑھنا کہ ہر قدم نے کیا کیا اور کسی ناکام رن کو دوبارہ چلانا۔ کوئی رن شروع کرنے کے
+لیے [پائپ لائن دستی طور پر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/) دیکھیں۔
 
-## Find a run
+## رن ڈھونڈیں
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. ورک اسپیس سائیڈبار میں **پائپ لائنز** پر کلک کریں۔ یہ اسکرین ورک اسپیس کی رن
+   قطار ہے — ہر رن، نئے سے پرانے کی ترتیب میں۔
+2. فلٹر کرنے کے لیے بائیں ریل استعمال کریں۔ بالکل تین فلٹر ہیں، ہر ایک کے ساتھ
+   براہِ راست گنتی: **سب**، **چل رہا ہے**، **ناکام**۔
+3. ٹیبل میں <kbd>↑</kbd>/<kbd>↓</kbd> (یا <kbd>j</kbd>/<kbd>k</kbd>) سے چلیں
+   اور فوکس شدہ رن کھولنے کے لیے <kbd>Enter</kbd> دبائیں۔ کسی قطار پر کلک کرنے
+   سے بھی یہی ہوتا ہے۔
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+ہر قطار ایک گلیف دکھاتی ہے جس سے پتہ چلتا ہے کہ رن کیسے شروع ہوا (دستی کے لیے
+پلے؛ کوڈ-گراف واچ کے لیے فائل گلیف؛ ورنہ خودکار ٹریگر)۔ ٹول ٹپ ٹریگر کا نام بتاتی
+ہے — **دستی**، **PR شائع ہوا**، **فائل تبدیلی** وغیرہ — اور کسی واچ رن کے لیے یہ
+بھی کہ کون سی فائلیں بدلیں۔ پھر پائپ لائن کا نام، ایک اسٹیٹس بیج، فعال مدت (یا
+`queued` رن کے لیے قطار میں پوزیشن) اور یہ کہ یہ کوشش کتنی دیر پہلے شروع ہوئی۔
+فعال مدت میں بیکار سٹاپ-اور-ری اسٹارٹ وقفے شامل نہیں، اس لیے یہ گھڑی کے اصل وقت
+کے برابر نہیں ہوتی۔
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+مکمل، معطل یا منسوخ رنز کے لیے کوئی فلٹر نہیں، نہ فی ٹیمپلیٹ کوئی فلٹر، نہ کوئی
+ٹائم ونڈو اور نہ فی ٹیمپلیٹ رن ہسٹری ویو۔ ایک ہی ٹیمپلیٹ کے رنز کا موازنہ کرنے
+کا مطلب قطار میں اُس کا نام ڈھونڈنا ہے۔
 
-## Read the run detail
+## رن کی تفصیل پڑھیں
 
-A run's page has three stacked parts.
+کسی رن کے صفحے کے تین اوپر تلے حصے ہوتے ہیں۔
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**میٹا اسٹرپ** میں آغاز کا وقت، فعال مدت، قدموں کی پیش رفت ("3 از 7 مراحل")، ایک
+ناکامی خلاصہ جس میں وہ قدم اور وجہ بتائی جاتی ہے جو ٹوٹا، اور **دوبارہ کوشش** اور
+**حذف کریں** ایکشن شامل ہوتے ہیں۔
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**ٹائمنگ واٹر فال** ہر قدم کے لیے ایک بار دیتا ہے، اُس کی مدت اور — ایجنٹ قدموں
+کے لیے — اُس کی لاگت سینٹ میں۔ جس قدم کو دوبارہ آزمایا گیا ہو اُس کی مدت کے بعد
+`×N` لاحقہ آتا ہے؛ یہ لاحقہ ہی واحد جگہ ہے جہاں کوششوں کی گنتی سامنے آتی ہے۔
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**گراف کینوس** ٹیمپلیٹ کو ہر نوڈ کی براہِ راست حالت کے ساتھ دکھاتا ہے۔ کسی نوڈ کو
+منتخب کرنے سے اُس کا قدم پینل کھل جاتا ہے۔
 
-### Run and step statuses
+### رن اور قدم کے اسٹیٹس
 
-| Status        | Meaning                                           |
+| اسٹیٹس        | مطلب                                           |
 | ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| **زیرِ التوا**   | بنایا گیا، ابھی شروع نہیں ہوا                          |
+| **قطار میں**    | داخل ہو گیا مگر روکا گیا: اِس ٹیمپلیٹ کی زیادہ سے زیادہ متوازی حد بھری ہوئی ہے؛ ابھی تک کوئی قدم درج نہیں |
+| **چل رہا ہے**   | زیرِ اجرا                                         |
+| **معطل** | کسی بیرونی چیز کا انتظار — معمول، پھنسا ہوا نہیں |
+| **مکمل** | کامیابی سے ختم ہوا                             |
+| **ناکام**    | کسی خرابی پر ختم ہوا                               |
+| **منسوخ** | کسی صارف یا سسٹم کی جانب سے روکا گیا                |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+قدموں کے اسٹیٹس وہی ہوتے ہیں مگر **قطار میں** کے بغیر، اور اُس اضافے کے ساتھ
+**چھوڑا گیا**، اُس برانچ کے لیے جو روٹر نے نہ لی (اور اُس کے اب ناقابلِ رسائی
+زیرِیں نوڈز)۔
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**معطل** ہی وہ حالت ہے جہاں ایجنٹ قدم اپنی زیادہ تر عمر گزارتا ہے: کوئی ڈسپیچ
+شدہ ایجنٹ یا منظوری گیٹ قدم کو اُس وقت تک روکے رکھتا ہے جب تک اُس کا کام مکمل نہ
+ہو جائے۔ انجن کے دو حفاظتی انتظامات جاری رکھنے کے بجائے پورا رن ناکام کر دیتے
+ہیں: 24 گھنٹے سے زیادہ معطل رہنے والا قدم (`extras.awaitApproval` — یعنی
+`orchestration.awaitApproval` باڈی — مستثنیٰ ہے؛ `human.gate` نہیں) اور وہ
+غیر idempotent قدم جو سرور کے رکنے کے وقت جاری تھا۔
 
-## Inspect a step
+## قدم کا معائنہ کریں
 
-Select a node on the canvas. The step panel shows, in order:
+کینوس پر کوئی نوڈ منتخب کریں۔ قدم پینل ترتیب وار یہ دکھاتا ہے:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- جب قدم ناکام ہو تو ایک **خرابی** کال آؤٹ، یا جب وہ چھوڑا گیا ہو تو وجہ کے ساتھ
+  ایک **چھوڑا گیا** کال آؤٹ۔
+- **شروع ہوا**، **ختم ہوا** اور مدت۔
+- **برانچ** — متوازی برانچوں کے لیے برانچ انڈیکس۔
+- **گفتگو دیکھیں** — اُس گفتگو پر جاتا ہے جس میں قدم چلا تھا۔ پائپ لائن کی گفتگوئیں
+  سائیڈبار سے چھپی رہتی ہیں، اس لیے اندر جانے کا یہی واحد راستہ ہے۔
+- **ان پٹ** اور **آؤٹ پٹ**، سکیڑنے کے قابل JSON کے طور پر۔
+- **ایجنٹ سرگرمی** — قدم نے جو بھی ایجنٹ رن ڈسپیچ کیا اُس کے لیے ایک ٹائل، اُس کی
+  اسٹیٹس، خلاصہ، مدت اور لاگت کے ساتھ۔
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+ایجنٹ قدم کے لیے **آؤٹ پٹ** وہ ساختی پے لوڈ ہے جو ایجنٹ نے `submit_output` کے
+ساتھ جمع کرایا، اُس کا نثر نہیں۔ استدلال کا ٹریس **ایجنٹ سرگرمی** میں اور
+**گفتگو دیکھیں** کے پیچھے موجود گفتگو میں رہتا ہے۔
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+bash قدم کے لیے **آؤٹ پٹ** وہ تراشیدہ stdout ہے جو اسکرپٹ نے exit 0 پر لکھا۔ غیر
+صفر exit قدم کو ناکام کر دیتا ہے اور stderr کا آخری حصہ خرابی کے پیغام کے طور پر
+آتا ہے۔
 
-## Recover a failed run
+## ناکام رن سے بحالی کریں
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. میٹا اسٹرپ پر ناکامی کا خلاصہ پڑھیں؛ اُس میں ناکام ہونے والے قدم کا نام ہوتا
+   ہے۔ پیغام قدم پینل کے **خرابی** کال آؤٹ میں ہے۔
+2. قدم کا **ان پٹ** چیک کریں — غائب یا غلط ہجے والی اسٹیٹ کلید سب سے عام وجہ ہے۔
+   پرامپٹ-ایجنٹ قدم فوراً ناکام ہو جاتا ہے اور غیر حل شدہ پلیس ہولڈرز کے نام
+   بتاتا ہے؛ bash قدم اُنہیں خالی اسٹرنگز کے طور پر لگا کر بہرحال چل پڑتا ہے، جس
+   کا اثر عام طور پر ایک قدم بعد ظاہر ہوتا ہے۔
+3. ایجنٹ قدم کے لیے **گفتگو دیکھیں** کھولیں اور پڑھیں کہ ایجنٹ نے اصل میں کیا
+   کیا۔
+4. میٹا اسٹرپ پر **دوبارہ کوشش** دبائیں۔ مکمل اور چھوڑے گئے قدم اپنے آؤٹ پٹس
+   برقرار رکھتے ہیں؛ باقی سب حذف ہو کر دوبارہ چلائے جاتے ہیں اور رن واپس چل رہا
+   ہے پر چلا جاتا ہے۔ اِس کوشش کے لیے مدت کی گھڑی دوبارہ شروع ہو جاتی ہے۔
 
-Common causes worth checking first:
+پہلے چیک کرنے کے قابل عام وجوہ:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **ٹائم آؤٹ** — قدم نے اپنا **ٹائم آؤٹ (ms)** تجاوز کر لیا۔ یاد رکھیں کہ یہ فیلڈ
+  ملی سیکنڈز میں ہے۔
+- **اسکرپٹ خرابی** — bash کمانڈ غیر صفر کے ساتھ ختم ہوئی، یا `bash` سرور ہوسٹ کے
+  `PATH` پر نہیں ہے۔
+- **اسکیمہ کی توثیق** — ایجنٹ کا `submit_output` پے لوڈ قدم کے آؤٹ پٹ اسکیمہ پر
+  پورا نہیں اترا۔
+- **غیر حل شدہ پلیس ہولڈر** — کوئی `{{key}}` جس کا حوالہ پرامپٹ-ایجنٹ قدم نے دیا
+  تھا، اوپر کبھی لکھا ہی نہیں گیا۔ خرابی ہر غیر حل شدہ کلید کا نام لیتی ہے۔
+- **غیر رجسٹرڈ باڈی** — وہ قدم جس کی باڈی کلید رجسٹرڈ نہ ہو، ٹیمپلیٹ لوڈ پر
+  وارننگ دیتا ہے اور پھر کبھی چلتا ہی نہیں۔
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[دوبارہ کوشش صرف ناکام یا منسوخ رن پر کام کرتی ہے]
+**دوبارہ کوشش** بٹن صرف اُس وقت دکھایا جاتا ہے جب رن `failed` یا `cancelled` ہو۔
+کسی بھی دوسری حالت کے لیے انجن فوراً واپس آ جاتا ہے۔
 :::
 
-## Stop a step that is stuck
+## پھنسے ہوئے قدم کو روکیں
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+چلتے ہوئے قدم کو منتخب کریں اور قدم پینل کے ہیڈر میں **چلتے ہوئے ختم کریں** بٹن
+دبائیں۔ یہ قدم کے پروسیس کو مار دیتا ہے، قدم کو ناکام نشان زد کرتا ہے اور اسی
+لیے پورا رن ناکام ہو جاتا ہے — ہر کھلی ہمشیرہ برانچ اُسی کے ساتھ بند کر دی جاتی
+ہے۔
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+اِس اسکرین پر رن منسوخ کرنے کا کوئی کنٹرول نہیں۔ `pipeline.cancel` بطور RPC
+آپریشن موجود ہے اور انجن اُسے نافذ کرتا ہے، مگر پائپ لائنز UI میں کوئی چیز اُسے
+کال نہیں کرتی؛ کسی قدم پر **چلتے ہوئے ختم کریں**، یا رن پر **حذف کریں**، ہی
+روکنے کے واحد دستیاب طریقے ہیں۔
 
-## Track cost
+## لاگت ٹریک کریں
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+لاگت فی قدم بتائی جاتی ہے، واٹر فال کے دائیں کالم میں اور **ایجنٹ سرگرمی** کے تحت
+ہر ٹائل پر۔ تفصیل کے صفحے پر رن کا کوئی مجموعہ نہیں اور رنز کی قطار میں لاگت کا
+کوئی کالم نہیں، اس لیے دو رنز کی لاگت کا موازنہ کرنے کا مطلب اُن کے قدموں کو جمع
+کرنا ہے۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Run a pipeline manually](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)
-- [Create a pipeline template](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
-- [Manage costs](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
-- [Pipeline steps reference](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/)
+- [پائپ لائن دستی طور پر چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)
+- [پائپ لائن ٹیمپلیٹ بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
+- [اخراجات منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اخراجات-منظم-کریں/)
+- [پائپ لائن قدم کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
+- [پائپ لائنز اور آٹومیشن](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)

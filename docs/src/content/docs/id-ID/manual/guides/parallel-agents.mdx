@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Jalankan agen secara paralel
+description: Kirim beberapa agen sekaligus dan jaga agar pekerjaan mereka tidak saling bertabrakan.
 slug: id-ID/panduan-pengguna/panduan-praktis/agen-paralel
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Panduan ini menunjukkan cara menjalankan beberapa agen pada saat yang sama tanpa mereka saling menimpa.
 
-## The unit of isolation is the space, not the agent
+## Unit isolasinya adalah space, bukan agen
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Saat pekerjaan dimulai di sebuah space, Control Center menyediakan satu checkout copy-on-write per repo terdaftar di bawah root milik space itu, pada branch yang diturunkan dari templat branch ruang kerja. Setiap agen di space tersebut kemudian mendapat direktori kerja overlay-nya sendiri — tetapi overlay itu **berbagi** direktori `repos/` milik space tersebut.
 
-So:
+Jadi:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- Dua agen di **space yang berbeda** bekerja di checkout yang berbeda, pada branch yang berbeda. Itulah isolasi yang sesungguhnya.
+- Dua agen di **space yang sama** bekerja di checkout yang sama, pada branch yang sama. Path overlay mereka berbeda, sehingga kunci path pengiriman (yang menyerialkan run hanya ketika keduanya meminta direktori kerja yang identik) juga tidak menyerialkan keduanya. Mereka dapat menulis file yang sama pada saat yang bersamaan.
 
-The rule that follows: **one space per parallel task.**
+Aturan yang menyusul: **satu space per tugas paralel.**
 
-## Run tasks in parallel — separate spaces
+## Jalankan tugas secara paralel — space terpisah
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. Buka space dengan agen A dan kirimkan sebuah tugas kepadanya.
+2. Buka space kedua dengan agen B dan kirimkan tugas yang berbeda kepadanya.
+3. Keduanya langsung dikirim, masing-masing di checkout space-nya sendiri pada branch-nya sendiri.
 
-This is the recipe to use whenever the agents will be editing files.
+Inilah resep yang dipakai setiap kali para agen akan mengedit file.
 
-## Work together in one space — several mentions
+## Bekerja bersama di satu space — beberapa sebutan
 
-In a single space, @-mention more than one agent:
+Di satu space, sebut lebih dari satu agen dengan @:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+Kedua agen dikirim secara paralel dan mengalir ke space yang sama, dengan penanda pengirimnya. Karena keduanya berbagi checkout space tersebut, gunakan cara ini untuk kolaborasi — satu menulis, satu membaca, atau dua agen bernalar tentang pohon yang sama — bukan untuk dua penyuntingan yang independen.
 
-## Fan out from a pipeline
+## Lakukan fan-out dari pipeline
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Templat `pr_review` bawaan adalah contoh fan-out yang sudah disertakan: beberapa node peninjau berjalan serentak dari satu pemicu dan node **Consolidate (join)** melipat temuan mereka menjadi satu laporan. Jalankan dari layar pipeline dan setiap peninjau akan dikirim secara paralel.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Editor pipeline menyembunyikan sentinel terminal dan menyambungkannya ulang untuk menunggu setiap sink yang aktif saat Anda menambah atau menghubungkan sebuah langkah, sehingga branch yang Anda gambar sendiri benar-benar berjalan.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Menetapkan tiket tidak mengirim apa pun]
+Menetapkan tiket kepada agen mencatat kepemilikan. Tidak ada pengirim tiket — `TicketAssigned` adalah sinyal audit dan tidak ada pekerjaan yang dimulai darinya. Satu-satunya pengecualian adalah tiket yang ditetapkan kepada sebuah _tim_, yang membangunkan pemimpin tim tersebut.
 :::
 
-## Watch them run
+## Pantau mereka berjalan
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Observabilitas → Langsung** (footer bilah sisi → Observabilitas, lalu tab Langsung) menampilkan daftar agen ruang kerja ini, yang diperbarui setiap detik: status (Berjalan / Menganggur / Diparkir / Dibatalkan), apa yang sedang dilakukan setiap agen, token dan biaya untuk run terbarunya, serta kontrol penghentian untuk proses yang sedang berjalan. Memilih sebuah baris membuka laci transkrip langsung.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Pengaturan → Ruang kerja → Agen** menampilkan daftar yang sama dengan kosakata status yang berbeda dan mengutamakan perhatian, yang diturunkan dari riwayat run setiap agen — Berjalan, Diblokir, Gagal, Menganggur, Belum ada run — diurutkan sehingga apa pun yang butuh perhatian mengapung ke atas. Tab **Log** setiap agen memuat riwayat run-nya sendiri.
 
-Both surfaces are scoped to the active workspace.
+Kedua permukaan ini dibatasi pada ruang kerja yang aktif.
 
-## Handle conflicts
+## Menangani konflik
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Antar space, setiap space berada pada branch-nya sendiri, sehingga tabrakan muncul sebagai konflik merge Git biasa saat Anda menggabungkan pull request kedua. Selesaikan dengan cara yang sama seperti Anda menyelesaikan konflik merge lainnya.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Di dalam satu space tidak ada batas branch dan tidak ada kunci: para agen menulis file yang sama secara langsung dan yang kalah sekadar ditimpa. Jika Anda merasa perlu dua agen mengedit di satu space, pisahkan pekerjaannya menjadi dua space saja.
 
-To reduce collisions either way:
+Untuk mengurangi tabrakan pada kedua cara itu:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/).
-- Review and merge each agent's pull request promptly.
+- Beri setiap agen cakupan yang berbeda — file yang berbeda, modul yang berbeda.
+- Gunakan graf kode untuk memeriksa apa yang tersentuh oleh suatu perubahan sebelum mengirim. Lihat [Cari kode dengan graf kode](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/).
+- Tinjau dan gabungkan pull request setiap agen dengan segera.
 
-## Resource considerations
+## Pertimbangan sumber daya
 
-Each running agent costs:
+Setiap agen yang berjalan menimbulkan biaya berupa:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Checkout space — dapat diabaikan di disk selama copy-on-write tersedia; di Windows berupa `git worktree`. Sistem berkas yang tidak dapat melakukan reflink akan menggagalkan penyediaan alih-alih menyalin.
+- Sebuah proses di host server
+- Token model, yang menumpuk per agen
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/) for the two commands that do have one.
+Biaya tercatat di **Observabilitas → Wawasan**. Perhatikan bahwa giliran interaktif yang biasa tidak punya batas pengeluaran; lihat [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/) untuk dua perintah yang memilikinya.
 
-## Related guides
+## Panduan terkait
 
-- [Create and configure an agent](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
-- [Build an agent team](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/)
-- [Manage costs](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/)
-- [Add repos to a workspace](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
+- [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/)
+- [Bangun tim agen](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/)
+- [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/)
+- [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)
 
-## Related concepts
+## Konsep terkait
 
-- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
-- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)
+- [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/)
+- [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/)

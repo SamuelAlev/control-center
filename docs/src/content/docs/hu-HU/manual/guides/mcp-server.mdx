@@ -1,45 +1,50 @@
 ---
-title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+title: Az MCP-szerver használata
+description: Irányítson egy külső MCP-klienst a Control Center eszközszerverére, állítson be bearer tokent, és ismerje, mit tesz elérhetővé a felület.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver
+sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
 ---
 
-This guide shows you how to connect an external MCP client — Claude Code, an
-editor, the MCP Inspector — to Control Center's own tool server.
+Ez az útmutató megmutatja, hogyan csatlakoztasson egy külső MCP-klienst — a
+Claude Code-ot, egy szerkesztőt, az MCP Inspectort — a Control Center saját
+eszközszerveréhez.
 
-Control Center registers **110** tools and serves them over the Model Context
-Protocol at protocol version `2024-11-05`. Whole tool families you might expect
-are absent: there are no meeting or calendar tools and no project tools.
+A Control Center **110** eszközt regisztrál, és ezeket a Model Context
+Protocolon keresztül, `2024-11-05` protokollverzióval szolgálja ki. Egész
+eszközcsaládok hiányoznak, amelyekre pedig számítana: nincsenek megbeszélés-
+vagy naptáreszközök, és projekteszközök sincsenek.
 
-## Find the endpoint
+## A végpont megkeresése
 
-The MCP surface shares the main `cc_server` listener. There is no separate MCP
-port.
+Az MCP-felület a fő `cc_server` figyelőt használja. Nincs külön MCP-port.
 
-| Endpoint | Method   | Purpose                                                  |
-| -------- | -------- | -------------------------------------------------------- |
-| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
-| `/mcp`   | `DELETE` | End a session                                            |
-| `/sse`   | `GET`    | Server-sent notification stream                          |
+| Végpont | Metódus  | Cél                                                       |
+| ------- | -------- | --------------------------------------------------------- |
+| `/mcp`  | `POST`   | Streamable HTTP átvitel — ezen beszél a kliens            |
+| `/mcp`  | `DELETE` | Munkamenet befejezése                                     |
+| `/sse`  | `GET`    | Szerver által küldött értesítési folyam                   |
 
-So a default local install is at `http://127.0.0.1:9030/mcp`.
+Egy alapértelmezett helyi telepítés tehát a `http://127.0.0.1:9030/mcp` címen
+érhető el.
 
-1. Go to **Settings → Server → MCP servers**
-2. Read the **MCP server** card — it shows running or stopped and the port it is
-   listening on
+1. Nyissa meg a **Beállítások → Szerver → MCP-szerverek** oldalt
+2. Olvassa le az **MCP-szerver** kártyát — mutatja, hogy fut vagy leállt, és
+   hogy melyik porton figyel
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
-restart; **Start** / **Stop** are session controls that do not change that
-preference.
+A felület friss telepítésen alapértelmezés szerint be van kapcsolva, így egy
+loopback kliens a beállítások megérintése nélkül működik. Az **Indítás az
+alkalmazás indításakor** szabályozza, hogy visszatér-e újraindítás után; az
+**Indítás** / **Leállítás** munkamenet-vezérlők, amelyek nem változtatják meg
+ezt a beállítást.
 
-The server binds loopback by default, so the endpoint is only reachable from the
-machine `cc_server` runs on unless you started it with `--bind any`.
+A szerver alapértelmezés szerint loopbackre köt, így a végpont csak arról a
+gépről érhető el, amelyen a `cc_server` fut, kivéve, ha `--bind any`
+kapcsolóval indította.
 
-## Connect a client
+## Kliens csatlakoztatása
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Irányítsa a klienst a Streamable HTTP végpontra. A konfiguráció pontos formája
+a kliensének a dolga; az URL mindkét esetben ugyanaz.
 
 ```json
 {
@@ -54,41 +59,47 @@ is your client's business; the URL is the same either way.
 
 ### Claude Code
 
-Claude Code will not pick this up from a project `.mcp.json` — it gates
-project-scoped MCP servers behind an approval prompt that a non-interactive
-`claude -p` never answers. Pass the config explicitly:
+A Claude Code ezt nem veszi át egy projekt `.mcp.json` fájljából — a
+projekthatókörű MCP-szervereket egy jóváhagyási kérés mögé zárja, amelyet egy
+nem interaktív `claude -p` soha nem válaszol meg. Adja át a konfigurációt
+explicit módon:
 
 ```bash
 claude --mcp-config /path/to/mcp.json --strict-mcp-config
 ```
 
-`--strict-mcp-config` makes Claude use only that file, so the same server is not
-also discovered from the project and registered twice.
+A `--strict-mcp-config` hatására a Claude csak azt a fájlt használja, így
+ugyanaz a szerver nem kerül fel a projektből is, és nem regisztrálódik kétszer.
 
-Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
-covering tickets, spaces, memory, code graph and review.
+Ellenőrzőpont: kérje meg a klienst, hogy listázza az eszközeit. `mcp__*`
+bejegyzéseket kell látnia, amelyek a jegyeket, a tereket, a memóriát, a
+kódgráfot és az átnézést fedik le.
 
-## Serve MCP beyond the host
+## MCP kiszolgálása a hoszton túl
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+1. A **Beállítások → Szerver → MCP-szerverek** oldalon a **Hitelesítési token**
+   sorban nyomja meg a **Beállítás** gombot, és illesszen be egy tokent
+2. Küldje el `Authorization: Bearer <token>` fejlécként minden `POST /mcp`
+   kérésnél
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+A token nélküli felület minden nem loopback hívót 403-mal utasít el. Ez
+szándékosan zárt hibamódú: épp a token teszi egyáltalán lehetővé a hoszton
+kívüli kiszolgálást.
 
-Token changes apply to the live surface immediately — no restart.
+A token módosításai azonnal érvényesülnek az élő felületen — újraindítás nélkül.
 
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
+:::note[`GET /sse` a tokent a lekérdezési sztringben fogadja]
+Az értesítési folyamot a rendszer ugyanúgy token alapján ellenőrzi, mint minden
+más útvonalat, de a böngésző `EventSource` nem tud `Authorization` fejlécet
+küldeni — ezért a `/sse` a tokent `?token=<token>` formában is elfogadja.
+Enélkül 401-gyel válaszol.
 :::
 
-## Scope every call to a workspace
+## Minden hívás munkaterülethez kötése
 
-Every tool that touches workspace-scoped data requires `workspace_id` and a call
-without it is refused rather than resolved against some "current" workspace:
+Minden eszköz, amely munkaterület-hatókörű adatot érint, megköveteli a
+`workspace_id` mezőt, és a nélküle érkező hívást elutasítja a rendszer, nem
+pedig valamely „aktuális” munkaterületre oldja fel:
 
 ```json
 {
@@ -98,56 +109,62 @@ without it is refused rather than resolved against some "current" workspace:
 }
 ```
 
-The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
-only exemptions are tools that genuinely span workspaces, such as
-`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
-has no user of its own, so those tools operate on the server owner's feeds.
+Az azonosító az, amely a böngészője vagy az alkalmazás URL-jében szerepel:
+`/workspaces/<workspace_id>/…`. Az egyetlen kivételt azok az eszközök
+jelentik, amelyek valóban munkaterületeken átnyúlóak, például a
+`list_workspaces` és a hírfolyam-eszközök — a hírfolyam felhasználónkénti, és
+az ügynöknek nincs saját felhasználója, így ezek az eszközök a szerver
+tulajdonosának hírfolyamain működnek.
 
-Repo-scoped tools additionally check that the repo is linked to that workspace.
+A repóhoz kötött eszközök ezenfelül ellenőrzik, hogy a repó hozzá van-e
+kapcsolva ehhez a munkaterülethez.
 
-## Know what the surface will refuse
+## Ismerje, mit fog elutasítani a felület
 
-- **Mode gating.** A call is resolved against the mode of the calling agent's
-  space, server-side. An agent in a read-only mode cannot reach a write
-  tool by omitting `space_id` — the mode is looked up from its active run
-  instead.
-- **Action guardrails.** Mutating tools declare their effect classes and go
-  through the same policy the rest of the product uses. See
-  [Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
-- **Confirmation.** Some destructive tools build a confirmation payload that has
-  to be approved before the call proceeds.
+- **Módkapuzás.** A hívás feloldása kiszolgálóoldalon, a hívó ügynök terének
+  módja szerint történik. Egy csak olvasható módban lévő ügynök nem érhet el egy
+  íróeszközt a `space_id` elhagyásával — a módot a rendszer az aktív futásából
+  keresi ki helyette.
+- **Műveleti korlátok.** Az állapotmódosító eszközök deklarálják a
+  hatásosztályaikat, és ugyanazon a szabályzaton mennek át, amelyet a termék
+  többi része használ. Lásd:
+  [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
+- **Megerősítés.** Egyes destruktív eszközök megerősítési adatcsomagot állítanak
+  össze, amelyet jóvá kell hagyni, mielőtt a hívás továbbhalad.
 
-The full catalogue is advertised in `tools/list` with no discovery gating — an
-external MCP client refuses to call a tool that is not in its cached list, so
-hiding tools breaks them rather than tidying them.
+A teljes katalógust a `tools/list` hirdeti meg, felfedezési kapuzás nélkül — egy
+külső MCP-kliens megtagadja egy olyan eszköz hívását, amely nem szerepel a
+gyorsítótárazott listájában, így az eszközök elrejtése inkább elrontja őket,
+mintsem rendbe tenné.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The client sees no tools
+### A kliens egyetlen eszközt sem lát
 
-- Check the **MCP server** card says running
-- Check the port matches your `cc_server` port
-- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+- Ellenőrizze, hogy az **MCP-szerver** kártya azt mutatja-e, hogy fut
+- Ellenőrizze, hogy a port megegyezik-e a `cc_server` portjával
+- A Claude Code esetében ellenőrizze, hogy átadta-e a `--mcp-config` és a
+  `--strict-mcp-config` kapcsolót
 
-### 403 from a machine that is not the server
+### 403 egy olyan gépről, amely nem a szerver
 
-No bearer token is configured. Set one and send it.
+Nincs beállítva bearer token. Állítson be egyet, és küldje el.
 
-### A tool call fails with "Missing or invalid argument: workspace_id"
+### Egy eszközhívás a következő hibával hiúsul meg: „Missing or invalid argument: workspace_id”
 
-Add `workspace_id`. There is no implicit workspace.
+Adja hozzá a `workspace_id` mezőt. Nincs implicit munkaterület.
 
-### A tool call is refused as unknown
+### Egy eszközhívást ismeretlenként utasít el a rendszer
 
-[MCP tools](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) lists the catalogue. Call the name
-exactly as it appears there.
+Az [MCP-eszközök](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) oldal listázza a
+katalógust. Pontosan úgy hívja meg a nevet, ahogy ott szerepel.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [MCP tools](/hu-HU/kezikonyv/referencia/mcp-eszkozok/)
-- [Configure guardrails](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/)
-- [Run a headless server](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
+- [MCP-eszközök](/hu-HU/kezikonyv/referencia/mcp-eszkozok/)
+- [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/)
+- [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/)
+- [Architektúra](/hu-HU/kezikonyv/fogalmak/architektura/)

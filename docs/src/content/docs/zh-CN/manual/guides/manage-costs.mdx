@@ -1,96 +1,97 @@
 ---
-title: Manage costs
-description: See what your agents are spending, cap an autonomous run and cut token use.
+title: 管理成本
+description: 了解你的智能体正在花掉多少费用，为自主运行设定上限，并削减 token 用量。
 slug: zh-CN/手册/操作指南/管理成本
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
-This guide shows you how to see what agent runs cost and how to cap an autonomous run.
+本指南介绍如何查看智能体运行花掉了多少费用，以及如何为自主运行设定上限。
 
-## How costs are recorded
+## 成本如何被记录
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+每次智能体运行都会写入一条运行日志，其中包含它的输入 token、输出 token、推理 token、缓存读取与缓存写入 token、一份以美分为单位的估算费用，以及它派生出的所有子智能体的费用。
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+定价来自 models.dev 目录，该目录只用来为模型列表补充价格与上下文窗口信息，绝不作为模型 id 的来源。目录无法定价的模型会记为 **$0**，零成本运行会被排除在 **用量与费用** 摘要之外。因此，本地 Ollama 模型完全不显示任何支出，尽管它的 token 数仍会被记录。固定费率套餐（kimi-code、Claude 订阅）只有在目录没有对所服务的模型定价时才是如此；如果目录有价，运行仍会按那些费率估算。在回退链下，运行的定价依据是实际服务它的模型，而不是被请求的那个模型。
 
-## See what you are spending
+## 查看你的支出
 
-### Observability → Insights
+### 可观测性 → 洞察
 
-Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
+从侧边栏页脚 → **可观测性** 进入。**用量** 标签会最先打开（累计 token 总量）；切换到第二个标签**洞察**，就能看到主要的成本界面：
 
-- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
-- Faceted filters over agent, model, status and role, as dismissible chips
-- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
-- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
-- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
-- The granular run log, which docks a transcript drawer for a selected run
+- 一个时间范围选择器：过去 24 小时、过去 7 天、过去 30 天或全部时间
+- 针对智能体、模型、状态和角色的分面筛选器，以可关闭的标签形式呈现
+- 一条 KPI 条：总运行数、总成本、错误率、缓存率、token/秒、平均延迟和首 token 时间，每一项都带有相对上一周期的变化（在“全部时间”下隐藏）
+- 活动与成本图表，外加一份**按角色的成本**明细，把支出拆分到主智能体、其子智能体和其顾问上
+- 一张按成本排序的按智能体表格，默认显示前十名并带有一个显示全部的开关。点击某一行会把其他所有界面都筛选为该智能体
+- 细粒度的运行日志，它会为选中的运行停靠一个转录抽屉
 
-:::note["All time" is not all time]
-The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::note[“全部时间”并非全部时间]
+运行流会订阅所有工作区中最近的 2000 条运行日志，然后再筛选出当前活跃工作区的那些。在繁忙的多工作区服务器上，冷清工作区中较早的历史会落在这个窗口之外。
 :::
 
-### Settings → Server → Model providers
+### 设置 → 服务器 → 模型提供商
 
-The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+此页面上的**用量与费用**卡片以单个美元数字显示最近七天观测到的支出，并附有按提供商拆分的明细；当某个提供商公布了配额窗口的重置时间时，还会显示距离下一次配额窗口重置还有多久。
 
-### A single agent's runs
+### 单个智能体的运行
 
-**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+**设置 → 工作区 → 智能体** → 选择一个智能体 → **日志** 会列出它的运行，包含状态、时长、开始与完成时间、PID 和适配器。此标签**不**显示成本——要看成本请使用 可观测性 → 洞察 中的按智能体表格。
 
-## Cap an autonomous run
+## 为自主运行设定上限
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+在空间的编辑器中输入的两个斜杠命令，是仅有的带支出上限的运行：
 
 ```
 /goal ship the auth refactor --budget 20
 /loop keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+- `/goal` 或 `/loop` 运行的每一段，都会在其计费支出达到 **500 美分（$5.00）** 时停止。达到该金额的 80% 时，循环会先引导模型收尾并留下一次干净的交接，使它不会在任务中途猝死。
+- 除非你传入 `--budget <dollars>`，否则一个完整的持久目标的上限是 **5000 美分（$50.00）**。监督器会把该目标的*剩余*预算分配到每一段，因此显式指定的预算绝不会被整整一段超支。
+- `--days N` 增加一个挂钟截止时间，`--max N` 增加一个运行次数上限。两者都是可选项；没有它们时，目标只受成本约束。
+- 触及上限的目标会停在 `budgetExhausted`，只有提高预算才能恢复。
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+由于上限是按计价生效的，目录无法定价的模型永远不会触及它。这样的运行转而受死循环重复防护、监督器在连续三次失败后放弃，以及你本人的约束。
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+空间中的一条消息、一次 @ 提及，或一个流水线步骤都没有支出上限。运行会在模型停止时、你叫停它时，或死循环防护引导它时结束。
 
-## Cut token use
+## 减少 token 用量
 
-### Compact a long conversation
+### 压缩长对话
 
-Type `/compact` in the space's composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+在空间的编辑器中输入 `/compact`。该命令在客户端被拦截，绝不会进入转录；服务器会把较早的历史折叠成一份带锚点的摘要，对话则在压缩后的上下文上继续。
 
-Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+当智能体正处于某一回合中，或没有足够旧的内容可折叠时，压缩会被拒绝。随着历史接近模型的上下文窗口，内置运行框架也会自行压缩。
 
-### Choose the effort level deliberately
+### 有意识地选择推理力度
 
-An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+智能体的**推理力度**（设置 → 工作区 → 智能体）提供所选模型公布的各个级别。级别越高，消耗的推理 token 越多。请把最高级别留给确实需要它的工作。
 
-### Choose the model per agent
+### 按智能体选择模型
 
-Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+模型是每个智能体各自的字段，因此负责格式化或分诊的智能体可以跑在便宜模型上，而架构智能体可以跑在昂贵模型上。在 可观测性 → 洞察 中按模型筛选按智能体表格，就能看出哪种搭配才真正在花钱。
 
-### Look for runs with outsized token counts
+### 找出 token 数异常偏高的运行
 
-Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+打开洞察的运行日志（最新 50 条筛选后的运行），并对任何异常之处打开转录抽屉。常见原因有：系统提示词或角色设定过长、本该已经被压缩的上下文，以及本该拆成几个更小任务的一项任务。
 
-## What happens if a budget is set out of band
+## 如果预算被带外设置会怎样
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+为完整起见，如果 `monthlyBudgetCents` 或某项预算策略被直接写入智能体的数据库行：
 
-- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
-- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
-- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
-- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+- 预算是在运行完成**之后**评估的，而不是在派发之前。运行完成时的一个监听器会把该智能体本月至今的支出与其上限作比较。
+- 越过软阈值（默认 80%）会记录一条警告事故，并触发一个 `BudgetThresholdCrossed` 事件，你可以把流水线触发器挂在它上面。
+- 耗尽预算会记录一条硬性事故，触发同一个事件，并把该智能体的生命周期状态翻转为 `paused`。
+- 派发前的拦截确实存在，但只有孤儿运行回收器和搁浅工单对账器在安排恢复时才会查询它——正常派发永远不会走到那里，派发路径上也没有任何环节检查 `paused` 状态。唯一可见的信号是组织架构图上的生命周期徽章。
 
-## Related guides
+## 相关指南
 
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Manage adapters and models](/zh-CN/手册/操作指南/适配器/)
-- [Run agent diagnostics](/zh-CN/手册/操作指南/诊断智能体/)
-- [Agent configuration reference](/zh-CN/手册/参考/智能体配置/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [管理适配器与模型](/zh-CN/手册/操作指南/适配器/)
+- [诊断智能体](/zh-CN/手册/操作指南/诊断智能体/)
+- [智能体配置参考](/zh-CN/手册/参考/智能体配置/)
 
-## Related concepts
+## 相关概念
 
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)

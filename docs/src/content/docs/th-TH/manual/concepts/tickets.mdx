@@ -1,155 +1,93 @@
 ---
-title: Tickets and delegation
-description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+title: ตั๋วงานและการมอบหมาย
+description: ทำไมตั๋วงานจึงติดตามงานโดยไม่จัดส่งงานนั้น การมอบหมายถูกป้องกันอย่างไร และมิเรอร์จากผู้ให้บริการเป็นเจ้าของสิ่งใดและไม่เป็นเจ้าของสิ่งใด
 slug: th-TH/คู่มือ/แนวคิด/ตั๋วงาน
+sourceHash: f90d3d10c08fbfc5df5ba7de30603c2af86ebec9
 ---
 
-A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
-artifact: a title, a body, a status, an owner and a place in a tree. It is not
-the thing agents execute against — agent work lives in conversations and the
-structured output of a run lives on the run log.
+ตั๋วงานเป็นหน่วยของงานที่ Control Center ติดตาม มันเป็นอาร์ติแฟกต์ที่ _โง่_ โดยเจตนา: มีชื่อ เนื้อหา สถานะ เจ้าของ และตำแหน่งในโครงสร้างต้นไม้ มันไม่ใช่สิ่งที่เอเจนต์ลงมือทำ — งานของเอเจนต์อยู่ในบทสนทนา และเอาต์พุตแบบมีโครงสร้างของการรันอยู่บนบันทึกรัน
 
-## Assignment records ownership; it dispatches nothing
+## การกำหนดผู้รับมอบหมายบันทึกความเป็นเจ้าของ ไม่ได้จัดส่งสิ่งใด
 
-This is the single most important thing to get right about tickets.
+นี่คือสิ่งสำคัญที่สุดเพียงเรื่องเดียวที่ต้องทำให้ถูกต้องเกี่ยวกับตั๋วงาน
 
-Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
-[domain event](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/). That event is an audit and
-notification signal and a pipeline trigger. **Assignment to an agent starts no
-run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
-that agent.
+การตั้งค่า `assignedAgentId` เขียนค่าลงฟิลด์หนึ่งและเผยแพร่ [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/) `TicketAssigned` เหตุการณ์นั้นเป็นสัญญาณสำหรับการตรวจสอบและการแจ้งเตือน รวมทั้งเป็นทริกเกอร์ของไปป์ไลน์ **การมอบหมายให้เอเจนต์ไม่เริ่มการรันใด ๆ** ไม่มีตัวจัดส่งตั๋วงานที่คอยเฝ้า `assignedAgentId` แล้วปลุกเอเจนต์ตัวนั้น
 
-The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
-dispatches the team leader with the operating protocol and roster.
+ข้อยกเว้นคือทีม: เมื่อตั้งค่า `assignedTeamId` แล้ว `TeamRoutingService` จะจัดส่งหัวหน้าทีมพร้อมโปรโตคอลการทำงานและรายชื่อสมาชิก
 
-If you want a specific agent to work on a ticket, you ask it in a conversation,
-or a pipeline step dispatches it, or another agent delegates to it. Assigning a
-ticket to an agent and waiting is the one thing that will never produce work.
+หากคุณต้องการให้เอเจนต์ตัวใดตัวหนึ่งทำงานบนตั๋วงาน คุณต้องขอให้มันทำในบทสนทนา หรือให้ขั้นตอนของไปป์ไลน์จัดส่งมัน หรือให้เอเจนต์อีกตัวมอบหมายงานให้มัน การมอบหมายตั๋วงานให้เอเจนต์แล้วรอ คือสิ่งเดียวที่จะไม่มีวันทำให้เกิดงานขึ้นมา
 
-## Mirror and overlay
+## มิเรอร์และโอเวอร์เลย์
 
-A ticket can be purely local or backed by an external tracker and it carries
-both on one row.
+ตั๋วงานอาจอยู่ภายในเครื่องล้วน ๆ หรือมีตัวติดตามภายนอกหนุนหลัง และมันเก็บทั้งสองส่วนไว้ในแถวเดียวกัน
 
-The **mirror** — provider, external key, URL, title, description, priority,
-labels, raw and normalized status, timestamps — is a cache when the ticket is
-remote. The remote is the source of truth there and a refresh rewrites the
-mirror wholesale.
+**มิเรอร์** — ผู้ให้บริการ คีย์ภายนอก URL ชื่อ คำอธิบาย ลำดับความสำคัญ ป้ายกำกับ สถานะดิบและสถานะที่ปรับรูปแบบแล้ว และการประทับเวลา — เป็นแคชเมื่อตั๋วงานอยู่บนระบบระยะไกล ในกรณีนั้นระบบระยะไกลคือแหล่งความจริง และการรีเฟรชจะเขียนมิเรอร์ใหม่ทั้งหมด
 
-The **overlay** — assignment, delegation, space link, parent, project, linked
-PRs — is Control Center-only. The tracker knows nothing about it and a refresh
-never touches it.
+**โอเวอร์เลย์** — การกำหนดผู้รับมอบหมาย การมอบหมาย ลิงก์สเปซ ตั๋วแม่ โปรเจกต์ และ PR ที่ลิงก์ไว้ — เป็นข้อมูลของ Control Center เท่านั้น ตัวติดตามไม่รู้อะไรเกี่ยวกับส่วนนี้เลย และการรีเฟรชไม่เคยแตะต้องมัน
 
-That split is what makes it safe to sync at all: a vendor pull can be
-destructive to the mirror without ever losing the orchestration metadata layered
-on top.
+การแยกส่วนแบบนี้เองที่ทำให้การซิงค์ปลอดภัยตั้งแต่แรก: การดึงข้อมูลจากผู้ให้บริการอาจเขียนทับมิเรอร์ได้อย่างรุนแรง โดยไม่สูญเสียเมทาดาทาของการประสานงานที่ซ้อนอยู่ด้านบนเลย
 
-## The lifecycle graph binds agents, not you
+## กราฟวงจรชีวิตผูกมัดเอเจนต์ ไม่ใช่คุณ
 
-Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
-a side loop and `failed` / `cancelled` as the other terminal states.
+สถานะไหลเป็น `backlog → open → inProgress → inReview → done` โดยมี `blocked` เป็นวงวนข้าง และ `failed` / `cancelled` เป็นสถานะสิ้นสุดอีกสองสถานะ
 
-The transition graph is enforced **only on the agent and automation path** —
-MCP tools and reconcilers. An illegal transition there is logged and ignored, so
-a confused agent cannot walk a ticket backwards out of a terminal state.
+กราฟการเปลี่ยนสถานะถูกบังคับใช้ **เฉพาะบนเส้นทางของเอเจนต์และระบบอัตโนมัติ** เท่านั้น — เครื่องมือ MCP และตัวกระทบยอด การเปลี่ยนสถานะที่ผิดกฎในเส้นทางนั้นจะถูกบันทึกไว้และเพิกเฉย ดังนั้นเอเจนต์ที่สับสนจะพาตั๋วงานย้อนกลับออกจากสถานะสิ้นสุดไม่ได้
 
-Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status the picker lists — including
-reopening a terminal one. The picker does not offer `failed`; agents set that
-through `fail_ticket`. The graph is a guard rail for automation, not a rule
-about how work is allowed to go.
+ทุกการเปลี่ยนแปลงที่ผู้ใช้สั่งใน UI จะส่ง `force: true` และข้ามกราฟไปทั้งหมด มนุษย์ย้ายตั๋วงานไปยังสถานะใดก็ได้ที่ตัวเลือกแสดงไว้ — รวมถึงการเปิดสถานะสิ้นสุดกลับมาอีกครั้ง ตัวเลือกนี้ไม่มี `failed` เอเจนต์จะตั้งสถานะนั้นผ่าน `fail_ticket` กราฟนี้เป็นราวกันตกของระบบอัตโนมัติ ไม่ใช่กฎว่าตัวงานต้องดำเนินไปอย่างไร
 
-`TicketWorkflowService` owns every mutation through a single chokepoint that
-loads the row, asserts it belongs to the caller's workspace and writes with an
-expected `version` so two concurrent edits cannot silently overwrite each other.
+`TicketWorkflowService` เป็นเจ้าของการแก้ไขทุกครั้งผ่านจุดคอขวดจุดเดียว ซึ่งโหลดแถวข้อมูล ตรวจสอบว่าแถวนั้นอยู่ในเวิร์กสเปซของผู้เรียก และเขียนด้วย `version` ที่คาดไว้ เพื่อให้การแก้ไขสองครั้งที่เกิดพร้อมกันเขียนทับกันอย่างเงียบ ๆ ไม่ได้
 
-For the full status table, transitions, field list and relation kinds, see
-[Ticket lifecycle](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/).
+สำหรับตารางสถานะทั้งหมด การเปลี่ยนสถานะ รายการฟิลด์ และชนิดความสัมพันธ์ ดูได้ที่ [วงจรชีวิตตั๋วงาน](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/)
 
-## Provenance: how a ticket came to exist
+## ที่มา: ตั๋วงานถือกำเนิดขึ้นได้อย่างไร
 
-Every ticket has an `originKind`. The enum has five values — `manual`,
-`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
-are written today: `manual` (the default on `createTicket`, including
-delegated children) and `externalSync` (the sync engine, on a vendor pull).
-`TicketWorkflowService.createTicket` does not take an origin argument, so
-`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+ตั๋วงานทุกใบมี `originKind` อีนัมนี้มีห้าค่า — `manual`, `pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — แต่ทุกวันนี้มีเพียงสองค่าที่ถูกเขียนจริง: `manual` (ค่าเริ่มต้นของ `createTicket` รวมถึงตั๋วลูกที่ถูกมอบหมาย) และ `externalSync` (เอนจินซิงค์ เมื่อดึงข้อมูลจากผู้ให้บริการ) `TicketWorkflowService.createTicket` ไม่รับอาร์กิวเมนต์ที่มาของตั๋ว ดังนั้น `pipelineStep`, `agentDelegation` และ `recovery` จึงไม่เคยถูกเขียนลงแถวข้อมูล
 
-## Guarded delegation
+## การมอบหมายที่มีการป้องกัน
 
-Delegation is where an agent creates work for another agent and it is the place
-privilege could leak, so the guards live server-side at a chokepoint rather than
-in prompt instructions.
+การมอบหมายคือจุดที่เอเจนต์สร้างงานให้เอเจนต์อีกตัว และเป็นจุดที่สิทธิ์อาจรั่วไหลได้ ตัวป้องกันจึงอยู่ฝั่งเซิร์ฟเวอร์ที่จุดคอขวด ไม่ได้อยู่ในคำสั่งในพรอมต์
 
-`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and then runs all
-four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
-hop back to an agent already in the chain (**cycle detection**), an **autonomy
-ceiling** (the delegate's effective level in the space must not exceed the
-delegator's) and a **budget envelope** (delegation bills the delegator's
-remaining hard-stop budget and cannot mint more). Production wiring supplies
-both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
-(unlimited / no-policy budget also passes). A refusal is thrown as a
-`DelegationRefusedException` whose message reaches the delegating agent
-verbatim — a loud denial, never a silent no-op.
+`delegate_task` วิ่งผ่าน `TicketWorkflowService.delegateGuarded` ซึ่งคำนวณความลึกและรากของตั๋วลูกจากสายของตั๋วแม่ แล้วรันการตรวจทั้งสี่ข้อของ `DelegationGuards`: การกระโดดที่จะเกิน **เพดานความลึกที่ 3**, การกระโดดกลับไปยังเอเจนต์ที่อยู่ในสายแล้ว (**การตรวจจับวงจร**), **เพดานความเป็นอิสระ** (ระดับที่มีผลจริงของผู้รับมอบหมายในสเปซต้องไม่เกินของผู้มอบหมาย) และ **กรอบวงเงินงบประมาณ** (การมอบหมายหักจากงบประมาณหยุดแข็งที่เหลืออยู่ของผู้มอบหมาย และสร้างเพิ่มไม่ได้) การต่อสายในโปรดักชันจัดหาพอร์ตรีโซลเวอร์ทั้งสองตัว การตรวจความเป็นอิสระและงบประมาณจะถูกข้ามเมื่อไม่ระบุ `from_agent_id` (งบประมาณแบบไม่จำกัด/ไม่มีนโยบายก็ผ่านเช่นกัน) การปฏิเสธจะถูกโยนออกมาเป็น `DelegationRefusedException` ซึ่งข้อความของมันไปถึงเอเจนต์ที่มอบหมายแบบคำต่อคำ — เป็นการปฏิเสธที่ดังก้อง ไม่ใช่การไม่ทำอะไรอย่างเงียบ ๆ
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
-directly and skips every guard. Prefer `delegate_task`.
+`delegate_ticket` เป็นคู่หูรุ่นเก่าที่ **ไม่มีการป้องกัน**: มันเรียก `createTicket` โดยตรงและข้ามการตรวจทุกข้อ ควรใช้ `delegate_task` แทน
 
-Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
-built-in harness's subagent nesting cap (2). They are different limits on
-different mechanisms.
+อย่าสับสนระหว่างเพดานความลึกของการมอบหมาย (3 สำหรับสายของ `delegate_task`) กับเพดานการซ้อนของซับเอเจนต์ของฮาร์เนสในตัว (2) ทั้งสองเป็นขีดจำกัดที่ต่างกันของกลไกที่ต่างกัน
 
-## Hierarchy, links and projects
+## ลำดับชั้น ลิงก์ และโปรเจกต์
 
-Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
-`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
-reading a ticket's relations has to merge both sources.
+ความสัมพันธ์แบบตั๋วแม่และตั๋วย่อยอยู่ใน `tickets.parent_ticket_id` ซึ่งดูแลโดย `setParent` / `clearParent` ความสัมพันธ์เหล่านั้น **ไม่ใช่** แถวใน `ticket_links` ดังนั้นอะไรก็ตามที่อ่านความสัมพันธ์ของตั๋วงานต้องรวมข้อมูลจากทั้งสองแหล่ง
 
-`ticket_links` holds the directional edges between otherwise unrelated tickets:
+`ticket_links` เก็บเส้นเชื่อมแบบมีทิศทางระหว่างตั๋วงานที่ไม่เกี่ยวข้องกันโดยตรง:
 
-| Link type     | Meaning                                 |
+| ชนิดลิงก์    | ความหมาย                                    |
 | ------------- | --------------------------------------- |
-| `blocks`      | The source blocks the target            |
-| `relatesTo`   | The two tickets are related (symmetric) |
-| `duplicateOf` | The source is a duplicate of the target |
+| `blocks`      | ตั๋วต้นทางบล็อกตั๋วปลายทาง                 |
+| `relatesTo`   | ตั๋วงานทั้งสองเกี่ยวข้องกัน (สมมาตร)          |
+| `duplicateOf` | ตั๋วต้นทางเป็นสำเนาซ้ำของตั๋วปลายทาง          |
 
-A **project** is a workspace-scoped grouping of tickets toward a shared goal.
-Projects are Control Center-only and never sync to an external provider.
+**โปรเจกต์** คือการจัดกลุ่มตั๋วงานภายในขอบเขตของเวิร์กสเปซเพื่อมุ่งสู่เป้าหมายร่วมกัน โปรเจกต์เป็นข้อมูลของ Control Center เท่านั้นและไม่เคยซิงค์ไปยังผู้ให้บริการภายนอก
 
-## Collaborators
+## ผู้ร่วมงาน
 
-`TicketCollaborator` rows are how more than one principal is attached to a
-ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
-agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
-sentinel value for "the user" and no foreign key to either table.
+แถวของ `TicketCollaborator` คือวิธีที่ผูกตัวตนมากกว่าหนึ่งตัวเข้ากับตั๋วงาน โดยมีบทบาทเป็น `assignee`, `collaborator` หรือ `reviewer` มนุษย์และเอเจนต์เป็นแถวที่เท่าเทียมกัน — มี `principalId` บวกกับ `collaboratorType` — โดยไม่มีค่าพิเศษแทน "ผู้ใช้" และไม่มีคีย์นอกไปยังตารางใดตารางหนึ่ง
 
-## External sync
+## การซิงค์ภายนอก
 
-Control Center's ticket is primary. Deleting a ticket is **local only**, so a
-vendor-backed ticket you delete is not deleted on the tracker and may reappear
-on the next sync. Collaborators and child tickets cascade.
+ตั๋วงานของ Control Center เป็นข้อมูลหลัก การลบตั๋วงานมีผล **เฉพาะภายในเครื่องเท่านั้น** ดังนั้นตั๋วงานที่หนุนหลังโดยผู้ให้บริการซึ่งคุณลบไปจะไม่ถูกลบบนตัวติดตาม และอาจปรากฏกลับมาอีกครั้งในการซิงค์ครั้งถัดไป ผู้ร่วมงานและตั๋วงานลูกจะถูกลบตามไปด้วย
 
-Adapter credentials resolve from the server's credential stores (a Linear key or
-GitHub token pasted in Settings is picked up on the next request; the
-environment only seeds those stores).
+ข้อมูลรับรองของอะแดปเตอร์จะถูกดึงจากที่เก็บข้อมูลรับรองของเซิร์ฟเวอร์ (คีย์ Linear หรือโทเค็น GitHub ที่วางไว้ในการตั้งค่าจะถูกนำมาใช้ในการร้องขอครั้งถัดไป ส่วนตัวแปรสภาพแวดล้อมเพียงเติมค่าเริ่มต้นให้ที่เก็บเหล่านั้นเท่านั้น)
 
-## Tickets and pipelines
+## ตั๋วงานและไปป์ไลน์
 
-No pipeline node creates, completes or cancels tickets — the palette has no
-such step and the engine does not call `TicketWorkflowService`. A pipeline
-trigger can still fire on `TicketAssigned`, `TicketCompleted`,
-`TicketFailed`, or `TicketCancelled` (those four are the ticket events
-`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
-the ticket; pipeline coupling lives on the agent run log.
+ไม่มีโหนดไปป์ไลน์ใดสร้าง ทำเครื่องหมายเสร็จ หรือยกเลิกตั๋วงาน — พาเลตต์ไม่มีขั้นตอนแบบนั้น และเอนจินไม่ได้เรียก `TicketWorkflowService` ทริกเกอร์ของไปป์ไลน์ยังทำงานเมื่อเกิด `TicketAssigned`, `TicketCompleted`, `TicketFailed` หรือ `TicketCancelled` ได้ (สี่เหตุการณ์นี้คือเหตุการณ์ตั๋วงานที่ `EventPayloadMapper` แมปจริง) ไม่มีคอลัมน์ `pipelineRunId` บนตั๋วงาน การเชื่อมโยงกับไปป์ไลน์อยู่บนบันทึกรันของเอเจนต์
 
-## See also
+## ดูเพิ่มเติม
 
-- [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/): ticket events can trigger a pipeline
-- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/): where a DAG of sub-tickets comes from
-- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): who a ticket is assigned to
-- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): the ticket lifecycle events
-- [Ticket lifecycle](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/): statuses, fields, transitions, relations
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
-- [Delegate work to agents](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
-- [Organize work with projects](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)
+- [ไปป์ไลน์และระบบอัตโนมัติ](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/): เหตุการณ์ของตั๋วงานสามารถทริกเกอร์ไปป์ไลน์ได้
+- [การประสานงาน](/th-TH/คู่มือ/แนวคิด/การประสานงาน/): DAG ของตั๋วงานย่อยมาจากไหน
+- [โมเดลเอเจนต์](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/): ตั๋วงานถูกมอบหมายให้ใคร
+- [เหตุการณ์โดเมน](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/): เหตุการณ์ในวงจรชีวิตของตั๋วงาน
+- [วงจรชีวิตตั๋วงาน](/th-TH/คู่มือ/อ้างอิง/วงจรชีวิตตั๋วงาน/): สถานะ ฟิลด์ การเปลี่ยนสถานะ และความสัมพันธ์
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/)
+- [มอบงานให้เอเจนต์](/th-TH/คู่มือ/วิธีทำ/มอบหมายตั๋วงาน/)
+- [จัดงานด้วยโปรเจกต์](/th-TH/คู่มือ/วิธีทำ/โปรเจกต์/)

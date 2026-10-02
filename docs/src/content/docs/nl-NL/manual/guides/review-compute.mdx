@@ -1,132 +1,150 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Review-compute (cohorten, assen en deterministische diffs)
+description: Wat de review-compute-ronde server-side oplevert — cohorten, API-contract- en visuele diffs, poorten per as — en hoe dat samenkomt in het tabblad Review.
 slug: nl-NL/handleiding/gidsen/review-compute
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Het tabblad **Review** van de PR is de live voortgang van de reviewpipeline terwijl
+die werkt, en daarna het artefact dat hij heeft gepubliceerd, met de acties erop.
+Eén tabblad met twee toestanden, want het is hetzelfde ding op twee momenten. Het
+is geen standaardtabblad: een PR heeft pas een review als iemand erom vraagt, dus
+**Ask AI** is wat het opent.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
-`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+Achter dat tabblad bouwt `cc_server` bestandscohorten, draait het de
+deterministische assen en serveert het die via de RPC-operaties `review_studio.*`
+(`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` en hun `watch*`-tweeling).
+Een opgeslagen layout die nog `pr.reviewStudio` heet, opent ditzelfde tabblad
+Review.
 
-On the Review tab:
+Op het tabblad Review:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- De bundelende agent publiceert een gewoon gespreksartefact met
+  `publish_artifact`, zodat het tabblad het weergeeft via dezelfde
+  artefactviewer die een chatbubbel opent — er is geen reviewvormige kopie van
+  het artefartsysteem.
+- Bevindingen staan in een zijbalk ernaast, en het oordeel rijdt mee op een
+  slanke balk boven het artefact in plaats van een dashboardkop.
+- Er verschijnt een verouderingsbanner wanneer de head van de PR voorbij de
+  review is geschoven.
 
-See [Use AI-powered review](/nl-NL/handleiding/gidsen/ai-review/) for the flow and
-[Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/) for acting on it.
+Zie [AI-gestuurde review gebruiken](/nl-NL/handleiding/gidsen/ai-review/) voor de
+flow en
+[Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
+om er iets mee te doen.
 
-## Cohorts
+## Cohorten
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Cohorten groeperen de gewijzigde bestanden van de PR in op inhoud afgeleide
+buckets met bestanden die qua betekenis bij elkaar horen, gerangschikt op impact
+zodat de riskantste groep als eerste wordt gelezen. Ze worden bij elke wijziging
+van de head-SHA opnieuw berekend en in hun geheel vervangen; elk cohort heeft
+een pushstabiele sleutel, zodat een samenvatting en de reviewvoortgang een
+rebase overleven.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Als de repo geen code-index heeft, vallen cohorten terug op groepering op pad.
+Om een repo te indexeren gebruik je
+**Instellingen → Werkruimte → Repository's** — elke rij van een repo heeft een
+actie **Code indexeren** die de pipeline `index_code` draait en de voortgang ter
+plaatse meldt.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
-Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+De codegraph parseert alleen talen met een meegeleverde grammatica (Dart, JS/TS,
+PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
+MATLAB, Ada). Een repo in een andere taal kan nooit semantische cohorten
+opleveren, hoe vaak je hem ook indexeert.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+Een agent kan een markdown-samenvatting voor een cohort vastleggen met
+`set_cohort_summary` en een gestructureerd rondleidingsdiagram toevoegen met
+`add_review_diagram` — een getypeerd sequence-, entiteit-relatie- of
+toestandsmachineobject, nooit mermaid-tekst. Elke rand wordt gecontroleerd tegen
+de echte codegraph, en een rand die de graaf niet kan bevestigen, wordt als
+onbevestigd gemarkeerd in plaats van als feit getekend.
 
-## The API-contract axis
+## De API-contractas
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+De contractas vergelijkt alleen **expliciete** specbestanden. Hij matcht de zes
+standaardnamen — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — plus elk gewijzigd bestand waarvan de naam
+`openapi` of `swagger` bevat en eindigt op `.yaml`, `.yml` of `.json`. Een
+contract dat uit handlercode is afgeleid, valt buiten scope en GraphQL-schema's
+worden niet vergeleken.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Elke wijziging wordt geclassificeerd — toevoegingen, verwijderingen en
+wijzigingen van endpoints, parameters, schema's en responses — en draagt een
+ernst: **breaking** (verwijderd endpoint of verwijderde parameter, verscherpt
+type, nieuwe verplichte parameter), non-breaking (additief) of informatief. Een
+afgewezen wijziging laat de contractpoort falen, net als een breaking wijziging
+die onbeslist blijft; breaking-maar-goedgekeurd geeft een waarschuwing; geen
+breaking wijzigingen slaagt. Een diff die als **derived (advisory)** is
+gemarkeerd, vormt nooit een poort.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Een wijziging goedkeuren of afwijzen doe je met
+`review_studio.setContractDecision`.
 
-## The visual axis
+## De visuele as
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Als de PR UI-componenten wijzigt in een Flutter-repo met een Widgetbook-app,
+rendert de compute-ronde de gewijzigde componenten voor en na via een headless
+`flutter test`-goldenpass in de base- en head-worktrees van de PR, en vergelijkt
+daarna de pixels.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Hiervoor is een Flutter-SDK op de serverhost nodig]
+De pure-Dart-server kan Flutter-widgets niet in-process renderen, dus roept hij
+`flutter test` aan als apart proces. De SDK moet geïnstalleerd zijn op de machine die
+`cc_server` draait — niet op je client. Zonder de SDK meldt de as
+**unavailable** met de reden "no Flutter SDK on host". Hij meldt nooit een pass
+die hij niet heeft verdiend.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Snapshots die als **changed** of **removed** zijn gemarkeerd, houden de visuele
+poort tegen tot ze zijn goedgekeurd; **unchanged**, **added** en **approved**
+snapshots openen hem. Niet-beschikbaarheid heeft een van vier redenen: geen
+Flutter-SDK op de host, geen Widgetbook-app in de repo, geen golden-testbare
+use-cases, of een fout in de golden harness.
 
-Approving an intended change is `review_studio.approveVisual`.
+Een bedoelde wijziging goedkeuren doe je met `review_studio.approveVisual`.
 
-## The axes and the verdict
+## De assen en het oordeel
 
-| Axis         | Driven by                      |
+| As           | Aangedreven door               |
 | ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Correctness  | Reviewer-agenten (tokens)      |
+| Security     | Reviewer-agenten (tokens)      |
+| Test gap     | Reviewer-agenten (tokens)      |
+| Visual       | Deterministisch (golden harness) |
+| API contract | Deterministisch (spec diff)    |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+De drie token-assen worden vastgelegd wanneer een lead-agent `finalize_review`
+aanroept; de twee deterministische assen worden vastgelegd door de compute-ronde.
 
-Each axis reports one of:
+Elke as meldt een van de volgende:
 
-| State           | Meaning                                            |
+| Toestand        | Betekenis                                          |
 | --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| **Pass**        | Gedraaid, niets blokkerends gevonden               |
+| **Warn**        | Gedraaid, niet-blokkerende aandachtspunten         |
+| **Fail**        | Gedraaid, een blokkerend probleem gevonden         |
+| **Partial**     | Gedraaid maar niet kunnen afronden; de resultaten zijn onvolledig |
+| **Unavailable** | Kon helemaal niet draaien                          |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Alleen **pass** en **warn** openen een as met een poort. **Partial** en
+**unavailable** zijn bewust onderscheiden van **fail** en geen van beide opent
+een poort.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+De assen komen samen in **Ship**, **Hold** of **Block**, en ze kunnen het
+oordeel alleen _strenger_ maken — het wordt nooit afgezwakt. Een as met een
+poort die **fails**, dwingt **Block** af; een die **partial** of **unavailable**
+is, dwingt minstens **Hold** af. Een blokkerende as die niet kon draaien,
+_houdt_ het oordeel dus tegen: afwezigheid van bewijs maakt een poort nooit
+groen.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Het oordeel op het tabblad Review is het oordeel dat `finalize_review` heeft
+geplaatst.
 
-## Related guides
+## Gerelateerde gidsen
 
-- [Use AI-powered review](/nl-NL/handleiding/gidsen/ai-review/)
-- [Dispatch reviewer agents](/nl-NL/handleiding/gidsen/reviewers-starten/)
-- [Review and merge a PR](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
-- [Search code with the code graph](/nl-NL/handleiding/gidsen/code-zoeken/)
+- [AI-gestuurde review gebruiken](/nl-NL/handleiding/gidsen/ai-review/)
+- [Reviewer-agenten starten](/nl-NL/handleiding/gidsen/reviewers-starten/)
+- [Een PR reviewen en mergen](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/)
+- [Code zoeken met de codegraph](/nl-NL/handleiding/gidsen/code-zoeken/)

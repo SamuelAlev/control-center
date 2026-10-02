@@ -1,26 +1,28 @@
 ---
-title: Dispatch reviewer agents
-description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+title: Send ut reviewer-agenter
+description: Send spesialist-reviewere mot en PR fra PR-visningen, et MCP-verktøy eller et pipeline-steg.
 slug: nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter
+sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
 ---
 
-This guide shows you how to dispatch reviewer agents to review pull requests.
+Denne guiden viser deg hvordan du sender ut reviewer-agenter for å gjennomgå
+pull requests.
 
-## From the PR view
+## Fra PR-visningen
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu and choose **Ask AI**
+1. Åpne PR-en og gå til **Oversikt**-fanen
+2. Åpne overflytsmenyen ⋯ og velg **Spør AI**
 
-This starts the seeded `pr_review` pipeline, which opens the PR's review space
-and dispatches the reviewers for the workspace's review level — three by
-default (the seeded **qa**, **architect** and **engineer** agents) — then has
-the lead agent consolidate. You do not choose the
-roles on this path. For control over which roles run and which files each one
-looks at, use the MCP tool or a pipeline step below.
+Dette starter den forhåndsdefinerte `pr_review`-pipelinen, som åpner PR-ens
+gjennomgangsområde og sender ut reviewerne for arbeidsområdets gjennomgangsnivå
+— tre som standard (de forhåndsdefinerte agentene **qa**, **architect** og
+**engineer**) — og lar deretter lederagenten konsolidere. Du velger ikke rollene
+på denne veien. Vil du bestemme hvilke roller som kjører, og hvilke filer hver
+av dem ser på, bruker du MCP-verktøyet eller et pipeline-steg nedenfor.
 
-## Via the `dispatch_reviewers` MCP tool
+## Via MCP-verktøyet `dispatch_reviewers`
 
-Call it from inside an existing review space:
+Kall det fra et eksisterende gjennomgangsområde:
 
 ```
 dispatch_reviewers(
@@ -33,109 +35,115 @@ dispatch_reviewers(
 )
 ```
 
-`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
-takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
-replaces the default brief. An optional `concurrency` (1–8) caps parallel
-dispatches; when omitted, the workspace's `review_concurrency` setting applies
-(default 3, set at Settings → Workspace → General).
+`space_id`, `workspace_id` og `reviewers` er alle påkrevde. Hver
+reviewer-spesifikasjon tar en `role` pluss en valgfri filglob-`scope` og en
+`prompt_override` som erstatter standardoppdraget. En valgfri `concurrency`
+(1–8) begrenser antall parallelle utsendinger; når den utelates, gjelder
+arbeidsområdets `review_concurrency`-innstilling (standard 3, angitt under
+Innstillinger → Arbeidsområde → Generelt).
 
-The tool returns immediately with `dispatched` and `unmatched` lists. Every
-dispatched reviewer is added to the space as a participant, announced with a
-system message and dispatched with its brief. Findings land as `review_node`
-messages in that space.
+Verktøyet returnerer umiddelbart med listene `dispatched` og `unmatched`. Hver
+utsendt reviewer legges til i området som deltaker, kunngjøres med en
+systemmelding og sendes ut med oppdraget sitt. Funn lander som
+`review_node`-meldinger i det området.
 
-## From a pipeline step
+## Fra et pipeline-steg
 
-Open **Settings → Workspace → Pipeline templates**, open a template, then:
+Åpne **Innstillinger → Arbeidsområde → Pipeline-maler**, åpne en mal, og gjør
+deretter:
 
-1. Add a **Reviewer (prompt)** node from the palette
-2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+1. Legg til en **Reviewer (prompt)**-node fra paletten
+2. Velg agenten som skal sendes ut, og skriv reviewer-prompten med `{{key}}`
+   som plassholdere for utdata oppstrøms (for eksempel `{{repo_local_path}}`,
    `{{pr_number}}`)
-3. Set the output key (default `reviewer_findings`) so downstream steps can read
-   the findings
+3. Angi utnøkkelen (standard `reviewer_findings`) slik at steg nedstrøms kan
+   lese funnene
 
-The step dispatches the agent and suspends until that run finishes. The engine
-then harvests the run's `submit_output` payload into pipeline state under the
-node's output key. (The palette description still says the step waits for a
-`complete_task` call — that tool does not exist; ignore the string.)
+Steget sender ut agenten og settes på pause til den kjøringen er ferdig. Motoren
+høster deretter kjøringens `submit_output`-nyttelast inn i pipeline-tilstanden
+under nodens utnøkkel. (Palettbeskrivelsen sier fortsatt at steget venter på et
+`complete_task`-kall — det verktøyet finnes ikke; se bort fra teksten.)
 
-Fan out by wiring several reviewer nodes to the same upstream step, then
-consolidate their outputs with a **Consolidate (join)** node.
+Vift ut ved å koble flere reviewer-noder til samme steg oppstrøms, og
+konsolider deretter utdataene deres med en **Consolidate (join)**-node.
 
-The editor rewires the hidden terminal to every reachable sink, so a node you
-add after the seeded Step still runs. Fan-out nodes wired to the same upstream
-step run in parallel.
+Redigeringsverktøyet kobler den skjulte terminalnoden om til hver nåbare
+utgangsnode, slik at en node du legger til etter den forhåndsdefinerte
+Step-noden, fortsatt kjører. Vifteut-noder koblet til samme steg oppstrøms
+kjører parallelt.
 
-## Automatic dispatch on a new PR
+## Automatisk utsending ved en ny PR
 
-To have a review pipeline fire by itself:
+Slik får du en gjennomgangspipeline til å utløse seg selv:
 
-1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Drag **PR published** or **External PR opened** from the Triggers section of
-   the node library onto the canvas (or pick it from the **Add a trigger** ghost
-   tile)
-3. Select the new node and turn on **Enabled** in its inspector, then enable the
-   template
+1. Åpne malen under **Innstillinger → Arbeidsområde → Pipeline-maler**
+2. Dra **PR publisert** eller **Ekstern PR åpnet** fra Utløsere-delen av
+   nodebiblioteket og over på lerretet (eller velg den fra spøkelsesflisen
+   **Legg til en utløser**)
+3. Velg den nye noden og slå på **På** i inspektøren, og aktiver deretter
+   malen
 
-Two events matter here and they are not interchangeable:
+To hendelser betyr noe her, og de kan ikke brukes om hverandre:
 
-| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| Hendelse               | Utløses når                                                                                                     | Nyttelastnøkler                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `PullRequestPublished` | En PR åpnes **gjennom Control Center** — komponeringsflaten, eller en agent som kaller `pr_lifecycle.publish`    | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | PR-avspørringstjenesten finner en PR som er åpnet direkte på GitHub                                             | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
-A PR opened on github.com never raises `PullRequestPublished`, so a template
-wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
-must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+En PR som åpnes på github.com, utløser aldri `PullRequestPublished`, så en mal
+som bare er koblet til den hendelsen, ser den ikke. Legg også merke til at
+`PullRequestPublished` ikke bærer noen `pr_number` — et steg der skriptet eller
+prompten refererer til `{{pr_number}}`, må få det fra `ExternalPrDetected`,
+eller fra en manuell kjøring som oppgir det.
 
-Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
-next matching PR. A template left disabled makes its trigger fire into nothing —
-the engine rejects a disabled template and returns without starting a run.
+Kontrollpunkt: når du har aktivert, åpne **Pipelines** og bekreft at det dukker
+opp en kjøring for neste PR som samsvarer. En mal som står deaktivert, gjør at
+utløseren fyrer ut i ingenting — motoren avviser en deaktivert mal og
+returnerer uten å starte en kjøring.
 
-## How a role is matched to an agent
+## Hvordan en rolle matches mot en agent
 
-`dispatch_reviewers` scores every agent in the workspace against each requested
-role label, case-insensitively:
+`dispatch_reviewers` skårer hver agent i arbeidsområdet mot hver forespurt
+rolleetikett, uten å skille mellom store og små bokstaver:
 
-| Match                                   | Score |
-| --------------------------------------- | ----- |
-| A skill containing the role label       | +3    |
-| A title containing the role label       | +2    |
-| An agent name containing the role label | +1    |
+| Treff                                   | Skår |
+| --------------------------------------- | ---- |
+| En skill som inneholder rolleetiketten  | +3   |
+| En tittel som inneholder rolleetiketten | +2   |
+| Et agentnavn som inneholder rolleetiketten | +1 |
 
-Scores accumulate and the highest total wins (on a tie, the first candidate
-found). If no candidate scores above zero, the spec comes back in the tool's
-`unmatched` list instead of being dispatched — so a role nobody matches is
-reported, never silently skipped.
+Skårene summeres, og høyest sum vinner (ved likhet den første kandidaten som ble
+funnet). Hvis ingen kandidat skårer over null, kommer spesifikasjonen tilbake i
+verktøyets `unmatched`-liste i stedet for å sendes ut — en rolle som ingen
+matcher, blir altså rapportert, aldri stille hoppet over.
 
-## The review space
+## Gjennomgangsområdet
 
-A PR has exactly **one** review space, not one per reviewer. It is created
-idempotently by `pr.ensureSpace`, linked to the PR through a
-`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
-dispatched reviewer joins that space and posts its `review_node` findings there,
-which is what makes the findings comparable and lets the lead agent reach
-consensus across them.
+En PR har nøyaktig **ett** gjennomgangsområde, ikke ett per reviewer. Det
+opprettes idempotent av `pr.ensureSpace`, kobles til PR-en gjennom en
+`ReviewSpaceAssociation` og klargjøres mot PR-ens head-ref. Hver utsendt
+reviewer blir med i det området og legger inn sine `review_node`-funn der, og
+det er nettopp det som gjør funnene sammenlignbare og lar lederagenten nå
+konsensus på tvers av dem.
 
-## Monitor the dispatch
+## Overvåk utsendingen
 
-Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+Hver utsendt reviewer får sin egen `AgentRunLog`. Følg fremdriften i:
 
-- The **review space**, where findings stream in live
-- The PR's **Review** tab, which shows the review status bar and verdict
-- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
-  with per-run status, live elapsed time, a transcript drawer and a kill control.
-  There is no keyboard shortcut for it — reach it from the sidebar footer.
+- **gjennomgangsområdet**, der funn strømmer inn i sanntid
+- PR-ens **Gjennomgang**-fane, som viser gjennomgangens statuslinje og vedtak
+- **Observabilitet → Live** (`/workspaces/:id/observability`), agentoversikten
+  med status per kjøring, live medgått tid, en transkriptskuff og en
+  stoppekontroll. Det finnes ingen tastatursnarvei for den — du når den fra
+  bunnteksten i sidepanelet.
 
-## Related guides
+## Relaterte guider
 
-- [Use AI-powered review](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/)
-- [Review and merge a PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
-- [Set up pipeline triggers](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
+- [Bruk AI-drevet gjennomgang](/nb-NO/handbok/slik-gjor-du/ai-gjennomgang/)
+- [Gjennomgå og slå sammen en PR](/nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr/)
+- [Sett opp pipeline-utløsere](/nb-NO/handbok/slik-gjor-du/pipeline-utlosere/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [AI review](/nb-NO/handbok/konsepter/ai-gjennomgang/)
+- [AI-gjennomgang](/nb-NO/handbok/konsepter/ai-gjennomgang/)
 - [Pipelines](/nb-NO/handbok/konsepter/pipelines/)

@@ -1,137 +1,144 @@
 ---
-title: Forward ports from a terminal
-description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
+title: Bir terminalden port yönlendirme
+description: Bir Terminal (VM) veya ana makine kabuğunda başlatılan bir geliştirme sunucusuna erişin — makinenizden, Tarayıcı (VM) içinden, Android'den, ağınızdan veya HTTPS'li bir geliştirme etki alanı altında.
 slug: tr-TR/kilavuz/nasil-yapilir/port-yonlendirme
+sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
 ---
 
-A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+Bir konuşmanın terminalinde başlattığınız sunucu yalnızca **o alan** için yayımlanır. Portlar paneli, bu uygulamanın orada başlattığı dinleyicileri fark eder, onları eşler ve erişmek isteyebileceğiniz her yer için size bir adres verir. İki alan da aynı anda `5173` portunu dinleyebilir; haritaları asla karışmaz.
 
-Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
+Buradaki hiçbir şey makineyi dışarı açmaz: her yol, sunucu tarafından istek üzerine oluşturulur ve terminalle ya da rig'le birlikte yok olur.
 
-## See what is listening
+## Neyin dinlediğini görün
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
-2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
-3. Within a few seconds the **plug icon** in the terminal's top-right corner
-   gets a dot. Click it.
+1. Konuşmanın **Terminal (VM)** sekmesini ya da ana makine kabuğunu açın (bir alanda veya bir PR sayfasında).
+2. Sunucunuzu başlatın — `pnpm dev`, `python -m http.server 8000`, herhangi bir şey.
+3. Birkaç saniye içinde terminalin sağ üst köşesindeki **fiş simgesi** bir nokta
+   alır. Üzerine tıklayın.
 
-The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the port the process bound on the left, the port it answers
-on locally on the right (the same number whenever it was free on your
-machine). Each row also says whether desktop `localhost`, the Browser (VM),
-and Android can reach it.
+Panel, dinleyen her portu, sahibi olan süreçle birlikte `3000 → 3000` biçiminde
+listeler: solda sürecin bağlandığı port, sağda ise yerelde yanıt verdiği port
+(makinenizde boş olduğu sürece aynı numara). Her satır ayrıca ona masaüstündeki
+`localhost` üzerinden, Tarayıcı (VM) içinden ve Android'den erişilip
+erişilemediğini söyler.
 
-Discovery is contained: a Terminal (VM) is polled inside that guest; a
-host-shell is polled from that session's PTY process tree. Other spaces,
-and other processes on your Mac, are not listed.
+Keşif yalıtılmıştır: bir Terminal (VM), o misafirin içinde yoklanır; bir ana
+makine kabuğu ise o oturumun PTY süreç ağacından yoklanır. Diğer alanlar ve
+Mac'inizdeki diğer süreçler listelenmez.
 
-New ports in **this** terminal are forwarded automatically. Turn
-**Auto-forward ports** off in the same panel if you want only the ones you
-add yourself.
+**Bu** terminaldeki yeni portlar otomatik olarak yönlendirilir. Yalnızca kendi
+eklediklerinizi istiyorsanız aynı panelden **Portları otomatik yönlendir**
+seçeneğini kapatın.
 
-## Reach it from this computer
+## Bu bilgisayardan erişin
 
-Use **Copy local URL** on the row — `http://localhost:3000`. The forward
-listens on loopback only, so nothing else on your network can see it.
+Satırdaki **Yerel URL'yi kopyala** seçeneğini kullanın — `http://localhost:3000`.
+Yönlendirme yalnızca loopback üzerinde dinler, bu yüzden ağınızdaki başka
+hiçbir şey onu göremez.
 
-If two spaces both expose guest `5173` and your machine already holds
-`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
-ephemeral local port. Copy URL uses the right-hand number.
+İki alan da misafirdeki `5173` portunu açığa çıkarıyorsa ve makinenizde
+`127.0.0.1:5173` zaten kullanılıyorsa, ikinci alan misafirdeki `5173` portunu
+korur ve geçici bir yerel port alır. Yerel URL'yi kopyalama sağdaki numarayı
+kullanır.
 
-On a host-shell, the process is already on your machine. Mapping the same
-local port is a no-op; picking a **different** local port binds a loopback
-proxy to the one you chose.
+Bir ana makine kabuğunda süreç zaten makinenizde çalışır. Aynı yerel portu
+eşlemenin hiçbir etkisi olmaz; **farklı** bir yerel port seçtiğinizde ise
+seçtiğiniz porta bir loopback proxy'si bağlanır.
 
-`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
-able to reach a server on the Mac. The guest has its own loopback; the
-server plants a tunnel into that guest when the Browser tab is in the
-**same space**.
+`--host` (ya da `0.0.0.0` adresine bağlanmak), yalıtılmış bir Tarayıcı (VM)
+içinden Mac'teki bir sunucuya erişilmesini **sağlamaz**. Misafirin kendi
+loopback'i vardır; sunucu, Tarayıcı sekmesi **aynı alanda** olduğunda o misafire
+bir tünel yerleştirir.
 
-## Reach it from the Browser (VM)
+## Tarayıcı (VM) içinden erişin
 
-Open the enclosed browser in the **same conversation**. Type
-`localhost:<left-hand port>` — the number the process bound. A remap
-(`5173 → 3000`) also answers at the right-hand number in that browser, so
-Copy URL works there too. An agent's `browser_use` can navigate to either.
-A server in Space A never appears as `localhost:5173` in Space B's browser.
+Yalıtılmış tarayıcıyı **aynı konuşmada** açın. `localhost:<left-hand port>` yazın
+— sürecin bağlandığı numara. Bir yeniden eşleme (`5173 → 3000`) o tarayıcıda
+sağdaki numaradan da yanıt verir, böylece Yerel URL'yi kopyalama orada da
+çalışır. Bir ajanın `browser_use` aracı ikisine de gidebilir. A alanındaki bir
+sunucu, B alanının tarayıcısında asla `localhost:5173` olarak görünmez.
 
-Use `localhost`, not a LAN IP and not `--host`. The guest has its own
-loopback; the tunnel listens there on both IPv4 and IPv6.
+Bir LAN IP'si ya da `--host` değil, `localhost` kullanın. Misafirin kendi
+loopback'i vardır; tünel orada hem IPv4 hem IPv6 üzerinde dinler.
 
-Pages that open many connections at once (dozens of assets, a live
-reload socket) share that same tunnel. The Browser (VM) multiplexes
-them onto one persistent exec, so a burst of fetches is not one process
-spawn per connection and does not time out as a white page.
+Aynı anda çok sayıda bağlantı açan sayfalar (düzinelerce varlık, bir canlı
+yenileme soketi) aynı tüneli paylaşır. Tarayıcı (VM) bunları tek bir kalıcı
+exec üzerinde çoğullar; böylece bir anda gelen istek patlaması her bağlantı için
+bir süreç doğurmaz ve beyaz sayfa olarak zaman aşımına uğramaz.
 
-Inside one space, a Terminal (VM) forward wins over a host-shell on the
-same number. Across spaces there is no precedence — they are separate maps.
+Tek bir alan içinde, aynı numarada bir Terminal (VM) yönlendirmesi ana makine
+kabuğunu yener. Alanlar arasında bir öncelik yoktur — haritalar ayrıdır.
 
-## Reach it from Android
+## Android'den erişin
 
-Open that space's **Android** tab. The emulator's `localhost:<port>` is
-then reversed to this space's published port (`adb reverse`). One emulator
-is device-global: attaching Space B retargets `:5173` to B and drops A's.
-Close the tab and the reverses this rig planted are removed.
+O alanın **Android** sekmesini açın. Emülatörün `localhost:<port>` adresi, bu
+alanın yayımlanan portuna ters çevrilir (`adb reverse`). Bir
+emülatör cihaz genelindedir: B alanını bağlamak `:5173` portunu B'ye yöneltir ve
+A'nınkini düşürür. Sekmeyi kapattığınızda bu rig'in yerleştirdiği ters
+çevirmeler kaldırılır.
 
-iOS Simulator already is the Mac — no reverse. A physical iPhone still
-needs a LAN share.
+iOS Simulator zaten Mac'in kendisidir — ters çevirme yok. Fiziksel bir iPhone
+yine de bir LAN paylaşımı gerektirir.
 
-## Share it on your network
+## Ağınızda paylaşın
 
-**⋯ → Share on local network** publishes the port at
-`<server-ip>:<random port>` — useful for opening the page on your phone, or
-when the server runs on another machine.
+**⋯ → Yerel ağda paylaş** portu `<server-ip>:<random port>` adresinde
+yayımlar — sayfayı telefonunuzda açmak ya da sunucu başka bir makinede
+çalıştığında kullanışlıdır.
 
-- The LAN port is always OS-assigned, never the guest's number, so exposure
-  is a deliberate, visible address rather than a guessable one.
-- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
-  takes it back off the network.
+- LAN portu her zaman işletim sistemi tarafından atanır, asla misafirin numarası
+  değildir; böylece açığa çıkarma, tahmin edilebilir bir adres yerine bilinçli
+  ve görünür bir adres olur.
+- Siz açana kadar özel kalır (yalnızca loopback) ve **⋯ → Yalnızca yerel** onu
+  yeniden ağdan çıkarır.
 
-## Give it a name — with HTTPS
+## Ona bir ad verin — HTTPS ile
 
-**⋯ → Set a browser domain (.test)** assigns the port a dev domain such as
-`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
-server with a valid padlock — useful for anything that behaves differently
-on a named origin or a secure context (cookies, service workers, OAuth
-callbacks).
+**⋯ → Tarayıcı etki alanı ayarla (.test)** porta `myapp.test` gibi bir
+geliştirme etki alanı atar. Ardından Tarayıcı (VM) içinde `https://myapp.test`,
+sunucunuzu geçerli bir kilit simgesiyle yükler — adlandırılmış bir kaynakta ya da
+güvenli bağlamda farklı davranan her şey için kullanışlıdır (çerezler, service
+worker'lar, OAuth geri çağrıları).
 
-- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
-  development, so a dev name can never shadow a real site.
-- Domain **names** are unique on the server; port **numbers** are not. Two
-  spaces may both use `5173`, but they cannot both claim `myapp.test`.
-- The certificate comes from a local authority minted on your server the
-  first time it is needed. Its keys live under the server's data directory
-  and never enter any guest; the enclosed browser trusts exactly that one
-  key, so TLS to the real internet still validates normally.
-- The domain resolves **inside the Browser (VM) only**. Your own browser on
-  the host uses `localhost:<port>` instead.
-- Plain `http://myapp.test` works too.
+- Etki alanları `.test` veya `.localhost` ile bitmelidir — geliştirme için
+  ayrılmış iki TLD bunlardır, böylece bir geliştirme adı gerçek bir siteyi asla
+  gölgeleyemez.
+- Etki alanı **adları** sunucuda benzersizdir; port **numaraları** değildir. İki
+  alan da `5173` kullanabilir, ama ikisi birden `myapp.test` adını sahiplenemez.
+- Sertifika, ilk gerektiğinde sunucunuzda üretilen yerel bir otoriteden gelir.
+  Anahtarları sunucunun veri dizininde yaşar ve hiçbir misafire girmez;
+  yalıtılmış tarayıcı tam olarak o tek anahtara güvenir, böylece gerçek
+  internete giden TLS yine normal şekilde doğrulanır.
+- Etki alanı **yalnızca Tarayıcı (VM) içinde** çözümlenir. Ana makinedeki kendi
+  tarayıcınız bunun yerine `localhost:<port>` kullanır.
+- Düz `http://myapp.test` de çalışır.
 
-## Forward a port by hand
+## Bir portu elle yönlendirme
 
-**Add port** at the bottom of the panel maps a port before (or whether or
-not) anything is listening on it. A manual forward keeps its address while
-your server restarts — the row shows *not listening* until it comes back —
-where auto-forwards disappear when their port does. On a host-shell you can
-also set a different local port.
+Panelin altındaki **Port ekle**, üzerinde henüz bir şey dinlemese de — hatta
+dinlemeye başlamasından önce — bir portu eşler. Elle yapılan bir yönlendirme,
+sunucunuz yeniden başlarken adresini korur — geri gelene kadar satır
+*dinlemiyor* gösterir — oysa otomatik yönlendirmeler portları ortadan
+kalktığında kaybolur. Bir ana makine kabuğunda farklı bir yerel port da
+ayarlayabilirsiniz.
 
-## How it stays contained
+## Nasıl yalıtılmış kalıyor
 
-Ports are keyed by workspace and space. The hypervisor's own port map is
-fixed when a machine boots, so a Terminal (VM) rides two narrow channels
-the server controls: one pre-created inbound lane into the guest that
-refuses to connect to any port the guest is not actually listening on, and
-reverse tunnels the server holds open for the Browser (VM) and Android. A
-host-shell never scans the whole machine. No listener is ever created
-inside a guest that the server did not put there, and everything is torn
-down with the terminal or rig. The design is explained in
-[Rigs and enclosures](/tr-TR/kilavuz/kavramlar/rigler/#ports-without-holes);
-the exact reserved ports and domain rules are in the
-[rigs reference](/tr-TR/kilavuz/referans/rigler/#ports-and-dev-domains).
+Portlar çalışma alanına ve alana göre anahtarlanır. Hipervizörün kendi port
+haritası, makine önyüklenirken sabitlenir; bu yüzden bir Terminal (VM),
+sunucunun denetlediği iki dar kanaldan geçer: misafirin gerçekte dinlemediği
+hiçbir porta bağlanmayı reddeden, önceden oluşturulmuş bir gelen hattı ve
+sunucunun Tarayıcı (VM) ile Android için açık tuttuğu ters tüneller. Bir ana
+makine kabuğu tüm makineyi asla taramaz. Bir misafirin içinde, sunucunun oraya
+koymadığı hiçbir dinleyici asla oluşturulmaz ve her şey terminalle ya da rig'le
+birlikte sökülür. Tasarım,
+[Rig'ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/#ports-without-holes)
+sayfasında açıklanır; tam ayrılmış portlar ve etki alanı kuralları
+[rig referansında](/tr-TR/kilavuz/referans/rigler/#ports-and-dev-domains) yer alır.
 
-## Related
+## İlgili
 
-- [Give an agent a machine to test on](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) — opening,
-  watching and taking over rigs
-- [Rigs reference](/tr-TR/kilavuz/referans/rigler/) — reserved ports, dev TLDs,
-  defaults
+- [Bir ajana test için makine verme](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) — rig'leri açma,
+  izleme ve devralma
+- [Rig referansı](/tr-TR/kilavuz/referans/rigler/) — ayrılmış portlar, geliştirme TLD'leri,
+  varsayılanlar

@@ -1,359 +1,352 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: ริก
+description: ทุกพื้นผิว แบ็กเอนด์ คำกริยาการกระทำ สถานะวงจรชีวิต พอร์ต ค่าเริ่มต้น และสัญญาของริก — แค็ตตาล็อกข้อเท็จจริงฉบับสมบูรณ์
 slug: th-TH/คู่มือ/อ้างอิง/ริก
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/th-TH/คู่มือ/แนวคิด/ริก/); to open a machine, follow [the
-guide](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/).
+ข้อเท็จจริงเท่านั้น สำหรับโมเดลที่อยู่เบื้องหลังสิ่งเหล่านี้ อ่าน
+[ริกและเอนโคลเจอร์](/th-TH/คู่มือ/แนวคิด/ริก/) ส่วนการเปิดเครื่อง ทำตาม
+[คู่มือวิธีทำ](/th-TH/คู่มือ/วิธีทำ/ใช้ริก/)
 
-## Surfaces and backends
+## พื้นผิวและแบ็กเอนด์
 
-| Surface | Drives | Backend | Value | Contained egress |
+| พื้นผิว | ขับเคลื่อน | แบ็กเอนด์ | ค่า | เอเกรสที่ถูกกักไว้ |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| เทอร์มินัล (exec) | เชลล์บนช่องทาง exec ของ VM | microVM | `smolvm` | ใช่ |
+| เบราว์เซอร์ | Chromium แบบไม่มีหน้าจอ (CDP), Firefox (WebDriver BiDi) หรือ WebKit (W3C WebDriver) | microVM | `smolvm` | ใช่ |
+| คอมพิวเตอร์ | เดสก์ท็อป X11: อินพุตผ่านไฮเปอร์ไวเซอร์ จับภาพผ่านเอเจนต์ในเกสต์ | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (ตัวสำรองแบบไม่เร่งความเร็ว ไม่ถูกเลือกอัตโนมัติ) | ใช่ |
+| Android | Android ผ่าน ADB | โปรแกรมจำลองของ Google | `android-emulator` | **ไม่** — โปรแกรมจำลองจัดการเครือข่ายของตัวเอง |
+| iOS | iOS Simulator ผ่าน WebDriverAgent | CoreSimulator | `ios-simulator` | **ไม่** — เครือข่ายตามโฮสต์ Mac |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+เทอร์มินัลและพื้นผิว `computer_use` ใช้ค่า `computer` ร่วมกัน พื้นผิวเทอร์มินัล
+แยกแยะได้ด้วยมาร์กเกอร์อิมเมจ exec ของมัน และไม่เคยถูกนำกลับมาใช้เป็นเดสก์ท็อป
+ที่ขับเคลื่อนได้ (หรือในทางกลับกัน) การสนทนาหนึ่งรายการใช้เครื่องเทอร์มินัล
+เครื่องเดิมซ้ำ
 
-## Browser engines
+## เอ็นจินเบราว์เซอร์
 
-| Engine | Value | Protocol | Live view | Stills |
+| เอ็นจิน | ค่า | โปรโตคอล | มุมมองสด | ภาพนิ่ง |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (ค่าเริ่มต้น) | Chrome DevTools Protocol | สกรีนแคสต์ — เบราว์เซอร์พุชเฟรมเมื่อหน้าเว็บวาดใหม่ | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | ภาพนิ่งแบบดึงเป็นระยะ (BiDi ไม่มีสกรีนแคสต์) จำกัดที่ 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (แบบดั้งเดิม) | ภาพนิ่งแบบดึงเป็นระยะ ทรานสโคดโดย ffmpeg ของโฮสต์ | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+ริกหนึ่งตัวรันเอ็นจิน **เดียว** ตลอดอายุของมัน การสนทนาหนึ่งรายการถือริกได้
+**หนึ่งตัวต่อเอ็นจิน** ซึ่งเป็นสิ่งที่ทำให้การเปรียบเทียบแบบเคียงข้างกันเป็นไปได้:
+การเปิด “Firefox (VM)” ข้าง ๆ “Chromium (VM)” คือสองเครื่อง และการปิด
+เครื่องหนึ่งจะเหลืออีกเครื่องรันอยู่
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+ส่ง `engine` ให้ `rig.open` หรือเครื่องมือ `browser_use` ชื่อที่ไม่รู้จักจะถูก
+ปฏิเสธแทนที่จะใช้ค่าเริ่มต้น — การขอเบราว์เซอร์ตัวหนึ่งแล้วได้อีกตัวหนึ่งอย่าง
+เงียบ ๆ เท่ากับตอบคำถามเรื่องความเข้ากันได้ด้วยคำตอบที่ผิด
 
-Engine-specific limits, stated rather than worked around:
+ขีดจำกัดเฉพาะเอ็นจิน ที่ระบุไว้ตรง ๆ แทนที่จะหาทางเลี่ยง:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** ไม่มีการโหลดซ้ำที่ข้ามแคช (มันปฏิเสธ `ignoreCache` ของ BiDi
+  ไปเลย) การโหลดซ้ำแบบ hard จึงเป็นการโหลดซ้ำปกติ
+- **WebKit** ก็ไม่มีการโหลดซ้ำที่ข้ามแคชเช่นกัน ไม่มีฟีดคอนโซล (เอาต์พุตถูกจับ
+  โดยการฮุก `console.*` หลังการนำทางแต่ละครั้ง สิ่งใดก็ตามที่บันทึกระหว่างโหลด
+  จึงถูกมองข้าม — การสกัดคอนโซลทุกครั้งบอกไว้เช่นนั้น) และต้องมี `ffmpeg`
+  บนโฮสต์สำหรับมุมมองสดของมัน
+- **ทั้งคู่** ไม่เปิดเผยทรีการเข้าถึงของแพลตฟอร์มผ่านโปรโตคอลของตัวเอง
+  `extract (a11y)` จึงคืนค่าประมาณที่ได้มาจาก DOM พร้อมติดป้ายกำกับไว้เช่นนั้น
+- **ทั้งคู่** รับการดรอปไฟล์จริงไม่ได้ แต่อินพุตไฟล์ยังชี้ไปที่พาธภายในเครื่องได้
 
-## Machine images
+## อิมเมจเครื่อง
 
-| Surface | Image | Fetched |
+| พื้นผิว | อิมเมจ | ดึงเมื่อ |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| เทอร์มินัล | `ubuntu:24.04` ปักหมุดด้วยไดเจสต์ | อัตโนมัติเมื่อบูตครั้งแรก ผ่านเครือข่ายที่ถูกกักของเครื่องเอง |
+| เบราว์เซอร์ (Chromium, Firefox, WebKit) | `debian:trixie-slim` ปักหมุดด้วยไดเจสต์ บวกแพ็กเกจของเอ็นจินเอง | อัตโนมัติเมื่อบูตครั้งแรก จากนั้นแคชเป็นแพ็กที่อุ่นไว้ |
+| คอมพิวเตอร์ | อิมเมจเดสก์ท็อป qcow2 ที่มี Chromium, Firefox, WebKit และพื้นฐาน CLI แบบรันเนอร์ที่โฮสต์บน GitHub ชุดเดียวกับที่เทอร์มินัลอุ่นไว้ | **นำเข้า** ที่ การตั้งค่า → เซิร์ฟเวอร์ → ริก (ดาวน์โหลดที่ปักหมุดด้วยเช็กซัมเมื่อมีการเผยแพร่) |
+| Android | อิมเมจระบบของ Google | ผ่าน Android SDK |
+| iOS | รันไทม์ของ Xcode Simulator บวก WebDriverAgent ที่ปักหมุดด้วยเช็กซัม | รันไทม์ผ่าน Xcode; บริดจ์ระบบอัตโนมัติจาก การตั้งค่า → เซิร์ฟเวอร์ → ริก |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+หลังการบูตครั้งแรกของ microVM แต่ละชนิด เซิร์ฟเวอร์จะแคชสำเนาที่แตกไฟล์ไว้
+ล่วงหน้าไว้ใต้ไดเรกทอรีข้อมูล แล้วบูตเครื่องถัด ๆ ไปทั้งหมดจากสำเนานั้น — รวมถึง
+อิมเมจที่อุ่นไว้ล่วงหน้าซึ่งมีแพ็กเกจติดตั้งอยู่แล้ว เทอร์มินัลจะอุ่นชุดเครื่องมือ
+CLI แบบรันเนอร์ที่โฮสต์บน GitHub (`git`, `gcc`, `python3`, `jq`, `rsync`
+เครื่องมือจัดการไฟล์เก็บถาวร และพื้นฐาน apt ที่เหลือ; ไม่ใช่ Docker หรือแคช
+เครื่องมือภาษา) อิมเมจ qcow2 ของคอมพิวเตอร์ฝังชื่อ CLI ชุดเดียวกันไว้ตอนบิลด์
+อิมเมจ ข้าง ๆ XFCE และเบราว์เซอร์ทั้งสาม เบราว์เซอร์ทุกตัวอุ่นเอ็นจินของตัวเอง
+เอ็นจินทั้งสามใช้ฐาน Debian ร่วมกันแต่ไม่เคยใช้แพ็กซ์ร่วมกัน: แคชถูกคีย์ด้วย
+อิมเมจ เอ็นจิน **และ** รีวิชันเสียง (`audio-v1-<engine>`) เพราะเครื่องที่อุ่นไว้
+สำหรับเอ็นจินหนึ่ง — หรืออุ่นไว้ก่อนที่ PulseAudio และ ffmpeg จะเป็นส่วนหนึ่งของ
+เวิร์กโหลด — ไม่มีเอ็นจินอื่นอยู่ในนั้นเลย แพ็กของเทอร์มินัลถูกคีย์ด้วยรีวิชัน
+ชุดเครื่องมือ (`tools-v1`) ด้วยเหตุผลเดียวกัน: แพ็กที่อุ่นไว้ก่อนที่คอมไพเลอร์
+จะเป็นส่วนหนึ่งของอิมเมจต้องไม่ถูกใช้ให้บริการเครื่องที่ควรจะมีคอมไพเลอร์
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+ไม่มีอิมเมจระบบอัตโนมัติสำเร็จรูปใดที่คุ้มจะหยิบมาใช้ — `chromedp/headless-shell`
+ของ Chromium คอมไพล์ทั้ง ALSA และ PulseAudio ออกไป จึงไม่มีทางส่งเสียงได้เลย
+อิมเมจ Firefox ตัวเดียวที่ยังดูแลอยู่มีขนาด 33 เท่าของฐาน Debian และยังไม่มี
+`socat` ติดตั้งมาให้ ส่วน WebKit ไม่มีอิมเมจที่ยังดูแลอยู่เลยแม้แต่ตัวเดียว
+เอ็นจินทุกตัวจึงติดตั้งตอนเริ่มครั้งแรก (`chromium`, `firefox-esr` หรือ
+`webkit2gtk-driver`) และเข้าถึงไฟล์เก็บถาวรของ Debian (`deb.debian.org`,
+`security.debian.org`, `cloudfront.debian.net`) ระหว่างทำเช่นนั้น Chromium
+คือไบนารีของการแจกจ่ายที่ถูกเรียกใช้เป็น `chromium --headless=new`
 
-### Per-workspace custom images
+### อิมเมจที่กำหนดเองต่อเวิร์กสเปซ
 
-| Setting key | Overrides |
+| คีย์การตั้งค่า | แทนที่ |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | อิมเมจของ Terminal (VM) |
+| `rigs.smolvm.browserImage` | อิมเมจของ Chromium Browser (VM) |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+เขียนผ่านที่เก็บการตั้งค่าเวิร์กสเปซที่กั้นด้วยสิทธิ์ผู้ดูแล (การตั้งค่า →
+เซิร์ฟเวอร์ → ริก → อิมเมจที่กำหนดเอง (เวิร์กสเปซนี้)) ค่าต้องเป็นเรฟเฟอเรนซ์
+ของรีจิสทรี — พาธภายในเครื่อง ไฟล์เก็บถาวร และสตริงที่คล้ายแฟล็กจะถูกปฏิเสธ
+ทั้งที่ฟิลด์และอีกครั้งตอนบูต ค่าที่จัดเก็บไว้ไม่ถูกต้องจะถูกละเว้นอย่างเปิดเผย
+และค่าเริ่มต้นจะบูตแทน รีจิสทรีของอิมเมจเอง (บวกคู่หู blob-CDN ที่รู้จักสำหรับ
+Docker Hub, GHCR, Quay, GitLab และ GCR) จะถูกอนุญาตผ่านประตูเอเกรสสำหรับการดึง
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**สัญญาของอิมเมจเทอร์มินัล** — มี `bash`; ติดตั้ง `git`, `curl`, `socat` มาแล้ว
+*หรือ* มีฐาน apt ของ Debian/Ubuntu (เอนโคลเจอร์จะติดตั้งสามตัวนั้นบวกชุด
+เครื่องมือ CLI แบบรันเนอร์ที่โฮสต์บน GitHub ตอนเริ่มครั้งแรก: คอมไพเลอร์,
+Python 3, `jq`, เครื่องมือจัดการไฟล์เก็บถาวร, `rsync` ไม่มีการติดตั้งแคช
+เครื่องมือภาษาและ Docker)
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**สัญญาของอิมเมจเบราว์เซอร์** — ฐาน apt ของ Debian/Ubuntu (หรือแพ็กเกจที่
+ติดตั้งอยู่แล้ว) ที่มี `bash` และ `socat` บวกไบนารี `chromium` ที่เซิร์ฟเวอร์
+เรียกเองเป็น `chromium --headless=new` โดยมี DevTools บนลูปแบ็กของเกสต์ `9223`
+ส่งต่อไปยังพอร์ตเกสต์ `9222` ติดตั้ง PulseAudio และ ffmpeg ตอนเริ่มครั้งแรก
+สำหรับเลนเสียง อย่าบิลด์ `FROM chromedp/headless-shell`: `headless.gn` ต้นน้ำ
+คอมไพล์ทั้ง ALSA และ PulseAudio ออกไป ไบนารีนั้นจึงส่งเสียงไม่ได้ การแทนที่นี้
+ใช้กับ **ริก Chromium เท่านั้น** — คำสั่งเวิร์กโหลดที่มันบูตเป็นของ Chromium
+และการส่งมันให้ Firefox หรือ WebKit จะเรียกไบนารีที่ไม่มีอยู่ ริก Firefox หรือ
+WebKit จะละเว้นมันอย่างเปิดเผยและบูตอิมเมจที่ปักหมุดของตัวเอง
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**พอร์ตระบบอัตโนมัติ** — เครื่องเบราว์เซอร์ทุกเครื่องส่งต่อพอร์ตลูปแบ็กของโฮสต์
+หนึ่งพอร์ตพอดีไปยังเกสต์ `9222` เบื้องหลังมัน: DevTools ของ Chromium และ
+รีโมตเอเจนต์ของ Firefox อยู่บนลูปแบ็กของเกสต์ `9223` โดยมีรีเลย์ `socat`
+อยู่ข้างหน้า (ทั้งคู่ผูกกับลูปแบ็กโดยไม่มีเงื่อนไข) ส่วนไดรเวอร์ของ WebKit รับ
+`--host` และผูกกับ NIC ของเกสต์เอง Firefox ยังตรวจสอบเฮดเดอร์ `Host`
+กับพอร์ตของตัวเองด้วย ไคลเอนต์จึงส่ง authority ฝั่งเกสต์แทนตัวที่มันเรียกไป
 
-## Action verbs
+## คำกริยาการกระทำ
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+การกระทำทุกอย่างถูกพาร์สแบบเบ็ดเสร็จ: เพย์โหลดที่ผิดรูปแบบจะคืนข้อความที่ระบุ
+ชื่อฟิลด์ ไม่ใช่ข้อยกเว้น คำกริยาการสังเกต (ทำเครื่องหมาย ○) ยังคงได้รับอนุญาต
+ขณะที่มนุษย์ถือการควบคุมอยู่ ส่วนคำกริยาที่เปลี่ยนแปลงสถานะจะถูกปฏิเสธ
 
 ### `computer_use`
 
 `screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
 `right_click`, `middle_click`, `double_click`, `triple_click`,
 `left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
-`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
-`clipboard_read`○, `clipboard_write`.
+`hold_key` (0–60 วินาที), `type`, `wait`○ (0–60 วินาที), `set_display`,
+`clipboard_read`○, `clipboard_write`
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
-`alt+Tab`, `Return`).
+พิกัดเป็นพิกเซลของเกสต์ในโหมดปัจจุบันของเกสต์ ภาพหน้าจอทุกภาพระบุขนาด
+จอแสดงผล คีย์ผสมใช้การสะกดแบบ X11 (`ctrl+s`, `alt+Tab`, `Return`)
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` รับ `selection`: `clipboard` (สิ่งที่ ctrl+C เติม ค่าเริ่มต้น),
+`primary` (เลือกเพื่อคัดลอกของ X11) หรือ `xdnd` (การลากที่กำลังดำเนินอยู่)
+ผลลัพธ์ว่างเปล่าเป็นคำตอบปกติสำหรับทั้งสามแบบ `clipboard_write` รับเฉพาะ
+`text` — รูปภาพและไฟล์เดินทางบนเลนไฟล์ เพราะอาร์กิวเมนต์ของการกระทำถูกบันทึก
+ลงบันทึกการตรวจสอบ และไบต์ของรูปภาพไม่ควรอยู่ที่นั่น เนื้อหาคลิปบอร์ดถูกส่ง
+กลับมาพร้อมล้อมกรอบเป็นข้อมูลที่ไม่น่าเชื่อถือ
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (http/https เท่านั้น), `reload` (`hard` ไม่บังคับ), `stop_loading`,
+`click` (ตัวเลือกหรือพิกัด), `fill`, `type`, `key` (ชื่อคีย์แบบ DOM),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+ไม่บังคับ), `set_viewport` (ขั้นต่ำ 320×240), `history`, `wait_for`○
+(ตัวเลือก, 0.1–30 วินาที), `clipboard_read`○, `clipboard_write`
 
-Extracted page content returns fenced as untrusted data.
+เนื้อหาหน้าเว็บที่สกัดได้จะถูกส่งกลับมาพร้อมล้อมกรอบเป็นข้อมูลที่ไม่น่าเชื่อถือ
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+เบราว์เซอร์มีคลิปบอร์ดเพียงอันเดียว `clipboard_read` จึงไม่รับ `selection`
+คำกริยาคลิปบอร์ดทั้งสองต้องมี **บริบทที่ปลอดภัย**: หน้าที่ให้บริการผ่าน
+`http://` ธรรมดาไม่มี Clipboard API เลย และคำกริยาจะบอกเช่นนั้นแทนที่จะ
+รายงานว่าว่างเปล่า — ใช้ `type` ในกรณีนั้น ซึ่งแทรกที่เคอร์เซอร์โดยไม่ผ่าน
+คลิปบอร์ด
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 มิลลิวินาที), `type`, `key` (นามแฝง `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`menu`, `volume_up`, `volume_down`, `power` หรือ `KEYCODE_*` ใด ๆ),
 `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+(จำกัดอยู่ที่ worktree ของริกและไดเรกทอรีข้อมูลของเซิร์ฟเวอร์), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` และ `shell`
+`shell` รับลิสต์ argv และรันภายใน Android ไม่เคยผ่านเชลล์ของโฮสต์; มันครอบคลุม
+การวินิจฉัยสำหรับนักพัฒนาเช่น `logcat`, `dumpsys` และ `pm grant`
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` ไม่มีคำกริยาคลิปบอร์ด ตั้งแต่ Android 10 มีเพียงแอปที่โฟกัสอยู่
+เท่านั้นที่อ่านคลิปบอร์ดได้
 
 ### `ios_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`tap`, `swipe` (50–5000 มิลลิวินาที), `type`, `key` (`enter`, `backspace`,
+`tab`, `escape`, ปุ่มลูกศร หรืออักขระพิมพ์ได้หนึ่งตัว; มอดิฟายเออร์ `command`,
+`control`, `option` และ `shift` แบบไม่บังคับ), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (ไดเรกทอรี `.app` ของโปรแกรมจำลอง
+ที่จำกัดอยู่ที่ worktree ของริกหรือไดเรกทอรีข้อมูลของเซิร์ฟเวอร์), `start_app`,
+`stop_app`, `uninstall_app`, `open_url` และ `spawn` `spawn` รับ argv และรัน
+ภายในโปรแกรมจำลองผ่าน `simctl`; มันไม่เคยเรียกเชลล์ของโฮสต์
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+พิกัดเป็น **พอยต์** ของหน้าจอ iOS ไม่ใช่พิกเซลของภาพหน้าจอ สตรีมสดคงขนาดคงที่
+ของโปรแกรมจำลองและใส่แถบดำรอบ ๆ แทนที่จะปรับขนาดอุปกรณ์ การถ่ายโอนคลิปบอร์ด
+ข้อความจากโฮสต์ไปยังโปรแกรมจำลองและจากโปรแกรมจำลองไปยังโฮสต์ใช้นโยบาย
+การอนุญาตรายผู้ใช้ รายทิศทางเดียวกับริกอื่น ๆ ไฟล์และรูปภาพไม่ได้รับการยอมรับ
+โดยเลนเพสต์บอร์ดของ iOS
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+ริกแต่ละตัวสร้างอุปกรณ์ CoreSimulator และเซสชัน WebDriverAgent ที่เป็นเจ้าของเอง
+การปิดมันจะหยุด WebDriverAgent ปิดและลบอุปกรณ์นั้น และลบรายการในรีจิสทรีของมัน
+ริก iOS รันได้เฉพาะบนเซิร์ฟเวอร์ macOS ที่มี Xcode รันไทม์ iOS ที่ติดตั้งแล้ว
+และบริดจ์ระบบอัตโนมัติที่ปักหมุดไว้ พวกมันไม่ให้การรับประกันเรื่องเสียง
+ไมโครโฟน การดรอปไฟล์ เชลล์ของโฮสต์ หรือเครือข่ายแบบปิดล้อม
 
-### Management tools
+### เครื่องมือจัดการ
 
-| Tool | Description |
+| เครื่องมือ | คำอธิบาย |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | แสดงรายการริกของเวิร์กสเปซพร้อมพื้นผิว สถานะ จอแสดงผล และผู้ควบคุม |
+| `rig_close` | ทำลายริกและทิ้งดิสก์ของมัน |
 
-## Lifecycle
+## วงจรชีวิต
 
-| Phase | Meaning |
+| เฟส | ความหมาย |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | กำลังบูต; รายละเอียดสถานะบอกขั้นตอนปัจจุบันตามจริง |
+| `ready` | เข้าถึงได้และรับการกระทำ |
+| `parked` | จอดเพราะว่าง: หยุด vCPU แต่ RAM ยังอยู่ในหน่วยความจำ; การกระทำถัดไปจะปลุกมัน |
+| `closing` | กำลังปิด |
+| `closed` | จากไปแล้ว; แถวยังคงอยู่เพื่อบันทึกการตรวจสอบ |
+| `failed` | ตายหรือไม่เคยขึ้นมา; แยกแยะได้เพื่อให้ UI เสนอการลองใหม่ |
 
-| Close reason | Fired when |
+| เหตุผลการปิด | เกิดขึ้นเมื่อ |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | มีคนหรือเอเจนต์ขอ |
+| `idleTimeout` | ว่างเกิน 2 เท่าของช่วงเวลาว่าง หรือถูกขับออกเพราะหน่วยความจำ |
+| `ttlExpired` | อายุการใช้งานแบบตายตัวหมดลง |
+| `conversationEnded` | การสนทนาที่เป็นเจ้าของสิ้นสุดลง |
+| `workspaceGone` | เวิร์กสเปซถูกลบหรือสูญเสียสมาชิกภาพ |
+| `serverShutdown` | เซิร์ฟเวอร์กำลังหยุด |
+| `backendFailure` | ไฮเปอร์ไวเซอร์ที่อยู่ข้างใต้ตายลง |
 
-## Defaults and ceilings
+## ค่าเริ่มต้นและเพดาน
 
-| Value | Terminal | Browser | Computer | Mobile |
+| ค่า | เทอร์มินัล | เบราว์เซอร์ | คอมพิวเตอร์ | มือถือ |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| หน่วยความจำ | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU | 2 | 2 | 4 | 4 |
+| TTL แบบตายตัว | 8 ชั่วโมง | 2 ชั่วโมง | 2 ชั่วโมง | 2 ชั่วโมง |
+| ช่วงเวลาว่าง | 45 นาที | 15 นาที | 15 นาที | 15 นาที |
+| จอแสดงผลตอนบูต | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- ภาพนิ่งของเลนเอเจนต์ถูกจำกัดที่ **1280×800**; เลนมนุษย์เจรจาได้ถึง
+  **2560×1600**
+- งบหน่วยความจำที่อยู่ในหน่วยความจำของโฮสต์สำหรับริกทั้งหมดมีค่าเริ่มต้นที่
+  **12 GB** นับเป็นเมกะไบต์ที่อยู่ในหน่วยความจำ (VM ที่จอดไว้ยังคงถือ RAM
+  ของมันไว้) การขับออกใช้หลักใช้ล่าสุดน้อยที่สุด และไม่เคยเอาเครื่องที่มีคนขับอยู่
+  กำลังดูอยู่ หรือมีเทอร์มินัลเปิดค้างอยู่ในนั้น
+- เทอร์มินัลที่เปิดอยู่หรือเลนเฝ้าดูจะตรึงริกไว้ไม่ให้ถูกจอดและไม่ให้ถูกเก็บกวาด
+  เพราะว่าง; TTL แบบตายตัวยังคงมีผล
 
-## Ports and dev domains
+## พอร์ตและโดเมนสำหรับพัฒนา
 
-| Port | Where | Reserved for |
+| พอร์ต | ที่ไหน | สงวนไว้สำหรับ |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | เกสต์เทอร์มินัล | มัลติเพล็กเซอร์พอร์ตที่การส่งต่อทุกครั้งวิ่งอยู่บนนั้น |
+| `9222`, `9223` | เกสต์เบราว์เซอร์ | รีเลย์และเอนด์พอยต์ของระบบอัตโนมัติ (WebKit ผูก `9222` โดยตรงและไม่ใช้รีเลย์) |
+| `80`, `443` | ลูปแบ็กของเกสต์เบราว์เซอร์ | เลน HTTP/HTTPS ของโดเมนสำหรับพัฒนา |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- การค้นหาจะโพลพอร์ต TCP ที่รอรับการเชื่อมต่อของเกสต์เทอร์มินัลทุก ~4 วินาที
+  ฝั่งเซิร์ฟเวอร์
+- ส่งต่อพอร์ตอัตโนมัติได้ไม่เกิน **16** พอร์ตต่อริก; พอร์ตที่มากกว่านั้นจะถูก
+  แสดงในบันทึกแต่ไม่ถูกส่งต่อ
+- การส่งต่อฝั่งโฮสต์ผูกกับลูปแบ็ก โดยเลือกใช้หมายเลขพอร์ตของเกสต์เองก่อน;
+  **แชร์บนเครือข่ายภายใน** จะเพิ่มพอร์ต LAN ที่ OS กำหนดให้
+- โดเมนสำหรับพัฒนาต้องตรงกับ `name.test` หรือ `name.localhost` (ตัวพิมพ์เล็ก
+  ป้ายชื่อยาวไม่เกิน 63 อักขระ) หนึ่งโดเมนแมปกับหนึ่งพอร์ต
+- HTTPS ของโดเมนสำหรับพัฒนาใช้ CA ที่อยู่ในเครื่องเซิร์ฟเวอร์ (EC P-256 ใต้
+  `<dataDir>/rigs/tls/` กุญแจ 0600 และไม่เคยอยู่ในเกสต์) โดยมีใบรับรองปลายทาง
+  แบบไวลด์การ์ดหนึ่งใบสำหรับ `*.test` / `*.localhost` หากโฮสต์ไม่มี `openssl`
+  ก็จะไม่มีเลน HTTPS; HTTP ธรรมดายังคงกำหนดเส้นทางได้
 
-## Egress defaults
+## ค่าเริ่มต้นของเอเกรส
 
-| Surface | Default allowlist |
+| พื้นผิว | รายการที่อนุญาตตามค่าเริ่มต้น |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| เทอร์มินัล | พื้นฐานสำหรับนักพัฒนาในแซนด์บ็อกซ์ (โฮสต์โค้ด รีจิสทรีแพ็กเกจ ผู้ให้บริการโมเดล) + มิเรอร์ apt ของ Ubuntu + โฮสต์โค้ดของ worktree เอง |
+| เบราว์เซอร์ | `usectrl.dev` (ไซต์ของผลิตภัณฑ์) — บวกไฟล์เก็บถาวรของ Debian ตอนบูตครั้งแรกของเอ็นจินทุกตัว ขณะติดตั้งแพ็กเกจของมัน หน้าแรกเป็นเอกสาร `file://` ภายในเครื่องและไม่ต้องใช้เอเกรส |
+| คอมพิวเตอร์ | ว่างเปล่า — ปฏิเสธทุกอย่าง — จนกว่าผู้เรียกจะอนุญาตโฮสต์ |
+| มือถือ | ไม่ได้บังคับใช้ (เครือข่ายที่โปรแกรมจำลองจัดการ) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+microVM ทุกตัวยังได้รับโฮสต์ของรีจิสทรีอิมเมจของมันเพิ่มเติม สำหรับการดึงเท่านั้น
+ชุดโฮสต์ที่อนุญาตของโบรกเกอร์ข้อมูลรับรองมาจากรายการที่อนุญาตชุดเดียวกัน:
+จะไม่มีการออกโทเค็นให้โฮสต์ที่เกสต์ไปไม่ถึง
 
-## Clipboard and file transfer
+## คลิปบอร์ดและการถ่ายโอนไฟล์
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+การคัดลอก/วางทั้งสองทิศทาง และการลากไฟล์เข้า–ออก ใช้ได้สำหรับคนที่ขับริกอยู่;
+เอเจนต์ได้คลิปบอร์ดผ่านคำกริยาข้างต้นและไม่ได้การถ่ายโอนไฟล์เลย (มันมีเชลล์อยู่
+ในเอนโคลเจอร์อยู่แล้ว)
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+การข้ามขอบเขตของคลิปบอร์ดเป็นรายผู้ใช้และรายทิศทาง การวางจากโฮสต์เข้าริก
+ได้รับอนุญาตโดยค่าเริ่มต้น; การคัดลอกจากริกออกไปยังโฮสต์จะถามก่อน (ให้สิทธิ์
+สิบนาที หรืออนุญาตเสมอที่ การตั้งค่า → เซิร์ฟเวอร์ → ริก → การเข้าถึงคลิปบอร์ด)
+ตัวเลือกทั้งสองเป็นอิสระต่อกันและไม่เคยเป็นการตั้งค่าระดับเวิร์กสเปซ
 
-| Lane | Route | Carries |
+| เลน | เส้นทาง | สิ่งที่บรรทุก |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| คลิปบอร์ด | `GET`/`POST /rig/clipboard/<rigId>` | ข้อความ รูป PNG/JPEG หนึ่งรูป (≤16 MB) และพาธในเกสต์ของไฟล์บนคลิปบอร์ด |
+| ไฟล์ | `POST /rig/files/<rigId>` | ไฟล์ได้ถึง 64 ไฟล์ ไฟล์ละ ≤256 MB และไม่เกิน 512 MB ต่อการดรอป พร้อมจุดดรอปแบบพิกเซลของเกสต์ที่ไม่บังคับ |
+| ไฟล์ | `GET /rig/files/<rigId>?p=<base64url path>` | ไบต์ของไฟล์หนึ่งไฟล์ ดึงกลับออกมา |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP ไม่ใช่ RPC** ซ็อกเก็ต RPC จะปิดการเชื่อมต่อเมื่อมีเฟรมขาเข้าที่เกิน
+  256 KB — ด่านกัน DoS ที่เหมาะกับคำสั่ง JSON แต่เป็นอันตรายถึงตายสำหรับ
+  ภาพหน้าจอที่วางมา ไบต์วิ่งบนเส้นทางชนิดเดียวกับที่เฟรมริกและเสียงการประชุม
+  ใช้อยู่แล้ว
+- **การยืนยันตัวตน** ใช้ทาร์เก็ตที่ลงนามแล้ว `rig-files:<workspaceId>/<rigId>`
+  บวกสมาชิกภาพของเวิร์กสเปซ — เป็นทาร์เก็ตของตัวเอง URL ที่ออกมาเพื่อ *เฝ้าดู*
+  เครื่องจึงเขียนไฟล์เข้าไปในนั้นไม่ได้ด้วย
+- **การเข้าควบคุมมีผล** การเขียนคลิปบอร์ดและการดรอปไฟล์เป็นการเปลี่ยนแปลง
+  สถานะและจะถูกปฏิเสธขณะที่มีคนอื่นถือการควบคุมอยู่ ส่วนการอ่านคลิปบอร์ดและ
+  การอ่านไฟล์ออกเป็นการสังเกต จึงไม่ถูกปฏิเสธ
+- **ไฟล์ที่ดรอปไปลงที่ไหน:** `~/Drops` (เดสก์ท็อป), `~/drops` (เทอร์มินัล —
+  ข้าง ๆ worktree ไม่เคยอยู่ข้างใน เพื่อให้การดรอปไม่เคยปรากฏเป็นการเปลี่ยนแปลง
+  ที่ยังไม่ถูกติดตาม), `/tmp/cc-drops` (เบราว์เซอร์) เซิร์ฟเวอร์เป็นผู้เลือก
+  ไดเรกทอรี; ผู้เรียกกำหนดชื่อไม่ได้ ไฟล์ที่มีอยู่จะไม่ถูกเขียนทับ — ชื่อที่ชนกัน
+  จะถูกบันทึกเป็น `2-name.ext`
+- **สิ่งที่เกสต์ได้รับแจ้ง:** หน้าเว็บเบราว์เซอร์ได้รับเหตุการณ์ดรอปจริง ณ จุด
+  ที่ร้องขอ (`Input.dispatchDragEvent`); เดสก์ท็อปจะได้ไฟล์พร้อม URI ของมัน
+  บนคลิปบอร์ด เพราะไม่มีโฮสต์ใดสังเคราะห์การลากแบบ XDND เข้าสู่ชุดเครื่องมือ
+  ใด ๆ ได้โดยไม่ต้องมีเดมอนที่ได้สิทธิ์พิเศษในเกสต์ คำตอบจะระบุว่าเกิดกรณีใด
+  ในสองกรณีนี้
+- **การลากออก** มีเฉพาะบนเดสก์ท็อป และอ่าน `XdndSelection` ของเกสต์ขณะที่
+  การลากกำลังดำเนินอยู่ เพย์โหลดที่เหมือนกับสิ่งที่เกสต์ถืออยู่แล้วตอนที่เริ่มกด
+  จะถือว่าเป็นการเลือกที่ค้างมาจากการลากที่จบไปแล้ว ไม่ใช่การลากใหม่ — X ไม่มี
+  ขั้นตอน “การลากจบแล้ว”
+- **ข้อกำหนดของอิมเมจ:** อิมเมจเดสก์ท็อปต้องเป็นโปรโตคอล 2 หรือใหม่กว่า
+  (บิลด์หลังจากที่รองรับคลิปบอร์ดแล้ว) อิมเมจที่เก่ากว่าจะตอบ 404 และแอปจะบอก
+  ให้บิลด์ใหม่แทนที่จะรายงานว่าเครื่องเสีย
+- **บันทึกการตรวจสอบบันทึกรูปร่าง ไม่เคยบันทึกเนื้อหา**: แถวของ
+  `clipboard_read`, `clipboard_write`, `drop_files` และ `read_file` บรรทุก
+  จำนวน ขนาด และพาธ คลิปบอร์ดคือที่ที่ข้อมูลรับรองอาศัยอยู่ครั้งละไม่กี่วินาที
+  และไม่มีส่วนใดของมันถูกบันทึกไว้
 
-## Guardrails, events, storage
+## กฎคุม เหตุการณ์ และที่จัดเก็บ
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- เครื่องมือริกประกาศคลาสการกระทำ **`enclosureControl`** (บวก `networkEgress`
+  และ `processSpawn` บนเครื่องมือ use; `mobile_use` และ `ios_use` ยังประกาศ
+  `packageInstall` ด้วย) `rig_close` ประกาศ `enclosureControl`; `rig_list`
+  ไม่ประกาศเลย อนุญาตโดยค่าเริ่มต้น; โหมดอ่านอย่างเดียวปฏิเสธทั้งหมด;
+  ปุ่มปรับความเป็นอิสระต่อสเปซสามารถลดระดับให้เป็นถามก่อนได้
+- เหตุการณ์โดเมน: `RigClosedEvent` (พร้อมเหตุผลการปิด), `RigControlChanged`
+  (เข้าควบคุม / คืนการควบคุม), `RigReaped` (การเก็บกวาดเพราะว่าง TTL หรือ
+  หน่วยความจำ พร้อมเอเจนต์ที่ขับอยู่) การเปิดริกไม่ใช่เหตุการณ์
+  ดู[เหตุการณ์โดเมน](/th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน/)
+- ที่จัดเก็บ: `rig_sessions` และ `rig_action_log` ในฐานข้อมูลของแต่ละเวิร์กสเปซ
+  บันทึกการกระทำบันทึกเหตุการณ์อินพุตทุกครั้งพร้อมผู้กระทำและลำดับต่อริกที่
+  เพิ่มขึ้นเรื่อย ๆ; ข้อความที่พิมพ์จะถูกปิดบังเหลือเพียงความยาวและแฮชก่อน
+  ถูกบันทึก
+- ไดเรกทอรีข้อมูล: `rigs/images/` (อิมเมจ qcow2 ที่นำเข้า), `rigs/smolvm/`
+  (สถานะรันไทม์ต่อริก), `rigs/smolvm-packs/` (แพ็กเครื่องที่แตกไฟล์ไว้ล่วงหน้า),
+  `rigs/tls/` (CA ของโดเมนสำหรับพัฒนา), `rigs/run/` (โอเวอร์เลย์และซีดของ QEMU)
+- เส้นทาง: มุมมองสดเป็นแท็บในหน้าสเปซหรือ PR; `/settings/server/rigs`
+  คือหน้าจอการตั้งค่าริก

@@ -1,88 +1,89 @@
 ---
-title: Your first workspace
-description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+title: Không gian làm việc đầu tiên của bạn
+description: Tạo một không gian làm việc, đăng ký một kho mã vào đó và tự mình xem ranh giới cô lập.
 slug: vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien
+sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 ---
 
-## What you will build
+## Những gì bạn sẽ xây dựng
 
-By the end of this tutorial, you will have:
+Kết thúc bài hướng dẫn này, bạn sẽ có:
 
-- A workspace named after your project
-- A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
-- A second, empty workspace that proves the isolation boundary
+- Một không gian làm việc mang tên dự án của bạn
+- Một kho mã Git đã được đăng ký vào đó
+- Năm agent được gieo sẵn, trong đó một agent đã được bạn cấu hình đủ tốt để chạy
+- Một không gian làm việc thứ hai, trống, chứng minh ranh giới cô lập
 
-Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+Quá trình thiết lập ban đầu đã tạo sẵn một không gian làm việc cho bạn. Bài hướng dẫn này cố ý tạo một không gian làm việc mới, để bạn thấy mọi phần của quy trình.
 
-Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+Trước khi bắt đầu, hãy chọn một bản checkout Git hội đủ cả ba điều kiện sau — bước đăng ký sẽ từ chối mọi thứ khác:
 
-- it is inside a git work tree
-- it has an `origin` remote
-- that remote points at github.com, gitlab.com or bitbucket.org
+- nó nằm trong một cây làm việc git
+- nó có một remote `origin`
+- remote đó trỏ tới github.com, gitlab.com hoặc bitbucket.org
 
-## Step 1: Create a workspace
+## Bước 1: Tạo một không gian làm việc
 
-1. Click the workspace chip in the title bar
-2. Choose **Add workspace…**
-3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
-4. Optionally pick a logo
-5. Click **Add workspace**
+1. Nhấp vào chip không gian làm việc trên thanh tiêu đề
+2. Chọn **Thêm không gian làm việc…**
+3. Nhập một tên nhận diện dự án, chẳng hạn “api-service” hoặc “frontend-v2”
+4. Tùy chọn, chọn một logo
+5. Nhấp **Thêm không gian làm việc**
 
-Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+Control Center chuyển sang không gian làm việc mới và dừng lại ở hộp thư của nó (`/workspaces/<id>/inbox`).
 
-Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+Đằng sau đó, máy chủ phát một sự kiện `WorkspaceCreated` và gieo sẵn không gian làm việc với:
 
-- a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
-- the built-in pipeline templates and their trigger rows
+- một **agent CEO**, với persona là điều phối và ủy thác
+- bốn chuyên gia — `qa`, `architect`, `engineer` và `librarian` — mỗi agent có hướng dẫn và kỹ năng riêng
+- các mẫu quy trình tích hợp sẵn và các hàng trình kích hoạt của chúng
 
-Every workspace you create gets all of this, not just the first one.
+Mọi không gian làm việc bạn tạo đều nhận được tất cả những thứ này, không chỉ cái đầu tiên.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Điểm kiểm tra: mở **Cài đặt → Không gian làm việc → Agent**. Năm agent có trong danh sách, mỗi agent mang một vòng trạng thái rỗng.
 
-## Step 2: Register a repository
+## Bước 2: Đăng ký một kho mã
 
-1. Go to **Settings → Workspace → Repositories**
-2. Click **Add repository**
-3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
-4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+1. Vào **Cài đặt → Không gian làm việc → Kho lưu trữ**
+2. Nhấp **Thêm kho lưu trữ**
+3. Duyệt tới bản checkout của bạn. Hộp thoại đi qua các thư mục trên máy đang chạy `cc_server` — không phải máy khách của bạn — và chỉ ở trong các gốc mà máy chủ đó công bố (mặc định là thư mục home của người dùng máy chủ). Một bản checkout git có biểu tượng thư mục riêng và một hộp kiểm; một thư mục thường không có cả hai, nên chỉ các bản checkout mới chọn được.
+4. Đánh dấu một hoặc nhiều bản checkout và đăng ký cả lô. Lựa chọn được giữ nguyên khi bạn điều hướng, nên bạn có thể gom nhiều bản trong một lượt và một lựa chọn hỏng không bao giờ làm mất phần còn lại.
 
-Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+Control Center đọc remote `origin` của từng bản checkout, phân giải owner và kho mã rồi tạo hàng kho mã **bên trong không gian làm việc này**. Không có bước thứ hai để liên kết nó: chính việc đăng ký là thứ giới hạn phạm vi của nó.
 
-Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+Đăng ký cùng bản checkout đó trong một không gian làm việc khác về sau sẽ tạo ra một hàng kho mã thứ hai, độc lập, với id riêng. Xuyên suốt các không gian làm việc, một bản checkout được nhận diện bằng đường dẫn hệ thống tệp của nó, không bao giờ bằng id.
 
-Confirm it: the repo appears in the list with its `owner/repo` and current branch.
+Điểm kiểm tra: kho mã xuất hiện trong danh sách với `owner/repo` và nhánh hiện tại của nó.
 
-## Step 3: Make one agent runnable
+## Bước 3: Làm cho một agent chạy được
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+Năm agent mà không gian làm việc này vừa gieo sẵn không có adapter và không có mô hình. Bộ điều phối chạy chúng trên **Control Center (built-in)** và, khi chưa đặt mô hình, hỏi Anthropic mô hình mặc định của nó — nên chúng chỉ chạy được nếu bạn đã kết nối một tài khoản Anthropic, và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối. Quá trình thiết lập ban đầu ở lần chạy đầu đóng dấu lựa chọn của nó lên mọi agent trong không gian làm việc đầu tiên, đúng một lần; một không gian làm việc bạn tạo sau đó khởi đầu với cả năm agent đều chưa đặt. Hãy đặt cho một agent ngay bây giờ.
 
-1. Open **Settings → Workspace → Agents**
-2. Select `engineer` in the roster
-3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
-4. Press **Save changes**
+1. Mở **Cài đặt → Không gian làm việc → Agent**
+2. Chọn `engineer` trong danh sách
+3. Trong thẻ **Cài đặt**, đặt **Bộ điều hợp** thành `Control Center (built-in)` và chọn một **Mô hình** từ nhà cung cấp bạn đã kết nối tại Cài đặt → Máy chủ → Nhà cung cấp mô hình
+4. Nhấn **Lưu thay đổi**
 
-Confirm it: reopen the agent and the two fields hold your choices.
+Điểm kiểm tra: mở lại agent và hai trường vẫn giữ lựa chọn của bạn.
 
-Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/) covers the rest of the form.
+Mỗi agent mang adapter và mô hình riêng, nên hãy lặp lại thao tác này cho bất kỳ agent nào khác bạn định dùng. [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/) trình bày phần còn lại của biểu mẫu.
 
-## Step 4: See the isolation boundary
+## Bước 4: Xem ranh giới cô lập
 
-Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+Tạo một không gian làm việc thứ hai từ chip trên thanh tiêu đề, đúng như ở bước 1. Rồi hãy nhìn vào nó:
 
-- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
-- The spaces list, tickets and memory are all empty.
+- **Cài đặt → Không gian làm việc → Kho lưu trữ** trống. Kho mã bạn đăng ký một phút trước không có ở đó.
+- **Cài đặt → Không gian làm việc → Agent** có năm agent, nhưng chúng là những hàng khác — bộ điều hợp bạn đặt ở bước 3 không còn.
+- Danh sách space, phiếu và bộ nhớ đều trống.
 
-Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+Không có gì rò rỉ, vì không có gì để rò rỉ từ đó: các hàng của mỗi không gian làm việc nằm trong tệp cơ sở dữ liệu riêng của không gian làm việc đó. Một lượt đọc xuyên không gian làm việc không phải là một truy vấn bị lọc, mà là một truy vấn không có nơi nào để chạy. Xóa một không gian làm việc là hủy liên kết một tệp.
 
-Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+Chuyển lại bằng chip trên thanh tiêu đề, hoặc mở **Quản lý không gian làm việc** để xem chúng cạnh nhau.
 
-For the full model, read [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
+Để có mô hình đầy đủ, hãy đọc [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
 
-## Recap
+## Tóm tắt
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+Bạn đã tạo một không gian làm việc, xem nó gieo sẵn một CEO và bốn chuyên gia, đăng ký một kho mã vào đó, gán cho một agent adapter và mô hình, và xác nhận rằng không gian làm việc thứ hai không chia sẻ thứ nào trong số đó.
 
-**Next:** [Dispatch your first agent](/vi-VN/so-tay/huong-dan/agent-dau-tien/) to put the workspace to work.
+**Tiếp theo:** [Điều phối agent đầu tiên](/vi-VN/so-tay/huong-dan/agent-dau-tien/) để đưa không gian làm việc vào việc.

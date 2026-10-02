@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: اپنا پہلا ایجنٹ بھیجیں
+description: ایک ایجنٹ بنائیں، اسے ایک اسپیس اور ایک کام دیں، اور رن کو واپس اسٹریم ہوتے دیکھیں۔
 slug: ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ایجنٹ
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## آپ کیا بنائیں گے
 
-By the end of this tutorial, you will have:
+اس ٹیوٹوریل کے اختتام پر آپ کے پاس یہ ہوگا:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- ایک ایجنٹ جو آپ نے خود بنایا اور کنفیگر کیا
+- ایک اسپیس جہاں آپ اور وہ ایجنٹ بات کرتے ہیں
+- ایک مکمل شدہ رن، جس میں الگ تھلگ ورک ٹری میں کمیٹ شدہ کام اور ایجنٹ کے رن لاگ میں ایک قطار ہو
 
-Prerequisites: [Your first workspace](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/) completed, so this workspace has a repo registered and at least one model provider connected.
+پیشگی ضروریات: [آپ کا پہلا ورک اسپیس](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-ورک-اسپیس/) مکمل ہو، تاکہ اِس ورک اسپیس میں ایک ریپو رجسٹر شدہ ہو اور کم از کم ایک ماڈل فراہم کنندہ منسلک ہو۔
 
-## Step 1: Create an agent
+## مرحلہ 1: ایک ایجنٹ بنائیں
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. **ترتیبات → ورک اسپیس → ایجنٹس** پر جائیں
+2. **نیا ایجنٹ** پر کلک کریں۔ “بے نام ایجنٹ” نام کا ایجنٹ فوراً بنا دیا جاتا ہے اور روسٹر میں منتخب ہو جاتا ہے — کوئی بنانے والا ڈائیلاگ نہیں اور تصدیق کرنے کو کچھ نہیں۔ آپ اِسی جگہ اسے کنفیگر کرتے ہیں۔
+3. **ترتیبات** ٹیب پر، یہ بھریں:
+   - **نام**: کچھ مختصر اور یاد رہنے والا، مثلاً `alice`۔ یہی وہ چیز ہے جو آپ `@` کے بعد ٹائپ کرتے ہیں۔
+   - **عنوان**: یہ کیا کرتا ہے، مثلاً “بیک اینڈ انجینئر”
+   - **اڈاپٹر**: `Control Center (built-in)`۔ اسے سوچ سمجھ کر چنیں — صرف بلٹ اِن ہارنس ہی رن کے دوران اسٹیئر کیا جا سکتا ہے اور باری کی حد پر روکا جا سکتا ہے، اور اس کے لیے سرور ہوسٹ پر کوئی CLI انسٹال کرنے کی ضرورت نہیں۔
+   - **ماڈل**: منسلک فراہم کنندہ جو فہرست پیش کرتا ہے، اُس سے چنیں
+   - **مہارتیں**: جو موزوں لگیں وہ لگائیں، مثلاً `testing` یا `architecture`
+4. **تبدیلیاں محفوظ کریں** دبائیں
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[بغیر اڈاپٹر والا ایجنٹ بلٹ اِن لوپ پر چلتا ہے]
+جب اڈاپٹر فیلڈ غیر مقرر ہو، تو ڈسپیچ **Control Center (built-in)** پر واپس گر جاتا ہے — یعنی سرور کے اندر موجود ایجنٹ لوپ، اس لیے ہوسٹ پر کچھ انسٹال کرنے کی ضرورت نہیں۔ اسے پھر بھی ایک ماڈل درکار ہوتا ہے: کوئی مقرر نہ ہو تو یہ اپنے ڈیفالٹ کے لیے Anthropic سے پوچھتا ہے، جو اُس صورت کام کرتا ہے جب آپ نے Anthropic اکاؤنٹ منسلک کیا ہو، ورنہ `No credential for provider "anthropic"` کے ساتھ ناکام ہو جاتا ہے۔ بہرحال دونوں واضح طور پر مقرر کریں، ورنہ آپ ایسے ماڈل پر چل رہے ہوں گے جو آپ نے نہیں چنا۔
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**چیک پوائنٹ۔** روسٹر کی قطار آپ کے ایجنٹ کا نام اور اسٹیٹس کا ایک کھوکھلا حلقہ دکھاتی ہے۔
 
-## Step 2: Start a space
+## مرحلہ 2: ایک اسپیس شروع کریں
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. سائیڈبار میں **اسپیسز** سیکشن تلاش کریں اور **+** بٹن پر کلک کریں
+2. اسپیس کو کوئی نام دیں
+3. **ایجنٹس شامل کریں** کے تحت وہی ایجنٹ منتخب کریں جو ابھی آپ نے بنایا
+4. اگر ورک اسپیس میں کوئی ریپو ہو، تو چنیں کہ یہ اسپیس کن پر کام کرے
+5. **بنائیں** پر کلک کریں
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+اسپیس کھل جاتی ہے۔ پس منظر میں Control Center اِس گفتگو کے لیے منتخب ریپوز کا copy-on-write ورک ٹری، اپنی الگ برانچ پر، تیار کرتا ہے۔ آپ کے سورس چیک آؤٹ میں کبھی تبدیلی نہیں کی جاتی۔
 
-## Step 3: Send a task
+## مرحلہ 3: کوئی کام بھیجیں
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+آپ نے جو ریپو رجسٹر کیا، اُس کے حوالے سے کوئی ایک ٹھوس، چھوٹا کام ٹائپ کریں۔ ایسا کام بہترین رہتا ہے جس کا نتیجہ جانچا جا سکے — ایک ٹیسٹ شامل کریں، کوئی لنٹ ٹھیک کریں، کسی سمبل کا نام بدلیں۔
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Enter دبائیں۔ آپ کو کسی کا `@`-ذکر کرنے کی ضرورت نہیں: اسپیس میں ایک ہی ایجنٹ ہو تو سادہ پیغام ہی اسے جگا دیتا ہے۔ کئی ایجنٹس والی اسپیس میں `@name` کسی ایک کو چنتا ہے۔
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center پرامپٹ کو ایجنٹ کی ہدایات، شخصیت، مہارتوں اور اسپیس کے کانٹیکسٹ سے جوڑتا ہے، پھر رن ڈسپیچ کرتا ہے۔
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**چیک پوائنٹ۔** کمپوزر کا بھیجنے والا بٹن ایک روکیں بٹن میں بدل جاتا ہے — اِس گفتگو میں ایک ایجنٹ کام کر رہا ہے — اور متن آنا شروع ہو جاتا ہے۔
 
-## Step 4: Watch it work
+## مرحلہ 4: اسے کام کرتے دیکھیں
 
-The conversation renders the run as it happens:
+گفتگو رن کو ہوتے ہوئے دکھاتی ہے:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **ریزننگ**، جو ایجنٹ کے سوچتے ہی ساتھ ساتھ دکھائی جاتی ہے
+- **ٹول کالز**: فائل ریڈز اور رائٹس، تلاشیں، شیل کمانڈز، ہر ایک اپنے نتیجے کے ساتھ
+- **متن**: خلاصے، وضاحتیں اور آپ کے لیے سوالات
 
-If the agent asks something, answer in the conversation and it resumes.
+اگر ایجنٹ کچھ پوچھے تو گفتگو میں جواب دیں اور وہ دوبارہ شروع ہو جاتا ہے۔
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+کسی رن کی اپنی میٹرکس اور اس کے وقفے، دوبارہ آغاز اور روکنے کے کنٹرولز کے لیے، اسپیس کے عام پینل کے **ایجنٹس** سیکشن میں چلتا ہوا ایجنٹ تلاش کریں اور **سرگرمی کھولیں** چنیں۔
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+سرگرمی پین میں اسٹیٹس بیج **چل رہا ہے** پڑھتا ہے، اور رن ختم ہونے پر **کامیاب**۔ جو رن اٹک جائے یا لوپ میں پھنس جائے وہ **بلاک** پڑھتا ہے؛ جو خرابی دے وہ **ناکام**۔ ایجنٹ رجسٹری میں روسٹر کا حلقہ پہلے رن سے پہلے کھوکھلا ہوتا ہے اور ایجنٹ کے دوبارہ بیکار ہوتے ہی ٹھوس ہو جاتا ہے۔
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/).
+رن کو کیا محدود کرتا ہے: اس کا اپنا copy-on-write ورک ٹری، وہ کریڈینشلز جو لانچ پر اس کے لیے بروکر کیے جاتے ہیں اور ٹیئر ڈاؤن پر منسوخ کر دیے جاتے ہیں، ایک صاف شدہ ماحول، وہ ٹول سطح جس کی اس کا موڈ اجازت دیتا ہے، اور ایکشن گارڈریلز۔ کسی برانچ کو پش کرنے یا pull request کھولنے جیسے اثرات الگ سے گیٹ کیے جاتے ہیں — دیکھیں [گارڈریلز](/ur-PK/ہدایت-نامہ/تصورات/گارڈریلز/)۔
 
-## Step 5: Check the result
+## مرحلہ 5: نتیجہ جانچیں
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. **ترتیبات → ورک اسپیس → ایجنٹس** کھولیں اور اپنا ایجنٹ منتخب کریں
+2. **لاگز** ٹیب کھولیں
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**چیک پوائنٹ۔** ایک رن کی قطار، جو اس کا اسٹیٹس، مدت، شروع اور اختتام کے اوقات اور وہ اڈاپٹر دکھاتی ہے جس پر وہ چلا۔
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+ایجنٹ کی تبدیلیاں گفتگو کی برانچ پر، اس کے ورک ٹری میں، کمیٹ کر دی جاتی ہیں۔ کمیٹس ایجنٹ کے طور پر تصنیف ہوتی ہیں، جبکہ آپ کا ذکر ایک `Co-Authored-By:` ٹریلر میں کریڈٹ کے ساتھ ہوتا ہے۔
 
-## Getting a pull request
+## pull request حاصل کرنا
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+کوئی چیز خود بخود pull request نہیں کھولتی۔ اگر آپ کو ایک چاہیے تو اُسی گفتگو میں اس کی درخواست کریں:
 
-> Push this branch and open a pull request against the default branch.
+> یہ برانچ پش کریں اور ڈیفالٹ برانچ کے خلاف ایک pull request کھولیں۔
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+پش کرنا (`gitPush`) اور PR بنانا (`prCreate`) دونوں ڈیفالٹ میں آپ کی منظوری مانگتے ہیں، اس لیے ہر ایک سے پہلے ایک تصدیق کی توقع رکھیں۔ جب پرامپٹ آئے اور کوئی منظور کنندہ منسلک نہ ہو، تو ایکشن کی اجازت دینے کے بجائے انکار کر دیا جاتا ہے — گارڈریلز بند ہو کر ناکام ہوتے ہیں۔
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR اُس GitHub شناخت کے تحت کھولا جاتا ہے جس کا ٹوکن رن نے استعمال کیا — یعنی آپ کی، اگر آپ نے ذاتی ٹوکن محفوظ کیا ہو — نہ کہ ایجنٹ کے نام سے۔ ایجنٹ کی مصنفیت کمیٹس پر ظاہر ہوتی ہے۔
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+آپ اسے خود بھی کھول سکتے ہیں: اسپیس کے **سورس کنٹرول** پینل میں **pull request بنائیں** کا بٹن ہے جو گفتگو کی برانچ کو کمپوز اسکرین میں لے جاتا ہے، اور **Pull requests → نیا PR** وہی اسکرین خالی حالت میں کھولتا ہے۔ اگلا ٹیوٹوریل یہیں سے آگے بڑھتا ہے۔
 
-## Recap
+## خلاصہ
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+آپ نے ایک ایجنٹ بنایا، اس کا اڈاپٹر اور ماڈل کنفیگر کیا، اسے ایک اسپیس اور ایک کام دیا، اور ایک حقیقی رن کو الگ تھلگ ورک ٹری میں، آپ کے چیک آؤٹ کو چھوئے بغیر، مکمل ہوتے دیکھا۔
 
-**Next:** [Review your first pull request](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-pr/) to learn the review workflow.
+**اگلا:** [اپنا پہلا pull request ریویو کریں](/ur-PK/ہدایت-نامہ/ٹیوٹوریلز/پہلا-pr/) تاکہ ریویو ورک فلو سیکھیں۔
 
-For more on agents: [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/). For dispatch details: [Agent dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/).
+ایجنٹس پر مزید کے لیے: [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/)۔ ڈسپیچ کی تفصیلات کے لیے: [ایجنٹ ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)۔

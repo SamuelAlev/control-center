@@ -1,129 +1,139 @@
 ---
-title: Install and manage skills
-description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+title: Készségek telepítése és kezelése
+description: Adjon hozzá GitHub-tárolókat készségforrásként, böngéssze a katalógusaikat, és telepítsen, frissítsen vagy távolítson el készségeket az antivírus-vizsgálati kapun keresztül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/keszsegek-kezelese
+sourceHash: 5a283c45b61e71fa2580d430a6a8565d385928e2
 ---
 
-This guide shows you how to fill a workspace with skills from GitHub: add a
-repository as a source, install the skills you want from it, and keep them
-current over time.
+Ez az útmutató bemutatja, hogyan töltsön fel egy munkaterületet GitHubról
+származó készségekkel: adjon hozzá egy tárolót forrásként, telepítse belőle a
+kívánt készségeket, és tartsa őket naprakészen.
 
-The important thing to know before you start: **a source repository is
-untrusted.** Its name, description and star count are written by whoever owns
-it. The only safety signal Control Center trusts is the antivirus scan verdict,
-which every install passes through before anything reaches disk or an agent
-prompt. If you want the reasoning, read the
-[agent model's skills section](/hu-HU/kezikonyv/fogalmak/ugynokmodell/); this page stays
-on the doing.
+A legfontosabb, amit kezdés előtt tudnia kell: **a forrástároló nem
+megbízható.** A nevét, a leírását és a csillagszámát az írja, aki birtokolja.
+Az egyetlen biztonsági jelzés, amelyben a Control Center megbízik, az
+antivírus-vizsgálat ítélete, amelyen minden telepítés átmegy, mielőtt bármi
+eljutna a lemezre vagy egy ügynökpromptba. Ha az indoklásra kíváncsi, olvassa el
+az [ügynökmodell készségekről szóló szakaszát](/hu-HU/kezikonyv/fogalmak/ugynokmodell/);
+ez az oldal a gyakorlatnál marad.
 
-Skills live at **Settings → Workspace → Skills**
-(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
-skills you install here belong to this workspace only. The page has two tabs:
-**Installed** (local skills, including a **New skill** editor) and **Sources**
-(GitHub catalogs). Both writes pass the same scan gate.
+A készségek a **Beállítások → Munkaterület → Készségek** helyen találhatók
+(`/workspaces/<id>/settings/workspace/skills`). Munkaterület-hatókörűek: az itt
+telepített készségek csak ehhez a munkaterülethez tartoznak. Az oldalon két lap
+van: a **Telepítve** (helyi készségek, köztük az **Új készség** szerkesztő) és a
+**Források** (GitHub-katalógusok). Mindkét írás ugyanazon a vizsgálati kapun
+megy át.
 
-## Add a skill repository
+## Készségtároló hozzáadása
 
-1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
-2. Press **Add repository**.
-3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
-   and confirm.
+1. Nyissa meg a **Beállítások → Munkaterület → Készségek** oldalt, és váltson a
+   **Források** lapra.
+2. Nyomja meg a **Tároló hozzáadása** gombot.
+3. Illessze be egy GitHub-tároló URL-jét, például
+   `https://github.com/anthropics/skills`, és erősítse meg.
 
-The server checks that the repository exists and is visible with its
-credentials, then adds it to the left rail. There is no curated store in the
-middle: any GitHub repository works, which also means reputation is yours to
-judge — a star count is evidence, never a guarantee.
+A szerver ellenőrzi, hogy a tároló létezik, és a hitelesítő adataival látható-e,
+majd hozzáadja a bal oldali sávhoz. Nincs középen gondozott tár: bármely
+GitHub-tároló működik, ami azt is jelenti, hogy a hírnevet Önnek kell
+megítélnie — a csillagszám bizonyíték, soha nem garancia.
 
-A repository's skills are the directories that contain a `SKILL.md` (up to
-three levels deep, plus the Claude plugin-marketplace layout
-`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
-If the grid later says the repository has no skills, that is what it means: no
-directory in it matches the skill convention.
+Egy tároló készségei azok a könyvtárak, amelyek `SKILL.md` fájlt tartalmaznak
+(legfeljebb három szint mélységig, valamint a Claude plugin-piactéri elrendezés
+`plugins/<plugin>/skills/<skill>`, a függőségi és vendor-fákat kihagyva). Ha a
+rács később azt írja, hogy a tárolóban nincsenek készségek, az pontosan ezt
+jelenti: egyetlen könyvtár sem felel meg benne a készségkonvenciónak.
 
-## Inspect a skill before installing
+## Készség megvizsgálása telepítés előtt
 
-Select a repository in the rail; its skills appear as a grid on the right,
-with a filter field above it that narrows the catalog by name, description or
-slug. Click a card to open the detail view. It shows three things:
+Válasszon ki egy tárolót a sávban; a készségei rácsként jelennek meg a jobb
+oldalon, felette egy szűrőmezővel, amely név, leírás vagy slug szerint szűkíti
+a katalógust. Kattintson egy kártyára a részletes nézet megnyitásához. A
+részletes nézet három dolgot mutat:
 
-- **The README**, rendered as markdown — the skill directory's `README.md`, or
-  the `SKILL.md` body when there is no README.
-- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
-  capabilities the skill's content declares (runs shell, writes files, network
-  access…) and every finding the scanner recorded.
-- **The file count** — an install writes the skill's whole directory, not just
-  its `SKILL.md`.
+- **A README**, markdownként megjelenítve — a készségkönyvtár `README.md`
+  fájlja, vagy a `SKILL.md` törzse, ha nincs README.
+- **A vizsgálati előnézet** — az ítélet (`pass`, `warn` vagy `quarantine`), a
+  készség tartalma által bejelentett képességek (shell futtatása, fájlok írása,
+  hálózati hozzáférés…) és a vizsgáló által rögzített összes megállapítás.
+- **A fájlszám** — a telepítés a készség teljes könyvtárát kiírja, nem csak a
+  `SKILL.md` fájlt.
 
-The preview scans the exact bytes an install would write, so the verdict you
-see is the verdict the install gets; nothing is re-judged behind your back.
+Az előnézet pontosan azokat a bájtokat vizsgálja, amelyeket a telepítés kiírna,
+így az Ön által látott ítélet az, amelyet a telepítés kap; semmit nem ítélnek
+újra a háta mögött.
 
-## Install a skill
+## Készség telepítése
 
-1. Open the skill's detail view.
-2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
-3. For a `quarantine` verdict, install stays disabled until you tick
-   **I understand the risk — install anyway**. That override is recorded, not
-   assumed.
+1. Nyissa meg a készség részletes nézetét.
+2. Olvassa el a vizsgálati ítéletet. `warn` vagy `pass` ítélet esetén nyomja meg
+   a **Telepítés** gombot.
+3. `quarantine` ítélet esetén a telepítés letiltva marad, amíg be nem jelöli a
+   **Megértem a kockázatot — telepítés ennek ellenére** lehetőséget. Ezt a
+   felülírást rögzítik, nem feltételezik.
 
-The install writes the skill's directory into the workspace, records a pin in
-`skills-lock.json` (source repository, path, the commit it came from and a
-content hash), and the skill becomes available to agents in the workspace. A
-card marked **Name in use** means a different skill already owns that name
-locally — uninstall that one first.
+A telepítés beírja a készség könyvtárát a munkaterületre, rögzít egy pint a
+`skills-lock.json` fájlban (forrástároló, útvonal, a commit, amelyből származik,
+és egy tartalomhash), és a készség elérhetővé válik a munkaterület ügynökei
+számára. Ha egy kártyán **A név foglalt** felirat szerepel, az azt jelenti, hogy
+helyben már egy másik készség birtokolja ezt a nevet — először távolítsa el azt.
 
-## Update skills over time
+## Készségek naprakészen tartása
 
-Cards for installed skills carry badges: **Installed**, or **Update available**
-when the repository has moved past the commit you pinned. Open the detail view
-and press **Update** to re-fetch at the new commit. An update passes through
-the same scan gate as an install — a skill whose new version quarantines is
-refused and the version you had stays put. The old version's hash is kept as a
-rollback reference in the lock.
+A telepített készségek kártyái jelvényeket viselnek: **Telepítve**, vagy
+**Frissítés elérhető**, ha a tároló túllépett a rögzített commiten. Nyissa meg a
+részletes nézetet, és nyomja meg a **Frissítés** gombot az új commiton való
+újralekéréshez. A frissítés ugyanazon a vizsgálati kapun megy át, mint a
+telepítés — egy olyan készséget, amelynek az új verziója karanténba kerül,
+elutasítanak, és a meglévő verzió a helyén marad. A régi verzió hashét
+visszaállítási hivatkozásként megőrzik a lockban.
 
-## Uninstall a skill, remove a repository
+## Készség eltávolítása, tároló eltávolítása
 
-**Uninstall** (on an installed skill's detail view, or delete in the Installed
-tab) removes the skill's directory and its lock pin together — an uninstalled
-skill leaves nothing behind.
+Az **Eltávolítás** (egy telepített készség részletes nézetében, vagy a
+Telepítve lapon a törlés) a készség könyvtárát és a lockpinjét együtt távolítja
+el — egy eltávolított készség nem hagy maga után semmit.
 
-**Removing a repository** from the rail removes only the catalog: skills you
-installed from it stay installed and still update, because a pin records the
-repository by name rather than by reference to the source entry. Add the
-repository back if you want to browse it again.
+**Egy tároló eltávolítása** a sávból csak a katalógust távolítja el: az abból
+telepített készségek telepítve maradnak, és továbbra is frissülnek, mert a pin a
+tárolót név szerint rögzíti, nem a forrásbejegyzésre való hivatkozással. Adja
+vissza a tárolót, ha újra böngészni szeretné.
 
-## Invoke a skill
+## Készség meghívása
 
-Skills are invoked under their own namespace, so they never collide with
-built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+A készségeket a saját névterük alatt hívja meg, így soha nem ütköznek a
+beépített slash-parancsokkal (`/plan`, `/goal`, `/loop`, `/compact`):
 
-- `/skill:<name>` — a skill installed in this workspace, or attached to the
-  agent
-- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+- `/skill:<name>` — egy ebben a munkaterületben telepített vagy az ügynökhöz
+  csatolt készség
+- `/skill:<repo>:<name>` — egy a térben checkoutolt repó által szállított
+  készség
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+A csupasz, nem beépített név továbbra is feloldódik, a névtér megjelenése előtt
+írt üzenetek esetében. A `plan` nevű készséget a `/skill:plan` éri el; a `/plan`
+mindig a beépített.
 
-## Repo-scoped skills
+## Repóhoz kötött készségek
 
-A checked-out repo can ship skills of its own, in `.agents/skills/`,
-`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
-are **not** installed through this page. An agent carries only the skills of
-the repo it is currently working in; they swap when it moves. The composer is
-not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+Egy checkoutolt repó saját készségeket is szállíthat, a `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` vagy `skills/`
+könyvtárban. Ezeket **nem** ezen az oldalon telepíti. Az ügynök csak annak a
+repónak a készségeit hordozza, amelyben éppen dolgozik; ezek cserélődnek, amikor
+továbbáll. A beviteli mező viszont nincs így leszűkítve: a
+`/skill:<repo>:<name>` a tér bármely repóját eléri.
 
-Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
-before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
-is withheld, with no operator override on that path.
+A repókészségek ugyanazon a hiba esetén elutasító vizsgálaton esnek át (`pass` /
+`warn` / `quarantine`), mielőtt a frontmatterjük egy promptba kerülne. A `warn`
+beengedett; a `quarantine` visszatartott, ezen az útvonalon operátori felülírás
+nélkül.
 
-See [Repo-scoped skills](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills) and
-[Slash commands](/hu-HU/kezikonyv/referencia/slash-parancsok/).
+Lásd a [Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills) és
+a [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/) oldalt.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Chat with an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
-- [Create and configure an agent](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
+- [Csevegés ügynökkel](/hu-HU/kezikonyv/gyakorlati-utmutatok/cseveges-ugynokkel/)
+- [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/)
+- [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/)

@@ -1,166 +1,164 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: GitHub 통합 설정
+description: PR 화면, 저장소 등록, 에이전트 실행이 작동하도록 GitHub에 로그인합니다.
 slug: ko-KR/매뉴얼/사용-가이드/github-통합
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+이 가이드는 설정 가운데 GitHub에 특화된 부분을 다룹니다. GitHub은 지원하는 세 가지
+코드 호스트 중 하나입니다 — GitLab 또는 Bitbucket 연결과, 한 워크스페이스에서 여러
+코드 호스트를 함께 쓰는 방법은
+[코드 호스트 연결](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)을 참고하십시오.
 
-## Prerequisites
+## 사전 준비
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- 작업하려는 저장소에 접근할 수 있는 GitHub 계정
+- **로그인**에 쓸, 서버에 등록된 GitHub App
+  ([GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/) 참고) **또는** 붙여넣을
+  `repo`와 `read:org` 권한의 개인 액세스 토큰
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[자격 증명은 서버에 있고 본인에게 연결됩니다]
+지금 입력 중인 기기에는 아무것도 저장되지 않습니다. 자격 증명은 사용자 id를 키로 삼아
+`cc_server`가 보관하며, 로그인한 모든 기기에서 이를 사용합니다 — 데스크톱, 웹, 휴대폰
+모두입니다. 같은 서버의 다른 구성원은 이를 읽을 수 없고, 그 구성원의 로그인은 본인이
+직접 해야 합니다.
 :::
 
-## Sign in with GitHub
+## GitHub로 로그인
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**기기 흐름** 방식입니다. GitHub이 짧은 코드를 보여 주면 github.com에서 이를 승인하고,
+서버가 자격 증명을 받습니다 — 콜백 URL도, 포트도, 노출할 것도 없습니다. 서버에
+클라이언트 id가 있으면 언제든 사용할 수 있으며, 공식 빌드에는 이미 포함되어 있습니다.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. **설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅**으로 이동합니다(또는 온보딩
+   첫 단계에서)
+2. **GitHub** 행에서 **GitHub로 로그인**을 클릭합니다
+3. 대화 상자에 여덟 자리 코드가 표시되고 브라우저에서
+   [github.com/login/device](https://github.com/login/device)가 열립니다.
+   코드는 이미 클립보드에 복사되어 있습니다
+4. 코드를 붙여넣고 앱을 승인한 뒤 돌아옵니다. 그러면 행이 스스로
+   `your-username(으)로 로그인했습니다.`로 바뀝니다
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+브라우저에서 작업을 마치는 동안 대화 상자를 닫아도 됩니다 — 서버는 코드가 만료될
+때까지(약 15분) 계속 폴링하므로 로그인은 그대로 완료됩니다.
 
-## Or paste a token
+## 또는 토큰 붙여넣기
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+서버에 앱이 없거나, 필요한 계정에 앱이 설치되어 있지 않거나, 그냥 PAT를 쓰고 싶을
+때의 대안입니다.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. **설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅**으로 이동합니다
+2. **GitHub** 행에서 **토큰 추가**를 클릭합니다
+3. `repo`와 `read:org` 권한이 있는 토큰(클래식)을 붙여넣고 저장합니다. **세분화된**
+   토큰에는 저장소 **Contents**와 **Pull requests**(읽기 및 쓰기), 그리고 **Checks**와
+   **Actions**(읽기) 권한이 필요합니다.
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+토큰은 저장되는 즉시 확인되므로, 행에 이 토큰이 속한 계정이 표시될 수 있습니다. 토큰을
+제거하려면 **연결 해제**를 클릭합니다.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+확인: **GitHub** 행에 `your-username(으)로 로그인했습니다.`가 표시됩니다. 응답하는
+자격 증명이 본인의 것이 아니면 접미사가 출처를 알려 줍니다 — "이 서버의 앱을 통해"
+또는 "환경에서"입니다.
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[우선순위는 고정되어 있습니다]
+본인을 대신해 이루어지는 요청은 **본인의** 자격 증명만 사용하고 다른 것은 사용하지
+않습니다 — 환경 변수는 서버의 자격 증명이지 본인의 것이 아니므로 본인을 대신하지
+않습니다. 사람이 뒤에 없는 작업(웹훅, PR 폴링, 티켓 동기화)은 서버의 앱 아이덴티티를
+사용하고, 그다음 서버 소유자의 자격 증명, 마지막으로 환경 변수를 사용합니다.
 :::
 
-## What the integration gives you
+## 통합으로 얻는 것
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| 기능                | 방법                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| PR 목록과 세부 정보 | 서버에서 앱 아이덴티티 또는 본인의 자격 증명으로 호출하는 GitHub REST API                              |
+| 검사 실행           | GitHub Checks API                                                                                      |
+| 리뷰 게시           | 사용자가 승인해야 진행되는 단계로, 리뷰를 PR에 게시합니다                                              |
+| 저장소 등록         | 체크아웃의 `origin` 리모트가 github.com 또는 gitlab.com / bitbucket.org를 가리키면 등록이 허용됩니다    |
+| 에이전트의 GitHub 접근 | 자격 증명 브로커가 에이전트의 기능에 따라 토큰을 `GH_TOKEN` / `GITHUB_TOKEN`으로 주입합니다         |
+| 알림 핑             | 서버가 GitHub 알림 받은편지함을 폴링해 "풀 리퀘스트에서 멘션됨"과 "리뷰 요청됨"을 발생시킵니다         |
+| 사용자 프로필       | 프로필 호버 카드와 작성자별 PR 필터링                                                                  |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+일부 경로는 더 저렴한 곳에서는 REST 대신 GraphQL API를 사용합니다 — PR 작성 화면의
+브랜치 선택기에서 쓰는 브랜치 활동과, 리뷰 요청 알림이 아직 대기 중인지 판단하는
+실시간 리뷰 상태가 그렇습니다.
 
-## Watch for GitHub outages
+## GitHub 장애 확인하기
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+제목 표시줄에는 GitHub, Claude, OpenAI, Kimi 가운데 제공자 하나가 저하된 상태일 때
+상태 칩이 표시됩니다. **모두 정상일 때는 이 칩이 숨겨집니다** — 칩이 있다는 사실이
+문제를 알리는 것이지, 칩이 없다는 사실이 문제를 알리는 것은 아닙니다.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+칩을 클릭하면 각 제공자의 상태와 새로 고침 버튼이 있는 플라이아웃이 열립니다. 상태는
+2분마다 자동으로 새로 고쳐집니다.
 
-## Know how agents act on GitHub
+## 에이전트가 GitHub에서 작동하는 방식
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- 에이전트는 **GitHub API 호출 허용** 또는 **git push 허용** 기능이 있을 때만 GitHub
+  토큰을 받습니다.
+  [샌드박스 정책 구성](/ko-KR/매뉴얼/사용-가이드/샌드박스-정책/)을 참고하십시오
+- 에이전트가 만든 커밋은 **에이전트로서** 작성됩니다 — 표시 이름에 ` (agent)`를
+  붙이고, 에이전트 id를 키로 한 합성 주소를 사용하며, 사람으로 작성되는 일은 없습니다.
+  작업을 요청한 사람은 `Co-Authored-By` 트레일러로 크레딧을 받습니다
+- GitHub App이 구성되어 있으면, 브로커는 광범위한 토큰을 넘겨 주는 대신 실행마다
+  저장소 범위의 약 1시간짜리 세분화된 설치 토큰을 발급합니다. 설치는 실행이 대상으로
+  삼은 저장소의 **소유자**를 기준으로 해석되므로, 여러 계정에 설치된 앱 하나가 실행이
+  건드리는 계정에 맞게 범위가 정해집니다. 앱이 없으면 에이전트는 환경 변수 토큰을
+  받습니다
+- 로그인한 구성원이 요청한 실행은 **그 구성원의** GitHub 아이덴티티로 동작합니다 —
+  브로커의 환경 변수 뒤에 해당 구성원의 자격 증명이 병합되므로, 에이전트가 그
+  구성원을 위해 만든 커밋이나 댓글은 그 구성원의 것으로 귀속됩니다
 
-## Troubleshooting
+## 문제 해결
 
-### The PR list is empty and says GitHub is not connected
+### PR 목록이 비어 있으면서 GitHub이 연결되지 않았다고 표시됩니다
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+이 서버에 GitHub 자격 증명이 없습니다. **코드 호스팅**에서 로그인하거나 토큰을
+붙여넣으십시오. 다른 forge의 저장소는 영향을 받지 않으며, GitHub의 저장소만 아무것도
+제공하지 않습니다.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### 행에 "토큰 추가"는 있지만 "GitHub로 로그인"은 없습니다
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+서버에 클라이언트 id가 없기 때문입니다 — 자격 증명은 공식 빌드에만 포함되므로 소스에서
+빌드한 경우에는 정상적인 상태입니다.
+[GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)를 참고하십시오. 약 2분이면
+되고, 서버 소유자만 한 번 하면 됩니다.
 
-### The sign-in dialog says the provider returned no device code
+### 로그인 대화 상자에 제공자가 기기 코드를 반환하지 않았다고 표시됩니다
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App은 있지만 **Device flow** 체크박스가 꺼져 있습니다. 앱 설정
+(General → Device flow)에서 이 옵션을 켜고 다시 시도하십시오.
 
-### The row says "via this server's app" when I expected my own account
+### 내 계정일 것으로 예상했는데 행에 "이 서버의 앱을 통해"가 표시됩니다
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+아직 로그인하지 않았으며, 지금 보이는 것은 서버의 앱 아이덴티티가 응답한 것입니다.
+해당 행에서 **GitHub로 로그인**을 클릭하십시오.
 
-### A fine-grained PAT shows no merge button or check status
+### 세분화된 PAT에 병합 버튼이나 검사 상태가 표시되지 않습니다
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+토큰에 **Contents**와 **Pull requests**(읽기 및 쓰기), 그리고 **Checks**와
+**Actions**(읽기) 권한이 필요합니다. 변경한 뒤 코드 호스팅에서 다시 붙여넣으십시오.
 
-### Adding a repo is rejected
+### 저장소 추가가 거부됩니다
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/).
+등록에는 세 가지가 모두 필요합니다. 경로가 git 워크트리 안에 있고, `origin` 리모트가
+있으며, 그 리모트가 지원되는 forge(github.com, gitlab.com 또는 bitbucket.org)를
+가리켜야 합니다.
+[워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)를 참고하십시오.
 
-### Everything stops working for a while after heavy use
+### 많이 사용한 뒤 한동안 모든 것이 작동을 멈춥니다
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+속도 제한 서킷 브레이커입니다. GitHub은 `x-ratelimit-remaining: 0`과 재설정 시각을 담은
+`403`으로 기본 한도에 도달했음을 알립니다. 이런 응답을 보면 클라이언트는 시간 창이
+지날 때까지 네트워크 호출 없이 이후 요청을 로컬에서 실패시킵니다. 따라서 재시도 폭주가
+한도를 더 악화시킬 수 없습니다. 일시적 실패는 `retry-after`를 준수하며 지수 백오프로
+최대 세 번까지 재시도됩니다.
 
-## Related guides
+## 관련 가이드
 
-- [Create the GitHub App](/ko-KR/매뉴얼/사용-가이드/github-app/)
-- [Connect a code host](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
-- [Manage API keys](/ko-KR/매뉴얼/사용-가이드/api-키/)
-- [Add repos to a workspace](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
-- [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
-- [Set up Slack integration](/ko-KR/매뉴얼/사용-가이드/slack-통합/)
+- [GitHub App 만들기](/ko-KR/매뉴얼/사용-가이드/github-app/)
+- [코드 호스트 연결](/ko-KR/매뉴얼/사용-가이드/코드-호스트-연결/)
+- [API 키 관리](/ko-KR/매뉴얼/사용-가이드/api-키/)
+- [워크스페이스에 저장소 추가](/ko-KR/매뉴얼/사용-가이드/저장소-추가/)
+- [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
+- [Slack 통합 설정](/ko-KR/매뉴얼/사용-가이드/slack-통합/)

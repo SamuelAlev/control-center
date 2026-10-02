@@ -1,109 +1,115 @@
 ---
-title: Connect to a remote server
-description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+title: Sambung ke pelayan jauh
+description: Halakan apl desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antara pelayan tanpa memulakan semula.
 slug: ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh
+sourceHash: c63c5cd7016c6c882dbe4e3388b83852983e6071
 ---
 
-Every client is a renderer over a `cc_server` that owns the data. The desktop can
-run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
-cannot, because a browser tab cannot host a server. Either way, this guide points
-a client at a server running elsewhere — a small box, a cloud VM, a build server.
+Setiap klien ialah pemapar kepada `cc_server` yang memiliki data. Desktop boleh
+menjalankan satu di dalam dirinya sendiri; apl web di
+[app.usectrl.dev](https://app.usectrl.dev) tidak boleh, kerana tab penyemak imbas
+tidak boleh menghoskan pelayan. Sama ada cara, panduan ini menghalakan klien ke
+pelayan yang berjalan di tempat lain — kotak kecil, VM awan, pelayan binaan.
 
-## Prerequisites
+## Prasyarat
 
-- A running `cc_server`. If you don't have one, see [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+- `cc_server` yang sedang berjalan. Jika anda belum mempunyainya, lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
+- Sama ada tiga nilai penggandingan yang ditempa oleh pelayan — **URL pelayan** (`ws://…/rpc` atau `wss://…/rpc`), **id peranti** dan **kunci penggandingan** — **atau** **kod jemputan** sekali guna daripada pentadbir ruang kerja. Menebus jemputan akan memperuntukkan pengguna anda, merekodkan keahlian anda dan menempa kelayakan klien ini untuk anda, jadi anda tidak pernah mengendalikan id peranti atau kunci.
 
-### Make sure the server is reachable
+### Pastikan pelayan boleh dicapai
 
-A local server needs nothing: `ws://localhost:9030/rpc` works from both the
-desktop and the browser, because browsers treat loopback as a trustworthy origin.
+Pelayan setempat tidak memerlukan apa-apa: `ws://localhost:9030/rpc` berfungsi
+daripada desktop dan penyemak imbas, kerana penyemak imbas menganggap loopback
+sebagai asalan yang boleh dipercayai.
 
-A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
-so the browser will only open a `wss://` socket with a certificate it already
-trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
-the first place. Give it one of:
+Pelayan pada mesin lain berbeza. `app.usectrl.dev` disajikan melalui HTTPS, jadi
+penyemak imbas hanya akan membuka soket `wss://` dengan sijil yang sudah
+dipercayainya — dan `cc_server` memang enggan mengikat alamat bukan loopback
+tanpa TLS sejak awal. Berikan salah satu daripadanya:
 
-- a certificate directly, with `--tls-cert` and `--tls-key`
-- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
+- sijil secara terus, dengan `--tls-cert` dan `--tls-key`
+- proksi terbalik penamat TLS di hadapan, dengan pelayan dimulakan `--insecure` (teks biasa di belakang proksi, pada rangkaian yang dipercayai sahaja)
+- terowong atau VPN yang membekalkan sijil itu — Tailscale, cloudflared atau seumpamanya. **Tetapan → Pelayan → Sambungan & status** mempunyai pilihan menyertai terowong terbina dalam di bawah **Kongsi pelayan ini**.
 
-Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
-set `--public-url` to the address clients should actually dial — it defaults to
-the local bind, so without it clients try the wrong host. And if you host your
-own copy of the web build, add its origin to `--allowed-origins`, which defaults
-to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+Dua tetapan pada sisi pelayan mudah terlepas pandang. Di belakang proksi, NAT
+atau terowong, tetapkan `--public-url` kepada alamat yang sepatutnya didail oleh
+klien — ia lalai kepada ikatan setempat, jadi tanpanya klien akan mencuba hos
+yang salah. Dan jika anda menghoskan salinan binaan web anda sendiri, tambahkan
+asalannya ke `--allowed-origins`, yang lalai kepada `https://app.usectrl.dev`
+sahaja; klien loopback dan natif sentiasa dibenarkan.
 
-## Connect the desktop app
+## Sambungkan apl desktop
 
-On a fresh install:
+Pada pemasangan baharu:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
-3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+1. Lancarkan Control Center. Skrin larian pertama bertanya **Bagaimana Control Center patut berjalan?**
+2. Daripada **Jalankan dalam apl ini**, isikan medan sambungan: URL pelayan, serta sama ada kod jemputan atau id peranti dan kunci penggandingan.
+3. Klik **Sambung**. Control Center mendail pelayan dan mendarat di peti masuk ruang kerja.
 
-On a desktop that already runs its own server:
+Pada desktop yang sudah menjalankan pelayannya sendiri:
 
-1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
-3. Click **Connect**, then **Switch** on the new server's row.
+1. Buka **Tetapan → Pelayan → Sambungan & status**.
+2. Klik **Tambah pelayan**. Masukkan URL pelayan (`wss://host:9030/rpc`) dan sama ada kod jemputan atau id peranti dan kunci penggandingan. Butang akhiran medan URL menemui instans `cc_server` pada LAN atau tailnet anda.
+3. Klik **Sambung**, kemudian **Tukar** pada baris pelayan baharu itu.
 
-Switching is live: the app rebuilds around the new session in place, with no
-restart. If the connect fails you stay on the current server and see the error.
-The row for the server you are on has no **Switch** action; the local server is
-the first row, labelled **Run in this app**.
+Peralihan berlaku secara langsung: apl dibina semula di sekeliling sesi baharu di
+tempatnya, tanpa permulaan semula. Jika sambungan gagal, anda kekal pada pelayan
+semasa dan melihat ralat itu. Baris untuk pelayan yang anda gunakan tiada tindakan
+**Tukar**; pelayan setempat ialah baris pertama, berlabel **Jalankan dalam apl
+ini**.
 
-Once switched, the desktop owns no database. Every screen reads and writes
-through the remote server over a WebSocket.
+Sebaik sahaja bertukar, desktop tidak memiliki pangkalan data. Setiap skrin
+membaca dan menulis melalui pelayan jauh itu melalui WebSocket.
 
-## Connect the web client
+## Sambungkan klien web
 
-The web build is always remote.
+Binaan web sentiasa jauh.
 
-1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+1. Buka [app.usectrl.dev](https://app.usectrl.dev), atau salinan binaan web anda sendiri.
+2. Masukkan URL pelayan serta sama ada kod jemputan atau id peranti dan kunci penggandingan.
+3. Klien mendail pelayan dan memaparkan antara muka yang sama seperti desktop.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
-rides in the URL **fragment**, which browsers never send to the server hosting
-the page, so the static host never sees it.
+Jika URL mengandungi pautan mendalam penggandingan, medan-medan itu telah diisi
+terlebih dahulu. Kunci penggandingan menunggang dalam **serpihan** URL, yang
+tidak pernah dihantar oleh penyemak imbas kepada pelayan yang menghoskan halaman
+itu, jadi hos statik tidak pernah melihatnya.
 
-:::note[Media and security]
-Media (avatars, feed images, PR screenshots) is proxied through the connected
-server, so the browser never fetches an upstream host directly. A per-request
-Content-Security Policy, stamped from a non-sensitive cookie, allows only the
-connected server's origin.
+:::note[Media dan keselamatan]
+Media (avatar, imej suapan, tangkapan skrin PR) diproksikan melalui pelayan yang
+bersambung, jadi penyemak imbas tidak pernah mengambil hos huluan secara langsung.
+Content-Security Policy bagi setiap permintaan, dicop daripada kuki yang tidak
+sensitif, membenarkan asalan pelayan yang bersambung sahaja.
 :::
 
-### What the browser does not do
+### Apa yang tidak dilakukan oleh penyemak imbas
 
-The web client reads and writes the same server as the desktop, but a few
-surfaces need a native window or the machine's own devices:
+Klien web membaca dan menulis pelayan yang sama seperti desktop, tetapi beberapa
+permukaan memerlukan tetingkap natif atau peranti mesin itu sendiri:
 
-- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
-- no LAN or tailnet server discovery in the **Add server** dialog
-- no in-app article reader — newsfeed articles open in a new tab
-- no re-running a meeting summary and no cancelling one that is processing
+- tiada toast pemberitahuan OS, bunyi pemberitahuan atau rel sepanduk ambien (pusat pemberitahuan dalam apl masih berfungsi)
+- tiada penemuan pelayan LAN atau tailnet dalam dialog **Tambah pelayan**
+- tiada pembaca artikel dalam apl — artikel suapan berita dibuka dalam tab baharu
+- tiada menjalankan semula ringkasan mesyuarat dan tiada pembatalan ringkasan yang sedang diproses
 
-Two behave differently rather than being missing. Meeting **recording** works in
-the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
-editors installed.
+Dua ciri berkelakuan berbeza dan bukannya tidak ada. **Rakaman** mesyuarat
+berfungsi dalam penyemak imbas, menangkap mikrofon anda serta kongsi skrin yang
+merangkumi trek audio. **Buka dalam IDE** juga berfungsi, tetapi meminta pelayan
+melancarkan editor pada paparan _pelayan_, jadi butang itu menyembunyikan dirinya
+terhadap hos tanpa kepala yang tiada editor dipasang.
 
-## Troubleshooting
+## Penyelesaian masalah
 
-- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
-- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
-- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
-- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
+- **Sambungan tamat masa**: pelayan mesti boleh dicapai daripada klien. Semak ikatan (`--bind any`), bahawa port terbuka dan bahawa `--public-url` menamakan alamat yang benar-benar boleh didail oleh klien. Di internet terbuka, TLS adalah wajib — ikatan bukan loopback teks biasa ditolak semasa permulaan melainkan pelayan dimulakan `--insecure` di belakang proksi.
+- **Penyemak imbas enggan bersambung tetapi klien natif berfungsi**: asalan penyemak imbas tiada dalam senarai `--allowed-origins` pelayan. Lalai hanya membenarkan `https://app.usectrl.dev` (serta loopback).
+- **Kunci penggandingan ditolak**: jalankan semula `cc_server pair` pada pelayan untuk memutar kunci peranti itu, kemudian masukkan kunci baharu. Peranti yang ditarik balik mendapati kelayakannya sudah hilang dan gagal secara tertutup; penarikan balik menggugurkan sesi langsung dalam beberapa saat.
+- **Ruang kerja salah**: ruang kerja ialah sebahagian daripada URL (`/workspaces/:workspaceId/…`) dan bergerak bersama setiap panggilan, jadi bertukar ruang kerja dalam satu klien hanya mengubah paparan anda sendiri. Anda hanya boleh mencapai ruang kerja yang anda menjadi ahli — selain itu ditolak dengan "Not a member of this workspace". Lihat [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
 
-## Related guides
+## Panduan berkaitan
 
-- [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)
-- [Pair a device](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): the phone relay path
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)
+- [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/): laluan geganti telefon
 
-## Related concepts
+## Konsep berkaitan
 
-- [Deployment and clients](/ms-MY/manual-pengguna/konsep/penerapan/)
-- [Remote control and mobile](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)
+- [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/)
+- [Kawalan jauh dan mudah alih](/ms-MY/manual-pengguna/konsep/kawalan-jauh/)

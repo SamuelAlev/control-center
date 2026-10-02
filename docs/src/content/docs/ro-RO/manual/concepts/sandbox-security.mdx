@@ -1,267 +1,258 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Sandbox și securitate
+description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
+`cc_server` sondează gazda la pornire și învelește execuția comenzilor agentului în
+sandbox-ul nativ al sistemului de operare atunci când unul este disponibil — Seatbelt pe macOS,
+bubblewrap pe Linux și WSL2 (care are nevoie de `bwrap` și `socat` în `PATH`). Acolo unde nu
+există niciun backend — Windows, sau o mașină Linux căreia îi lipsesc acele instrumente — rulările
+se întorc la celelalte granițe de mai jos, iar serverul spune asta în jurnalul său de pornire.
+`--sandbox off` îl oprește în mod deliberat.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Două lacune supraviețuiesc sandbox-ului și merită ținute minte:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- **Instrumentele de fișiere în proces** ale harness-ului încorporat (`read`, `write`, `edit`,
+  `apply_patch`, `search`, `find`, `search_files`) rulează în interiorul procesului serverului,
+  așa că doar `bash` este învelit. Ceea ce le limitează este confinarea căilor din instrumentele
+  însele, plus guardrail-urile de acțiuni.
+- **Claude Code este lansat cu `--dangerously-skip-permissions`**, pentru că un `claude -p`
+  neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt. Apelurile lui de fișiere și de
+  shell nu sunt deci filtrate de guardrail-urile Control Center — sandbox-ul de sistem este
+  granița din jurul lor.
   :::
 
-## Why isolation matters here
+## De ce contează izolarea aici
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Un agent citește fișiere, rulează comenzi shell și apelează API-uri externe în numele tău.
+Eșecul care te îngrijorează este rareori rea-voință — este un agent care citește greșit o cale și
+îți rescrie checkout-ul de lucru, sau unul care împinge o ramură pe care nu terminai de revizuit.
+Așa că întrebarea la care trebuie să răspundă produsul nu este „este agentul demn de încredere”,
+ci „care este raza de impact atunci când greșește”.
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+Control Center răspunde la asta pe straturi, iar straturile sunt independente intenționat. Dacă
+lipsește unul, celelalte rezistă în continuare. Asta contează, pentru că stratul cel mai exterior
+— sandbox-ul de sistem — este singurul condiționat: depinde de faptul că gazda oferă un backend,
+iar pe Windows niciuna nu o face.
 
-## What actually constrains an agent
+## Ce limitează de fapt un agent
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Cinci lucruri mărginesc o rulare de agent pe orice gazdă, cu sau fără sandbox. Niciunul dintre
+ele nu este o graniță de kernel; toate sunt reale. Acolo unde gazda oferă un backend, sandbox-ul
+de sistem stă deasupra lor, iar secțiunea „Ce adaugă sandbox-ul și unde se oprește” de mai jos
+acoperă ce schimbă asta.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**Propriul worktree copy-on-write.** Fiecare conversație își provisionează propriul checkout
+pentru fiecare repo legat, clonat copy-on-write prin nativul `rift` inclus, nu copiat octet cu
+octet, așa că izolarea este suficient de ieftină încât să fie varianta implicită. Repository-ul
+înregistrat pe care l-ai adăugat în spațiul de lucru nu este directorul în care lucrează agentul —
+două conversații care ating același repo nu pot vedea modificările celeilalte, iar niciuna nu-ți
+editează checkout-ul.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+Granularitatea merită precizată: **worktree-ul este per conversație, nu per agent.** Doi agenți
+din aceeași conversație primesc directoare de lucru overlay distincte care _împart_ directorul
+`repos/` al acelei conversații — ceea ce este și ideea, fiindcă ei colaborează la o singură
+modificare — în timp ce directoarele lor private de agent rămân separate. Copy-on-write este
+singurul backend oriunde este livrat `rift`: un sistem de fișiere care nu poate face reflink, sau
+un director de date aflat pe alt volum decât repo-ul, face ca provisionarea să eșueze, în loc să
+revină la altă variantă. Windows este excepția — acolo nu există niciun backend copy-on-write,
+așa că `git worktree` este backendul, nu o degradare silențioasă.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Confinarea căilor în instrumentele de fișiere ale harness-ului încorporat.** Instrumentele
+`read`, `write`, `edit`, `apply_patch`, `search`, `find` și `search_files` ale harness-ului
+rezolvă fiecare cale față de directorul de lucru al rulării plus rădăcinile partajate — directorul
+`repos/` al conversației, unde se află worktree-urile, și directorul de atașamente al spațiului,
+când există — și refuză orice iese în afara lor. Căile absolute sunt acceptate doar dacă erau
+deja înăuntru. Un symlink aflat în interiorul worktree-ului care indică spre exterior este
+rezolvat și refuzat la fel. De aceea un agent nu poate scrie cu `write` în `~/.ssh` nici atunci
+când sandbox-ul nu intră deloc în discuție.
 
-**The mode's tool surface.** A conversation's [mode](/ro-RO/manual/concepte/moduri/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**Suprafața de instrumente a modului.** [Modul](/ro-RO/manual/concepte/moduri/) unei conversații
+decide ce instrumente sunt materializate pentru rulare. În modurile doar pentru citire (`plan`,
+`review`, `orchestrate`) instrumentele care modifică starea pur și simplu nu se află în registru,
+iar politica de comenzi shell a acestor moduri refuză categoric fiecare comandă care modifică
+starea — `git commit`, `git push`, `npm install`, `docker` și restul — în loc să ceară aprobarea
+pentru ele. Un instrument care nu este prezent nu poate fi apelat, ceea ce este o garanție mai
+puternică decât un instrument prezent și filtrat.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/ro-RO/manual/concepte/guardrail-uri/) for the resolution model.
+**Guardrail-urile unificate de acțiuni.** Fiecare instrument care modifică starea declară clasele
+de efect pe care le poate produce, iar motorul de politici rezolvă fiecare dintre ele la permite,
+cere aprobare sau refuză înainte ca apelul să ruleze. Un `prompt` fără niciun aprobator conectat
+se rezolvă la _refuzat_ — o întrebare la care nimeni nu poate răspunde nu este niciodată un da.
+Vezi [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) pentru modelul de rezolvare.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Date de autentificare limitate de capabilități și un mediu sanitizat.** Datele de autentificare
+sunt emise la fiecare lansare din flag-urile de capabilitate ale conversației și sunt revocate
+când rularea se desființează. ACP, `bash`-ul harness-ului și Claude Code sub învelișul nativ
+primesc un mediu curățat de vectorii de injecție prin linker dinamic și interpretor (`LD_PRELOAD`,
+`DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` și rudele lor) înainte ca procesul să
+pornească. Claude Code prin `NoSandboxAdapter` moștenește mediul gazdei.
 
-### Where those bounds thin out
+### Unde aceste limite se subțiază
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+Instrumentele de fișiere ale harness-ului rulează _în procesul serverului_, nu într-un proces
+copil, așa că niciun profil de sandbox nu le-ar putea limita chiar dacă ar fi atașat unul — doar
+`bash` trece prin executorul de comenzi sandboxat. Confinarea lor este verificarea de căi descrisă
+mai sus, iar acea verificare este prin urmare esențială, nu o a doua linie de apărare.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+Instrumentul `bash` este celălalt loc unde trebuie să fim precisi. Comenzile lui sunt evaluate
+față de politica de comenzi a modului și apoi lansate cu un mediu sanitizat și cu worktree-ul ca
+director de lucru. Acolo unde există un backend, acea lansare este învelită, așa că sandbox-ul
+este ceea ce oprește o comandă shell să scrie în afara worktree-ului; acolo unde nu există
+niciunul — Windows, sau Linux fără `bwrap` și `socat` — politica de comenzi este singurul lucru
+dintre comandă și restul discului. În modul `chat`, politica refuză categoric o listă fixă
+(escaladarea privilegiilor, distrugerea sistemului și a discului, evadarea din container și din
+namespace) și cere aprobare pentru mutațiile stării de la distanță (`git push`, `gh pr create`,
+publicări și instalări de pachete). Orice nu se află pe niciuna dintre liste rulează.
+Pipeline-urile, lanțurile și subshell-urile sunt analizate, iar fiecare subcomandă este evaluată
+separat, câștigând decizia cea mai restrictivă.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/ro-RO/manual/concepte/guardrail-uri/#the-adapter-honesty-matrix).
+Claude Code, când este folosit ca adaptor, este cazul în care sandbox-ul are cea mai mare
+greutate. Control Center îl lansează cu `--dangerously-skip-permissions`, pentru că un `claude -p`
+neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt de aprobare. Apelurile sale de
+citire, scriere, editare și shell au loc în interiorul propriului proces, iar Control Center nu le
+vede niciodată; singurele apeluri pe care le face și care ajung la o poartă sunt instrumentele
+`mcp__*` pe care Control Center însuși le deservește. Acolo unde există un backend, acele apeluri
+nevăzute au loc totuși în interiorul învelișului de sandbox, așa că sistemul de operare este
+granița din jurul lor. Acolo unde nu există niciunul, nimic nu este. Fiecare adaptor declară
+asta în matricea sa de aplicare — vezi [matricea de onestitate a
+adaptoarelor](/ro-RO/manual/concepte/guardrail-uri/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## Controlul pe capabilități este aplicare prin absență
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+O conversație poartă patru flag-uri de capabilitate: push în repo, apelarea API-ului GitHub,
+apelarea furnizorului de tichete și accesul la rețea. Ele nu sunt verificate atunci când
+acționează agentul. Sunt verificate o singură dată, la lansare, de brokerul de date de
+autentificare — iar o capabilitate oprită înseamnă pur și simplu că tokenul corespunzător nu este
+niciodată pus în mediu.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Acesta este întregul mecanism și merită spus fără ocolișuri, pentru că modul de eșec nu este cel
+la care se așteaptă lumea. Oprirea „GitHub API” nu produce un mesaj de „capabilitate refuzată”.
+Produce un `401` obișnuit în interiorul agentului, pentru că nu există niciun `GH_TOKEN` de
+trimis. Agentul poate foarte bine să povestească asta ca pe o problemă de date de autentificare.
+Aplicarea prin absență este robustă — nu există nicio verificare de ocolit — dar este mută, iar
+agentul nu știe de ce a eșuat.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+Flag-ul de rețea se comportă la fel. Cu el oprit, instrumentele `web_fetch` și `web_search` ale
+harness-ului refuză fiecare apel, iar lista de permisiuni a proxy-ului unei lansări sandboxate
+este goală, așa că fiecare conexiune de ieșire este refuzată.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+Datele de autentificare sunt revocate când rularea se desființează, așa că un handle nu
+supraviețuiește rulării care l-a emis.
 
-## What the sandbox adds and where it stops
+## Ce adaugă sandbox-ul și unde se oprește
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+Enumerația `SandboxBackend` are trei valori — `native` (Seatbelt pe macOS, bubblewrap pe Linux și
+WSL2), `none` și `microvm`. Învelirea comenzilor agentului folosește doar primele două: `microvm`
+este backendul de VM izolat pentru terminalele interactive și stații, nu o upgradare silențioasă
+a unui înveliș `bash`. Înțelegerea formei native explică ce câștigi acolo unde este atașat unul și
+ce nu ți-ar fi dat niciodată.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+`cc_server` sondează gazda o dată la pornire, iar acolo unde un backend răspunde hrănește ambele
+cusături pe care le are calea de trimitere, pentru că transporturile nu împart una singură. Prima
+(`SandboxPort`) învelește CLI-ul Claude Code. A doua (`SandboxManager`) învelește adaptoarele ACP
+și instrumentul `bash` al harness-ului încorporat. Dacă ai hrăni doar una, celelalte ar fi lansate
+neînvelite, ceea ce se și întâmpla înainte. Pe o gazdă fără backend, sau sub `--sandbox off`,
+toate sunt lansate neînvelite, iar serverul spune în ce caz te afli pe linia sa de pornire. ACP și
+`bash`-ul harness-ului sanitizează în continuare mediul; Claude Code prin `NoSandboxAdapter`
+moștenește mediul gazdei.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+O suprafață se sustrage în mod deliberat: terminalul găzduit de server acceptă un argument de
+backend per sesiune, iar `cc_server` îl construiește implicit cu shell-ul gazdei, așa că un
+terminal pe care îl deschizi din aplicație rulează fără sandbox dacă un client nu numește explicit
+`native`. Acela este un shell real pe gazda serverului, nu o rulare de agent.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Pe Linux, `bubblewrap` construiește un namespace de montare, așa că agentul vede într-adevăr doar
+ce a fost legat în el. Pe macOS, `sandbox-exec` aplică un profil Seatbelt care este **permisiv
+implicit** — un profil complet cu refuz implicit face un shell interactiv inutilizabil, pentru că
+numărul de apeluri dyld, XPC și Mach de enumerat este nepractic. Profilul macOS pornește deci de
+la `(allow default)` și decupează interdicții: citiri ale căilor secrete, o politică de scriere
+resetată la refuz cu permisiuni explicite deasupra, blocarea ștergerii (unlink) pe fiecare cale
+interzisă și pe strămoșii ei, astfel încât o redenumire să nu poată ocoli o interdicție de
+scriere, interdicții de execuție pentru binarele mereu periculoase și pentru orice este copiat
+într-un director inscriptibil, și rețeaua restricționată la porturile proxy de loopback plus DNS.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+Consecința practică: pe Linux, vederea agentului asupra sistemului de fișiere este îngustată; pe
+macOS, agentul poate în continuare _citi_ cea mai mare parte a gazdei, iar checkout-urile tale
+înregistrate sunt protejate prin interdicții explicite de scriere și de redenumire, nu prin
+invizibilitate. Ambele sunt izolare la nivel de namespace, nu o graniță de securitate a
+kernelului — backend-urile spun asta în propriile note de capabilități.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+Setul de montări bind este locul unde este trasată granița dintre agenți. Trimiterea pe overlay
+(Claude Code și ACP) montează până la patru căi, rezolvate per rulare: directorul de lucru overlay
+al agentului, cu citire-scriere, directorul de configurare al agentului, cu citire doar,
+directorul partajat `repos/` al conversației, cu citire-scriere când există, și directorul de
+atașamente al spațiului, cu citire doar când există. Directorul unui agent frate nu este niciodată
+montat. Învelișul `bash` al harness-ului este mai îngust: montează prin bind doar directorul de
+lucru al rulării. Aceasta este aceeași formă pe care o impune în software verificarea de căi în
+proces a harness-ului, așa că cele două sunt de acord — dar doar verificarea de căi acoperă
+instrumentele de fișiere proprii ale harness-ului, care nu ajung niciodată la un namespace de
+montare.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+Checkout-urile tale înregistrate se alătură setului cu scriere interzisă peste asta, în fiecare
+mod și pe toate cele trei căi învelite (Claude Code, ACP, `bash`-ul harness-ului), iar fiecare
+regulă este emisă atât în grafia ei literală, cât și în cea rezolvată prin symlink. A doua grafie
+nu este un moft:
+kernelul potrivește o regulă de interdicție
+cu calea rezolvată, iar macOS face din rezolvare cazul obișnuit, nu cel exotic — `/tmp` este de
+fapt `/private/tmp`, `/var/folders/…` este de fapt `/private/var/folders/…` — așa că un checkout
+accesat prin oricare dintre ele ar fi fost inscriptibil în timp ce profilul părea să îl interzică.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+Rețeaua, sub un sandbox, este o listă de permisiuni **pe domenii**, per sesiune, impusă de
+proxy-uri de loopback în proces. Ieșirea în rețea este refuzată implicit: cu capabilitatea de
+rețea oprită, proxy-urile pornesc totuși, dar lista lor de permisiuni este goală, așa că fiecare
+conexiune de ieșire este refuzată. Cu ea pornită, rezolvatorul construiește lista de permisiuni
+dintr-o bază de referință atent selectată — furnizori de API pentru LLM-uri, găzduire git, registre
+de pachete, catalogul de modele — plus domeniile GitHub pe care i le câștigă agentului capabilitatea
+de GitHub sau de push, și potrivește gazda țintă a fiecărei conexiuni cu ea. Wildcard-urile
+funcționează (`*.example.com` potrivește subdomeniile, nu apexul). O listă separată, mereu
+interzisă, are prioritate în fața listei de permisiuni și acoperă punctele finale de metadate din
+cloud și destinațiile de telemetrie. Ceea ce _nu_ este configurabil este lista în sine:
+specificația poartă un câmp `egressAllowlist` pentru domenii suplimentare și un cârlig de domeniu
+pentru tichete, dar nimic din calea de trimitere nu populează vreunul dintre ele, așa că în
+practică fiecare rulare primește baza de referință plus domeniile derivate din capabilități, și
+nimic mai mult.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+Interdicțiile, pe macOS, sunt observabile: un monitor interceptează jurnalul de sistem pentru
+interdicțiile Sandbox, filtrează zgomotul cunoscut, elimină duplicatele furtunilor de reîncercări
+și expune fiecare interdicție ca un `SandboxViolation` care numește ce s-a încercat și ce
+capabilitate l-ar debloca. Pe Linux, calea de învelire analizează stderr după `EPERM`,
+`Operation not permitted` și `Permission denied` și emite același tip de eveniment — nu există
+nicio interceptare a jurnalului de sistem. Acestea ajung pe fluxul propriu de evenimente al
+rulării, așa că un apel de sistem refuzat apare în transcriere, nu doar într-un jurnal. Telemetria
+există doar cât timp un sandbox nativ învelește efectiv procesul — pe o gazdă fără backend nu
+există nimic de observat. De asemenea, nu are legătură cu controlul pe capabilități: o încălcare
+provine dintr-un apel de sistem refuzat, niciodată dintr-o căutare de capabilitate.
 
-## Confirmations come from the guardrails, not the sandbox
+## Confirmările vin de la guardrail-uri, nu de la sandbox
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+Sandbox-ul nu are nicio cale de aprobare. El lansează, execută, emite evenimente și se
+desființează; nu există în el niciun loc în care un om să răspundă la o întrebare. Când vezi o
+confirmare într-un spațiu — aprobă acest push, aprobă această ștergere — ea a fost ridicată de
+motorul de guardrail-uri (sau de politica de comenzi a harness-ului) _înainte_ ca acțiunea să
+ajungă deloc la runtime.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Această ordine este deliberată. O aprobare care s-ar produce după apelul de sistem ar fi o
+înregistrare de audit, nu o poartă. De aceea regula cu eșec închis stă în guardrail-uri: fără
+niciun aprobator conectat, decizia este luată înainte ca orice să ruleze și este un refuz.
 
-## Diagnostics
+## Diagnosticare
 
-[Run agent diagnostics](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) is the single place
-that states what can be checked by hand.
+[Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) este singurul loc
+care declară ce poate fi verificat manual.
 
-## Related concepts
+## Concepte conexe
 
-- [Rigs and enclosures](/ro-RO/manual/concepte/statii/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): where isolation fits in the dispatch flow
-- [Modes](/ro-RO/manual/concepte/moduri/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/ro-RO/manual/referinta/backend-uri-sandbox/): the backends and their configuration
+- [Stații și medii izolate](/ro-RO/manual/concepte/statii/): pasul de deasupra sandbox-ului — când munca are nevoie de o mașină întreagă de unică folosință cu o graniță de kernel, nu de un proces învelit
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): stratul de politici de deasupra pragului oferit de sistemul de operare și de unde vin de fapt aprobările
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): unde se încadrează izolarea în fluxul de trimitere
+- [Moduri](/ro-RO/manual/concepte/moduri/): cum îngustează un mod suprafața de instrumente și politica de comenzi
+- [Referință pentru backend-urile de sandbox](/ro-RO/manual/referinta/backend-uri-sandbox/): backend-urile și configurarea lor
 
-## Related guides
+## Ghiduri conexe
 
-- [Configure sandbox policies](/ro-RO/manual/ghiduri-practice/politici-sandbox/): capability flags and filesystem posture
-- [Run agent diagnostics](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/): what the diagnostic checks cover
+- [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/): flag-urile de capabilitate și postura față de sistemul de fișiere
+- [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/): ce acoperă verificările de diagnosticare

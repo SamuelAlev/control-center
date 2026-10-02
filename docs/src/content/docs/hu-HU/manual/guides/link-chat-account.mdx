@@ -1,95 +1,89 @@
 ---
-title: Link your Slack account
-description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+title: Slack-fiók összekapcsolása
+description: Igazolja, hogy egy Slack-identitás az Öné, hogy az ügynökök az Ön üzeneteire cselekedjenek, és a munkája Önhöz legyen rendelve.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa
+sourceHash: 7017efd948c19e99688629b49f9650384c056d07
 ---
 
-This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+Ez az útmutató bemutatja, hogyan kapcsolhatja össze a csevegőidentitását a Control Center-felhasználójával, és hogyan választhatja le.
 
-Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+Ezt minden tag egyszer teszi meg csevegőszolgáltatónként. Ez elkülönül az alkalmazás csatlakoztatásától: a kapcsolat teszi a botot elérhetővé az egész munkaterület számára, az összekapcsolás pedig _Önt_ teszi felismerhetővé azon belül.
 
-## Why linking is required
+## Miért szükséges az összekapcsolás
 
-The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+A híd megtagadja a cselekvést egy olyan csevegőfiók helyett, amelyet nem tud feloldani egy munkaterület tagjára. Ez szándékos — összekapcsolás nélkül minden Slackből érkező üzenetet ahhoz kellene rendelni, aki telepítette az alkalmazást, és az auditnapló, a Principalonkénti sebességkorlátok és a jegyek bejelentői is mind a rossz személyt neveznék meg.
 
-An unlinked member who mentions the bot gets a reply in that Slack thread explaining how to link. Nothing is dispatched.
+Egy össze nem kapcsolt tag, aki megemlíti a botot, abban a Slack szálban kap választ, amely elmagyarázza az összekapcsolást. Semmi nem kerül kiosztásra.
 
-## Link with a code
+## Összekapcsolás kóddal
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
-   accounts** card
-2. On the Slack block, click **Link my Slack account**
-3. Copy the command it shows, for example:
+1. Lépjen a **Beállítások → Munkaterület → Profil és identitás** helyre, és görgessen az **Összekapcsolt csevegőfiókok** kártyához
+2. A Slack blokkon kattintson **A Slack fiókom összekapcsolása** elemre
+3. Másolja ki a megjelenített parancsot, például:
 
 ```text
 /cc link K7M2QP
 ```
 
-4. In Slack, send that command to the bot — a DM is the easiest place
-5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+4. A Slackben küldje el ezt a parancsot a botnak — a közvetlen üzenet (DM) a legegyszerűbb hely
+5. A bot megerősíti, melyik Control Center-felhasználóhoz kapcsolódott most, és a nyitva hagyott párbeszédablak ugyanabban a pillanatban frissül, hogy ezt jelezze — nem kell bezárnia és utána néznie
 
-The code:
+A kód:
 
-- Is single-use and expires **15 minutes** after it is minted
-- Is always minted for _you_, never for a teammate
-- Replaces any code you already hold, so pressing the button again invalidates the previous one
-- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+- Egyszer használatos, és a kiállításától számított **15 perc** után lejár
+- Mindig _Önnek_ állítják ki, soha nem egy csapattársnak
+- Lép a már birtokolt kód helyébe, így a gomb ismételt megnyomása érvényteleníti az előzőt
+- Kizárólag a memóriában él, így a szerver újraindítása érvényteleníti a függőben lévő kódokat — nyomja meg ismét a gombot
 
-A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+Egy ismeretlen, lejárt vagy másik munkaterülethez kiállított kód ugyanúgy, megkülönböztethetetlenül hibázik: „ez a kód nem érvényes (vagy lejárt)”.
 
-## Automatic linking by email
+## Automatikus összekapcsolás e-mail alapján
 
-If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+Ha a Slack-profiljában van egy ellenőrzött e-mail-cím, amely egy olyan Control Center-felhasználóhoz tartozik, aki **már tagja ennek a munkaterületnek**, a híd az első beszélgetés alkalmával összekapcsolja Önt. Kódra nincs szükség.
 
-Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+Mindkét feltétel számít: az e-mail-egyezés igazolja az identitást, de hozzáférést csak a tagság ad, így egy idegen, akinek a címe véletlenül létezik a szerveren, semmihez sem kapcsolódik. A névsor mutatja, hogyan jött létre az egyes kapcsolatok („e-mail alapján párosítva” vagy „kóddal összekapcsolva”).
 
-Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+Az automatikus összekapcsoláshoz a `users:read.email` hatókör szükséges. Enélkül a Slack nem adja ki a címet, és csak a kódos folyamat marad.
 
-## See who is linked
+## Ki van összekapcsolva
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
-lists every linked member in the workspace, with the Slack account each maps to
-and how the link was made.
+A névsor a munkaterület adminisztrációjához tartozik, ezért a felület másik felén él: **Beállítások → Munkaterület → Általános → Csevegőhidak → Összekapcsolt fiókok**. Kilistázza a munkaterület minden összekapcsolt tagját, azt a Slack-fiókot, amelyhez tartoznak, és a kapcsolat létrejöttének módját.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
-"Linked to _your-slack-id_" once you are linked and tells you to link when you
-are not.
+A saját állapota a profiloldalán látható: az **A Slack fiókom összekapcsolása** sor az összekapcsolás után ezt írja: „Összekapcsolva: _your-slack-id_”, összekapcsolás hiányában pedig arra kéri, hogy kapcsolja össze.
 
-The roster is a live subscription, because the change happens on the other side —
-you type the code in Slack, so no request from the app can carry the answer back.
+A névsor élő előfizetés, mert a változás a másik oldalon történik — Ön írja be a kódot a Slackbe, így egyetlen alkalmazásból érkező kérés sem hozhatja vissza a választ.
 
-## Unlink
+## Leválasztás
 
-Click **Unlink** on a row in the workspace roster.
+Kattintson a **Leválasztás** elemre a munkaterület névsorának egy sorában.
 
-- Anyone can unlink themselves
-- Only an admin can unlink another member
-- Unlinking also revokes any outstanding link code for that member
+- Bárki leválaszthatja saját magát
+- Más tagot csak admin választhat le
+- A leválasztás az adott tag minden függőben lévő összekapcsolási kódját is visszavonja
 
-After unlinking, that Slack account can no longer drive agents until it links again. Existing spaces, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+Leválasztás után az a Slack-fiók nem tud többé ügynököket vezérelni, amíg újra össze nem kapcsolják. A meglévő terek, átiratok és jegyek megőrzik eredeti hozzárendelésüket — a leválasztás nem vonja vissza a korábbi munkát.
 
-## Troubleshooting
+## Hibaelhárítás
 
-### The bot says I am not a member of this workspace
+### A bot azt mondja, hogy nem vagyok tagja ennek a munkaterületnek
 
-Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/).
+A Slack-fiókja egy Control Center-felhasználóhoz van kapcsolva, de annak a felhasználónak nincs tagsága ebben a munkaterületben. Kérje meg egy admint, hogy hívja meg Önt; lásd: [Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/).
 
-### The bot says my role is read-only
+### A bot azt mondja, hogy a szerepköröm csak olvasható
 
-`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+A `viewer` és `guest` szerepkör nem indíthat munkát. Egy adminnak legalább `member` szintre kell emelnie a szerepkörét.
 
-### The slash command is not recognized
+### A slash-parancs nem ismerhető fel
 
-Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+Ellenőrizze, hogy létezik-e a slash-parancs a Slackben, és hogy azt a parancsot küldi-e el, amelyet a beállítások párbeszédablak mutatott — lehetséges, hogy egy admin átnevezte, ilyenkor a párbeszédablak az aktuális nevet mutatja.
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Set up Slack integration](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
-- [Customize the chat bot](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
-- [Chat bridge](/hu-HU/kezikonyv/referencia/csevegohid/)
+- [Slack-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio/)
+- [Csevegőbot testreszabása](/hu-HU/kezikonyv/gyakorlati-utmutatok/csevegobot-testreszabasa/)
+- [Csevegőhíd](/hu-HU/kezikonyv/referencia/csevegohid/)
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
-- [Multiplayer — identity, membership and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/)
+- [Csevegőhidak](/hu-HU/kezikonyv/fogalmak/csevegohidak/)
+- [Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/)

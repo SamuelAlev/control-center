@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Cycle de vie des tickets
+description: Champs, statuts, transitions, relations et point de passage des mutations d’un ticket.
 slug: fr-FR/manuel/reference/cycle-de-vie-des-tickets
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Statuts des tickets
 
-| Status       | Storage string | Description                                     |
+| Statut       | Chaîne stockée | Description                                     |
 | ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| `backlog`    | `backlog`      | Enregistré, pas encore trié dans la file active |
+| `open`       | `open`         | Trié et prêt à être traité, pas encore commencé |
+| `inProgress` | `inProgress`   | En cours de traitement                          |
+| `blocked`    | `blocked`      | Commencé mais bloqué par un élément externe     |
+| `inReview`   | `inReview`     | Travail terminé, en attente de revue            |
+| `done`       | `done`         | Terminé avec succès (terminal)                  |
+| `failed`     | `failed`       | Terminé sur une erreur (terminal)               |
+| `cancelled`  | `cancelled`    | Abandonné (terminal)                            |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Les valeurs de statut sont stockées en camelCase (`inProgress`, `inReview`), jamais `in_progress`. Une valeur stockée nulle est interprétée comme `open` ; une valeur inconnue lève une exception au lieu d’être convertie.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+`tryParseLoose` accepte les alias fournis par les agents, en ignorant la casse ainsi que les caractères `-` / `_` / espace :
 
-| Status       | Accepted aliases                              |
+| Statut       | Alias acceptés                                |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Transitions de statut
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,11 +43,11 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Ce graphe ne lie que les agents et l’automatisation.** `TicketWorkflowService.transitionStatus` le vérifie lorsque `force` vaut false — les outils MCP et les réconciliateurs. Une transition illégale y est journalisée et ignorée. Chaque changement de statut déclenché par un utilisateur dans l’interface passe `force: true` et contourne entièrement le graphe, si bien qu’un humain peut déplacer un ticket vers n’importe quel statut proposé par le sélecteur (tous les statuts sauf `failed`), y compris rouvrir un statut terminal. Les agents marquent `failed` avec `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Un statut peut toujours effectuer une transition vers lui-même. Les états terminaux n’ont aucune arête sortante.
 
-| From         | Allowed targets                                      |
+| De           | Cibles autorisées                                    |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
@@ -57,144 +58,144 @@ A status may always transition to itself. Terminal states have no outgoing edges
 | `failed`     | — (terminal)                                         |
 | `cancelled`  | — (terminal)                                         |
 
-## Ticket priorities
+## Priorités des tickets
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Stockées sous forme d’entier sur l’échelle native 0–4 de Linear. Une valeur inconnue est interprétée comme `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Priorité | Valeur stockée |
+| -------- | -------------- |
+| `none`   | `0`            |
+| `urgent` | `1`            |
+| `high`   | `2`            |
+| `medium` | `3`            |
+| `low`    | `4`            |
 
-## Ticket providers
+## Fournisseurs de tickets
 
-An unknown or null stored value parses to `local`.
+Une valeur stockée inconnue ou nulle est interprétée comme `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Fournisseur | Statut                                                     |
+| ----------- | ---------------------------------------------------------- |
+| `local`     | Stocké entièrement dans la base de données de l’espace de travail ; la valeur par défaut |
+| `linear`    | Détenu à distance, mis en miroir localement                |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Les adaptateurs de synchronisation vivent sous `packages/cc_infra/lib/src/tickets/sync/` pour Linear,
+GitHub Issues, Jira Cloud et ClickUp. GitHub Issues n’est qu’une source d’adaptateur de
+synchronisation (`vendorId: github`) — ce n’est pas une valeur de `TicketProvider`, donc
+une issue GitHub récupérée est stockée avec `originKind: externalSync` et `provider: local`
+par défaut. La correspondance des sources vit sur `ticket_sync_links`.
 
-## Ticket origin
+## Origine des tickets
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+`createTicket` écrit `manual`. Une récupération depuis une source écrit `externalSync`. Les
+enfants délégués restent `manual`.
 
-| Value          | Meaning                                                      |
+| Valeur         | Signification                                                |
 | -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| `manual`       | Valeur par défaut de `createTicket` (lignes humaines, agent et déléguées) |
+| `externalSync` | Défini par `TicketSyncEngine` lors d’une récupération depuis une source |
 
-## Ticket fields
+## Champs des tickets
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+L’agrégat couvre deux préoccupations sur une même ligne. Le **miroir** (fournisseur, clés, titre, description, priorité, étiquettes, statuts, horodatages) est un cache pour un fournisseur distant et est réécrit intégralement par une actualisation. La **surcouche** (attribution, délégation, espace, parent, projet, PR liées) est propre à Control Center et une actualisation n’y touche jamais.
 
-| Field                    | Type                       | Description                                                                                |
+| Champ                    | Type                       | Description                                                                                |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Espace de travail propriétaire                                                             |
+| `provider`               | `TicketProvider`           | Backend propriétaire des données canoniques (`local` par défaut)                            |
+| `externalKey`            | `String?`                  | Clé native du fournisseur (par ex. `LIN-123`). Le `createTicket` local écrit ici un UUID *distinct*, et non l’`id` de la ligne |
+| `url`                    | `String?`                  | URL web chez le fournisseur distant                                                        |
+| `title`                  | `String`                   | Résumé court ; ne doit pas être vide                                                       |
+| `description`            | `String?`                  | Corps Markdown plus long                                                                   |
+| `priority`               | `TicketPriority`           | `none` par défaut                                                                          |
+| `labels`                 | `List<String>`             | Étiquettes libres                                                                          |
+| `status`                 | `TicketStatus`             | Statut normalisé canonique                                                                 |
+| `rawStatus`              | `String?`                  | Le nom d’état natif du fournisseur distant, conservé pour un affichage sans perte           |
+| `externalSyncedAt`       | `DateTime?`                | Dernière synchronisation multi-source ; nulle jusqu’à la première. La correspondance par source vit dans `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Parent dans l’arborescence de délégation / décomposition                                    |
+| `projectId`              | `String?`                  | Projet propriétaire ; jamais poussé vers un distant                                         |
+| `assignedAgentId`        | `String?`                  | Identifiant du principal assigné (métadonnées uniquement — assigner ne lance rien)          |
+| `assigneeType`           | `PrincipalType`            | Type de principal que désigne `assignedAgentId` — `user` ou `agent` (`agent` par défaut)     |
+| `createdByType`          | `PrincipalType?`           | Type de principal ayant créé le ticket (`user` ou `agent`) ; nul pour les lignes héritées ou système |
+| `createdById`            | `String?`                  | Identifiant du principal créateur                                                          |
+| `assignedTeamId`         | `String?`                  | Équipe assignée (métadonnées uniquement)                                                    |
+| `delegatedByAgentId`     | `String?`                  | Agent qui a délégué ce ticket                                                              |
+| `delegationDepth`        | `int`                      | Profondeur dans la chaîne de délégation ; la racine vaut `0`, comparée au plafond de profondeur maximale |
+| `delegationRootTicketId` | `String?`                  | Racine de la chaîne de délégation ; nul pour un ticket racine                              |
+| `spaceId`                | `String?`                  | Conversation dont le ticket a été extrait, ou espace de l’agent délégant                    |
+| `errorMessage`           | `String?`                  | Défini lorsque `status` vaut `failed`                                                       |
+| `linkedPrIds`            | `List<String>`             | Identifiants des nœuds de PR auxquels ce ticket est lié                                     |
+| `metadata`               | `Map<String, dynamic>`     | Ensemble libre                                                                             |
+| `createdAt`              | `DateTime`                 | Heure de création                                                                          |
+| `startedAt`              | `DateTime?`                | Heure de début du travail                                                                  |
+| `blockedAt`              | `DateTime?`                | Heure à laquelle le ticket a été bloqué                                                     |
+| `cancelledAt`            | `DateTime?`                | Heure à laquelle le ticket a été annulé                                                     |
+| `completedAt`            | `DateTime?`                | Heure à laquelle le ticket s’est achevé avec succès                                         |
+| `finishedAt`             | `DateTime?`                | Heure à laquelle le ticket a atteint un état terminal                                       |
+| `updatedAt`              | `DateTime`                 | Dernière mutation (actualisation du miroir ou modification de la surcouche)                  |
+| `version`                | `int`                      | Compteur de concurrence optimiste, incrémenté à chaque mutation                              |
+| `originKind`             | `TicketOriginKind`         | Mode de création du ticket (`manual` par défaut)                                             |
+| `collaborators`          | `List<TicketCollaborator>` | Hydraté par le dépôt à la demande                                                           |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Dérivés : `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` et `displayKey` (`externalKey ?? id` — les tickets locaux affichent donc l’UUID distinct créé au moment de la création, et non l’`id` de la ligne).
 
-## Ticket relations
+## Relations entre tickets
 
-Stored edges are directional rows in `ticket_links`:
+Les arêtes stockées sont des lignes orientées dans `ticket_links` :
 
-| Type          | Storage string | Meaning                         |
+| Type          | Chaîne stockée | Signification                   |
 | ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| `blocks`      | `blocks`       | La source bloque la cible       |
+| `relatesTo`   | `relates_to`   | Relation symétrique             |
+| `duplicateOf` | `duplicate_of` | La source est un doublon de la cible |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Le vocabulaire que parlent l’interface et `ticket_relation` est `TicketRelationKind`, dérivé d’une arête stockée et de l’extrémité sur laquelle se trouve le sujet :
 
-| Kind           | Derived from                                         |
+| Type           | Dérivé de                                            |
 | -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| `blockedBy`    | Une ligne `blocks` où le sujet est la cible          |
+| `blocking`     | Une ligne `blocks` où le sujet est la source         |
+| `relatedTo`    | Une ligne `relates_to` (symétrique)                  |
+| `duplicateOf`  | Une ligne `duplicate_of` où le sujet est la source   |
+| `duplicatedBy` | Une ligne `duplicate_of` où le sujet est la cible    |
+| `subIssueOf`   | `tickets.parent_ticket_id` sur le sujet              |
+| `parentOf`     | `tickets.parent_ticket_id` sur l’autre ticket        |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Les liens parent et sous-ticket ne sont **pas** des lignes `ticket_links` — ils vivent sur `tickets.parent_ticket_id`.
 
-## Domain events
+## Événements de domaine
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Ces huit classes vivent dans `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Il n’existe pas de `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` ni `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| Événement                 | Déclenché quand                                      |
+| ------------------------- | ---------------------------------------------------- |
+| `TicketCreated`           | Le ticket est créé                                   |
+| `TicketAssigned`          | Le ticket est assigné à un principal ou à une équipe |
+| `TicketCompleted`         | Le travail se termine avec succès                    |
+| `TicketFailed`            | Le travail échoue                                    |
+| `TicketCancelled`         | Le ticket est annulé                                 |
+| `TicketStatusChanged`     | Tout changement de statut                            |
+| `TicketReassigned`        | Le ticket est réassigné                              |
+| `TicketDetailsUpdated`    | Le titre, la description, la priorité ou les étiquettes changent |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+`TicketAssigned` est un signal d’audit et de notification, ainsi qu’un déclencheur de pipeline. L’attribution à un agent ne démarre aucune exécution — aucun répartiteur de tickets ne surveille `assignedAgentId`. L’attribution à une équipe est l’exception : `TeamRoutingService` lance le chef d’équipe. Ajouter un collaborateur écrit une ligne et ne publie rien. Un webhook de source est appliqué via `TicketSyncEngine` sans événement de domaine.
 
-## Mutation chokepoint
+## Point de passage des mutations
 
-`TicketWorkflowService` owns every mutation.
+`TicketWorkflowService` détient chaque mutation.
 
-| Mechanism              | Detail                                                                                                                                            |
+| Mécanisme              | Détail                                                                                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Point de passage unique | Toutes les mutations passent par `_mutate`, qui charge la ligne et appelle `_assertWorkspace` avant d’appliquer                                    |
+| Isolation des espaces de travail | `_assertWorkspace` lève `WorkspaceMismatchException` lorsque le `workspaceId` de la ligne chargée ne correspond pas à celui de l’appelant |
+| Concurrence optimiste  | `_mutate` écrit avec `expectedVersion` défini sur la `version` qu’il vient de lire et réessaie sur `ConcurrencyConflictException` en relisant l’état frais |
+| Réservation exclusive  | `tryCheckout` / `releaseCheckout` ; un second agent qui réserve un ticket déjà réservé reçoit une `CheckoutConflictException`                      |
+| Garde de transition    | `canTransitionTo`, appliqué uniquement lorsque `force` vaut false                                                                                 |
 
-## See also
+## Voir aussi
 
 - [Tickets](/fr-FR/manuel/concepts/tickets/)
-- [Manage tickets](/fr-FR/manuel/guides/gerer-tickets/)
-- [Delegate tickets](/fr-FR/manuel/guides/deleguer-tickets/)
-- [Domain events](/fr-FR/manuel/reference/evenements-de-domaine/)
+- [Gérer les tickets](/fr-FR/manuel/guides/gerer-tickets/)
+- [Déléguer des tickets](/fr-FR/manuel/guides/deleguer-tickets/)
+- [Événements de domaine](/fr-FR/manuel/reference/evenements-de-domaine/)

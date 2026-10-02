@@ -1,149 +1,155 @@
 ---
-title: Configure notifications
-description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+title: Konfigurer varsler
+description: Slå kategorier av eller på, angi Quiet hours og en lyd, og få oversikt over hvilke varsler som når deg hvor.
 slug: nb-NO/handbok/slik-gjor-du/varsler
+sourceHash: 84a0e9fef4b31681d9b5e6f6533da272978262fe
 ---
 
-This guide shows you how to configure notifications and what each setting really
-controls.
+Denne veiledningen viser hvordan du konfigurerer varsler og hva hver innstilling
+egentlig styrer.
 
-Notifications arrive on two surfaces. The **notification centre** — the bell in
-the title bar — reads a durable per-workspace feed on the server. **OS toasts**
-are a separate, desktop-only path fed by live frames pushed from the server.
+Varsler kommer inn på to flater. **Varslingssentralen** — bjella i tittellinjen —
+leser en varig strøm per arbeidsområde på serveren. **OS-toasts** er en egen vei
+som bare finnes på skrivebordet, og som fylles av levende frames som serveren
+dytter ut.
 
-:::note[The web build shows no OS notifications]
-The toast pipeline is constructed only by the desktop bootstrap. On
-`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
-banners — the bell and its history still work, because they read the server feed.
-The phone client has no notification surface at all.
+:::note[Nettbygget viser ingen OS-varsler]
+Toast-pipelinen bygges bare av skrivebords-oppstarten. På `app.usectrl.dev` finnes
+det ingen OS-toasts, ingen varslingslyder og ingen ambient-bannere — bjella og
+historikken dens fungerer fortsatt, fordi de leser strømmen på serveren.
+Telefonklienten har ingen varselflate i det hele tatt.
 :::
 
-## Turn categories on or off
+## Slå kategorier av eller på
 
-1. Go to **Settings → You → Notifications**
-2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly sixteen:
+1. Gå til **Innstillinger → Deg → Varslinger**
+2. La **Slå på varslinger** stå på
+3. Slå av eller på kategoriene du vil ha. Det finnes nøyaktig seksten:
 
-| Category                  | Fires when                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Agent finished            | An agent finished a run                                                    |
-| PR published              | An agent published a PR                                                    |
-| PR merged                 | A PR was merged                                                            |
-| New messages              | A message arrived in a space you are not looking at                        |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
-| Review requested          | Your review was actually requested on a non-draft PR                       |
-| Review out of date        | New commits landed on a pull request you already reviewed                  |
-| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
-| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
-| Checks                    | CI failed on a pull request you authored, or recovered                     |
-| Review threads            | Someone replied in or resolved a thread you are in                         |
-| Ticket assigned           | A ticket was assigned                                                      |
-| Ticket status changed     | A ticket changed status                                                    |
-| Meeting starting soon     | A calendar meeting is inside your lead window                              |
-| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
-| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
+| Kategori                                | Utløses når                                                                              |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Agent ferdig                            | En agent fullførte en kjøring                                                            |
+| PR publisert                            | En agent publiserte en PR                                                                |
+| PR sammenslått                          | En PR ble slått sammen                                                                   |
+| Nye meldinger                           | En melding kom inn i et område du ikke ser på                                            |
+| Nevnt i pull request                    | GitHubs varselavspørring så at du ble nevnt i en PR                                      |
+| Gjennomgang forespurt                   | Gjennomgangen din ble faktisk forespurt på en PR som ikke er et utkast                   |
+| Gjennomgang utdatert                    | Nye commits landet på en pull request du allerede har gjennomgått                        |
+| Klar til sammenslåing                   | En pull request du har skrevet, ble sammenslåbar, eller sluttet å være det                |
+| Gjennomgangsvedtak                      | En reviewer godkjente, ba om endringer, eller fikk en godkjenning avvist                  |
+| Sjekker                                 | CI feilet på en pull request du har skrevet, eller kom seg igjen                          |
+| Gjennomgangstråder                      | Noen svarte i eller løste opp en tråd du er med i                                        |
+| Sak tildelt                             | En sak ble tildelt                                                                       |
+| Saksstatus endret                       | En sak endret status                                                                     |
+| Møte starter snart                      | Et kalendermøte er inne i forvarselvinduet ditt                                          |
+| Kalender koblet fra                     | OAuth-tokenet til en tilkoblet kalender utløp                                            |
+| Oppdateringer for isolert miljø         | Et isolert miljø ble overtatt, tatt tilbake eller feilet                                 |
 
-Anything outside this list cannot be notified or filtered — there is no
-"everything else" category.
+Alt utenfor denne listen kan det verken varsles om eller filtreres på — det
+finnes ingen «alt annet»-kategori.
 
-These preferences follow your user across devices, so a phone and a laptop stay
-in step. Volume is the deliberate exception and stays per device.
+Disse innstillingene følger brukeren din på tvers av enheter, så en telefon og en
+bærbar maskin holder følge. Volumet er det bevisste unntaket og holdes per enhet.
 
-## Set quiet hours
+## Angi Quiet hours
 
-1. On the same page, turn **Quiet hours** on
-2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+1. På samme side slår du på **Quiet hours**
+2. Skriv inn et start- og et sluttidspunkt i `HH:MM` (standardvinduet er 22:00–08:00)
 
-During quiet hours, non-urgent notifications are dropped — not queued and
-replayed later.
+I løpet av Quiet hours forkastes ikke-hastende varsler — de legges ikke i kø og
+spilles ikke av senere.
 
-Two categories are **urgent** and always deliver, bypassing quiet hours _and_
-focus mode: **Meeting starting soon** and **PR published**. A meeting
-alert you only see afterwards is worthless, which is the reason.
+To kategorier er **hastende** og leveres alltid, og omgår Quiet hours _og_
+fokusmodus: **Møte starter snart** og **PR publisert**. Et møtevarsel du først ser
+i ettertid, er verdiløst — det er grunnen.
 
-## Choose a sound
+## Velg en lyd
 
-1. Scroll to **Notification sound**
-2. Pick one of the eleven bundled sounds, or **None**
-3. Press the test button to hear it and set the volume with the slider
+1. Rull til **Varslingslyd**
+2. Velg en av de elleve innebygde lydene, eller **Ingen**
+3. Trykk på **Test** for å høre den, og still inn **Volum** med glidebryteren
 
-The app plays the sound itself; the OS notification is delivered silently so you
-never hear it twice.
+Appen spiller av lyden selv; OS-varselet leveres stille, så du hører den aldri
+to ganger.
 
-## Set the meeting lead time
+## Angi forvarselstiden for møter
 
-1. Scroll to **Alert lead time**
-2. Pick **5**, **10**, **15** or **30** minutes
+1. Rull til **Varslingsforvarsel**
+2. Velg **5**, **10**, **15** eller **30** minutter
 
-That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires. The default is 5 minutes.
+Så lang tid før en kalenderhendelse varselet **Møte starter snart** utløses.
+Standard er 5 minutter.
 
-## Know when a notification is suppressed
+## Finn ut når et varsel undertrykkes
 
-A notification is dropped, silently, when any of these is true:
+Et varsel forkastes i stillhet når ett av disse er sant:
 
-- Notifications are globally off, or its category is off
-- You are already on the route it would take you to — and, for a message, already
-  in that space
-- Focus mode is active and the category is not urgent
-- Quiet hours are active and the category is not urgent
+- Varsler er slått av globalt, eller kategorien er slått av
+- Du er allerede på ruten det ville ført deg til — og, for en melding, allerede
+  i det området
+- Fokusmodus er aktiv, og kategorien er ikke hastende
+- Quiet hours er aktive, og kategorien er ikke hastende
 
-Those checks apply to OS toasts. The durable bell still records the event.
+Disse sjekkene gjelder OS-toasts. Den varige bjella registrerer fortsatt
+hendelsen.
 
-Two more suppressions live further upstream, in what the server sends at all:
+To flere undertrykkinger ligger lenger oppstrøms, i det serveren i det hele tatt
+sender:
 
-- An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
-  unread badge
+- En melding fra et annet **menneske** der du ikke nevnes, blir aldri et varsel
+- Områder mellom agenter er dempet i sidestolpen, så de øker aldri badgen for
+  uleste hos et menneske
 
-Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+Innenfor et område finnes det ingen stille krok: hver samtale varsler like mye,
+tråder inkludert. Lesestatus gjelder for hele området, så ulest samles på tvers av
+samtalene i et område i stedet for å spores per samtale.
 
-## Read and clear the notification centre
+## Les og tøm varslingssentralen
 
-1. Click the bell in the title bar
+1. Klikk på bjella i tittellinjen
 
-The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it does **not** mark everything read — use **Mark all as read** in the
-header, or mark a single row. Read state follows your user across devices.
+Popover-vinduet viser nylig aktivitet og kobler hver oppføring direkte til det den
+gjelder. Å åpne det markerer **ikke** alt som lest — bruk **Merk alle som lest** i
+toppteksten, eller merk en enkelt rad. Lesestatus følger brukeren din på tvers av
+enheter.
 
-:::note[Clear all is a watermark, not a delete]
-**Clear all** stamps a per-user watermark that hides everything older; the rows
-stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50** and the
-popover lists up to **15** of those. History past that is gone regardless of read
-state.
+:::note[Fjern alle er et vannmerke, ikke en sletting]
+**Fjern alle** setter et vannmerke per bruker som skjuler alt eldre; radene blir
+liggende. Hvert arbeidsområde beholder i tillegg bare de **200** nyeste radene i
+strømmen, beskjært etter hvert som nye kommer inn, mens bjella abonnerer på de
+**50** nyeste og popover-vinduet viser opptil **15** av dem. Historikk utover det
+er borte, uansett lesestatus.
 :::
 
-## Troubleshooting
+## Feilsøking
 
-### No OS notifications on macOS
+### Ingen OS-varsler på macOS
 
-Authorization is requested natively when the app launches. If you declined it,
-re-enable Control Center under System Settings → Notifications; there is no
-in-app prompt to re-trigger it.
+Tillatelse forespørres nativt når appen starter. Hvis du avslo den, slår du på
+Control Center igjen under Systeminnstillinger → Varsler; det finnes ingen
+forespørsel i appen som kan utløse den på nytt.
 
-### Nothing arrives on the web build
+### Ingenting kommer inn i nettbygget
 
-Expected — the web build has no OS-notification pipeline. Use the bell.
+Forventet — nettbygget har ingen pipeline for OS-varsler. Bruk bjella.
 
-### The bell badge shows zero but there is clearly new activity
+### Badgen på bjella viser null, men det er tydelig ny aktivitet
 
-Until the read-mark stream resolves after connecting, entries render as read to
-avoid a badge that flashes and then empties. It settles once the mark loads.
+Til lesemarkørene er på plass etter tilkobling, vises oppføringene som lest, for å
+unngå en badge som blinker og så tømmes. Det stabiliserer seg så snart merket er
+lastet.
 
-### An agent's run finished but nothing pinged me
+### En agentkjøring ble ferdig, men ingenting varslet meg
 
-Check that you were not already on the space it happened in — an active route
-suppresses its own OS toast.
+Sjekk at du ikke allerede var i området det skjedde i — en aktiv rute undertrykker
+sin egen OS-toast.
 
-## Related guides
+## Relaterte veiledninger
 
-- [Use focus mode and soundscapes](/nb-NO/handbok/slik-gjor-du/fokusmodus/)
-- [Triage your inbox](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)
-- [Curate your newsfeed](/nb-NO/handbok/slik-gjor-du/nyhetsstrom/)
+- [Bruk fokusmodus og lydlandskap](/nb-NO/handbok/slik-gjor-du/fokusmodus/)
+- [Prioriter innboksen din](/nb-NO/handbok/slik-gjor-du/prioriter-innboks/)
+- [Kurater nyhetsstrømmen din](/nb-NO/handbok/slik-gjor-du/nyhetsstrom/)
 
-## Related concepts
+## Relaterte konsepter
 
-- [Domain events](/nb-NO/handbok/konsepter/domenehendelser/)
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/)

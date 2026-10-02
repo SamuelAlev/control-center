@@ -1,172 +1,175 @@
 ---
-title: Manage adapters and models
-description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+title: مدیریت آداپتورها و مدل‌ها
+description: ارائه‌دهنده‌های مدل را متصل کنید، مدلی را که یک عامل روی آن اجرا می‌شود انتخاب کنید و بررسی کنید سرور میزبان کدام CLIهای اجراکنندهٔ عامل را دارد.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها
+sourceHash: d2962ca879436af0023bf3f4f86e0335ef0c644a
 ---
 
-This guide shows you how to connect model providers and choose what an agent
-runs on.
+این راهنما نشان می‌دهد چگونه ارائه‌دهنده‌های مدل را متصل کنید و انتخاب کنید یک عامل روی چه چیزی اجرا شود.
 
-Everything here lives on one page: **Settings → Server → Model providers**. The
-sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+همه‌چیز اینجا در یک صفحه است: **تنظیمات → سرور → ارائه‌دهندگان مدل**. عنوان در
+نوارکنارِ فرعی «ارائه‌دهندگان مدل» است؛ عنوان صفحه «آداپتورها» است.
 
-## What an adapter is
+## آداپتور چیست
 
-An adapter is the _runner_ that executes an agent turn. There are two and the
-list is fixed — you cannot add a third.
+آداپتور همان _اجراکننده_ای است که یک نوبتِ عامل را اجرا می‌کند. دو مورد وجود دارد
+و فهرست ثابت است — نمی‌توانید سومی را اضافه کنید.
 
-| Adapter                   | CLI      | Transport                                           |
-| ------------------------- | -------- | --------------------------------------------------- |
-| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
-| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
+| آداپتور                   | CLI      | انتقال                                                            |
+| ------------------------- | -------- | ----------------------------------------------------------------- |
+| Control Center (built-in) | هیچ      | حلقهٔ عامل درون‌فرایندی؛ از طریق HTTP با ارائه‌دهنده‌ها سخن می‌گوید |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`                           |
 
-Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
-adapter, not separate CLIs. What you _can_ add is another provider — any
-OpenAI- or Anthropic-compatible endpoint. That is the next section.
+Cursor، Codex، Anthropic، OpenAI و بقیه **ارائه‌دهنده**هایی روی آداپتور داخلی‌اند،
+نه CLIهای جداگانه. چیزی که _می‌توانید_ اضافه کنید یک ارائه‌دهندهٔ دیگر است — هر
+نقطهٔ پایانی سازگار با OpenAI یا Anthropic. بخش بعدی همین است.
 
-:::note[Detection probes the server, not your machine]
-The **Detected runners** card lists what `cc_server` found on the _server host's_
-`PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Install the CLI on the machine that runs `cc_server`.
+:::note[تشخیص، سرور را بررسی می‌کند، نه دستگاه شما]
+کارت **اجراکننده‌های تشخیص‌داده‌شده** فهرست می‌کند که `cc_server` روی `PATH`
+_میزبان سرور_ چه یافته است. روی یک کلاینت سبک یا وب، آن ماشینی متفاوت از ماشینی
+است که به آن نگاه می‌کنید. CLI را روی ماشینی نصب کنید که `cc_server` را اجرا می‌کند.
 :::
 
-## Connect a model provider
+## اتصال یک ارائه‌دهندهٔ مدل
 
-The built-in adapter needs at least one connected provider before it can run.
-Fourteen ship in the catalogue.
+آداپتور داخلی پیش از آنکه بتواند اجرا شود به دست‌کم یک ارائه‌دهندهٔ متصل نیاز
+دارد. چهارده مورد در فهرست همراه است.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Find your provider and connect it:
+1. به **تنظیمات → سرور → ارائه‌دهندگان مدل** بروید
+2. به **ارائه‌دهنده‌ها و مدل‌ها** اسکرول کنید
+3. ارائه‌دهندهٔ خود را پیدا کنید و آن را متصل کنید:
 
-| Provider                                                                                                 | How to connect                                                                                                                |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
-| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
-| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
+| ارائه‌دهنده                                                                                              | نحوهٔ اتصال                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Anthropic                                                                                                | کلید API. اشتراک Claude Pro/Max یک ورود به API Anthropic نیست — برای آن طرح از آداپتور Claude Code استفاده کنید                  |
+| OpenAI, Codex, Cursor                                                                                    | ورود OAuth در مرورگر، یا یک کلید API. Codex یک اشتراک ChatGPT Plus/Pro از طریق بک‌اند Codex Responses است، نه فراخوانی یک CLI     |
+| Kimi Code                                                                                                | فقط OAuth در مرورگر — یک جریان کدِ دستگاه. طرحی با نرخ ثابت است، پس قیمت به‌ازای هر توکن ندارد                                     |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | کلید API                                                                                                                         |
 
-Checkpoint: the row's badge changes to connected and expanding it lists the
-models that provider serves, each with its price per million tokens and context
-window.
+نقطهٔ بازبینی: نشان سطر به «متصل» تغییر می‌کند و با باز کردن آن، مدل‌هایی که آن
+ارائه‌دهنده عرضه می‌کند فهرست می‌شود، هرکدام با قیمت به‌ازای هر میلیون توکن و
+پنجرهٔ بافت.
 
-OAuth tokens land in the server's own credential store and are refreshed before
-they expire. Provider credentials are **host-global** — they are shared by every
-workspace on the install, not scoped to one.
+نشان‌های OAuth در مخزن اعتبارنامهٔ خودِ سرور ذخیره می‌شوند و پیش از انقضا
+تازه‌سازی می‌شوند. اعتبارنامه‌های ارائه‌دهنده **سراسری در میزبان** هستند — میان
+همهٔ فضاهای کاری این نصب مشترک‌اند، نه محدود به یکی.
 
-### Add a custom provider
+### افزودن یک ارائه‌دهندهٔ سفارشی
 
-Use this for Ollama, LM Studio, vLLM, or a private deployment.
+از این برای Ollama، LM Studio، vLLM یا یک استقرار خصوصی استفاده کنید.
 
-1. In **Providers & models**, under **Custom providers**, press **Add provider**
-2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
-   Anthropic-compatible) and give the **base URL** (for example
-   `http://localhost:11434/v1`)
-3. Add an **API key** if the endpoint needs one, then press **Add provider**
+1. در **ارائه‌دهنده‌ها و مدل‌ها**، زیر **ارائه‌دهندگان سفارشی**، **افزودن ارائه‌دهنده** را فشار دهید
+2. یک **نام** پر کنید، **نوع API** را انتخاب کنید (سازگار با OpenAI یا سازگار با
+   Anthropic) و **URL پایه** را بدهید (برای مثال `http://localhost:11434/v1`)
+3. اگر نقطهٔ پایانی به **کلید API** نیاز دارد آن را اضافه کنید، سپس **افزودن ارائه‌دهنده** را فشار دهید
 
-A custom provider appears in the same list, with a delete button its built-in
-siblings do not have.
+یک ارائه‌دهندهٔ سفارشی در همان فهرست پدیدار می‌شود، با یک دکمهٔ حذف که هم‌تایان
+داخلی‌اش ندارند.
 
-## Pick a model for an agent
+## انتخاب مدل برای یک عامل
 
-1. Go to **Settings → Workspace → Agents** and select the agent
-2. On the **Settings** tab, choose the **adapter**
-3. Choose the **model** from the dropdown beside it
+1. به **تنظیمات → فضای کاری → عامل‌ها** بروید و عامل را انتخاب کنید
+2. در تب **تنظیمات**، **آداپتور** را انتخاب کنید
+3. **مدل** را از منوی بازشوی کنارش انتخاب کنید
 
-For the built-in adapter the dropdown is assembled live from every connected
-provider's own catalogue. A provider with no stored credential contributes zero
-models, which is why an empty dropdown almost always means "nothing connected
-yet" rather than "nothing available".
+برای آداپتور داخلی، منوی بازشو به‌صورت زنده از فهرست خودِ هر ارائه‌دهندهٔ متصل
+ساخته می‌شود. ارائه‌دهنده‌ای که اعتبارنامهٔ ذخیره‌ای ندارد صفر مدل می‌افزاید؛
+به همین دلیل یک منوی بازشوی خالی تقریباً همیشه یعنی «هنوز چیزی متصل نشده»، نه
+«چیزی در دسترس نیست».
 
-:::note[models.dev is enrichment, never a source of ids]
-The bundled [models.dev](https://models.dev) catalogue supplies price and context
-window for a model that is already in the live list. It never adds a model id. If
-a model you expect is missing, the provider's endpoint is not returning it.
+:::note[models.dev فقط غنی‌سازی است، هرگز منبع شناسه‌ها نیست]
+فهرست همراه [models.dev](https://models.dev) قیمت و پنجرهٔ بافت را برای مدلی که
+پیش‌تر در فهرست زنده هست فراهم می‌کند. هرگز شناسهٔ مدلی را اضافه نمی‌کند. اگر
+مدلی که انتظار دارید وجود ندارد، نقطهٔ پایانی ارائه‌دهنده آن را برنمی‌گرداند.
 :::
 
-Model ids for the built-in adapter are qualified `provider/model` and may carry
-a `|`-separated fallback chain. Under a fallback, cost is priced against the model
-that actually served the turn, not the one you asked for.
+شناسه‌های مدل برای آداپتور داخلی به‌صورت `provider/model` واجد صلاحیت‌اند و ممکن
+است زنجیرهٔ جایگزینی جداشده با `|` داشته باشند. در حالت جایگزین، هزینه بر اساس
+مدلی حساب می‌شود که واقعاً نوبت را سرو کرده است، نه مدلی که درخواست کرده‌اید.
 
-:::note[An agent with no adapter runs on the built-in loop]
-Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
-`librarian` — with no adapter and no model. Dispatch falls back to
-**Control Center (built-in)**, not to the **Default runners** setting on this
-page, which is a client preference the dispatch path never reads. The run log
-records `cc-harness` for those runs, so the transcript names what actually ran.
+:::note[عاملی که آداپتور ندارد روی حلقهٔ داخلی اجرا می‌شود]
+هر فضای کاری پنج عامل ایجاد می‌کند — یک CEO به‌همراه `qa`، `architect`،
+`engineer` و `librarian` — بدون آداپتور و بدون مدل. اعزام به
+**Control Center (built-in)** بازمی‌گردد، نه به تنظیم **اجراکننده‌های پیش‌فرض** در
+این صفحه، که یک ترجیح کلاینت است و مسیر اعزام هرگز آن را نمی‌خواند. گزارش اجرا
+برای آن اجراها `cc-harness` را ثبت می‌کند، پس رونوشت نام چیزی را می‌آورد که
+واقعاً اجرا شده است.
 
-With no model either, the built-in loop asks Anthropic for its default model. An
-agent left entirely unset therefore runs if you have connected an Anthropic
-account, and otherwise fails with `No credential for provider "anthropic"`.
+وقتی مدلی هم نباشد، حلقهٔ داخلی مدل پیش‌فرض را از Anthropic می‌پرسد. بنابراین
+عاملی که کاملاً تنظیم‌نشده رها شود، اگر حساب Anthropic متصل کرده باشید اجرا
+می‌شود، و در غیر این صورت با `No credential for provider "anthropic"` شکست
+می‌خورد.
 
-Finishing onboarding's adapter step back-patches **every** agent that is still
-missing an adapter or a model — CEO and specialists, across every workspace that
-exists at that moment — with the pair you picked. Workspaces created later still
-seed all five unset. Set the adapter and model explicitly on every agent you
-intend to use.
+پایان دادن به گام آداپتورِ راه‌اندازی اولیه، **هر** عاملی را که هنوز آداپتور یا
+مدل ندارد — مدیرعامل و متخصصان، در هر فضای کاری که در آن لحظه وجود دارد — با
+جفت انتخابی شما به‌صورت عقب‌گرد وصله می‌کند. فضاهای کاری که بعداً ساخته می‌شوند
+هنوز هر پنج عامل را تنظیم‌نشده ایجاد می‌کنند. آداپتور و مدل را روی هر عاملی که
+قصد استفاده از آن را دارید صریحاً تنظیم کنید.
 :::
 
-## Install a runner CLI
+## نصب CLI یک اجراکننده
 
-The built-in adapter needs no installation. For Claude Code, install its
-CLI **on the server host** with that tool's own package manager, for example:
+آداپتور داخلی به نصب نیاز ندارد. برای Claude Code، CLI آن را **روی میزبان سرور**
+با پکیج‌منیجر خودِ آن ابزار نصب کنید، برای مثال:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-Then press **Refresh** at the top of the page. Each detected row shows the
-resolved version and path, plus chips for whether it supports JSON mode and model
-selection.
+سپس **تازه‌سازی** را در بالای صفحه فشار دهید. هر سطر تشخیص‌داده‌شده نسخه و مسیر
+حل‌شده را نشان می‌دهد، به‌همراه برچسب‌هایی برای اینکه آیا از حالت JSON و انتخاب
+مدل پشتیبانی می‌کند.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+یک CLI خارجی اعتبارنامه‌های خود را، در پیکربندی خودش، روی میزبان سرور نگه
+می‌دارد. Control Center آنها را مدیریت نمی‌کند.
 
-:::caution[Adapter Arguments and Environment variables stay on this device]
-Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. Those values are stored on your device. The server reads launch argv
-and env from its own settings store. Put provider keys on the server (OAuth or
-the key field on the Model providers page), not in those two fields.
+:::caution[آرگومان‌های آداپتور و متغیرهای محیطی روی همین دستگاه می‌مانند]
+هر سطر آداپتور یک فیلد **آرگومان‌های اضافه** و یک پنجرهٔ **متغیرهای محیطی** دارد.
+آن مقادیر روی دستگاه شما ذخیره می‌شوند. سرور argv و env راه‌اندازی را از مخزن
+تنظیمات خودش می‌خواند. کلیدهای ارائه‌دهنده را روی سرور بگذارید (OAuth یا فیلد
+کلید در صفحهٔ ارائه‌دهندگان مدل)، نه در آن دو فیلد.
 :::
 
-## Restrict which providers a workspace may use
+## محدود کردن ارائه‌دهنده‌هایی که یک فضای کاری می‌تواند استفاده کند
 
-Provider governance is per workspace and is evaluated last-match-wins.
+حاکمیت ارائه‌دهنده به‌ازای هر فضای کاری است و با قاعدهٔ آخرین تطابق برنده
+ارزیابی می‌شود.
 
-1. In **Providers & models**, flip the **allow** switch on a provider row off
+1. در **ارائه‌دهنده‌ها و مدل‌ها**، کلید **اجازه** را روی یک سطر ارائه‌دهنده خاموش کنید
 
-That writes a `deny` statement for that provider in the active workspace and its
-models drop out of the catalogue for that workspace. Turning the switch back on
-removes the statement.
+این کار یک گزارهٔ `deny` برای آن ارائه‌دهنده در فضای کاری فعال می‌نویسد و
+مدل‌هایش از فهرست آن فضای کاری حذف می‌شوند. روشن‌کردن دوبارهٔ کلید آن گزاره را
+حذف می‌کند.
 
-## Troubleshooting
+## عیب‌یابی
 
-### A runner shows as not found
+### یک اجراکننده به‌صورت پیدا‌نشده نمایش داده می‌شود
 
-- Check the CLI is on the **server host's** `PATH`, not just yours
-- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
-  installed under a shell-only path may be invisible to it
-- Press **Refresh** after installing
+- بررسی کنید CLI روی `PATH` **میزبان سرور** باشد، نه فقط مال خودتان
+- یک برنامهٔ دسکتاپ که از رابط گرافیکی اجرا می‌شود سرورش را با `PATH` کمینه‌ای
+  راه می‌اندازد؛ CLI نصب‌شده در مسیری که فقط در شل وجود دارد ممکن است برایش
+  نامرئی باشد
+- پس از نصب **تازه‌سازی** را فشار دهید
 
-### The model dropdown is empty
+### منوی بازشوی مدل خالی است
 
-- The adapter is the built-in one and no provider is connected — connect one in
-  **Providers & models**
-- Or the provider is connected but denied by this workspace's governance switch
+- آداپتور داخلی است و هیچ ارائه‌دهنده‌ای متصل نیست — یکی را در
+  **ارائه‌دهنده‌ها و مدل‌ها** متصل کنید
+- یا ارائه‌دهنده متصل است اما کلید حاکمیت این فضای کاری آن را رد کرده است
 
-### A model runs but the price shows as unknown
+### یک مدل اجرا می‌شود اما قیمت به‌صورت نامعلوم نمایش داده می‌شود
 
-The live model list carries the id; price and context come from models.dev. A
-brand-new model, or one from a custom provider, has no catalogue entry yet.
+فهرست زندهٔ مدل‌ها شناسه را دارد؛ قیمت و بافت از models.dev می‌آید. یک مدل
+کاملاً تازه، یا مدلی از یک ارائه‌دهندهٔ سفارشی، هنوز مدخلی در فهرست ندارد.
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Create and configure an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
-- [Manage API keys](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/کلیدهای-api/)
-- [Diagnose an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
-- [Manage costs](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
+- [ایجاد و پیکربندی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/)
+- [مدیریت کلیدهای API(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/کلیدهای-api/)
+- [عیب‌یابی یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/عیبیابی-عامل/)
+- [مدیریت هزینه‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-هزینه/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [The agent model](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)
-- [Agent dispatch lifecycle](/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)
+- [مدل عامل(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/)
+- [چرخهٔ عمر اعزام عامل(/fa-IR/راهنمای-کاربر/مفهومها/چرخه-عمر-اعزام/)

@@ -1,130 +1,131 @@
 ---
-title: Route map
-description: Every route Control Center registers, with its screen and query parameters.
+title: Rota haritası
+description: Control Center'ın kaydettiği her rota, ekranı ve sorgu parametreleriyle birlikte.
 slug: tr-TR/kilavuz/referans/rota-haritasi
+sourceHash: a81e46f94c812005b51049018be170ef15405dd3
 ---
 
-## App shell
+## Uygulama kabuğu
 
-The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and the bare `/workspaces` picker, all full-screen and outside the shell.
+Uygulama kabuğu (`ControlCenterLayout`), çalışma alanı içindeki her rotayı bir `ShellRoute` üzerinden sarar. **Kabuk içindeki her hedef çalışma alanı öneki taşır — `/workspaces/:workspaceId/…` — ve etkin çalışma alanı için tek doğruluk kaynağı, URL'deki çalışma alanı kimliğidir.** Öneksiz kalan yalnızca bağlam öncesi yüzeylerdir: `/splash`, `/onboarding`, `/signed-out` ve yalın `/workspaces` seçicisi; hepsi tam ekran ve kabuğun dışındadır.
 
-The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
+Kapı, **oturum açmış kullanıcı için** en az bir forge bağlı olduğunda ve en az bir çalışma alanı var olduğunda tamamlanır.
 
-A missing credential and a missing setup are different screens, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded goes to `/signed-out` to re-authenticate; one that has not goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+Eksik bir kimlik bilgisi ile eksik bir kurulum farklı ekranlardır ve ayırt edici ölçüt, çağıranın kendi `identity.me` değerinden okunan `users.onboarding_finished_at` alanıdır — asla “çalışma alanları var”, çünkü bu, biri hiç oluşturmadığı bir çalışma alanına davet edildiği anda yanlış olur. Bağlı forge yokken kurulumu tamamlamış bir hesap yeniden kimlik doğrulamak için `/signed-out` adresine gider; tamamlamamış olan ise `/onboarding` adresine gider. Bayrak hâlâ bilinmezken koruma tahmin yürütmek yerine açılış ekranını tutar, çünkü onboarding'den geri asla yönlendirme yapmaz.
 
-## Unprefixed routes
+## Öneksiz rotalar
 
-| Path                       | Screen                                           |
-| -------------------------- | ------------------------------------------------ |
-| `/splash`                  | Startup splash that resolves the onboarding gate |
-| `/onboarding`              | Connect a forge, create or join a workspace, sandbox, default adapter, then voice. The workspace step is dropped when the account already belongs to one |
-| `/signed-out`              | Re-authenticate: the same forge-connections card Settings renders, with no step bar and no continue button — the router leaves on its own once a forge reports in |
-| `/workspaces`              | Workspace list and picker                        |
-| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+| Yol                        | Ekran                                                                                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/splash`                  | Onboarding kapısını çözen açılış ekranı                                                                                                                                                                                              |
+| `/onboarding`              | Bir forge bağlayın, bir çalışma alanı oluşturun veya mevcut olana katılın, sandbox, varsayılan adaptör, ardından ses. Hesap zaten bir çalışma alanına aitse çalışma alanı adımı atlanır                                                      |
+| `/signed-out`              | Yeniden kimlik doğrulama: Ayarlar'ın işlediği aynı forge bağlantıları kartı, adım çubuğu ve devam düğmesi olmadan — bir forge bildirim verdiğinde yönlendirici kendi kendine ayrılır                                                            |
+| `/workspaces`              | Çalışma alanı listesi ve seçici                                                                                                                                                                                                      |
+| `/workspaces/:workspaceId` | `/workspaces/:workspaceId/inbox` adresine yönlendirir                                                                                                                                                                               |
 
-## Workspace routes
+## Çalışma alanı rotaları
 
-Paths below omit the `/workspaces/:workspaceId` prefix.
+Aşağıdaki yollar `/workspaces/:workspaceId` önekini içermez.
 
-| Path                                    | Query params                              | Screen                                                                                                                                                                   |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/inbox`                                | —                                         | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
-| `/spaces`                               | —                                         | Space surface, no space selected                                                                                                                                         |
-| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>`            | One space; `m` deep-links to a message and is consumed once on open                                                                                                      |
-| `/tickets`                              | —                                         | Ticket board                                                                                                                                                             |
-| `/tickets/:ticketId`                    | —                                         | Ticket master-detail                                                                                                                                                     |
-| `/projects/:projectId`                  | —                                         | Project overview                                                                                                                                                         |
-| `/pull-requests`                        | `?repo=<owner/name>`                      | PR list; `repo` selects that repository in the left rail                                                                                                                 |
-| `/pull-requests/compose`                | `?space=<spaceId>`                        | Compose a new pull request; `space` names the space whose isolated worktree supplies the branch                                                                          |
-| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`             | PR detail with diff viewer; `comment` is the numeric REST id of one comment                                                                                              |
-| `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
-| `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
-| `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
-| `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
-| `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
-| `/meetings/record`                      | —                                         | Live meeting recording screen                                                                                                                                            |
-| `/meetings/:meetingId`                  | —                                         | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
-| `/calendar`                             | —                                         | Calendar: month, week and agenda views                                                                                                                                   |
-| `/calendar/:eventId`                    | —                                         | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
-| `/newsfeed`                             | —                                         | Newsfeed list                                                                                                                                                            |
-| `/newsfeed/article/:articleId`          | —                                         | Article reader                                                                                                                                                           |
-| `/observability`                        | —                                         | Observability hub: Usage, Insights, Live and Quality tabs over the workspace run-log feed. Defaults to the Usage tab                                                     |
-| `/users/:login`                         | —                                         | GitHub user profile                                                                                                                                                      |
-| `/teams/:organization/:slug`            | —                                         | GitHub organization team profile                                                                                                                                         |
-| `/api-keys`                             | —                                         | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
-| `/settings/…`                           | —                                         | Settings screens (below)                                                                                                                                                 |
+| Yol                                     | Sorgu parametreleri           | Ekran                                                                                                                                                                                                     |
+| --------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/inbox`                                | —                             | Birleşik gelen kutusu: inceleme yaşam döngüsüne göre sınıflandırılmış PR'lar ve operatörü engelleyen PR dışı işler. Koruma sonrası varış rotası; yalın `/workspaces/:workspaceId` buraya yönlendirir         |
+| `/spaces`                               | —                             | Alan yüzeyi, seçili alan yok                                                                                                                                                                              |
+| `/spaces/:spaceId`                      | `?m=<messageId>`, `?tab=<key>` | Tek bir alan; `m` bir iletiye derin bağlantı verir ve açılışta bir kez tüketilir                                                                                                                          |
+| `/tickets`                              | —                             | Bilet panosu                                                                                                                                                                                              |
+| `/tickets/:ticketId`                    | —                             | Bilet ana-ayrıntı görünümü                                                                                                                                                                                |
+| `/projects/:projectId`                  | —                             | Proje genel bakışı                                                                                                                                                                                        |
+| `/pull-requests`                        | `?repo=<owner/name>`          | PR listesi; `repo`, sol kenar çubuğunda o depoyu seçer                                                                                                                                                    |
+| `/pull-requests/compose`                | `?space=<spaceId>`            | Yeni bir pull request oluşturun; `space`, dalı sağlayan yalıtılmış çalışma ağacına sahip alanı adlandırır                                                                                                   |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`, `?comment=<id>`  | Diff görüntüleyicili PR ayrıntısı; `comment`, tek bir yorumun sayısal REST kimliğidir                                                                                                                      |
+| `/pipelines`                            | —                             | Pipeline çalıştırma listesi                                                                                                                                                                               |
+| `/pipelines/run`                        | `?templateId=<id>`            | Elle çalıştırma başlatıcısı                                                                                                                                                                               |
+| `/pipelines/:runId`                     | —                             | Pipeline çalıştırma ayrıntısı (adım zaman çizelgesi)                                                                                                                                                      |
+| `/plans`                                | —                             | Plan Studio merkezi: aktif planlar, plan belgeleri ve playbook'lar                                                                                                                                         |
+| `/plans/:kind/:id`                      | —                             | Tek bir plan için Plan Studio; `kind` değeri `orchestration` ya da `document` olur                                                                                                                         |
+| `/meetings`                             | —                             | Toplantı listesi                                                                                                                                                                                          |
+| `/meetings/record`                      | —                             | Canlı toplantı kaydı ekranı                                                                                                                                                                               |
+| `/meetings/:meetingId`                  | —                             | Toplantı ayrıntısı: notlar, transkripsiyon, eylem öğeleri, kararlar                                                                                                                                        |
+| `/calendar`                             | —                             | Takvim: ay, hafta ve gündem görünümleri                                                                                                                                                                   |
+| `/calendar/:eventId`                    | —                             | Takvim etkinliği ayrıntısı (kardeş rota; takvim sayfası anahtarını paylaşır)                                                                                                                              |
+| `/newsfeed`                             | —                             | Haber akışı listesi                                                                                                                                                                                       |
+| `/newsfeed/article/:articleId`          | —                             | Makale okuyucusu                                                                                                                                                                                          |
+| `/observability`                        | —                             | Gözlemlenebilirlik merkezi: çalışma alanı çalıştırma günlüğü akışı üzerinde Kullanım, İçgörüler, Canlı ve Kalite sekmeleri. Varsayılan olarak Kullanım sekmesi açılır                                             |
+| `/users/:login`                         | —                             | GitHub kullanıcı profili                                                                                                                                                                                  |
+| `/teams/:organization/:slug`            | —                             | GitHub organizasyon ekibi profili                                                                                                                                                                         |
+| `/api-keys`                             | —                             | API anahtarı yönetimi. **Gezinmede giriş noktası yok** — yalnızca URL ile ulaşılabilir                                                                                                                      |
+| `/settings/…`                           | —                             | Ayarlar ekranları (aşağıda)                                                                                                                                                                               |
 
-Conversations and threads have **no route of their own** — a thread is a conversation inside `/spaces/:spaceId`, opened as an editor tab rather than addressed by URL.
+Sohbetlerin ve ileti dizilerinin **kendi rotası yoktur** — bir ileti dizisi `/spaces/:spaceId` içindeki bir sohbettir ve URL ile adreslenmek yerine bir düzenleyici sekmesi olarak açılır.
 
-There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+**`/dashboard` rotası** ve gösterge paneli ekranı yoktur. Analitik yüzeyi, kenar çubuğunun altbilgisinden ulaşılan `/observability` adresidir.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+**Kenar çubuğunda “Planlar” öğesi yoktur.** Plan Studio, planı üreten konuşmadaki plan satırından bir düzenleyici sekmesi olarak açılır; `/plans` ve `/plans/:kind/:id` derin bağlantılardır.
 
-`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+`/observability` ve `/pull-requests/compose`, rota başlığı veya gezinti izi kayıtlarında yer almaz; bu yüzden ikisi de pencere başlığında yalın uygulama adını gösterir ve hiçbir gezinti izi sunmaz.
 
-## Settings routes
+## Ayarlar rotaları
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings`, `/settings/you/appearance` adresine yönlendirir. Kenar çubuğundaki ayarlar düğmesi ve `Cmd/Ctrl + ,` de `/settings/you/appearance` adresine gider.
 
-Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
+Ayarlar yolları **kapsama** göre ad alanına ayrılır — `you/`, `workspace/`, `server/` — çünkü bu bölüm bir değişikliğin kimi etkilediğini belirtir. İki yol bu ad alanı düzeninden öncesine aittir ve URL'de kapsamlı değildir: `/settings/memory` ve `/settings/pipelines`.
 
-### You
+### Siz
 
-| Path                          | Screen                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
-| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
-| `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
-| `/settings/you/devices`       | Paired phones and remote control                                           |
-| `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| Yol                           | Ekran                                                             |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `/settings/you/appearance`    | Tema, dil, tipografi, düzenleyici teması (ayarların açılış sayfası) |
+| `/settings/you/notifications` | Olay bazında anahtarlar, sessiz saatler                            |
+| `/settings/you/keybindings`   | Klavye kısayolu başvurusu (salt okunur)                            |
+| `/settings/you/audio`         | Mikrofon, dikte, toplantı algılama ve ses manzarası çıkışı         |
+| `/settings/you/devices`       | Eşleştirilmiş telefonlar ve uzaktan kontrol                        |
+| `/settings/you/newsfeed`      | Akış yönetimi: kaynaklar, yenileme, okundu durumu                  |
 
-### Workspace
+### Çalışma alanı
 
-| Path                               | Screen                                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
-| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
-| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
-| `/settings/workspace/agents`       | Registered agent identities                                                                         |
-| `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
-| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/pipelines`              | Pipeline templates                                                                                  |
-| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+| Yol                                | Ekran                                                                                                            |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/settings/workspace/profile`      | Bu çalışma alanındaki profil ve kimlik: ad, git yazarı, kod barındırma, takvim                                    |
+| `/settings/workspace/general`      | Ad, logo, gizli yol dışlamaları, inceleme yayılımı, dal adlandırma, eşitleme sağlığı, sohbet köprüleri, tehlikeli bölge |
+| `/settings/workspace/meetings`     | Toplantı notu şablonları ve kayıtlı ses profilleri                                                                |
+| `/settings/workspace/members`      | Kadro, davetler, denetim kaydı. Denetim kaydı isteğe bağlı `?cursor=` ile sayfalanır                               |
+| `/settings/workspace/repositories` | Bu çalışma alanında kayıtlı depolar                                                                              |
+| `/settings/workspace/agents`       | Kayıtlı ajan kimlikleri                                                                                          |
+| `/settings/workspace/skills`       | Beceri yapılandırması                                                                                            |
+| `/settings/memory`                 | Çalışma alanı belleği: olgular, politikalar, bilgi grafiği                                                        |
+| `/settings/workspace/permissions`  | Ajan izinleri: koruma matrisi ve “Ne olur?” sondası                                                               |
+| `/settings/pipelines`              | Pipeline şablonları                                                                                              |
+| `/settings/pipelines/:templateId`  | Pipeline şablonu düzenleyicisi (sürükle-bırak tuvali)                                                             |
 
-### Server
+### Sunucu
 
-| Path                           | Screen                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------- |
-| `/settings/server/connection`  | Connection and status                                                                 |
-| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
-| `/settings/server/providers`   | Model providers and adapters                                                          |
-| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
-| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
-| `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
-| `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
-| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
-| `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
-| `/settings/server/about`       | About and updates                                                                     |
+| Yol                            | Ekran                                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------------------- |
+| `/settings/server/connection`  | Bağlantı ve durum                                                                             |
+| `/settings/server/sso`         | Tek oturum açma (SAML, OIDC, SCIM ile kullanıcı sağlama)                                      |
+| `/settings/server/providers`   | Model sağlayıcıları ve adaptörler                                                             |
+| `/settings/server/mcp`         | Yerleşik ve harici MCP sunucuları                                                             |
+| `/settings/server/voice`       | Ses ve toplantı modelleri (ASR, konuşmacı ayırma)                                             |
+| `/settings/server/rigs`        | Rigs: bu ana makinenin açabildikleri, temel imajlar, özel imajlar, çalışan makineler            |
+| `/settings/server/sandbox`     | Sandbox çalıştırma izinleri: ajanların depolarınızın çalışma kopyasından çalıştırabileceği programlar |
+| `/settings/server/diagnostics` | Tanılama ve gizlilik: sandbox, gömme, eşitleme motoru, günlükleme, çökme raporlama             |
+| `/settings/server/backup`      | Yedekleme ve geri yükleme: kurulum anlık görüntüleri, çalışma alanı başına dışa aktarma, içe aktarma ve silme |
+| `/settings/server/about`       | Hakkında ve güncellemeler                                                                     |
 
-`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list. `settings_nav_test.dart` pins unique ids, unique routes, flattened J/K order and the three scopes. It does not walk every registered `GoRoute`.
+`lib/features/settings/settings_nav.dart` içindeki `kSettingsNav`, bu listenin tek doğruluk kaynağıdır. `settings_nav_test.dart` benzersiz kimlikleri, benzersiz rotaları, düzleştirilmiş J/K sırasını ve üç kapsamı sabitler. Kayıtlı her `GoRoute`'u dolaşmaz.
 
-## Route configuration
+## Rota yapılandırması
 
-| Concern             | File                                                    |
+| Konu                | Dosya                                                   |
 | ------------------- | ------------------------------------------------------- |
-| Router              | `lib/router/app_router.dart`                            |
-| Route builders      | `lib/router/routes.dart`                                |
-| Auth guards         | `lib/router/guards.dart`                                |
-| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
-| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+| Yönlendirici        | `lib/router/app_router.dart`                            |
+| Rota oluşturucuları | `lib/router/routes.dart`                                |
+| Kimlik doğrulama korumaları | `lib/router/guards.dart`                        |
+| Onboarding kapısı   | `lib/features/auth/providers/onboarding_providers.dart` |
+| Ayarlar gezinmesi   | `lib/features/settings/settings_nav.dart`               |
 
-## See also
+## Ayrıca bakınız
 
-- [Workspaces](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/)
-- [Keyboard shortcuts](/tr-TR/kilavuz/referans/klavye-kisayollari/)
+- [Çalışma alanları](/tr-TR/kilavuz/kavramlar/calisma-alanlari/)
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/)
+- [Klavye kısayolları](/tr-TR/kilavuz/referans/klavye-kisayollari/)

@@ -1,166 +1,163 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: ตั้งค่าการผสาน GitHub
+description: ลงชื่อเข้าใช้ GitHub เพื่อให้พื้นผิว PR การลงทะเบียนรีโป และการรันเอเจนต์ทำงานได้
 slug: th-TH/คู่มือ/วิธีทำ/การผสาน-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+คู่มือนี้ครอบคลุมส่วนที่เป็นเฉพาะของ GitHub ในขั้นตอนการตั้งค่า GitHub เป็นหนึ่งในสาม
+โฮสต์โค้ดที่รองรับ — ดู[เชื่อมต่อโฮสต์โค้ด](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/)
+สำหรับการเชื่อมต่อ GitLab หรือ Bitbucket และสำหรับวิธีที่เวิร์กสเปซหนึ่งผสมโฮสต์เหล่านี้เข้าด้วยกัน
 
-## Prerequisites
+## ก่อนที่คุณจะเริ่ม
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- บัญชี GitHub ที่มีสิทธิ์เข้าถึงรีโปที่คุณต้องการทำงานด้วย
+- GitHub App ที่ลงทะเบียนไว้สำหรับเซิร์ฟเวอร์ของคุณ (ดู
+  [สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)) เพื่อให้คุณ**ลงชื่อเข้าใช้**ได้
+  **หรือ**โทเค็นการเข้าถึงส่วนบุคคลที่มี `repo` และ `read:org` สำหรับวาง
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[ข้อมูลรับรองอยู่บนเซิร์ฟเวอร์ ผูกติดกับคุณ]
+ไม่มีอะไรถูกจัดเก็บบนเครื่องที่คุณกำลังพิมพ์อยู่ ข้อมูลรับรองของคุณถูกเก็บไว้โดย
+`cc_server` ของคุณ โดยใช้ user id ของคุณเป็นคีย์ และทุกอุปกรณ์ที่คุณลงชื่อเข้าใช้จะใช้
+ข้อมูลนั้น — เดสก์ท็อป เว็บ และโทรศัพท์ สมาชิกคนอื่นในเซิร์ฟเวอร์เดียวกันอ่านข้อมูลนี้ไม่ได้
+และการลงชื่อเข้าใช้ให้พวกเขาก็เป็นสิ่งที่พวกเขาทำด้วยตนเอง
 :::
 
-## Sign in with GitHub
+## ลงชื่อเข้าใช้ด้วย GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+**device flow**: GitHub แสดงรหัสสั้น ๆ ให้คุณ คุณอนุมัติบน github.com
+แล้วเซิร์ฟเวอร์ได้รับข้อมูลรับรอง — ไม่มี callback URL ไม่มีพอร์ต ไม่มีอะไรต้องเปิดเผย
+ใช้ได้ทุกเมื่อที่เซิร์ฟเวอร์มี client id ซึ่งบิลด์อย่างเป็นทางการมีมาให้อยู่แล้ว
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด** (หรือขั้นตอนแรก
+   ของการเริ่มต้นใช้งาน)
+2. ที่แถว **GitHub** คลิก **ลงชื่อเข้าใช้ด้วย GitHub**
+3. ไดอะล็อกจะแสดงรหัสแปดตัวอักษรและเปิด
+   [github.com/login/device](https://github.com/login/device) ในเบราว์เซอร์ของคุณ
+   รหัสอยู่ในคลิปบอร์ดของคุณแล้ว
+4. วางรหัส อนุมัติแอป แล้วกลับมา แถวจะเปลี่ยนเป็น
+   “ลงชื่อเข้าใช้เป็น _your-username_” ด้วยตัวเอง
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+ไดอะล็อกปิดได้ระหว่างที่คุณดำเนินการในเบราว์เซอร์ให้เสร็จ — เซิร์ฟเวอร์จะ
+โพลล์ต่อไปจนกว่ารหัสจะหมดอายุ (ประมาณ 15 นาที) การลงชื่อเข้าใช้จึงยังสำเร็จอยู่ดี
 
-## Or paste a token
+## หรือวางโทเค็น
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+ทางเลือกสำรองเมื่อเซิร์ฟเวอร์ไม่มีแอป เมื่อแอปไม่ได้ติดตั้งบนบัญชีที่คุณต้องการ
+หรือเมื่อคุณอยากใช้ PAT มากกว่า
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. ไปที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด**
+2. ที่แถว **GitHub** คลิก **เพิ่มโทเค็น**
+3. วางโทเค็นที่มี `repo` และ `read:org` (แบบคลาสสิก) แล้วบันทึก โทเค็น
+   **แบบละเอียด** ต้องมีสิทธิ์ **Contents** และ **Pull requests** (อ่านและเขียน)
+   บวกกับ **Checks** และ **Actions** (อ่าน)
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+โทเค็นจะถูกตรวจสอบขณะจัดเก็บ แถวจึงระบุบัญชีที่มันเป็นเจ้าของได้ คลิก
+**ยกเลิกการเชื่อมต่อ** เพื่อลบมัน
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+จุดตรวจสอบ: แถว **GitHub** แสดงข้อความ “ลงชื่อเข้าใช้เป็น _your-username_” คำต่อท้าย
+จะระบุแหล่งที่มาเมื่อข้อมูลรับรองที่ตอบสนองไม่ใช่ของคุณ — “ผ่านแอปของเซิร์ฟเวอร์นี้”
+หรือ “จากสภาพแวดล้อม”
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[ลำดับความสำคัญคงที่]
+คำขอที่ทำในนามของคุณใช้ข้อมูลรับรอง**ของคุณ** และไม่มีอะไรอื่น — สภาพแวดล้อมคือ
+ข้อมูลรับรองของเซิร์ฟเวอร์ ไม่ใช่ของคุณ จึงไม่เคยทำหน้าที่แทนคุณ งานที่ไม่มีมนุษย์
+อยู่เบื้องหลัง (webhook, การโพลล์ PR, การซิงค์ตั๋วงาน) ใช้ตัวตนแอปของเซิร์ฟเวอร์
+จากนั้นข้อมูลรับรองของเจ้าของเซิร์ฟเวอร์ แล้วจึงสภาพแวดล้อม
 :::
 
-## What the integration gives you
+## สิ่งที่การผสานนี้มอบให้
 
-| Feature             | How                                                                                                            |
+| ฟีเจอร์             | วิธีการ                                                                                                         |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| รายการและรายละเอียด PR | GitHub REST API จากเซิร์ฟเวอร์ บนตัวตนแอปหรือข้อมูลรับรองของคุณเอง                                              |
+| การรันเช็ก          | GitHub Checks API                                                                                              |
+| การเผยแพร่รีวิว    | ขั้นตอนที่ต้องมีผู้ใช้ยืนยัน ซึ่งโพสต์รีวิวของคุณไปที่ PR                                                        |
+| การลงทะเบียนรีโป   | เช็กเอาต์จะได้รับการยอมรับหาก remote `origin` ของมันชี้ไปที่ github.com — หรือ gitlab.com / bitbucket.org       |
+| การเข้าถึง GitHub ของเอเจนต์ | โบรกเกอร์ข้อมูลรับรองจะฉีดโทเค็นเป็น `GH_TOKEN` / `GITHUB_TOKEN` โดยถูกควบคุมด้วยความสามารถของเอเจนต์       |
+| การแจ้งเตือนแบบ ping | การโพลล์กล่องขาเข้าการแจ้งเตือน GitHub ของคุณฝั่งเซิร์ฟเวอร์จะสร้าง “ถูกกล่าวถึงใน pull request” และ “ขอรีวิวแล้ว” |
+| โปรไฟล์ผู้ใช้       | การ์ดโปรไฟล์เมื่อวางเมาส์ และการกรอง PR ตามผู้เขียนแต่ละราย                                                     |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+บางเส้นทางใช้ GraphQL API แทน REST เมื่อประหยัดกว่า — กิจกรรมของสาขาสำหรับตัวเลือก
+PR ในหน้าสร้าง และสถานะรีวิวสดที่ตัดสินว่าการแจ้งเตือนว่ามีผู้ขอรีวิวยังค้างอยู่หรือไม่
 
-## Watch for GitHub outages
+## เฝ้าระวังเหตุ GitHub ขัดข้อง
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+แถบชื่อเรื่องจะแสดงชิปสถานะเมื่อผู้ให้บริการรายใดทำงานบกพร่อง ครอบคลุม GitHub,
+Claude, OpenAI และ Kimi **มันถูกซ่อนไว้ขณะที่ทุกอย่างปกติ** — การปรากฏตัวรายงาน
+ปัญหา ไม่ใช่การไม่มีปัญหา
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+คลิกชิปเพื่อเปิดฟลายเอาต์ที่แสดงสถานะของผู้ให้บริการแต่ละรายและปุ่มรีเฟรช
+สถานะจะรีเฟรชเองทุกสองนาที
 
-## Know how agents act on GitHub
+## ทำความเข้าใจว่าเอเจนต์ทำอะไรบน GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- เอเจนต์จะได้รับโทเค็น GitHub ก็ต่อเมื่อ **อนุญาตการเรียก GitHub API** หรือ
+  **อนุญาต git push** ดู
+  [ตั้งค่านโยบายแซนด์บ็อกซ์](/th-TH/คู่มือ/วิธีทำ/นโยบายแซนด์บ็อกซ์/)
+- คอมมิตที่เอเจนต์สร้างจะถูกระบุผู้เขียน**เป็นเอเจนต์** — ชื่อที่แสดงบวก
+  ` (agent)` ที่แอดเดรสสังเคราะห์ซึ่งใช้ id ของเอเจนต์เป็นคีย์ — ไม่เคยเป็นมนุษย์
+  คนที่สั่งงานจะได้รับเครดิตผ่าน trailer `Co-Authored-By`
+- เมื่อกำหนดค่า GitHub App ไว้ โบรกเกอร์จะสร้าง installation token แบบละเอียดที่จำกัด
+  ขอบเขตตามรีโปและมีอายุราวหนึ่งชั่วโมงต่อการเปิดรันหนึ่งครั้ง แทนที่จะมอบโทเค็นที่กว้าง
+  การติดตั้งจะถูกตัดสินจาก **เจ้าของ** รีโปของการรัน แอปเดียวที่ติดตั้งบนหลายบัญชี
+  จึงจำกัดขอบเขตได้ถูกต้องตามบัญชีที่การรันแตะ หากไม่มีแอป เอเจนต์จะได้รับโทเค็นจาก
+  สภาพแวดล้อม
+- การรันที่ถูกร้องขอโดยสมาชิกที่ลงชื่อเข้าใช้แล้วจะทำหน้าที่ภายใต้ตัวตน GitHub
+  **ของสมาชิกคนนั้น** — ข้อมูลรับรองของพวกเขาถูกผสานเข้าไปหลังจากสภาพแวดล้อมของ
+  โบรกเกอร์ คอมมิตหรือคอมเมนต์ที่เอเจนต์ทำแทนพวกเขาจึงอ้างอิงถึงพวกเขาได้
 
-## Troubleshooting
+## การแก้ปัญหา
 
-### The PR list is empty and says GitHub is not connected
+### รายการ PR ว่างเปล่าและบอกว่า GitHub ยังไม่ได้เชื่อมต่อ
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+คุณไม่มีข้อมูลรับรอง GitHub บนเซิร์ฟเวอร์นี้ ลงชื่อเข้าใช้หรือวางโทเค็นใต้
+**โฮสต์โค้ด** รีโปบนโฮสต์โค้ดอื่นไม่ได้รับผลกระทบ — มีเพียงของ GitHub เท่านั้นที่
+ไม่ส่งข้อมูลอะไรเลย
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### แถวเสนอ “เพิ่มโทเค็น” แต่ไม่มี “ลงชื่อเข้าใช้ด้วย GitHub”
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+เซิร์ฟเวอร์ไม่มี client id — ซึ่งเป็นสถานะปกติของบิลด์จากซอร์สโค้ด เพราะข้อมูลรับรอง
+ถูกฝังไว้ในบิลด์อย่างเป็นทางการเท่านั้น ดู
+[สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/): ใช้เวลาประมาณสองนาที
+และมีเพียงเจ้าของเซิร์ฟเวอร์ที่ต้องทำ เพียงครั้งเดียว
 
-### The sign-in dialog says the provider returned no device code
+### ไดอะล็อกลงชื่อเข้าใช้บอกว่าผู้ให้บริการไม่ได้ส่ง device code กลับมา
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App มีอยู่ แต่กล่อง **Device flow** ของมันถูกปิดอยู่ เปิดมันในการตั้งค่าของ
+แอป (General → Device flow) แล้วลองอีกครั้ง
 
-### The row says "via this server's app" when I expected my own account
+### แถวบอกว่า “ผ่านแอปของเซิร์ฟเวอร์นี้” เมื่อฉันคาดหวังบัญชีของตัวเอง
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+คุณยังไม่ได้ลงชื่อเข้าใช้ สิ่งที่คุณเห็นคือตัวตนแอปของเซิร์ฟเวอร์เป็นผู้ตอบ
+คลิก **ลงชื่อเข้าใช้ด้วย GitHub** ที่แถวนั้น
 
-### A fine-grained PAT shows no merge button or check status
+### PAT แบบละเอียดไม่แสดงปุ่มรวมหรือสถานะเช็ก
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+โทเค็นต้องมี **Contents** และ **Pull requests** (อ่านและเขียน) บวกกับ **Checks**
+และ **Actions** (อ่าน) หลังจากแก้ไขแล้ว ให้วางใหม่ใต้
+โฮสต์โค้ด
 
-### Adding a repo is rejected
+### การเพิ่มรีโปถูกปฏิเสธ
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/).
+การลงทะเบียนต้องเข้าเงื่อนไขทั้งสามข้อ: พาธอยู่ภายใน git work tree, มี
+remote `origin`, และ remote นั้นชี้ไปที่โฮสต์โค้ดที่รองรับ (github.com,
+gitlab.com หรือ bitbucket.org) ดู
+[เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
 
-### Everything stops working for a while after heavy use
+### ทุกอย่างหยุดทำงานชั่วขณะหลังใช้งานหนัก
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+นั่นคือเซอร์กิตเบรกเกอร์ของขีดจำกัดอัตรา GitHub ส่งสัญญาณขีดจำกัดหลักด้วย
+`403` ที่แนบ `x-ratelimit-remaining: 0` และเวลารีเซ็ต เมื่อเจอแล้ว ไคลเอนต์จะทำให้
+คำขอต่อไปล้มเหลวในเครื่องโดยไม่เรียกผ่านเครือข่ายจนกว่าหน้าต่างเวลาจะผ่านไป
+พายุการลองใหม่จึงไม่สามารถทำให้ขีดจำกัดลึกลงได้ ความล้มเหลวชั่วคราวจะถูกลองใหม่
+ไม่เกินสามครั้งด้วย exponential backoff โดยเคารพ `retry-after`
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Create the GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)
-- [Connect a code host](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/)
-- [Manage API keys](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
-- [Add repos to a workspace](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
-- [Review and merge a PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
-- [Set up Slack integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)
+- [สร้าง GitHub App](/th-TH/คู่มือ/วิธีทำ/github-app/)
+- [เชื่อมต่อโฮสต์โค้ด](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อโฮสต์โค้ด/)
+- [จัดการคีย์ API](/th-TH/คู่มือ/วิธีทำ/คีย์-api/)
+- [เพิ่มรีโปในเวิร์กสเปซ](/th-TH/คู่มือ/วิธีทำ/เพิ่มรีโป/)
+- [รีวิวและรวม PR](/th-TH/คู่มือ/วิธีทำ/รีวิวและรวม-pr/)
+- [ตั้งค่าการผสาน Slack](/th-TH/คู่มือ/วิธีทำ/การผสาน-slack/)

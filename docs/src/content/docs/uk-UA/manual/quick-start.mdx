@@ -1,92 +1,94 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Швидкий старт
+description: Встановіть Control Center, налаштуйте одного агента й подивіться, як він працює над вашим репозиторієм.
 slug: uk-UA/керівництво/швидкий-старт
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Це найкоротший повний шлях від нуля до агента, який працює з вашим власним кодом. Виконуйте кроки по порядку; кожен з них залежить від попереднього.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Вам потрібні Git, обліковий запис GitHub і або обліковий запис провайдера моделей (Anthropic, OpenAI, Codex, Cursor, Kimi Code чи будь-якого провайдера з API-ключем), або вже встановлений CLI Claude Code. Усе інше налаштовується дорогою.
 
-## Step 1: Install and launch
+## Крок 1: Встановити й запустити
 
-Install Control Center as described in [Install](/uk-UA/керівництво/встановлення/), then open it.
+Встановіть Control Center, як описано в [Установці](/uk-UA/керівництво/встановлення/), а потім відкрийте його.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Під час першого запуску настільний застосунок запитує **«Як має працювати Control Center?»** Виберіть **Запускати в цьому застосунку**. Control Center породжує headless-сервер `cc_server` на цій машині, який володіє вашими даними й виконує всю роботу. Ви його ніколи не бачите; натомість відкривається екран початкового налаштування.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/uk-UA/керівництво/встановлення/#use-it-in-your-browser) for the browser route.
+:::note[Не хочете нічого встановлювати?]
+Той самий застосунок працює у браузері за адресою [app.usectrl.dev](https://app.usectrl.dev) з
+тими самими можливостями. Щоправда, вкладка браузера не може розмістити сервер, тож його
+надаєте ви — запустіть `cc_server` локально й під’єднайтеся до `ws://localhost:9030` або
+вкажіть сервер на іншій машині. Цей швидкий старт іде шляхом настільного застосунку, бо не
+потребує налаштування сервера; див. [Установку](/uk-UA/керівництво/встановлення/#use-it-in-your-browser)
+для браузерного варіанта.
 :::
 
-## Step 2: Work through onboarding
+## Крок 2: Пройти початкове налаштування
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Початкове налаштування складається з п’яти кроків, які виконуються по порядку — перескочити вперед не можна.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Підключення**: увійдіть через GitHub або вставте персональний токен доступу з `repo` і `read:org`. Облікові дані зберігаються на сервері й прив’язані до вашого облікового запису.
+2. **Робочий простір**: назвіть свій перший робочий простір і за бажанням виберіть логотип. Його створення закладає п’ятьох агентів — CEO і `qa`, `architect`, `engineer` та `librarian` — а також вбудовані шаблони конвеєрів.
+3. **Пісочниця**: записує налаштування пісочниці. Будь-який вибір дає змогу продовжити.
+4. **Адаптер**: виберіть адаптер і модель, які мають бути типовими для агентів. Виберіть **Control Center (вбудований)**, а тоді скористайтеся засобом вибору провайдера, щоб увійти до провайдера моделей — список моделей залишається порожнім, доки жодного не підключено. Завершення цього кроку також проставляє адаптер і модель агентові CEO робочого простору.
+5. **Голос (необов’язково)**: встановіть модель мовлення на пристрої для диктування або пропустіть цей крок.
 
-Control Center then opens your workspace inbox.
+Після цього Control Center відкриває вхідні вашого робочого простору.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/).
+:::note[Що обмежує запуск агента]
+Команди агента загортаються в рідну для ОС хоста пісочницю, коли вона доступна — Seatbelt на macOS, bubblewrap на Linux. На Windows бекенду немає, тож запуски там обмежені лише рештою шарів: власним worktree розмови (`git worktree` на Windows; copy-on-write там, де постачається `rift`), обліковими даними, які видає брокер на кожен запуск і які відкликаються під час згортання, та обмеженнями дій. Див. [Пісочниця та безпека](/uk-UA/керівництво/поняття/пісочниця-та-безпека/).
 :::
 
-## Step 3: Add a repository
+## Крок 3: Додати репозиторій
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Перейдіть до **Налаштування → Робочий простір → Репозиторії** і натисніть **Додати репозиторій**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+У діалозі переглядаються теки на машині, де працює сервер, а не на вашому клієнті, і він залишається в межах коренів, які сервер налаштований відкривати (типово — домашній каталог його користувача). Прапорець отримують лише копії git. Позначте свою й зареєструйте її.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Копію приймають, лише якщо вона лежить усередині робочого дерева git, має віддалене сховище `origin`, і це сховище вказує на підтримуваний хостинг коду — github.com, gitlab.com або bitbucket.org. Усе інше відхиляється із зазначенням причини.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Репозиторії належать робочому простору: реєстрація копії тут додає її саме до _цього_ робочого простору. Окремого кроку зв’язування немає.
 
-## Step 4: Give an agent an adapter and a model
+## Крок 4: Дати агентові адаптер і модель
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Перейдіть до **Налаштування → Робочий простір → Агенти**. Виберіть агента `engineer` у реєстрі.
 
-On the **Settings** tab, set:
+На вкладці **Налаштування** задайте:
 
-- **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Адаптер**: `Control Center (built-in)`
+- **Модель**: виберіть одну з провайдера, якого ви підключили під час початкового налаштування
 
-Press **Save changes**.
+Натисніть **Зберегти зміни**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+На практиці цей крок не є необов’язковим. Лише агент CEO успадковує адаптер, вибраний під час початкового налаштування; чотири фахівці створюються без нього. Вони повертаються до **Control Center (вбудований)** з типовою моделлю Anthropic, тож запускаються, лише якщо ви підключили обліковий запис Anthropic — і на моделі, якої ви не вибирали, якщо підключили.
 
-## Step 5: Send the agent a task
+## Крок 5: Надіслати агентові завдання
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. На бічній панелі знайдіть розділ **Простори** і натисніть кнопку **+**.
+2. Назвіть простір, додайте агента `engineer` у розділі **Додати агентів** і створіть його.
+3. Введіть конкретне невелике завдання щодо зареєстрованого репозиторію й натисніть Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center готує worktree з copy-on-write для репозиторіїв робочого простору під цю розмову, збирає промпт із ролі, персони й навичок агента та контексту простору й надсилає запуск. Вашої вихідної копії це ніколи не торкається.
 
-## Step 6: Watch it work
+## Крок 6: Подивитися, як він працює
 
-You should see, in order:
+Ви маєте побачити, в такому порядку:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- Кнопка надсилання в композері перетворюється на кнопку зупинки, бо в цій розмові працює агент
+- Міркування агента, виклики інструментів і текст потоком потрапляють у транскрипт
+- Кнопка надсилання повертається, коли запуск завершується
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Потім відкрийте **Налаштування → Робочий простір → Агенти**, виберіть агента й перегляньте вкладку **Журнали**: один рядок запуску з його статусом, тривалістю, часом початку й завершення та адаптером, на якому він працював.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Це і є весь цикл. Усе інше в Control Center — перевірка pull request, конвеєри, тікети, зустрічі, Slack — тримається на ньому.
 
-## Next steps
+## Наступні кроки
 
-- [Your first workspace](/uk-UA/керівництво/посібники/перший-робочий-простір/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/uk-UA/керівництво/посібники/перший-pr/): take an agent's branch through review and merge
-- [The agent model](/uk-UA/керівництво/поняття/модель-агента/): what an agent is made of
-- [Create and configure an agent](/uk-UA/керівництво/практичні-посібники/створити-агента/): the rest of the agent form
-- [Run an orchestration](/uk-UA/керівництво/практичні-посібники/запустити-оркестрацію/): one goal, one approval, a generated pipeline
-- [Pair your phone](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): follow the fleet from anywhere
-- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/): how the desktop, web and phone clients relate to the server
+- [Ваш перший робочий простір](/uk-UA/керівництво/посібники/перший-робочий-простір/): той самий шлях, лише повільніше, з поясненням моделі ізоляції
+- [Перевірте свій перший pull request](/uk-UA/керівництво/посібники/перший-pr/): проведіть гілку агента через перевірку та злиття
+- [Модель агента](/uk-UA/керівництво/поняття/модель-агента/): з чого складається агент
+- [Створити й налаштувати агента](/uk-UA/керівництво/практичні-посібники/створити-агента/): решта форми агента
+- [Запустити оркестрацію](/uk-UA/керівництво/практичні-посібники/запустити-оркестрацію/): одна мета, одне схвалення, згенерований конвеєр
+- [Прив’яжіть телефон](/uk-UA/керівництво/практичні-посібники/сполучити-пристрій/): стежте за флотом звідусіль
+- [Розгортання та клієнти](/uk-UA/керівництво/поняття/розгортання/): як настільний, веб- і телефонний клієнти пов’язані із сервером

@@ -1,267 +1,283 @@
 ---
-title: Sandbox and security
-description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+title: Homokozó és biztonság
+description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
+sourceHash: 0239aa5de68c6c76c482f53b628f437cc5bf8e0f
 ---
 
-:::note[Where the OS sandbox does and does not reach]
-`cc_server` probes the host at boot and wraps agent command execution in the
-OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
-Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+:::note[Hová ér el az operációs rendszer homokozója, és hová nem]
+A `cc_server` indításkor felméri a hosztot, és az ügynökparancsok végrehajtását
+az operációs rendszer saját homokozójába csomagolja, amikor van ilyen — macOS-en
+Seatbelt, Linuxon és WSL2-n bubblewrap (utóbbihoz `bwrap` és `socat` kell a
+`PATH`-ban). Ahol nem létezik háttérrendszer — Windowson, vagy egy olyan
+Linux-gépen, amelyről hiányoznak ezek az eszközök —, a futások visszaesnek az
+alábbi többi határra, és a szerver erről az indítási naplójában is beszámol. A
+`--sandbox off` szándékosan kapcsolja ki.
 
-Two gaps survive the sandbox and are worth holding in mind:
+Két rés fennmarad a homokozó mellett is, és érdemes észben tartani őket:
 
-- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, `search`, `find`, `search_files`) run inside the server
-  process, so only `bash` is wrapped. What bounds those is path confinement in
-  the tools themselves plus the action guardrails.
-- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt.
-  Its file and shell calls are therefore not gated by Control Center's
-  guardrails — the OS sandbox is the boundary around them.
+- A beépített harness **folyamaton belüli fájleszközei** (`read`, `write`,
+  `edit`, `apply_patch`, `search`, `find`, `search_files`) a szerverfolyamaton
+  belül futnak, így csak a `bash` van becsomagolva. Azokat az eszközök saját
+  útvonal-elkülönítése, valamint a műveleti korlátok szorítják határok közé.
+- **A Claude Code `--dangerously-skip-permissions` kapcsolóval indul**, mert egy
+  nem interaktív `claude -p` egyébként örökre blokkolna a saját kérdésénél. A
+  fájl- és shellhívásait ezért nem a Control Center korlátai kapuzzák —
+  körülöttük az operációs rendszer homokozója a határ.
   :::
 
-## Why isolation matters here
+## Miért számít itt az elkülönítés
 
-An agent reads files, runs shell commands and calls external APIs on your
-behalf. The failure you care about is rarely malice — it is an agent that
-misreads a path and rewrites your working checkout, or one that pushes a branch
-you had not finished reviewing. So the question the product has to answer is not
-"is the agent trustworthy" but "what is the blast radius when it is wrong".
+Az ügynök fájlokat olvas, shellparancsokat futtat és külső API-kat hív Ön
+helyett. A hiba, ami igazán számít, ritkán rosszindulat — az az ügynök, amely
+félreolvas egy útvonalat és átírja a munkakönyvtárát, vagy az, amely feltol egy
+ágat, amelyet még nem nézett át. A terméknek tehát nem arra a kérdésre kell
+válaszolnia, hogy „megbízható-e az ügynök", hanem arra, hogy „mekkora a
+hatássugár, amikor téved".
 
-Control Center answers that in layers and the layers are independent on
-purpose. If one is missing, the others still hold. That matters, because the
-outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+A Control Center ezt rétegekben válaszolja meg, és a rétegek szándékosan
+függetlenek. Ha az egyik hiányzik, a többi akkor is tart. Ez azért fontos, mert
+a legkülső réteg — az operációs rendszer homokozója — az egyetlen feltételes:
+azon múlik, hogy a hoszt nyújt-e háttérrendszert, Windowson pedig egyetlen hoszt
+sem tesz ilyet.
 
-## What actually constrains an agent
+## Mi korlátozza valójában az ügynököt
 
-Five things bound an agent run on every host, sandbox or no sandbox. None of
-them is a kernel boundary; all of them are real. Where the host offers a
-backend the OS sandbox sits above them and "What the sandbox adds and where
-it stops" below covers what that changes.
+Öt dolog köti meg az ügynökfutást minden hoszton, homokozóval vagy anélkül.
+Egyik sem kernelhatár; mindegyik valós. Ahol a hoszt háttérrendszert kínál, az
+operációs rendszer homokozója ezek fölött helyezkedik el, és az alábbi „Mit ad
+hozzá a homokozó, és hol áll meg" szakasz elmondja, ez mit változtat.
 
-**Its own copy-on-write worktree.** Every conversation provisions its own
-checkout of each linked repo, cloned copy-on-write through the bundled `rift`
-native rather than copied byte by byte, so isolation is cheap enough to be the
-default. The registered repository you added to the workspace is not the
-directory the agent works in — two conversations touching the same repo cannot
-see each other's edits and neither is editing your checkout.
+**A saját copy-on-write worktree-je.** Minden beszélgetés előkészíti a saját
+checkoutját minden csatolt repóból, a beépített `rift` natívon keresztül
+copy-on-write módon klónozva, nem bájtról bájtra másolva, így az elkülönítés
+elég olcsó ahhoz, hogy az alapértelmezett legyen. A munkaterülethez hozzáadott
+regisztrált repó nem az a könyvtár, amelyben az ügynök dolgozik — két
+beszélgetés, amely ugyanazt a repót érinti, nem látja a másik módosításait, és
+egyik sem az Ön checkoutját szerkeszti.
 
-The grain is worth being precise about: **the worktree is per conversation, not
-per agent.** Two agents in the same conversation get distinct overlay working
-directories that _share_ that conversation's `repos/` — which is the point,
-since they are collaborating on one change — while their private agent
-directories stay separate. Copy-on-write is the only backend wherever `rift`
-ships: a filesystem that cannot reflink, or a data dir on a different volume
-from the repo, fails the provision rather than falling back. Windows is the
-exception — there is no copy-on-write backend there, so `git worktree` is the
-backend, not a silent degradation.
+A szemcsézettséget érdemes pontosan megadni: **a worktree beszélgetésenként
+értendő, nem ügynökönként.** Két ügynök ugyanabban a beszélgetésben külön
+overlay-munkakönyvtárat kap, amelyek _megosztják_ a beszélgetés `repos/`
+könyvtárát — ez épp a lényeg, hiszen egy közös változtatáson dolgoznak —, a
+privát ügynökkönyvtáraik viszont külön maradnak. A copy-on-write az egyetlen
+háttérrendszer mindenhol, ahol a `rift` elérhető: az a fájlrendszer, amely nem
+tud reflinket, vagy a repótól eltérő köteten lévő adatkönyvtár, megbukik az
+előkészítésen ahelyett, hogy visszaesne. Windows a kivétel — ott nincs
+copy-on-write háttérrendszer, így a `git worktree` a háttérrendszer, nem
+csendes visszaesés.
 
-**Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
-resolve every path against the run's working directory plus shared roots — the
-conversation's `repos/` directory, where the worktrees live, and the space's
-attachments dir when it exists — and refuse anything that lands outside.
-Absolute paths are accepted only if they were already inside. A symlink inside
-the worktree pointing out of it is resolved and refused too. This is why an
-agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+**Útvonal-elkülönítés a beépített harness fájleszközeiben.** A harness `read`,
+`write`, `edit`, `apply_patch`, `search`, `find` és `search_files` eszköze
+minden útvonalat a futás munkakönyvtárához és a megosztott gyökerekhez képest
+old fel — a beszélgetés `repos/` könyvtárához, ahol a worktree-k élnek, valamint
+a tér csatolmánykönyvtárához, amikor létezik —, és mindent elutasít, ami ezen
+kívülre esik. Az abszolút útvonalakat csak akkor fogadja el, ha már eleve azon
+belül voltak. A worktree-n belüli, kifelé mutató symlink szintén feloldásra
+kerül, és elutasításra kerül. Ezért nem tud az ügynök a `~/.ssh` könyvtárba
+`write`-olni akkor sem, ha nincs képben homokozó.
 
-**The mode's tool surface.** A conversation's [mode](/hu-HU/kezikonyv/fogalmak/modok/)
-decides which tools are materialized for the run at all. In the read-only modes
-(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
-registry and the shell command policy for those modes denies every mutating
-command outright — `git commit`, `git push`, `npm install`, `docker` and the
-rest — rather than prompting for them. A tool that is not present cannot be
-called, which is a stronger guarantee than a tool that is present and gated.
+**A mód eszközfelülete.** Egy beszélgetés
+[módja](/hu-HU/kezikonyv/fogalmak/modok/) dönti el, mely eszközök jelennek meg
+egyáltalán a futáshoz. A csak olvasható módokban (`plan`, `review`,
+`orchestrate`) a módosító eszközök egyszerűen nincsenek benne a
+nyilvántartásban, és ezen módok shellparancs-szabályzata minden módosító
+parancsot eleve megtagad — `git commit`, `git push`, `npm install`, `docker` és
+a többi —, ahelyett hogy rákérdezne. Egy jelen nem lévő eszköz nem hívható meg,
+ami erősebb garancia, mint egy jelen lévő és kapuzott eszköz.
 
-**The unified action guardrails.** Every mutating tool declares the effect
-classes it can produce and the policy engine resolves each one to allow,
-prompt, or deny before the call runs. A `prompt` with no approver connected
-resolves to _denied_ — a question nobody can answer is never a yes. See
-[Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) for the resolution model.
+**Az egységes műveleti korlátok.** Minden módosító eszköz deklarálja, milyen
+hatásosztályokat válthat ki, és a szabályzatmotor mindegyiket engedélyezésre,
+kérésre vagy tiltásra oldja fel, mielőtt a hívás lefut. Egy csatlakoztatott
+jóváhagyó nélküli `prompt` _elutasításra_ oldódik fel — egy kérdés, amire senki
+nem tud válaszolni, soha nem igen. A feloldási modellt lásd a
+[Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) oldalon.
 
-**Capability-gated credentials and a sanitized environment.** Credentials are
-minted per launch from the conversation's capability flags and revoked when the
-run ends. ACP, harness `bash` and Claude Code under the native wrap get an
-environment stripped of the dynamic-linker and interpreter injection vectors
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
-their kin) before the process starts. Claude Code through `NoSandboxAdapter`
-inherits the host environment.
+**Képességkapuzott hitelesítő adatok és megtisztított környezet.** A hitelesítő
+adatokat minden indításkor a beszélgetés képességjelzőiből állítjuk ki, és a
+futás végén visszavonjuk. Az ACP, a harness `bash` és a natív becsomagolás alatti
+Claude Code a folyamat indulása előtt olyan környezetet kap, amelyből
+eltávolították a dinamikus linker és az interpreter injektálási vektorait
+(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` és
+társaik). A Claude Code a `NoSandboxAdapter`-en keresztül a hoszt környezetét
+örökli.
 
-### Where those bounds thin out
+### Ahol ezek a határok elvékonyodnak
 
-The harness's file tools run _in the server process_, not in a child process, so
-no sandbox profile could constrain them even if one were attached — only `bash`
-goes through the sandboxed command runner. Their confinement is the path check
-described above and that check is therefore load-bearing rather than a second
-line of defence.
+A harness fájleszközei _a szerverfolyamatban_ futnak, nem gyermekfolyamatban,
+így egyetlen homokozóprofil sem tudná korlátozni őket, még ha csatolnánk is
+ilyet — csak a `bash` megy át a homokozott parancsfuttatón. Az ő elkülönítésük a
+fent leírt útvonal-ellenőrzés, ezért ez az ellenőrzés teherviselő, nem csupán egy
+második védelmi vonal.
 
-The `bash` tool is the other place to be precise. Its commands are evaluated
-against the mode's command policy and then spawned with a sanitized environment
-and the worktree as its working directory. Where a backend exists that spawn is
-wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
-In `chat` mode the policy hard-denies a fixed list (privilege escalation,
-system and disk destruction, container and namespace escape) and prompts on
-remote-state mutations (`git push`, `gh pr create`, package publishes and
-installs). Anything on neither list runs. Pipelines, chains and subshells are
-parsed and each sub-command evaluated separately, with the most restrictive
-decision winning.
+A `bash` eszköz a másik hely, ahol pontosan kell fogalmazni. Parancsai a mód
+parancsszabályzata alapján értékelődnek ki, majd megtisztított környezettel és a
+worktree-t munkakönyvtárként használva indulnak el. Ahol létezik háttérrendszer,
+az az indítás be van csomagolva, így a homokozó az, ami megakadályozza, hogy egy
+shellparancs a worktree-n kívülre írjon; ahol nincs — Windows, vagy Linux
+`bwrap` és `socat` nélkül —, a parancsszabályzat az egyetlen dolog a parancs és
+a lemez többi része között. `chat` módban a szabályzat egy rögzített listát
+tilt keményen (jogosultságnövelés, rendszer- és lemezrombolás, konténer- és
+névtérkitörés), és rákérdez a távoli állapotot módosító műveletekre (`git push`,
+`gh pr create`, csomagközzététel és -telepítés). Ami egyik listán sem szerepel,
+az lefut. A pipeline-okat, a láncokat és az alshelleket elemezzük, és minden
+alparancsot külön értékelünk ki, a legszigorúbb döntés győz.
 
-Claude Code, when used as an adapter, is the case where the sandbox carries the
-most weight. Control Center launches it with `--dangerously-skip-permissions`,
-because a non-interactive `claude -p` would otherwise block forever on its own
-approval prompt. Its read, write, edit and shell calls happen inside its own
-process and Control Center never sees them; the only calls it makes that reach
-a gate are the `mcp__*` tools Control Center itself serves. Where a backend
-exists, those unseen calls still happen inside the sandbox wrap, so the OS is
-the boundary around them. Where none does, nothing is. Each adapter states this
-in its enforcement matrix — see [the adapter honesty
-matrix](/hu-HU/kezikonyv/fogalmak/korlatok/#the-adapter-honesty-matrix).
+A Claude Code adapterként az a hely, ahol a homokozón van a legnagyobb súly. A
+Control Center `--dangerously-skip-permissions` kapcsolóval indítja, mert egy nem
+interaktív `claude -p` egyébként örökre blokkolna a saját jóváhagyási kérésénél.
+Olvasási, írási, szerkesztési és shellhívásai a saját folyamatában történnek, és
+a Control Center soha nem látja őket; az egyetlen hívása, amely elér egy
+kapuhoz, a Control Center által kiszolgált `mcp__*` eszközök. Ahol létezik
+háttérrendszer, azok a láthatatlan hívások is a homokozóba csomagolva mennek
+végbe, így az operációs rendszer a körülöttük lévő határ. Ahol nincs, ott semmi.
+Minden adapter elmondja ezt a saját érvényesítési mátrixában — lásd
+[az adapterek őszinteségi mátrixát](/hu-HU/kezikonyv/fogalmak/korlatok/#the-adapter-honesty-matrix).
 
-## Capability gating is enforcement by absence
+## A képességkapuzás érvényesítés a hiány révén
 
-A conversation carries four capability flags: push to the repo, call the GitHub
-API, call the ticketing provider and access the network. They are not checked
-when the agent acts. They are checked once, at launch, by the credential broker
-— and a capability that is off means the matching token is simply never put in
-the environment.
+Egy beszélgetés négy képességjelzőt hordoz: feltolás a repóba, a GitHub API
+hívása, a jegykezelő szolgáltató hívása és hálózati hozzáférés. Ezeket nem akkor
+ellenőrzik, amikor az ügynök cselekszik. Egyszer ellenőrzik őket, indításkor, a
+hitelesítőadat-közvetítő — és egy kikapcsolt képesség azt jelenti, hogy a hozzá
+tartozó tokent egyszerűen soha nem tesszük a környezetbe.
 
-That is the whole mechanism and it is worth stating plainly because the failure
-mode is not what people expect. Turning off "GitHub API" does not produce a
-"capability denied" message. It produces an ordinary `401` inside the agent,
-because there is no `GH_TOKEN` to send. The agent may well narrate that as a
-credentials problem. Enforcement by absence is robust — there is no check to
-bypass — but it is silent and the agent does not know why it failed.
+Ez a teljes mechanizmus, és érdemes egyenesen megfogalmazni, mert a hiba módja
+nem az, amire az emberek számítanak. A „GitHub API" kikapcsolása nem egy
+„képesség megtagadva" üzenetet eredményez. Egy közönséges `401`-et eredményez az
+ügynökön belül, mert nincs `GH_TOKEN`, amit elküldhetne. Az ügynök joggal
+mesélhet erről hitelesítőadat-problémaként. A hiányon alapuló érvényesítés
+robusztus — nincs olyan ellenőrzés, amelyet meg lehetne kerülni —, de csendes,
+és az ügynök nem tudja, miért bukott meg.
 
-The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and a sandboxed spawn's proxy
-allowlist is empty, so every outbound connection is refused.
+A hálózati jelző ugyanígy viselkedik. Kikapcsolva a harness `web_fetch` és
+`web_search` eszköze minden hívást elutasít, és egy homokozott indítás
+proxy-engedélylistája üres, így minden kimenő kapcsolat elutasításra kerül.
 
-Credentials are revoked when the run tears down, so a handle does not outlive
-the run that minted it.
+A hitelesítő adatok a futás lebontásakor visszavonásra kerülnek, így egy fogantyú
+nem éli túl az őt kiállító futást.
 
-## What the sandbox adds and where it stops
+## Mit ad hozzá a homokozó, és hol áll meg
 
-The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
-bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
-uses only the first two: `microvm` is the enclosed-VM backend for interactive
-terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
-native shape explains what you gain where one is attached and what it was never
-going to give you.
+A `SandboxBackend` enum három értéket vesz fel — `native` (macOS-en Seatbelt,
+Linuxon és WSL2-n bubblewrap), `none` és `microvm`. Az ügynökparancsok
+becsomagolása csak az első kettőt használja: a `microvm` az interaktív
+terminálokhoz és állomásokhoz tartozó elszigetelt VM háttérrendszer, nem egy
+`bash`-becsomagolás csendes felminősítése. A natív forma megértése
+elmagyarázza, mit nyer ott, ahol csatolva van, és mit nem adott volna soha.
 
-`cc_server` probes the host once at boot and where a backend answers it feeds
-both of the seams the dispatch path has, because the transports do not share
-one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
-(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
-Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
-and harness `bash` still sanitize the environment; Claude Code through
-`NoSandboxAdapter` inherits the host environment.
+A `cc_server` indításkor egyszer felméri a hosztot, és ahol egy háttérrendszer
+válaszol, az indítási útvonal mindkét illesztési pontját ellátja, mert az
+átvitelek nem osztoznak egyen. Az első (`SandboxPort`) a Claude Code CLI-t
+csomagolja. A második (`SandboxManager`) az ACP-adaptereket és a beépített
+harness `bash` eszközét csomagolja. Csak az egyik ellátása a többieket
+csomagolatlanul hagyná indulni, ami korábban meg is történt. Egy háttérrendszer
+nélküli hoszton, vagy `--sandbox off` esetén, mind csomagolatlanul indul, és a
+szerver az indítási sorában megmondja, melyik esetben van. Az ACP és a harness
+`bash` továbbra is megtisztítja a környezetet; a Claude Code a
+`NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+Egy felület szándékosan kimarad: a szerveren hosztolt terminál munkamenetenként
+elfogad egy háttérrendszer-argumentumot, és a `cc_server` a hoszt shellre
+alapértelmezve építi fel, így az alkalmazásból megnyitott terminál homokozó
+nélkül fut, hacsak egy kliens kifejezetten meg nem nevezi a `native`-ot. Az egy
+valódi shell a szerver hosztján, nem ügynökfutás.
 
-On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
-only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
-profile that is **permissive by default** — a fully deny-by-default profile
-makes an interactive shell unusable, because the number of dyld, XPC and Mach
-calls to enumerate is impractical. The macOS profile therefore starts from
-`(allow default)` and carves out denies: reads of secret paths, a write policy
-reset to deny with explicit allows on top, unlink-blocking on every denied path
-and its ancestors so a rename cannot bypass a write-deny, exec denies for
-always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+Linuxon a `bubblewrap` mountnévtért épít, így az ügynök valóban csak azt látja,
+amit belecsatoltak. macOS-en a `sandbox-exec` egy Seatbelt-profilt alkalmaz,
+amely **alapértelmezés szerint megengedő** — egy teljesen tiltásra alapuló profil
+használhatatlanná tenné az interaktív shellt, mert a felsorolandó dyld-, XPC- és
+Mach-hívások száma kezelhetetlen. A macOS-profil ezért `(allow default)`-ból
+indul, és tiltásokat vés ki: titkos útvonalak olvasása, írási szabályzat
+visszaállítva tiltásra, felül pedig explicit engedélyek, unlink-blokkolás minden
+tiltott útvonalon és annak ősein, hogy egy átnevezés ne kerülhesse meg az írási
+tiltást, exec-tiltások a mindig veszélyes binárisokra és bármire, amit egy
+írható könyvtárba másoltak, valamint a hálózat a loopback proxy portjaira és a
+DNS-re korlátozva.
 
-The practical consequence: on Linux the agent's view of the filesystem is
-narrowed; on macOS the agent can still _read_ most of the host and your
-registered checkouts are protected by explicit write and rename denials rather
-than by invisibility. Both are namespace-level isolation, not a kernel security
-boundary — the backends say so in their own capability notes.
+A gyakorlati következmény: Linuxon az ügynök fájlrendszer-képe szűkül; macOS-en
+az ügynök még mindig _olvashatja_ a hoszt nagy részét, és a regisztrált
+checkoutjait nem a láthatatlanság védi, hanem explicit írási és átnevezési
+tiltások. Mindkettő névtérszintű elkülönítés, nem kernelbiztonsági határ — a
+háttérrendszerek ezt a saját képességjegyzeteikben maguk is elmondják.
 
-The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
-(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
-overlay working directory read-write, the agent's config directory read-only,
-the conversation's shared `repos/` directory read-write when it exists, and the
-space's attachments directory read-only when it exists. A sibling agent's
-directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
-only the run's working directory. This is the same shape the harness's
-in-process path check enforces in software, so the two agree — but only the
-path check covers the harness's own file tools, which never reach a mount
-namespace at all.
+A bind mount készlete az, ahol a keresztügynök-határ meghúzódik. Az overlay
+indítás (Claude Code és ACP) legfeljebb négy útvonalat csatol be, futásonként
+feloldva: az ügynök overlay-munkakönyvtárát írás-olvasásra, az ügynök
+konfigurációs könyvtárát csak olvasásra, a beszélgetés megosztott `repos/`
+könyvtárát írás-olvasásra, amikor létezik, valamint a tér csatolmánykönyvtárát
+csak olvasásra, amikor létezik. Egy testvér-ügynök könyvtára soha nincs
+becsatolva. A harness `bash` becsomagolása szűkebb: csak a futás munkakönyvtárát
+csatolja be. Ez ugyanaz a forma, amelyet a harness folyamaton belüli
+útvonal-ellenőrzése szoftveresen érvényesít, így a kettő egyezik — de csak az
+útvonal-ellenőrzés fedi a harness saját fájleszközeit, amelyek soha nem érnek el
+mountnévtérbe.
 
-Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
-each rule is emitted in both its literal and its symlink-resolved spelling. The
-second spelling is not a nicety:
-the kernel matches a deny rule
-against the resolved path and macOS makes resolution the common case rather
-than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
-really `/private/var/folders/…` — so a checkout reached through either would
-have been writable while the profile appeared to forbid it.
+A regisztrált checkoutjai ezen felül csatlakoznak az írásmegtagadási halmazhoz,
+minden módban és mindhárom becsomagolt úton (Claude Code, ACP, harness `bash`),
+és minden szabály a szó szerinti és a symlink-feloldott alakjában is kiadásra
+kerül. A második alak nem szépségápolás: a kernel a tiltási szabályt a feloldott
+útvonallal veti össze, és a macOS a feloldást teszi gyakorivá, nem egzotikussá —
+a `/tmp` valójában `/private/tmp`, a `/var/folders/…` valójában
+`/private/var/folders/…` —, így egy rajtuk keresztül elért checkout írható lett
+volna, miközben a profil látszólag tiltotta.
 
-Network, under a sandbox, is a per-session **domain** allowlist enforced by
-in-process loopback proxies. Egress is default-deny: with the network
-capability off, the proxies still start but their allowlist is empty, so every
-outbound connection is refused. With it on, the resolver builds the
-allowlist from a curated baseline — LLM API providers, git hosting, package
-registries, the model catalogue — plus the GitHub domains an agent's GitHub or
-push capability earns it and matches every connection's target host against
-it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
-separate always-denied list wins over the allowlist and covers cloud metadata
-endpoints and telemetry sinks. What is _not_ configurable is the list itself:
-the spec carries an `egressAllowlist` field for extra domains and a ticketing
-domain hook, but nothing in the dispatch path populates either, so in practice
-every run gets the baseline plus its capability-derived domains and nothing
-more.
+A hálózat homokozó alatt munkamenetenkénti **domain**-engedélylista, amelyet
+folyamaton belüli loopback proxyk érvényesítenek. A kimenő forgalom
+alapértelmezés szerint tiltott: kikapcsolt hálózati képességgel a proxyk
+elindulnak, de az engedélylistájuk üres, így minden kimenő kapcsolat
+elutasításra kerül. Bekapcsolva a feloldó egy gondozott alaplistából építi fel az
+engedélylistát — LLM API-szolgáltatók, git-hoszting, csomagregiszterek, a
+modellkatalógus —, plusz azokból a GitHub-domainekből, amelyeket az ügynök
+GitHub- vagy push-képessége kiérdemel, és minden kapcsolat célhosztját ezzel
+veti össze. A helyettesítő karakterek működnek (`*.example.com` az aldomainekre
+illeszkedik, nem a csúcstartományra). Egy külön, mindig tiltott lista felülírja
+az engedélylistát, és felhő-metaadatvégpontokat és telemetriai célpontokat fed
+le. Ami _nem_ konfigurálható, az maga a lista: a specifikáció hordoz egy
+`egressAllowlist` mezőt további domainekhez és egy jegykezelő domain-horgot, de
+az indítási útvonalban semmi nem tölti ki egyiket sem, így a gyakorlatban minden
+futás az alaplistát és a képességből származó domainjeit kapja, semmi többet.
 
-Denials, on macOS, are observable: a monitor taps the system log for Sandbox
-denials, filters known noise, deduplicates retry storms and surfaces each as a
-`SandboxViolation` naming what was attempted and which capability would unblock
-it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
-and `Permission denied` and emits the same event type — there is no system-log
-tap. Those arrive on the run's own event stream, so a denied syscall shows up in
-the transcript rather than only in a log. The telemetry only exists while a
-native sandbox is actually wrapping the process — on a host with no backend
-there is nothing to observe. It is also unrelated to capability gating: a
-violation comes from a denied syscall, never from a capability lookup.
+A tiltások macOS-en megfigyelhetők: egy monitor a rendszernaplóból kiszúrja a
+Sandbox-tiltásokat, kiszűri az ismert zajt, deduplikálja az újrapróbálkozási
+viharokat, és mindegyiket `SandboxViolation` eseményként hozza felszínre,
+megnevezve, mit kíséreltek meg és melyik képesség oldaná fel. Linuxon a
+becsomagolási út az stderr-ből elemzi ki az `EPERM`, `Operation not permitted`
+és `Permission denied` szövegeket, és ugyanazt az eseménytípust bocsátja ki —
+nincs rendszernapló-kiszúrás. Ezek a futás saját eseményfolyamán érkeznek, így
+egy megtagadott rendszerhívás az átiratban is megjelenik, nem csak egy naplóban.
+A telemetria csak addig létezik, amíg egy natív homokozó ténylegesen becsomagolja
+a folyamatot — egy háttérrendszer nélküli hoszton nincs mit megfigyelni. Az sem
+kapcsolódik a képességkapuzáshoz: egy sértés megtagadott rendszerhívásból
+származik, soha nem képességkeresésből.
 
-## Confirmations come from the guardrails, not the sandbox
+## A megerősítések a korlátokból jönnek, nem a homokozóból
 
-The sandbox has no approval path. It launches, executes, emits events and tears
-down; there is nowhere in it for a human to answer a question. When you see a
-confirmation in a space — approve this push, approve this delete — it was
-raised by the guardrail engine (or the harness's command policy) _before_ the
-action reached the runtime at all.
+A homokozónak nincs jóváhagyási útja. Elindul, végrehajt, eseményeket bocsát ki
+és lebomlik; nincs benne hely, ahol egy ember válaszolhatna egy kérdésre. Amikor
+egy megerősítést lát egy térben — hagyja jóvá ezt a push-t, hagyja jóvá ezt a
+törlést —, azt a korlátmotor (vagy a harness parancsszabályzata) emelte _azelőtt_,
+hogy a művelet egyáltalán elérte volna a futtatókörnyezetet.
 
-This ordering is deliberate. An approval that happened after the syscall would
-be an audit record, not a gate. It is also why the fail-closed rule lives in the
-guardrails: with no approver connected, the decision is made before anything
-runs and it is a denial.
+Ez a sorrend szándékos. Egy jóváhagyás, amely a rendszerhívás után történt
+volna, auditbejegyzés lenne, nem kapu. Ezért is él a fail-closed szabály a
+korlátokban: csatlakoztatott jóváhagyó nélkül a döntés még az előtt megszületik,
+hogy bármi elindulna, és ez egy elutasítás.
 
-## Diagnostics
+## Diagnosztika
 
-[Run agent diagnostics](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/) is the single place
-that states what can be checked by hand.
+Az [ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/)
+az egyetlen hely, amely elmondja, mi ellenőrizhető kézzel.
 
-## Related concepts
+## Kapcsolódó fogalmak
 
-- [Rigs and enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
-- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/): the policy layer above the OS floor and where approvals actually come from
-- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): where isolation fits in the dispatch flow
-- [Modes](/hu-HU/kezikonyv/fogalmak/modok/): how a mode narrows the tool surface and the command policy
-- [Sandbox backends reference](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/): the backends and their configuration
+- [Állomások és elszigetelt környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/): a homokozó feletti lépés — amikor a munkához egy egész eldobható gép kell kernelhatárral, nem egy becsomagolt folyamat
+- [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az operációs rendszer alsó korlátja feletti szabályzatréteg, és hogy honnan jönnek valójában a jóváhagyások
+- [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): hová illeszkedik az elkülönítés az indítási folyamatba
+- [Módok](/hu-HU/kezikonyv/fogalmak/modok/): hogyan szűkíti egy mód az eszközfelületet és a parancsszabályzatot
+- [Homokozó-háttérrendszerek](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/): a háttérrendszerek és konfigurációjuk
 
-## Related guides
+## Kapcsolódó útmutatók
 
-- [Configure sandbox policies](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/): capability flags and filesystem posture
-- [Run agent diagnostics](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/): what the diagnostic checks cover
+- [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/): képességjelzők és fájlrendszer-beállítás
+- [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/): mit fednek le a diagnosztikai ellenőrzések

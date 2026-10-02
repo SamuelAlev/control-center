@@ -1,138 +1,155 @@
 ---
-title: Create the GitHub App
-description: Register a GitHub App for your server so members can sign in, and so background work runs as the app rather than as a person.
+title: Créer la GitHub App
+description: Enregistrez une GitHub App pour votre serveur afin que les membres puissent se connecter et que le travail en arrière-plan s’exécute sous l’app plutôt que sous une personne.
 slug: fr-CA/manuel/guides/github-app
+sourceHash: 3c74fea5e45115d6978d5b446136f6bfe4ac83b8
 ---
 
-This guide shows you how to give your server its own GitHub identity. It takes
-about two minutes, only the server owner does it, and it only has to happen
-once per server.
+Ce guide vous montre comment donner à votre serveur sa propre identité GitHub.
+Il prend environ deux minutes, seul le propriétaire du serveur s’en occupe, et
+il ne faut le faire qu’une fois par serveur.
 
-:::note[You may not need it]
-An official build already ships a GitHub **client id**, so
-[Sign in with GitHub](/fr-CA/manuel/guides/integration-github/) works out of the box
-with nothing registered — a device flow authenticates with the client id alone,
-so it is safe to ship. Register your own app when you want the SERVER to act as
-itself (webhooks, PR polling and ticket sync running on an app installation
-rather than on a person's credential), or when you are building from source.
+:::note[Vous n’en avez peut-être pas besoin]
+Une version officielle est déjà livrée avec un **identifiant client** GitHub,
+donc [Se connecter avec GitHub](/fr-CA/manuel/guides/integration-github/)
+fonctionne d’emblée sans rien enregistrer — un flux d’appareil s’authentifie avec
+le seul identifiant client, de sorte qu’il n’y a aucun risque à la livrer.
+Enregistrez votre propre app lorsque vous voulez que le SERVEUR agisse en son nom
+(webhooks, interrogation périodique des PR et synchronisation des tickets sur une
+installation d’app plutôt que sur l’identifiant d’une personne), ou lorsque vous
+construisez à partir des sources.
 :::
 
-For connecting your own account afterwards, see
-[Set up GitHub integration](/fr-CA/manuel/guides/integration-github/).
+Pour connecter ensuite votre propre compte, voir
+[Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/).
 
-## Why your server needs its own app
+## Pourquoi votre serveur a besoin de sa propre app
 
-Two different jobs come out of one registration, and the app is what makes both
-honest:
+Une même inscription produit deux tâches différentes, et c’est l’app qui rend les
+deux honnêtes :
 
-| Job                    | What answers it                                | Why it matters                                                                                       |
-| ---------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **A person signs in**  | The app's client id, over the device flow      | You get a credential that is yours, on the server, on every device — with no token to paste or rotate |
-| **The server acts**    | The app's id + private key → installation token | Webhooks, PR polling and ticket sync stop depending on one human's token still being valid            |
+| Tâche | Ce qui y répond | Pourquoi c’est important |
+| --- | --- | --- |
+| **Une personne se connecte** | L’identifiant client de l’app, par le flux d’appareil | Vous obtenez un identifiant qui vous appartient, sur le serveur, sur chaque appareil — sans jeton à coller ni à faire tourner |
+| **Le serveur agit** | L’identifiant de l’app + la clé privée → jeton d’installation | Les webhooks, l’interrogation périodique des PR et la synchronisation des tickets cessent de dépendre de la validité du jeton d’un humain |
 
-Note what is **not** in that table: a client secret. GitHub's device flow
-authenticates with the client id alone — both the device-code request and the
-token poll — so there is no secret to keep for signing in.
+Remarquez ce qui **ne figure pas** dans ce tableau : un secret client. Le flux
+d’appareil de GitHub s’authentifie avec le seul identifiant client — tant la
+demande de code d’appareil que l’interrogation du jeton —, de sorte qu’il n’y a
+aucun secret à conserver pour se connecter.
 
-Without an app of your own, the first still works through the client id the
-build ships; the second falls back to the server owner's credential, so
-background work rides on whoever onboarded first.
+Sans app qui vous soit propre, la première tâche fonctionne quand même grâce à
+l’identifiant client livré par la version ; la seconde retombe sur l’identifiant
+du propriétaire du serveur, de sorte que le travail en arrière-plan repose sur la
+personne qui s’est configurée en premier.
 
-:::note[There is no "install Control Center's GitHub App" button]
-A distributed GitHub App would mean one shared client secret and one shared
-installation across everyone's servers, so every workspace's repository access
-would flow through credentials nobody in that workspace controls. Each server
-therefore owns its own app — this guide is about how little that costs.
+:::note[Il n’existe aucun bouton « Installer la GitHub App de Control Center »]
+Une GitHub App distribuée impliquerait un secret client partagé et une
+installation partagée entre les serveurs de tout le monde, de sorte que l’accès
+aux dépôts de chaque espace de travail passerait par des identifiants que
+personne dans cet espace de travail ne contrôle. Chaque serveur possède donc sa
+propre app — ce guide montre à quel point cela coûte peu.
 :::
 
-## Prerequisites
+## Prérequis
 
-- You are the **server owner** — the `providerApps.*` operations are gated to it,
-  and the card is invisible to everyone else
-- A GitHub account, or an organization you can create apps in
-- Nothing publicly reachable: the sign-in is a **device flow**, so the server
-  needs no inbound port, tunnel, callback URL or domain
+- Vous êtes le **propriétaire du serveur** — les opérations `providerApps.*` lui
+  sont réservées, et la carte est invisible pour tout le monde
+- Un compte GitHub, ou une organisation dans laquelle vous pouvez créer des apps
+- Rien qui soit accessible publiquement : la connexion est un **flux d’appareil**,
+  donc le serveur n’a besoin d’aucun port entrant, tunnel, URL de rappel ni
+  domaine
 
-## Register the app
+## Enregistrer l’app
 
-1. Go to [github.com/settings/apps/new](https://github.com/settings/apps/new)
-   (for an org: **Settings → Developer settings → GitHub Apps → New GitHub App**)
-2. **GitHub App name** — anything; `Control Center (yourname)` is fine. It shows
-   up on commits and comments the server makes
-3. **Homepage URL** — anything, e.g. `https://github.com/your-name`
-4. **Callback URL** — leave it empty. The device flow has none
-5. Tick **Enable Device Flow**. This is the one setting the sign-in cannot work
-   without
-6. Untick **Webhook → Active** unless you are wiring webhooks separately
-7. Under **Repository permissions**, grant at least:
+1. Allez à [github.com/settings/apps/new](https://github.com/settings/apps/new)
+   (pour une organisation : **Settings → Developer settings → GitHub Apps → New GitHub App**)
+2. **GitHub App name** — n’importe quoi ; `Control Center (yourname)` convient.
+   Ce nom apparaît sur les commits et les commentaires que le serveur produit
+3. **Homepage URL** — n’importe quoi, p. ex. `https://github.com/your-name`
+4. **Callback URL** — laissez-la vide. Le flux d’appareil n’en a pas
+5. Cochez **Enable Device Flow**. C’est le seul paramètre sans lequel la connexion
+   ne peut pas fonctionner
+6. Décochez **Webhook → Active**, sauf si vous câblez les webhooks séparément
+7. Sous **Repository permissions**, accordez au moins :
    - **Contents**: Read and write
-   - **Metadata**: Read-only (mandatory)
+   - **Metadata**: Read-only (obligatoire)
    - **Pull requests**: Read and write
-   - **Issues**: Read and write, if you use GitHub Issues for tickets, and
-     for the bot's PR-conversation comment search
-     (see [Talk to Control Center from a GitHub PR](/fr-CA/manuel/guides/conversations-pr-github/))
-   - **Checks**: Read-only, for CI state on the PR page
-8. Under **Where can this GitHub App be installed?**, choose whichever fits —
-   "Only on this account" is right for a personal server
-9. Click **Create GitHub App**
+   - **Issues**: Read and write, si vous utilisez GitHub Issues pour les tickets,
+     et pour la recherche de commentaires du bot dans les conversations de PR
+     (voir [Parler à Control Center depuis une PR GitHub](/fr-CA/manuel/guides/conversations-pr-github/))
+   - **Checks**: Read-only, pour l’état de l’intégration continue sur la page de
+     la PR
+8. Sous **Where can this GitHub App be installed?**, choisissez ce qui convient —
+   « Only on this account » est le bon choix pour un serveur personnel
+9. Cliquez sur **Create GitHub App**
 
-## Collect the three values
+## Recueillir les trois valeurs
 
-On the app's page, immediately after creation:
+Sur la page de l’app, immédiatement après la création :
 
-| Value           | Where                                             |
-| --------------- | ------------------------------------------------- |
-| **App ID**      | The **General** tab, near the top                 |
-| **Client ID**   | The **General** tab, under "Client secrets"       |
-| **Private key** | **Generate a private key** — a `.pem` downloads   |
+| Valeur | Où |
+| --- | --- |
+| **App ID** | L’onglet **General**, près du haut |
+| **Client ID** | L’onglet **General**, sous « Client secrets » |
+| **Private key** | **Generate a private key** — un fichier `.pem` se télécharge |
 
-The private key file downloads once and GitHub never shows it again. Keep it
-until you have pasted it; you can always generate another.
+Le fichier de clé privée ne se télécharge qu’une fois, et GitHub ne l’affiche
+plus jamais. Gardez-le jusqu’à ce que vous l’ayez collé ; vous pouvez toujours en
+générer un autre.
 
-A **client secret** is optional and buys exactly one thing: if you leave
-"Expire user authorization tokens" ON, it is what renews someone's token
-silently instead of asking them to sign in again every eight hours. The
-sign-in itself never uses it.
+Un **secret client** est facultatif et n’apporte qu’une seule chose : si vous
+laissez « Expire user authorization tokens » activé, c’est lui qui renouvelle
+silencieusement le jeton d’une personne au lieu de lui demander de se reconnecter
+toutes les huit heures. La connexion elle-même ne l’utilise jamais.
 
-The simpler setup is to turn that expiry OFF, and then no secret is needed
-anywhere. If you keep it on, generate a secret and paste it in
-**Settings → Server → Single sign-on** (the **Provider apps** card) — there is no environment variable for
-it, and none is baked into a build, so it stays on your server.
+La configuration la plus simple consiste à désactiver cette expiration ; plus
+aucun secret n’est alors nécessaire. Si vous la laissez activée, générez un
+secret et collez-le dans **Paramètres → Serveur → Authentification unique** (la
+carte **Applications fournisseur**) — il n’existe aucune variable d’environnement
+pour lui, et aucune n’est intégrée à une version, de sorte qu’il reste sur votre
+serveur.
 
-## Install it on your account
+## Installer l’app sur votre compte
 
-An app that is registered but not installed can authenticate people and read
-nothing.
+Une app enregistrée mais non installée peut authentifier des personnes et ne rien
+lire.
 
-1. On the app's page, open **Install App**
-2. Install it on your account or org
-3. Choose **All repositories**, or select the ones this server should see
+1. Sur la page de l’app, ouvrez **Install App**
+2. Installez-la sur votre compte ou votre organisation
+3. Choisissez **All repositories**, ou sélectionnez celles que ce serveur doit
+   voir
 
-## Paste it into Control Center
+## La coller dans Control Center
 
-1. Go to **Settings → Server → Single sign-on** and scroll to the
-   **Provider apps** card
-2. On the **GitHub** block, set each field:
-   - **App id** — the numeric App ID
-   - **Private key** — paste the whole `.pem`, `BEGIN` and `END` lines included
-   - **Client id** — from the same page
-   - **Client secret** — only if you generated one (for token refresh)
-3. Click **Test**
+1. Allez dans **Paramètres → Serveur → Authentification unique** et faites défiler
+   jusqu’à la carte **Applications fournisseur**
+2. Dans le bloc **GitHub**, définissez chaque champ :
+   - **Identifiant d’application** — l’App ID numérique
+   - **Clé privée** — collez le fichier `.pem` au complet, lignes `BEGIN` et `END`
+     comprises
+   - **Identifiant client** — depuis la même page
+   - **Secret client** — seulement si vous en avez généré un (pour le
+     renouvellement du jeton)
+3. Cliquez sur **Tester**
 
-The key is parsed as it is saved, so a truncated or wrong-format paste is
-rejected there and then rather than failing on a background request hours later.
-**Test** goes further and asks GitHub which accounts the app is installed on —
-"saved" and "works" are different claims, and only the second one means anything
-will run.
+La clé est analysée au moment où elle est enregistrée, de sorte qu’un collage
+tronqué ou mal formaté est rejeté sur-le-champ plutôt que d’échouer des heures
+plus tard sur une requête en arrière-plan. **Tester** va plus loin et demande à
+GitHub sur quels comptes l’app est installée — « enregistré » et « fonctionne »
+sont deux affirmations différentes, et seule la seconde signifie que quelque
+chose s’exécutera.
 
-Checkpoint: the GitHub block reads "The server can act as itself, and people can
-sign in", and the **GitHub** row under **Settings → Workspace → Profile & identity →
-Code hosting** now offers **Sign in with GitHub**.
+Point de contrôle : le bloc GitHub affiche « Le serveur peut agir en son nom, et
+les personnes peuvent se connecter », et la ligne **GitHub** sous
+**Paramètres → Espace de travail → Profil et identité → Hébergement de code**
+propose maintenant **Se connecter avec GitHub**.
 
-## Configure it with environment variables instead
+## Le configurer plutôt avec des variables d’environnement
 
-For a headless or scripted install, the server seeds each field from the
-environment the first time it has no stored value:
+Pour une installation sans interface ou automatisée, le serveur initialise chaque
+champ à partir de l’environnement la première fois qu’il n’a aucune valeur
+enregistrée :
 
 ```bash
 GITHUB_APP_ID=123456
@@ -140,64 +157,69 @@ GITHUB_APP_PRIVATE_KEY="$(cat control-center.private-key.pem)"
 GITHUB_CLIENT_ID=Iv1.0123456789abcdef
 ```
 
-There are no command-line flags for these — a secret on a command line is
-readable by every process on the host through `ps`. The environment is the only
-place to configure them, and it beats whatever the build ships.
-`.env.template` is the complete list.
+Il n’existe aucun indicateur de ligne de commande pour ces valeurs — un secret
+passé sur la ligne de commande est lisible par tout processus de l’hôte au moyen
+de `ps`. L’environnement est le seul endroit où les configurer, et il l’emporte
+sur ce que la version livre. `.env.template` en donne la liste complète.
 
-For local development the repo-root `.env` carries the same values and the
-desktop passes them to the server it spawns. Put the key on **one line** there:
-a `.env` value is one line, and `\n` inside double quotes decodes to a newline.
+Pour le développement local, le `.env` à la racine du dépôt porte les mêmes
+valeurs, et l’application de bureau les transmet au serveur qu’elle lance.
+Placez la clé sur **une seule ligne** : une valeur de `.env` tient sur une ligne,
+et `\n` entre guillemets doubles est décodé en saut de ligne.
 
 ```
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow…\n-----END RSA PRIVATE KEY-----"
 ```
 
-`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` are the same names the sandbox
-token broker already reads, so a host that configured fine-grained agent tokens
-gets the sign-in lane for free. Seeding happens **once per field** — after that
-the stored value wins, so editing in Settings is not undone by the next
-restart.
+`GITHUB_APP_ID` et `GITHUB_APP_PRIVATE_KEY` sont les mêmes noms que lit déjà le
+courtier de jetons du bac à sable, de sorte qu’un hôte qui a configuré des jetons
+d’agent à granularité fine obtient la voie de connexion gratuitement.
+L’initialisation se fait **une fois par champ** — ensuite, la valeur enregistrée
+l’emporte, donc une modification faite dans Paramètres n’est pas annulée au
+prochain redémarrage.
 
-## Do the same for Linear
+## Faites de même pour Linear
 
-Linear has no device flow, so its sign-in is a browser round-trip and it does
-need a callback URL — the **Provider apps** card shows you the exact one to
-register.
+Linear n’a pas de flux d’appareil, donc sa connexion est un aller-retour dans le
+navigateur et elle a bel et bien besoin d’une URL de rappel — la carte
+**Applications fournisseur** vous montre exactement celle à enregistrer.
 
-1. Create an OAuth application at
+1. Créez une application OAuth à
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
-2. Set the **Callback URL** to the URL the card shows, verbatim
-3. Paste the **Client ID** and **Client secret** into the Linear block
-4. Optionally add a workspace **API key** — that is the credential the server
-   uses to sync tickets when no human asked
+2. Renseignez **Callback URL** avec l’URL affichée par la carte, textuellement
+3. Collez **Identifiant client** et **Secret client** dans le bloc Linear
+4. Ajoutez facultativement une **clé d’API** d’espace de travail — c’est
+   l’identifiant que le serveur utilise pour synchroniser les tickets quand aucun
+   humain n’a fait la demande
 
-## Troubleshooting
+## Dépannage
 
-### The sign-in dialog says the provider returned no device code
+### La boîte de dialogue de connexion indique que le fournisseur n’a renvoyé aucun code d’appareil
 
-**Enable Device Flow** is off on the app. Turn it on under **General** and retry.
+**Enable Device Flow** est désactivé sur l’app. Activez-le sous **General**, puis
+réessayez.
 
-### Test says the credentials work but the app is not installed anywhere
+### **Tester** indique que les identifiants fonctionnent, mais que l’app n’est installée nulle part
 
-Registration and installation are separate steps. Open **Install App** on the
-app's page and install it.
+L’enregistrement et l’installation sont deux étapes distinctes. Ouvrez
+**Install App** sur la page de l’app, puis installez-la.
 
-### Test says the private key could not be read
+### **Tester** indique que la clé privée n’a pas pu être lue
 
-Paste the whole `.pem` file, including the `-----BEGIN` and `-----END` lines. An
-`ed25519` or EC key cannot be used — GitHub Apps sign with RSA.
+Collez le fichier `.pem` au complet, y compris les lignes `-----BEGIN` et
+`-----END`. Une clé `ed25519` ou EC ne peut pas être utilisée — les GitHub Apps
+signent avec RSA.
 
-### A member signed in but sees no repositories
+### Un membre s’est connecté, mais ne voit aucun dépôt
 
-The app is not installed on the account that owns them, or its installation
-selects different repositories. Their own sign-in only grants what the app is
-allowed to see.
+L’app n’est pas installée sur le compte qui les possède, ou son installation
+sélectionne d’autres dépôts. Sa propre connexion n’accorde que ce que l’app est
+autorisée à voir.
 
-## Related guides
+## Guides connexes
 
-- [Set up GitHub integration](/fr-CA/manuel/guides/integration-github/)
-- [Talk to Control Center from a GitHub PR](/fr-CA/manuel/guides/conversations-pr-github/)
-- [Connect a code host](/fr-CA/manuel/guides/connecter-hebergeur-de-code/)
-- [Manage API keys](/fr-CA/manuel/guides/cles-api/)
-- [Set up Slack integration](/fr-CA/manuel/guides/integration-slack/)
+- [Configurer l’intégration GitHub](/fr-CA/manuel/guides/integration-github/)
+- [Parler à Control Center depuis une PR GitHub](/fr-CA/manuel/guides/conversations-pr-github/)
+- [Connecter un hébergeur de code](/fr-CA/manuel/guides/connecter-hebergeur-de-code/)
+- [Gérer les clés API](/fr-CA/manuel/guides/cles-api/)
+- [Configurer l’intégration Slack](/fr-CA/manuel/guides/integration-slack/)

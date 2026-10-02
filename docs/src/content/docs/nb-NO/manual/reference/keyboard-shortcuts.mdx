@@ -1,149 +1,150 @@
 ---
-title: Keyboard shortcuts
-description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+title: Tastatursnarveier
+description: Det komplette registeret over tastaturbindinger, etter omfang, med betingelsene for når hver snarvei utløses.
 slug: nb-NO/handbok/referanse/tastatursnarveier
+sourceHash: c0385aece975eb9d3c97dc00b544f9e16ba8a9e6
 ---
 
-Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **48 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+Snarveiene kommer fra ett `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det inneholder **48 bindinger**. Innstillinger → Deg → Hurtigtaster viser dette registeret som en **skrivebeskyttet referanse**: det finnes ingen grensesnitt for å tilordne på nytt, og ingen fil for egne tastatursnarveier.
 
-`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+`Cmd` nedenfor er den primære kommandomodifikatoren — ⌘ på macOS, Ctrl på Windows og Linux. En binding utløses bare når kommandoen har en registrert behandler på gjeldende skjerm, og `when`-klausulen er oppfylt; `!textInputFocus` betyr at tasten i stedet sendes videre til et tekstfelt som har fokus.
 
-There is no digit-key navigation shortcut. Inbox, tickets, pull requests and the rest are reached from the sidebar or ⌘K. Observability has no shortcut either.
+Det finnes ingen snarvei for navigasjon med tallsiffer. Innboksen, saker, pull requests og resten nås fra sidepanelet eller med ⌘K. Observabilitet har heller ingen snarvei.
 
 ## Global (19)
 
-Scope `global`, so they are live anywhere in the shell.
+Omfanget er `global`, så de er aktive overalt i skallet.
 
 ### System
 
-| Shortcut                                    | Action                                           | Condition                                                  |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
-| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
-| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
-| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
-| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
-| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/appearance`) | —                                                          |
-| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
-| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
-| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
-| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
-| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+| Snarvei                                     | Handling                                          | Betingelse                                                     |
+| ------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | Kommandopalett                                    | —                                                              |
+| `Shift + /` (`?`)                           | Jukseark for tastatursnarveier                     | Ikke mens du skriver i et felt                                 |
+| `Cmd/Ctrl + Z`                              | Angre                                             | Ikke mens du skriver i et felt (et felt med fokus beholder sin egen angre-funksjon) |
+| `Cmd/Ctrl + Shift + Z`                      | Gjør om                                           | Ikke mens du skriver i et felt                                 |
+| `Cmd/Ctrl + Shift + T`                      | Bytt tema                                         | —                                                              |
+| `Cmd/Ctrl + ,`                              | Åpne innstillinger (lander på `/settings/you/appearance`) | —                                                       |
+| `Cmd/Ctrl + Shift + Alt + F`                | Slå fokusmodus av/på                              | —                                                              |
+| `Cmd/Ctrl + Shift + W`                      | Slå arbeidsområdebytteren av/på                   | —                                                              |
+| `Cmd/Ctrl + ]`                              | Neste arbeidsområde                               | —                                                              |
+| `Cmd/Ctrl + [`                              | Forrige arbeidsområde                             | —                                                              |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Bytt til arbeidsområde 1–9                        | —                                                              |
 
-## Pull request list (3)
+## Pull request-liste (3)
 
-Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+Omfanget er `/pull-requests`. Alle krever `route == '/pull-requests'` og ingen tekstfelt med fokus, så de utløses ikke mens PR-detaljruten ligger åpen over listen.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `R`      | Refresh          |
-| `Enter`  | Open PR          |
-| `F`      | Open filter menu |
+| Snarvei | Handling          |
+| ------- | ----------------- |
+| `R`     | Oppdater          |
+| `Enter` | Åpne PR           |
+| `F`     | Åpne filtermeny   |
 
-`Enter` (`pr.list-open`) is declared in the registry and appears on the keybindings reference, but **the list screen does not register a handler for it**, so it currently does not fire. `F` opens the filter menu (`pr.list-open-filter`), not search.
+`Enter` (`pr.list-open`) er deklarert i registeret og vises i referansen over tastaturbindinger, men **listeskjermen registrerer ingen behandler for den**, så den utløses foreløpig ikke. `F` åpner filtermenyen (`pr.list-open-filter`), ikke søket.
 
-## Pull request detail (2)
+## Pull request-detaljer (2)
 
-Scope `/pull-requests/`. Refresh requires no focused text field. Close-tab has no text-input guard (a ⌘-modified stroke is never plain text) and a route regex so it does not fire on the list.
+Omfanget er `/pull-requests/`. Oppdater krever ingen tekstfelt med fokus. Lukk fane har ingen vakt mot tekstinndata (et ⌘-modifisert tastetrykk er aldri ren tekst) og et rute-regex, så den ikke utløses på listen.
 
-| Shortcut       | Action    | Condition                          |
-| -------------- | --------- | ---------------------------------- |
-| `R`            | Refresh   | Not typing in a field              |
-| `Cmd/Ctrl + W` | Close tab | On a `/pull-requests/<…>` location |
+| Snarvei        | Handling   | Betingelse                        |
+| -------------- | ---------- | --------------------------------- |
+| `R`            | Oppdater   | Ikke mens du skriver i et felt    |
+| `Cmd/Ctrl + W` | Lukk fane  | På en `/pull-requests/<…>`-plassering |
 
-Tab switching (`1`/`2`/`3`), file viewed/collapse (`V`/`C`), the file list (`T`) and find-in-diff (`Cmd/Ctrl + F`) are owned by the diff viewer's own handler — see [Diff viewer keys outside the registry](#diff-viewer-keys-outside-the-registry).
+Fanebytte (`1`/`2`/`3`), vist/sammenfoldet for en fil (`V`/`C`), fillisten (`T`) og søk i diffen (`Cmd/Ctrl + F`) hører til diff-visningens egen behandler — se [Taster i diff-visningen utenfor registeret](#taster-i-diff-visningen-utenfor-registeret).
 
-## Inbox (1)
+## Innboks (1)
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `F`      | Open filter menu |
+| Snarvei | Handling        |
+| ------- | --------------- |
+| `F`     | Åpne filtermeny |
 
-Requires `route == '/inbox'` and no focused text field.
+Krever `route == '/inbox'` og ingen tekstfelt med fokus.
 
-## GitHub user and team profiles (3)
+## GitHub-bruker- og teamprofiler (3)
 
-Scope `/users/`. The `when` clause is a regex against `/users/<login>` **or** `/teams/<organization>/<slug>`, plus no focused text field.
+Omfanget er `/users/`. `when`-klausulen er et regex mot `/users/<login>` **eller** `/teams/<organization>/<slug>`, pluss ingen tekstfelt med fokus.
 
-| Shortcut       | Action       |
-| -------------- | ------------ |
-| `R`            | Refresh      |
-| `/`            | Focus search |
-| `Cmd/Ctrl + F` | Focus search |
+| Snarvei        | Handling       |
+| -------------- | -------------- |
+| `R`            | Oppdater       |
+| `/`            | Fokuser søk    |
+| `Cmd/Ctrl + F` | Fokuser søk    |
 
-## Spaces (8)
+## Områder (8)
 
-Scope `/spaces`. The `when` clauses use a regex so they fire on both the space list (`/spaces`) and a selected space (`/spaces/<id>`).
+Omfanget er `/spaces`. `when`-klausulene bruker et regex, så de utløses både på områdelisten (`/spaces`) og i et valgt område (`/spaces/<id>`).
 
-| Shortcut               | Action                 | Condition             |
-| ---------------------- | ---------------------- | --------------------- |
-| `Enter`                | Send message           | —                     |
-| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
-| `J`                    | Next space             | Not typing in a field |
-| `K`                    | Previous space         | Not typing in a field |
-| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
-| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
-| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
-| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+| Snarvei                | Handling                        | Betingelse                    |
+| ---------------------- | ------------------------------- | ----------------------------- |
+| `Enter`                | Send melding                    | —                             |
+| `Cmd/Ctrl + N`         | Nytt område                     | På en `/spaces`-rute          |
+| `J`                    | Neste område                    | Ikke mens du skriver i et felt |
+| `K`                    | Forrige område                  | Ikke mens du skriver i et felt |
+| `Cmd/Ctrl + Shift + D` | Diktering med trykk for å snakke | —                            |
+| `Cmd/Ctrl + T`         | Åpne editorfane                 | På en `/spaces`-rute          |
+| `Cmd/Ctrl + W`         | Lukk editorfane                 | På en `/spaces`-rute          |
+| `Cmd/Ctrl + B`         | Slå editor-sidepanelet av/på    | På en `/spaces`-rute          |
 
-Enter-to-send is owned by the composer text field; push-to-talk is owned by the composer's mic button (its own hardware-keyboard handler). Both are listed in the registry for the settings reference.
+Sending med Enter hører til tekstfeltet i meldingsfeltet; trykk-for-å-snakke hører til mikrofonknappen i meldingsfeltet, som har sin egen behandler for fysisk tastatur. Begge står i registeret for at innstillingsreferansen skal føre dem opp.
 
-## Workspace picker (2)
+## Arbeidsområdevelger (2)
 
-Scope `/workspaces`, live only on the picker itself.
+Omfanget er `/workspaces`, aktive bare på selve velgeren.
 
-| Shortcut       | Action                  |
-| -------------- | ----------------------- |
-| `Cmd/Ctrl + N` | New workspace           |
-| `Enter`        | Open selected workspace |
+| Snarvei        | Handling                     |
+| -------------- | ---------------------------- |
+| `Cmd/Ctrl + N` | Nytt arbeidsområde           |
+| `Enter`        | Åpne valgt arbeidsområde     |
 
-`Enter` requires no focused text field.
+`Enter` krever ingen tekstfelt med fokus.
 
-## Settings (5)
+## Innstillinger (5)
 
-| Shortcut       | Action                 | Screen                              |
-| -------------- | ---------------------- | ----------------------------------- |
-| `J`            | Next settings page     | Any `/settings` route, not typing   |
-| `K`            | Previous settings page | Any `/settings` route, not typing   |
-| `Cmd/Ctrl + N` | New agent              | Settings → Workspace → Agents       |
-| `Cmd/Ctrl + N` | Add repository         | Settings → Workspace → Repositories |
-| `R`            | Rescan for adapters    | Settings → Server → Model providers |
+| Snarvei        | Handling                   | Skjerm                                   |
+| -------------- | -------------------------- | ---------------------------------------- |
+| `J`            | Neste innstillingsside     | Alle `/settings`-ruter, ikke skriving    |
+| `K`            | Forrige innstillingsside   | Alle `/settings`-ruter, ikke skriving    |
+| `Cmd/Ctrl + N` | Ny agent                   | Innstillinger → Arbeidsområde → Agenter  |
+| `Cmd/Ctrl + N` | Legg til arkiv             | Innstillinger → Arbeidsområde → Arkiv    |
+| `R`            | Skann på nytt etter adaptere | Innstillinger → Server → Modellleverandører |
 
-## Newsfeed (5)
+## Nyhetsstrøm (5)
 
-Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+Omfanget er `/newsfeed`. Alle krever `route == '/newsfeed'` og ingen tekstfelt med fokus.
 
-| Shortcut | Action           |
-| -------- | ---------------- |
-| `J`      | Next article     |
-| `K`      | Previous article |
-| `Enter`  | Open article     |
-| `S`      | Toggle bookmark  |
-| `R`      | Refresh feeds    |
+| Snarvei | Handling              |
+| ------- | --------------------- |
+| `J`     | Neste artikkel        |
+| `K`     | Forrige artikkel      |
+| `Enter` | Åpne artikkel         |
+| `S`     | Slå bokmerke av/på    |
+| `R`     | Oppdater alle strømmer |
 
-## Diff viewer keys outside the registry
+## Taster i diff-visningen utenfor registeret
 
-The PR diff viewer handles these itself (`PrDiffKeyboardHandler`). Search/viewed/collapse are listed in the registry comments for the settings reference only — no dispatcher handler is registered, so the dispatcher leaves them to the diff view. They do not appear as their own rows on the keybindings reference.
+PR-diff-visningen håndterer disse selv (`PrDiffKeyboardHandler`). Søk/vist/sammenfold står i registerets kommentarer bare for innstillingsreferansen — ingen behandler i dispatcheren er registrert, så dispatcheren overlater dem til diff-visningen. De vises ikke som egne rader i referansen over tastaturbindinger.
 
-| Shortcut        | Action                                               |
-| --------------- | ---------------------------------------------------- |
-| `Cmd/Ctrl + F`  | Search in diff                                       |
-| `J` / `K`       | Next / previous file                                 |
-| `V`             | Toggle viewed on the focused file                    |
-| `C`             | Toggle collapse on the focused file                  |
-| `T`             | Show file list                                       |
-| `Enter`         | Next search match (only while find-in-diff is open)  |
-| `Shift + Enter` | Previous search match                                |
-| `Escape`        | Close find-in-diff, or clear the diff text selection |
-| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+| Snarvei         | Handling                                                       |
+| --------------- | -------------------------------------------------------------- |
+| `Cmd/Ctrl + F`  | Søk i diffen                                                   |
+| `J` / `K`       | Neste / forrige fil                                            |
+| `V`             | Slå «vist» av/på for filen med fokus                           |
+| `C`             | Slå sammenfolding av/på for filen med fokus                    |
+| `T`             | Vis filliste                                                   |
+| `Enter`         | Neste treff (bare mens søk i diffen er åpent)                  |
+| `Shift + Enter` | Forrige treff                                                  |
+| `Escape`        | Lukk søk i diffen, eller fjern tekstmarkeringen i diffen       |
+| `Cmd/Ctrl + C`  | Kopier markeringen i diffen                                    |
 
-## Browser-reserved combinations
+## Kombinasjoner som nettleseren reserverer
 
-On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+I nettbygget bruker nettleseren noen hurtigtaster før siden ser dem, så de tilhørende bindingene kan aldri utløses der. På skrivebordet fungerer de normalt. Reservert i kombinasjon med den primære kommandomodifikatoren: `T`, `W`, `N` og sifrene `1`–`9`.
 
-That covers `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+Det dekker arbeidsområdebytte med `Cmd/Ctrl + Alt + 1`–`9`, `Cmd/Ctrl + N` (nytt område, nytt arbeidsområde, ny agent, legg til arkiv) og `Cmd/Ctrl + T` / `Cmd/Ctrl + W` i områder og PR-detaljer.
 
-## See also
+## Se også
 
-- [Route map](/nb-NO/handbok/referanse/rutekart/)
-- [Focus mode](/nb-NO/handbok/slik-gjor-du/fokusmodus/)
+- [Rutekart](/nb-NO/handbok/referanse/rutekart/)
+- [Bruk fokusmodus og lydlandskap](/nb-NO/handbok/slik-gjor-du/fokusmodus/)

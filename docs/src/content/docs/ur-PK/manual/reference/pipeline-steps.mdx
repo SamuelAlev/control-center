@@ -1,246 +1,247 @@
 ---
-title: Pipeline steps
-description: Reference for pipeline step kinds, step body keys, their configuration and step results.
+title: پائپ لائن قدم
+description: پائپ لائن قدم کی اقسام، قدم باڈی کلیدیں، اُن کی کنفیگریشن اور قدم کے نتائج کا حوالہ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم
+sourceHash: e39ec69d4e5d1ce3b9434d7d811b6e2bdd4b54fc
 ---
 
-A pipeline step has two independent axes:
+ایک پائپ لائن قدم کے دو آزاد محور ہوتے ہیں:
 
-- **Kind** (`StepKind`) — how the engine _schedules_ the step relative to its triggers.
-- **Body key** (`BuiltInBodyKeys`) — which registered body closure _executes_ the step's work.
+- **قسم** (`StepKind`) — انجن قدم کو اُس کے ٹریگرز کے مقابلے میں کیسے _شیڈیول_ کرتا ہے۔
+- **باڈی کلید** (`BuiltInBodyKeys`) — کون سا رجسٹر شدہ باڈی کلوزر قدم کا کام _انجام_ دیتا ہے۔
 
-## Step kinds
+## قدم کی اقسام
 
-Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart`.
+`packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.dart` میں متعین۔
 
-| Kind       | Scheduling semantics                                                                                                                                                                                                                     |
+| قسم        | شیڈولنگ کے معنی                                                                                                                                                                                                                          |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trigger`  | Mandatory entry point — exactly one per template, always the first node. Does no work itself; what starts the run (manual / event / schedule) is tracked separately as `PipelineTrigger` rows. Its body is the no-op `pipeline.trigger`. |
-| `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
-| `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
-| `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
-| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
+| `trigger`  | لازمی داخلے کا مقام — فی ٹیمپلیٹ عین ایک، ہمیشہ پہلا نوڈ۔ خود کوئی کام نہیں کرتا؛ رن کیا شروع کرتا ہے (دستی / ایونٹ / شیڈول) الگ سے `PipelineTrigger` قطاروں کے طور پر ٹریک ہوتا ہے۔ اِس کی باڈی no-op `pipeline.trigger` ہے۔            |
+| `listen`   | جب تمام ماخذ قدم (`StepTrigger.sourceStepIds` میں) مکمل ہو جائیں تو چلتا ہے۔                                                                                                                                                              |
+| `join`     | جب `waitForStepIds` کے تمام قدم حتمی حالت تک پہنچ جائیں تو چلتا ہے۔                                                                                                                                                                      |
+| `router`   | مشروط شاخ بندی — باڈی `StepResult.route(key)` واپس کرتی ہے، جو صرف اُسی نیچے والے کنارے کو چلاتی ہے جس کی `routeKey` مماثل ہو؛ جن شاخوں کا انتخاب نہیں ہوا وہ چھوڑی گئی قرار دے دی جاتی ہیں۔                                                 |
+| `forEach`  | `listen` کی طرح شیڈیول ہوتا ہے (جب تمام `sourceStepIds` مکمل ہوں تو چلتا ہے)۔ تکراری کام رجسٹر شدہ `flow.forEach` باڈی کرتی ہے؛ انجن ہر آئٹم کے لیے ایک الگ چائلڈ قدم پیدا نہیں کرتا۔                                                     |
+| `terminal` | بغیر باڈی والا شیڈیولر سینٹینل۔ کوئی حتمی قدم مکمل ہو جائے تو پائپ لائن رن مکمل ہو جاتا ہے۔                                                                                                                                               |
 
-## Step bodies
+## قدم کی باڈیز
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+رجسٹر شدہ باڈی کلوزرز، جن کی کلیدیں `BuiltInBodyKeys` کے مستقل حروف ہیں (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`)۔ یہ 25 ہیں اور سب نیچے درج ہیں۔ جہاں کوئی اور بات نہ کہی گئی ہو، کنفیگریشن قدم کے `PipelineNodeConfig` (نیچے دیکھیں) سے پڑھی جاتی ہے؛ «اسٹیٹ کلیدیں» عمل درآمد کے وقت پائپ لائن اسٹیٹ / ٹریگر پے لوڈ سے پڑھی جاتی ہیں۔
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
+جس قدم کی `bodyKey` رجسٹر نہ ہو، وہ ٹیمپلیٹ لوڈ کے وقت ایک وارننگ پیدا کرتا ہے اور پھر کبھی نہیں چلتا — اس سے رن ناکام نہیں ہوتا۔ `trigger` اور `terminal` قدم اُس وارننگ سے مستثنیٰ ہیں: ٹریگر پھر بھی no-op `pipeline.trigger` باڈی چلاتا ہے؛ `terminal` قدم کی کوئی باڈی نہیں ہوتی۔
 
 ### `pipeline.trigger`
 
-No-op body of the mandatory `trigger` node — completes immediately so the engine fans out to downstream listeners. No configuration.
+لازمی `trigger` نوڈ کی no-op باڈی — فوراً مکمل ہو جاتی ہے تاکہ انجن نیچے کے سننے والوں تک فین آؤٹ کرے۔ کوئی کنفیگریشن نہیں۔
 
 ### `pipeline.bashScript`
 
-Agentless shell step (`bash -c`). `{{key}}` placeholders in the script are substituted from state + trigger payload with shell-escaped values.
+بغیر ایجنٹ والا شیل قدم (`bash -c`)۔ اسکرپٹ میں `{{key}}` پلیس ہولڈرز اسٹیٹ + ٹریگر پے لوڈ سے، شیل-اسکیپ شدہ قدروں کے ساتھ بدلے جاتے ہیں۔
 
-| Config field | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `script`     | Shell command to execute (required)              |
-| `outputKey`  | State key that receives trimmed stdout on exit 0 |
+| کنفیگ فیلڈ  | تفصیل                                                    |
+| ------------ | -------------------------------------------------------- |
+| `script`     | چلانے کے لیے شیل کمانڈ (لازمی)                           |
+| `outputKey`  | وہ اسٹیٹ کلید جسے exit 0 پر ٹرِم شدہ stdout ملتا ہے      |
 
-Runs with cwd `<cc_root>/pipelines/<pipelineRunId>/` (shared by all bash steps in a run) and `GITHUB_TOKEN` in the environment. Also writes `<stepId>_runDir` to state. Non-zero exit fails the step with the stderr tail.
+یہ cwd `<cc_root>/pipelines/<pipelineRunId>/` (ایک رن کے تمام bash قدموں کے لیے مشترک) اور ماحول میں `GITHUB_TOKEN` کے ساتھ چلتا ہے۔ اسٹیٹ میں `<stepId>_runDir` بھی لکھتا ہے۔ غیر صفر exit قدم کو stderr کے آخری حصے کے ساتھ ناکام کر دیتا ہے۔
 
 ### `conversation.promptAgent`
 
-Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into a conversation and suspends until the run finishes. The agent's `submit_output` payload is harvested into state under `outputKey`.
+عمومی پرامپٹ-اور-ڈسپیچ نوڈ: پرامپٹ رینڈر کرتا ہے، ایجنٹ کو ایک گفتگو میں ڈسپیچ کرتا ہے اور رن مکمل ہونے تک معطل رہتا ہے۔ ایجنٹ کا `submit_output` پے لوڈ `outputKey` کے تحت اسٹیٹ میں جمع کر لیا جاتا ہے۔
 
-| Config field       | Description                                                  |
-| ------------------ | ------------------------------------------------------------ |
-| `agentId`          | Workspace-scoped agent UUID to dispatch (required)           |
-| `prompt`           | Instruction text; supports `{{key}}` substitution (required) |
-| `outputKey`        | State key for the harvested output                           |
-| `outputSchema`     | JSON Schema the output must satisfy                          |
-| `label`            | Human label shown on the canvas                              |
-| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
-| `extras.conversationTitle` | Named stream inside that space (optional)             |
-| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+| کنفیگ فیلڈ                 | تفصیل                                                         |
+| -------------------------- | ------------------------------------------------------------- |
+| `agentId`                  | ڈسپیچ کرنے کے لیے ورک اسپیس کے دائرے کا ایجنٹ UUID (لازمی)     |
+| `prompt`                   | ہدایت کا متن؛ `{{key}}` تبدیلی کی حمایت کرتا ہے (لازمی)         |
+| `outputKey`                | جمع شدہ آؤٹ پٹ کے لیے اسٹیٹ کلید                                |
+| `outputSchema`             | وہ JSON Schema جسے آؤٹ پٹ پورا کرے                              |
+| `label`                    | کینوس پر دکھایا جانے والا انسانی لیبل                           |
+| `extras.spaceId`           | کام کرنے کے لیے موجودہ گفتگو (ڈیفالٹ: ایک پوشیدہ)              |
+| `extras.conversationTitle` | اُس اسپیس کے اندر نامزد اسٹریم (اختیاری)                       |
+| `extras.mode`              | اُس نوڈ پر پڑھا جاتا ہے جو کمرہ *کھولتا* ہے (`messaging.createSpace`)، یہاں نہیں۔ ڈیفالٹ `review`۔ |
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+روٹر باڈی — `config.extras` پڑھتی ہے، ایک شرط کا جائزہ لیتی ہے اور `StepResult.route(key)` واپس کرتی ہے۔ شرطیں JavaScript اظہار **نہیں** ہیں؛ ترجیحی ترتیب کے ساتھ تین تحریری شکلیں معاون ہیں:
 
-- **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
-  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
-  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
-  - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
+- **پریڈیکیٹ ٹری** (`extras.predicate`) — ایک بولین ٹری جو `"true"` / `"false"` روٹ کرتا ہے۔ ہر نوڈ ایک میپ ہے جس میں ایک `type` ہوتا ہے:
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — جب فہرست میں شامل کوئی بھی پاتھ ڈسک پر موجود ہو تو true؛ `negate` اسے پلٹ دیتا ہے؛ `recursive` ذیلی ڈائریکٹریز میں بھی تلاش کرتا ہے (`.git`، `node_modules`، `build`، `.dart_tool` چھوڑ کر)۔ نسبتی پاتھ `state[baseKey]` (ڈیفالٹ `repo_local_path`) کے مقابلے میں حل ہوتے ہیں، ورنہ فی رن ورک اسپیس ڈائریکٹری کے۔
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — آپریٹرز `equals`، `notEquals`، `contains`، `exists`، `notExists`، `gt`، `lt`؛ پائپ لائن اسٹیٹ پڑھتا ہے، فائل سسٹم نہیں۔
+  - `{"type": "and" | "or", "of": [<predicate>, ...]}` — بولین گروپس۔
+  - `{"type": "not", "of": <predicate>}` — نفی۔
+- **سوئچ** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`؛ پہلے ایسے کیس پر روٹ کرتا ہے جسے اسٹیٹ ویلیو بڑے/چھوٹے حروف کے فرق کے بغیر شامل ہو، ورنہ `default` پر۔
+- **موازنہ** (پرانی اعلیٰ سطحی `extras.left` / `extras.op` / `extras.right`) — ایک `comparison` پریڈیکیٹ کے برابر، اُن ٹیمپلیٹس کے لیے رکھا گیا جو ٹری سے پہلے لکھے گئے تھے۔
 
-Edges out of the node carry a `routeKey` that must match the returned key.
+نوڈ سے نکلنے والے کناروں کے ساتھ ایک `routeKey` ہوتی ہے جو واپس کی گئی کلید سے مماثل ہونی چاہیے۔
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+یکجا شدہ نتائج کو GitHub PR کلائنٹ کے ذریعے PR ریویو تبصرے کے طور پر پوسٹ کرتا ہے۔
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| اسٹیٹ کلید               | تفصیل                                        |
+| ------------------------ | -------------------------------------------- |
+| `repo_full_name`         | `owner/repo` (لازمی)                         |
+| `pr_number`              | PR نمبر — int یا عددی سٹرنگ (لازمی)          |
+| `consolidated_findings`  | تبصرے کی باڈی (لازمی)                        |
 
-Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
+`StepResult.terminal` واپس کرتا ہے، اور اسٹیٹ میں `comment_review_id` اور `commented_at` ہوتے ہیں۔
 
 ### `messaging.postSpace`
 
-Posts a message to a messaging space via `MessagingPort`.
+`MessagingPort` کے ذریعے کسی میسجنگ اسپیس پر پیغام پوسٹ کرتا ہے۔
 
-| State key   | Description                                       |
-| ----------- | ------------------------------------------------- |
-| `space_id`  | Target space (required)                           |
-| `content`   | Message body, read verbatim from state (required) |
+| اسٹیٹ کلید | تفصیل                                                     |
+| ---------- | --------------------------------------------------------- |
+| `space_id` | ہدف اسپیس (لازمی)                                          |
+| `content`  | پیغام کی باڈی، اسٹیٹ سے بغیر تبدیلی پڑھی جاتی ہے (لازمی)   |
 
-Writes `posted_space_id` and `posted_at` to state.
+اسٹیٹ میں `posted_space_id` اور `posted_at` لکھتا ہے۔
 
 ### `team.dispatch`
 
-Dispatches a whole team instead of a single agent, then suspends until the members' runs finish.
+ایک واحد ایجنٹ کے بجائے پوری ٹیم ڈسپیچ کرتا ہے، پھر ارکان کے رنز مکمل ہونے تک معطل رہتا ہے۔
 
-| Config field                                | Description                                                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `teamId`                                    | Workspace-scoped team to dispatch (required; mutually exclusive with `agentId`)                     |
-| `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
-| `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
-| `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
+| کنفیگ فیلڈ                                 | تفصیل                                                                                              |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `teamId`                                   | ڈسپیچ کرنے کے لیے ورک اسپیس کے دائرے کی ٹیم (لازمی؛ `agentId` کے ساتھ باہم ناسازگار)              |
+| `prompt`                                   | مقصد کا متن؛ `{{key}}` تبدیلی کی حمایت کرتا ہے (لازمی)                                              |
+| `dispatchMode`                             | `allParallel` (ڈیفالٹ — فی رکن ایک ٹاسک) یا `manager` (ہم آہنگی کے لیے صرف لیڈر کو ڈسپیچ کریں)     |
+| `outputKey`                                | جمع شدہ ارکان کے آؤٹ پٹس کے لیے اسٹیٹ کلید                                                          |
+| `outputSchema`, `label`, `extras.spaceId`  | جیسا کہ `conversation.promptAgent` کے لیے                                                          |
 
 ### `human.gate`
 
-Approval gate. Dispatches the approver agent into a conversation (review mode) with the gate prompt and a `{decision, reason}` output contract, then suspends until the approver submits via `submit_output`.
+منظوری گیٹ۔ منظور کرنے والے ایجنٹ کو ایک گفتگو (ریویو موڈ) میں گیٹ پرامپٹ اور `{decision, reason}` آؤٹ پٹ کنٹریکٹ کے ساتھ ڈسپیچ کرتا ہے، پھر منظور کنندہ کے `submit_output` کے ذریعے جمع کرانے تک معطل رہتا ہے۔
 
-| Config field                | Description                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `agentId`                   | The approver agent (required)                                                  |
-| `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
-| `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
-| `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
+| کنفیگ فیلڈ                 | تفصیل                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `agentId`                  | منظور کرنے والا ایجنٹ (لازمی)                                                  |
+| `prompt`                   | گیٹ پرامپٹ (اختیاری؛ موجود نہ ہو تو ڈیفالٹ استعمال ہوتا ہے)                      |
+| `outputKey`                | جمع شدہ `{decision, reason}` پے لوڈ کے لیے اسٹیٹ کلید                            |
+| `outputSchema`             | ڈیفالٹ طور پر ایک منظوری اسکیما (`decision`: `approved` / `rejected`، `reason`) |
+| `label`, `extras.spaceId`  | جیسا کہ `conversation.promptAgent` کے لیے                                       |
 
-The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
+گیٹ صرف `submit_output` کے ذریعے حل ہوتا ہے۔ `BuiltInBodyKeys.humanGate`، نوڈ ٹائپ لائبریری اور ایک بلٹ اِن ٹیمپلیٹ کا پرامپٹ متن، سب `approve_step` اور `reject_step` MCP ٹولز کا نام لیتے ہیں؛ **اِن میں سے کوئی ٹول بھی** کسی پیکج یا رجسٹری میں موجود نہیں۔
 
 ### `repos.cleanup`
 
-Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
+پرانی الگ تھلگ worktrees ہٹاتا ہے؛ اپنا موڈ ٹریگر پے لوڈ سے چنتا ہے۔ رن کے `dryRun` فلیگ کا لحاظ کرتا ہے۔
 
-| State key                     | Description                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `ticket_id`                   | Release that ticket's worktrees                                                       |
-| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
-| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
-| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| اسٹیٹ کلید                      | تفصیل                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ticket_id`                    | اُس ٹکٹ کے worktrees جاری کر دیں                                                       |
+| `repo_full_name` + `pr_number` | عارضی PR-ایڈیٹر worktree جاری کریں                                                     |
+| `space_id`                     | اُس گفتگو کے worktrees اور فولڈر کو ختم کریں                                           |
+| (مندرجہ بالا میں سے کوئی نہیں) | ورک اسپیس کی صفائی کریں: غائب ہو چکی ڈائریکٹریز، مردہ اسپیسز، یتیم گفتگو فولڈرز       |
 
-`outputKey` (optional) receives a summary string.
+`outputKey` (اختیاری) میں ایک خلاصہ سٹرنگ ملتی ہے۔
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
+کسی اسٹیٹ مجموعے پر میپ / فین آؤٹ: ہر آئٹم کے لیے پرامپٹ ایک بار رینڈر کرتا ہے، پھر اُن پرامپٹس کو جوڑ کر (`---` جداکار) ایجنٹ کو **ایک بار** ڈسپیچ کرتا ہے اور وہ رن مکمل ہونے تک معطل رہتا ہے۔ خالی مجموعہ فوراً ایک خالی فہرست کے ساتھ مکمل ہو جاتا ہے۔ یہ فی آئٹم ایک متوازی ڈسپیچ نہیں ہے۔
 
-| Config field         | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `agentId`            | Agent to dispatch per item (required)                           |
-| `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
-| `extras.iterableKey` | State key holding the collection (required)                     |
-| `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
+| کنفیگ فیلڈ          | تفصیل                                                             |
+| -------------------- | ----------------------------------------------------------------- |
+| `agentId`            | فی آئٹم ڈسپیچ کرنے والا ایجنٹ (لازمی)                             |
+| `prompt`             | فی آئٹم پرامپٹ؛ `{{key}}` تبدیلی کی حمایت کرتا ہے (لازمی)          |
+| `extras.iterableKey` | وہ اسٹیٹ کلید جس میں مجموعہ رکھا ہے (لازمی)                        |
+| `extras.itemKey`     | وہ کلید جس سے موجودہ آئٹم پرامپٹ میں بندھتا ہے (ڈیفالٹ `item`)     |
+| `outputKey`          | جمع شدہ آؤٹ پٹ کے لیے اسٹیٹ کلید (ایک ڈسپیچ، فہرست نہیں)           |
 
 ### `flow.callPipeline`
 
-Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a child run with `parentPipelineRunId` set). The step suspends until the child reaches a terminal state, then the child's final state is merged under `outputKey`.
+ایک اور پائپ لائن ٹیمپلیٹ کو نیسٹڈ ذیلی قدم کے طور پر چلاتا ہے (ذیلی پائپ لائن ایک چائلڈ رن کے طور پر چلتی ہے جس میں `parentPipelineRunId` سیٹ ہوتا ہے)۔ قدم معطل رہتا ہے جب تک بچہ حتمی حالت تک نہ پہنچے، پھر بچے کی حتمی حالت `outputKey` کے تحت ضم کر دی جاتی ہے۔
 
-| Config field        | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `extras.templateId` | Child template to run (required; a pipeline cannot call itself) |
-| `inputKeys`         | State keys copied into the child's trigger payload              |
-| `outputKey`         | State key for the child's merged final state                    |
+| کنفیگ فیلڈ          | تفصیل                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| `extras.templateId`  | چلانے کے لیے چائلڈ ٹیمپلیٹ (لازمی؛ کوئی پائپ لائن خود کو کال نہیں کر سکتی) |
+| `inputKeys`          | وہ اسٹیٹ کلیدیں جو بچے کے ٹریگر پے لوڈ میں نقل کی جاتی ہیں          |
+| `outputKey`          | بچے کی ضم شدہ حتمی حالت کے لیے اسٹیٹ کلید                            |
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
+پس منظر میں tree-sitter انڈیکسنگ: ایک ریپو پر چلتا ہے، ورکر آئسولیٹس میں علامات/ایجیز نکالتا ہے اور اُنہیں ورک اسپیس کوڈ گراف میں شامل کرتا ہے۔ پیش رفت کو قدم-رن قطار میں اسٹریم کرتا ہے؛ dry-run کی حمایت کرتا ہے۔ Tree-sitter اور اُس کے گرامرز لازمی نیٹِوز ہیں — dylib کی کمی کا مطلب ہے کہ سرور کبھی بوٹ ہی نہیں ہوا، اور کوئی گرامر جو رن کے دوران حل نہ ہو سکے، قدم کو چھوڑنے کے بجائے ناکام کر دیتا ہے۔
 
-| State key         | Description                           |
-| ----------------- | ------------------------------------- |
-| `repo_id`         | Repo to index (required)              |
-| `repo_local_path` | Local path of the checkout (required) |
+| اسٹیٹ کلید        | تفصیل                        |
+| ----------------- | ---------------------------- |
+| `repo_id`         | انڈیکس کرنے والا ریپو (لازمی) |
+| `repo_local_path` | چیک آؤٹ کا مقامی پاتھ (لازمی) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+آف لائن اسپیکر ڈائریائزیشن۔ میٹنگ کی محفوظ رکھی گئی آڈیو پڑھتا ہے، اُسے اسپیکرز (`Person 1`، `Person 2`، …) میں کلسٹر کرتا ہے، ٹرانسکرپٹ سیگمنٹس کو نئے لیبل دیتا ہے اور `transcript` اسٹیٹ دوبارہ لکھتا ہے؛ متوازی `meeting.updateTranscript` قدم کے لیے `diarization_spans` بھی خارج کرتا ہے۔ جب کوئی آڈیو محفوظ نہ رکھی گئی ہو یا ماڈلز انسٹال نہ ہوں تو ٹرانسکرپٹ کو بغیر تبدیلی گزرنے دیتا ہے۔
 
-| State key     | Description                   |
-| ------------- | ----------------------------- |
-| `meeting_id`  | Meeting to diarize (required) |
+| اسٹیٹ کلید    | تفصیل                        |
+| ------------- | ---------------------------- |
+| `meeting_id`  | ڈائریائز کرنے والی میٹنگ (لازمی) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+میٹنگ خلاصے کو محفوظ کرنے والی متعیّن باڈیز۔ ہر ایک اسٹیٹ سے `meeting_id` اور ایجنٹ قدم کا منظم `meeting_outcome` پے لوڈ (`{summary, enhancedNotes, actionItems[], decisions[]}`) پڑھتی ہے اور اپنا حصہ اپنی ٹیبل میں لکھتی ہے — نوٹس، ایکشن آئٹمز یا فیصلے۔ کسی تنزلی والے رن پر پہلے سے محفوظ قطاریں کبھی مٹائی نہیں جاتیں۔
 
-### Other built-in bodies
+### دیگر بلٹ اِن باڈیز
 
-| Body key                           | Description                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
-| `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
-| `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
-| `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
-| `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
-| `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
+| باڈی کلید                          | تفصیل                                                                                                                                                                                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `meeting.identifySpeakers`         | بین میٹنگ اسپیکر شناخت: ڈائریائز شدہ اسپیکرز کو محفوظ آواز پروفائلز سے ملاقاتا ہے اور پُراعتماد مماثلتیں خودکار طور پر لاگو کرتا ہے۔ پروفائلز/ایمبیڈنگز کے بغیر no-op۔                                                                                                          |
+| `meeting.updateTranscript`         | `diarization_spans` سے `Person N` لیبل لاگو کرتا ہے اور فی ونڈو ٹکڑوں کو فی اسپیکر باریوں میں ضم کرتا ہے، پھر صاف شدہ ٹرانسکرپٹ محفوظ کرتا ہے۔ جب ڈائریائزیشن نے کچھ پیدا نہ کیا ہو تو no-op۔                                                                                     |
+| `meeting.assemblePlayback`         | میٹنگ کا مکس شدہ پلے بیک ٹریک محفوظ رکھی گئی فی چینل WAVs سے تیار کرتا ہے۔ کوئی آڈیو محفوظ نہ رکھی گئی ہو تو no-op۔                                                                                                                                                              |
+| `orchestration.markPhase`          | کام کے DAG کے اختتام پر، بغیر آؤٹ پٹ والے ذیلی ٹکٹس کے لیے ناکامی کے سینٹینلز لکھتا ہے اور آرکیسٹریشن کو `synthesizing` پر بدل دیتا ہے۔                                                                                                                                           |
+| `orchestration.persistDeliverable` | ترکیب کا آؤٹ پٹ پیرنٹ ٹکٹ میں لکھتا ہے، اُسے مکمل کرتا ہے، حتمی نتیجہ پوسٹ کرتا ہے اور آرکیسٹریشن کو `completed` نشان زد کرتا ہے۔                                                                                                                                              |
+| `orchestration.awaitApproval`      | جزوی منظوری گیٹ: جب قدم کی نوڈ کلید آرکیسٹریشن کے منظور شدہ سیٹ میں ہو تو فوراً مکمل ہو جاتا ہے، ورنہ بعد کی منظوری کے دوبارہ شروع کرنے تک معطل رہتا ہے۔ یہ واحد باڈی ہے جو `extras.awaitApproval` سیٹ کرتی ہے، جس کی وجہ سے یہ 24 گھنٹے کی معطل قدم ٹائم آؤٹ سے مستثنیٰ ہو جاتی ہے۔ |
+| `messaging.createSpace`            | وہ گفتگو کھولتا ہے جس میں باقی ٹیمپلیٹ کام کرتا ہے، جو قدم کی `outputKey` کے تحت شائع ہوتی ہے (بلٹ اِن `pipeline_space_id` استعمال کرتے ہیں)۔ خالی `repoIds` فہرست کچھ بھی چیک آؤٹ نہیں کرتی؛ `extras['allRepos']` ورک اسپیس کے ہر ریپو کو چیک آؤٹ کرتا ہے۔ `extras['createConversation']` (ڈیفالٹ طور پر بند) ایک نامزد اسٹریم بھی کھولتا ہے۔ کوئی ایجنٹ قدم کسی کمرے میں شامل ہوتا ہے اور کبھی خود کوئی کمرہ نہیں کھولتا، اس لیے اِس نوڈ کے بغیر کوئی فین آؤٹ ڈسپیچ پر ناکام ہو جاتا ہے — اور اِسے ایک بار جوڑنے کا مطلب یہ ہے کہ پورا فین آؤٹ ایک ہی چیک آؤٹ شیئر کرتا ہے بجائے اس کے کہ ہر ایک کے لیے الگ چیک آؤٹ تیار کیا جائے۔ |
+| `prReview.finalize`                | PR-ریویو ٹیمپلیٹ کا آخری قدم: جمع شدہ ریویو نوڈز کو اتفاقِ رائے کی بالٹیوں میں ترتیب دیتا ہے اور فی PR فیصلہ شمار کرتا ہے۔                                                                                                                                                        |
+| `skills.analyze`                   | ورک اسپیس کی انسٹال شدہ مہارتوں پر مہارتوں کا سپلائی چین اسکین چلاتا ہے اور ہر فیصلہ ریکارڈ کرتا ہے۔                                                                                                                                                                            |
 
-## Step results
+## قدم کے نتائج
 
-A step body returns a `StepResult` (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`). All factories accept an optional `mutatedState` map merged into pipeline state, except `failed`.
+ایک قدم کی باڈی `StepResult` واپس کرتی ہے (`packages/cc_domain/lib/features/pipelines/domain/entities/step_result.dart`)۔ `failed` کے سوا تمام فیکٹریاں ایک اختیاری `mutatedState` میپ قبول کرتی ہیں جو پائپ لائن اسٹیٹ میں ضم کر دیا جاتا ہے۔
 
-| Factory                     | Signature                                                       | Description                                                               |
+| فیکٹری                     | دستخط                                                           | تفصیل                                                                     |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ok`                        | `StepResult.ok({mutatedState})`                                 | Normal completion; downstream listeners are evaluated                     |
-| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | Router completion; selects the downstream branch whose `routeKey` matches |
-| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | Pause until a specific domain event type fires                            |
-| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | Pause until all listed tasks reach terminal state                         |
-| `terminal`                  | `StepResult.terminal({mutatedState})`                           | The pipeline run is finished — no more steps                              |
-| `failed`                    | `StepResult.failed(errorMessage)`                               | The step failed with an error message                                     |
+| `ok`                        | `StepResult.ok({mutatedState})`                                 | عام تکمیل؛ نیچے کے سننے والوں کا جائزہ لیا جاتا ہے                        |
+| `route`                     | `StepResult.route(nextRouterKey, {mutatedState})`               | روٹر کی تکمیل؛ وہ نیچے والی شاخ چنتا ہے جس کی `routeKey` مماثل ہو          |
+| `suspendUntilEvent`         | `StepResult.suspendUntilEvent(eventType, {mutatedState})`       | معطل رکھیں جب تک کوئی مخصوص ڈومین ایونٹ ٹائپ رونما نہ ہو                   |
+| `suspendUntilTasksComplete` | `StepResult.suspendUntilTasksComplete(taskIds, {mutatedState})` | معطل رکھیں جب تک فہرست کے تمام ٹاسکس حتمی حالت تک نہ پہنچ جائیں            |
+| `terminal`                  | `StepResult.terminal({mutatedState})`                           | پائپ لائن رن مکمل ہو گیا — مزید کوئی قدم نہیں                             |
+| `failed`                    | `StepResult.failed(errorMessage)`                               | قدم ایک خرابی کے پیغام کے ساتھ ناکام ہو گیا                               |
 
 ## StepRetryPolicy
 
-Retry behaviour for a failing node body (`PipelineNodeConfig.retryPolicy`; null disables retries).
+ناکام ہونے والی نوڈ باڈی کے لیے دوبارہ کوشش کا رویہ (`PipelineNodeConfig.retryPolicy`؛ null دوبارہ کوششیں بند کر دیتا ہے)۔
 
-| Field            | Type     | Description                                                                    |
-| ---------------- | -------- | ------------------------------------------------------------------------------ |
-| `maxAttempts`    | `int`    | Total attempts including the first (3 = 1 try + 2 retries); must be ≥ 1        |
-| `backoff`        | `String` | `linear` or `exponential` (default)                                            |
-| `initialDelayMs` | `int`    | Delay before the first retry, in milliseconds; later delays grow per `backoff` |
+| فیلڈ             | ٹائپ     | تفصیل                                                                              |
+| ---------------- | -------- | ---------------------------------------------------------------------------------- |
+| `maxAttempts`    | `int`    | پہلی کوشش سمیت کل کوششیں (3 = 1 کوشش + 2 دوبارہ کوششیں)؛ ≥ 1 ہونا لازم ہے          |
+| `backoff`        | `String` | `linear` یا `exponential` (ڈیفالٹ)                                                 |
+| `initialDelayMs` | `int`    | پہلی دوبارہ کوشش سے پہلے تاخیر، ملی سیکنڈ میں؛ بعد کی تاخیریں `backoff` کے مطابق بڑھتی ہیں |
 
 ## PipelineNodeConfig
 
-Per-node configuration carried inside the step definition (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`). Both built-in and custom nodes share this shape; each body reads only the fields it cares about.
+فی نوڈ کنفیگریشن جو قدم کی تعریف کے اندر رکھی جاتی ہے (`packages/cc_domain/lib/features/pipelines/domain/entities/pipeline_node_config.dart`)۔ بلٹ اِن اور حسب ضرورت نوڈز، دونوں یہی شکل رکھتے ہیں؛ ہر باڈی صرف وہی فیلڈز پڑھتی ہے جن سے اُسے سروکار ہو۔
 
-| Field            | Type                    | Description                                                                                                                           |
-| ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`         | `String?`               | Prompt template with `{{key}}` substitution                                                                                           |
-| `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
-| `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
-| `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
-| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
-| `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
-| `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
-| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
-| `reducer`        | `String?`               | Merge strategy when parallel branches write the same `outputKey`: `append`, `mergeLists`, `mergeMaps`, `sum`, or `override` (default) |
-| `retryPolicy`    | `StepRetryPolicy?`      | Retry policy on body failure; null = single attempt                                                                                   |
-| `continueOnFail` | `bool`                  | When true, a terminal failure does not fail the run; the error is stashed under `state['_stepErrors'][stepId]`                        |
-| `timeoutMs`      | `int?`                  | Wall-clock timeout for the node body in milliseconds; null = no timeout                                                               |
-| `teamId`         | `String?`               | Team to dispatch (`team.dispatch` nodes); mutually exclusive with `agentId`                                                           |
-| `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
-| `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
+| فیلڈ             | ٹائپ                    | تفصیل                                                                                                                                         |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`         | `String?`               | `{{key}}` تبدیلی والا پرامپٹ ٹیمپلیٹ                                                                                                           |
+| `script`         | `String?`               | `{{key}}` تبدیلی والی Bash اسکرپٹ باڈی                                                                                                         |
+| `agentId`        | `String?`               | ڈسپیچ کرنے کے لیے ورک اسپیس کے دائرے کا ایجنٹ UUID                                                                                             |
+| `inputKeys`      | `List<String>`          | وہ اسٹیٹ کلیدیں جو یہ نوڈ بطور اِن پٹ لیتا ہے                                                                                                  |
+| `repoIds`        | `List<String>`          | وہ ریپوز جو `messaging.createSpace` نوڈ چیک آؤٹ کرتا ہے (`<repoId>` یا `<repoId>@<branch>`)۔ خالی = کوئی نہیں؛ `extras['allRepos']` = ورک اسپیس کا ہر ریپو۔ ایجنٹ قدموں پر نظر انداز کیا جاتا ہے۔ |
+| `outputKey`      | `String?`               | وہ اسٹیٹ کلید جس کے تحت اِس نوڈ کا آؤٹ پٹ لکھا جاتا ہے                                                                                          |
+| `label`          | `String?`               | کینوس پر دکھایا جانے والا انسانی لیبل (ڈیفالٹ طور پر قدم کی ID)                                                                                |
+| `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (ذیلی مجموعہ) جسے آؤٹ پٹ ویلیو پورا کرے                                                                                            |
+| `reducer`        | `String?`               | جب متوازی شاخیں ایک ہی `outputKey` لکھیں تو ضم کرنے کی حکمت عملی: `append`، `mergeLists`، `mergeMaps`، `sum` یا `override` (ڈیفالٹ)           |
+| `retryPolicy`    | `StepRetryPolicy?`      | باڈی ناکام ہونے پر دوبارہ کوشش کی پالیسی؛ null = ایک ہی کوشش                                                                                    |
+| `continueOnFail` | `bool`                  | جب true ہو تو کوئی حتمی ناکامی رن کو ناکام نہیں کرتی؛ خرابی `state['_stepErrors'][stepId]` کے تحت رکھ دی جاتی ہے                                |
+| `timeoutMs`      | `int?`                  | نوڈ باڈی کے لیے وال-کلاک ٹائم آؤٹ، ملی سیکنڈ میں؛ null = کوئی ٹائم آؤٹ نہیں                                                                      |
+| `teamId`         | `String?`               | ڈسپیچ کرنے والی ٹیم (`team.dispatch` نوڈز)؛ `agentId` کے ساتھ باہم ناسازگار                                                                     |
+| `dispatchMode`   | `String?`               | ٹیم کے عمل درآمد کا موڈ: `allParallel` یا `manager`                                                                                            |
+| `extras`         | `Map<String, dynamic>`  | آزاد شکل والی، باڈی کے لیے مخصوص کنفیگ (مثلاً `iterableKey`، `templateId`، شرط کے ٹری)                                                          |
 
-Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
+اخذ شدہ ایکسیسرز: `spaceId` (`extras['spaceId']` — کام کرنے کے لیے موجودہ گفتگو)، `createsConversation` (`extras['createConversation']`)، `conversationTitle` (`extras['conversationTitle']`)، `modeName` (`extras['mode']` — `chat` / `review` / `plan`، اسپیس کھولنے والے نوڈ پر پڑھا جاتا ہے) اور `runWhen` (`extras['runWhen']` — شرط پوری نہ ہونے پر نوڈ چھوڑ دیں)۔
 
-## See also
+## مزید دیکھیں
 
-- [Pipelines](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
-- [Create a pipeline](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
-- [Pipeline triggers](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
-- [Run a pipeline](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)
+- [پائپ لائنز](/ur-PK/ہدایت-نامہ/تصورات/پائپ-لائنز/)
+- [پائپ لائن بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-بنائیں/)
+- [پائپ لائن ٹریگرز](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-ٹریگرز/)
+- [پائپ لائن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پائپ-لائن-چلائیں/)

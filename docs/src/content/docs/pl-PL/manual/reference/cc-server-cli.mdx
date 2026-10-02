@@ -1,193 +1,207 @@
 ---
-title: cc_server CLI
-description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+title: CLI cc_server
+description: Każda flaga, zmienna środowiskowa, podpolecenie i ścieżka katalogu danych serwera headless.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli
+sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
 ---
 
-Every process flag takes a CLI flag or an environment variable; the flag wins,
-then the environment, then the default. Third-party credentials are the
-exception — see below.
+Każde ustawienie procesu można podać flagą CLI albo zmienną środowiskową;
+pierwszeństwo ma flaga, potem zmienna środowiskowa, a na końcu wartość domyślna.
+Wyjątkiem są poświadczenia firm trzecich — patrz poniżej.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so a typo
-(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Nieznane flagi są po cichu ignorowane]
+Parser argumentów jest napisany ręcznie i pomija wszystko, czego nie rozpoznaje, więc
+literówka (`--tls-key-file`, `--bindany`) nie daje żadnego błędu — serwer po prostu
+startuje z wartością domyślną. Gdy flaga wydaje się nie działać, sprawdź wiersze logu
+startowego.
 :::
 
-## Core
+## Ustawienia podstawowe
 
-| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
-| --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
-| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
-| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
-| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
-| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
-| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+| Flaga           | Zmienna                | Domyślnie                                        | Znaczenie                                                                                                                            |
+| --------------- | ---------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | katalog danych aplikacji dla użytkownika w systemie (patrz poniżej) | Bazy danych, sekrety, modele i zbuforowane multimedia                                                                                |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | Port TCP (`0` = efemeryczny)                                                                                                         |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback` albo `any`/`all`/`0.0.0.0` dla wszystkich interfejsów (wymaga TLS lub `--insecure`)                                        |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | katalog domowy użytkownika serwera               | Rozdzielone przecinkami katalogi bazowe, które klient może przeglądać przy rejestrowaniu repozytorium. Przeglądanie powyżej korzenia jest odrzucane |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning` lub `error`. Wiersze startu i gotowości są zawsze wypisywane                                              |
+| `--server-name` | `CC_SERVER_NAME`       | nazwa hosta maszyny                              | Nazwa pokazywana w selektorach, wykrywaniu i powierzchniach parowania                                                                |
 
-## Reachability and TLS
+## Osiągalność i TLS
 
-| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
-| ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
-| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
-| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
-| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
-| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
-| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
-| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
-| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
-| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
-| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
-| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
-| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+| Flaga               | Zmienna                     | Domyślnie                     | Znaczenie                                                                                                                                                                     |
+| ------------------- | --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | nieustawione                  | Łańcuch certyfikatów PEM. Razem z kluczem obsługuje `wss://` w tym samym procesie                                                                                              |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | nieustawione                  | Klucz prywatny PEM pasujący do certyfikatu                                                                                                                                     |
+| `--insecure`        | `CC_SERVER_INSECURE`        | wyłączone                     | Zezwala na bindowanie poza loopbackiem bez szyfrowania. Tylko za proxy kończącym TLS w zaufanej sieci; ignorowane, gdy skonfigurowano TLS                                      |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | wyliczany z bindowania        | Adres URL RPC, który ten serwer ogłasza sparowanym klientom. **Ustaw go jawnie za proxy, NAT lub tunelem** — wartość domyślna to jedynie domysł na podstawie lokalnego bindowania |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Rozdzielone przecinkami pochodzenia przeglądarek, którym wolno łączyć się z `/rpc` cross-origin. Loopback i klienci natywni są zawsze dozwoleni                              |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | nieustawione                  | Pochodzenie hostowanego klienta webowego, do którego wracają wywołania zwrotne logowania jednokrotnego                                                                          |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | Brokerski przekaźnik, do którego dołącza ten serwer, aby telefon mógł do niego dotrzeć bez bezpośredniej ścieżki                                                              |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | Ogłaszanie w sieci LAN: `auto` (tylko przy bindowaniu poza loopbackiem), `on`, `off`. Wykrywanie ogłasza wyłącznie istnienie — dołączenie i tak wymaga parowania                |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Zarządzany dostawca tunelu: `off`, `cloudflared`, `ngrok`, `tailscale`. Publiczne wystawienie wymaga wyraźnego włączenia                                                       |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | ustalany na podstawie `PATH`  | Jawna ścieżka pliku binarnego tunelu                                                                                                                                           |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | nieustawione                  | Oczekiwany skrót SHA-256 tego pliku binarnego, weryfikowany przed każdym uruchomieniem                                                                                          |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | puste                         | Rozdzielone przecinkami dodatkowe argumenty wywołania tunelu                                                                                                                    |
 
-## Indexing and third-party credentials
+## Indeksowanie i poświadczenia firm trzecich
 
-| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
-| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
-| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
-| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
-| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| Flaga                    | Zmienna                         | Domyślnie                             | Znaczenie                                                                                                                             |
+| ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Czy uruchomienia agentów są opakowywane w natywny dla systemu hosta sandbox, gdy jest dostępny. Opcja rezygnacji, a nie włączenia — patrz poniżej |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Wyłącznik bezpieczeństwa w środowisku produkcyjnym dla indeksowania grafu kodu w tle. `off` startuje czysto, bez przebudowy            |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Liczba sekund, przez które pierwszy przebieg indeksowania jest wstrzymywany po banerze gotowości (ograniczana do 0–300)                |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Czy uruchomienia harnessu wysyłają mały, rezydentny zestaw narzędzi plus indeks nazw, wczytując resztę przy pierwszym użyciu. Patrz poniżej |
+| `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Liczba sekund, przez które uruchomienie czeka, aż człowiek naprawi poświadczenie, które nie może go obsłużyć (ograniczana do 0–3600). Patrz poniżej |
 
-An empty value for a credential reads as unset, so the built-in fallback still applies.
-A build from source carries no built-in credentials at all.
+Pusta wartość poświadczenia jest odczytywana jako nieustawiona, więc wbudowany
+mechanizm zapasowy nadal działa. Kompilacja ze źródeł nie zawiera żadnych
+wbudowanych poświadczeń.
 
-Google Calendar and the Klipy GIF picker are **environment-only** — there is no
-`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
-`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
-the environment (or a `.env` next to the server). Empty disables that feature
-rather than failing the boot.
+Google Calendar i selektor GIF-ów Klipy działają **wyłącznie przez środowisko** —
+nie ma flagi `--google-client-id` / `--klipy-app-key` (nieznane flagi są
+ignorowane). Ustaw `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` oraz
+`KLIPY_APP_KEY` w środowisku (albo w pliku `.env` obok serwera). Pusta wartość
+wyłącza daną funkcję, zamiast powodować niepowodzenie startu.
 
 ### `--sandbox`
 
-The server probes the host once at boot and wraps agent command execution in the
-OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitization, the command policy and the
-action guardrails and the startup log says which state applies.
+Serwer sonduje host raz przy starcie i gdy backend jest dostępny, opakowuje
+wykonywanie poleceń agentów w natywny dla systemu sandbox: `sandbox-exec`
+(Seatbelt) w macOS oraz `bwrap` i `socat` w Linuksie i WSL2. Tam, gdzie go nie ma
+— w Windows albo na hoście z Linuksem bez tych narzędzi — uruchomienia cofają się
+do oczyszczania środowiska, polityki poleceń i guardrailów akcji, a log startowy
+mówi, który stan obowiązuje.
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+`--sandbox off` to wyłącznik bezpieczeństwa w środowisku produkcyjnym dla
+przypadku, którego sonda nie widzi: hosta, na którym sam profil sandboxa działa
+niepoprawnie. Nie wymaga przebudowy, a serwer przez cały czas życia procesu
+zapisuje ostrzeżenie, więc ten stan nigdy nie pozostaje niemy.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
+Uruchomienia wbudowanego harnessu wysyłają mały, rezydentny zestaw definicji
+narzędzi plus sam indeks nazw pozostałych, których schematy wczytują się przy
+pierwszym użyciu. Zmniejsza to blok narzędzi o około 78% i utrzymuje stale
+widoczny zestaw w przedziale, w którym modele wybierają narzędzia niezawodnie.
+Odroczone narzędzia przez cały czas można wywołać po nazwie, a `search_tools`
+znajduje je po intencji. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
-the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+`--tool-deferral off` ponownie czyni rezydentnym każde dopuszczone narzędzie,
+odtwarzając żądania, które serwer wysyłał, zanim odroczenie powstało. To wyłącznik
+bezpieczeństwa dla modelu, który źle radzi sobie z dwuwarstwową powierzchnią —
+flaga zamiast przebudowy. Dotyczy wyłącznie wbudowanego harnessu; `tools/list`
+MCP, który widzą klienci zewnętrzni, to zawsze pełny katalog.
 
 ### `--credential-gate`
 
-A run whose provider credential is missing or spent is **parked** rather than failed:
-the operator gets a prompt to fix it, and the run resumes if they do. The default
-deadline is 900 seconds (15 minutes), clamped to 0–3600.
+Uruchomienie, którego poświadczenie dostawcy brakuje lub zostało wyczerpane,
+trafia do **poczekalni**, a nie kończy się niepowodzeniem: operator dostaje prośbę
+o naprawienie go, a uruchomienie wznawia się, jeśli to zrobi. Domyślny termin to
+900 sekund (15 minut), ograniczany do 0–3600.
 
-The deadline is deliberately much longer than the approval prompt's: an approval is a
-decision someone makes in seconds, while fixing a credential means opening a terminal,
-signing in and coming back. The ceiling is what keeps an unattended run — a pipeline
-step, a cron trigger, a webhook — from waiting on somebody who is asleep. When it
-expires, the run fails with the message it would have failed with anyway.
+Termin jest celowo znacznie dłuższy niż w przypadku prośby o zatwierdzenie:
+zatwierdzenie to decyzja, którą podejmuje się w kilka sekund, a naprawienie
+poświadczenia oznacza otwarcie terminala, zalogowanie się i powrót. To właśnie ten
+pułap powstrzymuje uruchomienie bez nadzoru — krok potoku, wyzwalacz cron, webhook
+— przed czekaniem na kogoś, kto śpi. Gdy termin upłynie, uruchomienie kończy się
+niepowodzeniem z komunikatem, którym i tak by się skończyło.
 
-`--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
-ends the turn exactly as it did before the gate existed.
+`--credential-gate=0` to wyłącznik bezpieczeństwa: nic nigdy nie trafia do
+poczekalni, a błędne poświadczenie kończy turę dokładnie tak, jak przed powstaniem
+tej bramki.
 
-## Subcommands
+## Podpolecenia
 
-| Command                                       | What it does                                                                                        |
+| Polecenie                                     | Co robi                                                                                             |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
-| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
-| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
-| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+| `cc_server`                                   | Uruchamia serwer aż do `SIGINT`/`SIGTERM`                                                           |
+| `cc_server pair`                              | Tworzy urządzenie i wypisuje jego identyfikator oraz klucz parowania. Bezpieczne wobec katalogu danych, który serwer już obsługuje — działający serwer przejmuje urządzenie bez restartu |
+| `cc_server calendar connect --workspace <id>` | Łączy konto Google z obszarem roboczym za pomocą przepływu kodu urządzenia, a następnie kończy działanie |
+| `cc_server update`                            | Sprawdza, pobiera i weryfikuje nowsze samodzielne wydanie                                           |
+| `cc_server --version`                         | Wypisuje wersję kompilacji i SHA gita — tę samą tożsamość, którą ogłaszają `/healthz` i uzgadnianie RPC |
 
 ### `pair`
 
-| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| Flaga          | Domyślnie                                                 | Znaczenie                                                                                                                                                            |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
-| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
-| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+| `--device`     | `web-client`                                              | Identyfikator urządzenia. Platforma jest z niego wnioskowana, więc `--device desktop` tworzy wiersz komputera, a `--device ios`/`android` wiersz telefonu; wszystko inne jest traktowane jako klient webowy |
+| `--label`      | nazwa platformy plus nazwa hosta tej maszyny              | Nazwa wyświetlana na liście urządzeń                                                                                                                                 |
+| `--host`       | `localhost` albo `<this-host>` przy bindowaniu do wszystkich interfejsów | Host osadzany w wypisywanym adresie URL. Ustaw go na adres IP w sieci LAN albo host tunelu, z którym klient faktycznie się połączy                                     |
+| `--client-url` | nieustawione                                              | Pochodzenie hostowanego klienta **webowego**. Dodaje link bezpośredni do zeskanowania i kod QR w terminalu                                                           |
 
-`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
-select the data dir to write and shape the printed server URL (`ws` on loopback,
-`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
-key and drops that device's live sessions. A credential minted here has
-**no expiry**, unlike the 30 days an in-app pairing sets.
+`pair` przyjmuje też podstawowe flagi `--data-dir`, `--port` i `--bind`:
+wybierają one katalog danych do zapisu i kształtują wypisywany adres URL serwera
+(`ws` na loopbacku, `wss` przy `--bind any`). Ponowne uruchomienie `pair` dla tego
+samego `--device` rotuje jego klucz i porzuca aktywne sesje tego urządzenia.
+Utworzone tu poświadczenie **nie wygasa**, inaczej niż po 30 dniach ustawianych
+przez parowanie w aplikacji.
 
-:::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` fills in the **web** client's connect form (server URL,
-device id and key in the URL fragment). The phone pairs with a different payload
-minted from the in-app pairing panel — the server's full connection descriptor
-plus an expiry. The two are not interchangeable — see [Pair a device](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/).
+:::caution[Kod QR z `--client-url` to nie kod QR telefonu]
+`pair --client-url` wypełnia formularz połączenia klienta **webowego** (adres URL
+serwera, identyfikator urządzenia i klucz we fragmencie adresu URL). Telefon paruje
+się z innym ładunkiem, tworzonym w panelu parowania w aplikacji — pełnym
+deskryptorem połączenia serwera plus terminem ważności. Tych dwóch nie można
+używać zamiennie — zobacz [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/).
 :::
 
 ### `update`
 
-`--apply` replaces the install; it is refused while a server still answers on the
-configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+`--apply` zastępuje instalację; jest odrzucane, dopóki serwer nadal odpowiada na
+skonfigurowanym porcie, chyba że podasz `--force`. `--allow-downgrade` zezwala na
+starsze wydanie.
 
-The command refuses outright, with an explanation rather than an error, for installs it
-does not own:
+W przypadku instalacji, których nie jest właścicielem, polecenie odmawia od razu,
+podając wyjaśnienie, a nie błąd:
 
-| Environment                   | Detected by                                 | What it says                                                |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
-| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
-| Docker                        | container markers                           | Pull a newer image                                          |
+| Środowisko                              | Wykrywane przez                             | Co mówi                                                          |
+| --------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
+| Wbudowany serwer aplikacji desktopowej  | `CC_EMBEDDED=1` lub `CC_BOOTSTRAP_DEVICE_ID` | Zaktualizuj zamiast tego aplikację — instalator wymienia całe drzewo |
+| Źródła uruchamiane przez `dart run`     | ścieżka skryptu kończy się na `.dart`       | Zaktualizuj je za pomocą gita                                    |
+| Docker                                  | znaczniki kontenera                         | Pobierz nowszy obraz                                             |
 
-## Process lifecycle
+## Cykl życia procesu
 
-`cc_server` runs until `SIGINT` / `SIGTERM`. One extra environment variable governs
-that, and it is set by the desktop rather than by you:
+`cc_server` działa aż do `SIGINT` / `SIGTERM`. Steruje tym jedna dodatkowa zmienna
+środowiskowa, ustawiana przez aplikację desktopową, a nie przez Ciebie:
 
-| Variable                 | Effect                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CC_EXIT_WITH_PARENT=1`  | The server exits when its parent process does, detected by the parent closing the write end of its stdin pipe. The desktop sets it so a crashed app never leaves an orphaned server holding the data dir |
+| Zmienna                  | Efekt                                                                                                                                                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CC_EXIT_WITH_PARENT=1`  | Serwer kończy działanie wraz z procesem nadrzędnym; wykrywa się to po zamknięciu przez rodzica końca zapisu jego potoku stdin. Aplikacja desktopowa ustawia ją, aby zawieszona aplikacja nigdy nie pozostawiła osieroconego serwera trzymającego katalog danych |
 
-Set it yourself only if you are supervising `cc_server` as a child process and want
-the same guarantee.
+Ustaw ją samodzielnie tylko wtedy, gdy nadzorujesz `cc_server` jako proces potomny
+i chcesz mieć tę samą gwarancję.
 
-## Data directory layout
+## Układ katalogu danych
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
-no home or app-data directory resolves.
+Domyślnym katalogiem danych jest `~/Library/Application Support/control-center`
+w macOS, `%APPDATA%\control-center` w Windows oraz `$XDG_DATA_HOME/control-center`
+(w przeciwnym razie `~/.local/share/control-center`) gdzie indziej. Względny wobec
+bieżącego katalogu `.cc_server` jest używany tylko wtedy, gdy nie da się rozwiązać
+żadnego katalogu domowego ani katalogu danych aplikacji.
 
-| Path                              | Contents                                                                        |
+| Ścieżka                           | Zawartość                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------- |
-| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
-| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the provider app identity, per-user and Google tokens, SSO (`0600`) |
-| `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
-| `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
-| `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
-| `models/`                         | On-device embedding, diarization and speech models                              |
-| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
-| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
-| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
-| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
-| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
-| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+| `global.db`                       | Rejestr obszarów roboczych, użytkownicy, sparowane urządzenia, newsfeed i kolejka floty |
+| `<workspaceId>/workspace.db`      | Jedna baza danych na obszar roboczy — agenci, przestrzenie, zgłoszenia, pamięć, graf kodu |
+| `<workspaceId>/chat_credentials/` | Tokeny botów czatu jako zwykły JSON, dzięki czemu podróżują razem z obszarem roboczym |
+| `secrets.json`                    | Klucze parowania, tożsamość aplikacji dostawcy, tokeny poszczególnych użytkowników i tokeny Google, SSO (`0600`) |
+| `backups/<timestamp>/`            | Jedna migawka instalacji — `manifest.json`, `global.db` i kopia każdego obszaru roboczego |
+| `backups/exports/`                | Eksporty pojedynczego obszaru roboczego, `<workspaceId>-<timestamp>.db`         |
+| `backups/transfer/`               | Obszar przejściowy dla pobieranych i wysyłanych kopii zapasowych; czyszczony przez trasę, która do niego zapisuje |
+| `models/`                         | Modele osadzania, diaryzacji i mowy działające na urządzeniu                     |
+| `meetings/<meetingId>/`           | Zachowane nagrania audio spotkań                                                |
+| `rigs/images/`                    | Zaimportowane obrazy dysków rigów (powierzchnia pulpitu QEMU)                    |
+| `rigs/smolvm/<rigId>/`            | Stan wykonawczy microVM poszczególnych rigów (sekret brokera, `0600`)            |
+| `rigs/smolvm-packs/`              | Wstępnie rozpakowane paczki maszyn — cache, który przyspiesza kolejne starty rigów |
+| `rigs/tls/`                       | Urząd certyfikacji domeny deweloperskiej dla HTTPS rigów (klucze `0600`)         |
+| `rigs/run/<rigId>/`               | Nakładki QEMU, obrazy seed i klucze poszczególnych maszyn wirtualnych (`0600`)   |
 
-## See also
+## Zobacz też
 
-- [Run a headless server](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/) — the setup recipe these flags belong to
-- [Run a fleet worker](/pl-PL/podrecznik/poradniki/uruchamianie-workera-floty/) — the separate `cc_worker` binary that registers with this server
-- [Back up and restore](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/) — copying this directory somewhere safe
-- [Backup, export and import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/) — the snapshot layout and every backup operation
-- [Connect to a remote server](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/) — pointing a client at one
-- [Deployment and clients](/pl-PL/podrecznik/koncepcje/wdrazanie/) — why the server owns everything
+- [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/) — przepis konfiguracyjny, do którego należą te flagi
+- [Uruchom workera floty](/pl-PL/podrecznik/poradniki/uruchamianie-workera-floty/) — osobne binarium `cc_worker`, które rejestruje się w tym serwerze
+- [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/) — kopiowanie tego katalogu w bezpieczne miejsce
+- [Kopia zapasowa, eksport i import](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/) — układ migawek i każda operacja kopii zapasowej
+- [Połącz się ze zdalnym serwerem](/pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem/) — kierowanie klienta na taki serwer
+- [Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/) — dlaczego serwer jest właścicielem wszystkiego

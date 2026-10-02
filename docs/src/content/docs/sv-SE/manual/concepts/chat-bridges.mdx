@@ -1,249 +1,268 @@
 ---
-title: Chat bridges
-description: Why the Slack integration dials out instead of listening, what actually authorizes a message that arrives from chat and how one bridge serves any chat product.
+title: Chattbryggor
+description: Varför Slack-integrationen kopplar upp utåt i stället för att lyssna, vad som faktiskt auktoriserar ett meddelande som kommer in från chatten och hur en enda brygga kan betjäna vilken chattprodukt som helst.
 slug: sv-SE/handbok/koncept/chattbryggor
+sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
 ---
 
-A chat bridge makes an external chat product — Slack today — a first-class way
-into a Control Center workspace. Mention the bot and an agent wakes; reply in
-the Slack thread and the conversation continues; type a slash command and a
-ticket is filed. Underneath, the same spaces, transcripts, tickets and
-attribution the desktop app uses. Chat is a _surface_ on the workspace, not a
-copy of it.
+En chattbrygga gör en extern chattprodukt — i dag Slack — till en
+förstklassig väg in i en arbetsyta i Control Center. Nämn boten och en agent
+vaknar; svara i Slack-tråden och samtalet fortsätter; skriv ett slash-kommando
+och ett ärende skapas. Under ytan ligger samma ytor, avskrifter, ärenden och
+tillskrivning som skrivbordsappen använder. Chatten är en _yta_ på arbetsytan,
+inte en kopia av den.
 
-**Slack is the only provider that ships.** There is no Discord, Telegram, Teams,
-or Matrix implementation anywhere in the product. The feature is written
-provider-blind on purpose — adding a second product is one enum value, one
-adapter and one plugin — but today "chat" means Slack.
+**Slack är den enda leverantör som levereras.** Det finns ingen implementering
+för Discord, Telegram, Teams eller Matrix någonstans i produkten. Funktionen
+är medvetet skriven leverantörsblind — att lägga till en andra produkt är ett
+enum-värde, en adapter och en plugin — men i dag betyder ”chatt” Slack.
 
-Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customizing the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+Två ytor täcker det, och de tillhör olika personer. Att ansluta en arbetsyta
+till Slack och att anpassa boten är **admin**-åtgärder under
+Inställningar → Arbetsyta → Allmänt. Att länka sitt eget chattkonto till sin
+identitet i Control Center är en **medlems**åtgärd under
+Inställningar → Arbetsyta → Profil och identitet.
 
-Three decisions shape the whole feature: **which direction the connection
-runs**, **what authorizes a message that arrives from outside** and **where
-the product-specific knowledge is allowed to live**.
+Tre beslut formar hela funktionen: **vilken riktning anslutningen går i**,
+**vad som auktoriserar ett meddelande som kommer utifrån** och **var den
+produktspecifika kunskapen får bo**.
 
-## Outbound by design
+## Medvetet utgående
 
-The bridge never listens for the provider. Slack is reached over **Socket
-Mode**: the server asks Slack for a socket URL and dials out, then receives
-mentions, DMs and slash commands over that connection.
+Bryggan lyssnar aldrig på leverantören. Slack nås över **Socket Mode**:
+servern frågar Slack efter en socket-URL och kopplar upp utåt och tar sedan
+emot omnämningar, direktmeddelanden och slash-kommandon över den
+anslutningen.
 
-The consequence is the point. A laptop behind NAT, a home server with no
-domain, a machine that moves between networks — all of them can run the bridge
-with no inbound port, no tunnel, no TLS certificate and no public URL to
-rotate when it changes. There is no webhook endpoint to secure because there is
-no webhook endpoint. When Control Center composes the app definition it asserts
-Socket Mode and strips any request URL, because an app configured for both
-would be an app that half-works.
+Konsekvensen är själva poängen. En bärbar dator bakom NAT, en hemmaserver utan
+domän, en maskin som flyttar mellan nätverk — alla kan köra bryggan utan
+inkommande port, utan tunnel, utan TLS-certifikat och utan en publik URL att
+rotera när den ändras. Det finns ingen webhook-slutpunkt att säkra, eftersom
+det inte finns någon webhook-slutpunkt. När Control Center sätter ihop
+appdefinitionen framtvingar det Socket Mode och tar bort varje request-URL,
+för en app som är konfigurerad för båda vore en app som bara fungerar till
+hälften.
 
-The cost is a connection to keep alive, which is the server's job: reconnection
-is exponential backoff with jitter capped at 30 seconds, a provider-initiated
-socket rotation reconnects without escalating that backoff and a _rejected
-credential_ is terminal — retrying a revoked token forever would only earn a
-rate limit, so the bridge stops and waits for new tokens while reporting the
-provider's own error verbatim in settings.
+Priset är en anslutning som måste hållas vid liv, och det är serverns uppgift:
+återanslutningen är exponentiell backoff med jitter, begränsad till 30
+sekunder, en socketrotation som leverantören initierar återansluter utan att
+trappa upp den backoffen, och en _avvisad inloggningsuppgift_ är slutgiltig —
+att försöka igen med en återkallad token i evighet skulle bara ge en
+hastighetsbegränsning, så bryggan stannar och väntar på nya tokens medan den
+rapporterar leverantörens eget fel ordagrant i inställningarna.
 
-A workspace with no chat app costs nothing at all: no socket, no timers, no
-traffic. And the whole thing starts _after_ the server's ready banner, because a
-chat app that is slow to answer must never delay boot.
+En arbetsyta utan chattapp kostar ingenting alls: ingen socket, inga timers,
+ingen trafik. Och hela saken startar _efter_ serverns ready-banner, för en
+chattapp som är långsam att svara får aldrig fördröja uppstarten.
 
-## Membership authorizes, not token possession
+## Medlemskapet auktoriserar, inte innehavet av en token
 
-The person who installed the app is not the person sending the message. So
-every inbound event resolves to a **Principal** before anything happens and it
-fails closed with an explanation:
+Personen som installerade appen är inte personen som skickar meddelandet.
+Därför löses varje inkommande händelse upp till en **principal** innan något
+händer, och svaret blir ett nej med en förklaring:
 
-- **An unlinked chat account** is told how to link, in the Slack thread it
-  wrote in.
-- **A linked account whose user is not a member** of this workspace is told to
-  ask an admin for an invite.
-- **A member whose role is read-only** (`viewer`, `guest`) is told their role
-  cannot start work.
+- **Ett olänkat chattkonto** får veta hur det länkar, i den Slack-tråd det
+  skrev i.
+- **Ett länkat konto vars användare inte är medlem** i den här arbetsytan
+  uppmanas att be en admin om en inbjudan.
+- **En medlem vars roll är skrivskyddad** (`viewer`, `guest`) får veta att
+  rollen inte kan starta arbete.
 
-None of those proceed. A chat message is never attributed to somebody who did
-not send it — which is what keeps the audit trail, the per-principal rate
-limits and ticket reporters honest. See
-[Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/)
-for the membership model this leans on.
+Inget av detta fortsätter. Ett chattmeddelande tillskrivs aldrig någon som inte
+skickade det — och det är vad som håller revisionsspåret,
+hastighetsbegränsningarna per principal och ärendenas avsändare ärliga. Se
+[Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/)
+för den medlemskapsmodell som detta lutar sig mot.
 
-Linking is identity resolution, **not** an access grant. Membership is
-re-checked on every event, so a link belonging to someone who has since been
-removed resolves to a refusal rather than to their old privileges. Two paths
-establish a link: a short-lived single-use code the member types in chat, or an
-automatic match on the provider's _verified_ email — and the email path still
-requires that the matched user already be a member, so a stranger whose address
-happens to exist on the server links to nothing.
+Länkning är identitetsuppslagning, **inte** en åtkomstbeviljning.
+Medlemskapet kontrolleras på nytt vid varje händelse, så en länk som tillhör
+någon som sedan dess tagits bort leder till ett nej i stället för till dennes
+gamla privilegier. Två vägar upprättar en länk: en kortlivad engångskod som
+medlemmen skriver i chatten, eller en automatisk matchning mot leverantörens
+_verifierade_ e-post — och e-postvägen kräver fortfarande att den matchade
+användaren redan är medlem, så en främling vars adress råkar finnas på
+servern länkas till ingenting.
 
-The codes are deliberately kept in memory, with a 15-minute time to live.
-Persisting one would create a durable credential-shaped row for something meant
-to evaporate and a server restart invalidating every outstanding code is the
-correct behavior, not a regression — the member presses "link" again.
+Koderna hålls medvetet i minnet, med en livstid på 15 minuter. Att spara en
+skulle skapa en varaktig rad formad som en inloggningsuppgift för något som är
+tänkt att försvinna, och att en serveromstart ogiltigförklarar varje
+utestående kod är rätt beteende, inte en regression — medlemmen trycker på
+”länka” igen.
 
-A refusal is answered **in the Slack thread the message opened**, as a real
-reply. A threaded reply badges the message it answers, reaches the one person who
-needs it and still keeps "you are not linked" out of the channel itself. Posting
-a message is also the one capability every provider has, so the explanation
-never depends on a feature the app may not carry.
+Ett nej besvaras **i den Slack-tråd som meddelandet öppnade**, som ett riktigt
+svar. Ett svar i tråden märker meddelandet det svarar på, når fram till just
+den person som behöver det och håller ändå ”you are not linked” borta från
+själva kanalen. Att skicka ett meddelande är dessutom den enda förmåga som
+varje leverantör har, så förklaringen hänger aldrig på en funktion som appen
+kanske inte bär.
 
-## Provenance and the echo problem
+## Härkomst och ekoproblemet
 
-A bridge that mirrors both ways will loop unless something tells the two
-directions apart. Every message the bridge brings in is stamped with
-`metadata['chat']` — provider, team, conversation, thread, message and sender.
-The outbound mirror skips any message carrying that stamp.
+En brygga som speglar åt båda hållen hamnar i en loop om inget skiljer de två
+riktningarna åt. Varje meddelande som bryggan tar in stämplas med
+`metadata['chat']` — leverantör, team, samtal, tråd, meddelande och avsändare.
+Den utgående speglingen hoppar över varje meddelande som bär den stämpeln.
 
-That single rule is what makes bidirectional mirroring safe: a human message
-typed in Control Center is relayed out to the linked thread (prefixed with the
-author's name), while a message that came _from_ chat stops where it entered.
+Den enda regeln är vad som gör dubbelriktad spegling säker: ett mänskligt
+meddelande som skrivs i Control Center vidarebefordras ut till den länkade
+tråden (med författarens namn framför), medan ett meddelande som kom _från_
+chatten stannar där det kom in.
 
-What crosses outward is deliberately narrow. The agent's **answer** is relayed
-as ordinary chat text. A short thought can appear on the `Thinking…` row of the
-card. Tool output is a wall of diffs and stays in Control Center, which is also
-where a truncated reply points.
+Det som går utåt är medvetet smalt. Agentens **svar** vidarebefordras som
+vanlig chattext. En kort tanke kan synas på kortets `Thinking…`-rad.
+Verktygsutdata är en vägg av diffar och stannar i Control Center, vilket också
+är dit ett avkortat svar pekar.
 
-## A card reports the work; the text is still the message
+## Ett kort rapporterar arbetet; texten är fortfarande meddelandet
 
-Where the provider renders them, a turn carries **one task card**, edited in
-place for as long as the turn runs and sitting above the answer it explains.
+Där leverantören kan visa dem bär en tur **ett uppgiftskort**, som redigeras på
+plats så länge turen pågår och ligger ovanför det svar det förklarar.
 
-The card is one grouped plan, not a mashed paragraph. Slack concatenates
-`details` and `output` on the same task, so a row's details are sent once (the
-thought on `Thinking…`) and `output` is never streamed. Setup is one row whose
-title is replaced (`Working on it…`, `Cloning …`). Reasoning adds a `Thinking…`
-row. Each tool is its own row (`Read lib/main.dart`). The answer is ordinary
-text under the card — Slack's plan view reads it from a later markdown append, not from
-a chunk mixed into the tasks. Nothing else: no tool output and only a tool
-argument from a short allow-list, because an unknown tool's arguments can be an
-entire file body and a row is one line.
+Kortet är en grupperad plan, inte ett ihopmosat stycke. Slack sammanfogar
+`details` och `output` på samma uppgift, så en rads detaljer skickas en gång
+(tanken på `Thinking…`) och `output` strömmas aldrig. Uppsättningen är en rad
+vars titel byts ut (`Working on it…`, `Cloning …`). Resonemanget lägger till en
+`Thinking…`-rad. Varje verktyg är en egen rad (`Read lib/main.dart`). Svaret
+är vanlig text under kortet — Slacks planvy läser det från ett senare
+markdown-tillägg, inte från en bit inblandad bland uppgifterna. Inget annat:
+ingen verktygsutdata och bara ett verktygsargument från en kort
+tillåtelselista, för ett okänt verktygs argument kan vara en hel fil och en
+rad är en rad.
 
-The card also covers the wait _before_ the turn. A first mention creates the
-conversation and creating it clones every repo the agent will work in — which on
-a real repository is minutes where the agent has not been asked anything yet and
-the thread looks like the bot ignored the request. So the card opens the moment
-the mention is accepted (`Working on it…`) and then that setup row updates in the
-same words the desktop shows — `Cloning acme/widgets…`, `Setting up
-Reviewer…`, `Starting the agent…` — then a `Thinking…` row as soon as the agent
-starts reasoning, then a row per tool. One card, one message, from "I heard you"
-through to the answer as ordinary text beneath. Setup is only reported where somebody
-in chat is waiting for it: a conversation being prepared in the app, or a
-stranded one resumed at server boot, provisions with no card at all.
+Kortet täcker också väntan _före_ turen. En första omnämning skapar samtalet,
+och att skapa det klonar varje repo som agenten ska arbeta i — vilket på ett
+riktigt repo är minuter där agenten ännu inte har fått någon fråga och tråden
+ser ut som om boten ignorerade begäran. Därför öppnas kortet i samma stund som
+omnämningen accepteras (`Working on it…`), och sedan uppdateras
+uppsättningsraden med samma ord som skrivbordsappen visar — `Cloning acme/widgets…`, `Setting up
+Reviewer…`, `Starting the agent…` — därefter en
+`Thinking…`-rad så fort agenten börjar resonera, sedan en rad per verktyg. Ett
+kort, ett meddelande, från ”jag hörde dig” hela vägen till svaret som vanlig
+text under. Uppsättningen rapporteras bara där någon i chatten väntar på den:
+ett samtal som förbereds i appen, eller ett strandat som återupptas vid
+serverns uppstart, förbereds helt utan kort.
 
-It carries the only thing chat cannot give the reader: a **View in Control
-Center** link to the conversation behind the reply. Chat products accept `http(s)`
-in a link and nothing else, so the button points at a small page this server
-serves, which bounces the browser to the desktop app's `control-center://` link.
-That page reads nothing and resolves nothing — the ids in its URL are echoed into
-a deep link and nowhere else — and a server with no reachable public URL simply
-produces a card with no button rather than a broken one.
+Det bär det enda som chatten inte kan ge läsaren: en länk
+**View in Control Center** till samtalet bakom svaret. Chattprodukter
+accepterar `http(s)` i en länk och inget annat, så knappen pekar på en liten
+sida som den här servern levererar, vilken skickar vidare webbläsaren till
+skrivbordsappens `control-center://`-länk. Den sidan läser ingenting och löser
+upp ingenting — id:na i dess URL ekar in i en djuplänk och ingen annanstans —
+och en server utan nåbar publik URL ger helt enkelt ett kort utan knapp i
+stället för ett trasigt.
 
-Cards are a capability like any other. A provider without them behaves exactly as
-before, text only and a provider that refuses one at call time keeps its stream:
-the reply always outranks the card that describes it. When streaming is off
-entirely, the finished card rides the single posted message instead. A filed
-ticket gets the same treatment — the `/cc ticket` confirmation is a completed card
-whose reason to exist is the link to the ticket just created.
+Kort är en förmåga som vilken annan som helst. En leverantör utan dem beter
+sig precis som förut, bara text, och en leverantör som nekar ett kort vid
+anropstillfället behåller sin ström: svaret går alltid före kortet som
+beskriver det. När strömning är helt av åker det färdiga kortet med i det enda
+postade meddelandet i stället. Ett skapat ärende får samma behandling —
+bekräftelsen för `/cc ticket` är ett slutfört kort vars enda skäl att finnas är
+länken till ärendet som just skapades.
 
-## Capabilities are negotiated, then remembered
+## Förmågor förhandlas fram och behålls
 
-Chat products differ in what they can render, so the bridge is written against
-the richest surface — a reply that grows live inside a thread, a transient
-"is thinking…" status, a titled thread, an ephemeral answer to a slash command —
-and degrades one capability at a time. A provider with none of it still works; replies simply
-arrive as one message.
+Chattprodukter skiljer sig åt i vad de kan rendera, så bryggan är skriven mot
+den rikaste ytan — ett svar som växer live inne i en tråd, en tillfällig
+status ”is thinking…”, en tråd med titel, ett efemärt svar på ett
+slash-kommando — och trappar ned en förmåga i taget. En leverantör utan något
+av detta fungerar ändå; svaren kommer helt enkelt som ett meddelande.
 
-Advertising a capability is not promising it. Slack's streaming replies need a
-paid plan feature and Slack only refuses at call time. A refusal marked
-permanent is remembered for **the whole life of the connection**: the bridge
-stops asking and posts whole replies from then on and settings says so plainly,
-because "my replies stopped streaming" should be answerable without reading a
-log. Task cards are dropped the same way if Slack refuses one.
+Att annonsera en förmåga är inte att lova den. Slacks strömmande svar kräver
+en funktion i ett betalt abonnemang, och Slack nekar först vid
+anropstillfället. Ett nej som markerats som permanent kommer ihåg under **hela
+anslutningens livstid**: bryggan slutar fråga och postar hela svar från och med
+då, och inställningarna säger det rakt ut, för ”mina svar slutade strömmas”
+ska gå att få svar på utan att läsa en logg. Uppgiftskort släpps på samma sätt
+om Slack nekar ett.
 
-Every limit belongs to the provider rather than to the relay: the message
-ceiling, the stream-chunk ceiling and whether a stream needs a thread anchor
-are all declared by the adapter and a long reply is split on a paragraph, line,
-or word boundary rather than mid-word.
+Varje gräns tillhör leverantören och inte vidarebefordran: taket för
+meddelanden, taket för strömmade bitar och huruvida en ström behöver ett
+trådankare deklareras alla av adaptern, och ett långt svar delas vid en
+stycke-, rad- eller ordgräns i stället för mitt i ett ord.
 
-## One bridge, one adapter per product
+## En brygga, en adapter per produkt
 
-Everything product-shaped lives behind a port. The generic core knows about
-markdown, chat conversations, chat threads and members; it knows nothing about
-Slack envelopes, `mrkdwn`, or gateway intents. Three pieces make that work:
+Allt som är produktspecifikt ligger bakom en port. Den generiska kärnan känner
+till markdown, chattsamtal, chatt-trådar och medlemmar; den vet ingenting om
+Slack-kuvert, `mrkdwn` eller gateway-intents. Tre delar får det att fungera:
 
-- **The adapter** normalizes one product: its transport, its API calls, its text
-  codec and its envelope quirks. Slack's are instructive — a channel mention
-  arrives twice (as `app_mention` _and_ as `message`) and most message subtypes
-  are chrome rather than new requests. Both are resolved in the adapter, so the
-  core never learns that Slack double-delivers.
-- **The descriptor** is the provider's public shape: which credentials it needs,
-  what their formats are, which URLs help a user find them, what it can do and
-  whether its app can be created or edited from here. The settings card, the
-  connect dialog and argument validation are all _generated_ from it — the
-  client posts back a provider plus a map keyed by field id.
-- **The plugin** is the server-side composition: how credentials become a
-  verified connection, how an adapter is built and how the provider-side app is
-  managed.
+- **Adaptern** normaliserar en produkt: dess transport, dess API-anrop, dess
+  text-codec och dess egenheter i kuverten. Slacks är lärorika — en
+  kanalomnämning kommer in två gånger (som `app_mention` _och_ som `message`),
+  och de flesta meddelandetyper är dekoration snarare än nya förfrågningar.
+  Båda löses upp i adaptern, så kärnan får aldrig veta att Slack levererar
+  dubbelt.
+- **Deskriptorn** är leverantörens publika form: vilka inloggningsuppgifter
+  den behöver, vilka format de har, vilka URL:er som hjälper en användare att
+  hitta dem, vad den kan och huruvida dess app kan skapas eller redigeras
+  härifrån. Inställningskortet, anslutningsdialogen och valideringen av
+  argument _genereras_ alla från den — klienten skickar tillbaka en leverantör
+  plus en map med fält-id:n som nycklar.
+- **Pluginen** är kompositionen på serversidan: hur inloggningsuppgifter blir
+  en verifierad anslutning, hur en adapter byggs och hur appen hos leverantören
+  hanteras.
 
-So adding a product is one enum value, one adapter and one plugin. No new RPC
-op, no schema change, no client change — and the client stays honest, because a
-field it has never heard of still renders with the label the server supplied.
+Att lägga till en produkt är alltså ett enum-värde, en adapter och en plugin.
+Ingen ny RPC-operation, ingen schemaändring, ingen klientändring — och
+klienten förblir ärlig, för ett fält den aldrig har hört talas om renderas
+ändå med den etikett som servern angav.
 
-Two details keep the abstraction from leaking upward. The app-management steps a
-provider has no API for (generate a token, install the app, reinstall after a
-permission change) are returned as **named steps with their own links**, so the
-finish-setup screen shows them without knowing which provider it is. And every
-instruction the bridge writes names the provider and the command the app
-actually uses, so a renamed command or a second provider reads correctly with no
-new string.
+Två detaljer hindrar abstraktionen från att läcka uppåt. De apphanteringssteg
+som en leverantör inte har något API för (generera en token, installera appen,
+installera om efter en behörighetsändring) returneras som **namngivna steg med
+egna länkar**, så skärmen för att slutföra uppsättningen visar dem utan att
+veta vilken leverantör det gäller. Och varje instruktion som bryggan skriver
+namnger leverantören och det kommando som appen faktiskt använder, så ett
+omdöpt kommando eller en andra leverantör läses korrekt utan någon ny sträng.
 
-:::caution[Reinstall after a permission change]
-Editing the bot's name, description, or icon takes effect immediately. A
-**permissions** change needs a reinstall: Slack applies the new manifest but
-keeps the grant at whatever was installed. The edit returns a remaining step
-with a link to Slack's "Reinstall to Workspace" page.
+:::caution[Installera om efter en behörighetsändring]
+Att redigera botens namn, beskrivning eller ikon får effekt direkt. En ändring
+av **behörigheterna** kräver en ominstallation: Slack tillämpar det nya
+manifestet men behåller beviljandet vid det som installerades. Redigeringen
+returnerar ett återstående steg med en länk till Slacks sida
+”Reinstall to Workspace”.
 :::
 
-## Where credentials live
+## Var inloggningsuppgifterna finns
 
-A workspace's chat tokens sit in that workspace's **own directory, beside its
-database** — as plain JSON at
-`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, not in the database
-and deliberately not in the OS keychain. Two consequences are easy to lose
-later: deleting a workspace unlinks the directory and its tokens go with it and
-exporting or backing up a workspace copies `workspace.db`, so a workspace handed
-to somebody else does not carry live bot tokens inside it. The file inherits the
-server host's filesystem trust boundary — anything with read access to the data
-directory can read a bot token, which is the same boundary the databases sit
-behind.
+En arbetsytas chatt-tokens ligger i arbetsytans **egen katalog, bredvid dess
+databas** — som vanlig JSON på
+`<dataDir>/<workspaceId>/chat_credentials/<provider>.json`, inte i databasen
+och medvetet inte i operativsystemets nyckelring. Två konsekvenser är lätta
+att tappa bort senare: att ta bort en arbetsyta avlänkar katalogen och dess
+tokens följer med, och att exportera eller säkerhetskopiera en arbetsyta
+kopierar `workspace.db`, så en arbetsyta som lämnas till någon annan bär inte
+levande bottokens inuti sig. Filen ärver filsystemets förtroendegräns på
+servervärden — allt med läsåtkomst till datakatalogen kan läsa en bottoken,
+vilket är samma gräns som databaserna ligger bakom.
 
-One file per provider, written atomically and owner-only: a revoked app is
-deleted by unlinking one file and a corrupt file costs one provider rather than
-all of them. Credentials travel _in_ over the connect operation and never come
-back out — status reads answer with connection metadata only.
+En fil per leverantör, skriven atomiskt och endast åtkomlig för ägaren: en
+återkallad app raderas genom att en fil avlänkas, och en trasig fil kostar en
+leverantör i stället för alla. Inloggningsuppgifter färdas _in_ via
+anslutningsoperationen och kommer aldrig ut igen — statusläsningar svarar bara
+med anslutningsmetadata.
 
-## What is deliberately not offered
+## Det som medvetet inte erbjuds
 
-- **Structural app settings.** The transport, scopes and event subscriptions
-  are asserted, not exposed. An app that can be configured into silence from a
-  settings screen is a support ticket, not a feature.
-- **Conversation plus slash commands.** The Slack surface is messages, thread
-  replies and slash commands.
-- **A second source of truth.** Chat is not a place where work is stored. The
-  Slack thread is a space, the reply is a transcript, the ticket is a ticket —
-  all of them in the workspace, reachable from every client.
+- **Strukturella appinställningar.** Transport, behörighetsomfång och
+  händelseprenumerationer framtvingas, de exponeras inte. En app som kan
+  konfigureras till tystnad från en inställningsskärm är en supportbiljett,
+  inte en funktion.
+- **Samtal plus slash-kommandon.** Slack-ytan är meddelanden, svar i trådar
+  och slash-kommandon.
+- **En andra källa till sanning.** Chatten är inte en plats där arbete lagras.
+  Slack-tråden är en yta, svaret är en avskrift, ärendet är ett ärende — allt i
+  arbetsytan, nåbart från varje klient.
 
-## See also
+## Se även
 
-- [Multiplayer — identity, membership and presence](/sv-SE/handbok/koncept/multiplayer/): the principals and roles the bridge resolves through
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/): why links and credentials are per workspace
-- [The agent model](/sv-SE/handbok/koncept/agentmodell/): what wakes when a mention arrives
-- [Tickets and delegation](/sv-SE/handbok/koncept/arenden/): what `/cc ticket` files
-- [Architecture](/sv-SE/handbok/koncept/arkitektur/): where the bridge sits between server and clients
-- [Bridge Slack to your workspace](/sv-SE/handbok/guider/forsta-chattbrygga/)
-- [Set up Slack integration](/sv-SE/handbok/how-to-guider/slack-integration/)
-- [Link your Slack account](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
-- [Customize the chat bot](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
-- [PR conversations](/sv-SE/handbok/koncept/pr-samtal/): the same three decisions, made for a forge
+- [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/): de principaler och roller som bryggan löser upp genom
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/): varför länkar och inloggningsuppgifter är per arbetsyta
+- [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vad som vaknar när en omnämning kommer in
+- [Ärenden och delegering](/sv-SE/handbok/koncept/arenden/): vad `/cc ticket` skapar
+- [Arkitektur](/sv-SE/handbok/koncept/arkitektur/): var bryggan sitter mellan server och klienter
+- [Koppla Slack till din arbetsyta](/sv-SE/handbok/guider/forsta-chattbrygga/)
+- [Konfigurera Slack-integration](/sv-SE/handbok/how-to-guider/slack-integration/)
+- [Länka ditt Slack-konto](/sv-SE/handbok/how-to-guider/lanka-chattkonto/)
+- [Anpassa chattboten](/sv-SE/handbok/how-to-guider/anpassa-chattbot/)
+- [PR-samtal](/sv-SE/handbok/koncept/pr-samtal/): samma tre beslut, fattade för en forge

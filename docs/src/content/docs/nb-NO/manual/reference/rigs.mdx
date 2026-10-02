@@ -1,137 +1,140 @@
 ---
-title: Rigs
-description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+title: Stasjoner
+description: Alle stasjonsflater, backender, handlingsverb, livssyklustilstander, porter, standardverdier og kontrakter — den fullstendige faktakatalogen.
 slug: nb-NO/handbok/referanse/stasjoner
+sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 ---
 
-Facts only. For the model behind them, read [Rigs and
-enclosures](/nb-NO/handbok/konsepter/stasjoner/); to open a machine, follow [the
-guide](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/).
+Bare fakta. For modellen bak dem, les [Stasjoner og isolerte
+miljøer](/nb-NO/handbok/konsepter/stasjoner/); for å åpne en maskin, følg
+[veiledningen](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/).
 
-## Surfaces and backends
+## Flater og backender
 
-| Surface | Drives | Backend | Value | Contained egress |
+| Flate | Styrer | Backend | Verdi | Isolert utgående trafikk |
 | --- | --- | --- | --- | --- |
-| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
-| Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
-| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
-| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| Terminal (exec) | Et skall over VM-ens exec-kanal | mikro-VM | `smolvm` | Ja |
+| Nettleser | Hodeløs Chromium (CDP), Firefox (WebDriver BiDi) eller WebKit (W3C WebDriver) | mikro-VM | `smolvm` | Ja |
+| Datamaskin | X11-skrivebord: inndata via hypervisoren, skjermfangst via gjesteagenten | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (uakselerert reserve, velges aldri automatisk) | Ja |
+| Android | Android via ADB | Googles emulator | `android-emulator` | **Nei** — emulatoren håndterer sitt eget nettverk |
+| iOS | iOS-simulator via WebDriverAgent | CoreSimulator | `ios-simulator` | **Nei** — nettverket følger Mac-verten |
 
-The terminal and the `computer_use` surface share the `computer` surface
-value; the terminal is distinguished by its exec image marker and is never
-reused as a drivable desktop (or vice versa). One conversation reuses one
-terminal machine.
+Terminalen og `computer_use`-flaten deler flateverdien `computer`; terminalen
+kjennetegnes av exec-bildemarkøren sin og gjenbrukes aldri som et styrbart
+skrivebord (eller omvendt). Én samtale gjenbruker én terminalmaskin.
 
-## Browser engines
+## Nettlesermotorer
 
-| Engine | Value | Protocol | Live view | Stills |
+| Motor | Verdi | Protokoll | Sanntidsvisning | Stillbilder |
 | --- | --- | --- | --- | --- |
-| Chromium | `chromium` (default) | Chrome DevTools Protocol | Screencast — the browser pushes frames as the page repaints | JPEG |
-| Firefox | `firefox` | WebDriver BiDi | Polled stills (BiDi has no screencast), capped at 6 fps | JPEG |
-| WebKit | `webkit` | W3C WebDriver (classic) | Polled stills, transcoded by the host's ffmpeg | PNG |
+| Chromium | `chromium` (standard) | Chrome DevTools Protocol | Screencast — nettleseren dytter bilder etter hvert som siden tegnes på nytt | JPEG |
+| Firefox | `firefox` | WebDriver BiDi | Stillbilder med polling (BiDi har ingen screencast), begrenset til 6 fps | JPEG |
+| WebKit | `webkit` | W3C WebDriver (klassisk) | Stillbilder med polling, transkodet av vertens ffmpeg | PNG |
 
-A rig runs **one** engine for its whole life. One conversation can hold one
-rig **per engine**, which is what makes a side-by-side comparison possible:
-opening "Firefox (VM)" beside "Chromium (VM)" is two machines, and closing
-one leaves the other running.
+En stasjon kjører **én** motor hele levetiden. Én samtale kan ha én stasjon
+**per motor**, og det er det som gjør en side-ved-side-sammenligning mulig:
+å åpne «Firefox (VM)» ved siden av «Chromium (VM)» er to maskiner, og å lukke
+den ene lar den andre fortsette å kjøre.
 
-Pass `engine` to `rig.open` or to the `browser_use` tool. An unknown name is
-refused rather than defaulted — asking for a browser and silently getting a
-different one answers a compatibility question with the wrong answer.
+Send `engine` til `rig.open` eller til `browser_use`-verktøyet. Et ukjent navn
+avvises i stedet for å falle tilbake til standard — å be om en nettleser og
+stille få en annen, svarer på et kompatibilitetsspørsmål med feil svar.
 
-Engine-specific limits, stated rather than worked around:
+Motoravhengige begrensninger, oppgitt i stedet for omgått:
 
-- **Firefox** has no cache-bypassing reload (it rejects BiDi's `ignoreCache`
-  outright), so a hard reload is a normal reload.
-- **WebKit** has no cache-bypassing reload either, no console feed (output is
-  captured by hooking `console.*` after each navigation, so anything logged
-  during load is missed — every console extract says so), and needs `ffmpeg`
-  on the host for its live view.
-- **Neither** exposes a platform accessibility tree over its protocol, so
-  `extract (a11y)` returns a DOM-derived approximation, labelled as one.
-- **Neither** can take a real file drop; a file input can still be pointed at
-  paths inside the machine.
+- **Firefox** har ingen omlasting som omgår cachen (den avviser BiDis
+  `ignoreCache` kategorisk), så en hard omlasting er en vanlig omlasting.
+- **WebKit** har heller ingen omlasting som omgår cachen, ingen konsollstrøm
+  (utdata fanges ved å kroke `console.*` etter hver navigasjon, så alt som
+  logges under lasting, går tapt — hvert konsolluttrekk sier det), og trenger
+  `ffmpeg` på verten for sanntidsvisningen.
+- **Ingen av dem** eksponerer et plattform-tilgjengelighetstre over protokollen
+  sin, så `extract (a11y)` returnerer en DOM-avledet tilnærming, merket som
+  nettopp det.
+- **Ingen av dem** kan ta imot en ekte filslipp; et filinndatafelt kan likevel
+  pekes mot stier inne i maskinen.
 
-## Machine images
+## Maskinbilder
 
-| Surface | Image | Fetched |
+| Flate | Bilde | Hentes |
 | --- | --- | --- |
-| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
-| Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
+| Terminal | `ubuntu:24.04`, festet med digest | Automatisk ved første oppstart, via maskinens eget slusede nettverk |
+| Nettleser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, festet med digest, pluss motorens egne pakker | Automatisk ved første oppstart, deretter bufret som en forvarmet pakke |
+| Datamaskin | Et qcow2-skrivebordsbilde med Chromium, Firefox, WebKit og den samme CLI-basislinjen for GitHub-hostede runnere som terminalen varmer opp | **Importer** under Innstillinger → Server → Stasjoner (nedlastinger festet med sjekksum der de er publisert) |
+| Android | Googles systembilder | Gjennom Android SDK |
+| iOS | En Xcode-simulatorkjøretid pluss WebDriverAgent festet med sjekksum | Kjøretid gjennom Xcode; automatiseringsbro fra Innstillinger → Server → Stasjoner |
 
-After the first boot of each microVM kind the server caches a pre-extracted
-copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed. The
-terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
-`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
-not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
-names in at image build, next to XFCE and the three browsers. Every browser
-warms its engine. All three engines share a Debian base but never share a
-pack: the cache is keyed on the image, the engine **and** an audio revision
-(`audio-v1-<engine>`), because a machine warmed for one engine — or before
-PulseAudio and ffmpeg were part of the workload — has none of the other in
-it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
-same reason: a pack warmed before the compiler was part of the image must
-not serve a machine that is supposed to have one.
+Etter den første oppstarten av hver mikro-VM-type bufrer serveren en
+forhåndsutpakket kopi under datamappen og starter alle senere maskiner fra den
+— også forvarmede bilder med pakkene allerede installert. Terminalen varmer
+opp et CLI-verktøysett av samme slag som en GitHub-hostet runner (`git`,
+`gcc`, `python3`, `jq`, `rsync`, arkivverktøy og resten av apt-basislinjen;
+ikke Docker eller verktøycacher for språk). Datamaskin-qcow2-en baker inn de
+samme CLI-navnene ved bygging av bildet, ved siden av XFCE og de tre
+nettleserne. Hver nettleser varmer opp motoren sin. Alle tre motorene deler en
+Debian-base, men deler aldri en pakke: cachen er nøklet på bildet, motoren
+**og** en lydrevisjon (`audio-v1-<engine>`), fordi en maskin som er varmet opp
+for én motor — eller før PulseAudio og ffmpeg var en del av arbeidslasten —
+ikke har noen av de andre i seg. Terminalpakken er nøklet på en
+verktøysettrevisjon (`tools-v1`) av samme grunn: en pakke som er varmet opp før
+kompilatoren var en del av bildet, må ikke betjene en maskin som skal ha en.
 
-There is no baked automation image worth taking — Chromium's
-`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
-never emit sound; the only maintained Firefox one is 33× the size of the
-Debian base and still ships no `socat`; there is no maintained WebKit one at
-all. So every engine installs on first start (`chromium`, `firefox-esr`, or
-`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
-`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
-the distribution binary launched as `chromium --headless=new`.
+Det finnes ikke noe ferdigbygd automatiseringsbilde som er verdt å bruke —
+Chromiums `chromedp/headless-shell` kompilerer bort både ALSA og PulseAudio, så
+den kan aldri gi lyd; den eneste vedlikeholdte Firefox-varianten er 33×
+størrelsen på Debian-basen og leveres fortsatt uten `socat`; det finnes ingen
+vedlikeholdt WebKit-variant i det hele tatt. Derfor installerer hver motor ved
+første start (`chromium`, `firefox-esr` eller `webkit2gtk-driver`) og når
+Debian-arkivene (`deb.debian.org`, `security.debian.org`,
+`cloudfront.debian.net`) mens den gjør det. Chromium er distribusjonsbinæren,
+startet som `chromium --headless=new`.
 
-### Per-workspace custom images
+### Egne bilder per arbeidsområde
 
-| Setting key | Overrides |
+| Innstillingsnøkkel | Overstyrer |
 | --- | --- |
-| `rigs.smolvm.execImage` | The Terminal (VM) image |
-| `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
+| `rigs.smolvm.execImage` | Terminal (VM)-bildet |
+| `rigs.smolvm.browserImage` | Nettleser (VM)-bildet for Chromium |
 
-Written through the admin-gated workspace settings store (Settings → Server →
-Rigs → Custom images (this workspace)). The value must be a registry reference — local
-paths, archives and flag-like strings are refused, both at the field and
-again at boot. An invalid stored value is ignored loudly and the default
-boots instead. The image's own registry (plus known blob-CDN companions for
-Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
-for the pull.
+Angis gjennom arbeidsområdets innstillingslager, som er forbeholdt
+administratorer (Innstillinger → Server → Stasjoner → Egne bilder (dette
+arbeidsområdet)). Verdien må være en registerreferanse — lokale stier, arkiver
+og flagglignende strenger avvises, både i feltet og igjen ved oppstart. En
+ugyldig lagret verdi ignoreres med et tydelig varsel, og standarden startes i
+stedet. Bildets eget register (pluss kjente blob-CDN-følgesvenner for Docker
+Hub, GHCR, Quay, GitLab og GCR) tillates gjennom slusen for utgående trafikk
+for hentingen.
 
-**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
-three plus a GitHub-hosted-runner-style CLI toolset on first start:
-compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
-Docker are not installed).
+**Bildekontrakt for terminal** — `bash` til stede; `git`, `curl`, `socat`
+forhåndsinstallert *eller* en Debian/Ubuntu apt-base (det isolerte miljøet
+installerer disse tre pluss et CLI-verktøysett av samme slag som en
+GitHub-hostet runner ved første start: kompilatorer, Python 3, `jq`,
+arkivverktøy, `rsync`. Verktøycacher for språk og Docker installeres ikke).
 
-**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
-installed) with `bash` and `socat`, plus a `chromium` binary the server
-launches itself as `chromium --headless=new` with DevTools on guest loopback
-`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
-first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
-upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
-cannot emit sound. The override applies to **Chromium rigs only** — the
-workload command it boots is Chromium's, and handing it to Firefox or WebKit
-would launch a binary that is not there. A Firefox or WebKit rig ignores it
-loudly and boots its pinned image.
+**Bildekontrakt for nettleser** — en Debian/Ubuntu apt-base (eller pakkene
+allerede installert) med `bash` og `socat`, pluss en `chromium`-binær som
+serveren starter selv som `chromium --headless=new`, med DevTools på gjestens
+loopback `9223`, videreformidlet til gjesteporten `9222`. PulseAudio og ffmpeg
+installeres ved første start for lydbanen. Ikke bygg
+`FROM chromedp/headless-shell`: oppstrøms `headless.gn` kompilerer bort både ALSA og
+PulseAudio, så den binæren kan ikke gi lyd. Overstyringen gjelder **bare
+Chromium-stasjoner** — arbeidslastkommandoen den starter, er Chromiums, og å gi
+den til Firefox eller WebKit ville starte en binær som ikke finnes. En Firefox-
+eller WebKit-stasjon ignorerer den med et tydelig varsel og starter sitt
+festede bilde.
 
-**Automation ports** — every browser machine forwards exactly one host
-loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
-remote agent sit on guest loopback `9223` with a `socat` relay in front (both
-bind loopback unconditionally); WebKit's driver takes a `--host` and binds the
-guest NIC itself. Firefox additionally validates the `Host` header against
-its own port, so the client sends the guest-side authority rather than the one
-it dialled.
+**Automatiseringsporter** — hver nettlesermaskin videresender nøyaktig én
+vertsloopback-port til gjestens `9222`. Bak den: Chromiums DevTools og Firefox'
+fjernagent ligger på gjestens loopback `9223` med en `socat`-relé foran (begge
+binder loopback ubetinget); WebKits driver tar en `--host` og binder gjestens
+NIC selv. Firefox validerer i tillegg `Host`-headeren mot sin egen port, så
+klienten sender gjestesidens autoritet i stedet for den den koblet til.
 
-## Action verbs
+## Handlingsverb
 
-Every action is parsed totally: a malformed payload returns a message naming
-the field, never an exception. Observation verbs (marked ○) stay allowed
-while a human holds control; mutating verbs are refused.
+Hver handling parses fullstendig: en feilformet nyttelast returnerer en melding
+som navngir feltet, aldri et unntak. Observasjonsverb (merket ○) forblir
+tillatt mens et menneske har kontrollen; mutative verb avvises.
 
 ### `computer_use`
 
@@ -141,219 +144,225 @@ while a human holds control; mutating verbs are refused.
 `hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
 `clipboard_read`○, `clipboard_write`.
 
-Coordinates are guest pixels in the guest's current mode; every screenshot
-states the display size. Key combinations use X11 spellings (`ctrl+s`,
+Koordinater er gjestepiksler i gjestens gjeldende modus; hvert skjermbilde
+oppgir skjermstørrelsen. Tastenkombinasjoner bruker X11-stavemåter (`ctrl+s`,
 `alt+Tab`, `Return`).
 
-`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
-default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
-empty result is a normal answer for all three. `clipboard_write` takes
-`text` only — images and files travel on the file lane, because an action's
-arguments are persisted to the audit log and image bytes have no business
-there. Clipboard content comes back fenced as untrusted data.
+`clipboard_read` tar en `selection`: `clipboard` (det ctrl+C fyller,
+standarden), `primary` (X11 merk-for-å-kopiere) eller `xdnd` (en dra-operasjon
+underveis). Et tomt resultat er et normalt svar for alle tre. `clipboard_write`
+tar bare `text` — bilder og filer går på filbanen, fordi en handlings argumenter
+lagres i revisjonsloggen, og bildetekst har ingenting der å gjøre. Innholdet på
+utklippstavlen kommer tilbake inngjerdet som ikke-klarerte data.
 
 ### `browser_use`
 
-`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
-`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`navigate` (bare http/https), `reload` (`hard` valgfritt), `stop_loading`,
+`click` (velger eller koordinat), `fill`, `type`, `key` (DOM-tastnavn),
 `scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
 `extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
-optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
-0.1–30 s), `clipboard_read`○, `clipboard_write`.
+valgfritt), `set_viewport` (min. 320×240), `history`, `wait_for`○ (velger,
+0,1–30 s), `clipboard_read`○, `clipboard_write`.
 
-Extracted page content returns fenced as untrusted data.
+Uttrukket sideinnhold returneres inngjerdet som ikke-klarerte data.
 
-The browser has exactly one clipboard, so `clipboard_read` takes no
-`selection`. Both clipboard verbs need a **secure context**: a page served
-over plain `http://` has no clipboard API at all, and the verb says so rather
-than reporting an empty one — use `type` there, which inserts at the caret
-without going through a clipboard.
+Nettleseren har nøyaktig én utklippstavle, så `clipboard_read` tar ingen
+`selection`. Begge utklippstavleverbene trenger en **sikker kontekst**: en side
+servert over ren `http://` har ingen utklippstavle-API i det hele tatt, og
+verbet sier det i stedet for å rapportere en tom utklippstavle — bruk `type`
+der, som setter inn ved innsettingspunktet uten å gå via en utklippstavle.
 
 ### `mobile_use`
 
-`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`tap`, `swipe` (50–5000 ms), `type`, `key` (aliasene `back`, `home`,
 `recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
-`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
-`screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`,
-`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
-`shell` takes an argv list and runs inside Android, never through a host shell;
-it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
+`menu`, `volume_up`, `volume_down`, `power`, eller en hvilken som helst
+`KEYCODE_*`), `screenshot`○, `ui_dump`○, `install_apk`
+(begrenset til stasjonens worktree og serverens datamappe), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url` og `shell`.
+`shell` tar en argv-liste og kjører inne i Android, aldri gjennom et
+vertsskall; den dekker utviklerdiagnostikk som `logcat`, `dumpsys` og
+`pm grant`.
 
-`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
-may read the clipboard.
+`mobile_use` har ingen utklippstavleverb. Siden Android 10 er det bare appen
+med fokus som kan lese utklippstavlen.
 
 ### `ios_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
-`escape`, arrow keys or one printable character; optional `command`,
-`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
-`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
-confined to the rig worktree or server data directory), `start_app`, `stop_app`,
-`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
-inside the simulator through `simctl`; it never invokes a host shell.
+`escape`, piltaster eller ett skrivbart tegn; valgfrie `command`-, `control`-,
+`option`- og `shift`-modifikatorer), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (en `.app`-mappe for simulatoren,
+begrenset til stasjonens worktree eller serverens datamappe), `start_app`,
+`stop_app`, `uninstall_app`, `open_url` og `spawn`. `spawn` tar argv og kjører
+inne i simulatoren gjennom `simctl`; den påkaller aldri et vertsskall.
 
-Coordinates are iOS screen **points**, not screenshot pixels. The live stream
-keeps the simulator's fixed size and letterboxes it instead of resizing the
-device. Host-to-simulator and simulator-to-host text clipboard transfer uses
-the same per-user, per-direction permission policy as other rigs; files and
-images are not accepted by the iOS pasteboard lane.
+Koordinater er iOS-skjerm**punkter**, ikke skjermbildepiksler. Sanntidsstrømmen
+beholder simulators faste størrelse og setter den i letterbox i stedet for å
+endre størrelsen på enheten. Tekstoverføring via utklippstavlen fra vert til
+simulator og fra simulator til vert bruker samme tillatelsespolicy per bruker og
+per retning som andre stasjoner; filer og bilder godtas ikke av
+iOS-utklippstavlebanen.
 
-Each rig creates an owned CoreSimulator device and WebDriverAgent session.
-Closing it stops WebDriverAgent, shuts down and deletes that device, and
-removes its registry entry. iOS rigs run only on a macOS server with Xcode,
-an installed iOS runtime and the pinned automation bridge. They expose no
-audio, microphone, file drop, host shell or enclosed-network guarantee.
+Hver stasjon oppretter en eid CoreSimulator-enhet og en WebDriverAgent-økt.
+Å lukke den stopper WebDriverAgent, slår av og sletter den enheten og fjerner
+registeroppføringen dens. iOS-stasjoner kjører bare på en macOS-server med
+Xcode, en installert iOS-kjøretid og den festede automatiseringsbroen. De gir
+ingen garanti for lyd, mikrofon, filslipp, vertsskall eller isolert nettverk.
 
-### Management tools
+### Administrasjonsverktøy
 
-| Tool | Description |
+| Verktøy | Beskrivelse |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
-| `rig_close` | Destroy a rig and discard its disk |
+| `rig_list` | List opp et arbeidsområdes stasjoner med flate, status, skjerm og kontrollør |
+| `rig_close` | Ødelegg en stasjon og forkast disken dens |
 
-## Lifecycle
+## Livssyklus
 
-| Phase | Meaning |
+| Fase | Betydning |
 | --- | --- |
-| `provisioning` | Booting; the status detail carries the current step verbatim |
-| `ready` | Reachable and accepting actions |
-| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
-| `closing` | Shutting down |
-| `closed` | Gone; the row survives for the audit trail |
-| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+| `provisioning` | Starter opp; statusdetaljen gjengir gjeldende steg ordrett |
+| `ready` | Tilgjengelig og tar imot handlinger |
+| `parked` | Inaktivitets-parkert: vCPU-er stoppet, RAM fortsatt resident; neste handling vekker den |
+| `closing` | Slår seg av |
+| `closed` | Borte; raden består for revisjonssporet |
+| `failed` | Døde eller kom aldri opp; skilles ut så brukergrensesnittet kan tilby nytt forsøk |
 
-| Close reason | Fired when |
+| Lukkegrunn | Utløses når |
 | --- | --- |
-| `requested` | A person or agent asked |
-| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
-| `ttlExpired` | The hard lifetime ran out |
-| `conversationEnded` | The owning conversation ended |
-| `workspaceGone` | The workspace was deleted or membership was lost |
-| `serverShutdown` | The server is stopping |
-| `backendFailure` | The hypervisor died underneath it |
+| `requested` | En person eller agent ba om det |
+| `idleTimeout` | Inaktiv utover 2× inaktivitetsvinduet, eller støtt ut på grunn av minne |
+| `ttlExpired` | Den harde levetiden løp ut |
+| `conversationEnded` | Samtalen som eier den, ble avsluttet |
+| `workspaceGone` | Arbeidsområdet ble slettet, eller medlemskapet ble mistet |
+| `serverShutdown` | Serveren stanser |
+| `backendFailure` | Hypervisoren under den døde |
 
-## Defaults and ceilings
+## Standardverdier og tak
 
-| Value | Terminal | Browser | Computer | Mobile |
+| Verdi | Terminal | Nettleser | Datamaskin | Mobil |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
-| vCPUs | 2 | 2 | 4 | 4 |
-| Hard TTL | 8 h | 2 h | 2 h | 2 h |
-| Idle window | 45 min | 15 min | 15 min | 15 min |
-| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+| Minne | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
+| vCPU-er | 2 | 2 | 4 | 4 |
+| Hard TTL | 8 t | 2 t | 2 t | 2 t |
+| Inaktivitetsvindu | 45 min | 15 min | 15 min | 15 min |
+| Oppstartsvisning | — | 1280×800 | 1280×800 | 1080×1920 |
 
-- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
-  to **2560×1600**.
-- The host's resident-memory budget for all rigs defaults to **12 GB**,
-  counted in resident megabytes (a parked VM still holds its RAM). Eviction
-  is least-recently-used and never takes a machine someone is driving,
-  watching, or has a terminal open in.
-- An open terminal or watch lane pins the rig against parking and idle
-  reaping; the hard TTL still applies.
+- Stillbilder på agentbanen er begrenset til **1280×800**; menneskebanen
+  forhandler seg opp til **2560×1600**.
+- Vertens budsjett for resident minne for alle stasjoner er som standard
+  **12 GB**, målt i residente megabyte (en parkert VM holder fortsatt på RAM-en
+  sin). Utstøting skjer etter minst nylig brukt og tar aldri en maskin som noen
+  styrer, ser på eller har en terminal åpen i.
+- En åpen terminal eller seerbane holder stasjonen fast mot parkering og
+  inaktivitetsrydding; den harde TTL-en gjelder fortsatt.
 
-## Ports and dev domains
+## Porter og utviklingsdomener
 
-| Port | Where | Reserved for |
+| Port | Hvor | Reservert for |
 | --- | --- | --- |
-| `7911` | Terminal guest | The port multiplexer every forward rides |
-| `9222`, `9223` | Browser guest | The automation relay and endpoint (WebKit binds `9222` directly and uses no relay) |
-| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+| `7911` | Gjesten i terminalen | Portmultiplekseren all videresending går over |
+| `9222`, `9223` | Gjesten i nettleseren | Automatiseringsreléet og endepunktet (WebKit binder `9222` direkte og bruker ingen relé) |
+| `80`, `443` | Gjestens loopback i nettleseren | HTTP/HTTPS-banene for utviklingsdomener |
 
-- Discovery polls the terminal guest's listening TCP ports every ~4 s,
-  server-side.
-- At most **16** ports are auto-forwarded per rig; more are listed in the
-  log, not forwarded.
-- The host-side forward binds loopback, preferring the guest's own port
-  number; **Share on local network** adds an OS-assigned LAN port.
-- Dev domains must match `name.test` or `name.localhost` (lower-case,
-  max 63-character label). One domain maps to one port.
-- Dev-domain HTTPS uses a server-local CA (EC P-256, under
-  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
-  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
-  lane; plain HTTP still routes.
+- Oppdagelse poller gjestens lyttende TCP-porter i terminalen omtrent hvert
+  4. sekund, på serversiden.
+- Høyst **16** porter videresendes automatisk per stasjon; flere listes opp i
+  loggen, men videresendes ikke.
+- Videresendingen på vertssiden binder loopback og foretrekker gjestens eget
+  portnummer; **Del på lokalt nettverk** legger til en LAN-port tildelt av
+  operativsystemet.
+- Utviklingsdomener må samsvare med `name.test` eller `name.localhost` (med små
+  bokstaver, etikett på maks 63 tegn). Ett domene mapper til én port.
+- HTTPS for utviklingsdomener bruker en serverlokal CA (EC P-256, under
+  `<dataDir>/rigs/tls/`, nøkler 0600 og aldri i en gjest) med ett
+  jokertegnssluttblad for `*.test` / `*.localhost`. Ingen `openssl` på verten
+  betyr ingen HTTPS-bane; ren HTTP rutes fortsatt.
 
-## Egress defaults
+## Standardverdier for utgående trafikk
 
-| Surface | Default allowlist |
+| Flate | Standard tillatelsesliste |
 | --- | --- |
-| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
-| Computer | Empty — deny everything — until a caller grants hosts |
-| Mobile | Not enforced (emulator-managed networking) |
+| Terminal | Sandkassens utviklerbasislinje (kodeverter, pakkeregistre, modellleverandører) + Ubuntus apt-speil + worktreets egen kodevert |
+| Nettleser | `usectrl.dev` (produktsiden) — pluss Debian-arkivene ved hver motors første oppstart, mens den installerer pakkene sine. Hjemmesiden er et lokalt `file://`-dokument og trenger ingen utgående trafikk |
+| Datamaskin | Tom — avvis alt — til en kaller gir tillatelse til verter |
+| Mobil | Ikke håndhevet (emulatorstyrt nettverk) |
 
-Every microVM additionally gets its image's registry hosts, for the pull
-only. The credential broker's allowed-hosts set is derived from the same
-allowlist: no token is minted for a host the guest cannot reach.
+Hver mikro-VM får i tillegg bildets registerverter, bare for hentingen.
+Legitimasjonsmeglerens sett av tillatte verter utledes fra den samme
+tillatelseslisten: det utstedes ikke noe token for en vert gjesten ikke kan nå.
 
-## Clipboard and file transfer
+## Utklippstavle og filoverføring
 
-Both directions of copy/paste, and dragging files in and out. Available to a
-person driving a rig; an agent gets the clipboard through the verbs above and
-no file transfer at all (it already has a shell inside the enclosure).
+Begge retninger av kopier/lim inn, og å dra filer inn og ut. Tilgjengelig for
+en person som styrer en stasjon; en agent får utklippstavlen gjennom verbene
+ovenfor og ingen filoverføring i det hele tatt (den har allerede et skall inne
+i det isolerte miljøet).
 
-Clipboard crossing is per-user and per-direction. Host-to-rig paste is
-allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
-allow under Settings → Server → Rigs → Clipboard access). The two choices
-are independent and are never a workspace setting.
+Kryssing av utklippstavlen skjer per bruker og per retning. Lim inn fra vert til
+stasjon er tillatt som standard; kopiering fra stasjon til vert spør først (en
+tildeling på ti minutter, eller alltid tillat under Innstillinger → Server →
+Stasjoner → Tilgang til utklippstavle). De to valgene er uavhengige og er aldri
+en innstilling for arbeidsområdet.
 
-| Lane | Route | Carries |
+| Bane | Rute | Fraktet |
 | --- | --- | --- |
-| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
-| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
-| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+| Utklippstavle | `GET`/`POST /rig/clipboard/<rigId>` | Tekst, én PNG/JPEG (≤16 MB) og gjestestiene til filene på utklippstavlen |
+| Filer | `POST /rig/files/<rigId>` | Opptil 64 filer, ≤256 MB hver og ≤512 MB per slipp, med et valgfritt slippunkt i gjestepiksler |
+| Filer | `GET /rig/files/<rigId>?p=<base64url path>` | Bytedataene til én fil, tilbake ut |
 
-- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
-  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
-  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
-  audio already do.
-- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
-  workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
-- **Take-over applies.** Writing the clipboard and dropping files are
-  mutating and are refused while someone else holds control; reading the
-  clipboard and reading a file out are observation and are not.
-- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
-  worktree, never inside it, so a drop never appears as an untracked change),
-  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
-  name it. Existing files are never overwritten — a colliding name lands as
-  `2-name.ext`.
-- **What the guest is told:** a browser page gets a real drop event at the
-  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
-  their URIs on its clipboard, because no host can synthesize an XDND drag
-  into an arbitrary toolkit without a privileged in-guest daemon. The reply
-  states which of the two happened.
-- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
-  while a drag is live. A payload identical to what the guest was already
-  holding when the press began is treated as a stale selection from a
-  finished drag, not a new one — X has no "the drag is over" step.
-- **Image requirements:** the desktop image must be protocol 2 or later
-  (built after clipboard support landed). An older image answers 404 and the
-  app says to rebuild it rather than reporting a broken machine.
-- **The audit log records the shape, never the content**: `clipboard_read`,
-  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
-  and paths. A clipboard is where credentials live for a few seconds at a
-  time, and none of it is written down.
+- **HTTP, ikke RPC.** RPC-sokkelen lukker en tilkobling ved en innkommende
+  ramme over 256 KB — en DoS-vakt som er riktig for JSON-kommandoer og dødelig
+  for et innlimt skjermbilde. Bytedata går over samme slags rute som stasjonsrammer
+  og møtelyd allerede bruker.
+- **Autentisering** er det signerte målet `rig-files:<workspaceId>/<rigId>`
+  pluss medlemskap i arbeidsområdet — et eget mål, så en URL utstedt for å *se
+  på* en maskin ikke også kan skrive filer inn i den.
+- **Overtakelse gjelder.** Å skrive til utklippstavlen og å slippe filer er
+  muterende og avvises mens noen andre har kontrollen; å lese utklippstavlen og
+  å lese en fil ut er observasjon og er det ikke.
+- **Hvor slipp lander:** `~/Drops` (skrivebord), `~/drops` (terminal — ved siden
+  av worktreet, aldri inne i det, så et slipp aldri dukker opp som en usporet
+  endring), `/tmp/cc-drops` (nettleser). Serveren velger mappen; en kaller kan
+  ikke navngi den. Eksisterende filer overskrives aldri — en navnekollisjon
+  lander som `2-name.ext`.
+- **Hva gjesten får beskjed om:** en nettside får en ekte slipphendelse på det
+  angitte punktet (`Input.dispatchDragEvent`); et skrivebord får filene pluss
+  URI-ene deres på utklippstavlen, fordi ingen vert kan syntetisere en
+  XDND-dra-operasjon inn i et vilkårlig verktøysett uten en privilegert daemon i
+  gjesten. Svaret oppgir hvilken av de to som skjedde.
+- **Å dra ut** fungerer bare på skrivebordet og leser gjestens `XdndSelection`
+  mens en dra-operasjon pågår. En nyttelast som er identisk med det gjesten
+  allerede holdt da trykket begynte, behandles som en foreldet markering fra en
+  avsluttet dra-operasjon, ikke en ny — X har ikke noe «dra-operasjonen er
+  over»-steg.
+- **Bildekrav:** skrivebordsbildet må være protokoll 2 eller nyere (bygget etter
+  at utklippstavlestøtten kom). Et eldre bilde svarer 404, og appen sier at det
+  må bygges på nytt i stedet for å rapportere en ødelagt maskin.
+- **Revisjonsloggen registrerer formen, aldri innholdet**: radene
+  `clipboard_read`, `clipboard_write`, `drop_files` og `read_file` bærer antall,
+  størrelser og stier. En utklippstavle er der legitimasjon lever i noen
+  sekunder av gangen, og ingenting av det skrives ned.
 
-## Guardrails, events, storage
+## Tillatelsesregler, hendelser, lagring
 
-- Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
-  `ios_use` also declare `packageInstall`). `rig_close` declares
-  `enclosureControl`; `rig_list` declares none. Allowed by default;
-  read-only modes deny it wholesale; the per-space autonomy dial can
-  demote it to ask-first.
-- Domain events: `RigClosedEvent` (with its close reason),
-  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). Opening a rig is not an event.
-  See [domain events](/nb-NO/handbok/referanse/domenehendelser/).
-- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
-  The action log records every input event with its principal and a
-  monotonic per-rig sequence; typed text is redacted to a length and hash
-  before it is written.
-- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
-  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
-  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
-  seeds).
-- Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Rigs settings screen.
+- Stasjonsverktøy erklærer handlingsklassen **`enclosureControl`** (pluss
+  `networkEgress` og `processSpawn` på bruksverktøyene; `mobile_use` og
+  `ios_use` erklærer også `packageInstall`). `rig_close` erklærer
+  `enclosureControl`; `rig_list` erklærer ingen. Tillatt som standard;
+  skrivebeskyttede moduser avviser det kategorisk; autonomidreiet per område kan
+  nedgradere det til å spørre først.
+- Domenehendelser: `RigClosedEvent` (med lukkegrunnen sin),
+  `RigControlChanged` (overtakelse / tilbakelevering), `RigReaped` (inaktivitets-,
+  TTL- eller minneutstøting, med den styrende agenten). Å åpne en stasjon er
+  ikke en hendelse. Se [domenehendelser](/nb-NO/handbok/referanse/domenehendelser/).
+- Lagring: `rig_sessions` og `rig_action_log` i hver arbeidsområdedatabase.
+  Handlingsloggen registrerer hver inndatahendelse med sin aktør og en monoton
+  sekvens per stasjon; tekst som skrives inn, maskeres til en lengde og en hash
+  før den skrives.
+- Datamappe: `rigs/images/` (importerte qcow2-bilder), `rigs/smolvm/`
+  (kjøretidstilstand per stasjon), `rigs/smolvm-packs/` (forhåndsutpakkede
+  maskinpakker), `rigs/tls/` (CA-en for utviklingsdomener), `rigs/run/`
+  (QEMU-overlay og seed-filer).
+- Ruter: sanntidsvisningen er en fane i en område- eller PR-side;
+  `/settings/server/rigs` er innstillingsskjermen for stasjoner.

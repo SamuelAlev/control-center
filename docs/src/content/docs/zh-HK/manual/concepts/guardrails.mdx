@@ -1,248 +1,131 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: 護欄——每個變更操作都套用同一套政策
+description: Control Center 為何讓代理的每個副作用都經過單一的允許／先詢問／拒絕引擎、ActionClass 分類體系為何刻意保持精簡，以及自主程度旋鈕實際改變了甚麼。
 slug: zh-HK/手冊/概念/護欄
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+Control Center 的代理可以刪除檔案、推送分支、發佈 pull request，以及呼叫外部 API。這些各自屬於不同_類別_的風險，而長久以來只有其中一種——shell 指令——有政策規範。護欄正是為了統一回答一個問題而存在，適用於代理可採取的每一個變更操作，不論它由哪個執行環境或工具提出：**這項操作是允許、需要核准，還是被拒絕？**
 
-## One engine, every chokepoint
+## 一個引擎，涵蓋每個關卡
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+政策引擎只有一個。凡是操作可能離開系統的位置，都會查詢它：內建框架的工具註冊表、伺服器端的 MCP 分派閘門，以及程式庫操作的變更。因此，寫一次的規則同時適用於內建執行環境與外部代理 CLI——不存在第二條更隱蔽的繞道。舊有的純 bash 指令政策仍然有效：規則可以改為比對指令前綴，而非操作類別，兩種形式並存於同一個儲存庫。
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/zh-HK/手冊/概念/沙箱與保安/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+然而，這個引擎不能取代作業系統沙箱，沙箱也不能取代它。兩者回答不同的問題：護欄決定 Control Center 看得見的呼叫是否獲准發生，沙箱則界定隨之而來的程序可以觸及何處。主機提供後端時，`cc_server` 會套用沙箱——但 [Windows 不提供任何後端，而 Linux 需要 `bwrap` 和 `socat`](/zh-HK/手冊/概念/沙箱與保安/)。在這些主機上，護欄就是最外層的強制執行機制，而不是一層架在底板之上的政策；在你決定要放寬到甚麼程度時，這一點值得留意。
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass：刻意封閉的分類體系
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+每個變更工具都會宣告自己屬於哪些 **ActionClass**，這些類別來自一個由十三個效果類別組成的封閉集合。其中五個開箱即設為先詢問；其餘則允許，要改動就得靠規則。
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| 類別                       | 內建預設   | 涵蓋範圍                                                     |
+| -------------------------- | ---------- | ------------------------------------------------------------ |
+| `fileDelete`               | **先詢問** | 刪除檔案（刪除形式的寫入，`rm`）                             |
+| `gitPush`                  | **先詢問** | 推送至 git 遠端                                              |
+| `prCreate`                 | **先詢問** | 建立 pull request                                            |
+| `prPublish`                | **先詢問** | 發佈審查、合併 PR                                            |
+| `vendorSyncWrite`          | **先詢問** | 寫入外部工單供應商（Linear、Jira、GitHub 同步）              |
+| `fileWriteOutsideWorktree` | 允許       | 在隔離 worktree 之外寫入檔案                                 |
+| `gitCommit`                | 允許       | 建立 git 提交                                                |
+| `networkEgress`            | 允許       | 網絡出口（網頁抓取、任意 HTTP）                              |
+| `secretAccess`             | 允許       | 讀取密鑰或憑證                                               |
+| `packageInstall`           | 允許       | 安裝套件（npm、pip、pub、brew）                              |
+| `processSpawn`             | 允許       | 啟動程序（shell 及任何經 shell 執行的東西）                  |
+| `workspaceMutation`        | 允許       | 變更工作區結構（程式庫、空間、代理）                         |
+| `enclosureControl`         | 允許       | 操控隔離環境（測試機）：啟動 VM、向它傳送輸入                |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+這八個預設允許的類別，是基於沙箱底板在其下生效的假設而選定的。主機提供後端時確實如此，但在 Windows 或缺少 `bwrap` 和 `socat` 的 Linux 機器上並非如此——所以若你想在那些環境為 `fileWriteOutsideWorktree` 或 `packageInstall` 加設閘門，就得自己寫一條規則。
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+這個集合是刻意封閉的。新的變更工具若不宣告任何類別，就無法通過棘輪測試，因此分類體系只能經明確而經過論證的決定才得以擴充——「分類體系失控膨脹，就是這項功能的死因。」十三個類別足以表達人們實際會寫的政策（未經詢問絕不推送、絕不在 worktree 之外刪除、一律允許讀取），同時又少得讓設定介面保持易懂。
 
-## Rules and scope resolution
+## 規則與範圍判定
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+一條規則將 `(scope, ActionClass | command prefix) → allow | prompt | deny` 對應起來。範圍由最具體到最概括層層嵌套：
 
-**space > agent > workspace > mode preset > built-in default**
+**空間 > 代理 > 工作區 > 模式預設 > 內建預設**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+判定以**具體程度優先**：第一個有相符規則的範圍作出決定，判定即在此停止。最嚴格只是平手時的決勝條件——用於同一範圍內兩條具體程度相同的規則之間，以及在合併單一操作所宣告的多個類別時。在同一個範圍內，指令規則以最長的指令前綴作比對。在任何地方，允許都不會壓過拒絕。
 
-Two decisions carry hard guarantees:
+有兩項決定附帶硬性保證：
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **失效即拒絕的詢問。** 在沒有連接核准人的情況下，`prompt` 會判定為 _拒絕_。沒有回答的問題永遠不等於同意。
+- **最嚴格合併。** 橫跨多個類別的操作，會以最嚴格的方式合併；當多個類別都要求先詢問，一次確認會全部列出。
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+系統刻意不設逐回合鎖存。每次工具呼叫都會從頭重新判定政策，因此同一操作重複詢問的次數，是由操作者自己選擇「記住這個決定」所限制，而非任何以單一回合為範圍的機制。
 
-## Argument-level rules
+## 參數層面的規則
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+規則可以約束操作的**參數**，而不只是它的動作。「可以推送」與「可以推送到 `feature/*`」是兩種不同的宣稱，只有後者才是管控——只授權動作本身的能力閘門，正是大多數已公開代理事故的成因。
 
-A constraint may name:
+約束可以指定：
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **路徑**——glob 模式（`repos/**`、`!**/.env`）
+- **ref**——git ref，配以 `!` 作否定（`['**', '!main']` 讀作「任何分支，但 main 除外」）
+- **主機**——網絡目的地，支援子網域萬用字元（`*.internal`）
+- **指令**——指令前綴，以詞界作比對
+- **上限**——`maxCount` / `maxCents`，因此可以表達「最多刪除 50 個檔案」
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+語法保持封閉且不含迴圈，帶來三個特性，而這三者正是重點：每條規則都能改寫成一句可以讀出來的話，每次拒絕都能指出相符的約束，而整份政策可以逐一列舉——你可以在代理執行*之前*就看到它可以做甚麼。
 
-Three rules that matter:
+三條重要的規則：
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- 在相同範圍下，**有約束的規則比沒有約束的更為具體**，因此「拒絕推送到 `main`」勝過「允許推送」，無須任何人考慮排序。
+- **限制性**規則（拒絕／先詢問）只要請求觸及其所指的*任何*值就會套用；**寬容性**規則（允許）則只在請求*完全*落在其範圍內時套用。若兩者一視同仁，代理就能把一個無害的路徑與被禁的路徑綁在一起，藉此洗白後者。
+- 若規則指定的面向是請求完全沒有提及的，該規則既不會套用，也不會略過：它會**升級為核准請求**。默默略過會令所有受保護分支的規則，對不報告自身 ref 的工具形同虛設；默默拒絕則會擋下擷取器無法描述的所有推送。在沒有連接核准人的情況下，既有的失效即拒絕規則會把這種升級變成拒絕。
 
-## What a command rule can and cannot catch
+## 指令規則能與不能攔截的範圍
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+`commandPrefix` 規則以詞界作比對：`git push` 涵蓋 `git push origin main`，但不涵蓋 `git pushx`。它**不會**對 shell 作正規化。`git  push`（兩個空格）、`cd sub && git push` 和 `GIT_DIR=… git push` 都是不同的字串，沒有一個會與 `git push` 的規則相符。
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+這是一項真實的限制，我們選擇明言，而不是粉飾過去：指令規則是方便操作者塑造代理日常行為的工具，**而非**抵禦惡意代理的界線。真正的界線是效果類別（由工具自行宣告，且無法改寫）、政策儲存庫之下的模式指令網，以及兩者之下的作業系統沙箱。判定為 `allow` 的指令規則，永遠不會放寬這兩層——模式指令網會在其後執行，而它的 `deny` 為最終決定。
 
-## Standing approvals
+## 常設核准
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+以「記住這個」回答詢問，會寫入一條真正的政策規則：有範圍限制（空間／代理／工作區）、**受參數約束**（核准推送到 `feature/login`，只授予 `feature/**`，而不是 `main`），並在明確的 TTL 到期後**自動撤銷**。為接下來數小時說一次「是」，並不等同於悄悄改寫你的永久政策；它寫入的規則會落在同一個儲存庫，來源標記為 `remembered`，並附有到期時間，因此可以提早撤銷。
 
-## Enforcement levels
+## 強制執行等級
 
-Each rule carries one:
+每條規則都帶有一個等級：
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **諮詢**——允許，但記錄規則曾經相符。這是導入的路徑：先以諮詢模式推行嚴格規則，讀一星期的稽核軌跡，看清楚它*本來*會擋下甚麼，然後再升級它。沒有這個層級，嚴格政策永遠不會被啟用。
+- **軟性**——拒絕，但持有覆寫權限的人可以覆寫，並須記錄理由。覆寫本身也是一宗受稽核的事件。
+- **硬性**（預設）——拒絕。沒有任何機制可以覆寫。
 
-## The managed tier
+## 受管層級
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+安裝操作人員可以釘住政策，令任何工作區管理員都無法放寬。受管規則存放於伺服器端，並以**最嚴格**方式與每個工作區自己的規則鏈合併——它們不是鏈首的一個範圍，因為置於鏈首的受管 `allow` 會讓安裝層覆蓋工作區的拒絕，這與限制機制的用意正好相反。因此，受管規則只可能收緊，不可能放寬。
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+將 `CC_SERVER_MANAGED_POLICY` 設為一個 JSON 檔案，其效力完全凌駕於儲存庫中的規則，這正是讓操作人員釘住某種姿態、令任何管理介面都無法改動的方式——這也回答了「我可以阻止開發人員停用安全管控嗎？」這個問題。
 
-## The autonomy dial is a profile, not a parallel system
+## 自主程度旋鈕是設定檔，不是另一套並行系統
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+每個空間的自主程度旋鈕，是同一個政策儲存庫之上的具名設定檔，而不是第二套機制。它的三個設定以 `proposeOnly`、`actWithApproval` 和 `actFreely` 儲存與傳送（連字號形式只屬介面文案，`autonomy.setForSpace` 會拒絕其他任何值）。未設定時，行為等同 `actWithApproval`。
 
-What each one does to a resolved decision:
+三者分別如何影響已判定的決定：
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** 會直接拒絕所有設有閘門的工具。代理仍可推理和回覆；只是無法付諸行動，而它的訊息會說明原因。
+- **`actWithApproval`**（以及未設定）就是上文所述的失效即拒絕核准閘門。
+- **`actFreely`** 會預先核准任何未判定為硬性 `deny` 的操作。
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+最後一項值得直說，而不應輕描淡寫：在 `actFreely` 之下，`prompt` 的決定**不會**升級給核准人——它直接獲准，也不會詢問任何人。只有明確的 `deny` 規則能在這個旋鈕下依然生效。因此 `actFreely` 是刻意授予自主權，而不是貪方便的設定；而失效即拒絕規則所保護的，正是它真正發揮作用的情境（`actWithApproval`，即預設值）。
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+代理之間的委派，在 `delegate_task` 關卡由全部四道防護把守：深度上限（預設 3）、循環偵測、**自主權上限**（受委派者的自主程度永遠不能高於委派者——權限無法藉由把工作交給更自由的代理來洗白），以及**預算額度**（委派會從委派者的剩餘預算中扣帳，不能額外增發）。任何一項遭拒都會明確報錯，並將防護的理由原樣交回給代理。
 
-## The adapter honesty matrix
+## 配接器誠實矩陣
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+並非每個執行環境都讓 Control Center 攔截每一個操作。外部代理 CLI 會在行程內原生執行某些工具，那裏無法安置任何閘門。與其假裝不是這樣，每個配接器都帶有一份**誠實矩陣**：逐個配接器說明 Control Center 是否篩選工具介面、是否攔截工具呼叫、是否觀察完成契約、能否看見執行器的原生工具，以及行程內工具是否受沙箱設定檔涵蓋。
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+在你信任某項設定之前，有兩項記載值得一讀。內建框架聲明它的行程內檔案工具**不受**沙箱保護——工具介面和這個政策引擎是它僅有的檔案系統界線。Claude Code 聲明它自己的工具呼叫**無法**攔截，因為它是以 `--dangerously-skip-permissions` 啟動；Control Center 只看得到它的 `mcp__*` 呼叫，而它自己的讀取、寫入、編輯和 shell 工具都在無人看見的情況下執行。
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+設定畫面會顯示這份矩陣，因為對護欄系統而言，唯一不可原諒的失誤就是宣稱擁有實際上不存在的覆蓋範圍。
 
-## Probing policy before it bites
+## 在政策生效前先行探測
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+護欄位於 **設定 → 工作區 → 代理權限**（`/workspaces/<id>/settings/workspace/permissions`）。這個畫面有撰寫規則的政策矩陣、政策範本、假設情境探測、授權稽核軌跡，以及配接器誠實矩陣。
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+探測會取一個操作類別（或一條指令）和一個範圍，顯示是哪條規則作出決定及其原因。由於判定是純粹而確定性的——同樣的操作、同樣的範圍，就有同樣的決定——探測得出的答案，就是代理會得到的答案。
 
-## Related concepts
+## 相關概念
 
-- [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/zh-HK/手冊/概念/多人協作/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/zh-HK/手冊/操作指南/設定護欄/): writing and testing rules in practice
+- [沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/)：實際約束代理執行的是甚麼，以及這個引擎底下的作業系統底板延伸多遠
+- [多人協作——身分、成員與線上狀態](/zh-HK/手冊/概念/多人協作/)：空間、主體，以及自主程度旋鈕所在的位置
+- [設定護欄](/zh-HK/手冊/操作指南/設定護欄/)：在實務中撰寫與測試規則

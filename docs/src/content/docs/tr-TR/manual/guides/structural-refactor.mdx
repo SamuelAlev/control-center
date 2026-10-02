@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Kodu yapısal olarak yeniden düzenleme
+description: Bir ajanın kodu metne göre değil şekle göre bulup yeniden yazmasını sağlayın ve değişiklik yere inmeden önce onu inceleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/yapisal-yeniden-duzenleme
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Bu kılavuz, bir ajanın yapısal arama ve yeniden yazmayı kullanarak geniş ve mekanik bir değişikliği — bir codemod, toplu bir API geçişi, kurtulmak istediğiniz bir deseni — nasıl yapacağını gösterir; değişiklik, herhangi bir şey yazılmadan önce incelenmek üzere sahnelenir.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` kodu **şekle** göre eşleştirir. `ast_edit` onu yeniden yazar. `resolve` ise işler ya da atar.
 
-## Before you start
+## Başlamadan önce
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Yapısal araçlar, kod grafiğinin ayrıştırdığı dilleri kapsar: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB ve Ada. Bunların tree-sitter gramerlerinin hazırlanmış olması gerekir; gönderilen bir derlemede bu her zaman böyledir — eksik bir gramer, aramayı bozmak yerine sunucuyu durdurur.
 
-## Find the shape first
+## Önce şekli bulun
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Bakmadığınız bir şeyi asla yeniden yazmayın. Ajandan arama yapmasını isteyin:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Az önce null denetimi yaptığımız bir nullable üzerinde `dispose()` çağırdığımız her yeri bul.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Çıktı, her yer için `file:line` bilgisi ve eşleşen kaynak metnidir.
 
-### What the pattern syntax buys you
+### Desen söz dizimi size ne kazandırır
 
-| Token      | Matches                                    |
-| ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| Belirteç  | Eşleştirdiği                                |
+| --------- | ------------------------------------------- |
+| `$NAME`   | Yakalanan herhangi bir tek düğüm            |
+| `$$$NAME` | Herhangi bir kardeş dizisi — argümanlar, deyimler |
+| `$_`      | Her şey, adsız yakalanır                    |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Önemli olan şu: **yinelenen bir `$NAME` aynı metni yakalamak zorundadır**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+test ettiği şeyi dispose eden bir koruma koşuluyla eşleşir. `if (a != null) b.dispose()` ile eşleşmez — ki bu genellikle aradığınız hatanın ta kendisidir. Hiçbir metinsel arama bunu ifade edemez.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Bir dize ya da yorum içinde eşleşemez]
+Desen, dosyayla aynı gramerle ayrıştırılır; dolayısıyla bir doküman yorumunda ya da bir dize sabitinde yazılmış `dispose(x)` bir çağrı değildir ve eşleşmez. Bunun için `grep` yerine buna başvurmanızın tek nedeni budur.
 :::
 
-### When the pattern finds nothing
+### Desen hiçbir şey bulamadığında
 
-Two things to try, in order:
+Sırayla denenecek iki şey:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Daha küçük yapın.** `if (a) { foo($X); }` yerine önce `foo($X)` deneyin. Tek başına geçerli kod olmayan bir desen, çoğu zaman kastettiğiniz yapı değildir.
+2. **Dili belirtin.** `language:` yalnızca `path` tek bir dosyayı gösterdiğinde çıkarımlanır.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Hiçbir ayrıştırma bağlamının kabul etmediği bir desen, ayrıştırılamaz olarak bildirilir — araç, hiçbir zaman göründüğü gibi okunmayan bir şey için "eşleşme yok" demek yerine bunu söyler.
 
-## Rewrite, and look before it lands
+## Yeniden yazın ve yere inmeden önce bakın
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Sonuç bir **öneridir**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Henüz diskte hiçbir şey yok. Listeyi okuyun, aramanın bildirdiği birkaç yeri denetleyin, ardından:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+ya da
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[İşleme ya hep ya hiç mantığıyla yapılır]
+Her dosya, değişiklik sahnelendiğinde yakalanan içerikle karşılaştırılır. Bunlardan herhangi biri değiştiyse — ajan onu elle düzenlediyse, bir biçimlendirici çalıştıysa, bir tanılama geçişi onu yeniden yazdıysa — **tüm** değişiklik reddedilir ve atılır. Kısmen uygulanmış bir yapısal yeniden yazma, geride ne eski ne de yeni şekle göre derlenen bir ağaç bırakır.
 
-Re-run the tool against the current files; do not retry the stale id.
+Aracı güncel dosyalara karşı yeniden çalıştırın; bayat kimliği yeniden denemeyin.
 :::
 
-## Check your work with the compiler
+## Çalışmanızı derleyiciyle denetleyin
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Bunu yapısal olarak yapmanın amacı, geniş olmasıdır. Akla yatkın görünen bir yeniden yazmanın bir türü bozduğu yer tam da geniş değişikliklerdir. İşledikten sonra tanılama isteyin:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"`, dosya başına bir sorgu yerine projenin kendi denetleyicisini (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) çalıştırır — kırk dosyaya dokunan bir değişiklikten sonra sorulacak doğru soru biçimi budur.
 
-## Worked example: migrating a call
+## Uygulamalı örnek: bir çağrıyı yeni biçimine geçirme
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Diyelim ki `log(msg, level)`, `log(level: level, message: msg)` biçimine geçiyor.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Eşleşmelere bakın. Bazıları *başka* bir iki argümanlı `log` ise, farkı desende ifade etmeye çalışmak yerine `path` değerini kastettiğiniz `log`'un bulunduğu dizinle sınırlayarak deseni daraltın.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Ardından `resolve`, sonra `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Ne zaman başka bir şey kullanmalı
 
-| Situation                                 | Better tool                          |
+| Durum                                     | Daha iyi araç                        |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/tr-TR/kilavuz/nasil-yapilir/kod-arama/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Bir sembolü yeniden adlandırma            | `lsp_rename` — şekilleri değil, referansları izler |
+| Bir dizeyi, bir yorumu ya da bir dosya adını bulma | `search` (içerik) / `search_files` (adlar) |
+| "Bunu değiştirirsem ne bozulur?"          | [Kod grafiği](/tr-TR/kilavuz/nasil-yapilir/kod-arama/) |
+| Gramerlerin kapsamadığı bir dil           | `search` artı `edit`                 |
 
-## Related
+## İlgili
 
-- [Code intelligence](/tr-TR/kilavuz/kavramlar/kod-zekasi/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/tr-TR/kilavuz/referans/ajan-araclari/) — the full argument list
-- [Search code with the code graph](/tr-TR/kilavuz/nasil-yapilir/kod-arama/) — the symbol and impact side
+- [Kod zekâsı](/tr-TR/kilavuz/kavramlar/kod-zekasi/) — yapısal eşleştirme neden fazladan adımları olan bir regex değildir
+- [Yerleşik ajan araçları](/tr-TR/kilavuz/referans/ajan-araclari/) — tam argüman listesi
+- [Kod grafiğiyle kod arama](/tr-TR/kilavuz/nasil-yapilir/kod-arama/) — sembol ve etki tarafı

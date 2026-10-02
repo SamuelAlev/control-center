@@ -1,225 +1,245 @@
 ---
-title: AI review
-description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+title: Revizuire IA
+description: Cum devine un pull request unul revizuit — spații de revizuire, noduri de revizuire și consensul între colegi, cohorte și axe, verdictul Ship/Hold/Block și de ce publicarea rămâne un pas pe care îl faci tu.
 slug: ro-RO/manual/concepte/revizuire-ia
+sourceHash: 5a161c4fd5c949b2726d0a70ae9e0f983ebf4086
 ---
 
-## The shape of a review
+## Forma unei revizuiri
 
-An AI review is one run of the seeded `pr_review` pipeline against one open pull
-request. The pipeline opens the PR's review space, fans out reviewer agents to
-read the diff in that space's isolated checkout, each files its findings as
-structured **review nodes**, a lead agent consolidates them into a walkthrough,
-and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
-pipeline never does is publish — posting to GitHub is a separate, deliberate
-step a human takes.
+O revizuire IA este o singură rulare a pipeline-ului predefinit `pr_review` pe un
+pull request deschis. Pipeline-ul deschide spațiul de revizuire al PR-ului,
+distribuie agenți recenzori care citesc diff-ul în checkout-ul izolat al acelui
+spațiu, fiecare își depune constatările ca **noduri de revizuire** structurate,
+un agent lider le consolidează într-o parcurgere ghidată, iar un finalizator
+calculează un singur verdict: **Ship**, **Hold** sau **Block**. Ce nu face
+niciodată pipeline-ul este să publice — postarea pe GitHub este un pas separat,
+deliberat, pe care îl face un om.
 
-The rest of this page explains the pieces and why they are shaped this way.
+Restul acestei pagini explică piesele și de ce sunt modelate astfel.
 
-## One review space per PR
+## Un spațiu de revizuire per PR
 
-A PR's review context is a messaging space — mode `review`, kind `pr` — linked
-to the pull request by a **review space association**. It is created
-idempotently: the PR page, the review pipeline and the chat surfaces all
-resolve the PR's _one_ backing space through the same code path, so a template
-that reviews a PR and a human who opens it can never end up in two different
-rooms looking at two different checkouts.
+Contextul de revizuire al unui PR este un spațiu de mesagerie — modul `review`,
+tipul `pr` — legat de pull request printr-o **asociere de spațiu de revizuire**.
+Este creat idempotent: pagina PR-ului, pipeline-ul de revizuire și suprafețele de
+chat rezolvă toate _un singur_ spațiu suport al PR-ului prin același traseu de
+cod, astfel încât un șablon care revizuiește un PR și un om care îl deschide nu
+pot ajunge niciodată în două camere diferite, uitându-se la două checkout-uri
+diferite.
 
-The space's isolated worktree has the PR checked out at its head ref. One room
-also means one checkout: every reviewer works in the same space rather than each
-getting its own clone of the workspace.
+Worktree-ul izolat al spațiului are PR-ul extras la ref-ul său de vârf. O
+singură cameră înseamnă și un singur checkout: fiecare recenzent lucrează în
+același spațiu, în loc ca fiecare să primească propria clonă a spațiului de
+lucru.
 
-Each reviewer posts into its own named stream inside that one space, and
-findings are `review_node` messages rather than plain prose. The space-wide
-gather at the end is deliberate — a verdict computed from one thread's findings
-would silently be a verdict on one reviewer.
+Fiecare recenzent publică într-un flux propriu, cu nume, în interiorul acelui
+singur spațiu, iar constatările sunt mesaje `review_node`, nu text simplu.
+Adunarea la nivel de spațiu de la final este intenționată — un verdict calculat
+din constatările unui singur fir ar fi, în tăcere, un verdict despre un singur
+recenzent.
 
-The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
-on the PR's Review tab.
+Asocierea are o scară de stări — `requested` → `in progress` →
+`awaiting approval` → `completed` — care este cea care condiționează **Publică
+pe GitHub** în tab-ul Revizuire al PR-ului.
 
-## Review levels
+## Niveluri de revizuire
 
-How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → General**, on the **Workspace policy** card:
+Cât de profund merge o revizuire este o politică de spațiu de lucru cu trei
+niveluri, setată în **Setări → Spațiu de lucru → General**, pe cardul
+**Politică spațiu de lucru**:
 
-| Level       | Reviewers that fan out                        | Reporting                                     |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `light`     | Engineer only                                 | Only what materially matters                  |
-| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
-| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+| Nivel      | Recenzenți care sunt distribuiți             | Raportare                                          |
+| ---------- | -------------------------------------------- | -------------------------------------------------- |
+| `light`    | Doar inginerul                               | Doar ce contează cu adevărat                       |
+| `balanced` | Inginer, QA, arhitect (implicit)             | Verificarea obișnuită                              |
+| `thorough` | Toți cinci, inclusiv securitate și performanță | Nimic retrogradat                                |
 
-The level moves two dials at once: which reviewers fan out, enforced by the
-pipeline template's `runWhen` state gates rather than by prompt wording —
-prompt wording can be ignored, a gate cannot — and where sub-threshold findings
-are rendered. Neither dial ever deletes a finding: a level that reports less
-still files exactly as much and groups the remainder.
+Nivelul mișcă simultan două cadrane: ce recenzenți sunt distribuiți, impus de
+porțile de stare `runWhen` ale șablonului de pipeline, nu de formularea
+promptului — formularea promptului poate fi ignorată, o poartă nu — și unde sunt
+afișate constatările sub prag. Niciunul dintre cadrane nu șterge vreodată o
+constatare: un nivel care raportează mai puțin înregistrează exact la fel de
+mult și grupează restul.
 
-The security and performance passes reuse the seeded architect and engineer
-agents rather than introducing new ones. The specialism is the brief the
-reviewer is dispatched with, not a separate agent per axis — an agent per axis
-would be five more rows in every workspace for no additional capability.
-Reviewer selection never inspects the diff for language or domain.
+Trecerea de securitate și cea de performanță refolosesc agenții predefiniți de
+arhitect și inginer, în loc să introducă unii noi. Specializarea este
+instrucțiunea cu care este trimis recenzentul, nu un agent separat per axă — un
+agent per axă ar însemna cinci rânduri în plus în fiecare spațiu de lucru,
+fără nicio capacitate suplimentară. Selecția recenzenților nu inspectează
+niciodată diff-ul după limbaj sau domeniu.
 
-## Review nodes: findings as data, not prose
+## Nodurile de revizuire: constatările ca date, nu ca text
 
-A finding filed with `add_review_node` becomes a **review node** on the PR —
-which is what the Review tab renders, what the verdict is computed from, and
-what "Publish to GitHub" turns into an inline comment. A reviewer that only
-returns prose produces a pipeline run that looks successful and a review
-surface that is empty; filing is the load-bearing part.
+O constatare înregistrată cu `add_review_node` devine un **nod de revizuire** pe
+PR — ceea ce randează tab-ul Revizuire, ceea ce stă la baza calculării
+verdictului și ceea ce "Publică pe GitHub" transformă într-un comentariu inline.
+Un recenzent care returnează doar text produce o rulare de pipeline care pare
+reușită și o suprafață de revizuire goală; înregistrarea este partea esențială.
 
-Each node carries:
+Fiecare nod conține:
 
-| Field             | Values                                                                     |
-| ----------------- | -------------------------------------------------------------------------- |
-| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
-| Priority          | P0 (critical) → P3 (nit)                                                    |
-| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
-| Anchor            | File path, line start and end                                               |
-| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
-| Confidence        | A [0, 1] score                                                              |
-| Reasoning         | The analysis, written before the finding                                    |
+| Câmp                    | Valori                                                                  |
+| ----------------------- | ----------------------------------------------------------------------- |
+| Tip                     | `bug`, `suggestion`, `recommendation`, `question`, `ticket`             |
+| Prioritate              | P0 (critic) → P3 (minor)                                                |
+| Triplet de triaj        | categorie (`security`, `stability`, …), severitate, efort               |
+| Ancoră                  | Calea fișierului, începutul și sfârșitul liniei                         |
+| Remedierea transportată | Linii de înlocuire sugerate, un diff opțional, un prompt de remediere opțional |
+| Încredere               | Un scor [0, 1]                                                          |
+| Raționament             | Analiza, scrisă înainte de constatare                                    |
 
-Two details are deliberate. A one-click GitHub suggestion is only offered when
-the reviewer supplied exact replacement lines — inferring them from a unified
-diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the `add_review_node` schema presents `reasoning`
-before the finding, so a model that fills the object in schema order writes the
-analysis first. The field is optional: omitting it does not reject the node.
-A node whose payload is malformed disappears rather than polluting the review.
+Două detalii sunt intenționate. O sugestie GitHub cu un singur clic este oferită
+doar când recenzentul a furnizat linii de înlocuire exacte — deducerea lor
+dintr-un diff unificat dă greș în tăcere, iar un commit cu un singur clic al
+unei deducții greșite este mai rău decât niciun buton. Și schema
+`add_review_node` prezintă `reasoning` înaintea constatării, astfel încât un
+model care completează obiectul în ordinea schemei scrie analiza prima. Câmpul
+este opțional: omiterea lui nu respinge nodul. Un nod al cărui payload este
+malformat dispare, în loc să polueze revizuirea.
 
-## Peer consensus
+## Consensul între colegi
 
-A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
-The middle step is the heart of the model: **a finding only graduates when a
-peer reviewer confirms it, and an agent can never confirm its own finding.**
-The MCP tool `publish_review_to_github` and the RPC default still publish
-peer-confirmed findings only. The Review tab's **Publish to GitHub** button
-instead sends every remaining open finding.
+Un nod trece prin `open` → `consensus-ready` → `resolved` sau `dismissed`.
+Pasul din mijloc este inima modelului: **o constatare avansează doar când un
+coleg recenzent o confirmă, iar un agent nu își poate confirma niciodată
+propria constatare.** Instrumentul MCP `publish_review_to_github` și implicitul
+RPC publică în continuare doar constatări confirmate de colegi. Butonul
+**Publică pe GitHub** din tab-ul Revizuire trimite, în schimb, fiecare
+constatare deschisă rămasă.
 
-The rule is enforced in three independent places — the confirm tool, the
-finalizer and the publisher — so it survives a buggy caller in any one of
-them. Status changes all route through one service, which is what makes a
-status mean something: before that, two half-paths could disagree about
-whether the same finding was resolved.
+Regula este impusă în trei locuri independente — instrumentul de confirmare,
+finalizatorul și publicatorul — astfel încât rezistă la un apelant cu erori în
+oricare dintre ele. Toate schimbările de stare trec printr-un singur serviciu,
+ceea ce face ca o stare să însemne ceva: înainte de asta, două jumătăți de
+traseu puteau să nu fie de acord dacă aceeași constatare era rezolvată.
 
-When reviewers disagree — same file and line, priorities two or more levels
-apart, or one calling it a `bug` while the other calls it a `suggestion` — the
-disagreement is surfaced above the findings list. That is where the reviewers'
-opinions diverge and a human's judgement is worth the most.
+Când recenzenții nu sunt de acord — același fișier și aceeași linie, priorități
+la două sau mai multe niveluri distanță sau unul numindu-l `bug` în timp ce
+celălalt îl numește `suggestion` — dezacordul este scos în evidență deasupra
+listei de constatări. Acolo diverg opiniile recenzenților și acolo judecata unui
+om valorează cel mai mult.
 
-Dismissing a finding also writes a soft suppression fact into the memory
-domain, at low confidence — one dismissal is a preference, not a rule.
+Respingerea unei constatări scrie de asemenea un fapt de suprimare slabă în
+domeniul de memorie, la încredere scăzută — o singură respingere este o
+preferință, nu o regulă.
 
-## Cohorts: what the review is grouped around
+## Cohorte: în jurul a ce se grupează revizuirea
 
-The review compute pass groups a PR's changed files into **cohorts** derived
-from the code graph: changed files map to the symbols they touch, symbols to connected
-components, and the cohorts are ranked by blast radius. A cohort carries a
-guided reading order, diagrams and insights rather than being a flat file
-list.
+Trecerea de calcul a revizuirii grupează fișierele modificate ale unui PR în
+**cohorte** derivate din graful de cod: fișierele modificate se mapează pe
+simbolurile pe care le ating, simbolurile pe componentele conectate, iar
+cohortele sunt clasate după raza de impact. O cohortă are o ordine de citire
+ghidată, diagrame și observații, în loc să fie o listă plată de fișiere.
 
-Two honesty rules shape this. Cohort keys are content-derived and stable
-across pushes, so findings and review progress survive a rebase or force-push
-instead of orphaning. And when the repo has no code index, grouping falls back
-to plain paths and says so — the fallback never fakes semantic confidence.
+Două reguli de onestitate modelează acest lucru. Cheile cohortelor sunt derivate
+din conținut și stabile de-a lungul push-urilor, astfel încât constatările și
+progresul revizuirii supraviețuiesc unui rebase sau force-push, în loc să rămână
+orfane. Iar când repo-ul nu are index de cod, gruparea revine la căi simple și
+spune asta — fallback-ul nu simulează niciodată încredere semantică.
 
-## Review axes and gates
+## Axele și porțile revizuirii
 
-Alongside the reviewers' findings, a review accumulates **axis results**: six
-axes, of two kinds.
+Alături de constatările recenzenților, o revizuire acumulează **rezultate de
+axe**: șase axe, de două tipuri.
 
-| Axis                          | Kind          | Drawn from                          |
-| ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
-| `testGap`                 | Token-driven  | The reviewers' findings                             |
-| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
-| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
+| Axă                       | Tip                     | Dedusă din                                                     |
+| ------------------------- | ----------------------- | -------------------------------------------------------------- |
+| `correctness`, `security` | Determinată de token-uri | Constatările recenzenților înșiși                             |
+| `testGap`                 | Determinată de token-uri | Constatările recenzenților                                    |
+| `visual`, `apiContract`   | Deterministă            | Calculată fără consum de token-uri                             |
+| `performance`             | Deterministă            | Doar enumerare — nimic din produs nu calculează un rezultat     |
 
-An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
-only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
-and `unavailable` is load-bearing: a gated axis that could not complete or
-could not run at all holds the overall verdict rather than passing it.
-**Absence of evidence never converts to a green gate.**
+Un verdict de axă este `pass`, `warn`, `fail`, `partial` sau `unavailable` — și
+doar `pass` sau `warn` trece o poartă. Distincția dintre `fail`, `partial` și
+`unavailable` este esențială: o axă cu poartă care nu a putut fi finalizată sau
+nu a putut rula deloc reține verdictul general, în loc să îl treacă.
+**Absența dovezilor nu se transformă niciodată într-o poartă verde.**
 
-Some axes are advisory on purpose. The test-gap axis derived from cohorts
-cannot see dependency-injection or factory coverage — an unindexed repo with a
-thorough suite and one with no tests at all look identical from there, so
-claiming either would be a lie; it surfaces in the dashboard without gating.
-The token axes are advisory because the finding priorities already drive the
-verdict, and re-gating on them would double-count.
+Anumite axe sunt consultative intenționat. Axa lacunelor de testare derivată din
+cohorte nu poate vedea acoperirea injecției de dependențe sau a fabricilor — un
+repo neindexat cu o suită temeinică și unul fără niciun test arată identic de
+acolo, așa că a afirma oricare dintre ele ar fi o minciună; ea apare în tabloul
+de bord fără să impună o poartă. Axele bazate pe token-uri sunt consultative
+pentru că prioritățile constatărilor conduc deja verdictul, iar o condiționare
+din nou pe baza lor ar dubla numărătoarea.
 
-## The verdict
+## Verdictul
 
-The finalizer computes the verdict over the findings with status `open` or
+Finalizatorul calculează verdictul pentru constatările cu starea `open` sau
 `consensus-ready`:
 
-- any P0 finding with confidence ≥ 0.7 → **Block**
-- otherwise, any P0 (low-confidence) or any P1 → **Hold**
-- otherwise → **Ship**
+- orice constatare P0 cu încredere ≥ 0,7 → **Block**
+- altfel, orice P0 (încredere scăzută) sau orice P1 → **Hold**
+- altfel → **Ship**
 
-The verdict carries an aggregate confidence derived from the spread of the
-contributing confidences — agreement raises it, divergence lowers it.
+Verdictul are o încredere agregată derivată din dispersia încrederilor
+contribuitoare — acordul o ridică, divergența o scade.
 
-The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
-hand-written second copy of the findings is exactly what drifts from the real
-one. Duplicate findings are demoted rather than repeated — several reviewers
-are pointed at one diff with deliberately overlapping remits, so the same
-defect reaching the finalizer three times is the system working; publishing it
-three times is the system leaking its own architecture into the reader's
-inbox. On a re-review, findings are fingerprinted and diffed against the
-previous round, so the delta is what surfaces.
+Consolidarea agentului lider (CEO) este o trecere editorială, nu o relistare: o
+a doua copie scrisă de mână a constatărilor este exact ce se îndepărtează de cea
+reală. Constatările duplicate sunt retrogradate, nu repetate — mai mulți
+recenzenți sunt îndreptați spre un singur diff, cu atribuții care se suprapun
+intenționat, așa că același defect care ajunge de trei ori la finalizator
+înseamnă că sistemul funcționează; publicarea lui de trei ori înseamnă că
+sistemul își scurge propria arhitectură în inbox-ul cititorului. La o revizuire
+repetată, constatările sunt amprentate și comparate cu runda anterioară, astfel
+încât delta este cea care iese la suprafață.
 
-Finally the axes fold in, and they can only make the verdict **more** severe:
-a gated failing axis forces Block — it cannot be out-voted by findings — and a
-gated axis that could not complete forces at least Hold.
+În final, axele se adaugă, și pot doar să facă verdictul **mai** sever: o axă cu
+poartă care eșuează forțează Block — constatările nu o pot depăși la vot —, iar
+o axă cu poartă care nu a putut fi finalizată forțează cel puțin Hold.
 
-## Publishing stays with you
+## Publicarea rămâne la tine
 
-The pipeline deliberately does not post to GitHub; publishing is user-gated so
-a review can never double-publish. When you press **Publish to GitHub**:
+Pipeline-ul nu postează intenționat pe GitHub; publicarea este condiționată de
+utilizator, astfel încât o revizuire nu poate fi publicată niciodată de două
+ori. Când apeși **Publică pe GitHub**:
 
-- One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped. The button publishes every remaining open finding
-  (`selection: all_open`). The MCP tool `publish_review_to_github` still
-  defaults to peer-confirmed findings only (`consensus`).
-- Findings anchored to a file and line become inline comments; everything else
-  folds into the summary body, each carrying a "— Control Center AI review"
-  footer so the source is unambiguous.
-- Anchors are re-verified against the PR's _current_ diff at publish time.
-  A comment on code that has already been rewritten is the most
-  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
-  anchor anyway, the whole review is re-sent with every finding folded into
-  the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
-  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
-  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
-- The review is posted under the server's app identity. Who pressed Publish is
-  recorded for the role gate and the audit log; it is not the GitHub author.
+- Se trimite o singură revizuire GitHub. Constatările deja rezolvate sau
+  respinse sunt sărite. Butonul publică fiecare constatare deschisă rămasă
+  (`selection: all_open`). Instrumentul MCP `publish_review_to_github` folosește
+  în continuare implicit doar constatările confirmate de colegi (`consensus`).
+- Constatările ancorate la un fișier și o linie devin comentarii inline; tot
+  restul se pliază în corpul rezumatului, fiecare purtând un subsol
+  "— Control Center AI review", astfel încât sursa este neechivocă.
+- Ancorele sunt reverificate față de diff-ul _actual_ al PR-ului în momentul
+  publicării. Un comentariu pe cod care a fost deja rescris este cel mai
+  distructiv lucru pentru încredere pe care îl poate lăsa un recenzent; dacă
+  GitHub respinge totuși o ancoră inline, întreaga revizuire este retrimisă cu
+  fiecare constatare pliată în corp, astfel încât nimic nu este eliminat în
+  tăcere.
+- Un verdict **Block** este trimis ca `REQUEST_CHANGES`; **Hold** ca `COMMENT`;
+  **Ship** ca `APPROVE` din buton (`approve_on_ship: true`). Instrumentul MCP
+  lasă Ship ca `COMMENT` dacă nu transmiți `approve_on_ship`.
+- Revizuirea este postată sub identitatea de aplicație a serverului. Cine a
+  apăsat Publică este înregistrat pentru poarta de rol și jurnalul de audit; nu
+  este autorul GitHub.
 
-Publishing declares the `prPublish` action class, so the guardrail chokepoint
-gates it like any mutating action — it prompts by default and fails closed
-when no approver is connected. See [Guardrails](/ro-RO/manual/concepte/guardrail-uri/).
+Publicarea declară clasa de acțiune `prPublish`, astfel încât punctul de control
+al guardrail-urilor o condiționează ca orice acțiune care mută date — solicită
+aprobare implicit și eșuează închis când nu este conectat niciun aprobator. Vezi
+[Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/).
 
-## What a reviewer may do
+## Ce poate face un recenzent
 
-Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
-allowlist covering findings, commentary, tickets and peer review — but no
-mutations. A reviewer cannot fix the code it critiques; it can attach a
-suggested fix that a human applies. The mode's refusal message tells an agent
-that tries to act anyway to finalize the review and let the user act on the
-published summary.
+Agenții recenzori rulează în modul `review`: un sandbox doar-citire și o listă
+de instrumente permise, selectată, care acoperă constatări, comentarii, tichete
+și revizuirea între colegi — dar fără mutații. Un recenzent nu poate repara
+codul pe care îl critică; poate atașa o remediere sugerată pe care o aplică un
+om. Mesajul de refuz al modului îi spune unui agent care încearcă totuși să
+acționeze să finalizeze revizuirea și să lase utilizatorul să acționeze pe baza
+rezumatului publicat.
 
-## Related concepts
+## Concepte conexe
 
-- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/) — the policy engine that gates publishing
-- [Modes](/ro-RO/manual/concepte/moduri/) — what `review` mode changes for an agent
-- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/) — the engine the review runs on
-- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/) — where the isolated worktree comes from
+- [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) — motorul de politici care condiționează publicarea
+- [Moduri](/ro-RO/manual/concepte/moduri/) — ce schimbă modul `review` pentru un agent
+- [Pipeline-uri și automatizare](/ro-RO/manual/concepte/pipeline-uri/) — motorul pe care rulează revizuirea
+- [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/) — de unde vine worktree-ul izolat
 
-## Related guides
+## Ghiduri conexe
 
-- [Use AI-powered review](/ro-RO/manual/ghiduri-practice/revizuire-ia/) — run a review and publish it
-- [Dispatch reviewer agents](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/) — choose the reviewers yourself
-- [Review compute](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/) — cohorts, axes and diffs
+- [Folosește revizuirea bazată pe IA](/ro-RO/manual/ghiduri-practice/revizuire-ia/) — rulează o revizuire și publică-o
+- [Trimite agenți revizori](/ro-RO/manual/ghiduri-practice/trimite-agenti-revizori/) — alege singur recenzenții
+- [Calculul revizuirii (cohorte și axe)](/ro-RO/manual/ghiduri-practice/calculul-revizuirii/) — cohorte, axe și diff-uri

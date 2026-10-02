@@ -1,104 +1,103 @@
 ---
-title: SSO configuration reference
-description: Every knob, endpoint, op and error code of single sign-on.
+title: SSO 設定參考
+description: 單一登入的每一項設定、端點、操作與錯誤碼。
 slug: zh-HK/手冊/參考/sso
+sourceHash: 60cd2b6d0a137f8f23849eedc35f1ecf2a7e8810
 ---
 
-Everything configurable about single sign-on, in one place. Values live in
-the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
-saved row is the only source of truth — there is no `CC_SAML_*` /
-`CC_OIDC_*` environment path (a connection that could arrive from two
-places is one the settings screen can disagree with).
+關於單一登入的一切可設定項目，都集中在這裡。取值存放在 `global.db` 的
+`sso_connections` 資料列中（按設計屬伺服器範圍），可透過
+**設定 → 伺服器 → 單一登入** 或 `sso.*` RPC 操作編輯。已儲存的資料列
+是唯一的事實來源——並不存在 `CC_SAML_*` / `CC_OIDC_*` 環境變數路徑
+（一條可以從兩個地方抵達的連線，就是設定畫面可能與之不一致的連線）。
 
-## Connection fields
+## 連線欄位
 
-| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
-| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
-| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
-| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
-| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
-| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
-| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
-| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
-| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
-| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
-| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
-| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
-| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
-| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
-| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
-| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
-| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
-| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+| 欄位                   | 適用範圍 | 預設值          | 含義                                                                                                                                                 |
+| ---------------------- | -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | 兩者     | 關閉            | 登入可以使用這條連線                                                                                                                                 |
+| `idpMetadataXml`       | SAML     | —               | IdP 的 `EntityDescriptor` XML（啟用前必須填寫）                                                                                                      |
+| `spEntityId`           | SAML     | `<origin>/saml` | 我們的實體 ID；來源有變化時予以固定                                                                                                                  |
+| `emailAttribute`       | SAML     | `email`         | 承載電郵的屬性；形如電郵的 NameID 則作為後備                                                                                                         |
+| `displayNameAttribute` | SAML     | `displayName`   | 顯示名稱屬性                                                                                                                                         |
+| `groupsAttribute`      | SAML     | `groups`        | 群組名稱屬性                                                                                                                                         |
+| `clockSkewSeconds`     | SAML     | 90              | 有效期驗證所容許的時鐘偏差                                                                                                                           |
+| `allowIdpInitiated`    | SAML     | 關閉            | 接受未經請求的回應（沒有 `InResponseTo`）                                                                                                            |
+| `wantResponseSigned`   | SAML     | 關閉            | 要求回應根元素簽章（斷言簽章一律必須）                                                                                                               |
+| `issuer`               | OIDC     | —               | 簽發者基底 URL（啟用前必須填寫）                                                                                                                     |
+| `clientId`             | OIDC     | —               | 公開用戶端 id（啟用前必須填寫）                                                                                                                      |
+| `clientSecret`         | OIDC     | —               | 僅限機密用戶端；儲存在 0600 密鑰檔案中，絕不存入資料庫——經 RPC 只可寫入（`sso.getConfig` 會報告 `clientSecretPresent`）                              |
+| `groupsClaim`          | OIDC     | `groups`        | 承載群組名稱的宣告                                                                                                                                   |
+| `defaultRole`          | 兩者     | `member`        | 沒有群組對應時的角色——絕不會是 `owner`                                                                                                               |
+| `groupRoleMap`         | 兩者     | `{}`            | 群組 → 角色；儲存時會拒絕 owner 對應                                                                                                                 |
+| `autoMember`           | 兩者     | 開啟            | 首次登入時自動把用戶加入每個工作區                                                                                                                   |
+| `allowJit`             | 兩者     | 開啟            | 登入時佈建未知用戶                                                                                                                                   |
 
-## Process configuration
+## 程序設定
 
-SSO connections are not seeded from the environment. One remaining process
-flag is about the **browser handoff**, not the connection row:
+SSO 連線不會由環境植入。僅餘的一項程序旗標與**瀏覽器交接**有關，而非
+連線資料列：
 
-| Variable / flag                          | Meaning                                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+| 變數 / 旗標                                      | 含義                                                                                                                 |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL`  | SSO 回呼把瀏覽器彈回至的來源（憑證隨 URL 片段傳遞）。未設定時，交接會保持同源。                                      |
 
-The issuer URL itself must be `https` (`http` is accepted for loopback
-issuers `localhost`, `127.0.0.1`, and `::1` only).
+簽發者 URL 本身必須是 `https`（只有回送簽發者 `localhost`、`127.0.0.1`
+和 `::1` 才接受 `http`）。
 
-## HTTP endpoints
+## HTTP 端點
 
-| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
-| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
-| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
-| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
-| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
-| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
-| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
-| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
-| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+| 端點                                             | 認證                 | 用途                                                                                                                                                                                                            |
+| ------------------------------------------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /saml/login?relay=…`                        | 無（重新導向）       | 開始由 SP 發起的登入；`relay=desktop` 會交接給應用程式，`relay=web-popup` 則向等待中的連線分頁 postMessages（該分頁會聲明自己的 `client_origin`，只有當來源允許清單信任它時才會被採納）                          |
+| `POST /saml/acs`                                 | 無（IdP POST）       | 斷言接收端——驗證、佈建、簽發                                                                                                                                                                                    |
+| `GET /saml/metadata`                             | 無                   | 我們的 SP `EntityDescriptor`                                                                                                                                                                                    |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | 無                   | OIDC 往返；`relay=desktop` 會交接給應用程式，`relay=web-popup` 則交接給等待中的連線分頁（同樣的 `client_origin` 約定）                                                                                          |
+| `GET /auth/providers`                            | 無，CORS `*`         | 連接畫面的探測：所提供的 SSO 連線（`id`/`kind`/`label`）+ `pairingEnabled`                                                                                                                                       |
+| `/scim/v2/Users…`                                | Bearer（SCIM 權杖）  | Users 的建立/取得/列表+篩選/PUT/PATCH/DELETE                                                                                                                                                                    |
+| `/scim/v2/Groups`                                | Bearer               | 唯讀；按設計，群組推送會回應 501                                                                                                                                                                                |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer               | 能力文件                                                                                                                                                                                                        |
 
-## RPC ops
+## RPC 操作
 
-All `sso.*` ops are server-scoped and gated to the **server owner** (the
-install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
-not enough; pairing alone never grants them.
+所有 `sso.*` 操作都以伺服器為範圍，並只限**伺服器擁有者**（該安裝的
+操作員，`ServerAuthority.serverOwner`）。僅擁有一個工作區並不足夠；單靠
+配對永遠無法取得這些權限。
 
-| Op                        | Purpose                                                                                                                                                       |
+| 操作                      | 用途                                                                                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
-| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
-| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
-| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
-| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
-| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
-| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
-| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
-| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+| `sso.getConfig`           | 某種類型的已儲存連線                                                                                                                                          |
+| `sso.saveConfig`          | 驗證、持久化並即時套用                                                                                                                                        |
+| `sso.status`              | 已啟用/已設定的旗標、SCIM 權杖是否存在、規範來源                                                                                                              |
+| `sso.testConnection`      | 在不經瀏覽器往返的情況下測試連線（SAML：解析中繼資料 + 建構 AuthnRequest；OIDC：簽發者探索），並可選用畫面上尚未儲存的值                                    |
+| `sso.spMetadata`          | 為某個來源輸出 SP `EntityDescriptor`                                                                                                                          |
+| `sso.setPairingEnabled`   | 允許/禁止手動配對（邀請碼、配對金鑰）；在尚無可用 SSO 連線時拒絕停用它，可防範被鎖在門外                                                                      |
+| `sso.sessionPolicy`       | 讀取該安裝的裝置憑證最長有效期與閒置逾時（分鐘；`0` = 未設定）                                                                                                |
+| `sso.setSessionPolicy`    | 設定這些界限；在裝置檢查時強制執行，不會向用戶端公布                                                                                                          |
+| `sso.scimRegenerateToken` | 產生並傳回 SCIM bearer token（僅一次）                                                                                                                        |
 
-## Validation error codes
+## 驗證錯誤碼
 
-`cc_saml_verify_response` failures carry a stable code:
+`cc_saml_verify_response` 的失敗會帶有穩定的錯誤碼：
 
-| Code                   | Meaning                                                                          |
+| 錯誤碼                 | 含義                                                                             |
 | ---------------------- | -------------------------------------------------------------------------------- |
-| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
-| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
-| `audience`             | audience restriction does not name us                                            |
-| `destination`          | response destination is not our ACS                                              |
-| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
-| `issuer`               | issuer is not the configured IdP                                                 |
-| `recipient`            | subject-confirmation recipient is not our ACS                                    |
-| `malformed`            | XML/schema-level failure                                                         |
-| `status`               | IdP-reported status was not Success                                              |
-| `invalid` / `internal` | anything else / seam failure                                                     |
+| `signature`            | 簽章缺失/不受信任/遭篡改，或使用了不允許的演算法/變換                            |
+| `expired`              | 超出 `NotBefore`/`NotOnOrAfter`（超出偏差範圍）                                  |
+| `audience`             | 受眾限制沒有指明我們                                                             |
+| `destination`          | 回應目的地不是我們的 ACS                                                         |
+| `request_match`        | `InResponseTo` 與任何待處理請求都不匹配，或在不允許時屬未經請求                  |
+| `issuer`               | 簽發者不是所設定的 IdP                                                           |
+| `recipient`            | 主體確認的接收方不是我們的 ACS                                                   |
+| `malformed`            | XML/schema 層面的失敗                                                            |
+| `status`               | IdP 所報告的狀態不是 Success                                                     |
+| `invalid` / `internal` | 其他任何情況 / 接縫失敗                                                          |
 
-## Database surfaces
+## 資料庫層面
 
-- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
-  DESIGN.
-- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
-  unique per `(issuer, subject)` via a partial index.
-- `users.deactivated_at` — the SCIM deactivation stamp.
-- The SCIM bearer token and the OIDC client secret live in the 0600
-  secrets file, never the database.
+- `sso_connections`（global.db）——每種類型一列，按設計即跨工作區。
+- `users.sso_subject` + `users.sso_issuer`——供應者主體的固定，透過部分索引
+  確保每個 `(issuer, subject)` 唯一。
+- `users.deactivated_at`——SCIM 停用時間戳。
+- SCIM bearer token 與 OIDC 用戶端密鑰存放在 0600 密鑰檔案中，絕不會存入
+  資料庫。

@@ -1,60 +1,59 @@
 ---
-title: Provision users with SCIM
-description: Let your IdP create, update and deprovision Control Center accounts automatically.
+title: הקצאת משתמשים עם SCIM
+description: תנו ל-IdP שלכם ליצור, לעדכן ולבטל חשבונות Control Center באופן אוטומטי.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-scim
+sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 ---
 
-Use this guide when you want lifecycle control — offboarding must revoke
-access automatically, not just block future logins. SCIM is the push
-protocol IdPs (Okta, Entra ID and others) use for exactly that.
+השתמשו במדריך הזה כשרוצים שליטה על מחזור החיים — יציאת משתמשים צריכה לשלול
+גישה באופן אוטומטי, לא רק לחסום כניסות עתידיות. SCIM הוא פרוטוקול הדחיפה
+שספקי זהויות (Okta, Entra ID ואחרים) משתמשים בו בדיוק לשם כך.
 
-## Prerequisites
+## דרישות מוקדמות
 
-- SSO already working (the [SSO tutorial](/he-IL/מדריך-למשתמש/מדריכים/sso) or the
-  [OIDC guide](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-oidc)),
-- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
-  not the user's browser. Use the built-in tunnel
-  (Settings → Server → Connection & status → Share this server → Cloudflared/ngrok/Tailscale) or a public URL. A
-  server reachable only through the WebSocket relay cannot receive SCIM
-  pushes; JIT provisioning still works there, this guide does not.
+- SSO שכבר עובד ([מדריך ה-SSO](/he-IL/מדריך-למשתמש/מדריכים/sso) או
+  [מדריך OIDC](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/sso-oidc)),
+- **שרת שה-IdP יכול להגיע אליו דרך HTTPS** — קריאות SCIM יוצאות מה-IdP,
+  ולא מהדפדפן של המשתמש. השתמשו במנהרה המובנית
+  (הגדרות ← שרת ← חיבור וסטטוס ← שתף שרת זה ← Cloudflared/ngrok/Tailscale) או
+  בכתובת ציבורית. שרת שנגיש רק דרך ממסר ה-WebSocket אינו יכול לקבל דחיפות
+  SCIM; הקצאת JIT עדיין עובדת שם, המדריך הזה לא.
 
-## Steps
+## שלבים
 
-1. Open **Settings → Server → Single sign-on** → the
-   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+1. פתחו את **הגדרות ← שרת ← כניסה מאוחדת** ← הכרטיס
+   **הקצאת משתמשים (SCIM)**. הכרטיס מציג את נקודת הקצה, למשל
    `https://<your-server>/scim/v2/Users`.
-2. Press **Generate token** (or **Regenerate token** if one already
-   exists) — the bearer token appears once in a dialog and is copied to
-   the clipboard. Store it in your password manager; the server only keeps
-   a constant-time-verifiable copy.
-3. In your IdP's provisioning settings, enable SCIM with:
-   - **Base URL**: the endpoint above
+2. לחצו על **יצירת אסימון גישה** (או **יצירת אסימון מחדש** אם כבר קיים
+   אחד) — אסימון ה-bearer מופיע פעם אחת בדיאלוג ומועתק ללוח. שמרו אותו
+   במנהל הסיסמאות שלכם; השרת שומר רק עותק שניתן לאמת בזמן קבוע.
+3. בהגדרות ההקצאה של ה-IdP, הפעילו SCIM עם:
+   - **Base URL**: נקודת הקצה שלמעלה
    - **Authentication**: `Authorization: Bearer <token>`
-   - **User id**: `userName` (email) or `externalId` — both match
-4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   - **User id**: `userName` (דוא"ל) או `externalId` — שניהם מתאימים
+4. בדקו עם משתמש אחד: דחפו אותו מה-IdP ואמתו שהוא מופיע (יצירה ב-SCIM
+   מקבעת את ה-`externalId` של הספק על החשבון — אותו קיבוע שכניסת SSO
+   ראשונה קובעת).
 
-## What deprovisioning does
+## מה עושה ביטול הקצאה
 
-When the IdP sends `active: false` (or `DELETE`), SCIM first refuses if
-the account is a workspace **owner** (transfer ownership first). Otherwise:
+כשה-IdP שולח `active: false` (או `DELETE`), SCIM מסרב תחילה אם החשבון הוא
+**בעלים** של סביבת עבודה (יש להעביר בעלות קודם). אחרת:
 
-1. every device credential is revoked first — live sessions drop within
-   seconds,
-2. every workspace membership is removed,
-3. the account is stamped deactivated (it can never log in, whatever the
-   IdP says later until explicitly reactivated).
+1. כל פרטי הגישה של המכשירים נשללים תחילה — סשנים פעילים נופלים בתוך
+   שניות,
+2. כל חברות בסביבת עבודה מוסרת,
+3. החשבון מסומן כלא פעיל (הוא לא יוכל עוד להתחבר, יהא אשר יהא מה שה-IdP
+   יגיד בהמשך, עד שיופעל מחדש במפורש).
 
-The user row itself survives — attribution on tickets, messages and
-commits is permanent. Reactivation (SCIM `active: true`) restores login but
-**not** memberships: those need a fresh invite or the login-time auto-member
-policy.
+שורת המשתמש עצמה שורדת — הייחוס בכרטיסים, בהודעות ובקומיטים הוא קבוע.
+הפעלה מחדש (SCIM `active: true`) מחזירה את הכניסה אבל **לא** את החברויות:
+אלה זקוקות להזמנה חדשה או למדיניות החברות האוטומטית בזמן הכניסה.
 
-## Troubleshooting
+## פתרון תקלות
 
-- **401 on every call** — the token changed; regenerate and update the IdP.
-- **The endpoint is not reachable** — the tunnel is down, or the server is
-  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
-- **Group push errors (501)** — intentional: group→role mapping happens at
-  login from the SAML/OIDC group attributes, not from pushed groups.
+- **401 בכל קריאה** — האסימון השתנה; צרו אותו מחדש ועדכנו את ה-IdP.
+- **נקודת הקצה אינה נגישה** — המנהרה לא פעילה, או שהשרת מבוסס ממסר בלבד.
+  SCIM זקוק ל-HTTPS ישיר; JIT ממשיך לעבוד בכל מקרה.
+- **שגיאות בדחיפת קבוצות (501)** — מכוון: מיפוי קבוצה→תפקיד מתבצע בזמן
+  הכניסה מתוך מאפייני הקבוצה של SAML/OIDC, ולא מקבוצות שנדחפות.

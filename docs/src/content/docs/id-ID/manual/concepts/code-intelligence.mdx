@@ -1,87 +1,88 @@
 ---
-title: Code intelligence
-description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+title: Kecerdasan kode
+description: Mengapa agen membutuhkan compiler, pencari struktural, dan debugger — dan pertanyaan apa yang dijawab masing-masing yang tidak dapat dijawab oleh yang lain.
 slug: id-ID/panduan-pengguna/konsep/kecerdasan-kode
+sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
 ---
 
-Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
+Control Center memberi agen empat cara untuk memahami kode di luar sekadar membacanya. Keempatnya menjawab pertanyaan yang benar-benar berbeda, dan alasan ada empat alih-alih satu adalah karena tidak ada satu mekanisme pun yang dapat menjawab semuanya.
 
-| Mechanism            | Answers                                          | Costs                                  |
-| -------------------- | ------------------------------------------------ | -------------------------------------- |
-| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
-| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
-| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
-| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+| Mekanisme            | Menjawab                                          | Biaya                                  |
+| -------------------- | ------------------------------------------------- | -------------------------------------- |
+| **Graf kode**        | Apa yang ada di sini, dan apa yang bergantung padanya | Satu proses indeks; murah untuk dikueri |
+| **Server bahasa**    | Apakah ini benar-benar terkompilasi, dan apa tipe ini | Satu proses server per proyek          |
+| **Pencarian struktural** | Di mana BENTUK ini muncul                     | Satu penguraian per file               |
+| **Debugger**         | Apa yang benar pada momen ini, di frame ini       | Satu proses yang berhenti              |
 
-## The gap the language server closes
+## Celah yang ditutup server bahasa
 
-The [code graph](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+[Graf kode](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/) dibangun dari tree-sitter: simbol, tepi pemanggilan, radius dampak. Graf ini cepat, murah, dan tidak tahu apa pun tentang **tipe**. Graf ini tidak dapat memberi tahu Anda apakah pemanggilan yang baru Anda tulis dapat dikompilasi, apakah field itu ada pada objek, atau apakah penggantian nama Anda melewatkan sebuah re-ekspor.
 
-Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+Tanpa server bahasa, agen baru mengetahuinya saat pengujian — atau tidak pernah sama sekali. Agen menulis sesuatu yang tampak masuk akal, melanjutkan pekerjaan, dan kegagalannya muncul tiga giliran kemudian, menempel pada perubahan yang berbeda.
 
-So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+Jadi manfaat utamanya sebenarnya bukan alat `lsp`. Manfaatnya adalah `write`, `edit`, dan `apply_patch` dibungkus: setelah setiap penulisan, file melewati server bahasa dan diagnostik yang **baru muncul** dilipat ke dalam hasil alat. Agen langsung tahu bahwa ia merusak build pada saat ia merusaknya, terlepas dari apakah ia sempat terpikir untuk bertanya.
 
-### Only new diagnostics
+### Hanya diagnostik baru
 
-Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+Mengulangi apa yang sudah diberitahukan kepada agen lebih buruk daripada tidak mengatakan apa pun: hal itu mengisi hasil dengan kebisingan yang membuat agen terbiasa melewatinya begitu saja, dan satu error baru ikut terlewat bersamanya. Sebuah catatan per eksekusi melacak apa yang sudah dilaporkan, dengan kunci berupa tingkat keparahan, kode, dan pesan — **bukan** posisi, sehingga diagnostik yang hanya bergeser empat baris ke bawah tidak dilaporkan ulang sebagai baru.
 
-### Lazy, and honest about being absent
+### Bersifat malas, dan jujur tentang ketidakhadirannya
 
-No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+Tidak ada server yang dimulai saat boot. Sebuah server dimulai pada permintaan pertama yang membutuhkannya, yang hampir selalu merupakan edit pertama pada file yang diklaimnya, dan server yang menganggur akan dibersihkan. Host yang tidak pernah menyentuh Dart tidak akan pernah memulai analyzer.
 
-Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+Deteksi adalah sebuah **irisan**: penanda root harus ada di checkout *dan* biner-nya harus dapat di-resolve. Penanda saja hanya mengatakan "proyek ini adalah Python" dan tidak mengatakan apa pun tentang apakah server-nya terpasang; biner yang dapat di-resolve saja hanya mengatakan bahwa host memiliki toolchain dan tidak mengatakan apa pun tentang checkout ini. Hanya keduanya bersama-sama yang berarti sebuah kueri dapat berhasil, dan alat yang ditawarkan tetapi selalu gagal lebih buruk daripada alat yang tidak ada.
 
-## Why structural search, when grep exists
+## Mengapa pencarian struktural, padahal grep sudah ada
 
-`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+`grep` mencocokkan karakter. Alat itu tepat untuk sebuah nama dan salah untuk sebuah bentuk.
 
-A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+Pola struktural diuraikan oleh **grammar yang sama dengan file**, sehingga `dispose($X)` menemukan pemanggilan tersebut bagaimanapun spasi, pembungkusan, atau pemenggalan barisnya, dan tidak akan pernah mencocokkan karakter yang sama di dalam literal string atau komentar.
 
-The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+Sifat yang membuatnya lebih dari sekadar regex dengan langkah tambahan adalah bahwa metavariabel yang diulang dalam satu pola harus menangkap teks yang sama:
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+Pola ini cocok dengan penjaga yang membuang apa yang diujinya, dan tidak cocok dengan penjaga yang membuang hal lain. Itu adalah kelas bug yang sama sekali tidak dapat Anda ekspresikan secara tekstual.
 
-### It runs on the tree-sitter already linked
+### Alat ini berjalan di atas tree-sitter yang sudah tertaut
 
-There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+Tidak ada mesin kedua. `cc_natives` sudah memuat tree-sitter dan grammar-nya untuk graf kode, lengkap dengan cache kueri terkompilasi dan tabel bahasa. Pencocoknya murni Dart di atas pohon yang memang sedang diuraikan. Mesin struktural kedua akan berarti parser kedua, rangkaian grammar kedua yang harus dibangun dan disiapkan untuk setiap platform, serta dua jawaban untuk "apa itu ekspresi pemanggilan".
 
-### A fragment needs somewhere to live
+### Sebuah fragmen perlu tempat untuk hidup
 
-A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+Sebuah grammar hanya mendefinisikan apa itu sebuah *file* secara utuh. Jika diuraikan mentah-mentah pada tingkat atas Dart, `dispose(x)` adalah **signature fungsi** yang sepenuhnya valid — deklarasi bernama `dispose` yang menerima parameter `x` — tanpa ada error di mana pun yang membocorkannya. Pencocok yang dibangun di atas penguraian itu akan mencari deklarasi, tidak menemukan pemanggilan apa pun, dan melaporkan "tidak ada kecocokan" untuk pola yang sebenarnya tidak pernah dibaca sesuai penampilannya.
 
-So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+Jadi sebuah pola dicoba dalam tangga kerangka — pernyataan, ekspresi, anggota kelas, tingkat atas — dan kerangka pertama yang menerimanya yang menang. Fragmen yang tidak diterima oleh konteks mana pun dilaporkan sebagai tidak dapat diuraikan, alih-alih dicari lalu diam-diam tidak ditemukan.
 
-## Why a rewrite stages instead of writing
+## Mengapa penulisan ulang memakai staging alih-alih langsung menulis
 
-A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+Penulisan ulang struktural adalah edit terluas yang dapat dilakukan agen: satu pola, empat puluh file, dan tidak ada yang membaca hasilnya baris demi baris — bukan modelnya, dan bukan orang yang memintanya. Menuliskannya lalu melaporkan "selesai" berarti tatapan jujur pertama terhadap perubahan itu adalah `git diff` setelahnya.
 
-So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+Jadi `ast_edit` melaporkan apa yang *akan* dilakukannya — jumlahnya, file-nya, situs yang cocok — dan perubahan itu baru diterapkan ketika `resolve` melakukan commit. Itulah juga yang memungkinkan sebuah diff serta Terima/Buang berada di hadapan manusia sebelum apa pun menyentuh disk.
 
-The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+Commit bersifat semua-atau-tidak sama sekali, dan setiap file diperiksa terhadap konten yang ditangkap pada saat staging. Antara staging dan commit, agen mungkin telah mengedit salah satu file itu secara manual, proses diagnostik mungkin telah menulis ulang file itu, atau formatter mungkin telah menyentuhnya — tetap melakukan commit akan membuang pekerjaan itu dan diff-nya akan tampak disengaja. Ketidakcocokan apa pun akan menolak seluruh perubahan, karena penulisan ulang struktural yang baru diterapkan sebagian meninggalkan pohon yang tidak dapat dikompilasi dalam kedua bentuk tersebut.
 
-## What a debugger answers that a print statement cannot
+## Apa yang dijawab debugger yang tidak dapat dijawab pernyataan print
 
-The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+Siklus pernyataan print adalah: tambahkan print, jalankan seluruhnya lagi, baca output-nya, hapus print tersebut. Siklus ini memakan satu kali pengujian penuh untuk setiap pertanyaan, dan hanya menjawab pertanyaan yang sempat Anda pikirkan *sebelum* menjalankannya.
 
-A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+Frame yang berhenti menjawab semua pertanyaan tentang momen itu sekaligus — setiap variabel lokal, setiap pemanggil, dan ekspresi yang dievaluasi dalam scope milik frame itu sendiri. Untuk proses yang macet atau kegagalan yang hanya terulang sekali dalam sepuluh kali eksekusi, itulah perbedaan antara seharian dan satu menit.
 
-### Bounded like an enclosure, and for the same reason
+### Dibatasi seperti kurungan, dan karena alasan yang sama
 
-A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+Adapter debug memiliki sebuah **proses yang berhenti** yang memegang apa pun yang dipegang proses itu — port, lock, koneksi basis data. Sesi yang tidak dijalankan siapa pun adalah kebocoran yang hidup lebih lama daripada giliran yang memulainya. Karena itu ada TTL yang tegas, tepat satu sesi per percakapan, dan `launch` kedua ditolak alih-alih diam-diam menggantikan yang pertama: agen yang memulai sesi kedua tanpa mengakhiri yang pertama hampir pasti telah kehilangan jejak sesi pertama.
 
-### One transport, two protocols
+### Satu transport, dua protokol
 
-The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+Debug Adapter Protocol berbagi framing `Content-Length` milik Language Server Protocol dan tidak berbagi apa pun di atasnya — kunci korelasi yang berbeda, bentuk kegagalan yang berbeda, dan jenis pesan ketiga (peristiwa) yang tidak memiliki padanan di LSP. Framing-nya berada di satu tempat; protokol-protokolnya duduk di atasnya secara terpisah.
 
-Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+Menulis framing dua kali akan berarti dua jawaban untuk "sebuah pesan membentang dua chunk", "sebuah chunk memuat tiga pesan", dan "server menulis banner ke stdout sebelum frame pertamanya", dan hanya salah satunya yang akan mendapatkan perbaikan.
 
-## Related
+## Terkait
 
-- [Search code with the code graph](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/) — the symbol and impact side
-- [Debug a failing test](/id-ID/panduan-pengguna/panduan-praktis/debug-pengujian-gagal/) — the debugger, end to end
-- [Refactor structurally](/id-ID/panduan-pengguna/panduan-praktis/refaktor-struktural/) — `ast_grep` and `ast_edit`
-- [Built-in agent tools](/id-ID/panduan-pengguna/referensi/alat-agen/) — every operation and argument
+- [Cari kode dengan graf kode](/id-ID/panduan-pengguna/panduan-praktis/cari-kode/) — sisi simbol dan dampaknya
+- [Debug pengujian yang gagal](/id-ID/panduan-pengguna/panduan-praktis/debug-pengujian-gagal/) — debugger, dari awal sampai akhir
+- [Refaktor kode secara struktural](/id-ID/panduan-pengguna/panduan-praktis/refaktor-struktural/) — `ast_grep` dan `ast_edit`
+- [Alat agen bawaan](/id-ID/panduan-pengguna/referensi/alat-agen/) — setiap operasi dan argumen

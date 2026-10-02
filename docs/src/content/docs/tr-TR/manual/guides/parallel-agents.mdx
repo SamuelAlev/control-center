@@ -1,88 +1,128 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: Ajanları paralel çalıştırma
+description: Birkaç ajanı aynı anda gönderin ve işlerinin birbirine çarpmasını önleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/paralel-ajanlar
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+Bu kılavuz, birkaç ajanı birbirlerinin üzerine yazmadan aynı anda nasıl
+çalıştıracağınızı gösterir.
 
-## The unit of isolation is the space, not the agent
+## Yalıtımın birimi ajan değil, alandır
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+Bir alanda iş başladığında Control Center, o alanın kendi kökü altında, kayıtlı
+her depo için çalışma alanının dal şablonundan türetilen bir dal üzerinde bir
+copy-on-write checkout hazırlar. Alandaki her ajan daha sonra kendi overlay
+çalışma dizinini alır — ama overlay'ler o alanın `repos/` dizinini **paylaşır**.
 
-So:
+Yani:
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- **Farklı alanlardaki** iki ajan, farklı checkout'larda, farklı dallarda
+  çalışır. Gerçek yalıtım budur.
+- **Aynı alandaki** iki ajan, aynı checkout'ta, aynı dalda çalışır. Overlay
+  yolları farklı olduğundan, gönderim yolu kilidi (çalıştırmaları yalnızca özdeş
+  çalışma dizinini istediklerinde sıraya sokan) onları da sıraya sokmaz.
+  Aynı dosyalara aynı anda yazabilirler.
 
-The rule that follows: **one space per parallel task.**
+Bundan çıkan kural: **her paralel görev için bir alan.**
 
-## Run tasks in parallel — separate spaces
+## Görevleri paralel çalıştırma — ayrı alanlar
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. A ajanıyla bir alan açın ve ona bir görev gönderin.
+2. B ajanıyla ikinci bir alan açın ve ona farklı bir görev gönderin.
+3. İkisi de hemen gönderilir; her biri kendi alan checkout'unda, kendi dalında
+   çalışır.
 
-This is the recipe to use whenever the agents will be editing files.
+Ajanlar dosya düzenleyecekse her zaman bu tarifi kullanın.
 
-## Work together in one space — several mentions
+## Tek alanda birlikte çalışma — birden çok anma
 
-In a single space, @-mention more than one agent:
+Tek bir alanda birden fazla ajanı @ ile anın:
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+İki ajan da paralel gönderilir ve gönderene göre etiketlenerek aynı alana akar.
+Alanın checkout'unu paylaştıkları için bunu işbirliği amacıyla kullanın — biri
+yazarken diğeri okurken ya da iki ajan aynı ağaç üzerinde akıl yürütürken —
+birbirinden bağımsız iki düzenleme için değil.
 
-## Fan out from a pipeline
+## Bir pipeline'dan yelpaze şeklinde dağıtma
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+Yerleşik `pr_review` şablonu, bir fan-out'un ürünle birlikte gelen örneğidir:
+tek bir tetikleyiciyle birkaç inceleyici düğümü eşzamanlı çalışır ve bir
+**Consolidate (join)** düğümü bulgularını tek bir raporda toplar. Bunu
+pipeline'lar ekranından çalıştırın; her inceleyici paralel gönderilir.
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+Pipeline düzenleyici, terminal nöbetçisini gizler ve bir adım eklediğinizde ya da
+bağladığınızda onu her canlı çıkışı bekleyecek şekilde yeniden bağlar; böylece
+kendi çizdiğiniz dallar gerçekten çalışır.
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[Bilet atamak hiçbir şey göndermez]
+Bir bileti bir ajana atamak yalnızca sahipliği kaydeder. Bir bilet göndericisi
+yoktur — `TicketAssigned` bir denetim sinyalidir ve ondan hiçbir iş başlamaz.
+Tek istisna, bir _ekibe_ atanan bilettir; o da o ekibin liderini uyandırır.
 :::
 
-## Watch them run
+## Çalışmalarını izleme
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**Gözlemlenebilirlik → Canlı** (kenar çubuğunun alt kısmı → Gözlemlenebilirlik,
+ardından Canlı sekmesi) bu çalışma alanının ajan kadrosunu gösterir ve her
+saniye yenilenir: durum (Çalışıyor / Boşta / Park edildi / İptal edildi), her
+birinin ne yaptığı, son çalıştırmasının token'ları ve maliyeti, ayrıca çalışan
+bir süreç için bir sonlandırma denetimi. Bir satır seçmek canlı bir transkript
+çekmecesini yerleştirir.
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**Ayarlar → Çalışma alanı → Ajanlar** aynı kadroyu, her ajanın çalıştırma
+geçmişinden türetilen farklı, dikkat öncelikli bir durum dağarcığıyla gösterir
+— Çalışıyor, Engellendi, Başarısız, Boşta, Henüz çalıştırma yok — ilgi
+gerektiren her şey en üste çıkacak şekilde sıralanır. Her ajanın **Loglar**
+sekmesi kendi çalıştırma geçmişini barındırır.
 
-Both surfaces are scoped to the active workspace.
+Her iki yüzey de etkin çalışma alanıyla sınırlıdır.
 
-## Handle conflicts
+## Çakışmaları ele alma
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+Alanlar arasında her alan kendi dalındadır; bu yüzden ikinci pull request'i
+birleştirdiğinizde çarpışma sıradan bir Git birleştirme çakışması olarak ortaya
+çıkar. Onu, herhangi bir birleştirme çakışmasını çözer gibi çözün.
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+Tek bir alanın içinde ne bir dal sınırı ne de bir kilit vardır: ajanlar aynı
+dosyalara canlı canlı yazar ve kaybedenin üzerine basitçe yazılır. İki ajanın tek
+bir alanda düzenleme yapmasını istediğinizi fark ederseniz, işi bunun yerine iki
+alana bölün.
 
-To reduce collisions either way:
+Her iki durumda da çarpışmaları azaltmak için:
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/tr-TR/kilavuz/nasil-yapilir/kod-arama/).
-- Review and merge each agent's pull request promptly.
+- Her ajana belirgin bir kapsam verin — farklı dosyalar, farklı modüller.
+- Göndermeden önce bir değişikliğin nelere dokunduğunu kod grafiğiyle kontrol
+  edin. Bkz. [Kod grafiğiyle kod arama](/tr-TR/kilavuz/nasil-yapilir/kod-arama/).
+- Her ajanın pull request'ini zamanında inceleyip birleştirin.
 
-## Resource considerations
+## Kaynak değerlendirmeleri
 
-Each running agent costs:
+Çalışan her ajan şunlara mal olur:
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- Bir alan checkout'u — copy-on-write kullanılabilirken diskte ihmal edilebilir;
+  Windows'ta bir `git worktree`. reflink yapamayan bir dosya sistemi, kopyalamak
+  yerine hazırlığı başarısız kılar.
+- Sunucu ana makinesinde bir süreç
+- Ajan başına biriken model token'ları
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/) for the two commands that do have one.
+Maliyetler **Gözlemlenebilirlik → İçgörüler** altında birikir. Normal bir
+etkileşimli turun harcama üst sınırı olmadığını unutmayın; üst sınırı olan iki
+komut için bkz.
+[Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/).
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Build an agent team](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/)
-- [Manage costs](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
-- [Add repos to a workspace](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [Ajan ekibi kurma](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/)
+- [Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
+- [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/)
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)

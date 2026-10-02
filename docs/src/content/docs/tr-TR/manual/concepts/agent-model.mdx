@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: Ajan modeli
+description: Control Center'da bir ajanın gerçekte ne olduğu, hangi alanlarının davranışı değiştirdiği ve üzerinde çalıştığı adaptörün nelerin uygulanabileceğine nasıl karar verdiği.
 slug: tr-TR/kilavuz/kavramlar/ajan-modeli
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## Ajan nedir?
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+Bir ajan; bir persona, bir beceri kümesi, üzerinde çalışacağı bir adaptör ve bir yetenek kümesine sahip adlandırılmış bir aktördür. Ajanlar da insanlarla aynı anlamda Principal'dir: mesaj yazar, bilet sahibi olur, inceleme bırakır ve aynı kadroda görünür. İşi yapan şey onlardır.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+Her ajan tam olarak bir çalışma alanına aittir. Bu katı bir değişmezdir — `agent.workspaceId` boş olamaz, ajanın satırlarının düştüğü veritabanı dosyasını ajanın kendi çalışma alanı seçer ve çalışma alanı olmayan bir ajan oluşturmak reddedilir.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+Bir ajan aynı zamanda bir dizindir. Tanımı, çalışma alanının veri dizini altındaki `agents/<slug>/AGENTS.md` dosyasında yaşar ve sahip olduğu beceriler `agents/<slug>/.agents/skills` içine sembolik bağlanır. Veritabanı satırı ile dosya birlikte yazılır. Tohumlama idempotenttir: ajan satırı zaten varsa, diskteki dosyalar ve beceri bağlantıları yine de yeniden yazılır. Üretimdeki çağıran, her sunucu başlatması değil, çalışma alanı oluşturmadır.
 
-## What an agent carries
+## Ajanın taşıdıkları
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| Öznitelik              | Ne yapar                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `name`                  | Kısa, slug benzeri tanımlayıcı (`architect`, `qa`). `@mentions` da buna göre çözümlenir |
+| `title`                 | İnsan tarafından okunabilir görev unvanı                                              |
+| `persona`               | Serbest metin kişilik ve davranış talimatları; isteme bir bölüm olarak enjekte edilir |
+| `systemPrompt`          | İsteğe bağlı ek talimatlar; bir “Agent instructions” bölümü olarak enjekte edilir — bir araya getirilen istemin geri kalanının yerini almazlar |
+| `skills`                | Büyük/küçük harf duyarsız beceri adları kümesi; diskte beceri bağlantıları olarak yansıtılır |
+| `adapterId`             | Ajanın hangi runner'a gönderim yaptığı. **Null olması yerleşik döngüye geri düşer**  |
+| `modelId`               | O adaptör içindeki model                                                              |
+| `effort`                | Seçilen modelin kendi sözcük dağarcığından alınan akıl yürütme düzeyi                 |
+| `contextSize`           | Bağlam penceresi geçersiz kılması                                                     |
+| `capabilities`          | Başlatmada denetlenen kimlik bilgisi ve çıkış bayrakları                              |
+| `silenceTimeoutMinutes` | Sessizlik gözcüsü için ajan başına geçersiz kılma (1–240)                             |
+| `reportsTo`             | Üst ajan kimliği — organizasyon şemasının çizdiği bağlılık zinciri                    |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+Bunların tümünü Ayarlar → Çalışma alanı → Ajanlar altından düzenlersiniz. **Yeni ajan**, ardından doldurduğunuz adsız bir ajan oluşturur.
 
-## Skills
+## Beceriler
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+Beceriler, ajan varlığı üzerindeki büyük/küçük harf duyarsız adlardır. Onlarla iki ayrı şey olur:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- Adlar, bir araya getirilen istemde bir “Skills” başlığı altında listelenir. Varlığın kümesinin tek başına yaptığı budur — ona bağlı, beceri başına bir istem kütüphanesi yoktur.
+- Adı geçen her becerinin dizini (çalışma alanındaki `skills/<slug>/SKILL.md`) ajanın kendi klasörüne bağlanır. Yerleşik harness üzerinde, bağlı becerilerin frontmatter'ı sistem istemine otomatik yüklenir ve ajan gövdeyi istediğinde okur; bir konuşmada `/skill:<name>` yazmak, o gövdeyi tur için bir direktif olarak yükler.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme/).
+Dışarıdan alınan beceriler, alma ile yazma arasında hataya kapalı bir tedarik zinciri taramasından geçer — hiçbir beceri içeriği bir karar olmadan diske ya da bir isteme ulaşmaz. Dışarısı, kendinizin beceri kaynağı olarak kaydettiği GitHub depolarıdır: özenle seçilmiş bir mağaza yoktur, bu yüzden deponun kendi üst verisi (açıklaması, yıldızları, becerinin adı) güvenilmez görüntüleme verisidir ve tek güvenlik sinyali tarama kararıdır. Bir kurulum, becerinin tüm dizinini alır, `skills-lock.json` içinde geldiği commit'e sabitler ve sonraki bir güncelleme herhangi bir şeyi değiştirmeden önce kapıdan yeniden geçer. Nasıl yapılacağı [becerileri kurma ve yönetme](/tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme/) sayfasındadır.
 
-### Repo-scoped skills
+### Depoya özel beceriler
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+Bir depo, kendi becerilerini alışılmış yerlerin herhangi birinde (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`) getirebilir. Bir alan, bağlı her depoyu `repos/<name>/` altında yan yana checkout eder, ancak bir ajan aynı anda tek bir depoda çalışır — bu yüzden **yalnızca o deponun** becerilerini taşır ve depo değiştiğinde bunlar da değişir.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+Hangi deponun etkin olduğu, ajanın dokunduğu dosyalardan çıkarılır: `repos/<name>/` altında bir dosya yazmak o depoyu etkin yapar, oysa depolar arasında yalnızca okuma yapmak yapmaz; böylece bir sembolü kardeş bir servise kadar izlemek, küme bir görevin altından hiçbir zaman değişmez. Tek depolu bir alanda yanıt ilk turdan önce bilinir.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+Bu kapsamlandırma bir bağlam bütçesi kararıdır. Beceri dizini her turda istemde durur, gövdeler durmaz; bu yüzden her deponun becerilerini birden listelemek sürekli token harcar — ve iş başka bir serviste olduğunda bir servisin `testing` becerisi aktif olarak yanıltır. Aynı gerekçe, bir ajanın dizininin tek bir depo taşımasının ama yazı alanının bu şekilde kapsamlandırılmamasının nedenidir: bir beceriyi kendiniz adlandırmak tek bir açık eylemdir, bu yüzden `/skill:<repo>:<name>` alandaki her depoya ulaşır.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+Depo becerileri yalnızca yerleşik harness için değil, **her** adaptör için yüklenir. Etkin deponun becerileri ajanın çalışma dizinine — Claude Code'un zaten taradığı yola — somutlaştırılır; aynı dizin, yerleşik harness'ın okuduğu `AGENTS.md` içine de işlenir. Bir deponun becerileri, tüm bunlar olmadan önce kurulu bir becerinin geçtiği hataya kapalı taramadan geçer — checkout edilmiş bir depo klonlanmış içeriktir ve frontmatter'ı bir isteme ulaşır.
 
-## Capabilities
+## Yetenekler
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+Yetenekler, bir çalıştırmaya neyin _verildiğini_ denetler, dosya sisteminin neye dokunmasına izin verdiğini değil. Kimlik bilgisi aracısı bunları başlatmada denetler: bir yetenek kapalıysa, eşleşen belirteç yalnızca enjekte edilmez.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **Depoya push** — `git push` için kullanılan GitHub belirtecinin enjeksiyonunu denetler.
+- **GitHub API** — `GH_TOKEN` enjeksiyonunu ve api.github.com'a çıkışı denetler.
+- **Biletleme** — biletleme sağlayıcısının API anahtarını ve kendi alan adlarına çıkışı denetler.
+- **Ağ çıkışı** — rastgele giden istekler.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+Bir çalıştırma bunları ajanın kendi satırından çözümler. Ajanın hiçbiri yoksa, sabit ve ihtiyatlı bir varsayılan geçerlidir: üç kimlik bilgisi bayrağı kapalı, ağ çıkışı açık. Ajan formundaki “Sandbox izinleri” anahtarı, bu geri düşme ile ajan üzerinde saklanan özel bir küme arasında seçim yapar.
 
-See [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) for the other half of the story, including what is and is not enforced at the filesystem level.
+Hikâyenin diğer yarısı, dosya sistemi düzeyinde neyin uygulandığı ve neyin uygulanmadığı dâhil, [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasındadır.
 
-## The adapter decides what can be enforced
+## Neyin uygulanabileceğine adaptör karar verir
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+Bir ajan üzerindeki en sonuç doğuran tek alan adaptörüdür, çünkü adaptörün taşıma katmanı, Control Center'ın politikasının ne kadarının gerçekten uygulanabilir olduğunu belirler.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
+| Taşıma katmanı  | Adaptörler                | Control Center'ın uyguladıkları                                                                                                                                                                                                                                            |
 | ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Yerleşik harness | Control Center (built-in) | Her şey. Araç yüzeyi moddan _inşa edilir_, bu yüzden izin verilmeyen bir araç yalnızca reddedilmekle kalmaz, görünmez olur; her çağrı onay kapısından ve eylem korumalarından geçer; tamamlama sözleşmesi dürtükleyebilir ve ardından teslimatı olmadan biten bir çalıştırmayı başarısız kılabilir |
+| Claude CLI       | Claude Code               | Yalnızca kendisine sunulan `mcp__*` araçları. Claude'un kendi okuma, yazma, düzenleme ve kabuk araçları kendi sürecinde yaşar ve görünmeden çalışır — ve `--dangerously-skip-permissions` ile başlatılır, çünkü etkileşimsiz `claude -p` aksi hâlde kendi isteminde sonsuza dek takılır    |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+Somut olarak, **alt ajanları, çalıştırma ortasında yönlendirmeyi, duraklatma ve sürdürmeyi (ve dolayısıyla devralmayı) ve yapısal mod uygulamasını yalnızca yerleşik harness destekler.** Claude Code bunların hiçbirini almaz.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[İşletim sistemi sandbox'ı bir tabandır, bir mod uygulayıcısı değildir ve her ana makinede bulunmaz]
+Yukarıdaki matris, Control Center'ın _neleri görüp kapıdan geçirebildiğiyle_ ilgilidir. Onun altında, `cc_server`, Claude Code CLI'yi var olduğu yerde ana makinenin işletim sistemi sandbox'ına sarar — macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap — böylece görülmeyen bir `rm` ya da görülmeyen bir yazma yine de işletim sistemi tarafından sınırlanır. **Windows'ta hiçbir arka uç yoktur** ve `bwrap` ile `socat` olmayan Linux veya WSL2'de sonda hiçbir şey bildirmez; bu yüzden oralarda bu çalıştırmalar ortam arındırmaya, aracılı kimlik bilgilerine, Control Center'ın görebildiği çağrılardaki korumalara ve konuşmanın kendi worktree'sine geri düşer (`rift`'in geldiği yerde copy-on-write; Windows'ta `git worktree`).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
+Sandbox bir _kapı_ değildir. Bir sürecin nerede okuyabileceğini, yazabileceğini ve bağlanabileceğini sınırlar — salt okunur bir mod ona ulaşır, salt okunur bağlama noktaları olarak — ama bir çağrıyı kesemez, bir onay isteği çıkaramaz ya da sonrasında CLI'nin ne denediğini söyleyemez. Bu ve hemen yukarıda adı geçen dört yetenek, hâlâ yerleşik harness'ın sahip olup diğerlerinin olmadığı şeydir. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+**Adaptörü olmayan** bir ajan **Control Center (built-in)** seçeneğine geri düşer — sunucunun içindeki döngü, yani kurulacak bir CLI yoktur — ve çalıştırma günlüğü `cc-harness` kaydeder. Tohumlanan her ajan adaptörsüz ve modelsiz oluşturulur; bu yüzden yeni bir çalışma alanının beş ajanı da, siz ajan başına bir adaptör ve model belirleyene kadar orada, Anthropic'in varsayılan modeli üzerinde çalışır. İlk kurulumdaki “varsayılan adaptör” seçimi, sunucunun hiç okumadığı bir istemci tarafı tercihtir ve hâlihazırda oluşturulmuş ajanlara geriye dönük uygulanmaz.
 
-## Where agents come from
+## Ajanlar nereden gelir
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **Çalışma alanıyla birlikte tohumlanır.** Her çalışma alanı — yalnızca ilki değil — kendisine bağlı bir CEO ile dört uzman (`qa`, `architect`, `engineer`, `librarian`) alır; bunlar çalışma alanı oluşturulurken arka planda idempotent biçimde oluşturulur. Bkz. [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
+- **Elle eklenir** Ayarlar → Çalışma alanı → Ajanlar altından. Bir ajandan iş arkadaşı işe almasını istemek bir satır oluşturmaz; o ekranı kullanın.
 
-## Live state
+## Canlı durum
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+Bir ajanın saklanan bir durum sütunu yoktur. Canlı durumu, her okunduğunda en son çalıştırma günlüklerinden türetilir:
 
-| State      | Meaning                                                              |
+| Durum      | Anlamı                                                               |
 | ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| `neverRun` | Hiç çalıştırma günlüğü yoktur                                        |
+| `running`  | En az bir çalıştırma şu anda sürüyor                                 |
+| `failed`   | En son çalıştırma hata verdi ya da canlılığı başarısız veya ölü      |
+| `blocked`  | En son çalıştırmanın canlılığı engellendi, durakladı veya döngüde    |
+| `idle`     | Diğer her şey — ajan daha önce çalıştı ve uçuşta hiçbir şeyi yok     |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+İki durum daha, `queued` ve `succeeded`, konuşma çalıştırma ağacındaki tek tek çalıştırmalar için vardır; kadro bunları hiç üretmez, çünkü bitmiş bir çalıştırmanın yeşil olması çalıştırmayla ilgili bir olgudur, ajanla değil.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/tr-TR/kilavuz/kavramlar/cok-oyunculu/).
+Varlık listesi, canlı çalıştırma olaylarından sunucu tarafında sentezlenen paralel ve daha kaba bir tablo gösterir — düşünüyor, çalışıyor, onay için engellendi, bitti — ajanların insanların yanında görünmesini sağlayan da budur. Bkz. [Çok oyunculu ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/).
 
-## Related concepts
+## İlgili kavramlar
 
-- [Agent dispatch lifecycle](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): what happens when an agent is actually run
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): what constrains a run today
-- [Agent configuration reference](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/): the full field list
+- [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): bir ajan gerçekten çalıştırıldığında ne olur
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/): bir ajanın araç yüzeyini şekillendiren konuşma başına ayar
+- [Çok oyunculu ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): ajanların Principal oluşu, varlık ve otonomi kadranı
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): bugün bir çalıştırmayı neyin sınırladığı
+- [Ajan yapılandırması](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/): tam alan listesi

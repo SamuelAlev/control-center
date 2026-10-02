@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: 에이전트 도구 컨텍스트 조정
+description: 실행이 실제로 보내는 내용을 검사하고, 어떤 도구를 미리 로드할지 변경하며, 잘못된 도구 선택이 검색 미스였는지 프롬프트 문제였는지 가려냅니다.
 slug: ko-KR/매뉴얼/사용-가이드/도구-컨텍스트-조정
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/ko-KR/매뉴얼/개념/도구-컨텍스트).
+이 가이드에서는 2계층 도구 표면을 다루는 실무, 즉 한 번의 실행이 무엇을 보내는지 확인하고, 그것을 바꾸고, 에이전트가 엉뚱한 도구를 골랐을 때 진단하는 방법을 다룹니다. 이렇게 동작하는 이유는 [도구 컨텍스트와 프롬프트 캐싱](/ko-KR/매뉴얼/개념/도구-컨텍스트)을 참고하십시오.
 
-## Look at what a run actually sends
+## 실행이 실제로 보내는 내용 살펴보기
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+대화를 열고 대화 헤더의 컨텍스트 사용량 표시기를 탭합니다. 그러면 아무것도 실행하지 않고도 다음 디스패치가 보낼 표면을 그대로 재구성합니다. **더 보기**(또는 `/context` 명령)를 누르면 각 도구를 검사할 수 있는 전체 컨텍스트 탐색기가 열립니다.
 
-Two segments matter here:
+여기서 중요한 세그먼트는 두 가지입니다:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **도구 정의** 및 **MCP 및 동적 도구** — 상주 세트이며, 각 도구의 실제 토큰 비용이 함께 표시됩니다.
+- **필요 시 로드되는 도구** — 지연 인덱스입니다. 각 항목에는 이름만 비용이 부과됩니다. 요청이 실어 가는 것이 이름뿐이기 때문입니다. 항목을 열면 전체 설명과 스키마가 그대로 표시되므로, 실행이 그것을 끌어들였을 때 *얼마나* 들지를 확인할 수 있습니다.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli).
+지연 세그먼트가 비어 있다면 이 서버에서는 지연이 꺼져 있는 것입니다. [`cc_server` CLI](/ko-KR/매뉴얼/레퍼런스/cc-server-cli)에서 `--tool-deferral`을 확인하십시오.
 
-## Change which tools load up front
+## 미리 로드할 도구 변경하기
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+상주 세트는 구성이 아니라 정책입니다. 즉 `ModeToolPolicy`(`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`)에 들어 있으며 모든 실행에 적용됩니다:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/ko-KR/매뉴얼/개념/모드) uses on nearly every turn.
+- `residentBuiltins` — 파일과 셸 어휘.
+- `residentDiscovery` — `search_tools`와 `list_my_tools`. 이 둘은 제거하지 마십시오. 에이전트가 나머지 모든 것에 도달하는 방법이기 때문입니다.
+- `residentMcpTools` — 모든 요청에서 스키마만큼의 값어치를 하는 소수의 Control Center 도구.
+- 모드별 블록 — 특정 [모드](/ko-KR/매뉴얼/개념/모드)가 거의 매 턴 사용하는 도구를 위한 것입니다.
 
-Two rules when editing it:
+이를 편집할 때 지킬 규칙은 두 가지입니다:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**대부분의 실행이 사용하는 경우에만 도구를 추가하십시오.** 모든 이름은 모든 실행의 모든 요청에서 영원히 자기 스키마만큼의 비용을 냅니다. 쓰일 때는 중요하지만 전체적으로는 드문 도구는 지연되는 쪽에 속합니다. 에이전트는 그래도 그것을 찾아냅니다.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**도구의 실제 이름을 사용하십시오.** 어떤 도구와도 일치하지 않는 상주 이름은 아무 효과가 없습니다. 오류도 경고도 없이 그 도구는 그저 지연될 뿐입니다. `test/tooling/resident_tool_names_test.dart`가 이를 잡아내고, 동시에 각 모드를 상주 도구 40개 미만으로 유지합니다. 이것이 이 작업의 요점입니다. 그 범위를 넘어서면 도구 선택이 눈에 띄게 나빠집니다.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+모드의 필수 및 고정 동사는 자동으로 추가되므로, 모드 자체의 출력 동사를 나열할 필요가 전혀 없습니다.
 
-## Diagnose a bad tool choice
+## 잘못된 도구 선택 진단하기
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+에이전트가 잘못된 도구를 사용했거나 무언가를 할 수 없다고 주장했다면, 세 가지 중 무엇이 일어났는지 가려내십시오.
 
-### 1. Did it look?
+### 1. 찾아보기는 했는가?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+각 실행은 자신이 로드한 지연 도구와 그 계기를 기록합니다. 이름으로 직접 호출했는지, 아니면 `search_tools` 쿼리였는지입니다. 실행의 이벤트 스트림(**설정 → 워크스페이스 → 에이전트** → 에이전트 → **로그** → **보기**)을 열고 `[harness] loaded N deferred tool(s)`를 찾아보십시오.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **아무것도 기록되지 않았고 에이전트가 그 역량이 없다고 말했다** — 찾아보지 않은 것입니다. 그것은 검색 문제가 아니라 프롬프트 문제입니다. 지연 인덱스는 시스템 프롬프트에 있고, 검색이 빈손으로 돌아오기 전까지는 역량이 없다고 선언하지 말라는 지침이 함께 있습니다.
+- **검색은 기록되었지만 아무것도 로드되지 않았다** — 진짜 검색 미스입니다. 2단계로 이동하십시오.
+- **도구는 로드되었지만 잘못된 것을 사용했다** — 찾은 도구들이 너무 비슷한 것입니다. 3단계로 이동하십시오.
 
-### 2. Fix a retrieval miss
+### 2. 검색 미스 해결하기
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools`는 이름, 설명, 인수 이름을 기준으로 일치시킵니다. 미스는 거의 항상 설명에 에이전트가 사용한 단어가 들어 있지 않다는 뜻입니다.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+그 단어들을 추가하십시오. 설명이 곧 검색 인덱스이므로 **줄이지 말고 늘리십시오** — 내부 명사만이 아니라 운영자가 실제로 입력할 법한 어휘("assign", "hand off", "give to")를 쓰십시오. 토큰을 아끼려고 설명을 줄이면 검색 적중과 선택 정확도를 모두 잃고, 스키마에 비하면 거의 아무것도 아끼지 못합니다.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+올바른 도구가 존재하지만 순위가 낮다면, 그것이 바로 `limit` 인수의 용도입니다. 도구 자체의 설명이 아슬아슬하지만 빗나간 검색을 넓히라고 에이전트에게 알려 줍니다.
 
-### 3. Fix look-alike tools
+### 3. 비슷하게 생긴 도구 해결하기
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+두 도구의 설명이, 차이를 이미 알지 못하는 사람에게는 똑같이 읽힌다면 모델은 추측하고 있는 것입니다. 그것들을 구별하는 인수를 가진 하나의 도구로 합치십시오.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation`과 `ticket_pr_link`가 이 패턴을 따릅니다. 각각 구별하는 인수를 통해 연결과 연결 해제를 처리합니다. 요청의 전체 컨텍스트가 있는 상태에서 한 번의 호출 *안에서* 내리는 선택은, 비슷하게 생긴 두 설명 사이에서 내리는 선택보다 더 신뢰할 수 있습니다.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+승인 게이트, 감사, 렌더링이 서로 달라야 하는 경우에는 도구를 분리해 두십시오. 이는 통합하면 실제로 대가를 치르게 되는 이유입니다.
 
-## Check the prompt cache is working
+## 프롬프트 캐시가 작동하는지 확인하기
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+캐시 적중률은 **옵저버빌리티 → 인사이트**에 **캐시율**로 표시됩니다. 건강한 장기 실행 대화는 높은 값을 유지합니다. 이 값이 계속 낮다면 매 턴 무언가가 접두사를 다시 쓰고 있는 것입니다.
 
-Common causes, in order of likelihood:
+가능성이 높은 순서대로 흔한 원인은 다음과 같습니다:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **프롬프트 앞부분에 있는 비결정적인 요소.** 타임스탬프, 요청 ID, 또는 순서가 매번 달라지는 집합을 반복하는 것만으로도 그렇게 됩니다.
+- **대화 도중의 모델 또는 추론 수준 변경.** 둘 다 접두사를 바꿉니다. 서브에이전트는 여기서 특히 틀리기 쉽습니다. 비용을 아끼려고 자식을 더 낮은 추론 수준으로 실행하면, 잃는 캐시 공유 비용이 아끼는 것보다 더 클 수 있습니다.
+- **잦은 압축.** 압축은 설계상 기록을 다시 쓰므로 그 비용은 실재합니다. 해결책은 자주 얕게가 아니라 드물게 깊게 압축하는 것입니다.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+`--tool-deferral=off`로 지연을 끄는 것은 동작 변화가 2계층 표면에서 비롯되었는지 분리해 내기 위한 유효한 A/B 테스트입니다. 지연 이전의 요청을 정확히 재현하므로, 껐는데도 그 동작이 계속된다면 표면이 원인이 아닙니다.

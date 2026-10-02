@@ -1,193 +1,201 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Konfigurera sandlådepolicyer
+description: Vad som begränsar en agentkörning, hur du avgör om OS-sandlådan lindar in den och vilka förmågeinställningar servern faktiskt läser.
 slug: sv-SE/handbok/how-to-guider/sandladepolicyer
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Om en agentkörning är sandlådad avgörs på servern, vid start
+(`--sandbox`). Växeln **Aktivera sandlåda**, väljaren **Backend** och
+växlarna **Standardförmågor · nya ytor** under **Inställningar → Server →
+Diagnostik och integritet** är inställningar som lagras på din enhet.
+Värdidentifieringen i kortet **Sandlåda** rapporterar vad servervärden kan linda
+in.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Två kontroller når en körning och den här guiden tar upp båda:
+**Sandlådebehörigheter** per agent nedan och serverns egen flagga `--sandbox`.
 
-## What constrains an agent run
+## Vad som begränsar en agentkörning
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+En agentkörning hålls tillbaka av sex saker. Den första är OS-sandlådan och det
+är den enda som är villkorlig – de övriga fem gäller på varje värd.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| Gräns                     | Vad den gör                                                                                                                                                                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OS-sandlådan              | Seatbelt på macOS, bubblewrap på Linux och WSL2. Lindar in Claude Code-CLI:n, ACP-adaptrar och harnessens `bash`-verktyg. **Saknas på Windows och på Linux utan `bwrap` och `socat`** |
+| Sin egen worktree         | Varje samtal får en copy-on-write-utcheckning. Den ursprungliga utcheckningen viks in i körningen som en skrivnekad sökväg och det är sandlådan som verkställer det                                                                                  |
+| Mäklade inloggningsuppgifter | Mäklaren för inloggningsuppgifter präglar en miljö per körning utifrån agentens förmågor och återkallar den vid nedrivning. Ingen förmåga, ingen token i miljön                                                                                    |
+| Åtgärdsräcken             | Varje muterande verktyg deklarerar sina effektklasser och grinden löser dem innan anropet körs. En `prompt` utan ansluten godkännare nekas                                                                                                           |
+| Miljösanering             | ACP och harnessens `bash`-verktyg får en filtrerad miljö. Claude Code via `NoSandboxAdapter` ärver värdmiljön                                                                                                                                        |
+| Lägets verktygsyta        | Ett skrivskyddat läge tar bort de worktree-muterande verktygen helt och låser lägets eget utdataverb så att det fortfarande kan leverera                                                                                                             |
 
-Three things stay weaker than they look:
+Tre saker är svagare än de ser ut:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Bara den **inbyggda harnessen** verkställer verktygsgrinden,
+  slutförandekontrakten och de strukturella lägesreglerna. Claude Code-adaptern
+  gör det inte. Särskilt Claude Code startas med
+  `--dangerously-skip-permissions`, eftersom en icke-interaktiv `claude -p`
+  annars skulle blockera för evigt på sin egen prompt – så Claudes egna anrop
+  för läsning, skrivning, redigering och bash varken ses eller grindas av
+  Control Center. Där sandlådan är på är den gränsen runt dem.
+- Harnessens filverktyg i processen (read, write, edit, apply patch, search,
+  find, search_files) körs inuti serverprocessen, så ingen sandlådeprofil
+  begränsar dem. Bara verktyget `bash` går genom den sandlådade
+  kommandoköraren. De verktygen begränsas av sin egen sökvägsbegränsning plus
+  åtgärdsräckena.
+- På en värd utan backend gäller den första raden inte alls. ACP och harnessens
+  `bash`-verktyg faller tillbaka på miljösanering plus kommandopolicyn; Claude
+  Code ärver värdmiljön via `NoSandboxAdapter`. Servern säger det i sin
+  startlogg. Kontrollera din nedan.
 
-## Set an agent's capabilities
+## Ställ in en agents förmågor
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Det här är den enda förmågestyrning som servern läser. Den är per agent och
+avgör vad mäklaren för inloggningsuppgifter lägger i agentens miljö.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. Gå till **Inställningar → Arbetsyta → Agenter**
+2. Välj agenten i listan
+3. På fliken **Inställningar** rullar du till **Sandlådebehörigheter**
+4. Slå på växeln – radens bildtext ändras från **Använd arbetsytans standard**
+5. Ställ in de fyra växlarna:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| Växel                            | Vad den styr                                                                                                                                                                                                                                       |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **Tillåt git push**               | Med den av får körningen `GIT_ASKPASS=/usr/bin/false` och `GIT_TERMINAL_PROMPT=0`, så en push kan inte fråga efter en inloggningsuppgift                                                                                                          |
+| **Tillåt GitHub API-anrop**       | Tillsammans med **Tillåt git push** styr den om mäklaren injicerar GitHub-token som `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                                     |
+| **Tillåt API-anrop för ärenden**  | Styr om mäklaren injicerar `TICKETING_API_KEY`                                                                                                                                                                                                    |
+| **Tillåt allmän nätverksåtkomst** | Där sandlådan är på är detta en riktig utgående grind: med den av är körningens allowlist tom och varje utgående begäran nekas i proxyn. Där det inte finns någon backend registreras den på körningen men blockerar inget som en startad process gör |
 
-6. Save
+6. Spara
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Kontrollpunkt: öppna agenten igen och växeln är fortfarande på med dina växlar –
+en sparad förmågeuppsättning går fram och tillbaka genom servern och en agent
+utan någon faller tillbaka på den konservativa standarden (push av, GitHub-API
+av, ärenden av, nätverk på).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Två sätt det här biter]
+Bildtexten säger **Använd arbetsytans standard**, men det finns ingen
+förmågeinställning på arbetsytenivå som servern läser. En agent med växeln av
+får den inbyggda konservativa standarden.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Separat: körningens GitHub-inloggningsuppgift är alltid bara mäklarens – en
+repo-scopad installationstoken för GitHub-appen, eller fallbacken med PAT i
+miljön – aldrig den begärande medlemmens egen lagrade token. `actingUserId`
+skickas så att mäklaren kan *hålla tillbaka* serverns PAT från en medlem som
+inte är ägare och inte har anslutit GitHub; den slår inte samman en personlig
+token över en förmåga som är av. Behandla inte **Tillåt GitHub API-anrop** som
+en hård utgående gräns på en värd utan OS-sandlåda: en startad process kan
+fortfarande nå nätverket.
 :::
 
-## Check whether your agent runs are sandboxed
+## Kontrollera om dina agentkörningar är sandlådade
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Två saker avgör det, båda på servern: om värden erbjuder en backend och om
+`--sandbox` är på. Kontrollera dem i den ordningen.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. Gå till **Inställningar → Server → Diagnostik och integritet**
+2. Läs kortet **Sandlåda**. Uppgiften **Värd** är maskinen som `cc_server`
+   kör på, inte maskinen du tittar på. Fältet **Backend** listar
+   **Inbyggd sandlåda** (Seatbelt på macOS, bubblewrap på Linux och WSL2) eller
+   **Ingen isolering**. Uppgiften **I kraft** är den här enhetens inställning,
+   inte den inlindning som servern faktiskt använder.
+3. Läs serverns startlogg. Den skriver ut exakt en av tre rader:
+   - `agent sandbox ON` plus backend-anteckningen – körningarna lindas in
+   - `no OS-native agent sandbox on this host` plus en installationshänvisning
+     där en sådan finns – körningarna lindas inte in
+   - `agent sandbox DISABLED by --sandbox off` – ett medvetet val att stänga av
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` rapporterar inte sandlådans tillstånd, så startloggen är
+kontrollen.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+För att stänga av sandlådan medvetet – en värd där profilen beter sig illa är
+anledningen till att den finns – startar du servern med `--sandbox off`, eller
+sätter `CC_SERVER_SANDBOX=off`. Standardvärdet är `on` och `on` betyder "använd
+en backend om värden har en", aldrig "kräv en".
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+Två situationer får aldrig en inbyggd sandlådeinlindning. På **Windows**
+rapporterar den inbyggda sonden alltid otillgänglig och det finns inget att
+installera – agentdispatch använder `none`. Backenden `microvm` är separat
+(interaktiva terminaler och stationer) och sonderas på sin egen runtime. På
+**Linux och WSL2** måste både `bwrap` och `socat` finnas i `PATH`; utan dem
+rapporterar sonden otillgänglig och namnger de saknade paketen.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+På Linux/WSL2 med bubblewrap installerat kan standardpolicyns globmönster för
+hemliga filer inte verkställas för filer som en agent skapar senare. En sådan
+inbyggd körning misslyckas nu i stället för att tyst ignorera reglerna. En
+positiv startsond garanterar därför inte att en Linux-dispatch kan starta.
+`--sandbox off` är ett medvetet oinskränkt val att stänga av, inte en ersättande
+säkerhetsgräns.
 
-## Know what a mode already forbids
+## Vet vad ett läge redan förbjuder
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Läget lagras per yta och matar räckesupplösaren som lagret
+**lägesförinställning**. Tre av de fyra lägena är skrivskyddade och ett
+skrivskyddat läge nekar elva effektklasser direkt:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Läge               | Worktree   | Nekas av förinställningen                                                                                                                                                        |
+| ------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent** (`chat`) | Skrivbar   | Inget – de inbyggda standarderna gäller                                                                                                                                          |
+| **Plan**           | Skrivskyddat | Ta bort en fil, skriva utanför worktreen, skapa en commit, pusha, öppna en PR, publicera eller slå ihop, skriva till ett externt ärendesystem, installera ett paket, köra en process, ändra arbetsytans struktur, starta eller driva en avskild miljö |
+| **Granskning**     | Skrivskyddat | Samma elva. Inte valbart av användaren – composern erbjuder bara Agent, Plan och Orkestrera                                                                                     |
+| **Orkestrera**     | Skrivskyddat | Samma elva                                                                                                                                                                       |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Nätverksåtkomst och hemlighetsåtkomst nekas medvetet _inte_ av ett skrivskyddat
+läge: forskning är själva poängen med ett sådant.
 
-## Require approval before an action runs
+## Kräv godkännande innan en åtgärd körs
 
-Approval is a guardrail decision, not a sandbox setting.
+Godkännande är ett räckesbeslut, inte en sandlådeinställning.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. Gå till **Inställningar → Arbetsyta → Agentbehörigheter**
+2. Sätt åtgärdsklassen till **Fråga först** i omfånget arbetsyta, agent eller yta
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/sv-SE/handbok/how-to-guider/konfigurera-racken/) for the full
-resolution order.
+Ett beslut **Fråga först** avbryter körningen och frågar dig. Utan ansluten
+godkännare misslyckas det stängt och åtgärden nekas. Se
+[Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/) för hela
+upplösningsordningen.
 
-## Troubleshooting
+## Felsökning
 
-### An agent cannot push and I never denied it
+### En agent kan inte pusha och jag har aldrig nekat den
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Kontrollera agentens **Sandlådebehörigheter**. En agent utan egen
+förmågeuppsättning får den konservativa standarden, där **Tillåt git push** är
+av – så mäklaren injicerar ingen GitHub-token och git har inget sätt att
+autentisera sig.
 
-### The Sandboxing card reports no native sandbox
+### Kortet Sandlåda rapporterar ingen inbyggd sandlåda
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/sv-SE/handbok/how-to-guider/konfigurera-racken/).
+Då lindas inte agentkörningarna på den värden in av Seatbelt eller bubblewrap
+och de återstående gränserna är vad du har. På Linux och WSL2 installerar du
+båda de saknade verktygen – `sudo apt-get install bubblewrap socat` – och
+startar om servern; startloggen bör då säga att sandlådan är på. På Windows
+finns ingen inbyggd backend att installera, så skärp räckena i stället: se
+[Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/).
 
-### An agent reached a file outside its worktree
+### En agent nådde en fil utanför sin worktree
 
-Which tool reached it decides whether this is expected.
+Vilket verktyg som nådde den avgör om det här är väntat.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Harnessens filverktyg i processen (read, write, edit, apply patch, search,
+find, search_files) körs i serverprocessen, så ingen sandlådeprofil gäller för
+dem – deras gräns är deras egen sökvägsbegränsning plus räckena. Ett
+`bash`-kommando eller Claude Code-CLI:n _lindas_ in där en backend finns, och
+dina registrerade utcheckningar är skrivnekade inuti den inlindningen i varje
+läge, inklusive deras symlänksupplösta stavningar (på macOS löses en sökväg som
+nås via `/tmp` eller `/var/folders` upp under `/private` och båda stavningarna
+nekas nu). På en värd utan backend gäller inget av det. Hur som helst kan
+räckena neka **Skriv utanför worktree** direkt.
 
-## Related guides
+## Relaterade guider
 
-- [Configure guardrails](/sv-SE/handbok/how-to-guider/konfigurera-racken/)
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Diagnose an agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
-- [Sandbox backends](/sv-SE/handbok/referens/sandladebackends/)
-- [cc_server CLI](/sv-SE/handbok/referens/cc-server-cli/): the `--sandbox` flag
+- [Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/)
+- [Sandlådebackends](/sv-SE/handbok/referens/sandladebackends/)
+- [cc_server CLI](/sv-SE/handbok/referens/cc-server-cli/): flaggan `--sandbox`
 
-## Related concepts
+## Relaterade koncept
 
-- [Sandbox and security](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)
-- [Modes](/sv-SE/handbok/koncept/lagen/)
+- [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/)
+- [Lägen](/sv-SE/handbok/koncept/lagen/)

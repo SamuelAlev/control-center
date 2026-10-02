@@ -1,123 +1,123 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: เชื่อมต่อ Google Calendar
+description: เชื่อมต่อ Google Calendar เข้ากับเวิร์กสเปซ จัดการหลายบัญชี และเชื่อมต่อใหม่เมื่อโทเค็นหมดอายุ
 slug: th-TH/คู่มือ/วิธีทำ/เชื่อมต่อปฏิทิน
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/) for the full picture.
+คู่มือนี้แสดงวิธีเชื่อมต่อ Google Calendar เข้ากับเวิร์กสเปซ โดยแยกตามเวิร์กสเปซ:
+มันซิงค์เหตุการณ์ของเวิร์กสเปซนั้นเข้ามาใน Control Center แบบอ่านอย่างเดียว
+ดู[ปฏิทินและการจัดตาราง](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/) สำหรับภาพรวมทั้งหมด
 
-## Connect an account
+## เชื่อมต่อบัญชี
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. เปิด **ปฏิทิน** ในแถบด้านข้าง
+2. คลิก **เพิ่มบัญชีปฏิทิน** ในแถบด้านข้างของปฏิทิน (ส่วนเดียวกันนี้อยู่ที่ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน** ใต้ **Google Calendar**)
+3. เลือกวิธีอนุญาต:
+   - **ใช้แอป Google ของ Control Center** — ไม่ต้องตั้งค่าอะไร เป็นค่าเริ่มต้นเมื่อบิลด์ของคุณมาพร้อมกับแอปนี้
+   - **ใช้ไคลเอนต์ Google Cloud ของฉันเอง** — วาง client id และ secret จากโปรเจกต์ของคุณเอง (ดู [นำไคลเอนต์ Google ของคุณมาเอง](#นำไคลเอนต์-google-ของคุณมาเอง-ฟอร์กและการโฮสต์เอง))
+4. คลิก **เชื่อมต่อ Google Calendar** กล่องโต้ตอบจะแสดงรหัสสั้น ๆ และลิงก์ไปยังหน้าอุปกรณ์ของ Google
+5. เปิดหน้านั้นบนอุปกรณ์ใดก็ได้ ใส่รหัส แล้วอนุมัติการเข้าถึงที่ขอ กล่องโต้ตอบจะปิดเอง และเหตุการณ์ของคุณจะเริ่มซิงค์
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+เซิร์ฟเวอร์เป็นผู้ทำการแลกเปลี่ยนนี้ ไม่ใช่อุปกรณ์ของคุณ และเก็บรีเฟรชโทเค็นที่ได้
+ไว้ — นั่นคือเหตุผลที่รหัสถูกอนุมัติบน "อุปกรณ์ใดก็ได้" แทนที่จะเป็นในแอปนี้
+โดยเฉพาะ
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+บัญชีจะถูกเชื่อม **เข้ากับเวิร์กสเปซที่ใช้งานอยู่เท่านั้น** สลับเวิร์กสเปซแล้ว
+คุณจะเห็นปฏิทินของเวิร์กสเปซนั้นแทน
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+ขั้นตอนการเชื่อมต่อขอ `calendar.readonly` พร้อมอีเมลของคุณ — สโคปชุดเดียวกัน
+ทั้งสำหรับแอปในตัวและไคลเอนต์ที่คุณวางเข้ามา Control Center อ่านเหตุการณ์เท่านั้น
+ไม่ได้สร้าง แก้ไข ลบ หรือตอบรับคำเชิญบน Google
 
-## How syncing works
+## การซิงค์ทำงานอย่างไร
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**เซิร์ฟเวอร์** เป็นเจ้าของตารางเวลา: มันกวาดบัญชีที่เชื่อมไว้ของทุกเวิร์กสเปซ
+ทุกสองนาที และเขียนเหตุการณ์ลงฐานข้อมูลของเวิร์กสเปซ ไคลเอนต์ไม่เคยคุยกับ
+Google — พวกมันอ่านสิ่งที่เซิร์ฟเวอร์เขียนไว้
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+การกวาดเป็นแบบเพิ่มพูน รอบแรกของแต่ละปฏิทินจะดึงหน้าต่างแบบเลื่อน (ย้อนหลัง
+60 วัน ล่วงหน้า 90 วัน) และบันทึกโทเค็นซิงค์ของ Google รอบถัด ๆ ไปจะส่งโทเค็นนั้น
+และได้รับเฉพาะสิ่งที่เปลี่ยนแปลง ซึ่งเป็นสิ่งที่ทำให้รอบการทำงานทุกสองนาทีมี
+ต้นทุนที่รับได้ หน้าต่างจะถูกยึดใหม่ด้วยการซิงค์เต็มทุก 24 ชั่วโมง และทุกครั้งที่
+Google ทำให้โทเค็นใช้ไม่ได้
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+รีเฟรชโทเค็นอยู่ในฝั่งเซิร์ฟเวอร์ ใน `secrets.json` ภายใต้ไดเรกทอรีข้อมูลของ
+เซิร์ฟเวอร์ เขียนแบบเจ้าของเท่านั้น (`0600`) — ไม่ได้อยู่ในคีย์เชนของ
+ระบบปฏิบัติการ และไม่อยู่บนอุปกรณ์ไคลเอนต์เลย
 
-## Connect multiple accounts
+## เชื่อมต่อหลายบัญชี
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+เวิร์กสเปซหนึ่งเชื่อมบัญชี Google ได้หลายบัญชี (เช่น บัญชีที่ทำงานและบัญชี
+ส่วนตัว) ทำขั้นตอนการเชื่อมต่อซ้ำสำหรับแต่ละบัญชี เหตุการณ์ของทั้งหมดจะรวมเข้าใน
+มุมมองเดือน / สัปดาห์ / วาระเดียวกัน แต่ละบัญชีซิงค์และรีเฟรชอย่างอิสระ และ
+ยกเลิกการเชื่อมต่อแยกกันได้
 
-## Reconnect an expired account
+## เชื่อมต่อบัญชีที่หมดอายุอีกครั้ง
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+หาก Google ทำให้โทเค็นของบัญชีใช้ไม่ได้อย่างถาวร (เซสชันถูกเพิกถอนหรือหมดอายุ
+ไปนานแล้ว) การซิงค์จะหยุด และ Control Center จะแสดงแบนเนอร์ **เชื่อมต่ออีกครั้ง**
+บนปฏิทิน พร้อมการแจ้งเตือนบนเดสก์ท็อป คลิก **เชื่อมต่ออีกครั้ง** แล้วอนุมัติรหัส
+ใหม่ แบนเนอร์จะหายไปเมื่อการซิงค์ครั้งถัดไปสำเร็จ
 
-## Disconnect an account
+## ยกเลิกการเชื่อมต่อบัญชี
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+จากแถบด้านข้างของปฏิทิน (หรือ **การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน**)
+คลิก **ยกเลิกการเชื่อมต่อ** ที่บัญชีนั้น การทำเช่นนี้จะลบเหตุการณ์ที่ซิงค์ไว้และ
+ล้างโทเค็นที่จัดเก็บไว้บนเซิร์ฟเวอร์
 
-## Connect from a headless server
+## เชื่อมต่อจากเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ
 
-A server with no GUI attached connects the same account from its own terminal:
+เซิร์ฟเวอร์ที่ไม่มีการเชื่อมต่อ GUI เชื่อมบัญชีเดียวกันได้จากเทอร์มินัลของตัวเอง:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+มันจะแสดงรหัสและ URL รอการอนุมัติ แล้วจัดเก็บโทเค็นและซิงค์ในรอบกวาดถัดไป
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+บิลด์จากซอร์ส**ไม่**แนบไคลเอนต์ Google มาให้ จึงต้องระบุ id และ secret —
+ตั้ง `GOOGLE_OAUTH_CLIENT_ID` และ `GOOGLE_OAUTH_CLIENT_SECRET` ไม่มีแฟล็ก
+`--google-client-id` (แฟล็กที่ไม่รู้จักจะถูกมองข้าม) หากไม่มีตัวแปรสภาพแวดล้อม
+คู่นี้ คำสั่งจะออกด้วยข้อผิดพลาดว่าขาดไคลเอนต์
 
-## Bring your own Google client (forks and self-hosting)
+## นำไคลเอนต์ Google ของคุณมาเอง (ฟอร์กและการโฮสต์เอง)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+บิลด์รุ่นทางการแนบไคลเอนต์ Google มาให้ คนส่วนใหญ่จึงไม่ต้องแตะเรื่องนี้เลย
+นำของคุณมาเองหากคุณบิลด์จากซอร์ส รันเซิร์ฟเวอร์ของคุณเอง หรือต้องการให้หน้า
+ยินยอมระบุชื่อโปรเจกต์ของคุณเอง
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. ใน [Google Cloud Console](https://console.cloud.google.com/apis/credentials) เปิดใช้ **Google Calendar API** และตั้งค่า **OAuth consent screen** โดยเพิ่มสโคป `calendar.readonly`, `openid` และ `email` ระหว่างที่แอปยังไม่ผ่านการตรวจสอบ ให้เพิ่มตัวคุณเองเป็น **test user** การเพิ่ม `calendar.events` บนหน้ายินยอมไม่ได้เปิดใช้ RSVP — Control Center ไม่เคยขอสโคปนั้น
+2. สร้าง **OAuth client ID** ชนิดแอปพลิเคชัน **TVs and limited input devices** แล้วคัดลอกทั้ง client id และ client secret
+3. ใส่ข้อมูลเหล่านี้แบบต่อการเชื่อมต่อแต่ละครั้ง (เลือก **ใช้ไคลเอนต์ Google Cloud ของฉันเอง** ในกล่องโต้ตอบ) หรือทั้งเซิร์ฟเวอร์ด้วย `GOOGLE_OAUTH_CLIENT_ID` และ `GOOGLE_OAUTH_CLIENT_SECRET`
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+คู่ที่ตั้งระดับเซิร์ฟเวอร์จะแทนที่คู่ในตัวทุกที่ รวมถึงเบื้องหลังตัวเลือก
+"ใช้แอป Google ของ Control Center" — ดังนั้นบนเซิร์ฟเวอร์ของคุณเอง ตัวเลือกนั้น
+ก็คือแอปของคุณ
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+client secret ไม่เคยออกจากเซิร์ฟเวอร์: ไม่มีคำตอบ RPC ใดพามันออกไป และบัญชี
+ที่เชื่อมผ่านไคลเอนต์ของเซิร์ฟเวอร์เองจะเก็บเพียงเครื่องหมายแทนสำเนาของคู่ข้อมูล
+การหมุนเวียนมันจึงเป็นแค่การรีสตาร์ตด้วยค่าใหม่
 
-### Troubleshooting
+### การแก้ปัญหา
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| อาการ | สาเหตุที่เป็นไปได้ |
+| ----- | ----------------- |
+| กล่องโต้ตอบไม่มีตัวเลือกในตัว | บิลด์นี้ไม่แนบไคลเอนต์ Google มาให้ (บิลด์จากซอร์ส) หรือเซิร์ฟเวอร์เริ่มทำงานโดยมีเพียงครึ่งเดียวของคู่ข้อมูล ต้องมีทั้ง id และ secret |
+| `invalid_scope` เมื่อเริ่มขั้นตอน | โปรเจกต์ Cloud นั้นไม่ได้อนุญาตให้ใช้ Calendar กับไคลเอนต์แบบ device-code ให้ใช้โปรเจกต์ไคลเอนต์แบบ loopback หรือแบบเว็บแทน |
+| `invalid_client` จาก Google | ไคลเอนต์ไม่ใช่ไคลเอนต์ชนิด **TVs and limited input devices** หรือ id กับ secret มาจากไคลเอนต์คนละตัว |
+| อนุมัติสำเร็จแต่การซิงค์ว่างเปล่า | บัญชีของคุณไม่ใช่ **test user** บนหน้ายินยอม หรือ `calendar.readonly` ไม่ได้ถูกให้สิทธิ์ |
+| รหัสหมดอายุก่อนที่คุณจะอนุมัติ | รหัสอุปกรณ์มีอายุสั้น เริ่มการเชื่อมต่อใหม่เพื่อขอรหัสใหม่ |
+| "อัปเดตคำตอบไม่ได้" เมื่อตอบรับ (RSVP) | เป็นเรื่องปกติ: ขั้นตอนการเชื่อมต่อไม่เคยขอ `calendar.events` |
+| การซิงค์หยุดพร้อมคำเตือนเรื่องการรีเฟรชในบันทึกของเซิร์ฟเวอร์ | บัญชีถูกเชื่อมด้วยไคลเอนต์ที่ไม่ได้ตั้งค่าไว้อีกต่อไป เชื่อมต่อบัญชีอีกครั้ง หรือกู้คืน client id และ secret นั้น |
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Record and summarize a meeting](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/): turn an event into a recording
-- [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
+- [บันทึกและสรุปการประชุม](/th-TH/คู่มือ/วิธีทำ/บันทึกการประชุม/): เปลี่ยนเหตุการณ์ให้เป็นการบันทึก
+- [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/): ที่ซึ่งโทเค็นและตารางการซิงค์อยู่
+- [ตั้งค่าการผสาน GitHub](/th-TH/คู่มือ/วิธีทำ/การผสาน-github/)
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Calendar and scheduling](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/)
+- [ปฏิทินและการจัดตาราง](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/)

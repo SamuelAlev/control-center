@@ -1,113 +1,121 @@
 ---
-title: Orchestration
-description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+title: Orkestrasyon
+description: Tek bir "büyük istek" nasıl bir kez onayladığınız ekip çapında bir plana, ardından da onu yürüten üretilmiş bir pipeline'a dönüşür.
 slug: tr-TR/kilavuz/kavramlar/orkestrasyon
+sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
 ---
 
-A single agent is good at one thing. Some asks are bigger than that: "research
-the market for X and write a positioning doc", "ship this feature end to end",
-"audit this module and fix what you find". An **orchestration** is how Control
-Center handles those: an orchestrator (usually your CEO agent) proposes a
-whole-team plan, you approve it **once** and a deterministic materializer turns
-it into a pipeline that does the work.
+Tek bir ajan tek bir işte iyidir. Bazı istekler bundan daha büyüktür: “X pazarını
+araştır ve bir konumlandırma belgesi yaz”, “bu özelliği uçtan uca yayımla”, “bu
+modülü denetle ve bulduklarını düzelt”. Bir **orkestrasyon**, Control Center’ın bu
+tür istekleri ele alma biçimidir: bir orkestratör (genellikle CEO ajanınız) ekip
+çapında bir plan önerir, siz onu **bir kez** onaylarsınız ve deterministik bir
+materyalize edici bunu işi yapan bir pipeline’a dönüştürür.
 
-It sits between the two existing ways of getting work done:
+İşleri halletmenin mevcut iki yolunun arasında durur:
 
-| When you want to…                                 | Use                                                       |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Hand one task to one agent                        | A [message in a space](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/) |
-| Encode a process you already know, by hand        | A [pipeline template](/tr-TR/kilavuz/kavramlar/pipelinelar/)        |
-| Say the goal and let the team figure out the plan | **An orchestration**                                      |
+| Şunu yapmak istediğinizde…                          | Şunu kullanın                                                |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| Tek bir görevi tek bir ajana vermek                 | Alanda bir [mesaj](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/) |
+| Elle, zaten bildiğiniz bir süreci kodlamak          | Bir [pipeline şablonu](/tr-TR/kilavuz/kavramlar/pipelinelar/) |
+| Hedefi söyleyip planı ekibin çözmesine izin vermek  | **Bir orkestrasyon**                                         |
 
-## The shape of a proposal
+## Bir önerinin biçimi
 
-When you give the orchestrator a goal, it returns a structured
-**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
-than free-form prose. A proposal has:
+Orkestratöre bir hedef verdiğinizde, size yapılandırılmış bir
+**`OrchestrationProposal`** döndürür: serbest biçimli düzyazı yerine, uygulamanın
+doğrulayıp yürütebileceği tipli bir plan. Bir öneri şunları içerir:
 
-- **Goal**: your high-level ask, restated.
-- **Roles**: who does the work. Each role is either an **existing agent** you
-  pick, or a **new hire** the orchestration creates on approval.
-- **Sub-tickets**: the work, broken into a DAG of [tickets](/tr-TR/kilavuz/kavramlar/biletler/).
-- **Research** _(optional)_: a research phase that runs first and feeds the rest.
-- **Discussion** _(optional)_: a bounded round where each role posts a structured
-  position before work begins.
-- **Synthesis**: the final step that produces the deliverable.
-- **Budget**: a declared cost ceiling.
+- **Hedef**: üst düzey isteğinizin yeniden ifade edilmiş hâli.
+- **Roller**: işi kimin yapacağı. Her rol ya sizin seçtiğiniz **mevcut bir ajan**
+  ya da onay sırasında orkestrasyonun oluşturduğu **yeni bir işe alımdır**.
+- **Alt biletler**: [biletlerden](/tr-TR/kilavuz/kavramlar/biletler/) oluşan bir DAG’a bölünmüş iş.
+- **Araştırma** _(isteğe bağlı)_: önce çalışan ve geri kalanı besleyen bir araştırma aşaması.
+- **Tartışma** _(isteğe bağlı)_: iş başlamadan önce her rolün yapılandırılmış bir
+  görüş paylaştığı sınırlı bir tur.
+- **Sentez**: teslimatı üreten son adım.
+- **Bütçe**: beyan edilen maliyet üst sınırı.
 
-:::caution[The budget is advisory]
-The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+:::caution[Bütçe yalnızca tavsiye niteliğindedir]
+Önerinin maliyet üst sınırı, planın tahmini toplamıyla karşılaştırılır ve bütçeyi
+aşan bir planı siz onaylamadan _önce_ onay çubuğunda işaretler. Çalıştırma
+başladıktan sonra bunu hiçbir şey okumaz; dolayısıyla bütçesini aşan bir
+orkestrasyonu durdurmaz veya başarısız kılmaz. Ajan başına ve çalışma alanı
+başına bütçe politikaları ayrı bir mekanizmadır ve harcamayı gerçekte duraklatan
+da bunlardır.
 :::
 
-## Where you review it
+## Nerede incelersiniz
 
-Two surfaces show the same orchestration.
+Aynı orkestrasyonu iki yüzey gösterir.
 
-The **proposal card** lives in the conversation that produced the plan. It is
-one message that re-renders through the whole lifecycle — proposed, executing,
-completed — with the approve and cancel actions on it.
+**Öneri kartı**, planı üreten konuşmada bulunur. Tüm yaşam döngüsü boyunca —
+önerildi, yürütülüyor, tamamlandı — yeniden işlenen tek bir mesajdır ve üzerinde
+onaylama ile iptal eylemleri yer alır.
 
-**Plan Studio** is the editor: a DAG canvas, a node inspector, a revision and
-diff drawer and the approval bar carrying the estimate. It opens as an editor
-tab straight from that card. There is deliberately no "Plans" item in the
-sidebar; `/plans` and `/plans/:kind/:id` exist as deep links for sharing.
+**Plan Studio** ise düzenleyicidir: bir DAG tuvali, bir düğüm denetçisi, bir
+revizyon ve fark çekmecesi ile tahmini taşıyan onay çubuğu. Doğrudan o karttan
+bir düzenleyici sekmesi olarak açılır. Kenar çubuğunda bilinçli olarak bir
+“Planlar” öğesi yoktur; `/plans` ve `/plans/:kind/:id` paylaşım için derin
+bağlantı olarak vardır.
 
-Approving is **operator-only**. There is no MCP tool for it: an agent can
-propose (`propose_orchestration`), submit a plan (`submit_plan`), or instantiate
-a playbook (`run_playbook`), but only a human approves. Agent-initiated
-revisions are additionally rate-limited by a two-minute cooldown, so a
-replanning loop coalesces instead of flooding your feed.
+Onaylama **yalnızca operatöre** açıktır. Bunun için bir MCP aracı yoktur: bir
+ajan öneride bulunabilir (`propose_orchestration`), bir plan gönderebilir
+(`submit_plan`) veya bir playbook örnekleyebilir (`run_playbook`), ancak yalnızca
+bir insan onaylar. Ajan tarafından başlatılan revizyonlar ayrıca iki dakikalık
+bir bekleme süresiyle sınırlandırılır; böylece yeniden planlama döngüsü akışınızı
+doldurmak yerine birleşir.
 
-What you can change before approving is what the node inspector exposes:
-retitle or rewrite a sub-ticket, change which **role** owns it, rewire its
-dependencies, edit its output schema, or delete the node outright. Structural
-nodes (research, discussion, synthesis) and nodes that have already executed are
-read-only. You cannot pin a role to a specific named agent and you cannot edit
-the budget, from the editor.
+Onaylamadan önce değiştirebilecekleriniz, düğüm denetçisinin sunduklarıyla
+sınırlıdır: bir alt biletin başlığını veya metnini değiştirmek, ona hangi
+**rolün** sahip olduğunu değiştirmek, bağımlılıklarını yeniden bağlamak, çıktı
+şemasını düzenlemek veya düğümü tamamen silmek. Yapısal düğümler (araştırma,
+tartışma, sentez) ve hâlihazırda yürütülmüş düğümler salt okunurdur.
+Düzenleyiciden bir rolü belirli bir adlandırılmış ajana sabitleyemez ve bütçeyi
+düzenleyemezsiniz.
 
-Two editors on one plan is resolved by optimistic concurrency, not merging.
-Every edit carries the `base_revision` it was made against; an edit based on a
-stale revision is refused with "the plan moved on" rather than silently
-clobbering someone else's. Rewinding is not a delete either — it appends the
-older proposal as a new revision, so the revision timeline only ever grows.
+Tek bir plan üzerinde iki düzenleyicinin çalışması, birleştirmeyle değil iyimser
+eşzamanlılıkla çözülür. Her düzenleme, üzerinde yapıldığı `base_revision`
+değerini taşır; eski bir revizyona dayanan bir düzenleme, sessizce başkasınınkinin
+üzerine yazmak yerine “the plan moved on” mesajıyla reddedilir. Geri sarma da bir
+silme değildir — eski öneriyi yeni bir revizyon olarak ekler, böylece revizyon
+zaman çizelgesi yalnızca büyür.
 
-## Honest estimates, or none
+## Dürüst tahminler ya da hiç yok
 
-The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band. Cost totals **sum** the
-estimable nodes; duration is the **critical path** through the DAG rather than
-the sum (parallel branches overlap).
+Onay çubuğundaki tahmin, her rol için gerçek tamamlanmış çalıştırma geçmişinden
+çeyrekler arası (p25–p75) bir bant olarak oluşturulur. Maliyet toplamları, tahmin
+edilebilir düğümleri **toplar**; süre ise toplam değil, DAG üzerindeki **kritik
+yoldur** (paralel dallar çakışır).
 
-A node whose role has **no completed-run history** reports `sampleSize: 0` and
-null ranges. That renders as exactly that — unknown — never as a fabricated
-point value, because an estimate you cannot trust is worse than no estimate.
-When some nodes have history and some do not, the total is marked partial.
-Blast radius appears only when a node declared `symbol` or `file` provenance
-refs; a node without them stays "unknown" rather than inferring from prose.
+Rolü için **tamamlanmış çalıştırma geçmişi olmayan** bir düğüm, `sampleSize: 0` ve
+null aralıklar bildirir. Bu, tam olarak böyle — bilinmiyor — olarak görünür; asla
+uydurulmuş bir nokta değeri olarak değil, çünkü güvenemeyeceğiniz bir tahmin, hiç
+tahmin olmamasından kötüdür. Bazı düğümlerin geçmişi olup bazılarının olmadığında
+toplam kısmi olarak işaretlenir. Etki alanı yalnızca bir düğüm `symbol` veya
+`file` kaynak referansı bildirdiğinde görünür; bunlara sahip olmayan bir düğüm,
+düzyazıdan çıkarım yapmak yerine “bilinmiyor” olarak kalır.
 
-## One approval, then deterministic execution
+## Tek onay, ardından deterministik yürütme
 
-This is the core idea: **the agent plans; a deterministic function executes.**
-When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
-and no I/O, converts the proposal into a real [pipeline](/tr-TR/kilavuz/kavramlar/pipelinelar/).
-Given the same proposal and the same resolved roles, it always produces the same
-DAG. That matters because the generated pipeline inherits everything the engine
-already does for free: suspension and resume across restarts, crash recovery,
-per-run cost and token rollups and the run-detail UI.
+İşte temel fikir: **ajan planlar; deterministik bir işlev yürütür.** Onayladığınızda,
+LLM’siz ve I/O’suz saf bir işlev olan `OrchestrationMaterializer`, öneriyi gerçek bir
+[pipeline’a](/tr-TR/kilavuz/kavramlar/pipelinelar/) dönüştürür. Aynı öneri ve aynı
+çözümlenmiş roller verildiğinde her zaman aynı DAG’ı üretir. Bu önemlidir, çünkü
+üretilen pipeline, motorun hâlihazırda bedavaya sunduğu her şeyi devralır: yeniden
+başlatmalar arasında askıya alma ve sürdürme, çökme kurtarma, çalıştırma başına
+maliyet ve token toplamları ile çalıştırma ayrıntısı arayüzü.
 
-Approval also creates the scaffolding the work needs:
+Onay ayrıca işin ihtiyaç duyduğu iskeleti oluşturur:
 
-- **hires** any roles marked as new (and records the hired agent ids so a crash
-  mid-approval can resume without duplicate hires)
-- a **team** grouping the roles
-- a **project** that files the parent ticket
-- the **pipeline template + run** that drives it all
+- yeni olarak işaretlenmiş rollerin **işe alımını** yapar (ve işe alınan ajan
+  kimliklerini kaydeder, böylece onay sırasındaki bir çökme yinelenen işe alımlar
+  olmadan sürdürülebilir)
+- rolleri gruplayan bir **ekip**
+- üst bileti kaydeden bir **proje**
+- tüm bunları yürüten **pipeline şablonu + çalıştırma**
 
-## The lifecycle
+## Yaşam döngüsü
 
 ```
 proposed → approved → executing → synthesizing → completed
@@ -115,45 +123,45 @@ proposed → approved → executing → synthesizing → completed
                    ↘                 ↘            cancelled
 ```
 
-| Status         | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `proposed`     | The plan is ready and waiting for your one upfront approval                      |
-| `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
-| `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
-| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
-| `failed`       | Materialization failed, or the generated pipeline run failed                     |
-| `cancelled`    | You cancelled it                                                                 |
+| Durum          | Anlamı                                                                            |
+| -------------- | --------------------------------------------------------------------------------- |
+| `proposed`     | Plan hazır ve tek seferlik ön onayınızı bekliyor                                  |
+| `approved`     | Onayladınız; materyalizasyon sürüyor (işe alımlar, ekip, proje, pipeline)          |
+| `executing`    | Üretilen pipeline çalışıyor: alt biletler, tartışma, iş                            |
+| `synthesizing` | Alt biletler tamamlandı; sentez adımı teslimatı üretiyor                           |
+| `completed`    | Bitti: üst bilet tamamlandı olarak işaretlenir ve teslimat paylaşılan alanda yayımlanır |
+| `failed`       | Materyalizasyon başarısız oldu ya da üretilen pipeline çalıştırması başarısız oldu |
+| `cancelled`    | İptal ettiniz                                                                     |
 
-A monotonic **revision** number tracks the proposal as the orchestrator revises
-it while it is still `proposed`; the app records which revision you approved.
-`propose_orchestration` refuses a revision once the status is no longer
-`proposed`.
+Orkestratör öneriyi hâlâ `proposed` durumundayken revize ederken, monoton bir
+**revizyon** numarası öneriyi izler; uygulama hangi revizyonu onayladığınızı
+kaydeder. `propose_orchestration`, durum artık `proposed` olmadığında bir
+revizyonu reddeder.
 
-An orchestration always opens against a **parent ticket** and shares one
-discussion **space**, so the whole effort is traceable to a single work item
-and the team talks in one room.
+Bir orkestrasyon her zaman bir **üst bilete** karşı açılır ve tek bir tartışma
+**alanını** paylaşır; böylece tüm çaba tek bir iş öğesine kadar izlenebilir ve
+ekip tek bir odada konuşur.
 
-## What happens when it finishes
+## Bitince ne olur
 
-A kept-alive listener watches the generated pipeline and maps its terminal state
-back onto the orchestration and the parent ticket, so completion and failure
-surface in the places you already watch. The orchestration feature does not need
-its own execution engine.
+Açık tutulan bir dinleyici, üretilen pipeline’ı izler ve nihai durumunu
+orkestrasyona ve üst bilete geri eşler; böylece tamamlanma ve başarısızlık, zaten
+takip ettiğiniz yerlerde görünür. Orkestrasyon özelliğinin kendi yürütme motoruna
+ihtiyacı yoktur.
 
-You can cancel an orchestration at any time; the cancellation tears down the
-in-flight work.
+Bir orkestrasyonu istediğiniz zaman iptal edebilirsiniz; iptal, yürütülmekte olan
+işi söker.
 
 ::::note
-Orchestration builds on [pipelines](/tr-TR/kilavuz/kavramlar/pipelinelar/) and
-[tickets](/tr-TR/kilavuz/kavramlar/biletler/). It is a planning and approval layer over
-the top of them rather than a separate runtime.
+Orkestrasyon, [pipeline’ların](/tr-TR/kilavuz/kavramlar/pipelinelar/) ve
+[biletlerin](/tr-TR/kilavuz/kavramlar/biletler/) üzerine kuruludur. Ayrı bir
+çalışma zamanı olmaktan çok, onların üzerinde bir planlama ve onay katmanıdır.
 ::::
 
-## See also
+## Ayrıca bakınız
 
-- [Pipelines and automation](/tr-TR/kilavuz/kavramlar/pipelinelar/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/tr-TR/kilavuz/kavramlar/biletler/): the parent ticket an orchestration is anchored on
-- [The agent model](/tr-TR/kilavuz/kavramlar/ajan-modeli/): the roles an orchestration fills or hires
-- [Run an orchestration](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
-- [Work in Plan Studio](/tr-TR/kilavuz/nasil-yapilir/plan-studio/)
+- [Pipeline’lar ve otomasyon](/tr-TR/kilavuz/kavramlar/pipelinelar/): materyalize edilmiş bir orkestrasyonun üzerinde çalıştığı motor
+- [Biletler ve devretme](/tr-TR/kilavuz/kavramlar/biletler/): bir orkestrasyonun dayandığı üst bilet
+- [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): bir orkestrasyonun doldurduğu veya işe aldığı roller
+- [Bir orkestrasyon çalıştırma](/tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma/)
+- [Plan Studio’da çalışma](/tr-TR/kilavuz/nasil-yapilir/plan-studio/)

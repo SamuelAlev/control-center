@@ -1,216 +1,211 @@
 ---
-title: Multiplayer — identity, membership and presence
-description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+title: 멀티플레이어 — 신원, 멤버십, 프레즌스
+description: Control Center가 사람과 에이전트를 동등한 참여자로 모델링하는 방식, 워크스페이스 접근을 실제로 통제하는 것, 그리고 실시간 인지와 공유 기록이 서로 다른 두 레인을 타고 다니는 이유를 설명합니다.
 slug: ko-KR/매뉴얼/개념/멀티플레이어
+sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
 ---
 
-Control Center works for a single operator, but the model underneath it is
-multi-actor from the start. Humans and agents message in the same spaces,
-edit the same tickets and appear on the same roster. Making that safe and
-comprehensible comes down to three decisions: **who counts as an actor**,
-**what gates access** and **which state is shared durably versus merely
-broadcast live**.
+Control Center는 운영자 한 명만으로도 동작하지만, 그 바탕에 깔린 모델은 처음부터
+다중 행위자를 전제로 합니다. 사람과 에이전트는 같은 스페이스에서 메시지를
+주고받고, 같은 티켓을 편집하며, 같은 명단에 나타납니다. 이것을 안전하고 이해
+가능하게 만드는 일은 세 가지 결정으로 귀결됩니다: **누가 행위자로 세어지는가**,
+**무엇이 접근을 통제하는가**, **어떤 상태를 영속적으로 공유하고 어떤 상태를
+실시간으로 방송할 뿐인가**.
 
-## Principals: users and agents are co-equal actors
+## 주체 — 사람과 에이전트는 동등한 행위자
 
-Everything that records "who did this" — messages, tickets, reviews, plans,
-run logs, audit entries — resolves through a **Principal**, a sealed union of
-`UserPrincipal` and `AgentPrincipal` with a compact wire form
-(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
-agents) into one sentinel account, so a review left by an agent and a review
-left by a person are distinguishable everywhere they surface.
+"누가 이것을 했는가"를 기록하는 모든 것 — 메시지, 티켓, 리뷰, 플랜, 실행 로그,
+감사 항목 — 은 **주체**를 거쳐 해석됩니다. 주체는 `UserPrincipal`과
+`AgentPrincipal`을 묶은 봉인된 유니온이며, 간결한 와이어 형식
+(`user:<id>` / `agent:<id>`)을 갖습니다. 귀속은 N명의 사람(또는 N개의
+에이전트)을 하나의 센티널 계정으로 뭉개지 않으므로, 에이전트가 남긴 리뷰와
+사람이 남긴 리뷰는 그것이 드러나는 모든 곳에서 구분됩니다.
 
-Because the principal is the unit of identity, it is also the unit of
-containment:
+주체가 신원의 단위이므로, 격리의 단위이기도 합니다:
 
-- **Rate limits are per principal, not per session.** The flood guard on
-  remote tool calls budgets by user, not by connection: all of a member's
-  devices draw from one shared sliding window (120 calls a minute, of which at
-  most 30 may mutate), so opening three devices doesn't triple anyone's
-  allowance and one noisy member can't starve the others.
-- **Undo is per principal.** Each client's action journal records only the
-  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
-  can't undo a teammate's — by the time you see it, the durable lane has
-  already resolved it (see below).
+- **속도 제한은 세션이 아니라 주체 단위입니다.** 원격 도구 호출에 걸린 폭주
+  방지 장치는 연결이 아니라 사용자 단위로 예산을 배정합니다: 한 멤버의 모든
+  기기가 하나의 공유 슬라이딩 윈도에서 한도를 끌어다 쓰므로(분당 120회 호출,
+  그중 최대 30회만 변경 가능), 기기를 세 대 열어도 누구의 허용량이 세 배가 되지
+  않고, 시끄러운 멤버 한 명이 다른 멤버의 몫을 빼앗지 못합니다.
+- **되돌리기도 주체 단위입니다.** 각 클라이언트의 작업 저널은 _자신의_ 주체가
+  수행한 변경만 기록합니다. 자기 티켓 편집은 ⌘Z로 되돌릴 수 있지만, 동료의
+  편집은 되돌릴 수 없습니다 — 그것을 보는 시점에는 영속 레인이 이미 해결을
+  마쳤기 때문입니다(아래 참고).
 
-## Membership is the access boundary — not the pairing key
+## 접근 경계는 멤버십이며 페어링 키가 아닙니다
 
-Two separate credentials answer two separate questions. The **pairing key**
-(see [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/))
-authenticates a _device_ to the server. **Membership** authorizes that
-device's user to act inside a _workspace_. A paired device whose user holds
-no membership in a workspace can neither read nor mutate it.
+두 개의 서로 다른 자격 증명이 두 개의 서로 다른 질문에 답합니다. **페어링
+키**([원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/) 참고)는 _기기_를
+서버에 인증합니다. **멤버십**은 그 기기의 사용자가 _워크스페이스_ 안에서
+행동하도록 권한을 부여합니다. 사용자가 어떤 워크스페이스에도 멤버십이 없는
+페어링된 기기는 그 워크스페이스를 읽지도, 변경하지도 못합니다.
 
-Membership is one row per (workspace, user), stored in **that workspace's own
-database file** — so "who is in this workspace?" is an ordinary scoped read,
-while the inverse question, "which workspaces am I in?", necessarily spans
-files and is one of the few sanctioned cross-workspace fan-outs. It is what the
-workspace picker runs before any workspace has been chosen.
+멤버십은 (워크스페이스, 사용자)마다 한 행이며, **그 워크스페이스 자체의
+데이터베이스 파일**에 저장됩니다 — 그래서 "이 워크스페이스에는 누가 있는가?"는
+평범한 범위 지정 읽기이고, 반대 질문인 "나는 어느 워크스페이스에 속해 있는가?"는
+필연적으로 여러 파일에 걸치며, 허용된 몇 안 되는 교차 워크스페이스 팬아웃 중
+하나입니다. 워크스페이스 선택기가 아직 어떤 워크스페이스도 고르기 전에 실행하는
+것이 바로 이것입니다.
 
-Each row carries a role from a five-level, rank-ordered ladder:
+각 행은 다섯 단계로 서열이 매겨진 사다리에서 역할 하나를 갖습니다:
 
-| Role     | May                                                                                                        |
-| -------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
-| `admin`  | Manage members, invites, settings, destructive operations                                                  |
-| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
-| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
+| 역할     | 허용되는 작업                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| `owner`  | 전체 제어, 워크스페이스 삭제 포함; 워크스페이스마다 정확히 하나                                              |
+| `admin`  | 멤버, 초대, 설정, 파괴적 작업 관리                                                                             |
+| `member` | 일상적인 읽기·쓰기: 메시지, 티켓, 에이전트 실행                                                                |
+| `viewer` | 워크스페이스 전반에서 읽기 전용; 비밀 제외 글롭이 코드가 있는 화면에서 일치하는 경로를 숨깁니다                |
+| `guest`  | 뷰어와 같은 읽기 전용 하한, 사다리에서 가장 낮은 서열                                                          |
 
-Every access decision reduces to "is the caller's role at least X". The floor
-is derived from the operation's kind unless it declares one explicitly: a read
-needs `guest`, a mutation needs `member`, a destructive operation needs
-`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
-of scope.
+모든 접근 결정은 "호출자의 역할이 최소 X 이상인가"로 환원됩니다. 하한은 작업이
+명시적으로 선언하지 않는 한 작업의 종류에서 도출됩니다: 읽기에는 `guest`,
+변경에는 `member`, 파괴적 작업에는 `admin`이 필요합니다. 아래의 저장소별
+그랜트를 넘어서는 객체별 ACL은 의도적으로 범위 밖입니다.
 
-**Invites** are how membership is granted, from Settings → Workspace →
-Members. An admin mints a single-use code (as a link or QR) that
-expires after seven days by default; the server stores only the code's SHA-256
-hash and the code itself is shown exactly once. Redeeming it JIT-provisions
-the user, records membership at the invite's role (never `owner` — ownership is
-transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted after pairing are themselves time-boxed to
-30 days, so a pairing is not a permanent key.
+**초대**는 설정 → 워크스페이스 → 멤버에서 멤버십을 부여하는 방법입니다.
+관리자가 일회용 코드를(링크 또는 QR로) 발급하며, 기본적으로 7일 후 만료됩니다.
+서버는 코드의 SHA-256 해시만 저장하고 코드 자체는 정확히 한 번만 표시됩니다.
+코드를 사용하면 사용자가 JIT로 프로비저닝되고, 초대의 역할로 멤버십이
+기록되며(`owner`는 절대 아닙니다 — 소유권은 명시적으로 이전될 뿐, 초대로 부여되지
+않습니다), 기기 페어링으로 넘어갑니다. 페어링 후 발급되는 기기 자격 증명 자체도
+30일로 기간이 제한되므로, 페어링이 영구 키가 되지는 않습니다.
 
-**Repo grants** sit beneath membership. Because the server holds full
-checkouts, workspace membership alone must never out-privilege the forge:
-every code-bearing surface — files, diffs, PR review, code search — checks
-the member's grant on _that repo_. Grants are per (workspace, user, repo) and
-ranked `none` → `read` → `review` → `write`, where `write` means driving
-agent runs that write to the repo. Absence of a row means `none`; owners and
-admins implicitly hold `write` on every linked repo and carry no rows at all.
+**저장소 그랜트**는 멤버십 아래에 자리합니다. 서버가 전체 체크아웃을
+보관하므로, 워크스페이스 멤버십만으로 forge보다 더 큰 권한을 갖게 해서는 안
+됩니다: 파일, 디프, PR 리뷰, 코드 검색 등 코드가 있는 모든 화면은 _해당
+저장소_에 대한 멤버의 그랜트를 확인합니다. 그랜트는 (워크스페이스, 사용자,
+저장소)마다 존재하며 `none` → `read` → `review` → `write` 순으로 서열이
+매겨지고, 여기서 `write`는 저장소에 쓰는 에이전트 실행을 구동하는 것을
+뜻합니다. 행이 없으면 `none`이며, 소유자와 관리자는 연결된 모든 저장소에 대해
+암묵적으로 `write`를 가지므로 행을 전혀 갖지 않습니다.
 
-## Two lanes of collaboration state
+## 협업 상태의 두 레인
 
-Control Center splits shared state into two lanes with opposite durability
-rules, because the two kinds of state fail in opposite ways.
+Control Center는 공유 상태를 서로 반대의 영속성 규칙을 가진 두 레인으로
+나눕니다. 두 종류의 상태는 서로 반대 방식으로 잘못되기 때문입니다.
 
-### The ephemeral presence lane
+### 일시적인 프레즌스 레인
 
-Presence — who is online, where they are, what they're typing, what an agent
-is doing right now — is worthless the moment it is stale. If it were
-persisted, every reconnect would have to reconcile "the database says Sam is
-editing this ticket" against reality. So presence is **never written to the
-database**. It lives in an in-memory **presence hub** on the server: clients
-publish with `presence.update`, peers subscribe with `presence.watch` and
-entries expire automatically after three missed heartbeats (heartbeats run
-every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
-only to let lapse.
+프레즌스 — 누가 온라인인지, 어디에 있는지, 무엇을 입력하는지, 에이전트가 지금
+무엇을 하는지 — 는 한순간이라도 낡으면 가치가 없습니다. 이것을 영속화하면
+재접속할 때마다 "데이터베이스에는 샘이 이 티켓을 편집 중이라고 나온다"는 말과
+현실을 대조해야 할 것입니다. 그래서 프레즌스는 **데이터베이스에 절대 기록되지
+않습니다**. 대신 서버의 메모리 내 **프레즌스 허브**에 존재합니다: 클라이언트는
+`presence.update`로 발행하고, 피어는 `presence.watch`로 구독하며, 항목은
+하트비트를 세 번 놓치면 자동으로 만료됩니다(하트비트는 10초마다 실행되고, 허브는
+5초마다 정리합니다). 대조할 것은 없고, 그저 만료되도록 두면 됩니다.
 
-Two properties keep the lane trustworthy:
+이 레인을 신뢰할 수 있게 유지하는 두 가지 속성이 있습니다:
 
-- **Identity comes from the session, never from client arguments.** The
-  server maps the connection's authenticated device to a user id; a client
-  can only ever update its own presence, so nobody can spoof another
-  participant's status or locus. An explicit `offline` update (disconnect or
-  the invisible toggle) removes the entry immediately.
-- **The roster is server-hubbed.** Peers never exchange presence directly,
-  so every participant sees the same roster regardless of topology. Agents
-  have no client, so the server _synthesizes_ their entries from live run
-  state — thinking, running, blocked on an approval gate, done — with a
-  single representative run deciding an agent's state and locus so
-  concurrent runs don't make the roster flap.
+- **신원은 세션에서 오며, 클라이언트 인자에서는 절대 오지 않습니다.** 서버가
+  연결의 인증된 기기를 사용자 id로 매핑하므로, 클라이언트는 자기 프레즌스만
+  갱신할 수 있고, 누구도 다른 참여자의 상태나 위치를 위조할 수 없습니다.
+  명시적인 `offline` 갱신(연결 해제 또는 보이지 않기 토글)은 항목을 즉시
+  제거합니다.
+- **명단은 서버 허브를 거칩니다.** 피어는 프레즌스를 직접 주고받지 않으므로,
+  모든 참여자가 토폴로지와 무관하게 같은 명단을 봅니다. 에이전트에는 클라이언트가
+  없으므로 서버가 실시간 실행 상태에서 에이전트의 항목을 _합성_합니다 — 생각
+  중, 실행 중, 승인 게이트에서 차단됨, 완료 — 이때 대표 실행 하나가 에이전트의
+  상태와 위치를 결정하므로 동시 실행이 명단을 요동치게 하지 않습니다.
 
-Fan-out is tiered per consumer: desktop and web ride a full tier (at most
-one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
-cursor-cadence updates can't melt the PWA.
+팬아웃은 소비자별로 계층화됩니다: 데스크톱과 웹은 전체 계층(100ms마다 최대
+한 번의 명단 방출)을, 휴대폰은 요약 계층(500ms마다 한 번)을 타므로, 커서 주기의
+갱신이 PWA를 녹여 버릴 수 없습니다.
 
-A participant's **locus** — where they currently are, down to the artifact —
-is a sealed union: `Space`, `File` (repo + path + optional line), `Pr`,
-`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
-file-viewer route, so a `File` locus renders as a label rather than a
-destination. The lane also carries **soft claims** ("Sam is editing this
-ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
-Unknown locus kinds parse to null, so an old client simply doesn't render what
-it doesn't understand.
+참여자의 **위치** — 현재 어디에 있는지, 아티팩트 단위까지 — 는 봉인된
+유니온입니다: `Space`, `File`(저장소 + 경로 + 선택적 줄), `Pr`, `Ticket`,
+`PlanNode`. 모든 위치에 이동할 곳이 있는 것은 아닙니다: 파일 뷰어 라우트가
+없으므로 `File` 위치는 목적지가 아니라 레이블로 렌더링됩니다. 이 레인은
+**소프트 클레임**("샘이 이 티켓을 편집 중", "에이전트가 이 워크트리를 점유
+중")도 실어 나릅니다. 이는 잠금이 아니라 충돌 _가시성_입니다. 알 수 없는 위치
+종류는 null로 파싱되므로, 구버전 클라이언트는 이해하지 못하는 것을 그냥
+렌더링하지 않습니다.
 
-### The durable shared lane
+### 영속적인 공유 레인
 
-Records that must survive — tickets, the shared space Notes doc, messages —
-take the opposite path: authoritative, ordered and persisted. Concurrent
-edits resolve by **last-writer-wins in server receipt order**, never by
-client clocks. The resolution is deliberately fine-grained: ticket edits are
-_per-column_, so two people editing different fields of the same ticket both
-land and neither clobbers the other (workflow transitions keep optimistic
-locking instead); the space Notes doc is one column, so the whole doc is
-LWW with soft claims on the presence lane making concurrent editing visible
-instead of locked. It is deliberately not a CRDT — the burden of proof is on
-the CRDT and receipt-order LWW plus visible claims covers the actual
-collaboration patterns.
+반드시 살아남아야 하는 기록 — 티켓, 스페이스 공유 Notes 문서, 메시지 — 은 반대
+경로를 탑니다: 권위가 있고, 정렬되어 있으며, 영속적입니다. 동시 편집은 **서버
+수신 순서 기준 마지막 작성자 승리**로 해결되며, 클라이언트 시계는 절대 기준이
+되지 않습니다. 해결 단위는 의도적으로 잘게 나뉩니다: 티켓 편집은 _열_ 단위이므로
+같은 티켓의 서로 다른 필드를 편집하는 두 사람 모두 반영되고 어느 쪽도 상대를
+덮어쓰지 않습니다(워크플로 전환은 대신 낙관적 잠금을 유지합니다). 스페이스
+Notes 문서는 열이 하나이므로 문서 전체가 LWW이고, 프레즌스 레인의 소프트
+클레임이 동시 편집을 잠그는 대신 눈에 보이게 만듭니다. 이것은 의도적으로 CRDT가
+아닙니다. 증명 책임은 CRDT에 있고, 수신 순서 LWW와 가시적 클레임이면 실제 협업
+패턴을 충분히 감당합니다.
 
-"Last writer" means **server receipt order**, never a client clock — a laptop
-with a skewed clock cannot win an edit it lost. Behind the durable lane sits
-the **sync feed**: SQLite triggers append every mutation to a per-workspace
-change log _inside the writing transaction_, allocating a monotonic
-per-workspace sequence number in the same transaction as the mutation itself.
-A server service tails that log into versioned delta frames in sequence order.
-Clients evolve from full snapshots to deltas; a gap in the sequence drops that
-store back to snapshot mode rather than misapplying frames.
+"마지막 작성자"는 클라이언트 시계가 아니라 **서버 수신 순서**를 뜻합니다 —
+시계가 어긋난 노트북이 이미 진 편집을 이길 수는 없습니다. 영속 레인 뒤에는
+**동기화 피드**가 있습니다: SQLite 트리거가 모든 변경을 _쓰기 트랜잭션
+내부에서_ 워크스페이스별 변경 로그에 덧붙이고, 변경 자체와 같은 트랜잭션에서
+워크스페이스별 단조 증가 시퀀스 번호를 할당합니다. 서버 서비스가 그 로그를
+순서대로 따라가며 버전이 붙은 델타 프레임으로 만듭니다. 클라이언트는 전체
+스냅샷에서 델타로 나아갑니다. 시퀀스에 구멍이 생기면 그 스토어는 프레임을 잘못
+적용하는 대신 스냅샷 모드로 되돌아갑니다.
 
-## Follow, steer, take over, hand back
+## 팔로우, 스티어, 인수, 반환
 
-The presence lane isn't just a roster — it drives the collaboration verbs:
+프레즌스 레인은 단순한 명단이 아니라 협업 동사를 구동합니다:
 
-- **Follow mode.** Click a participant and your client rides their locus,
-  navigating as they navigate. Follow is "until you act": the moment you
-  navigate under your own steam, follow detaches. A dismissible banner
-  announces when another participant is spotlighting (presenting) a space
-  you're in.
-- **Steer.** A message to a running agent is queued as steering; the agent
-  re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
-- **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (a Claude Code run, which has no safe
-  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
-  reversible. A durable marker blocks new dispatches into the space and
-  survives a server restart — the server never auto-resumes into a human's
-  half-finished edit. One live editor per worktree is a soft claim: a second
-  take-over is visible and refused, not silently merged.
-- **Hand back.** Returning control posts a structured diff summary of the
-  worktree to the space, queues it as steering for the paused runs,
-  resumes them and clears the marker.
+- **팔로우 모드.** 참여자를 클릭하면 클라이언트가 그 참여자의 위치를 따라 함께
+  이동합니다. 팔로우는 "직접 행동할 때까지"입니다: 스스로 이동하는 순간 팔로우가
+  풀립니다. 다른 참여자가 당신이 있는 스페이스를 스포트라이트(발표)할 때는 닫을
+  수 있는 배너로 알려 줍니다.
+- **스티어.** 실행 중인 에이전트에게 보낸 메시지는 스티어링으로 대기열에
+  들어가고, 에이전트는 다음 턴을 재개하기 전에 그것을 다시 읽습니다. 따라서
+  실행을 죽이지 않고도 비행 중에 방향을 살짝 틀 수 있습니다.
+- **인수.** 대화의 제어권을 가져오면 모든 활성 실행이 다음의 깨끗한 턴
+  경계에서 일시 중지됩니다(안전한 경계가 없는 Claude Code 실행은 중지됩니다).
+  그 앞에는 턴마다 남기는 git 스냅샷이 있어 인수를 되돌릴 수 있습니다. 영속
+  마커가 스페이스로 들어오는 새 디스패치를 막고 서버 재시작 후에도 남습니다 —
+  서버는 사람의 미완성 편집 위로 절대 자동 재개하지 않습니다. 워크트리마다 활성
+  편집자 하나라는 것은 소프트 클레임입니다: 두 번째 인수는 조용히 병합되지 않고
+  눈에 보이게 거부됩니다.
+- **반환.** 제어권을 돌려주면 워크트리의 구조화된 디프 요약을 스페이스에
+  게시하고, 일시 중지된 실행들의 스티어링으로 대기열에 넣은 뒤, 실행을 재개하고
+  마커를 해제합니다.
 
-## The autonomy dial
+## 자율성 다이얼
 
-Steering and take-over are interventions after the fact. The **autonomy dial**
-is the standing setting: per space, per agent, set from the space header,
-it decides what happens when an agent reaches a gated action.
+스티어링과 인수는 사후 개입입니다. **자율성 다이얼**은 상시 설정입니다:
+스페이스마다, 에이전트마다, 스페이스 헤더에서 설정하며, 에이전트가 게이트가
+걸린 작업에 도달했을 때 무슨 일이 일어나는지를 결정합니다.
 
-| Level             | Wire value        | Effect on a gated tool call                                                                                   |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
-| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
-| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
-| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+| 수준        | 와이어 값         | 게이트가 걸린 도구 호출에 미치는 영향                                                                          |
+| ----------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| 제안만      | `proposeOnly`     | 이유와 함께 즉시 거부되고, 에이전트는 그 이유를 전달하라는 지시를 받습니다 — 행동을 설명할 수는 있지만 실행할 수는 없습니다 |
+| 승인 후 실행 | `actWithApproval` | 실패 시 닫히는 승인 게이트: 연결된 운영자에게 확인 하나가 표시되고, 승인자가 없으면 거부됩니다                  |
+| 자유롭게 실행 | `actFreely`      | 미리 승인되지만, 강한 `deny` 가드레일 규칙이 적용되는 경우는 예외입니다 — 거부 규칙이 항상 이깁니다             |
+| (설정 안 함) | `null`           | 승인 후 실행과 같습니다: 서버의 기본값                                                                          |
 
-Two things sit outside the dial in both directions. A mode's own output verb is
-pinned and can never be denied, whatever the dial says — orchestrate mode was
-once structurally unable to emit its only deliverable because a preset denied
-the effect class that verb declares. And a hard `deny` from the action
-guardrails is not overridable by `actFreely`.
+두 가지는 다이얼의 양쪽 바깥에 있습니다. 모드 자체의 출력 동사는 고정되어 있어
+다이얼이 무엇을 말하든 거부될 수 없습니다 — 한때 오케스트레이트 모드는 그 동사가
+선언하는 효과 클래스를 프리셋이 거부하는 바람에 자신의 유일한 산출물을 구조적으로
+낼 수 없었습니다. 그리고 액션 가드레일의 강한 `deny`는 `actFreely`로도 재정의할
+수 없습니다.
 
-:::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on the
-Claude Code adapter makes its own tool calls inside its own process,
-where Control Center has nothing to gate — see
-[The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/).
+:::note[다이얼은 내장 하네스만 게이트합니다]
+이 다이얼은 하네스 루프의 승인 콜백에서 참조됩니다. Claude Code 어댑터에서
+실행되는 에이전트는 자체 프로세스 안에서 스스로 도구를 호출하며, Control Center가
+게이트할 것이 없습니다 — [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/)을
+참고하세요.
 :::
 
-## Solo zero-regression
+## 단독 사용에서도 회귀 없음
 
-All of this is additive. A solo operator's workflow is unchanged: with one
-human and no agents the presence hub has nothing to broadcast, so the lane
-emits its initial snapshot and then idles at zero traffic; the LWW and sync
-machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been. Membership is already the
-access boundary — with one human there is a single owner row and no roster
-chrome.
+이 모든 것은 가산적입니다. 단독 운영자의 워크플로는 달라지지 않습니다: 사람
+하나에 에이전트가 없으면 프레즌스 허브가 방송할 것이 없어서, 레인은 최초
+스냅샷을 내보낸 뒤 트래픽 없이 유휴 상태로 있습니다. LWW와 동기화 기계는
+언제나 그랬던 단일 작성자 경로 그대로이고, 페어링 키도 늘 그랬던 기기 자격
+증명입니다. 멤버십은 이미 접근 경계입니다 — 사람이 하나면 소유자 행 하나뿐이고
+명단 UI도 없습니다.
 
-## Related concepts
+## 관련 개념
 
-- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/): the boundary membership enforces
-- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/): the pairing key and device credential side of identity
-- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/): the agent half of the principal union
-- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/): the runs that steering and take-over pause and resume
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/): the effect-class policy the autonomy dial composes with
-- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/): the bus that live updates ride
+- [워크스페이스와 격리](/ko-KR/매뉴얼/개념/워크스페이스/): 멤버십이 강제하는 경계
+- [원격 제어와 모바일](/ko-KR/매뉴얼/개념/원격-제어/): 신원에서 페어링 키와 기기 자격 증명을 다루는 쪽
+- [에이전트 모델](/ko-KR/매뉴얼/개념/에이전트-모델/): 주체 유니온에서 에이전트에 해당하는 절반
+- [에이전트 디스패치 수명주기](/ko-KR/매뉴얼/개념/디스패치-수명주기/): 스티어링과 인수가 일시 중지하고 재개하는 실행
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/): 자율성 다이얼이 결합되는 효과 클래스 정책
+- [도메인 이벤트](/ko-KR/매뉴얼/개념/도메인-이벤트/): 실시간 업데이트가 타는 버스

@@ -1,79 +1,80 @@
 ---
-title: Add repos to a workspace
-description: Register Git checkouts into a workspace so agents can work on them.
+title: Thêm kho mã vào không gian làm việc
+description: Đăng ký các bản checkout Git vào một không gian làm việc để agent có thể làm việc trên chúng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma
+sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+Hướng dẫn này chỉ cho bạn cách đăng ký một bản checkout Git vào một không gian làm việc, lập chỉ mục lại nó và gỡ nó đi.
 
-Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+Kho mã được **giới hạn theo không gian làm việc**. Không có sổ đăng ký toàn cục và không có bước liên kết: thêm một kho mã và đưa nó vào một không gian làm việc là cùng một hành động. Cùng một bản checkout khi được đăng ký trong hai không gian làm việc sẽ trở thành hai hàng độc lập với hai id khác nhau — xuyên suốt các không gian làm việc, danh tính của một kho mã là đường dẫn hệ thống tệp của nó, không bao giờ là id.
 
-## Before you start
+## Trước khi bắt đầu
 
-A folder can only be registered if all three of these hold:
+Một thư mục chỉ có thể được đăng ký nếu hội đủ cả ba điều kiện sau:
 
-1. It is inside a **git work tree**.
-2. That work tree has an **`origin` remote**.
-3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+1. Nó nằm trong một **cây làm việc git**.
+2. Cây làm việc đó có một **remote `origin`**.
+3. Remote `origin` trỏ tới một **máy chủ mã được hỗ trợ**: github.com, gitlab.com hoặc bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
+Mọi trường hợp khác đều bị từ chối ngay khi đăng ký với một thông báo rõ ràng: “Folder is not inside a git work tree.”, “No `origin` remote configured for this repository.” hoặc “The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).”. Không có chế độ chỉ cục bộ.
 
-The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+Máy chủ mã được đọc từ remote và lưu trên kho mã — bạn không bao giờ tự chọn nó. Một không gian làm việc có thể chứa kho mã từ cả ba máy chủ cùng lúc, và mỗi máy chủ được giao tiếp qua API riêng với thông tin xác thực riêng. Các namespace lồng nhau của GitLab được giữ nguyên, nên `gitlab.com/group/subgroup/project` được đăng ký với owner `group/subgroup` và tên `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+Thư mục cũng phải nằm trên máy đang chạy `cc_server`, bên trong một trong các thư mục `--repo-roots` của máy chủ đó. Danh sách cho phép đó mặc định là thư mục home của người dùng máy chủ, và việc duyệt vượt lên trên một gốc trong danh sách bị từ chối.
 
-## Register a checkout
+## Đăng ký một bản checkout
 
-1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
-2. Click **Add repository**.
+1. Mở **Cài đặt → Không gian làm việc → Kho lưu trữ** (`/workspaces/<id>/settings/workspace/repositories`).
+2. Nhấp vào **Thêm kho lưu trữ**.
 
-The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+Hộp thoại là một trình duyệt có thể điều hướng trên hệ thống tệp của **máy chủ**, không phải của bạn. Luồng thao tác giống nhau trên máy tính, web và điện thoại, vì trình chọn thư mục của hệ điều hành sẽ chọn một thư mục trên máy sai.
 
-3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
-4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
-5. Register them in one batch.
+3. Điều hướng trong các gốc đã cấu hình của máy chủ. Những thư mục là bản checkout git được đánh dấu.
+4. Đánh dấu bao nhiêu thư mục cũng được. Lựa chọn được giữ nguyên khi bạn điều hướng, nên bạn có thể gom các bản checkout từ nhiều thư mục khác nhau.
+5. Đăng ký chúng trong một lô.
 
-One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+Một lựa chọn thất bại không bao giờ làm mất phần còn lại của lô — bạn nhận được các id đã được tạo cùng một lỗi cho mỗi đường dẫn bị từ chối. Đăng ký lại một đường dẫn đã có trong không gian làm việc này sẽ trả về kho mã hiện có thay vì tạo ra một bản trùng lặp.
 
-Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+Mỗi kho mã đã đăng ký xuất hiện trong danh sách với `owner/name`, một huy hiệu ghi tên máy chủ mã của nó, và đường dẫn của nó trên máy chủ. Kho mã GitHub còn hiển thị avatar của owner; các máy chủ mã khác không có URL avatar owner đoán được, nên chúng quay về dùng chữ cái đầu.
 
-The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+Huy hiệu máy chủ mã có ý nghĩa trong một không gian làm việc hỗn hợp: hai kho mã đều có thể tên là `acme/web` trên các máy chủ mã khác nhau, và chúng hành xử khác nhau — việc đánh giá có thể làm gì, và một liên kết dẫn tới đâu.
 
-## What happens next
+## Điều gì xảy ra tiếp theo
 
-Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+Việc đăng ký phát ra một sự kiện `RepoAdded` trong phạm vi không gian làm việc này, sự kiện này khởi động quy trình `index_code` cho bản checkout đó. Đó là thứ nạp dữ liệu cho đồ thị mã, để tìm kiếm và phân tích ảnh hưởng có dữ liệu để trả lời.
 
-Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/).
+Chỉ những tệp có ngôn ngữ với grammar được phát hành mới được lập chỉ mục (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB và Ada). Xem [Tìm mã bằng đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/).
 
-## Re-index a repo
+## Lập chỉ mục lại một kho mã
 
-Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+Mỗi hàng có một nút **Lập chỉ mục mã**. Nhấp vào đó để chạy lại trình lập chỉ mục cho bản checkout đó; trong khi chạy, nút này trở thành một chỉ báo tiến độ hiển thị số tệp đã xong trên tổng số, kèm nút hủy. Khi hoàn tất, nó chuyển thành một dấu kiểm kèm số ký hiệu, hoặc một cảnh báo nếu lần chạy thất bại.
 
-## Reorder repos
+## Sắp xếp lại thứ tự kho mã
 
-Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+Kéo tay nắm trên một hàng. Thứ tự bạn đặt là thứ tự mà mọi danh sách kho mã trong ứng dụng đọc lại.
 
-## Fix the GitHub link
+## Sửa liên kết GitHub
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+Biểu tượng liên kết trên một hàng mở trình chỉnh sửa owner GitHub và tên kho mã của kho đó — hữu ích khi remote bị đổi tên hoặc chuyển đi.
 
-## Remove a repo
+## Gỡ một kho mã
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the trash icon on the row.
-3. Confirm "Remove repository from workspace?"
+1. Mở **Cài đặt → Không gian làm việc → Kho lưu trữ**.
+2. Nhấp vào biểu tượng thùng rác trên hàng đó.
+3. Xác nhận “Gỡ kho lưu trữ khỏi không gian làm việc?”
 
-The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+Hộp thoại nói rõ điều nó làm: “_name_ sẽ bị gỡ khỏi không gian làm việc này. Tệp cục bộ trên đĩa không bị thay đổi.”
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Việc gỡ sẽ xóa hàng kho mã khỏi không gian làm việc này và xóa theo tầng các hàng đồ thị mã của nó — ký hiệu, cạnh, tệp và điểm kiểm tra lập chỉ mục — cùng mọi cấp quyền kho mã theo từng thành viên trên nó, các liên kết giữa space và kho mã của nó, và các bản ghi checkout cách ly của nó. Cùng bản checkout đó khi được đăng ký trong một không gian làm việc khác là một hàng độc lập và không bị ảnh hưởng. Các worktree trên đĩa mà những bản ghi đó trỏ tới không bị xóa bởi thao tác gỡ.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Search code with the code graph](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/)
-- [Run agents in parallel](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
-- [Set up GitHub integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-- [Your first workspace](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/)
+- [Tìm mã bằng đồ thị mã](/vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma/)
+- [Chạy agent song song](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-song-song/)
+- [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
+- [Không gian làm việc đầu tiên của bạn](/vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)

@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: 模式
+description: 為何承載模式的是空間而非代理；四種模式各自保證甚麼；以及這項保證在何處屬於結構性，而非僅靠提示詞。
 slug: zh-HK/手冊/概念/模式
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## 甚麼是模式
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+模式是**空間**的屬性，以空間資料列上的單一欄位儲存。空間內的每則對話都共用它，討論串也不例外——討論串會像其他對話一樣繼承所屬空間的模式。因此，同一個代理可以同時在不同空間處於不同模式，而切換空間的模式會改變下一個回合的行為，完全毋須觸碰代理。
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+模式恰好有四種：`chat`、`review`、`plan`、`orchestrate`。這個列舉本身不帶任何政策。模式所保證的一切，都只在**能力設定檔**中宣告一次，而每個強制執行層都由此投射而來：
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **工具介面**——該模式下究竟有哪些工具存在，以最高核准層級、允許清單、拒絕清單及一組拒絕的效果類別來表達。
+2. **必要輸出動詞**——執行必須呼叫甚麼，才算交付了任何東西。
+3. **拒絕的效果類別**——動作守衛會直接拒絕哪些效果類別。
+4. **worktree 態勢**——worktree 可否寫入。這一點是靠把會變更狀態的工具從介面中剔除來強制執行，也正是它能在每部主機上都成立的原因。若主機設有作業系統沙箱，同一態勢亦會界定檔案系統的寫入規則——唯讀模式會以唯讀方式掛載 worktree——但那只是這項保證的第二份副本，並不是真正發揮作用的那一份。
+5. **系統提示詞區塊**——由實際具體化後的工具清單衍生的_自動產生_能力前言，外加手寫指引。
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+每個強制執行層都由這一個設定檔投射而來，因此工具介面、守衛、worktree 態勢與提示詞之間不可能互相矛盾。
 
-## The four modes
+## 四種模式
 
-### Chat — displayed as "Agent"
+### 聊天 —— 顯示為「代理」
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+這是預設模式，也是唯一沒有任何額外限制的模式：完整的工具介面（最高至執行層級）、可寫入的 worktree、沒有拒絕的效果類別，也沒有完成契約。可用於實作、修正錯誤、查詢程式碼庫相關問題，以及任何臨時任務。
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+注意這個標籤：在輸入列中，該模式顯示為**「代理」**，而非「聊天」。
 
-### Plan — read-only, one deliverable
+### 計劃 —— 唯讀，單一交付項目
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+計劃模式會令 worktree 變為唯讀，並把寫入工具從介面中完全剔除，因此這項限制是結構性的，而非口頭指示。代理會閱讀、搜尋與研究，並只交付一樣東西：一次 `submit_plan` 呼叫，攜帶一個具型別的相依圖——一個目標，加上各有鍵、標題、描述，以及各自所相依節點鍵的節點。
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+計劃會在對話中顯示為一個精簡的列，並在旁邊的分頁中開啟 Plan Studio。核准計劃會把該圖編譯成一次編排、執行所產生的作業，並把發起該計劃的空間切回代理模式。
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+若計劃模式的一次執行在從未呼叫 `submit_plan` 的情況下結束，迴圈會先注入一則提醒，指出在該呼叫成功之前，計劃並不存在。這則提醒明確允許以誠實的「此處毋須計劃」作為退出，因為計劃模式是空間設定，在當中提出一個普通問題不應迫使產生一份虛假的計劃。
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/).
+:::note[未達成的契約不等於失敗的執行]
+沒有交出計劃而結束的執行，仍會以狀態 `completed` 記錄下來——因為程序是乾淨地結束的。實情則取決於該次執行的活躍度（`empty`）、錯誤類別（`silentRun`），以及一份列出未產出項目的摘要。請參閱[代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)。
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+還有第二種、各自獨立的退出方式：`exit_plan_mode`。它是一道硬性核准閘門，不是輸出動詞——代理若呼叫它而非 `submit_plan`，就等於沒有交付任何東西。首次呼叫會開啟一項持久的 `plan_exit` 核准並傳回 `pending`，而空間維持唯讀；重複呼叫會維持 `pending`，而不會開啟第二道閘門。只有在核准獲批之後，其後的呼叫才會把空間切換為聊天。若被拒絕，代理可以就修訂後的計劃重新提出請求。
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+如要自行離開計劃模式，請切換輸入列的下拉選單（或按 Shift+Tab）。`exit_plan_mode` 是透過 `decide_approval` MCP 工具來決定的。收件箱中的「代理核准」列是另一回事：那是執行中的代理在每個回合發出的確認提示。
 
-### Review — read-only, no contract
+### 審查 —— 唯讀，沒有契約
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+審查模式用於 PR 審查。它會令 worktree 變為唯讀、把工具介面限制在執行層級以下，並套用一份精選的審查、工單與通訊工具允許清單。為 pull request 開啟的空間會自動以審查模式建立。
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+代理的輸出是結構化的發現項目——**審查節點**——以及審查定案時的一份**判定**。節點帶有種類（`bug`、`suggestion`、`recommendation`、`question` 或 `ticket`）、由 P0（阻礙發佈）至 P3（可有可無）的優先次序、自我評估的信心度、選用的錨點（檔案加上行範圍；涵蓋整個程式庫的備註則沒有錨點），以及一個生命週期狀態——一旦有同儕（永遠不會是作者本人）確認，狀態便會由 `open` 轉為 `consensusReady`。優先次序或信心度缺失或超出範圍的發現項目，會在讀取邊界被丟棄，而不是污染判定結果。
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+判定結果為 ship、hold 或 block，而納入其中的各軸向結果只會令它變得更_嚴厲_：已設閘的軸向若失敗，會強制 `block`；已設閘的軸向若無法執行，則至少強制 `hold`。缺乏證據永遠不會令閘門轉綠。
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+與計劃和編排不同，審查**沒有完成契約**。發現項目會透過 `add_review_node` 累積，並由 `finalize_review` 發佈，而兩者都完全可以合法地一次也不被呼叫——在審查模式下執行的管線代理，可能是為了完成一張工單而存在。
 
-### Orchestrate — read-only, proposes a team
+### 編排 —— 唯讀，提出團隊建議
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+編排模式會把一個目標變成全隊計劃。與計劃模式一樣，它是唯讀的，不能寫入檔案；在研究工具介面之上，它有一個特權動詞 `propose_orchestration`，會發出一份結構化提案：角色、子工單樹、一個綜合步驟及一份預算。提示詞只會列出介面上有的工具，因此模型不會把回合花在敘述它無法呼叫的聘用或工單作業上。
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/zh-HK/手冊/概念/編排/).
+在你核准之前，提案中沒有任何內容會執行。核准後，一個確定性的具體化程式會聘用代理、建立工單與一個項目，並執行一條產生的管線。核准僅限操作者：沒有可供核准的 MCP 工具，因此代理可以提出建議，但永遠無法核准自己的計劃。由代理發起的重新提案受兩分鐘冷卻時間限制，因此連續重新規劃會被拒絕，並被要求合併處理。請參閱[編排](/zh-HK/手冊/概念/編排/)。
 
-## Two rules worth knowing
+## 兩條值得知道的規則
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**模式本身的輸出動詞永遠不能被拒絕。** `submit_plan` 與 `propose_orchestration` 會被固定納入工具介面，並預先獲得核准，繞過工具篩選器、核准閘門與動作守衛，因此每個空間的自主權調節無法令模式的交付物歸於沉寂。框架的 `ask_user` 亦基於同一理由被固定：它_正是_執行接觸操作者的方式，若對它設閘，一個需要提問的執行便會死鎖。它屬於讀取層級，因此每個唯讀模式都會保留它，而且它不受核准包裝器約束——在沒有連接核准人的情況下，提示前面的提示會以失效關閉方式失敗，那就等同拒絕代理提出詢問這個動作。
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**唯讀模式不會拒絕網絡存取或機密。** 審查、計劃與編排所拒絕的效果類別，都是會改變現實世界的那些：刪除檔案、在 worktree 以外寫入、提交、推送、建立與發佈 PR、供應商同步寫入、安裝套件、啟動程序、變更工作區，以及圍封控制。網絡出口與機密存取刻意維持在預設值——研究正是唯讀模式存在的全部意義。
 
-## Choosing and changing a mode
+## 選擇與切換模式
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+輸入列的模式下拉選單提供**三個**選項：代理（聊天）、計劃與編排。`review` **不是使用者可選的**——它會在建立 PR 審查空間時由系統設定，也由管線步驟設定。
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+**開啟空間**的管線節點可以用 `extras['mode']` 鍵（`chat`、`review` 或 `plan`）固定該房間的模式。這個鍵採完全比對：任何其他拼法——包括 `orchestrate`——都會被靜默忽略，該房間則取得請求主體的預設值（在建立空間的請求主體上為 `review`）。代理步驟會加入並非由它建立的房間，而且不會重新授予權限。
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+解析本身很簡單。派發器會讀取空間的 `mode` 欄位；沒有空間的派發——一次性執行、一次 CLI 呼叫，或來自另一個工作區的空間 id（那種 id 根本不在這個工作區的資料庫檔案中）——會解析為 `chat`。切換模式會由下一個回合起生效。
 
-## Where the guarantee actually holds
+## 保證實際生效的地方
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+模式的工具介面由**內建框架**建立並強制執行。它是唯一能把工具變成隱形、而非僅僅拒絕的傳輸通道，也是唯一能在每次呼叫執行前設閘，並觀察完成契約的傳輸通道。
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/zh-HK/手冊/概念/代理模型/).
+在 Claude Code 傳輸上，非聊天模式會以 `--permission-mode plan` 傳入。Claude 依慣例遵循這一點；它自己的讀取、寫入、編輯與 shell 工具會在不被看見的情況下執行。就該傳輸而言，模式只是指引，而不是 Control Center 的界限——請參閱[代理模型](/zh-HK/手冊/概念/代理模型/)。
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+允許清單只約束寫入層級及以上的工具。內建框架的讀取層級仍可觸及任何清單都未列名的工具；在 Claude Code 上，允許清單未列出的工具一律會被拒絕，不論伺服器是否擁有它。
 
-## Related concepts
+## 相關概念
 
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/): where the mode is resolved and projected
-- [The agent model](/zh-HK/手冊/概念/代理模型/): which transports can enforce a mode
-- [Guardrails](/zh-HK/手冊/概念/護欄/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/zh-HK/手冊/概念/編排/): what an approved orchestrate proposal does
-- [Use plan mode](/zh-HK/手冊/操作指南/計劃模式/): the practical walkthrough
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/)：模式在哪裡被解析與投射
+- [代理模型](/zh-HK/手冊/概念/代理模型/)：哪些傳輸通道可以強制執行模式
+- [護欄](/zh-HK/手冊/概念/護欄/)：模式的預設集所餵入的效果類別政策
+- [編排](/zh-HK/手冊/概念/編排/)：獲核准的編排提案會做甚麼
+- [使用計劃模式](/zh-HK/手冊/操作指南/計劃模式/)：實務操作逐步說明

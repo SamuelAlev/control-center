@@ -1,75 +1,76 @@
 ---
-title: Tune an agent's tool context
-description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+title: Juster verktøykonteksten til en agent
+description: Se hva en kjøring faktisk sender, endre hvilke verktøy som lastes på forhånd, og finn ut om et dårlig verktøyvalg var et gjenfinningsbom eller et promptproblem.
 slug: nb-NO/handbok/slik-gjor-du/juster-verktoykontekst
+sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
 ---
 
-This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/nb-NO/handbok/konsepter/verktoykontekst).
+Denne veiledningen dekker det praktiske arbeidet rundt verktøyflaten med to nivåer: å se hva en kjøring sender, å endre det, og å diagnostisere en agent som grep etter feil verktøy. For å forstå hvorfor det fungerer slik, les [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
 
-## Look at what a run actually sends
+## Se hva en kjøring faktisk sender
 
-Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
+Åpne en samtale og trykk på kontekstbruksindikatoren i samtalens topptekst. Den bygger opp den nøyaktige flaten neste utsending ville sende, uten å kjøre noe. **Se mer** (eller kommandoen `/context`) åpner hele kontekstutforskeren, der du kan inspisere hvert verktøy.
 
-Two segments matter here:
+To segmenter er viktige her:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
-- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+- **Verktøydefinisjoner** og **MCP- og dynamiske verktøy** — det faste settet, med den reelle tokenkostnaden til hvert verktøy.
+- **Verktøy lastet ved behov** — den utsatte indeksen. Hver oppføring belastes bare med navnet sitt, fordi et navn er alt forespørselen bærer med seg; å åpne ett viser fortsatt hele beskrivelsen og skjemaet, slik at du kan se hva det *ville* koste hvis kjøringen trakk det inn.
 
-If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/nb-NO/handbok/referanse/cc-server-cli).
+Hvis det utsatte segmentet er tomt, er utsettelse av for denne serveren. Sjekk `--tool-deferral` i [`cc_server`-CLI-en](/nb-NO/handbok/referanse/cc-server-cli).
 
-## Change which tools load up front
+## Endre hvilke verktøy som lastes på forhånd
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+Det faste settet er policy, ikke konfigurasjon — det ligger i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) og gjelder for hver kjøring:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/nb-NO/handbok/konsepter/moduser) uses on nearly every turn.
+- `residentBuiltins` — fil- og shell-vokabularet.
+- `residentDiscovery` — `search_tools` og `list_my_tools`. Ikke fjern disse; det er slik en agent når alt annet.
+- `residentMcpTools` — de få Control Center-verktøyene som er verdt skjemaet sitt ved hver forespørsel.
+- En blokk per modus, for verktøyene en gitt [modus](/nb-NO/handbok/konsepter/moduser) bruker i nesten hver tur.
 
-Two rules when editing it:
+To regler når du redigerer det:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Legg bare til et verktøy hvis de fleste kjøringer bruker det.** Hvert navn koster skjemaet sitt ved hver forespørsel i hver kjøring, for alltid. Et verktøy som er viktig når det brukes, men sjeldent totalt sett, hører hjemme i den utsatte halvdelen — agenten finner det fortsatt.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Bruk verktøyets virkelige navn.** Et fast navn som ikke samsvarer med noe verktøy, er inert: ingen feil, ingen advarsel, verktøyet blir rett og slett utsatt. `test/tooling/resident_tool_names_test.dart` fanger opp dette og holder i tillegg hver modus under 40 faste verktøy, som er hele poenget — forbi det båndet blir verktøyvalget målbar dårligere.
 
-A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+En modus' påkrevde og festede verb legges til automatisk, så du trenger aldri å føre opp en modus' eget utdataverb.
 
-## Diagnose a bad tool choice
+## Diagnostiser et dårlig verktøyvalg
 
-When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+Når en agent brukte feil verktøy eller hevdet at den ikke kunne gjøre noe, finn ut hvilken av tre ting som skjedde.
 
-### 1. Did it look?
+### 1. Lette den?
 
-Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+Hver kjøring registrerer hvilke utsatte verktøy den lastet, og hva som utløste det — et direkte kall ved navn, eller en `search_tools`-spørring. Åpne hendelsesstrømmen til kjøringen (**Innstillinger → Arbeidsområde → Agenter** → agenten → **Logger** → **Vis**) og se etter `[harness] loaded N deferred tool(s)`.
 
-- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
-- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
-- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+- **Ingenting logget, og agenten sa at evnen manglet** — den lette aldri. Det er et promptproblem, ikke et gjenfinningsproblem: den utsatte indeksen ligger i systemprompten med en instruks om ikke å erklære en evne som manglende før et søk har kommet tomt tilbake.
+- **Et søk logget, men ingenting lastet** — et ekte gjenfinningsbom. Gå til steg 2.
+- **Verktøy lastet, men feil brukt** — verktøyene den fant, er for like. Gå til steg 3.
 
-### 2. Fix a retrieval miss
+### 2. Fiks et gjenfinningsbom
 
-`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+`search_tools` matcher på navn, beskrivelser og argumentnavn. Et bom betyr nesten alltid at beskrivelsen ikke inneholder ordene agenten brukte.
 
-Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+Legg dem til. Beskrivelser er gjenfinningsindeksen, så **forleng dem i stedet for å kutte** — skriv vokabularet en operatør faktisk ville skrevet («tilordne», «overlevere», «gi til»), ikke bare det interne substantivet. Å kutte en beskrivelse for å spare tokens koster deg både søketreffet og valgnøyaktigheten, og sparer nesten ingenting sammenlignet med skjemaet.
 
-If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+Hvis det riktige verktøyet finnes, men rangeres lavt, er det derfor `limit`-argumentet finnes; verktøyets egen beskrivelse ber agenten utvide et søk som ser nært ut, men bommer.
 
-### 3. Fix look-alike tools
+### 3. Fiks verktøy som ligner hverandre
 
-If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+Hvis to verktøy har beskrivelser som ville lest likt for noen som ikke allerede kjenner forskjellen, gjetter modellen. Slå dem sammen til ett verktøy med et diskriminerende argument.
 
-`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` og `ticket_pr_link` følger dette mønsteret: hver av dem håndterer kobling og avkobling gjennom et diskriminerende argument. Et valg som tas *inne i* ett kall, med hele konteksten i forespørselen, er mer pålitelig enn et valg som tas mellom to beskrivelser som ligner hverandre.
 
-Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+Hold verktøy adskilt når de trenger forskjellige godkjenningsregler, ulik revisjon eller ulik rendering — det er grunner til at en sammenslåing ville koste deg noe reelt.
 
-## Check the prompt cache is working
+## Sjekk at promptbufferen virker
 
-Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Treffprosenten på bufferen vises i **Observabilitet → Innsikt** som **Cache-rate**. En sunn, langvarig samtale ligger høyt; hvis den vedvarende er lav, er det noe som skriver om prefikset hver tur.
 
-Common causes, in order of likelihood:
+Vanlige årsaker, i rekkefølge etter sannsynlighet:
 
-- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
-- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
-- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+- **Alt ikke-deterministisk tidlig i prompten.** Et tidsstempel, en forespørsels-id eller et sett som itereres i varierende rekkefølge, er nok.
+- **En endring av modell eller resonneringsinnsats midt i samtalen.** Begge endrer prefikset. Underagenter er spesielt lette å gjøre feil her: å kjøre barn med lavere resonneringsinnsats for å spare penger kan koste mer i tapt bufferdeling enn det sparer.
+- **Hyppig kompaktering.** Kompaktering skriver om historikken med vilje, så kostnaden er reell; løsningen er å kompaktere sjelden og dypt i stedet for ofte og grunt.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Å slå av utsettelse med `--tool-deferral=off` er en gyldig A/B-test for å isolere om en atferdsendring kom fra flaten med to nivåer. Den gjenskaper forespørselen fra før utsettelsen nøyaktig, så hvis atferden vedvarer med den av, er ikke flaten årsaken.

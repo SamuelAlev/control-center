@@ -2,6 +2,7 @@
 title: Sign your team in with SSO
 description: Connect Okta (SAML) to your Control Center server and take a login end to end.
 slug: en-GB/manual/tutorials/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -42,7 +43,7 @@ If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
 Okta calls it "Metadata URL"; open the URL and copy what it serves). The
 same button on **OpenID Connect** checks your issuer's discovery
 document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
+IdP recognises Control Center, use the
 [checker in step 6](#6-check-it-from-this-page).
 
 ## 3. Register Control Center at the IdP
@@ -111,7 +112,7 @@ address, it also asks that server whether SAML sign-in is on.
 
 It catches what **Test connection** in the app cannot see: a signing
 certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+with the test sign-in, whether the IdP recognises Control Center at all.
 
 <SsoCheck kind="saml" />
 

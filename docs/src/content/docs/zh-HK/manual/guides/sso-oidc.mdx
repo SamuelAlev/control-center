@@ -1,95 +1,95 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: 連接 OpenID Connect 供應商
+description: 將任何 OIDC 簽發者 —— Pocket ID、Keycloak、Auth0、Zitadel —— 接到 Control Center 登入。
 slug: zh-HK/手冊/操作指南/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+當你的身分供應商使用 **OpenID Connect** 而非 SAML 時，請使用本指南。任何
+通過 OIDC 認證的簽發者都適用 —— Pocket ID、Keycloak、Auth0、
+Zitadel、Google Workspace 等全都遵循相同步驟；差別只在於
+供應商顯示這些值的位置。
 
-## Prerequisites
+## 先決條件
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- 一個可讓你建立用戶端的 OIDC 供應商 —— 記下其**用戶端 ID**
+  及其**簽發者 URL**（`.well-known/openid-configuration`
+  文件所在的基底），此外若用戶端屬於機密類型，還需其
+  **用戶端密鑰**（公開的
+  PKCE 用戶端則沒有），
+- 一部由你管理的 Control Center 伺服器（即**伺服器擁有者**）。
 
-## Steps
+## 步驟
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. 開啟 **設定 → 伺服器 → 單一登入**，並切換到
+   **OpenID Connect**。
+2. 填入 **簽發者 URL**、**用戶端 ID**，以及供應商有簽發時的
+   **用戶端密鑰（選填）**。Control Center
+   會從簽發者的標準探索文件探索端點 ——
+   毋須逐個供應商設定。
+3. 在供應商一方，於該用戶端註冊重新導向位址
+   `https://<your-server>/oidc/callback`。
+4. 若你的群組位於 `groups` 以外的宣告之下，請設定
+   **群組宣告**名稱；如需要，可將群組對應到角色（SSO 永遠無法
+   授予擁有者角色）。
+5. 選擇成員政策（自動加入每個工作區，或每個工作區都需要個別
+   邀請），開啟 **使用 OpenID Connect 登入**，然後
+   按下 **儲存連線**。
+6. 按下 **測試連線** —— 伺服器會擷取簽發者的探索
+   文件並確認其端點，因此綠色的提示訊息代表除了瀏覽器往返之外
+   一切正常。若要一併檢查用戶端註冊，
+   請使用[下方的檢查器](#從本頁檢查你的設定)。
+7. 進行一次登入：網頁連接畫面會顯示 **以 OpenID
+   Connect 登入**，或直接開啟 `https://<your-server>/oidc/login`。
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+你的伺服器會透過 TLS 從簽發者的權杖端點讀取宣告（電郵、姓名、群組）
+—— 瀏覽器從不提供這些資料，因此不涉及本機 JWT
+簽章驗證。應允許該用戶端要求
+`openid profile email` 範圍，而這正是 Control Center 所要求的。
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+由於該 TLS 通道是驗證這些宣告的唯一途徑，簽發者 URL 必須為
+**https** —— 明文簽發者會讓任何路徑上的攻擊者任意
+偽造身分。僅在本機開發時，回送簽發者
+（`localhost`、`127.0.0.1`、`::1`）才接受 `http`。
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[公開用戶端還是機密用戶端？]
+預設（也是建議）的形態是**公開用戶端**，使用
+授權碼流程配合 **PKCE**（RFC 7636）：伺服器持有的一次性
+驗證碼驗證器會取代密鑰，而權杖交換會
+繫結到啟動它的授權請求。既沒有密鑰可洩漏，被竊取的授權碼
+沒有驗證器也毫無用處。部分供應商在你建立時
+會把這種用戶端類型稱為「SPA」或「原生」。
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+若你的供應商改為簽發**機密**用戶端，可在供應商一方將該
+用戶端標記為公開（無論哪種做法，PKCE 都會保持開啟），或把
+用戶端密鑰貼到連線的**用戶端密鑰（選填）**欄位。該
+密鑰會儲存在伺服器的 0600 密鑰檔案中（絕不會存入資料庫），
+以 `client_secret_post` 傳送到權杖端點，且永不經由
+RPC 回傳；儲存時將欄位留空會保留已儲存的密鑰。當登入
+在權杖交換階段失敗時，伺服器日誌會指出供應商本身的錯誤
+（`invalid_client` 幾乎總是表示密鑰缺失或錯誤）。
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/zh-HK/手冊/操作指南/sso-scim).
+:::note[可達性]
+登入本身由瀏覽器居中進行：簽發者只會將使用者的
+瀏覽器重新導向回 `/oidc/callback`，而你的伺服器會對權杖端點
+發出對外 HTTPS 呼叫 —— 不需要來自簽發者的連入連線，
+因此只要使用者的瀏覽器能連到它（LAN、VPN、Tailscale 或隧道），
+位於 NAT 之後的伺服器也能運作。**SCIM 佈建則是
+例外**：IdP 會直接呼叫你的伺服器，這需要隧道或
+公開 URL —— 參見[以 SCIM 佈建用戶](/zh-HK/手冊/操作指南/sso-scim)。
 :::
 
-## Check your configuration from this page
+## 從本頁檢查你的設定
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+下方的檢查器在你的瀏覽器中執行。它會直接擷取你簽發者的探索
+文件，因此本網站永遠看不到它，並套用伺服器的
+規則：與文件相符的 https 簽發者、位於簽發者
+本身來源的端點、PKCE S256，以及你的用戶端類型所需的權杖
+驗證方法。只要提供用戶端 ID 和伺服器位址，它就能開啟測試登入，
+顯示該用戶端及其重新導向 URI 是否已註冊。它永遠不會要求
+用戶端密鑰。
 
 <SsoCheck kind="oidc" />

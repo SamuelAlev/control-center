@@ -1,33 +1,22 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: 評価と品質
+description: 評価スイート、各ワークスペースにシードされるスターターセット、そしてそれらがオブザーバビリティのどこに表示されるか。
 slug: ja-JP/マニュアル/コンセプト/評価と品質
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**評価スイート**とは、エージェントに対して実行するタスクをワークスペーススコープで定義したものです。プロンプト、対象のエージェントとモード、省略可能なセットアップ、固定された SHA を持つ省略可能なフィクスチャ、そしてグレーダーの一覧から構成されます。グレーダーはまず決定論的で、そうしたチェックでは表現できない部分を LLM ルーブリックによる判定が補います。
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+ワークスペースの作成時に 5 つのスタータースイートがシードされます。これらは、オーケストレーションの提案、シードされたバグを検出するレビュー、プランモードが読み取り専用にとどまること、プランモードがプランを生成すること、チケットのラウンドトリップをカバーします。シードは `WorkspaceCreated`（`workspace.upsert` または `workspace.create`）をリッスンし、既に存在する名前はスキップし、古いワークスペースをバックフィルしません。
 
-## Where they appear
+## 表示される場所
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**オブザーバビリティ → 品質**（`/workspaces/<id>/observability`）に、ワークスペース内の各スイートが一覧表示されます。
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+スイートの作成、一覧表示、編集、削除は `evals.upsertSuite`、`evals.deleteSuite`、`evals.watchSuites` で行います。品質タブが一覧であり、これらの操作がエディターです。
 
-## Related concepts
+## 関連項目
 
-- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/): the configuration a suite
-  pins
-- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/): the autonomy dial
-- [Manage costs and budgets](/ja-JP/マニュアル/ハウツーガイド/コスト管理/): spend recorded
-  alongside a run
+- [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/): スイートが固定する設定
+- [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/): 自律性のダイヤル
+- [コストと予算の管理](/ja-JP/マニュアル/ハウツーガイド/コスト管理/): 実行とともに記録される支出

@@ -1,112 +1,113 @@
 ---
-title: The agent model
-description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+title: نموذج الوكيل
+description: ما هو الوكيل فعلًا في Control Center، وأي حقل من حقوله يغيّر السلوك، وكيف يقرّر المحوّل الذي يعمل عليه ما يمكن فرضه.
 slug: ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل
+sourceHash: f9ae4f17c7f2c53a943c912f24ccd68483f44c3f
 ---
 
-## What is an agent?
+## ما الوكيل؟
 
-An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+الوكيل فاعل له اسم وشخصية ومجموعة مهارات ومحوّل يعمل عليه ومجموعة قدرات. الوكلاء أطراف بالمعنى نفسه الذي يكون به البشر أطرافًا: يكتبون الرسائل، ويملكون التذاكر، ويتركون المراجعات، ويظهرون في الكشف نفسه. هم من ينجز العمل.
 
-Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+كل وكيل ينتمي إلى مساحة عمل واحدة بالضبط. هذا قيد صارم: `agent.workspaceId` لا يقبل قيمة فارغة، ومساحة عمل الوكيل نفسها هي التي تختار ملف قاعدة البيانات الذي تستقر فيه صفوفه، ويُرفض إنشاء وكيل من غير مساحة عمل.
 
-An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together. Seeding is idempotent: if the agent row already exists, the on-disk files and skill links are still rewritten. The production caller is workspace creation, not every server launch.
+الوكيل مجلد على القرص أيضًا. تعريفه في `agents/<slug>/AGENTS.md` تحت دليل بيانات مساحة العمل، والمهارات التي يحملها مربوطة بوصلات رمزية داخل `agents/<slug>/.agents/skills`. صف قاعدة البيانات والملف يُكتبان معًا. البذر لا يكرّر الصف: إن وُجد صف الوكيل أصلًا، تُعاد كتابة الملفات على القرص ووصلات المهارات. في الإنتاج، الاستدعاء يأتي من إنشاء مساحة العمل، لا من كل إقلاع للخادم.
 
-## What an agent carries
+## ما يحمله الوكيل
 
-| Attribute               | What it does                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
-| `title`                 | Human-readable job title                                                              |
-| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
-| `systemPrompt`          | Optional extra instructions, injected as an "Agent instructions" section — they do not replace the rest of the assembled prompt |
-| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
-| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the built-in loop**        |
-| `modelId`               | Which model within that adapter                                                       |
-| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
-| `contextSize`           | Context window override                                                               |
-| `capabilities`          | Credential and egress flags, checked at launch                                        |
-| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
-| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| الحقل                   | ما يفعله                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `name`                  | معرّف قصير على شكل اسم مسار (`architect` و`qa`). وهو أيضًا ما تُحلّ `@mentions` مقابله   |
+| `title`                 | مسمّى وظيفي يقرأه الإنسان                                                                 |
+| `persona`               | شخصية وتعليمات سلوك بنص حر، تُحقن قسمًا في المطالبة                                       |
+| `systemPrompt`          | تعليمات إضافية اختيارية، تُحقن قسمًا بعنوان "Agent instructions"، ولا تستبدل بقية المطالبة المجمّعة |
+| `skills`                | مجموعة أسماء مهارات لا تميّز حالة الأحرف، وتُقابَل بوصلات للمهارات على القرص             |
+| `adapterId`             | المشغّل الذي يُرسَل الوكيل إليه. **القيمة الفارغة تعود إلى الحلقة المضمّنة**              |
+| `modelId`               | النموذج داخل ذلك المحوّل                                                                  |
+| `effort`                | مستوى الاستدلال، بألفاظ النموذج المختار نفسه                                              |
+| `contextSize`           | تجاوز لحجم نافذة السياق                                                                   |
+| `capabilities`          | أعلام بيانات الاعتماد والخروج، تُفحص عند الإطلاق                                          |
+| `silenceTimeoutMinutes` | تجاوز لكل وكيل (1–240) لمراقب الصمت                                                       |
+| `reportsTo`             | معرّف الوكيل الأعلى، وسلسلة التبعية التي يرسمها الهيكل التنظيمي                          |
 
-You edit all of these at Settings → Workspace → Agents. **New agent** creates an unnamed agent that you then fill in.
+تحرّر هذه الحقول كلها من الإعدادات ← مساحة العمل ← الوكلاء. **وكيل جديد** ينشئ وكيلًا بلا اسم، ثم تملأ بياناته.
 
-## Skills
+## المهارات
 
-Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+المهارات أسماء على كيان الوكيل، لا تميّز حالة الأحرف. يحدث معها أمران منفصلان:
 
-- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
-- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/skill:<name>` in a conversation loads that body as a directive for the turn.
+- تُدرَج الأسماء في المطالبة المجمّعة تحت عنوان "Skills". هذا كل ما تفعله مجموعة الكيان وحدها. لا توجد مكتبة مطالبات لكل مهارة تُستدعى من هذه المجموعة.
+- مجلد كل مهارة مسمّاة (`skills/<slug>/SKILL.md` داخل مساحة العمل) يُربَط بمجلد الوكيل نفسه. في الإطار المضمّن تُحمَّل البيانات الأمامية للمهارات المربوطة تلقائيًا إلى موجّه النظام، ويقرأ الوكيل المتن عند الطلب. كتابة `/skill:<name>` في محادثة تحمّل ذلك المتن توجيهًا للجولة.
 
-Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. The outside is GitHub repositories you register yourself as skill sources: there is no curated store, so the repository's own metadata (its description, its stars, the skill's name) is untrusted display data and the scan verdict is the only safety signal. An install fetches the skill's whole directory, pins it to the commit it came from in `skills-lock.json`, and a later update re-passes the gate before replacing anything. The how-to lives in [install and manage skills](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-المهارات/).
+المهارات المجلوبة من الخارج تمر بفحص لسلسلة التوريد، مغلق عند الفشل، بين الجلب والكتابة. لا يصل محتوى أي مهارة إلى القرص أو إلى مطالبة من غير حكم. الخارج هنا مستودعات GitHub تسجّلها أنت مصادر للمهارات. لا يوجد متجر مُنتقى، فبيانات المستودع نفسه (وصفه، ونجومه، واسم المهارة) بيانات عرض غير موثوقة، وحكم الفحص هو إشارة الأمان الوحيدة. التثبيت يجلب مجلد المهارة كاملًا، ويثبّتها على الإيداع الذي جاءت منه في `skills-lock.json`، وأي تحديث لاحق يعيد عبور البوابة قبل أن يستبدل شيئًا. الشرح العملي في [تثبيت المهارات وإدارتها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إدارة-المهارات/).
 
-### Repo-scoped skills
+### مهارات على نطاق المستودع
 
-A repo can ship its own skills, in any of the conventional places (`.agents/skills/`, `.claude/skills/`, `.opencode/skills/`). A space checks every linked repo out side by side under `repos/<name>/`, but an agent works in one repo at a time — so it carries **only that repo's** skills, and they swap when it moves.
+يستطيع المستودع أن يشحن مهاراته في أي من المواضع المعتادة (`.agents/skills/` و`.claude/skills/` و`.opencode/skills/`). المساحة تُخرج كل مستودع مرتبط جنبًا إلى جنب تحت `repos/<name>/`، لكن الوكيل يعمل في مستودع واحد في كل مرة، فيحمل **مهارات ذلك المستودع وحده**، وتتبدل حين ينتقل.
 
-Which repo is active is inferred from the files the agent touches: writing a file under `repos/<name>/` makes that the active repo, while merely reading across repos does not, so chasing a symbol into a sibling service never swaps the set out from under a task. On a single-repo space the answer is known before the first turn.
+يُستنتج المستودع النشط من الملفات التي يلمسها الوكيل. كتابة ملف تحت `repos/<name>/` تجعل ذلك المستودع هو النشط، ومجرد القراءة عبر المستودعات لا تفعل. ملاحقة رمز إلى خدمة شقيقة لا تبدّل المجموعة من تحت المهمة. في مساحة بمستودع واحد تُعرف الإجابة قبل الجولة الأولى.
 
-The scoping is a context-budget decision. The skill index sits in the prompt on every turn while the bodies do not, so listing every repo's skills at once costs tokens continuously — and a `testing` skill from one service actively misleads when the work is in another. The same reasoning is why an agent's index carries one repo but the composer is not scoped that way: naming a skill yourself is one explicit act, so `/skill:<repo>:<name>` reaches any repo in the space.
+هذا الحصر قرار لميزانية السياق. فهرس المهارات يبقى في المطالبة في كل جولة، والمتون لا تبقى، فسرد مهارات كل المستودعات دفعة واحدة يستهلك الرموز باستمرار. ومهارة `testing` من خدمة واحدة تضلّل حين يكون العمل في خدمة أخرى. المنطق نفسه يفسّر لماذا يحمل فهرس الوكيل مستودعًا واحدًا بينما حقل الكتابة ليس محصورًا كذلك: تسمية المهارة بنفسك فعل صريح واحد، فيصل `/skill:<repo>:<name>` إلى أي مستودع في المساحة.
 
-Repo skills are loaded for **every** adapter, not just the built-in harness. The active repo's skills are materialized into the agent's working directory, which is the path Claude Code already scans; the same index is composed into the `AGENTS.md` the built-in harness reads. A repo's skills pass the same fail-closed scan an installed skill does before any of that happens — a checked-out repo is cloned content, and its frontmatter reaches a prompt.
+تُحمَّل مهارات المستودع مع **كل** محوّل، لا مع الإطار المضمّن وحده. تُجهَّز مهارات المستودع النشط في دليل عمل الوكيل، وهو المسار الذي يمسحه Claude Code أصلًا، ويُدخَل الفهرس نفسه في `AGENTS.md` الذي يقرأه الإطار المضمّن. مهارات المستودع تمر بالفحص المغلق عند الفشل نفسه الذي تمر به المهارة المثبّتة، قبل أن يحدث أي من ذلك. المستودع المُخرَج محتوى مُستنسَخ، وبياناته الأمامية تصل إلى مطالبة.
 
-## Capabilities
+## القدرات
 
-Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+القدرات تضبط ما _يُسلَّم_ إلى التشغيل، لا ما يسمح نظام الملفات بلمسه. وسيط بيانات الاعتماد يفحصها عند الإطلاق: إن كانت قدرة مطفأة، لا يُحقن الرمز المطابق.
 
-- **Push to repo** — gates injection of the GitHub token used for `git push`.
-- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
-- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
-- **Network egress** — arbitrary outbound requests.
+- **الدفع إلى المستودع** يضبط حقن رمز GitHub المستخدم في `git push`.
+- **GitHub API** يضبط حقن `GH_TOKEN` والخروج إلى api.github.com.
+- **التذاكر** تضبط مفتاح API لمزوّد التذاكر والخروج إلى نطاقاته.
+- **الخروج إلى الشبكة** يعني أي طلب صادر.
 
-A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent.
+يحلّ التشغيل هذه القدرات من صف الوكيل نفسه. إن لم تكن للوكيل قدرات، يُطبَّق افتراضي متحفّظ ثابت: أعلام بيانات الاعتماد الثلاثة مطفأة، والخروج إلى الشبكة مشغّل. مفتاح «أذونات البيئة المعزولة» في نموذج الوكيل يختار بين هذا الرجوع ومجموعة مخصّصة مخزّنة على الوكيل.
 
-See [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) for the other half of the story, including what is and is not enforced at the filesystem level.
+انظر [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) للنصف الآخر من الصورة، بما يُفرض على مستوى نظام الملفات وما يبقى بلا فرض.
 
-## The adapter decides what can be enforced
+## المحوّل يقرّر ما يمكن فرضه
 
-The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+الحقل الأثقل أثرًا في الوكيل هو محوّله، لأن نقل المحوّل يحدّد مقدار ما يمكن فرضه فعلًا من سياسة Control Center.
 
-| Transport        | Adapters                  | What Control Center enforces                                                                                                                                                                                                                                               |
-| ---------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in harness | Control Center (built-in) | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
-| Claude CLI       | Claude Code               | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| النقل           | المحوّلات                 | ما يفرضه Control Center                                                                                                                                                                                                                                            |
+| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| الإطار المضمّن  | Control Center (built-in) | كل شيء. سطح الأدوات _يُبنى_ من الوضع، فالأداة الممنوعة غير مرئية ولا تُرفض بعد ظهورها. كل استدعاء يمر ببوابة الموافقة وضوابط الإجراء. عقد الإكمال يستطيع أن ينبّه ثم يُفشل تشغيلًا ينتهي من غير التسليم المطلوب |
+| Claude CLI      | Claude Code               | أدوات `mcp__*` التي تُقدَّم إليه فقط. أدوات القراءة والكتابة والتحرير والصدفة الخاصة بـ Claude تعيش في عمليته وتعمل من غير رصد، ويُطلَق مع `--dangerously-skip-permissions`، لأن `claude -p` غير التفاعلي سيتوقف إلى الأبد على طلب الإذن الخاص به |
 
-Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
+عمليًا، **الإطار المضمّن وحده يدعم الوكلاء الفرعيين، والتوجيه في أثناء التشغيل، والإيقاف المؤقت والاستئناف (ومعها التولّي)، وفرض الوضع بنيويًا.** Claude Code لا يحصل على شيء من ذلك.
 
-:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+:::caution[بيئة نظام التشغيل المعزولة حدّ أدنى، ولا تفرض الوضع، ولا يملكها كل مضيف]
+المصفوفة أعلاه عما يستطيع Control Center أن _يراه ويضبطه_. تحتها يغلّف `cc_server` سطر أوامر Claude Code ببيئة نظام التشغيل المعزولة على المضيف حيث توجد: Seatbelt على macOS، وbubblewrap على Linux وWSL2. بذلك يبقى أمر `rm` غير المرصود، أو الكتابة غير المرصودة، محصورًا بنظام التشغيل. على **Windows لا توجد خلفية أصلًا**، وعلى Linux أو WSL2 من غير `bwrap` و`socat` يبلّغ الفحص بالغياب، فتعود تلك التشغيلات إلى تعقيم البيئة، وبيانات الاعتماد التي يصدرها الوسيط، والضوابط على الاستدعاءات التي يراها Control Center، وشجرة عمل المحادثة نفسها (نسخ عند الكتابة حيث يتوفر `rift`، و`git worktree` على Windows).
 
-What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/).
+البيئة المعزولة ليست _بوابة_. هي تحصر أين يجوز للعملية أن تقرأ وتكتب وتتصل، ووضع القراءة فقط يصل إليها عبر تركيبات ربط للقراءة فقط، لكنها لا تعترض استدعاءً، ولا ترفع موافقة، ولا تخبرك بعد ذلك بما حاول سطر الأوامر فعله. هذا، مع القدرات الأربع المذكورة للتو، ما يملكه الإطار المضمّن ولا يملكه غيره. انظر [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+الوكيل **بلا** محوّل يعود إلى **Control Center (built-in)**، وهي الحلقة داخل الخادم، فلا سطر أوامر لتثبيته، ويسجّل سجل تشغيله `cc-harness`. كل وكيل مبذور يُنشأ بلا محوّل ولا نموذج، فيعمل الوكلاء الخمسة في مساحة العمل الجديدة هناك كلهم، على النموذج الافتراضي لدى Anthropic، إلى أن تضبط محوّلًا ونموذجًا لكل وكيل. اختيار «المحوّل الافتراضي» في الإعداد الأول تفضيل على جهة العميل: الخادم لا يقرأه، ولا يُطبَّق بأثر رجعي على الوكلاء الذين أُنشئوا من قبل.
 
-## Where agents come from
+## من أين يأتي الوكلاء
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
-- **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
+- **يُبذَرون مع مساحة العمل.** كل مساحة عمل، لا الأولى وحدها، تحصل على وكيل CEO وأربعة متخصصين (`qa` و`architect` و`engineer` و`librarian`) يتبعون له، ويُنشَؤون في الخلفية عند إنشاء مساحة العمل من غير تكرار الصف. انظر [مساحات العمل والعزل](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/).
+- **يُضافون يدويًا** من الإعدادات ← مساحة العمل ← الوكلاء. أن تطلب من وكيل توظيف زميل لا ينشئ صفًا. استخدم تلك الشاشة.
 
-## Live state
+## الحالة الحيّة
 
-An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+ليس للوكيل عمود حالة مخزّن. حالته الحيّة تُشتق من أحدث سجلات تشغيله كلما قُرئ:
 
-| State      | Meaning                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `neverRun` | No run log exists                                                    |
-| `running`  | At least one run is currently in progress                            |
-| `failed`   | The latest run errored, or its liveness is failed or dead            |
-| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
-| `idle`     | Everything else — the agent has run before and has nothing in flight |
+| الحالة     | المعنى                                                              |
+| ---------- | ------------------------------------------------------------------- |
+| `neverRun` | لا يوجد سجل تشغيل                                                   |
+| `running`  | تشغيل واحد على الأقل قيد التنفيذ                                    |
+| `failed`   | آخر تشغيل انتهى بخطأ، أو حيويته فاشلة أو ميتة                       |
+| `blocked`  | حيوية آخر تشغيل محجوبة أو عالقة أو في حلقة                          |
+| `idle`     | ما عدا ذلك: الوكيل اشتغل من قبل، وليس لديه عمل جارٍ                 |
 
-Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+حالتان أخريان، `queued` و`succeeded`، تخصّان التشغيلات المفردة في شجرة تشغيل المحادثة. الكشف لا ينتجهما، لأن نجاح تشغيل منتهٍ حقيقة عن التشغيل لا عن الوكيل.
 
-The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/).
+كشف الحضور يعرض صورة موازية أقل تفصيلًا، يركّبها الخادم من أحداث التشغيل الحيّة: يفكّر، يعمل، محجوب بانتظار موافقة، انتهى. وهذا ما يجعل الوكلاء يظهرون إلى جانب البشر. انظر [تعدد اللاعبين والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/).
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): what happens when an agent is actually run
-- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): the per-conversation setting that shapes an agent's tool surface
-- [Multiplayer](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): agents as principals, presence and the autonomy dial
-- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): what constrains a run today
-- [Agent configuration reference](/ar-SA/دليل-المستخدم/مرجع/تهيئة-الوكيل/): the full field list
+- [دورة حياة إرسال الوكيل](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/): ما يحدث حين يُشغَّل الوكيل فعلًا
+- [الأوضاع](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/): الإعداد الخاص بكل محادثة الذي يشكّل سطح أدوات الوكيل
+- [تعدد اللاعبين والحضور](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/): الوكلاء أطرافًا، والحضور، ومؤشر الاستقلالية
+- [البيئة المعزولة والأمان](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/): ما يقيّد التشغيل اليوم
+- [تهيئة الوكيل](/ar-SA/دليل-المستخدم/مرجع/تهيئة-الوكيل/): قائمة الحقول كاملة

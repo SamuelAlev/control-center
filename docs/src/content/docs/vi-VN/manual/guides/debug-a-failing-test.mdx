@@ -1,65 +1,66 @@
 ---
-title: Debug a failing test with an agent
-description: Have an agent set a breakpoint, launch under a debugger and read a real stack frame instead of adding print statements.
+title: Gỡ lỗi bài kiểm thử thất bại bằng agent
+description: Cho một agent đặt điểm dừng, khởi chạy dưới trình gỡ lỗi và đọc một khung ngăn xếp thật thay vì thêm các câu lệnh in.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/go-loi-kiem-thu-that-bai
+sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
 ---
 
-This guide shows you how to get an agent to use a debugger on a failure that print statements are not explaining.
+Hướng dẫn này chỉ cho bạn cách để một agent dùng trình gỡ lỗi cho một lỗi mà các câu lệnh in không giải thích được.
 
-The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope — where a print statement answers only the question you thought to ask before running.
+Công cụ `debug` điều khiển một phiên Debug Adapter Protocol thật. Một khung đang dừng trả lời mọi câu hỏi về khoảnh khắc đó cùng lúc — mọi biến cục bộ, mọi nơi gọi, và một biểu thức được tính trong chính phạm vi của khung — trong khi một câu lệnh in chỉ trả lời câu hỏi bạn đã nghĩ ra trước khi chạy.
 
-## Before you start
+## Trước khi bắt đầu
 
-The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
+Công cụ luôn hiện diện trên bề mặt để agent có thể hỏi vì sao không có gì dùng được, thay vì đoán mò. Một adapter chỉ thực sự khởi động được khi **cả hai** điều sau đều đúng:
 
-- a project marker in the checkout, and
-- the adapter's binary resolving.
+- có một dấu hiệu dự án trong bản checkout, và
+- tệp nhị phân của adapter phân giải được.
 
-Ask the agent to check:
+Hãy yêu cầu agent kiểm tra:
 
 ```
 debug(op: "adapters")
 ```
 
-It answers with what it found, or explains that an adapter needs both halves.
+Nó trả lời bằng những gì tìm thấy, hoặc giải thích rằng một adapter cần cả hai nửa.
 
-| Language        | Adapter                      | Marker                                          | Install                            |
+| Ngôn ngữ       | Adapter                      | Dấu hiệu                                         | Cài đặt                            |
 | --------------- | ---------------------------- | ----------------------------------------------- | ---------------------------------- |
-| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Ships with the SDK — nothing to do |
+| Dart / Flutter  | `dart debug_adapter`         | `pubspec.yaml`                                   | Đi kèm SDK — không cần làm gì      |
 | Python          | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` | `pip install debugpy`              |
-| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
+| Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Đi kèm LLVM                        |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python chọn trình thông dịch của dự án]
+`debugpy` được tìm trong `.venv/bin` hoặc `venv/bin` trước `$PATH`. Một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng chứ không phải như nhầm trình thông dịch.
 :::
 
-## Set the breakpoint first, then launch
+## Đặt điểm dừng trước, rồi khởi chạy
 
-The order matters and the tool enforces it: breakpoints may be set **before** a session exists, because that is the sequence the protocol requires.
+Thứ tự rất quan trọng và công cụ bắt buộc phải theo: điểm dừng có thể được đặt **trước khi** một phiên tồn tại, vì đó là trình tự mà giao thức yêu cầu.
 
-Ask the agent something like:
+Hãy yêu cầu agent làm việc đại loại như sau:
 
-> The `compute` function in `bin/main.dart` returns the wrong value. Set a breakpoint on the line that assigns `product`, launch it under the debugger and tell me what `a` and `b` actually are.
+> Hàm `compute` trong `bin/main.dart` trả về sai giá trị. Đặt một điểm dừng tại dòng gán `product`, khởi chạy nó dưới trình gỡ lỗi và cho tôi biết `a` và `b` thực sự là gì.
 
-It will run roughly:
+Nó sẽ chạy đại khái:
 
 ```
 debug(op: "breakpoints", file: "bin/main.dart", lines: [7])
 debug(op: "launch", program: "bin/main.dart")
 ```
 
-The launch reports where it stopped:
+Lệnh launch báo cáo nơi nó dừng lại:
 
 ```
 Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack` to see where.
 ```
 
-:::caution[If it reports the program exiting instead]
-The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
+:::caution[Nếu nó báo chương trình thoát thay vào đó]
+Điểm dừng đã không gắn được. Một dòng trống, một dòng chú thích, hoặc một dòng không được biên dịch vào bản dựng thì không thể giữ điểm dừng. Gọi `breakpoints` trên một phiên đang sống sẽ báo cáo có bao nhiêu điểm trong số bạn đặt thực sự được gắn.
 :::
 
-## Read the frame
+## Đọc khung
 
 ```
 debug(op: "stack")
@@ -67,7 +68,7 @@ debug(op: "stack")
   #2 main (bin/main.dart:2:18)
 ```
 
-Then walk into it:
+Sau đó đi vào bên trong khung:
 
 ```
 debug(op: "scopes", frame_id: 1)
@@ -79,50 +80,50 @@ debug(op: "variables", reference: 12)
   product (int) = 42
 ```
 
-An object with children reports `[expand: reference N]` — but only when there is genuinely something behind it, so an expansion the agent cannot use is never offered.
+Một đối tượng có các đối tượng con sẽ báo `[expand: reference N]` — nhưng chỉ khi thật sự có thứ gì đó đằng sau nó, nên một phần mở rộng mà agent không dùng được sẽ không bao giờ được đưa ra.
 
-For anything not visible as a local:
+Với bất cứ thứ gì không hiển thị như một biến cục bộ:
 
 ```
 debug(op: "evaluate", expression: "config.timeout.inSeconds", frame_id: 1)
 ```
 
-## Step through
+## Chạy từng bước
 
-| What you want          | Op          |
-| ---------------------- | ----------- |
-| Run to the next stop   | `continue`  |
-| Next line, same frame  | `step_over` |
-| Into the call          | `step_in`   |
-| Out to the caller      | `step_out`  |
-| Stop a running program | `pause`     |
+| Điều bạn muốn            | Op          |
+| ------------------------ | ----------- |
+| Chạy tới điểm dừng kế tiếp | `continue`  |
+| Dòng kế tiếp, cùng khung  | `step_over` |
+| Đi vào lời gọi            | `step_in`   |
+| Đi ra nơi gọi             | `step_out`  |
+| Dừng một chương trình đang chạy | `pause`     |
 
-## Attach to something already running
+## Gắn vào một thứ đang chạy sẵn
 
-For a wedged process rather than one you are starting:
+Dành cho một tiến trình bị kẹt thay vì một tiến trình bạn đang khởi chạy:
 
 ```
 debug(op: "attach", port: 5858)
 ```
 
-## Finish
+## Kết thúc
 
 ```
 debug(op: "terminate")
 ```
 
-Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
+Luôn kết thúc phiên. Một bộ điều hợp gỡ lỗi sở hữu một **tiến trình bị dừng** đang giữ bất cứ thứ gì tiến trình đó giữ — một cổng, một khóa, một kết nối cơ sở dữ liệu.
 
-:::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+:::note[Nó không thể vượt khỏi tầm kiểm soát của bạn]
+Mọi phiên đều có một TTL cứng mà nó không thể gia hạn, mỗi cuộc hội thoại có đúng một phiên, và mọi thứ đều bị dọn sạch khi máy chủ dừng. Lệnh `launch` thứ hai sẽ bị từ chối thay vì thay thế lệnh đầu tiên: một agent khởi chạy phiên mới mà không kết thúc phiên cũ gần như chắc chắn đã mất dấu phiên đầu tiên.
 :::
 
-## Bounded output
+## Đầu ra có giới hạn
 
-A `variables` expansion on a deep object graph is unbounded by nature — one Flutter widget reaches the whole element tree. Children per scope are capped at 50, values at 400 characters and stack frames at 30. A tool result that fills the context window is a tool that ends the run it was helping.
+Một phần mở rộng `variables` trên một đồ thị đối tượng sâu vốn không có giới hạn tự nhiên — một widget Flutter chạm tới toàn bộ cây phần tử. Số đối tượng con mỗi phạm vi bị giới hạn ở 50, giá trị ở 400 ký tự và khung ngăn xếp ở 30. Một kết quả công cụ lấp đầy cửa sổ ngữ cảnh chính là công cụ kết thúc lượt chạy mà nó đang hỗ trợ.
 
-## Related
+## Liên quan
 
-- [Code intelligence](/vi-VN/so-tay/khai-niem/tri-tue-ma-nguon/) — why a debugger, a compiler and a matcher answer different questions
-- [Built-in agent tools](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — every `debug` op and argument
-- [Diagnose an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) — when the problem is the agent, not the code
+- [Trí tuệ mã nguồn](/vi-VN/so-tay/khai-niem/tri-tue-ma-nguon/) — vì sao trình gỡ lỗi, trình biên dịch và bộ so khớp trả lời những câu hỏi khác nhau
+- [Công cụ agent tích hợp](/vi-VN/so-tay/tham-chieu/cong-cu-agent/) — mọi thao tác và tham số của `debug`
+- [Chẩn đoán một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) — khi vấn đề nằm ở agent, không phải ở mã

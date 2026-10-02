@@ -1,96 +1,101 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Koble til en enhet
+description: Koble telefonen din (eller en ekstra nettleser eller skrivebordsapp) til Control Center-serveren din, slik at du kan følge flåten eksternt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-enhet
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/) for how the link
-works and its security model.
+Denne guiden viser deg hvordan du parer en telefon med Control Center, slik at
+du kan lese meldinger og saker og svare hvor som helst fra. Den samme flyten
+parer en ekstra nettleser eller skrivebordsapp. Se
+[Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/) for hvordan
+koblingen fungerer og sikkerhetsmodellen dens.
 
-## Prerequisites
+## Forutsetninger
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- En skrivebords- eller nettklient koblet til serveren din, og et arbeidsområde satt opp. Paringsoperasjoner krever en full klient, så en paret telefon kan aldri pare — eller tilbakekalle — en annen enhet.
+- Serveren må være tilgjengelig fra enheten du parer. På samme nettverk fungerer dette av seg selv; på lengre avstand frakter det formidlede reléet trafikken. Hvis panelet svarer **Ikke tilgjengelig** i stedet for en QR-kode eller legitimasjon, må du publisere en vei først — tunnelvalget under **Innstillinger → Server → Tilkobling og status** (**Del denne serveren**), eller serverens `--public-url` (se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/)).
+- For en telefon: ingenting å installere. QR-koden åpner nettappen **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) som standard).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Selvhosting.** Remote og relémegleren har åpen kildekode i dette repoet:
+telefonappen (`apps/cc_remote`, en Flutter-nett-PWA du kan distribuere til
+Cloudflare Pages via `wrangler.jsonc`, til nginx-imaget `docker/cc_remote`,
+eller til en hvilken som helst statisk vert med HTTPS — service workere og
+IndexedDB krever sikker kontekst) og reléet (`apps/cc_signaling_server`, en
+enkelt tilstandsløs Dart-binær som ikke lagrer appdata og aldri ser
+paringshemmeligheten — den videresender bare ende-til-ende-forseglede rammer).
+Se README-filene deres for bygge- og kjøretrinn.
 
-## Step 1: Open the pairing panel
+## Trinn 1: Åpne paringspanelet
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Åpne **Innstillinger → Deg → Dine enheter**. Seksjonen **Dine enheter** viser
+klientene som er paret med kontoen din på denne serveren. (Serverens eier ser
+alle enheter på serveren; alle andre ser bare sine egne.)
 
-## Step 2: Pair a new client
+## Trinn 2: Par en ny klient
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Klikk **Par en ny klient** i sidehodet, gi den et navn (f.eks. «Min telefon»),
+velg typen — **Nettleser**, **Skrivebordsapp** eller **Telefon** — og klikk
+**Par**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- For en **telefon** vises en QR-kode. Skann den med telefonens kamera, eller kopier lenken og åpne den i en hvilken som helst nettleser. Den peker Remote-appen mot serveren din og inneholder legitimasjonen.
+- For en **nettleser** eller **skrivebordsapp** kopierer du i stedet den viste lenken (eller enhets-id-en og paringsnøkkelen) inn i den nye klienten. Ett-trykks-lenken tilbys bare når du parer fra nettklienten, siden en skrivebordsbinær ikke har noe nettopphav å bygge den fra.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+Telefon-QR-en og lenken `cc_server pair --client-url` skriver ut på
+kommandolinjen, er **forskjellige nyttelaster og kan ikke byttes om**:
+CLI-lenken fyller ut nettklientens tilkoblingsskjema, mens denne QR-en
+inneholder serverens fulle tilkoblingsbeskrivelse og identitetsfingeravtrykk for
+Remote-PWA-en.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+På telefonsiden parer det ikke i det stille å åpne en paringslenke. Remote viser
+serverens annonserte navn og ber deg bekrefte før den lagrer noe, så en
+forfalsket lenke kan ikke kapre appen over til noen andres server.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[En skannet QR-kode gir umiddelbar tilgang]
+Det finnes ikke noe trinn med vent-til-godkjenning: en utstedt enhet er aktiv fra
+det øyeblikket den opprettes, og tilkoblingssperren sjekker bare at
+legitimasjonen er aktiv og ikke utløpt. Behandle QR-koden og paringsnøkkelen som
+et passord, og tilbakekall alt du ikke mente å dele ut.
 :::
 
-## Manage paired devices
+## Administrer parede enheter
 
-From **Settings → You → Your devices** you can:
+Fra **Innstillinger → Deg → Dine enheter** kan du:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Gi nytt navn** til en enhet
+- **Tilbakekall** en enhet du ikke lenger stoler på. Tilbakekalling ødelegger legitimasjonen og avslutter den aktive økten innen sekunder, så den svikter lukket ved gjentilkobling
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Tilbakekalling er det riktige å gjøre med en telefon som er mistet eller byttet
+ut. Det skjer umiddelbart og er irreversibelt sett fra enhetens side.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Legitimasjon utstedt fra dette panelet er tidsbegrenset: den utløper 30 dager
+etter at den er utstedt, og tilkoblingssperren svikter lukket etter det. En
+legitimasjon utstedt med `cc_server pair` på kommandolinjen har **ingen
+utløpstid i det hele tatt** — tilbakekall den manuelt når maskinen den var ment
+for, tas ut av drift.
 
-## Switch workspaces from the phone
+## Bytt arbeidsområde fra telefonen
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+En paret telefon kan bytte mellom arbeidsområder uavhengig av skrivebordet.
+Telefonen sender arbeidsområdet med hvert kall, og serveren sjekker medlemskapet
+og rollen din i det arbeidsområdet ved hvert enkelt — så telefonen når bare
+arbeidsområder du er medlem av, og å bytte der endrer aldri det skrivebordet
+viser.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+En telefonøkt er i tillegg begrenset til en liten tillatelsesliste over verktøy
+som er tunge på lesing: den kan liste opp og lese saker, agenter, områder,
+meldinger og artikler i nyhetsstrømmen, og den kan oppdatere eller tildele en
+sak, sende en melding i et område og merke en artikkel som lest eller lagret.
+Alt utenfor dette settet avvises før det når serverens dispatcher.
 
-## Related guides
+## Relaterte guider
 
-- [Run a headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): make the server reachable in the first place
-- [Connect to a remote server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/): point a full client at it
-- [Use spaces](/nb-NO/handbok/slik-gjor-du/omrader/): what you'll mostly do from the phone
-- [Create and manage tickets](/nb-NO/handbok/slik-gjor-du/administrer-saker/): triage from the road
+- [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/): gjør serveren tilgjengelig i utgangspunktet
+- [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/): pek en full klient mot den
+- [Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/): det du stort sett gjør fra telefonen
+- [Opprett og administrer saker](/nb-NO/handbok/slik-gjor-du/administrer-saker/): prioriter på farten
 
-## Related concepts
+## Relaterte konsepter
 
-- [Remote control and mobile](/nb-NO/handbok/konsepter/fjernstyring/)
-- [Deployment and clients](/nb-NO/handbok/konsepter/drift/)
+- [Fjernstyring og mobil](/nb-NO/handbok/konsepter/fjernstyring/)
+- [Drift og klienter](/nb-NO/handbok/konsepter/drift/)

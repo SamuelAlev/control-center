@@ -1,98 +1,98 @@
 ---
-title: Customize the chat bot
-description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+title: Dostosuj bota czatu
+description: Zmień nazwę bota, to, co mówi o sobie, albo jego polecenie z ukośnikiem — z poziomu Control Center.
 slug: pl-PL/podrecznik/poradniki/dostosowanie-bota-czatu
+sourceHash: 7084d6221d4d5b818c595b3b475b1e479e7f05c8
 ---
 
-This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+Ten poradnik pokazuje, jak zmienić aplikację bota po stronie dostawcy bez wychodzenia z Control Center.
 
-## Prerequisites
+## Wymagania wstępne
 
-- The `owner` or `admin` role in the workspace
-- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
-- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+- Rola `owner` lub `admin` w obszarze roboczym
+- **Połączony** dostawca. Wiersz **Dostosuj bota** pojawia się dopiero wtedy, gdy obszar roboczy jest połączony
+- Aplikacja, którą Control Center może zarządzać. W przypadku Slacka oznacza to, że połączenie przechowuje token odświeżania konfiguracji aplikacji (`xoxe-…`); jeśli go nie ma, wiersz mówi o tym i pozostaje wyłączony
 
-## What you can change
+## Co możesz zmienić
 
-| Field                 | Meaning                                         | Limit                                                      |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
-| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
-| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
-| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
-| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
-| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+| Pole                                          | Znaczenie                                              | Limit                                                          |
+| --------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------- |
+| **Nazwa aplikacji**                           | Jak dostawca wyświetla aplikację na liście             | 1–35 znaków                                                    |
+| **Nazwa bota (co członkowie wpisują po @)**   | Co członkowie wpisują po `@`                           | 1–80 znaków                                                    |
+| **Krótki opis**                               | Jedna linia wyświetlana przez dostawcę                 | Maksymalnie 140 znaków                                         |
+| **Co bot mówi, że potrafi**                   | Wyświetlane nad wiadomością prywatną z botem           | Maksymalnie 300 znaków                                         |
+| **Polecenie z ukośnikiem**                    | Polecenie wywoływane przez członków, bez ukośnika      | Małe litery, tylko `a–z 0–9 _ -`, obcinane po 32 znakach       |
+| **Wiadomości prywatne**                       | Czy bot udostępnia doświadczenie wiadomości prywatnych i agenta | Włączone lub wyłączone                                 |
 
-Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+Control Center weryfikuje cztery pola tekstowe, zanim wywoła dostawcę, dzięki czemu dostajesz komunikat „the app name must be between 1 and 35 characters" zamiast nieprzejrzystego `invalid_manifest` z serwera, którego nie widzisz. Polecenie nie jest odrzucane, lecz normalizowane: wiodący ukośnik jest usuwany, reszta zamieniana na małe litery, wszystko poza `a–z 0–9 _ -` jest odrzucane, a pusty wynik wraca do wartości `cc`.
 
-## Edit the bot
+## Edytuj bota
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
-2. On the provider block, click **Customize bot**
-3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
-4. Edit what you need and save
+1. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+2. W bloku dostawcy kliknij **Dostosuj bota**
+3. Okno dialogowe otwiera się na _bieżących_ wartościach aplikacji, odczytanych z powrotem od dostawcy — więc punktem wyjścia jest zmiana, którą ktoś wprowadził we własnym interfejsie Slacka
+4. Zmień, co trzeba, i zapisz
 
-Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+Odczytywanie tych bieżących wartości kosztuje rotację tokenu po stronie Slacka — dlatego wiersz wymaga świadomego kliknięcia, a nie jest czymś, co strona robi przy wczytywaniu.
 
-The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+Zapis nakłada Twoje zmiany na bieżącą definicję aplikacji. Wszystko, czego Control Center nie modeluje — drugie polecenie z ukośnikiem dodane w Slacku, krok workflow, niepowiązane ustawienie — pozostaje nietknięte. Zakresy i zdarzenia są scalane, nigdy odejmowane.
 
-After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+Po zapisaniu Control Center odczytuje tożsamość bota ponownie, aby nazwa w ustawieniach zgadzała się z nazwą w aplikacji czatu.
 
-## Reinstall when permissions change
+## Zainstaluj ponownie, gdy zmienią się uprawnienia
 
-:::caution[Reinstall after a permission change]
-Slack applies the new app definition immediately but keeps the installed grant
-as it was. Reinstall the app for a permission change to take effect. The bridge
-keeps running on the previous grant until you do.
+:::caution[Po zmianie uprawnień zainstaluj ponownie]
+Slack stosuje nową definicję aplikacji natychmiast, ale pozostawia zainstalowane
+uprawnienia bez zmian. Aby zmiana uprawnień zaczęła obowiązywać, zainstaluj
+aplikację ponownie. Do tego czasu most działa dalej na poprzednich uprawnieniach.
 :::
 
-When a save changes permissions, the dialog stays open and says "Slack changed
-the app's permissions. Reinstall the app for them to take effect", with a
-**Reinstall app** button that opens Slack's install-on-team page for that app.
-In Slack that is **Install App → Reinstall to Workspace**.
+Gdy zapis zmienia uprawnienia, okno dialogowe pozostaje otwarte i mówi: „Slack zmienił uprawnienia aplikacji. Zainstaluj ją ponownie, aby zaczęły obowiązywać.", z przyciskiem **Zainstaluj ponownie**, który otwiera stronę instalacji tej aplikacji w zespole Slacka. W Slacku to **Install App → Reinstall to Workspace**.
 
-## Rename the slash command
+## Zmień nazwę polecenia z ukośnikiem
 
-Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+Zmień **Polecenie z ukośnikiem** i zapisz. Most tworzy wtedy instrukcje, używając polecenia, którym został wywołany ostatnio, więc tekst pomocy i instrukcje linkowania podążają za zmianą nazwy, zamiast wskazywać polecenie, które już nie istnieje.
 
-Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+Zmiana nazwy nie psuje istniejących wątków w moście: wątki są kluczowane rozmową, a nie poleceniem.
 
-## What Control Center will not change
+## Czego Control Center nie zmieni
 
-- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
-- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
-- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+- **Ustawienia strukturalne.** Transport (Socket Mode), wymagane zakresy i subskrypcje zdarzeń są narzucane, a nie udostępniane. Aplikacja, którą da się wyciszyć z ekranu ustawień, to zgłoszenie do wsparcia, a nie funkcja
+- **Ikona bota.** Zmienić ją mogą wyłącznie własne ustawienia aplikacji dostawcy, i okno dialogowe tak mówi
+- **Własne migracje funkcji dostawcy.** Aplikacja, która działa już na dawnej formie asystenta Slacka, pozostaje przy niej; to okno edytuje opis, a nie migruje aplikacji
 
-## Troubleshooting
+## Rozwiązywanie problemów
 
-### There is no Customize bot row at all
+### Wiersz „Dostosuj bota" w ogóle się nie pojawia
 
-The workspace is not connected yet. The row only appears once the provider block
-shows a live connection. See [Set up Slack integration](/pl-PL/podrecznik/poradniki/integracja-slack/).
+Obszar roboczy nie jest jeszcze połączony. Wiersz pojawia się dopiero wtedy, gdy
+blok dostawcy pokazuje aktywne połączenie. Zobacz
+[Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/).
 
-### The Customize bot row is disabled
+### Wiersz „Dostosuj bota" jest wyłączony
 
-The connection has no app-management credential — the row's subtitle says
-"Control Center needs an app configuration token to edit the bot. Reconnect and
-include one." For Slack, generate an app configuration token pair on
-[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
-token filled in. This is expected for an app built by hand or created through
-**Create in Slack**, because Slack never reports which app it made.
+Połączenie nie ma poświadczeń do zarządzania aplikacją — podtytuł wiersza mówi:
+„Do edycji bota Control Center potrzebuje tokenu konfiguracji aplikacji. Połącz się
+ponownie i dołącz taki token.". W przypadku Slacka wygeneruj parę tokenów
+konfiguracji aplikacji na [api.slack.com/apps](https://api.slack.com/apps) i połącz
+się ponownie z wypełnionym tokenem odświeżania. Jest to oczekiwane w przypadku
+aplikacji zbudowanej ręcznie albo utworzonej przez **Utwórz w Slack**, ponieważ
+Slack nigdy nie zgłasza, którą aplikację utworzył.
 
-### "Control Center does not know which app to edit"
+### „Control Center does not know which app to edit"
 
-The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+Zapisane połączenie nie zawiera identyfikatora aplikacji — zwykle dotyczy to aplikacji połączonej ręcznie, zanim identyfikator został zapisany. Połącz obszar roboczy ponownie albo utwórz aplikację z poziomu Control Center.
 
-### The bot's new name has not appeared in chat
+### Nowa nazwa bota nie pojawiła się w czacie
 
-Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+Dostawcy krótko buforują metadane aplikacji. Jeśli nazwa jest nieaktualna po minucie, sprawdź, czy zapis nie poprosił Cię o ponowną instalację aplikacji.
 
-## Related guides
+## Powiązane poradniki
 
-- [Set up Slack integration](/pl-PL/podrecznik/poradniki/integracja-slack/)
-- [Link your Slack account](/pl-PL/podrecznik/poradniki/laczenie-konta-czatu/)
-- [Chat bridge](/pl-PL/podrecznik/dokumentacja-referencyjna/most-czatu/)
+- [Skonfiguruj integrację Slack](/pl-PL/podrecznik/poradniki/integracja-slack/)
+- [Połącz konto Slack](/pl-PL/podrecznik/poradniki/laczenie-konta-czatu/)
+- [Most czatu](/pl-PL/podrecznik/dokumentacja-referencyjna/most-czatu/)
 
-## Related concepts
+## Powiązane koncepcje
 
-- [Chat bridges](/pl-PL/podrecznik/koncepcje/mosty-czatu/)
+- [Mosty czatu](/pl-PL/podrecznik/koncepcje/mosty-czatu/)

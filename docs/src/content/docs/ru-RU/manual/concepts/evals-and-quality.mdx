@@ -1,33 +1,37 @@
 ---
-title: Evals and quality
-description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+title: Eval и качество
+description: Наборы eval, стартовый набор, создаваемый в каждом рабочем пространстве, и то, где они появляются в «Наблюдаемости».
 slug: ru-RU/руководство/понятия/eval-и-качество
+sourceHash: 2617283e17b5b606c55f4ca371c9b5565ae0934c
 ---
 
-An **eval suite** is a workspace-scoped definition of a task to run against an
-agent: a prompt, a target agent and mode, optional setup, an optional fixture
-with a pinned SHA and a list of graders. Graders are deterministic first; an
-LLM-rubric judge covers what those checks cannot express.
+**Eval-набор** — это определение задачи в рамках рабочего пространства, которую
+нужно запустить против агента: промпт, целевой агент и режим, необязательная
+подготовка, необязательная фикстура с зафиксированным SHA и список грейдеров.
+Грейдеры в первую очередь детерминированные; судья с LLM-рубрикой покрывает то,
+что эти проверки выразить не могут.
 
-Five starter suites seed when a workspace is created. They cover orchestration
-proposals, a review that finds a seeded bug, plan mode staying read-only, plan
-mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
-that already exists and does not backfill older workspaces.
+При создании рабочего пространства создаются пять стартовых наборов. Они
+охватывают предложения оркестрации, проверку, которая находит намеренно
+внесённую ошибку, режим плана, остающийся доступным только для чтения, режим
+плана, создающий план, и полный цикл работы с тикетом. Начальное заполнение
+слушает `WorkspaceCreated` (`workspace.upsert` или `workspace.create`),
+пропускает имя, которое уже существует, и не заполняет задним числом более
+старые рабочие пространства.
 
-## Where they appear
+## Где они появляются
 
-**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
-in the workspace.
+**Наблюдаемость → Качество** (`/workspaces/<id>/observability`) перечисляет
+все наборы в рабочем пространстве.
 
-Create, list, edit and delete suites over `evals.upsertSuite`,
-`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
-those operations are the editor.
+Создавайте, просматривайте, редактируйте и удаляйте наборы через
+`evals.upsertSuite`, `evals.deleteSuite` и `evals.watchSuites`. Вкладка
+«Качество» — это список; эти операции — редактор.
 
-## Related concepts
+## Связанные понятия
 
-- [The agent model](/ru-RU/руководство/понятия/модель-агента/): the configuration a suite
-  pins
-- [Guardrails](/ru-RU/руководство/понятия/ограничения/): the autonomy dial
-- [Manage costs and budgets](/ru-RU/руководство/практические-руководства/управлять-затратами/): spend recorded
-  alongside a run
+- [Модель агента](/ru-RU/руководство/понятия/модель-агента/): конфигурация,
+  которую фиксирует набор
+- [Ограничения](/ru-RU/руководство/понятия/ограничения/): регулятор автономии
+- [Управлять затратами и бюджетами](/ru-RU/руководство/практические-руководства/управлять-затратами/):
+  расходы, записываемые вместе с запуском

@@ -1,31 +1,34 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Headless bir sunucu çalıştırma
+description: cc_server headless ikilisini ya da Docker imajını çalıştırın, ona bir istemci eşleştirin ve tüm CLI bayrakları ile ortam değişkenleri yüzeyiyle yapılandırın.
 dateModified: 2026-09-10
 slug: tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Sürekli açık kalan bir makinede `cc_server` çalıştırın, ardından masaüstünüzden,
+bir tarayıcıdan ya da telefonunuzdan ona bağlanın. Sunucu, saf Dart ile yazılmış
+yerel bir ikilidir — Flutter motoru yoktur — bu yüzden macOS, Linux ya da Windows
+üzerinde headless çalışır. Veritabanına sahiptir, ajanları çalıştırır ve tüm dış
+API çağrılarını yapar; istemciler yalnızca çizer.
 
-## Run in Docker (prebuilt images)
+## Docker’da çalıştırma (hazır imajlar)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Her sürüm, dört GHCR imajından oluşan ve kendi sunucunuzda barındırabileceğiniz
+bir yığın yayımlar — arka uç, iki statik ince istemci ve isteğe bağlı eşleştirme
+aktarıcısı — ayrıca genel demo ana makinesi için ayrı bir `cc-server-demo` imajı.
+Kendi sunucunuzda barındırılan bir kurulum, kaynak kodu kopyası gerektirmez. Bir
+sürüm etiketi sabitleyin (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) ya da
+`latest` ile ilerleyin.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| İmaj                                             | Ne olduğu                                     | Yayımladığı portlar |
+| ------------------------------------------------ | --------------------------------------------- | ------------------- |
+| `ghcr.io/samuelalev/cc-server`                    | Arka uç: veritabanı, ajanlar, MCP, webhook’lar | `-p 9030:9030`      |
+| `ghcr.io/samuelalev/cc-webapp`           | Web istemcisi (statik nginx)                  | `-p 8080:8080`      |
+| `ghcr.io/samuelalev/cc-remote`        | Telefon yardımcı PWA’sı (statik nginx)        | `-p 8081:8080`      |
+| `ghcr.io/samuelalev/cc-signaling-server`     | WebRTC eşleştirme aktarıcısı (isteğe bağlı)   | `-p 8788:8788`      |
 
-The whole stack as a compose file:
+Tüm yığın, tek bir compose dosyası olarak:
 
 ```yaml
 services:
@@ -51,91 +54,95 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Bunlardan herhangi birini loopback dışına açmadan önce bilmeye değer şeyler:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **`cc-server` imajı `CC_SERVER_INSECURE=1` ile gelir** (yayımlanan port
+  trafiğini alabilmesi için `0.0.0.0` adresine bağlanmak zorundadır); bu yalnızca
+  güvenilir bir ağda, TLS sonlandıran bir ters proxy’nin — Caddy, Traefik, nginx
+  ya da bir Cloudflare Tunnel — arkasında güvenlidir. TLS’i bunun yerine süreç
+  içinde sonlandırmak için bir sertifika bağlayın ve `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` değişkenlerini ayarlayın (ardından `CC_SERVER_INSECURE`
+  değişkenini kaldırın). Her şey `docker run -e …` ya da compose dosyasındaki
+  `environment:` bloğu ile geçersiz kılınabilir.
+- **Tek durum `/data` dizinidir.** SQLite veritabanları, eşleştirilmiş cihaz
+  sırları, indirilen modeller ve toplantı sesleri hep bu birimde tutulur — onu
+  yedekleyin, kapsayıcı gözden çıkarılabilir hale gelir.
+- **İlk bağlantıdan önce imajın içinden bir istemci eşleştirin**; bu, [3.
+  adımın](#3-adım-i̇lk-başlatmadan-önce-bir-istemci-eşleştirme) kapsayıcıdaki karşılığıdır:
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **İki istemci imajı da statik nginx barındırıcısıdır** — çalışma zamanında
+  yapılandırılacak hiçbir şey yoktur; her istemcinin bağlantı formu sunucu
+  URL’nizi, cihaz kimliğini ve eşleştirme anahtarını alır. Sinyal aktarıcısı da
+  aynı şekilde yalnızca portuna ihtiyaç duyar (`SIGNALING_HOST` /
+  `SIGNALING_PORT` geçersiz kılınabilir); durumsuzdur, hiçbir sır tutmaz ve bir
+  **yedek yoldur** — bir telefon, erişilebilir bir yol olduğunda loopback’i,
+  LAN’ı, tailnet’i ya da doğrudan bir `wss://` yolunu kullanır ve yalnızca
+  hiçbiri yoksa aktarıcıya düşer. İstemcileriniz sunucuya her zaman doğrudan
+  erişiyorsa bunu atlayın.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Bu kılavuzun geri kalanı sunucuyu kaynaktan derler; ele aldığı bayraklar ve
+davranış, imajın ortam değişkenlerinin beslediği şeylerin aynısıdır.
 
-## Prerequisites
+## Önkoşullar
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [Dart SDK](https://dart.dev/get-dart). Bu depo SDK’sını [fvm](https://fvm.app) ile sabitler, bu yüzden her komutun başına `fvm` ekleyin.
+- Bu deponun kopyası alınmış olmalı.
+- Hazırlama betiğinin ihtiyaç duyduğu yerel araç zinciri — Rust/`cargo` ile birlikte `meson`, `ninja`, `pkg-config`, `git` ve bir C++ derleyicisi. Her derleme betiği, bulamadığı şeyi ve nasıl kurulacağını belirtir.
+- Erişilebilir bir ana makine: yerel kullanım için loopback ya da uzak istemciler için TLS’li bir LAN/genel adres.
 
-## Step 1: Stage the native libraries
+## 1. Adım: Yerel kitaplıkları hazırlama
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Yerel kitaplıklar **zorunludur** — düşürülmüş bir mod yoktur. Her şeyden önce
+bunları depo kökünden derleyin:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Bu, `rift`, `fff`, tree-sitter ve dil bilgilerini, `aec`, `lame`, `ccpty`,
+`cc_watcher`, `cc_inference` ile SAML yerel kitaplığını `build/natives/`
+dizinine derler. `cc_server` derleme kancası, orada hazırlanan her şeyi pakete
+yeniden yazar; bu yüzden bu adımı atlamak ya derlemeyi doğrudan başarısız kılar
+ya da — aşağıdaki kaçış kapısıyla — açılış ön denetimi başlamayı reddeden ve
+eksik kitaplığın adını veren bir ikili üretir.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Yalnızca derleme için kaçış kapısı]
+Depo kökünde boş bir `.cc_natives_allow_missing` dosyası oluşturmak, eksik yerel
+kitaplıklar yüzünden oluşan derleme hatasını bir uyarıya düşürür. Yeni bir
+klonun söz dizimini denetlemek içindir; bu şekilde derlenen bir sunucu açılamaz.
+Bir **dosya** olmalıdır — derleme kancası çalıştırıcısı çağıranın ortamını
+iletmez, bu yüzden bir ortam değişkeni yok sayılır.
 :::
 
-## Step 2: Build the binary
+## 2. Adım: İkiliyi derleme
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
-`./build/cli/<os_arch>/bundle/bin/cc_server`.
+Paket, ikilinin yanında `libsqlite3` ile hazırlanan yerel kitaplıkları da taşır —
+sistem SQLite’ı ve Flutter motoru gerekmez. Çalıştırılabilir dosya
+`./build/cli/<os_arch>/bundle/bin/cc_server` yoluna yerleşir.
 
-## Step 3: Pair a client before first start
+## 3. Adım: İlk başlatmadan önce bir istemci eşleştirme
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Yeni bir veri dizininde eşleştirilmiş cihaz ve önceden paylaşılan anahtar yoktur,
+bu yüzden bir istemcinin eşleştirme anahtarı istemi henüz karşılanamaz. `pair`
+alt komutuyla bir tane üretin. `global.db` ile `secrets.json` dosyalarını
+doğrudan yazar; o veri dizinini zaten sunan bir sunucu, yeni cihazı yeniden
+başlatma olmadan alır:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+İstemcinin bağlantı formuna yapıştıracağınız üç değer yazdırır:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +151,49 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+İşe yarar bayraklar: `--device` (varsayılanı `web-client`; kimlik aynı zamanda
+cihaz katmanını da seçer — `desktop`, `ios`, `android`, başka her şey bir web
+istemcisidir), `--label` (varsayılanı platform adı artı bu makinenin ana makine
+adıdır), `--host` (URL’de yazdırılacak ana makine; çünkü loopback’e başka bir
+makineden erişilemez) ve `--client-url`. `pair` komutunu yeniden çalıştırmak o
+cihazın anahtarını döndürür ve açık oturumlarını düşürür. Eşleştirme hiçbir
+zaman çalışma alanı oluşturmaz: bağlanan istemcinin ilk kurulum akışı ilkini
+adlandırır ve oluşturur.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+`--client-url` ile ayrıca, web istemcisini önceden doldurulmuş halde açan,
+terminalden taranabilir bir QR kodu yazdırır:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
+:::caution[Bu QR, telefon QR’ı değildir]
+`--client-url`, **web istemcisi** için bir bağlantı oluşturur — sunucu URL’si,
+cihaz kimliği ve anahtar URL fragment’ında. **Remote** telefon uygulaması farklı
+bir yük bekler (sunucunun tam bağlantı tanımlayıcısı artı bir son kullanma
+tarihi); bu, çalışan bir istemcide **Ayarlar → Siz → Cihazlarınız** yolundan
+üretilir. İkisi birbirinin yerine kullanılamaz. Bkz. [Bir cihaz
+eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+`cc_server pair` ile üretilen bir kimlik bilgisinin **son kullanma tarihi
+yoktur**; uygulamada üretilen bir tanesinin ise süresi her zaman 30 gün sonra
+dolar. İşiniz bittiğinde CLI ile üretilmiş bir cihazı **Ayarlar → Siz →
+Cihazlarınız** yolundan iptal edin.
 
-## Step 4: Start the server
+## 4. Adım: Sunucuyu başlatma
 
-On loopback — the default and all you need for a client on the same machine:
+Loopback üzerinde — varsayılan budur ve aynı makinedeki bir istemci için
+ihtiyacınız olan tek şeydir:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Ona başka bir makineden erişmek için tüm arayüzlere bağlanın. TLS olmadan
+loopback dışı bir bağlanma **başlangıçta reddedilir** (`Refusing to bind
+non-loopback address … without TLS`), bu yüzden bir sertifika sağlayın:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +201,44 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Ya da güvenilir bir özel ağda TLS’i bir ters proxy’de sonlandırın ve onun
+arkasında düz metin bir bağlanmayı seçin:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--tls-cert` ve `--tls-key` birlikte ayarlandığında `--insecure` yok sayılır —
+TLS her zaman kazanır. Sunucu, düz metin durumunu `GET /healthz` içinde
+`insecure: true` olarak duyurur ve istemciler böyle bir bağlantıyı güvensiz
+olarak işaretler.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Sunucu `SIGINT`/`SIGTERM` alana kadar çalışır, ardından temiz biçimde kapanır.
 
-## Step 5: Connect a client
+## 5. Adım: Bir istemci bağlama
 
-Point a client at the server URL and pairing key from step 3:
+Bir istemciyi 3. adımdaki sunucu URL’sine ve eşleştirme anahtarına yönlendirin:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
+- **Masaüstü uygulaması**: ilk çalıştırma ekranında (**Control Center nasıl çalışsın?**) **Bu uygulamada çalıştır** yerine bağlantı alanlarını doldurun ya da sunucuyu daha sonra **Ayarlar → Sunucu → Bağlantı ve durum** yolundan ekleyin. Bkz. [Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/).
+- **Web istemcisi**: [app.usectrl.dev](https://app.usectrl.dev) adresini (ya da web paketinin kendi kopyanızı) açın ve sunucu URL’sini, cihaz kimliğini ve eşleştirme anahtarını girin.
+- **Telefon**: **Remote** uygulamasını çalışan bir istemciden eşleştirin — bkz. [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server hiçbir web paketi sunmaz]
+Tek başına çalışan bir `cc_server` hiçbir zaman bir web kökü bağlamaz, bu yüzden
+`GET /` 404 döner. Web istemcisi ayrı olarak barındırılır — `app.usectrl.dev`
+adresini kullanın ya da web paketini HTTPS destekli herhangi bir statik
+barındırıcıda kendiniz barındırın (yukarıdaki `cc-webapp` imajı tam olarak
+budur). Loopback dışındaki bir tarayıcı kaynağı `--allowed-origins` listesinde
+olmalıdır, yoksa `/rpc` için WebSocket yükseltmesi reddedilir; listenin
+varsayılanı `https://app.usectrl.dev` adresidir ve `localhost` / `127.0.0.1` her
+zaman izinlidir.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## 6. Adım: Bir Google Calendar bağlama (isteğe bağlı)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Bir çalışma alanının takvimini arayüz olmadan eşitlemek için cihaz kodu akışını
+kullanın:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +246,69 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/).
+Başka bir cihazda onaylamak için bir kod ve bir URL yazdırır, yenileme
+belirtecini sunucu tarafında saklar ve çıkar. Kaynak derlemesi bir Google
+istemcisi içermez, bu yüzden kimlik ve gizli anahtar ortam değişkenleri
+zorunludur — `--google-client-id` diye bir bayrak yoktur. Bkz. [Bir Google
+Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/).
 
-## Configuration
+## Yapılandırma
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/tr-TR/kilavuz/referans/cc-server-cli/).
+Yukarıda kullanılan bayraklar, ilk kurulumun ihtiyaç duyduğu bayraklardır. Tam
+yüzey — 23 bayrak ve ortam değişkeni çifti, dört alt komut ve veri dizini düzeni
+— [`cc_server` CLI referansında](/tr-TR/kilavuz/referans/cc-server-cli/) yer
+alır.
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Bilinmeyen bayraklar sessizce yok sayılır]
+Argüman ayrıştırıcısı elle yazılmıştır ve tanımadığı her şeyi atlar, bu yüzden
+bir yazım hatası (`--tls-key-file`, `--bindany`) hata üretmez — sunucu yalnızca
+varsayılanla başlar. Bir bayrak etkisiz göründüğünde başlangıç günlük satırlarını
+denetleyin.
 :::
 
-The four you are most likely to need:
+En çok ihtiyaç duyacağınız dört tanesi:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Bayrak         | Varsayılan                           | Anlamı                                                                                           |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | işletim sisteminin kullanıcı başına uygulama verisi dizini | Veritabanları, sırlar, modeller ve önbelleğe alınmış medya                                       |
+| `--port`       | `9030`                               | TCP portu (`0` = geçici)                                                                         |
+| `--bind`       | `loopback`                           | `loopback` ya da tüm arayüzler için `any` (TLS ya da `--insecure` gerektirir)                    |
+| `--public-url` | bağlanmadan türetilir                | Eşleştirilmiş istemcilere duyurulan RPC URL’si. **Bir proxy, NAT ya da tünel arkasında bunu açıkça ayarlayın** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Varsayılan veri dizini macOS’ta `~/Library/Application Support/control-center`,
+Windows’ta `%APPDATA%\control-center`, diğer yerlerde
+`$XDG_DATA_HOME/control-center` (yoksa `~/.local/share/control-center`) olur.
+Çalışma dizinine göreli bir `.cc_server` yalnızca hiçbir ev ya da uygulama
+verisi dizini çözümlenemediğinde kullanılır.
 
-## What the server serves
+## Sunucunun sundukları
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` ürünün bir alt kümesi değil, tüm yüzeyidir: repo-RPC veri yolu ve
+abonelikleri, aynı portta `POST /mcp` ve `GET /sse` üzerindeki MCP araç uç
+noktası, gelen webhook’lar, medya ve yazı tipi proxy’leri, tek oturum açma geri
+çağrıları, filo kiralama protokolü, 30 dakikalık bir zamanlamayla sunucu tarafı
+RSS çekme ve vektör arama (`sqlite_vector` uzantısı süreç genelinde bir otomatik
+uzantı olarak kaydedilir; yalnızca uzantının bulunmadığı yerde tam metin
+aramasına düşer).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Dağıtıcı **durumsuzdur**: oturum başına bir çalışma alanı bağlaması yoktur.
+Çalışma alanına özgü her çağrı kendi `workspace_id` değerini taşır ve erişime,
+çağıranın çalışma alanı üyeliği ve rolü karar verir — bir eşleştirme anahtarı
+taşımak değil.
 
-Two things to know before you expose the port beyond loopback:
+Portu loopback dışına açmadan önce bilmeniz gereken iki şey:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP, ana makine dışında kapalıya düşer.** Belirteçsiz bir MCP yüzeyi yalnızca loopback’e yanıt verir. `any` adresine bağlanmak bunu genişletmez — ana makine dışından gelen bir istek, siz bir belirteç yapılandırana kadar "MCP requires a bearer token to answer non-loopback clients" ile reddedilir (`mcp.setToken` ya da **Ayarlar → Sunucu → MCP sunucuları**).
+- **`GET /healthz` tasarımı gereği kimlik doğrulamasızdır**, joker CORS ile çalışır ve sunucunun kimliğini, adını, kimlik parmak izini ve derleme sürümünü yayımlar. İstemcilerin sunucuyu sabitlemek için parmak izine ihtiyacı vardır, bu yüzden bu kasıtlıdır — ancak bu, erişilebilir herhangi bir `cc_server`’ın soran herkese bu kadarını açıkladığı anlamına gelir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/)
-- [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)
-- [Run a fleet worker](/tr-TR/kilavuz/nasil-yapilir/filo-workeri-calistirma/)
-- [Connect a Google Calendar](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
+- [Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/)
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/)
+- [Bir filo worker’ı çalıştırma](/tr-TR/kilavuz/nasil-yapilir/filo-workeri-calistirma/)
+- [Bir Google Calendar bağlama](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/)
 
-## Related concepts
+## İlgili kavramlar
 
-- [Deployment and clients](/tr-TR/kilavuz/kavramlar/dagitim/)
-- [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)
+- [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/)
+- [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/)

@@ -1,193 +1,206 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: Sandbox politikalarını yapılandırma
+description: Bir ajan çalıştırmasını neyin kısıtladığı, işletim sistemi sandbox'ının onu sarıp sarmadığını nasıl anlayacağınız ve sunucunun gerçekte hangi yetenek ayarlarını okuduğu.
 slug: tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+Bir ajan çalıştırmasının sandbox'a alınıp alınmadığına sunucu, açılışta karar
+verir (`--sandbox`). **Ayarlar → Sunucu → Tanılama ve gizlilik** altındaki
+**Korumalı alanı etkinleştir** anahtarı, **Backend** seçici ve **Varsayılan
+yetenekler · yeni space'ler** anahtarları cihazınızda saklanan tercihlerdir.
+**Korumalı alan** kartının ana makine algılaması, sunucu ana makinesinin neyi
+sarabileceğini bildirir.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+Bir çalıştırmaya ulaşan iki denetim vardır ve bu kılavuz ikisini de ele alır:
+aşağıdaki ajan bazlı **Sandbox izinleri** ve sunucunun kendi `--sandbox` bayrağı.
 
-## What constrains an agent run
+## Bir ajan çalıştırmasını neyin kısıtladığı
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+Bir ajanı altı şey tutar. İlki işletim sistemi sandbox'ıdır ve koşullu olan tek
+şey odur — diğer beşi her ana makinede geçerlidir.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| Sınır                    | Ne yapar                                                                                                                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| İşletim sistemi sandbox'ı | macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap. Claude Code CLI'yı, ACP adaptörlerini ve harness `bash` aracını sarar. **Windows'ta ve `bwrap` ile `socat` olmayan Linux'ta yoktur** |
+| Kendi worktree'si        | Her konuşma copy-on-write bir checkout alır. Özgün checkout, çalıştırmaya yazma reddi yolu olarak katılır ve bunu uygulayan şey sandbox'tır                                                    |
+| Broker üzerinden verilen kimlik bilgileri | Kimlik bilgisi broker'ı, ajanın yeteneklerinden çalıştırma başına bir ortam üretir ve kapanışta geri alır. Yetenek yoksa ortamda token da yok                                        |
+| Eylem korumaları         | Her değişiklik yapan araç etki sınıflarını bildirir ve koruma bunları çağrı çalışmadan önce çözümler. Bağlı onaylayıcısı olmayan bir `prompt` reddedilir                                      |
+| Ortam temizliği          | ACP ve harness `bash` aracı filtrelenmiş bir ortam alır. `NoSandboxAdapter` üzerinden Claude Code, ana makine ortamını devralır                                                                 |
+| Modun araç yüzeyi        | Salt okunur bir mod, worktree'yi değiştiren araçları tamamen çıkarır ve yine de teslim edebilmesi için modun kendi çıktı fiilini sabitler                                                        |
 
-Three things stay weaker than they look:
+Üç şey göründüğünden daha zayıf kalır:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- Araç kapısını, tamamlanma sözleşmelerini ve yapısal mod kurallarını yalnızca
+  **yerleşik harness** uygular. Claude Code adaptörü uygulamaz. Özellikle Claude
+  Code, `--dangerously-skip-permissions` ile başlatılır; çünkü etkileşimsiz bir
+  `claude -p`, aksi halde kendi isteminde sonsuza dek bloke olur — dolayısıyla
+  Claude'un kendi okuma, yazma, düzenleme ve bash çağrıları Control Center
+  tarafından ne görülür ne de kapıya bağlanır. Sandbox açıkken onların
+  etrafındaki sınır odur.
+- Harness'in süreç içi dosya araçları (read, write, edit, apply patch, search,
+  find, search_files) sunucu sürecinin içinde çalışır; bu yüzden onları hiçbir
+  sandbox profili kısıtlamaz. Sandbox'a alınmış komut çalıştırıcısından yalnızca
+  `bash` aracı geçer. Bu araçlar kendi yol hapsetmeleri ve eylem korumalarıyla
+  sınırlıdır.
+- Arka ucu olmayan bir ana makinede ilk satır hiç geçerli olmaz. ACP ve harness
+  `bash` aracı, ortam temizliği ve komut ilkesine döner; Claude Code,
+  `NoSandboxAdapter` üzerinden ana makine ortamını devralır. Sunucu bunu
+  başlangıç günlüğünde söyler. Kendi günlüğünüzü aşağıda denetleyin.
 
-## Set an agent's capabilities
+## Bir ajanın yeteneklerini ayarlama
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+Sunucunun okuduğu tek yetenek denetimi budur. Ajan bazlıdır ve kimlik bilgisi
+broker'ının o ajanın ortamına ne koyacağına karar verir.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. **Ayarlar → Çalışma alanı → Ajanlar** bölümüne gidin
+2. Listeden ajanı seçin
+3. **Ayarlar** sekmesinde **Sandbox izinleri** bölümüne kaydırın
+4. Anahtarı açın — satırın alt yazısı **Çalışma alanı varsayılanını kullan**
+   olmaktan çıkar
+5. Dört anahtarı ayarlayın:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| Anahtar                          | Neyi denetler                                                                                                                                                                                                                                     |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **git push'a izin ver**          | Bu kapalıyken çalıştırma `GIT_ASKPASS=/usr/bin/false` ve `GIT_TERMINAL_PROMPT=0` alır, böylece bir push kimlik bilgisi isteyemez                                                                                                                |
+| **GitHub API çağrılarına izin ver** | **git push'a izin ver** ile birlikte, broker'ın GitHub token'ını `GH_TOKEN` / `GITHUB_TOKEN` olarak enjekte edip etmeyeceğini denetler                                                                                                        |
+| **Bilet API çağrılarına izin ver** | Broker'ın `TICKETING_API_KEY` enjekte edip etmeyeceğini denetler                                                                                                                                                                                |
+| **Genel ağ erişimine izin ver**  | Sandbox açıkken bu gerçek bir çıkış kapısıdır: kapalıyken çalıştırmanın izin listesi boştur ve her dışa giden istek proxy'de reddedilir. Arka uç olmadığında çalıştırmaya kaydedilir ama başlatılan bir sürecin yaptığı hiçbir şeyi engellemez |
 
-6. Save
+6. Kaydet
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+Kontrol noktası: ajanı yeniden açtığınızda anahtar, sizin ayarlarınızla birlikte
+hâlâ açıktır — kaydedilmiş bir yetenek kümesi sunucudan gidip gelir ve hiçbiri
+olmayan bir ajan tutucu varsayılana döner (push kapalı, GitHub API kapalı,
+biletleme kapalı, ağ açık).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[Canınızı yakabilecek iki durum]
+Alt yazı **Çalışma alanı varsayılanını kullan** der, ama sunucunun okuduğu bir
+çalışma alanı düzeyi yetenek ayarı yoktur. Anahtarı kapalı olan bir ajan,
+yerleşik tutucu varsayılanı alır.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+Ayrı olarak, çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca broker'ın
+kimlik bilgisidir — depo kapsamlı bir GitHub App kurulum token'ı ya da ortam PAT
+yedeği — asla isteği yapan üyenin kendi saklı token'ı değildir. `actingUserId`,
+broker'ın sunucu PAT'ını, sahibi olmayan ve GitHub'ı bağlamamış bir üyeden
+*esirgeyebilmesi* için geçirilir; kapalı bir yeteneğin üzerine kişisel bir
+token'ı birleştirmez. İşletim sistemi sandbox'ı olmayan bir ana makinede
+**GitHub API çağrılarına izin ver**'i kesin bir çıkış sınırı olarak görmeyin:
+başlatılan bir süreç yine de ağa erişebilir.
 :::
 
-## Check whether your agent runs are sandboxed
+## Ajan çalıştırmalarınızın sandbox'a alınıp alınmadığını denetleme
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+Buna iki şey karar verir, ikisi de sunucudadır: ana makinenin bir arka uç sunup
+sunmadığı ve `--sandbox`'ın açık olup olmadığı. Bunları bu sırayla denetleyin.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. **Ayarlar → Sunucu → Tanılama ve gizlilik** bölümüne gidin
+2. **Korumalı alan** kartını okuyun. **Host** olgusu, baktığınız makine değil
+   `cc_server`'ın çalıştığı makinedir. **Backend** alanı **Yerel sandbox**
+   (macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap) ya da **İzolasyon yok**
+   listeler. **Yürürlükte** olgusu, sunucunun gerçekte kullandığı sarma değil bu
+   cihazın tercihidir.
+3. Sunucunun başlangıç günlüğünü okuyun. Tam olarak üç satırdan birini yazar:
+   - `agent sandbox ON` ve arka uç notu — çalıştırmalar sarılır
+   - `no OS-native agent sandbox on this host` ve varsa bir kurulum ipucu —
+     çalıştırmalar sarılmaz
+   - `agent sandbox DISABLED by --sandbox off` — bilinçli bir vazgeçme
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` sandbox durumunu bildirmez; bu yüzden denetim başlangıç
+günlüğüdür.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Sandbox'ı bilinçli olarak kapatmak için — profilin kötü davrandığı bir ana
+makine, onun var olma sebebidir — sunucuyu `--sandbox off` ile başlatın ya da
+`CC_SERVER_SANDBOX=off` ayarlayın. Varsayılan `on`'dur ve `on`, "ana makinede
+varsa bir arka uç kullan" demektir, asla "bir tane gerektir" değil.
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+İki durum hiçbir zaman yerel bir sandbox sarması almaz. **Windows**'ta yerel
+sonda her zaman kullanılamaz bildirir ve kurulacak bir şey yoktur — ajan
+gönderimi `none` kullanır. `microvm` arka ucu ayrıdır (etkileşimli terminaller
+ve rig'ler) ve kendi çalışma zamanında sonda kapısına bağlıdır. **Linux ve
+WSL2**'de hem `bwrap` hem `socat` `PATH` üzerinde olmalıdır; bunlar olmadan
+sonda kullanılamaz bildirir ve eksik paketleri adlandırır.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+bubblewrap kurulu Linux/WSL2'de, standart politikanın gizli dosya glob'ları, bir
+ajanın sonradan oluşturduğu dosyalar için uygulanamaz. Böyle yerel bir
+çalıştırma artık kuralları sessizce yok saymak yerine başarısız olur. Dolayısıyla
+olumlu bir açılış sondası, bir Linux gönderiminin başlayabileceğini garanti
+etmez. `--sandbox off` bilinçli, sınırsız bir vazgeçmedir; yerine geçen bir
+güvenlik sınırı değildir.
 
-## Know what a mode already forbids
+## Bir modun zaten neyi yasakladığını bilme
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+Mod, alan başına saklanır ve koruma çözümleyicisini **mod ön ayarı** katmanı
+olarak besler. Dört moddan üçü salt okunurdur ve salt okunur bir mod on bir etki
+sınıfını doğrudan reddeder:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
-| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| Mod                 | Worktree  | Ön ayar tarafından reddedilen                                                                                                                                                    |
+| ------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ajan** (`chat`)   | Yazılabilir | Hiçbir şey — yerleşik varsayılanlar geçerlidir                                                                                                                                |
+| **Plan**            | Salt okunur | Bir dosyayı sil, çalışma ağacının dışına yaz, commit oluştur, uzak depoya push et, pull request aç, inceleme yayınla veya birleştir, harici takip sistemine yaz, paket kur, süreç çalıştır, çalışma alanı yapısını değiştir, bir enclosure'ı (rig) yönet |
+| **İnceleme**        | Salt okunur | Aynı on bir. Kullanıcı seçemez — ileti alanı yalnızca Ajan, Plan ve Orkestrasyon sunar                                                                                         |
+| **Orkestrasyon**    | Salt okunur | Aynı on bir                                                                                                                                                                     |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+Ağ erişimi ve sır erişimi, salt okunur bir mod tarafından bilinçli olarak
+reddedilmez: araştırma, böyle bir modun asıl amacıdır.
 
-## Require approval before an action runs
+## Bir eylem çalışmadan önce onay isteme
 
-Approval is a guardrail decision, not a sandbox setting.
+Onay bir koruma kararıdır, bir sandbox ayarı değildir.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. **Ayarlar → Çalışma alanı → Ajan izinleri** bölümüne gidin
+2. Eylem sınıfını çalışma alanı, ajan veya alan kapsamında **Önce sor** olarak
+   ayarlayın
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/) for the full
-resolution order.
+Bir **Önce sor** kararı çalıştırmayı kesintiye uğratır ve size sorar. Bağlı bir
+onaylayıcı yoksa kapalı yönde başarısız olur ve eylem reddedilir. Tam çözümleme
+sırası için [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
+sayfasına bakın.
 
-## Troubleshooting
+## Sorun giderme
 
-### An agent cannot push and I never denied it
+### Bir ajan push edemiyor ve ben bunu hiç reddetmedim
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+Ajanın **Sandbox izinlerini** denetleyin. Özel bir yetenek kümesi olmayan bir
+ajan, **git push'a izin ver** seçeneği kapalı olan tutucu varsayılanı alır — bu
+yüzden broker hiçbir GitHub token'ı enjekte etmez ve git'in kimlik doğrulamasının
+hiçbir yolu kalmaz.
 
-### The Sandboxing card reports no native sandbox
+### Korumalı alan kartı yerel sandbox bildirmiyor
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/).
+O zaman o ana makinedeki ajan çalıştırmaları Seatbelt veya bubblewrap tarafından
+sarılmaz ve elinizde kalan sınırlar geçerlidir. Linux ve WSL2'de eksik olan her
+iki aracı kurun — `sudo apt-get install bubblewrap socat` — ve sunucuyu yeniden
+başlatın; başlangıç günlüğü ardından sandbox'ın açık olduğunu söylemelidir.
+Windows'ta kurulacak yerel bir arka uç yoktur; bu yüzden onun yerine korumaları
+sıkılaştırın:
+[Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
+sayfasına bakın.
 
-### An agent reached a file outside its worktree
+### Bir ajan worktree'sinin dışındaki bir dosyaya erişti
 
-Which tool reached it decides whether this is expected.
+Hangi aracın eriştiği, bunun beklenen olup olmadığına karar verir.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+Harness'in süreç içi dosya araçları (read, write, edit, apply patch, search,
+find, search_files) sunucu sürecinde çalışır; bu yüzden onlara hiçbir sandbox
+profili uygulanmaz — sınırları, kendi yol hapsetmeleri ve korumalardır. Bir
+`bash` komutu ya da Claude Code CLI, arka ucun olduğu yerde _sarılır_ ve kayıtlı
+checkout'larınız, sembolik bağlantı çözümlenmiş yazımları dahil, her modda o
+sarmada yazmaya kapalıdır (macOS'ta `/tmp` veya `/var/folders` üzerinden
+ulaşılan bir yol `/private` altında çözümlenir ve her iki yazım da artık
+reddedilir). Arka ucu olmayan bir ana makinede bunların hiçbiri geçerli değildir.
+Her iki durumda da korumalar **Çalışma ağacının dışına yaz**'ı doğrudan
+reddedebilir.
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Configure guardrails](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
-- [Create and configure an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
-- [Diagnose an agent](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
-- [Sandbox backends](/tr-TR/kilavuz/referans/sandbox-arka-uclari/)
-- [cc_server CLI](/tr-TR/kilavuz/referans/cc-server-cli/): the `--sandbox` flag
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)
+- [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/)
+- [Bir ajanı tanılama](/tr-TR/kilavuz/nasil-yapilir/ajan-tanilama/)
+- [Sandbox arka uçları](/tr-TR/kilavuz/referans/sandbox-arka-uclari/)
+- [cc_server CLI](/tr-TR/kilavuz/referans/cc-server-cli/): `--sandbox` bayrağı
 
-## Related concepts
+## İlgili kavramlar
 
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
-- [Modes](/tr-TR/kilavuz/kavramlar/modlar/)
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
+- [Modlar](/tr-TR/kilavuz/kavramlar/modlar/)

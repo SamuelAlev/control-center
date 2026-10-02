@@ -1,199 +1,211 @@
 ---
-title: Memory and knowledge
-description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+title: Bộ nhớ và tri thức
+description: Cách Control Center lưu trữ tri thức của agent, điều gì thực sự đến được prompt của agent và vì sao thao tác đọc bộ nhớ lại mở khi lỗi.
 slug: vi-VN/so-tay/khai-niem/bo-nho-va-tri-thuc
+sourceHash: 32260721061aec132c70c2aaa3f0b77465c13b12
 ---
 
-## What memory is for
+## Bộ nhớ dùng để làm gì
 
-Without memory, every agent conversation starts from zero: the same convention
-has to be re-explained, the same decision re-litigated, the same dead end
-re-explored. Memory is the workspace-scoped store that survives runs and it
-exists so that knowledge produced by one agent is findable by another later.
+Không có bộ nhớ, mọi cuộc hội thoại với agent đều bắt đầu từ số không: cùng một
+quy ước phải được giải thích lại, cùng một quyết định phải tranh luận lại, cùng
+một ngõ cụt phải dò lại. Bộ nhớ là kho có phạm vi không gian làm việc, tồn tại
+qua các lần chạy, và nó tồn tại để tri thức do agent này tạo ra vẫn tìm được về
+sau bởi một agent khác.
 
-It has three layers and they answer different questions:
+Nó có ba tầng và chúng trả lời những câu hỏi khác nhau:
 
-1. **Facts** — what is true (a convention, an outcome, a decision).
-2. **Policies** — what agents must do about it (a normative rule).
-3. **Working memory** — what one agent was in the middle of.
+1. **Sự kiện** — điều gì là đúng (một quy ước, một kết quả, một quyết định).
+2. **Chính sách** — agent phải làm gì với điều đó (một quy tắc mang tính quy phạm).
+3. **Bộ nhớ làm việc** — điều mà một agent đang làm dở.
 
-The distinction matters because they reach the agent by different routes. Facts
-are searched. Policies are pushed. Working memory is private.
+Sự phân biệt này quan trọng vì chúng đến với agent bằng những đường khác nhau.
+Sự kiện thì được tìm kiếm. Chính sách thì được đẩy vào. Bộ nhớ làm việc là riêng
+tư.
 
-## Facts
+## Sự kiện
 
-A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+`MemoryFact` là một đơn vị tri thức có phạm vi gắn với một không gian làm việc và
+một miền.
 
-| Attribute                                   | What it is                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
-| `topic`                                     | A short topic label                                                       |
-| `content`                                   | The knowledge text                                                        |
-| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
-| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
-| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
-| `sourceObservationIds`                      | Which observations led to it                                              |
-| `supersededBy`                              | The newer fact that replaced it, if any                                   |
-| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+| Thuộc tính                                | Nội dung                                                                   |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `domain`                                  | Miền tri thức ("conventions", "decisions", "codebase")                     |
+| `topic`                                   | Nhãn chủ đề ngắn                                                           |
+| `content`                                 | Nội dung tri thức                                                          |
+| `confidence`                              | 0.0–1.0, được gieo từ nguồn gốc và tăng lên khi được nhắc lại             |
+| `memoryType`                              | Loại của sự kiện — quyết định đường cong suy giảm theo thời gian của nó    |
+| `veracity`                                | Cách nó được biết đến — gieo độ tin cậy và định cỡ mức tăng mỗi lần nhắc lại |
+| `sourceObservationIds`                    | Những quan sát nào đã dẫn đến nó                                           |
+| `supersededBy`                            | Sự kiện mới hơn đã thay thế nó, nếu có                                     |
+| `validUntil`, `recallCount`, `mentionCount` | Tín hiệu hết hạn và mức sử dụng dùng khi truy hồi                        |
 
-The last two rows are the ones people miss and they are what decide _which_
-fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
-time-boxed commitment fades quickly while a stable profile fact does not.
-`veracity` records provenance — stated by a human (weight 1.0), inferred by an
-agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
-the fact's starting confidence.
+Hai dòng cuối là những dòng người ta thường bỏ qua, và chúng chính là thứ quyết
+định _sự kiện nào_ nổi lên. `memoryType` mang các tham số suy giảm Weibull riêng
+cho từng loại, nên một cam kết có thời hạn sẽ phai nhanh còn một sự kiện hồ sơ ổn
+định thì không. `veracity` ghi lại nguồn gốc — do con người nêu (trọng số 1.0),
+do agent suy ra (0.7), do công cụ tạo ra (0.5), do nhập vào (0.6) — và trọng số đó
+gieo độ tin cậy ban đầu cho sự kiện.
 
-Facts are never edited in place when they are contradicted. Writing a fact runs
-conflict detection against same-domain, same-topic facts and supersedes the
-loser, recording a conflict row. The audit trail is the point: you can always
-see what was believed before and what replaced it.
+Sự kiện không bao giờ được sửa tại chỗ khi bị mâu thuẫn. Việc ghi một sự kiện sẽ
+chạy phát hiện xung đột với các sự kiện cùng miền, cùng chủ đề và thay thế bên
+thua, đồng thời ghi lại một dòng xung đột. Dấu vết kiểm toán mới là điểm mấu
+chốt: bạn luôn có thể thấy trước đây người ta tin điều gì và điều gì đã thay thế
+nó.
 
-## Policies
+## Chính sách
 
-A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
-and domain, with an active flag and an optional `requiredRole`.
+`MemoryPolicy` là một quy tắc mang tính quy phạm được suy ra từ các sự kiện, có
+phạm vi gắn với một không gian làm việc và một miền, kèm một cờ hoạt động và một
+`requiredRole` tùy chọn.
 
-Every **active** policy in the workspace is injected into **every** dispatch,
-unfiltered — no filtering by domain, role, task, or space. This is worth
-knowing before you write your twentieth policy, because policies compete for
-the same context window as the task. It is also why `requiredRole` on a policy
-is advisory: it describes who the rule is aimed at, it does not stop the rule
-reaching everyone else.
+Mọi chính sách **đang hoạt động** trong không gian làm việc đều được chèn vào
+**mọi** lần điều phối, không lọc — không lọc theo miền, vai trò, tác vụ hay
+space. Điều này đáng biết trước khi bạn viết chính sách thứ hai mươi của mình, vì
+các chính sách tranh nhau cùng một cửa sổ ngữ cảnh với tác vụ. Đó cũng là lý do
+`requiredRole` trên một chính sách chỉ mang tính khuyến nghị: nó mô tả quy tắc
+nhắm tới ai, chứ không ngăn quy tắc đến với tất cả những người còn lại.
 
-## Domains
+## Miền
 
-A `MemoryDomain` groups facts and policies within a workspace. Domains give
-knowledge organizational structure and they are the unit access grants are
-written against — but see the caution below before treating a domain as a
-confidentiality boundary.
+`MemoryDomain` nhóm các sự kiện và chính sách trong một không gian làm việc. Miền
+mang lại cấu trúc tổ chức cho tri thức và chúng là đơn vị mà các cấp quyền truy
+cập được viết dựa trên — nhưng hãy xem phần chú ý bên dưới trước khi coi một miền
+là ranh giới bảo mật.
 
-A domain is either workspace-wide (`architecture`) or scoped to one repository
-(`repo:<slug>/architecture`). The same name in both scopes is two independent
-stores: a fact that is true of one codebase does not overwrite the
-workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
-memory first when the agent is working in that repo; they do not filter the
-rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
-write or boost that scope.
+Một miền hoặc là toàn không gian làm việc (`architecture`), hoặc gắn với một kho
+mã (`repo:<slug>/architecture`). Cùng một tên ở hai phạm vi là hai kho độc lập:
+một sự kiện đúng với một kho mã không ghi đè sự kiện toàn không gian làm việc.
+`search_memory` và phần mở đầu điều phối xếp bộ nhớ theo phạm vi kho mã lên trước
+khi agent đang làm việc trong kho mã đó; chúng không lọc phần còn lại ra. Hãy
+truyền `repo` vào `propose_fact` / `propose_policy` / `search_memory` để ghi vào
+hoặc đẩy hạng phạm vi đó.
 
-## Access control is fail-open for reads
+## Kiểm soát truy cập mở khi lỗi cho thao tác đọc
 
-`MemoryAccessGrant` maps an agent role and a domain to one of three permission
-levels:
+`MemoryAccessGrant` ánh xạ một vai trò agent và một miền vào một trong ba mức
+quyền:
 
-| Permission | Meaning                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `none`     | No access                                                                                        |
-| `read`     | Can search and retrieve facts                                                                    |
-| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
+| Quyền  | Ý nghĩa                                                                                            |
+| ------ | -------------------------------------------------------------------------------------------------- |
+| `none` | Không có quyền truy cập                                                                            |
+| `read` | Có thể tìm kiếm và truy xuất sự kiện                                                                |
+| `write` | Được `propose_policy` yêu cầu. Các thao tác ghi sự kiện (`propose_fact`, `supersede_fact`) không bị chặn bởi cấp quyền |
 
-:::caution[A missing grant means read, not deny]
-When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design. The one write that
-throws is `propose_policy` without `write` permission
-(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
-does not restrict who can read it unless you have explicitly written a `none`
-grant for every role that should not see it.
+:::caution[Thiếu cấp quyền nghĩa là được đọc, chứ không phải bị từ chối]
+Khi không có dòng cấp quyền nào cho cặp `(role, domain)`, quyền hiệu lực là
+**`read`**. Thao tác đọc được thiết kế theo kiểu mở khi lỗi. Thao tác ghi duy
+nhất ném lỗi là `propose_policy` khi không có quyền `write`
+(`InsufficientMemoryPermission`). Đặt nội dung nhạy cảm vào một miền bộ nhớ
+không hạn chế được ai có thể đọc nó, trừ khi bạn đã ghi tường minh một cấp quyền
+`none` cho mọi vai trò không nên thấy nó.
 
-There is also no UI for grants anywhere in the product today. The memory screen
-has Facts, Policies and Graph tabs and nothing else; grants are reachable only
-over the `memory_access_grant.*` RPC ops.
+Hiện tại trong sản phẩm cũng không có giao diện nào để cấp quyền. Màn hình bộ nhớ
+chỉ có các tab Sự kiện, Chính sách và Đồ thị tri thức, không có gì khác; cấp
+quyền chỉ tiếp cận được qua các thao tác RPC `memory_access_grant.*`.
 :::
 
-The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
-Memory is most useful when it circulates and a read denial produces an agent
-that silently knows less rather than one that reports a problem. A policy-write
-denial, by contrast, is loud and correctable, so that is where the enforcement
-sits. A newly created domain seeds `write` for every role; tightening it
-afterwards is an RPC-only edit, because there is no grants UI.
+Sự bất đối xứng — dễ dãi với thao tác đọc, chặt chẽ với thao tác ghi chính sách —
+là một đánh đổi có chủ đích. Bộ nhớ hữu ích nhất khi nó luân chuyển, và việc từ
+chối đọc sẽ tạo ra một agent âm thầm biết ít hơn thay vì một agent báo lên vấn
+đề. Ngược lại, việc từ chối ghi chính sách thì ồn ào và có thể sửa được, nên đó
+là nơi đặt cơ chế thực thi. Một miền mới tạo được gieo sẵn quyền `write` cho mọi
+vai trò; siết lại sau đó là một chỉnh sửa chỉ qua RPC, vì không có giao diện cấp
+quyền.
 
-## Working memory
+## Bộ nhớ làm việc
 
-Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
-workspace and agent. It persists across runs, is private to that agent and is
-injected into its prompt at every dispatch. It is where "I was halfway through
-refactoring auth" lives — the state that is worth carrying to the next run but
-not worth promoting to a durable fact.
+Mỗi agent có một `AgentWorkingMemory`: một bảng nháp văn bản tự do được đánh khóa
+theo không gian làm việc và agent. Nó tồn tại qua các lần chạy, là riêng tư với
+agent đó và được chèn vào prompt của agent ở mọi lần điều phối. Đây là nơi câu
+"tôi đang làm dở phần tái cấu trúc auth" nằm — trạng thái đáng mang sang lần chạy
+kế tiếp nhưng không đáng nâng cấp thành một sự kiện bền vững.
 
-## What actually reaches an agent's prompt
+## Điều gì thực sự đến được prompt của agent
 
-At dispatch, the memory preamble is assembled from exactly three things:
+Khi điều phối, phần mở đầu bộ nhớ được lắp ghép từ đúng ba thứ:
 
-- **Every active workspace policy**, as `- [domain] rule` lines.
-- **The agent's own working memory**, verbatim.
-- **A keyword-matched shortlist of facts** for this task — at most five, within
-  a ~1,200-character budget and only when the task description is at least 20
-  characters long. Shorter tasks get no facts at all.
+- **Mọi chính sách đang hoạt động của không gian làm việc**, dưới dạng các dòng
+  `- [domain] rule`.
+- **Bộ nhớ làm việc của chính agent**, nguyên văn.
+- **Một danh sách rút gọn các sự kiện khớp theo từ khóa** cho tác vụ này — tối đa
+  năm sự kiện, trong ngân sách khoảng 1.200 ký tự và chỉ khi phần mô tả tác vụ dài
+  ít nhất 20 ký tự. Các tác vụ ngắn hơn không nhận sự kiện nào.
 
-The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
-query is slow and the dispatch path is the one place where latency is
-immediately visible, so the slow semantic path is deliberately kept off it. The
-preamble closes by telling the agent to verify load-bearing items with
-`search_memory`, which is where the full recall model lives.
+Danh sách rút gọn chỉ dùng FTS/từ khóa và bị giới hạn hạn mức là có chủ đích.
+Nhúng một truy vấn thì chậm, mà đường điều phối là nơi duy nhất độ trễ lộ ra ngay
+lập tức, nên đường ngữ nghĩa chậm được cố ý giữ ra ngoài. Phần mở đầu kết thúc
+bằng lời nhắc agent xác minh những mục then chốt bằng `search_memory`, nơi chứa
+toàn bộ mô hình truy hồi.
 
-No access grants are consulted on this path. Whatever the shortlist finds is
-what the agent sees.
+Trên đường này không có cấp quyền truy cập nào được tham vấn. Danh sách rút gọn
+tìm thấy gì thì agent thấy đúng thứ đó.
 
-## Recall: one query, four voices
+## Truy hồi: một truy vấn, bốn tiếng nói
 
-The agent-facing `search_memory` tool has three modes and they are genuinely
-different searches:
+Công cụ `search_memory` dành cho agent có ba chế độ, và chúng thực sự là những
+tìm kiếm khác nhau:
 
-- **`keyword`** — FTS5 only.
-- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
-- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
-  together, then diversified.
+- **`keyword`** — chỉ FTS5.
+- **`semantic`** — kết quả BM25 và vector được hợp nhất bằng kết hợp hạng nghịch
+  đảo.
+- **`hybrid`** (mặc định) — truy hồi đa âm: bốn tiếng nói đã xếp hạng được hợp
+  nhất với nhau, rồi đa dạng hóa.
 
-The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
-active facts) and graph — a two-hop walk over episodic edges from the
-strongest lexical and semantic seeds. The graph voice is the reason episodic
-edges exist at all: it surfaces the fact that is _connected to_ your answer
-without matching any of your words. The voices are weighted by a classified
-query intent (semantic carries the most weight by default, then graph and
-lexical, then recency), every candidate's score is scaled by its Weibull decay,
-and the result set is MMR-diversified so five restatements of one fact do not
-crowd out four different ones.
+Bốn tiếng nói là từ vựng (FTS), ngữ nghĩa (KNN vector), thời gian (các sự kiện
+đang hoạt động gần đây) và đồ thị — một bước duyệt hai chặng trên các cạnh tình
+tiết xuất phát từ những hạt giống từ vựng và ngữ nghĩa mạnh nhất. Tiếng nói đồ
+thị chính là lý do các cạnh tình tiết tồn tại ngay từ đầu: nó làm nổi lên sự kiện
+_có liên quan đến_ câu trả lời của bạn mà không khớp với bất kỳ từ nào của bạn.
+Các tiếng nói được đánh trọng số theo ý định truy vấn đã được phân loại (mặc định
+ngữ nghĩa nặng nhất, rồi đến đồ thị và từ vựng, rồi đến độ mới), điểm của mọi ứng
+viên được co giãn theo suy giảm Weibull của nó, và tập kết quả được đa dạng hóa
+bằng MMR để năm cách diễn đạt lại cùng một sự kiện không chèn ép bốn sự kiện khác
+nhau.
 
-:::note[Semantic recall is silent until the model is installed]
-The vector voice only contributes once the on-device embedding model has been
-downloaded. Until then, hybrid recall runs with three voices and there is no
-retroactive backfill — facts written before the model was installed never gain
-vectors. The vector path degrades further, to an in-Dart scan over the packed
-embeddings, if the SQLite vector extension itself fails to load; recall still
-answers, just more slowly.
+:::note[Truy hồi ngữ nghĩa im lặng cho đến khi cài mô hình]
+Tiếng nói vector chỉ đóng góp sau khi mô hình embedding trên máy đã được tải về.
+Trước đó, truy hồi lai chạy với ba tiếng nói và không có việc điền bù hồi tố —
+các sự kiện được ghi trước khi cài mô hình sẽ không bao giờ có vector. Đường
+vector còn suy giảm thêm, thành một bước quét trong Dart trên các embedding đã
+đóng gói, nếu bản thân tiện ích mở rộng vector của SQLite không tải được; truy hồi
+vẫn trả lời, chỉ chậm hơn.
 :::
 
-The desktop and web memory search is a separate, simpler path: the
-`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
-a query embedding and the hybrid path stays host-internal. So the ranking you
-see in the memory browser is not the ranking an agent gets from `search_memory`.
-That is expected, not a bug, but it does mean "I searched and did not find it"
-in the UI is not evidence the agent will not find it.
+Tìm kiếm bộ nhớ trên desktop và web là một đường riêng, đơn giản hơn: thao tác RPC
+`memory_fact.search` **chỉ dùng FTS5**, vì một máy khách mỏng không thể gửi kèm
+embedding truy vấn và đường lai vẫn nằm trong máy chủ. Vậy nên thứ hạng bạn thấy
+trong trình duyệt bộ nhớ không phải thứ hạng mà agent nhận được từ
+`search_memory`. Đó là điều đã dự kiến, không phải lỗi, nhưng nó cũng có nghĩa
+"tôi đã tìm mà không thấy" trên giao diện không phải bằng chứng rằng agent cũng
+sẽ không thấy.
 
-## Where memory lives and who writes it
+## Bộ nhớ nằm ở đâu và ai ghi vào đó
 
-The memory browser is at **Settings → Workspace → Memory**
-(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+Trình duyệt bộ nhớ nằm ở **Cài đặt → Không gian làm việc → Bộ nhớ**
+(`/workspaces/<id>/settings/memory`), với các tab Sự kiện, Chính sách và Đồ thị
+tri thức.
 
-There is an asymmetry there that surprises people: **you can edit and delete
-memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact` and
-`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
-`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
-later promote to a fact; `record_observation` and `update_my_notes` write the
-private scratchpad injected at dispatch. The browser is a review and correction
-surface, not an authoring one — so if you want a fact in memory, the way to put
-it there is to tell an agent.
+Ở đó có một sự bất đối xứng khiến người ta ngạc nhiên: **bạn có thể sửa và xóa bộ
+nhớ, nhưng không thể tạo.** Cả tab Sự kiện lẫn tab Chính sách đều không có nút
+thêm. Việc soạn thảo diễn ra ở phía agent, qua `propose_fact` và `propose_policy`
+(`supersede_fact` / `supersede_policy` để thay thế chúng). `remember` ghi một mục
+thuộc tầng nóng giới hạn theo phiên mà `consolidate_memory` có thể nâng cấp sau
+đó thành một sự kiện; `record_observation` và `update_my_notes` ghi bảng nháp
+riêng tư được chèn khi điều phối. Trình duyệt là bề mặt để xem lại và chỉnh sửa,
+không phải bề mặt soạn thảo — nên nếu bạn muốn có một sự kiện trong bộ nhớ, cách
+đưa nó vào là bảo một agent làm việc đó.
 
-Two maintenance operations are likewise agent-invoked rather than scheduled:
-`consolidate_memory` merges and prunes accumulated facts and
-`harmonize_memory` reconciles beliefs that diverged across agents.
-`list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer. Meeting decisions are harvested into the
-`decisions` domain when a meeting persist step records them; that is not a
-timer on completed agent runs.
+Hai thao tác bảo trì cũng do agent gọi chứ không chạy theo lịch:
+`consolidate_memory` hợp nhất và cắt tỉa các sự kiện tích lũy, còn
+`harmonize_memory` hòa giải những hiểu biết đã lệch nhau giữa các agent.
+`list_memory_conflicts` cho thấy những gì phát hiện xung đột đã ghi lại. Không có
+gì chạy chúng thay bạn theo bộ hẹn giờ. Các quyết định từ cuộc họp được thu hoạch
+vào miền `decisions` khi một bước lưu cuộc họp ghi lại chúng; đó không phải bộ
+hẹn giờ trên các lần chạy agent đã hoàn tất.
 
-## Related concepts
+## Khái niệm liên quan
 
-- [The agent model](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): roles are what grants are written against
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): memory is workspace-scoped and lives in that workspace's own database file
-- [Manage workspace memory](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-bo-nho/): working with memory in practice
+- [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): vai trò là thứ mà cấp quyền được viết dựa trên
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/): bộ nhớ có phạm vi không gian làm việc và nằm trong tệp cơ sở dữ liệu riêng của không gian làm việc đó
+- [Quản lý bộ nhớ không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-bo-nho/): làm việc với bộ nhớ trong thực tế

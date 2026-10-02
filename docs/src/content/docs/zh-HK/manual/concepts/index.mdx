@@ -1,64 +1,62 @@
 ---
-title: Concepts
-description: How Control Center works and why it is built this way — the background reading behind the guides.
+title: 概念
+description: Control Center 如何運作，以及為何這樣設計 —— 操作指南背後的背景閱讀材料。
 slug: zh-HK/手冊/概念
+sourceHash: 93363d3ea78e70ec66fab6a008f7d839c9b5f3a7
 ---
 
-These pages explain **how Control Center works and why**. They are for understanding,
-not for doing: no page here is a procedure to follow. When you want to accomplish a
-specific task, go to the [how-to guides](/zh-HK/手冊/操作指南/); when you want to look
-something up, go to the [reference](/zh-HK/手冊/參考/).
+這些頁面說明 **Control Center 如何運作，以及為何這樣設計**。它們供你理解，而非供你操作：這裡沒有需要依序執行的程序。當你想完成某項具體任務，請前往[操作指南](/zh-HK/手冊/操作指南/)；當你想查閱某項資料，請前往[參考](/zh-HK/手冊/參考/)。
 
-Read them in any order. If you are new, the core model is the place to start.
+你可以按任何順序閱讀。如果你是新手，就從核心模型開始。
 
-## Core model
+## 核心模型
 
-The four ideas everything else is built on.
+其他一切皆建立於這四個概念之上。
 
-- [Workspaces and isolation](/zh-HK/手冊/概念/工作區/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
-- [The agent model](/zh-HK/手冊/概念/代理模型/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
-- [Agent dispatch lifecycle](/zh-HK/手冊/概念/派發生命週期/) — what happens between your message and the agent's first token
-- [Modes](/zh-HK/手冊/概念/模式/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
-- [Tool context and prompt caching](/zh-HK/手冊/概念/工具上下文/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
-- [Code intelligence](/zh-HK/手冊/概念/程式碼智能/) — the code graph, language server, structural search and debugger
-- [Conversation history](/zh-HK/手冊/概念/對話紀錄/) — persistence, compaction and forking a transcript
+- [工作區與隔離](/zh-HK/手冊/概念/工作區/) —— 租戶界線，以及為何它由資料庫配置而非查詢紀律強制執行
+- [代理模型](/zh-HK/手冊/概念/代理模型/) —— 一個代理由什麼組成：身分、角色、技能、能力、配接器與模型
+- [代理派發生命週期](/zh-HK/手冊/概念/派發生命週期/) —— 由你送出訊息到代理產生第一個 token 之間發生的事
+- [模式](/zh-HK/手冊/概念/模式/) —— `chat`、`plan`、`review` 與 `orchestrate` 如何改變代理可做的事
+- [工具上下文與提示快取](/zh-HK/手冊/概念/工具上下文/) —— 為何代理只看見部分工具、它如何取用其餘工具，以及什麼讓供應商的快取保持溫熱
+- [程式碼智能](/zh-HK/手冊/概念/程式碼智能/) —— 程式碼圖、語言伺服器、結構化搜尋與除錯器
+- [對話紀錄](/zh-HK/手冊/概念/對話紀錄/) —— 持久化、壓縮與分岔一段對話
 
-## Safety and control
+## 安全與控制
 
-What an agent is allowed to touch and who decides.
+代理可以碰觸什麼，以及由誰決定。
 
-- [Sandbox and security](/zh-HK/手冊/概念/沙箱與保安/) — what actually constrains an agent run today
-- [Guardrails](/zh-HK/手冊/概念/護欄/) — one policy engine for every mutating action and how a rule is resolved
-- [Authorization](/zh-HK/手冊/概念/授權/) — roles, the permission catalog and the audit trail
-- [Rigs and enclosures](/zh-HK/手冊/概念/測試機/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+- [沙箱與保安](/zh-HK/手冊/概念/沙箱與保安/) —— 今日實際上以什麼約束代理執行
+- [護欄](/zh-HK/手冊/概念/護欄/) —— 用於每個變更動作的單一政策引擎，以及規則如何判定
+- [授權](/zh-HK/手冊/概念/授權/) —— 角色、權限目錄與稽核軌跡
+- [測試機與隔離環境](/zh-HK/手冊/概念/測試機/) —— 為何代理得到的是用完即棄的 VM 而非你的電腦，以及界線到底在哪裡
 
-## Directing the work
+## 指揮工作
 
-Turning intent into work that gets done.
+把意圖轉化為真正完成的工作。
 
-- [Tickets and delegation](/zh-HK/手冊/概念/工單/) — the vendor-neutral unit of work the whole fleet shares
-- [Pipelines and automation](/zh-HK/手冊/概念/管線/) — DAG workflows, triggers and resumable runs
-- [Orchestration](/zh-HK/手冊/概念/編排/) — one goal, one approval, a generated pipeline
-- [AI review](/zh-HK/手冊/概念/ai-審查/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
-- [PR conversations](/zh-HK/手冊/概念/pr-對話/) — answering a GitHub mention or `ai-review` label from the forge itself
-- [Memory and knowledge](/zh-HK/手冊/概念/記憶與知識/) — facts, policies and what an agent is allowed to know
-- [Evals and quality](/zh-HK/手冊/概念/評估與質素/) — eval suites and the Quality tab
+- [工單與委派](/zh-HK/手冊/概念/工單/) —— 整個機群共用的中立工作單位
+- [管線與自動化](/zh-HK/手冊/概念/管線/) —— DAG 工作流程、觸發器與可續跑的執行
+- [編排](/zh-HK/手冊/概念/編排/) —— 一個目標、一次核准、一條自動生成的管線
+- [AI 審查](/zh-HK/手冊/概念/ai-審查/) —— PR 如何變成已審查的 PR：審查空間、同儕共識、軸向與 Ship/Hold/Block 判定
+- [PR 對話](/zh-HK/手冊/概念/pr-對話/) —— 直接在程式碼託管平台回應 GitHub 的提及或 `ai-review` 標籤
+- [記憶與知識](/zh-HK/手冊/概念/記憶與知識/) —— 事實、政策，以及代理獲准知道什麼
+- [評估與質素](/zh-HK/手冊/概念/評估與質素/) —— 評估套件與「質素」分頁
 
-## People and reach
+## 人員與觸達
 
-Working with other humans and reaching the fleet from elsewhere.
+與其他人類協作，以及從其他地方觸達機群。
 
-- [Multiplayer and presence](/zh-HK/手冊/概念/多人協作/) — humans and agents as co-equal participants and what gates access
-- [Single sign-on](/zh-HK/手冊/概念/單一登入/) — SAML and OIDC logins
-- [Chat bridges](/zh-HK/手冊/概念/聊天橋接/) — why the Slack bridge dials out and what authorizes a message from chat
-- [Remote control and mobile](/zh-HK/手冊/概念/遙控/) — how a phone reaches your server and the security model around it
-- [Meetings and transcription](/zh-HK/手冊/概念/會議/) — on-device recording, transcription and summarization
-- [Calendar and scheduling](/zh-HK/手冊/概念/日曆/) — Google Calendar sync and meeting alerts
+- [多人協作與線上狀態](/zh-HK/手冊/概念/多人協作/) —— 人類與代理作為對等參與者，以及什麼限制存取
+- [單一登入](/zh-HK/手冊/概念/單一登入/) —— SAML 與 OIDC 登入
+- [聊天橋接](/zh-HK/手冊/概念/聊天橋接/) —— 為何 Slack 橋接會向外撥接，以及什麼授權來自聊天室的訊息
+- [遙控與流動裝置](/zh-HK/手冊/概念/遙控/) —— 手機如何連上你的伺服器，以及圍繞它的保安模型
+- [會議與轉錄](/zh-HK/手冊/概念/會議/) —— 裝置上的錄音、轉錄與摘要
+- [日曆與排程](/zh-HK/手冊/概念/日曆/) —— Google Calendar 同步與會議提示
 
-## Under the hood
+## 底層運作
 
-The shape of the system itself.
+系統本身的形態。
 
-- [Architecture](/zh-HK/手冊/概念/架構/) — layering, the shared kernel, ports and adapters
-- [Deployment and clients](/zh-HK/手冊/概念/部署/) — how the desktop, web and phone clients relate to one server
-- [Domain events](/zh-HK/手冊/概念/領域事件/) — the in-process bus features talk over
+- [架構](/zh-HK/手冊/概念/架構/) —— 分層、共用核心、連接埠與配接器
+- [部署與用戶端](/zh-HK/手冊/概念/部署/) —— 桌面、網頁與手機用戶端如何與單一伺服器關聯
+- [領域事件](/zh-HK/手冊/概念/領域事件/) —— 各項功能據以溝通的行內匯流排

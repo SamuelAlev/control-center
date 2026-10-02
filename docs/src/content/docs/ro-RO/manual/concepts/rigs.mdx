@@ -1,241 +1,261 @@
 ---
-title: Rigs and enclosures
-description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
+title: Stații și medii izolate
+description: De ce primesc agenții mașini de unică folosință în locul computerului tău — granițele de izolare, canalele de afișare, credențialele, porturile și ciclul de viață.
 slug: ro-RO/manual/concepte/statii
+sourceHash: 0e2d6ded0923e4545da285a1c67a20abc150d7d6
 ---
 
-A **rig** is a disposable machine an agent drives in real time — a browser,
-a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
-an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
-the explicit exceptions. This page explains each boundary and why the pieces
-are shaped the way they are. To open one, see
-[Give an agent a machine to test on](/ro-RO/manual/ghiduri-practice/foloseste-statii/); for the exact
-verbs, ports and defaults, see the [rigs reference](/ro-RO/manual/referinta/statii/).
+O **stație** este o mașină de unică folosință pe care un agent o conduce în timp
+real — un browser, un desktop Linux, un emulator Android, un Simulator iOS sau
+mașina din spatele unui terminal izolat. Majoritatea stațiilor sunt VM-uri;
+simulatoarele mobile gestionate de gazdă sunt excepțiile explicite. Această
+pagină explică fiecare graniță și de ce componentele au forma pe care o au. Ca
+să deschizi una, vezi
+[Oferă unui agent o mașină pe care să testeze](/ro-RO/manual/ghiduri-practice/foloseste-statii/);
+pentru verbele, porturile și valorile implicite exacte, vezi
+[referința pentru stații](/ro-RO/manual/referinta/statii/).
 
-## Why a VM, not a sandbox
+## De ce o VM, nu un sandbox
 
-The [native sandbox](/ro-RO/manual/concepte/sandbox-si-securitate/) wraps a process in
-namespace isolation — real, but it shares your kernel, and it constrains a
-*process*, not a *computer*. The moment an agent needs to click around a
-desktop app, render a page in a real browser, or run `rm -rf` experiments you
-would rather not think about, the honest boundary is a machine: its own
-kernel, its own disk, its own network stack.
+[Sandboxul nativ](/ro-RO/manual/concepte/sandbox-si-securitate/) învelește un
+proces în izolare prin spații de nume — reală, dar partajează kernelul tău și
+constrânge un *proces*, nu un *computer*. Din momentul în care un agent trebuie
+să dea clic prin aplicația de desktop, să randeze o pagină într-un browser real
+sau să ruleze experimente `rm -rf` la care ai prefera să nu te gândești, granița
+onestă este o mașină: kernel propriu, disc propriu, stivă de rețea proprie.
 
-The enclosed surfaces use two VM backends:
+Suprafețele izolate folosesc două backend-uri de VM:
 
-- **microVMs** for the terminal and browser — sub-second hypervisor boot from
-  digest-pinned container images.
-- **QEMU** for the full Linux desktop, which needs a display device the
-  microVM does not have.
+- **microVM-uri** pentru terminal și browser — pornire a hipervizorului în mai
+  puțin de o secundă, din imagini de container fixate prin digest.
+- **QEMU** pentru desktopul Linux complet, care are nevoie de un dispozitiv de
+  afișare pe care microVM-ul nu îl are.
 
-Mobile surfaces are host-managed and state the weaker boundary directly:
+Suprafețele mobile sunt gestionate de gazdă și declară direct granița mai
+slabă:
 
-- **Android** drives Google's emulator through ADB.
-- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
-  through WebDriverAgent. The device and its data are deleted when the rig
-  closes, but its network follows the host Mac.
+- **Android** conduce emulatorul Google prin ADB.
+- **iOS** creează și deține un dispozitiv CoreSimulator pe o gazdă Mac și îl
+  conduce prin WebDriverAgent. Dispozitivul și datele lui sunt șterse când se
+  închide stația, dar rețeaua lui urmează Mac-ul gazdă.
 
-Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. An iOS rig owns a disposable
-CoreSimulator device that is deleted when the rig closes. Android attaches to
-a host emulator that outlives the session.
+Stațiile izolate scriu într-un strat suprapus de unică folosință, peste o
+imagine de bază numai în citire, așa că o stație nu poate schimba imaginea de la
+care pornește următoarea. O stație iOS deține un dispozitiv CoreSimulator de
+unică folosință, care este șters când se închide stația. Android se atașează la
+un emulator de pe gazdă care supraviețuiește sesiunii.
 
-## Deny-by-default egress
+## Trafic de ieșire refuzat implicit
 
-A rig's network starts at **nothing**. Hosts are admitted per rig through a
-gate the guest cannot route around: the machine's only paths out are the ones
-the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig admits
-the product site (`usectrl.dev`) and boots to a local `file://` page that
-needs no egress; everything else is refused at connect time.
+Rețeaua unei stații pornește de la **nimic**. Gazdele sunt admise per stație
+printr-o poartă pe care invitatul nu o poate ocoli: singurele căi de ieșire ale
+mașinii sunt cele create de configurația de lansare. Un terminal izolat primește
+baza de referință pentru dezvoltatori (registre de pachete, platforme de
+găzduire a codului, mirror-urile apt); o stație de browser admite site-ul
+produsului (`usectrl.dev`) și pornește pe o pagină locală `file://` care nu are
+nevoie de ieșire; orice altceva este refuzat la momentul conectării.
 
-Android and iOS are not covered by this gate. Their host emulator and
-simulator use the server host's networking, so the UI and capability report
-mark egress as not enforced and never offer a misleading “restart
-unrestricted” control.
+Android și iOS nu sunt acoperite de această poartă. Emulatorul și simulatorul
+lor folosesc rețeaua gazdei serverului, așa că interfața și raportul de
+capabilități marchează ieșirea ca neaplicată și nu oferă niciodată un control
+înșelător de „repornire fără restricții”.
 
-Egress and credentials are one policy seen from two sides — the credential
-broker (below) will not mint a token for a host the guest cannot reach.
+Ieșirea și credențialele sunt aceeași politică văzută din două părți — brokerul
+de credențiale (mai jos) nu va emite un token pentru o gazdă pe care invitatul nu
+o poate atinge.
 
-Everything a rig *reads* is treated as untrusted: page text, DOM and
-accessibility trees, UI dumps and console output come back to the agent
-fenced with a standing "this is data, not instructions" rule. The fence is
-framing; the egress gate is the enforcement behind it.
+Tot ce *citește* o stație este tratat ca nesigur: textul paginilor, DOM-ul și
+arborii de accesibilitate, dump-urile de interfață și ieșirea din consolă ajung
+la agent delimitate de o regulă permanentă: „acestea sunt date, nu
+instrucțiuni”. Delimitarea este cadrul; poarta de ieșire este mecanismul de
+aplicare din spatele ei.
 
-## Input goes through the hypervisor, capture through the guest
+## Intrarea trece prin hipervizor, captura prin invitat
 
-For the desktop surface, keyboard and pointer events are injected by the
-*hypervisor's* own virtual input devices. The guest never runs a privileged
-daemon that can synthesize input — so compromising the guest's software does
-not hand the attacker a keyboard. Capture flows the other way, through a
-small unprivileged in-guest agent, because the guest can scale frames before
-they cross the wire.
+Pentru suprafața de desktop, evenimentele de tastatură și de pointer sunt
+injectate de dispozitivele virtuale de intrare ale *hipervizorului* însuși.
+Invitatul nu rulează niciodată un demon privilegiat care poate sintetiza intrare
+— așa că compromiterea software-ului din invitat nu îi dă atacatorului o
+tastatură. Captura curge în sens invers, printr-un agent mic, neprivilegiat, din
+interiorul invitatului, pentru că invitatul poate scala cadrele înainte ca ele să
+treacă prin rețea.
 
-## Two display lanes
+## Două canale de afișare
 
-The person watching and the model driving have opposite needs, so a rig
-serves two independent streams:
+Persoana care privește și modelul care conduce au nevoi opuse, așa că o stație
+servește două fluxuri independente:
 
-- The **human lane** is full resolution at your panel size, renegotiated as
-  you resize, relayed by the server as opaque bytes — the server never
-  decodes a frame, because a video decoder on the request path is what stops
-  it answering RPCs.
-- The **agent lane** is downscaled stills capped at a model-friendly size,
-  one image per tool result, with older frames shed during compaction while
-  their text descriptions survive.
+- **Canalul uman** este la rezoluție completă, la dimensiunea panoului tău,
+  renegociat când redimensionezi, retransmis de server ca octeți opaci —
+  serverul nu decodează niciodată un cadru, pentru că un decodor video pe calea
+  cererilor este exact ce l-ar împiedica să răspundă la RPC-uri.
+- **Canalul agentului** este format din imagini statice redimensionate în jos,
+  limitate la o dimensiune prietenoasă pentru model, o imagine per rezultat de
+  instrument, iar cadrele mai vechi sunt eliminate în timpul compactării, în
+  timp ce descrierile lor textuale supraviețuiesc.
 
-Neither lane compromises for the other: you get a fluid picture, the model
-gets a cheap one.
+Niciun canal nu face compromisuri pentru celălalt: tu primești o imagine fluidă,
+modelul primește una ieftină.
 
-## Take-over is a chokepoint, not a request
+## Preluarea controlului este un punct de trecere obligatoriu, nu o cerere
 
-Exclusive control is enforced at the single point every action passes through
-— not by asking the model to behave. While a human holds it, the server
-refuses the agent's *mutating* actions. The agent keeps its observation verbs
-(screenshots, extraction) so it can narrate what you are doing, and it is
-told about the take-over through its steering lane rather than left to
-discover it through refused clicks. Clicking and typing on the canvas works
-whenever nobody else holds that lock — or when you do; the status tag reads
-**You have control**. Every input event — yours and the agent's — lands in a
-per-rig audit log with its principal and a monotonic sequence, so "who
-clicked that" stays answerable after the machine is gone.
+Controlul exclusiv este impus în singurul punct prin care trece fiecare acțiune
+— nu rugând modelul să se comporte. Cât timp îl deține un om, serverul refuză
+acțiunile *care modifică starea* ale agentului. Agentul își păstrează verbele de
+observare (capturi de ecran, extragere), așa că poate povesti ce faci, și este
+anunțat despre preluare prin canalul său de direcționare, în loc să fie lăsat să
+descopere asta prin clicuri refuzate. Clicul și tastarea pe canvas funcționează
+oricând nu deține altcineva acea blocare — sau când o deții tu; eticheta de
+stare afișează **Ai controlul**. Fiecare eveniment de intrare — al tău și al
+agentului — ajunge într-un jurnal de audit per stație, cu principalul și o
+secvență monotonă, așa că întrebarea „cine a dat clicul acela” rămâne cu
+răspuns după ce mașina a dispărut.
 
-## Content crosses the boundary; the machines stay separate
+## Conținutul traversează granița; mașinile rămân separate
 
-Copy and paste work in both directions, and so does dragging files in and
-out — but a rig is a different computer, and the design never pretends
-otherwise.
+Copierea și lipirea funcționează în ambele direcții, la fel și tragerea
+fișierelor înăuntru și în afară — dar o stație este un alt computer, iar
+proiectarea nu pretinde niciodată altceva.
 
-**The clipboard** is carried on demand, not mirrored continuously. Press the
-copy chord over a rig and the guest is told to copy, then whatever it put on
-its clipboard — text, an image, a list of files — is fetched and placed on
-yours. Paste sends the same content the other way and then presses paste
-inside the guest. Nothing is synchronised in the background: a password you
-copy on your own machine does not silently arrive inside a VM because a timer
-fired.
+**Clipboardul** este transportat la cerere, nu oglindit continuu. Apasă
+combinația de copiere peste o stație și invitatului i se spune să copieze, apoi
+orice a pus în clipboardul lui — text, o imagine, o listă de fișiere — este
+preluat și plasat în al tău. Lipirea trimite același conținut în cealaltă
+direcție și apoi apasă lipire în interiorul invitatului. Nimic nu este
+sincronizat în fundal: o parolă pe care o copiezi pe mașina ta nu ajunge în
+tăcere într-o VM pentru că s-a declanșat un temporizator.
 
-Crossing is gated per user and per direction, independently. Paste into a
-rig is allowed by default; copy out of a rig prompts first (a ten-minute
-grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
-access**). It is never a workspace setting: one member cannot consent to
-another member's clipboard.
+Trecerea este restricționată per utilizator și per direcție, independent.
+Lipirea într-o stație este permisă implicit; copierea dinspre o stație cere
+întâi confirmare (o autorizare de zece minute, sau **Permiteți întotdeauna** în
+**Setări → Server → Stații → Acces la clipboard**). Nu este niciodată o setare
+de spațiu de lucru: un membru nu poate consimți pentru clipboardul altui membru.
 
-On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
-reaching a guest shell as the interrupt it is. On Windows and Linux the two
-chords are the same keystroke, so the guest receives it unchanged and your
-clipboard is only overwritten when the guest's actually changed. An interrupt
-stays an interrupt.
+Pe macOS combinația de trecere este ⌘C/⌘V, care este lipsită de ambiguitate — ⌃C
+ajunge în continuare la shellul din invitat ca întreruperea care este de fapt. Pe
+Windows și Linux cele două combinații sunt aceeași apăsare de taste, așa că
+invitatul o primește neschimbată, iar clipboardul tău este suprascris doar când
+s-a schimbat cu adevărat cel al invitatului. O întrerupere rămâne o întrerupere.
 
-**Files dragged in** are copied into the machine's drop folder and then
-offered to it. What "offered" means depends on what can honestly be done: a
-browser page receives a *real* drop event at the point you let go, so an
-upload zone behaves exactly as it would for a local file; a desktop gets the
-files in `~/Drops` with their paths on its clipboard, because no host can
-synthesize a drag into an arbitrary Linux toolkit without running a
-privileged daemon inside the guest — which is precisely what this design
-refuses to have. The result says which happened, so a CSV dropped on an
-upload zone is never reported as uploaded when it is merely a file in a
-folder. Dropping onto an enclosed **terminal** copies the file in and types
-its guest path at the prompt, which is what a shell can actually use.
+**Fișierele trase înăuntru** sunt copiate în folderul de depunere al mașinii și
+apoi îi sunt oferite. Ce înseamnă „oferite” depinde de ce se poate face cu
+onestitate: o pagină de browser primește un eveniment de depunere *real* în
+punctul în care dai drumul, așa că o zonă de încărcare se comportă exact ca
+pentru un fișier local; un desktop primește fișierele în `~/Drops` cu căile lor
+în clipboard, pentru că nicio gazdă nu poate sintetiza o tragere într-un toolkit
+Linux arbitrar fără să ruleze un demon privilegiat în interiorul invitatului —
+exact ceea ce acest design refuză să aibă. Rezultatul spune care dintre variante
+s-a întâmplat, așa că un CSV depus pe o zonă de încărcare nu este niciodată
+raportat ca încărcat când este doar un fișier într-un folder. Depunerea pe un
+**terminal** izolat copiază fișierul înăuntru și tastează calea lui din invitat
+la prompt, ceea ce un shell poate folosi cu adevărat.
 
-**Files dragged out** work on the desktop surface, where X11's drag protocol
-makes the payload readable while a drag is in flight. Start a drag inside the
-guest, carry it out of the canvas, and the files are fetched to your machine
-and handed to the OS as a real drag. Copying files in the guest's file
-manager and pasting on the host works the same way. The browser surface
-deliberately does *not* offer this: a headless browser has no drag selection
-to read, and the nearest available signal — the page's text selection — is
-not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+**Fișierele trase în afară** funcționează pe suprafața de desktop, unde
+protocolul de tragere al X11 face payloadul lizibil cât timp o tragere este în
+curs. Începe o tragere în interiorul invitatului, du-o în afara canvasului, iar
+fișierele sunt preluate pe mașina ta și predate sistemului de operare ca o
+tragere reală. Copierea fișierelor în managerul de fișiere al invitatului și
+lipirea pe gazdă funcționează la fel. Suprafața de browser *nu* oferă deliberat
+asta: un browser headless nu are nicio selecție de tragere de citit, iar cel mai
+apropiat semnal disponibil — selecția de text a paginii — nu este deloc dovada
+unei trageri, așa că acționarea pe baza lui ar deturna clicurile obișnuite.
 
-Everything read out of a guest stays untrusted content: clipboard text
-reaches a model inside the same fence a page extraction does, and the audit
-log records that a paste happened and how much of it there was — never what
-it said.
+Tot ce este citit dintr-un invitat rămâne conținut nesigur: textul din clipboard
+ajunge la un model în interiorul aceleiași delimitări ca o extragere de pagină,
+iar jurnalul de audit consemnează că a avut loc o lipire și cât de mult conținut
+a implicat — niciodată ce spunea.
 
-## Credentials never live in the guest
+## Credențialele nu locuiesc niciodată în invitat
 
-`git push` works from an enclosed terminal, yet the guest stores no forge
-token. It holds one per-VM secret whose only power is to *ask* the host's
-credential broker — over a tunnel the host controls — for a short-lived,
-repo-scoped token, per operation, rate-limited, bounded by the same host
-allowlist as egress, and revoked the moment the rig closes. A machine built
-to be thrown away must contain nothing worth stealing.
+`git push` funcționează dintr-un terminal izolat, și totuși invitatul nu
+stochează niciun token de platformă de găzduire a codului. Deține un singur
+secret per VM a cărui singură putere este să *ceară* brokerului de credențiale
+al gazdei — printr-un tunel controlat de gazdă — un token de scurtă durată,
+limitat la un depozit, per operație, cu limită de frecvență, mărginit de aceeași
+listă de gazde permise ca și ieșirea, și revocat în momentul în care stația se
+închide. O mașină construită ca să fie aruncată nu trebuie să conțină nimic care
+merită furat.
 
-## The worktree in a rig is a satellite
+## Worktree-ul dintr-o stație este un satelit
 
-When a rig carries your repository, the host worktree stays authoritative.
-The copy is *synced in* at boot (with secrets like `.env` files excluded),
-and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
-never pushed, never checked out. Nothing inside a VM can move your branch or
-touch your working tree; merging what a rig produced is always a human
-decision made on the host.
+Când o stație transportă depozitul tău, worktree-ul de pe gazdă rămâne cel
+autoritar. Copia este *sincronizată înăuntru* la pornire (cu secrete precum
+fișierele `.env` excluse), iar commit-urile se întorc doar când ceri tu — aduse
+în `refs/rigs/<id>/*`, niciodată împinse, niciodată extrase în arborele de
+lucru. Nimic din interiorul unei VM nu poate muta ramura ta sau atinge arborele
+tău de lucru; contopirea a ceea ce a produs o stație este întotdeauna o decizie
+umană, luată pe gazdă.
 
-## Ports without holes
+## Porturi fără breșe
 
-A dev server started inside the terminal VM becomes reachable — on your
-machine, in the Browser (VM), optionally on your LAN, optionally under a dev
-domain with HTTPS — without ever opening the machine up. The hypervisor's
-port map is fixed at boot, so all later forwarding rides two narrow,
-host-controlled channels: one pre-created inbound multiplexer that refuses to
-dial anything the guest is not actually listening on, and reverse tunnels the
-host holds open for guest-initiated connections. Dev-domain HTTPS terminates
-at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from a
-terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/).
+Un server de dezvoltare pornit în interiorul VM-ului de terminal devine
+accesibil — pe mașina ta, în Browser (VM), opțional în LAN-ul tău, opțional sub
+un domeniu de dezvoltare cu HTTPS — fără ca mașina să fie deschisă vreodată.
+Harta de porturi a hipervizorului este fixată la pornire, așa că toată
+redirecționarea ulterioară călătorește pe două canale înguste, controlate de
+gazdă: un multiplexor de intrare precreat, care refuză să formeze orice conexiune
+pe care invitatul nu o ascultă de fapt, și tuneluri inverse pe care gazda le ține
+deschise pentru conexiunile inițiate de invitat. HTTPS-ul pentru domeniul de
+dezvoltare se termină la server, folosind o autoritate emisă local, ale cărei
+chei nu intră niciodată într-un invitat. Mecanismele sunt în
+[Redirecționează porturi dintr-un terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/).
 
-## Machines are bounded by construction
+## Mașinile sunt mărginite prin construcție
 
-A rig cannot become a pet:
+O stație nu poate deveni un animal de companie:
 
-- a **hard TTL** the guest cannot extend;
-- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
-  window, close after twice it — where an open terminal or a watching viewer
-  counts as "in use";
-- a **memory budget** counted in *resident megabytes*, not sessions, because
-  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
-  machine is evicted first, and never one a person is driving or watching;
-- teardown on server shutdown, plus an ownership-marked orphan sweep at the
-  next start, so a crashed server never strands a hypervisor that answers to
-  nobody.
+- un **TTL strict** pe care invitatul nu îl poate prelungi;
+- o **scară de inactivitate** — parcare (vCPU-urile oprite, RAM-ul rămâne
+  rezident) după fereastra de inactivitate, închidere după dublul ei — unde un
+  terminal deschis sau un privitor activ contează ca „în uz”;
+- un **buget de memorie** contabilizat în *megaocteți rezidenți*, nu în sesiuni,
+  pentru că o VM parcată eliberează CPU și păstrează fiecare octet de RAM;
+  mașina cea mai puțin utilizată recent este eliminată prima, și niciodată una
+  pe care o conduce sau o privește cineva;
+- demontare la oprirea serverului, plus o măturare a orfanilor marcați cu
+  proprietarul la următoarea pornire, așa că un server căzut nu lasă niciodată în
+  urmă un hipervizor care nu răspunde nimănui.
 
-First boots pull the machine's pinned image; the server then caches a
-pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with a GitHub-hosted
-runner's kind of CLI baseline already installed — compilers, Python, `jq`,
-archive tools — not a language toolcache or Docker. The Computer image
-bakes that same CLI baseline in at build time, next to XFCE and the
-browsers.
+Primele porniri trag imaginea fixată a mașinii; serverul pune apoi în cache, în
+fundal, o copie preextrasă, astfel încât fiecare mașină ulterioară de acel tip
+pornește în câteva secunde, iar un terminal izolat pornește cu un set de bază de
+utilitare CLI de tipul celui de pe un runner găzduit de GitHub deja instalat —
+compilatoare, Python, `jq`, instrumente de arhivare — nu un toolcache de limbaje
+sau Docker. Imaginea Computer include același set de bază CLI încă de la
+construire, lângă XFCE și browsere.
 
-## Three browsers, not one
+## Trei browsere, nu unul
 
-"It works on my machine" is a claim about one rendering engine. So a browser
-rig is not "the browser" — it is **Chromium, Firefox or WebKit**, chosen when
-you open it, and a rig runs the one it was opened with for its whole life.
-One conversation can hold one of each: opening *Firefox (VM)* beside
-*Chromium (VM)* gives you two machines, and pointing both at the same page is
-the comparison. WebKit is as close to Safari as anything that runs on Linux —
-same engine lineage, so it catches the gaps Safari users hit.
+„Merge pe mașina mea” este o afirmație despre un singur motor de randare. Deci o
+stație de browser nu este „browserul” — este **Chromium, Firefox sau WebKit**,
+ales când o deschizi, iar o stație rulează tot restul vieții pe cel cu care a
+fost deschisă. O conversație poate ține câte unul din fiecare: dacă deschizi
+*Firefox (VM)* lângă *Chromium (VM)*, obții două mașini, iar îndreptarea
+amândurora spre aceeași pagină este comparația. WebKit este cât se poate de
+aproape de Safari, ca orice lucru care rulează pe Linux — aceeași descendență de
+motor, așa că prinde lipsurile cu care se lovesc utilizatorii Safari.
 
-The verbs are identical across all three; the protocols underneath are not,
-and the differences are stated rather than smoothed over. Chromium speaks the
-DevTools Protocol and *pushes* frames, so its live view costs nothing while a
-page is still. Firefox speaks WebDriver BiDi and WebKit speaks classic
-WebDriver, neither of which has a screencast, so their live views poll — a
-few frames a second, which is right for watching a page and not for watching
-an animation. Where an engine genuinely cannot do something (Firefox has no
-cache-bypassing reload; WebKit cannot see console output logged before a page
-finishes loading), the answer says so instead of quietly doing something
-else.
+Verbele sunt identice la toate trei; protocoalele de dedesubt nu sunt, iar
+diferențele sunt declarate, nu netezite. Chromium vorbește DevTools Protocol și
+*împinge* cadrele, așa că vizualizarea lui live nu costă nimic cât timp pagina
+stă pe loc. Firefox vorbește WebDriver BiDi, iar WebKit vorbește WebDriver
+clasic; niciunul nu are screencast, așa că vizualizările lor live sondează —
+câteva cadre pe secundă, ceea ce este potrivit pentru a urmări o pagină, nu o
+animație. Acolo unde un motor chiar nu poate face ceva (Firefox nu are
+reîncărcare care ocolește cache-ul; WebKit nu poate vedea ieșirea din consolă
+înregistrată înainte ca o pagină să termine încărcarea), răspunsul spune asta, în
+loc să facă în tăcere altceva.
 
-## Where rigs live in the product
+## Unde stau stațiile în produs
 
-A rig is deliberately **not** a global destination. The live view is a tab in
-the space or PR where the work is happening, scoped to that conversation —
-so your tab and the agent's `browser_use` calls address *one* machine (one
-per engine, on the browser surface).
-Whether rigs can boot at all is a host property, so capabilities, images,
-per-workspace custom images and the running-machine list live under
-**Settings → Server → Rigs**. Driving an enclosure is its own
-[guardrail action class](/ro-RO/manual/concepte/guardrail-uri/), so a workspace,
-agent or space can allow it, require approval, or deny it outright —
-read-only modes deny it wholesale.
+O stație nu este, deliberat, o **destinație globală**. Vizualizarea live este o
+filă în spațiul sau PR-ul în care se întâmplă munca, limitată la acea conversație
+— așa că fila ta și apelurile `browser_use` ale agentului se adresează *unei
+singure* mașini (una per motor, pe suprafața de browser).
+Dacă stațiile pot porni deloc este o proprietate a gazdei, așa că
+capabilitățile, imaginile, imaginile personalizate per spațiu de lucru și lista
+mașinilor care rulează se află în **Setări → Server → Stații**. Conducerea unui
+mediu izolat este propria ei
+[clasă de acțiuni guardrail](/ro-RO/manual/concepte/guardrail-uri/), așa că un
+spațiu de lucru, un agent sau un spațiu o poate permite, cere aprobare sau
+refuza direct — modurile numai în citire o refuză în bloc.

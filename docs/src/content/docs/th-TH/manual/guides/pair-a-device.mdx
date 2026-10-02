@@ -1,96 +1,95 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: จับคู่อุปกรณ์
+description: จับคู่โทรศัพท์ (หรือเบราว์เซอร์หรือเดสก์ท็อปเครื่องที่สอง) กับเซิร์ฟเวอร์ Control Center ของคุณ เพื่อติดตามฟลีตจากที่ไกล ๆ
 slug: th-TH/คู่มือ/วิธีทำ/จับคู่อุปกรณ์
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/) for how the link
-works and its security model.
+คู่มือนี้แสดงวิธีจับคู่โทรศัพท์กับ Control Center เพื่อให้คุณอ่านข้อความและตั๋วงาน
+และตอบกลับได้จากทุกที่ ขั้นตอนเดียวกันนี้ใช้จับคู่เบราว์เซอร์หรือแอปเดสก์ท็อป
+เครื่องที่สอง ดู[ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/)
+ว่าการเชื่อมต่อนี้ทำงานอย่างไรและมีโมเดลความปลอดภัยแบบใด
 
-## Prerequisites
+## ก่อนเริ่ม
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- ไคลเอนต์เดสก์ท็อปหรือเว็บที่เชื่อมต่อกับเซิร์ฟเวอร์ของคุณ และเวิร์กสเปซที่ตั้งค่าไว้แล้ว การดำเนินการจับคู่ต้องใช้ไคลเอนต์เต็มรูปแบบ โทรศัพท์ที่จับคู่แล้วจึงจับคู่ — หรือเพิกถอน — อุปกรณ์อื่นไม่ได้เลย
+- เซิร์ฟเวอร์ต้องเข้าถึงได้จากอุปกรณ์ที่คุณกำลังจับคู่ ในเครือข่ายเดียวกันก็ทำงานได้ทันที จากที่ไกลออกไปกว่านั้นรีเลย์ที่มีตัวกลางเป็นตัวขนส่งทราฟฟิก หากแผงตอบว่า **เข้าถึงไม่ได้** แทนที่จะแสดง QR หรือข้อมูลรับรอง ให้เผยแพร่เส้นทางก่อน — การเลือกใช้ทันเนลที่ **การตั้งค่า → เซิร์ฟเวอร์ → การเชื่อมต่อและสถานะ** (**แชร์เซิร์ฟเวอร์นี้**) หรือ `--public-url` ของเซิร์ฟเวอร์ (ดู[รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/))
+- สำหรับโทรศัพท์: ไม่ต้องติดตั้งอะไร QR จะเปิดเว็บแอป **Remote** ([remote.usectrl.dev](https://remote.usectrl.dev/) โดยค่าเริ่มต้น)
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**การโฮสต์เอง** Remote และรีเลย์โบรกเกอร์เป็นโอเพนซอร์สในรีโปนี้: แอปโทรศัพท์
+(`apps/cc_remote` เป็น PWA เว็บ Flutter ที่คุณนำไปปรับใช้บน Cloudflare Pages ผ่าน
+`wrangler.jsonc` ของมัน บนอิมเมจ nginx `docker/cc_remote` หรือบนโฮสต์สแตติกใดก็ได้
+ที่ใช้ HTTPS — service worker และ IndexedDB ใช้ได้เฉพาะในบริบทที่ปลอดภัยเท่านั้น)
+และรีเลย์ (`apps/cc_signaling_server` ไบนารี Dart แบบไร้สถานะตัวเดียวที่เก็บข้อมูล
+แอปไม่ได้เลยและไม่เคยเห็นความลับการจับคู่ — มันส่งต่อเฉพาะเฟรมที่ปิดผนึกแบบต้นทาง
+ถึงปลายทาง) ดู README ของทั้งสองตัวสำหรับขั้นตอนบิลด์และรัน
 
-## Step 1: Open the pairing panel
+## ขั้นตอนที่ 1: เปิดแผงการจับคู่
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+เปิด **การตั้งค่า → คุณ → อุปกรณ์ของคุณ** ส่วน **อุปกรณ์ของคุณ** แสดงรายการ
+ไคลเอนต์ที่จับคู่กับบัญชีของคุณบนเซิร์ฟเวอร์นี้ (เจ้าของเซิร์ฟเวอร์เห็นทุกอุปกรณ์
+บนเซิร์ฟเวอร์ คนอื่นเห็นเฉพาะของตัวเอง)
 
-## Step 2: Pair a new client
+## ขั้นตอนที่ 2: จับคู่ไคลเอนต์ใหม่
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+คลิก **จับคู่ไคลเอนต์ใหม่** ที่ส่วนหัวของหน้า ตั้งป้ายชื่อให้มัน (เช่น
+"โทรศัพท์ของฉัน") เลือกชนิด — **เว็บเบราว์เซอร์** **แอปเดสก์ท็อป** หรือ
+**โทรศัพท์** — แล้วคลิก **จับคู่**
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- สำหรับ **โทรศัพท์** จะมี QR โค้ดปรากฏขึ้น สแกนมันด้วยกล้องของโทรศัพท์ หรือคัดลอกลิงก์แล้วเปิดในเบราว์เซอร์ใดก็ได้ ลิงก์นี้ชี้แอป Remote ไปที่เซิร์ฟเวอร์ของคุณและพาข้อมูลรับรองไปด้วย
+- สำหรับ **เบราว์เซอร์** หรือ **เดสก์ท็อป** ให้คัดลอกลิงก์ที่แสดง (หรือ ID อุปกรณ์กับคีย์จับคู่) ไปใส่ในไคลเอนต์ใหม่แทน ลิงก์แบบแตะครั้งเดียวจะเสนอให้เฉพาะเมื่อคุณจับคู่จากไคลเอนต์เว็บ เนื่องจากไบนารีเดสก์ท็อปไม่มีเว็บออริจินให้สร้างลิงก์ดังกล่าว
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+QR ของโทรศัพท์กับลิงก์ที่ `cc_server pair --client-url` พิมพ์บน CLI เป็น
+**เพย์โหลดที่ต่างกันและใช้แทนกันไม่ได้**: ลิงก์จาก CLI กรอกแบบฟอร์มเชื่อมต่อของ
+ไคลเอนต์เว็บ ขณะที่ QR นี้พาตัวพรรณาการเชื่อมต่อทั้งหมดของเซิร์ฟเวอร์และ
+ลายนิ้วมือตัวตนไปให้ Remote PWA
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+ฝั่งโทรศัพท์ การเปิดลิงก์จับคู่ไม่ได้จับคู่อย่างเงียบ ๆ Remote จะแสดงชื่อที่
+เซิร์ฟเวอร์ประกาศไว้และขอให้คุณยืนยันก่อนจัดเก็บสิ่งใด ลิงก์ปลอมจึงลักพาแอปไป
+ยังเซิร์ฟเวอร์ของคนอื่นไม่ได้
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[QR ที่สแกนแล้วให้สิทธิ์เข้าถึงทันที]
+ไม่มีขั้นตอนค้างรอแล้วอนุมัติ: อุปกรณ์ที่สร้างขึ้นใช้งานได้ทันทีที่ถูกสร้าง และเกต
+การเชื่อมต่อตรวจสอบเพียงว่าข้อมูลรับรองยังใช้งานได้และยังไม่หมดอายุ ให้ปฏิบัติกับ
+QR และคีย์จับคู่เหมือนรหัสผ่าน และเพิกถอนทุกสิ่งที่คุณไม่ได้ตั้งใจมอบออกไป
 :::
 
-## Manage paired devices
+## จัดการอุปกรณ์ที่จับคู่แล้ว
 
-From **Settings → You → Your devices** you can:
+จาก **การตั้งค่า → คุณ → อุปกรณ์ของคุณ** คุณสามารถ:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **เปลี่ยนชื่อ** อุปกรณ์
+- **เพิกถอน** อุปกรณ์ที่คุณไม่ไว้วางใจอีกต่อไป การเพิกถอนจะทำลายข้อมูลรับรองของมันและตัดเซสชันที่ใช้งานอยู่ภายในไม่กี่วินาที เมื่อเชื่อมต่อใหม่จึงล้มเหลวแบบปิด
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+การเพิกถอนเป็นการกระทำที่ถูกต้องสำหรับโทรศัพท์ที่หายหรือถูกเปลี่ยนเครื่อง
+มันมีผลทันทีและย้อนกลับไม่ได้จากมุมมองของอุปกรณ์
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+ข้อมูลรับรองที่สร้างจากแผงนี้มีเวลาจำกัด: มันหมดอายุ 30 วันหลังออกให้ และเกต
+การเชื่อมต่อจะทำให้มันล้มเหลวแบบปิดหลังจากนั้น ข้อมูลรับรองที่สร้างด้วย
+`cc_server pair` บนบรรทัดคำสั่ง **ไม่มีวันหมดอายุเลย** — ให้เพิกถอนด้วยมือ
+เมื่อเครื่องที่มันมีไว้เพื่อนั้นปลดระวาง
 
-## Switch workspaces from the phone
+## สลับเวิร์กสเปซจากโทรศัพท์
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+โทรศัพท์ที่จับคู่แล้วสลับเวิร์กสเปซได้อย่างอิสระจากเดสก์ท็อป โทรศัพท์ส่ง
+เวิร์กสเปซไปกับการเรียกทุกครั้ง และเซิร์ฟเวอร์ตรวจสอบสมาชิกภาพและบทบาทของคุณ
+ในเวิร์กสเปซนั้นทุกครั้ง — โทรศัพท์จึงเข้าถึงเฉพาะเวิร์กสเปซที่คุณเป็นสมาชิก
+และการสลับที่นั่นไม่เคยเปลี่ยนสิ่งที่เดสก์ท็อปแสดง
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+เซสชันของโทรศัพท์ยังถูกจำกัดเพิ่มเติมให้ใช้ได้เฉพาะรายการอนุญาตสั้น ๆ ของ
+เครื่องมือที่เน้นการอ่านเป็นหลัก: มันแสดงรายการและอ่านตั๋วงาน เอเจนต์ สเปซ
+ข้อความ และบทความในฟีดได้ และอัปเดตหรือมอบหมายตั๋วงาน ส่งข้อความในสเปซ และ
+ทำเครื่องหมายว่าบทความอ่านแล้วหรือบันทึกไว้ได้ สิ่งใดนอกเหนือจากชุดนั้นจะถูก
+ปฏิเสธก่อนถึงตัวจัดส่งของเซิร์ฟเวอร์
 
-## Related guides
+## คู่มือที่เกี่ยวข้อง
 
-- [Run a headless server](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/): make the server reachable in the first place
-- [Connect to a remote server](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/): point a full client at it
-- [Use spaces](/th-TH/คู่มือ/วิธีทำ/สเปซ/): what you'll mostly do from the phone
-- [Create and manage tickets](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/): triage from the road
+- [รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ](/th-TH/คู่มือ/วิธีทำ/รันเซิร์ฟเวอร์แบบไม่มีส่วนติดต่อ/): ทำให้เซิร์ฟเวอร์เข้าถึงได้ตั้งแต่แรก
+- [เชื่อมต่อเซิร์ฟเวอร์ระยะไกล](/th-TH/คู่มือ/วิธีทำ/เชื่อมต่อเซิร์ฟเวอร์ระยะไกล/): ชี้ไคลเอนต์เต็มรูปแบบมาที่มัน
+- [ใช้สเปซ](/th-TH/คู่มือ/วิธีทำ/สเปซ/): สิ่งที่คุณจะทำจากโทรศัพท์เป็นหลัก
+- [สร้างและจัดการตั๋วงาน](/th-TH/คู่มือ/วิธีทำ/จัดการตั๋วงาน/): คัดแยกงานระหว่างเดินทาง
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/)
-- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)
+- [ควบคุมระยะไกลและมือถือ](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/)
+- [การปรับใช้และไคลเอนต์](/th-TH/คู่มือ/แนวคิด/การปรับใช้/)

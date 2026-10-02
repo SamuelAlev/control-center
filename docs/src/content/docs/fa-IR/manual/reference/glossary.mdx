@@ -1,7 +1,8 @@
 ---
-title: Glossary
-description: Definitions of key terms used throughout Control Center.
+title: واژه‌نامه
+description: تعریف اصطلاح‌های کلیدی به‌کاررفته در سراسر Control Center.
 slug: fa-IR/راهنمای-کاربر/مرجع/واژه-نامه
+sourceHash: 80f7ac45a579f2ff2564ca5dc4ca9475ccfaaf69
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -11,89 +12,89 @@ export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
 {/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
 pairs in sync with the prose definitions below (single page, rarely changes). */}
 export const glossaryTerms = [
-['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
-['Adapter', 'The runner that executes an agent turn. Two ship: Control Center (built-in) — the in-process harness that talks to model providers — and Claude Code via the claude CLI. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.'],
-['Workspace', 'The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
-['Forge', 'A code host — GitHub, GitLab or Bitbucket Cloud. A property of each repo, read from its origin remote at registration. One workspace can hold repos on all three.'],
-['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose origin remote points at a supported forge (GitHub, GitLab or Bitbucket Cloud).'],
-['Isolated repo', 'A workspace-scoped worktree of a registered repo. Copy-on-write via rift wherever that native ships; git worktree on Windows. Provisioned per space so every conversation in that space shares one checkout; agents never mutate the source.'],
-['Space', 'A workspace-scoped collaboration container with human and agent participants, a persisted Mode, provisioning status and a SpaceKind (topic, agentPeer, system, pr or slack) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via rift; git worktree on Windows).'],
-['Conversation', 'One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or main stream. Each opens as an editor tab; a space unread state aggregates across all of them.'],
-['Thread', 'A Conversation whose anchorMessageId is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.'],
-['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (TeamRoutingService dispatches the leader).'],
-['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
-['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped.'],
-['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
-['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as google_* keys in the secrets.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
-['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
-['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
-['Skill source', 'A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository\'s metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt.'],
-['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
-['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
-['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
-['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
-['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
-['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
-['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
-['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
-['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
-['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
-['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
-['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
-['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
-['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
-['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
-['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
-['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
-['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
-['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
-['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
-['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
-['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.'],
-['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
-['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
-['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
-['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
-['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
-['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
-['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
-['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
-['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
-['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
-['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
-['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
-['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
-['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
-['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
-['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
-['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
-['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
-['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
-['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
-['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
-['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
-['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
-['Review compute', 'Server-side review compute for a PR: graph-derived file cohorts, typed walkthrough diagrams, UI visual diffs, OpenAPI contract diffs, blast-radius map and per-axis gates, served over review_studio.* and folded into the Review tab verdict.'],
-['Review space', "A PR's single backing space (mode review, kind pr), created idempotently and linked to the PR by a ReviewSpaceAssociation. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head."],
-['Review node', 'The structured unit of an AI review finding: kind (bug, suggestion, recommendation, question, ticket), priority P0-P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with add_review_node; the verdict is computed from nodes, not prose.'],
-['Consensus-ready', 'The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab Publish button sends every remaining open finding; the MCP tool publish_review_to_github still defaults to peer-confirmed findings only.'],
-['Review level', 'Workspace policy (light, balanced, thorough) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.'],
-['Review axis', 'One of five per-review scoring lanes: correctness, security and testGap drawn from reviewer findings; visual and apiContract deterministic. Gated axes fold into the verdict and can only make it more severe — a partial or unavailable gate holds the verdict rather than passing it.'],
-['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
-['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
-['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
+['عامل', 'کارگری هوش مصنوعی با هویت، نقش، مهارت‌ها و توانایی‌ها. دقیقاً به یک فضای کاری تعلق دارد. کنشگر اصلی در سیستم.'],
+['آداپتور', 'اجراکننده‌ای که یک نوبت عامل را می‌چرخاند. دو مورد عرضه می‌شود: Control Center (built-in) — هارنس درون‌فرایندی که با ارائه‌دهندگان مدل حرف می‌زند — و Claude Code از طریق CLI مربوط به claude. Cursor، Codex و دیگر ارائه‌دهندگان مدل به آداپتور داخلی وصل می‌شوند، نه به‌عنوان اجراکننده‌های جداگانه.'],
+['فضای کاری', 'مستأجر ایزوله‌سازی سطح‌بالا. عامل‌ها، مخزن‌ها، فضاها، تیکت‌ها، حافظه و پایپ‌لاین‌ها را گروه می‌کند. ایزوله‌سازی ساختاری است، نه قراردادی: هر فضای کاری فایل SQLite خودش را دارد، پس یک خواندن میان‌فضاکاری کامپایل نمی‌شود. هر مسیر درون برنامه با /workspaces/:workspaceId شروع می‌شود.'],
+['میزبان کد', 'یک میزبان کد — GitHub، GitLab یا Bitbucket Cloud. ویژگی هر مخزن که هنگام ثبت از ریموت origin آن خوانده می‌شود. یک فضای کاری می‌تواند مخزن‌هایی روی هر سه داشته باشد.'],
+['مخزن', 'یک مخزن Git که درون یک فضای کاری ثبت شده است. محدود به فضای کاری: همان checkout ثبت‌شده در دو فضای کاری دو ردیف با دو شناسه است و هویت مخزن میان فضاهای کاری با مسیر فایل‌سیستم تعیین می‌شود، نه با شناسه. ثبت به یک درخت کاری git نیاز دارد که ریموت origin آن به یک میزبان کد پشتیبانی‌شده اشاره کند (GitHub، GitLab یا Bitbucket Cloud).'],
+['مخزن ایزوله', 'یک worktree محدود به فضای کاری از یک مخزن ثبت‌شده. کپی‌هنگام‌نوشتن از طریق rift هر جا آن نسخهٔ بومی عرضه شود؛ git worktree در Windows. برای هر فضا آماده می‌شود تا هر گفتگو در آن فضا یک checkout مشترک داشته باشد؛ عامل‌ها هرگز منبع را تغییر نمی‌دهند.'],
+['فضا', 'یک محفظهٔ همکاری محدود به فضای کاری با مشارکت‌کنندگان انسانی و عاملی، یک Mode ماندگار، وضعیت آماده‌سازی و یک SpaceKind (topic، agentPeer، system، pr یا slack) که تعیین می‌کند چگونه دسته‌بندی، بی‌صدا، نشان‌دار و پاک‌سازی خودکار شود. مالک worktreeهای ایزوله‌ای است که گفتگوهایش به اشتراک می‌گذارند (کپی‌هنگام‌نوشتن از طریق rift؛ git worktree در Windows).'],
+['گفتگو', 'یک جریان پیام درون یک فضا، با شناسه، تاریخچه و بافت اجرای عامل خودش. گفتگوها در یک فضا هم‌ترازند — جریان اصلی یا «main» وجود ندارد. هر کدام به‌عنوان یک زبانهٔ ویرایشگر باز می‌شود؛ وضعیت خوانده‌نشدهٔ یک فضا روی همهٔ آن‌ها تجمیع می‌شود.'],
+['رشته', 'گفتگویی که anchorMessageId آن تنظیم شده است: به یک پیام از گفتگویی دیگر در همان فضا لنگر انداخته، با بافت تازه‌ای از عامل که آن پیام لنگر بذرش را کاشته است. یک سطح عمق — رشته‌ها هرگز به رشته‌ها لنگر نمی‌اندازند.'],
+['تیکت', 'تجمیع واحد کار. مستقل از فروشنده: به‌طور پیش‌فرض local، با آداپتورهای همگام‌سازی برای Linear، GitHub Issues، Jira Cloud و ClickUp، هرچند هیچ سطحی در برنامه اتصال همگام‌سازی نمی‌سازد. از سلسله‌مراتب، پیوندها و واگذاری پشتیبانی می‌کند. واگذاری به یک عامل مالکیت را ثبت می‌کند و چیزی اعزام نمی‌کند؛ واگذاری به یک تیم استثناست (TeamRoutingService سرگروه را اعزام می‌کند).'],
+['پایپ‌لاین', 'یک گردش‌کار مبتنی بر DAG که گام‌ها (اعزام عامل، اسکریپت‌ها، شرط‌ها) را زنجیره می‌کند. قالب‌ها آن را تعریف می‌کنند؛ در قالب اجرا اجرا می‌شود.'],
+['جلسه', 'یک نشست جلسه که به‌صورت محلی ضبط و رونویسی شده است. میکروفون و صدای سیستم را می‌گیرد، با یک مدل ASR قابل انتخاب روی دستگاه رونویسی می‌کند (به‌طور پیش‌فرض Parakeet TDT v3؛ Parakeet TDT v2، Whisper large-v3-turbo و Whisper base.en جایگزین‌هایند)، گویندگان را تفکیک می‌کند و به یادداشت، موارد اقدام و تصمیم‌ها خلاصه می‌کند. مدل ASR انتخاب‌شده هنگام بوت به‌اجبار نصب می‌شود و عملیات ضبط پس از یک راه‌اندازی مجدد فعال می‌شوند. محدود به فضای کاری.'],
+['CalendarEvent', 'یک ورودی همگام‌شدهٔ Google Calendar محدود به یک فضای کاری و حساب متصل. متمایز از جلسه: یک رویداد یک تعهد زمان‌بندی‌شده است، یک جلسه یک نشست ضبط‌شده.'],
+['CalendarAccount', 'یک حساب Google متصل، به‌ازای هر فضای کاری و ایمیل. توکن‌های تازه‌سازی OAuth سمت سرور به‌صورت کلیدهای google_* در فایل secrets.json زیر پوشهٔ داده ذخیره می‌شوند و هرگز به کلاینت نمی‌رسند؛ پرچم authExpiredAt بنر اتصال دوباره را می‌گرداند.'],
+['AgentRole', 'نقش شمارشی (CEO، coder، reviewer، QA، designer، security، devops، PM، general). پرسونا، دسترسی به حافظه و سلسله‌مراتب را تعیین می‌کند.'],
+['AgentSkills', 'مجموعه‌ای نامحساس به بزرگی و کوچکی حروف از شناسه‌های مهارت که هنگام اعزام، بافت مرتبط را به پرامپت‌ها تزریق می‌کنند.'],
+['منبع مهارت', 'یک مخزن GitHub که به‌ازای هر فضای کاری به‌عنوان کاتالوگ مهارت ثبت می‌شود. از پایه نامطمئن است: فرادادهٔ مخزن فقط نمایشی است و هر نصب پیش از رسیدن هر محتوایی به دیسک یا پرامپت، از دروازهٔ اسکنِ «در نبود تأیید، رد کن» می‌گذرد.'],
+['skills-lock.json', 'مانیفست مهارت‌های نصب‌شده به‌ازای هر فضای کاری: برای هر یک، مخزن منبع، مسیر مخزن، کامیتی که به آن پین شده و هش محتوای تجمیعی. نصب، به‌روزرسانی و حذف نصب آن را به‌روز نگه می‌دارد؛ verify_skills آن را با دیسک بررسی می‌کند.'],
+['AgentCapabilities', 'چهار پرچم (push به مخزن، GitHub API، تیکتینگ، خروج شبکه) که برای هر اعزام حل می‌شوند: پیش‌فرض عامل، سپس پیش‌فرض کاربر، با بازنویسی به‌ازای هر گفتگو. از راه نبودنشان اعمال می‌شود، چون یک توانایی خاموش یعنی توکن یا خروج به‌سادگی هرگز تزریق نمی‌شود.'],
+['Mode', 'chat، plan، review یا orchestrate. به‌ازای هر فضا ذخیره می‌شود، پس یک عامل می‌تواند در فضاهای مختلف حالت‌های متفاوتی داشته باشد؛ هر گفتگو در یک فضا آن را به اشتراک می‌گذارد. پرامپت سیستمی، قواعد نوشتن سندباکس و فهرست مجاز ابزار MCP را دروازه‌بانی می‌کند.'],
+['SandboxBackend', 'microvm (یک VM محصور — تنها بک‌اندی با مرز کرنل، اعمال‌شده بر ترمینال‌های تعاملی)، native (Seatbelt بومی macOS، bubblewrap در Linux و WSL2) یا none. یک‌بار هنگام بوت بررسی می‌شود؛ native در صورت دسترس بودن، هارنس را هنگام اعزام عامل می‌پیچد. Windows بک‌اند بومی ندارد و Linux به bwrap به‌علاوهٔ socat نیاز دارد، پس اجراها آنجا بدون پوشش‌اند؛ --sandbox off آگاهانه انصراف می‌دهد.'],
+['ریگ', 'ماشینی دورریختنی که یک عامل در زمان واقعی می‌راند: یک مرورگر یا دسکتاپ Linux محصور، یک شبیه‌ساز Android یا iOS Simulator مدیریت‌شده توسط میزبان، یا یک ترمینال محصور. به‌صورت زنده روی خط تمام‌رزولوشن خودش تماشا می‌شود و تصاحب سمت سرور اعمال می‌شود. محدود به یک گفتگو تا زبانهٔ انسانی و ابزار عامل یک ماشین را خطاب کنند.'],
+['محفظه', 'ویژگی ایزوله‌سازی قوی‌تر موجود برای ریگ‌های مبتنی بر VM: یک مرز کرنل، دیسک لایهٔ دورریختنی، دروازهٔ شبکهٔ «به‌طور پیش‌فرض رد کن» و کارگزار اعتبارنامه. ریگ‌های Android و iOS دورریختنی‌اند اما از شبکهٔ مدیریت‌شده توسط میزبان استفاده می‌کنند، پس این مرز را ادعا نمی‌کنند. راندن هر ریگ از کلاس گاردریل enclosureControl استفاده می‌کند.'],
+['RunCost', 'شمارش توکن/هزینه (توکن‌های ورودی، توکن‌های خروجی، هزینهٔ تخمینی به سنت) برای یک اجرای عامل.'],
+['WakeReason', 'چرایی اعزام یک عامل. شش مقدار: پیام کاربر، واگذاری تیکت، اعزام دوبارهٔ بازیابی پس از شکست، تکمیل تیکت فرزند، ضربان پیگیری زمان‌بندی‌شده و گام پایپ‌لاین.'],
+['SandboxPort', 'چرخهٔ عمر سندباکس را مدیریت می‌کند (بررسی، اجرا، رویدادها، exec، نابودی).'],
+['CredentialBrokerPort', 'اعتبارنامه‌های محدوده‌دار و مشروط به توانایی را برای راه‌اندازی سندباکس ضرب می‌کند و هنگام برچیدن باطلشان می‌کند.'],
+['GitRepoInspectorPort', 'فراداده (مالک، مخزن، شاخه) را از یک مسیر مخزن Git محلی استخراج می‌کند.'],
+['EmbeddingPort', 'بردارهای امبدینگ متن با نرم واحد برای جستجوی معنایی تولید می‌کند.'],
+['NotificationPort', 'اعلان‌های بومی رومیزی را با رعایت دروازه‌بانی دسته/مسیر نشان می‌دهد.'],
+['TicketProviderPort', 'مرز مستقل از فروشنده به یک بک‌اند تیکتینگ (ایجاد، خواندن، فهرست، به‌روزرسانی، گذار، تخصیص).'],
+['PipelineEnginePort', 'یک اجرای پایپ‌لاین را از یک قالب شروع می‌کند و فراخوان‌ها را از موتور مشخص جدا می‌کند.'],
+['AgentDispatchService', 'اجراهای عامل را آغاز می‌کند: مخزن‌های ایزوله را آماده می‌سازد، پرامپت‌ها را می‌سازد، لاگ‌های اجرا را ایجاد می‌کند و جریان‌های رویداد زنده را برمی‌گرداند.'],
+['TicketWorkflowService', 'موتور چرخهٔ عمر تیکت با دامنهٔ خالص، با یک گلوگاه جهشِ هم‌روندی خوش‌بینانه و اعمال ایزولاسیون فضای کاری. گراف گذاری که اعمال می‌کند تنها عامل‌ها و خودکارسازی را مقید می‌کند؛ تغییرات کاربرمحورِ رابط کاربری force true را می‌فرستند و از آن عبور می‌کنند.'],
+['PipelineEngine', 'اجرای اجراها را ارکستر می‌کند: اجراها را شروع می‌کند، گام‌ها را زمان‌بندی می‌کند، وضعیت را ماندگار می‌کند، روترها/اتصال‌ها/ادامه-در-صورت-خطا را مدیریت می‌کند و اجراهای در جریان را پس از راه‌اندازی مجدد از سر می‌گیرد.'],
+['PipelineTriggerDispatcher', 'به رویدادهای دامنه مشترک می‌شود و اجراهای پایپ‌لاین منطبق را برای تریگرهای فعال خودکار شروع می‌کند.'],
+['MemoryAccessPolicy', 'مجوزهای حافظهٔ نقش عامل را روی دامنه‌ها حل و اعمال می‌کند.'],
+['HarnessCostCalculator', 'مصرف توکن هارنس داخلی را بر پایهٔ کاتالوگ models.dev به یک RunCost قیمت‌گذاری می‌کند. اعزام آن شمارش را روی لاگ اجرا ماندگار می‌کند.'],
+['BudgetEnforcementService', 'هزینهٔ ماهانهٔ هر عامل و یک مسدودسازی پیش از اعزام (checkInvocationBlock) را محاسبه می‌کند. آن مسدودسازی تنها توسط آشتی‌دهنده‌های بازیابی (OrphanRunReaper، StrandedTicketReconciler) بررسی می‌شود، هرگز توسط اعزام عادی.'],
+['BudgetGovernanceService', 'هزینهٔ ماهانهٔ هر عامل را پس از هر اجرا ارزیابی می‌کند: یک آستانهٔ نرم رخداد هشدار ثبت می‌کند؛ تمام‌شدن بودجه رخداد سختی ثبت می‌کند و چرخهٔ عمر عامل را به paused برمی‌گرداند.'],
+['DomainEventBus', 'باس انتشار/اشتراک پخش درون‌فرایندی برای ارتباط میان ویژگی‌ها. رویدادها نوع‌دارند؛ مشترک‌ها جریان‌های نوع‌دار را مصرف می‌کنند.'],
+['DomainEvent', 'رابط پایه. هر رویداد یک occurredAt دارد. دسته‌های کلیدی: فضای کاری/عامل، PR/بازبینی، پیام‌رسانی، تیکتینگ، پایپ‌لاین، جلسه‌ها/تقویم، هویت، ریگ‌ها، مشاهده‌پذیری.'],
+['Clean Architecture', 'قاعدهٔ وابستگی: ارائه به کاربرد/ارائه‌دهنده‌ها به دامنه، با زیرساختی که به سمت داخل اشاره می‌کند. دامنه هیچ import زیرساختی ندارد.'],
+['پورت‌ها و آداپتورها', 'دامنه رابط‌های انتزاعی (پورت) را تعریف می‌کند؛ زیرساخت پیاده‌سازی‌های مشخص (آداپتور) را فراهم می‌کند. ریشهٔ ترکیب آن‌ها را به هم می‌بندد.'],
+['هستهٔ مشترک', 'موجودیت‌ها، اشیای مقدار، پورت‌ها و سرویس‌های core/domain/ که میان ۳+ ویژگی به اشتراک گذاشته می‌شوند.'],
+['ویژگی-محور', 'کد بر اساس دامنهٔ کسب‌وکار سازمان می‌یابد (عامل‌ها، پایپ‌لاین‌ها، پیام‌رسانی)، نه بر اساس لایهٔ فنی.'],
+['معماری کلاینت نازک', 'هیچ کلاینتی پایگاه داده را باز نمی‌کند؛ یک فرایند بدون رابط cc_server مالک داده است و آن را روی RPC مبتنی بر WebSocket سرو می‌کند. هر کلاینت (دسکتاپ، وب، تلفن) یک رندرکننده روی همان یک اتصال RPC است.'],
+['cc_server', 'باینری سرور بدون رابط (Dart خالص، بدون موتور Flutter). مالک پایگاه دادهٔ Drift/SQLite است، repo-RPC را روی WebSocket سرو می‌کند و سرویس‌های پس‌زمینه (پایپ‌لاین‌ها، MCP، آشتی‌دهنده‌ها) را اجرا می‌کند.'],
+['ServerConnectionMode', 'شیوهٔ رسیدن دسکتاپ به سرور: local (راه‌اندازی یک cc_server روی همین ماشین) یا remote (شماره‌گیری یکی در جای دیگر). کلاینت وب همیشه remote است.'],
+['RemoteRpcClient', 'کلاینت JSON-RPC مستقل از ترابری که هر کلاینت نازک برای صحبت با سرورش استفاده می‌کند، روی WSS، لوپ‌بک یا رلهٔ کارگزاری‌شده.'],
+['محدوده‌بندی فضای کاری برای هر فراخوان', 'سرور بی‌حالت است: هیچ اتصال فضای کاری به‌ازای نشست وجود ندارد، پس چند کلاینت روی یک سرور هرگز یک فضای کاری جاری مشترک ندارند. هر repo/call و sub/subscribe محدود به فضای کاری باید workspace_id را در آرگومان‌هایش حمل کند؛ شناسهٔ غایب یا ثبت‌نشده پیش از باز شدن هر پایگاه داده‌ای رد می‌شود. سپس دسترسی با عضویت و نقش در فضای کاری دروازه‌بانی می‌شود، نه با نشست.'],
+['cc_remote', 'کلاینت نازک تلفن — یک PWA وب Flutter که ناوگان را از طریق رلهٔ کارگزاری‌شده با سیاست ابزار «به‌طور پیش‌فرض رد کن» از راه دور کنترل می‌کند.'],
+['cc_signaling_server', 'یک کارگزار رلهٔ WebSocket بی‌حالت که اتاق‌های دعوت‌محور را میزبانی می‌کند. رله‌ای ساده: تنها فریم‌های سرتاسر-مهروموم‌شده را فوروارد می‌کند، هیچ دادهٔ برنامه‌ای نگه نمی‌دارد و هرگز PSK جفت‌سازی را نمی‌بیند.'],
+['Principal', 'یک مقدار مهروموم‌شده که انسان‌ها و عامل‌ها را به‌عنوان تنها انتزاع کنشگر یکپارچه می‌کند. UserPrincipal(userId) یا AgentPrincipal(agentId). هر پیام، تیکت، بازبینی، برنامه و لاگ اجرا از طریق یک Principal نسبت داده می‌شود.'],
+['کاربر', 'یک هویت انسانی که در global.db ذخیره می‌شود و بنابراین سراسری میان فضاهای کاری است. کنشگری که یک فضای کاری را می‌سازد مالک آن می‌شود، با مهر روی Workspace.ownerUserId و یک سطر عضویت با نقش مالک؛ دیگران با دعوت یا SSO می‌پیوندند.'],
+['WorkspaceMember', 'یک سطر عضویت که یک کاربر را با یک WorkspaceRole به یک فضای کاری می‌بندد. عضویت — نه کلید جفت‌سازی — مرز دسترسی است.'],
+['WorkspaceRole', 'نقش عضویت پله‌ای: owner، admin، member، viewer یا guest. گلوگاه عملیات مخزن برای هر نوع عملیات یک کف حداقلی نقش استخراج می‌کند.'],
+['ParticipantPresence', 'آگاهی زودگذر برای یک Principal (وضعیت، جایگاه، نشانگر، تایپ، وضعیت زندهٔ عامل + هزینهٔ در حال اجرا). هرگز ماندگار نمی‌شود؛ هابش در سرور است؛ پیش از پخش با مجوز مخزن فیلتر می‌شود.'],
+['Follow-mode', 'روی یک آواتار کلیک کنید تا تا وقتی خودتان کاری کنید نما را همراهی کنید، سپس جدا شوید. برای انسان‌ها و عامل‌ها کار می‌کند («تماشای کار یک عامل»).'],
+['Autonomy dial', 'یک کنترل به‌ازای هر فضا و هر عامل — propose-only / act-with-approval / act-freely — که به‌صورت پروفایلی نام‌دار روی مخزن گاردریل کنش پیاده می‌شود.'],
+['cc_worker', 'یک باینری اجراکنندهٔ ناوگانِ Dart خالص و بدون رابط. با یک cc_server جفت می‌شود، توانایی‌هایش را اعلام می‌کند، کارهای اجاره‌ای را می‌کشد، اجرایشان می‌کند و رویدادها را بازمی‌گرداند. هیچ وضعیت ماندگاری نگه نمی‌دارد.'],
+['JobSpec', 'مشخصات نوع‌دار برای هر چیز اجراشدنی (اجرای عامل، گام پایپ‌لاین، ایندکس کد، رندر طلایی، بنچمارک، دستهٔ ارزیابی): توانایی‌های لازم، اولویت، بودجه، فضای کاری.'],
+['ActionClass', 'مجموعهٔ بسته‌ای از ۱۳ کلاس اثر (fileDelete، gitPush، prCreate، networkEgress، processSpawn، enclosureControl، …). هر ابزار تغییردهنده کلاس‌هایش را اعلام می‌کند؛ موتور گاردریل برای هر دامنه allow / prompt / deny را حل می‌کند.'],
+['WriteLedger', 'یک دفتر خودتوانی محدود به فضای کاری. هر جهش یک کلید خودتوانی به‌ازای هر کنش منطقی حمل می‌کند؛ یک تکرار همان نتیجهٔ اصلی بایت‌به‌بایت را برمی‌گرداند. اتصال دوباره و چندکلاینتی را از پایه ایمن می‌کند.'],
+['کلید خودتوانی', 'یک UUIDv7 تولیدشده توسط کلاینت که به‌ازای هر کنش منطقی (نه هر تلاش) ضرب می‌شود. تلاش‌های مجدد را در اتصال‌های دوباره و میان کلاینت‌ها تکراری‌زدایی می‌کند.'],
+['صندوق ورودی نیازهای من', 'یک صف میان‌ستونی با قاعده‌ای سخت: یک مورد تنها وقتی ظاهر می‌شود که چیزی را مسدود کند (یک عامل، یک ادغام، یک همگام‌سازی) یا صراحتاً اپراتور را بخواهد.'],
+['Plan Studio', 'سطح برنامه‌ریزی تعاملی: یک پیشنهاد ارکستراسیون یا برنامهٔ تک‌عاملی که به‌صورت یک DAG نوع‌دار قابل‌ویرایش رندر می‌شود، با برآورد هزینه/زمان/ریسک هر گام، نسخه‌بندی دیف برنامه و تأیید جزئی.'],
+['محاسبهٔ بازبینی', 'محاسبهٔ بازبینی سمت سرور برای یک PR: گروه‌های فایل برگرفته از گراف، دیاگرام‌های گام‌به‌گام نوع‌دار، دیف‌های بصری رابط کاربری، دیف‌های قرارداد OpenAPI، نقشهٔ شعاع اثر و دروازه‌های هر محور، که روی review_studio.* سرو می‌شود و در حکم زبانهٔ بازبینی جمع می‌شود.'],
+['فضای بازبینی', 'تنها فضای پشتیبان یک PR (حالت review، نوع pr) که خودتوان ساخته می‌شود و با یک ReviewSpaceAssociation به PR پیوند می‌خورد. هر بازبین یافته‌هایش را در آن ثبت می‌کند و همین آن‌ها را قابل مقایسه می‌کند؛ worktree ایزولهٔ آن، PR را روی head خود checkout دارد.'],
+['گرهٔ بازبینی', 'واحد ساخت‌یافتهٔ یک یافتهٔ بازبینی هوش مصنوعی: نوع (bug، suggestion، recommendation، question، ticket)، اولویت P0-P3، یک سه‌گانهٔ تریاژ دسته/شدت/تلاش، یک لنگر فایل-و-خط، اصلاح پیشنهادی اختیاری و یک امتیاز اطمینان. با add_review_node ثبت می‌شود؛ حکم از گره‌ها محاسبه می‌شود، نه از متن.'],
+['Consensus-ready', 'وضعیت گرهٔ بازبینی که تنها وقتی به آن می‌رسد که یک بازبین همتا یک یافته را تأیید کند — یک عامل نمی‌تواند یافتهٔ خودش را تأیید کند. دکمهٔ انتشار در زبانهٔ بازبینی هر یافتهٔ باز باقی‌مانده را می‌فرستد؛ ابزار MCP با نام publish_review_to_github هنوز به‌طور پیش‌فرض تنها یافته‌های تأییدشدهٔ همتا را می‌فرستد.'],
+['سطح بازبینی', 'سیاست فضای کاری (light، balanced، thorough) که تعیین می‌کند کدام بازبین‌ها پخش شوند (تنها مهندس؛ +qa+architect؛ +security+perf) و یافته‌های زیر آستانه کجا رندر شوند. هرگز یافته‌ای را حذف نمی‌کند.'],
+['محور بازبینی', 'یکی از پنج مسیر امتیازدهی هر بازبینی: correctness، security و testGap برگرفته از یافته‌های بازبین؛ visual و apiContract قطعی. محورهای دروازه‌بانی‌شده در حکم جمع می‌شوند و تنها می‌توانند آن را سخت‌تر کنند — یک دروازهٔ partial یا unavailable حکم را نگه می‌دارد به‌جای اینکه آن را بگذراند.'],
+['حکم بازبینی', 'ship، hold یا block. هر یافتهٔ P0 با اطمینان >= 0.7 مسدود می‌کند؛ هر P0 دیگر یا هر P1 نگه می‌دارد؛ در غیر این صورت ship. یک محور دروازه‌بانی‌شده که رد شود، block را تحمیل می‌کند و یافته‌ها نمی‌توانند با رأی بر آن غلبه کنند.'],
+['SessionRecording', 'یک جریان رویداد به‌علاوهٔ کاست‌های HTTP/LLM و ورودی/خروجی ابزار که برای یک اجرا ضبط شده و با یک AgentConfigHash جفت شده است.'],
+['نشست طلایی', 'یک SessionRecording تأییدشده که به‌ازای هر عامل یا پلی‌بوک پین شده است.'],
 ];
 
 <StructuredData
   schema={{
     "@context": "https://schema.org",
     "@type": "DefinedTermSet",
-    name: "Control Center glossary",
+    name: "واژه‌نامهٔ Control Center",
     url: glossaryUrl,
     hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
       "@type": "DefinedTerm",
@@ -104,179 +105,179 @@ export const glossaryTerms = [
   }}
 />
 
-## Core entities
+## موجودیت‌های هسته
 
-**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+**عامل**: کارگری هوش مصنوعی با هویت، نقش، مهارت‌ها و توانایی‌ها. دقیقاً به یک فضای کاری تعلق دارد. کنشگر اصلی در سیستم.
 
-**Adapter**: The runner that executes an agent turn. Two ship: **Control Center (built-in)** — the in-process harness that talks to model providers — and **Claude Code** via `claude -p`. Cursor, Codex, Anthropic, OpenAI and the rest are providers on the built-in adapter, not separate CLIs. See [Manage adapters and models](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/).
+**آداپتور**: اجراکننده‌ای که یک نوبت عامل را می‌چرخاند. دو مورد عرضه می‌شود: **Control Center (built-in)** — هارنس درون‌فرایندی که با ارائه‌دهندگان مدل حرف می‌زند — و **Claude Code** از طریق `claude -p`. Cursor، Codex، Anthropic، OpenAI و بقیه ارائه‌دهنده‌هایی روی آداپتور داخلی‌اند، نه CLIهای جداگانه. [مدیریت آداپتورها و مدل‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/آداپتورها/) را ببینید.
 
-**Workspace**: The top-level isolation tenant. Groups agents, repos, spaces, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/).
+**فضای کاری**: مستأجر ایزوله‌سازی سطح‌بالا. عامل‌ها، مخزن‌ها، فضاها، تیکت‌ها، حافظه و پایپ‌لاین‌ها را گروه می‌کند. ایزوله‌سازی ساختاری است، نه قراردادی: هر فضای کاری فایل SQLite خودش را دارد (`<dataDir>/<workspaceId>/workspace.db`)، پس یک خواندن میان‌فضاکاری کامپایل نمی‌شود. هر مسیر درون برنامه با `/workspaces/:workspaceId` شروع می‌شود — [نقشهٔ مسیرها(/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/) را ببینید.
 
-**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-میزبان-کد/).
+**میزبان کد**: یک میزبان کد — **GitHub**، **GitLab** یا **Bitbucket Cloud**. میزبان کد ویژگی هر مخزن است، هنگام ثبت از ریموت `origin` آن خوانده می‌شود و آداپتور API و اعتبارنامهٔ آن مخزن را انتخاب می‌کند. یک فضای کاری می‌تواند مخزن‌هایی روی هر سه داشته باشد؛ سطوح تجمیع‌کننده (صندوق ورودی، صف PR) روی هر میزبان کد نماینده‌شده پخش می‌شوند، نتایج را ادغام می‌کنند و شکست‌ها را ایزوله نگه می‌دارند تا یک میزبان کد دور از دسترس هرگز بقیه را خالی نکند. میزبان‌های کد در پشتیبانی تفاوت دارند — جدول توانایی‌ها را در [اتصال میزبان کد(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/اتصال-میزبان-کد/) ببینید.
 
-**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+**مخزن**: یک مخزن Git که درون یک فضای کاری ثبت شده است. **محدود به فضای کاری** — همان checkout ثبت‌شده در دو فضای کاری دو ردیف مستقل با دو شناسه است؛ هویت مخزن میان فضاهای کاری با مسیر فایل‌سیستم تعیین می‌شود، نه با شناسه. ثبت به یک درخت کاری git نیاز دارد که ریموت `origin` آن به یک میزبان کد پشتیبانی‌شده اشاره کند. هر مخزن همان **میزبان کد** را حمل می‌کند (`github` / `gitlab` / `bitbucket`) که آداپتور API و اعتبارنامهٔ استفاده‌شده برای آن را انتخاب می‌کند.
 
-**Isolated repo**: A workspace-scoped worktree of a registered repo. Copy-on-write via `rift` wherever that native ships; `git worktree` on Windows. Provisioned **per space** — every conversation in that space shares one checkout — so agents never mutate the source.
+**مخزن ایزوله**: یک worktree محدود به فضای کاری از یک مخزن ثبت‌شده. کپی‌هنگام‌نوشتن از طریق `rift` هر جا آن نسخهٔ بومی عرضه شود؛ `git worktree` در Windows. **برای هر فضا** آماده می‌شود — هر گفتگو در آن فضا یک checkout مشترک دارد — پس عامل‌ها هرگز منبع را تغییر نمی‌دهند.
 
-**Space**: A workspace-scoped collaboration container with human and agent participants, a persisted `Mode`, provisioning status and a `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. It owns the isolated worktrees its conversations share (copy-on-write via `rift`; `git worktree` on Windows).
+**فضا**: یک محفظهٔ همکاری محدود به فضای کاری با مشارکت‌کنندگان انسانی و عاملی، یک `Mode` ماندگار، وضعیت آماده‌سازی و یک `SpaceKind` (`topic` / `agentPeer` / `system` / `pr` / `slack`) که تعیین می‌کند چگونه دسته‌بندی، بی‌صدا، نشان‌دار و پاک‌سازی خودکار شود. مالک worktreeهای ایزوله‌ای است که گفتگوهایش به اشتراک می‌گذارند (کپی‌هنگام‌نوشتن از طریق `rift`؛ `git worktree` در Windows).
 
-**Conversation**: One message stream inside a Space, with its own id, history and agent-run context. Conversations in a space are flat equals — there is no primary or "main" stream. Each opens as an editor tab; a space's unread state aggregates across all of them.
+**گفتگو**: یک جریان پیام درون یک فضا، با شناسه، تاریخچه و بافت اجرای عامل خودش. گفتگوها در یک فضا هم‌ترازند — جریان اصلی یا «main» وجود ندارد. هر کدام به‌عنوان یک زبانهٔ ویرایشگر باز می‌شود؛ وضعیت خوانده‌نشدهٔ یک فضا روی همهٔ آن‌ها تجمیع می‌شود.
 
-**Thread**: A Conversation whose `anchorMessageId` is set: anchored to one message of a sibling conversation in the same Space, with a fresh agent context seeded by that anchor message. One level deep — threads never anchor to threads.
+**رشته**: گفتگویی که `anchorMessageId` آن تنظیم شده است: به یک پیام از گفتگویی دیگر در همان فضا لنگر انداخته، با بافت تازه‌ای از عامل که آن پیام لنگر بذرش را کاشته است. یک سطح عمق — رشته‌ها هرگز به رشته‌ها لنگر نمی‌اندازند.
 
-**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment to an agent records ownership and dispatches nothing; assignment to a team is the exception (`TeamRoutingService` dispatches the leader).
+**تیکت**: تجمیع واحد کار. مستقل از فروشنده: به‌طور پیش‌فرض `local`، با آداپتورهای همگام‌سازی برای Linear، GitHub Issues، Jira Cloud و ClickUp — هرچند هیچ سطحی در برنامه اتصال همگام‌سازی نمی‌سازد. از سلسله‌مراتب، پیوندها و واگذاری پشتیبانی می‌کند. واگذاری به یک عامل مالکیت را ثبت می‌کند و چیزی اعزام نمی‌کند؛ واگذاری به یک تیم استثناست (`TeamRoutingService` سرگروه را اعزام می‌کند).
 
-**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+**پایپ‌لاین**: یک گردش‌کار مبتنی بر DAG که گام‌ها (اعزام عامل، اسکریپت‌ها، شرط‌ها) را زنجیره می‌کند. قالب‌ها آن را تعریف می‌کنند؛ در قالب اجرا اجرا می‌شود.
 
-## Value objects
+## اشیای مقدار
 
-**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+**AgentRole**: نقش شمارشی (CEO، coder، reviewer، QA، designer، security، devops، PM، general). پرسونا، دسترسی به حافظه و سلسله‌مراتب را تعیین می‌کند.
 
-**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+**AgentSkills**: مجموعه‌ای نامحساس به بزرگی و کوچکی حروف از شناسه‌های مهارت که هنگام اعزام بافت مرتبط را به پرامپت‌ها تزریق می‌کنند.
 
-**Skill source**: A GitHub repository registered per workspace as a skill catalog. Untrusted by construction: the repository's metadata is display-only and every install passes the fail-closed scan gate before any content reaches disk or a prompt. See [install and manage skills](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-مهارتها/).
+**منبع مهارت**: یک مخزن GitHub که به‌ازای هر فضای کاری به‌عنوان کاتالوگ مهارت ثبت می‌شود. از پایه نامطمئن است: فرادادهٔ مخزن فقط نمایشی است و هر نصب پیش از رسیدن هر محتوایی به دیسک یا پرامپت، از دروازهٔ اسکنِ «در نبود تأیید، رد کن» می‌گذرد. [نصب و مدیریت مهارت‌ها(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/مدیریت-مهارتها/) را ببینید.
 
-**skills-lock.json**: The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; `verify_skills` checks it against disk.
+**skills-lock.json**: مانیفست مهارت‌های نصب‌شده به‌ازای هر فضای کاری: برای هر یک، مخزن منبع، مسیر مخزن، کامیتی که به آن پین شده و هش محتوای تجمیعی. نصب، به‌روزرسانی و حذف نصب آن را به‌روز نگه می‌دارد؛ `verify_skills` آن را با دیسک بررسی می‌کند.
 
-**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+**AgentCapabilities**: چهار پرچم (push به مخزن، GitHub API، تیکتینگ، خروج شبکه) که برای هر اعزام حل می‌شوند — پیش‌فرض عامل → پیش‌فرض کاربر، با بازنویسی به‌ازای هر گفتگو. از راه نبودنشان اعمال می‌شود: یک توانایی خاموش یعنی توکن یا خروج به‌سادگی هرگز تزریق نمی‌شود.
 
-**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+**Mode**: `chat`، `plan`، `review` یا `orchestrate`. **به‌ازای هر فضا** ذخیره می‌شود، پس یک عامل می‌تواند در فضاهای مختلف حالت‌های متفاوتی داشته باشد؛ هر گفتگو در یک فضا آن را به اشتراک می‌گذارد. پرامپت سیستمی، قواعد نوشتن سندباکس و فهرست مجاز ابزار MCP را دروازه‌بانی می‌کند. ویرایشگر پیام تنها `chat`، `plan` و `orchestrate` را پیشنهاد می‌دهد؛ برچسب `chat` «عامل» است.
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (یک VM محصور — تنها بک‌اندی با مرز کرنل، اعمال‌شده بر ترمینال‌های تعاملی)، `native` (Seatbelt در macOS، bubblewrap در Linux و WSL2) یا `none`. یک‌بار هنگام بوت بررسی می‌شود؛ `native` در صورت دسترس بودن **بر اعزام عامل اعمال می‌شود** و CLI مربوط به Claude Code و ابزار `bash` هارنس را می‌پیچد. Windows بک‌اند بومی ندارد و Linux به `bwrap` به‌علاوهٔ `socat` نیاز دارد، پس اجراها آنجا بدون پوشش‌اند؛ `--sandbox off` آگاهانه انصراف می‌دهد.
 
-**Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/fa-IR/راهنمای-کاربر/مفهومها/ریگها/).
+**ریگ**: یک ماشین دورریختنی که یک عامل در زمان واقعی می‌راند — یک مرورگر یا دسکتاپ Linux محصور، یک شبیه‌ساز Android یا iOS Simulator مدیریت‌شده توسط میزبان، یا یک ترمینال محصور. به‌صورت زنده روی خط تمام‌رزولوشن خودش تماشا می‌شود و تصاحب سمت سرور اعمال می‌شود. محدود به یک گفتگو تا زبانهٔ انسانی و فراخوان‌های `browser_use` / `computer_use` / `mobile_use` / `ios_use` عامل یک ماشین پیش‌فرض را خطاب کنند. [ریگ‌ها و محفظه‌ها(/fa-IR/راهنمای-کاربر/مفهومها/ریگها/) را ببینید.
 
-**Enclosure**: The stronger VM-backed rig boundary — a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking and do not claim this boundary. Driving any rig uses the `enclosureControl` guardrail class.
+**محفظه**: مرز قوی‌تر ریگ مبتنی بر VM — یک مرز کرنل، دیسک لایهٔ دورریختنی، دروازهٔ شبکهٔ «به‌طور پیش‌فرض رد کن» و کارگزار اعتبارنامه. ریگ‌های Android و iOS دورریختنی‌اند اما از شبکهٔ مدیریت‌شده توسط میزبان استفاده می‌کنند و این مرز را ادعا نمی‌کنند. راندن هر ریگ از کلاس گاردریل `enclosureControl` استفاده می‌کند.
 
-**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+**RunCost**: شمارش توکن/هزینه (توکن‌های ورودی، توکن‌های خروجی، هزینهٔ تخمینی به سنت) برای یک اجرای عامل.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: چرایی اعزام یک عامل. شش مقدار: پیام کاربر، واگذاری تیکت، اعزام دوبارهٔ بازیابی پس از شکست، تکمیل تیکت فرزند، ضربان پیگیری زمان‌بندی‌شده و گام پایپ‌لاین.
 
-## Ports
+## پورت‌ها
 
-**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+**SandboxPort**: چرخهٔ عمر سندباکس را مدیریت می‌کند (بررسی، اجرا، رویدادها، exec، نابودی).
 
-**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+**CredentialBrokerPort**: اعتبارنامه‌های محدوده‌دار و مشروط به توانایی را برای راه‌اندازی سندباکس ضرب می‌کند و هنگام برچیدن باطلشان می‌کند.
 
-**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+**GitRepoInspectorPort**: فراداده (مالک، مخزن، شاخه) را از یک مسیر مخزن Git محلی استخراج می‌کند.
 
-**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+**EmbeddingPort**: بردارهای امبدینگ متن با نرم واحد برای جستجوی معنایی تولید می‌کند.
 
-**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+**NotificationPort**: اعلان‌های بومی رومیزی را با رعایت دروازه‌بانی دسته/مسیر نشان می‌دهد.
 
-**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+**TicketProviderPort**: مرز مستقل از فروشنده به یک بک‌اند تیکتینگ (ایجاد، خواندن، فهرست، به‌روزرسانی، گذار، تخصیص).
 
-**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+**PipelineEnginePort**: یک اجرای پایپ‌لاین را از یک قالب شروع می‌کند و فراخوان‌ها را از موتور مشخص جدا می‌کند.
 
-## Domain services
+## سرویس‌های دامنه
 
-**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+**AgentDispatchService**: اجراهای عامل را آغاز می‌کند: مخزن‌های ایزوله را آماده می‌سازد، پرامپت‌ها را می‌سازد، لاگ‌های اجرا را ایجاد می‌کند و جریان‌های رویداد زنده را برمی‌گرداند.
 
-**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher for an agent assignee — `AgentDispatchService` owns dispatch, and assigning a ticket to an agent starts no run. Assigning a ticket to a team is the exception (`TeamRoutingService` dispatches the leader).
+**TicketWorkflowService**: موتور چرخهٔ عمر تیکت با دامنهٔ خالص، با یک گلوگاه جهشِ هم‌روندی خوش‌بینانه و اعمال ایزولاسیون فضای کاری. گراف گذاری که اعمال می‌کند تنها عامل‌ها و خودکارسازی را مقید می‌کند؛ تغییرات کاربرمحورِ رابط کاربری `force: true` را می‌فرستند و از آن عبور می‌کنند. هیچ اعزام‌کنندهٔ تیکتی برای واگذارشدهٔ عامل وجود ندارد — `AgentDispatchService` مالک اعزام است و واگذاری یک تیکت به یک عامل هیچ اجرایی را شروع نمی‌کند. واگذاری یک تیکت به یک تیم استثناست (`TeamRoutingService` سرگروه را اعزام می‌کند).
 
-**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+**PipelineEngine**: اجرای اجراها را ارکستر می‌کند: اجراها را شروع می‌کند، گام‌ها را زمان‌بندی می‌کند، وضعیت را ماندگار می‌کند، روترها/اتصال‌ها/ادامه-در-صورت-خطا را مدیریت می‌کند و اجراهای در جریان را پس از راه‌اندازی مجدد از سر می‌گیرد.
 
-**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+**PipelineTriggerDispatcher**: به رویدادهای دامنه مشترک می‌شود و اجراهای پایپ‌لاین منطبق را برای تریگرهای فعال خودکار شروع می‌کند.
 
-**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+**MemoryAccessPolicy**: مجوزهای حافظهٔ نقش عامل را روی دامنه‌ها حل و اعمال می‌کند.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessCostCalculator**: مصرف توکن هارنس داخلی را بر پایهٔ کاتالوگ models.dev به یک `RunCost` قیمت‌گذاری می‌کند. اعزام آن شمارش را روی لاگ اجرا ماندگار می‌کند.
 
-**BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+**BudgetEnforcementService**: هزینهٔ ماهانهٔ هر عامل و یک مسدودسازی پیش از اعزام (`checkInvocationBlock`) را محاسبه می‌کند. آن مسدودسازی تنها توسط آشتی‌دهنده‌های بازیابی (`OrphanRunReaper`، `StrandedTicketReconciler`) بررسی می‌شود، هرگز توسط اعزام عادی یک کاربر یا عامل.
 
-**BudgetGovernanceService**: Evaluates per-agent monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`.
+**BudgetGovernanceService**: هزینهٔ ماهانهٔ هر عامل را پس از هر اجرا ارزیابی می‌کند — یک آستانهٔ نرم رخداد هشدار ثبت می‌کند؛ تمام‌شدن بودجه رخداد سختی ثبت می‌کند و چرخهٔ عمر عامل را به `paused` برمی‌گرداند.
 
-## Events
+## رویدادها
 
-**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+**DomainEventBus**: باس انتشار/اشتراک پخش درون‌فرایندی برای ارتباط میان ویژگی‌ها. رویدادها نوع‌دارند؛ مشترک‌ها جریان‌های `on<T>()` را مصرف می‌کنند.
 
-**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, meetings/calendar, identity, rigs, observability.
+**DomainEvent**: رابط پایه. هر رویداد یک `occurredAt` دارد. دسته‌های کلیدی: فضای کاری/عامل، PR/بازبینی، پیام‌رسانی، تیکتینگ، پایپ‌لاین، جلسه‌ها/تقویم، هویت، ریگ‌ها، مشاهده‌پذیری.
 
-## Meetings and calendar
+## جلسه‌ها و تقویم
 
-**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Parakeet TDT v2, Whisper large-v3-turbo and Whisper base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The selected ASR model is force-installed at boot and recording ops light up after one restart. Workspace-scoped; stays on the machine.
+**Meeting**: یک نشست جلسه که به‌صورت محلی ضبط و رونویسی شده است. میکروفون و صدای سیستم را می‌گیرد، با یک مدل ASR قابل انتخاب روی دستگاه رونویسی می‌کند (به‌طور پیش‌فرض Parakeet TDT v3؛ Parakeet TDT v2، Whisper large-v3-turbo و Whisper base.en جایگزین‌هایند)، گویندگان را تفکیک می‌کند و به یادداشت، موارد اقدام و تصمیم‌ها خلاصه می‌کند. مدل ASR انتخاب‌شده هنگام بوت به‌اجبار نصب می‌شود و عملیات ضبط پس از یک راه‌اندازی مجدد فعال می‌شوند. محدود به فضای کاری؛ روی همان ماشین می‌ماند.
 
-**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+**MeetingSegment**: یک پنجرهٔ صوتی رونویسی‌شده، با برچسب گوینده (`me`/`them`) با یک برچسب تفکیک گوینده و آفست‌های میلی‌ثانیه‌ای.
 
-**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+**MeetingActionItem / MeetingDecision**: خروجی‌های ساخت‌یافته‌ای که پایپ‌لاین خلاصه‌سازی استخراج و به‌صورت ردیف‌های مجزا ذخیره می‌کند. موارد اقدام می‌توانند به یک تیکت پیوند بخورند.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: یک ورودی همگام‌شدهٔ Google Calendar محدود به یک فضای کاری و حساب متصل. متمایز از جلسه: یک رویداد یک تعهد زمان‌بندی‌شده است؛ یک جلسه یک نشست ضبط‌شده. با یک `MeetingCalendarLink` یک‌به‌یک پیوند می‌خورد.
 
-**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side as `google_*` keys in `<dataDir>/secrets.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+**CalendarAccount**: یک حساب Google متصل، به‌ازای هر فضای کاری و ایمیل. توکن‌های تازه‌سازی OAuth سمت سرور به‌صورت کلیدهای `google_*` در `<dataDir>/secrets.json` ذخیره می‌شوند و هرگز به کلاینت نمی‌رسند؛ جریان کد دستگاه روی سرور کامل می‌شود. یک پرچم `authExpiredAt` بنر اتصال دوباره را می‌گرداند.
 
-## Architecture terms
+## اصطلاحات معماری
 
-**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+**Clean Architecture**: قاعدهٔ وابستگی: ارائه → کاربرد/ارائه‌دهنده‌ها → دامنه ← زیرساخت. دامنه هیچ import زیرساختی ندارد.
 
-**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+**پورت‌ها و آداپتورها**: دامنه رابط‌های انتزاعی (پورت) را تعریف می‌کند؛ زیرساخت پیاده‌سازی‌های مشخص (آداپتور) را فراهم می‌کند. ریشهٔ ترکیب آن‌ها را به هم می‌بندد.
 
-**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+**هستهٔ مشترک**: موجودیت‌ها، اشیای مقدار، پورت‌ها و سرویس‌های `core/domain/` که میان ۳+ ویژگی به اشتراک گذاشته می‌شوند.
 
-**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+**ویژگی-محور**: کد بر اساس دامنهٔ کسب‌وکار سازمان می‌یابد (عامل‌ها، پایپ‌لاین‌ها، پیام‌رسانی)، نه بر اساس لایهٔ فنی.
 
-## Multiplayer, identity and velocity
+## چندنفره، هویت و سرعت
 
-**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+**Principal**: یک مقدار مهروموم‌شده که انسان‌ها و عامل‌ها را به‌عنوان تنها انتزاع کنشگر یکپارچه می‌کند — `UserPrincipal(userId)` یا `AgentPrincipal(agentId)`. هر پیام، تیکت، بازبینی، برنامه و لاگ اجرا از طریق یک Principal نسبت داده می‌شود.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**کاربر**: یک هویت انسانی که در `global.db` ذخیره می‌شود و بنابراین سراسری میان فضاهای کاری است. کنشگری که یک فضای کاری را می‌سازد **مالک** آن می‌شود — با مهر روی `Workspace.ownerUserId` و یک سطر عضویت با نقش مالک در همان عملیات. دیگران با دعوت یا SSO می‌پیوندند.
 
-**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+**WorkspaceMember** / **WorkspaceRole**: یک سطر عضویت که یک کاربر را با یک نقش به یک فضای کاری می‌بندد (`owner` / `admin` / `member` / `viewer` / `guest`). **عضویت — نه کلید جفت‌سازی — مرز دسترسی است.** مجوزهای هر مخزن نمی‌گذارند عضویت از اختیارات میزبان کد فراتر برود.
 
-**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+**ParticipantPresence**: آگاهی زودگذر برای یک Principal (وضعیت، جایگاه، نشانگر، تایپ، وضعیت زنده و هزینهٔ در حال اجرای یک عامل). هرگز ماندگار نمی‌شود؛ هابش در سرور است؛ پیش از پخش با مجوز مخزن فیلتر می‌شود.
 
-**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+**حالت دنبال‌کردن**: روی یک آواتار کلیک کنید تا تا وقتی خودتان کاری کنید نما را همراهی کنید، سپس جدا شوید. برای انسان‌ها و عامل‌ها کار می‌کند («تماشای کار یک عامل»).
 
-**Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+**درجهٔ خودمختاری**: یک کنترل به‌ازای هر فضا و هر عامل — `propose-only` / `act-with-approval` / `act-freely` — که به‌صورت پروفایلی نام‌دار روی مخزن گاردریل کنش پیاده می‌شود.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: مجموعهٔ بسته‌ای از ۱۳ کلاس اثر (`fileDelete`، `gitPush`، `prCreate`، `networkEgress`، `processSpawn`، `enclosureControl`، …). هر ابزار تغییردهنده کلاس‌هایش را اعلام می‌کند؛ موتور گاردریل برای هر دامنه `allow` / `prompt` / `deny` را حل می‌کند (فضا > عامل > فضای کاری > پیش‌تنظیم حالت > پیش‌فرض داخلی).
 
-**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+**WriteLedger** / **کلید خودتوانی**: هر جهش یک کلید خودتوانی تولیدشده توسط کلاینت حمل می‌کند (UUIDv7، به‌ازای هر کنش منطقی). دفتر محدود به فضای کاری پیش از اجرای هندلر تکراری‌زدایی می‌کند؛ یک تکرار همان نتیجهٔ اصلی بایت‌به‌بایت را برمی‌گرداند. اتصال دوباره و چندکلاینتی را از پایه ایمن می‌کند.
 
-**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+**صندوق ورودی نیازهای من**: یک صف میان‌ستونی با قاعده‌ای سخت — یک مورد تنها وقتی ظاهر می‌شود که چیزی را _مسدود_ کند (یک عامل، یک ادغام، یک همگام‌سازی) یا صراحتاً اپراتور را بخواهد.
 
-**Plan Studio**: The interactive planning surface — editable typed-DAG plans with per-step cost, time and risk, and partial approval.
+**Plan Studio**: سطح برنامه‌ریزی تعاملی — برنامه‌های DAG نوع‌دار قابل‌ویرایش با هزینه، زمان و ریسک هر گام، و تأیید جزئی.
 
-**Review compute**: Server-side PR review compute (graph-derived cohorts, typed diagrams, visual diffs, API contract diffs, multi-axis gates) served over `review_studio.*` and folded into the Review tab.
+**محاسبهٔ بازبینی**: محاسبهٔ بازبینی سمت سرور (گروه‌های برگرفته از گراف، دیاگرام‌های نوع‌دار، دیف‌های بصری، دیف‌های قرارداد API، دروازه‌های چندمحوری) که روی `review_studio.*` سرو می‌شود و در زبانهٔ بازبینی جمع می‌شود.
 
-**Review space**: A PR's single backing space (mode `review`, kind `pr`), created idempotently and linked to the PR by a `ReviewSpaceAssociation`. Every reviewer files findings in it, which is what makes them comparable; its isolated worktree has the PR checked out at its head.
+**فضای بازبینی**: تنها فضای پشتیبان یک PR (حالت `review`، نوع `pr`) که خودتوان ساخته می‌شود و با یک `ReviewSpaceAssociation` به PR پیوند می‌خورد. هر بازبین یافته‌هایش را در آن ثبت می‌کند و همین آن‌ها را قابل مقایسه می‌کند؛ worktree ایزولهٔ آن، PR را روی head خود checkout دارد.
 
-**Review node**: The structured unit of an AI review finding: kind (`bug`, `suggestion`, `recommendation`, `question`, `ticket`), priority P0–P3, a category/severity/effort triage triple, a file-and-line anchor, optional suggested fix and a confidence score. Filed with `add_review_node`; the verdict is computed from nodes, not prose.
+**گرهٔ بازبینی**: واحد ساخت‌یافتهٔ یک یافتهٔ بازبینی هوش مصنوعی: نوع (`bug`، `suggestion`، `recommendation`، `question`، `ticket`)، اولویت P0–P3، یک سه‌گانهٔ تریاژ دسته/شدت/تلاش، یک لنگر فایل-و-خط، اصلاح پیشنهادی اختیاری و یک امتیاز اطمینان. با `add_review_node` ثبت می‌شود؛ حکم از گره‌ها محاسبه می‌شود، نه از متن.
 
-**Consensus-ready**: The review node status reached only when a peer reviewer confirms a finding — an agent cannot confirm its own. The Review tab's **Publish to GitHub** button sends every remaining open finding (`selection: all_open`); the MCP tool `publish_review_to_github` still defaults to peer-confirmed findings only.
+**Consensus-ready**: وضعیت گرهٔ بازبینی که تنها وقتی به آن می‌رسد که یک بازبین همتا یک یافته را تأیید کند — یک عامل نمی‌تواند یافتهٔ خودش را تأیید کند. دکمهٔ **انتشار در GitHub** زبانهٔ بازبینی هر یافتهٔ باز باقی‌مانده را می‌فرستد (`selection: all_open`)؛ ابزار MCP با نام `publish_review_to_github` هنوز به‌طور پیش‌فرض تنها یافته‌های تأییدشدهٔ همتا را می‌فرستد.
 
-**Review level**: Workspace policy (`light`, `balanced`, `thorough`) dialing which reviewers fan out (engineer only; +qa+architect; +security+perf) and where sub-threshold findings render. Never deletes a finding.
+**سطح بازبینی**: سیاست فضای کاری (`light`، `balanced`، `thorough`) که تعیین می‌کند کدام بازبین‌ها پخش شوند (تنها مهندس؛ +qa+architect؛ +security+perf) و یافته‌های زیر آستانه کجا رندر شوند. هرگز یافته‌ای را حذف نمی‌کند.
 
-**Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
+**محور بازبینی**: یکی از پنج مسیر امتیازدهی هر بازبینی: `correctness`، `security` و `testGap` برگرفته از یافته‌های بازبین؛ `visual` و `apiContract` قطعی. محورهای دروازه‌بانی‌شده در حکم جمع می‌شوند و تنها می‌توانند آن را سخت‌تر کنند — یک دروازهٔ `partial` یا `unavailable` حکم را نگه می‌دارد به‌جای اینکه آن را بگذراند.
 
-**Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+**حکم بازبینی**: `ship`، `hold` یا `block`. هر یافتهٔ P0 با اطمینان ≥ 0.7 مسدود می‌کند؛ هر P0 دیگر یا هر P1 نگه می‌دارد؛ در غیر این صورت ship. یک محور دروازه‌بانی‌شده که رد شود، block را تحمیل می‌کند و یافته‌ها نمی‌توانند با رأی بر آن غلبه کنند.
 
-## Fleet and evals
+## ناوگان و ارزیابی‌ها
 
-**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+**cc_worker**: یک باینری اجراکنندهٔ ناوگانِ Dart خالص و بدون رابط. با یک `cc_server` جفت می‌شود، توانایی‌های میزبانش را اعلام می‌کند، کارهای اجاره‌ای را می‌کشد، اجرایشان می‌کند و رویدادهای فرایند را بازمی‌گرداند. **هیچ وضعیت ماندگاری** نگه نمی‌دارد — یک سرور معتبر، N اندام ساده.
 
-**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+**JobSpec**: مشخصات نوع‌دار برای هر چیز اجراشدنی (اجرای عامل، گام پایپ‌لاین، ایندکس کد، رندر طلایی، بنچمارک، دستهٔ ارزیابی).
 
-**Eval suite**: A workspace-scoped evaluation definition (prompt, target agent and mode, graders). Five starters seed on workspace creation; Observability → Quality lists them.
+**مجموعهٔ ارزیابی**: یک تعریف ارزیابی محدود به فضای کاری (پرامپت، عامل و حالت هدف، ارزیاب‌ها). هنگام ساخت فضای کاری پنج نمونهٔ آغازین ساخته می‌شود؛ مشاهده‌پذیری → کیفیت آن‌ها را فهرست می‌کند.
 
-## Deployment and clients
+## استقرار و کلاینت‌ها
 
-**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+**معماری کلاینت نازک**: هیچ کلاینتی پایگاه داده را باز نمی‌کند؛ یک فرایند `cc_server` بدون رابط مالک داده است و آن را روی RPC مبتنی بر WebSocket سرو می‌کند. هر کلاینت (دسکتاپ، وب، تلفن) یک رندرکننده روی همان یک اتصال RPC است.
 
-**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+**cc_server**: باینری سرور بدون رابط (Dart خالص، بدون موتور Flutter). مالک پایگاه دادهٔ Drift/SQLite است، repo-RPC را روی WebSocket سرو می‌کند و سرویس‌های پس‌زمینه (پایپ‌لاین‌ها، MCP، آشتی‌دهنده‌ها) را اجرا می‌کند.
 
-**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+**ServerConnectionMode**: شیوهٔ رسیدن دسکتاپ به سرورش — `local` (راه‌اندازی یک `cc_server` روی همین ماشین، پیش‌فرض) یا `remote` (شماره‌گیری یکی در جای دیگر). کلاینت وب همیشه `remote` است.
 
-**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+**RemoteRpcClient**: کلاینت JSON-RPC مستقل از ترابری که هر کلاینت نازک برای صحبت با سرورش استفاده می‌کند — روی WSS، لوپ‌بک یا رلهٔ کارگزاری‌شده.
 
-**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+**محدوده‌بندی فضای کاری برای هر فراخوان**: سرور بی‌حالت است — **هیچ** اتصال فضای کاری به‌ازای نشست وجود ندارد، پس چند کلاینت روی یک سرور هرگز یک «فضای کاری جاری» مشترک ندارند. هر `repo/call` و `sub/subscribe` محدود به فضای کاری باید `workspace_id` را در آرگومان‌هایش حمل کند؛ شناسهٔ غایب یا ثبت‌نشده پیش از باز شدن هر پایگاه داده‌ای رد می‌شود. سپس دسترسی با عضویت و نقش در فضای کاری دروازه‌بانی می‌شود، نه با نشست.
 
-**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+**cc_remote**: کلاینت نازک تلفن — یک PWA وب Flutter که ناوگان را از طریق رلهٔ کارگزاری‌شده با سیاست ابزار «به‌طور پیش‌فرض رد کن» از راه دور کنترل می‌کند.
 
-**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+**cc_signaling_server**: یک کارگزار رلهٔ WebSocket بی‌حالت که اتاق‌های دعوت‌محور را میزبانی می‌کند — رله‌ای ساده که تنها فریم‌های سرتاسر-مهروموم‌شده را فوروارد می‌کند، هیچ دادهٔ برنامه‌ای نگه نمی‌دارد و هرگز PSK جفت‌سازی را نمی‌بیند.
 
-## See also
+## همچنین ببینید
 
-- [Route map](/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/)
-- [Architecture](/fa-IR/راهنمای-کاربر/مفهومها/معماری/)
-- [Workspaces](/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
-- [Domain events](/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/)
+- [نقشهٔ مسیرها(/fa-IR/راهنمای-کاربر/مرجع/نقشه-مسیرها/)
+- [معماری(/fa-IR/راهنمای-کاربر/مفهومها/معماری/)
+- [فضاهای کاری(/fa-IR/راهنمای-کاربر/مفهومها/فضاهای-کاری/)
+- [رویدادهای دامنه(/fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه/)

@@ -1,152 +1,163 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: Dùng đánh giá hỗ trợ AI
+description: Chạy quy trình pr_review trên một PR, đọc các phát hiện và kết luận, rồi xuất bản đánh giá lên GitHub.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+Hướng dẫn này chỉ cho bạn cách để các agent đánh giá xem xét một pull request và
+cách xuất bản kết quả lên GitHub.
 
-## Start an AI review
+## Bắt đầu một lượt đánh giá AI
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. Mở PR và chuyển đến tab **Tổng quan** của nó
+2. Mở menu tràn ⋯ trong hàng hành động và chọn **Hỏi AI**
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+Mục này chỉ xuất hiện khi PR còn mở — đây là một hành động trước khi merge. Nút
+tương tự cũng có mặt dưới dạng **Hỏi AI** ở trạng thái rỗng của tab **Đánh giá**,
+khi chưa có đánh giá nào.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center khởi động quy trình `pr_review` có sẵn và mở tab **Đánh giá** của
+PR để bạn theo dõi. Quy trình này:
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. Mở space đánh giá riêng của PR, nơi worktree cách ly đã có PR được checkout
+   tại head của nó
+2. Triển khai những người đánh giá theo mức đánh giá của không gian làm việc —
+   mặc định là ba (các agent **qa**, **architect** và **engineer** được tạo sẵn,
+   chạy song song). Không có bước phát hiện ngôn ngữ hay lĩnh vực nào
+3. Cho agent chủ trì (CEO) hợp nhất các phát hiện của họ thành một bản dẫn dắt
+4. Hoàn tất: phân loại các phát hiện vào các nhóm đồng thuận và tính ra kết
+   luận. Khi liên kết đạt `awaiting approval`, **Xuất bản lên GitHub** xuất hiện
+   trên tab Đánh giá
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+Độ sâu của lượt đánh giá là **mức đánh giá** của không gian làm việc — `light`
+(một người đánh giá), `balanced` (ba, mặc định) hoặc `thorough` (cả năm, thêm các
+chuyên gia bảo mật và hiệu năng) — đặt tại **Cài đặt → Không gian làm việc →
+Chung**, trên thẻ **Chính sách không gian làm việc**. Một mức nhẹ hơn vẫn ghi
+nhận đủ ngần ấy phát hiện; chỉ là nó báo ít phát hiện hơn ở vị trí nổi bật.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/vi-VN/so-tay/khai-niem/danh-gia-ai/) for how the pieces fit together.
+Mọi người đánh giá đều đăng vào một space đánh giá duy nhất của PR, và chính điều
+đó khiến các phát hiện của họ có thể so sánh được. Xem
+[Đánh giá bằng AI](/vi-VN/so-tay/khai-niem/danh-gia-ai/) để hiểu cách các mảnh
+ghép khớp với nhau.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/).
+`pr_review` chỉ đi kèm trình kích hoạt thủ công. Để nó chạy trên mọi PR đã xuất
+bản, hãy tự thêm một trình kích hoạt — xem
+[Điều phối agent đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/).
+Bạn cũng có thể khởi động một lượt đánh giá ngay từ GitHub, không cần trình kích
+hoạt quy trình: nhắc đến bot của máy chủ trên PR hoặc thêm nhãn `ai-review` — xem
+[Nói chuyện với Control Center từ một PR GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github/).
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+Nếu có thông báo nổi cho biết một đánh giá đang chạy cho pull request này, thì đã
+có một lượt đang tiến hành; hãy ở lại tab **Đánh giá** hoặc mở **Pipelines** để
+tìm nó.
 
-## Read the findings
+## Đọc các phát hiện
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+Người đánh giá ghi lại phát hiện dưới dạng **node đánh giá** trong space đánh
+giá. Mỗi node mang theo:
 
-| Field          | Description                                                   |
+| Trường         | Mô tả                                                         |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| Loại           | `bug`, `suggestion`, `recommendation`, `question` hoặc `ticket` |
+| Mức ưu tiên    | P0 (nghiêm trọng) → P3 (nhỏ nhặt)                             |
+| Danh mục       | `security`, `stability`, `data_integrity`, `correctness`, `performance` hoặc `maintainability` |
+| Tệp và dòng    | Nơi phát hiện được neo vào                                    |
+| Mã gốc         | Đoạn mã mà phát hiện nói tới                                  |
+| Mã đề xuất     | Bản sửa được đề xuất                                          |
+| Độ tin cậy     | Mức độ tin cậy của người đánh giá                             |
+| Trạng thái     | `open` → `consensus-ready` → `resolved` hoặc `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+Một phát hiện chỉ đạt **sẵn sàng đồng thuận** khi một người đánh giá _ngang hàng_
+xác nhận nó. Một agent không thể xác nhận phát hiện của chính mình, nên ý kiến
+của một người đánh giá đơn lẻ không bao giờ tự mình được công nhận.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/) for what the pass produces.
+Tab **Đánh giá** hiển thị danh sách phát hiện, có thể lọc theo loại và trạng
+thái, kèm một công tắc cho các phát hiện đã bỏ qua, bên cạnh artifact mà agent
+tổng hợp đã xuất bản. Chế độ xem tất định — các cohort, bảng điều khiển đa trục,
+diff hợp đồng và diff hình ảnh — được tính ở phía máy chủ nhưng không có bề mặt
+nào trong ứng dụng; xem
+[Tính toán đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/) để
+biết lượt chạy đó tạo ra những gì.
 
-## Check the disagreements panel
+## Kiểm tra bảng bất đồng
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+Khi hai người đánh giá neo phát hiện vào cùng một tệp và dòng nhưng đánh giá
+chúng rất khác nhau — mức ưu tiên cách nhau từ hai bậc trở lên, hoặc một người
+gọi đó là `bug` còn người kia gọi là `suggestion` — thì một bảng bất đồng xuất
+hiện phía trên danh sách phát hiện. Hãy đọc những mục đó trước: đây là nơi ý kiến
+của những người đánh giá rẽ khác nhau và phán đoán của bạn có giá trị nhất.
 
-## Read the verdict
+## Đọc kết luận
 
-When the lead agent finalizes, it computes a **verdict**:
+Khi agent chủ trì hoàn tất, nó tính ra một **kết luận**:
 
-| Verdict   | Meaning                                      |
+| Kết luận  | Ý nghĩa                                      |
 | --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| **Ship**  | Không tìm thấy điều gì chặn merge            |
+| **Hold**  | Có vấn đề cần xử lý trước khi merge          |
+| **Block** | Có vấn đề nghiêm trọng buộc phải sửa         |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+Kết luận mang theo điểm tin cậy tổng hợp và số lượng phát hiện theo từng mức ưu
+tiên.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+Sau đó các trục đánh giá được gộp vào kết luận và chúng chỉ có thể khiến nó
+**nghiêm trọng hơn**. Một trục có cổng mà thất bại sẽ buộc **Block**; một trục có
+cổng không thể hoàn tất (`partial`) hoặc hoàn toàn không chạy được
+(`unavailable`) buộc ít nhất là **Hold**. Thiếu bằng chứng không bao giờ mở được
+một cổng.
 
-## Publish the review to GitHub
+## Xuất bản đánh giá lên GitHub
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+Xuất bản là một bước riêng, được đặt sau cổng kiểm soát của người dùng một cách
+có chủ đích. Quy trình `pr_review` giữ đánh giá lại trong Control Center; nó
+không đăng lên GitHub.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. Trên tab **Đánh giá**, chờ cho đến khi **Xuất bản lên GitHub** xuất hiện
+2. Nhấn **Xuất bản lên GitHub**
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center gửi **một** đánh giá GitHub duy nhất. Những phát hiện đã được giải
+quyết hoặc đã bỏ qua sẽ bị bỏ qua. Nút này bao gồm mọi phát hiện đang mở còn lại
+và, khi **Ship**, gửi `APPROVE`. (Công cụ MCP `publish_review_to_github` vẫn mặc
+định chỉ dùng các phát hiện đã được xác nhận ngang hàng và không phê duyệt trừ
+khi bạn truyền `approve_on_ship`.) Những phát hiện có neo tệp và dòng sẽ trở
+thành bình luận nội tuyến; mọi thứ còn lại được gộp vào phần thân tóm tắt, mỗi
+mục kèm một chân trang "— Control Center AI review" để nguồn gốc rõ ràng. Một kết
+luận **Block** được gửi dưới dạng `REQUEST_CHANGES`; **Hold** là `COMMENT`;
+**Ship** là `APPROVE` từ nút này. Sau đó một thông báo nổi hiện **Đã xuất bản**.
+Đánh giá được đăng dưới danh tính ứng dụng của máy chủ.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+Nếu GitHub từ chối một neo nội tuyến vì dòng đó không thuộc diff, toàn bộ đánh
+giá sẽ được gửi lại với mọi phát hiện được gộp vào phần thân, để không có gì bị
+lặng lẽ bỏ mất.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[Việc xuất bản phải qua rào chắn]
+`pr_review.publishReview` khai báo lớp hành động `prPublish` và chạy qua điểm
+chặn của rào chắn. Nếu quyết định được phân giải là `prompt` và không có người
+phê duyệt nào được kết nối, việc xuất bản sẽ bị từ chối — rào chắn đóng lại khi
+gặp lỗi. Hãy đặt một quy tắc tường minh tại Cài đặt → Không gian làm việc → Quyền
+của agent nếu bạn muốn nó chạy không cần giám sát.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+Các quy trình tích hợp sẵn khác thì đăng thẳng lên GitHub: `cross_review`,
+`pr_triage`, `ticket_to_pr` và `pre_merge_gate` đều kết thúc bằng một bước bình
+luận. Chỉ riêng `pr_review` giữ kết quả lại cho bạn.
 
-## Dispatch reviewers yourself
+## Tự điều phối người đánh giá
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/).
+Để kiểm soát vai trò nào đánh giá PR và mỗi vai trò xem những tệp nào, hãy dùng
+công cụ MCP `dispatch_reviewers` bên trong một space đánh giá sẵn có, hoặc thêm
+node đánh giá vào một quy trình. Cả hai cách, kèm chữ ký chính xác của công cụ,
+đều có trong
+[Điều phối agent đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Dispatch reviewer agents](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/)
-- [Review compute (cohorts and axes)](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/)
+- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Điều phối agent đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-phoi-agent-danh-gia/)
+- [Tính toán đánh giá (cohort và trục)](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [AI review](/vi-VN/so-tay/khai-niem/danh-gia-ai/)
-- [Guardrails](/vi-VN/so-tay/khai-niem/rao-chan/)
+- [Đánh giá bằng AI](/vi-VN/so-tay/khai-niem/danh-gia-ai/)
+- [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/)

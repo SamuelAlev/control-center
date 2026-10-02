@@ -1,239 +1,262 @@
 ---
-title: Deployment and clients
-description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+title: Dağıtım ve istemciler
+description: Control Center’ın ince istemci mimarisinin headless bir sunucuyu masaüstü, web ve mobil istemcilerinden nasıl ayırdığı.
 slug: tr-TR/kilavuz/kavramlar/dagitim
+sourceHash: 097660a115a0f707cc39bb594b0f21092a8aa505
 ---
 
-Control Center is not one program. It is a **thin-client architecture**: a
-headless server that owns your data and a set of clients that render an
-interface over a single RPC connection to it. Understanding this split explains
-why some things run where they do and what each client can and cannot reach.
+Control Center tek bir program değildir. Bir **ince istemci mimarisidir**:
+verilerinize sahip olan headless bir sunucu ve ona tek bir RPC bağlantısı
+üzerinden arayüz çizen bir dizi istemci. Bu ayrımı anlamak, bazı şeylerin neden
+orada çalıştığını ve her istemcinin neye erişip neye erişemediğini açıklar.
 
-## The server owns the data
+## Verilere sunucu sahiptir
 
-A process called **`cc_server`** holds the databases — a small `global.db` for
-server-wide state plus one SQLite file per [workspace](/tr-TR/kilavuz/kavramlar/calisma-alanlari/),
-opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
-the MCP tool surface and the orchestration listener. Everything that needs to
-outlive a window, or that two clients should see identically, lives there.
+**`cc_server`** adlı bir süreç veritabanlarını tutar — sunucu geneli durum için
+küçük bir `global.db` ve her
+[çalışma alanı](/tr-TR/kilavuz/kavramlar/calisma-alanlari/) için tembel açılan
+birer SQLite dosyası — ve uzun ömürlü işleri yürütür: pipeline motorları,
+uzlaştırıcılar, MCP araç yüzeyi ve orkestrasyon dinleyicisi. Bir pencereyi
+aşması gereken ya da iki istemcinin birebir aynı görmesi gereken her şey orada
+yaşar.
 
-No client opens a database file itself. Instead, every client holds one
-**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
-server authenticates the connection against a paired-device pre-shared key —
-and then stops caring about the connection. **A session is not bound to a
-workspace.** The dispatcher is stateless: every workspace-scoped call carries
-its own `workspace_id` in its arguments and a call that omits one is refused.
+Hiçbir istemci veritabanı dosyasını kendisi açmaz. Bunun yerine her istemci tek
+bir **`RemoteRpcClient`** tutar ve depo işlemlerini ve abonelikleri onun
+üzerinden yürütür. Sunucu bağlantının kimliğini eşleştirilmiş cihaz ön
+paylaşımlı anahtarına karşı doğrular — ve sonra bağlantıyı umursamayı bırakır.
+**Bir oturum bir çalışma alanına bağlı değildir.** Dağıtıcı durumsuzdur: çalışma
+alanı kapsamlı her çağrı kendi `workspace_id` değerini bağımsız değişkenlerinde
+taşır ve bunu atlayan bir çağrı reddedilir.
 
-That is deliberate and it is what lets two clients on one server sit in
-different workspaces without a server-held "current workspace" for them to
-disagree about. Isolation is enforced per call instead, in four steps:
+Bu bilinçli bir tercihtir ve bir sunucudaki iki istemcinin, anlaşmazlığa
+düşebilecekleri, sunucunun tuttuğu bir "geçerli çalışma alanı" olmadan farklı
+çalışma alanlarında oturabilmesini sağlayan da budur. Yalıtım bunun yerine her
+çağrıda, dört adımda uygulanır:
 
-1. The op declares whether it is workspace-scoped; if it is and no
-   `workspace_id` arrived, the call is rejected.
-2. The named id must be a **registered** workspace, checked before anything
-   opens a database — otherwise an unknown id would materialize an empty ghost
-   `workspace.db` on every request. A miss is a not-found.
-3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
-   read needs guest, mutate needs member, destructive needs admin.
-4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
-   never silently out-privileges the forge.
+1. İşlem, çalışma alanı kapsamlı olup olmadığını bildirir; öyleyse ve
+   `workspace_id` gelmediyse çağrı reddedilir.
+2. Adı verilen kimlik **kayıtlı** bir çalışma alanı olmalıdır ve bu, herhangi bir
+   şey veritabanı açmadan önce denetlenir — aksi halde bilinmeyen bir kimlik her
+   istekte boş bir hayalet `workspace.db` yaratırdı. Bir ıska, bulunamadı
+   demektir.
+3. Çağıranın `WorkspaceRole` değeri işlemin tabanını karşılamalıdır; bu taban
+   işlemin türünden türetilir: okuma misafir ister, değiştirme üye ister, yıkıcı
+   işlem yönetici ister.
+4. Depo içeriğini açığa çıkaran bir işlem ayrıca, bildirdiği düzeyde depo başına
+   bir yetki gerektirir — `none` / `read` / `review` / `write` — böylece çalışma
+   alanı üyeliği forge’un ayrıcalıklarını sessizce aşmaz.
 
-The sentence that matters: **holding a pairing key is not the access boundary;
-membership is.**
+Önemli olan cümle şu: **erişim sınırı eşleme anahtarına sahip olmak değildir;
+üyeliktir.**
 
-## Why split it this way
+## Neden bu şekilde bölündü
 
-Three pressures pushed toward a server:
+Sunucuya doğru üç baskı itti:
 
-1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
-   should see the same fleet state. If each owned its own database, they would
-   drift. A single server means every client reads the same live data.
-2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
-   local file, so a web build can never own the database or run an agent. It
-   must talk to a server that does. Rather than build a second, web-only data
-   path, the desktop was brought onto the same path.
-3. **Headless operation.** A server you can run on a small box — reachable from
-   a phone on the train or a browser anywhere — is more useful than a GUI you
-   must leave open.
+1. **Tek doğruluk kaynağı.** Bir masaüstü ile bir telefon ya da bir dizüstü ile
+   bir masaüstü aynı filo durumunu görmelidir. Her biri kendi veritabanına sahip
+   olsaydı birbirlerinden ayrışırlardı. Tek bir sunucu, her istemcinin aynı canlı
+   veriyi okuması demektir.
+2. **Web kendi kendine yetemez.** Bir tarayıcı alt süreç başlatamaz ya da yerel
+   bir dosya açamaz, bu yüzden bir web yapısı veritabanına asla sahip olamaz ya
+   da bir ajan çalıştıramaz. Veritabanına sahip olan bir sunucuyla konuşmak
+   zorundadır. İkinci, yalnızca web’e özel bir veri yolu kurmak yerine masaüstü
+   aynı yola taşındı.
+3. **Headless çalıştırma.** Küçük bir kutuda çalıştırabileceğiniz — trende
+   telefondan ya da herhangi bir yerden bir tarayıcıdan erişilebilen — bir
+   sunucu, açık bırakmanız gereken bir GUI’den daha kullanışlıdır.
 
-The trade-off is that the server is now a dependency: if it is not running,
-nothing works. The desktop's default answer to that is to **spawn one itself**.
+Ödünleşim, sunucunun artık bir bağımlılık olmasıdır: çalışmıyorsa hiçbir şey
+çalışmaz. Masaüstünün buna verdiği varsayılan yanıt **kendisinin bir tane
+başlatmasıdır**.
 
-## The clients
+## İstemciler
 
-Five clients reach the server, each with a different shape and trust profile.
+Sunucuya beş istemci erişir; her birinin biçimi ve güven profili farklıdır.
 
-### Desktop app
+### Masaüstü uygulaması
 
-The Flutter desktop application (macOS, Windows, Linux) is the full client. On
-first launch it asks how it should run, then remembers the choice:
+Flutter masaüstü uygulaması (macOS, Windows, Linux) tam istemcidir. İlk açılışta
+nasıl çalışacağını sorar ve sonra seçimi hatırlar:
 
-- **Local**: spawn and supervise a `cc_server` on this machine — the default,
-  self-contained, single-user setup. The desktop launches the server, which
-  owns the database under the app-support root and talks to it over loopback.
-- **Remote**: connect to a `cc_server` running elsewhere over a secure
-  WebSocket. The data lives on that server; this desktop is purely a renderer.
+- **Yerel**: bu makinede bir `cc_server`’ı başlatın ve denetleyin — varsayılan,
+  kendi kendine yeten, tek kullanıcılı kurulum. Masaüstü sunucuyu başlatır;
+  sunucu veritabanına uygulama destek kökü altında sahip olur ve onunla loopback
+  üzerinden konuşur.
+- **Uzak**: güvenli bir WebSocket üzerinden başka bir yerde çalışan bir
+  `cc_server`’a bağlanın. Veriler o sunucuda yaşar; bu masaüstü yalnızca bir
+  görüntüleyicidir.
 
-In both cases the resulting RPC client overrides the app's data provider, so
-the entire UI — every screen, every feature — reads and writes through the
-server. The desktop never touches the database file directly.
+Her iki durumda da elde edilen RPC istemcisi uygulamanın veri sağlayıcısını
+geçersiz kılar; böylece tüm arayüz — her ekran, her özellik — okumayı ve yazmayı
+sunucu üzerinden yapar. Masaüstü veritabanı dosyasına asla doğrudan dokunmaz.
 
-### Web client
+### Web istemcisi
 
-The web build is the same Flutter app compiled to run in a browser, hosted at
-[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
-browser cannot spawn a subprocess, so the web client is **always** remote: it
-dials a `cc_server` over `wss://` and renders the full desktop interface. Once
-connected it shows the same screens against the same fleet, because it is the
-same code over the same RPC. The gaps are the handful of places that need a
-native capability a browser does not have — the meeting capture quality layer
-below is the main one and OS notifications are another.
+Web yapısı, tarayıcıda çalışacak biçimde derlenmiş aynı Flutter uygulamasıdır ve
+[app.usectrl.dev](https://app.usectrl.dev) adresinde barındırılır, yani kurulacak
+bir şey yoktur. Bir tarayıcı alt süreç başlatamaz, bu yüzden web istemcisi **her
+zaman** uzaktır: bir `cc_server`’a `wss://` üzerinden bağlanır ve tam masaüstü
+arayüzünü çizer. Bağlandıktan sonra aynı filoya karşı aynı ekranları gösterir,
+çünkü aynı RPC üzerinden çalışan aynı koddur. Eksik kalanlar, tarayıcının sahip
+olmadığı yerel bir yetenek gerektiren birkaç yerdir — bunların başında aşağıdaki
+toplantı kaydı kalite katmanı gelir, işletim sistemi bildirimleri de bir
+diğeridir.
 
-This is why "no download" and "no server" are different claims. The web client
-removes the install; it does not remove the server. What it dials can be a
-`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
-certificate because browsers treat loopback as trustworthy — or one on another
-machine, which must be reachable over `wss://` with a certificate the browser
-trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
-remote server means either its own certificate, a TLS-terminating proxy, or a
-tunnel or VPN that supplies one.
+"İndirme yok" ile "sunucu yok"un neden farklı iddialar olduğunu da bu açıklar.
+Web istemcisi kurulumu ortadan kaldırır; sunucuyu ortadan kaldırmaz. Bağlandığı
+şey aynı dizüstündeki bir `cc_server` olabilir — `ws://localhost:9030`, sertifika
+gerektirmez çünkü tarayıcılar loopback’i güvenilir sayar — ya da başka bir
+makinedeki bir `cc_server` olabilir; buna tarayıcının güvendiği bir sertifikayla
+`wss://` üzerinden erişilebilmelidir. `cc_server`, TLS olmadan loopback dışı bir
+adrese bağlanmayı reddeder; yani uzak bir sunucu ya kendi sertifikası, ya TLS
+sonlandıran bir proxy, ya da bunu sağlayan bir tünel veya VPN demektir.
 
-The bundle itself is hosted separately from the server it talks to. A
-standalone `cc_server` serves the RPC endpoint, the MCP surface and its
-proxies, but **not** a web bundle — the static-file path exists in the server
-but no web root is configured on the standalone binary, so it has nothing to
-serve at `/`. The published `cc-webapp` container image is what hosts
-the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
-browser origins on its `--allowed-origins` list, which defaults to
-`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+Paketin kendisi, konuştuğu sunucudan ayrı olarak barındırılır. Tek başına
+çalışan bir `cc_server`, RPC uç noktasını, MCP yüzeyini ve proxy’lerini sunar
+ama bir web paketi **sunmaz** — statik dosya yolu sunucuda vardır ancak tek
+başına çalışan ikili üzerinde hiçbir web kökü yapılandırılmamıştır, dolayısıyla
+`/` altında sunacak bir şeyi yoktur. Yayımlanan `cc-webapp` kapsayıcı imajı
+paketi barındıran şeydir, onu derleyen de `scripts/build_web.sh`’dir. Bir sunucu
+tarayıcı kaynaklarını yalnızca `--allowed-origins` listesinde kabul eder; bu
+listenin varsayılanı `https://app.usectrl.dev` olduğundan, paketi kendi
+sunucunuzda barındırmak kaynağını eklemek anlamına gelir.
 
-Media (avatars, feed images, PR screenshots) routes through the server's proxy
-endpoint rather than hitting upstream hosts directly, so a browser never fetches
-an arbitrary origin. The deployed client stamps a per-request Content-Security
-Policy from a non-sensitive cookie so only the connected server's origin is
-allowed.
+Medya (avatarlar, akış görselleri, PR ekran görüntüleri) doğrudan üst kaynak
+sunuculara gitmek yerine sunucunun proxy uç noktası üzerinden yönlendirilir,
+böylece bir tarayıcı hiçbir zaman rastgele bir kaynaktan içerik çekmez.
+Dağıtılan istemci, hassas olmayan bir çerezden istek başına bir İçerik Güvenliği
+Politikası damgalar; böylece yalnızca bağlı sunucunun kaynağına izin verilir.
 
-### Phone companion (cc_remote)
+### Telefon yardımcı istemcisi (cc_remote)
 
-The **Remote** app is a separate, lighter client — a Flutter web PWA at
-[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
-the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
-speaks a
-read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
-send a reply or update a ticket.
+**Remote** uygulaması ayrı, daha hafif bir istemcidir —
+[remote.usectrl.dev](https://remote.usectrl.dev/) adresindeki bir Flutter web
+PWA. Kasıtlı olarak tam uygulama **değildir**. Aracılı, uçtan uca mühürlenmiş
+bir WebSocket aktarıcısı üzerinden eşleşir ve araç yüzeyinin ağırlıklı olarak
+okuma amaçlı bir dilimini konuşur: biletleri, mesajları ve haber akışını okuyun;
+bir yanıt gönderin ya da bir bileti güncelleyin.
 
-A phone is a **lower-privilege principal** than a local agent. A default-deny
-tool policy, a pre-shared key sealing every frame, a session capability that
-locks privileged ops (pairing, for instance) out of a companion client, the
-per-call role and repo-grant checks above and rate limiting keep an approved
-(or leaked) pairing from becoming full remote control. See
-[Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/) for the full
-security model.
+Telefon, yerel bir ajandan **daha düşük ayrıcalıklı bir varlıktır**. Varsayılan
+olarak reddeden bir araç politikası, her çerçeveyi mühürleyen bir ön paylaşımlı
+anahtar, ayrıcalıklı işlemleri (örneğin eşleştirmeyi) bir yardımcı istemcinin
+dışında tutan bir oturum yeteneği, yukarıdaki çağrı başına rol ve depo yetkisi
+denetimleri ve hız sınırlama, onaylanmış (ya da sızdırılmış) bir eşleştirmenin
+tam uzaktan kontrole dönüşmesini engeller. Tam güvenlik modeli için
+[Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/) sayfasına
+bakın.
 
-### MCP clients
+### MCP istemcileri
 
-External tools — editors, other agents, CLIs — that speak the Model Context
-Protocol connect to the server's MCP surface and consume the typed tool
-registry. This is the programmatic integration path; it is not a GUI. See
-[Use the MCP server](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/) and the
-[MCP tools reference](/tr-TR/kilavuz/referans/mcp-araclari/).
+Model Context Protocol’ü konuşan harici araçlar — düzenleyiciler, diğer ajanlar,
+CLI’lar — sunucunun MCP yüzeyine bağlanır ve tiplenmiş araç kaydını tüketir. Bu,
+programatik entegrasyon yoludur; bir GUI değildir.
+[MCP sunucusunu kullanma](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/) ve
+[MCP araçları referansı](/tr-TR/kilavuz/referans/mcp-araclari/) sayfalarına
+bakın.
 
-### Fleet executors (cc_worker)
+### Filo yürütücüleri (cc_worker)
 
-A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute. It streams process
-events back over the same RPC and holds **no durable state**: no database, no
-auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
-limb, not a second brain. One authoritative server, N dumb limbs; there is no
-consensus, no worker-to-worker traffic.
+Bir **`cc_worker`**, bir `cc_server` ile eşleşen, ana makine yeteneklerini
+bildiren ve yürütmek üzere kiralanmış işleri çeken headless, saf Dart ikilisidir.
+Süreç olaylarını aynı RPC üzerinden geri akıtır ve **kalıcı durum tutmaz**:
+veritabanı yok, kimlik doğrulama yok, onay yok, bütçe yok — bunlar
+`cc_server`’dan asla ayrılmaz. Bir worker bir uzuvdur, ikinci bir beyin değil.
+Tek yetkili sunucu, N aptal uzuv; uzlaşma yok, worker’dan worker’a trafik yok.
 
-Leased execution is still lease plumbing. `agentRun` is the only kind that runs
-a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
-`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
-currently probe with `git --version` / `rev-parse HEAD` so the streaming path
-is exercised without pretending those jobs ran.
+Kiralanmış yürütme hâlâ yalnızca kiralama altyapısıdır. Gerçek bir komutu
+çalıştıran tek tür `agentRun`’dır (`CC_JOB_COMMAND` ya da hiç verilmediyse
+yankılanan bir istem). `pipelineStep`, `codeIndex`, `goldenRender`, `benchmark`
+ve `evalBatch` ise şu anda `git --version` / `rev-parse HEAD` ile yoklama yapar;
+böylece akış yolu, o işler çalışmış gibi yapılmadan denenmiş olur.
 
-What it advertises is the operating system, CPU architecture, core count, RAM,
-whether a Flutter SDK is reachable and which sandbox backends the host has
-(none on Windows). A dedicated worker also always advertises `alwaysOn` and
-`acceptsParallel`, which is what the pin → prefer → spill scheduler places
-against. There is no GPU or ML probe.
+Bildirdiği şeyler işletim sistemi, CPU mimarisi, çekirdek sayısı, RAM, bir
+Flutter SDK’ya ulaşılıp ulaşılamadığı ve ana makinenin hangi sandbox arka
+uçlarına sahip olduğudur (Windows’ta hiçbiri). Özel bir worker ayrıca her zaman
+`alwaysOn` ve `acceptsParallel` bildirir; sabitle → tercih et → taşır
+zamanlayıcısının yerleştirme yaparken kullandığı da bunlardır. GPU ya da ML
+yoklaması yoktur.
 
-A solo desktop notices none of this, because ordinary dispatch does not go
-through the fleet at all. There _is_ an implicit in-process worker registered
-for the server host, but it is a registration seam with no runners wired into
-it — a job actually placed on the local worker fails rather than executing.
-Today, only a real `cc_worker` executes leased jobs.
+Tek başına çalışan bir masaüstü bunların hiçbirini fark etmez, çünkü olağan
+gönderim filodan hiç geçmez. Sunucu ana makinesi için kayıtlı örtük bir süreç içi
+worker _vardır_, ama bu, içine hiçbir çalıştırıcının bağlanmadığı bir kayıt
+dikişinden ibarettir — yerel worker’a gerçekten yerleştirilen bir iş, çalışmak
+yerine başarısız olur. Bugün kiralanmış işleri yalnızca gerçek bir `cc_worker`
+yürütür.
 
-## What runs where
+## Neyin nerede çalıştığı
 
-| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
-| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
-| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
-| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
-| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
-| MCP tool surface                               | serves it                  | —                            | —              | —                                |
-| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
-| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
-| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
-| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+| Konu                                                   | Sunucu (`cc_server`)         | Filo yürütücüsü (`cc_worker`) | Masaüstü istemcisi | Web / telefon istemcisi                      |
+| ------------------------------------------------------ | ---------------------------- | ----------------------------- | ------------------ | -------------------------------------------- |
+| Veritabanları (Drift/SQLite)                           | bunlara sahiptir             | —                             | —                  | —                                            |
+| Kimlik doğrulama, onaylar, bütçeler, kimlik            | bunlara sahiptir             | —                             | —                  | —                                            |
+| Pipeline’lar, uzlaştırıcılar, orkestrasyon dinleyicisi | bunları yürütür              | —                             | —                  | —                                            |
+| MCP araç yüzeyi                                        | bunu sunar                   | —                             | —                  | —                                            |
+| Ajan yürütme                                           | bunu yürütür (ya da kiralar) | kiralanmış işleri yürütür     | —                  | —                                            |
+| Arayüz çizimi                                          | —                            | —                             | tam                | tam (web) / ağırlıklı olarak okuma (telefon) |
+| Toplantı kaydı (mikrofon + toplantı sesi)              | —                            | —                             | yerel kayıt        | yalnızca web, ekran paylaşımı sesi üzerinden |
+| Takvim OAuth (Google)                                  | belirteçleri saklar          | —                             | —                  | —                                            |
 
-The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
-itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
-all.** It advertises a `sandbox` capability so the server can place jobs by
-platform, but nothing in the worker applies one: a leased job is spawned
-directly, bounded by the lease's environment and the worktree it was given.
-Leasing work out therefore moves execution outside the sandbox even on a host
-that has one. See [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/)
-for what bounds a run in each case.
+İki katman aynı biçimde sandbox uygulamaz. `cc_server`, kendi yürüttüğü
+çalıştırmaları, bir arka ucun bulunduğu yerlerde ana makinenin işletim sistemi
+sandbox’ına sarar — macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap — ve
+Windows’ta ya da `bwrap` ile `socat` yokken diğer sınırlara geri düşer.
+**`cc_worker` hiç sandbox uygulamaz.** Sunucunun işleri platforma göre
+yerleştirebilmesi için bir `sandbox` yeteneği bildirir, ama worker’da bunu
+uygulayan hiçbir şey yoktur: kiralanmış bir iş doğrudan başlatılır ve sınırlarını
+kiralamanın ortamı ile kendisine verilen çalışma ağacı çizer. Dolayısıyla işi
+dışarıya kiralamak, sandbox’ı olan bir ana makinede bile yürütmeyi sandbox’ın
+dışına taşır. Her durumda bir çalıştırmayı neyin sınırladığı için
+[Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasına
+bakın.
 
-Meeting capture happens on a client because it needs a microphone and the
-meeting's audio — a server in a closet cannot record your call. The recording
-is then summarized by the server's pipeline and the notes are stored where
-every client can read them.
+Toplantı kaydı bir istemcide gerçekleşir çünkü bir mikrofona ve toplantının
+sesine ihtiyaç duyar — bir dolaptaki sunucu aramanızı kaydedemez. Kayıt daha
+sonra sunucunun pipeline’ı tarafından özetlenir ve notlar her istemcinin
+okuyabileceği bir yerde saklanır.
 
-The web client records too, which the table's shape can obscure: it captures
-the microphone plus a screenshare audio track in the browser and streams 16 kHz
-PCM to the server. It _requires_ that audio track, so it fails explicitly where
-the browser will not provide one. What is genuinely desktop-only is the quality
-layer around capture — signal-level echo cancellation through the native
-processor, the input-level meter and dead-mic warning, re-running a summary,
-cancelling processing and the calendar's record-and-link action.
+Web istemcisi de kaydeder; tablonun biçimi bunu gizleyebilir: tarayıcıda
+mikrofona ek olarak bir ekran paylaşımı ses kanalı yakalar ve sunucuya 16 kHz
+PCM akıtır. Bu ses kanalını _gerektirir_, dolayısıyla tarayıcının kanalı
+sağlamadığı yerlerde açıkça başarısız olur. Gerçekten yalnızca masaüstüne özel
+olan şey, kaydın etrafındaki kalite katmanıdır — yerel işlemci üzerinden sinyal
+düzeyinde yankı engelleme, giriş seviyesi göstergesi ve ölü mikrofon uyarısı,
+bir özeti yeniden çalıştırma, işlemeyi iptal etme ve takvimin kaydı başlat ve
+bağla eylemi.
 
-## Pairing and trust
+## Eşleştirme ve güven
 
-Every client proves who it is with a **pre-shared key** provisioned once:
+Her istemci kimliğini, bir kez sağlanan bir **ön paylaşımlı anahtarla** kanıtlar:
 
-- The desktop in local mode generates a fresh key each boot and hands it to the
-  spawned server via environment, so nothing secret is persisted on the desktop.
-- Remote clients (desktop-remote, web, phone) use a key minted by the server's
-  `pair` command and stored in the OS keychain (or, on the phone, locally).
+- Yerel moddaki masaüstü her açılışta yeni bir anahtar üretir ve bunu başlattığı
+  sunucuya ortam üzerinden verir; böylece masaüstünde hiçbir gizli bilgi kalıcı
+  olmaz.
+- Uzak istemciler (uzak masaüstü, web, telefon) sunucunun `pair` komutuyla
+  üretilen ve işletim sistemi anahtarlığında (telefonda ise yerel olarak)
+  saklanan bir anahtar kullanır.
 
-Revocation is **live**, not lazy. The server watches its paired-device table
-and drops any open session whose device has left the active set, within
-seconds — on the direct WebSocket path and the relay path alike. You do not
-have to wait for the device to reconnect to cut it off.
+İptal **anında** gerçekleşir, tembel değildir. Sunucu eşleştirilmiş cihaz
+tablosunu izler ve etkin kümeden çıkmış bir cihazın açık oturumunu saniyeler
+içinde düşürür — doğrudan WebSocket yolunda da aktarma yolunda da. Bir cihazın
+bağlantısını kesmek için yeniden bağlanmasını beklemeniz gerekmez.
 
-The key never travels through a URL a static host can see. When it arrives by
-link — on the phone or in a browser — it rides in the **URL fragment**, the
-part after `#`, which the browser never sends to the server hosting the page.
-That is the invariant worth remembering and it applies to both. The web client
-has two other entry points: the connect form, where you paste a server and key
-directly and an invite code, which it redeems for a credential minted for that
-browser alone.
+Anahtar, statik bir ana makinenin görebileceği bir URL üzerinden asla yol almaz.
+Bir bağlantıyla geldiğinde — telefonda ya da bir tarayıcıda — **URL parçası**
+içinde, yani `#` sonrasındaki bölümde taşınır; tarayıcı bunu sayfayı barındıran
+sunucuya asla göndermez. Hatırlamaya değer değişmez budur ve her ikisi için de
+geçerlidir. Web istemcisinin iki giriş noktası daha vardır: bir sunucu ile
+anahtarı doğrudan yapıştırdığınız bağlantı formu ve yalnızca o tarayıcı için
+üretilmiş bir kimlik bilgisi karşılığında kullandığı bir davet kodu.
 
-## Related concepts
+## İlgili kavramlar
 
-- [Workspaces and isolation](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): why every RPC call carries its own workspace id and how the database split makes isolation structural
-- [Architecture](/tr-TR/kilavuz/kavramlar/mimari/): how the codebase is structured around the server and its clients
-- [Remote control and mobile](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/): the phone pairing and security model
+- [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/): her RPC çağrısının neden kendi çalışma alanı kimliğini taşıdığı ve veritabanı bölünmesinin yalıtımı nasıl yapısal kıldığı
+- [Mimari](/tr-TR/kilavuz/kavramlar/mimari/): kod tabanının sunucu ve istemcileri etrafında nasıl yapılandırıldığı
+- [Uzaktan kontrol ve mobil](/tr-TR/kilavuz/kavramlar/uzaktan-kontrol/): telefon eşleştirme ve güvenlik modeli
 
-## Related guides
+## İlgili kılavuzlar
 
-- [Run a headless server](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): start `cc_server` and pair a client
-- [Connect to a remote server](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/): point the desktop or web client at a server elsewhere
-- [Pair a device](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): add a phone, a second browser, or another desktop
-- [Run a fleet worker](/tr-TR/kilavuz/nasil-yapilir/filo-workeri-calistirma/): add a `cc_worker` that pulls leased jobs
+- [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/): `cc_server`’ı başlatın ve bir istemci eşleştirin
+- [Uzak bir sunucuya bağlanma](/tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma/): masaüstü ya da web istemcisini başka bir yerdeki bir sunucuya yönlendirin
+- [Bir cihaz eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/): bir telefon, ikinci bir tarayıcı ya da başka bir masaüstü ekleyin
+- [Bir filo worker’ı çalıştırma](/tr-TR/kilavuz/nasil-yapilir/filo-workeri-calistirma/): kiralanmış işleri çeken bir `cc_worker` ekleyin

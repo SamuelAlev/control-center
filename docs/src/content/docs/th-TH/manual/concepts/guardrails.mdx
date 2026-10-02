@@ -1,248 +1,231 @@
 ---
-title: Guardrails — one policy for every mutating action
-description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
+title: กฎคุม — นโยบายเดียวสำหรับทุกการกระทำที่เปลี่ยนแปลงสถานะ
+description: ทำไม Control Center จึงส่งผลข้างเคียงของเอเจนต์ทุกอย่างผ่านเอนจินเดียวที่ตัดสินว่าอนุญาต ถามก่อน หรือปฏิเสธ, ทำไมอนุกรมวิธาน ActionClass จึงตั้งใจให้เล็ก และปุ่มปรับความเป็นอิสระเปลี่ยนอะไรจริง ๆ
 slug: th-TH/คู่มือ/แนวคิด/กฎคุม
+sourceHash: d18b7ebcc6927ecbcb7e6fcdd225b8404aa8ea10
 ---
 
-Agents in Control Center can delete files, push branches, publish pull
-requests and call external APIs. Each of those is a different _kind_ of risk,
-and for a long time only one of them — shell commands — had a policy. The
-guardrails exist to answer one question uniformly, for every mutating action
-an agent can take, regardless of which runtime or tool proposes it: **is this
-allowed, does it need an approval, or is it denied?**
+เอเจนต์ใน Control Center ลบไฟล์ พุชแบรนช์ เผยแพร่ pull request และเรียก API
+ภายนอกได้ แต่ละอย่างเป็นความเสี่ยงต่าง *แบบ* กัน และเป็นเวลานานที่มีเพียงอย่างเดียว
+— คำสั่งเชลล์ — ที่มีนโยบาย กฎคุมมีอยู่เพื่อตอบคำถามข้อเดียวอย่างสม่ำเสมอ
+สำหรับทุกการกระทำที่เปลี่ยนแปลงสถานะซึ่งเอเจนต์ทำได้ ไม่ว่าตัวรันหรือเครื่องมือใด
+จะเป็นผู้เสนอ: **สิ่งนี้ได้รับอนุญาต ต้องมีการอนุมัติ หรือถูกปฏิเสธ?**
 
-## One engine, every chokepoint
+## เอนจินเดียว ทุกจุดที่ต้องผ่าน
 
-There is exactly one policy engine. It is consulted at every point where an
-action can leave the system: the built-in harness's tool registry, the
-server-side MCP dispatcher gate and repo-op mutations. A rule written once
-therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+มีเอนจินนโยบายเพียงหนึ่งเดียวเท่านั้น มันถูกเรียกใช้ ณ ทุกจุดที่การกระทำอาจออกจาก
+ระบบ: ทะเบียนเครื่องมือของฮาร์เนสในตัว ประตูตัวจัดส่ง MCP ฝั่งเซิร์ฟเวอร์ และการ
+เปลี่ยนแปลงจาก repo-op กฎที่เขียนครั้งเดียวจึงใช้กับทั้งรันไทม์ในตัวและเอเจนต์ CLI
+ภายนอกเหมือนกัน — ไม่มีเส้นทางที่สองที่เงียบกว่าอ้อมมันไป นโยบายคำสั่งแบบใช้แต่
+bash แบบเดิมยังทำงานอยู่: กฎหนึ่งข้อจับคู่กับคำนำหน้าคำสั่งแทนที่จะเป็นประเภทการ
+กระทำ และทั้งสองรูปแบบอยู่ร่วมกันในที่เก็บเดียวกัน
 
-The engine is not, however, a substitute for the OS sandbox and the sandbox is
-not a substitute for it. They answer different questions: the guardrails decide
-whether a call Control Center can see is allowed to happen at all, while the
-sandbox bounds where the resulting process may reach. `cc_server` applies the
-sandbox where the host offers a backend — but [Windows offers none and Linux
-needs `bwrap` and `socat`](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
-on top of a floor, which is worth knowing when you decide how permissive to be.
+อย่างไรก็ตาม เอนจินนี้ไม่ใช่สิ่งทดแทนแซนด์บ็อกซ์ของ OS และแซนด์บ็อกซ์ก็ไม่ใช่
+สิ่งทดแทนของมัน ทั้งสองตอบคำถามต่างกัน: กฎคุมตัดสินว่าการเรียกที่ Control Center
+มองเห็นได้รับอนุญาตให้เกิดขึ้นเลยหรือไม่ ส่วนแซนด์บ็อกซ์จำกัดว่ากระบวนการที่เกิดขึ้น
+จะเอื้อมไปถึงที่ใดได้บ้าง `cc_server` ใช้แซนด์บ็อกซ์ในโฮสต์ที่มีแบ็กเอนด์ — แต่
+[Windows ไม่มีเลย และ Linux ต้องมี `bwrap` และ `socat`](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) บนโฮสต์
+เหล่านั้น กฎคุมคือชั้นบังคับใช้ชั้นนอกสุด ไม่ใช่นโยบายที่วางทับบนพื้น จึงควรรู้ไว้
+เมื่อคุณตัดสินใจว่าจะผ่อนปรนแค่ไหน
 
-## ActionClass: a deliberately closed taxonomy
+## ActionClass: อนุกรมวิธานที่ปิดโดยเจตนา
 
-Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
-rest allow and a rule is what changes that.
+เครื่องมือที่เปลี่ยนแปลงสถานะทุกตัวประกาศว่าตนเป็นสมาชิกของ **ActionClass** ใด
+จากชุดปิดของคลาสผลกระทบสิบสามคลาส ห้าคลาสถามก่อนโดยค่าเริ่มต้น ที่เหลืออนุญาต
+และกฎคือสิ่งที่เปลี่ยนมัน
 
-| Class                      | Built-in default | What it covers                                                   |
-| -------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `fileDelete`               | **prompt**       | Deleting a file (a delete-shaped write, `rm`)                    |
-| `gitPush`                  | **prompt**       | Pushing to a git remote                                          |
-| `prCreate`                 | **prompt**       | Creating a pull request                                          |
-| `prPublish`                | **prompt**       | Publishing a review, merging a PR                                |
-| `vendorSyncWrite`          | **prompt**       | Writing to an external ticket vendor (Linear, Jira, GitHub sync) |
-| `fileWriteOutsideWorktree` | allow            | Writing a file outside the isolated worktree                     |
-| `gitCommit`                | allow            | Creating a git commit                                            |
-| `networkEgress`            | allow            | Network egress (web fetch, arbitrary HTTP)                       |
-| `secretAccess`             | allow            | Reading a secret or credential                                   |
-| `packageInstall`           | allow            | Installing a package (npm, pip, pub, brew)                       |
-| `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
-| `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
-| `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| คลาส                       | ค่าเริ่มต้นในตัว | ครอบคลุมอะไร                                             |
+| -------------------------- | ---------------- | -------------------------------------------------------- |
+| `fileDelete`               | **ถามก่อน**      | การลบไฟล์ (การเขียนแบบลบ, `rm`)                          |
+| `gitPush`                  | **ถามก่อน**      | การพุชไปยังรีโมตของ git                                  |
+| `prCreate`                 | **ถามก่อน**      | การสร้าง pull request                                    |
+| `prPublish`                | **ถามก่อน**      | การเผยแพร่รีวิว, การรวม PR                               |
+| `vendorSyncWrite`          | **ถามก่อน**      | การเขียนไปยังระบบตั๋วภายนอก (Linear, Jira, GitHub sync)  |
+| `fileWriteOutsideWorktree` | อนุญาต           | การเขียนไฟล์นอก worktree ที่แยกออกมา                     |
+| `gitCommit`                | อนุญาต           | การสร้างคอมมิตของ git                                    |
+| `networkEgress`            | อนุญาต           | การออกเครือข่าย (ดึงเว็บ, HTTP ตามอำเภอใจ)                |
+| `secretAccess`             | อนุญาต           | การอ่านความลับหรือข้อมูลรับรอง                            |
+| `packageInstall`           | อนุญาต           | การติดตั้งแพ็กเกจ (npm, pip, pub, brew)                   |
+| `processSpawn`             | อนุญาต           | การสปอว์นโพรเซส (เชลล์และทุกอย่างที่เรียกผ่านเชลล์)       |
+| `workspaceMutation`        | อนุญาต           | การเปลี่ยนโครงสร้างเวิร์กสเปซ (รีโป, สเปซ, เอเจนต์)       |
+| `enclosureControl`         | อนุญาต           | การควบคุมเอนโคลเจอร์ (ริก): บูต VM, ส่งอินพุตให้มัน       |
 
-The eight allow-by-default classes were chosen on the assumption that the
-sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+แปดคลาสที่อนุญาตโดยค่าเริ่มต้นถูกเลือกบนสมมติฐานว่ามีพื้นแซนด์บ็อกซ์อยู่ใต้มัน
+มันเป็นเช่นนั้นในโฮสต์ที่มีแบ็กเอนด์ และไม่เป็นเช่นนั้นบน Windows หรือบนเครื่อง Linux
+ที่ขาด `bwrap` และ `socat` — ดังนั้นถ้าคุณต้องการให้ `fileWriteOutsideWorktree`
+หรือ `packageInstall` ถูกกั้นที่นั่น นั่นคือกฎที่คุณต้องเขียนเอง
 
-The set is closed on purpose. A new mutating tool that declares no class fails
-the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
-enough to express the policies people actually write (never push without
-asking, never delete outside a worktree, always allow reads) and few enough
-that the settings UI stays comprehensible.
+ชุดนี้ปิดโดยเจตนา เครื่องมือที่เปลี่ยนแปลงสถานะตัวใหม่ที่ประกาศคลาสไม่ได้จะ
+สอบไม่ผ่าน ratchet test อนุกรมวิธานจึงเติบโตได้ด้วยการตัดสินใจที่ชัดเจนและมี
+เหตุผลเท่านั้น — “การบานปลายของอนุกรมวิธานคือความตายของฟีเจอร์นี้” สิบสามคลาส
+เพียงพอที่จะแสดงนโยบายที่คนเขียนจริง (ไม่พุชโดยไม่ถาม, ไม่ลบนอก worktree,
+อนุญาตการอ่านเสมอ) และน้อยพอที่ UI การตั้งค่าจะยังเข้าใจได้
 
-## Rules and scope resolution
+## กฎและการตัดสินขอบเขต
 
-A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
-Scopes nest from most to least specific:
+กฎหนึ่งข้อแมป `(scope, ActionClass | command prefix) → allow | prompt | deny`
+ขอบเขตซ้อนกันจากจำเพาะที่สุดไปหาไม่จำเพาะที่สุด:
 
-**space > agent > workspace > mode preset > built-in default**
+**สเปซ > เอเจนต์ > เวิร์กสเปซ > พรีเซ็ตโหมด > ค่าเริ่มต้นในตัว**
 
-Resolution is **specificity first**: the first scope with a matching rule
-decides and resolution stops there. Most-restrictive is only a tie-break —
-between two equally specific rules within one scope and when combining the
-several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix. Allow does not beat deny anywhere.
+การตัดสินให้ **ความจำเพาะก่อน**: ขอบเขตแรกที่มีกฎตรงกันเป็นตัวตัดสิน และการ
+ตัดสินหยุดที่ตรงนั้น การเข้มงวดที่สุดใช้เป็นตัวตัดสินเฉพาะเมื่อเสมอกันเท่านั้น —
+ระหว่างกฎสองข้อที่จำเพาะเท่ากันในขอบเขตเดียวกัน และเมื่อรวมหลายคลาสที่การกระทำ
+เดียวประกาศไว้ ภายในขอบเขตหนึ่ง กฎคำสั่งจับคู่กับคำนำหน้าคำสั่งที่ยาวที่สุด
+อนุญาตไม่ชนะปฏิเสธที่ใดเลย
 
-Two decisions carry hard guarantees:
+การตัดสินสองอย่างมีหลักประกันที่แน่นอน:
 
-- **Fail-closed prompts.** A `prompt` with no approver connected resolves to
-  _denied_. An unanswered question is never a yes.
-- **Most-restrictive combination.** An action spanning several classes
-  combines them most-restrictively; when several classes prompt, one
-  confirmation lists them all.
+- **คำถามที่ปิดเมื่อล้มเหลว** `prompt` ที่ไม่มีผู้อนุมัติเชื่อมต่ออยู่จะกลายเป็น
+  _ปฏิเสธ_ คำถามที่ไม่มีคำตอบไม่เคยเป็นคำตอบว่าใช่
+- **การรวมแบบเข้มงวดที่สุด** การกระทำที่คร่อมหลายคลาสจะถูกรวมแบบเข้มงวดที่สุด
+  เมื่อหลายคลาสถามก่อน การยืนยันครั้งเดียวจะแสดงรายการทั้งหมด
 
-There is deliberately no per-turn latch. Every tool call re-resolves the policy
-from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+จงใจไม่มีตัวล็อกต่อเทิร์น ทุกการเรียกเครื่องมือตัดสินนโยบายใหม่ตั้งแต่ต้น
+การถามซ้ำสำหรับการกระทำเดิมจึงถูกจำกัดด้วย “จดจำการตัดสินนี้” ของผู้ปฏิบัติการเอง
+ไม่ใช่ด้วยสิ่งที่ผูกกับเทิร์น
 
-## Argument-level rules
+## กฎระดับอาร์กิวเมนต์
 
-A rule can constrain the ARGUMENTS of an action, not just its verb. "May
-push" and "may push to `feature/*`" are different claims, and only the second
-is a control — a capability gate that authorizes the verb alone is the shape
-behind most published agent incidents.
+กฎหนึ่งข้อจำกัด **อาร์กิวเมนต์** ของการกระทำได้ ไม่ใช่แค่กริยาของมัน “พุชได้” กับ
+“พุชไปยัง `feature/*` ได้” เป็นข้ออ้างที่ต่างกัน และมีเพียงข้อที่สองเท่านั้นที่
+เป็นการควบคุม — ประตูความสามารถที่อนุญาตเฉพาะกริยาเป็นรูปทรงที่อยู่เบื้องหลัง
+เหตุการณ์เอเจนต์ที่ถูกเปิดเผยส่วนใหญ่
 
-A constraint may name:
+ข้อจำกัดหนึ่งข้ออาจระบุ:
 
-- **paths** — glob patterns (`repos/**`, `!**/.env`)
-- **refs** — git refs, with `!` negation (`['**', '!main']` reads as "any
-  branch except main")
-- **hosts** — network destinations, with subdomain wildcards (`*.internal`)
-- **commands** — command prefixes, matched on a word boundary
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
-  expressible
+- **พาธ** — รูปแบบ glob (`repos/**`, `!**/.env`)
+- **ref** — git ref พร้อมการปฏิเสธด้วย `!` (`['**', '!main']` อ่านว่า “ทุกแบรนช์
+  ยกเว้น main”)
+- **โฮสต์** — ปลายทางเครือข่าย พร้อมไวลด์การ์ดซับโดเมน (`*.internal`)
+- **คำสั่ง** — คำนำหน้าคำสั่ง จับคู่ที่ขอบเขตคำ
+- **เพดาน** — `maxCount` / `maxCents` ทำให้ “ลบได้ถึง 50 ไฟล์” แสดงออกได้
 
-Three properties fall out of keeping the grammar closed and loop-free, and
-all three are the point: every rule renders as a sentence you can read back,
-every denial can name the constraint that matched, and the whole policy can be
-enumerated — you can see what an agent may do *before* it runs.
+คุณสมบัติสามอย่างเกิดจากการที่ไวยากรณ์ปิดและไม่มีลูป และทั้งสามคือประเด็น:
+ทุกกฎแสดงออกเป็นประโยคที่คุณอ่านกลับได้ ทุกการปฏิเสธระบุข้อจำกัดที่ตรงได้ และ
+นโยบายทั้งหมดแจกแจงได้ — คุณเห็นได้ว่าเอเจนต์ทำอะไรได้ *ก่อน* มันรัน
 
-Three rules that matter:
+กฎสามข้อที่สำคัญ:
 
-- A **constrained rule is more specific** than an unconstrained one at the
-  same scope, so "deny push to `main`" beats "allow push" without anyone
-  thinking about ordering.
-- A **restrictive** rule (deny / prompt) applies when the request touches
-  *any* value it names; a **permissive** one (allow) applies only when the
-  request is *entirely* inside it. Reading both the same way would let an
-  agent launder a forbidden path by batching an innocent one beside it.
-- A rule that names a facet the request says nothing about is neither applied
-  nor skipped: it **escalates to an approval**. Silently skipping would make
-  every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot
-  describe. With no approver connected, the existing fail-closed rule turns
-  that escalation into a denial.
+- **กฎที่มีข้อจำกัดจำเพาะกว่า** กฎที่ไม่มีข้อจำกัดในขอบเขตเดียวกัน “ปฏิเสธการ
+  พุชไป `main`” จึงชนะ “อนุญาตการพุช” โดยไม่มีใครต้องคิดเรื่องลำดับ
+- กฎแบบ **จำกัด** (ปฏิเสธ / ถามก่อน) มีผลเมื่อคำขอแตะค่าใด ๆ ที่มันระบุ กฎแบบ
+  **ผ่อนปรน** (อนุญาต) มีผลเฉพาะเมื่อคำขออยู่ *ทั้งหมด* ภายในมัน การอ่านทั้งสอง
+  แบบเดียวกันจะเปิดทางให้เอเจนต์ฟอกพาธต้องห้ามโดยพาเส้นทางที่ไม่ผิดอะไรไปด้วย
+  ข้าง ๆ
+- กฎที่ระบุมิติที่คำขอไม่ได้กล่าวถึง จะไม่ถูกปรับใช้และไม่ถูกข้าม: มัน
+  **ยกระดับเป็นการขออนุมัติ** การข้ามไปเงียบ ๆ จะทำให้กฎป้องกันแบรนช์ทุกข้อ
+  ไร้ผลกับเครื่องมือที่ไม่รายงาน ref ของมัน การปฏิเสธเงียบ ๆ จะปฏิเสธทุกการพุช
+  ที่ตัวสกัดอธิบายไม่ได้ เมื่อไม่มีผู้อนุมัติเชื่อมต่ออยู่ กฎปิดเมื่อล้มเหลวที่
+  มีอยู่จะเปลี่ยนการยกระดับนั้นเป็นการปฏิเสธ
 
-## What a command rule can and cannot catch
+## กฎคำสั่งจับอะไรได้และจับอะไรไม่ได้
 
-A `commandPrefix` rule matches on a word boundary: `git push` covers
-`git push origin main` and not `git pushx`. It does **not** normalise the
-shell. `git  push` (two spaces), `cd sub && git push` and
-`GIT_DIR=… git push` are all different strings and none of them matches a
-rule about `git push`.
+กฎ `commandPrefix` จับคู่ที่ขอบเขตคำ: `git push` ครอบ `git push origin main`
+และไม่ครอบ `git pushx` มัน **ไม่** ปรับรูปเชลล์ `git  push` (เว้นวรรคสองครั้ง),
+`cd sub && git push` และ `GIT_DIR=… git push` เป็นสตริงที่ต่างกันทั้งหมด และ
+ไม่มีอันใดตรงกับกฎเกี่ยวกับ `git push`
 
-That is a real limit and it is stated rather than papered over: command rules
-are an operator convenience for shaping ordinary agent behaviour, **not** a
-boundary against an adversarial one. The boundaries are the effect classes
-(which a tool declares and cannot re-spell), the mode command net beneath the
-policy store, and the OS sandbox beneath both. A command rule that resolves to
-`allow` never loosens either of those — the mode net runs afterwards and its
-`deny` is final.
+นั่นคือข้อจำกัดจริง และมันถูกระบุไว้แทนที่จะกลบเกลื่อน: กฎคำสั่งเป็นความสะดวก
+ของผู้ปฏิบัติการในการจัดรูปพฤติกรรมปกติของเอเจนต์ **ไม่ใช่** ขอบเขตต่อเอเจนต์ที่
+เป็นปรปักษ์ ขอบเขตคือคลาสผลกระทบ (ซึ่งเครื่องมือประกาศและสะกดใหม่ไม่ได้) ตาข่าย
+คำสั่งของโหมดที่อยู่ใต้ที่เก็บนโยบาย และแซนด์บ็อกซ์ของ OS ที่อยู่ใต้ทั้งสอง
+กฎคำสั่งที่ตัดสินเป็น `allow` ไม่เคยทำให้สองอย่างนั้นหลวมขึ้น — ตาข่ายโหมดรัน
+หลังจากนั้น และ `deny` ของมันเป็นที่สุด
 
-## Standing approvals
+## การอนุมัติแบบต่อเนื่อง
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+การตอบคำถามด้วย “จดจำการตัดสินนี้” เขียนกฎนโยบายจริง: มีขอบเขต (สเปซ / เอเจนต์ /
+เวิร์กสเปซ), **มีข้อจำกัดที่อาร์กิวเมนต์** (การอนุมัติพุชไปยัง `feature/login`
+ให้สิทธิ์ `feature/**` ไม่ใช่ `main`) และ **เพิกถอนตัวเอง** ตาม TTL ที่ระบุชัด
+การตอบว่าใช่สำหรับสองสามชั่วโมงข้างหน้าไม่เหมือนกับการเขียนนโยบายถาวรของคุณใหม่
+เงียบ ๆ และกฎที่มันเขียนจะลงในที่เก็บเดียวกันโดยมีแหล่งที่มาเป็น `remembered`
+และวันหมดอายุ จึงเพิกถอนก่อนกำหนดได้
 
-## Enforcement levels
+## ระดับการบังคับใช้
 
-Each rule carries one:
+แต่ละกฎมีระดับหนึ่ง:
 
-- **advisory** — allow, but record that the rule matched. This is the
-  adoption path: roll a strict rule out in advisory mode, read the audit
-  trail for a week to see exactly what it *would* have blocked, then promote
-  it. Without this tier, strict policies never get turned on.
-- **soft** — deny, overridable by someone holding the override permission,
-  with a recorded justification. The override is itself an audited event.
-- **hard** (the default) — deny. Nothing overrides it.
+- **advisory** — อนุญาต แต่บันทึกว่ากฎตรง นี่คือเส้นทางการนำไปใช้: เปิดกฎเข้มใน
+  โหมด advisory อ่านเส้นทางการตรวจสอบหนึ่งสัปดาห์เพื่อดูว่ามัน *จะ* บล็อกอะไร
+  บ้าง แล้วเลื่อนขั้นมัน หากไม่มีระดับนี้ นโยบายเข้มจะไม่ถูกเปิดใช้เลย
+- **soft** — ปฏิเสธ แต่ผู้ที่ถือสิทธิ์เขียนทับเขียนทับได้ พร้อมเหตุผลที่บันทึกไว้
+  การเขียนทับนั้นเองก็เป็นเหตุการณ์ที่ถูกตรวจสอบ
+- **hard** (ค่าเริ่มต้น) — ปฏิเสธ ไม่มีสิ่งใดเขียนทับได้
 
-## The managed tier
+## ชั้นที่จัดการจากส่วนกลาง
 
-An install operator can pin policy that no workspace admin can loosen. Managed
-rules live server-side and are merged **most-restrictive** with each
-workspace's own chain — they are not a scope at the head of it, because a
-head-of-chain managed `allow` would let the install override a workspace's
-deny, the opposite of what a clamp is for. A managed rule can therefore only
-ever tighten.
+ผู้ปฏิบัติการติดตั้งสามารถปักหมุดนโยบายที่ผู้ดูแลเวิร์กสเปซคนใดก็ทำให้หลวมขึ้น
+ไม่ได้ กฎที่จัดการจากส่วนกลางอยู่ฝั่งเซิร์ฟเวอร์และถูกรวมแบบ **เข้มงวดที่สุด**
+กับเชนของแต่ละเวิร์กสเปซ — ไม่ใช่ขอบเขตที่อยู่หัวเชน เพราะ `allow` ที่จัดการจาก
+ส่วนกลางซึ่งอยู่หัวเชนจะเปิดให้การติดตั้งเขียนทับการปฏิเสธของเวิร์กสเปซ ซึ่ง
+ตรงข้ามกับจุดประสงค์ของการบีบ กฎที่จัดการจากส่วนกลางจึงทำได้เพียงเข้มขึ้นเสมอ
 
-Setting `CC_SERVER_MANAGED_POLICY` to a JSON file outranks the stored rules
-entirely, which is what lets an operator pin a posture that no admin UI can
-flip — the answer to "can I stop my developers from disabling the safety
-controls?".
+การตั้ง `CC_SERVER_MANAGED_POLICY` ให้ชี้ไปที่ไฟล์ JSON มีอำนาจเหนือกฎที่จัดเก็บ
+ไว้ทั้งหมด นี่คือสิ่งที่ทำให้ผู้ปฏิบัติการปักหมุดท่าทีที่ UI ผู้ดูแลใด ๆ พลิกไม่ได้
+— คำตอบของคำถาม “ฉันหยุดนักพัฒนาของฉันจากการปิดการควบคุมความปลอดภัยได้ไหม?”
 
-## The autonomy dial is a profile, not a parallel system
+## ปุ่มปรับความเป็นอิสระเป็นโปรไฟล์ ไม่ใช่ระบบคู่ขนาน
 
-The per-space autonomy dial is a named profile over this same policy store,
-not a second mechanism. Its three settings are stored and sent as
-`proposeOnly`, `actWithApproval` and `actFreely` (the hyphenated forms are UI
-prose only and `autonomy.setForSpace` rejects anything else). Leaving it
-unset behaves as `actWithApproval`.
+ปุ่มปรับความเป็นอิสระต่อสเปซเป็นโปรไฟล์ที่มีชื่อบนที่เก็บนโยบายเดียวกันนี้
+ไม่ใช่กลไกที่สอง การตั้งค่าสามอย่างของมันถูกจัดเก็บและส่งเป็น `proposeOnly`,
+`actWithApproval` และ `actFreely` (รูปแบบที่มีขีดกลางเป็นถ้อยคำของ UI เท่านั้น
+และ `autonomy.setForSpace` ปฏิเสธอย่างอื่น) การปล่อยให้ไม่ได้ตั้งมีพฤติกรรม
+เหมือน `actWithApproval`
 
-What each one does to a resolved decision:
+แต่ละอย่างทำอะไรกับการตัดสินที่ได้:
 
-- **`proposeOnly`** denies every gated tool outright. The agent can still
-  reason and reply; it just cannot act and its message says why.
-- **`actWithApproval`** (and unset) is the fail-closed approval gate described
-  above.
-- **`actFreely`** pre-approves anything that did not resolve to a hard `deny`.
+- **`proposeOnly`** ปฏิเสธเครื่องมือที่มีประตูกั้นทุกตัว เอเจนต์ยังคิดและตอบได้
+  แต่ลงมือไม่ได้ และข้อความของมันบอกเหตุผล
+- **`actWithApproval`** (และเมื่อไม่ได้ตั้ง) คือประตูอนุมัติแบบปิดเมื่อล้มเหลวที่
+  อธิบายข้างต้น
+- **`actFreely`** อนุมัติล่วงหน้าทุกอย่างที่ไม่ได้ตัดสินเป็น `deny` แบบ hard
 
-That last one deserves to be stated plainly rather than softened: under
-`actFreely` a `prompt` decision is **not** escalated to an approver — it is
-allowed and no one is asked. Only an explicit `deny` rule survives the dial.
-So `actFreely` is a deliberate grant of autonomy, not a convenience setting,
-and the fail-closed rule protects exactly the case where it matters
-(`actWithApproval`, the default).
+ข้อสุดท้ายควรถูกระบุตรง ๆ มากกว่าทำให้เบาลง: ภายใต้ `actFreely` การตัดสินที่เป็น
+`prompt` **ไม่** ถูกยกระดับไปยังผู้อนุมัติ — มันถูกอนุญาตและไม่มีใครถูกถาม
+มีเพียงกฎ `deny` ที่ชัดเจนเท่านั้นที่รอดจากปุ่มปรับ ดังนั้น `actFreely` เป็นการ
+มอบความเป็นอิสระโดยเจตนา ไม่ใช่การตั้งค่าตามความสะดวก และกฎปิดเมื่อล้มเหลว
+ปกป้องกรณีที่มันสำคัญพอดี (`actWithApproval` ซึ่งเป็นค่าเริ่มต้น)
 
-Delegation between agents is guarded at the `delegate_task` chokepoint by all
-four guards: a depth cap (default 3), cycle detection, an **autonomy ceiling**
-(a delegate can never act with more autonomy than its delegator — privilege
-cannot be laundered by handing work to a freer agent) and a **budget
-envelope** (delegation bills the delegator's remaining budget and cannot mint
-more). Each is refused loudly, with the guard's reason returned to the agent
-verbatim.
+การมอบหมายระหว่างเอเจนต์ถูกป้องกันที่จุดที่ต้องผ่าน `delegate_task` ด้วยการ์ด
+ทั้งสี่: เพดานความลึก (ค่าเริ่มต้น 3), การตรวจจับวงจร, **เพดานความเป็นอิสระ**
+(ผู้รับมอบหมายลงมือด้วยความเป็นอิสระมากกว่าผู้มอบหมายไม่ได้เลย — สิทธิ์พิเศษ
+ไม่สามารถถูกฟอกด้วยการยกงานให้เอเจนต์ที่อิสระกว่า) และ **กรอบงบประมาณ**
+(การมอบหมายตัดจากงบประมาณที่เหลือของผู้มอบหมายและสร้างเพิ่มไม่ได้) แต่ละอย่าง
+ถูกปฏิเสธอย่างชัดเจน พร้อมเหตุผลของการ์ดที่ส่งกลับไปให้เอเจนต์ตามเดิม
 
-## The adapter honesty matrix
+## เมทริกซ์ความซื่อสัตย์ของอะแดปเตอร์
 
-Not every runtime lets Control Center intercept every action. External agent
-CLIs run some tools natively, in-process, where no gate can sit. Rather than
-pretend otherwise, each adapter carries an **honesty matrix**: per adapter,
-whether Control Center filters the tool surface, intercepts tool calls,
-observes the completion contract, can see the runner's native tools and
-whether in-process tools are covered by a sandbox profile.
+ไม่ใช่ทุกรันไทม์ที่เปิดให้ Control Center สกัดทุกการกระทำ เอเจนต์ CLI ภายนอก
+รันเครื่องมือบางตัวแบบเนทีฟ ในโปรเซสเดียวกัน ซึ่งไม่มีประตูใดนั่งอยู่ได้ แทนที่
+จะแกล้งทำเป็นอื่น แต่ละอะแดปเตอร์จึงมี **เมทริกซ์ความซื่อสัตย์**: ต่ออะแดปเตอร์
+ว่า Control Center กรองพื้นผิวเครื่องมือ สกัดการเรียกเครื่องมือ สังเกตสัญญาการ
+จบงาน มองเห็นเครื่องมือเนทีฟของตัวรัน และว่าเครื่องมือในโปรเซสเดียวกันถูกครอบ
+ด้วยโปรไฟล์แซนด์บ็อกซ์หรือไม่
 
-Two entries are worth reading before you trust a configuration. The built-in
-harness declares that its in-process file tools are **not** sandboxed — the
-tool surface and this policy engine are the only filesystem boundary it has.
-Claude Code declares that its own tool calls are **not** interceptable, because
-it is launched with `--dangerously-skip-permissions`; Control Center sees only
-its `mcp__*` calls and its own read, write, edit and shell tools run unseen.
+สองรายการควรค่าแก่การอ่านก่อนที่คุณจะเชื่อการตั้งค่าใด ๆ ฮาร์เนสในตัวประกาศว่า
+เครื่องมือไฟล์ในโปรเซสของมัน **ไม่** ถูกแซนด์บ็อกซ์ — พื้นผิวเครื่องมือและ
+เอนจินนโยบายนี้คือขอบเขตระบบไฟล์เดียวที่มันมี Claude Code ประกาศว่าการเรียก
+เครื่องมือของมันเอง **สกัดไม่ได้** เพราะมันถูกเรียกด้วย
+`--dangerously-skip-permissions`; Control Center เห็นเพียงการเรียก `mcp__*`
+ของมัน และเครื่องมืออ่าน เขียน แก้ไข และเชลล์ของมันเองรันแบบไม่ถูกเห็น
 
-The settings screen shows this matrix, because the one unforgivable failure for
-a guardrail system is claiming coverage that does not exist.
+หน้าจอการตั้งค่าแสดงเมทริกซ์นี้ เพราะความล้มเหลวที่ไม่อาจให้อภัยได้อย่างเดียว
+สำหรับระบบกฎคุมคือการอ้างความครอบคลุมที่ไม่มีอยู่
 
-## Probing policy before it bites
+## ตรวจสอบนโยบายก่อนที่มันจะกัด
 
-The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
-policy matrix where rules are written, policy templates, a what-if probe, the
-authorization audit trail and the adapter honesty matrix.
+กฎคุมอยู่ที่ **การตั้งค่า → เวิร์กสเปซ → สิทธิ์ของเอเจนต์**
+(`/workspaces/<id>/settings/workspace/permissions`) หน้าจอมีเมทริกซ์นโยบายที่
+ใช้เขียนกฎ เทมเพลตนโยบาย ตัวตรวจแบบสมมติ เส้นทางการตรวจสอบการอนุญาต และ
+เมทริกซ์ความซื่อสัตย์ของอะแดปเตอร์
 
-The probe takes an action class (or a command) and a scope and shows which rule
-decided and why. Because resolution is pure and deterministic — same action,
-same scope, same decision — the probe's answer is the answer the agent will
-get.
+ตัวตรวจรับคลาสการกระทำ (หรือคำสั่ง) และขอบเขต แล้วแสดงว่ากฎใดตัดสินและเพราะ
+อะไร เพราะการตัดสินบริสุทธิ์และกำหนดได้แน่นอน — การกระทำเดิม ขอบเขตเดิม คำตอบ
+เดิม — คำตอบของตัวตรวจคือคำตอบที่เอเจนต์จะได้รับ
 
-## Related concepts
+## แนวคิดที่เกี่ยวข้อง
 
-- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
-- [Multiplayer — identity, membership and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): spaces, principals and where the autonomy dial lives
-- [Configure guardrails](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/): writing and testing rules in practice
+- [แซนด์บ็อกซ์และความปลอดภัย](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/): อะไรที่จำกัดการรันของเอเจนต์จริง ๆ และพื้นของ OS ใต้เอนจินนี้เอื้อมไปไกลแค่ไหน
+- [การทำงานร่วมกันแบบหลายคน — ตัวตน สมาชิกภาพ และการแสดงตน](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/): สเปซ ตัวตนหลัก และตำแหน่งของปุ่มปรับความเป็นอิสระ
+- [ตั้งค่ากฎคุม](/th-TH/คู่มือ/วิธีทำ/ตั้งค่ากฎคุม/): การเขียนและทดสอบกฎในทางปฏิบัติ

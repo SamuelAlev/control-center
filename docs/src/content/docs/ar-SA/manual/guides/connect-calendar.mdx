@@ -1,123 +1,119 @@
 ---
-title: Connect a Google Calendar
-description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+title: ربط Google Calendar
+description: اربط Google Calendar بمساحة عمل، وأدر عدة حسابات، وأعد الاتصال حين تنتهي صلاحية الرمز.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/ربط-التقويم
+sourceHash: 2d0d2b0a63bc9232c598014b479c6a4d47d0ac16
 ---
 
-This guide shows you how to connect Google Calendar to a workspace. It's
-per-workspace: it syncs that workspace's events into Control Center, read-only.
-See [Calendar and scheduling](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/) for the full picture.
+يبيّن هذا الدليل كيف تربط Google Calendar بمساحة عمل. الربط لكل مساحة عمل:
+يزامن أحداث تلك المساحة إلى Control Center، للقراءة فقط. انظر
+[التقويم والجدولة](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/) للصورة الكاملة.
 
-## Connect an account
+## ربط حساب
 
-1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
-3. Choose how to authorize:
-   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
-   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
-4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
-5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+1. افتح **التقويم** في الشريط الجانبي.
+2. انقر **إضافة حساب تقويم** في الشريط الجانبي للتقويم. (القسم نفسه موجود في **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية**، تحت **تقويم Google**.)
+3. اختر طريقة التفويض:
+   - **استخدام تطبيق Google التابع لـControl Center** — لا شيء يلزم إعداده. هذا هو الافتراضي حين يُشحن بناؤك بعميل.
+   - **استخدام عميل Google Cloud الخاص بي** — الصق معرّف العميل وسرّه من مشروعك (انظر [جلب عميل Google الخاص بك](#جلب-عميل-google-الخاص-بك-النسخ-المتفرعة-والاستضافة-الذاتية)).
+4. انقر **ربط تقويم Google**. يعرض الحوار رمزًا قصيرًا ورابطًا إلى صفحة التحقق لدى Google.
+5. افتح تلك الصفحة على أي جهاز، وأدخل الرمز، ووافق على الوصول المطلوب. يُغلق الحوار من تلقاء نفسه وتبدأ أحداثك بالمزامنة.
 
-The server, not your device, runs this exchange and keeps the resulting refresh
-token — which is why the code is approved on "any device" rather than in this app
-specifically.
+الخادم، لا جهازك، يجري هذا التبادل ويحتفظ برمز التحديث الناتج. ولهذا تُوافق
+على الرمز على «أي جهاز»، لا داخل هذا التطبيق تحديدًا.
 
-The account is connected **to the active workspace only**. Switch workspaces and
-you'll see that workspace's calendars instead.
+يُربَط الحساب **بمساحة العمل النشطة فقط**. بدّل مساحة العمل فترى تقويمات تلك
+المساحة بدلًا منها.
 
-The connect flow requests `calendar.readonly` plus your email — the same scopes
-for the built-in app and for a client you paste in. Control Center reads events;
-it does not create, edit, delete, or respond to invitations on Google.
+يطلب مسار الربط `calendar.readonly` بالإضافة إلى بريدك، وهي النطاقات نفسها
+للتطبيق المضمَّن وللعميل الذي تلصقه. يقرأ Control Center الأحداث، ولا ينشئ
+دعوات ولا يحرّرها ولا يحذفها ولا يردّ عليها على Google.
 
-## How syncing works
+## كيف تعمل المزامنة
 
-The **server** owns the schedule: it sweeps every workspace's connected accounts
-every two minutes and writes the events into the workspace's database. Clients
-never talk to Google — they read what the server wrote.
+**الخادم** يملك الجدول: يمسح الحسابات المتصلة في كل مساحة عمل كل دقيقتين،
+ويكتب الأحداث في قاعدة تلك المساحة. لا يتصل العملاء بـ Google أبدًا، بل
+يقرؤون ما كتبه الخادم.
 
-The sweep is incremental. The first pass per calendar fetches a rolling window
-(60 days back, 90 days ahead) and captures Google's sync token; later passes
-present that token and receive only what changed, which is what makes a
-two-minute cadence affordable. The window is re-anchored with a full sync every
-24 hours and whenever Google invalidates the token.
+المسح تزايدي. الجولة الأولى لكل تقويم تجلب نافذة متحركة (60 يومًا إلى الوراء،
+و90 يومًا إلى الأمام) وتلتقط رمز مزامنة Google، والجولات اللاحقة تقدّم ذلك
+الرمز وتتلقى ما تغيّر فقط، وهذا ما يجعل إيقاع الدقيقتين قليل الكلفة. تُعاد
+مزامنة النافذة كاملة كل 24 ساعة، وكلما أبطل Google الرمز.
 
-Refresh tokens live server-side in `secrets.json` under the server's data
-directory, written owner-only (`0600`) — not in the OS keychain and never on a
-client device.
+رموز التحديث تبقى على الخادم في `secrets.json` تحت دليل بيانات الخادم،
+وتُكتب للمالك فقط (`0600`)، لا في سلسلة مفاتيح النظام ولا على جهاز عميل أبدًا.
 
-## Connect multiple accounts
+## ربط عدة حسابات
 
-A workspace can connect several Google accounts (for example work and personal).
-Repeat the connect step for each; their events merge into the same month / week /
-agenda views. Each account syncs and refreshes independently and each can be
-disconnected on its own.
+تستطيع مساحة العمل ربط عدة حسابات Google (كحساب العمل وحساب شخصي). كرّر
+خطوة الربط لكل منها، فتُدمَج أحداثها في عروض الشهر والأسبوع وجدول الأعمال
+نفسها. كل حساب يزامن ويجدّد باستقلال، ويمكن قطع اتصال كل حساب على حدة.
 
-## Reconnect an expired account
+## إعادة ربط حساب منتهي الصلاحية
 
-If Google permanently invalidates an account's token (a revoked or long-expired
-session), syncing stops and Control Center shows a **Reconnect** banner on the
-calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
-the banner clears on the next successful sync.
+إذا أبطل Google رمز الحساب إبطالًا دائمًا (جلسة مُلغاة أو منتهية منذ وقت
+طويل)، تتوقف المزامنة ويُظهر Control Center شريط **إعادة الاتصال** على
+التقويم، مع إشعار على سطح المكتب. انقر **إعادة الاتصال** ووافق على رمز جديد،
+فيختفي الشريط عند المزامنة الناجحة التالية.
 
-## Disconnect an account
+## قطع اتصال حساب
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
-**Disconnect** on the account. This deletes its synced events and clears its
-stored tokens on the server.
+من الشريط الجانبي للتقويم (أو **الإعدادات ← مساحة العمل ← الملف الشخصي والهوية**)، انقر
+**قطع الاتصال** على الحساب. يحذف ذلك أحداثه المُزامَنة ويمسح رموزه المخزَّنة
+على الخادم.
 
-## Connect from a headless server
+## الربط من خادم بلا واجهة
 
-A server with no GUI attached connects the same account from its own terminal:
+خادم بلا واجهة رسومية يربط الحساب نفسه من طرفيته:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
-It prints a code and a URL, waits for approval, then stores the tokens and syncs
-on the next sweep.
+يطبع رمزًا وعنوان URL، وينتظر الموافقة، ثم يخزّن الرموز ويزامن في المسح التالي.
 
-A build from source ships **no** Google client, so the id and secret are
-required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
-There is no `--google-client-id` flag (unknown flags are ignored). Without the
-environment pair the command exits with a missing-client error.
+البناء من المصدر يُشحن **بلا** عميل Google، فمعرّف العميل وسرّه مطلوبان. اضبط
+`GOOGLE_OAUTH_CLIENT_ID` و`GOOGLE_OAUTH_CLIENT_SECRET`. لا يوجد علم
+`--google-client-id` (الأعلام غير المعروفة تُتجاهل). ومن غير زوج متغيرات
+البيئة يخرج الأمر بخطأ غياب العميل.
 
-## Bring your own Google client (forks and self-hosting)
+## جلب عميل Google الخاص بك (النسخ المتفرعة والاستضافة الذاتية)
 
-Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, or want the consent screen
-to name your own project.
+تُشحن بناءات الإصدار الرسمية بعميل Google، فلا يحتاج معظم الناس إلى هذا.
+اجلب عميلك إن كنت تبني من المصدر، أو تشغّل خادمك، أو تريد أن يظهر اسم
+مشروعك على شاشة الموافقة.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
-2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+1. في [Google Cloud Console](https://console.cloud.google.com/apis/credentials)، فعّل **Google Calendar API** واضبط **شاشة موافقة OAuth**، وأضف النطاقات `calendar.readonly` و`openid` و`email`. ما دام التطبيق غير متحقَّق منه، أضف نفسك **مستخدمًا تجريبيًا**. إضافة `calendar.events` على شاشة الموافقة لا تفعّل الرد على الدعوة. Control Center لا يطلب ذلك النطاق أبدًا.
+2. أنشئ **معرّف عميل OAuth** من نوع التطبيق **أجهزة التلفاز والإدخال المحدود**، وانسخ معرّف العميل وسرّه كليهما.
+3. قدّمهما إما عند كل ربط (اختر **استخدام عميل Google Cloud الخاص بي** في الحوار) أو على نطاق الخادم عبر `GOOGLE_OAUTH_CLIENT_ID` و`GOOGLE_OAUTH_CLIENT_SECRET`.
 
-A server-wide pair replaces the built-in one everywhere, including behind the
-"use Control Center's Google app" option — so on your own server, that option is
-your app.
+زوج على نطاق الخادم يحل محل المضمَّن في كل مكان، بما في ذلك خلف خيار
+«استخدام تطبيق Google التابع لـControl Center»، فعلى خادمك يكون ذلك الخيار
+تطبيقك.
 
-The client secret never leaves the server: no RPC response carries it and an
-account connected through the server's own client stores a marker rather than a
-copy of the pair, so rotating it is a matter of restarting with a new value.
+سر العميل لا يغادر الخادم: لا تحمل أي استجابة RPC السر، والحساب المربوط عبر
+عميل الخادم نفسه يخزّن علامة لا نسخة من الزوج، فتدويره يكون بإعادة التشغيل
+بقيمة جديدة.
 
-### Troubleshooting
+### استكشاف الأخطاء وإصلاحها
 
-| Symptom                                             | Likely cause                                                                                                                                          |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
-| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
-| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
-| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
-| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
-| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+| العَرَض | السبب المرجّح |
+| --- | --- |
+| الحوار لا يعرض خيارًا مضمّنًا | هذا البناء بلا عميل Google (بناء من المصدر)، أو أُطلق الخادم بنصف الزوج فقط. معرّف العميل وسرّه مطلوبان معًا |
+| `invalid_scope` عند بدء التدفق | لا يُسمح بـ Google Calendar لعميل رمز الجهاز في مشروع Cloud ذاك. استخدم مشروعًا بعميل loopback أو عميل ويب بدلًا منه |
+| `invalid_client` من Google | العميل ليس من نوع **أجهزة التلفاز والإدخال المحدود**، أو المعرّف والسر من عميلين مختلفين |
+| تنجح الموافقة لكن المزامنة فارغة | حسابك ليس **مستخدمًا تجريبيًا** على شاشة الموافقة، أو لم يُمنح `calendar.readonly` |
+| ينتهي الرمز قبل أن توافق عليه | رموز الجهاز قصيرة العمر. ابدأ الربط من جديد لتحصل على رمز جديد |
+| «تعذّر تحديث ردّك» عند الرد على الدعوة | متوقَّع: مسار الربط لا يطلب `calendar.events` |
+| تتوقف المزامنة مع تحذير تجديد الرمز في سجل الخادم | رُبط الحساب بعميل لم يعد مُعدًّا. أعد ربط الحساب، أو أعد معرّف ذلك العميل وسرّه |
 
-## Related guides
+## أدلة ذات صلة
 
-- [Record and summarize a meeting](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/): turn an event into a recording
-- [Run a headless server](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): where the tokens and the sync schedule live
-- [Set up GitHub integration](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
+- [تسجيل اجتماع وتلخيصه](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تسجيل-اجتماع/): حوّل حدثًا إلى تسجيل
+- [تشغيل خادم بلا واجهة](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تشغيل-خادم-بلا-واجهة/): أين تُحفظ الرموز وجدول المزامنة
+- [إعداد تكامل GitHub](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تكامل-github/)
 
-## Related concepts
+## مفاهيم ذات صلة
 
-- [Calendar and scheduling](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/)
+- [التقويم والجدولة](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/)

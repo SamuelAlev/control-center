@@ -1,31 +1,33 @@
 ---
-title: Run a headless server
-description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+title: Rulează un server headless
+description: Rulează binarul headless cc_server sau imaginea lui Docker, asociază un client la el și configurează-l cu întreaga suprafață de flaguri CLI și variabile de mediu.
 dateModified: 2026-09-10
 slug: ro-RO/manual/ghiduri-practice/ruleaza-server-headless
+sourceHash: 9cea0c79e9cd28bb440ab31d43027858a008fd7e
 ---
 
-Run `cc_server` on a machine that stays on, then connect to it from your desktop,
-a browser, or your phone. The server is a pure-Dart native binary — no Flutter
-engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
-runs the agents and makes every external API call; the clients only render.
+Rulează `cc_server` pe o mașină care rămâne pornită, apoi conectează-te la el de
+pe desktop, dintr-un browser sau de pe telefon. Serverul este un binar nativ scris
+în pur Dart — fără motor Flutter —, așa că rulează headless pe macOS, Linux sau
+Windows. El deține baza de date, rulează agenții și face fiecare apel API extern;
+clienții doar afișează.
 
-## Run in Docker (prebuilt images)
+## Rulează în Docker (imagini precompilate)
 
-Every release publishes a self-hosted stack of four GHCR images — the backend,
-the two static thin clients and the optional pairing relay — plus a separate
-`cc-server-demo` image for the public demo host. A self-hosted install needs
-no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
-or ride `latest`.
+Fiecare versiune publică un stack auto-găzduit de patru imagini GHCR — backendul,
+cele două clienturi subțiri statice și releul de asociere opțional — plus o
+imagine separată `cc-server-demo` pentru gazda publică de demo. O instalare
+auto-găzduită nu are nevoie de o copie a codului sursă. Fixează un tag de
+versiune (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) sau mergi pe `latest`.
 
-| Image                                             | What it is                                   | Publishes        |
-| ------------------------------------------------- | -------------------------------------------- | ---------------- |
-| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
-| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
-| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
-| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+| Imagine                                          | Ce este                                            | Publică          |
+| ------------------------------------------------- | -------------------------------------------------- | ---------------- |
+| `ghcr.io/samuelalev/cc-server`                    | Backendul: baza de date, agenții, MCP, webhook-uri | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | Clientul web (nginx static)                        | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | PWA-ul companion de pe telefon (nginx static)      | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | Releul de asociere WebRTC (opțional)               | `-p 8788:8788`   |
 
-The whole stack as a compose file:
+Tot stackul ca fișier compose:
 
 ```yaml
 services:
@@ -51,91 +53,98 @@ volumes:
   cc_data:
 ```
 
-Things worth knowing before you expose any of this beyond loopback:
+Lucruri pe care merită să le știi înainte de a expune toate acestea dincolo de
+loopback:
 
-- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
-  to receive published-port traffic), which is only safe behind a
-  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
-  on a trusted network. To terminate TLS in-process instead, mount a certificate
-  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
-  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
-  compose `environment:` block.
-- **`/data` is the only state.** The SQLite databases, paired-device secrets,
-  downloaded models and meeting audio all live in the volume — back it up and
-  the container becomes disposable.
-- **Pair a client from inside the image** before the first connection, the
-  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+- **Imaginea `cc-server` vine cu `CC_SERVER_INSECURE=1`** (trebuie să se lege la
+  `0.0.0.0` ca să primească traficul din porturile publicate), ceea ce este sigur
+  doar în spatele unui proxy invers care termină TLS — Caddy, Traefik, nginx sau
+  un Cloudflare Tunnel —, într-o rețea de încredere. Ca să termini TLS în proces,
+  montează în schimb un certificat și setează `CC_SERVER_TLS_CERT` /
+  `CC_SERVER_TLS_KEY` (apoi scoate `CC_SERVER_INSECURE`). Totul poate fi
+  suprascris cu `docker run -e …` sau cu blocul `environment:` din compose.
+- **`/data` este singura stare.** Bazele de date SQLite, secretele
+  dispozitivelor asociate, modelele descărcate și audio-ul întâlnirilor stau
+  toate în volum — fă-i un backup, iar containerul devine eliminabil.
+- **Asociază un client din interiorul imaginii** înainte de prima conexiune,
+  echivalentul în container al [pasului 3](#pasul-3-asociază-un-client-înainte-de-prima-pornire):
 
   ```bash
   docker run --rm -it -v cc_data:/data \
     --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
   ```
 
-- **The two client images are static nginx hosts** — nothing to configure at
-  runtime; each client's connect form takes your server URL, device id and
-  pairing key. The signaling relay likewise needs only its port
-  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
-  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
-  direct `wss://` path when one is reachable, and only falls back to the relay
-  when none is. Skip it if your clients always reach the server directly.
+- **Cele două imagini de client sunt gazde nginx statice** — nimic de configurat
+  la runtime; formularul de conectare al fiecărui client preia URL-ul serverului,
+  ID-ul de dispozitiv și cheia de asociere. Releul de semnalizare, la fel, are
+  nevoie doar de portul său (`SIGNALING_HOST` / `SIGNALING_PORT` pot fi
+  suprascrise); este fără stare, nu ține niciun secret și este o **soluție de
+  rezervă** — un telefon folosește loopback, LAN-ul, tailnet-ul sau o cale
+  `wss://` directă atunci când una este accesibilă și trece pe releu doar când
+  niciuna nu este. Sari peste el dacă clienții tăi ajung întotdeauna direct la
+  server.
 
-The rest of this guide builds the server from source; the flags and behavior it
-covers are the same ones the image's environment variables feed.
+Restul acestui ghid construiește serverul din surse; flagurile și comportamentul
+pe care le acoperă sunt aceleași pe care le alimentează variabilele de mediu ale
+imaginii.
 
-## Prerequisites
+## Cerințe preliminare
 
-- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
-- This repository checked out.
-- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
-- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+- [SDK-ul Dart](https://dart.dev/get-dart). Acest depozit își fixează SDK-ul cu [fvm](https://fvm.app), așa că pune prefixul `fvm` înaintea fiecărei comenzi.
+- Acest depozit clonat local.
+- Lanțul de unelte native de care are nevoie scriptul de pregătire — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` și un compilator C++. Fiecare script de build numește ce nu găsește și cum se instalează.
+- O gazdă accesibilă: loopback pentru uz local sau o adresă LAN/publică cu TLS pentru clienții remote.
 
-## Step 1: Stage the native libraries
+## Pasul 1: Pregătește bibliotecile native
 
-The natives are **required** — there is no degraded mode. Build them from the
-repo root before anything else:
+Bibliotecile native sunt **obligatorii** — nu există un mod degradat. Compilează-le
+din rădăcina depozitului înainte de orice altceva:
 
 ```bash
 scripts/natives/build_natives.sh
 ```
 
-This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
-`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
-`build/natives/`. The `cc_server` build
-hook re-emits whatever is staged there into the bundle, so skipping this step
-either fails the build outright or — with the escape hatch below — produces a
-binary whose boot preflight refuses to start and names the missing library.
+Aceasta compilează `rift`, `fff`, tree-sitter plus gramaticile sale, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` și biblioteca nativă SAML în
+`build/natives/`. Hook-ul de build al `cc_server`
+reemite în bundle tot ce este pregătit acolo, așa că sărirea peste acest pas fie
+eșuează direct buildul, fie — cu portița de scăpare de mai jos — produce un binar
+a cărui verificare prealabilă de la pornire refuză să pornească și numește
+biblioteca lipsă.
 
-:::note[Compile-only escape hatch]
-Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
-the missing-natives build failure to a warning. It is for syntax-checking a
-fresh clone; a server built that way cannot boot. It must be a **file** — the
-build-hook runner does not forward the caller's environment, so an environment
-variable is ignored.
+:::note[Portiță de scăpare doar pentru compilare]
+Crearea unui fișier gol `.cc_natives_allow_missing` în rădăcina depozitului
+transformă eroarea de build pentru bibliotecile native lipsă într-un avertisment.
+Este pentru verificarea sintaxei pe o clonă proaspătă; un server construit astfel
+nu poate porni. Trebuie să fie un **fișier** — runner-ul hook-ului de build nu
+transmite mediul apelantului, așa că o variabilă de mediu este ignorată.
 :::
 
-## Step 2: Build the binary
+## Pasul 2: Compilează binarul
 
 ```bash
 cd apps/cc_server
 fvm dart build cli
 ```
 
-The bundle ships `libsqlite3` and the staged natives alongside the binary — no
-system SQLite and no Flutter engine needed. The executable lands at
+Bundle-ul include `libsqlite3` și bibliotecile native pregătite alături de binar —
+nu e nevoie de SQLite de sistem și nici de motorul Flutter. Executabilul ajunge în
 `./build/cli/<os_arch>/bundle/bin/cc_server`.
 
-## Step 3: Pair a client before first start
+## Pasul 3: Asociază un client înainte de prima pornire
 
-A fresh data directory has no paired device and no pre-shared key, so a client's
-pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It writes `global.db` and `secrets.json` directly; a server that is already
-serving that data dir picks the new device up without a restart:
+Un director de date nou nu are niciun dispozitiv asociat și nicio cheie
+prepartajată, așa că solicitarea cheii de asociere a unui client nu poate fi
+satisfăcută încă. Emite una cu subcomanda `pair`. Ea scrie direct `global.db` și
+`secrets.json`; un server care servește deja acel director de date preia noul
+dispozitiv fără repornire:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ```
 
-It prints three values to paste into a client's connect form:
+Afișează trei valori pe care să le lipești în formularul de conectare al unui
+client:
 
 ```
 Connect a thin client (paste into its connect form):
@@ -144,45 +153,48 @@ Connect a thin client (paste into its connect form):
   Pairing key <a freshly generated key>
 ```
 
-Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
-(defaults to the platform name plus this machine's hostname), `--host` (the host
-to print in the URL, since loopback is not reachable from another machine) and
-`--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+Flaguri utile: `--device` (implicit `web-client`; ID-ul alege și nivelul
+dispozitivului — `desktop`, `ios`, `android`, orice altceva este un client web),
+`--label` (implicit numele platformei plus numele gazdă al acestei mașini),
+`--host` (gazda de afișat în URL, pentru că loopback nu este accesibil de pe altă
+mașină) și `--client-url`. Rularea din nou a lui `pair` rotește cheia acelui
+dispozitiv și elimină sesiunile lui active. Asocierea nu creează niciodată un
+spațiu de lucru: onboarding-ul clientului care se conectează numește și creează
+primul spațiu.
 
-With `--client-url` it also prints a terminal-scannable QR that opens the web
-client already filled in:
+Cu `--client-url` afișează și un cod QR care poate fi scanat din terminal și care
+deschide clientul web deja completat:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
   --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
 ```
 
-:::caution[This QR is not the phone QR]
-`--client-url` builds a link for the **web client** — server URL, device id and
-key in the URL fragment. The **Remote** phone app expects a different payload
-(the server's full connection descriptor plus an expiry), minted from
-**Settings → You → Your devices** in a running client. The two are not
-interchangeable. See [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
+:::caution[Acest QR nu este QR-ul de telefon]
+`--client-url` construiește un link pentru **clientul web** — URL-ul serverului,
+ID-ul de dispozitiv și cheia în fragmentul URL-ului. Aplicația de telefon
+**Remote** așteaptă un payload diferit (descriptorul complet de conexiune al
+serverului plus o expirare), emis din **Setări → Tu → Dispozitivele tale**
+într-un client care rulează. Cele două nu sunt interschimbabile. Vezi
+[Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+O acreditare emisă de `cc_server pair` nu are **nicio expirare**; una emisă în
+aplicație expiră întotdeauna după 30 de zile. Revocă un dispozitiv emis din CLI
+din **Setări → Tu → Dispozitivele tale** când ai terminat cu el.
 
-## Step 4: Start the server
+## Pasul 4: Pornește serverul
 
-On loopback — the default and all you need for a client on the same machine:
+Pe loopback — valoarea implicită și tot ce ai nevoie pentru un client de pe
+aceeași mașină:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-To reach it from another machine, bind every interface. A non-loopback bind
-without TLS is **refused at startup** (`Refusing to bind non-loopback address …
-without TLS`), so supply a certificate:
+Ca să ajungi la el de pe altă mașină, leagă-l la toate interfețele. O legare
+non-loopback fără TLS este **refuzată la pornire** (`Refusing to bind non-loopback
+address … without TLS`), așa că furnizează un certificat:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
@@ -190,41 +202,43 @@ without TLS`), so supply a certificate:
   --public-url wss://server.example:9030/rpc
 ```
 
-Or terminate TLS in a reverse proxy on a trusted private network and opt into a
-plaintext bind behind it:
+Sau termină TLS într-un proxy invers, într-o rețea privată de încredere, și
+optează pentru o legare în text simplu în spatele lui:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
   --bind any --insecure --public-url wss://server.example/rpc
 ```
 
-`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
-always wins. The server advertises the plaintext state as `insecure: true` in
-`GET /healthz` and clients badge such a connection as insecure.
+`--insecure` este ignorat când `--tls-cert` și `--tls-key` sunt ambele setate —
+TLS câștigă întotdeauna. Serverul anunță starea de text simplu ca
+`insecure: true` în `GET /healthz`, iar clienții marchează o astfel de conexiune
+ca nesigură.
 
-The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+Serverul rulează până la `SIGINT`/`SIGTERM`, apoi se oprește curat.
 
-## Step 5: Connect a client
+## Pasul 5: Conectează un client
 
-Point a client at the server URL and pairing key from step 3:
+Îndreaptă un client către URL-ul serverului și cheia de asociere de la pasul 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
-- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
+- **Aplicația desktop**: pe ecranul de prima rulare (**Cum ar trebui să ruleze Control Center?**) completează câmpurile de conectare în loc de **Rulează în această aplicație**, sau adaugă serverul mai târziu din **Setări → Server → Conexiune și stare**. Vezi [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/).
+- **Client web**: deschide [app.usectrl.dev](https://app.usectrl.dev) (sau propria copie a versiunii web) și introdu URL-ul serverului, ID-ul de dispozitiv și cheia de asociere.
+- **Telefon**: asociază aplicația **Remote** dintr-un client care rulează — vezi [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
 
-:::note[cc_server serves no web bundle]
-A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
-client is hosted separately — use `app.usectrl.dev`, or host the web build
-yourself on any static HTTPS host (the `cc-webapp` image above is
-exactly that). A browser origin other than loopback must be
-on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
-list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
-allowed.
+:::note[cc_server nu servește niciun bundle web]
+Un `cc_server` standalone nu montează niciodată o rădăcină web, așa că `GET /`
+returnează 404. Clientul web este găzduit separat — folosește `app.usectrl.dev`
+sau găzduiește singur versiunea web pe orice gazdă HTTPS statică (imaginea
+`cc-webapp` de mai sus este exact asta). O origine de browser diferită de loopback
+trebuie să fie în `--allowed-origins`, altfel upgrade-ul WebSocket către `/rpc`
+este refuzat; lista implicită este `https://app.usectrl.dev`, iar `localhost` /
+`127.0.0.1` sunt întotdeauna permise.
 :::
 
-## Step 6: Connect a Google Calendar (optional)
+## Pasul 6: Conectează un Google Calendar (opțional)
 
-To sync a workspace's calendar with no GUI attached, use the device-code flow:
+Ca să sincronizezi calendarul unui spațiu de lucru fără nicio interfață grafică
+atașată, folosește fluxul cu cod de dispozitiv:
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
@@ -232,64 +246,70 @@ GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
   --data-dir ./data --workspace <workspace-id>
 ```
 
-It prints a code and a URL to approve on another device, stores the refresh token
-server-side and exits. A source build ships no Google client, so the id and
-secret environment variables are required — there is no `--google-client-id`
-flag. See [Connect a Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
+Afișează un cod și un URL de aprobat pe alt dispozitiv, stochează tokenul de
+reîmprospătare pe partea de server și iese. O compilare din surse nu include
+niciun client Google, așa că variabilele de mediu pentru ID și secret sunt
+obligatorii — nu există un flag `--google-client-id`. Vezi [Conectează un Google
+Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/).
 
-## Configuration
+## Configurare
 
-The flags used above are the ones a first setup needs. The complete surface — 23
-flag and environment-variable pairs, the four subcommands and the data-directory
-layout — is in the [`cc_server` CLI reference](/ro-RO/manual/referinta/cc-server-cli/).
+Flagurile folosite mai sus sunt cele de care are nevoie o primă configurare.
+Suprafața completă — 23 de perechi de flaguri și variabile de mediu, cele patru
+subcomenzi și structura directorului de date — se află în [referința CLI
+`cc_server`](/ro-RO/manual/referinta/cc-server-cli/).
 
-:::caution[Unknown flags are ignored silently]
-The argument parser is hand-rolled and skips anything it does not recognise, so
-a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
-with the default. Check the startup log lines when a flag seems to have no effect.
+:::caution[Flagurile necunoscute sunt ignorate în tăcere]
+Parserul de argumente este scris manual și sare peste orice nu recunoaște, așa că
+o greșeală de tastare (`--tls-key-file`, `--bindany`) nu produce nicio eroare —
+serverul pornește pur și simplu cu valoarea implicită. Verifică liniile din
+jurnalul de pornire când un flag pare să nu aibă niciun efect.
 :::
 
-The four you are most likely to need:
+Cele patru de care vei avea cel mai probabil nevoie:
 
-| Flag           | Default                              | Meaning                                                                                          |
+| Flag           | Implicit                             | Semnificație                                                                                     |
 | -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
-| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
-| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
-| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+| `--data-dir`   | directorul de date de aplicație per utilizator al sistemului de operare | Bazele de date, secretele, modelele și media din cache                    |
+| `--port`       | `9030`                               | Port TCP (`0` = efemer)                                                                          |
+| `--bind`       | `loopback`                           | `loopback` sau `any` pentru toate interfețele (necesită TLS sau `--insecure`)                    |
+| `--public-url` | derivat din legare                   | URL-ul RPC anunțat clienților asociați. **Setează-l explicit în spatele unui proxy, NAT sau tunel** |
 
-The default data dir is `~/Library/Application Support/control-center` on macOS,
-`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
-`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
-used when no home or app-data directory resolves.
+Directorul de date implicit este `~/Library/Application Support/control-center` pe
+macOS, `%APPDATA%\control-center` pe Windows și `$XDG_DATA_HOME/control-center`
+(altfel `~/.local/share/control-center`) în restul cazurilor. Un `.cc_server`
+relativ la directorul de lucru este folosit doar când nu se rezolvă niciun
+director home sau de date de aplicație.
 
-## What the server serves
+## Ce servește serverul
 
-`cc_server` is the whole product surface, not a subset: the repo-RPC data path
-and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
-same port, inbound webhooks, the media and font proxies, single sign-on
-callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
-schedule and vector search (the `sqlite_vector` extension is registered as a
-process-global auto-extension, degrading to full-text search only where the
-extension is unavailable).
+`cc_server` este întreaga suprafață a produsului, nu un subset: calea de date
+repo-RPC și abonamentele, endpointul de instrumente MCP la `POST /mcp` și
+`GET /sse` pe același port, webhook-urile primite, proxy-urile de media și de
+fonturi, callback-urile de autentificare unică, protocolul de concesionare al
+flotei, preluarea RSS pe partea de server la un interval de 30 de minute și
+căutarea vectorială (extensia `sqlite_vector` este înregistrată ca auto-extensie
+globală de proces, degradând la căutare full-text doar acolo unde extensia nu
+este disponibilă).
 
-The dispatcher is **stateless**: there is no per-session workspace binding.
-Every workspace-scoped call carries its own `workspace_id` and access is decided
-by the caller's workspace membership and role — not by holding a pairing key.
+Dispatcherul este **fără stare**: nu există nicio legătură de spațiu de lucru per
+sesiune. Fiecare apel limitat la un spațiu de lucru își poartă propriul
+`workspace_id`, iar accesul este decis de apartenența și rolul apelantului în
+spațiul de lucru — nu de deținerea unei chei de asociere.
 
-Two things to know before you expose the port beyond loopback:
+Două lucruri de știut înainte de a expune portul dincolo de loopback:
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
-- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+- **MCP eșuează închis în afara gazdei.** O suprafață MCP fără token răspunde doar pe loopback. Legarea la `any` nu o lărgește — o cerere din afara gazdei este refuzată cu „MCP requires a bearer token to answer non-loopback clients” până când configurezi unul (`mcp.setToken`, sau **Setări → Server → Servere MCP**).
+- **`GET /healthz` este neautentificat prin proiectare**, cu CORS wildcard, și publică ID-ul, numele, amprenta de identitate și versiunea de build ale serverului. Clienții au nevoie de amprentă ca să fixeze serverul, deci este deliberat — dar înseamnă că orice `cc_server` accesibil dezvăluie atât oricui întreabă.
 
-## Related guides
+## Ghiduri conexe
 
-- [Connect to a remote server](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/)
-- [Pair a device](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/)
-- [Run a fleet worker](/ro-RO/manual/ghiduri-practice/ruleaza-worker-din-flota/)
-- [Connect a Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
+- [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/)
+- [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/)
+- [Rulează un worker din flotă](/ro-RO/manual/ghiduri-practice/ruleaza-worker-din-flota/)
+- [Conectează un Google Calendar](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/)
 
-## Related concepts
+## Concepte conexe
 
-- [Deployment and clients](/ro-RO/manual/concepte/implementare/)
-- [Remote control and mobile](/ro-RO/manual/concepte/control-remote/)
+- [Implementare și clienți](/ro-RO/manual/concepte/implementare/)
+- [Control remote și mobil](/ro-RO/manual/concepte/control-remote/)

@@ -1,95 +1,91 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: ربط مزوّد OpenID Connect
+description: اربط أي مُصدِر OIDC — Pocket ID، وKeycloak، وAuth0، وZitadel — بتسجيل الدخول إلى Control Center.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+استخدم هذا الدليل حين يدعم موفّر هويتك **OpenID Connect** لا SAML. أي
+مُصدِر معتمد وفق OIDC يصلح — Pocket ID وKeycloak وAuth0 وZitadel
+وGoogle Workspace وأشباهها تتبع الخطوات نفسها؛ ولا يختلف إلا الموضع
+الذي يعرض فيه موفّرك القيم.
 
-## Prerequisites
+## المتطلبات
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- موفّر OIDC تستطيع فيه إنشاء عميل — دوّن **معرّف العميل**
+  و**عنوان URL للمُصدِر** (الأساس الذي يقع تحته مستند
+  `.well-known/openid-configuration`)، و**سر العميل** إن كان العميل
+  من النوع السرّي (عملاء PKCE العامّون بلا سر)،
+- خادم Control Center تديره (أنت **مالك الخادم**).
 
-## Steps
+## الخطوات
 
-1. Open **Settings → Server → Single sign-on** and switch to
+1. افتح **الإعدادات ← الخادم ← تسجيل الدخول الموحّد** وبدّل إلى
    **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+2. املأ **عنوان URL للمُصدِر** و**معرّف العميل**، وأضف **سر العميل
+   (اختياري)** إن أصدر الموفّر واحدًا. يكتشف Control Center نقاط النهاية
+   من مستند الاكتشاف القياسي لدى المُصدِر — بلا تهيئة تخص موفّرًا بعينه.
+3. لدى الموفّر، سجّل إعادة التوجيه
+   `https://<your-server>/oidc/callback` على ذلك العميل.
+4. إن كانت مجموعاتك تحت مطالبة غير `groups`، عيّن اسم **مطالبة
+   المجموعات**؛ وعيّن المجموعات إلى الأدوار إن شئت (لا يمنح SSO دور
+   المالك أبدًا).
+5. اختر سياسة العضوية (الإضافة التلقائية إلى كل مساحة عمل، أو اشتراط
+   دعوة لكل مساحة عمل)، وفعّل **استخدام OpenID Connect لتسجيل الدخول**
+   واضغط **حفظ الاتصال**.
+6. اضغط **اختبار الاتصال** — يجلب الخادم مستند الاكتشاف لدى المُصدِر
+   ويؤكد نقاط نهايته، فالتنبيه الأخضر يعني أن كل شيء يعمل عدا جولة
+   المتصفح ذهابًا وإيابًا. للتحقق من تسجيل العميل أيضًا، استخدم
+   [أداة التحقق أدناه](#تحقق-من-تهيئتك-من-هذه-الصفحة).
+7. أجرِ تسجيل دخول: تعرض شاشة الاتصال على الويب **تسجيل الدخول عبر
+   OpenID Connect**، أو افتح `https://<your-server>/oidc/login` مباشرة.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+تُقرأ المطالبات (البريد الإلكتروني والاسم والمجموعات) من نقطة نهاية
+الرمز لدى المُصدِر عبر TLS بواسطة خادمك — ولا يقدّمها المتصفح أبدًا، فلا
+يجري أي تحقق محلي من توقيع JWT. يُفترض السماح للعميل بطلب النطاق
+`openid profile email`، وهو بالضبط ما يطلبه Control Center.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+ولأن قناة TLS هذه هي وحدها ما يثبت صحة المطالبات، يجب أن يكون عنوان URL
+للمُصدِر **https** — فمُصدِر غير مشفّر يتيح لأي مهاجم على المسار تزوير
+الهويات بالجملة. يُقبل `http` لمُصدِري الاسترجاع (`localhost`،
+`127.0.0.1`، `::1`) فقط، للتطوير المحلي.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[عميل عام أم عميل سرّي؟]
+الشكل الافتراضي — والموصى به — هو **عميل عام** يستخدم تدفق رمز التفويض
+مع **PKCE** (RFC 7636): متحقّق الرمز لمرة واحدة الذي يحتفظ به الخادم
+يحل محل السر، ويُربَط تبادل الرمز بطلب التفويض الذي أطلقه. لا سرّ
+يتسرّب، ورمز تفويض مسروق لا ينفع من غير المتحقّق. يسمّي بعض الموفّرين
+هذا النوع «SPA» أو «native» عند إنشائه.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+إن أصدر موفّرك عميلًا **سرّيًا** بدل ذلك، فإما أن تجعله عامًا لدى
+الموفّر وإما أن تلصق سر العميل في حقل **سر العميل (اختياري)** في
+الاتصال (يبقى PKCE مفعّلًا في الحالين). يُخزَّن السر في ملف أسرار
+الخادم بصلاحية 0600 (لا في قاعدة البيانات أبدًا)، ويُرسَل إلى نقطة نهاية
+الرمز بأسلوب `client_secret_post` ولا يُعاد عبر RPC أبدًا؛ وترك الحقل
+فارغًا عند الحفظ يُبقي السر المخزَّن. إذا فشل تسجيل الدخول عند تبادل
+الرمز، يسمّي سجل الخادم خطأ الموفّر نفسه (`invalid_client` يعني في
+الأغلب أن السر مفقود أو خاطئ).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-scim).
+:::note[إمكانية الوصول]
+تسجيل الدخول نفسه يتم بوساطة المتصفح: لا يفعل المُصدِر إلا إعادة توجيه
+متصفح المستخدم إلى `/oidc/callback`، ويرسل خادمك طلبًا صادرًا عبر HTTPS
+إلى نقطة نهاية الرمز — فلا حاجة إلى اتصال وارد من المُصدِر، فيعمل خادم
+خلف NAT ما دامت متصفحات المستخدمين تبلغه (LAN أو VPN أو Tailscale أو
+نفق). **توفير المستخدمين عبر SCIM هو الاستثناء**: يستدعي IdP خادمك
+مباشرة، وهذا يقتضي نفقًا أو عنوان URL عامًا — انظر
+[توفير المستخدمين عبر SCIM](/ar-SA/دليل-المستخدم/أدلة-إرشادية/sso-scim).
 :::
 
-## Check your configuration from this page
+## تحقق من تهيئتك من هذه الصفحة
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+تعمل أداة التحقق أدناه في متصفحك. تجلب مستند الاكتشاف لدى مُصدِرك
+مباشرة، فلا يراه هذا الموقع أبدًا، وتطبّق قواعد الخادم: مُصدِر https
+يطابق المستند، ونقاط نهاية على أصل المُصدِر نفسه، وPKCE S256، وطريقة
+مصادقة الرمز التي يحتاجها نوع عميلك. ومع معرّف عميل وعنوان خادم، تستطيع
+الأداة فتح تسجيل دخول تجريبي يبيّن هل العميل ومعرّف URI لإعادة التوجيه
+مسجّلان. ولا تطلب الأداة سر العميل أبدًا.
 
 <SsoCheck kind="oidc" />

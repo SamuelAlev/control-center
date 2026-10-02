@@ -1,27 +1,28 @@
 ---
-title: Ticket lifecycle
-description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+title: Κύκλος ζωής εισιτηρίου
+description: Πεδία, καταστάσεις, μεταβάσεις και σχέσεις εισιτηρίου και το σημείο συμφόρησης των τροποποιήσεων.
 slug: el-GR/εγχειρίδιο/αναφορά/κύκλος-ζωής-εισιτηρίου
+sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
 ---
 
-## Ticket statuses
+## Καταστάσεις εισιτηρίου
 
-| Status       | Storage string | Description                                     |
-| ------------ | -------------- | ----------------------------------------------- |
-| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
-| `open`       | `open`         | Triaged and ready to be worked, not started     |
-| `inProgress` | `inProgress`   | Actively being worked                           |
-| `blocked`    | `blocked`      | Started but blocked on something external       |
-| `inReview`   | `inReview`     | Work done, awaiting review                      |
-| `done`       | `done`         | Finished successfully (terminal)                |
-| `failed`     | `failed`       | Finished with an error (terminal)               |
-| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+| Κατάσταση    | Συμβολοσειρά αποθήκευσης | Περιγραφή                                                  |
+| ------------ | ------------------------ | ---------------------------------------------------------- |
+| `backlog`    | `backlog`                | Καταγραμμένο, δεν έχει ακόμη ταξινομηθεί στην ενεργή ουρά   |
+| `open`       | `open`                   | Ταξινομημένο και έτοιμο για εργασία, δεν έχει ξεκινήσει     |
+| `inProgress` | `inProgress`             | Βρίσκεται σε ενεργή επεξεργασία                            |
+| `blocked`    | `blocked`                | Ξεκίνησε αλλά έχει μπλοκάρει σε κάτι εξωτερικό              |
+| `inReview`   | `inReview`               | Η εργασία ολοκληρώθηκε, αναμένει έλεγχο                    |
+| `done`       | `done`                   | Ολοκληρώθηκε με επιτυχία (τελική)                          |
+| `failed`     | `failed`                 | Ολοκληρώθηκε με σφάλμα (τελική)                            |
+| `cancelled`  | `cancelled`              | Εγκαταλείφθηκε (τελική)                                    |
 
-Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+Οι τιμές κατάστασης αποθηκεύονται σε camelCase (`inProgress`, `inReview`), ποτέ ως `in_progress`. Μια αποθηκευμένη τιμή null ερμηνεύεται ως `open`· μια άγνωστη τιμή προκαλεί σφάλμα αντί να εξαναγκαστεί σε μετατροπή.
 
-`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+Το `tryParseLoose` δέχεται ψευδώνυμα που παρέχει ο πράκτορας, αγνοώντας τη διάκριση πεζών-κεφαλαίων καθώς και τα `-` / `_` / το κενό:
 
-| Status       | Accepted aliases                              |
+| Κατάσταση    | Αποδεκτά ψευδώνυμα                            |
 | ------------ | --------------------------------------------- |
 | `open`       | `todo`, `ready`, `pending`, `new`             |
 | `inProgress` | `doing`, `started`, `active`, `wip`           |
@@ -31,7 +32,7 @@ Status values are stored as camelCase (`inProgress`, `inReview`), never `in_prog
 | `failed`     | `error`, `errored`                            |
 | `cancelled`  | `canceled`, `abandoned`, `dropped`            |
 
-## Status transitions
+## Μεταβάσεις καταστάσεων
 
 ```
 backlog ──→ open ──→ inProgress ──→ inReview ──→ done
@@ -42,159 +43,161 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
+**Αυτός ο γράφος δεσμεύει μόνο τους πράκτορες και τον αυτοματισμό.** Το `TicketWorkflowService.transitionStatus` τον ελέγχει όταν το `force` είναι false — τα εργαλεία MCP και οι reconcilers. Μια μη έγκυρη μετάβαση εκεί καταγράφεται και αγνοείται. Κάθε αλλαγή κατάστασης που προέρχεται από τον χρήστη στο UI περνά `force: true` και παρακάμπτει τον γράφο εντελώς, οπότε ένας άνθρωπος μπορεί να μετακινήσει ένα εισιτήριο σε οποιαδήποτε κατάσταση εμφανίζει ο επιλογέας (κάθε κατάσταση εκτός από `failed`), ακόμη και να ανοίξει ξανά μια τελική κατάσταση. Οι πράκτορες σημειώνουν το `failed` με το `fail_ticket`.
 
-A status may always transition to itself. Terminal states have no outgoing edges.
+Μια κατάσταση μπορεί πάντα να μεταβεί στον εαυτό της. Οι τελικές καταστάσεις δεν έχουν εξερχόμενες ακμές.
 
-| From         | Allowed targets                                      |
+| Από          | Επιτρεπόμενοι προορισμοί                             |
 | ------------ | ---------------------------------------------------- |
 | `backlog`    | `open`, `cancelled`                                  |
 | `open`       | `inProgress`, `blocked`, `cancelled`                 |
 | `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
 | `blocked`    | `inProgress`, `cancelled`                            |
 | `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
-| `done`       | — (terminal)                                         |
-| `failed`     | — (terminal)                                         |
-| `cancelled`  | — (terminal)                                         |
+| `done`       | — (τελική)                                           |
+| `failed`     | — (τελική)                                           |
+| `cancelled`  | — (τελική)                                           |
 
-## Ticket priorities
+## Προτεραιότητες εισιτηρίου
 
-Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+Αποθηκεύονται ως ακέραιος στην εγγενή κλίμακα 0–4 του Linear. Μια άγνωστη τιμή ερμηνεύεται ως `none`.
 
-| Priority | Stored as |
-| -------- | --------- |
-| `none`   | `0`       |
-| `urgent` | `1`       |
-| `high`   | `2`       |
-| `medium` | `3`       |
-| `low`    | `4`       |
+| Προτεραιότητα | Αποθηκεύεται ως |
+| ------------- | --------------- |
+| `none`        | `0`             |
+| `urgent`      | `1`             |
+| `high`        | `2`             |
+| `medium`      | `3`             |
+| `low`         | `4`             |
 
-## Ticket providers
+## Πάροχοι εισιτηρίου
 
-An unknown or null stored value parses to `local`.
+Μια άγνωστη ή null αποθηκευμένη τιμή ερμηνεύεται ως `local`.
 
-| Provider | Status                                                 |
-| -------- | ------------------------------------------------------ |
-| `local`  | Stored entirely in the workspace database; the default |
-| `linear` | Remote-owned, mirrored locally                         |
+| Πάροχος  | Κατάσταση                                                |
+| -------- | -------------------------------------------------------- |
+| `local`  | Αποθηκεύεται εξ ολοκλήρου στη βάση δεδομένων του χώρου εργασίας· η προεπιλογή |
+| `linear` | Ανήκει σε απομακρυσμένο σύστημα, κατοπτρίζεται τοπικά     |
 
-Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
-GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
-(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
-GitHub issue is stored with `originKind: externalSync` and default
-`provider: local`. The vendor mapping lives on `ticket_sync_links`.
+Οι προσαρμογείς συγχρονισμού βρίσκονται κάτω από το
+`packages/cc_infra/lib/src/tickets/sync/` για τα Linear, GitHub Issues, Jira
+Cloud και ClickUp. Το GitHub Issues είναι μόνο προμηθευτής προσαρμογέα
+συγχρονισμού (`vendorId: github`) — δεν είναι τιμή `TicketProvider`, οπότε ένα
+ζήτημα GitHub που λαμβάνεται με συγχρονισμό αποθηκεύεται με
+`originKind: externalSync` και προεπιλεγμένο `provider: local`. Η αντιστοίχιση
+των προμηθευτών βρίσκεται στο `ticket_sync_links`.
 
-## Ticket origin
+## Προέλευση εισιτηρίου
 
-`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
-children stay `manual`.
+Το `createTicket` γράφει `manual`. Μια λήψη από προμηθευτή γράφει
+`externalSync`. Τα ανατεθειμένα θυγατρικά παραμένουν `manual`.
 
-| Value          | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
-| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
+| Τιμή           | Σημασία                                                       |
+| -------------- | ------------------------------------------------------------- |
+| `manual`       | Προεπιλογή στο `createTicket` (γραμμές ανθρώπων, πρακτόρων και ανατεθειμένων) |
+| `externalSync` | Ορίζεται από το `TicketSyncEngine` σε μια λήψη από προμηθευτή |
 
-## Ticket fields
+## Πεδία εισιτηρίου
 
-The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, space, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+Το σύνολο καλύπτει δύο διαφορετικές πτυχές στην ίδια γραμμή. Το **κατοπτρικό αντίγραφο** (πάροχος, κλειδιά, τίτλος, περιγραφή, προτεραιότητα, ετικέτες, καταστάσεις, χρονικές σημάνσεις) είναι μια προσωρινή μνήμη για έναν απομακρυσμένο πάροχο και ξαναγράφεται εξ ολοκλήρου από μια ανανέωση. Η **επικάλυψη** (εκχώρηση, ανάθεση, χώρος, γονέας, έργο, συνδεδεμένα PR) υπάρχει μόνο στο Control Center και μια ανανέωση δεν την αγγίζει ποτέ.
 
-| Field                    | Type                       | Description                                                                                |
+| Πεδίο                    | Τύπος                      | Περιγραφή                                                                                  |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
 | `id`                     | `String`                   | UUID v4                                                                                    |
-| `workspaceId`            | `String`                   | Owning workspace                                                                           |
-| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
-| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
-| `title`                  | `String`                   | Short summary; must not be empty                                                           |
-| `description`            | `String?`                  | Longer Markdown body                                                                       |
-| `priority`               | `TicketPriority`           | Default `none`                                                                             |
-| `labels`                 | `List<String>`             | Free-form labels                                                                           |
-| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
-| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
-| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
-| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
-| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
-| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
-| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
-| `createdById`            | `String?`                  | Creating principal's id                                                                    |
-| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
-| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
-| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
-| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
-| `spaceId`                | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's space                   |
-| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
-| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
-| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
-| `createdAt`              | `DateTime`                 | Creation time                                                                              |
-| `startedAt`              | `DateTime?`                | When work started                                                                          |
-| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
-| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
-| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
-| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
-| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
-| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
-| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
-| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+| `workspaceId`            | `String`                   | Ο χώρος εργασίας στον οποίο ανήκει                                                         |
+| `provider`               | `TicketProvider`           | Το backend που κατέχει τα κανονικά δεδομένα (προεπιλογή `local`)                           |
+| `externalKey`            | `String?`                  | Εγγενές κλειδί του παρόχου (π.χ. `LIN-123`). Το τοπικό `createTicket` γράφει εδώ ένα *ξεχωριστό* UUID, όχι το `id` της γραμμής |
+| `url`                    | `String?`                  | URL ιστού στον απομακρυσμένο πάροχο                                                        |
+| `title`                  | `String`                   | Σύντομη σύνοψη· δεν πρέπει να είναι κενή                                                   |
+| `description`            | `String?`                  | Μεγαλύτερο σώμα Markdown                                                                   |
+| `priority`               | `TicketPriority`           | Προεπιλογή `none`                                                                          |
+| `labels`                 | `List<String>`             | Ετικέτες ελεύθερης μορφής                                                                  |
+| `status`                 | `TicketStatus`             | Κανονική κατάσταση μετά την κανονικοποίηση                                                 |
+| `rawStatus`              | `String?`                  | Το εγγενές όνομα κατάστασης του απομακρυσμένου παρόχου, που διατηρείται για απεικόνιση χωρίς απώλειες |
+| `externalSyncedAt`       | `DateTime?`                | Ο τελευταίος συγχρονισμός πολλών προμηθευτών· null μέχρι τον πρώτο. Η αντιστοίχιση ανά προμηθευτή βρίσκεται στο `ticket_sync_links` |
+| `parentTicketId`         | `String?`                  | Γονέας στο δέντρο ανάθεσης / κατάτμησης                                                    |
+| `projectId`              | `String?`                  | Έργο στο οποίο ανήκει· δεν προωθείται ποτέ σε απομακρυσμένο σύστημα                        |
+| `assignedAgentId`        | `String?`                  | Το id του εκχωρημένου υποκειμένου (μόνο μεταδεδομένα — η εκχώρηση δεν αποστέλλει τίποτα)    |
+| `assigneeType`           | `PrincipalType`            | Τι είδους υποκείμενο ονομάζει το `assignedAgentId` — `user` ή `agent` (προεπιλογή `agent`) |
+| `createdByType`          | `PrincipalType?`           | Το είδος του υποκειμένου που δημιούργησε το εισιτήριο (`user` ή `agent`)· null για γραμμές παλαιού τύπου/συστήματος |
+| `createdById`            | `String?`                  | Το id του υποκειμένου που το δημιούργησε                                                   |
+| `assignedTeamId`         | `String?`                  | Εκχωρημένη ομάδα (μόνο μεταδεδομένα)                                                       |
+| `delegatedByAgentId`     | `String?`                  | Ο πράκτορας που ανέθεσε αυτό το εισιτήριο                                                  |
+| `delegationDepth`        | `int`                      | Βάθος στην αλυσίδα ανάθεσης· η ρίζα είναι `0`, ελέγχεται ως προς το ανώτατο όριο βάθους   |
+| `delegationRootTicketId` | `String?`                  | Η ρίζα της αλυσίδας ανάθεσης· null για ένα εισιτήριο ρίζας                                 |
+| `spaceId`                | `String?`                  | Η συνομιλία από την οποία ξεκίνησε το εισιτήριο, ή ο χώρος του πράκτορα που το ανέθεσε     |
+| `errorMessage`           | `String?`                  | Ορίζεται όταν το `status` είναι `failed`                                                   |
+| `linkedPrIds`            | `List<String>`             | Τα id κόμβων PR με τα οποία είναι συνδεδεμένο αυτό το εισιτήριο                            |
+| `metadata`               | `Map<String, dynamic>`     | Σακούλα ελεύθερης μορφής                                                                   |
+| `createdAt`              | `DateTime`                 | Χρόνος δημιουργίας                                                                         |
+| `startedAt`              | `DateTime?`                | Πότε ξεκίνησε η εργασία                                                                    |
+| `blockedAt`              | `DateTime?`                | Πότε μπλοκαρίστηκε το εισιτήριο                                                            |
+| `cancelledAt`            | `DateTime?`                | Πότε ακυρώθηκε το εισιτήριο                                                                |
+| `completedAt`            | `DateTime?`                | Πότε το εισιτήριο ολοκληρώθηκε με επιτυχία                                                 |
+| `finishedAt`             | `DateTime?`                | Πότε το εισιτήριο έφτασε σε οποιαδήποτε τελική κατάσταση                                   |
+| `updatedAt`              | `DateTime`                 | Η τελευταία τροποποίηση (ανανέωση του κατοπτρικού αντιγράφου ή αλλαγή της επικάλυψης)      |
+| `version`                | `int`                      | Μετρητής αισιόδοξης ταυτοχρονικότητας, που αυξάνεται σε κάθε τροποποίηση                   |
+| `originKind`             | `TicketOriginKind`         | Πώς δημιουργήθηκε το εισιτήριο (προεπιλογή `manual`)                                       |
+| `collaborators`          | `List<TicketCollaborator>` | Φορτώνονται από το αποθετήριο κατ' απαίτηση                                                |
 
-Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
+Παράγωγα: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` και `displayKey` (`externalKey ?? id` — τα τοπικά εισιτήρια εμφανίζουν επομένως το ξεχωριστό UUID της στιγμής δημιουργίας, όχι το `id` της γραμμής).
 
-## Ticket relations
+## Σχέσεις εισιτηρίου
 
-Stored edges are directional rows in `ticket_links`:
+Οι αποθηκευμένες ακμές είναι κατευθυντικές γραμμές στο `ticket_links`:
 
-| Type          | Storage string | Meaning                         |
-| ------------- | -------------- | ------------------------------- |
-| `blocks`      | `blocks`       | Source blocks target            |
-| `relatesTo`   | `relates_to`   | Symmetric relation              |
-| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+| Τύπος         | Συμβολοσειρά αποθήκευσης | Σημασία                          |
+| ------------- | ------------------------ | -------------------------------- |
+| `blocks`      | `blocks`                 | Η πηγή μπλοκάρει τον στόχο       |
+| `relatesTo`   | `relates_to`             | Συμμετρική σχέση                 |
+| `duplicateOf` | `duplicate_of`           | Η πηγή είναι αντίγραφο του στόχου |
 
-The vocabulary the UI and `ticket_relation` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+Το λεξιλόγιο που μιλούν το UI και το `ticket_relation` είναι το `TicketRelationKind`, το οποίο προκύπτει από μια αποθηκευμένη ακμή συν σε ποιο άκρο βρίσκεται το υποκείμενο εισιτήριο:
 
-| Kind           | Derived from                                         |
-| -------------- | ---------------------------------------------------- |
-| `blockedBy`    | A `blocks` row where the subject is the target       |
-| `blocking`     | A `blocks` row where the subject is the source       |
-| `relatedTo`    | A `relates_to` row (symmetric)                       |
-| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
-| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
-| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
-| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+| Είδος          | Προκύπτει από                                                |
+| -------------- | ------------------------------------------------------------ |
+| `blockedBy`    | Μια γραμμή `blocks` όπου το υποκείμενο εισιτήριο είναι ο στόχος |
+| `blocking`     | Μια γραμμή `blocks` όπου το υποκείμενο εισιτήριο είναι η πηγή |
+| `relatedTo`    | Μια γραμμή `relates_to` (συμμετρική)                         |
+| `duplicateOf`  | Μια γραμμή `duplicate_of` όπου το υποκείμενο εισιτήριο είναι η πηγή |
+| `duplicatedBy` | Μια γραμμή `duplicate_of` όπου το υποκείμενο εισιτήριο είναι ο στόχος |
+| `subIssueOf`   | Το `tickets.parent_ticket_id` στο υποκείμενο εισιτήριο       |
+| `parentOf`     | Το `tickets.parent_ticket_id` στο άλλο εισιτήριο             |
 
-Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+Οι σύνδεσμοι γονέα και υποζητήματος **δεν** είναι γραμμές του `ticket_links` — βρίσκονται στο `tickets.parent_ticket_id`.
 
-## Domain events
+## Γεγονότα τομέα
 
-These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
+Αυτές οι οκτώ κλάσεις βρίσκονται στο `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. Δεν υπάρχει `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded` ή `ExternalTicketWebhookReceived`.
 
-| Event                     | Fired when                                         |
-| ------------------------- | -------------------------------------------------- |
-| `TicketCreated`           | Ticket is created                                  |
-| `TicketAssigned`          | Ticket is assigned to a principal or team          |
-| `TicketCompleted`         | Work finishes successfully                         |
-| `TicketFailed`            | Work fails                                         |
-| `TicketCancelled`         | Ticket is cancelled                                |
-| `TicketStatusChanged`     | Any status change                                  |
-| `TicketReassigned`        | Ticket reassigned                                  |
-| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+| Γεγονός                   | Πυροδοτείται όταν                                      |
+| ------------------------- | ------------------------------------------------------ |
+| `TicketCreated`           | Δημιουργείται ένα εισιτήριο                            |
+| `TicketAssigned`          | Ένα εισιτήριο εκχωρείται σε ένα υποκείμενο ή μια ομάδα |
+| `TicketCompleted`         | Η εργασία ολοκληρώνεται με επιτυχία                    |
+| `TicketFailed`            | Η εργασία αποτυγχάνει                                  |
+| `TicketCancelled`         | Ένα εισιτήριο ακυρώνεται                               |
+| `TicketStatusChanged`     | Οποιαδήποτε αλλαγή κατάστασης                          |
+| `TicketReassigned`        | Ένα εισιτήριο ανατίθεται εκ νέου                       |
+| `TicketDetailsUpdated`    | Αλλάζουν ο τίτλος, η περιγραφή, η προτεραιότητα ή οι ετικέτες |
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
+Το `TicketAssigned` είναι σήμα ελέγχου και ειδοποίησης και ενεργοποιητής pipeline. Η εκχώρηση σε έναν πράκτορα δεν ξεκινά καμία εκτέλεση — δεν υπάρχει αποστολέας εισιτηρίων που να παρακολουθεί το `assignedAgentId`. Η εκχώρηση σε μια ομάδα αποτελεί την εξαίρεση: το `TeamRoutingService` αποστέλλει τον αρχηγό της ομάδας. Η προσθήκη ενός συνεργάτη γράφει μια γραμμή και δεν δημοσιεύει τίποτα. Ένα webhook προμηθευτή εφαρμόζεται μέσω του `TicketSyncEngine` χωρίς γεγονός τομέα.
 
-## Mutation chokepoint
+## Σημείο συμφόρησης των τροποποιήσεων
 
-`TicketWorkflowService` owns every mutation.
+Το `TicketWorkflowService` κατέχει κάθε τροποποίηση.
 
-| Mechanism              | Detail                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
-| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
-| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
-| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
-| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+| Μηχανισμός               | Λεπτομέρεια                                                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ένα μοναδικό σημείο συμφόρησης | Όλες οι τροποποιήσεις δρομολογούνται μέσω του `_mutate`, το οποίο φορτώνει τη γραμμή και καλεί το `_assertWorkspace` πριν εφαρμόσει              |
+| Απομόνωση χώρου εργασίας | Το `_assertWorkspace` εκπέμπει `WorkspaceMismatchException` όταν το `workspaceId` της φορτωμένης γραμμής δεν ταιριάζει με αυτό του καλούντος        |
+| Αισιόδοξη ταυτοχρονικότητα | Το `_mutate` γράφει με `expectedVersion` ορισμένο στο `version` που μόλις διάβασε και επαναλαμβάνει σε `ConcurrencyConflictException` διαβάζοντας εκ νέου την τρέχουσα κατάσταση |
+| Αποκλειστική διεκδίκηση  | `tryCheckout` / `releaseCheckout`· ένας δεύτερος πράκτορας που διεκδικεί ένα εισιτήριο σε κατάσταση checkout λαμβάνει `CheckoutConflictException` |
+| Φρουρός μετάβασης        | `canTransitionTo`, που εφαρμόζεται μόνο όταν το `force` είναι false                                                                                 |
 
-## See also
+## Δείτε επίσης
 
-- [Tickets](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
-- [Manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
-- [Delegate tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
-- [Domain events](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)
+- [Εισιτήρια και ανάθεση](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/)
+- [Δημιουργία και διαχείριση εισιτηρίων](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/)
+- [Ανάθεση εργασίας σε πράκτορες](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/ανάθεση-εισιτηρίων/)
+- [Γεγονότα τομέα](/el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα/)

@@ -1,166 +1,172 @@
 ---
-title: Set up GitHub integration
-description: Sign in to GitHub so the PR surface, repo registration and agent runs work.
+title: Thiết lập tích hợp GitHub
+description: Đăng nhập GitHub để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github
+sourceHash: 3b2fb6a501145275d7d05e852dd0772cc6d90f5d
 ---
 
-This guide covers the GitHub-specific parts of the setup. GitHub is one of three
-supported code hosts — see [Connect a code host](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
-for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+Hướng dẫn này đề cập đến những phần dành riêng cho GitHub trong quá trình thiết
+lập. GitHub là một trong ba máy chủ mã được hỗ trợ — xem
+[Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
+để kết nối GitLab hoặc Bitbucket, và để biết cách một không gian làm việc dùng
+chung cả ba.
 
-## Prerequisites
+## Trước khi bắt đầu
 
-- A GitHub account with access to the repos you want to work on
-- Either a GitHub App registered for your server (see
-  [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) so you can **sign in**,
-  **or** a personal access token with `repo` and `read:org` to paste
+- Một tài khoản GitHub có quyền truy cập vào những kho mã bạn muốn làm việc
+- Hoặc một GitHub App đã được đăng ký cho máy chủ của bạn (xem
+  [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) để bạn có thể **đăng nhập**,
+  **hoặc** một token truy cập cá nhân có `repo` và `read:org` để dán
 
-:::note[Credentials live on the server, attached to you]
-Nothing is stored on the machine you are typing on. Your credential is held by
-your `cc_server`, keyed by your user id, and every device you sign in from uses
-it — desktop, web and phone. Another member of the same server cannot read it,
-and signing them in is something they do themselves.
+:::note[Thông tin xác thực nằm trên máy chủ, gắn với bạn]
+Không có gì được lưu trên máy mà bạn đang gõ. Thông tin xác thực của bạn do
+`cc_server` giữ, được đánh khóa theo id người dùng của bạn, và mọi thiết bị bạn
+đăng nhập đều dùng nó — máy tính, web và điện thoại. Một thành viên khác của cùng
+máy chủ không thể đọc nó, và việc đăng nhập cho họ là việc họ tự làm.
 :::
 
-## Sign in with GitHub
+## Đăng nhập với GitHub
 
-A **device flow**: GitHub shows you a short code, you approve it on github.com,
-and the server receives the credential — no callback URL, no port, nothing to
-expose. Available whenever the server has a client id, which an official build
-already ships.
+Một **luồng thiết bị**: GitHub hiển thị cho bạn một mã ngắn, bạn phê duyệt nó
+trên github.com, và máy chủ nhận thông tin xác thực — không có URL callback,
+không có cổng, không có gì phải mở ra ngoài. Khả dụng bất cứ khi nào máy chủ có
+id client, thứ mà một bản dựng chính thức đã kèm sẵn.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
-   step of onboarding)
-2. On the **GitHub** row, click **Sign in with GitHub**
-3. A dialog shows an eight-character code and opens
-   [github.com/login/device](https://github.com/login/device) in your browser.
-   The code is already on your clipboard
-4. Paste it, approve the app, and come back. The row flips to
-   "Signed in as _your-username_" on its own
+1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** (hoặc bước đầu
+   tiên của quá trình thiết lập ban đầu)
+2. Trên hàng **GitHub**, nhấn **Đăng nhập với GitHub**
+3. Một hộp thoại hiển thị mã gồm tám ký tự và mở
+   [github.com/login/device](https://github.com/login/device) trong trình duyệt
+   của bạn. Mã đã có sẵn trong clipboard của bạn
+4. Dán mã, phê duyệt ứng dụng, rồi quay lại. Hàng đó tự chuyển sang
+   “Đã đăng nhập với tên _your-username_”
 
-The dialog can be closed while you finish in the browser — the server keeps
-polling until the code expires (about 15 minutes), so the sign-in still lands.
+Bạn có thể đóng hộp thoại trong lúc hoàn tất thao tác trong trình duyệt — máy chủ
+vẫn thăm dò cho đến khi mã hết hạn (khoảng 15 phút), nên việc đăng nhập vẫn thành
+công.
 
-## Or paste a token
+## Hoặc dán một token
 
-The fallback when the server has no app, when the app is not installed on an
-account you need, or when you would simply rather use a PAT.
+Phương án dự phòng khi máy chủ không có ứng dụng, khi ứng dụng không được cài
+trên một tài khoản bạn cần, hoặc khi bạn đơn giản là muốn dùng PAT.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting**
-2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
-   token needs repository **Contents** and **Pull requests** (read and write),
-   plus **Checks** and **Actions** (read).
+1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**
+2. Trên hàng **GitHub**, nhấn **Thêm token**
+3. Dán một token có `repo` và `read:org` (loại Classic) rồi lưu. Một token
+   **fine-grained** cần quyền kho mã **Contents** và **Pull requests** (đọc và
+   ghi), cùng **Checks** và **Actions** (đọc).
 
-The token is probed as it is stored, so the row can name the account it belongs
-to. Click **Disconnect** to remove it.
+Token được kiểm tra ngay khi được lưu, nên hàng đó có thể nêu tên tài khoản mà nó
+thuộc về. Nhấn **Ngắt kết nối** để gỡ nó.
 
-Checkpoint: the **GitHub** row reads "Signed in as _your-username_". A suffix
-names the source when the credential answering is not yours — "via this
-server's app" or "from the environment".
+Điểm kiểm tra: hàng **GitHub** ghi “Đã đăng nhập với tên _your-username_”. Một hậu
+tố nêu rõ nguồn khi thông tin xác thực đang trả lời không phải của bạn — “qua ứng
+dụng của máy chủ này” hoặc “từ môi trường”.
 
-:::note[Precedence is fixed]
-A request made on your behalf uses **your** credential, and nothing else — the
-environment is the server's credential, not yours, so it never stands in for
-you. Work with no human behind it (webhooks, PR polling, ticket sync) uses the
-server's app identity, then the server owner's credential, then the
-environment.
+:::note[Thứ tự ưu tiên là cố định]
+Một yêu cầu thực hiện thay mặt bạn chỉ dùng thông tin xác thực **của bạn**, và
+không dùng gì khác — môi trường là thông tin xác thực của máy chủ, không phải của
+bạn, nên nó không bao giờ đứng ra thay bạn. Công việc không có con người đứng sau
+(webhook, thăm dò PR, đồng bộ phiếu) dùng danh tính ứng dụng của máy chủ, rồi đến
+thông tin xác thực của chủ máy chủ, rồi đến môi trường.
 :::
 
-## What the integration gives you
+## Tích hợp này mang lại cho bạn những gì
 
-| Feature             | How                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| PR list and detail  | The GitHub REST API, from the server, on the app identity or your own credential                              |
-| Check runs          | The GitHub Checks API                                                                                          |
-| Review publishing   | A user-gated step that posts your review to the PR                                                             |
-| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
-| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
-| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
-| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+| Tính năng                   | Cách hoạt động                                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Danh sách và chi tiết PR    | API REST của GitHub, từ máy chủ, dưới danh tính ứng dụng hoặc thông tin xác thực của chính bạn                       |
+| Các lượt chạy kiểm tra      | API GitHub Checks                                                                                                    |
+| Xuất bản đánh giá           | Một bước do người dùng xác nhận, đăng đánh giá của bạn lên PR                                                        |
+| Đăng ký kho mã              | Một bản checkout được chấp nhận nếu remote `origin` của nó trỏ tới github.com — hoặc tới gitlab.com / bitbucket.org  |
+| Quyền truy cập GitHub của agent | Trình môi giới thông tin xác thực chèn token dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`, được kiểm soát theo khả năng của agent |
+| Tín hiệu thông báo          | Một lượt thăm dò phía máy chủ vào hộp thư thông báo GitHub của bạn tạo ra “Được nhắc trong pull request” và “Đã yêu cầu review” |
+| Hồ sơ người dùng            | Thẻ hồ sơ khi rê chuột và lọc PR theo từng tác giả                                                                    |
 
-Some paths use the GraphQL API instead of REST where it is cheaper — branch
-activity for the compose-PR picker and the live review state that decides
-whether a review-requested notification is still pending.
+Một số đường đi dùng API GraphQL thay vì REST khi rẻ hơn — hoạt động của nhánh
+cho trình chọn soạn PR và trạng thái đánh giá trực tiếp, thứ quyết định liệu một
+thông báo yêu cầu đánh giá còn đang chờ hay không.
 
-## Watch for GitHub outages
+## Theo dõi sự cố GitHub
 
-The title bar shows a status chip when a provider is degraded, covering GitHub,
-Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
-reports trouble, not its absence.
+Thanh tiêu đề hiển thị một chip trạng thái khi một nhà cung cấp đang gặp sự cố,
+bao gồm GitHub, Claude, OpenAI và Kimi. **Nó bị ẩn khi mọi thứ đều bình thường** —
+sự xuất hiện báo hiệu có trục trặc, chứ không phải sự vắng mặt của nó.
 
-Click the chip to open a flyout with each provider's state and a refresh button.
-The statuses refresh on their own every two minutes.
+Nhấn vào chip để mở một khung bật lên hiển thị trạng thái của từng nhà cung cấp
+cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
 
-## Know how agents act on GitHub
+## Cách agent hành động trên GitHub
 
-- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
-  **Allow git push**. See
-  [Configure sandbox policies](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
-- Commits an agent makes are authored **as the agent** — the display name plus
-  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
-  The person who asked is credited with a `Co-Authored-By` trailer
-- With a GitHub App configured, the broker mints fine-grained, repo-scoped,
-  roughly one-hour installation tokens per launch instead of handing over a
-  broad token. The installation is resolved from the run's repo **owner**, so
-  one app installed on several accounts scopes correctly to whichever one the
-  run touches. Without an app, agents receive the environment token
-- A run requested by a member who has signed in acts under **that member's**
-  GitHub identity — their credential is merged in after the broker's
-  environment, so a commit or comment an agent makes for them is attributable to
-  them
+- Một agent chỉ nhận được token GitHub nếu nó có **Cho phép gọi GitHub API** hoặc
+  **Cho phép git push**. Xem
+  [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
+- Các commit do agent tạo được ghi là **do agent** — tên hiển thị cộng thêm
+  ` (agent)`, tại một địa chỉ tổng hợp được đánh khóa theo id của agent — không
+  bao giờ là con người. Người đã yêu cầu được ghi công bằng một trailer
+  `Co-Authored-By`
+- Khi đã cấu hình GitHub App, trình môi giới tạo ra các token cài đặt
+  fine-grained, giới hạn theo kho mã và kéo dài khoảng một giờ, cho mỗi lần chạy
+  thay vì đưa ra một token rộng. Bản cài đặt được phân giải từ **owner** kho mã
+  của lượt chạy, nên một ứng dụng cài trên nhiều tài khoản sẽ giới hạn đúng theo
+  tài khoản mà lượt chạy chạm tới. Không có ứng dụng, agent nhận token của môi
+  trường
+- Một lượt chạy do một thành viên đã đăng nhập yêu cầu sẽ hành động dưới **danh
+  tính GitHub của thành viên đó** — thông tin xác thực của họ được hợp nhất vào
+  sau môi trường của trình môi giới, nên một commit hay bình luận mà agent thực
+  hiện cho họ được ghi nhận cho họ
 
-## Troubleshooting
+## Xử lý sự cố
 
-### The PR list is empty and says GitHub is not connected
+### Danh sách PR trống và báo rằng GitHub chưa được kết nối
 
-You have no GitHub credential on this server. Sign in or paste a token under
-**Code hosting**. Repos on other forges are unaffected — only GitHub's
-contribute nothing.
+Bạn không có thông tin xác thực GitHub nào trên máy chủ này. Hãy đăng nhập hoặc
+dán token trong **Lưu trữ mã**. Các kho mã trên những forge khác không bị ảnh
+hưởng — chỉ kho mã của GitHub không đóng góp gì.
 
-### The row offers "Add token" but no "Sign in with GitHub"
+### Hàng đó chỉ có “Thêm token” mà không có “Đăng nhập với GitHub”
 
-The server has no client id — which is the normal state for a build from
-source, since credentials are only baked into official builds. See
-[Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): it takes about two minutes
-and only the server owner has to do it, once.
+Máy chủ không có id client — đây là trạng thái bình thường đối với bản dựng từ mã
+nguồn, vì thông tin xác thực chỉ được nhúng vào các bản dựng chính thức. Xem
+[Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/): việc này mất khoảng hai phút
+và chỉ chủ máy chủ phải làm, một lần.
 
-### The sign-in dialog says the provider returned no device code
+### Hộp thoại đăng nhập báo nhà cung cấp không trả về mã thiết bị
 
-The GitHub App exists but its **Device flow** checkbox is off. Turn it on in the
-app's settings (General → Device flow) and try again.
+GitHub App tồn tại nhưng hộp kiểm **Device flow** của nó đang tắt. Hãy bật nó
+trong phần cài đặt của ứng dụng (General → Device flow) rồi thử lại.
 
-### The row says "via this server's app" when I expected my own account
+### Hàng đó ghi “qua ứng dụng của máy chủ này” trong khi tôi mong đợi tài khoản của mình
 
-You have not signed in; what you are seeing is the server's app identity
-answering. Click **Sign in with GitHub** on that row.
+Bạn chưa đăng nhập; thứ bạn đang thấy là danh tính ứng dụng của máy chủ đang trả
+lời. Hãy nhấn **Đăng nhập với GitHub** trên hàng đó.
 
-### A fine-grained PAT shows no merge button or check status
+### Một PAT fine-grained không hiển thị nút merge hay trạng thái kiểm tra
 
-The token needs **Contents** and **Pull requests** (read and write), plus
-**Checks** and **Actions** (read). After changing it, paste it again under
-Code hosting.
+Token cần **Contents** và **Pull requests** (đọc và ghi), cùng **Checks** và
+**Actions** (đọc). Sau khi thay đổi nó, hãy dán lại trong **Lưu trữ mã**.
 
-### Adding a repo is rejected
+### Việc thêm kho mã bị từ chối
 
-Registration requires all three: the path is inside a git work tree, it has an
-`origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+Việc đăng ký cần cả ba điều kiện: đường dẫn nằm trong một worktree git, nó có
+remote `origin`, và remote đó trỏ tới một forge được hỗ trợ (github.com,
+gitlab.com hoặc bitbucket.org). Xem
+[Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
 
-### Everything stops working for a while after heavy use
+### Mọi thứ ngừng hoạt động một lúc sau khi dùng nhiều
 
-That is the rate-limit circuit breaker. GitHub signals its primary limit with a
-`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
-client fails further requests locally without a network call until the window
-elapses, so a retry storm cannot deepen the limit. Transient failures are retried
-up to three times with exponential backoff, honouring `retry-after`.
+Đó là cầu dao ngắt mạch của giới hạn tốc độ. GitHub báo hiệu giới hạn chính của
+nó bằng một `403` mang theo `x-ratelimit-remaining: 0` và một thời điểm đặt lại;
+khi thấy một phản hồi như vậy, máy khách cho các yêu cầu tiếp theo thất bại ngay
+tại chỗ mà không gọi mạng cho đến khi hết cửa sổ thời gian, nhờ vậy một cơn bão
+thử lại không thể làm giới hạn sâu thêm. Các lỗi tạm thời được thử lại tối đa ba
+lần với backoff lũy thừa, tôn trọng `retry-after`.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Create the GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
-- [Connect a code host](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
-- [Manage API keys](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
-- [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
-- [Review and merge a PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Set up Slack integration](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)
+- [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
+- [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/)
+- [Quản lý khóa API](/vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api/)
+- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
+- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Thiết lập tích hợp Slack](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack/)

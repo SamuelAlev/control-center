@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Prozkoumejte data v persistentním kernelu
+description: Dej agentovi interpret Pythonu nebo JavaScriptu, který si mezi voláními drží proměnné, kreslí grafy do chatu a z buňky umí volat tvoje vlastní nástroje.
 slug: cs-CZ/prirucka/navody/pruzkum-dat-v-kernelu
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Tenhle návod ukazuje, jak nechat agenta načíst něco drahého jednou a pak se toho ptát několikrát, místo aby načtení platil u každé otázky.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+Nástroj `eval` spouští **persistentní interpret**. Proměnné, importy a načtená data mezi voláními přežijí.
 
-## Why not just run a script
+## Proč nespustit jen skript
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Jednorázové `python -c` platí přípravu u každé otázky. Načtení dataframe stojí sekundy a stovku megabajtů; graf z něj milisekundy. Když každá otázka stojí načtení, agent se ptá míň, než by měl — a každá odpověď se vrátí jako text, který pak musí znovu rozebrat.
 
-## Load once, then ask
+## Načti jednou, pak se ptej
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Načti `data/runs.csv` a řekni mi p95 trvání podle agenta.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Poslední výraz se vypíše jako v notebooku, takže `len(runs)` ohlásí počet řádků i bez `print`.
 
-Then, in a **separate call**:
+Potom, v **samostatném volání**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` je pořád načtený. Frame z pandas se vrátí vykreslený jako tabulka, ne jako repr.
 
-## Charts land in the chat
+## Grafy skončí v chatu
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Figury se po buňce zachytí a vrátí jako obrázky, které vykreslí přepis. Graf vidíš ty i agent.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Po zachycení se figury zavřou. Figura, kterou kód nesebral, by se překreslila a znovu odeslala i v *další* buňce, takže relace o pěti buňkách by první graf vyslala pětkrát.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Žádný Jupyter, žádný pip, žádný krok instalace]
+Běží jako obyčejné `python3 -u`, které po stdio mluví řádkovým protokolem. Samo implementuje `display()`, rozeslání MIME bundlů a zachycení figur, takže funguje na libovolném Pythonu 3 — i uvnitř sandboxu, kde je instalace přesně to, čemu má sandbox zabránit.
 :::
 
-## The idioms you would type anyway
+## Idiomy, které bys napsal i tak
 
-These are rewritten into plain code rather than erroring:
+Přepíšou se na obyčejný kód, místo aby skončily chybou:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| Napíšeš          | Co se stane                                                            |
+| ---------------- | ---------------------------------------------------------------------- |
+| `%pip install x` | Spustí pip a pak **vyčistí cache modulů**, aby ho viděl další `import` |
+| `%cd path`       | `os.chdir`                                                             |
+| `!command`       | Zachycený podproces                                                    |
+| `%%bash`         | Zbytek buňky jako shellový skript                                      |
+| `%%timeit`       | 1000 měřených opakování                                                |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Vyklizení cache u `%pip` je to jediné, na čem záleží: instalace do živého interpretu s už importovaným modulem nic nezmění, takže bez něj neběží verze, kterou jsi právě nainstaloval.
 
-## Calling your own tools from inside a cell
+## Volání vlastních nástrojů z buňky
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` znovu vstoupí do vlastního registru nástrojů agenta. Buňka tak může rozvětvit práci přes stovku souborů, nebo ji přes `task` delegovat, aniž by model za každou položku utrácel tah.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Most neobchází tvoje guardraily]
+Volání přes most se vyřeší proti **stejnému** registru nástrojů jako volání, které vydal model, takže politika `ActionClass`, výzvy ke schválení i každý obal platí stejně. Most, který by sáhl za registr, by byl dírou přesně ve tvaru „napiš to jedním řádkem Pythonu“.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Volání přes most **pozastaví časový limit buňky**, dokud není vyřízené. Rozpočet měří nečinnost, ne reálný čas — buňka, která se rozvětví na podagenty a čtyři minuty čeká, není zaseknutá, a její zabití uprostřed rozvětvení by přišlo o stav celého kernelu.
 
-## Starting over
+## Začít znovu
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Zahodí interpret a spustí čistý. Všechno načtené je pryč, a o to jde.
 
-## Where the kernel runs
+## Kde kernel běží
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+V **izolovaném prostředí** konverzace, pokud nějaké má, jinak na hostiteli.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Persistentní interpret poháněný modelem, který čte nedůvěryhodný repozitář, je přesně případ, pro který existuje provádění jen v izolovaném prostředí: jednorázové volání `bash` aspoň skončí, kernel je shell, který si pamatuje.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/cs-CZ/prirucka/navody/pouziti-stanic/).
+Aby tam kernel běžel, izolované prostředí **nenabootuje** — stejné pravidlo, které brání kartě stanice naběhnout sama. Když chceš kernel v izolovaném prostředí, nejdřív otevři shell konverzace. Viz [Dejte agentovi stroj na testování](/cs-CZ/prirucka/navody/pouziti-stanic/).
 
-## Limits
+## Limity
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Jedna buňka najednou na kernel.** Dvě buňky, které se v jednom interpretu předhánějí, jsou dvě půlky dvou programů proložené v jednom jmenném prostoru.
+- **Výstup je omezený.** Buňka ve smyčce s printy se ořízne, místo aby směla zaplnit kontextové okno.
+- **Čtyři obrázky na buňku.** Smyčka s grafy umí v každé iteraci vydat figuru a každý obrázek je v požadavku, který ho veze, velký pevný náklad.
+- **Kernel umírá s během.** Ten, který po skončení konverzace pořád drží dataframe, je únik.
 
-## Related
+## Související
 
-- [Sandbox and security](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/) — what "enclosed" means here
-- [Give an agent a machine to test on](/cs-CZ/prirucka/navody/pouziti-stanic/) — opening the enclosure
-- [Built-in agent tools](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — the arguments
+- [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/) — co tu znamená „v izolovaném prostředí“
+- [Dejte agentovi stroj na testování](/cs-CZ/prirucka/navody/pouziti-stanic/) — otevření izolovaného prostředí
+- [Vestavěné nástroje agentů](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/) — argumenty

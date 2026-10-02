@@ -1,241 +1,244 @@
 ---
-title: Create a pipeline template
-description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+title: 파이프라인 템플릿 만들기
+description: 파이프라인 편집기에서 DAG 워크플로 템플릿을 작성합니다. 노드를 추가하고 연결하며 입력을 선언해 실행할 수 있게 만듭니다.
 slug: ko-KR/매뉴얼/사용-가이드/파이프라인-만들기
+sourceHash: 637b50c85537c66f2993eead9052e6d6312d5106
 ---
 
-Pipeline templates are authored in workspace settings. The **Pipelines** entry
-in the workspace sidebar is the _run queue_, not the template list — it has no
-"create template" action.
+파이프라인 템플릿은 워크스페이스 설정에서 작성합니다. 워크스페이스 사이드바의
+**파이프라인** 항목은 _실행 큐_이며 템플릿 목록이 아닙니다. 여기에는 "템플릿
+만들기" 동작이 없습니다.
 
-For what each step kind, body key and config field means, see the
-[pipeline steps reference](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/).
+각 단계 종류, 본문 키, 구성 필드가 무엇을 뜻하는지는
+[파이프라인 단계 레퍼런스](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/)를
+참고하십시오.
 
-## Create a template
+## 템플릿 만들기
 
-1. Go to **Settings → Workspace → Pipeline templates**
-   (`/workspaces/<workspace-id>/settings/pipelines`).
-2. Press **New template**.
+1. **설정 → 워크스페이스 → 파이프라인 템플릿**
+   (`/workspaces/<workspace-id>/settings/pipelines`)으로 이동합니다.
+2. **새 템플릿**을 누릅니다.
 
-There is no id dialog. The editor opens immediately on a seeded skeleton
-named **New pipeline**, with an auto-allocated id (`pipeline_1`, then
-`pipeline_2`, …). Click the title in the header to rename it.
+ID 대화상자는 없습니다. 편집기는 **새 파이프라인**이라는 이름의 기본 제공
+스켈레톤으로 즉시 열리고, ID는 자동으로 할당됩니다(`pipeline_1`, 그다음
+`pipeline_2`, …). 헤더의 제목을 클릭하면 이름을 바꿀 수 있습니다.
 
-The canvas is not blank: a **Trigger** entry node, one prompt-agent node
-labelled **Step** and a terminal sentinel that ends the run. The sentinel is
-not drawn. The editor rewires that hidden terminal to every reachable sink, so
-work you attach after **Step** still runs.
+캔버스는 비어 있지 않습니다. **트리거** 진입 노드, **Step**이라는 레이블이 붙은
+프롬프트 에이전트 노드 하나, 그리고 실행을 끝내는 터미널 센티널이 있습니다.
+센티널은 그려지지 않습니다. 편집기는 이 숨겨진 터미널을 도달 가능한 모든
+싱크에 다시 연결하므로, **Step** 뒤에 붙인 작업도 실행됩니다.
 
-## Add nodes
+## 노드 추가
 
-The **Node library** sidebar sits permanently on the left of the editor. Filter
-it with the **Search nodes** box and drag an entry onto the canvas — the node
-lands where you drop it, with no incoming connection.
+**노드 라이브러리** 사이드바는 편집기 왼쪽에 항상 표시됩니다. **노드 검색**
+상자로 걸러 내고 항목을 캔버스로 끌어다 놓습니다. 노드는 놓은 자리에 들어가며
+들어오는 연결은 없습니다.
 
-| Palette node                    | Step kind | What it does                                                                         |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
-| **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
-| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
-| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
-| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
-| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
-| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
-| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
-| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
-| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
-| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
-| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
-| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
-| **For each (map)**              | forEach   | Renders a prompt per item, then dispatches the agent once with those prompts joined  |
-| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
-| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+| 팔레트 노드                     | 단계 종류 | 하는 일                                                                                |
+| ------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen    | `{{state}}` 치환과 함께 셸 스크립트를 실행합니다. 에이전트는 디스패치되지 않습니다       |
+| **Open conversation**           | listen    | 실행의 유일한 표시 스페이스와 그 체크아웃을 엽니다. 에이전트 노드가 이 방에 참여합니다   |
+| **Clone PR branch**             | listen    | `gh pr view`로 PR 헤드 브랜치를 찾아 실행 디렉터리로 클론합니다                         |
+| **Post PR comment**             | listen    | 취합한 결과를 GitHub 리뷰 댓글로 PR에 게시합니다                                        |
+| **Reviewer (prompt)**           | listen    | 전문 리뷰어 에이전트를 디스패치하고, 에이전트가 결과를 제출할 때까지 중단합니다          |
+| **Consolidate (join)**          | join      | 여러 업스트림 분기를 기다린 뒤 에이전트에게 그 출력을 취합하도록 요청합니다             |
+| **Custom prompt**               | listen    | `promptAgent` 본문을 거치는 범용 프롬프트 기반 노드                                     |
+| **Post to space**               | listen    | 메시징 스페이스에 메시지를 보냅니다                                                     |
+| **Condition / switch (router)** | router    | 상태 값에 따라 흐름을 분기합니다                                                        |
+| **If file exists (router)**     | router    | 클론 아래에 경로가 있으면 `"true"`, 없으면 `"false"`로 라우팅합니다                     |
+| **Any file exists (OR router)** | router    | 나열된 경로 중 하나라도 있으면 `"true"`로 라우팅합니다                                  |
+| **All conditions (AND router)** | router    | 나열된 경로가 모두 있을 때만 `"true"`로 라우팅합니다                                    |
+| **Team dispatch**               | listen    | 팀 전체를 디스패치하고 끝날 때까지 중단합니다                                           |
+| **Approval gate**               | listen    | 승인 결정을 기다리며 일시 중지합니다                                                    |
+| **For each (map)**              | forEach   | 항목마다 프롬프트를 렌더링한 뒤, 그 프롬프트를 이어 붙여 에이전트를 한 번 디스패치합니다 |
+| **Call sub-pipeline**           | listen    | 다른 템플릿을 중첩 단계로 실행합니다                                                    |
+| **Clean up worktrees**          | listen    | 오래된 격리 워크트리를 제거합니다. 결정적이며 에이전트는 디스패치되지 않습니다           |
 
-The library groups these under **Flow & logic**, **PR review**, **Agents**,
-**Messaging** and **Code**. There is no Demo group.
+라이브러리는 이들을 **흐름 및 로직**, **PR 리뷰**, **에이전트**, **메시징**,
+**코드** 아래에 묶습니다. Demo 그룹은 없습니다.
 
-## Wire nodes together
+## 노드 연결하기
 
-Each work node has a circular **output port** on its right edge. Drag from that
-port onto another node to connect them. Start triggers are the same: each one
-owns its own port, so a wire from **Schedule** does not also leave **Manual
-run**. Press **Add step** (`+`) just past a node to insert a type after it.
-Hover the midpoint of an existing edge and press × to disconnect.
+각 작업 노드의 오른쪽 가장자리에는 원형 **출력 포트**가 있습니다. 그 포트에서
+다른 노드로 끌어 연결합니다. 시작 트리거도 같습니다. 각자 자기 포트를 가지므로
+**일정**에서 나간 연결이 **수동 실행**에서도 나가지 않습니다. 노드 바로
+뒤에서 **단계 추가**(`+`)를 눌러 그 뒤에 종류를 삽입합니다. 기존 엣지의 중간
+지점에 커서를 올리고 ×를 누르면 연결이 끊어집니다.
 
-Connections are also edited from the node that _receives_ them:
+연결은 그것을 _받는_ 노드에서도 편집합니다.
 
-1. Select the downstream node. Its config panel opens on the right.
-2. Scroll to **Triggers from** and tap the chip for each upstream node this one
-   should listen to. Tapping a selected chip removes the connection.
-3. If an upstream node is a router, a **Route keys** block appears under the
-   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
-   the key that edge fires on — `true` or `false` for the file-exists routers,
-   or the case name for a switch.
+1. 다운스트림 노드를 선택합니다. 오른쪽에 구성 패널이 열립니다.
+2. **Triggers from**까지 스크롤해, 이 노드가 리슨해야 할 업스트림 노드마다 칩을
+   탭합니다. 선택된 칩을 탭하면 연결이 제거됩니다.
+3. 업스트림 노드가 라우터라면 칩 아래에 **라우트 키** 블록이 나타나며, 라우터
+   엣지마다 **&lt;node&gt;의 라우트 키** 필드가 하나씩 있습니다. 그 엣지가
+   발화할 키를 입력합니다. 파일 존재 라우터라면 `true`나 `false`, 스위치라면
+   케이스 이름입니다.
 
-Each trigger node is an entry point. A node may listen to several
-upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
-stay acyclic — nothing in the editor stops you wiring a cycle, so check your
-work.
+각 트리거 노드는 진입 지점입니다. 노드는 여러 업스트림을 리슨하고(팬인) 여러
+다운스트림을 먹일 수 있으며(팬아웃), 그래프는 비순환을 유지해야 합니다.
+편집기에는 순환 연결을 막는 장치가 없으니 직접 확인하십시오.
 
-The terminal sentinel is filtered out of the canvas, so it cannot be selected.
-The editor rewires it to every reachable sink whenever the graph changes, so
-work you attach after the seeded **Step** still runs. An empty graph (trigger
-with no work successors) lists the trigger itself so a run completes
-immediately.
+터미널 센티널은 캔버스에서 걸러지므로 선택할 수 없습니다. 편집기는 그래프가
+바뀔 때마다 그것을 도달 가능한 모든 싱크에 다시 연결하므로, 기본 제공 **Step**
+뒤에 붙인 작업도 실행됩니다. 빈 그래프(작업 후속이 없는 트리거)는 트리거 자체를
+나열하므로 실행이 즉시 완료됩니다.
 
-## Configure a node
+## 노드 구성
 
-Select a node to open its config panel. Which fields appear depends on the
-node's body.
+노드를 선택하면 구성 패널이 열립니다. 어떤 필드가 나타나는지는 노드의 본문에
+따라 다릅니다.
 
-Every node has **Label**, **Input keys** (comma-separated state keys read at
-execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
-**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
-nodes can also switch their **Kind** between the two.
+모든 노드에는 **레이블**, **입력 키**(실행 시 읽는 쉼표로 구분된 상태 키)가
+있고, **고급** 아래에 **리듀서**, **시간 제한 (ms)**, **재시도 횟수**, **이
+단계가 실패해도 계속**, **출력 스키마**가 있습니다. listen과 join 노드는
+**종류**를 둘 사이에서 전환할 수도 있습니다.
 
-### Open conversation
+### 대화 열기
 
-Adds a **repo scope** picker (which workspace repos to check out; empty means
-none), a **Space name**, and a **Create conversation** checkbox. When that
-checkbox is on, a **Conversation title** field names the stream the room opens
-with. Agent nodes join this room — they do not open one of their own.
+**클론할 저장소** 피커(어느 워크스페이스 저장소를 체크아웃할지, 비어 있으면
+없음), **스페이스 이름**, **여기서 대화 열기** 체크박스를 추가합니다. 이
+체크박스가 켜져 있으면 **대화 이름** 필드가 방이 열릴 때의 스트림 이름을
+정합니다. 에이전트 노드는 이 방에 참여하며 자기 방을 따로 열지 않습니다.
 
-### Prompt agent
+### 프롬프트 에이전트
 
-Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
-reference inputs or upstream outputs) and **Output key**.
+**에이전트**(디스패치할 에이전트), **프롬프트 템플릿**(`{{key}}`로 입력이나
+업스트림 출력을 참조합니다), **출력 키**를 추가합니다.
 
-**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
-Entering `900` gives the step 0.9 seconds.
+**시간 제한 (ms)**은 초가 아니라 _밀리초_ 단위입니다. `900000`은 15분입니다.
+`900`을 입력하면 단계에 0.9초가 주어집니다.
 
-The conversation mode a prompt-agent node runs under has no editor field on
-the agent node. It rides `extras['mode']` (`chat`, `plan` or `review`) on the
-**Open conversation** node that created the room (default `review`). Setting
-it on an agent step is ignored. The key is matched exactly: any other spelling
-is silently ignored.
+프롬프트 에이전트 노드가 실행되는 대화 모드는 에이전트 노드의 편집기 필드에
+없습니다. 방을 만든 **Open conversation** 노드의 `extras['mode']`(`chat`,
+`plan`, `review`)로 전달됩니다(기본값 `review`). 에이전트 단계에서 설정해도
+무시됩니다. 키는 정확히 일치해야 하며, 다른 표기는 조용히 무시됩니다.
 
-### Bash script
+### Bash 스크립트
 
-Adds **Script**. There are no working-directory or environment fields, because
-neither is configurable:
+**Bash 스크립트**를 추가합니다. 작업 디렉터리나 환경 필드는 없습니다. 둘 다
+구성할 수 없기 때문입니다.
 
-- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
-- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
-  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
-- The script is spawned as the literal executable `bash`, so `bash` must be on
-  the server host's `PATH`. That is a Windows consideration.
+- 한 실행의 모든 bash 단계는 작업 디렉터리 `<cc_root>/pipelines/<runId>/`를
+  공유합니다.
+- `GITHUB_TOKEN`은 자격 증명 저장소에서 주입되므로 `gh`와
+  `git clone https://x-access-token:$GITHUB_TOKEN@…`가 별도 설정 없이
+  동작합니다.
+- 스크립트는 문자 그대로 `bash` 실행 파일로 스폰되므로 서버 호스트의 `PATH`에
+  `bash`가 있어야 합니다. 이는 Windows에서 고려할 사항입니다.
 
-### Router
+### 라우터
 
-A router evaluates a condition and returns a route key; the engine fires only
-the downstream edge whose route key matches and marks the other branches
-skipped.
+라우터는 조건을 평가해 라우트 키를 반환합니다. 엔진은 라우트 키가 일치하는
+다운스트림 엣지만 발화하고 다른 분기는 건너뜀으로 표시합니다.
 
-Selecting a router replaces the **Output key** field with the condition editor.
-Pick one of its four modes:
+라우터를 선택하면 **출력 키** 필드가 조건 편집기로 바뀝니다. 네 가지 모드 중
+하나를 고릅니다.
 
-- **File(s) exist — any** — routes `"true"` when any listed path exists.
-- **Files exist — all** — routes `"true"` only when every listed path exists.
-- **Comparison** — compares a state value against a literal.
-- **Switch** — routes on a state key's value, with a default case.
+- **파일 존재 — 하나라도** — 나열된 경로 중 하나라도 있으면 `"true"`로
+  라우팅합니다.
+- **파일 존재 — 모두** — 나열된 경로가 모두 있을 때만 `"true"`로 라우팅합니다.
+- **비교** — 상태 값을 리터럴과 비교합니다.
+- **스위치** — 상태 키의 값으로 라우팅하며 기본 케이스가 있습니다.
 
-Then set the matching route keys on the outgoing edges (see
-[Wire nodes together](#wire-nodes-together)).
+그런 다음 나가는 엣지에 일치하는 라우트 키를 설정합니다
+([노드 연결하기](#노드-연결하기) 참고).
 
-Boolean `and` / `or` / `not` groups are supported by the body but cannot be
-authored from this form — they need a hand-written predicate tree under
-`extras.predicate`. The full predicate and operator vocabulary is in the
-[pipeline steps reference](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/).
+불리언 `and` / `or` / `not` 그룹은 본문에서 지원하지만 이 양식에서는 작성할
+수 없습니다. `extras.predicate` 아래에 손으로 작성한 술어 트리가 필요합니다.
+전체 술어와 연산자 어휘는
+[파이프라인 단계 레퍼런스](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/)에 있습니다.
 
-### Join
+### 조인
 
-No configuration of its own: it waits for all of its upstream steps.
+자체 구성은 없습니다. 모든 업스트림 단계를 기다립니다.
 
-### Approval gate
+### 승인 게이트
 
-The gate dispatches the approver agent into a hidden conversation with the gate
-prompt and suspends. The approver seeks your decision in the conversation and submits it
-with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
-The decision lands under the output key (default `approval_decision`), so a
-switch router downstream can branch on it.
+게이트는 승인자 에이전트를 게이트 프롬프트와 함께 숨겨진 대화로 디스패치하고
+중단합니다. 승인자는 그 대화에서 결정을 구하고, `submit_output`으로
+`{ "decision": "approved" | "rejected", "reason": "..." }` 형태로 제출합니다.
+결정은 출력 키(기본값 `approval_decision`) 아래에 들어가므로, 다운스트림의
+스위치 라우터가 그것으로 분기할 수 있습니다.
 
-Set **Agent** to the approver and **Prompt** to the gate question. The gate
-resolves through `submit_output` as `{ "decision": "approved" | "rejected",
-"reason": "..." }`. Reviewer (prompt) nodes submit the same way.
+**에이전트**에 승인자를, **프롬프트 템플릿**에 게이트 질문을 설정합니다.
+게이트는 `submit_output`을 통해 `{ "decision": "approved" | "rejected",
+"reason": "..." }` 형태로 해결됩니다. Reviewer (prompt) 노드도 같은 방식으로
+제출합니다.
 
-### Team dispatch
+### 팀 디스패치
 
-Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+**팀 ID**와 **디스패치 모드**를 추가합니다. 피커가 제공하는 모드는 정확히 두
+가지입니다.
 
-- `allParallel` — one task per member, suspends until all complete.
-- `manager` — dispatches the leader, who delegates.
+- `allParallel` — 멤버마다 작업 하나를 실행하고 모두 완료될 때까지 중단합니다.
+- `manager` — 리더를 디스패치하고, 리더가 위임합니다.
 
-Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
-collect each member's result into a list under the output key.
+다른 값이 저장돼 있으면 `allParallel`로 동작합니다. **리듀서**를 `append`로
+설정하면 각 멤버의 결과가 출력 키 아래 목록으로 모입니다.
 
-### For each and Call sub-pipeline
+### For each 및 Call sub-pipeline
 
-**For each** maps over the `items` state key by default (`extras.iterableKey` /
-`extras.itemKey` on the node). It renders its prompt once per item (`{{item}}`
-by default) and dispatches the agent **once** with those prompts concatenated.
-An empty collection completes immediately with an empty list. It is not one
-parallel dispatch per item.
+**For each**는 기본적으로 `items` 상태 키를 매핑합니다(노드의
+`extras.iterableKey` / `extras.itemKey`). 항목마다 프롬프트를 한 번
+렌더링하고(`{{item}}` 기본값), 그 프롬프트를 이어 붙여 에이전트를 **한 번**
+디스패치합니다. 빈 컬렉션은 빈 목록으로 즉시 완료됩니다. 항목마다 병렬로
+디스패치하는 것이 아닙니다.
 
-**Call sub-pipeline** suspends until the child run reaches a terminal state, then
-merges the child's final state under the output key (default `subflow_result`).
-Point it at a child with `extras.templateId`. A template cannot call itself; a
-failed or cancelled child fails the parent step, which then feeds that step's
-retry and continue-on-fail policy.
+**Call sub-pipeline**은 자식 실행이 종료 상태에 도달할 때까지 중단한 뒤, 자식의
+최종 상태를 출력 키(기본값 `subflow_result`) 아래에 병합합니다.
+`extras.templateId`로 자식을 지정합니다. 템플릿은 자기 자신을 호출할 수 없으며,
+실패하거나 취소된 자식은 상위 단계를 실패시킵니다. 그러면 그 단계의 재시도와
+실패 시 계속 정책이 적용됩니다.
 
-## Declare inputs and allow manual runs
+## 입력 선언 및 수동 실행 허용
 
-Both live behind **Manual run** in the editor header.
+둘 다 편집기 헤더의 **수동 실행** 뒤에 있습니다.
 
-1. Press **Manual run**.
-2. Turn on **Allow manual run**. This switch persists immediately — it creates
-   (or deletes) the `manual` trigger row that makes the template appear in the
-   run launcher.
-3. Set **Max parallel runs** if you want a cap (leave empty for unlimited).
-   Extra starts wait in a `queued` state until a slot frees.
-4. Press **Add input** for each form field a manual run should collect:
+1. **수동 실행**을 누릅니다.
+2. **수동 실행 허용**을 켭니다. 이 스위치는 즉시 저장됩니다. 템플릿이 실행
+   선택기에 나타나게 하는 `manual` 트리거 행을 만들거나 삭제합니다.
+3. 상한을 두려면 **최대 병렬 실행 수**를 설정합니다(무제한이면 비워 둡니다).
+   초과 실행은 슬롯이 날 때까지 `queued` 상태로 기다립니다.
+4. 수동 실행이 수집할 폼 필드마다 **입력 추가**를 누릅니다.
 
-| Field             | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| **Key**           | State key the value is stored under; reference it as `{{key}}` |
-| **Label**         | Display label (defaults to the key)                            |
-| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
-| **Options**       | Comma-separated choices, for Select only                       |
-| **Default value** | Pre-filled value                                               |
-| **Placeholder**   | Hint text inside the empty field                               |
-| **Help text**     | Helper text under the field                                    |
-| **Required**      | Whether the run form blocks on an empty value                  |
+| 필드          | 설명                                                   |
+| ------------- | ------------------------------------------------------ |
+| **키**        | 값이 저장되는 상태 키이며, `{{key}}`로 참조합니다      |
+| **레이블**    | 표시 레이블(기본값은 키)                               |
+| **유형**      | 텍스트, 여러 줄 텍스트, 숫자, 토글, 선택, 저장소       |
+| **옵션**      | 쉼표로 구분된 선택지, 선택 유형에서만 사용             |
+| **기본값**    | 미리 채워지는 값                                       |
+| **플레이스홀더** | 빈 필드 안의 힌트 텍스트                            |
+| **도움말**    | 필드 아래의 도움말 텍스트                              |
+| **필수**      | 실행 폼이 빈 값에서 막히는지 여부                      |
 
-A **Repository** input renders a picker over the workspace's repos and populates
-`repo_id`, `repo_local_path`, `repo_full_name` and — when the repo has a GitHub
-remote — `repo_owner` and `repo_name` into the run payload.
+**저장소** 입력은 워크스페이스의 저장소를 고르는 피커를 렌더링하고, `repo_id`,
+`repo_local_path`, `repo_full_name`, 그리고 저장소에 GitHub 원격이 있으면
+`repo_owner`와 `repo_name`을 실행 페이로드에 채웁니다.
 
-5. Press **Save** in the dialog. Input edits are folded into the draft; they
-   persist when you save the template.
+5. 대화상자에서 **저장**을 누릅니다. 입력 편집은 초안에 반영되며, 템플릿을
+   저장할 때 영속화됩니다.
 
-## Save and enable
+## 저장 및 활성화
 
-1. Press **Save** in the editor header. The header shows "Unsaved changes"
-   until you do.
-2. Go back to **Settings → Workspace → Pipeline templates** and check the
-   template's row switch is on. The engine refuses to start a disabled
-   template and a disabled template never appears in the run launcher.
-3. To start it automatically, drag a trigger from the node library onto the
-   canvas — see
-   [Set up pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/).
+1. 편집기 헤더에서 **저장**을 누릅니다. 저장하기 전까지 헤더에는 "저장되지 않은
+   변경 사항"이 표시됩니다.
+2. **설정 → 워크스페이스 → 파이프라인 템플릿**으로 돌아가 템플릿 행의 스위치가
+   켜져 있는지 확인합니다. 엔진은 비활성 템플릿의 시작을 거부하며, 비활성
+   템플릿은 실행 선택기에 절대 나타나지 않습니다.
+3. 자동으로 시작하게 하려면 노드 라이브러리에서 트리거를 캔버스로 끌어다
+   놓습니다.
+   [파이프라인 트리거 설정](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)을
+   참고하십시오.
 
-## Related guides
+## 관련 가이드
 
-- [Run a pipeline manually](/ko-KR/매뉴얼/사용-가이드/파이프라인-실행/)
-- [Set up pipeline triggers](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
-- [Monitor pipeline runs](/ko-KR/매뉴얼/사용-가이드/파이프라인-모니터링/)
-- [Pipeline steps reference](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/)
+- [파이프라인 수동 실행](/ko-KR/매뉴얼/사용-가이드/파이프라인-실행/)
+- [파이프라인 트리거 설정](/ko-KR/매뉴얼/사용-가이드/파이프라인-트리거/)
+- [파이프라인 실행 모니터링](/ko-KR/매뉴얼/사용-가이드/파이프라인-모니터링/)
+- [파이프라인 단계 레퍼런스](/ko-KR/매뉴얼/레퍼런스/파이프라인-단계/)
 
-## Related concepts
+## 관련 개념
 
-- [Pipelines](/ko-KR/매뉴얼/개념/파이프라인/)
+- [파이프라인](/ko-KR/매뉴얼/개념/파이프라인/)

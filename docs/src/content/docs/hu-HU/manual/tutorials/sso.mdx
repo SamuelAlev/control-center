@@ -1,125 +1,140 @@
 ---
-title: Sign your team in with SSO
-description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+title: Csapat bejelentkeztetése SSO-val
+description: Kapcsolja össze az Okta (SAML) szolgáltatást a Control Center szerverével, és vigyen végig egy bejelentkezést az elejétől a végéig.
 slug: hu-HU/kezikonyv/oktatoanyagok/sso
+sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-## What you will build
+## Mit fog felépíteni
 
-By the end of this tutorial, you will have:
+Az oktatóanyag végére a következőkkel rendelkezik majd:
 
-- a SAML connection between your Control Center server and an identity
-  provider (we use Okta as the example),
-- one user provisioned automatically on their first login and
-- a workspace membership policy you chose deliberately.
+- SAML-kapcsolat a Control Center szervere és egy identitásszolgáltató
+  között (a példában az Okta szerepel),
+- egy felhasználó, aki az első bejelentkezésekor automatikusan létrejön, és
+- egy munkaterület-tagsági szabályzat, amelyet Ön választott meg
+  szándékosan.
 
-You will need a server you administer (the **server owner** — the
-install's operator) and an IdP application you can configure. Budget 20
-minutes.
+Szüksége lesz egy szerverre, amelyet Ön igazgat (a **szervertulajdonos** — a
+telepítés üzemeltetője), valamint egy IdP-alkalmazásra, amelyet be tud
+állítani. Szánjon rá 20 percet.
 
-## 1. Open the single sign-on settings
+## 1. Nyissa meg az egyszeri bejelentkezés beállításait
 
-Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen switches between
-**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
-card. Stay on SAML.
+Jelentkezzen be a Control Centerbe, majd nyissa meg a
+**Beállítások → Szerver → Egyszeri bejelentkezés** oldalt. A képernyő a
+**SAML** és az **OpenID Connect** között vált, és van rajta egy
+**Felhasználó-provisioning (SCIM)** kártya is. Maradjon a SAML-nál.
 
-Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only the server owner can edit it.
+Az ezen a képernyőn látható beállítások a teljes szerverre érvényesek:
+egyetlen IdP hitelesíti az összes munkaterület felhasználóit, ezért csak a
+szervertulajdonos szerkesztheti őket.
 
-## 2. Paste the IdP metadata
+## 2. Illessze be az IdP metaadatait
 
-In Okta, open your app's **Sign On** tab and copy the metadata XML (or
-download it and paste the file's contents). Back in Control Center, paste it
-into **IdP metadata XML** and press **Test connection**.
+Az Oktában nyissa meg az alkalmazás **Sign On** fülét, és másolja ki a
+metaadat XML-t (vagy töltse le, és illessze be a fájl tartalmát). A Control
+Centerben illessze be az **IdP-metaadat XML** mezőbe, majd nyomja meg a
+**Kapcsolat tesztelése** gombot.
 
-The toast reports the IdP's sign-on endpoint — proof that the metadata
-parsed, the certificate was read and the server can build a login request
-against it (the test exercises everything short of the browser round-trip).
-If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
-Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on **OpenID Connect** checks your issuer's discovery
-document instead. To also catch an expiring certificate and see whether the
-IdP recognizes Control Center, use the
-[checker in step 6](#6-check-it-from-this-page).
+A felugró értesítés az IdP bejelentkezési végpontját közli — ami azt
+bizonyítja, hogy a metaadat feldolgozása sikerült, a tanúsítvány beolvasható,
+és a szerver képes bejelentkezési kérést építeni rá (a teszt a böngészős
+körfordulón kívül mindent lefed). Ha meghiúsul, az XML nem volt teljes
+`EntityDescriptor` (az Okta SAML fülén ezt „Metadata URL” néven találja;
+nyissa meg az URL-t, és másolja le, amit kiszolgál). Ugyanez a gomb az
+**OpenID Connect** esetében helyette a kibocsátó felfedezési dokumentumát
+ellenőrzi. Ha a lejáróban lévő tanúsítványt is el szeretné kapni, és látni
+szeretné, hogy az IdP egyáltalán felismeri-e a Control Centert, használja a
+[6. lépés ellenőrzőjét](#6-ellenőrzés-erről-az-oldalról).
 
-## 3. Register Control Center at the IdP
+## 3. Regisztrálja a Control Centert az IdP-nél
 
-Press **Copy SP metadata** and hand it to whoever configures the Okta side
-(or read the two values they ask for):
+Nyomja meg az **SP-metaadat másolása** gombot, és adja át annak, aki az Okta
+oldalt konfigurálja (vagy olvassa fel a két értéket, amit kérdez):
 
 - **ACS URL**: `https://<your-server>/saml/acs`
 - **Entity ID**: `https://<your-server>/saml`
 
-The URLs derive from the origin your users' browsers reach. If the server
-runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
-explicitly in the **SP entity ID** field.
+Az URL-ek abból az originből származnak, amelyet a felhasználók böngészője
+elér. Ha a szerver alagút vagy fordított proxy mögött fut, ügyeljen rá, hogy
+az origin stabil legyen
+(Beállítások → Szerver → Kapcsolat és állapot → Szerver megosztása mutatja a nyilvános URL-t) — vagy rögzítse az
+entity ID-t kifejezetten az **SP entity ID** mezőben.
 
-:::note[Behind NAT?]
-SAML login does **not** need a public IP or domain: the IdP never connects
-to your server — the user's browser carries the round-trip, so localhost,
-LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+:::note[NAT mögött?]
+A SAML-bejelentkezéshez **nem** kell nyilvános IP-cím vagy domain: az IdP
+soha nem kapcsolódik a szerveréhez — a körfordulót a felhasználó böngészője
+viszi, így a localhost, a LAN, a VPN, a Tailscale vagy egy alagút is működik.
+Két dolgot érdemes szem előtt tartani:
 
-- the origin the browser uses must **match** the ACS URL / entity ID
-  registered at the IdP (pin the entity ID if users reach the server under
-  more than one origin),
-- **SCIM provisioning is the exception** — the IdP calls your server
-  directly, so it needs a tunnel or public URL
-  ([provision users with SCIM](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim)).
+- a böngésző által használt originnek **egyeznie kell** az IdP-nél
+  regisztrált ACS URL-lel / entity ID-vel (rögzítse az entity ID-t, ha a
+  felhasználók több origon keresztül érik el a szervert),
+- **a SCIM-provisionálás a kivétel** — az IdP közvetlenül hívja a szerverét,
+  ezért alagútra vagy nyilvános URL-re van szüksége
+  ([felhasználók provisionálása SCIM-mel](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim)).
   :::
 
-## 4. Choose what a login grants
+## 4. Válassza ki, mit engedélyez egy bejelentkezés
 
-Two policies decide what a first login does:
+Két szabályzat dönti el, mit tesz az első bejelentkezés:
 
-- **Add users to every workspace on first login** — leave on for a
-  single-team deployment where SSO equals trust. Turn it off when several
-  teams or customers share the server: each newcomer then needs an explicit
-  workspace invite, which is the safer default.
-- **Provision unknown users on first login** — on by default; turn it off to
-  reject anyone whose account does not already exist.
+- **Felhasználók hozzáadása minden munkaterülethez az első bejelentkezéskor** —
+  hagyja bekapcsolva egyetlen csapatot kiszolgáló telepítésnél, ahol az SSO
+  a bizalmat jelenti. Kapcsolja ki, ha több csapat vagy ügyfél osztozik a
+  szerveren: ilyenkor minden új belépőnek kifejezett munkaterület-meghívóra
+  van szüksége, ami a biztonságosabb alapértelmezés.
+- **Ismeretlen felhasználók provisionálása az első bejelentkezéskor** —
+  alapértelmezés szerint be van kapcsolva; kapcsolja ki, ha el szeretné
+  utasítani mindazokat, akiknek még nincs fiókjuk.
 
-Optionally map an attribute carrying group names (Okta's is commonly
-`groups`) and translate groups to roles with the map — for example
-`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+Opcionálisan leképezhet egy csoportneveket hordozó attribútumot (az Okta
+esetében ez általában a `groups`), és a leképezéssel csoportokat fordíthat
+szerepekre — például `{"platform-leads": "admin"}`. Az SSO soha nem adhatja
+meg a tulajdonos szerepet.
 
-## 5. Enable and take a login
+## 5. Kapcsolja be, és vigyen végig egy bejelentkezést
 
-Turn on **Use SAML for sign-in**, press **Save connection**, then open a
-private browser window at `https://<your-server>/saml/login`. Sign in at
-Okta and you land back on the web client — logged in, with your account
-created and its membership granted per the policy you chose.
+Kapcsolja be az **SAML használata a bejelentkezéshez** lehetőséget, nyomja meg
+a **Kapcsolat mentése** gombot, majd nyisson egy privát böngészőablakot a
+`https://<your-server>/saml/login` címen. Jelentkezzen be az Oktánál, és
+visszakerül a webes kliensre — bejelentkezve, a fiókja létrejött, a tagsága
+pedig a választott szabályzat szerint megadva.
 
-The same entry point appears on the web connect screen (**Sign in with
-SAML**) the moment you type the server address — the form adapts to what
-the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
-The button opens sign-in in a **new tab**; when the round-trip completes,
-the waiting tab picks the session up automatically. The desktop
-server-setup screen does the same: type the server URL, a **Sign in with
-SAML** button appears that opens your browser and the app logs in when the
-round-trip completes.
+Ugyanez a belépési pont jelenik meg a webes csatlakozási képernyőn
+(**Bejelentkezés ezzel: SAML**), amint beírja a szerver címét — az űrlap
+alkalmazkodik ahhoz, amit a szerver kínál (OpenID Connect esetén a
+**Bejelentkezés ezzel: OpenID Connect** jelenik meg). A gomb **új lapon**
+nyitja meg a bejelentkezést; amikor a körforduló befejeződik, a várakozó lap
+automatikusan átveszi a munkamenetet. Az asztali szerverbeállító képernyő
+ugyanezt teszi: írja be a szerver URL-jét, megjelenik egy **Bejelentkezés
+ezzel: SAML** gomb, amely megnyitja a böngészőt, és az alkalmazás
+bejelentkezik, amikor a körforduló befejeződik.
 
-## 6. Check it from this page
+## 6. Ellenőrzés erről az oldalról
 
-Before you roll SSO out, or when a login fails, check the pieces here. The
-checker runs entirely in your browser: it reads the metadata you paste in
-this tab and applies the same rules as the server. Given your server
-address, it also asks that server whether SAML sign-in is on.
+Mielőtt bevezetné az SSO-t, vagy amikor egy bejelentkezés meghiúsul,
+ellenőrizze itt az egyes elemeket. Az ellenőrző teljes egészében a
+böngészőjében fut: beolvassa az ezen a lapon beillesztett metaadatot, és
+ugyanazokat a szabályokat alkalmazza, mint a szerver. Ha megadja a szerver
+címét, azt is megkérdezi a szervertől, hogy be van-e kapcsolva a
+SAML-bejelentkezés.
 
-It catches what **Test connection** in the app cannot see: a signing
-certificate close to expiry, an IdP that insists on signed requests, and,
-with the test sign-in, whether the IdP recognizes Control Center at all.
+Azokat is elkapja, amelyeket az alkalmazás **Kapcsolat tesztelése** funkciója
+nem lát: a lejárathoz közeli aláíró tanúsítványt, a szigorúan aláírt kéréseket
+követelő IdP-t, valamint a próbabejelentkezéssel azt, hogy az IdP egyáltalán
+felismeri-e a Control Centert.
 
 <SsoCheck kind="saml" />
 
-## Where to go next
+## Következő lépések
 
-- Give your IdP lifecycle control too:
-  [provision and deprovision users with SCIM](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim).
-- Your IdP speaks OpenID Connect instead of SAML?
-  [Connect an OpenID Connect provider](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc).
-- Curious what the browser round-trip actually verifies?
-  [How single sign-on works](/hu-HU/kezikonyv/fogalmak/egyszeri-bejelentkezes).
+- Adjon életciklus-vezérlést az IdP-jének is:
+  [felhasználók provisionálása és deprovisionálása SCIM-mel](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim).
+- Az IdP-je inkább OpenID Connectet beszél a SAML helyett?
+  [OpenID Connect szolgáltató csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc).
+- Kíváncsi, mit ellenőriz valójában a böngészős körforduló?
+  [Hogyan működik az egyszeri bejelentkezés](/hu-HU/kezikonyv/fogalmak/egyszeri-bejelentkezes).

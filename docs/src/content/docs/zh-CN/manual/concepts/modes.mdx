@@ -1,89 +1,90 @@
 ---
-title: Modes
-description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+title: 模式
+description: 为什么承载模式的是空间而不是智能体；四种模式各自保证什么；以及这项保证在哪些地方是结构性的，而不只是靠提示词。
 slug: zh-CN/手册/概念/模式
+sourceHash: 4aaf65c4a8ec6773cd85b47e3699dd48ca0430a4
 ---
 
-## What a mode is
+## 模式是什么
 
-A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+模式是**空间**的属性，以空间行上的一列存储。空间内的每一段对话都共享它，子对话也不例外——子对话和其他任何对话一样，继承其所属空间的模式。因此，同一个智能体可以同时在不同的空间里处于不同的模式；切换某个空间的模式会改变下一轮发生的事情，却完全不触及该智能体。
 
-There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+一共只有四种：`chat`、`review`、`plan`、`orchestrate`。枚举本身不携带任何策略。一个模式所保证的一切只声明一次，写在**能力配置**里，每一层强制执行机制都从它投影出来：
 
-1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
-2. **Required output verb** — what the run must call to have delivered anything.
-3. **Denied effect classes** — what the action guard refuses outright.
-4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
-5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+1. **工具面**——在该模式下究竟存在哪些工具，表述为最高审批层级、一份允许列表、一份拒绝列表，以及一组被拒绝的效果类别。
+2. **必需的输出动词**——一次运行必须调用什么，才算交付了东西。
+3. **被拒绝的效果类别**——操作护栏会直接拒绝哪些东西。
+4. **工作树姿态**——工作树是否可写。它是通过把会改变状态的工具从工具面中剥离来强制执行的，正因如此它才在所有主机上都成立。若主机带有操作系统沙盒，同一姿态还会刻出文件系统的写入规则——只读模式以只读方式挂载工作树——但那只是这份保证的第二份副本，真正在干活的并不是它。
+5. **系统提示词区块**——一段_生成的_能力前言，源自实际物化出来的工具列表，再加上手写的指导。
 
-Every enforcement layer projects from that one profile, so the tool surface, the guard, the worktree posture and the prompt cannot disagree.
+每一层强制执行机制都从这一份配置投影，因此工具面、护栏、工作树姿态和提示词不可能相互矛盾。
 
-## The four modes
+## 四种模式
 
-### Chat — displayed as "Agent"
+### 聊天——显示为“Agent”
 
-The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+这是默认模式，也是唯一没有任何额外约束的模式：直到执行层级的完整工具面、可写的工作树、没有被拒绝的效果类别，也没有完成契约。用它来实现功能、修复缺陷、询问代码库相关问题，以及任何临时任务。
 
-Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+注意这个标签：在输入框中，该模式显示为 **“Agent”**，而不是“聊天”。
 
-### Plan — read-only, one deliverable
+### 计划——只读，单一交付物
 
-Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+计划模式把工作树设为只读，并把写入工具从工具面中彻底剥离，因此这项限制是结构性的，而不是靠指令说出来的。智能体读取、搜索、调研，并且只交付一件东西：一次 `submit_plan` 调用，携带一张带类型的依赖图——一个目标，外加若干节点，每个节点都有键、标题、描述，以及它所依赖的节点键。
 
-The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back to agent mode.
+计划在对话中显示为一行紧凑的条目，并在旁边的标签页里打开 Plan Studio。批准它会把这幅图编译成一次编排、运行生成出来的工作，并把发起该计划的空间切回智能体模式。
 
-If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+如果一次计划模式运行结束时始终没有调用 `submit_plan`，循环会先注入一条提醒，说明在该调用成功之前计划并不存在。这条提醒明确授权一个诚实的“这里不需要计划”的退出方式，因为计划模式是一项空间设置，在里面问一个普通问题不该被迫产出一份假计划。
 
-:::note[An unmet contract is not a failed run]
-A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/).
+:::note[未兑现的契约不算运行失败]
+没有产出计划的运行仍会以 `completed` 状态记录——进程干净退出了。真相落在这次运行的存活状态（`empty`）、错误类别（`silentRun`），以及一段指明未产出内容的摘要上。参见[智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)。
 :::
 
-There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+还有第二种、彼此独立的退出方式：`exit_plan_mode`。它是一道硬性审批闸门，而不是输出动词——调用它而不调用 `submit_plan` 的智能体什么也没有交付。第一次调用会开启一项持久的 `plan_exit` 审批并返回 `pending`，空间保持只读；重复调用仍然是 `pending`，而不会开启第二道闸门。只有在审批获批之后，后续调用才会把空间切到聊天模式。拒绝则允许智能体新开一个请求，以获得修订后的计划。
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+要自己离开计划模式，切换输入框中的下拉菜单（或按 Shift+Tab）。`exit_plan_mode` 由 MCP 工具 `decide_approval` 裁决。收件箱里的“智能体审批”行是另一回事：它们来自正在运行的智能体，是逐轮的确认提示。
 
-### Review — read-only, no contract
+### 审查——只读，没有契约
 
-Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+审查模式用于 PR 审查。它把工作树设为只读，把工具面封顶在执行层级之下，并应用一份精心挑选的允许列表，涵盖审查、工单和沟通类工具。为某个 pull request 打开的空间会自动以审查模式创建。
 
-The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+智能体的输出是结构化的发现项——**审查节点**——以及审查定稿时的一份**结论**。一个节点带有类型（`bug`、`suggestion`、`recommendation`、`question` 或 `ticket`）、从 P0（阻断发布）到 P3（有则更好）的优先级、一个自评置信度、一个可选的锚点（文件加一个行范围；全仓库范围的笔记没有锚点），以及一个生命周期状态：一旦有同行——绝不是作者本人——确认，它就从 `open` 变为 `consensusReady`。优先级或置信度缺失、或超出范围的发现项，会在读边界被丢弃，而不会污染结论。
 
-The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+结论是 ship、hold 或 block，而折入其中的各轴结果只会让它变得_更_严厉：受门控的轴失败会强制为 `block`，受门控的轴无法运行则至少强制为 `hold`。证据缺失永远不会让一道门控变绿。
 
-Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+与计划和编排不同，审查**没有完成契约**。发现项通过 `add_review_node` 积累，并由 `finalize_review` 发布，两者都完全可以被调用零次——以审查模式运行的流水线智能体，可能只是来完成一张工单的。
 
-### Orchestrate — read-only, proposes a team
+### 编排——只读，提议一支团队
 
-Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. The prompt names only the tools on the surface, so the model does not spend turns narrating hiring or ticket work it cannot call.
+编排模式把一个目标变成一份属于整支团队的计划。与计划模式一样，它是只读的，不能写文件；在研究工具面之上，它有一个唯一的特权动词 `propose_orchestration`，会产出一份结构化提案：角色、一棵子工单树、一个综合步骤和一份预算。提示词只列出工具面上的工具，因此模型不会把轮次花在讲述它无法调用的招聘或工单工作上。
 
-Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/zh-CN/手册/概念/编排/).
+在你批准之前，提案里的任何内容都不会执行。批准时，一个确定性的物化器会聘用智能体，创建工单和一个项目，并运行一条生成的流水线。批准仅限操作者：没有对应的 MCP 工具，因此智能体可以提议，但永远不能批准自己的计划。由智能体发起的重新提议受两分钟冷却时间的限制，因此连续的重新规划会被拒绝，并被要求合并。参见[编排](/zh-CN/手册/概念/编排/)。
 
-## Two rules worth knowing
+## 两条值得了解的规则
 
-**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike, so the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+**模式自己的输出动词永远不会被拒绝。** `submit_plan` 和 `propose_orchestration` 被钉进工具面，并一律越过工具过滤器、审批闸门和操作护栏，获得预先批准，因此按空间生效的自主程度旋钮无法让某个模式的交付物沉默。harness 的 `ask_user` 出于同样的原因被钉住：它_正是_一次运行触达操作者的方式，对它加门控会让一次需要提问的运行死锁。它属于读取层级，因此每种只读模式都保留它；它还豁免于审批包装层——在没有连接任何审批者时，提示词前面再加一层提示词会直接失败关闭，而这会剥夺智能体提问这一行为。
 
-**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+**只读模式不会拒绝网络访问或密钥。** 审查、计划和编排所拒绝的效果类别，都是会改变世界的那些：删除文件、写入工作树之外、创建提交、推送到远程仓库、创建和发布 PR、写入外部跟踪器、安装软件包、运行进程、更改工作区结构以及操控隔离舱。网络出口和密钥访问则有意保持各自的默认值——研究本来就是只读模式的全部意义。
 
-## Choosing and changing a mode
+## 选择和更改模式
 
-The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+输入框中的模式下拉菜单提供 **三个** 选项：Agent（聊天模式）、Plan 和 Orchestrate。`review` **不能由用户选择**——它由系统在创建 PR 审查空间时设置，也由流水线步骤设置。
 
-A pipeline node that **opens a space** can pin that room's mode with an `extras['mode']` key (`chat`, `review`, or `plan`). The key is exact-match: any other spelling — including `orchestrate` — is silently ignored and the room gets the body's default (`review` on the create-space body). An agent step joins a room it did not create and does not re-permission it.
+一个**打开空间**的流水线节点，可以用 `extras['mode']` 键（`chat`、`review` 或 `plan`）固定该空间的模式。该键要求精确匹配：其他任何写法——包括 `orchestrate`——都会被静默忽略，空间会拿到请求体的默认值（在创建空间的请求体上是 `review`）。智能体步骤加入的是它没有创建的空间，不会重新设置其权限。
 
-Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+解析本身很简单。调度器读取空间的 `mode` 列；不带空间的派发——一次性运行、CLI 调用，或来自另一个工作区的空间 id（它根本不在这个工作区的数据库文件里）——会解析为 `chat`。更改模式从下一轮开始生效。
 
-## Where the guarantee actually holds
+## 这项保证真正成立的地方
 
-A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+模式的工具面由**内置 harness** 构建并强制执行。它是唯一能把工具变得不可见、而不只是拒绝调用，能在每次调用运行前加以门控，并能观察完成契约的传输通道。
 
-On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`. Claude honours that by convention; its own read, write, edit and shell tools run unseen. For that transport the mode is guidance, not a Control Center boundary — see [The agent model](/zh-CN/手册/概念/智能体模型/).
+在 Claude Code 传输通道上，非聊天的模式会以 `--permission-mode plan` 传入。Claude 只是按惯例遵守这一点；它自己的读取、写入、编辑和 shell 工具都在视野之外运行。对该传输通道而言，模式只是指导，而不是 Control Center 的边界——参见[智能体模型](/zh-CN/手册/概念/智能体模型/)。
 
-The allow-lists constrain write-tier-and-above tools. The built-in harness's read tier still reaches tools no list names; on Claude Code, a tool the allow-list omits is refused whether or not the server has it.
+允许列表约束的是写入层级及以上的工具。内置 harness 的读取层级仍能触达没有任何列表点名的工具；而在 Claude Code 上，允许列表未收录的工具会被拒绝，无论服务器是否提供它。
 
-## Related concepts
+## 相关概念
 
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/): where the mode is resolved and projected
-- [The agent model](/zh-CN/手册/概念/智能体模型/): which transports can enforce a mode
-- [Guardrails](/zh-CN/手册/概念/护栏/): the effect-class policy a mode's preset feeds into
-- [Orchestration](/zh-CN/手册/概念/编排/): what an approved orchestrate proposal does
-- [Use plan mode](/zh-CN/手册/操作指南/计划模式/): the practical walkthrough
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)：模式在哪里被解析并投影
+- [智能体模型](/zh-CN/手册/概念/智能体模型/)：哪些传输通道能强制执行模式
+- [护栏](/zh-CN/手册/概念/护栏/)：模式的预设所汇入的效果类别策略
+- [编排](/zh-CN/手册/概念/编排/)：一项获批的编排提案会做什么
+- [使用计划模式](/zh-CN/手册/操作指南/计划模式/)：实操演练

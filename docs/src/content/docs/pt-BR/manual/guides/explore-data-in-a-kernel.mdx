@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Explorar dados em um kernel persistente
+description: Dê a um agente um interpretador Python ou JavaScript que mantém suas variáveis entre chamadas, desenha gráficos no chat e pode chamar suas próprias ferramentas de dentro de uma célula.
 slug: pt-BR/manual/guias/explorar-dados-em-kernel
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Este guia mostra como fazer um agente carregar algo caro uma única vez e depois fazer várias perguntas sobre esse algo, em vez de pagar o carregamento a cada pergunta.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+A ferramenta `eval` executa um **interpretador persistente**. Variáveis, importações e dados carregados sobrevivem entre chamadas.
 
-## Why not just run a script
+## Por que não apenas rodar um script
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Um `python -c` pontual paga a preparação a cada pergunta. Carregar um dataframe custa segundos e cem megabytes; plotá-lo custa milissegundos. Quando cada pergunta custa o carregamento, um agente faz menos perguntas do que deveria — e cada resposta volta como texto que ele precisa analisar de novo.
 
-## Load once, then ask
+## Carregue uma vez, depois pergunte
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> Carregue `data/runs.csv` e me diga a duração p95 por agente.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+A última expressão é ecoada como um notebook faz, então `len(runs)` informa a contagem de linhas sem um `print`.
 
-Then, in a **separate call**:
+Depois, em uma **chamada separada**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` continua carregado. Um frame do pandas volta renderizado como tabela, e não como um `repr`.
 
-## Charts land in the chat
+## Os gráficos aparecem no chat
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+As figuras são capturadas depois da célula e devolvidas como imagens, que a transcrição renderiza. Você vê o gráfico; o agente também.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+As figuras são fechadas após a captura. Uma figura não coletada seria redesenhada e reenviada pela *próxima* célula também, então uma sessão de cinco células emitiria o primeiro gráfico cinco vezes.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Sem Jupyter, sem pip, sem etapa de instalação]
+O executor é simplesmente `python3 -u`, falando um protocolo de linhas em stdio. Ele mesmo implementa `display()`, o despacho de pacotes MIME e a captura de figuras, então funciona em qualquer Python 3 — inclusive dentro de um sandbox onde instalar é exatamente o que o sandbox existe para impedir.
 :::
 
-## The idioms you would type anyway
+## As sintaxes que você digitaria de qualquer forma
 
-These are rewritten into plain code rather than erroring:
+Estas são reescritas como código comum em vez de gerar erro:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| Você digita | O que acontece                                       |
+| ----------- | ---------------------------------------------------- |
+| `%pip install x` | Executa o pip e então **limpa o cache de módulos** para que o próximo `import` o veja |
+| `%cd path`  | `os.chdir`                                           |
+| `!command`  | Um subprocesso capturado                             |
+| `%%bash`    | O resto da célula como um script de shell            |
+| `%%timeit`  | 1000 execuções cronometradas                         |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+A remoção de cache do `%pip` é a que importa: instalar em um interpretador vivo não faz nada por um módulo que já foi importado, então sem ela a versão que você acabou de instalar não é a que está rodando.
 
-## Calling your own tools from inside a cell
+## Chamar suas próprias ferramentas de dentro de uma célula
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)` entra novamente no registro de ferramentas do próprio agente. Isso significa que uma célula pode se distribuir por cem arquivos, ou delegar por meio de `task`, sem que o modelo gaste um turno por item.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[A ponte não contorna as suas barreiras]
+Uma chamada via ponte é resolvida contra o **mesmo** registro de ferramentas que uma chamada emitida pelo modelo, então a política de `ActionClass`, as solicitações de aprovação e todos os wrappers se aplicam de forma idêntica. Uma ponte que passasse por cima do registro seria um buraco com exatamente o formato de "escreva um one-liner em Python".
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Uma chamada via ponte **suspende o timeout da célula** enquanto está pendente. O orçamento mede a inatividade, não o tempo de relógio — uma célula que se distribui para subagentes e espera quatro minutos não está travada, e matá-la no meio da distribuição perderia todo o estado do kernel.
 
-## Starting over
+## Começar de novo
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Descarta o interpretador e inicia um novo, limpo. Tudo o que foi carregado se perde, e é justamente essa a ideia.
 
-## Where the kernel runs
+## Onde o kernel roda
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+No **recinto** da conversa quando ela tem um; caso contrário, no host.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Um interpretador persistente conduzido por um modelo que lê um repositório não confiável é exatamente para isso que existe a execução apenas em recinto: uma chamada `bash` pontual ao menos termina, enquanto um kernel é um shell que se lembra.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/pt-BR/manual/guias/usar-rigs/).
+Ele **não** inicializa um recinto para chegar até lá — a mesma regra que impede uma aba de rig de iniciar automaticamente. Se você quer o kernel dentro de um recinto, abra primeiro o shell da conversa. Consulte [Dar a um agente uma máquina para testar](/pt-BR/manual/guias/usar-rigs/).
 
-## Limits
+## Limites
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Uma célula por vez por kernel.** Duas células disputando um mesmo interpretador são duas metades de dois programas intercaladas em um único namespace.
+- **A saída tem limite.** Uma célula em um loop de `print` é truncada em vez de poder encher a janela de contexto.
+- **Quatro imagens por célula.** Um loop de plotagem pode emitir uma figura por iteração, e cada imagem é um custo fixo alto na requisição que a carrega.
+- **O kernel morre com a execução.** Um kernel que ainda segura um dataframe depois que a conversa terminou é um vazamento.
 
-## Related
+## Relacionados
 
-- [Sandbox and security](/pt-BR/manual/conceitos/sandbox-e-seguranca/) — what "enclosed" means here
-- [Give an agent a machine to test on](/pt-BR/manual/guias/usar-rigs/) — opening the enclosure
-- [Built-in agent tools](/pt-BR/manual/referencia/ferramentas-de-agente/) — the arguments
+- [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/) — o que "dentro do recinto" significa aqui
+- [Dar a um agente uma máquina para testar](/pt-BR/manual/guias/usar-rigs/) — abrir o recinto
+- [Ferramentas de agente integradas](/pt-BR/manual/referencia/ferramentas-de-agente/) — os argumentos

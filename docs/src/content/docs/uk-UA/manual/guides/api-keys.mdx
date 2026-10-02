@@ -1,115 +1,122 @@
 ---
-title: Manage API keys
-description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+title: Керувати API-ключами
+description: Де зберігаються кожні облікові дані — у вашому обліковому записі користувача на сервері, на самому сервері чи в зовнішньому CLI — і як їх задати, змінити та видалити.
 slug: uk-UA/керівництво/практичні-посібники/api-ключі
+sourceHash: 6929d9f617d12a8fb7a55da5e5e6a4ad08671338
 ---
 
-This guide shows you where each credential Control Center uses is stored and how
-to change it.
+Цей посібник показує, де зберігаються кожні облікові дані, які використовує
+Control Center, і як їх змінити.
 
-**Nothing is stored on the machine you are typing on.** Every credential lives
-on the server; which one answers a given request depends on whether there is a
-human behind it.
+**Нічого не зберігається на машині, з якої ви працюєте.** Кожні облікові дані
+живуть на сервері; які саме відповідають на конкретний запит, залежить від
+того, чи стоїть за ним людина.
 
-| Credential                           | Stored                                                    | Who uses it                                                     |
-| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
-| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
-| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
-| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
+| Облікові дані                                | Де зберігаються                                                                 | Хто їх використовує                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Ваші облікові дані хостингу коду / тікетингу | Файл секретів 0600 на сервері, прив’язаний до ідентифікатора вашого користувача | Усе, що ви просите: поверхня PR, запуски ваших агентів, ваші образи           |
+| Ідентичність застосунку сервера              | Той самий файл, плюс `server_settings` для несекретних даних                    | Робота, якої не просила людина: вебхуки, опитування PR, синхронізація тікетів |
+| Ключі постачальників моделей і токени OAuth  | Власне сховище облікових даних сервера                                          | Вбудований адаптер, для кожного робочого простору в інсталяції                |
+| Токени ботів Slack                           | `<dataDir>/<workspaceId>/chat_credentials/` на сервері                          | Чат-міст для цього робочого простору                                          |
+| Облікові дані зовнішніх CLI                  | Те, що використовує цей CLI                                                     | Claude Code, на хості сервера                                                 |
 
-## Two GitHub credentials, and they answer different questions
+## Два типи облікових даних GitHub, які відповідають на різні питання
 
-- **Yours**, from signing in (device flow) or pasting a token. It is what every
-  request made *on your behalf* uses, so a comment posted for you carries your
-  name. Another member cannot read it, and they connect their own
-- **The server's**, from the GitHub App the operator registered. It answers
-  everything with no caller — so forge access does not disappear when one
-  person leaves or rotates a token
+- **Ваші** — з входу (device flow) або вставленого токена. Саме їх використовує
+  кожен запит, зроблений *від вашого імені*, тож коментар, опублікований за вас,
+  несе ваше ім’я. Інший учасник не може їх прочитати й підключає власні
+- **Серверні** — від GitHub App, який зареєстрував оператор. Вони відповідають
+  на все, де немає викликача, — тож доступ до хостингу коду не зникає, коли
+  хтось іде чи змінює токен
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's in **Provider apps** at **Settings → Server → Single
-sign-on**. See [Set up GitHub integration](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
-and [Create the GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/).
+Ваші задаються в картці **Хостинг коду** за шляхом **Налаштування → Робочий
+простір → Профіль і ідентичність**; серверні — у **Застосунки провайдера** за
+шляхом **Налаштування → Сервер → Єдиний вхід**. Див. [Налаштувати інтеграцію
+GitHub](/uk-UA/керівництво/практичні-посібники/інтеграція-github/) і [Створити
+GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/).
 
-:::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
-first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+:::note[Існує також екран, доступний лише за URL]
+`/workspaces/<workspaceId>/api-keys` показує ті самі дві картки, що й перший
+крок онбордингу. Він **не має жодного запису в навігації інтерфейсу**; до нього
+можна дістатися лише, ввівши URL. Натомість скористайтеся Налаштування →
+Робочий простір → Профіль і ідентичність.
 :::
 
-## Set model provider keys
+## Задайте ключі постачальників моделей
 
-The built-in adapter authenticates providers itself and those credentials live
-on the server.
+Вбудований адаптер сам автентифікує провайдерів, і ці облікові дані зберігаються
+на сервері.
 
-1. Go to **Settings → Server → Model providers**
-2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
-   API key for Anthropic and the rest
+1. Перейдіть до **Налаштування → Сервер → Постачальники моделей**
+2. Прокрутіть до **Провайдери й моделі**
+3. Підключіть провайдера — OAuth у браузері для OpenAI, Codex, Cursor і Kimi
+   Code; API-ключ для Anthropic та решти
 
-See [Manage adapters and models](/uk-UA/керівництво/практичні-посібники/адаптери/) for the full list and
-for adding a custom endpoint.
+Повний список і додавання власного ендпоінта див. у [Керувати адаптерами та
+моделями](/uk-UA/керівництво/практичні-посібники/адаптери/).
 
-These credentials are **host-global**: one key serves every workspace on the
-install. OAuth tokens are refreshed before they expire.
+Ці облікові дані **глобальні для хоста**: один ключ обслуговує кожен робочий
+простір в інсталяції. Токени OAuth оновлюються до завершення їхнього терміну дії.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Зовнішні CLI адаптерів тримають власні облікові дані у власній конфігурації на
+хості сервера — Control Center ними не керує. Автентифікуйте Claude Code так, як
+каже його власна документація, на машині, де працює `cc_server`.
 
-The per-adapter **Environment variables** dialog looks like a place to put a key
-for one of them, but it is not: it writes to your device, while the server reads
-its own copy and nothing bridges the two. See
-[Manage adapters and models](/uk-UA/керівництво/практичні-посібники/адаптери/).
+Діалог **Змінні середовища**, що належить окремому адаптеру, виглядає як місце,
+де можна покласти ключ для одного з них, але це не так: він пише на ваш
+пристрій, а сервер читає власну копію, і ніщо ці дві не з’єднує. Див.
+[Керувати адаптерами та моделями](/uk-UA/керівництво/практичні-посібники/адаптери/).
 
-## Connect a ticketing vendor
+## Підключіть провайдера тікетів
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and the credential for it. Choosing **Local** hides the
-credential row — local tickets live in this server's own database and have
-nothing to authenticate to.
+Картка **Тікетинг** за шляхом **Налаштування → Робочий простір → Загальні**
+містить обидві половини одного рішення: у якого провайдера живуть ваші тікети і
+які облікові дані для нього. Вибір **Локально** ховає рядок облікових даних —
+локальні тікети живуть у власній базі даних цього сервера, і автентифікуватися
+їм ні до чого.
 
-Your key is stored on the server against your user id, like the forge one. The
-server keeps its own Linear key separately (**Provider apps**), which is what
-ticket sync runs on when no human asked. A key an agent receives is only
-injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/uk-UA/керівництво/практичні-посібники/інтеграція-linear/).
+Ваш ключ зберігається на сервері з прив’язкою до ідентифікатора вашого
+користувача, як і ключ хостингу коду. Сервер окремо тримає власний ключ Linear
+(**Застосунки провайдера**) — саме на ньому працює синхронізація тікетів, коли
+її не просила людина. Ключ, який отримує агент, вставляється лише тоді, коли
+агент має можливість **Дозволити виклики ticketing API**. Див. [Налаштувати
+інтеграцію Linear](/uk-UA/керівництво/практичні-посібники/інтеграція-linear/).
 
-## Rotate or revoke
+## Змініть або відкличте
 
-- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
-  the new token. Revoke the old one on GitHub
-- **The server's app**: generate a new private key or client secret on the app's
-  GitHub page, paste it in **Provider apps** and press **Test**
-- **A model provider**: on its row, sign out (OAuth) or remove the key, then
-  connect again
-- **Slack**: re-paste the tokens in the connect dialog. See
-  [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
+- **Ваші облікові дані GitHub**: натисніть **Від’єднатися**, потім увійдіть
+  знову або вставте новий токен. Відкличте старий на GitHub
+- **Застосунок сервера**: згенеруйте новий приватний ключ або клієнтський секрет
+  на сторінці застосунку в GitHub, вставте його в **Застосунки провайдера** і
+  натисніть **Тест**
+- **Постачальник моделей**: у його рядку вийдіть (OAuth) або видаліть ключ, потім
+  підключіть знову
+- **Slack**: вставте токени заново в діалозі підключення. Див. [Налаштувати
+  інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
 
-## Troubleshooting
+## Усунення проблем
 
-### The PR list is empty but my token works in `curl`
+### Список PR порожній, але мій токен працює в `curl`
 
-Check the **Code hosting** row's subtitle. If it names another source ("via this
-server's app", "from the environment"), the credential you are testing is not
-the one answering — yours was not saved.
+Перевірте підзаголовок рядка **Хостинг коду**. Якщо там названо інше джерело
+(«через застосунок цього сервера», «із середовища»), то облікові дані, які ви
+перевіряєте, — не ті, що відповідають: ваші не збереглися.
 
-### The token is accepted but later requests fail
+### Токен приймається, але наступні запити не проходять
 
-The token is probed as it is stored, so the row names the account behind it —
-but only the account, not the scopes. A token with too few scopes connects and
-then fails individual requests. Check the scopes and the expiry:
+Токен перевіряють таким, як він збережений, тож рядок називає обліковий запис за
+ним — але лише запис, не області доступу. Токен із надто вузькими областями
+доступу підключається, а потім не проходить окремі запити. Перевірте області
+доступу та термін дії:
 
 ```bash
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 ```
 
-## Related guides
+## Пов’язані посібники
 
-- [Set up GitHub integration](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
-- [Create the GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)
-- [Manage adapters and models](/uk-UA/керівництво/практичні-посібники/адаптери/)
-- [Set up Slack integration](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
-- [Set up Linear integration](/uk-UA/керівництво/практичні-посібники/інтеграція-linear/)
+- [Налаштувати інтеграцію GitHub](/uk-UA/керівництво/практичні-посібники/інтеграція-github/)
+- [Створити GitHub App](/uk-UA/керівництво/практичні-посібники/github-app/)
+- [Керувати адаптерами та моделями](/uk-UA/керівництво/практичні-посібники/адаптери/)
+- [Налаштувати інтеграцію Slack](/uk-UA/керівництво/практичні-посібники/інтеграція-slack/)
+- [Налаштувати інтеграцію Linear](/uk-UA/керівництво/практичні-посібники/інтеграція-linear/)

@@ -1,59 +1,60 @@
 ---
-title: Refactor code structurally
-description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+title: Refaktor kod secara struktur
+description: Minta ejen mencari dan menulis semula kod mengikut bentuk dan bukan mengikut teks, serta semak perubahan itu sebelum ia mendarat.
 slug: ms-MY/manual-pengguna/panduan-cara/refaktor-struktur
+sourceHash: 8cc7571ce28b592247a814fe3603f4776347d3e4
 ---
 
-This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+Panduan ini menunjukkan cara meminta ejen membuat perubahan mekanikal yang luas — codemod, penghijrahan API secara pukal, corak yang anda mahu hapuskan — menggunakan carian dan penulisan semula struktur, dengan perubahan itu diperingkatkan untuk semakan sebelum apa-apa ditulis.
 
-`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+`ast_grep` memadankan kod mengikut **bentuk**. `ast_edit` menulis semulanya. `resolve` mengkomit atau membuangnya.
 
-## Before you start
+## Sebelum anda bermula
 
-Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Alat struktur merangkumi bahasa yang dihuraikan oleh graf kod: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB dan Ada. Ia memerlukan tatabahasa tree-sitter disediakan, dan ia sentiasa begitu dalam binaan yang dikeluarkan — tatabahasa yang hilang menghentikan pelayan dan bukannya merendahkan carian.
 
-## Find the shape first
+## Cari bentuk dahulu
 
-Never rewrite something you have not looked at. Ask the agent to search:
+Jangan sekali-kali menulis semula sesuatu yang belum anda lihat. Minta ejen mencari:
 
-> Find every place we call `dispose()` on a nullable that we just null-checked.
+> Cari setiap tempat kita memanggil `dispose()` pada nilai nullable yang baru sahaja kita semak null.
 
 ```
 ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
 ```
 
-The output is `file:line` plus the matched source for each site.
+Outputnya ialah `file:line` serta sumber yang dipadankan bagi setiap tapak.
 
-### What the pattern syntax buys you
+### Apa yang sintaks corak berikan kepada anda
 
-| Token      | Matches                                    |
+| Token      | Padanan                                    |
 | ---------- | ------------------------------------------ |
-| `$NAME`    | Any single node, captured                  |
-| `$$$NAME`  | Any run of siblings — arguments, statements |
-| `$_`       | Anything, captured under no name            |
+| `$NAME`    | Sebarang nod tunggal, ditangkap                  |
+| `$$$NAME`  | Sebarang jujukan nod bersaudara — argumen, penyataan |
+| `$_`       | Apa-apa sahaja, ditangkap tanpa nama            |
 
-The one that matters: **a repeated `$NAME` must capture the same text**.
+Yang paling penting: **`$NAME` yang berulang mesti menangkap teks yang sama**.
 
 ```
 if ($X != null) $X.dispose()
 ```
 
-finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+menemui pengawal yang melupuskan apa yang diujinya. Ia **tidak** menemui `if (a != null) b.dispose()` — yang selalunya menjadi pepijat yang anda cari. Tiada carian teks dapat menyatakan perkara itu.
 
-:::note[It cannot match inside a string or a comment]
-The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::note[Ia tidak boleh memadankan di dalam rentetan atau komen]
+Corak itu dihuraikan oleh tatabahasa yang sama seperti fail itu, jadi `dispose(x)` yang ditulis dalam komen doc atau literal rentetan bukanlah satu panggilan dan tidak dipadankan. Itulah sebab utama untuk menggunakan ini berbanding `grep`.
 :::
 
-### When the pattern finds nothing
+### Apabila corak tidak menemui apa-apa
 
-Two things to try, in order:
+Dua perkara untuk dicuba, mengikut urutan:
 
-1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
-2. **Name the language.** `language:` is inferred only when `path` names a single file.
+1. **Kecilkan ia.** `foo($X)` sebelum `if (a) { foo($X); }`. Corak yang bukan kod sah dengan sendirinya selalunya bukan konstruk yang anda maksudkan.
+2. **Namakan bahasa.** `language:` hanya diinferensikan apabila `path` menamakan satu fail tunggal.
 
-A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+Corak yang tidak diterima oleh mana-mana konteks penghuraian dilaporkan sebagai tidak boleh dihuraikan — alat itu menyatakannya dan bukannya melaporkan "tiada padanan" bagi sesuatu yang tidak pernah dibaca seperti rupanya.
 
-## Rewrite, and look before it lands
+## Tulis semula, dan lihat sebelum ia mendarat
 
 ```
 ast_edit(
@@ -63,7 +64,7 @@ ast_edit(
 )
 ```
 
-The result is a **proposal**:
+Hasilnya ialah satu **cadangan**:
 
 ```
 (proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
@@ -75,43 +76,43 @@ Nothing has been written. Call resolve with edit_id "edit_1" and action
 "accept" to apply it, or "discard" to drop it.
 ```
 
-Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+Belum ada apa-apa di cakera. Baca senarai itu, semak beberapa tapak yang dilaporkan oleh carian, kemudian:
 
 ```
 resolve(edit_id: "edit_1", action: "accept")
 ```
 
-or
+atau
 
 ```
 resolve(edit_id: "edit_1", action: "discard")
 ```
 
-:::caution[The commit is all-or-nothing]
-Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+:::caution[Komit itu semua-atau-tiada]
+Setiap fail dibandingkan dengan kandungan yang ditangkap semasa perubahan itu diperingkatkan. Jika mana-mana satu daripadanya berubah — ejen menyuntingnya secara manual, pemformat dijalankan, satu laluan diagnostik menulis semulanya — **keseluruhan** perubahan itu ditolak dan dibuang. Penulisan semula struktur yang hanya sebahagiannya digunakan meninggalkan pokok yang tidak dikompil di bawah bentuk lama mahupun bentuk baharu.
 
-Re-run the tool against the current files; do not retry the stale id.
+Jalankan semula alat itu terhadap fail semasa; jangan cuba semula id yang lapuk.
 :::
 
-## Check your work with the compiler
+## Semak kerja anda dengan pengkompil
 
-The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+Tujuan melakukannya secara struktur ialah kerana ia luas. Perubahan luas ialah tempat yang tepat apabila penulisan semula yang kelihatan munasabah memecahkan sesuatu jenis. Minta diagnostik selepas melakukan resolve:
 
 ```
 lsp(action: "diagnostics", file: "*")
 ```
 
-`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+`file: "*"` menjalankan pemeriksa projek itu sendiri (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) dan bukannya pertanyaan bagi setiap fail — bentuk soalan yang betul selepas perubahan yang menyentuh empat puluh fail.
 
-## Worked example: migrating a call
+## Contoh amali: menghijrahkan satu panggilan
 
-Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+Katakan `log(msg, level)` sedang bertukar menjadi `log(level: level, message: msg)`.
 
 ```
 ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
 ```
 
-Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+Lihat padanan yang ditemui. Jika sebahagian daripadanya ialah `log` dua argumen yang *berbeza*, sempitkan corak itu dengan menskopkan `path` kepada direktori yang memiliki `log` yang anda maksudkan, dan bukannya cuba menyatakan perbezaan itu dalam corak.
 
 ```
 ast_edit(
@@ -122,19 +123,19 @@ ast_edit(
 )
 ```
 
-Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+Kemudian `resolve`, kemudian `lsp(action: "diagnostics", file: "*")`.
 
-## When to use something else
+## Bila perlu guna sesuatu yang lain
 
-| Situation                                 | Better tool                          |
+| Keadaan                                 | Alat yang lebih baik                          |
 | ----------------------------------------- | ------------------------------------ |
-| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
-| "What breaks if I change this?"           | The [code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) |
-| A language the grammars do not cover      | `search` plus `edit`                 |
+| Menamakan semula simbol                         | `lsp_rename` — ia mengikut rujukan, bukan bentuk |
+| Mencari rentetan, komen atau nama fail | `search` (kandungan) / `search_files` (nama) |
+| "Apa yang pecah jika saya ubah ini?"           | [Graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) |
+| Bahasa yang tidak diliputi oleh tatabahasa      | `search` bersama `edit`                 |
 
-## Related
+## Berkaitan
 
-- [Code intelligence](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — why structural matching is not a regex with extra steps
-- [Built-in agent tools](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — the full argument list
-- [Search code with the code graph](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) — the symbol and impact side
+- [Kepintaran kod](/ms-MY/manual-pengguna/konsep/kepintaran-kod/) — mengapa padanan struktur bukan satu regex dengan beberapa langkah tambahan
+- [Alat ejen terbina](/ms-MY/manual-pengguna/rujukan/alat-ejen/) — senarai penuh argumen
+- [Cari kod dengan graf kod](/ms-MY/manual-pengguna/panduan-cara/cari-kod/) — bahagian simbol dan kesan

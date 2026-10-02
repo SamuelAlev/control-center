@@ -1,150 +1,156 @@
 ---
-title: Monitor pipeline runs
-description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+title: Theo dõi lần chạy quy trình
+description: Xử lý hàng đợi lần chạy, đọc thác thời gian và bảng chi tiết bước của một lần chạy, và khôi phục sau một bước thất bại hoặc bị kẹt.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh
+sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
 ---
 
-This is the page for everything after a run has started: finding it, reading
-what each step did and getting a failed run moving again. To start one, see
-[Run a pipeline manually](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/).
+Đây là trang dành cho mọi thứ diễn ra sau khi một lần chạy đã bắt đầu: tìm nó,
+đọc xem từng bước đã làm gì và đưa một lần chạy thất bại tiếp tục chạy trở lại.
+Để bắt đầu một lần chạy, xem
+[Chạy quy trình thủ công](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/).
 
-## Find a run
+## Tìm một lần chạy
 
-1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
-   run queue — every run, newest first.
-2. Use the left rail to filter. There are exactly three filters, each with a
-   live count: **All**, **Running**, **Failed**.
-3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
-   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
-   same.
+1. Nhấp **Pipelines** trong thanh bên của không gian làm việc. Màn hình này là
+   hàng đợi lần chạy của không gian làm việc — mọi lần chạy, mới nhất trước.
+2. Dùng thanh bên trái để lọc. Có đúng ba bộ lọc, mỗi bộ lọc kèm số đếm trực
+   tiếp: **Tất cả**, **Đang chạy**, **Thất bại**.
+3. Di chuyển trong bảng bằng <kbd>↑</kbd>/<kbd>↓</kbd> (hoặc <kbd>j</kbd>/<kbd>k</kbd>)
+   và nhấn <kbd>Enter</kbd> để mở lần chạy đang được chọn. Nhấp vào một hàng cũng
+   làm điều tương tự.
 
-Each row shows a glyph for how the run started (play for manual; a file glyph
-for a code-graph watch; otherwise the automatic trigger). The tooltip names the
-trigger — **Manual**, **PR published**, **file change**, and so on — and, for
-a watch run, which files changed. Then the pipeline name, a status badge, the
-active duration (or the queue position for a `queued` run) and how long ago
-this attempt started. Active duration excludes idle stop-and-restart gaps, so
-it is not the wall-clock span.
+Mỗi hàng hiển thị một ký hiệu cho biết lần chạy đã khởi đầu thế nào (nút play cho
+thủ công; một ký hiệu tệp cho theo dõi đồ thị mã; còn lại là trình kích hoạt tự
+động). Chú thích nêu tên trình kích hoạt — **Thủ công**, **PR được xuất bản**,
+**Thay đổi tệp**, v.v. — và, với một lần chạy theo dõi, những tệp nào đã thay
+đổi. Tiếp theo là tên quy trình, huy hiệu trạng thái, thời lượng hoạt động (hoặc
+vị trí trong hàng đợi với một lần chạy `queued`) và lần thử này đã bắt đầu cách
+đây bao lâu. Thời lượng hoạt động không tính những khoảng dừng rồi khởi động lại
+lúc nhàn rỗi, nên nó không phải khoảng thời gian trên đồng hồ thực.
 
-There is no filter for completed, suspended or cancelled runs, no per-template
-filter, no time window and no per-template run history view. Comparing runs of
-one template means scanning the queue for its name.
+Không có bộ lọc cho những lần chạy đã hoàn tất, đang tạm dừng hoặc đã hủy, không
+có bộ lọc theo từng mẫu, không có cửa sổ thời gian và không có chế độ xem lịch sử
+lần chạy theo từng mẫu. Muốn so sánh các lần chạy của cùng một mẫu, bạn phải quét
+hàng đợi để tìm tên của nó.
 
-## Read the run detail
+## Đọc chi tiết lần chạy
 
-A run's page has three stacked parts.
+Trang của một lần chạy có ba phần xếp chồng lên nhau.
 
-**The meta strip** carries the start time, active duration, step progress
-("3 of 7 steps"), a failure summary naming the step that broke and why and the
-**Retry** and **Delete** actions.
+**Dải thông tin** mang thời gian bắt đầu, thời lượng hoạt động, tiến độ các bước
+("3 / 7 bước"), bản tóm tắt thất bại nêu tên bước bị hỏng cùng lý do, và các hành
+động **Thử lại** và **Xóa**.
 
-**The timing waterfall** gives one bar per step, with its duration and — for
-agent steps — its cost in cents. A step that was retried shows a `×N` suffix
-after its duration; that suffix is the only place attempt counts surface.
+**Thác thời gian** cho một thanh cho mỗi bước, kèm thời lượng và — với các bước
+agent — chi phí tính bằng xu. Một bước từng được thử lại hiển thị hậu tố `×N` sau
+thời lượng; hậu tố đó là nơi duy nhất số lần thử hiện ra.
 
-**The graph canvas** draws the template with each node's live status.
-Selecting a node opens its step panel.
+**Khung vẽ đồ thị** vẽ mẫu với trạng thái trực tiếp của từng nút. Chọn một nút sẽ
+mở bảng chi tiết bước của nó.
 
-### Run and step statuses
+### Trạng thái lần chạy và bước
 
-| Status        | Meaning                                           |
-| ------------- | ------------------------------------------------- |
-| **Pending**   | Created, not yet started                          |
-| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
-| **Running**   | Executing                                         |
-| **Suspended** | Waiting on something external — normal, not stuck |
-| **Completed** | Finished successfully                             |
-| **Failed**    | Ended with an error                               |
-| **Cancelled** | Stopped by a user or by the system                |
+| Trạng thái         | Ý nghĩa                                           |
+| ------------------ | ------------------------------------------------- |
+| **Đang chờ**       | Đã tạo, chưa bắt đầu                              |
+| **Trong hàng đợi** | Đã được nhận nhưng bị giữ: hạn mức chạy song song tối đa của mẫu này đã đầy; chưa có hàng bước nào |
+| **Đang chạy**      | Đang thực thi                                     |
+| **Tạm dừng**       | Đang chờ một thứ bên ngoài — bình thường, không phải bị kẹt |
+| **Hoàn tất**       | Kết thúc thành công                               |
+| **Thất bại**       | Kết thúc với lỗi                                  |
+| **Đã hủy**         | Bị người dùng hoặc hệ thống dừng                  |
 
-Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
-router did not take (and its now-unreachable descendants).
+Các bước có những trạng thái đó trừ **Trong hàng đợi**, cộng thêm **Đã bỏ qua**,
+dành cho một nhánh mà router không đi qua (và những bước hậu duệ nay không thể
+tiếp cận của nó).
 
-**Suspended** is where an agent step spends most of its life: a dispatched agent
-or an approval gate holds the step until its work lands. Two engine backstops
-fail the whole run rather than resuming: a step suspended longer than 24 hours
-(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
-`human.gate` is not) and a non-idempotent step that was mid-flight when the
-server stopped.
+**Tạm dừng** là nơi một bước agent trải qua phần lớn vòng đời của nó: một agent
+đã được điều phối hoặc một cổng phê duyệt giữ bước lại cho đến khi công việc của
+nó hoàn tất. Hai chốt an toàn của engine đánh dấu thất bại cả lần chạy thay vì
+chạy tiếp: một bước bị tạm dừng lâu hơn 24 giờ (`extras.awaitApproval` — body
+`orchestration.awaitApproval` — được miễn; `human.gate` thì không) và một bước
+không idempotent đang chạy dở khi máy chủ dừng lại.
 
-## Inspect a step
+## Kiểm tra một bước
 
-Select a node on the canvas. The step panel shows, in order:
+Chọn một nút trên khung vẽ. Bảng chi tiết bước hiển thị, theo thứ tự:
 
-- An **Error** callout when the step failed, or a **Skipped** callout with the
-  reason when it was skipped.
-- **Started**, **Finished** and duration.
-- **Branch** — the branch index, for parallel branches.
-- **View conversation** — jumps to the conversation the step ran in. Pipeline
-  conversations are hidden from the sidebar, so this is the only way in.
-- **Input** and **Output**, as collapsible JSON.
-- **Agent activity** — one tile per agent run the step dispatched, with its
-  status, summary, duration and cost.
+- Khung thông báo **Lỗi** khi bước thất bại, hoặc khung thông báo **Đã bỏ qua**
+  kèm lý do khi bước bị bỏ qua.
+- **Bắt đầu**, **Kết thúc** và thời lượng.
+- **Nhánh** — chỉ số nhánh, dành cho các nhánh song song.
+- **Xem hội thoại** — nhảy tới cuộc hội thoại mà bước đã chạy trong đó. Các cuộc
+  hội thoại của quy trình bị ẩn khỏi thanh bên, nên đây là lối vào duy nhất.
+- **Đầu vào** và **Đầu ra**, dưới dạng JSON có thể thu gọn.
+- **Hoạt động của agent** — một ô cho mỗi lần chạy agent mà bước đã điều phối,
+  kèm trạng thái, tóm tắt, thời lượng và chi phí.
 
-For an agent step, **Output** is the structured payload the agent submitted with
-`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
-and in the conversation behind **View conversation**.
+Với một bước agent, **Đầu ra** là payload có cấu trúc mà agent đã gửi bằng
+`submit_output`, không phải phần văn xuôi của nó. Dấu vết suy luận nằm trong
+**Hoạt động của agent** và trong cuộc hội thoại phía sau **Xem hội thoại**.
 
-For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
-A non-zero exit fails the step with the stderr tail as the error message.
+Với một bước bash, **Đầu ra** là stdout đã được cắt gọn mà script ghi khi thoát
+với mã 0. Thoát với mã khác 0 làm bước thất bại với phần đuôi stderr làm thông
+báo lỗi.
 
-## Recover a failed run
+## Khôi phục một lần chạy thất bại
 
-1. Read the failure summary on the meta strip; it names the failing step. The
-   step panel's **Error** callout has the message.
-2. Check the step's **Input** — a missing or misspelled state key is the most
-   common cause. A prompt-agent step fails outright and names the unresolved
-   placeholders; a bash step renders them as empty strings and runs anyway,
-   which usually surfaces one step later.
-3. For an agent step, open **View conversation** and read what the agent actually
-   did.
-4. Press **Retry** on the meta strip. Completed and skipped steps keep their
-   outputs; everything else is deleted and re-executed and the run flips back
-   to running. The duration clock restarts for this attempt.
+1. Đọc bản tóm tắt thất bại trên dải thông tin; nó nêu tên bước bị lỗi. Khung
+   thông báo **Lỗi** trong bảng chi tiết bước chứa thông báo.
+2. Kiểm tra **Đầu vào** của bước — một khóa trạng thái bị thiếu hoặc viết sai là
+   nguyên nhân phổ biến nhất. Một bước prompt-agent thất bại ngay và nêu tên các
+   placeholder chưa được giải quyết; một bước bash hiển thị chúng thành chuỗi rỗng
+   rồi vẫn chạy, điều thường chỉ lộ ra ở bước sau.
+3. Với một bước agent, mở **Xem hội thoại** và đọc xem agent thực sự đã làm gì.
+4. Nhấn **Thử lại** trên dải thông tin. Những bước đã hoàn tất và đã bỏ qua giữ
+   nguyên đầu ra; mọi thứ còn lại bị xóa và thực thi lại, và lần chạy chuyển ngược
+   về trạng thái đang chạy. Đồng hồ thời lượng bắt đầu lại cho lần thử này.
 
-Common causes worth checking first:
+Những nguyên nhân phổ biến đáng kiểm tra trước tiên:
 
-- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
-  milliseconds.
-- **Script error** — the bash command exited non-zero, or `bash` is not on the
-  server host's `PATH`.
-- **Schema validation** — the agent's `submit_output` payload did not satisfy
-  the step's output schema.
-- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
-  never written upstream. The error names every unresolved key.
-- **Unregistered body** — a step whose body key is not registered warns at
-  template load and then simply never executes.
+- **Hết thời gian** — bước đã vượt quá **Hết thời gian (ms)** của nó. Hãy nhớ
+  trường này tính bằng mili giây.
+- **Lỗi script** — lệnh bash thoát với mã khác 0, hoặc `bash` không có trên `PATH`
+  của máy chủ.
+- **Xác thực schema** — payload `submit_output` của agent không thỏa lược đồ đầu
+  ra của bước.
+- **Placeholder chưa được giải quyết** — một `{{key}}` mà bước prompt-agent tham
+  chiếu chưa từng được ghi ở thượng nguồn. Thông báo lỗi nêu tên mọi khóa chưa
+  được giải quyết.
+- **Body chưa được đăng ký** — một bước có khóa body chưa được đăng ký sẽ cảnh báo
+  khi nạp mẫu và sau đó đơn giản là không bao giờ thực thi.
 
-:::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is shown only when the run is `failed` or `cancelled`. The
-engine returns immediately for any other status.
+:::caution[Thử lại chỉ hiệu quả với một lần chạy thất bại hoặc đã hủy]
+Nút **Thử lại** chỉ hiển thị khi lần chạy ở trạng thái `failed` hoặc `cancelled`.
+Engine trả về ngay lập tức với mọi trạng thái khác.
 :::
 
-## Stop a step that is stuck
+## Dừng một bước bị kẹt
 
-Select the running step and press the **Kill running** button in the step
-panel's header. This kills the step's process, marks the step failed and
-therefore fails the whole run — every open sibling branch is closed out with it.
+Chọn bước đang chạy và nhấn nút **Hủy đang chạy** ở đầu bảng chi tiết bước. Thao
+tác này kết liễu tiến trình của bước, đánh dấu bước thất bại và do đó làm thất bại
+cả lần chạy — mọi nhánh anh em đang mở đều bị đóng lại theo.
 
-There is no cancel-run control on this screen. `pipeline.cancel` exists as an
-RPC operation and the engine implements it, but nothing in the pipelines UI
-calls it; **Kill running** on a step, or **Delete** on the run, are the only
-stop gestures available.
+Không có nút hủy lần chạy trên màn hình này. `pipeline.cancel` tồn tại như một
+thao tác RPC và engine có triển khai nó, nhưng không có gì trong giao diện quy
+trình gọi tới nó; **Hủy đang chạy** trên một bước, hoặc **Xóa** trên lần chạy, là
+những thao tác dừng duy nhất hiện có.
 
-## Track cost
+## Theo dõi chi phí
 
-Cost is reported per step, in the waterfall's right-hand column and on each
-tile under **Agent activity**. There is no run total on the detail page and no
-cost column in the runs queue, so comparing the cost of two runs means adding up
-their steps.
+Chi phí được báo theo từng bước, ở cột bên phải của thác thời gian và trên mỗi ô
+trong **Hoạt động của agent**. Không có tổng chi phí của cả lần chạy trên trang
+chi tiết và không có cột chi phí trong hàng đợi lần chạy, nên muốn so sánh chi phí
+của hai lần chạy, bạn phải cộng dồn các bước của chúng.
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Run a pipeline manually](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
-- [Create a pipeline template](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
-- [Manage costs](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
-- [Pipeline steps reference](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/)
+- [Chạy quy trình thủ công](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-quy-trinh/)
+- [Tạo mẫu quy trình](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh/)
+- [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
+- [Tham chiếu các bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Pipelines](/vi-VN/so-tay/khai-niem/quy-trinh/)
+- [Quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/)

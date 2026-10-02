@@ -1,152 +1,161 @@
 ---
-title: Use AI-powered review
-description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+title: AI 기반 리뷰 사용
+description: PR에서 pr_review 파이프라인을 실행하고, 발견 사항과 판정을 확인한 다음, 리뷰를 GitHub에 게시합니다.
 slug: ko-KR/매뉴얼/사용-가이드/ai-리뷰
+sourceHash: dbd6c5e7ff9d3f625188aae12f9cfab8a970445f
 ---
 
-This guide shows you how to have reviewer agents review a pull request and how to
-publish the result to GitHub.
+이 가이드에서는 리뷰어 에이전트가 풀 리퀘스트를 리뷰하도록 하고 그 결과를
+GitHub에 게시하는 방법을 설명합니다.
 
-## Start an AI review
+## AI 리뷰 시작
 
-1. Open the PR and go to its **Overview** tab
-2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+1. PR을 열고 **개요** 탭으로 이동합니다
+2. 작업 행에서 ⋯ 오버플로 메뉴를 열고 **AI에게 물어보기**를 선택합니다
 
-The item only appears while the PR is open — it is a pre-merge action. The same
-button is offered as **Ask AI** on the **Review** tab's empty state, before any
-review exists.
+이 항목은 PR이 열려 있는 동안에만 나타납니다. 병합 전 액션이기 때문입니다.
+같은 버튼은 리뷰가 아직 없을 때 **리뷰** 탭의 빈 상태에서도
+**AI에게 물어보기**로 제공됩니다.
 
-Control Center starts the seeded `pr_review` pipeline and opens the PR's
-**Review** tab so you can watch it. The pipeline:
+Control Center는 기본 제공되는 `pr_review` 파이프라인을 시작하고, 진행 상황을
+볼 수 있도록 PR의 **리뷰** 탭을 엽니다. 파이프라인은 다음을 수행합니다.
 
-1. Opens the PR's own review space, whose isolated worktree has the PR checked
-   out at its head
-2. Fans out the reviewers for the workspace's review level — three by default
-   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
-   There is no language or domain detection
-3. Has the lead (CEO) agent consolidate their findings into a walkthrough
-4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict. When the association reaches `awaiting approval`, **Publish to
-   GitHub** appears on the Review tab
+1. PR 전용 리뷰 스페이스를 엽니다. 이 스페이스의 격리된 워크트리에는 PR이
+   head 기준으로 체크아웃되어 있습니다
+2. 워크스페이스의 리뷰 수준에 따라 리뷰어를 전개합니다. 기본값은 세
+   명입니다(기본 제공되는 **qa**, **architect**, **engineer** 에이전트가
+   병렬로 실행됨). 언어나 도메인 감지는 하지 않습니다
+3. 리드(CEO) 에이전트가 그들의 발견 사항을 하나의 워크스루로 통합하게 합니다
+4. 파이널라이즈합니다. 발견 사항을 합의 버킷으로 분류하고 판정을 계산합니다.
+   연결이 `awaiting approval`에 도달하면 리뷰 탭에 **GitHub에 게시**가
+   나타납니다
 
-How deep the review goes is the workspace's **review level** — `light` (one
-reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
-security and performance specialists) — set at
-**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
-files just as many findings; it reports fewer of them front and centre.
+리뷰가 얼마나 깊이 들어가는지는 워크스페이스의 **리뷰 수준**으로
+결정합니다. `light`(리뷰어 한 명), `balanced`(세 명, 기본값),
+`thorough`(보안과 성능 전문가를 더한 다섯 명 전부) 중 하나이며,
+**설정 → 워크스페이스 → 일반**의 **워크스페이스 정책** 카드에서 설정합니다.
+더 가벼운 수준도 똑같은 수의 발견 사항을 제출하며, 다만 그중 더 적은 수를
+전면에 보고합니다.
 
-All the reviewers post into the PR's single review space, which is what makes
-their findings comparable. See
-[AI review](/ko-KR/매뉴얼/개념/ai-리뷰/) for how the pieces fit together.
+모든 리뷰어는 PR의 단일 리뷰 스페이스에 게시하며, 이것이 그들의 발견 사항을
+서로 비교할 수 있게 해 줍니다. 각 구성 요소가 어떻게 맞물리는지는
+[AI 리뷰](/ko-KR/매뉴얼/개념/ai-리뷰/)를 참고하세요.
 
-`pr_review` ships with a manual trigger only. To have it fire on every published
-PR, add a trigger yourself — see
-[Dispatch reviewer agents](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/). You can also
-start one from GitHub itself, no pipeline trigger needed: mention the server's
-bot on the PR or add the `ai-review` label — see
-[Talk to Control Center from a GitHub PR](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/).
+`pr_review`는 수동 트리거만 함께 제공합니다. 게시되는 모든 PR에서 실행되게
+하려면 트리거를 직접 추가하세요.
+[리뷰어 에이전트 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)를
+참고하세요. 파이프라인 트리거 없이 GitHub 자체에서 시작할 수도 있습니다. PR에서
+서버의 봇을 멘션하거나 `ai-review` 레이블을 추가하면 됩니다. 자세한 내용은
+[GitHub PR에서 Control Center와 대화](/ko-KR/매뉴얼/사용-가이드/github-pr-대화/)를
+참고하세요.
 
-If a toast says a review is already running for this pull request, one is
-already in flight; stay on the **Review** tab or open **Pipelines** to find it.
+이 풀 리퀘스트에 대해 리뷰가 이미 실행 중이라는 토스트가 표시되면, 리뷰가
+이미 진행 중인 것입니다. **리뷰** 탭에 그대로 있거나 **파이프라인**을 열어
+찾으세요.
 
-## Read the findings
+## 발견 사항 읽기
 
-Reviewers record findings as **review nodes** in the review space. Each carries:
+리뷰어는 발견 사항을 리뷰 스페이스에 **리뷰 노드**로 기록합니다. 각 노드는
+다음을 담습니다.
 
-| Field          | Description                                                   |
+| 필드           | 설명                                                          |
 | -------------- | ------------------------------------------------------------- |
-| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
-| Priority       | P0 (critical) → P3 (nit)                                      |
-| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
-| File and line  | Where the finding is anchored                                 |
-| Original code  | The code the finding is about                                 |
-| Suggested code | The proposed fix                                              |
-| Confidence     | How confident the reviewer is                                 |
-| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+| 종류           | `bug`, `suggestion`, `recommendation`, `question` 또는 `ticket` |
+| 우선순위       | P0(치명적) → P3(사소함)                                       |
+| 카테고리       | `security`, `stability`, `data_integrity`, `correctness`, `performance` 또는 `maintainability` |
+| 파일과 줄      | 발견 사항이 앵커된 위치                                       |
+| 원본 코드      | 발견 사항이 다루는 코드                                       |
+| 제안 코드      | 제안된 수정                                                   |
+| 신뢰도         | 리뷰어가 얼마나 확신하는지                                    |
+| 상태           | `open` → `consensus-ready` → `resolved` 또는 `dismissed`      |
 
-A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
-agent cannot confirm its own finding, so a single reviewer's opinion never
-graduates on its own.
+발견 사항은 _동료_ 리뷰어가 확인해야만 **consensus-ready**에 도달합니다.
+에이전트는 자신의 발견 사항을 확인할 수 없으므로, 리뷰어 한 명의 의견은 결코
+스스로 승격되지 않습니다.
 
-The **Review** tab shows the findings list, filterable by kind and status, with a
-toggle for dismissed findings, beside the artifact the consolidating agent
-published. The deterministic view — cohorts, the multi-axis dashboard, contract
-and visual diffs — is computed server-side but has no surface in the app; see
-[Review compute](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/) for what the pass produces.
+**리뷰** 탭은 통합 에이전트가 게시한 아티팩트 옆에 발견 사항 목록을
+표시하며, 종류와 상태로 필터링할 수 있고 무시된 발견 사항을 위한 토글이
+있습니다. 결정적 뷰 — 코호트, 다축 대시보드, 계약 및 시각적 diff — 는 서버
+측에서 계산되지만 앱에는 표시되는 화면이 없습니다. 이 패스가 무엇을
+만들어 내는지는
+[리뷰 컴퓨트](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)를 참고하세요.
 
-## Check the disagreements panel
+## 불일치 패널 확인
 
-When two reviewers anchor findings to the same file and line but rate them very
-differently — priorities two or more levels apart, or one calls it a `bug` while
-the other calls it a `suggestion` — a disagreement panel appears above the findings
-list. Read those first: they are where the reviewers' opinions diverge and your
-judgement is worth the most.
+두 리뷰어가 발견 사항을 같은 파일과 줄에 앵커했는데 평가가 크게 다를 때 —
+우선순위가 두 단계 이상 차이 나거나, 한쪽은 `bug`, 다른 쪽은 `suggestion`이라고
+부를 때 — 발견 사항 목록 위에 불일치 패널이 나타납니다. 이것을 먼저 읽으세요.
+리뷰어들의 의견이 갈라지고 여러분의 판단이 가장 가치 있는 곳이 바로
+여기입니다.
 
-## Read the verdict
+## 판정 읽기
 
-When the lead agent finalizes, it computes a **verdict**:
+리드 에이전트가 파이널라이즈할 때 **판정**을 계산합니다.
 
-| Verdict   | Meaning                                      |
-| --------- | -------------------------------------------- |
-| **Ship**  | Nothing blocking found                       |
-| **Hold**  | Issues that should be addressed before merge |
-| **Block** | Critical issues that must be fixed           |
+| 판정      | 의미                              |
+| --------- | --------------------------------- |
+| **Ship**  | 차단 요소를 찾지 못함             |
+| **Hold**  | 병합 전에 해결해야 할 문제        |
+| **Block** | 반드시 수정해야 할 치명적 문제    |
 
-The verdict carries an aggregate confidence score and per-priority finding counts.
+판정에는 종합 신뢰도 점수와 우선순위별 발견 사항 개수가 함께 있습니다.
 
-The review axes then fold into it and they can only make it **more** severe. A
-gated axis that fails forces **Block**; a gated axis that could not complete
-(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
-Absence of evidence never clears a gate.
+그런 다음 리뷰 축이 여기에 합쳐지는데, 축은 판정을 **더** 엄격하게만 만들 수
+있습니다. 게이트 대상 축이 실패하면 **Block**이 강제됩니다. 완료하지
+못했거나(`partial`) 아예 실행할 수 없었던(`unavailable`) 게이트 대상 축은
+최소한 **Hold**를 강제합니다. 증거의 부재는 결코 게이트를 통과시키지
+않습니다.
 
-## Publish the review to GitHub
+## 리뷰를 GitHub에 게시
 
-Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-keeps the review in Control Center; it does not post to GitHub.
+게시는 별도의, 의도적으로 사용자가 게이트하는 단계입니다. `pr_review`
+파이프라인은 리뷰를 Control Center에 두며 GitHub에 게시하지 않습니다.
 
-1. On the **Review** tab, wait until **Publish to GitHub** appears
-2. Press **Publish to GitHub**
+1. **리뷰** 탭에서 **GitHub에 게시**가 나타날 때까지 기다립니다
+2. **GitHub에 게시**를 누릅니다
 
-Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped. The button includes every remaining open finding and, on **Ship**,
-submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
-peer-confirmed findings only and does not approve unless you pass
-`approve_on_ship`.) Those that carry a file and line anchor become inline
-comments; everything else folds into the summary body, each with a
-"— Control Center AI review" footer so the source is unambiguous. A **Block**
-verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
-`APPROVE` from this button. A toast then reads **Published**. The review is
-posted under the server's app identity.
+Control Center는 **하나의** GitHub 리뷰를 보냅니다. 이미 해결되었거나 무시된
+발견 사항은 건너뜁니다. 이 버튼은 남아 있는 열린 발견 사항을 모두 포함하며,
+**Ship**인 경우 `APPROVE`를 제출합니다. (MCP 도구
+`publish_review_to_github`는 여전히 동료가 확인한 발견 사항만 기본으로 하며,
+`approve_on_ship`을 전달하지 않으면 승인하지 않습니다.) 파일과 줄 앵커가 있는
+발견 사항은 인라인 댓글이 되고, 나머지는 모두 요약 본문에 합쳐지며, 각
+항목에는 출처가 분명하도록 "— Control Center AI review" 푸터가 붙습니다.
+**Block** 판정은 `REQUEST_CHANGES`로, **Hold**는 `COMMENT`로, **Ship**은 이
+버튼에서 `APPROVE`로 제출됩니다. 그런 다음 토스트에 **게시됨**이 표시됩니다.
+리뷰는 서버의 앱 아이덴티티로 게시됩니다.
 
-If GitHub rejects an inline anchor because the line is not part of the diff, the
-whole review is re-sent with every finding folded into the body, so nothing is
-silently dropped.
+해당 줄이 diff의 일부가 아니라는 이유로 GitHub이 인라인 앵커를 거부하면,
+아무것도 조용히 누락되지 않도록 모든 발견 사항을 본문에 합쳐 전체 리뷰를
+다시 보냅니다.
 
-:::caution[Publishing is guardrail-gated]
-`pr_review.publishReview` declares the `prPublish` action class and runs through
-the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
-connected, the publish is denied — guardrails fail closed. Set an explicit rule at
-Settings → Workspace → Agent permissions if you want it to run unattended.
+:::caution[게시는 가드레일 게이트를 거칩니다]
+`pr_review.publishReview`는 `prPublish` 액션 클래스를 선언하며 가드레일
+초크포인트를 거쳐 실행됩니다. 해석된 결정이 `prompt`이고 연결된 승인자가
+없으면 게시가 거부됩니다. 가드레일은 닫힌 상태로 실패합니다. 사람 없이
+실행되게 하려면 설정 → 워크스페이스 → 에이전트 권한에서 명시적 규칙을
+설정하세요.
 :::
 
-Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+다른 기본 제공 파이프라인은 GitHub에 직접 게시합니다. `cross_review`,
+`pr_triage`, `ticket_to_pr`, `pre_merge_gate`는 각각 댓글 단계로 끝납니다.
+`pr_review`만 출력을 붙잡아 두고 여러분의 결정을 기다립니다.
 
-## Dispatch reviewers yourself
+## 리뷰어 직접 디스패치
 
-For control over which roles review the PR and which files each one looks at, use
-the `dispatch_reviewers` MCP tool inside an existing review space, or add
-reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
-[Dispatch reviewer agents](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/).
+어떤 역할이 PR을 리뷰하고 각자 어떤 파일을 볼지 직접 제어하려면, 기존 리뷰
+스페이스 안에서 `dispatch_reviewers` MCP 도구를 사용하거나 파이프라인에
+리뷰어 노드를 추가하세요. 도구의 정확한 시그니처와 함께 두 방법 모두
+[리뷰어 에이전트 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)에
+있습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Review and merge a PR](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
-- [Dispatch reviewer agents](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
-- [Review compute (cohorts and axes)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
+- [PR 리뷰 및 병합](/ko-KR/매뉴얼/사용-가이드/pr-리뷰-및-병합/)
+- [리뷰어 에이전트 디스패치](/ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치/)
+- [리뷰 컴퓨트(코호트와 축)](/ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트/)
 
-## Related concepts
+## 관련 개념
 
-- [AI review](/ko-KR/매뉴얼/개념/ai-리뷰/)
-- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/)
+- [AI 리뷰](/ko-KR/매뉴얼/개념/ai-리뷰/)
+- [가드레일](/ko-KR/매뉴얼/개념/가드레일/)

@@ -1,81 +1,82 @@
 ---
-title: Branch a conversation
-description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+title: شاخه‌کردن یک گفتگو
+description: رویکردی دیگر را از نقطه‌ای پیشین امتحان کنید، بی‌آنکه مسیری را که همین حالا دارید از دست بدهید؛ سپس آنچه را می‌خواهید نگه دارید فورک یا برون‌بری کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/شاخه-کردن-گفتگو
+sourceHash: 2c64e4e499d6095eca7ee38ee3fbe490210ee4ec
 ---
 
-This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+این راهنما نشان می‌دهد چگونه در یک گفتگو به نقطه‌ای پیشین بازگردید و آن را به جای دیگری ببرید — بی‌آنکه مسیری را که ترک کرده‌اید از دست بدهید.
 
-## The one thing worth knowing
+## تنها چیزی که ارزش دانستن دارد
 
-**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+**شاخه‌کردن چیزی نمی‌نویسد.** یک گفتگو درختی از پیام‌هاست با اشاره‌گری در نوک آن، و عقب رفتن همان اشاره‌گر را جابه‌جا می‌کند. هیچ‌چیز حذف نمی‌شود، هیچ‌چیز پنهان نمی‌شود، و بازگشت دوباره هم جابه‌جایی دیگری از همان اشاره‌گر است.
 
-That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+به همین دلیل است که ویرایش یک پرامپت و اجرای دوبارهٔ آن اینجا بی‌خطر است: پاسخی که در حال مقایسه با آن بودید هنوز سر جایش است.
 
-## See the branches
+## شاخه‌ها را ببینید
 
 ```
 /tree
 ```
 
-The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+ناوبر هر پیام را فهرست می‌کند، در هر فورک تورفته، و مسیر کنونی را **روی این شاخه** علامت می‌زند. گفتگویی که هرگز فورک نشده، همان فهرست تختی را نشان می‌دهد که همیشه بوده — تا وقتی چیزی برای پیمایش وجود نداشته باشد، نگاه کردن به ناوبر هیچ هزینه‌ای ندارد.
 
-Each row offers two actions.
+هر سطر دو کنش پیشنهاد می‌دهد.
 
-| Action                          | Effect                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
-| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+| کنش | اثر |
+| --- | --- |
+| **ادامه از اینجا** | اشاره‌گر را جابه‌جا می‌کند. پیام بعدی شما از همان پیام ادامه می‌یابد. |
+| **شاخه به گفتگوی جدید** | مسیر را تا آن پیام در یک گفتگوی جدید کپی می‌کند. |
 
-## Branch: try a different approach
+## شاخه: رویکردی دیگر را امتحان کنید
 
 1. `/tree`
-2. Find the message you want to start again from — usually the last one you were happy with.
-3. **Continue from here.**
-4. Type the new prompt.
+2. پیامی را پیدا کنید که می‌خواهید از آن دوباره شروع کنید — معمولاً آخرین پیامی که از آن راضی بودید.
+3. **ادامه از اینجا.**
+4. پرامپت تازه را تایپ کنید.
 
-The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+ادامهٔ پیشین هنوز در درخت است؛ `/tree` از این پس دو مسیر از آن نقطه نشان می‌دهد و می‌توانید آزادانه میانشان جابه‌جا شوید.
 
-:::note[The path you left is still there]
-Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
+:::note[مسیری که ترک کرده‌اید هنوز آنجاست]
+شاخه‌کردن هیچ‌چیز را پنهان یا حذف نمی‌کند. `/tree` هر مسیر را فهرست می‌کند، مسیر کنونی را **روی این شاخه** علامت می‌زند، و همان راهی است که با آن جابه‌جا می‌شوید.
 :::
 
-## Fork: take it somewhere else
+## فورک: آن را جای دیگری ببرید
 
-Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+فورک کردن، مسیر را در یک **گفتگوی جدید** در همان فضا کپی می‌کند. آن را به کار ببرید وقتی آن دو جهت قرار است همچنان از هم دور شوند و می‌خواهید کنار هم بمانند، نه اینکه میانشان جابه‌جا شوید.
 
-The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+این کپی شناسه‌های پیام تازه دارد. دو گفتگویی که سطرهای مشترک داشته باشند، پیام‌های بعدی یکدیگر را نشان می‌دهند و این دقیقاً همان چیزی است که یک فورک باید از آن جلوگیری کند.
 
-## Revert versus branch
+## بازگردانی در برابر شاخه
 
-They are different tools and the difference matters.
+این دو ابزارهای متفاوتی هستند و این تفاوت مهم است.
 
-|                     | Revert                                             | Branch                          |
-| ------------------- | -------------------------------------------------- | ------------------------------- |
-| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
-| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
+| | بازگردانی | شاخه |
+| --- | --- | --- |
+| پیام‌های بعدی | از رونوشت پنهان می‌شوند | هنوز در `/tree` دیده می‌شوند |
+| **worktree** | به عکس فوری آن نوبت برگردانده می‌شود | دست‌نخورده می‌ماند |
+| واگرد | **واگرد بازگردانی** دسته را برمی‌گرداند | اشاره‌گر را عقب ببرید |
 
-Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+بازگردانی همان چیزی است که وقتی عامل *فایل‌هایی* را که می‌خواهید برگردند تغییر داده باشد، می‌خواهید. شاخه همان چیزی است که وقتی گفتگو مسیر اشتباه رفته اما فایل‌ها سالم مانده‌اند، می‌خواهید.
 
-Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+بازگردانی نوک شاخه را هم جابه‌جا می‌کند، پس پیام بعدی شما از جای درست ادامه می‌یابد، نه از دُمی که دیگر هیچ‌کس نمی‌تواند ببیندش.
 
-## Take it out of the app
+## آن را از برنامه بیرون ببرید
 
 ### `/export`
 
-Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+یک **فایل HTML خودبسنده** می‌نویسد: تمام گفتگو با کارت‌های ابزار تاشویی که نشان می‌دهند به هر فراخوانی چه داده شده و چه برگردانده است. بدون شیوه‌نامه، بدون اسکریپت، بدون میزبان تصویر — از روی یک حافظهٔ USB کار می‌کند و پنج سال بعد هم کار می‌کند.
 
-- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
-- **Web:** a browser download.
+- **دسکتاپ:** `Documents/ControlCenter/exports/`، با مُهر زمان، تا یک برون‌بری دوم اولی را بازنویسی نکند.
+- **وب:** یک دانلود در مرورگر.
 
 ### `/dump`
 
-Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+رونوشت را به‌صورت markdown در کلیپ‌بورد کپی می‌کند، با فراخوانی‌های ابزار در بلوک‌های تاشو. این همانی است که باید در یک ایشو جای‌گذاری کنید.
 
-Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+استدلال به‌عمد بیرون گذاشته شده است: آن فضای چرک‌نویس مدل است و گزارش ایراد را یک انسان می‌خواند.
 
-## Related
+## مرتبط
 
-- [Conversation history](/fa-IR/راهنمای-کاربر/مفهومها/تاریخچه-گفتگو/) — why the tree is a pointer move, and what resume actually restores
-- [Slash commands](/fa-IR/راهنمای-کاربر/مرجع/دستورات-اسلش/) — `/tree`, `/export`, `/dump`
+- [تاریخچهٔ گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/تاریخچه-گفتگو/) — چرا درخت یک جابه‌جایی اشاره‌گر است، و ازسرگیری واقعاً چه چیزی را بازمی‌گرداند
+- [دستورات اسلش(/fa-IR/راهنمای-کاربر/مرجع/دستورات-اسلش/) — `/tree`، `/export`، `/dump`

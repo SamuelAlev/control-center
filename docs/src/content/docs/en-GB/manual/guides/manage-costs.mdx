@@ -2,6 +2,7 @@
 title: Manage costs
 description: See what your agents are spending, cap an autonomous run and cut token use.
 slug: en-GB/manual/guides/manage-costs
+sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
 ---
 
 This guide shows you how to see what agent runs cost and how to cap an autonomous run.
@@ -71,7 +72,7 @@ An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whate
 
 Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
 
-### Look for runs with outsized token counts
+### Look for runs with oversized token counts
 
 Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
 

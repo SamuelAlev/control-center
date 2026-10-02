@@ -1,130 +1,148 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: Organiser votre fil d’actualités
+description: Ajoutez et gérez des flux RSS/Atom, lisez des articles avec le blocage de contenu et sachez que vos flux vous suivent dans tous vos espaces de travail.
 dateModified: 2026-09-19
 slug: fr-FR/manuel/guides/fil-actualites
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+Ce guide vous montre comment façonner le fil d’actualités : les sources qu’il
+interroge, la façon dont les articles sont lus et ce que fait le blocage de
+contenu.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[Le fil d’actualités est propre à l’utilisateur, et non à l’espace de travail]
+Les flux et les articles appartiennent à l’utilisateur connecté : votre liste de
+flux, votre état de lecture et vos signets vous suivent dans chaque espace de
+travail et sur chaque appareil où vous vous connectez, et aucun autre utilisateur
+ne les voit. Les flux résident dans la base de données globale du serveur ;
+l’URL `/newsfeed` ne porte donc un identifiant d’espace de travail que parce que
+c’est le cas de toutes les routes de l’application.
 :::
 
-## Read articles
+## Lire les articles
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. Cliquez sur **Fil d’actualités** dans la barre latérale
+2. Basculez entre **Tout**, **Non lus** et **Enregistrés** à l’aide des segments
+   de la barre d’outils
+3. Affinez la liste avec le champ de recherche ou le sélecteur de source
+4. Basculez entre la grille magazine et la liste dense à l’aide des boutons de
+   disposition
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+Ouvrir un article le marque comme lu. Utilisez **Tout marquer comme lu** dans
+l’en-tête de la page — il n’apparaît que tant que quelque chose n’est pas lu —
+pour vider l’arriéré d’un coup, et la commande de signet d’une carte pour en
+enregistrer un pour plus tard.
 
-The layout choice persists across launches.
+Le choix de disposition est conservé d’un lancement à l’autre.
 
-## Add a feed
+## Ajouter un flux
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. Ouvrez **Paramètres → Vous → Fil d’actualités** (l’icône de paramètres dans
+   l’en-tête du fil d’actualités y mène directement)
+2. Appuyez sur **Ajouter un flux**
+3. Renseignez un **nom** et l’**URL du flux** (RSS ou Atom)
+4. Développez éventuellement **Avancé** et définissez un **User-Agent**
+   personnalisé — certains éditeurs renvoient une réponse différente à un client
+   par défaut
+5. Appuyez sur **Ajouter un flux**
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+Vérification : le flux apparaît dans la liste **Flux** et ses articles arrivent
+après la première récupération. Une URL déjà abonnée est refusée avec « Un flux
+avec cette URL existe déjà. »
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+Quatorze flux sont amorcés pour chaque utilisateur à la première utilisation :
+Control Center, The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt,
+TLDR AI, Import AI, The Pragmatic Engineer, Martin Fowler, Irrational Exuberance
+de Will Larson, The Engineering Manager, Lea Verou et CSS-Tricks.
 
-## Manage feeds
+## Gérer les flux
 
-Each row in the **Feeds** list gives you three controls:
+Chaque ligne de la liste **Flux** vous offre trois commandes :
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| Commande              | Effet                                                                     |
+| --------------------- | ------------------------------------------------------------------------- |
+| Interrupteur          | Désactive le flux. Une ligne désactivée est grisée et n’est plus récupérée |
+| Icône d’actualisation | Récupère ce flux immédiatement                                            |
+| Icône de corbeille    | Supprime le flux, après confirmation                                      |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+**Tout actualiser** en haut de la liste récupère tous les flux activés.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+Le sous-titre d’un flux affiche sa description et le temps écoulé depuis sa
+dernière récupération ; un flux en échec affiche l’erreur à la place, dans la
+couleur d’avertissement.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+Il n’existe aucune fonction d’édition — pour modifier le nom, l’URL ou l’agent
+utilisateur d’un flux, supprimez-le et ajoutez-le à nouveau.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+La récupération s’exécute entièrement sur le serveur : une fois par utilisateur
+au démarrage (et à la première utilisation pour les comptes créés plus tard),
+puis toutes les 30 minutes.
 
-## Block ads and trackers in the reader
+## Bloquer les publicités et les traqueurs dans le lecteur
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. Dans Paramètres → Vous → Fil d’actualités, trouvez **Préférences du lecteur**
+2. Laissez **Ouvrir les articles dans l’application** activé pour utiliser le
+   lecteur intégré, ou désactivez-le pour confier les articles à votre navigateur
+   système
+3. Laissez **Bloquer les publicités, traqueurs et bannières de cookies** activé
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+Le blocage est activé par défaut. Le lecteur intégré n’existe que sur macOS et
+Windows : dans la version web et sous Linux, le navigateur système _est_ le
+lecteur et l’article s’y ouvre (dans un nouvel onglet sur le web). Sur le web,
+l’interrupteur de blocage, la carte **Listes de filtrage** et la carte **Sites de
+confiance** sont masqués.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+Le lecteur intégré à l’application ne remet pas en forme l’article. Il affiche la
+page de l’éditeur dans une vue web intégrée et supprime les publicités, les
+traqueurs et les bannières de cookies à l’aide de listes de filtrage mises en
+cache.
 
-### Check or update the filter lists
+### Vérifier ou mettre à jour les listes de filtrage
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+La carte **Listes de filtrage** indique combien de règles de masquage de cookies,
+de masquage de publicités et de blocage réseau sont chargées, ainsi que les
+paramètres de suivi qu’elle élimine et la date de la dernière mise à jour des
+listes. Appuyez sur **Vérifier les mises à jour** pour les actualiser.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+Les sources sont EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster,
+plusieurs listes uBlock Origin et la liste de paramètres de suivi d’uBO. Tant
+qu’un téléchargement n’a pas réussi, la carte présente les listes comme des
+valeurs par défaut intégrées qui n’ont jamais été mises à jour — les compteurs de
+règles publicitaires, de cookies et de réseau restent à zéro ; la suppression des
+paramètres de suivi utilise toujours un ensemble par défaut intégré.
 
-### Allowlist a site
+### Autoriser un site
 
-Some sites break under blocking.
+Certains sites ne fonctionnent plus lorsque le blocage est actif.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. Dans Paramètres → Vous → Fil d’actualités, allez dans **Sites de confiance**
+2. Appuyez sur **Ajouter un site de confiance** et saisissez le domaine
 
-Blocking is skipped there.
+Le blocage y est ignoré.
 
-## Troubleshooting
+## Dépannage
 
-### A feed I added shows up in another workspace
+### Un flux que vous avez ajouté apparaît dans un autre espace de travail
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+C’est normal. Le fil d’actualités est propre à l’utilisateur, et non à l’espace
+de travail — vos flux vous suivent partout où vous êtes connecté. Voir
+l’avertissement en haut de la page.
 
-### A feed row shows an error instead of a description
+### Une ligne de flux affiche une erreur au lieu d’une description
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+La dernière récupération a échoué et la ligne affiche la raison telle quelle.
+Appuyez sur l’icône d’actualisation pour réessayer et vérifiez que l’URL sert
+toujours du RSS ou de l’Atom. Un éditeur qui rejette les clients inconnus peut
+nécessiter un agent utilisateur personnalisé, ce qui implique de supprimer le
+flux et de l’ajouter à nouveau.
 
-### An article page renders badly
+### Une page d’article s’affiche mal
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+Désactivez **Bloquer les publicités, traqueurs et bannières de cookies** pour ce
+domaine via **Sites de confiance**, ou désactivez **Ouvrir les articles dans
+l’application** et lisez l’article dans votre navigateur.
 
-## Related guides
+## Guides connexes
 
-- [Configure notifications](/fr-FR/manuel/guides/notifications/)
-- [Triage your inbox](/fr-FR/manuel/guides/trier-boite-de-reception/)
+- [Configurer les notifications](/fr-FR/manuel/guides/notifications/)
+- [Trier votre boîte de réception](/fr-FR/manuel/guides/trier-boite-de-reception/)

@@ -1,131 +1,134 @@
 ---
-title: Delegate work to agents
-description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+title: ایجنٹس کو کام تفویض کریں
+description: کسی گفتگو میں ٹکٹ کسی ایجنٹ کے حوالے کریں اور ایجنٹس کو ایک دوسرے کو ذیلی کام تفویض کرنے دیں، گہرائی اور سائیکل گارڈز کی پابندی کے ساتھ۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-تفویض-کریں
+sourceHash: ad9e6a607552fea8b06f386ab610c48ac9abba6f
 ---
 
-This guide covers getting work off your plate and onto an agent's and what
-happens when agents pass work between themselves.
+یہ گائیڈ بتاتی ہے کہ کام آپ کی فہرست سے ہٹا کر کسی ایجنٹ پر کیسے ڈالا جائے اور
+جب ایجنٹس آپس میں کام ایک دوسرے کے حوالے کرتے ہیں تو کیا ہوتا ہے۔
 
-:::caution[Assigning a ticket to an agent does not dispatch]
-There is no ticket dispatcher for an agent assignee. Assignment records
-ownership and nothing more — no space is created, no status changes, no agent
-starts. The exception is a ticket assigned to a **team**, which wakes that
-team's leader. Agent work for a named assignee lives in conversations, so that
-is where you start it.
+:::caution[کسی ایجنٹ کو ٹکٹ اسائن کرنا ڈسپیچ نہیں کرتا]
+کسی ایجنٹ تفویض شدہ کے لیے کوئی ٹکٹ ڈسپیچر نہیں ہوتا۔ اسائنمنٹ صرف ملکیت
+درج کرتی ہے، اس کے سوا کچھ نہیں — نہ کوئی اسپیس بنتی ہے، نہ کوئی اسٹیٹس بدلتا
+ہے، نہ کوئی ایجنٹ شروع ہوتا ہے۔ استثنا **ٹیم** کو تفویض کردہ ٹکٹ ہے، جو اُس ٹیم
+کے لیڈر کو جگاتا ہے۔ کسی نامزد ایجنٹ تفویض شدہ کا کام گفتگوؤں میں رہتا ہے، اس
+لیے آپ اسے وہیں سے شروع کرتے ہیں۔
 :::
 
-## Hand a ticket to an agent
+## ایک ٹکٹ کسی ایجنٹ کے حوالے کریں
 
-1. [Create the ticket](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/) with a title and a
-   description precise enough to work from.
-2. Set its **Assignee** to the agent, so ownership is on the record.
-3. Open (or create) a space and @-mention that agent.
-4. Reference the ticket with a `#` mention in your message — the composer
-   autocompletes workspace tickets — and say what you want done.
+1. [ٹکٹ بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/) ایسے عنوان اور
+   تفصیل کے ساتھ جو کام کرنے کے لیے کافی درست ہو۔
+2. اس کا **تفویض شدہ** ایجنٹ پر سیٹ کریں، تاکہ ملکیت ریکارڈ پر رہے۔
+3. کوئی اسپیس کھولیں (یا بنائیں) اور اُس ایجنٹ کا @-ذکر کریں۔
+4. اپنے پیغام میں `#` ذکر کے ساتھ ٹکٹ کا حوالہ دیں — کمپوزر ورک اسپیس کے ٹکٹس
+   خودکار مکمل کرتا ہے — اور بتائیں کہ آپ کیا کروانا چاہتے ہیں۔
 
-The agent picks the work up from the conversation. Its progress streams into
-that space.
+ایجنٹ یہ کام گفتگو سے اٹھا لیتا ہے۔ اس کی پیش رفت اُسی اسپیس میں رواں دواں رہتی
+ہے۔
 
-## What the agent receives
+## ایجنٹ کو کیا ملتا ہے
 
-- Your message, including the ticket reference you tagged.
-- The space to work and report in.
-- An isolated worktree from the workspace's linked repos.
-- The space's **mode**, which is what governs the run's tool surface.
+- آپ کا پیغام، بشمول وہ ٹکٹ حوالہ جسے آپ نے ٹیگ کیا۔
+- کام کرنے اور رپورٹ دینے کے لیے اسپیس۔
+- ورک اسپیس کے لنک شدہ ریپوز سے ایک الگ تھلگ worktree۔
+- اسپیس کا **موڈ**، جو رن کی ٹول سطح کا تعین کرتا ہے۔
 
-Mode is a property of the space, not of the ticket — a ticket has no
-mode. One agent can therefore be in `chat` in one space and `plan` in
-another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
-**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
-See [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/).
+موڈ اسپیس کا وصف ہے، ٹکٹ کا نہیں — ٹکٹ کا کوئی موڈ نہیں ہوتا۔ چنانچہ ایک ہی
+ایجنٹ ایک اسپیس میں `chat` اور دوسری میں `plan` میں ہو سکتا ہے۔ اسے کمپوزر کے
+موڈ ڈراپ ڈاؤن (**ایجنٹ**، **پلان** یا **آرکیسٹریٹ**) سے منتخب کریں؛ `review`
+PR-ریویو اسپیسز مقرر کرتے ہیں اور یہ قابلِ انتخاب نہیں۔
+دیکھیں [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)۔
 
-## Require a structured result
+## ساختی نتیجہ لازم کریں
 
-An output contract is declared on the dispatch, not on the ticket:
-`expected_output_schema` plus `output_contract_mode` (strict by default). The
-agent satisfies it by calling `submit_output`, which validates the payload
-against the schema and rejects a non-conforming one.
+آؤٹ پٹ معاہدہ ڈسپیچ پر بیان ہوتا ہے، ٹکٹ پر نہیں: `expected_output_schema` کے
+ساتھ `output_contract_mode` (ڈیفالٹ میں strict)۔ ایجنٹ اسے `submit_output` کال
+کر کے پورا کرتا ہے، جو پے لوڈ کو اسکیما کے خلاف جانچتا ہے اور غیر مطابق کو
+مسترد کر دیتا ہے۔
 
-Both the accepted output and any rejections land on the **agent run log**. The
-ticket's own status is untouched by this — a failed contract does not fail the
-ticket.
+قبول شدہ آؤٹ پٹ اور تمام مستردیاں دونوں **ایجنٹ رن لاگ** پر پہنچتے ہیں۔ اس سے
+ٹکٹ کا اپنا اسٹیٹس متاثر نہیں ہوتا — ناکام معاہدہ ٹکٹ کو ناکام نہیں کرتا۔
 
-## Monitor progress
+## پیش رفت کی نگرانی کریں
 
-- **The space** — live agent activity, the primary view.
-- **The ticket** — its status, as whoever moves it sets it.
-- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
-  live agent roster.
-- **Observability → Insights** — the run log, with cost and duration.
+- **اسپیس** — ایجنٹ کی لائیو سرگرمی، بنیادی منظر۔
+- **ٹکٹ** — اس کا اسٹیٹس، جیسا کہ اسے آگے بڑھانے والا مقرر کرتا ہے۔
+- **آبزرویبلٹی → لائیو** (`/workspaces/<workspace-id>/observability`) — چلتے
+  ایجنٹس کا روسٹر۔
+- **آبزرویبلٹی → بصیرتیں** — رن لاگ، لاگت اور دورانیے کے ساتھ۔
 
-There is no dashboard screen; a bare workspace URL redirects to the inbox.
+کوئی ڈیش بورڈ اسکرین نہیں؛ محض ورک اسپیس کا URL ان باکس پر ری ڈائریکٹ ہو جاتا
+ہے۔
 
-## Let agents delegate to each other
+## ایجنٹس کو ایک دوسرے کو تفویض کرنے دیں
 
-An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
-It creates a child ticket assigned to another agent and — when you pass
-`parent_ticket_id` — records the chain so the guards can see it.
+جو ایجنٹ کسی ذیلی مسئلے سے ٹکرائے وہ `delegate_task` MCP ٹول سے تفویض کرتا
+ہے۔ یہ کسی دوسرے ایجنٹ کو تفویض کردہ ایک ذیلی ٹکٹ بناتا ہے اور — جب آپ
+`parent_ticket_id` پاس کریں — زنجیر ریکارڈ کرتا ہے تاکہ گارڈز اسے دیکھ سکیں۔
 
-Two structural guards always run at the ticketing chokepoint, never by
-prompt instruction:
+دو ساختی گارڈز ہمیشہ ٹکٹنگ کے چوک پوائنٹ پر چلتے ہیں، کبھی پرامپٹ ہدایت سے
+نہیں:
 
-- **Depth cap** — a chain deeper than 3 hops is refused.
-- **Cycle detection** — a hop back to an agent already in the chain is refused.
+- **گہرائی کی حد** — 3 ہاپس سے گہری زنجیر مسترد کر دی جاتی ہے۔
+- **سائیکل کی نشان دہی** — زنجیر میں پہلے سے موجود ایجنٹ تک واپس جانے والا ہاپ
+  مسترد کر دیا جاتا ہے۔
 
-When you pass `from_agent_id`, two more guards run (production always supplies
-the resolver ports):
+جب آپ `from_agent_id` پاس کرتے ہیں تو دو مزید گارڈز چلتے ہیں (پروڈکشن ہمیشہ
+ریزولور پورٹس مہیا کرتی ہے):
 
-- **Autonomy ceiling** — the delegate's effective level in the space must not
-  exceed the delegator's.
-- **Budget envelope** — delegation bills the delegator's remaining hard-stop
-  budget and cannot mint more. No policy, or an unlimited policy, passes.
+- **خود مختاری کی چھت** — اسپیس میں ڈیلیگیٹ کی مؤثر سطح تفویض کرنے والے سے
+  زیادہ نہیں ہونی چاہیے۔
+- **بجٹ لفافہ** — تفویض، تفویض کرنے والے کے بقایا ہارڈ اسٹاپ بجٹ پر بل لگاتی
+  ہے اور مزید نہیں بنا سکتی۔ کوئی پالیسی نہ ہو، یا لامحدود پالیسی ہو، تو پاس ہو
+  جاتی ہے۔
 
-A refusal is loud: the tool returns the guard's reason verbatim, so the
-delegating agent sees exactly why. The `delegatedByAgentId` field records who
-delegated, forming a delegation tree.
+انکار بلند آواز ہوتا ہے: ٹول گارڈ کی وجہ لفظ بہ لفظ واپس کرتا ہے، اس لیے تفویض
+کرنے والا ایجنٹ ٹھیک ٹھیک دیکھ لیتا ہے کہ وجہ کیا ہے۔ `delegatedByAgentId`
+فیلڈ ریکارڈ کرتا ہے کہ کس نے تفویض کیا، جس سے ایک تفویض درخت بنتا ہے۔
 
-:::caution[`delegate_ticket` skips every guard]
-The older `delegate_ticket` tool is still registered and calls `createTicket`
-directly — no depth cap, no cycle check, no autonomy ceiling, no budget
-envelope. Prefer `delegate_task`.
+:::caution[`delegate_ticket` ہر گارڈ کو چھوڑ دیتا ہے]
+پرانا `delegate_ticket` ٹول اب بھی رجسٹرڈ ہے اور براہِ راست `createTicket` کال
+کرتا ہے — نہ گہرائی کی حد، نہ سائیکل چیک، نہ خود مختاری کی چھت، نہ بجٹ لفافہ۔
+`delegate_task` کو ترجیح دیں۔
 :::
 
-This delegation depth cap of 3 is a different limit from the built-in harness's
-subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
-subagents inside a single run.
+تفویض کی یہ گہرائی کی حد 3، بلٹ اِن ہارنس کی سب ایجنٹ نیسٹنگ کی حد 2 سے ایک
+مختلف حد ہے — ایک ایجنٹس کے درمیان ٹکٹس کو محدود کرتی ہے، دوسری ایک ہی رن کے
+اندر سب ایجنٹس کو۔
 
-## Put several agents on one ticket
+## ایک ہی ٹکٹ پر کئی ایجنٹس لگائیں
 
-Add them as **collaborators** on the ticket (roles: assignee, collaborator,
-reviewer). That is a roster — a record of who is involved — and grants nothing
-by itself.
+انہیں ٹکٹ پر **تعاون کنندگان** کے طور پر شامل کریں (کردار: تفویض شدہ، تعاون
+کنندہ، ریویوور)۔ یہ ایک روسٹر ہے — اس بات کا ریکارڈ کہ کون شامل ہے — اور بذات
+خود کوئی اجازت نہیں دیتا۔
 
-To actually put agents in the same conversation, add them as participants from
-the space header. They can then @-mention each other there. See
-[Spaces](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/).
+کسی ایک ہی گفتگو میں ایجنٹس کو واقعی شامل کرنے کے لیے انہیں اسپیس ہیڈر سے
+شرکا کے طور پر شامل کریں۔ پھر وہ وہاں ایک دوسرے کا @-ذکر کر سکتے ہیں۔ دیکھیں
+[اسپیسز](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)۔
 
-## Automated ticket creation
+## خودکار ٹکٹ تخلیق
 
-No node in the pipeline palette creates tickets, so a pipeline cannot fan work
-out as assigned tickets.
+پائپ لائن پیلیٹ میں کوئی نوڈ ٹکٹ نہیں بناتا، اس لیے کوئی پائپ لائن کام کو
+تفویض شدہ ٹکٹس کے طور پر نہیں پھیلا سکتی۔
 
-The path that does exist is orchestration: approving a proposal creates a
-project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
-template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
-and starts that run. See
-[Run an orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/).
+جو راستہ واقعی موجود ہے وہ آرکیسٹریشن ہے: کسی تجویز کی منظوری ایک پروجیکٹ اور
+ایک ٹیم بناتی ہے، تجویز کے ذیلی ٹکٹ DAG کو ایک **پائپ لائن ٹیمپلیٹ** میں
+کمپائل کرتی ہے (فی ذیلی ٹکٹ ایک `promptAgent` قدم، نہ کہ ہر ایک کے لیے ایک
+`Ticket` قطار) اور وہ رن شروع کرتی ہے۔ دیکھیں
+[آرکیسٹریشن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)۔
 
-## Related guides
+## متعلقہ گائیڈز
 
-- [Create and manage tickets](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
-- [Chat with an agent](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
-- [Run an orchestration](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
-- [Organize work with projects](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)
-- [Ticket lifecycle reference](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/)
+- [ٹکٹس بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)
+- [ایجنٹ سے چیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ایجنٹ-سے-چیٹ/)
+- [آرکیسٹریشن چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/آرکیسٹریشن-چلائیں/)
+- [پروجیکٹس سے کام منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پروجیکٹس/)
+- [ٹکٹ لائف سائیکل کا حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/ٹکٹ-لائف-سائیکل/)
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Tickets](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
-- [Dispatch lifecycle](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
-- [Modes](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)
+- [ٹکٹس](/ur-PK/ہدایت-نامہ/تصورات/ٹکٹس/)
+- [ڈسپیچ لائف سائیکل](/ur-PK/ہدایت-نامہ/تصورات/ڈسپیچ-لائف-سائیکل/)
+- [موڈز](/ur-PK/ہدایت-نامہ/تصورات/موڈز/)

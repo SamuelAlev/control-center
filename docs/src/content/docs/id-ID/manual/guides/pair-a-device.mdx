@@ -1,96 +1,104 @@
 ---
-title: Pair a device
-description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+title: Pasangkan perangkat
+description: Pasangkan ponsel Anda (atau peramban atau desktop kedua) dengan server Control Center Anda agar Anda dapat mengikuti fleet dari jarak jauh.
 slug: id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat
+sourceHash: bcb2446f7d3cc55caaabd5d27ce1dccdde023d1d
 ---
 
-This guide shows you how to pair a phone with Control Center, so you can read
-messages and tickets and reply from anywhere. The same flow pairs a second
-browser or desktop app. See
-[Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) for how the link
-works and its security model.
+Panduan ini menunjukkan cara memasangkan ponsel dengan Control Center, sehingga
+Anda dapat membaca pesan dan tiket serta membalas dari mana saja. Alur yang sama
+juga memasangkan peramban atau aplikasi desktop kedua. Lihat
+[Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) untuk cara tautan ini
+bekerja dan model keamanannya.
 
-## Prerequisites
+## Prasyarat
 
-- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
-- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Connection & status** (**Share this server**), or the server's `--public-url` (see [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)).
-- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+- Klien desktop atau web yang terhubung ke server Anda dan ruang kerja yang sudah disiapkan. Operasi pemasangan memerlukan klien lengkap, jadi ponsel yang sudah dipasangkan tidak akan pernah dapat memasangkan — atau mencabut — perangkat lain.
+- Server dapat dijangkau dari perangkat yang Anda pasangkan. Pada jaringan yang sama ini langsung berfungsi; dari jarak yang lebih jauh, relay dengan perantara yang membawa lalu lintasnya. Jika panel menjawab **Tidak dapat dijangkau**, bukan menampilkan QR atau kredensial, publikasikan jalur terlebih dahulu — opsi ikut-serta tunnel di **Pengaturan → Server → Koneksi & status** (**Bagikan server ini**), atau `--public-url` milik server (lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/)).
+- Untuk ponsel: tidak ada yang perlu diinstal. QR membuka aplikasi web **Remote** (secara bawaan [remote.usectrl.dev](https://remote.usectrl.dev/)).
 
-**Self-hosting.** Remote and the relay broker are open source in this repo: the
-phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
-via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
-host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
-relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
-app data and never sees the pairing secret — it forwards only
-end-to-end-sealed frames). See their READMEs for build and run steps.
+**Menghosting sendiri.** Remote dan broker relay bersifat open source di repo
+ini: aplikasi ponsel (`apps/cc_remote`, PWA web Flutter yang dapat Anda deploy ke
+Cloudflare Pages melalui `wrangler.jsonc`-nya, ke image nginx `docker/cc_remote`,
+atau ke host statis mana pun dengan HTTPS — service worker dan IndexedDB
+dibatasi oleh konteks aman) dan relay (`apps/cc_signaling_server`, biner Dart
+stateless tunggal yang tidak menyimpan data aplikasi apa pun dan tidak pernah
+melihat rahasia pemasangan — ia hanya meneruskan frame yang tersegel ujung ke
+ujung). Lihat README masing-masing untuk langkah build dan menjalankannya.
 
-## Step 1: Open the pairing panel
+## Langkah 1: Buka panel pemasangan
 
-Open **Settings → You → Your devices**. The **Your devices** section lists the
-clients paired to your account on this server. (The server owner sees every
-device on the server; everyone else sees only their own.)
+Buka **Pengaturan → Anda → Perangkat Anda**. Bagian **Perangkat Anda**
+mencantumkan klien yang dipasangkan ke akun Anda di server ini. (Pemilik server
+melihat setiap perangkat di server; semua orang lain hanya melihat perangkatnya
+sendiri.)
 
-## Step 2: Pair a new client
+## Langkah 2: Pasangkan klien baru
 
-Click **Pair a new client** in the page header, give it a label (e.g. "My
-phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
-click **Pair**.
+Klik **Pasangkan klien baru** di header halaman, beri label (mis. "Ponsel
+saya"), pilih jenisnya — **Peramban web**, **Aplikasi desktop**, atau
+**Ponsel** — lalu klik **Pasangkan**.
 
-- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- Untuk **ponsel**, kode QR akan muncul. Pindai dengan kamera ponsel, atau salin tautannya dan buka di peramban mana pun. Tautan ini mengarahkan aplikasi Remote ke server Anda dan membawa kredensialnya.
+- Untuk **peramban** atau **desktop**, salin tautan yang ditampilkan (atau id perangkat dan kunci pemasangan) ke klien baru. Tautan sekali ketuk hanya ditawarkan saat Anda memasangkan dari klien web, karena biner desktop tidak memiliki origin web untuk membangunnya.
 
-The phone QR and the link `cc_server pair --client-url` prints on the CLI are
-**different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
-descriptor and identity fingerprint for the Remote PWA.
+QR ponsel dan tautan yang dicetak `cc_server pair --client-url` di CLI adalah
+**muatan yang berbeda dan tidak dapat dipertukarkan**: tautan CLI mengisi
+formulir koneksi klien web, sedangkan QR ini membawa deskriptor koneksi lengkap
+server dan sidik jari identitas untuk PWA Remote.
 
-On the phone side, opening a pairing link does not pair silently. Remote shows
-the server's advertised name and asks you to confirm before it stores anything,
-so a forged link cannot hijack the app onto someone else's server.
+Di sisi ponsel, membuka tautan pemasangan tidak memasangkan secara diam-diam.
+Remote menampilkan nama yang diumumkan server dan meminta Anda mengonfirmasi
+sebelum menyimpan apa pun, sehingga tautan palsu tidak dapat membajak aplikasi
+ke server orang lain.
 
-:::caution[A scanned QR grants access immediately]
-There is no pending-then-approve step: a minted device is active from the
-moment it is created and the connect gate checks only that the credential is
-active and unexpired. Treat the QR and the pairing key like a password and
-revoke anything you did not mean to hand out.
+:::caution[QR yang dipindai langsung memberikan akses]
+Tidak ada langkah menunggu-lalu-menyetujui: perangkat yang dibuat langsung aktif
+sejak saat dibuat dan gerbang koneksi hanya memeriksa bahwa kredensialnya aktif
+dan belum kedaluwarsa. Perlakukan QR dan kunci pemasangan seperti kata sandi,
+lalu cabut apa pun yang tidak ingin Anda berikan.
 :::
 
-## Manage paired devices
+## Kelola perangkat yang dipasangkan
 
-From **Settings → You → Your devices** you can:
+Dari **Pengaturan → Anda → Perangkat Anda**, Anda dapat:
 
-- **Rename** a device
-- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+- **Ganti nama** perangkat
+- **Cabut** perangkat yang tidak lagi Anda percayai. Pencabutan menghancurkan kredensialnya dan memutus sesi aktifnya dalam hitungan detik, sehingga perangkat gagal secara tertutup saat menyambung kembali
 
-Revoking is the right move for a lost or replaced phone. It is immediate and
-irreversible from the device's perspective.
+Mencabut adalah langkah yang tepat untuk ponsel yang hilang atau diganti. Dari
+sudut pandang perangkat, tindakan ini langsung berlaku dan tidak dapat
+dibatalkan.
 
-Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+Kredensial yang dibuat dari panel ini dibatasi waktu: kredensial kedaluwarsa 30
+hari setelah diterbitkan dan gerbang koneksi menolaknya secara tertutup setelah
+itu. Kredensial yang dibuat dengan `cc_server pair` di baris perintah **sama
+sekali tidak memiliki masa kedaluwarsa** — cabut secara manual saat mesin yang
+dituju sudah tidak digunakan lagi.
 
-## Switch workspaces from the phone
+## Beralih ruang kerja dari ponsel
 
-A paired phone can switch between workspaces independently of the desktop. The
-phone sends the workspace with every call and the server checks your membership
-and role in that workspace on each one — so the phone reaches only workspaces you
-are a member of and switching there never changes what the desktop shows.
+Ponsel yang dipasangkan dapat beralih antar-ruang kerja secara independen dari
+desktop. Ponsel mengirimkan ruang kerja pada setiap panggilan dan server
+memeriksa keanggotaan serta peran Anda di ruang kerja tersebut pada setiap
+panggilan — sehingga ponsel hanya menjangkau ruang kerja yang Anda ikuti dan
+beralih di sana tidak pernah mengubah apa yang ditampilkan desktop.
 
-A phone session is additionally restricted to a small allow-list of read-heavy
-tools: it can list and read tickets, agents, spaces, messages and feed
-articles and it can update or assign a ticket, send a message in a space and
-mark an article read or saved. Anything outside that set is refused before it reaches
-the server's dispatcher.
+Sesi ponsel juga dibatasi pada daftar izin kecil berisi alat yang banyak
+membaca: ponsel dapat menampilkan daftar dan membaca tiket, agen, space, pesan,
+dan artikel umpan berita, serta dapat memperbarui atau menetapkan tiket,
+mengirim pesan di sebuah space, dan menandai artikel sebagai sudah dibaca atau
+disimpan. Apa pun di luar kumpulan itu ditolak sebelum mencapai dispatcher
+server.
 
-## Related guides
+## Panduan terkait
 
-- [Run a headless server](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): make the server reachable in the first place
-- [Connect to a remote server](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/): point a full client at it
-- [Use spaces](/id-ID/panduan-pengguna/panduan-praktis/space/): what you'll mostly do from the phone
-- [Create and manage tickets](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/): triage from the road
+- [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/): agar server dapat dijangkau sejak awal
+- [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/): arahkan klien lengkap ke server tersebut
+- [Gunakan space](/id-ID/panduan-pengguna/panduan-praktis/space/): hal yang paling sering Anda lakukan dari ponsel
+- [Buat dan kelola tiket](/id-ID/panduan-pengguna/panduan-praktis/kelola-tiket/): pilah tiket saat dalam perjalanan
 
-## Related concepts
+## Konsep terkait
 
-- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)
-- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/)
+- [Kontrol jarak jauh dan seluler](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/)
+- [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/)

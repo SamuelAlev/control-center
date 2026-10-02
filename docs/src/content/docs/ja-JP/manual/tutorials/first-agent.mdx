@@ -1,98 +1,99 @@
 ---
-title: Dispatch your first agent
-description: Create an agent, give it a space and a task and watch the run stream back.
+title: 初めてのエージェントをディスパッチする
+description: エージェントを作成し、スペースとタスクを与え、実行がストリーミングで返ってくるのを見届けます。
 slug: ja-JP/マニュアル/チュートリアル/初めてのエージェント
+sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
 ---
 
-## What you will build
+## 作るもの
 
-By the end of this tutorial, you will have:
+このチュートリアルを終えると、次のものが揃っています:
 
-- An agent you created and configured yourself
-- A space where you and that agent talk
-- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+- 自分で作成して設定したエージェント
+- あなたとそのエージェントが会話するスペース
+- 完了した 1 回の実行 — 分離されたワークツリーにコミットされた作業と、エージェントの実行ログの 1 行
 
-Prerequisites: [Your first workspace](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/) completed, so this workspace has a repo registered and at least one model provider connected.
+前提条件: [初めてのワークスペース](/ja-JP/マニュアル/チュートリアル/初めてのワークスペース/)を完了していること。これにより、このワークスペースにはリポジトリが登録され、少なくとも 1 つのモデルプロバイダーが接続された状態になります。
 
-## Step 1: Create an agent
+## ステップ 1: エージェントを作成する
 
-1. Go to **Settings → Workspace → Agents**
-2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
-3. On the **Settings** tab, fill in:
-   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
-   - **Title**: what it does, e.g. "Backend engineer"
-   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
-   - **Model**: choose from the list the connected provider serves
-   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
-4. Press **Save changes**
+1. **設定 → ワークスペース → エージェント**を開きます
+2. **新しいエージェント**をクリックします。「名前なしエージェント」というエージェントがすぐに作成され、名簿内で選択されます — 作成ダイアログはなく、確認するものもありません。設定はその場で行います。
+3. **設定**タブで次を入力します:
+   - **名前**: `alice` のような、短くて覚えやすいもの。`@` の後に入力する名前です。
+   - **タイトル**: そのエージェントの役割。例: 「バックエンドエンジニア」
+   - **アダプター**: `Control Center (built-in)`。これは意図的に選んでください — 実行中に軌道修正でき、ターン境界で一時停止できるのは内蔵ハーネスだけであり、サーバーホストに CLI をインストールする必要もありません。
+   - **モデル**: 接続済みプロバイダーが提供する一覧から選びます
+   - **スキル**: 適したものを付けます。例: `testing` や `architecture`
+4. **変更を保存**を押します
 
-:::note[An agent with no adapter runs on the built-in loop]
-When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::note[アダプターのないエージェントは組み込みループで実行される]
+アダプターフィールドが未設定の場合、ディスパッチは **Control Center (built-in)** にフォールバックします — サーバー内部のエージェントループなので、ホストにインストールするものはありません。それでもモデルは必要です。モデルも設定されていなければ Anthropic にそのデフォルトを問い合わせます。これは Anthropic アカウントを接続していれば機能し、そうでなければ `No credential for provider "anthropic"` で失敗します。いずれにせよ両方を明示的に設定してください。さもないと、自分で選んでいないモデルで実行することになります。
 :::
 
-**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
+**チェックポイント。** 名簿の行に、エージェントの名前と中空のステータスリングが表示されます。
 
-## Step 2: Start a space
+## ステップ 2: スペースを開始する
 
-1. In the sidebar, find the **Spaces** section and click the **+** button
-2. Give the space a name
-3. Under **Add agents**, select the agent you just created
-4. If the workspace has any repos, pick which ones this space should work on
-5. Click **Create**
+1. サイドバーで**スペース**セクションを見つけ、**+** ボタンをクリックします
+2. スペースに名前を付けます
+3. **エージェントを追加**で、作成したばかりのエージェントを選択します
+4. ワークスペースにリポジトリがある場合は、このスペースで作業するものを選びます
+5. **作成**をクリックします
 
-The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+スペースが開きます。バックグラウンドで Control Center が、この会話のために選択したリポジトリのコピーオンライトのワークツリーを、それぞれ独自のブランチでプロビジョニングします。ソースのチェックアウトが変更されることはありません。
 
-## Step 3: Send a task
+## ステップ 3: タスクを送信する
 
-Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+登録したリポジトリに対して、具体的で小さなタスクを 1 つ入力します。結果を確認できるものが最適です — テストを追加する、lint を修正する、シンボルの名前を変更するなどです。
 
-Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+Enter を押します。誰かを `@` でメンションする必要はありません。スペースにエージェントが 1 体だけなら、通常のメッセージでそのエージェントが動き出します。エージェントが複数いるスペースでは、`@name` で 1 体を選びます。
 
-Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+Control Center は、エージェントの指示、ペルソナ、スキル、スペースのコンテキストからプロンプトを組み立ててから、実行をディスパッチします。
 
-**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+**チェックポイント。** コンポーザーの送信ボタンが停止ボタンに変わります — この会話でエージェントが作業している証拠です — そしてテキストが届き始めます。
 
-## Step 4: Watch it work
+## ステップ 4: 実行の様子を見る
 
-The conversation renders the run as it happens:
+会話は、実行の進行に合わせてそれを描画します:
 
-- **Reasoning**, shown inline as the agent thinks
-- **Tool calls**: file reads and writes, searches, shell commands, each with its result
-- **Text**: summaries, explanations and questions for you
+- **推論** — エージェントの思考に合わせてインラインで表示されます
+- **ツール呼び出し**: ファイルの読み取りと書き込み、検索、シェルコマンド。それぞれに結果が付きます
+- **テキスト**: 要約、説明、あなたへの質問
 
-If the agent asks something, answer in the conversation and it resumes.
+エージェントが何かを尋ねてきたら、会話の中で答えれば再開します。
 
-For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+実行自体のメトリクスと、その一時停止・再開・停止のコントロールについては、スペースの一般パネルの**エージェント**セクションで実行中のエージェントを見つけ、**アクティビティを開く**を選びます。
 
-In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
+アクティビティペインでは、ステータスバッジは**実行中**と表示され、実行が終わると**成功**になります。停止またはループしている実行は**ブロック中**、エラーになった実行は**失敗**と表示されます。エージェントレジストリでは、名簿のリングは最初の実行前は中空で、エージェントが再びアイドルになると塗りつぶされます。
 
-What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/).
+実行を制約するもの: それ自身のコピーオンライトのワークツリー、起動時にブローカー経由で発行され、終了時に取り消される資格情報、サニタイズされた環境、そのモードが許可するツールサーフェス、そしてアクションガードレールです。ブランチのプッシュやプルリクエストの作成といったエフェクトは別途ゲートされます — [ガードレール](/ja-JP/マニュアル/コンセプト/ガードレール/)を参照してください。
 
-## Step 5: Check the result
+## ステップ 5: 結果を確認する
 
-1. Open **Settings → Workspace → Agents** and select your agent
-2. Open the **Logs** tab
+1. **設定 → ワークスペース → エージェント**を開き、自分のエージェントを選択します
+2. **ログ**タブを開きます
 
-**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+**チェックポイント。** 実行の行が 1 つあり、そのステータス、所要時間、開始時刻と終了時刻、実行に使われたアダプターが表示されます。
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+エージェントの変更は、会話のブランチ上、そのワークツリー内にコミットされます。コミットの作者はエージェントで、あなたは `Co-Authored-By:` トレーラーにクレジットされます。
 
-## Getting a pull request
+## プルリクエストを開く
 
-Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+プルリクエストを勝手に開くものはありません。開きたい場合は、同じ会話の中で依頼します:
 
-> Push this branch and open a pull request against the default branch.
+> このブランチをプッシュし、デフォルトブランチに対するプルリクエストを開いてください。
 
-Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+プッシュ（`gitPush`）と PR の作成（`prCreate`）はいずれも既定で承認を求めるため、それぞれの前に確認が入ります。プロンプトが発火した時点で承認者が接続されていなければ、アクションは許可されるのではなく拒否されます — ガードレールはフェイルクローズします。
 
-The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+PR は、その実行が使用したトークンの GitHub アイデンティティ（個人トークンを保存していればあなた）の下で開かれ、エージェントの名前で開かれることはありません。エージェントが作者であることはコミットに現れます。
 
-You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+自分で開くこともできます。スペースの**ソース管理**パネルには**プルリクエストを作成**ボタンがあり、会話のブランチを作成画面に引き継ぎます。また、**プルリクエスト → 新しい PR** は同じ画面を空の状態で開きます。次のチュートリアルはここから続きます。
 
-## Recap
+## まとめ
 
-You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+エージェントを作成し、そのアダプターとモデルを設定し、スペースとタスクを与え、チェックアウトに触れることなく、実際の実行が分離されたワークツリー内で完了するのを見ました。
 
-**Next:** [Review your first pull request](/ja-JP/マニュアル/チュートリアル/初めてのプルリクエスト/) to learn the review workflow.
+**次:** [初めてのプルリクエストをレビュー](/ja-JP/マニュアル/チュートリアル/初めてのプルリクエスト/)で、レビューワークフローを学びます。
 
-For more on agents: [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/). For dispatch details: [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/).
+エージェントについて詳しくは: [エージェントモデル](/ja-JP/マニュアル/コンセプト/エージェントモデル/)。ディスパッチの詳細については: [エージェントのディスパッチライフサイクル](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/)。

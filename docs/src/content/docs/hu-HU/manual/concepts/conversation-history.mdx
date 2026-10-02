@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: Beszélgetési előzmények
+description: Hogyan őrzi meg, hajtja össze, ágaztatja el és folytatja egy futtatás a kontextusát — tömörítési stratégiák, a munkamenetfa, és hogy mit is jelent valójában a „folytatás”.
 slug: hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+Egy hosszú beszélgetés kemény falba ütközik: a modell kontextusablakába. Ezen az oldalon minden e fal miatt létezik, és az igazán érdekes rész az, hogy mi kerül kidobásra, mi marad meg, és mi hozható vissza.
 
-## Four ways to reclaim context
+## Négy mód a kontextus visszanyerésére
 
-They are not alternatives so much as a ladder, cheapest first.
+Ezek nem annyira alternatívák, mint inkább egy létra, a legolcsóbbal kezdve.
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
-| -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| Mechanizmus      | Költség           | Megőrzi                                | Elveszíti                             |
+| ---------------- | ----------------- | -------------------------------------- | ------------------------------------- |
+| **Kihagyás**     | Semmi             | A narratíva minden szavát              | Az eseménytelenebb régebbi eszközeredményeket |
+| **Képek elhagyása** | Semmi          | A körülöttük lévő szöveget             | A régi képernyőképeket                |
+| **Pillanatképek** | Semmi            | Minden szót, pixelként                 | Az olvashatóságot nem látó modell számára |
+| **Összefoglaló** | Egy modellhívás   | Egy narratívát                         | Azokat a részleteket, amelyeket nem választott ki |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+A kihagyás és a képek elhagyása fut először, mert ingyenesek, és abban az értelemben veszteségmentesek, ami számít: olyan terjedelmet dobnak el, amelyet senki sem olvasott volna újra.
 
-### Why summarizing is the last resort
+### Miért az összefoglaló az utolsó lehetőség
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+A négy közül az összefoglaló az egyetlen, amely **modellhívást költ el**, és az egyetlen, amely **helyetted dönti el**, mi volt fontos. Mindkettő valódi költség. A hívás az érdekesebb, amiatt, hogy mikor történik.
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+A tömörítés általában a fal *előtt* jár, egy küszöbértéken. De **reaktívan** is fut, miután maga a szolgáltató túl nagyként utasítja el a kérést — a heurisztikus becslés alábecsülte azt, amit a szolgáltató ténylegesen mért. Ebben a helyzetben az összefoglaló tömörítőnek kérést kell indítania a kontextus zsugorításához, és az a kérés, amit indít, éppen az, amelyik az előbb túlcsordult.
 
-### Snapshots
+### Pillanatképek
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+A pillanatkép-tömörítés a kidobott előzményeket sűrű pixellapokra rajzolja, és képként adja vissza.
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+A feltevés alapja egy számlázási sajátosság: a látó modell egy képért fix vagy területtel arányos díjat számít fel, amelynek semmi köze ahhoz, hány karakter van benne. Tizenkétezer karakter kidobott beszélgetés tizenkétezer karakter értékű szövegtokenbe kerül. Ugyanaz a tizenkétezer karakter egyetlen lapra rajzolva egy képbe kerül.
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+Amiért érdemes a birtoklása, nem csupán ötletes, az az, hogy **nincs szüksége modellhívásra, kulcsra és hálózatra**. Ez az egyetlen stratégia, amely a túlcsordulás utáni helyreállítás során mindig elérhető.
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+A rekonstrukció alakja: szó szerinti eleje, képre vitt közepe, szó szerinti vége. Az eleje a feladat és a megkötések, amelyekre minden későbbi rész visszautal; a vége az, ahol a munka éppen tart. A közepe az, amit a legkevesebbet olvasnak újra, és a legtöbbe kerül.
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[Becsületesen romlik a minősége]
+A látás nélküli modell nem tud pixellapokat elolvasni, és olyan szöveget kirajzolni, amelyre semmi sem tud ránézni, nem lefokozott tömörítés — az egy törölt beszélgetés. Ezért az olvasó képessége dönt, és a nem látó modell mindig az összefoglalót kapja.
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[A lap alakját az API árazza, nem a súlyok]
+A Gemini képenként fix díjat számláz, így a lap minden plusz karaktere ingyenes, és az ő lapjai a legszélesebbek. Az OpenAI és az Anthropic terület alapján számláz, így a nagyobb lap semmit sem hoz. Egyes processzorok egy küszöb felett lekicsinyítik a képet, ami csendben tönkreteszi az 5 pixeles karaktereket, ezért az ő lapjaik a küszöb alatt maradnak. A gatewayen keresztül kiszolgált Claude-ot a gateway számlázza, így az alak a modellazonosítót követi, ahogy az útvonal megnevezi.
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+A pillanatképek minden menetben a **megtartott forrásszövegből** rajzolódnak újra, soha nem az előző menet pixeljeiből. Egy kép képként való feldolgozása tömörítésenként egy generációval rontja a karaktereket, amíg semmi sem tudja elolvasni őket.
 
-## What a run actually resumes from
+## Mit folytat valójában egy futtatás
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+Történelmileg minden harness-futtatás üres előzményekből indult, és a folytonosságot a promptban lévő `<context>` blokkból építette újra — a beszélgetés *összefoglalójából*, nem magából a beszélgetésből. Ebből három dolog következett:
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **A folytatás újraelmondás volt.** A modell soha nem látta a saját korábbi gondolatmenetét vagy az eszközei által visszaadott tényleges bájtokat, csak azok leírását.
+- **A visszatekerés meghalt a folyamattal.** A `checkpoint` egy index az élő üzenetlistába, így egy újraindulás elveszítette az összes címkét, amelyet a modell beállított.
+- **Az újrapróbálás nem tudta megkülönböztetni a „nincs mit újrapróbálni” esetet a „nincs betöltve” esettől.** Újraindulás után a sikertelen kör mindkét esetben eltűnik az élő állapotból.
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+Mindhármat az átirat megőrzése oldja meg. Minden **körhatáron** mentődik, és soha nem a kör közben: az eszközhívás és annak eredménye között rögzített előzményt egyetlen szolgáltató sem fogad el, így az abban a pillanatban bekövetkező összeomlás az *előző* kört állítja vissza, nem egy fél kört, amelyet nem lehet újrajátszani.
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+A folytatott futtatás a legújabb üzeneteire vágódik, olyan határnál vágva, amely nem árva eszközeredmény — az olyan eredmény, amelynek hívását levágta, olyan kérés, amelyet a szolgáltatók egyenesen elutasítanak, és a küldhetetlen átirat rosszabb a rövidnél.
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[Hol található]
+Beszélgetésenként és ügynökönként egy JSON-fájl, a munkaterület saját könyvtárában, az adatbázisa mellett. Egy beszélgetés két ügynöke két előzményt tart: különböző eszközeredményeket láttak, és különböző rendszerpromptokat kaptak, így az egyesítésük mindegyiküknek a másik gondolatmenetét adná a sajátjaként.
 :::
 
-## The session tree
+## A munkamenetfa
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+Minden üzenet rögzíti, hogy melyiktől folytatódik, és minden beszélgetés megnevezi a jelenlegi **ágcsúcsát**. Ez az egyetlen döntés maga a teljes funkció.
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**Az elágaztatás nem ír semmit.** A mutatót mozgatja. Az elhagyott útvonal továbbra is ott van, így a visszaváltás egy újabb mutatómozgatás, nem helyreállítás — és ha egy promptot szerkesztve újrafuttat, nem veszíti el azt a választ, amelyhez éppen hasonlított.
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+Enélkül a visszalépés minden formája kénytelen elrejteni vagy törölni az üzeneteket, a rejtés pedig olyan hazugság, amelyen a következő olvasó nem lát át.
 
-### Branch versus fork
+### Ág vagy fork
 
-|                | Branch              | Fork                        |
+|                | Ág                  | Fork                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| Mi történik    | A mutató elmozdul   | Az útvonal másolódik        |
+| Hová kerül     | Ugyanaz a beszélgetés | Új beszélgetés            |
+| Költség        | Semmi               | Az ág egy másolata          |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+A fork **friss azonosítókkal** másol, nem sorokat oszt meg. A sorokat megosztó két beszélgetés megmutatná egymás későbbi üzeneteit, és pontosan ezt nem szabad egy fork-nak tennie.
 
-### Rewind rides the same pointer
+### A visszatekerés ugyanazon a mutatón utazik
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+A futáson belüli `checkpoint` / `rewind` pár egy tiszta körhatárt jelöl meg, és egy felfedezés után oda tér vissza, megőrizve egy kivonatot. Mivel a checkpointok az átirat mellett tárolódnak, egy újraindítás előtt beállított címke továbbra is oda érkezik, ahová beállították. Az a checkpoint, amelynek célpontja nem élte túl a levágást, **eldobódik**, nem a megmaradt legközelebbi pontra igazítódik — „a címkéhez” visszatekerni és máshová érkezni pontosan az a hiba, amelyet egy címke hivatott megakadályozni.
 
-## Related
+## Kapcsolódó
 
-- [Branch a conversation](/hu-HU/kezikonyv/gyakorlati-utmutatok/beszelgetes-elagaztatasa/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) — the other half of what fills a context window
-- [Slash commands](/hu-HU/kezikonyv/referencia/slash-parancsok/) — `/compact`, `/shake`, `/context`, `/tree`
+- [Beszélgetés elágaztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beszelgetes-elagaztatasa/) — a fanavigátor, a fork és az export
+- [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) — a másik fele annak, ami megtölti a kontextusablakot
+- [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/) — `/compact`, `/shake`, `/context`, `/tree`

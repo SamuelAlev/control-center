@@ -1,156 +1,159 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: استفاده از فضاها
+description: فضا بسازید، حالتشان را تعیین کنید، مشارکت‌کنندگان و خودمختاری را مدیریت کنید و گفتگوها و رشته‌ها را باز کنید.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/فضاها
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+این راهنما نشان می‌دهد چگونه از فضاها استفاده کنید. یک **فضا** سطح پیام‌رسانی در
+Control Center است: اتاقی محدود به یک فضای کاری با یک یا چند مشارکت‌کننده (شما
+و/یا عامل‌ها) که برای هر مخزنی که فضا برایش ساخته شده، یک worktree
+کپی‌درنوشتن دارد.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+اتاق‌های دونفره و اتاق‌های چندعاملی هر دو فقط فضا هستند و تنها در شمار
+مشارکت‌کنندگانشان با هم تفاوت دارند. تنها استثنا فضاهایی است که عامل‌ها برای
+گفتگو با یکدیگر باز می‌کنند — [فضاهای عامل‌به‌عامل](#فضاهای-عاملبهعامل) را
+در ادامه ببینید.
 
-## Create a space
+## ساخت یک فضا
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. به **فضاها** بروید
+2. روی دکمهٔ **+** کنار سرصفحهٔ فضاها کلیک کنید
+3. یک **نام** برایش بگذارید — الزامی است. نام خالی پذیرفته نمی‌شود؛
+   پنجرهٔ گفتگو باز می‌ماند
+4. به‌صورت اختیاری عامل‌هایی از فضای کاری اضافه کنید
+5. وقتی فضای کاری مخزنی دارد، انتخاب کنید این فضا برای کدام‌هایشان worktree
+   فراهم کند. همه به‌طور پیش‌فرض انتخاب شده‌اند؛ برداشتن انتخاب همهٔ مخزن‌ها
+   فضایی می‌سازد که هیچ چیزی در آن چک‌اوت نشده است
+6. تأیید کنید
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+فضاها محدود به فضای کاری‌اند: فقط عامل‌های فضای کاری جاری را می‌بینید و یک
+فضا هرگز داده‌ای از فضای کاری دیگری را رو نمی‌کند.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills).
+هر مخزن درون فضا در `repos/<name>/` چک‌اوت می‌شود. مخزنی که مهارت‌های عامل
+خودش را عرضه می‌کند، آن‌ها را به هر عاملی که در آن کار می‌کند می‌دهد — هر بار
+مجموعهٔ یک مخزن، و با جابه‌جا شدن عامل جابه‌جا می‌شود. از ویرایشگر پیام
+می‌توانید با `/skill:<repo>:<name>` به هر یک از آن‌ها دسترسی داشته باشید.
+[مهارت‌های محدود به مخزن(/fa-IR/راهنمای-کاربر/مفهومها/مدل-عامل/#repo-scoped-skills) را ببینید.
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+این سطح در `/workspaces/<id>/spaces` قرار دارد و یک فضای منفرد در
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## تعیین حالت فضا
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+یک فضای تازه در حالت پیش‌فرض شروع می‌شود. آن را از **فهرست بازشوی حالت** در
+منتهی‌الیه چپ نوار ابزار ویرایشگر پیام تغییر دهید — نه از پنجرهٔ ساخت (که هیچ
+فیلد حالتی ندارد) و نه از سرصفحهٔ فضا.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| حالت         | اثر                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| **عامل**     | دسترسی کامل. پیش‌فرض؛ در لایهٔ درونی `chat` و در فهرست بازشو با عنوان «عامل» نمایش داده می‌شود      |
+| **برنامه**   | فقط خواندن و پژوهش؛ خروجی یک طرح نوع‌دار است                                                        |
+| **ارکستر**   | خواندن و پژوهش به‌علاوهٔ یک فعل منفرد `propose_orchestration`؛ طرح تنها پس از تأیید شما اجرا می‌شود |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab بدون باز کردن فهرست بازشو، میان حالت برنامه و حالت عامل جابه‌جا می‌شود.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+حالت چهارمی هم وجود دارد، **review**، که در فهرست بازشو عرضه نمی‌شود — به‌طور
+خودکار روی فضاهای بازبینی PR اعمال می‌شود.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+حالت روی خود فضا ذخیره می‌شود، بنابراین همان عامل می‌تواند در یک فضا در حالت
+برنامه و در فضایی دیگر در حالت عامل باشد. هر گفتگویی درون یک فضا، حالت همان
+فضا را به اشتراک می‌گذارد.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[به نشان اعمال توجه کنید]
+وقتی عامل‌های فضا روی آداپتوری اجرا می‌شوند که نمی‌تواند حالت انتخابی شما را
+اعمال کند، نشانه‌ای کنار فهرست بازشوی حالت ظاهر می‌شود. تنها هارنس داخلی
+Control Center سطح ابزار را پالایش می‌کند و هر فراخوانی را دروازه‌گذاری می‌کند؛
+آداپتورهای Claude Code و ACP حالت را به‌شکل درخواستی دریافت می‌کنند که ممکن
+است runnerشان رعایتش کند یا نه. نبود نشان یعنی «هیچ ادعایی مطرح نمی‌شود»، نه
+«ایمن تأییدشده».
 :::
 
-See [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) for the full model.
+برای مدل کامل، [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/) را ببینید.
 
-## Manage participants and per-agent autonomy
+## مدیریت مشارکت‌کنندگان و خودمختاری هر عامل
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+روی آیکون افراد در سرصفحهٔ فضا کلیک کنید تا **مدیریت مشارکت‌کنندگان** باز شود.
+برای هر عاملی که از پیش در فضا هست می‌توانید:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- آن را از فضا حذف کنید
+- **خودمختاری** آن را برای این فضا تعیین کنید: **پیش‌فرض**، **فقط پیشنهاد**،
+  **عمل با تأیید** یا **عمل آزاد**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+درجهٔ خودمختاری به‌ازای هر (فضا، عامل) است، بنابراین عاملی که در یک اتاق به آن
+اعتماد دارید در اتاقی دیگر می‌تواند به «فقط پیشنهاد» محدود شود.
 
-## React to a message
+## واکنش به یک پیام
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+نشانگر را روی یک پیام ببرید و روی آیکون لبخند کلیک کنید تا پالت واکنش باز شود.
+مجموعهٔ ثابتی از شش مورد است: 👍 👎 🎉 ❤️ 👀 ✅. هیچ انتخابگر ایموجی آزادی
+وجود ندارد — زدن هر کدام آن را برای شما روشن/خاموش می‌کند و تراشه‌های
+تجمیع‌شده زیر پیام ظاهر می‌شوند.
 
-## Open a conversation
+## باز کردن یک گفتگو
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+یک فضا هم‌زمان چندین گفتگو را میزبانی می‌کند و همه هم‌تراز و برابرند — هیچ‌کدام
+اصلی نیست. یک فضا همیشه دست‌کم یک گفتگوی زنده نگه می‌دارد: نمی‌توانید آخرین
+گفتگوی فعال را بایگانی کنید و باز کردن فضایی که هنوز هیچ گفتگویی ندارد، یک
+گفتگوی دائمی بی‌عنوان می‌سازد.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+گفتگوها به‌صورت زبانه‌های ویرایشگر و، وقتی بیش از یکی باشد، به‌صورت ردیف‌های
+تودرتو زیر فضا در نوار کناری ظاهر می‌شوند. **گفتگوی جدید** در منوی زبانهٔ جدید
+ویرایشگر قرار دارد و بدون پرسش عنوان یک گفتگوی بی‌عنوان می‌سازد — مدل
+عنوان‌گذاری آن را بر پایهٔ نخستین پیام نام‌گذاری می‌کند. از یکی از آن‌ها برای
+اجرای کار موازی با همان عامل و همان worktree استفاده کنید.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+هر گفتگو تاریخچهٔ پیام‌ها و نشست‌های عامل خودش را نگه می‌دارد و در عین حال
+worktreeهای فضا و حالت آن را به اشتراک می‌گذارد. بستن یک زبانه فقط آن را پنهان
+می‌کند؛ **بایگانی گفتگو** (ردیف نوار کناری یا منوی راست‌کلیک زبانهٔ گفتگو) تنها
+همان گفتگو را بایگانی می‌کند.
 
-## Start a thread
+## شروع یک رشته
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+نشانگر را روی هر پیامی ببرید و **شروع رشته** را انتخاب کنید. این کار گفتگویی
+باز می‌کند که به آن پیام لنگر شده است: لنگر، بافت عامل گفتگوی جدید را با یک خط
+می‌آغازد و تاریخچهٔ گفتگوی مادر **کپی نمی‌شود**.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+وقتی یک رشته پاسخ می‌گیرد، پیامی که رشته به آن آویزان است، یک ردیف زیر خودش
+پیدا می‌کند — چهرهٔ کسانی که سخن گفته‌اند، شمار پاسخ‌ها و زمانی که آخرین پاسخ
+رسیده است. همان ردیف راه بازگشت است: کلیک روی آن زبانهٔ رشته را باز می‌کند (یا
+به آن تمرکز می‌دهد). این تنها اثری است که یک رشته در جریانی که از آن شاخه زده
+به‌جا می‌گذارد و همین دلیل وجود آن است.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+زبانهٔ یک رشته عنوان `Thread: <name>` دارد و نماد شاخه را حمل می‌کند، پس دو
+زبانه در یک فضا هرگز با هم اشتباه گرفته نمی‌شوند.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+رشته‌ها هرگز تودرتو نمی‌شوند — لنگر زدن به پیامی که از پیش درون یک رشته است،
+رد می‌شود. سرصفحهٔ گفتگو به پیام لنگر پیوند می‌دهد. حذف پیام لنگر رشته را حذف
+می‌کند و بایگانی گفتگوی مادر، رشته‌های موجودش را مسدود نمی‌کند.
 
-## Read state
+## وضعیت خواندن
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+نشانه‌های خوانده‌شده به فضا محدودند، نه به گفتگو: باز کردن هر گفتگویی در فضا
+کل اتاق را پاک می‌کند. با این حال خوانده‌نشده‌ها روی همهٔ گفتگوهای یک فضا، با
+احتساب رشته‌ها، تجمیع می‌شوند. وقتی گفتگوها زیر فضا فهرست می‌شوند، نقطهٔ
+خوانده‌نشده روی گفتگویی می‌نشیند که کار ندیده دارد، نه روی ردیف مادر.
 
-## Agent-to-agent spaces
+## فضاهای عامل‌به‌عامل
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+فضاهایی که عامل‌ها برای گفتگو با یکدیگر باز می‌کنند، در نوار کناری جداگانه و
+زیر **عامل‌ها** بخش‌بندی می‌شوند، به‌طور پیش‌فرض جمع‌شده‌اند و کم‌رنگ رسم
+می‌شوند. آن‌ها هرگز نشان خوانده‌نشدهٔ شما را بالا نمی‌برند — پرحرفی عامل‌ها
+از ساختار بی‌صداست، نه با تنظیمی که باید پیدایش کنید.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+نوع یک فضا یکی از پنج مقدار است: `topic` (پیش‌فرض هر چیزی که می‌سازید)،
+`agentPeer`، `system` (مدیریت‌شده با پایپ‌لاین)، `pr` (وقتی سطح یک PR به لنگر
+worktree نیاز پیدا کند ساخته می‌شود و تا وقتی پیامی نداشته باشد از نوار کناری
+پنهان است) و `slack` (ساخته‌شده با پل گفتگو برای یک رشتهٔ Slack یا پیام مستقیم
+ربات، و مانند یک گفتگوی معمولی انسانی رفتار می‌شود).
 
-## Related guides
+## راهنماهای مرتبط
 
-- [Chat with an agent](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
-- [@-mention agents](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/منشن-عاملها/)
-- [Use plan mode](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/)
+- [گفتگو با یک عامل(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/گفتگو-با-عامل/)
+- [منشن کردن عامل‌ها با @(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/منشن-عاملها/)
+- [استفاده از حالت برنامه(/fa-IR/راهنمای-کاربر/راهنماهای-عملی/حالت-برنامه/)
 
-## Related concepts
+## مفهوم‌های مرتبط
 
-- [Modes](/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
-- [Chat bridges](/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/): how a Slack thread becomes a space
+- [حالت‌ها(/fa-IR/راهنمای-کاربر/مفهومها/حالتها/)
+- [پل‌های گفتگو(/fa-IR/راهنمای-کاربر/مفهومها/پلهای-گفتگو/): چگونه یک رشتهٔ Slack به یک فضا تبدیل می‌شود

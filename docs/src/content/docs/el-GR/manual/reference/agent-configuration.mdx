@@ -1,111 +1,113 @@
 ---
-title: Agent configuration
-description: Every field on the agent entity and the enums it uses.
+title: Διαμόρφωση πράκτορα
+description: Κάθε πεδίο της οντότητας πράκτορα και οι απαριθμήσεις που χρησιμοποιεί.
 slug: el-GR/εγχειρίδιο/αναφορά/διαμόρφωση-πράκτορα
+sourceHash: 191e1905ca31ef6bbfec0e182e95f2ce381f2cb4
 ---
 
-This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/).
+Αυτή η αναφορά παραθέτει κάθε πεδίο της οντότητας πράκτορα, μαζί με τις απαριθμήσεις και τις σημαίες που χρησιμοποιεί. Για οδηγίες βήμα προς βήμα για τη δημιουργία ή την επεξεργασία ενός πράκτορα στην εφαρμογή, δείτε [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/).
 
-## Agent entity fields
+## Πεδία της οντότητας πράκτορα
 
-| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
-| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
-| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
-| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
-| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
-| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
-| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
-| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
-| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
-| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
-| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
-| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
-| `strictMode`            | `bool`                 | No       | Default `false`. Written to the row and to the agent's `AGENTS.md`                                                                                                                               |
-| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
-| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
-| `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
-| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
-| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
-| `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
-| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
-| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
-| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+| Πεδίο                   | Τύπος                  | Απαιτείται | Περιγραφή                                                                                                                                                                                           |
+| ----------------------- | ---------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Ναι        | Μοναδικό αναγνωριστικό πράκτορα                                                                                                                                                                     |
+| `name`                  | `String`               | Ναι        | Σύντομο αναγνωριστικό για @-αναφορές                                                                                                                                                                |
+| `title`                 | `String`               | Ναι        | Τίτλος ρόλου αναγνώσιμος από άνθρωπο                                                                                                                                                                |
+| `agentMdPath`           | `String`               | Ναι        | Απόλυτη διαδρομή προς το αρχείο ορισμού `.md` του πράκτορα                                                                                                                                          |
+| `workspaceId`           | `String`               | Ναι        | Ο χώρος εργασίας στον οποίο ανήκει (μη null)                                                                                                                                                        |
+| `reportsTo`             | `String?`              | Όχι        | Αναγνωριστικό γονικού πράκτορα                                                                                                                                                                      |
+| `skills`                | `AgentSkills`          | Ναι        | Σύνολο αναγνωριστικών δεξιοτήτων                                                                                                                                                                    |
+| `persona`               | `String?`              | Όχι        | Οδηγίες συμπεριφοράς σε ελεύθερο κείμενο                                                                                                                                                            |
+| `systemPrompt`          | `String?`              | Όχι        | Παράκαμψη της προεπιλεγμένης προτροπής συστήματος                                                                                                                                                   |
+| `adapterId`             | `String?`              | Όχι        | Αναγνωριστικό προσαρμογέα συμπερασμού                                                                                                                                                               |
+| `modelId`               | `String?`              | Όχι        | Αναγνωριστικό μοντέλου εντός του προσαρμογέα                                                                                                                                                        |
+| `strictMode`            | `bool`                 | Όχι        | Προεπιλογή `false`. Γράφεται στη γραμμή και στο `AGENTS.md` του πράκτορα                                                                                                                            |
+| `effort`                | `String?`              | Όχι        | Αναγνωριστικό επιπέδου συλλογισμού (π.χ. `'low'`, `'xhigh'`), που προέρχεται από τα `thinkingLevels` του επιλεγμένου μοντέλου                                                                       |
+| `contextSize`           | `int?`                 | Όχι        | Μέγιστο μέγεθος παραθύρου πλαισίου                                                                                                                                                                  |
+| `role`                  | `AgentRole?`           | Όχι        | Ο ρόλος του πράκτορα                                                                                                                                                                                |
+| `capabilities`          | `AgentCapabilities?`   | Όχι        | Προεπιλογή δυνατοτήτων ανά πράκτορα· όταν είναι null, κατά την αποστολή εφαρμόζεται η προεπιλογή σε επίπεδο χρήστη και μια συνομιλία μπορεί ακόμη να την παρακάμψει                                  |
+| `monthlyBudgetCents`    | `int`                  | Όχι        | Μηνιαίο ανώτατο όριο δαπάνης σε σεντς (προεπιλογή `0`, χωρίς όριο)                                                                                                                                   |
+| `silenceTimeoutMinutes` | `int?`                 | Όχι        | Παράκαμψη του χρονικού ορίου σιωπής σε λεπτά· πρέπει να είναι null ή μεταξύ 1–240 (επαληθεύεται στον κατασκευαστή)                                                                                  |
+| `maxConcurrentTasks`    | `int`                  | Όχι        | Προεπιλογή `1`. Μέγεθος χωρητικότητας που αναφέρει το μοντέλο παρουσίας (οι μετρητές των εκτελέσεων που εκτελούνται και των εκτελέσεων σε ουρά συγκρίνονται με αυτό)                                |
+| `visibility`            | `AgentVisibility`      | Όχι        | Προεπιλογή `workspace`                                                                                                                                                                              |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | Όχι        | Κατάσταση διακυβέρνησης (προεπιλογή `active`). Γράφεται από το σκληρό όριο του προϋπολογισμού και εμφανίζεται στο οργανόγραμμα και στον κατάλογο παρουσίας. Η αποστολή εξακολουθεί να δέχεται εργασία από πράκτορα σε κατάσταση `paused` |
+| `budgetPolicyId`        | `String?`              | Όχι        | Αναγνωριστικό κοινής πολιτικής προϋπολογισμού· όταν είναι null εφαρμόζεται απευθείας το `monthlyBudgetCents`                                                                                        |
+| `runtimeProfileId`      | `String?`              | Όχι        | Αναγνωριστικό προσαρμοσμένου προφίλ χρόνου εκτέλεσης                                                                                                                                                |
+| `createdAt`             | `DateTime`             | Ναι        | Χρονική σήμανση δημιουργίας                                                                                                                                                                         |
 
-`name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+Τα `name` και `title` πρέπει και τα δύο να μην είναι κενά (επαληθεύεται στον
+κατασκευαστή). Η προεπιλεγμένη τιμή `0` του `monthlyBudgetCents` σημαίνει χωρίς
+όριο. Γράψτε ένα ανώτατο όριο με το `agents.upsert`.
 
-## AgentRole enum
+## Απαρίθμηση AgentRole
 
-| Role       | Label    | Description                      |
-| ---------- | -------- | -------------------------------- |
-| `ceo`      | CEO      | Coordination and delegation      |
-| `coder`    | Coder    | Code implementation              |
-| `reviewer` | Reviewer | PR review and analysis           |
-| `qa`       | QA       | Testing and quality assurance    |
-| `designer` | Designer | UI/UX implementation             |
-| `security` | Security | Security review and auditing     |
-| `devops`   | DevOps   | Infrastructure and deployment    |
-| `pm`       | PM       | Product management               |
-| `general`  | General  | Flexible, multi-purpose          |
+| Ρόλος      | Ετικέτα  | Περιγραφή                           |
+| ---------- | -------- | ----------------------------------- |
+| `ceo`      | CEO      | Συντονισμός και ανάθεση             |
+| `coder`    | Coder    | Υλοποίηση κώδικα                    |
+| `reviewer` | Reviewer | Έλεγχος και ανάλυση PR              |
+| `qa`       | QA       | Δοκιμές και διασφάλιση ποιότητας    |
+| `designer` | Designer | Υλοποίηση UI/UX                     |
+| `security` | Security | Έλεγχος και επιθεώρηση ασφαλείας    |
+| `devops`   | DevOps   | Υποδομή και ανάπτυξη                |
+| `pm`       | PM       | Διαχείριση προϊόντος                |
+| `general`  | General  | Ευέλικτος, πολλαπλών χρήσεων         |
 
-## AgentVisibility enum
+## Απαρίθμηση AgentVisibility
 
-| Value       | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | The default; unknown and null stored values parse to it |
-| `private`   | Private to the creating user                            |
+| Τιμή        | Περιγραφή                                                     |
+| ----------- | ------------------------------------------------------------- |
+| `workspace` | Η προεπιλογή· άγνωστες και null αποθηκευμένες τιμές αναλύονται σε αυτήν |
+| `private`   | Ιδιωτική για τον χρήστη που τη δημιούργησε                    |
 
-## AgentLifecycleStatus enum
+## Απαρίθμηση AgentLifecycleStatus
 
-| Value      | Description                                                                           |
-| ---------- | ------------------------------------------------------------------------------------- |
-| `active`   | The default. `isDispatchable` is true only for this value                             |
-| `paused`   | Set by the budget hard-stop. Shown on the presence roster; dispatch still accepts work |
-| `archived` | Retired and hidden from active rosters                                                |
+| Τιμή       | Περιγραφή                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| `active`   | Η προεπιλογή. Το `isDispatchable` είναι αληθές μόνο για αυτή την τιμή                            |
+| `paused`   | Ορίζεται από το σκληρό όριο του προϋπολογισμού. Εμφανίζεται στον κατάλογο παρουσίας· η αποστολή εξακολουθεί να δέχεται εργασία |
+| `archived` | Αποσυρμένη και κρυμμένη από τους ενεργούς καταλόγους                                            |
 
-## AgentCapabilities flags
+## Σημαίες AgentCapabilities
 
-Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+Επιλύονται ανά αποστολή: η προεπιλογή του πράκτορα, με εφεδρική την προεπιλογή σε επίπεδο χρήστη όταν αυτή είναι null, και από πάνω μια παράκαμψη ανά συνομιλία. Επιβάλλονται με απουσία — ο μεσίτης διαπιστευτηρίων απλώς δεν εκδίδει ούτε εγχέει ό,τι καλύπτει μια απενεργοποιημένη δυνατότητα.
 
-| Flag               | Type   | Default | Description                                                                              |
-| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
-| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
-| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
-| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
-| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+| Σημαία             | Τύπος  | Προεπιλογή | Περιγραφή                                                                                  |
+| ------------------ | ------ | ---------- | ------------------------------------------------------------------------------------------ |
+| `canPushToRepo`    | `bool` | `false`    | Κάνει push commits στο απομακρυσμένο αποθετήριο· ελέγχει μαζί με το `canCallGitHubApi` την έγχυση του token του GitHub |
+| `canCallGitHubApi` | `bool` | `false`    | Καλεί το api.github.com· ελέγχει την έγχυση του `GH_TOKEN` και τους τομείς εξόδου του GitHub |
+| `canCallTicketing` | `bool` | `false`    | Καλεί το API του παρόχου εισιτηρίων· ελέγχει την έγχυση του κλειδιού API του παρόχου και τους τομείς εξόδου του |
+| `canAccessNetwork` | `bool` | `true`     | Αυθαίρετη εξερχόμενη κίνηση. Ελέγχει επίσης τα εργαλεία `web_fetch` και `web_search` του harness |
 
-`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+Το `AgentCapabilities.safeDefault` είναι οι τέσσερις προεπιλογές του κατασκευαστή. Το `legacyDefault` (και οι τέσσερις true) χρησιμοποιείται μόνο από τη μετανάστευση που συμπλήρωσε εκ των υστέρων συνομιλίες οι οποίες είχαν δημιουργηθεί πριν υπάρξουν οι δυνατότητες. Ένα παραμορφωμένο ή κενό αποθηκευμένο blob αναλύεται σε `safeDefault`· το παλαιό κλειδί `canCallLinear` διαβάζεται ως `canCallTicketing`.
 
 ## AgentSkills
 
-An immutable, case-insensitive set of skill identifiers. At dispatch those slugs are synced as skill links in the agent's overlay; the harness then autoloads the linked skills' frontmatter into the prompt.
+Ένα αμετάβλητο σύνολο αναγνωριστικών δεξιοτήτων χωρίς διάκριση πεζών-κεφαλαίων. Κατά την αποστολή, αυτά τα slugs συγχρονίζονται ως σύνδεσμοι δεξιοτήτων στο overlay του πράκτορα· στη συνέχεια το harness φορτώνει αυτόματα το frontmatter των συνδεδεμένων δεξιοτήτων στην προτροπή.
 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
 
-## AgentLiveState (derived)
+## AgentLiveState (παράγωγη)
 
-Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+Δεν αποθηκεύεται. Επτά τιμές. Η σειρά δήλωσης είναι η σειρά προτεραιότητας (`sortPriority`, καθηλωμένη από τεστ), που είναι και η σειρά με την οποία ταξινομεί ο κατάλογος:
 
-| State       | `sortPriority` | Condition                                                                                                           |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `running`   | 0              | Any run log has status `running`                                                                                    |
-| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
-| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
-| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
-| `succeeded` | 4              | The run finished successfully                                                                                       |
-| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
-| `neverRun`  | 6              | No run logs exist                                                                                                   |
+| Κατάσταση   | `sortPriority` | Συνθήκη                                                                                                              |
+| ----------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | Οποιαδήποτε καταγραφή εκτέλεσης έχει κατάσταση `running`                                                              |
+| `blocked`   | 1              | Η ζωτικότητα της πιο πρόσφατης εκτέλεσης είναι `blocked`, `stalled` ή `looping`                                      |
+| `failed`    | 2              | Η κατάσταση της πιο πρόσφατης εκτέλεσης είναι `error` ή η ζωτικότητά της είναι `failed` ή `dead`                      |
+| `queued`    | 3              | Μια εκτέλεση έχει αποσταλεί αλλά δεν εκτελείται — παρκαρισμένη πίσω από άλλη εκτέλεση του ίδιου πράκτορα, ή εγγεγραμμένη αλλά όχι ακόμη ξεκινημένη |
+| `succeeded` | 4              | Η εκτέλεση ολοκληρώθηκε με επιτυχία                                                                                    |
+| `idle`      | 5              | Ο πράκτορας έχει εκτελεστεί στο παρελθόν και δεν έχει τίποτα σε εξέλιξη                                              |
+| `neverRun`  | 6              | Δεν υπάρχουν καταγραφές εκτέλεσης                                                                                     |
 
-`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+Τα `queued` και `succeeded` είναι **μόνο ανά εκτέλεση**. Το `deriveAgentLiveState`, που υπολογίζει την κατάσταση καταλόγου για έναν πράκτορα, δεν παράγει ποτέ κανένα από τα δύο — επιστρέφει `neverRun`, `running`, `failed`, `blocked` ή `idle`.
 
-## See also
+## Δείτε επίσης
 
-- [Create and configure an agent](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
-- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)
-- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)
+- [Δημιουργία και ρύθμιση πράκτορα](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-πράκτορα/)
+- [Το μοντέλο πρακτόρων](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/)
+- [Κύκλος ζωής αποστολής πράκτορα](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/)

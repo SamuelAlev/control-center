@@ -1,193 +1,193 @@
 ---
-title: Configure sandbox policies
-description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+title: הגדרת מדיניות ארגז חול
+description: מה מגביל הרצת סוכן, כיצד לדעת אם ארגז החול של מערכת ההפעלה עוטף אותה ואילו הגדרות יכולות השרת באמת קורא.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/מדיניות-ארגז-חול
+sourceHash: 5629a16ef62b6b875dde9153e63285196c9bd04d
 ---
 
-Whether an agent run is sandboxed is decided on the server, at boot
-(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
-**Default capabilities · new spaces** toggles under **Settings → Server →
-Diagnostics & privacy** are preferences stored on your device. The
-**Sandboxing** card's host detection reports what the server host can wrap.
+האם הרצת סוכן פועלת בארגז חול נקבע בשרת, באתחול
+(`--sandbox`). המתג **הפעלת ארגז חול**, בורר **בקאנד** והמתגים
+**יכולות ברירת מחדל · מרחבים חדשים** תחת **הגדרות → שרת →
+אבחון ופרטיות** הם העדפות הנשמרות במכשיר שלכם. זיהוי המארח בכרטיס
+**ארגז חול** מדווח מה מארח השרת יכול לעטוף.
 
-Two controls reach a run and this guide covers both: the per-agent
-**Sandbox permissions** below and the server's own `--sandbox` flag.
+שני אמצעי בקרה מגיעים אל ההרצה, והמדריך הזה מכסה את שניהם: **הרשאות
+ארגז חול** ברמת הסוכן שלהלן, והדגל `--sandbox` של השרת עצמו.
 
-## What constrains an agent run
+## מה מגביל הרצת סוכן
 
-An agent is held by six things. The first is the OS sandbox and it is the one
-that is conditional — the other five hold on every host.
+שישה דברים מגבילים סוכן. הראשון הוא ארגז החול של מערכת ההפעלה, והוא היחיד
+שהוא מותנה — החמישה האחרים מחזיקים בכל מארח.
 
-| Boundary                 | What it does                                                                                                                                                                                      |
+| גבול | מה הוא עושה |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
-| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
-| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
-| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
-| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+| ארגז החול של מערכת ההפעלה | Seatbelt ב-macOS, bubblewrap ב-Linux וב-WSL2. עוטף את ה-CLI של Claude Code, את מתאמי ACP ואת כלי ה-`bash` של מנגנון ההרצה. **נעדר ב-Windows וב-Linux ללא `bwrap` ו-`socat`** |
+| עץ העבודה הפרטי שלו | כל שיחה מקבלת צ׳קאאוט בהעתקה בעת כתיבה. הצ׳קאאוט המקורי מקופל לתוך ההרצה כנתיב דחיית כתיבה, וארגז החול הוא מה שאוכף זאת |
+| פרטי גישה דרך ה-broker | broker פרטי הגישה מנפיק סביבה לכל הרצה מתוך היכולות של הסוכן ומבטל אותה כשההרצה מתפרקת. אין יכולת — אין אסימון בסביבה |
+| מעקות הבטיחות של הפעולות | כל כלי משנה־מצב מצהיר על מחלקות ההשפעה שלו, ומנוע ההכרעה מכריע בהן לפני שהקריאה רצה. `prompt` בלי מאשר מחובר נדחה |
+| חיטוי הסביבה | ACP וכלי ה-`bash` של מנגנון ההרצה מקבלים סביבה מסוננת. Claude Code דרך `NoSandboxAdapter` יורש את סביבת המארח |
+| משטח הכלים של המצב | מצב לקריאה בלבד מסיר את כלי שינוי עץ העבודה כליל ומצמיד את פועל הפלט של המצב עצמו כדי שיוכל עדיין לספק תוצר |
 
-Three things stay weaker than they look:
+שלושה דברים נשארים חלשים מכפי שהם נראים:
 
-- Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. The Claude Code adapter does not. Claude
-  Code in particular is launched with `--dangerously-skip-permissions`, because a
-  non-interactive `claude -p` would otherwise block forever on its own prompt —
-  so Claude's own read, write, edit and bash calls are neither seen nor gated by
-  Control Center. Where the sandbox is on, it is the boundary around them.
-- The harness's in-process file tools (read, write, edit, apply patch, search,
-  find, search_files) run inside the server process, so no sandbox profile constrains them.
-  Only the `bash` tool goes through the sandboxed command runner. Those tools are
-  bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitization plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- רק **מנגנון ההרצה המובנה** אוכף את שער הכלים, חוזי ההשלמה וכללי המצב
+  המבניים. מתאם Claude Code אינו עושה זאת. Claude
+  Code בפרט מופעל עם `--dangerously-skip-permissions`, משום
+  ש-`claude -p` לא אינטראקטיבי היה אחרת נתקע לנצח בבקשת ההרשאה של עצמו —
+  כך שקריאות הקריאה, הכתיבה, העריכה וה-bash של Claude עצמו אינן נראות ואינן
+  מגודרות בידי Control Center. במקום שארגז החול פועל, הוא הגבול סביבן.
+- כלי הקבצים בתהליך של מנגנון ההרצה (read, write, edit, apply patch, search,
+  find, search_files) רצים בתוך תהליך השרת, ולכן אף פרופיל של ארגז חול אינו מגביל אותם.
+  רק כלי ה-`bash` עובר דרך מריץ הפקודות העטוף בארגז חול. הכלים האלה
+  מתוחמים בידי ריתוק הנתיבים שלהם בתוספת מעקות הבטיחות של הפעולות.
+- במארח בלי בקאנד השורה הראשונה אינה חלה כלל. ACP וכלי
+  ה-`bash` של מנגנון ההרצה נופלים חזרה לחיטוי הסביבה בתוספת מדיניות
+  הפקודות; Claude Code יורש את סביבת המארח דרך `NoSandboxAdapter`.
+  השרת אומר זאת ביומן האתחול שלו. בדקו את שלכם להלן.
 
-## Set an agent's capabilities
+## הגדרת היכולות של סוכן
 
-This is the one capability control the server reads. It is per agent and it
-decides what the credential broker puts in that agent's environment.
+זהו אמצעי הבקרה היחיד על יכולות שהשרת קורא. הוא לכל סוכן, והוא
+קובע מה broker פרטי הגישה מכניס לסביבה של אותו סוכן.
 
-1. Go to **Settings → Workspace → Agents**
-2. Select the agent in the list
-3. On the **Settings** tab, scroll to **Sandbox permissions**
-4. Turn the switch on — the row's caption changes from **Use workspace default**
-5. Set the four toggles:
+1. עברו אל **הגדרות → סביבת עבודה → סוכנים**
+2. בחרו את הסוכן ברשימה
+3. בלשונית **הגדרות**, גללו אל **הרשאות ארגז חול**
+4. הדליקו את המתג — הכיתוב בשורה משתנה מ**שימוש בברירת המחדל של סביבת העבודה**
+5. הגדירו את ארבעת המתגים:
 
-| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| מתג | על מה הוא שולט |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
-| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
-| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
-| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+| **אפשר git push** | כשהוא כבוי, ההרצה מקבלת `GIT_ASKPASS=/usr/bin/false` ו-`GIT_TERMINAL_PROMPT=0`, כך שדחיפה אינה יכולה לבקש פרטי גישה |
+| **אפשר קריאות ל־API של GitHub** | יחד עם **אפשר git push**, שולט בשאלה אם ה-broker מזריק את אסימון GitHub בתור `GH_TOKEN` / `GITHUB_TOKEN` |
+| **התרת קריאות API של ניהול כרטיסים** | שולט בשאלה אם ה-broker מזריק `TICKETING_API_KEY` |
+| **אפשר גישה כללית לרשת** | במקום שארגז החול פועל זהו שער יציאה אמיתי: כשהוא כבוי רשימת ההיתר של ההרצה ריקה וכל בקשה יוצאת נדחית ב-proxy. במקום שאין בקאנד, הוא נרשם על ההרצה אך אינו חוסם דבר שמבצע תהליך בן |
 
-6. Save
+6. שמרו
 
-Checkpoint: reopen the agent and the switch is still on with your toggles — a
-saved capability set round-trips through the server and an agent with none falls
-back to the conservative default (push off, GitHub API off, ticketing off,
-network on).
+נקודת ביקורת: פתחו מחדש את הסוכן והמתג עדיין דלוק עם המתגים שהגדרתם — ערכת
+יכולות שמורה עוברת הלוך ושוב דרך השרת, וסוכן בלי אחת נופל חזרה לברירת המחדל
+השמרנית (דחיפה כבויה, API של GitHub כבוי, כרטיסים כבויים, רשת דלוקה).
 
-:::caution[Two ways this bites]
-The caption says **Use workspace default**, but there is no workspace-level
-capability setting the server reads. An agent with the switch off gets the
-built-in conservative default.
+:::caution[שתי דרכים שבהן זה נושך]
+הכיתוב אומר **שימוש בברירת המחדל של סביבת העבודה**, אבל אין הגדרת יכולות
+ברמת סביבת העבודה שהשרת קורא. סוכן עם המתג כבוי מקבל את ברירת המחדל
+השמרנית המובנית.
 
-Separately, the run's GitHub credential is only ever the broker's — a
-repo-scoped GitHub App installation token, or the environment PAT fallback —
-never the requesting member's own stored token. `actingUserId` is passed so the
-broker can *withhold* the server PAT from a member who is not the owner and has
-not connected GitHub; it does not merge a personal token over a capability
-that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
-on a host with no OS sandbox: a spawned process can still reach the network.
+לחוד מכך, פרטי הגישה של GitHub להרצה הם תמיד של ה-broker בלבד — אסימון התקנה
+של GitHub App מוגבל למאגר, או נסיגת ה-PAT מהסביבה — ולעולם לא האסימון
+השמור של החבר המבקש עצמו. `actingUserId` מועבר כדי שה-broker יוכל *לעכב* את
+ה-PAT של השרת מחבר שאינו הבעלים ולא חיבר את GitHub; הוא אינו ממזג אסימון
+אישי מעל יכולת שכבויה. אל תתייחסו אל **אפשר קריאות ל־API של GitHub** כאל
+גבול יציאה קשיח במארח בלי ארגז חול של מערכת ההפעלה: תהליך בן עדיין יכול
+להגיע לרשת.
 :::
 
-## Check whether your agent runs are sandboxed
+## בדיקה אם הרצות הסוכן שלכם עטופות בארגז חול
 
-Two things decide it, both on the server: whether the host offers a backend and
-whether `--sandbox` is on. Check them in that order.
+שני דברים מכריעים בכך, ושניהם בשרת: אם המארח מציע בקאנד ואם `--sandbox`
+פועל. בדקו אותם בסדר הזה.
 
-1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
-   runs on, not the machine you are looking at. The **Backend** field lists
-   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
-   **No isolation**. The **In force** fact is this device's preference, not the
-   wrap the server actually uses.
-3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
-   - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+1. עברו אל **הגדרות → שרת → אבחון ופרטיות**
+2. קראו את כרטיס **ארגז חול**. העובדה **מארח** היא המכונה ש-`cc_server`
+   רץ עליה, לא המכונה שאתם מסתכלים עליה. השדה **בקאנד** מפרט
+   **ארגז חול מקורי** (Seatbelt ב-macOS, bubblewrap ב-Linux וב-WSL2) או
+   **ללא בידוד**. העובדה **בתוקף** היא ההעדפה של המכשיר הזה, לא
+   העטיפה שהשרת באמת משתמש בה.
+3. קראו את יומן האתחול של השרת. הוא מדפיס בדיוק אחת משלוש שורות:
+   - `agent sandbox ON` בתוספת הערת הבקאנד — ההרצות עטופות
+   - `no OS-native agent sandbox on this host` בתוספת רמז התקנה במקום שיש
+     כזה — ההרצות אינן עטופות
+   - `agent sandbox DISABLED by --sandbox off` — ביטול מכוון
 
-`GET /healthz` does not report sandbox state, so the startup log is the check.
+`GET /healthz` אינו מדווח על מצב ארגז החול, ולכן יומן האתחול הוא הבדיקה.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+כדי לכבות את ארגז החול במכוון — מארח שבו הפרופיל מתנהג שלא כשורה הוא
+הסיבה שהוא קיים — הפעילו את השרת עם `--sandbox off`, או הגדירו
+`CC_SERVER_SANDBOX=off`. ברירת המחדל היא `on`, ו-`on` משמעו "השתמשו בבקאנד
+אם למארח יש כזה", ולעולם לא "דרוש אחד".
 
-Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+שני מצבים לעולם אינם מקבלים עטיפת ארגז חול מקורי. ב-**Windows** בדיקת ארגז
+החול המקורי מדווחת תמיד כלא זמינה ואין מה להתקין — שיגור הסוכן
+משתמש ב-`none`. הבקאנד `microvm` נפרד (מסופים אינטראקטיביים ותחנות)
+והוא תלוי בבדיקה של סביבת הריצה שלו בלבד. ב-**Linux וב-WSL2** גם `bwrap` וגם
+`socat` חייבים להיות ב-`PATH`; בלעדיהם הבדיקה מדווחת כלא זמינה
+ומציינת את החבילות החסרות.
 
-On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+ב-Linux/WSL2 עם bubblewrap מותקן, אי אפשר לאכוף את תבניות הגלוב של קובצי
+הסוד במדיניות התקנית על קבצים שסוכן יוצר אחר כך. הרצה מקורית כזו נכשלת כעת
+במקום להתעלם מהכללים בשקט. בדיקת אתחול מוצלחת אינה מבטיחה אפוא ששיגור
+ב-Linux יצליח להתחיל. `--sandbox off` הוא ביטול מכוון בלי הגבלה, לא גבול
+אבטחה חלופי.
 
-## Know what a mode already forbids
+## לדעת למה מצב כבר מסרב
 
-Mode is stored per space and feeds the guardrail resolver as the **mode
-preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+המצב נשמר לפי מרחב ומזין את מנוע מעקות הבטיחות כשכבת **ערכת המצב**. שלושה
+מארבעת המצבים הם לקריאה בלבד, ומצב לקריאה בלבד מסרב על הסף לאחת עשרה מחלקות
+השפעה:
 
-| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| מצב | עץ העבודה | מסורב בידי הערכה |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **סוכן** (`chat`) | ניתן לכתיבה | דבר לא — ברירות המחדל המובנות חלות |
+| **תכנון** | לקריאה בלבד | מחיקת קובץ, כתיבה מחוץ לעץ העבודה, ביצוע קומיט, דחיפה, פתיחת בקשת משיכה, פרסום או מיזוג, כתיבה למערכת מעקב חיצונית, התקנת חבילה, הרצת תהליך, שינוי מבנה סביבת העבודה, הפעלה או שליטה במתחם מבודד |
+| **סקירה** | לקריאה בלבד | אותן אחת עשרה. אינו ניתן לבחירה בידי המשתמש — תיבת הכתיבה מציעה רק סוכן, תכנון ותזמור |
+| **תזמור** | לקריאה בלבד | אותן אחת עשרה |
 
-Network access and secret access are deliberately _not_ refused by a read-only
-mode: research is the point of one.
+גישה לרשת וגישה לסודות אינן נמסרות במכוון בסירוב של מצב לקריאה בלבד: מחקר
+הוא כל תכליתו של מצב כזה.
 
-## Require approval before an action runs
+## דרישת אישור לפני שפעולה רצה
 
-Approval is a guardrail decision, not a sandbox setting.
+אישור הוא החלטה של מעקות בטיחות, לא הגדרה של ארגז חול.
 
-1. Go to **Settings → Workspace → Agent permissions**
-2. Set the action class to **Ask first** at the workspace, agent or space scope
+1. עברו אל **הגדרות → סביבת עבודה → הרשאות סוכנים**
+2. הגדירו את מחלקת הפעולה ל**שאל קודם** בטווח סביבת העבודה, הסוכן או המרחב
 
-An **Ask first** decision interrupts the run and asks you. With no approver
-connected it fails closed and the action is denied. See
-[Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/) for the full
-resolution order.
+החלטת **שאל קודם** קוטעת את ההרצה ושואלת אתכם. בלי מאשר
+מחובר היא נכשלת באופן סגור והפעולה נדחית. ראו
+[הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/) לסדר
+ההכרעה המלא.
 
-## Troubleshooting
+## פתרון תקלות
 
-### An agent cannot push and I never denied it
+### סוכן לא מצליח לדחוף ומעולם לא סירבתי לו
 
-Check the agent's **Sandbox permissions**. An agent with no custom capability set
-gets the conservative default, which has **Allow git push** off — so the broker
-injects no GitHub token and git has no way to authenticate.
+בדקו את **הרשאות ארגז חול** של הסוכן. סוכן בלי ערכת יכולות מותאמת
+מקבל את ברירת המחדל השמרנית, שבה **אפשר git push** כבוי — ולכן ה-broker
+אינו מזריק אסימון GitHub ול-git אין דרך להזדהות.
 
-### The Sandboxing card reports no native sandbox
+### כרטיס ארגז החול מדווח שאין ארגז חול מקורי
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
-[Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/).
+אז הרצות סוכן במארח הזה אינן עטופות ב-Seatbelt או ב-bubblewrap, והגבולות
+שנותרו הם מה שיש לכם. ב-Linux וב-WSL2 התקינו את שני הכלים החסרים —
+`sudo apt-get install bubblewrap socat` — והפעילו מחדש את השרת; יומן האתחול
+אמור אז לומר שארגז החול פועל. ב-Windows אין בקאנד מקורי להתקין, ולכן הדקו
+במקום זאת את מעקות הבטיחות: ראו
+[הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/).
 
-### An agent reached a file outside its worktree
+### סוכן הגיע לקובץ מחוץ לעץ העבודה שלו
 
-Which tool reached it decides whether this is expected.
+הכלי שאיתו הוא הגיע מכריע אם זה צפוי.
 
-The harness's in-process file tools (read, write, edit, apply patch, search,
-find, search_files) run in the server process, so no sandbox profile applies to
-them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
-CLI _is_ wrapped where a backend exists and your registered
-checkouts are deny-write inside that wrap in every mode, including their
-symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
-**Write outside the worktree** outright.
+כלי הקבצים בתהליך של מנגנון ההרצה (read, write, edit, apply patch, search,
+find, search_files) רצים בתהליך השרת, ולכן שום פרופיל של ארגז חול אינו חל עליהם
+— הגבול שלהם הוא ריתוק הנתיבים שלהם בתוספת מעקות הבטיחות. פקודת `bash` או
+ה-CLI של Claude Code _כן_ עטופים במקום שקיים בקאנד, והצ׳קאאוטים הרשומים
+שלכם הם דחיית כתיבה בתוך העטיפה הזו בכל מצב, כולל בצורותיהם
+המפוענחות-סימבולית (ב-macOS נתיב שמגיעים אליו דרך `/tmp` או
+`/var/folders` נפתר תחת `/private`, ושתי הצורות נדחות כעת). במארח בלי בקאנד
+שום דבר מזה אינו חל. כך או כך, מעקות הבטיחות יכולים לסרב
+ל**כתיבה מחוץ לעץ העבודה** על הסף.
 
-## Related guides
+## מדריכים קשורים
 
-- [Configure guardrails](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/)
-- [Create and configure an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
-- [Diagnose an agent](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)
-- [Sandbox backends](/he-IL/מדריך-למשתמש/עזר/מנועי-ארגז-חול/)
-- [cc_server CLI](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/): the `--sandbox` flag
+- [הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/)
+- [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/)
+- [אבחון סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/אבחון-סוכן/)
+- [מנועי ארגז חול](/he-IL/מדריך-למשתמש/עזר/מנועי-ארגז-חול/)
+- [CLI של cc_server](/he-IL/מדריך-למשתמש/עזר/cc-server-cli/): הדגל `--sandbox`
 
-## Related concepts
+## מושגים קשורים
 
-- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
-- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/)
+- [ארגז חול ואבטחה](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/)
+- [מצבים](/he-IL/מדריך-למשתמש/מושגים/מצבים/)

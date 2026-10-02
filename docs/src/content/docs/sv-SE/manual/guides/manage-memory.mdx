@@ -1,101 +1,102 @@
 ---
-title: Manage workspace memory
-description: Review, correct and prune the facts and policies agents have written into a workspace.
+title: Hantera arbetsytans minne
+description: Granska, rätta och rensa fakta och policyer som agenter har skrivit in i en arbetsyta.
 slug: sv-SE/handbok/how-to-guider/hantera-minne
+sourceHash: 34bc55e2fd48c19e7e0e97c6160779b5ddeb2fdd
 ---
 
-This guide shows you how to work with a workspace's knowledge store.
+Den här guiden visar hur du arbetar med en arbetsytas kunskapslager.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+Det viktiga att känna till innan du börjar: **minnesgränssnittet är en yta för granskning, inte för författande.** Fakta och policyer skrivs av agenter — via `propose_fact` och `propose_policy`, med `supersede_fact` och `supersede_policy` för att ersätta dem. `remember` skriver ett sessionsbundet objekt på hot-tier-nivån som `consolidate_memory` senare kan befordra till en fakta. Inspelade mötesbeslut skördas in i domänen `decisions`; det finns ingen skörd för slutförda agentkörningar. Det du gör här är att läsa vad de skrev, rätta det, inaktivera det eller ta bort det.
 
-Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
+Minnet finns under **Inställningar → Arbetsyta → Minne** (`/workspaces/<id>/settings/memory`). Det är inte en destination på sidofältets översta nivå.
 
-## The three tabs
+## De tre flikarna
 
-The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
+Sidan har exakt tre flikar. Fakta och Policyer visar en aktuell räknare; grafen gör det inte:
 
-- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
-- **Policies** — normative rules grouped by domain, with a count of the active ones
-- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+- **Fakta** — varje fakta i arbetsytan, med en räknare över de som inte är ersatta
+- **Policyer** — normativa regler grupperade efter domän, med en räknare över de aktiva
+- **Kunskapsgraf** — en interaktiv nodcanvas över domäner, ämnen, fakta och policyer
 
-Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+Domäner är inget du skapar. En domän uppstår när en agent skriver in den första faktan eller policyn i den; det finns ingen kontroll för att skapa domäner någonstans i gränssnittet.
 
-## Review and correct a fact
+## Granska och rätta en fakta
 
-1. Open the **Facts** tab.
-2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
-4. Use the sort toggle to order by recency or by confidence.
-5. Click a fact's edit control.
+1. Öppna fliken **Fakta**.
+2. Använd sökrutan för att begränsa listan. Det är ett enkelt delsträngsfilter över varje faktas domän, ämne och innehåll — inget nyckelordsindex, ingen rangordning.
+3. Använd omfångsfiltret för att visa alla omfång, endast arbetsyteövergripande fakta eller en enskild repos fakta.
+4. Använd sorteringsväxlaren för att ordna efter senaste eller tillförlitlighet.
+5. Klicka på en faktas redigeringskontroll.
 
-The edit dialog lets you change:
+Redigeringsdialogen låter dig ändra:
 
-- **Domain** — moving a fact between domains
-- **Topic** — its short label
-- **Content** — the knowledge text
-- **Confidence** — a slider in 5% steps
+- **Domän** — flytta en fakta mellan domäner
+- **Ämne** — dess korta etikett
+- **Innehåll** — själva kunskapstexten
+- **Tillförlitlighet** — ett reglage med steg om 5 %
 
-Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+Spara för att skriva tillbaka den. Det finns ingen **Lägg till fakta**-knapp; dialogen öppnas bara på en befintlig rad.
 
-## See superseded facts
+## Se ersatta fakta
 
-The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+Fliken Fakta har en växlare för **Visa ersatta**. Ersatta fakta är dolda som standard och visas av den växlaren, och det är där spårbarheten finns — att ersätta tar aldrig bort något.
 
-## Delete a fact
+## Ta bort en fakta
 
-Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+Använd en faktas borttagningskontroll och bekräfta. Det här är en riktig borttagning, inte en ersättning: använd den för fakta som helt enkelt var fel att registrera, och låt agenterna ersätta fakta vars _innehåll_ har förändrats.
 
-## Manage policies
+## Hantera policyer
 
-The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+Fliken **Policyer** grupperar aktiva policyer efter domän och flyttar inaktiva till ett avsnitt i slutet. Per policy kan du:
 
-- **Edit** it
-- **Delete** it
-- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+- **Redigera** den
+- **Ta bort** den
+- **Inaktivera** / **Aktivera** den — det återställbara alternativet och oftast rätt. Endast aktiva policyer når agentprompter.
 
-As with facts, there is no create control.
+Precis som för fakta finns det ingen kontroll för att skapa.
 
-## Explore the knowledge graph
+## Utforska kunskapsgrafen
 
-The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+Fliken **Kunskapsgraf** lägger ut domäner, ämnen, fakta och policyer som en navigerbar nodcanvas — panorera, zooma, dra noder. Att trycka på en nod öppnar dess detaljpanel, och därifrån nås samma redigeringsdialoger. Det är det snabbaste sättet att se vilka domäner som faktiskt har innehåll.
 
-## Edit an agent's working memory
+## Redigera en agents arbetsminne
 
-Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+Arbetsminnet är ett privat kladdblock per agent som injiceras i dess prompt vid dispatch. Agenterna skriver det själva med `record_observation` och `update_my_notes`, men du kan läsa och redigera det direkt:
 
-**Settings → Workspace → Agents** → select the agent → the **Memory** tab.
+**Inställningar → Arbetsyta → Agenter** → välj agenten → fliken **Minne**.
 
-## Access grants
+## Åtkomstbehörigheter
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
+Åtkomstbehörigheter för minnet mappar en agents roll till en behörighet (`none`, `read`, `write`) per domän. Skriv dem med operationerna `memory_access_grant.*`.
 
-Two things to understand about how they resolve:
+Två saker att förstå om hur de löses ut:
 
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
-- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
+- **Läsningar är fail-open.** Utan en behörighetsrad för ett `(roll, domän)`-par är den effektiva behörigheten `read`. Den enda skrivning som kastar ett fel utan `write` är `propose_policy`. Faktaskrivningar styrs inte av behörigheter.
+- **Behörigheter är nycklade på agentens roll.** Förslagsverktyg sätter en saknad `agent_role` till `general` som standard. En behörighet skriven för en annan roll binder inte de agenterna; det gör däremot en `general`-behörighet.
 
-## Search is not the same everywhere
+## Sökningen är inte densamma överallt
 
-Three different things are called "memory search" and they do not agree:
+Tre olika saker kallas "minnessökning" och de är inte överens:
 
-| Where                               | What it does                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
-| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
+| Var                                | Vad den gör                                                                                                     |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Sökrutan på fliken Fakta           | Delsträngsfilter över de fakta som redan är inlästa i klienten                                                  |
+| RPC-op:en `memory_fact.search`     | Endast FTS5-sökning på nyckelord — en tunn klient kan inte skicka med en frågeinbäddning, så hybridsökningen förblir intern i värden |
+| Verktyget `search_memory` på agentsidan | `keyword`, `semantic` eller `hybrid` (standard). Hybrid slår samman fyra röster: lexikal, semantisk, temporal och graf |
 
-So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+En agent och minnessidan kommer alltså inte att rangordna samma fråga på samma sätt. När du kontrollerar vad en agent faktiskt kan återkalla, fråga agenten.
 
-## Embeddings
+## Inbäddningar
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
+Fakta bäddas in **vid skrivtillfället** och bara när inbäddningsmodellen på enheten är installerad. Kontrollera dess status under **Inställningar → Server → Diagnostik och integritet → Semantisk sökning**. Installera modellen innan agenterna börjar skriva minne om du vill ha semantisk återkallning.
 
-## Related guides
+## Relaterade guider
 
-- [Create and configure an agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
-- [Use the MCP server](/sv-SE/handbok/how-to-guider/mcp-server/)
+- [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/)
+- [Använd MCP-servern](/sv-SE/handbok/how-to-guider/mcp-server/)
 
-## Related concepts
+## Relaterade koncept
 
-- [Memory and knowledge](/sv-SE/handbok/koncept/minne-och-kunskap/)
-- [Workspaces and isolation](/sv-SE/handbok/koncept/arbetsytor/)
+- [Minne och kunskap](/sv-SE/handbok/koncept/minne-och-kunskap/)
+- [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/)

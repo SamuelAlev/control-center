@@ -1,88 +1,89 @@
 ---
-title: Run agents in parallel
-description: Dispatch several agents at once and keep their work from colliding.
+title: 并行运行智能体
+description: 同时派发多个智能体，并避免它们的工作互相覆盖。
 slug: zh-CN/手册/操作指南/并行智能体
+sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
 ---
 
-This guide shows you how to run several agents at the same time without them overwriting each other.
+本指南介绍如何同时运行多个智能体，而不让它们互相覆盖对方的工作。
 
-## The unit of isolation is the space, not the agent
+## 隔离的单位是空间，而不是智能体
 
-When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+当工作在一个空间中启动时，Control Center 会为该空间中每个已注册的仓库预配一份写时复制检出，放在该空间自己的根目录下，所用分支派生自工作区的分支模板。空间中的每个智能体随后各自获得一个叠加工作目录——但这些叠加目录**共用**该空间的 `repos/` 目录。
 
-So:
+因此：
 
-- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
-- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+- **不同空间**中的两个智能体在不同的检出、不同的分支上工作。这才是真正的隔离。
+- **同一空间**中的两个智能体在同一个检出、同一个分支上工作。它们的叠加路径不同，因此派发路径锁（只有当两次运行请求完全相同的工作目录时才会把它们串行化）也不会把它们串行化。它们可能同时写入同一批文件。
 
-The rule that follows: **one space per parallel task.**
+由此得出的规则是：**每个并行任务用一个独立的空间。**
 
-## Run tasks in parallel — separate spaces
+## 并行运行任务——使用不同的空间
 
-1. Open a space with agent A and send it a task.
-2. Open a second space with agent B and send it a different task.
-3. Both dispatch immediately, each in its own space checkout on its own branch.
+1. 为智能体 A 打开一个空间，并给它发送一个任务。
+2. 为智能体 B 打开第二个空间，并给它发送一个不同的任务。
+3. 两者都会立即派发，各自在自己的空间检出、自己的分支上运行。
 
-This is the recipe to use whenever the agents will be editing files.
+只要智能体会编辑文件，就应当采用这一做法。
 
-## Work together in one space — several mentions
+## 在同一个空间里协作——@提及多个智能体
 
-In a single space, @-mention more than one agent:
+在单个空间中，@提及不止一个智能体：
 
 ```
 @alice refactor the auth module. @bob review what alice lands.
 ```
 
-Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+两个智能体会并行派发，并以发送者为标记汇入同一个空间。由于它们共用该空间的检出，这种做法适合协作——一个写、一个读，或者两个智能体对同一棵代码树进行推理——而不适合两项互不相干的编辑。
 
-## Fan out from a pipeline
+## 从流水线扇出
 
-The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+内置的 `pr_review` 模板就是随产品提供的扇出示例：多个审查节点由同一个触发器并发运行，再由一个 **Consolidate (join)** 节点把它们的发现汇总成一份报告。从流水线界面运行它，每个审查者都会并行派发。
 
-The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
+当你添加或连接步骤时，流水线编辑器会隐藏终端哨兵，并把它的接线改为等待每一个仍活动的汇点，因此你自己画出的分支确实会运行。
 
-:::caution[Assigning a ticket dispatches nothing]
-Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::caution[分配工单不会派发任何东西]
+把工单分配给智能体只会记录归属关系。并不存在工单派发器——`TicketAssigned` 是一个审计信号，不会由它启动任何工作。唯一的例外是分配给*团队*的工单，它会唤醒该团队的负责人。
 :::
 
-## Watch them run
+## 观察它们运行
 
-**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+**可观测性 → 实时**（侧边栏页脚 → 可观测性，然后是实时标签页）会列出该工作区的智能体名册，每秒刷新一次：状态（运行中 / 空闲 / 已停驻 / 已中止）、每个智能体正在做什么、它最近一次运行的令牌数与费用，以及用于终止正在运行的进程的终止控件。选中某一行会停靠出一个实时转录抽屉。
 
-**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+**设置 → 工作区 → 智能体**显示的也是这份名册，但状态词汇不同，以需要注意为先，并且来自每个智能体的运行历史——运行中、已阻塞、失败、空闲、从未运行——排序时让任何需要关注的内容浮到顶部。每个智能体的**日志**标签页保存它自己的运行历史。
 
-Both surfaces are scoped to the active workspace.
+这两个界面都限定在当前活动的工作区范围内。
 
-## Handle conflicts
+## 处理冲突
 
-Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+跨空间时，每个空间都在自己的分支上，因此冲突会在你合并第二个 pull request 时以普通的 Git 合并冲突形式出现。像处理任何合并冲突那样解决它即可。
 
-Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+在同一个空间内部，既没有分支边界也没有锁：智能体在实时写同一批文件，落败的一方会被直接覆盖。如果你发现自己想让两个智能体在同一个空间里编辑，那就把工作拆到两个空间里。
 
-To reduce collisions either way:
+无论哪种情况，都可以这样减少冲突：
 
-- Give each agent a distinct scope — different files, different modules.
-- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/zh-CN/手册/操作指南/代码搜索/).
-- Review and merge each agent's pull request promptly.
+- 给每个智能体划定不同的范围——不同的文件、不同的模块。
+- 派发之前，先用代码图检查一次改动会触及什么。参见[用代码图搜索代码](/zh-CN/手册/操作指南/代码搜索/)。
+- 及时审查并合并每个智能体的 pull request。
 
-## Resource considerations
+## 资源考量
 
-Each running agent costs:
+每个运行中的智能体都会消耗：
 
-- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
-- A process on the server host
-- Model tokens, which accumulate per agent
+- 一份空间检出——在写时复制可用时，它在磁盘上的开销可以忽略；在 Windows 上则是一个 `git worktree`。无法使用 reflink 的文件系统会让预配失败，而不是退回复制。
+- 服务器主机上的一个进程
+- 模型令牌，按智能体累加
 
-Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/zh-CN/手册/操作指南/管理成本/) for the two commands that do have one.
+费用会汇总到**可观测性 → 洞察**。请注意，普通的交互回合没有费用上限；请参见[管理成本](/zh-CN/手册/操作指南/管理成本/)，了解确实设有上限的那两条命令。
 
-## Related guides
+## 相关指南
 
-- [Create and configure an agent](/zh-CN/手册/操作指南/创建智能体/)
-- [Build an agent team](/zh-CN/手册/操作指南/组建智能体团队/)
-- [Manage costs](/zh-CN/手册/操作指南/管理成本/)
-- [Add repos to a workspace](/zh-CN/手册/操作指南/添加仓库/)
+- [创建并配置智能体](/zh-CN/手册/操作指南/创建智能体/)
+- [组建智能体团队](/zh-CN/手册/操作指南/组建智能体团队/)
+- [管理成本](/zh-CN/手册/操作指南/管理成本/)
+- [向工作区添加仓库](/zh-CN/手册/操作指南/添加仓库/)
 
-## Related concepts
+## 相关概念
 
-- [Agent dispatch lifecycle](/zh-CN/手册/概念/派发生命周期/)
-- [Sandbox and security](/zh-CN/手册/概念/沙盒与安全/)
+- [智能体派发生命周期](/zh-CN/手册/概念/派发生命周期/)
+- [沙盒与安全](/zh-CN/手册/概念/沙盒与安全/)

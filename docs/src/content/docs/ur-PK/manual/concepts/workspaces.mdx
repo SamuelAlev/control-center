@@ -1,148 +1,149 @@
 ---
-title: Workspaces and isolation
-description: Why a workspace is a hard tenant boundary, how the database split makes that boundary structural and what deliberately crosses it.
+title: ورک اسپیسز اور تنہائی
+description: ایک ورک اسپیس سخت ٹیننٹ حد کیوں ہے، ڈیٹا بیس کی تقسیم اُس حد کو ساختی کیسے بناتی ہے اور جان بوجھ کر اُسے کیا کچھ عبور کرتا ہے۔
 slug: ur-PK/ہدایت-نامہ/تصورات/ورک-اسپیسز
+sourceHash: d29f01a16b06fdbddc475e66dcf0c600995efb6f
 ---
 
-## What is a workspace?
+## ورک اسپیس کیا ہے؟
 
-A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, spaces, tickets, memory, pipelines and members into a bounded context. Everything that happens inside a workspace stays inside it.
+ورک اسپیس Control Center میں سب سے اوپر کی سطح کا تنہائی ٹیننٹ ہے۔ یہ ایجنٹس، ریپوزٹریز، اسپیسز، ٹکٹس، میموری، پائپ لائنز اور اراکین کو ایک محدود سیاق میں سمو دیتا ہے۔ ورک اسپیس کے اندر ہونے والی ہر چیز اُسی کے اندر رہتی ہے۔
 
-A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2" and "infrastructure".
+ایک عام ورک اسپیس کسی ایک پروجیکٹ یا ایک کوڈ بیس سے مطابقت رکھتا ہے۔ ہو سکتا ہے آپ کے ”api-service“، ”frontend-v2“ اور ”infrastructure“ کے لیے الگ الگ ورک اسپیسز ہوں۔
 
-## Workspace-scoped data
+## ورک اسپیس کے دائرے کا ڈیٹا
 
-A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<workspaceId>/workspace.db`. Each workspace gets a directory rather than a bare file, because a workspace accumulates more than a database — per-conversation worktrees, the agent and skill files, chat bot credentials — and giving it a folder means all of that lives and is deleted, together.
+ورک اسپیس کی قطاریں اُسی ورک اسپیس کی اپنی SQLite فائل میں، `<dataDir>/<workspaceId>/workspace.db` پر رہتی ہیں۔ ہر ورک اسپیس کو ننگی فائل کے بجائے ایک ڈائریکٹری ملتی ہے، کیونکہ ورک اسپیس ایک ڈیٹا بیس سے زیادہ کچھ جمع کرتا ہے — فی گفتگو ورک ٹریز، ایجنٹ اور مہارت کی فائلیں، چیٹ بوٹ کی اسناد — اور اُسے ایک فولڈر دینے کا مطلب یہ ہے کہ یہ سب ایک ساتھ رہتا ہے اور ایک ساتھ حذف ہوتا ہے۔
 
-| Entity                                              | Scope                                        |
+| شے                                                  | دائرہ                                       |
 | --------------------------------------------------- | -------------------------------------------- |
-| Agents                                              | Belong to exactly one workspace              |
-| Repositories                                        | Registered into one workspace (see below)    |
-| Spaces, conversations and messages                  | Workspace-scoped                             |
-| Tickets, projects, plans, orchestrations            | Workspace-scoped                             |
-| Memory facts, policies, domains, access grants      | Workspace-scoped                             |
-| Pipeline runs, templates, triggers                  | Workspace-scoped                             |
-| Pull request state, review spaces, review cohorts   | Workspace-scoped                             |
-| Agent run logs and working memory                   | Workspace-scoped                             |
-| Members, invites, per-repo grants                   | Workspace-scoped                             |
-| Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
+| ایجنٹس                                              | عین ایک ورک اسپیس سے تعلق رکھتے ہیں          |
+| ریپوزٹریز                                           | ایک ورک اسپیس میں رجسٹر ہوتی ہیں (نیچے دیکھیں) |
+| اسپیسز، گفتگوئیں اور پیغامات                        | ورک اسپیس کے دائرے میں                       |
+| ٹکٹس، پروجیکٹس، پلانز، آرکیسٹریشنز                   | ورک اسپیس کے دائرے میں                       |
+| میموری فیکٹس، پالیسیاں، ڈومینز، رسائی گرانٹس         | ورک اسپیس کے دائرے میں                       |
+| پائپ لائن رنز، ٹیمپلیٹس، ٹریگرز                     | ورک اسپیس کے دائرے میں                       |
+| PR کی حالت، ریویو اسپیسز، ریویو کوہارٹس             | ورک اسپیس کے دائرے میں                       |
+| ایجنٹ رن لاگز اور ورکنگ میموری                      | ورک اسپیس کے دائرے میں                       |
+| اراکین، دعوتیں، فی ریپو گرانٹس                       | ورک اسپیس کے دائرے میں                       |
+| کوڈ گراف کے سمبلز اور ایجز                          | ورک اسپیس فائل کے اندر `repoId` سے محدود     |
 
-Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
+اِن میں سے بیشتر قطاریں ایک `workspaceId` کالم رکھتی ہیں؛ تنہائی کو الگ ڈیٹا بیس فائلیں نافذ کرتی ہیں۔ نیچے تنہائی کا غیر متغیر اصول دیکھیں۔
 
-## Repos are workspace-scoped; identity across workspaces is by path
+## ریپوز ورک اسپیس کے دائرے میں ہیں؛ ورک اسپیسز کے پار شناخت پاتھ سے ہوتی ہے
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
+ایک ریپو کی قطار اُس کے ورک اسپیس کی اپنی ڈیٹا بیس فائل میں رہتی ہے — فائل _ہی_ دائرہ ہے، اس لیے ٹیبل میں نہ کوئی `workspaceId` کالم ہے اور نہ کوئی جوائن ٹیبل۔
 
-You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+آپ کسی ورک اسپیس میں ریپو ترتیبات → ورک اسپیس → ریپوزٹریز سے شامل کرتے ہیں۔ ایک ہی چیک آؤٹ کو دو ورک اسپیسز میں رجسٹر کرنے سے دو مختلف ids والی دو آزاد قطاریں بنتی ہیں؛ ورک اسپیسز کے _پار_ ریپو کی شناخت فائل سسٹم پاتھ (یا GitHub owner/name) سے ہوتی ہے، id سے کبھی نہیں۔
 
-Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
+رجسٹریشن سخت ہے: پاتھ ایک git ورک ٹری کے اندر ہونا چاہیے، اُس میں ایک `origin` ریموٹ ہونا چاہیے اور وہ ریموٹ کسی معاون forge (github.com، gitlab.com یا bitbucket.org) کی طرف اشارہ کرنا چاہیے۔ forge ریموٹ سے پڑھا جاتا ہے اور ریپو پر محفوظ ہوتا ہے، اس لیے ایک ورک اسپیس تینوں کے ریپوز رکھ سکتا ہے۔ اس کے علاوہ ہر چیز مسترد کر دی جاتی ہے۔ جس فولڈر براؤزر سے آپ انتخاب کرتے ہیں وہ **سرور ہوسٹ** کا فائل سسٹم دکھاتا ہے، جو سرور کی `--repo-roots` اجازت فہرست تک محدود ہے (جس کا ڈیفالٹ سرور صارف کی ہوم ڈائریکٹری ہے)۔
 
-Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+کسی ریپو کو ورک اسپیس سے ہٹانا قطار کو یکسر حذف کر دیتا ہے اور اُس کے کوڈ سمبلز، ایجز، فائلیں، انڈیکس چیک پوائنٹس اور فی رکن گرانٹس کو سلسلہ وار حذف کرتا ہے۔ ڈسک پر موجود چیک آؤٹ کو کوئی فرق نہیں پڑتا۔
 
-The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+کوڈ گراف اُسی فائل میں، `repoId` کی کلید سے رہتا ہے، کیونکہ مختلف ورک اسپیسز میں وہی ریپوزٹری مختلف برانچوں پر اور مختلف کوڈ کے ساتھ ہو سکتی ہے۔
 
-## The isolation invariant
+## تنہائی کا غیر متغیر اصول
 
-Cross-workspace data leaks are treated as bugs. Isolation is **structural**, enforced at several levels:
+ورک اسپیسز کے پار ڈیٹا لیک کو بگ سمجھا جاتا ہے۔ تنہائی **ساختی** ہے اور کئی سطحوں پر نافذ کی جاتی ہے:
 
-- **Database layer.** Each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A workspace database does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call rather than caching one and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
-- **The workspace id is a path segment.** Because the id becomes a directory name, it must match a safe single-segment pattern (alphanumeric start, then alphanumerics, dots, underscores, hyphens; no `..`). Ids are UUIDs everywhere in the product. Anything else throws rather than being sanitized — that is the path-traversal guard and it fails loudly rather than writing a workspace's data to a path someone else chose.
-- **Defense in depth.** The `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes and existing row shapes unchanged and they make a file self-describing when it is inspected on its own — which is what export and import rely on.
-- **Domain layer.** Services that mutate entities by id validate `entity.workspaceId == workspaceId` at a single chokepoint before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an id that arrived from the wrong context. Denying loudly matters: a silent no-op hides the bug and proceeding leaks.
-- **RPC layer.** The repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its own args — there is no per-session "current workspace" to leak and an unknown id is refused as not-found _before_ anything opens a database, so a bad id cannot materialize a ghost `workspace.db`. Genuinely global ops (the newsfeed, the fleet queue) declare themselves unscoped as an explicit, reviewed decision. MCP tools follow the same rule: any tool touching workspace-scoped data requires `workspace_id`.
-- **Cross-workspace fan-out is enumerable.** Answering a question about several workspaces means opening several databases. That fan-out is confined to one helper, `CrossWorkspaceQueries`, so the complete list of things that legitimately cross the boundary lives in one file's call sites instead of diffusing behind doc comments. Those call sites are: server-wide aggregation, startup reconcilers, retention and GC sweeps, backup, event routers — and the membership lookup below.
-- **ID-only access is not sufficient.** Looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable; the domain-layer validation catches a wrong id that arrives through a legitimate file.
+- **ڈیٹا بیس تہہ۔** ہر ورک اسپیس کی اپنی SQLite فائل ہوتی ہے، جو `WorkspaceDatabaseManager.of(workspaceId)` فراہم کرتا ہے۔ کوئی ورک اسپیس ڈیٹا بیس `users`، `workspaces` یا کسی دوسرے ورک اسپیس کے ٹیبلز کا اعلان نہیں کرتا، اس لیے ورک اسپیسز کے پار ریڈ کوئی ایسا بگ نہیں جو آپ لکھ سکیں — وہ کمپائل ہی نہیں ہوتا۔ ریپوزٹریز اپنا DAO ہر کال پر حل کرتی ہیں، ایک بار کیش کر کے نہیں رکھتیں، اور چونکہ ریپوزٹری کا ہر میتھڈ ایک لازمی `workspaceId` لیتا ہے، ورک اسپیس کا اندازہ لگایا جا سکتا نہ ڈیفالٹ کیا جا سکتا ہے۔
+- **ورک اسپیس id ایک پاتھ سیگمنٹ ہے۔** چونکہ id ایک ڈائریکٹری نام بن جاتی ہے، اُسے ایک محفوظ واحد سیگمنٹ پیٹرن سے میل کھانا چاہیے (شروع میں حرف یا ہندسہ، پھر حروف، ہندسے، نقطے، انڈر اسکور، ہائفن؛ `..` نہیں)۔ پروڈکٹ میں ہر جگہ ids UUIDs ہوتی ہیں۔ اس کے علاوہ ہر چیز صاف کیے جانے کے بجائے ایکسپشن پھینکتی ہے — یہی پاتھ ٹریورسل گارڈ ہے اور یہ زور سے ناکام ہوتا ہے بجائے اِس کے کہ کسی ورک اسپیس کا ڈیٹا کسی اور کے چنے ہوئے پاتھ پر لکھ دے۔
+- **گہرائی میں دفاع۔** `workspaceId` کالم اب بھی موجود ہیں اور اب بھی لکھے جاتے ہیں۔ ایک فائل کے اندر زائد ہونے کے باوجود، وہ سنک فیڈ ٹریگرز، FTS انڈیکسز اور موجودہ قطار کی شکلیں بغیر تبدیلی کے رکھتے ہیں اور فائل کو اکیلا جانچے جانے پر خود وضاحتی بناتے ہیں — اسی پر ایکسپورٹ اور امپورٹ کا انحصار ہے۔
+- **ڈومین تہہ۔** جو سروسز اکائیوں کو id سے بدلتی ہیں، آگے بڑھنے سے پہلے ایک ہی چوک پوائنٹ پر `entity.workspaceId == workspaceId` کی توثیق کرتی ہیں اور عدم مطابقت پر `WorkspaceMismatchException` پھینکتی ہیں — غلط سیاق سے آنے والی id کے لیے زوردار ناکامی۔ زور سے انکار کرنا اہم ہے: خاموش no-op بگ چھپا دیتا ہے اور آگے بڑھنا ڈیٹا لیک کرتا ہے۔
+- **RPC تہہ۔** ریپو-RPC ڈسپیچر ہی چوک پوائنٹ ہے۔ ورک اسپیس کے دائرے کا ہر آپریشن لازماً اپنے دلائل میں `workspace_id` لے کر آتا ہے — لیک ہونے کوئی فی سیشن ”موجودہ ورک اسپیس“ نہیں ہے اور نامعلوم id کو، کسی چیز کے کوئی ڈیٹا بیس کھولنے سے _پہلے_، نہ ملا کے طور پر مسترد کر دیا جاتا ہے، اس لیے کوئی بری id بھوت `workspace.db` وجود میں نہیں لا سکتی۔ واقعی عالمی آپریشنز (نیوز فیڈ، فلیٹ قطار) اپنے آپ کو ایک واضح، نظرثانی شدہ فیصلے کے طور پر غیر محدود قرار دیتے ہیں۔ MCP ٹولز اسی اصول کی پیروی کرتے ہیں: ورک اسپیس کے دائرے کے ڈیٹا کو چھونے والا کوئی بھی ٹول `workspace_id` مانگتا ہے۔
+- **ورک اسپیسز کے پار فین آؤٹ قابلِ شمار ہے۔** کئی ورک اسپیسز کے بارے میں سوال کا جواب دینے کا مطلب کئی ڈیٹا بیس کھولنا ہے۔ یہ فین آؤٹ ایک ہی ہیلپر، `CrossWorkspaceQueries`، تک محدود ہے، اس لیے وہ تمام چیزیں جو جائز طور پر اِس حد کو عبور کرتی ہیں، ڈاک کامنٹس کے پیچھے بکھرنے کے بجائے ایک ہی فائل کے کال سائٹس میں رہتی ہیں۔ وہ کال سائٹس یہ ہیں: سرور گیر مجموعی حساب، اسٹارٹ اپ ری کنسائلرز، ریٹینشن اور GC کی صفائیاں، بیک اپ، ایونٹ روٹرز — اور نیچے دی گئی رکنیت کی تلاش۔
+- **صرف ID والی رسائی کافی نہیں۔** کسی اکائی کو اُس کی UUID سے تلاش کرنا ثابت نہیں کرتا کہ وہ کال کرنے والے کے ورک اسپیس سے تعلق رکھتی ہے۔ فائل کی تقسیم غلط فائل کو ناقابلِ رسائی بناتی ہے؛ ڈومین تہہ کی توثیق کوئی ایسی غلط id پکڑ لیتی ہے جو کسی جائز فائل کے ذریعے آئی ہو۔
 
-## Membership, not the pairing key, is what grants access
+## رسائی دینے والی چیز رکنیت ہے، پیئرنگ کلید نہیں
 
-Holding a device credential authenticates a _device_. It does not authorize anything inside a workspace. Every workspace-scoped op resolves the caller's membership role and enforces a floor derived from the op's kind — read needs `guest`, a mutation needs `member`, a destructive operation needs `admin` — and ops that expose repo content additionally check the caller's per-repo grant. A valid pairing key with no membership gets `Not a member of this workspace`.
+ڈیوائس کی کوئی سند رکھنا ایک _ڈیوائس_ کی توثیق کرتا ہے۔ یہ ورک اسپیس کے اندر کسی چیز کا اختیار نہیں دیتا۔ ورک اسپیس کے دائرے کا ہر آپریشن کال کرنے والے کا رکنیتی کردار حل کرتا ہے اور آپریشن کی قسم سے اخذ شدہ ایک کم از کم حد نافذ کرتا ہے — ریڈ کے لیے `guest`، تبدیلی کے لیے `member`، تباہ کن آپریشن کے لیے `admin` — اور ریپو کا مواد سامنے لانے والے آپریشنز کے لیے اضافی طور پر کال کرنے والے کی فی ریپو گرانٹ کی جانچ ہوتی ہے۔ رکنیت کے بغیر ایک درست پیئرنگ کلید کو `Not a member of this workspace` ملتا ہے۔
 
-The consequence for isolation is neat: membership rows live in the _workspace's own_ file, so "who is in this workspace?" is an ordinary scoped read. The inverse question — "which workspaces am I in?" — is by definition spread across files, so it is one of the few sanctioned `CrossWorkspaceQueries` fan-outs and it is what the workspace picker runs before any workspace has been chosen.
+تنہائی کے لیے اِس کا نتیجہ صاف ہے: رکنیت کی قطاریں _ورک اسپیس کی اپنی_ فائل میں رہتی ہیں، اس لیے ”اِس ورک اسپیس میں کون ہے؟“ ایک عام محدود ریڈ ہے۔ اُلٹا سوال — ”میں کن ورک اسپیسز میں ہوں؟“ — بذات خود فائلوں کے پار پھیلا ہوتا ہے، اس لیے یہ اُن چند منظور شدہ `CrossWorkspaceQueries` فین آؤٹس میں سے ایک ہے اور ورک اسپیس پکر، کوئی ورک اسپیس چنے جانے سے پہلے یہی چلاتا ہے۔
 
-See [Multiplayer](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/) for the role ladder and repo grants.
+کرداروں کی سیڑھی اور ریپو گرانٹس کے لیے [ملٹی پلیئر](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/) دیکھیں۔
 
-## The global registry
+## عالمی رجسٹری
 
-Not everything is workspace-scoped. A second database, `<dataDir>/global.db`, holds what is genuinely server-wide:
+ہر چیز ورک اسپیس کے دائرے میں نہیں ہے۔ دوسرا ڈیٹا بیس، `<dataDir>/global.db`، وہ رکھتا ہے جو واقعی سرور گیر ہے:
 
-- the **workspace registry**, so the switcher can list every workspace without opening a single workspace file — and so a workspace's name, logo, owner, manual order and soft-delete marker live outside the file they describe;
-- **identity**: users, user preferences and paired devices, because one human is one user across every workspace and a paired device survives a workspace being deleted;
-- the **fleet queue** (workers, jobs, placement log), whose scheduler matches the whole queue against every worker on each tick;
-- the **newsfeed**, which is per-user (not per-workspace) — adding a feed follows you into every workspace;
-- **`workspace_routes`**, the pre-auth index that answers "which workspace owns this key?" for entry points that arrive with nothing but a secret or an opaque id (an invite hash, a webhook token, a deep link) and no workspace. A miss there is a not-found; there is deliberately no scan fallback;
-- **install-wide settings and identity**: the install id, host-level settings, SSO connections and managed action policies (an install-wide clamp that can only tighten workspace guardrails).
+- **ورک اسپیس رجسٹری**، تاکہ سوئچر ایک بھی ورک اسپیس فائل کھولے بغیر ہر ورک اسپیس کی فہرست دے سکے — اور تاکہ کسی ورک اسپیس کا نام، لوگو، مالک، دستی ترتیب اور نرم حذف کا نشان اُس فائل سے باہر رہے جس کی وہ وضاحت کرتی ہے؛
+- **شناخت**: صارفین، صارف ترجیحات اور جوڑے ہوئے ڈیوائسز، کیونکہ ایک انسان ہر ورک اسپیس میں ایک ہی صارف ہے اور کوئی جوڑا ہوا ڈیوائس ورک اسپیس حذف ہونے پر بھی قائم رہتا ہے؛
+- **فلیٹ قطار** (ورکرز، جابز، پلیسمنٹ لاگ)، جس کا شیڈیولر ہر ٹک پر پوری قطار کو ہر ورکر سے ملاتا ہے؛
+- **نیوز فیڈ**، جو فی صارف ہے (فی ورک اسپیس نہیں) — کوئی فیڈ شامل کرنا آپ کے ساتھ ہر ورک اسپیس میں جاتا ہے؛
+- **`workspace_routes`**، وہ پری آتھ انڈیکس جو اُن داخلی مقامات کے لیے ”یہ کلید کس ورک اسپیس کی ہے؟“ کا جواب دیتا ہے جو صرف ایک سیکرٹ یا ایک مبہم id (دعوت کا ہیش، ویب ہک ٹوکن، ڈیپ لنک) لے کر آتے ہیں اور کوئی ورک اسپیس نہیں۔ وہاں چوک جانا نہ ملا ہونا ہے؛ جان بوجھ کر کوئی اسکین فال بیک نہیں ہے؛
+- **انسٹال گیر ترتیبات اور شناخت**: انسٹال id، ہوسٹ سطح کی ترتیبات، SSO کنکشنز اور منظم ایکشن پالیسیاں (ایک انسٹال گیر پابندی جو ورک اسپیس گارڈریلز کو صرف سخت تر کر سکتی ہے)۔
 
-Boot opens only this file. Workspace files open lazily on first touch, so startup cost stays flat no matter how much history the workspaces accumulate and the per-file `quick_check` is paid on first use rather than on the path to the ready banner.
+بوٹ صرف یہی فائل کھولتا ہے۔ ورک اسپیس فائلیں پہلی دسترس پر دیر سے کھلتی ہیں، اس لیے اسٹارٹ اپ کی لاگت اتنی ہی رہتی ہے چاہے ورک اسپیسز کتنی ہی تاریخ جمع کر لیں، اور فی فائل `quick_check` پہلے استعمال پر ادا ہوتا ہے، ریڈی بینر تک کے راستے پر نہیں۔
 
-A workspace file carries only a single-row `workspace_meta` for self-identification (its id, the install that created it, the schema version it was created with, when). Everything descriptive about a workspace is in the registry.
+ایک ورک اسپیس فائل خود کی شناخت کے لیے صرف ایک قطار والا `workspace_meta` رکھتی ہے (اُس کی id، وہ انسٹال جس نے اُسے بنایا، وہ اسکیما ورژن جس کے ساتھ وہ بنی، اور کب)۔ ورک اسپیس کے بارے میں وضاحتی ہر چیز رجسٹری میں ہوتی ہے۔
 
-## Creating a workspace
+## ورک اسپیس بنانا
 
-Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
+ورک اسپیس بنانا صرف رجسٹری میں قطار داخل کرنا نہیں ہے۔ ایک ہی آپریشن میں سرور بنانے والے صارف کو `ownerUserId` کے طور پر لکھتا ہے، اُس صارف کی مالک کردار والی رکنیت درج کرتا ہے اور ایک `WorkspaceCreated` ڈومین ایونٹ شائع کرتا ہے۔ اُس ایونٹ کے سننے والے پھر، ایڈمپوٹنٹ انداز میں اور پس منظر میں، یہ چیزیں سیڈ کرتے ہیں:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
-- the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
-- the **starter eval suites**.
+- ایک **CEO ایجنٹ** اور چار ماہرین — `qa`، `architect`، `engineer`، `librarian` — جہاں ماہرین CEO کو رپورٹ کرتے ہیں؛
+- **بلٹ اِن پائپ لائن ٹیمپلیٹس** اور اُن کے ٹریگرز (ایونٹ اور دستی ٹریگرز فعال حالت میں آتے ہیں؛ شیڈیول شدہ ٹریگرز، روزانہ ورک ٹری-GC صفائی کے سوا، اختیاری ہیں)؛
+- **اسٹارٹر ایوال سویٹس**۔
 
-This happens for _every_ workspace, not only the first. The seeded agents are created with no adapter, so they run on **Control Center (built-in)** with Anthropic's default model (`claude-opus-4-8` unless you pin another) until you set an adapter and model per agent at Settings → Workspace → Agents. See [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/).
+یہ _ہر_ ورک اسپیس کے لیے ہوتا ہے، صرف پہلے کے لیے نہیں۔ سیڈ کیے گئے ایجنٹس بغیر کسی اڈاپٹر کے بنائے جاتے ہیں، اس لیے وہ Anthropic کے ڈیفالٹ ماڈل کے ساتھ (`claude-opus-4-8`، جب تک آپ کوئی اور پن نہ کریں) **Control Center (built-in)** پر چلتے ہیں، یہاں تک کہ آپ ترتیبات → ورک اسپیس → ایجنٹس میں فی ایجنٹ اڈاپٹر اور ماڈل مقرر کریں۔ [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/) دیکھیں۔
 
-The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
+مالک رکنیت کی یہ تحریر دکھنے سے زیادہ اہم ہے: اُس کے بغیر نئے بنائے گئے ورک اسپیس کا کوئی رکن نہ ہوتا اور بنانے والے کی اگلی ہر ورک اسپیس محدود کال مسترد ہو جاتی۔
 
-:::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+:::note[ایجنٹس ورک اسپیس نہیں بنا سکتے]
+`create_workspace` نامی کوئی MCP ٹول نہیں ہے۔ انسان ورک اسپیس `workspace.create` (صرف نام والا چوک پوائنٹ) یا `workspace.upsert` (مکمل ریکارڈ، جو اپ ڈیٹس کے لیے بھی استعمال ہوتا ہے) کے ذریعے بناتے ہیں۔ دونوں بنانے والے صارف کو `owner` کے طور پر لکھتے ہیں اور `WorkspaceCreated` شائع کرتے ہیں۔
 :::
 
-## Deleting, exporting, importing
+## حذف کرنا، ایکسپورٹ کرنا، امپورٹ کرنا
 
-Deleting a workspace **marks the registry row and unlinks the directory**. The workspace disappears from every list and lookup. The registry row stays (soft-deleted) so the id is still known to backup and maintenance, but `workspace.delete` immediately drops that workspace's directory — database, worktrees, agent files and the rest — via `WorkspaceDatabaseManager.dropAndClose`. Only the workspace **owner** can delete it.
+کسی ورک اسپیس کو حذف کرنا **رجسٹری کی قطار کو نشان زد کرتا ہے اور ڈائریکٹری کا لنک کاٹ دیتا ہے**۔ ورک اسپیس ہر فہرست اور تلاش سے غائب ہو جاتا ہے۔ رجسٹری کی قطار (نرم حذف شدہ) رہتی ہے تاکہ id بیک اپ اور مینٹیننس کو اب بھی معلوم رہے، مگر `workspace.delete` فوراً اُس ورک اسپیس کی ڈائریکٹری — ڈیٹا بیس، ورک ٹریز، ایجنٹ فائلیں اور باقی سب — `WorkspaceDatabaseManager.dropAndClose` کے ذریعے گرا دیتا ہے۔ صرف ورک اسپیس کا **مالک** ہی اُسے حذف کر سکتا ہے۔
 
-Because one workspace is one file, handing a workspace around is a file operation rather than a table-by-table dump:
+چونکہ ایک ورک اسپیس ایک فائل ہے، ورک اسپیس کو آگے دینا ٹیبل بہ ٹیبل ڈمپ کے بجائے ایک فائل آپریشن ہے:
 
-- `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving.
-- `workspace.import` adopts such a file, replacing whatever the target workspace currently holds. The embedded `workspace_meta` lets an import distinguish "my own file, re-adopted" from "a file from another install" (the latter is allowed, but logged rather than invisible).
-- `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
-- `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
+- `workspace.export` ایک ہی `VACUUM INTO` ہے — سرور کے مسلسل خدمت کرتے رہتے ہوئے ایک ریڈ ٹرانزیکشن کے تحت لی گئی مستقل، ڈیفراگمنٹ شدہ اسنیپ شاٹ۔
+- `workspace.import` ایسی فائل کو اپناتا ہے اور ہدف ورک اسپیس کے پاس اس وقت جو کچھ موجود ہے اُسے بدل دیتا ہے۔ ایمبیڈڈ `workspace_meta` کسی امپورٹ کو ”اپنی ہی فائل، دوبارہ اپنائی گئی“ اور ”کسی دوسرے انسٹال کی فائل“ میں فرق کرنے دیتا ہے (دوسری کی اجازت ہے، مگر نظرانداز کرنے کے بجائے لاگ کی جاتی ہے)۔
+- `server.backupNow` پورے انسٹال کا اسنیپ شاٹ لائیو ڈیٹا ڈائر کو نقل کرنے والی ٹائم اسٹیمپ والی ڈائریکٹری میں لیتا ہے — `manifest.json`، `global.db` اور فی ورک اسپیس ایک `<workspaceId>/workspace.db` — چنانچہ بحالی صرف اُسے واپس کاپی کرنا ہے۔
+- `server.listBackups` اُس ڈائریکٹری کو تازہ ترین سے پہلے کی ترتیب میں واپس پڑھتا ہے، ہر اسنیپ شاٹ کے سائز اور ورک اسپیس فہرست کے ساتھ۔ جس اسنیپ شاٹ کا مینی فیسٹ غائب ہو یا جو ایسی فائلوں کے نام لے جو وہاں موجود نہ ہوں، وہ بھی رپورٹ ہوتا ہے، نامکمل کے طور پر نشان زد — اُسے چھپانا ہی وہ راستہ ہے جس سے کوئی آپریٹر یہ سمجھ بیٹھے کہ اُس کے پاس ایسا بیک اپ ہے جو دراصل نہیں ہے۔
 
-The backup operations live under **Settings → Server → Backup & restore**:
-**Back up now** takes an install snapshot, the list shows which snapshots are
-complete and lets the install owner delete one after confirmation, and each
-workspace offers export and import. The built-in **Workspace backup** pipeline
-takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
-install snapshot is `workspace.import` pointed at the snapshot's
-`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
-copy-back of the snapshot directory.
+بیک اپ آپریشنز **ترتیبات → سرور → بیک اپ اور بحالی** کے تحت رہتے ہیں:
+**اب بیک اپ لیں** انسٹال کا اسنیپ شاٹ لیتا ہے، فہرست دکھاتی ہے کہ کون سے اسنیپ شاٹس
+مکمل ہیں اور انسٹال کے مالک کو تصدیق کے بعد ایک حذف کرنے دیتی ہے، اور ہر
+ورک اسپیس ایکسپورٹ اور امپورٹ پیش کرتا ہے۔ بلٹ اِن **Workspace backup** پائپ لائن
+ہفتہ وار شیڈول پر صرف اُسی ورک اسپیس کا ڈیٹا بیس لیتی ہے اور اپنے اُن بیک اپس
+کو حذف کرتی ہے جو مقرر کردہ ریٹینشن عمر سے پرانے ہوں۔ کسی ورک اسپیس کو انسٹال
+اسنیپ شاٹ سے بحال کرنا `workspace.import` ہے جسے اسنیپ شاٹ کے
+`<workspaceId>/workspace.db` کی طرف اشارہ کیا گیا ہو؛ پورے انسٹال کی بحالی اب بھی
+اسنیپ شاٹ ڈائریکٹری کی، سرور بند حالت میں، واپس کاپی ہے۔
 
-What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#what-a-backup-does-not-contain) has the full table.
+اِن میں سے کوئی بھی چیز ورک اسپیس ڈائریکٹری کا باقی حصہ نہیں لے کر چلتی۔ ورک اسپیس ایک ڈیٹا بیس سے زیادہ جمع کرتا ہے — چسپاں کی گئی تصاویر، مہارت اور ایجنٹ فائلیں، چیٹ اسناد، ورک ٹریز — اور ایکسپورٹ و امپورٹ **فائل** کو منتقل کرتے ہیں، اس لیے اُس کے ساتھ والی ہر چیز جہاں ہے وہیں رہتی ہے۔ اسناد کے لیے یہ جان بوجھ کر ہے اور ورک ٹریز کے لیے یہ ضائع ہونے والی چیز ہے؛ باقی کے لیے یہ جاننے کی ایک حد ہے، کوئی خصوصیت نہیں۔ [بیک اپ حوالہ](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#what-a-backup-does-not-contain) میں مکمل ٹیبل موجود ہے۔
 
-## Moving a backup between the server and your device
+## سرور اور آپ کے ڈیوائس کے درمیان بیک اپ منتقل کرنا
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed HTTP routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#transfer-routes) — carry the bytes for every other topology, on the same authenticated lane the media proxy and the image store already use. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload is the one that works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+اُوپر کا ہر آپریشن **سرور** کے پاتھوں کی زبان بولتا ہے، جو مکمل جواب صرف اُس وقت ہوتا ہے جب سرور آپ کی اپنی مشین ہو۔ تین دستخط شدہ HTTP روٹس — [`/backup/workspace`، `/backup/snapshot` اور `/backup/restore`](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/#transfer-routes) — باقی ہر ٹوپولوجی کے لیے بائٹس منتقل کرتے ہیں، اُسی مستند لین پر جو میڈیا پراکسی اور امیج اسٹور پہلے ہی استعمال کرتے ہیں۔ صفحے پر یہ ہر ایکسپورٹ اور ہر اسنیپ شاٹ کے ساتھ ایک **ڈاؤن لوڈ** بٹن ہے (کہاں اُترے گا یہ آپ چنتے ہیں)، اور اُس فائل سے بحالی کے لیے **فائل منتخب کریں اور اپ لوڈ کریں** ہے جو آپ کی زیرِ استعمال مشین پر رکھی ہو۔ اپ لوڈ وہی ہے جو اُس وقت کام کرتا ہے جب سرور آپ کی مشین نہ ہو: `workspace.import` چاہتا ہے کہ فائل پہلے سے ہوسٹ پر ہو، اور وہ وہاں اِسی طرح پہنچتی ہے۔
 
-Three properties are worth knowing:
+تین خصوصیات جاننے کے قابل ہیں:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
-- **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
-- **A relayed connection has no HTTP origin**, so the transfer controls are disabled there with a note saying why. Everything that speaks in server-side paths keeps working over the relay; only the byte lanes need a direct connection.
+- **ایک ڈاؤن لوڈ تازہ کاپی بناتا ہے اور سرور اُس میں سے کچھ نہیں رکھتا۔** ڈاؤن لوڈ کرنا ”ایکسپورٹ بٹن کی بنائی ہوئی فائل لے آؤ“ نہیں ہے — یہ دوبارہ ایکسپورٹ کرتا ہے، اُسے اسٹریم کرتا ہے اور اُسے حذف کر دیتا ہے۔ جواب اسی وجہ سے `no-store` کے ساتھ `Accept-Ranges: none` ہے: دوبارہ شروع ہونے والی رینج دو مختلف ایکسپورٹس کو ایک ایسی فائل میں جوڑ دیتی جو درست دکھتی ہے مگر ہے نہیں۔
+- **اپ لوڈ ڈسک پر اسٹریم ہوتا ہے، کبھی بفر نہیں ہوتا**، دونوں سروں پر، اور تیار کردہ کاپی ہر راستے سے باہر نکلتے وقت حذف ہو جاتی ہے — بشمول انکار کے۔ ورک اسپیس کا ڈیٹا بیس کوئی اسکرین شاٹ نہیں ہے۔
+- **ریلے شدہ کنکشن کا کوئی HTTP اوریجن نہیں ہوتا**، اس لیے وہاں ٹرانسفر کنٹرولز ایک ایسے نوٹ کے ساتھ غیر فعال ہوتے ہیں جو وجہ بتاتا ہے۔ سرور کی طرف کے پاتھوں کی زبان بولنے والی ہر چیز ریلے پر کام کرتی رہتی ہے؛ صرف بائٹ لینز کو براہِ راست کنکشن درکار ہے۔
 
-:::note[Which paths are whose]
-The paths the page *shows* — the snapshot directory, the file an export wrote, the source an import reads — are on the machine running `cc_server`. The path a **download** reports is on the machine you are sitting at. That distinction is why both exist: the first is what a maintenance script or an ssh session needs, the second is what a person collecting a backup needs.
+:::note[کون سے پاتھ کس کے ہیں]
+صفحہ جو پاتھ *دکھاتا* ہے — اسنیپ شاٹ ڈائریکٹری، وہ فائل جو کسی ایکسپورٹ نے لکھی، وہ ماخذ جو کوئی امپورٹ پڑھتا ہے — وہ اُس مشین پر ہیں جو `cc_server` چلا رہی ہے۔ کوئی **ڈاؤن لوڈ** جس پاتھ کی اطلاع دیتا ہے وہ اُس مشین پر ہے جہاں آپ بیٹھے ہیں۔ یہی فرق اِن دونوں کے وجود کی وجہ ہے: پہلا وہ ہے جو کسی مینٹیننس اسکرپٹ یا ssh سیشن کو چاہیے، دوسرا وہ جو بیک اپ جمع کرنے والے شخص کو چاہیے۔
 :::
 
-## Multiple workspaces
+## متعدد ورک اسپیسز
 
-You can run multiple workspaces side by side. Each operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory and cannot see its tickets. Recipient resolution for agent-to-agent messaging is exact and never crosses a workspace.
+آپ متعدد ورک اسپیسز ساتھ ساتھ چلا سکتے ہیں۔ ہر ایک آزادانہ کام کرتا ہے: ایک ورک اسپیس کے ایجنٹس کسی دوسرے ورک اسپیس کے ایجنٹس کو پیغام نہیں بھیج سکتے، کسی دوسرے ورک اسپیس کی میموری نہیں پڑھ سکتے اور اُس کے ٹکٹس نہیں دیکھ سکتے۔ ایجنٹ سے ایجنٹ پیغام رسانی میں وصول کنندہ کا تعین قطعی ہے اور کبھی کسی ورک اسپیس کو عبور نہیں کرتا۔
 
-There is no cross-workspace dashboard. The analytics surface at `/workspaces/:workspaceId/observability` subscribes to a bounded global feed of recent runs and immediately narrows it to the active workspace, so what you see there is one workspace at a time. The only genuinely multi-workspace surfaces a person touches are the workspace picker and the switcher.
+کوئی کراس ورک اسپیس ڈیش بورڈ نہیں ہے۔ `/workspaces/:workspaceId/observability` پر موجود اینالیٹکس سطح حالیہ رنز کی ایک محدود عالمی فیڈ کو سبسکرائب کرتی ہے اور فوراً اُسے فعال ورک اسپیس تک محدود کر دیتی ہے، اس لیے وہاں آپ کو ایک وقت میں ایک ہی ورک اسپیس نظر آتا ہے۔ کوئی شخص جِن واقعی کثیر ورک اسپیس سطحوں کو چھوتا ہے وہ ورک اسپیس پکر اور سوئچر ہی ہیں۔
 
-One practical limit worth knowing: a workspace someone is using stays open — there is no LRU. Past 32 of those the server warns rather than refusing, because each open file holds a background isolate and a page cache. Cross-workspace fan-out opens files transiently and closes them afterwards if nothing else has claimed them.
+ایک عملی حد جاننے کے قابل ہے: جس ورک اسپیس کو کوئی استعمال کر رہا ہو وہ کھلا رہتا ہے — کوئی LRU نہیں ہے۔ ایسے 32 سے زیادہ ہو جانے پر سرور انکار کے بجائے انتباہ کرتا ہے، کیونکہ ہر کھلی فائل ایک پس منظر isolate اور ایک پیج کیش رکھتی ہے۔ کراس ورک اسپیس فین آؤٹ فائلیں عارضی طور پر کھولتا ہے اور بعد میں، اگر کسی اور نے اُن پر دعویٰ نہ کیا ہو، بند کر دیتا ہے۔
 
-## Related concepts
+## متعلقہ تصورات
 
-- [Multiplayer](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): membership, roles and repo grants — the access half of isolation
-- [The agent model](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): agents belong to exactly one workspace
-- [Memory and knowledge](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/): memory is workspace-scoped
-- [Architecture](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): where the databases sit in the client/server split
-- [Back up and restore](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/): taking a snapshot, moving a workspace, keeping copies elsewhere
-- [Backup, export and import](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/): every operation, route, manifest field and limit
-- [Add repositories](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/): registering a checkout into a workspace
+- [ملٹی پلیئر](/ur-PK/ہدایت-نامہ/تصورات/ملٹی-پلیئر/): رکنیت، کردار اور ریپو گرانٹس — تنہائی کا رسائی والا نصف
+- [ایجنٹ ماڈل](/ur-PK/ہدایت-نامہ/تصورات/ایجنٹ-ماڈل/): ایجنٹس عین ایک ورک اسپیس سے تعلق رکھتے ہیں
+- [میموری اور علم](/ur-PK/ہدایت-نامہ/تصورات/میموری-اور-علم/): میموری ورک اسپیس کے دائرے میں ہے
+- [آرکیٹیکچر](/ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر/): کلائنٹ/سرور تقسیم میں ڈیٹا بیس کہاں بیٹھتے ہیں
+- [بیک اپ اور بحالی](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/بیک-اپ-اور-بحالی/): اسنیپ شاٹ لینا، ورک اسپیس منتقل کرنا، کاپیاں کہیں اور رکھنا
+- [بیک اپ، ایکسپورٹ اور امپورٹ](/ur-PK/ہدایت-نامہ/حوالہ/بیک-اپ/): ہر آپریشن، روٹ، مینی فیسٹ فیلڈ اور حد
+- [ریپوز شامل کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریپوز-شامل-کریں/): کسی چیک آؤٹ کو ورک اسپیس میں رجسٹر کرنا

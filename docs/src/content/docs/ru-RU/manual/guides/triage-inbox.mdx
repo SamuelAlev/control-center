@@ -1,164 +1,184 @@
 ---
-title: Triage your inbox
-description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+title: Разобрать входящие
+description: Работайте с едиными входящими — разбирайте то, что вас блокирует, проверяйте то, что ждёт вас, и отслеживайте свои PR.
 slug: ru-RU/руководство/практические-руководства/разобрать-входящие
+sourceHash: 3c320f831b4f0826bd54acc1a559f44f312a9735
 ---
 
-This guide shows you how to work the inbox: the one surface that collects
-everything that blocks you or explicitly asks for you — pending agent
-approvals, failed ticket syncs and every pull request that involves you as
-reviewer or author.
+Это руководство показывает, как работать с входящими: единственной
+поверхностью, которая собирает всё, что вас блокирует или явно запрашивает
+вас, — ожидающие подтверждения агентов, неудачные синхронизации тикетов и
+каждый pull request, где вы выступаете ревьюером или автором.
 
-## Open the inbox
+## Открыть входящие
 
-1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
-   failed syncs and open PRs awaiting your review.
-2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
-3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+1. Нажмите **Входящие** на боковой панели. Бейдж рядом считает ожидающие
+   подтверждения агентов, неудачные синхронизации и открытые PR, ждущие
+   вашего ревью.
+2. Или нажмите <kbd>⌘K</kbd> и выполните команду навигации **Входящие**.
+3. Или перейдите по прямой ссылке на `/workspaces/<workspace-id>/inbox`.
 
-The sidebar entry always shows the live count, so you can see triage work
-accumulate without opening the page.
+Элемент боковой панели всегда показывает актуальный счётчик, так что вы
+видите, как накапливается работа по разбору, не открывая страницу.
 
-## Read severity at a glance
+## Оценить критичность с одного взгляда
 
-Scan top to bottom; the inbox is already ordered by urgency:
+Просматривайте сверху вниз: во входящих уже задан порядок по срочности:
 
-1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Registered sources (an agent stuck on a
-   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
-   **Blocked**.
-2. Within the strip, the most urgent severity comes first; ties go to the item
-   that has been waiting longest.
-3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
-   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
-   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
-   author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team you
-   belong to on forges that have them (GitHub drops the team once any teammate
-   reviews).
+1. Закреплённая полоса **Требует внимания** находится над разделами PR. На
+   каждой карточке есть чип критичности. Зарегистрированные источники
+   (агент, застрявший на запросе подтверждения, или синхронизация тикета,
+   чьё зеркало у поставщика устарело) выдают **Заблокировано**.
+2. Внутри полосы первой идёт самая высокая критичность; при равенстве выше
+   то, что ждёт дольше всех.
+3. Ниже полосы PR сгруппированы по фиксированным разделам жизненного цикла
+   ревью — **Ждут вашего ревью**, **Возвращены вам**, **Одобрено**,
+   **Черновики**, **Ожидают ревьюеров**, **Слияние и недавно слитые**,
+   **Ожидают автора**. Верхние разделы — это то, что нужно _вам_; остальные
+   показывают, как обстоят дела с _вашими_ PR. Раздел **Ждут вашего ревью**
+   включает PR, которые всё ещё запрашивают команду, в которую вы входите, на
+   тех хостах кода, где команды есть (GitHub убирает команду, как только
+   кто-то из её участников провёл ревью).
 
-An item only lands in the inbox when it blocks something or explicitly
-requests you. An empty strip plus an empty section list shows **You're all
-caught up** only when that emptiness is trustworthy.
+Элемент попадает во входящие, только когда он что-то блокирует или явно
+запрашивает вас. Пустая полоса вместе с пустым списком разделов показывают
+**Вы всё просмотрели** только тогда, когда этой пустоте можно доверять.
 
-## One inbox across every forge
+## Одни «Входящие» для всех хостов кода
 
-If the workspace holds repos on more than one code host, the inbox merges them
-into a single stream — a GitHub pull request and a Bitbucket pull request sit in
-the same section, ordered by time rather than grouped by vendor. The row's
-`repo #number` meta is what tells them apart.
+Если в рабочем пространстве есть репозитории на нескольких хостах кода,
+входящие сливают их в один поток — pull request из GitHub и pull request из
+Bitbucket стоят в одном разделе, упорядоченные по времени, а не
+сгруппированные по поставщику. Различить их позволяет пометка
+`repo #number` в строке.
 
-"Yours" is resolved **per forge**, because you are a different account on each.
-A pull request only counts as yours, or as requesting your review, when it
-matches your identity on the forge that repo actually lives on.
+«Ваше» определяется **для каждого хоста кода отдельно**, потому что на
+каждом из них вы — другой аккаунт. Pull request считается вашим или
+запрашивающим ваше ревью, только когда он совпадает с вашей идентичностью на
+том хосте кода, где на самом деле лежит репозиторий.
 
-A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. The empty
-state names a caveat instead of **You're all caught up** when every forge login
-is still unresolved (**Couldn't confirm your GitHub account** — the copy still
-names GitHub), when githubstatus.com reports an incident, or when a GitHub App
-install covering linked repos is suspended.
+Хост кода, который недоступен или не подключён, ничего не добавляет и
+оставляет остальные входящие нетронутыми — одно сломанное подключение
+никогда не опустошает весь список. Пустое состояние называет причину вместо
+**Вы всё просмотрели**, когда идентичность ещё не определена ни на одном
+хосте кода (**Не удалось подтвердить аккаунт GitHub** — текст всё равно
+упоминает GitHub), когда githubstatus.com сообщает об инциденте или когда
+установка GitHub App, покрывающая связанные репозитории, приостановлена.
 
-## Clear the attention strip
+## Разобрать полосу «Требует внимания»
 
-Each strip card has one next action:
+У каждой карточки в полосе есть одно следующее действие:
 
-1. If a card is a pending agent confirmation, click **Review** — you land in
-   that agent's space with its pending confirmation. Approve or reject there
-   (see [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)).
-2. If a card says **Sync failed** for a vendor, click **Open** — you land on
-   **Settings → Workspace → General**, whose **Sync health** card shows each
-   connection's last sync, consecutive-failure streak and latest outcome. Only
-   the latest failure per vendor appears in the inbox, so a recovered sync
-   clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+1. Если карточка — это ожидающее подтверждение агента, нажмите **Ревью** —
+   вы попадёте в пространство этого агента с его запросом на подтверждение.
+   Одобрите или отклоните его там
+   (см. [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)).
+2. Если на карточке указано **Синхронизация не удалась** для какого-то
+   поставщика, нажмите **Открытые** — вы попадёте в
+   **Настройки → Рабочее пространство → Основные**, где карточка
+   **Состояние синхронизации** показывает последнюю синхронизацию каждого
+   подключения, серию сбоев подряд и последний результат. Во входящих
+   появляется только последний сбой по каждому поставщику, поэтому
+   восстановившаяся синхронизация убирает карточку.
+3. Карточки исчезают сами, как только соответствующее состояние разрешается
+   (агенту ответили, синхронизация восстановилась) — вручную закрывать
+   нечего.
 
-:::note[These are per-turn confirmations, not governance approvals]
-An "agent approval" card is a running agent pausing to ask permission for one
-action, in its own conversation. It is a different thing from the governance
-`Approval` record agents create with the approval MCP tools — those have no
-human screen anywhere in the app and never appear here.
+:::note[Это подтверждения в рамках хода, а не согласования управления]
+Карточка «одобрение агента» — это работающий агент, который приостановился,
+чтобы запросить разрешение на одно действие в своём разговоре. Это не то же
+самое, что запись `Approval` системы управления, которую агенты создают с
+помощью инструментов MCP для одобрения, — для неё нигде в приложении нет
+человеческого экрана, и здесь она никогда не появляется.
 :::
 
-:::caution[Sync health is read-only]
-The card reports on ticket-sync connections; apart from a **Sync now** button it
-cannot create, edit or reconnect one and there is no other screen that can
-either. With no connection configured it simply reads "No sync connections yet",
-which is what a fresh workspace shows.
+:::caution[Состояние синхронизации доступно только для чтения]
+Карточка сообщает о подключениях синхронизации тикетов; помимо кнопки
+**Синхронизировать** она не может создать, изменить или переподключить
+подключение, и никакого другого экрана для этого тоже нет. Если подключение
+не настроено, она просто пишет «Подключений синхронизации пока нет» — именно
+это показывает новое рабочее пространство.
 :::
 
-## Filter to what is blocking
+## Отфильтровать то, что блокирует
 
-1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
-   click the filter button in the toolbar.
-2. Pick any combination of status, author, reviewers, content, repo
-   owner/name, date windows, or quick-to-review. Facet counts in the menu show
-   how many inbox items each option matches.
-3. Active filters appear as chips in the bar above the list; click a chip's
-   ✕ to drop that criterion.
-4. Use the left rail to jump between sections — each entry shows its live
-   count and the highlight tracks your scroll position. Click a section
-   header to collapse sections you don't triage (for example **Drafts** while
-   clearing reviews).
-5. Click a column header (title, changes, or updated) to sort every section;
-   click the active column again to flip direction. The display-options button
-   controls draft visibility, the recently-merged window, row properties,
-   ordering and grouping (only grouping by author changes the inbox layout).
+1. Нажмите <kbd>f</kbd> (когда ни одно текстовое поле не в фокусе), чтобы
+   открыть меню фильтров, или нажмите кнопку фильтра на панели инструментов.
+2. Выберите любое сочетание статуса, автора, ревьюеров, содержимого,
+   владельца/имени репозитория, временных окон или «Быстрое ревью».
+   Счётчики фасетов в меню показывают, скольким элементам входящих
+   соответствует каждый вариант.
+3. Активные фильтры отображаются как чипы на панели над списком; нажмите ✕
+   на чипе, чтобы убрать это условие.
+4. Используйте левую панель, чтобы переходить между разделами — у каждого
+   пункта показан актуальный счётчик, а подсветка следует за позицией
+   прокрутки. Нажмите заголовок раздела, чтобы свернуть разделы, которые вы
+   не разбираете (например, **Черновики**, пока разбираете ревью).
+5. Нажмите заголовок столбца (название, изменения или обновлено), чтобы
+   отсортировать все разделы; нажмите по активному столбцу ещё раз, чтобы
+   сменить направление. Кнопка параметров отображения управляет видимостью
+   черновиков, окном недавно слитых, свойствами строк, порядком и
+   группировкой (на раскладку входящих влияет только группировка по автору).
 
-Filters here are independent of the PR queue — narrowing the inbox never
-changes the queue's filters and vice versa.
+Фильтры здесь не зависят от очереди PR — сужение входящих никогда не меняет
+фильтры очереди, и наоборот.
 
-## Act on a PR item
+## Действия с элементом PR
 
-1. Click any row to open the PR detail page.
-2. If the PR is in **Needs your review**, review it and submit your decision —
-   see [Review and merge a PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/).
-3. If the PR is in **Returned to you** (changes requested or CI failed), push
-   fixes from your checkout or hand the follow-up to an agent.
-4. If the PR is in **Approved**, merge it from the detail page.
-5. If you'd rather delegate a review than do it yourself, see
-   [Dispatch reviewers](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/) and
-   [the dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/).
+1. Нажмите любую строку, чтобы открыть страницу сведений о PR.
+2. Если PR находится в разделе **Ждут вашего ревью**, проведите ревью и
+   отправьте своё решение — см.
+   [Проверить и смержить PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/).
+3. Если PR находится в разделе **Возвращены вам** (запрошены изменения или
+   CI упал), отправьте исправления из своей рабочей копии или передайте
+   доработку агенту.
+4. Если PR в разделе **Одобрено**, смержите его со страницы сведений.
+5. Если вы предпочитаете делегировать ревью, а не делать его самим, см.
+   [Запускать агентов-ревьюеров](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/)
+   и [жизненный цикл запуска](/ru-RU/руководство/понятия/жизненный-цикл-запуска/).
 
-Once the underlying state changes (your review lands, the PR merges), the
-classifier re-files the PR into its new section automatically.
+Как только соответствующее состояние меняется (ваше ревью отправлено, PR
+смержен), классификатор автоматически переносит PR в его новый раздел.
 
-## Undo a mistaken action
+## Отменить ошибочное действие
 
-1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
-2. If a text field is focused, ⌘Z edits the field's text instead — click out
-   of the field first to undo an app-level action.
+1. Нажмите <kbd>⌘Z</kbd>, чтобы отменить последнее действие, и
+   <kbd>⌘⇧Z</kbd>, чтобы вернуть его.
+2. Если в фокусе текстовое поле, ⌘Z вместо этого меняет текст в поле —
+   сначала кликните вне поля, чтобы отменить действие уровня приложения.
 
-## Look up shortcuts in place
+## Посмотреть горячие клавиши на месте
 
-Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
-sheet. It lists every binding active on the current route, including the
-inbox's <kbd>f</kbd> filter shortcut. The full map is in the
-[keyboard shortcuts reference](/ru-RU/руководство/справка/горячие-клавиши/).
+Нажмите <kbd>?</kbd> (когда ни одно текстовое поле не в фокусе), чтобы
+открыть шпаргалку по клавиатуре. В ней перечислены все привязки, действующие
+на текущем маршруте, включая сочетание <kbd>f</kbd> для фильтра во входящих.
+Полная карта — в
+[справочнике горячих клавиш](/ru-RU/руководство/справка/горячие-клавиши/).
 
-## Drive it from the command palette
+## Управлять из палитры команд
 
-1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
-2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
-   matching pull requests and opens the one you pick.
-3. While the inbox is open, run **Copy link to this page** to copy that URL
-   for sharing. The command copies the current route, so it is the inbox URL
-   only when you are on this page.
+1. Нажмите <kbd>⌘K</kbd> в любом месте, чтобы открыть палитру команд.
+2. Введите **Входящие**, чтобы перейти на страницу, или введите название
+   PR — палитра покажет подходящие pull request и откроет выбранный.
+3. Пока входящие открыты, выполните команду **Скопировать ссылку на эту
+   страницу**, чтобы скопировать этот URL для отправки. Команда копирует
+   текущий маршрут, поэтому URL входящих она вернёт, только пока вы на этой
+   странице.
 
-## Refresh on demand
+## Обновлять по требованию
 
-The inbox updates live, but if you suspect stale data, click the refresh
-control in the toolbar — it forces an immediate server-side sweep of every
-connected forge and refetches the merged/reviewed overlays. The icon spins until
-every fetch settles.
+Входящие обновляются в реальном времени, но если вы подозреваете
+устаревшие данные, нажмите элемент обновления на панели инструментов — он
+запускает немедленный обход на стороне сервера по каждому подключённому
+хосту кода и заново запрашивает оверлеи «слито» и «проверено». Значок
+вращается, пока не завершатся все запросы.
 
-## Related guides
+## Связанные руководства
 
-- [Review and merge a PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
-- [Chat with an agent](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
-- [Dispatch reviewers](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/)
+- [Проверить и смержить PR](/ru-RU/руководство/практические-руководства/проверить-и-смержить-pr/)
+- [Общаться с агентом](/ru-RU/руководство/практические-руководства/общаться-с-агентом/)
+- [Запускать агентов-ревьюеров](/ru-RU/руководство/практические-руководства/запускать-ревьюеров/)
 
-## Related concepts
+## Связанные понятия
 
-- [Dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)
+- [Жизненный цикл запуска](/ru-RU/руководство/понятия/жизненный-цикл-запуска/)

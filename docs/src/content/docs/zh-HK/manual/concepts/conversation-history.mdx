@@ -1,90 +1,91 @@
 ---
-title: Conversation history
-description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+title: 對話紀錄
+description: 一次執行如何保留、摺疊、分支並恢復它的上下文——壓縮策略、對話樹，以及「恢復」實際上代表甚麼。
 slug: zh-HK/手冊/概念/對話紀錄
+sourceHash: 0286acc57acbef978c7556ea86c700cae29d966e
 ---
 
-A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+一段長時間的對話終會撞上一道硬牆：模型的上下文窗口。本頁的一切都因這道牆而存在，而真正有意思的部分在於：哪些東西會被丟棄、哪些會被保留，以及哪些還能再找回來。
 
-## Four ways to reclaim context
+## 回收上下文的四種方式
 
-They are not alternatives so much as a ladder, cheapest first.
+與其說它們是幾種替代方案，不如說它們是一架梯子，由代價最低的開始。
 
-| Mechanism      | Cost           | Keeps                                | Loses                             |
+| 機制      | 代價           | 保留                                | 丟失                             |
 | -------------- | -------------- | ------------------------------------ | --------------------------------- |
-| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
-| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
-| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
-| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+| **省略**    | 無        | 敘述中的每一個字          | 平淡無奇的舊工具結果     |
+| **圖像剝離** | 無 | 它們周遭的文字                 | 舊截圖                   |
+| **快照**  | 無                | 以像素保存的每一個字                | 對非視覺模型的可讀性  |
+| **摘要**    | 一次模型呼叫 | 一段敘述                          | 它沒有挑選的細節       |
 
-Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+省略與剝離先執行，因為它們是免費的，而且在真正要緊的意義上無損：它們丟掉的都是沒有人會再讀的大量內容。
 
-### Why summarizing is the last resort
+### 為何摘要是最後手段
 
-A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+摘要是這四種之中唯一**花掉一次模型呼叫**的，也是唯一會**替你決定**甚麼才重要的。兩者都是實實在在的代價。而更有意思的是那次呼叫，因為它出現的時機。
 
-Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+壓縮通常按門檻、*早於*撞牆而執行。但它也會**被動觸發**：在供應商自己以請求過大為由拒絕之後——啟發式估算低估了供應商實際量度到的數量。在這種情況下，採用摘要的壓縮器必須再發一次請求來縮減上下文，而它發出的這次請求，恰恰就是剛剛溢出的那一次。
 
-### Snapshots
+### 快照
 
-Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+快照壓縮把被丟棄的歷史渲染成佈滿像素字形的密集頁面，再以圖像形式交還。
 
-The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+其前提源於一個計費上的怪癖：視覺模型對圖像按固定費率或按面積比例計費，與圖像裏有多少字元毫無關係。一萬二千個字元被丟棄的對話，要花掉相當於一萬二千個字元的文字 token。同樣的字元渲染到一頁上，只花一張圖像的錢。
 
-What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+它之所以值得擁有、而不只是顯得聰明，是因為它**不需要模型呼叫、不需要密鑰，也不需要網絡**。它是溢出恢復期間唯一始終可用的策略。
 
-The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+重建的形態是：原文照錄的頭部、轉為圖像的中段、原文照錄的尾部。頭部是任務以及下游一切都要回指的各種約束；尾部是工作當前所在之處。中段被重讀得最少，代價卻最高。
 
-:::note[It degrades honestly]
-A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::note[它會誠實地降級]
+沒有視覺能力的模型讀不了像素頁面，而把文字渲染成沒有任何東西能看的形式，並不是降級壓縮——那是把對話刪掉。所以決定權在讀取方的能力，而沒有視覺能力的模型永遠得到摘要。
 :::
 
-:::caution[Page shape is priced for the API, not the weights]
-Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::caution[頁面形態是為 API 計價，而不是為權重計價]
+Gemini 對每張圖像收固定費用，因此頁面上多出的每個字元都是免費的，它的頁面也最寬。OpenAI 與 Anthropic 按面積計費，所以把頁面做大並不能換來甚麼。有些處理器在超過某個門檻後會降採樣，悄悄破壞 5 像素字形，因此它們的頁面會保持在該門檻之下。經由閘道提供的 Claude 由閘道計費，因此頁面形態跟隨路由所命名的 model id。
 :::
 
-Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+快照每一輪都從**保留的來源文字**重新渲染，絕不基於上一輪的像素。把圖像再成像，字形每壓縮一次便損失一代，直到沒有任何東西能讀懂它們。
 
-## What a run actually resumes from
+## 一次執行實際上是從甚麼恢復
 
-Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+以往，每一次執行框架的執行都從空白歷史開始，並靠提示中一個 `<context>` 區塊重建連貫性——那是對話的*摘要*，而不是對話本身。由此帶來三個後果：
 
-- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
-- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
-- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+- **恢復等於重新講述。** 模型從未看過自己先前的推理，也沒看過工具實際返回的位元組，只看到對它們的描述。
+- **回退隨進程一同消亡。** `checkpoint` 是即時訊息清單中的一個索引，因此重啟會丟失模型設定的每一個標籤。
+- **重試無法分辨「沒有可重試的內容」與「甚麼都沒載入」。** 重啟之後，無論哪一種情況，失敗的那一回合都已從即時狀態中消失。
 
-All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+這三個問題都藉由持久化對話紀錄得到解決。對話紀錄在每一個**回合邊界**儲存，絕不在回合中途儲存：在工具呼叫與其結果之間擷取的歷史，沒有任何供應商會接受，因此若在那一瞬間崩潰，還原的是*上一個*完整回合，而不是一個無法重播的半截回合。
 
-A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+恢復後的執行會裁剪至最新的訊息，剪切點是不留下孤立工具結果的那種邊界——若一個結果的呼叫已被裁掉，這種請求會被供應商直接拒絕，而一份無法送出的對話紀錄，比一份較短的紀錄更糟。
 
-:::note[Where it lives]
-One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::note[它存放在哪裏]
+每個「對話—代理」組合一個 JSON 檔案，放在該工作區自己的目錄下、緊鄰它的資料庫。同一個對話中的兩個代理持有兩份歷史：它們看到的工具結果不同，被賦予的系統提示也不同，因此把它們合併，就等於把對方的推理當成自己的交給彼此。
 :::
 
-## The session tree
+## 對話樹
 
-Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+每則訊息都記錄自己所承接的那一則，而每個對話都指明自己當前的**分支末端**。這一個決定就是整個特性的全部。
 
-**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+**建立分支不會寫入任何內容。** 它只是移動指標。你離開的那條路徑仍然在那裏，所以切換回去只是再移動一次指標，而不是做一次還原——而且為了重跑而修改提示，也不再會讓你失去那個正在用來對照的答案。
 
-Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+沒有它，任何形式的後退都必須隱藏或刪除訊息，而隱藏是一個後來的讀者看不穿的謊言。
 
-### Branch versus fork
+### 分支與分叉
 
-|                | Branch              | Fork                        |
+|                | 分支              | 分叉                        |
 | -------------- | ------------------- | --------------------------- |
-| What happens   | The pointer moves   | The path is copied          |
-| Where it goes  | Same conversation   | A new conversation          |
-| Cost           | Nothing             | One copy of the branch      |
+| 發生的事   | 指標移動   | 路徑被複製          |
+| 去向  | 同一個對話   | 一個新對話          |
+| 代價           | 無             | 分支的一份副本      |
 
-A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+分叉會以**全新的 id** 複製，而不是共用資料列。兩個共用資料列的對話會互相看到對方後來的訊息，而這正是分叉絕不該做的事。
 
-### Rewind rides the same pointer
+### 回退沿用同一個指標
 
-The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+執行期間的 `checkpoint` / `rewind` 組合會標記一個乾淨的回合邊界，並在一次探索之後回到該處，同時保留一份摘要。由於檢查點與對話紀錄一併持久化，模型在重啟前設定的標籤仍然會落在它當初被設定的位置。目標沒有在裁剪中存活的檢查點會被**丟棄**，而不是被就近鉗制——「回到該標籤」卻落在別處，恰恰是標籤存在的意義所在：防止這種失敗。
 
-## Related
+## 相關
 
-- [Branch a conversation](/zh-HK/手冊/操作指南/分支對話/) — the tree navigator, forking and export
-- [Tool context and prompt caching](/zh-HK/手冊/概念/工具上下文/) — the other half of what fills a context window
-- [Slash commands](/zh-HK/手冊/參考/斜線指令/) — `/compact`, `/shake`, `/context`, `/tree`
+- [分支一則對話](/zh-HK/手冊/操作指南/分支對話/) — 樹狀導覽器、分叉與匯出
+- [工具上下文與提示快取](/zh-HK/手冊/概念/工具上下文/) — 填滿上下文窗口的另一半
+- [斜線指令](/zh-HK/手冊/參考/斜線指令/) — `/compact`、`/shake`、`/context`、`/tree`

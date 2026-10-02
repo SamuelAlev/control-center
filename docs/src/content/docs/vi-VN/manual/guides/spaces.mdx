@@ -1,156 +1,162 @@
 ---
-title: Use spaces
-description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+title: Dùng space
+description: Tạo space, đặt chế độ cho chúng, quản lý người tham gia và quyền tự chủ, rồi mở cuộc trò chuyện và luồng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/space
+sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
 ---
 
-This guide shows you how to use spaces. A **space** is the messaging surface in
-Control Center: a workspace-scoped room with one or more participants (you and/or
-agents), owning a copy-on-write worktree per repo it was created for.
+Hướng dẫn này chỉ cho bạn cách dùng space. Một **space** là bề mặt nhắn tin trong
+Control Center: một phòng thuộc phạm vi không gian làm việc với một hoặc nhiều
+người tham gia (bạn và/hoặc agent), sở hữu một worktree copy-on-write cho mỗi kho
+mã mà nó được tạo ra.
 
-One-on-one and many-agent rooms are both just spaces, distinguished only by how
-many participants they have. The one exception is spaces agents open to talk to
-each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+Phòng một-một và phòng nhiều agent đều chỉ là space, chỉ khác nhau ở số người
+tham gia. Ngoại lệ duy nhất là những space mà agent mở để nói chuyện với nhau —
+xem [Space giữa các agent](#space-giữa-các-agent) bên dưới.
 
-## Create a space
+## Tạo một space
 
-1. Navigate to **Spaces**
-2. Click the **+** button beside the Spaces heading
-3. Give it a **name** — required. An empty name is refused; the
-   dialog stays open
-4. Optionally add agents from the workspace
-5. When the workspace has any repos, pick which ones this space provisions
-   worktrees for. All are selected by default; deselecting every repo creates a
-   space with nothing checked out
-6. Confirm
+1. Điều hướng đến **Không gian**
+2. Nhấp nút **+** bên cạnh tiêu đề Không gian
+3. Đặt cho nó một **tên** — bắt buộc. Tên rỗng sẽ bị từ chối; hộp thoại
+   vẫn mở
+4. Tùy chọn thêm agent từ không gian làm việc
+5. Khi không gian làm việc có bất kỳ kho mã nào, hãy chọn những kho mà space này
+   cấp phát worktree cho. Mặc định tất cả đều được chọn; bỏ chọn mọi kho mã sẽ tạo
+   một space không checkout gì cả
+6. Xác nhận
 
-Spaces are workspace-scoped: you only see agents from the current workspace and
-a space never surfaces data from another workspace.
+Space thuộc phạm vi không gian làm việc: bạn chỉ thấy agent từ không gian làm việc
+hiện tại và một space không bao giờ hiển thị dữ liệu từ không gian làm việc khác.
 
-Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
-its own agent skills contributes them to whichever agent is working in it — one
-repo's set at a time, swapping as the agent moves. From the composer you can
-reach any of them with `/skill:<repo>:<name>`. See
-[Repo-scoped skills](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
+Mỗi kho mã được checkout tại `repos/<name>/` bên trong space. Một kho mã mang theo
+skill agent của riêng nó sẽ đóng góp chúng cho agent bất kỳ đang làm việc trong đó
+— mỗi lần một bộ của một kho, hoán đổi khi agent di chuyển. Từ trình soạn bạn có
+thể truy cập bất kỳ skill nào trong số đó với `/skill:<repo>:<name>`. Xem
+[Skill theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
 
-The surface lives at `/workspaces/<id>/spaces`, and a single space at
+Bề mặt này nằm tại `/workspaces/<id>/spaces`, và một space đơn lẻ tại
 `/workspaces/<id>/spaces/<spaceId>`.
 
-## Set the space's mode
+## Đặt chế độ cho space
 
-A new space starts in the default mode. Change it from the **mode dropdown** on
-the far left of the composer toolbar — not from the create dialog (which has no
-mode field) and not from the space header.
+Một space mới bắt đầu ở chế độ mặc định. Hãy đổi chế độ từ **hộp chọn chế độ** ở
+tận cùng bên trái thanh công cụ của trình soạn — không phải từ hộp thoại tạo (vốn
+không có trường chế độ) và cũng không phải từ tiêu đề space.
 
-| Mode            | Effect                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
-| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
-| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+| Chế độ         | Tác dụng                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| **Agent**      | Toàn quyền truy cập. Mặc định; `chat` ở bên trong, được gắn nhãn "Agent" trong hộp chọn               |
+| **Kế hoạch**   | Chỉ đọc và nghiên cứu; kết quả giao là một kế hoạch có kiểu                                            |
+| **Điều phối**  | Đọc và nghiên cứu cùng một động từ duy nhất `propose_orchestration`; kế hoạch chỉ chạy sau khi bạn phê duyệt |
 
-Shift+Tab toggles between plan and agent mode without opening the dropdown.
+Shift+Tab chuyển đổi giữa chế độ kế hoạch và chế độ agent mà không cần mở hộp
+chọn.
 
-A fourth mode, **review**, exists but is not offered in the dropdown — it is
-applied automatically to PR review spaces.
+Có một chế độ thứ tư, **rà soát**, tồn tại nhưng không được đưa ra trong hộp chọn —
+nó được áp dụng tự động cho các space xem xét PR.
 
-The mode is stored on the space, so the same agent can be in plan mode in one
-space and agent mode in another. Every conversation inside a space shares that
-space's mode.
+Chế độ được lưu trên space, nên cùng một agent có thể ở chế độ kế hoạch trong space
+này và chế độ agent trong space khác. Mọi cuộc trò chuyện bên trong một space đều
+dùng chung chế độ của space đó.
 
-:::caution[Watch for the enforcement badge]
-A badge appears beside the mode dropdown when the space's agents run on an
-adapter that cannot enforce the mode you picked. Only the built-in Control Center
-harness filters the tool surface and gates every call; Claude Code and ACP
-adapters receive the mode as a request their runner may or may not honour. No
-badge means "no claim is being made", not "verified safe".
+:::caution[Coi chừng huy hiệu cưỡng chế]
+Một huy hiệu xuất hiện bên cạnh hộp chọn chế độ khi các agent của space chạy trên
+một adapter không thể cưỡng chế chế độ bạn đã chọn. Chỉ có harness tích hợp của
+Control Center mới lọc bề mặt công cụ và gác mọi lời gọi; các adapter Claude Code
+và ACP nhận chế độ như một yêu cầu mà runner của chúng có thể tuân theo hoặc
+không. Không có huy hiệu nghĩa là "không đưa ra cam kết nào", chứ không phải "đã
+được xác minh an toàn".
 :::
 
-See [Modes](/vi-VN/so-tay/khai-niem/che-do/) for the full model.
+Xem [Chế độ](/vi-VN/so-tay/khai-niem/che-do/) để biết mô hình đầy đủ.
 
-## Manage participants and per-agent autonomy
+## Quản lý người tham gia và quyền tự chủ theo từng agent
 
-Click the people icon in the space header to open **Manage participants**. For
-each agent already in the space you can:
+Nhấp biểu tượng con người trong tiêu đề space để mở **Quản lý người tham gia**. Với
+mỗi agent đã có trong space, bạn có thể:
 
-- Remove it from the space
-- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
-  approval** or **Act freely**
+- Gỡ nó khỏi space
+- Đặt **Tự chủ** của nó cho space này: **Mặc định**, **Chỉ đề xuất**, **Hành động
+  khi được duyệt** hoặc **Hành động tự do**
 
-The autonomy dial is per (space, agent), so an agent you trust in one room can be
-held to propose-only in another.
+Núm tự chủ được đặt theo từng cặp (space, agent), nên một agent bạn tin tưởng trong
+phòng này vẫn có thể bị giữ ở mức chỉ đề xuất trong phòng khác.
 
-## React to a message
+## Bày tỏ cảm xúc với một tin nhắn
 
-Hover a message and click the smile icon to open the reaction palette. It is a
-fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
-toggles it for you and the aggregated chips appear below the message.
+Di chuột qua một tin nhắn và nhấp biểu tượng mặt cười để mở bảng biểu cảm. Đây là
+một bộ cố định gồm sáu biểu tượng: 👍 👎 🎉 ❤️ 👀 ✅. Không có trình chọn emoji tự
+do — nhấp vào một biểu tượng sẽ bật/tắt nó cho bạn và các chip tổng hợp xuất hiện
+bên dưới tin nhắn.
 
-## Open a conversation
+## Mở một cuộc trò chuyện
 
-A space hosts several conversations at once and they are flat equals — there is
-no primary one. A space always keeps at least one live conversation: you cannot
-archive the last active one, and opening a space that has none yet mints an
-untitled standing conversation.
+Một space chứa nhiều cuộc trò chuyện cùng lúc và chúng bình đẳng ngang hàng — không
+có cuộc nào là chính. Một space luôn giữ ít nhất một cuộc trò chuyện đang hoạt
+động: bạn không thể lưu trữ cuộc cuối cùng đang hoạt động, và việc mở một space
+chưa có cuộc nào sẽ tạo ra một cuộc trò chuyện thường trực không có tiêu đề.
 
-Conversations appear as editor tabs, and as nested rows under the space in the
-sidebar once there is more than one. **New conversation** lives in the editor's
-new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
-the same agent and worktree.
+Các cuộc trò chuyện hiển thị dưới dạng tab trong trình soạn thảo, và dưới dạng hàng
+lồng nhau bên dưới space trên thanh bên khi có nhiều hơn một. **Cuộc trò chuyện
+mới** nằm trong menu tab mới của trình soạn thảo và tạo một cuộc trò chuyện không
+có tiêu đề mà không hỏi tiêu đề — mô hình đặt tiêu đề sẽ đặt tên cho nó theo tin
+nhắn đầu tiên. Hãy dùng nó để chạy công việc song song với cùng một agent và
+worktree.
 
-Each conversation keeps its own message history and agent sessions while sharing
-the space's worktrees and its mode. Closing a tab hides it; **Archive
-conversation** (sidebar row or the chat tab's context menu) archives only that
-conversation.
+Mỗi cuộc trò chuyện giữ lịch sử tin nhắn và các phiên agent riêng, đồng thời dùng
+chung worktree và chế độ của space. Đóng một tab sẽ ẩn nó đi; **Lưu trữ cuộc trò
+chuyện** (hàng trên thanh bên hoặc menu ngữ cảnh của tab chat) chỉ lưu trữ cuộc trò
+chuyện đó.
 
-## Start a thread
+## Bắt đầu một luồng
 
-Hover any message and choose **Start thread**. That opens a conversation
-anchored to that message: the anchor seeds the new conversation's agent context
-with one line and the parent's history is **not** copied.
+Di chuột qua bất kỳ tin nhắn nào và chọn **Bắt đầu luồng**. Thao tác này mở một
+cuộc trò chuyện neo vào tin nhắn đó: điểm neo gieo vào ngữ cảnh agent của cuộc trò
+chuyện mới một dòng, còn lịch sử của cuộc trò chuyện mẹ **không** được sao chép.
 
-Once a thread has replies, the message it hangs off grows a row underneath it —
-the faces of who has spoken, the reply count and when the last reply landed.
-That row is the way back in: clicking it opens (or focuses) the thread's tab. It
-is the only trace a thread leaves in the stream it branched from, which is why
-it is there at all.
+Khi một luồng đã có trả lời, tin nhắn mà nó gắn vào sẽ mọc thêm một hàng bên dưới —
+mặt của những người đã nói, số trả lời và thời điểm trả lời cuối cùng đến. Hàng đó
+là lối quay lại: nhấp vào nó sẽ mở (hoặc đưa tiêu điểm tới) tab của luồng. Đây là
+dấu vết duy nhất mà một luồng để lại trong dòng mà nó tách ra, và đó là lý do nó
+tồn tại.
 
-A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
-tabs on the same space are never mistaken for each other.
+Tab của một luồng có tiêu đề `Thread: <name>` và mang ký hiệu nhánh, nên hai tab
+trên cùng một space không bao giờ bị nhầm với nhau.
 
-Threads never nest — anchoring to a message that already sits inside a thread is
-refused. The conversation header links back to the anchor message. Deleting the
-anchor message deletes the thread, and archiving the parent conversation does not
-block its existing threads.
+Luồng không bao giờ lồng nhau — việc neo vào một tin nhắn đã nằm trong một luồng sẽ
+bị từ chối. Tiêu đề cuộc trò chuyện liên kết ngược về tin nhắn neo. Xóa tin nhắn
+neo sẽ xóa luồng, còn việc lưu trữ cuộc trò chuyện mẹ không chặn các luồng hiện có
+của nó.
 
-## Read state
+## Trạng thái đã đọc
 
-Read marks are scoped to the space, not the conversation: opening any
-conversation in the space clears the room. Unread still aggregates across all of
-a space's conversations, threads included. When conversations are listed under
-the space, the unread dot sits on the conversation that has unseen work rather
-than on the parent row.
+Dấu đã đọc được giới hạn theo space, chứ không theo cuộc trò chuyện: mở bất kỳ cuộc
+trò chuyện nào trong space sẽ xóa trạng thái chưa đọc cho cả phòng. Trạng thái chưa
+đọc vẫn tổng hợp trên tất cả cuộc trò chuyện của một space, kể cả các luồng. Khi
+các cuộc trò chuyện được liệt kê bên dưới space, chấm chưa đọc nằm trên cuộc trò
+chuyện có công việc chưa xem chứ không nằm trên hàng mẹ.
 
-## Agent-to-agent spaces
+## Space giữa các agent
 
-Spaces that agents open to talk to each other are sectioned separately in the
-sidebar under **Agents**, collapsed by default and rendered muted. They never bump
-your unread badge — agent chatter is quiet by construction, not by a setting
-you have to find.
+Những space mà agent mở để nói chuyện với nhau được tách riêng thành một mục trên
+thanh bên dưới **Agent**, mặc định thu gọn và hiển thị mờ. Chúng không bao giờ làm
+tăng huy hiệu chưa đọc của bạn — chuyện trò của agent vốn im lặng theo thiết kế,
+chứ không phải nhờ một cài đặt bạn phải đi tìm.
 
-A space's kind is one of five values: `topic` (the default for anything you
-create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
-surface needs a worktree anchor and hidden from the sidebar until it has
-messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
-and treated as an ordinary human conversation).
+Loại của một space là một trong năm giá trị: `topic` (mặc định cho mọi thứ bạn
+tạo), `agentPeer`, `system` (do quy trình quản lý), `pr` (được tạo khi một bề mặt
+PR cần một neo worktree và bị ẩn khỏi thanh bên cho tới khi có tin nhắn) và `slack`
+(do cầu chat tạo cho một luồng Slack hoặc DM với bot, và được xử lý như một cuộc
+trò chuyện thông thường giữa người với người).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Chat with an agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
-- [@-mention agents](/vi-VN/so-tay/huong-dan-thuc-hanh/mention-agent/)
-- [Use plan mode](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/)
+- [Chat với một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent/)
+- [@-mention agent](/vi-VN/so-tay/huong-dan-thuc-hanh/mention-agent/)
+- [Dùng chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Modes](/vi-VN/so-tay/khai-niem/che-do/)
-- [Chat bridges](/vi-VN/so-tay/khai-niem/cau-chat/): how a Slack thread becomes a space
+- [Chế độ](/vi-VN/so-tay/khai-niem/che-do/)
+- [Cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/): cách một luồng Slack trở thành một space

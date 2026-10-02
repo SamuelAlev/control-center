@@ -1,20 +1,21 @@
 ---
-title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+title: Kalıcı bir kernel’de veri keşfetme
+description: Bir ajana, çağrılar arasında değişkenlerini koruyan, sohbete grafik çizen ve bir hücrenin içinden kendi araçlarınızı çağırabilen bir Python veya JavaScript yorumlayıcısı verin.
 slug: tr-TR/kilavuz/nasil-yapilir/kernelde-veri-kesfetme
+sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
 ---
 
-This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+Bu kılavuz, bir ajana pahalı bir şeyi bir kez yükletip ardından ona birkaç soru sordurmayı — her soruda yükleme bedelini ödemek yerine — nasıl yapacağınızı gösterir.
 
-The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+`eval` aracı **kalıcı bir yorumlayıcı** çalıştırır. Değişkenler, içe aktarmalar ve yüklenen veriler çağrılar arasında yaşamaya devam eder.
 
-## Why not just run a script
+## Neden yalnızca bir betik çalıştırmıyoruz
 
-A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+Tek atımlık bir `python -c`, her soruda kurulum bedelini öder. Bir dataframe yüklemek saniyeler ve yüz megabayt tutar; grafiğini çizmekse milisaniyeler. Her soru bu yüklemeyle başladığında ajan, sorması gerekenden daha az soru sorar — ve her yanıt, yeniden ayrıştırmak zorunda kaldığı metin olarak geri döner.
 
-## Load once, then ask
+## Bir kez yükleyin, sonra sorun
 
-> Load `data/runs.csv` and tell me the p95 duration by agent.
+> `data/runs.csv` dosyasını yükle ve bana ajan bazında p95 süresini söyle.
 
 ```python
 import pandas as pd
@@ -22,46 +23,46 @@ runs = pd.read_csv("data/runs.csv")
 len(runs)
 ```
 
-The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+Son ifade, bir notebook’un yaptığı gibi yankılanır; böylece `len(runs)` satır sayısını bir `print` olmadan bildirir.
 
-Then, in a **separate call**:
+Ardından, **ayrı bir çağrıda**:
 
 ```python
 runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
 ```
 
-`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+`runs` hâlâ yüklüdür. Bir pandas frame’i, bir repr yerine tablo olarak işlenmiş hâlde geri döner.
 
-## Charts land in the chat
+## Grafikler sohbete düşer
 
 ```python
 import matplotlib.pyplot as plt
 runs.groupby("agent")["duration_ms"].mean().plot.bar()
 ```
 
-Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+Şekiller hücreden sonra yakalanır ve görüntü olarak döndürülür; transkript bunları işler. Grafiği siz de görürsünüz, ajan da.
 
-Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+Şekiller yakalandıktan sonra kapatılır. Toplanmayan bir şekil, *sonraki* hücre tarafından da yeniden çizilip yeniden gönderilirdi; bu yüzden beş hücrelik bir oturum ilk grafiği beş kez yayardı.
 
-:::note[No Jupyter, no pip, no install step]
-The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::note[Jupyter yok, pip yok, kurulum adımı yok]
+Çalıştırıcı, stdio üzerinden bir satır protokolü konuşan düz bir `python3 -u`'dur. `display()`, MIME demeti dağıtımı ve şekil yakalamayı kendisi uygular; dolayısıyla herhangi bir Python 3 üzerinde çalışır — kurulum yapmanın tam da sandbox’ın engellemek için var olduğu şey olduğu bir sandbox içinde bile.
 :::
 
-## The idioms you would type anyway
+## Zaten yazacağınız kalıplar
 
-These are rewritten into plain code rather than erroring:
+Bunlar hata vermek yerine düz koda dönüştürülür:
 
-| You type    | What happens                                        |
-| ----------- | --------------------------------------------------- |
-| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
-| `%cd path`  | `os.chdir`                                          |
-| `!command`  | A captured subprocess                               |
-| `%%bash`    | The rest of the cell as a shell script              |
-| `%%timeit`  | 1000 timed runs                                     |
+| Yazdığınız      | Ne olur                                              |
+| --------------- | ---------------------------------------------------- |
+| `%pip install x` | pip’i çalıştırır, ardından **modül önbelleğini temizler**; böylece sonraki `import` onu görür |
+| `%cd path`      | `os.chdir`                                           |
+| `!command`      | Çıktısı yakalanan bir alt süreç                      |
+| `%%bash`        | Hücrenin geri kalanı, bir shell betiği olarak        |
+| `%%timeit`      | 1000 zamanlı çalıştırma                              |
 
-The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+Asıl önemli olan, `%pip`'in önbelleği boşaltmasıdır: canlı bir yorumlayıcıya kurulum yapmak, zaten içe aktarılmış bir modül için hiçbir şey değiştirmez; bu yüzden o olmadan, az önce kurduğunuz sürüm çalışmakta olan sürüm değildir.
 
-## Calling your own tools from inside a cell
+## Kendi araçlarınızı bir hücrenin içinden çağırma
 
 ```python
 paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
@@ -70,39 +71,39 @@ for path in paths.splitlines()[:100]:
     ...
 ```
 
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+`tool(name, args)`, ajanın kendi araç kaydına yeniden girer. Bu da bir hücrenin yüzlerce dosyaya dağılabileceği veya `task` üzerinden devredebileceği anlamına gelir; modelin her öğe için bir tur harcamasına gerek kalmaz.
 
-:::caution[The bridge does not go around your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::caution[Köprü, korumalarınızı atlamaz]
+Köprü üzerinden gelen bir çağrı, modelin yaptığı bir çağrıyla **aynı** araç kaydı üzerinden çözümlenir; dolayısıyla `ActionClass` politikası, onay istemleri ve her sarmalayıcı birebir aynı şekilde uygulanır. Kaydın ötesine uzanan bir köprü, tam olarak “tek satırlık bir Python yaz” biçiminde bir açık olurdu.
 :::
 
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+Köprü üzerinden gelen bir çağrı, sürdüğü sürece **hücrenin zaman aşımını askıya alır**. Bütçe, duvar saatini değil hareketsizliği ölçer — alt ajanlara dağılan ve dört dakika bekleyen bir hücre takılmış sayılmaz ve onu dağıtımın ortasında öldürmek tüm kernel durumunu kaybettirirdi.
 
-## Starting over
+## Baştan başlamak
 
 ```
 eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
-Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+Yorumlayıcıyı atar ve temiz bir tane başlatır. Yüklenmiş her şey gitmiş olur; mesele de zaten bu.
 
-## Where the kernel runs
+## Kernel nerede çalışır
 
-In the conversation's **enclosure** when it has one, on the host otherwise.
+Konuşmanın bir **enclosure**’ı varsa orada, yoksa ana makinede çalışır.
 
-A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+Güvenilmeyen bir depoyu okuyan bir model tarafından sürülen kalıcı bir yorumlayıcı, yalnızca enclosure içinde çalıştırmanın tam da var olma sebebidir: tek atımlık bir `bash` çağrısı en azından biter, oysa bir kernel hatırlayan bir kabuktur.
 
-It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/).
+Bunun için bir enclosure **başlatmaz** — bir rig sekmesinin kendiliğinden başlamasını engelleyen kuralın aynısı. Kernel’in enclosure içinde olmasını istiyorsanız, önce konuşmanın shell’ini açın. Bkz. [Bir ajana test için makine verme](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/).
 
-## Limits
+## Sınırlar
 
-- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
-- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
-- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
-- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+- **Kernel başına aynı anda tek hücre.** Tek bir yorumlayıcıda yarışan iki hücre, iki programın iki yarısının tek bir ad alanında iç içe geçmesidir.
+- **Çıktı sınırlandırılır.** Döngü içinde print yapan bir hücrenin çıktısı, bağlam penceresini doldurmasına izin verilmek yerine kesilir.
+- **Hücre başına dört görüntü.** Bir grafik döngüsü her yinelemede bir şekil üretebilir ve her görüntü, onu taşıyan istekte büyük sabit bir maliyettir.
+- **Kernel, çalıştırmayla birlikte ölür.** Konuşma bittikten sonra hâlâ bir dataframe tutan kernel bir sızıntıdır.
 
-## Related
+## İlgili
 
-- [Sandbox and security](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) — what "enclosed" means here
-- [Give an agent a machine to test on](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) — opening the enclosure
-- [Built-in agent tools](/tr-TR/kilavuz/referans/ajan-araclari/) — the arguments
+- [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) — burada “enclosure” ile ne kastediliyor
+- [Bir ajana test için makine verme](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) — enclosure’ı açmak
+- [Yerleşik ajan araçları](/tr-TR/kilavuz/referans/ajan-araclari/) — argümanlar

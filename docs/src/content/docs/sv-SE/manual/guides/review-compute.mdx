@@ -1,132 +1,142 @@
 ---
-title: Review compute (cohorts, axes and deterministic diffs)
-description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+title: Granskningsberäkning (kohorter, axlar och deterministiska diffar)
+description: Vad granskningsberäkningens körning producerar på serversidan – kohorter, API-kontrakts- och visuella diffar, grindar per axel – och hur det vävs in i fliken Granskning.
 slug: sv-SE/handbok/how-to-guider/granskningsberakning
+sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ---
 
-The PR's **Review** tab is the review pipeline's live progress while it works,
-then the artifact it published, with the actions on it. One tab with two states,
-because they are the same thing at two times. It is not a default tab: a PR has
-no review until someone asks for one, so **Ask AI** is what opens it.
+Fliken **Granskning** på en PR visar granskningspipelinen i realtid medan den
+arbetar, och sedan artefakten den publicerade, med åtgärderna på den. En flik med
+två tillstånd, eftersom det är samma sak vid två tidpunkter. Den är ingen
+standardflik: en PR har ingen granskning förrän någon begär en, så det är
+**Fråga AI** som öppnar den.
 
-Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
-and serves them over the `review_studio.*` RPC operations (`cohorts`,
+Bakom den fliken bygger `cc_server` filkohorter, kör de deterministiska axlarna
+och exponerar dem via RPC-operationerna `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
+`setContractDecision`, `approveVisual`, `compute` och deras `watch*`-tvillingar).
+En sparad layout som fortfarande heter `pr.reviewStudio` öppnar samma flik
+Granskning.
 
-On the Review tab:
+På fliken Granskning:
 
-- The consolidating agent publishes an ordinary conversation artifact with
-  `publish_artifact`, so the tab renders it through the same artifact viewer a
-  chat bubble opens — there is no review-shaped copy of the artifact system.
-- Findings sit in a rail beside it, and the verdict rides a slim bar above the
-  artifact rather than a dashboard header.
-- A stale banner appears when the PR head moved past the review.
+- Den sammanställande agenten publicerar en vanlig samtalsartefakt med
+  `publish_artifact`, så fliken renderar den genom samma artefaktvisare som en
+  chattbubbla öppnar – det finns ingen granskningsformad kopia av
+  artefaktsystemet.
+- Fynden sitter i en smal kolumn bredvid, och utfallet ligger på en tunn rad
+  ovanför artefakten i stället för i en rubrik på en instrumentpanel.
+- En banner om inaktuell granskning visas när PR:ens head har flyttat sig förbi
+  granskningen.
 
-See [Use AI-powered review](/sv-SE/handbok/how-to-guider/ai-granskning/) for the flow and
-[Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/) for acting on it.
+Se [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/) för flödet och
+[Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/) för hur du agerar på den.
 
-## Cohorts
+## Kohorter
 
-Cohorts group the PR's changed files into content-derived buckets of files that
-belong together by meaning, ranked by impact so the riskiest group reads first.
-They are recomputed on every head-SHA change and replaced wholesale; each cohort
-has a push-stable key, so a summary and review progress survive a rebase.
+Kohorter grupperar PR:ens ändrade filer i innehållshärledda buntar av filer som
+hör ihop till betydelsen, rangordnade efter påverkan så att den mest riskabla
+gruppen läses först. De räknas om vid varje ändring av head-SHA och ersätts i sin
+helhet; varje kohort har en nyckel som är stabil mellan pushar, så ett sammandrag
+och granskningsframstegen överlever en rebase.
 
-If the repo is not code-indexed, cohorts fall back to path grouping. To index a
-repo, use **Settings → Workspace → Repositories** — each repo row carries an
-**Index code** action that runs the `index_code` pipeline and reports progress in
-place.
+Om repot inte är kodindexerat faller kohorterna tillbaka på gruppering efter
+sökväg. För att indexera ett repo använder du
+**Inställningar → Arbetsyta → Arkiv** – varje arkivrad har åtgärden **Indexera
+kod** som kör pipelinen `index_code` och rapporterar framdriften på plats.
 
-The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
+Kodgrafen parsar bara språk med en medföljande grammatik (Dart, JS/TS, PHP,
 Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
-MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
-however often you index it.
+MATLAB, Ada). Ett repo på något annat språk kan aldrig producera semantiska
+kohorter, hur ofta du än indexerar det.
 
-An agent can record a markdown summary for a cohort with `set_cohort_summary`
-and attach a structured walkthrough diagram with `add_review_diagram` — a typed
-sequence, entity-relation or state-machine object, never mermaid text. Every
-edge is cross-checked against the real code graph, and an edge the graph cannot
-corroborate is marked unverified rather than drawn as fact.
+En agent kan registrera ett markdown-sammandrag för en kohort med
+`set_cohort_summary` och bifoga ett strukturerat genomgångsdiagram med
+`add_review_diagram` – ett typat objekt för sekvens, entitetsrelation eller
+tillståndsmaskin, aldrig mermaid-text. Varje kant korsverifieras mot den
+verkliga kodgrafen, och en kant som grafen inte kan styrka markeras som
+overifierad i stället för att ritas som ett faktum.
 
-## The API-contract axis
+## Axeln för API-kontraktet
 
-The contract axis diffs only **explicit** spec files. It matches the six default
-names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
-`swagger.yml`, `swagger.json` — plus any changed file whose name contains
-`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
-inferred from handler code is out of scope and GraphQL schemas are not diffed.
+Kontraktaxeln diffar bara **explicita** specifikationsfiler. Den matchar de sex
+standardnamnen – `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` – plus varje ändrad fil vars namn innehåller
+`openapi` eller `swagger` och slutar på `.yaml`, `.yml` eller `.json`. Ett
+kontrakt som härleds ur handlerkod ligger utanför omfånget, och GraphQL-scheman
+diffas inte.
 
-Each change is classified — endpoint, parameter, schema and response additions,
-removals and modifications — and carries a severity: **breaking** (removed
-endpoint or param, tightened type, new required param), non-breaking (additive),
-or informational. A rejected change fails the contract gate, as does a breaking
-change left undecided; breaking-but-approved warns; no breaking changes passes. A
-diff marked **derived (advisory)** never gates.
+Varje ändring klassificeras – tillägg, borttagningar och ändringar av endpoint,
+parameter, schema och svar – och bär en allvarlighetsgrad: **breaking**
+(borttagen endpoint eller parameter, stramad typ, ny obligatorisk parameter),
+icke-brytande (additiv) eller informativ. En avvisad ändring fallerar
+kontraktgrinden, och detsamma gäller en breaking-ändring som lämnas oavgjord;
+breaking men godkänd varnar; inga breaking-ändringar passerar. En diff märkt
+**härledd (rådgivande)** utgör aldrig en grind.
 
-Approving or rejecting a change is `review_studio.setContractDecision`.
+Att godkänna eller avvisa en ändring är `review_studio.setContractDecision`.
 
-## The visual axis
+## Den visuella axeln
 
-If the PR changes UI components in a Flutter repo with a Widgetbook app, the
-compute pass renders the changed components before and after via a headless
-`flutter test` golden pass in the PR's base and head worktrees, then diffs the
-pixels.
+Om PR:en ändrar UI-komponenter i ett Flutter-repo med en Widgetbook-app renderar
+beräkningskörningen de ändrade komponenterna före och efter via en headless
+golden-körning med `flutter test` i PR:ens base- och head-worktrees, och diffar
+sedan pixlarna.
 
-:::note[This needs a Flutter SDK on the server host]
-The pure-Dart server cannot render Flutter widgets in-process, so it shells out
-to `flutter test`. The SDK has to be installed on the machine running
-`cc_server` — not on your client. Without it the axis reports **unavailable**
-with the reason "no Flutter SDK on host". It never reports a pass it did not
-earn.
+:::note[Det här kräver ett Flutter SDK på servervärten]
+Den rena Dart-servern kan inte rendera Flutter-widgetar i processen, så den
+startar `flutter test` som en separat process. SDK:t måste vara installerat på
+maskinen som kör `cc_server` – inte på din klient. Utan det rapporterar axeln
+**unavailable** med orsaken ”no Flutter SDK on host”. Den rapporterar aldrig ett
+godkänt resultat som den inte har gjort sig förtjänat.
 :::
 
-Snapshots marked **changed** or **removed** hold the visual gate until approved;
-**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+Ögonblicksbilder märkta **changed** eller **removed** håller kvar den visuella
+grinden tills de godkänns; ögonblicksbilder märkta **unchanged**, **added** och
+**approved** öppnar den. Otillgänglighet har en av fyra orsaker: ingen Flutter
+SDK på värden, ingen Widgetbook-app i repot, inga golden-testbara
+användningsfall eller ett fel i golden-harnesset.
 
-Approving an intended change is `review_studio.approveVisual`.
+Att godkänna en avsedd ändring är `review_studio.approveVisual`.
 
-## The axes and the verdict
+## Axlarna och utfallet
 
-| Axis         | Driven by                      |
-| ------------ | ------------------------------ |
-| Correctness  | Reviewer agents (tokens)       |
-| Security     | Reviewer agents (tokens)       |
-| Test gap     | Reviewer agents (tokens)       |
-| Visual       | Deterministic (golden harness) |
-| API contract | Deterministic (spec diff)      |
+| Axel         | Drivs av                        |
+| ------------ | ------------------------------- |
+| Korrekthet   | Granskaragenter (tokens)        |
+| Säkerhet     | Granskaragenter (tokens)        |
+| Testgap      | Granskaragenter (tokens)        |
+| Visuell      | Deterministisk (golden-harness) |
+| API-kontrakt | Deterministisk (spec-diff)      |
 
-The three token axes are recorded when a lead agent calls `finalize_review`; the
-two deterministic axes are recorded by the compute pass.
+De tre tokenaxlarna registreras när en ledaragent anropar `finalize_review`; de
+två deterministiska axlarna registreras av beräkningskörningen.
 
-Each axis reports one of:
+Varje axel rapporterar ett av:
 
-| State           | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| **Pass**        | Ran, nothing blocking found                        |
-| **Warn**        | Ran, non-blocking concerns                         |
-| **Fail**        | Ran, found a blocking problem                      |
-| **Partial**     | Ran but could not complete; results are incomplete |
-| **Unavailable** | Could not run at all                               |
+| Tillstånd       | Betydelse                                                  |
+| --------------- | ---------------------------------------------------------- |
+| **Pass**        | Körde, hittade inget blockerande                           |
+| **Warn**        | Körde, icke-blockerande problem                            |
+| **Fail**        | Körde, hittade ett blockerande problem                     |
+| **Partial**     | Körde men kunde inte slutföras; resultaten är ofullständiga |
+| **Unavailable** | Kunde inte köras alls                                      |
 
-Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
-are deliberately distinct from **fail** and neither clears a gate.
+Bara **pass** och **warn** öppnar en grindad axel. **Partial** och
+**unavailable** är medvetet åtskilda från **fail**, och ingen av dem öppnar en
+grind.
 
-The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
-the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
-forces **Block**; one that is **partial** or **unavailable** forces at least
-**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
-evidence never greens a gate.
+Axlarna vävs samman till **Ship**, **Hold** eller **Block**, och de kan bara
+göra utfallet _allvarligare_ – det nedgraderas aldrig. En grindad axel som
+**fallerar** tvingar fram **Block**; en som är **partial** eller **unavailable**
+tvingar fram minst **Hold**. Så en blockerande axel som inte kunde köras
+_håller_ kvar utfallet: frånvaro av bevis blir aldrig en grön grind.
 
-The verdict on the Review tab is the one `finalize_review` posted.
+Utfallet på fliken Granskning är det som `finalize_review` lade in.
 
-## Related guides
+## Relaterade guider
 
-- [Use AI-powered review](/sv-SE/handbok/how-to-guider/ai-granskning/)
-- [Dispatch reviewer agents](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
-- [Review and merge a PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
-- [Search code with the code graph](/sv-SE/handbok/how-to-guider/sok-kod/)
+- [Använd AI-driven granskning](/sv-SE/handbok/how-to-guider/ai-granskning/)
+- [Starta granskningsagenter](/sv-SE/handbok/how-to-guider/starta-granskningsagenter/)
+- [Granska och slå ihop en PR](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/)
+- [Sök kod med kodgrafen](/sv-SE/handbok/how-to-guider/sok-kod/)

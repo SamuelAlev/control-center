@@ -1,120 +1,121 @@
 ---
-title: Search code with the code graph
-description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+title: Tìm mã bằng đồ thị mã
+description: Lập chỉ mục một kho mã và dùng các công cụ của đồ thị mã để tìm ký hiệu và xem một thay đổi sẽ làm hỏng những gì.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tim-ma
+sourceHash: d79858d5a5fc926da8be6eefa1a40b483ff7a7d4
 ---
 
-This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+Hướng dẫn này chỉ cho bạn cách đưa một kho mã vào đồ thị mã, rồi dùng nó để trả lời câu hỏi mà bạn thực sự có trước một lần tái cấu trúc: cái gì phụ thuộc vào thứ này?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
+Đồ thị mã là một cơ sở dữ liệu về ký hiệu và cạnh, được dựng bằng cách phân tích cú pháp các bản checkout đã đăng ký của bạn bằng tree-sitter. Các công cụ của nó **hướng tới agent** — bạn tiếp cận chúng bằng cách hỏi một agent.
 
-## Before you start
+## Trước khi bắt đầu
 
-The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
+Đồ thị lập chỉ mục cho Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB và Ada. Các tệp thuộc bất kỳ ngôn ngữ nào khác đều không được phân tích cú pháp, nên chúng không xuất hiện trong `search_code`, `code_symbol`, `code_callers`, `code_callees` hay `code_impact`.
 
-Two more things shape what gets indexed:
+Hai điều nữa định hình những gì được lập chỉ mục:
 
-- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
-- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+- Trong một worktree git, bước liệt kê dựa vào `git ls-files --cached --others --exclude-standard`, nên mọi `.gitignore`, tệp loại trừ lồng nhau, `.git/info/exclude` và tệp loại trừ toàn cục đều được tôn trọng. Đó là thứ giữ `node_modules` và đầu ra bản dựng khỏi đồ thị.
+- Dart được sinh tự động thì luôn bị loại bỏ, bất kể cấu hình. Các tệp sinh tự động thường được commit, nên chỉ git thì không loại trừ chúng, và chúng bị xáo trộn sau mỗi lần chạy sinh mã.
 
-## Get a repo indexed
+## Đưa một kho mã vào chỉ mục
 
-Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+Việc đăng ký một bản checkout kích hoạt `RepoAdded`, sự kiện này tự động khởi động quy trình `index_code` cho nó. Xem [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
 
-To re-index by hand:
+Để lập chỉ mục lại bằng tay:
 
-1. Open **Settings → Workspace → Repositories**.
-2. Click the **Index code** button on the repo's row.
-3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+1. Mở **Cài đặt → Không gian làm việc → Kho lưu trữ**.
+2. Nhấn nút **Lập chỉ mục mã** trên dòng của kho mã đó.
+3. Trong lúc chạy, nút hiển thị số tệp đã xong trên tổng số, kèm một nút hủy. Khi chạy xong, nó lắng lại thành một dấu kiểm kèm số lượng ký hiệu.
 
-The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
+Đồ thị được phân vùng theo không gian làm việc, kho mã và bản checkout: bản checkout được liên kết là một phân vùng, còn mỗi worktree của space có phân vùng riêng (khóa theo id kho mã cô lập của nó).
 
-Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+Có hai cơ chế điều tiết đáng để biết, vì chúng giải thích một khoảng chờ trông như bị treo:
 
-- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
-- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
+- Bộ theo dõi tệp chỉ nhận **một** lượt lập chỉ mục tại một thời điểm trên máy chủ — một bản checkout thứ hai phải chờ. Quy trình `index_code` cũng bị giới hạn riêng ở một lượt chạy cho mỗi không gian làm việc, nên hai kho mã trong cùng một không gian làm việc phải xếp hàng; những không gian làm việc khác nhau có thể lập chỉ mục song song. Bản thân trình lập chỉ mục tuần tự hóa hai lượt chạy trên **cùng một** bản checkout, để một lần khởi động quy trình và một lượt quét của bộ theo dõi không thể phân tích cú pháp nó hai lần.
+- Những worktree thuộc **space không hoạt động** (không có tin nhắn nào trong tuần trước) thì không được theo dõi lẫn lập chỉ mục. Các bản checkout được liên kết vẫn được theo dõi. Một quyết định bỏ qua sẽ được kiểm tra lại sau năm phút, nên một space hoạt động trở lại sẽ được đưa vào trở lại.
 
-:::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::caution[Thiếu một ngữ pháp sẽ chặn máy chủ, chứ không chặn tìm kiếm]
+Tree-sitter và các ngữ pháp của nó là những thành phần native bắt buộc. Nếu thiếu một cái, `cc_server` từ chối khởi động và nêu tên tệp dylib còn thiếu — triệu chứng là một máy chủ không khởi động được, chứ không bao giờ là một tìm kiếm bị suy giảm. Hãy chuẩn bị chúng bằng `scripts/natives/build_natives.sh` rồi dựng lại tệp nhị phân của máy chủ.
 :::
 
-## Find a symbol
+## Tìm một ký hiệu
 
-Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+Hãy yêu cầu một agent tìm kiếm. Công cụ là `search_code` và nó cần cả một không gian làm việc lẫn một kho mã:
 
 ```
 search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
 ```
 
-Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+Id kho mã đến từ `list_repos`. Tham số tùy chọn `mode` nhận các giá trị `keyword`, `semantic` hoặc `hybrid` và mặc định là hybrid — BM25 trên tên, chữ ký và chú thích tài liệu, hợp nhất với độ tương đồng vector.
 
-Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+Mỗi kết quả mang id, tên, tên đầy đủ, loại, đường dẫn tệp, dòng bắt đầu và dòng kết thúc của ký hiệu, cùng chữ ký của nó khi có. **id** chính là tay nắm mà bạn truyền cho mọi công cụ khác trên trang này.
 
-When you know the exact name, look it up directly instead:
+Khi đã biết chính xác tên, hãy tra thẳng nó thay vì tìm kiếm:
 
 ```
 code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
 ```
 
-## Trace calls
+## Truy vết các lời gọi
 
-Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+Cả hai đều nhận một `symbol_id` từ kết quả tìm kiếm, cùng một `limit` tùy chọn (mặc định 50):
 
 ```
 code_callers(workspace_id: "...", symbol_id: "...")
 code_callees(workspace_id: "...", symbol_id: "...")
 ```
 
-`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+`code_callers` trả về những ký hiệu có một cạnh đi vào ký hiệu này; `code_callees` trả về những ký hiệu mà nó phụ thuộc vào.
 
-## Check what a change would break
+## Kiểm tra một thay đổi sẽ làm hỏng những gì
 
-This is the tool the whole page exists for:
+Đây là công cụ mà cả trang này tồn tại vì nó:
 
 ```
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+Nó tính **bán kính phụ thuộc ngược**: mọi thứ phụ thuộc trực tiếp hoặc gián tiếp vào ký hiệu theo các cạnh `calls`, `extends` và `implements` (import, mixin và tham chiếu generic được lưu trong đồ thị nhưng không được duyệt ở đây). `depth` là số bước nhảy tối đa, trong khoảng từ 1 đến 6, mặc định là 2.
 
-The result is three fields:
+Kết quả gồm ba trường:
 
-- `root` — the symbol you asked about
-- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
-- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+- `root` — ký hiệu mà bạn đã hỏi tới
+- `impacted` — tập hợp có thể tiếp cận được, bao gồm cả gốc ở độ sâu 0, mỗi phần tử mang `depth` của nó tính từ gốc
+- `edgeCount` — số cạnh mà lượt duyệt đã đi qua, dưới dạng một con số thay vì chính các cạnh đó
 
-Run it before you rename or change a signature and give the agent the impacted list as its scope.
+Hãy chạy nó trước khi bạn đổi tên hay thay đổi chữ ký, rồi đưa danh sách bị ảnh hưởng cho agent làm phạm vi hoạt động.
 
-## Results are checked against the caller's own working copy
+## Kết quả được đối chiếu với bản làm việc của chính bên gọi
 
-For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+Với bên gọi là agent, id space được tự động chèn vào và kết quả được đối chiếu với bản làm việc của **chính space đó**. Một ký hiệu có tệp không còn tồn tại trong cây của bên gọi sẽ bị bỏ qua, và phản hồi mang theo một bộ đếm `staleOmitted` cùng một ghi chú cho biết chỉ mục đã cũ đối với những ký hiệu đó.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
+Đó là lý do bạn và một agent có thể nhận được những câu trả lời khác nhau cho cùng một truy vấn, và cũng là lý do một agent trong space này có thể nhận câu trả lời khác với một agent trong space khác. Mọi cuộc hội thoại trong một space dùng chung một worktree đó. Việc đối chiếu thất bại theo hướng mở: một câu trả lời cũ vẫn được ưu tiên hơn một câu trả lời rỗng.
 
-Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/).
+Hãy yêu cầu một agent chạy `code_impact` (hoặc `review_studio.blastRadius`) khi bạn muốn biết bán kính ảnh hưởng của một thay đổi. Xem [Tính toán đánh giá](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/).
 
-## Semantic search needs the embedding model
+## Tìm kiếm ngữ nghĩa cần mô hình embedding
 
-Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+Ký hiệu và dữ kiện được nhúng vector ngay tại thời điểm ghi, và chỉ khi mô hình embedding trên thiết bị đã được cài. Trước đó, `mode: "semantic"` và nửa ngữ nghĩa của chế độ hybrid không có gì để so khớp, và tìm kiếm thực chất chỉ còn theo từ khóa.
 
-Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
+Hãy cài mô hình tại **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư → Tìm kiếm ngữ nghĩa** trước khi lập chỉ mục. Ký hiệu nhận một vector khi tệp chứa nó được nạp vào.
 
-Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+Cũng lưu ý rằng mọi lần dựng lại tệp nhị phân của máy chủ đều đưa các dylib ngữ pháp vào lại và thay đổi mtime của chúng, khiến mọi checkpoint của chỉ mục trở nên vô hiệu và buộc một lượt quét lại toàn bộ mỗi bản checkout ở lần chạy kế tiếp. Nó băm lại, nhưng không trích xuất lại những tệp không đổi.
 
-## What is in the graph
+## Đồ thị chứa những gì
 
-**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+**Các loại ký hiệu:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
 
-**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+**Các loại cạnh:** calls, imports, extends, implements, mixes in, references.
 
-The canonical signatures for these tools live in [MCP tools](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/).
+Chữ ký chuẩn tắc của những công cụ này nằm trong [Công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/).
 
-## Related guides
+## Hướng dẫn liên quan
 
-- [Add repos to a workspace](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
-- [Review compute (cohorts and axes)](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/)
-- [Use the MCP server](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
+- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
+- [Tính toán đánh giá (cohort và trục)](/vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia/)
+- [Dùng máy chủ MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/)
 
-## Related concepts
+## Khái niệm liên quan
 
-- [Workspaces and isolation](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)
+- [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/)

@@ -1,130 +1,128 @@
 ---
-title: Curate your newsfeed
-description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+title: 뉴스피드 큐레이션
+description: RSS/Atom 피드를 추가하고 관리하고, 콘텐츠 차단과 함께 아티클을 읽고, 피드가 모든 워크스페이스를 따라간다는 점을 알아둡니다.
 dateModified: 2026-09-19
 slug: ko-KR/매뉴얼/사용-가이드/뉴스피드
+sourceHash: 4b5a28e185c6f36bb101f1ae9fed9882d0b09c8e
 ---
 
-This guide shows you how to shape the newsfeed: which sources it pulls, how
-articles are read and what content blocking does.
+이 가이드에서는 뉴스피드를 구성하는 방법, 즉 어떤 소스를 가져오는지, 아티클을
+어떻게 읽는지, 콘텐츠 차단이 무엇을 하는지 설명합니다.
 
-:::caution[The newsfeed is per-user, not workspace-scoped]
-Feeds and articles belong to the signed-in user: your feed list, read state and
-bookmarks follow you into every workspace and to every device you sign in from,
-and no other user sees them. Feeds live in the server's global database, so the
-`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::caution[뉴스피드는 워크스페이스 범위가 아니라 사용자별입니다]
+피드와 아티클은 로그인한 사용자에게 속합니다. 피드 목록, 읽음 상태, 북마크는 모든
+워크스페이스와 로그인한 모든 기기로 따라가며, 다른 사용자에게는 보이지 않습니다.
+피드는 서버의 전역 데이터베이스에 있으므로 `/newsfeed` URL에 워크스페이스 id가
+들어가는 것은 앱 내 모든 라우트가 그렇기 때문일 뿐입니다.
 :::
 
-## Read articles
+## 아티클 읽기
 
-1. Click **Newsfeed** in the sidebar
-2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
-3. Narrow the list with the search box or the source picker
-4. Toggle between the magazine grid and the dense list with the layout buttons
+1. 사이드바에서 **뉴스피드**를 클릭합니다
+2. 도구 모음 세그먼트로 **전체**, **읽지 않음**, **저장됨** 사이를 전환합니다
+3. 검색 상자나 소스 선택기로 목록을 좁힙니다
+4. 레이아웃 버튼으로 매거진 그리드와 조밀한 목록 사이를 전환합니다
 
-Opening an article marks it read. Use **Mark all as read** in the page header —
-it appears only while something is unread — to clear the backlog in one go and
-the bookmark control on a card to save one for later.
+아티클을 열면 읽음으로 표시됩니다. 페이지 헤더의 **모두 읽음으로 표시** — 읽지 않은
+항목이 있을 때만 나타납니다 — 를 사용해 밀린 항목을 한 번에 정리하고, 카드의 북마크
+컨트롤을 사용해 아티클을 나중을 위해 저장합니다.
 
-The layout choice persists across launches.
+레이아웃 선택은 실행 간에 유지됩니다.
 
-## Add a feed
+## 피드 추가
 
-1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
-   goes straight there)
-2. Press **Add feed**
-3. Fill in a **name** and the **feed URL** (RSS or Atom)
-4. Optionally expand **Advanced** and set a custom **User-Agent** — some
-   publishers serve a different response to a default client
-5. Press **Add feed**
+1. **설정 → 나 → 뉴스피드**를 엽니다(뉴스피드 헤더의 설정 아이콘을 누르면 바로
+   이동합니다)
+2. **피드 추가**를 누릅니다
+3. **이름**과 **피드 URL**(RSS 또는 Atom)을 입력합니다
+4. 선택 사항으로 **고급**을 펼쳐 사용자 지정 **User-Agent**를 설정합니다. 일부
+   퍼블리셔는 기본 클라이언트에 다른 응답을 제공합니다
+5. **피드 추가**를 누릅니다
 
-Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "A feed with this
-URL already exists."
+확인: 피드가 **피드** 목록에 나타나고 첫 가져오기 후에 아티클이 들어옵니다. 이미
+구독한 URL은 "이 URL의 피드가 이미 있습니다."라는 메시지와 함께 거부됩니다.
 
-Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
-TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
-Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
-Engineering Manager, Lea Verou and CSS-Tricks.
+모든 사용자에게 처음 사용할 때 열네 개의 피드가 기본 제공됩니다: Control Center,
+The Verge, TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI,
+The Pragmatic Engineer, Martin Fowler, Will Larson의 Irrational Exuberance, The
+Engineering Manager, Lea Verou, CSS-Tricks.
 
-## Manage feeds
+## 피드 관리
 
-Each row in the **Feeds** list gives you three controls:
+**피드** 목록의 각 행에는 세 가지 컨트롤이 있습니다:
 
-| Control      | Effect                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
-| Refresh icon | Fetch this one feed now                                             |
-| Trash icon   | Delete the feed, after a confirmation                               |
+| 컨트롤        | 효과                                                                      |
+| ------------- | ------------------------------------------------------------------------- |
+| 스위치        | 피드를 사용 중지합니다. 사용 중지된 행은 흐리게 표시되고 더 이상 가져오지 않습니다 |
+| 새로 고침 아이콘 | 이 피드 하나를 지금 가져옵니다                                          |
+| 휴지통 아이콘 | 확인 후 피드를 삭제합니다                                                 |
 
-**Refresh all** at the top of the list fetches every enabled feed.
+목록 상단의 **모두 새로 고침**은 활성화된 모든 피드를 가져옵니다.
 
-A feed's subtitle shows its description and how long ago it was fetched; a feed
-that failed shows the error in its place, in warning colour.
+피드의 부제목에는 설명과 마지막으로 가져온 시점이 표시되며, 실패한 피드는 그 자리에
+오류가 경고 색상으로 표시됩니다.
 
-There is no edit affordance — to change a feed's name, URL or user agent, delete
-it and add it again.
+편집 기능은 없습니다. 피드의 이름, URL 또는 사용자 에이전트를 변경하려면 피드를
+삭제하고 다시 추가합니다.
 
-Fetching runs entirely on the server: once per user at boot (and on first use
-for accounts created later), then every 30 minutes.
+가져오기는 전적으로 서버에서 실행됩니다. 부팅 시 사용자당 한 번(나중에 생성된
+계정은 처음 사용할 때), 그다음에는 30분마다 실행됩니다.
 
-## Block ads and trackers in the reader
+## 리더에서 광고와 트래커 차단
 
-1. In Settings → You → Newsfeed, find **Reader preferences**
-2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
-   hand articles to your system browser
-3. Leave **Block ads, trackers & cookie banners** on
+1. 설정 → 나 → 뉴스피드에서 **리더 환경설정**을 찾습니다
+2. 내장 리더를 사용하려면 **앱에서 아티클 열기**를 켜 둔 채로 두고, 시스템
+   브라우저로 넘기려면 끕니다
+3. **광고, 트래커 및 쿠키 배너 차단**을 켜 둔 채로 둡니다
 
-Blocking is on by default. The embedded reader is macOS and Windows only: on
-the web build and on Linux the system browser _is_ the reader and an article
-opens there (a new tab on web). On web the blocking toggle, **Filter lists**
-card and **Trusted sites** card are hidden.
+차단은 기본적으로 켜져 있습니다. 내장 리더는 macOS와 Windows에서만 사용할 수
+있습니다. 웹 빌드와 Linux에서는 시스템 브라우저가 _곧_ 리더이며 아티클이 그곳에서
+열립니다(웹에서는 새 탭). 웹에서는 차단 토글, **목록 필터** 카드, **신뢰할 수 있는
+사이트** 카드가 숨겨집니다.
 
-The in-app reader does not reformat the article. It renders the publisher's page
-in an embedded webview and suppresses ads, trackers and cookie banners using
-cached filter lists.
+앱 내 리더는 아티클을 다시 포맷하지 않습니다. 퍼블리셔의 페이지를 내장 웹뷰에
+렌더링하고 캐시된 필터 목록을 사용해 광고, 트래커, 쿠키 배너를 억제합니다.
 
-### Check or update the filter lists
+### 목록 필터 확인 또는 업데이트
 
-The **Filter lists** card shows how many cookie-hiding, ad-hiding and
-network-block rules are loaded, plus the tracking parameters it strips and when
-the lists were last updated. Press **Check for updates** to refresh them.
+**목록 필터** 카드에는 로드된 쿠키 숨김, 광고 숨김, 네트워크 차단 규칙 수와 함께
+제거하는 추적 파라미터, 목록을 마지막으로 업데이트한 시점이 표시됩니다.
+**업데이트 확인**을 눌러 새로 고칩니다.
 
-Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
-uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the card labels the lists as bundled defaults that were never updated — ad,
-cookie and network rule counts stay at zero; tracking-parameter stripping still
-uses a built-in default set.
+소스는 EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, 여러 uBlock Origin
+목록, uBO의 추적 파라미터 목록입니다. 다운로드가 성공하기 전까지 카드는 해당 목록을
+한 번도 업데이트되지 않은 번들 기본값으로 표시합니다. 광고, 쿠키, 네트워크 규칙
+수는 0으로 유지되며, 추적 파라미터 제거는 여전히 내장 기본 집합을 사용합니다.
 
-### Allowlist a site
+### 사이트 허용 목록에 추가
 
-Some sites break under blocking.
+일부 사이트는 차단 때문에 깨집니다.
 
-1. In Settings → You → Newsfeed, go to **Trusted sites**
-2. Press **Add trusted site** and enter the domain
+1. 설정 → 나 → 뉴스피드에서 **신뢰할 수 있는 사이트**로 이동합니다
+2. **신뢰할 수 있는 사이트 추가**를 누르고 도메인을 입력합니다
 
-Blocking is skipped there.
+해당 사이트에서는 차단을 건너뜁니다.
 
-## Troubleshooting
+## 문제 해결
 
-### A feed I added shows up in another workspace
+### 추가한 피드가 다른 워크스페이스에 나타납니다
 
-Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
-everywhere you are signed in. See the caution at the top.
+정상입니다. 뉴스피드는 워크스페이스별이 아니라 사용자별이므로, 피드는 로그인한 모든
+곳을 따라갑니다. 맨 위의 주의 사항을 참고하세요.
 
-### A feed row shows an error instead of a description
+### 피드 행에 설명 대신 오류가 표시됩니다
 
-The last fetch failed and the row shows the reason verbatim. Press the refresh
-icon to retry and check the URL still serves RSS or Atom. A publisher that
-rejects unknown clients may need a custom user agent, which means deleting the
-feed and re-adding it.
+마지막 가져오기가 실패했고 행에 그 이유가 그대로 표시됩니다. 새로 고침 아이콘을
+눌러 다시 시도하고 URL이 여전히 RSS 또는 Atom을 제공하는지 확인하세요. 알 수 없는
+클라이언트를 거부하는 퍼블리셔라면 사용자 지정 사용자 에이전트가 필요할 수 있으며,
+이 경우 피드를 삭제하고 다시 추가해야 합니다.
 
-### An article page renders badly
+### 아티클 페이지가 잘못 렌더링됩니다
 
-Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
-turn **Open articles in app** off and read it in your browser.
+**신뢰할 수 있는 사이트**를 통해 해당 도메인에 대해 **광고, 트래커 및 쿠키 배너
+차단**을 끄거나, **앱에서 아티클 열기**를 끄고 브라우저에서 읽습니다.
 
-## Related guides
+## 관련 가이드
 
-- [Configure notifications](/ko-KR/매뉴얼/사용-가이드/알림/)
-- [Triage your inbox](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)
+- [알림 구성](/ko-KR/매뉴얼/사용-가이드/알림/)
+- [받은편지함 분류](/ko-KR/매뉴얼/사용-가이드/받은편지함-분류/)

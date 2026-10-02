@@ -2,6 +2,7 @@
 title: Tool context and prompt caching
 description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
 slug: en-GB/manual/concepts/tool-context
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
 Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
@@ -53,7 +54,7 @@ Caching works on an exact prefix match, which yields one governing rule.
 
 ### Never rewrite what was already sent
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Any byte that changes invalidates the cache from that point onwards. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
 
 The loop also trims stale tool output from older turns to reclaim context. It
 waits until there is enough to reclaim to be worth the rewrite, so a trim is a

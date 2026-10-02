@@ -1,109 +1,110 @@
 ---
-title: Diagnose an agent
-description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+title: Diagnosis ejen
+description: Telusuri log larian, pemeriksaan penyesuai, status pelayan dan diagnostik hos apabila ejen berhenti menghasilkan larian.
 slug: ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen
+sourceHash: 7bb2f949d72d8c5e6fe750da77855ee7e23178bd
 ---
 
-This guide shows you how to find out why an agent is not producing runs.
+Panduan ini menunjukkan cara mengetahui mengapa sesuatu ejen tidak menghasilkan larian.
 
-Work top down: the agent's own runs first, then its backend, then the server, then the host.
+Bekerja dari atas ke bawah: larian ejen itu sendiri dahulu, kemudian bahagian belakangnya, kemudian pelayan, kemudian hos.
 
-## 1. Check the agent's run history
+## 1. Semak sejarah larian ejen
 
-**Settings → Workspace → Agents** → select the agent → **Logs**.
+**Tetapan → Ruang kerja → Ejen** → pilih ejen itu → **Log**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Setiap larian menunjukkan lencana status, tempoh ("Running…" semasa masih berjalan), masa mula dan tamatnya, PID-nya dan penyesuai yang digunakannya. **Lihat** membuka strim peristiwa mentah larian itu. **Henti** menghentikan paksa proses yang sedang berjalan dan menandakan larian itu "Killed by user"; **Henti paksa yang berjalan** dalam pengepala melakukan perkara yang sama untuk setiap larian ejen itu yang sedang berjalan.
 
-Read it like this:
+Baca seperti ini:
 
-- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
-- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+- **Tiada larian langsung** — penghantaran tidak pernah berlaku. Sebutan dalam penggubah ialah `@` campur aksara perkataan (huruf, digit, garis bawah). Peleraiannya ialah padanan tepat atau awalan pada nama ejen, jadi `@code-reviewer` dihuraikan sebagai `code` dan masih boleh membangkitkan ejen bernama `code-reviewer`. Nama yang mengandungi ruang tidak boleh disebut sebagai satu token. Kemudian pergi ke langkah 2.
+- **Larian yang tamat serta-merta dengan ralat** — buka **Lihat**. Kegagalan melancarkan bahagian belakang muncul di sini sebagai ralat proses.
+- **Larian yang tersekat pada "Running…"** — hentikannya, kemudian semak **Tamat masa senyap** ejen itu pada tab Tetapan. Tamat masa yang tidak ditetapkan menggunakan lalai setiap modus.
+- **Larian selesai tanpa output berguna** — status log larian kekal `completed` bagi larian yang tamat tanpa hasil yang diisytiharkannya; isyarat jujurnya ialah teks ringkasan, bukan lencana.
 
-The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+Tab Log tidak menunjukkan kos. Untuk perbelanjaan, gunakan jadual setiap ejen dalam **Kebolehcerapan → Wawasan**.
 
-## 2. Check the agent's backend
+## 2. Semak bahagian belakang ejen
 
-**Settings → Server → Model providers** (`/settings/server/providers`).
+**Tetapan → Pelayan → Penyedia model** (`/settings/server/providers`).
 
-The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+Senarai **Pelari dikesan** menunjukkan setiap penyesuai dengan hasil pemeriksaannya — versi yang dipasang, "Menyemak…", atau "Tidak dijumpai" — beserta laluan yang diselesaikan dan cip keupayaan bagi CLI yang ditemui. Klik **Muat semula** dalam pengepala halaman untuk memeriksa semula.
 
-The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+Pemeriksaan itu berjalan pada mesin yang menghoskan `cc_server`, bukan pada mesin yang anda sedang lihat. Jika anda berada pada klien web atau peranti berganding, "Tidak dijumpai" bermaksud CLI itu tiada pada hos pelayan.
 
-Two things to confirm:
+Dua perkara untuk disahkan:
 
-- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
-- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+- **Ejen memang mempunyai penyesuai yang ditetapkan.** Ejen dengan penyesuai kosong dihantar ke **Control Center (built-in)** dan log larian merekodkan `cc-harness`, jadi transkrip menamakan apa yang berjalan. Dengan tiada model juga, ia meminta model lalainya daripada Anthropic — yang gagal dengan `No credential for provider "anthropic"` melainkan anda telah menyambungkan akaun Anthropic. Pakar yang disemai disertakan tanpa penyesuai.
+- **Penyesuai terbina mempunyai model.** Senarai modelnya datang secara langsung daripada penyedia yang disambungkan lebih jauh ke bawah pada halaman yang sama, jadi penyedia yang tiada kelayakan tersimpan menyumbang sifar model.
 
-The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+Katalog penyesuai itu sendiri adalah tetap — tiada cara untuk mendaftarkan penyesuai baharu. Apa yang boleh anda ubah bagi setiap penyesuai di sini ialah argumen pelancaran dan pemboleh ubah persekitarannya. Perhatikan bahawa pembatalan persekitaran bagi setiap penyesuai secara senyap mengalahkan akaun penyedia yang disambungkan apabila kelayakan diselesaikan.
 
-## 3. Check the server
+## 3. Semak pelayan
 
-**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+**Tetapan → Pelayan → Sambungan & status** (`/settings/server/connection`) menunjukkan pelayan mana yang sedang dihubungi oleh klien ini dan apa yang dilaporkannya.
 
-For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+Untuk pelayan tanpa kepala, `GET /healthz` ialah maklumat yang sama tanpa klien. Ia tidak disahkan dan terbuka kepada CORS secara reka bentuk:
 
 ```
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
+Ia mengembalikan status pelayan, masa hidup dalam saat, bilangan sambungan langsung, port terikat, versi binaan dan SHA git, versi skema ruang kerja, versi katalog RPC, id, nama dan cap jari identiti pelayan, sama ada ikatan itu tidak selamat dan blok `codeGraph` dengan kiraan `watching` / `indexing` / `pending`. Apabila sesuatu cache telah menerima trafik, ia turut menyertakan blok `caches`; pelayan demo menambah `demo: true`.
 
-Two things worth knowing when a change "works in tests but not in the app":
+Dua perkara yang wajar diketahui apabila sesuatu perubahan "berfungsi dalam ujian tetapi tidak dalam apl":
 
-- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
-- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+- Desktop melancarkan binari `cc_server` **prabina** dan mengutamakannya berbanding sumber. Op RPC atau alat MCP baharu tidak muncul sehingga binari itu dibina semula, dan log boot mencatat amaran apabila SHA git proses anak itu berbeza daripada SHA apl.
+- Desktop menghentikan paksa pelayan yang dijanakannya yang tidak mencetak sepanduk sedia dalam masa 20 saat dan jatuh ke skrin ralat.
 
-## 4. Check the host
+## 4. Semak hos
 
-**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+**Tetapan → Pelayan → Diagnostik & privasi** (`/settings/server/diagnostics`) ialah halaman peringkat hos. Ia membawa:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
-- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behavior** — keep the computer awake while agents run.
-- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
-- **Log level** — raise it before reproducing a failure.
-- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+- **Kotak pasir** — togel induk, bahagian belakang yang dikesan, petunjuk pemasangan dan togel keupayaan lalai. Hanya bahagian belakang yang dikesan datang daripada pelayan; lihat amaran di bawah. Tiada kawalan set semula.
+- **Carian semantik** — kitaran hayat model pembenaman pada peranti: dipasang, sedang memuat turun dengan peratusan, tidak dipasang, atau ralat pemasangan. Sehingga ia dipasang, carian memori dan kod kekal berasaskan kata kunci sahaja.
+- **Tingkah laku sistem** — kekalkan komputer terjaga semasa ejen berjalan.
+- **Enjin segerak** — suis mati bagi setiap stor untuk tiket, pemesejan dan nota. Ini ialah lubang keluar kecemasan kembali kepada langganan snapshot penuh; sesuatu perubahan hanya menjejaskan langganan baharu, jadi ia berkuat kuasa sepenuhnya selepas muat semula.
+- **Tahap log** — naikkannya sebelum menghasilkan semula sesuatu kegagalan.
+- **Privasi** — sama ada kandungan diff mentah boleh diteruskan kepada model ejen dan sama ada laporan ranap dihantar.
 
-:::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+:::caution[Bahagian ini melaporkan hos dan kawalannya berada di pihak klien]
+Pengesanan dan penguatkuasaan kini sependapat: apabila pengesan melaporkan bahagian belakang natif, larian ejen pada hos itu memang benar-benar dibalut dengannya. Tetapi pengesan ialah satu-satunya perkara yang langsung dalam bahagian ini. Togel induk, pemilih bahagian belakang dan togel keupayaan lalai ialah keutamaan yang disimpan pada peranti anda dan pelayan tidak membaca mana-mana daripadanya — suis pelayan sendiri ialah `--sandbox` (`on` secara lalai, `off` untuk menarik diri) dan bagi mana-mana ejen yang dibiarkan pada "Gunakan lalai ruang kerja", pelayan jatuh kembali kepada lalai konservatifnya: tiada git push, tiada API GitHub, tiada kunci penetikan, rangkaian hidup.
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+Jadi amaran di sini wajar ditindaklanjuti, tetapi ia biasanya bukan sebab sesuatu ejen gagal. Untuk mengesahkan keadaan pelayan itu, baca log permulaannya: ia mencetak `agent sandbox ON` dengan nota bahagian belakang, `no OS-native agent sandbox on this host` dengan petunjuk pemasangan, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tiada medan kotak pasir.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+Di mana tiada bahagian belakang — Windows sentiasa, Linux atau WSL2 tanpa `bwrap` dan `socat` — larian **tidak** dikotak pasirkan dan apa yang membataskannya ialah checkout perbualan itu sendiri, keupayaan yang menyekat kelayakan mana yang ditempa ke dalamnya, guardrail tindakan, sanitasi persekitaran dan permukaan alat yang dibenarkan oleh modusnya.
 :::
 
-## Common failures
+## Kegagalan biasa
 
-### The run never starts and the adapter shows "Not found"
+### Larian tidak pernah bermula dan penyesuai menunjukkan "Tidak dijumpai"
 
-Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+Pasang CLI itu **pada hos pelayan**, kemudian klik **Muat semula** pada halaman Penyedia model. Atau tukar ejen itu kepada penyesuai terbina, yang tidak memerlukan CLI, dan sambungkan penyedia pada halaman yang sama.
 
-### The agent cannot push or open a pull request
+### Ejen tidak boleh push atau membuka pull request
 
-Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+Keupayaannya ialah getnya. Buka **Tetapan → Ruang kerja → Ejen** → ejen itu → **Kebenaran kotak pasir**, hidupkan suis itu dan dayakan **Benarkan git push** dan **Benarkan panggilan API GitHub**. Membiarkan suis itu pada "Gunakan lalai ruang kerja" tidak memberikan ejen itu mana-mana daripadanya.
 
-### Semantic search returns nothing useful
+### Carian semantik tidak mengembalikan apa-apa yang berguna
 
-Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+Semak **Tetapan → Pelayan → Diagnostik & privasi → Carian semantik**. Sehingga model pembenaman dipasang, carian hanyalah berasaskan kata kunci. Baris yang ditulis sebelum model dipasang tidak pernah diisi semula, jadi ia kekal berasaskan kata kunci sahaja walaupun selepas itu.
 
-### The server will not boot at all
+### Pelayan langsung tidak but
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Pustaka natif diperlukan dan tiada modus terdegradasi. dylib yang hilang menyebabkan `cc_server` enggan dimulakan dan menamakan pesalah itu dalam ralat. Sediakan natif dengan `scripts/natives/build_natives.sh` dan bina semula binari pelayan.
 
-### An action is silently denied
+### Sesuatu tindakan ditolak secara senyap
 
-A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+Keputusan guardrail `prompt` tanpa pelulus yang bersambung ditolak, memang disengajakan. Semak peraturan ruang kerja itu di bawah **Tetapan → Ruang kerja → Kebenaran ejen**.
 
-## Related guides
+## Panduan berkaitan
 
-- [Create and configure an agent](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
-- [Manage adapters and models](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
-- [Configure guardrails](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/)
-- [Run a headless server](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)
+- [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/)
+- [Urus penyesuai dan model](/ms-MY/manual-pengguna/panduan-cara/penyesuai/)
+- [Konfigurasikan guardrail](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/)
+- [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/)
 
-## Related concepts
+## Konsep berkaitan
 
-- [Sandbox and security](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
-- [Agent dispatch lifecycle](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)
+- [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/)
+- [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/)

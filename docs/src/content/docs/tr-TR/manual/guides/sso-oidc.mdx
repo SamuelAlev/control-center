@@ -1,95 +1,106 @@
 ---
-title: Connect an OpenID Connect provider
-description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+title: Bir OpenID Connect sağlayıcısı bağlama
+description: Herhangi bir OIDC issuer’ını — Pocket ID, Keycloak, Auth0, Zitadel — Control Center oturum açmasına bağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/sso-oidc
+sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
 
-Use this guide when your identity provider speaks **OpenID Connect** rather
-than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
-Zitadel, Google Workspace and friends all follow the same steps; only the
-spot where your provider shows the values differs.
+Kimlik sağlayıcınız SAML yerine **OpenID Connect** konuşuyorsa bu kılavuzu
+kullanın. OIDC sertifikalı her issuer çalışır — Pocket ID, Keycloak, Auth0,
+Zitadel, Google Workspace ve benzerlerinin tümü aynı adımları izler; yalnızca
+sağlayıcınızın değerleri gösterdiği yer farklıdır.
 
-## Prerequisites
+## Önkoşullar
 
-- an OIDC provider where you can create a client — note its **client id**
-  and its **issuer URL** (the base the
-  `.well-known/openid-configuration` document lives under), plus its
-  **client secret** when the client is the confidential kind (public
-  PKCE clients have none),
-- a Control Center server you administer (the **server owner**).
+- istemci oluşturabileceğiniz bir OIDC sağlayıcısı — **client id** ve
+  **issuer URL** değerlerini (`.well-known/openid-configuration` belgesinin
+  yayımlandığı temel adres) ve istemci gizli türdeyse (herkese açık PKCE
+  istemcilerinde secret bulunmaz) **client secret** değerini not edin,
+- yönettiğiniz bir Control Center sunucusu (**sunucu sahibi**).
 
-## Steps
+## Adımlar
 
-1. Open **Settings → Server → Single sign-on** and switch to
-   **OpenID Connect**.
-2. Fill in the **Issuer URL** and the **Client ID** and the **Client
-   secret (optional)** when the provider issued one. Control Center
-   discovers the endpoints from the issuer's standard discovery document —
-   no per-provider configuration.
-3. At the provider, register the redirect
-   `https://<your-server>/oidc/callback` on that client.
-4. If your groups live under a claim other than `groups`, set the
-   **Groups claim** name; map groups to roles if you want (SSO can never
-   grant the owner role).
-5. Choose the membership policy (auto-add to every workspace, or require
-   per-workspace invites), turn on **Use OpenID Connect for sign-in** and
-   press **Save connection**.
-6. Press **Test connection** — the server fetches the issuer's discovery
-   document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works. To check the client registration
-   too, use the [checker below](#check-your-configuration-from-this-page).
-7. Take a login: the web connect screen shows **Sign in with OpenID
-   Connect**, or open `https://<your-server>/oidc/login` directly.
+1. **Ayarlar → Sunucu → Tek oturum açma** bölümünü açın ve **OpenID
+   Connect** seçeneğine geçin.
+2. **Issuer URL**, **Client ID** ve sağlayıcı verdiyse **Client secret
+   (isteğe bağlı)** alanlarını doldurun. Control Center uç noktaları
+   issuer’ın standart discovery belgesinden keşfeder — sağlayıcı başına
+   yapılandırma gerekmez.
+3. Sağlayıcıda, bu istemciye `https://<your-server>/oidc/callback`
+   yönlendirmesini kaydedin.
+4. Gruplarınız `groups` dışında bir claim altında yer alıyorsa **Gruplar
+   claim** adını ayarlayın; isterseniz grupları rollere eşleyin (SSO sahip
+   rolünü asla veremez).
+5. Üyelik politikasını seçin (her çalışma alanına otomatik ekleme ya da
+   çalışma alanı başına davet zorunluluğu), **Oturum açmak için OpenID
+   Connect kullan** seçeneğini açın ve **Bağlantıyı kaydet** düğmesine
+   basın.
+6. **Bağlantıyı dene** düğmesine basın — sunucu issuer’ın discovery
+   belgesini getirir ve uç noktalarını doğrular; yani yeşil bir bildirim,
+   tarayıcı gidiş-dönüşü dışındaki her şeyin çalıştığı anlamına gelir.
+   İstemci kaydını da denetlemek için
+   [aşağıdaki denetleyiciyi](#yapılandırmanızı-bu-sayfadan-denetleyin)
+   kullanın.
+7. Bir oturum açma deneyin: web bağlanma ekranı **OpenID Connect ile
+   oturum aç** gösterir ya da `https://<your-server>/oidc/login` adresini
+   doğrudan açabilirsiniz.
 
-Claims (email, name, groups) are read from the issuer's token endpoint over
-TLS by your server — the browser never supplies them, so no local JWT
-signature verification is involved. The client should be allowed to request
-the `openid profile email` scope, which is exactly what Control Center asks
-for.
+Claim’ler (e-posta, ad, gruplar) sunucunuz tarafından issuer’ın token uç
+noktasından TLS üzerinden okunur — tarayıcı bunları hiçbir zaman sağlamaz,
+dolayısıyla hiçbir yerel JWT imza doğrulaması devreye girmez. İstemcinin
+`openid profile email` kapsamını istemesine izin verilmelidir; Control
+Center tam olarak bunu ister.
 
-Because that TLS channel is the only thing authenticating the claims, the
-issuer URL must be **https** — a plaintext issuer would let any on-path
-attacker forge identities wholesale. `http` is accepted for loopback
-issuers (`localhost`, `127.0.0.1`, `::1`) only, for local development.
+Claim’leri kimlik doğrulayan tek şey bu TLS kanalı olduğundan, issuer URL
+**https** olmalıdır — düz metin bir issuer, yoldaki herhangi bir saldırganın
+toplu olarak kimlik sahtelemesine olanak tanır. `http` yalnızca yerel
+geliştirme için loopback issuer’larda (`localhost`, `127.0.0.1`, `::1`)
+kabul edilir.
 
-:::note[Public client or confidential client?]
-The default — and recommended — shape is a **public client** using
-authorization code flow with **PKCE** (RFC 7636): the one-time code
-verifier the server holds replaces the secret and the token exchange is
-bound to the authorization request that started it. There is no secret to
-leak and a stolen authorization code is useless without the verifier. Some
-providers call this "SPA" or "native" client type when you create it.
+:::note[Herkese açık istemci mi, gizli istemci mi?]
+Varsayılan — ve önerilen — biçim, **PKCE** (RFC 7636) ile authorization
+code akışını kullanan **herkese açık istemci**dir: sunucunun elinde
+tuttuğu tek kullanımlık code verifier, secret’ın yerini alır ve token
+alışverişi, onu başlatan yetkilendirme isteğine bağlanır. Sızabilecek bir
+secret yoktur ve çalınan bir authorization code, verifier olmadan işe
+yaramaz. Bazı sağlayıcılar, istemciyi oluştururken bu türe "SPA" ya da
+"native" istemci türü der.
 
-If your provider issued a **confidential** client instead, either mark the
-client as public at the provider (PKCE stays on either way), or paste the
-client secret into the connection's **Client secret (optional)** field. The
-secret is stored in the server's 0600 secrets file (never the database),
-sent to the token endpoint as `client_secret_post` and never returned over
-RPC; leaving the field blank on save keeps the stored secret. When a login
-fails at the token exchange, the server log names the provider's own error
-(`invalid_client` almost always means the secret is missing or wrong).
+Sağlayıcınız bunun yerine **gizli** bir istemci verdiyse ya istemciyi
+sağlayıcıda herkese açık olarak işaretleyin (PKCE her iki durumda da açık
+kalır) ya da client secret’ı bağlantının **Client secret (isteğe bağlı)**
+alanına yapıştırın. Secret, sunucunun 0600 izinli secrets dosyasında
+saklanır (asla veritabanında değil), token uç noktasına
+`client_secret_post` olarak gönderilir ve RPC üzerinden asla döndürülmez;
+kaydederken alanı boş bırakmak saklanan secret’ı korur. Bir oturum açma
+token alışverişinde başarısız olduğunda sunucu günlüğü sağlayıcının kendi
+hatasını adlandırır (`invalid_client` neredeyse her zaman secret’ın eksik
+ya da yanlış olduğu anlamına gelir).
 :::
 
-:::note[Reachability]
-Login itself is browser-mediated: the issuer only redirects the user's
-browser back to `/oidc/callback` and your server makes an outbound HTTPS
-call to the token endpoint — no inbound connection from the issuer is
-needed, so a server behind NAT works as long as users' browsers can reach
-it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
-exception**: the IdP calls your server directly, which requires a tunnel or
-a public URL — see [provision users with SCIM](/tr-TR/kilavuz/nasil-yapilir/sso-scim).
+:::note[Erişilebilirlik]
+Oturum açmanın kendisi tarayıcı aracılığıyla gerçekleşir: issuer yalnızca
+kullanıcının tarayıcısını `/oidc/callback` adresine geri yönlendirir ve
+sunucunuz token uç noktasına giden yönde bir HTTPS çağrısı yapar —
+issuer’dan gelen bir bağlantıya gerek yoktur; bu nedenle NAT arkasındaki
+bir sunucu, kullanıcıların tarayıcıları ona ulaşabildiği sürece çalışır
+(LAN, VPN, Tailscale veya bir tünel). **SCIM ile sağlama istisnadır**: IdP
+doğrudan sunucunuzu çağırır; bu da bir tünel ya da herkese açık bir URL
+gerektirir — bkz.
+[SCIM ile kullanıcı sağlama](/tr-TR/kilavuz/nasil-yapilir/sso-scim).
 :::
 
-## Check your configuration from this page
+## Yapılandırmanızı bu sayfadan denetleyin
 
-The checker below runs in your browser. It fetches your issuer's discovery
-document directly, so this site never sees it, and applies the server's
-rules: an https issuer that matches the document, endpoints on the issuer's
-own origin, PKCE S256 and the token auth method your client type needs. With
-a client ID and server address, it can open a test sign-in that shows
-whether the client and its redirect URI are registered. It never asks for
-the client secret.
+Aşağıdaki denetleyici tarayıcınızda çalışır. Issuer’ınızın discovery
+belgesini doğrudan getirir; bu site onu hiçbir zaman görmez ve sunucunun
+kurallarını uygular: belgeyle eşleşen bir https issuer, uç noktaların
+issuer’ın kendi origin’inde olması, PKCE S256 ve istemci türünüzün
+gerektirdiği token kimlik doğrulama yöntemi. Bir client ID ve sunucu
+adresiyle, istemcinin ve yönlendirme URI’sinin kayıtlı olup olmadığını
+gösteren bir test oturum açması açabilir. Hiçbir zaman client secret
+istemez.
 
 <SsoCheck kind="oidc" />

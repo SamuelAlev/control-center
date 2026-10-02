@@ -1,92 +1,93 @@
 ---
-title: Quick start
-description: Install Control Center, configure one agent and watch it work on your repo.
+title: Snelstart
+description: Installeer Control Center, configureer één agent en zie hem aan je repo werken.
 slug: nl-NL/handleiding/snelstart
+sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
 ---
 
-This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+Dit is het kortste volledige pad van niets naar een agent die op je eigen code werkt. Volg het op volgorde; elke stap bouwt voort op de vorige.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
+Je hebt Git nodig, een GitHub-account en ofwel een account bij een modelprovider (Anthropic, OpenAI, Codex, Cursor, Kimi Code of elke andere provider met een API-sleutel) ofwel de Claude Code CLI, al geïnstalleerd. Al het andere stel je onderweg in.
 
-## Step 1: Install and launch
+## Stap 1: Installeren en starten
 
-Install Control Center as described in [Install](/nl-NL/handleiding/installeren/), then open it.
+Installeer Control Center zoals beschreven in [Installeren](/nl-NL/handleiding/installeren/) en open het.
 
-On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+Bij de eerste start vraagt de desktop-app **"Hoe moet Control Center draaien?"**. Kies **In deze app uitvoeren**. Control Center start op deze machine een headless `cc_server`, die je gegevens bezit en al het werk doet. Je krijgt hem nooit te zien; in plaats daarvan opent het onboardingscherm.
 
-:::note[Prefer not to install anything?]
-The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
-same features. A browser tab cannot host the server, though, so you supply one — run
-`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
-another machine. This quick start takes the desktop path because it needs no server
-setup; see [Install](/nl-NL/handleiding/installeren/#use-it-in-your-browser) for the browser route.
+:::note[Liever niets installeren?]
+Dezelfde app draait in de browser op [app.usectrl.dev](https://app.usectrl.dev) met
+dezelfde functies. Een browsertab kan de server echter niet hosten, dus lever je er zelf
+een aan — draai `cc_server` lokaal en verbind met `ws://localhost:9030`, of richt hem op een
+server op een andere machine. Deze snelstart neemt het desktoppad, omdat daarvoor geen
+server hoeft te worden ingesteld; zie [Installeren](/nl-NL/handleiding/installeren/#use-it-in-your-browser) voor de browserroute.
 :::
 
-## Step 2: Work through onboarding
+## Stap 2: Het onboarden doorlopen
 
-Onboarding has five steps and they run in order — there is no skipping ahead.
+Het onboarden bestaat uit vijf stappen en ze lopen op volgorde — vooruit springen kan niet.
 
-1. **Connect**: sign in with GitHub or paste a personal access token with `repo` and `read:org`. The credential is stored on the server, attached to your account.
-2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
-3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
-4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
-5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+1. **Verbinden**: meld je aan met GitHub of plak een persoonlijk toegangstoken met `repo` en `read:org`. De inloggegevens worden op de server opgeslagen en aan je account gekoppeld.
+2. **Werkruimte**: geef je eerste werkruimte een naam en kies optioneel een logo. Bij het aanmaken worden vijf agenten geseed — een CEO plus `qa`, `architect`, `engineer` en `librarian` — en de ingebouwde pipeline-sjablonen.
+3. **Sandbox**: legt een sandboxvoorkeur vast. Bij beide keuzes kun je doorgaan.
+4. **Adapter**: kies de adapter en het model die agenten standaard moeten gebruiken. Kies **Control Center (built-in)** en gebruik dan de providerkiezer die verschijnt om je bij een modelprovider aan te melden — de modellenlijst blijft leeg tot er een is verbonden. Met het afronden van deze stap worden de adapter en het model ook op de CEO-agent van de werkruimte vastgelegd.
+5. **Stem (optioneel)**: installeer een spraakmodel op het apparaat voor dicteren, of sla deze stap over.
 
-Control Center then opens your workspace inbox.
+Control Center opent daarna het postvak van je werkruimte.
 
-:::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
+:::note[Wat een agentrun begrenst]
+Agentopdrachten worden verpakt in de OS-native sandbox van de host wanneer die beschikbaar is — Seatbelt op macOS, bubblewrap op Linux. Windows heeft geen backend, dus worden runs daar alleen door de andere lagen begrensd: de eigen worktree van het gesprek (`git worktree` op Windows; copy-on-write waar `rift` meelevert), inloggegevens die per start worden bemiddeld en bij het opruimen worden ingetrokken, en de actiebeveiligingen. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
 :::
 
-## Step 3: Add a repository
+## Stap 3: Een repository toevoegen
 
-Go to **Settings → Workspace → Repositories** and click **Add repository**.
+Ga naar **Instellingen → Werkruimte → Repository's** en klik op **Repository toevoegen**.
 
-The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+De dialoog doorzoekt de mappen op de machine die de server draait, niet die van je client, en hij blijft binnen de roots die die server mag ontsluiten (standaard de homedirectory van zijn gebruiker). Alleen git-checkouts krijgen een selectievakje. Vink de jouwe aan en registreer hem.
 
-A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+Een checkout wordt alleen geaccepteerd als hij in een git-worktree staat, een `origin`-remote heeft en die remote naar een ondersteunde forge wijst — github.com, gitlab.com of bitbucket.org. Al het andere wordt met de reden geweigerd.
 
-Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+Repo's zijn werkruimtegebonden: een checkout die je hier registreert, komt in _deze_ werkruimte terecht. Er is geen aparte koppelstap.
 
-## Step 4: Give an agent an adapter and a model
+## Stap 4: Een agent een adapter en een model geven
 
-Go to **Settings → Workspace → Agents**. Select the `engineer` agent in the roster.
+Ga naar **Instellingen → Werkruimte → Agenten**. Selecteer de agent `engineer` in de lijst.
 
-On the **Settings** tab, set:
+Op het tabblad **Instellingen** stel je in:
 
 - **Adapter**: `Control Center (built-in)`
-- **Model**: pick one from the provider you connected in onboarding
+- **Model**: kies er een van de provider die je tijdens het onboarden hebt verbonden
 
-Press **Save changes**.
+Klik op **Wijzigingen opslaan**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+Deze stap is in de praktijk niet optioneel. Alleen de CEO-agent erft de adapter die je tijdens het onboarden hebt gekozen; de vier specialisten worden zonder adapter aangemaakt. Ze vallen terug op **Control Center (built-in)** met het standaardmodel van Anthropic, dus ze draaien alleen als je een Anthropic-account hebt verbonden — en als je er een hebt verbonden, op een model dat je niet zelf hebt gekozen.
 
-## Step 5: Send the agent a task
+## Stap 5: De agent een taak sturen
 
-1. In the sidebar, find the **Spaces** section and click the **+** button.
-2. Name the space, add the `engineer` agent under **Add agents** and create it.
-3. Type a concrete, small task against the repo you registered and press Enter.
+1. Zoek in de zijbalk de sectie **Ruimtes** en klik op de knop **+**.
+2. Geef de ruimte een naam, voeg de agent `engineer` toe onder **Agenten toevoegen** en maak hem aan.
+3. Typ een concrete, kleine taak voor de repo die je hebt geregistreerd en druk op Enter.
 
-Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the space's context and dispatches the run. Your source checkout is never touched.
+Control Center voorziet voor dit gesprek in een copy-on-write worktree van de repo's van de werkruimte, stelt een prompt samen uit de rol, persona en skills van de agent en de context van de ruimte, en dispatcht de run. Je broncheckout wordt nooit aangeraakt.
 
-## Step 6: Watch it work
+## Stap 6: Kijken hoe hij werkt
 
-You should see, in order:
+Je zou het volgende moeten zien, in deze volgorde:
 
-- The composer's send button turn into a stop button, because an agent is working in this conversation
-- The agent's reasoning, tool calls and text streaming into the transcript
-- The send button come back when the run ends
+- De verzendknop van de composer verandert in een stopknop, omdat er een agent in dit gesprek werkt
+- De redenering van de agent, toolaanroepen en tekst die in het transcript streamen
+- De verzendknop komt terug wanneer de run eindigt
 
-Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+Open daarna **Instellingen → Werkruimte → Agenten**, selecteer de agent en bekijk het tabblad **Logboeken**: één runrij, met de status, duur, start- en eindtijd en de adapter waarop hij heeft gedraaid.
 
-That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+Dat is de lus. Al het andere in Control Center — pull-requestreview, pipelines, tickets, vergaderingen, Slack — hangt daaraan.
 
-## Next steps
+## Volgende stappen
 
-- [Your first workspace](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/): the same ground, slower, with the isolation model explained
-- [Review your first pull request](/nl-NL/handleiding/zelfstudies/eerste-pr/): take an agent's branch through review and merge
-- [The agent model](/nl-NL/handleiding/concepten/agentmodel/): what an agent is made of
-- [Create and configure an agent](/nl-NL/handleiding/gidsen/agent-maken/): the rest of the agent form
-- [Run an orchestration](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/): one goal, one approval, a generated pipeline
-- [Pair your phone](/nl-NL/handleiding/gidsen/apparaat-koppelen/): follow the fleet from anywhere
-- [Deployment and clients](/nl-NL/handleiding/concepten/deployment/): how the desktop, web and phone clients relate to the server
+- [Je eerste werkruimte](/nl-NL/handleiding/zelfstudies/eerste-werkruimte/): dezelfde stof, langzamer, met het isolatiemodel uitgelegd
+- [Je eerste pull request reviewen](/nl-NL/handleiding/zelfstudies/eerste-pr/): loodst de branch van een agent door review en merge
+- [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): waaruit een agent bestaat
+- [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/): de rest van het agentformulier
+- [Een orkestratie uitvoeren](/nl-NL/handleiding/gidsen/orkestratie-uitvoeren/): één doel, één goedkeuring, een gegenereerde pipeline
+- [Je telefoon koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/): volg de vloot vanaf elke locatie
+- [Deployment en clients](/nl-NL/handleiding/concepten/deployment/): hoe de desktop-, web- en telefoonclients zich tot de server verhouden

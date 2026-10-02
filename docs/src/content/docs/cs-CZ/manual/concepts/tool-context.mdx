@@ -1,89 +1,88 @@
 ---
-title: Tool context and prompt caching
-description: Why an agent is shown a small set of tools rather than all of them, how it reaches the rest, and the rules that keep the provider's prompt cache warm across a run.
+title: Kontext nástrojů a cache promptů
+description: Proč agent vidí malou sadu nástrojů místo všech, jak se dostane ke zbytku a jaká pravidla drží cache promptů poskytovatele zahřátou po celý běh.
 slug: cs-CZ/prirucka/koncepty/kontext-nastroju
+sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
 ---
 
-Two things are true of every request the built-in harness makes: the tool definitions are the largest fixed cost in it, and almost none of them will be used. This page explains what Control Center does about that, and why the answer is not simply "send fewer tools".
+U každého požadavku vestavěného harnessu platí dvě věci: definice nástrojů tvoří největší pevný náklad a skoro žádná z nich se nepoužije. Tahle stránka vysvětluje, co s tím Control Center dělá a proč odpověď není prostě „posílat míň nástrojů“.
 
-## The problem is attention, not bytes
+## Problém je pozornost, ne bajty
 
-Control Center registers about 126 tools. Sent in full, their definitions cost roughly **23,000 tokens on every request** — a cost no compaction can touch, because tool definitions travel in a separate part of the request from the conversation.
+Control Center registruje zhruba 126 nástrojů. Když se pošlou celé, stojí jejich definice přibližně **23 000 tokenů na každý požadavek** — náklad, na který komprimace nesáhne, protože definice nástrojů jdou v požadavku jinou částí než konverzace.
 
-The token bill is the obvious complaint, and with prompt caching it is also the smaller one. The real cost is **selection accuracy**. Published evaluations of tool-calling agree that models pick the right tool reliably up to somewhere around 30–50 tools in context, and get progressively worse beyond that. The named cause is not the token count but **semantic overlap**: once a catalogue contains several tools whose descriptions read alike, the model is choosing between look-alikes rather than recalling a capability.
+Účet za tokeny je ta zjevná stížnost a s cache promptů zároveň ta menší. Skutečná cena je **přesnost výběru**. Publikovaná hodnocení volání nástrojů se shodují, že modely vyberou správný nástroj spolehlivě zhruba do 30–50 nástrojů v kontextu a za tou hranicí se postupně zhoršují. Pojmenovaná příčina není počet tokenů, ale **sémantický překryv**: jakmile katalog obsahuje několik nástrojů, jejichž popisy znějí podobně, model volí mezi dvojníky, místo aby si vybavoval schopnost.
 
-At 126 tools, an agent is well past that band on every single turn — including the many turns where it only needed to read a file.
+Při 126 nástrojích je agent na každém tahu daleko za tím pásmem — včetně těch mnoha tahů, kde stačilo přečíst soubor.
 
-## The two-tier surface
+## Dvouúrovňová plocha
 
-A run is therefore shown two things:
+Běh proto vidí dvě věci:
 
-- a **resident** set — roughly two dozen tools, sent with full schemas on every request;
-- a **name index** of everything else, grouped under headings like "Tickets and projects" or "Memory and knowledge", costing a few hundred tokens for the whole catalogue.
+- **rezidentní** sadu — zhruba dvě desítky nástrojů, poslaných s plným schématem při každém požadavku;
+- **jmenný index** všeho ostatního, seskupený pod nadpisy jako „Tickets and projects“ nebo „Memory and knowledge“, za pár stovek tokenů na celý katalog.
 
-Measured on the current catalogue, that takes the tool block from **~23.1k tokens to ~5.0k, about 78% smaller**, and puts the always-visible set inside the band where selection is reliable.
+Na současném katalogu to srazí blok nástrojů z **~23,1 tis. tokenů na ~5,0 tis., tedy asi o 78 %**, a trvale viditelnou sadu dostane do pásma, kde je výběr spolehlivý.
 
-The resident set is the tools a run uses in *most* runs: the file and shell vocabulary (`read`, `write`, `edit`, `search`, `bash`, …), the discovery tools, the task checklist, memory search, and whatever verb the current [mode](/cs-CZ/prirucka/koncepty/rezimy) must call to deliver its output. A mode's own output verb is always resident — a run must never have to go looking for the one call that produces its deliverable.
+Rezidentní sada jsou nástroje, které běh použije ve *většině* běhů: slovník souborů a shellu (`read`, `write`, `edit`, `search`, `bash`, …), nástroje pro objevování, kontrolní seznam úkolů, hledání v paměti a sloveso, které musí aktuální [režim](/cs-CZ/prirucka/koncepty/rezimy/) zavolat, aby odevzdal výstup. Vlastní výstupní sloveso režimu je vždy rezidentní. Běh nesmí hledat právě to volání, které jeho výstup vytvoří.
 
-### Deferred does not mean unavailable
+### Odložený neznamená nedostupný
 
-This is the part that makes the design safe rather than merely cheap. **A deferred tool is callable from the first turn.** Only its schema is withheld.
+Tohle z návrhu dělá bezpečný, ne jen levný. **Odložený nástroj jde zavolat už od prvního tahu.** Zadržené je jen jeho schéma.
 
-The agent sees the name in its prompt. If it calls that name directly, the harness loads the schema and runs the tool in the same step — no error, no round trip. The model does not need to know that the tool was ever "unloaded".
+Agent vidí jméno v promptu. Když ho zavolá přímo, harness ve stejném kroku načte schéma a nástroj spustí — bez chyby a bez dalšího kola. Model nemusí vědět, že byl nástroj kdy „nenačtený“.
 
-When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
+Když agent zná úkol, ale ne jméno, `search_tools` vezme popis běžným jazykem („přiřaď ticket někomu“), seřadí celou plochu běhu a vrátí shody *už s načtenými schématy*, takže hned další tah může jednu zavolat. Když hledání nic nenajde, řekne to napřímo a navrhne jiné znění nebo širší hledání. Schválně: agent, který prázdné hledání přečte jako „tahle schopnost neexistuje“, si vymyslí náhradu, místo aby hledal znovu.
 
-`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+`search_tools` existuje jen ve vestavěném harnessu. Externí klienti MCP mají místo něj `search_tool_bm25`, který řadí stejný index, ale shody jen popisuje. Ti klienti už každé schéma dostali z `tools/list`, takže není co načítat.
 
-### What deferral never does
+### Co odložení nikdy nedělá
 
-Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/cs-CZ/prirucka/koncepty/guardraily) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
+Odložení se uplatní **až po** filtru nástrojů režimu, nikdy místo něj. Skryje schéma. Nástroj, který režim zakázal, odhalit neumí. Aktivovaný nástroj pořád projde výzvou ke schválení a [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) úplně stejně jako rezidentní a nenačte jméno, které na ploše běhu od začátku nebylo.
 
-The MCP surface external clients see is **not** affected. `tools/list` still returns the complete catalogue. An earlier attempt to trim it broke agents outright: MCP clients validate tool names against their own cached list and refuse anything unlisted without ever asking the server, so a "hidden but callable" tool was simply unreachable. Deferral lives in the harness, where loading a tool mid-run is something the harness can actually do.
+Plocha MCP, kterou vidí externí klienti, se **nemění**. `tools/list` pořád vrací celý katalog. Dřívější pokus ho ořezat agenty rovnou rozbil: klienti MCP ověřují jména nástrojů proti vlastnímu seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj „skrytý, ale volatelný“ byl prostě nedosažitelný. Odložení žije v harnessu, kde načtení nástroje uprostřed běhu harness opravdu umí.
 
-### Turning it off
+### Jak to vypnout
 
-`--tool-deferral=off` (or `CC_SERVER_TOOL_DEFERRAL=off`) makes every admitted tool resident again, producing exactly the requests the server made before deferral existed. See the [`cc_server` CLI reference](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli).
+`--tool-deferral=off` (nebo `CC_SERVER_TOOL_DEFERRAL=off`) znovu udělá rezidentním každý připuštěný nástroj a vyrobí přesně ty požadavky, které server posílal, než odložení existovalo. Viz [referenční příručka CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
 
-## Prompt caching
+## Cache promptů
 
-Agent workloads are lopsided: they send enormous prompts and receive small answers, turn after turn, with the same prefix each time. Providers cache that prefix, and a cache read costs about a tenth of a fresh one. Cache hit rate is therefore a first-class property of the harness rather than an optimisation — and on Anthropic it also buys throughput, because cached tokens do not count against the per-minute input limit.
+Zátěž agentů je nevyvážená: posílají obrovské prompty a dostávají malé odpovědi, tah za tahem, pokaždé se stejným prefixem. Poskytovatelé ten prefix cachují a čtení z cache stojí asi desetinu čerstvého čtení. Míra zásahů cache je proto vlastnost harnessu, se kterou se počítá, ne dodatečná optimalizace — a u Anthropic k tomu získá i propustnost, protože nacachované tokeny se nepočítají do minutového limitu vstupu.
 
-Caching works on an exact prefix match, which yields one governing rule.
+Cache funguje na přesné shodě prefixu a z toho plyne jedno řídící pravidlo.
 
-### Never rewrite what was already sent
+### Co už odešlo, se nepřepisuje
 
-Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
+Jakýkoli změněný bajt zneplatní cache od toho místa dál. Harness proto jen **připisuje**: nové zprávy na konec a nově aktivovaná schémata nástrojů *za* nacachovaný blok nástrojů, ne sloučená do něj. Tohle pořadí je důvod, proč je aktivace levná — nacachovaný prefix zůstane stejný a běh zaplatí jen za schémata, která právě načetl.
 
-The loop also trims stale tool output from older turns to reclaim context. It
-waits until there is enough to reclaim to be worth the rewrite, so a trim is a
-rare deep rewrite instead of a continuous cache miss.
+Smyčka taky ořezává zastaralý výstup nástrojů ze starších tahů, aby kontext získala zpátky. Čeká, až je co získat natolik, aby se přepis vyplatil, takže ořez je vzácný hluboký přepis, ne průběžné minutí cache.
 
-### Where the breakpoints go
+### Kam patří značky
 
-A provider allows a limited number of cache markers, and Control Center spends them deliberately:
+Poskytovatel dovolí omezený počet značek cache a Control Center je utrácí záměrně:
 
-| Marker                       | Covers                             | Lifetime |
-| ---------------------------- | ---------------------------------- | -------- |
-| Last **resident** tool       | The tool block                     | 1 hour   |
-| Last system block            | Tools + system prompt              | 1 hour   |
-| Previous turn's tail         | History up to the last request     | 5 min    |
-| Current turn's tail          | The full history                   | 5 min    |
+| Značka | Pokrývá | Životnost |
+| --- | --- | --- |
+| Poslední **rezidentní** nástroj | Blok nástrojů | 1 hodina |
+| Poslední systémový blok | Nástroje + systémový prompt | 1 hodina |
+| Ocas předchozího tahu | Historie až po poslední požadavek | 5 min |
+| Ocas aktuálního tahu | Celá historie | 5 min |
 
-The last two are a rolling pair, and the reason for the pair is subtle: a cache lookup searches backwards a bounded number of blocks for something an earlier request stored. A single turn that runs many tools in parallel can emit more blocks than that window, at which point one tail marker quietly misses and the request pays full price with nothing in the response to say so. Marking the exact spot the previous request stopped makes the hit structural instead of a race.
+Poslední dvě jsou klouzavý pár a důvod páru je jemný: vyhledání v cache jde zpátky omezený počet bloků a hledá něco, co uložil dřívější požadavek. Jeden tah, který spustí hodně nástrojů paralelně, může vyrobit víc bloků, než to okno pojme. Jedna značka na ocasu pak mine potichu a požadavek zaplatí plnou cenu, aniž by to odpověď někde řekla. Označení přesného místa, kde předchozí požadavek skončil, udělá zásah strukturálním, ne výsledkem závodu.
 
-The tools-and-system prefix takes the long lifetime because it is constant for the whole run, is shared by every run and subagent with the same shape, and because the clock starts when a request *begins* — a turn that streams for several minutes has already spent most of a short window before the next request forms.
+Prefix nástrojů a systému má dlouhou životnost, protože je po celý běh stejný, sdílí ho každý běh a subagent stejného tvaru a protože hodiny se spustí, když požadavek *začne* — tah, který streamuje několik minut, už většinu krátkého okna spotřebuje, než se sestaví další požadavek.
 
-### Subagents share one prefix
+### Subagenti sdílejí jeden prefix
 
-Subagents of the same type produce byte-identical prompt prefixes, so they should read one cache entry rather than each writing their own. But an entry only becomes readable once the request that wrote it starts responding, so a fan-out launched all at once has every child paying the premium for a prefix they all share.
+Subagenti stejného typu vyrábějí bajtově totožné prefixy promptů, takže mají číst jednu položku cache, ne si každý zapisovat vlastní. Položka je ale čitelná až ve chvíli, kdy požadavek, který ji zapsal, začne odpovídat. Rozvětvení spuštěné najednou proto nechá každého potomka platit přirážku za prefix, který mají společný.
 
-The harness lets the first child of a given shape start, then releases its siblings as soon as it begins streaming. The wait is bounded: a slow first child costs a cache hit, never the fan-out itself. For the same reason, every subagent gets the same resident tool set regardless of its profile — varying it per profile would fragment the shared prefix for no gain, since the profile has already decided what the child may call.
+Harness nechá nastartovat prvního potomka daného tvaru a sourozence pustí, jakmile začne streamovat. Čekání má mez: pomalý první potomek přijde o jeden zásah cache, o rozvětvení ne. Ze stejného důvodu dostane každý subagent stejnou rezidentní sadu nástrojů bez ohledu na profil — měnit ji podle profilu by společný prefix rozdrobilo bez zisku, protože profil už rozhodl, co potomek smí volat.
 
-## Watching it work
+## Jak to sledovat
 
-Both halves are observable rather than assumed:
+Obě poloviny jdou pozorovat, ne jen předpokládat:
 
-- The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
-- Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- **Průzkumník kontextu** u konverzace hlásí rezidentní nástroje, odložený index a to, kolik by každé zadržené schéma *stálo*. Počítá to stejná cesta v kódu, kterou používá skutečný běh.
+- Každý běh si zapisuje, které odložené nástroje načetl a co načtení spustilo, takže hledání, které nic nenašlo, je vidět jako minutí vyhledání, ne že se ztratí v agentovi, který potichu dělá něco vedlejšího.
+- Observabilita hlásí **Míra cache** jako čtení z cache vůči všem zpracovaným tokenům promptu, včetně zápisů do cache — běh, který si prefix pořád staví znovu, vychází nízko, ne jako běh, který cache nikdy nepotřeboval.
